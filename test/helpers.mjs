@@ -55,6 +55,7 @@ export async function startTestServer(env = {}) {
     DIRIGENT_CLOUD: '0',
     DIRIGENT_SCAN_MS: '60000',
     DIRIGENT_QUIET: '1',
+    DIRIGENT_OPEN: 'dry',
     ...env,
   });
   const app = await createApp(config);

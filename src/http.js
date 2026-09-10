@@ -151,6 +151,12 @@ export function createHttpServer(app) {
       if (!entries) throw new HttpError(404, 'Session nenalezena.');
       return { entries };
     }],
+    ['POST', /^\/api\/sessions\/([^/]+)\/open$/, async (req, m) => {
+      const body = await readBody(req);
+      const r = await app.openSession(decodeURIComponent(m[1]), String(body.target || ''));
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
     ['POST', /^\/api\/hooks\/claude-code$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
       const r = await app.connectors['claude-code'].ingestHook(await readBody(req));

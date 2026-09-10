@@ -21,6 +21,8 @@ export function loadConfig(env = process.env) {
     cloudFetch: env.DIRIGENT_CLOUD !== '0',
     keychain: env.DIRIGENT_KEYCHAIN !== '0' && process.platform === 'darwin',
     processes: env.DIRIGENT_PROCESSES !== '0',
+    // exec = skutečně otevírat aplikace (macOS), dry = jen vrátit plán (testy), off = vypnuto
+    openMode: env.DIRIGENT_OPEN === 'dry' ? 'dry' : env.DIRIGENT_OPEN === '0' || process.platform !== 'darwin' ? 'off' : 'exec',
     scanIntervalMs: Number(env.DIRIGENT_SCAN_MS) || 10000,
     processIntervalMs: Number(env.DIRIGENT_PROCESS_MS) || 5000,
     quiet: env.DIRIGENT_QUIET === '1',

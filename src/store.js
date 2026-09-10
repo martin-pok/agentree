@@ -39,6 +39,7 @@ export class Store extends EventEmitter {
     if (!this.sessions.has(s.id) || !s.lastAt) return;
     const prev = this.summaries.get(s.id);
     const value = summarize(s, now, this.windowMs);
+    if (this.decorate) this.decorate(value);
     const json = JSON.stringify(value);
     if (!prev || prev.json !== json) {
       this.summaries.set(s.id, { json, value });

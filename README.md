@@ -31,7 +31,7 @@ node ~/dirigent/bin/dirigent.mjs install-agent
 |---|---|
 | Přehled | Kolik agentů pracuje, kdo čeká na tebe, časová osa „Dnešní směna“, spotřeba tokenů, limity předplatných, útrata měsíce |
 | Agenti | Seznam všech sessions (30 dní) s filtry podle stavu, zdroje a poskytovatele, živá aktivita a plán úkolů |
-| Detail agenta | Živý přepis (zprávy, nástroje, výstupy), běžící čas tahu a počet kroků, složení tokenů, příkaz pro pokračování |
+| Detail agenta | Živý přepis (zprávy, nástroje, výstupy), běžící čas tahu a počet kroků, složení tokenů; **otevření přímo v aplikaci** (vlákno Codexu, Claude, Cursor, VS Code, web) nebo **pokračování v Terminálu** |
 | Statistiky | Tokeny podle poskytovatele, heatmapa aktivity, podíl aplikací, projekty, modely, limity a kredity |
 | Útrata | Výdaje a předplatné (ruční i z Admin API), rozpočty s upozorněním na 80 % a 100 %, prognóza do konce měsíce, historie kreditů |
 | Upozornění | Rozhodnutí, limity, rozpočty, dokončené dlouhé úlohy. Nativní notifikace macOS, notifikace prohlížeče, přehled v aplikaci |
@@ -39,7 +39,7 @@ node ~/dirigent/bin/dirigent.mjs install-agent
 ## Vývoj
 
 ```bash
-npm test          # 32 testů: parsery, stav, upozornění, rozpočty, hooky, HTTP API, realtime stream
+npm test          # 37 testů: parsery, stav, upozornění, rozpočty, hooky, HTTP API, realtime stream
 npm run check     # syntaktická kontrola všech JS souborů
 npm run dev       # server s automatickým restartem při změně src/
 ```

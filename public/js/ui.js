@@ -92,7 +92,8 @@ export function kindLabel(kind) {
 
 export function howToAnswer(s) {
   if (s.source === 'web') return 'Odpověz přímo v konverzaci v prohlížeči.';
-  if (s.connector === 'claude-code') return 'Odpověz v okně, kde session běží (Claude Desktop nebo terminál).';
+  if (s.connector === 'claude-code') return 'Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde session běží.';
+  if (s.connector === 'codex') return 'Otevři vlákno v Codexu tlačítkem výše a odpověz tam.';
   if (s.connector === 'cursor') return 'Potvrď akci v Cursoru.';
   if (s.connector === 'vscode-copilot') return 'Potvrď akci v panelu Copilotu ve VS Code.';
   return 'Odpověz v aplikaci, kde agent běží.';
@@ -105,7 +106,7 @@ export function activityItem(s) {
     ? `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity)}`
     : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;
   return `<li><a class="act-item" href="${agentHref(s.id)}">
-    <span class="icon-tile">${glyph(s.provider)}<i class="status-dot status-${esc(s.status)}"></i></span>
+    <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
     <span class="act-text"><span class="act-title">${esc(s.title)}</span><span class="act-meta"><span class="sr-only">${esc(STATUS[s.status]?.label || '')}, </span>${meta}</span></span>
     <span class="act-value">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : ''}</span>${ICON.chev}
   </a></li>`;
@@ -115,17 +116,28 @@ export function decisionCard(s) {
   const limited = s.status === 'limited';
   const since = s.pending?.at || s.limit?.at || s.lastAt;
   return `<li class="decision${limited ? ' is-limit' : ''}">
-    <span class="icon-tile">${glyph(s.provider)}</span>
+    <span class="icon-tile">${glyph(s)}</span>
     <div class="decision-body">
       <span class="decision-kicker">${limited ? 'Vyčerpaný limit' : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
       <p class="decision-reason">${esc(s.reason)}</p>
     </div>
     <div class="decision-actions">
-      ${s.url ? `<a class="btn btn--sm btn--primary" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${ICON.external}Otevřít</a>` : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">Detail</a>`}
-      ${s.resume ? `<button class="btn btn--sm" type="button" data-copy="${esc(s.resume)}" data-copy-message="Příkaz zkopírován — vlož ho do Terminálu">${ICON.terminal}Příkaz</button>` : ''}
+      ${s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">Detail</a>`}
     </div>
   </li>`;
+}
+
+// Tlačítka „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ — nabídku sestavuje server (session.open).
+export function openButtons(s, { small = false, max = 3 } = {}) {
+  const icons = { terminal: ICON.terminal, folder: ICON.folder };
+  return (s.open || [])
+    .slice(0, max)
+    .map((t, i) => {
+      const icon = t.id === 'app' ? glyph(s, { onDark: i === 0 }) : icons[t.id] || ICON.open;
+      return `<button class="btn${small ? ' btn--sm' : ''}${i === 0 ? ' btn--primary' : ''}" type="button" data-open-target="${esc(t.id)}" data-session-id="${esc(s.id)}">${icon}${esc(t.label)}</button>`;
+    })
+    .join('');
 }
 
 export function legendHtml(series) {
@@ -158,7 +170,7 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
       const expired = Boolean(l.resetsAt && l.resetsAt < now);
       if (!active && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
       const pct = active ? 100 : expired ? 0 : l.usedPercent;
-      const color = active || pct >= 95 ? 'var(--coral-ink)' : pct >= 80 ? 'var(--saffron)' : 'var(--lagoon)';
+      const color = active || pct >= 95 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)';
       const value = active ? 'Vyčerpán' : expired ? 'Obnoven' : `${Math.round(pct)} %`;
       const sub = l.resetsAt && !expired ? `obnova ${resetsLabel(l.resetsAt, now)}` : l.plan ? `plán ${l.plan}` : '';
       return { at: l.at, html: gauge({ pct, color, value, label: `${l.app} · ${l.label}`, sub, size, reached: active }) };

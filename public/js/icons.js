@@ -1,37 +1,72 @@
+// Barvy poskytovatelů (grafy) a oficiální loga služeb.
+// Loga: @lobehub/icons-static-svg 1.95.0 (MIT), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
-  anthropic: { label: 'Anthropic', color: '#F2921D', ink: '#A85405', on: '#1E1B22' },
-  openai: { label: 'OpenAI', color: '#1E1B22', ink: '#1E1B22', on: '#FFFFFF' },
-  google: { label: 'Google', color: '#E8436B', ink: '#C92F57', on: '#FFFFFF' },
-  github: { label: 'GitHub', color: '#45BEC3', ink: '#177F85', on: '#1E1B22' },
-  microsoft: { label: 'Microsoft', color: '#3C7DD9', ink: '#2A64B8', on: '#FFFFFF' },
-  cursor: { label: 'Cursor', color: '#6D5BD0', ink: '#5A48BD', on: '#FFFFFF' },
-  perplexity: { label: 'Perplexity', color: '#2E9E8F', ink: '#1F7A6E', on: '#FFFFFF' },
-  xai: { label: 'xAI', color: '#8A8594', ink: '#5E5A66', on: '#FFFFFF' },
-  alibaba: { label: 'Alibaba', color: '#C9A227', ink: '#7A5E0A', on: '#1E1B22' },
-  local: { label: 'Lokální', color: '#5E9E57', ink: '#3F7A39', on: '#FFFFFF' },
-  other: { label: 'Ostatní', color: '#B3AEBA', ink: '#6B6770', on: '#1E1B22' },
+  anthropic: { label: 'Anthropic', color: '#D97757', ink: '#A6522F', on: '#FFFFFF' },
+  openai: { label: 'OpenAI', color: '#16141D', ink: '#16141D', on: '#FFFFFF' },
+  google: { label: 'Google', color: '#4285F4', ink: '#2A64C8', on: '#FFFFFF' },
+  github: { label: 'GitHub', color: '#8250DF', ink: '#6A3CC2', on: '#FFFFFF' },
+  microsoft: { label: 'Microsoft', color: '#0F6CBD', ink: '#0F6CBD', on: '#FFFFFF' },
+  cursor: { label: 'Cursor', color: '#4A4855', ink: '#3A3843', on: '#FFFFFF' },
+  perplexity: { label: 'Perplexity', color: '#1F8A96', ink: '#176873', on: '#FFFFFF' },
+  xai: { label: 'xAI', color: '#8C8896', ink: '#5E5A66', on: '#FFFFFF' },
+  alibaba: { label: 'Alibaba', color: '#615CED', ink: '#4B45D1', on: '#FFFFFF' },
+  local: { label: 'Lokální', color: '#6F8F5E', ink: '#4F6E40', on: '#FFFFFF' },
+  other: { label: 'Ostatní', color: '#B3AEBA', ink: '#686472', on: '#16141D' },
 };
 
 export const pkey = (p) => (PROVIDERS[p] ? p : 'other');
 
-const GLYPHS = {
-  anthropic: '<path class="g" d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/>',
-  openai: '<path class="g" d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><circle class="gf" cx="12" cy="12" r="2.4"/>',
-  google: '<path class="gf" d="M12 2c.8 5.3 4.7 9.2 10 10-5.3.8-9.2 4.7-10 10-.8-5.3-4.7-9.2-10-10 5.3-.8 9.2-4.7 10-10z"/>',
-  github: '<rect class="g" x="4" y="4" width="16" height="16" rx="5"/><circle class="gf" cx="9.5" cy="11.5" r="1.7"/><circle class="gf" cx="14.5" cy="11.5" r="1.7"/>',
-  microsoft: '<rect class="gf" x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect class="gf" x="13" y="3.5" width="7.5" height="7.5" rx="1.5" opacity=".5"/><rect class="gf" x="3.5" y="13" width="7.5" height="7.5" rx="1.5" opacity=".5"/><rect class="gf" x="13" y="13" width="7.5" height="7.5" rx="1.5"/>',
-  cursor: '<path class="gf" d="M5 3l14 8-6.2 1.6L10 19z"/>',
-  perplexity: '<path class="g" d="M12 3v18M5 7l7 5 7-5M5 17l7-5 7 5"/>',
-  xai: '<path class="g" d="M5 5l14 14M19 5L5 19"/>',
-  alibaba: '<circle class="g" cx="11" cy="11" r="7"/><path class="g" d="M16 16l4 4"/>',
-  local: '<circle class="g" cx="12" cy="12" r="8"/><circle class="gf" cx="12" cy="12" r="3"/>',
-  other: '<path class="g" d="M12 4l8.5 15h-17z"/>',
+const LOGOS = {
+  claude: { label: 'Claude' },
+  codex: { label: 'Codex' },
+  openai: { label: 'ChatGPT', mono: true },
+  gemini: { label: 'Gemini' },
+  githubcopilot: { label: 'GitHub Copilot', mono: true },
+  copilot: { label: 'Microsoft Copilot' },
+  perplexity: { label: 'Perplexity' },
+  grok: { label: 'Grok', mono: true },
+  qwen: { label: 'Qwen' },
+  cursor: { label: 'Cursor', mono: true },
+  ollama: { label: 'Ollama', mono: true },
+  lmstudio: { label: 'LM Studio', mono: true },
 };
 
-export function glyph(provider, { color } = {}) {
-  const p = pkey(provider);
-  return `<svg viewBox="0 0 24 24" class="glyph" style="color:${color || PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p]}</svg>`;
+const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama' };
+const CONNECTOR_LOGO = { 'claude-code': 'claude', codex: 'codex', cursor: 'cursor', 'copilot-cli': 'githubcopilot', 'vscode-copilot': 'githubcopilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen' };
+const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio' };
+const WEB_APP_LOGO = [[/chatgpt/i, 'openai'], [/claude/i, 'claude'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot/i, 'githubcopilot'], [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen']];
+
+// Přijímá klíč poskytovatele ("openai"), session ({connector, app}), konektor ({id}) nebo běhové prostředí ({runtime}).
+export function logoKey(x) {
+  if (!x) return null;
+  if (typeof x === 'string') return PROVIDER_LOGO[x] || (LOGOS[x] ? x : null);
+  if (x.connector === 'web' && x.app) {
+    const hit = WEB_APP_LOGO.find(([re]) => re.test(x.app));
+    if (hit) return hit[1];
+  }
+  if (x.connector && CONNECTOR_LOGO[x.connector]) return CONNECTOR_LOGO[x.connector];
+  if (x.runtime && RUNTIME_LOGO[x.runtime]) return RUNTIME_LOGO[x.runtime];
+  if (x.id && CONNECTOR_LOGO[x.id]) return CONNECTOR_LOGO[x.id];
+  if (x.logo && LOGOS[x.logo]) return x.logo;
+  return PROVIDER_LOGO[x.provider] || null;
 }
+
+const GLYPHS = {
+  local: '<circle class="g" cx="12" cy="12" r="8"/><circle class="gf" cx="12" cy="12" r="3"/>',
+  other: '<path class="g" d="M4 16c3-7 5-9 8-9s5 2 8 9"/><circle class="gf" cx="12" cy="7" r="2.2"/>',
+};
+
+export function glyph(x, { onDark = false } = {}) {
+  const key = logoKey(x);
+  if (key) {
+    const l = LOGOS[key];
+    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="/logos/${key}.svg" alt="" width="18" height="18" decoding="async" draggable="false">`;
+  }
+  const p = pkey(typeof x === 'string' ? x : x?.provider);
+  return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
+}
+
+export const logoLabel = (x) => LOGOS[logoKey(x)]?.label || '';
 
 const svg = (d) => `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true" focusable="false">${d}</svg>`;
 
@@ -45,6 +80,7 @@ export const ICON = {
   bell: svg('<path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>'),
   check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   external: svg('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'),
+  open: svg('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M10 14l2-2 2 2M12 12v5"/>'),
   terminal: svg('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/>'),
   clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
   trash: svg('<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>'),

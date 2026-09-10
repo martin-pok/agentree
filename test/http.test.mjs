@@ -51,6 +51,19 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.ok(r.body.connectors.some((c) => c.id === 'claude-code' && c.state === 'connected'));
   });
 
+  await t.test('otevření v aplikaci: nabídka akcí, plán, ochrana', async () => {
+    const st = await a.get(`/api/sessions/${encodeURIComponent(id)}`);
+    assert.deepEqual(st.body.session.open.map((x) => x.id), ['app', 'terminal', 'folder']);
+    const path = `/api/sessions/${encodeURIComponent(id)}/open`;
+    assert.equal((await a.send('POST', path, { target: 'terminal' }, {})).status, 403);
+    const r = await a.send('POST', path, { target: 'terminal' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.dry, true);
+    assert.equal(r.body.plan.command, `cd '/Users/x/proj' && claude --resume ${sid}`);
+    assert.equal((await a.send('POST', path, { target: 'shell' })).status, 422);
+    assert.equal((await a.send('POST', '/api/sessions/neexistuje/open', { target: 'app' })).status, 404);
+  });
+
   await t.test('cizí Host je odmítnut (DNS rebinding)', async () => {
     const r = await raw(`${srv.url}/api/state`, { headers: { Host: 'evil.example' } });
     assert.equal(r.status, 403);

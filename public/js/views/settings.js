@@ -156,7 +156,7 @@ function update() {
       <div class="code-line"><code class="secret">••••••••••••${esc(i.extension.token.slice(-6))}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.token)}" data-copy-message="Klíč pro rozšíření zkopírován">${ICON.copy}Kopírovat klíč</button></div></details>
     <div class="site-grid">${Object.entries(sites).map(([k, s]) => {
       const at = web?.sites?.[k];
-      return `<div class="site">${glyph(s.provider)}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
+      return `<div class="site">${glyph({ connector: 'web', app: s.name, provider: s.provider })}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
     }).join('')}</div>`);
 
   fill(el, 'notifications', `
@@ -189,7 +189,7 @@ function update() {
 
   fill(el, 'connectors', state.connectors.map((c) => `
     <article class="conn">
-      <div class="conn-head">${glyph(c.provider)}<h3>${esc(c.name)}</h3>${stateBadge(c.state, STATE_LABEL[c.state] || c.state)}</div>
+      <div class="conn-head">${glyph(c)}<h3>${esc(c.name)}</h3>${stateBadge(c.state, STATE_LABEL[c.state] || c.state)}</div>
       <p>${esc(c.detail || c.description)}</p>
       <div class="conn-foot"><code>${esc(c.source)}</code><span class="badge${c.verified ? ' badge--ok' : ''}">${c.verified ? 'Ověřeno' : 'Beta'}</span></div>
       ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}

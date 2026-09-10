@@ -20,6 +20,7 @@ export async function request(method, path, body) {
 export const api = {
   state: () => request('GET', '/api/state'),
   session: (id) => request('GET', `/api/sessions/${encodeURIComponent(id)}`),
+  openSession: (id, target) => request('POST', `/api/sessions/${encodeURIComponent(id)}/open`, { target }),
   addLedger: (entry) => request('POST', '/api/spend/ledger', entry),
   endLedger: (id, endDate) => request('PATCH', `/api/spend/ledger/${encodeURIComponent(id)}`, { endDate }),
   deleteLedger: (id) => request('DELETE', `/api/spend/ledger/${encodeURIComponent(id)}`),

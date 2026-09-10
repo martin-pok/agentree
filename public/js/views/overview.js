@@ -1,6 +1,6 @@
 import { state, sessionsList } from '../state.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
-import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
+import { glyph, logoKey, PROVIDERS, pkey, ICON } from '../icons.js';
 import { areaChart, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER } from '../data.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitGauges } from '../ui.js';
@@ -78,7 +78,7 @@ function update() {
   const today = startOfDay(now);
   const todayCount = all.filter((s) => s.lastAt >= today).length;
   const running = state.runtimes.filter((r) => r.running).length;
-  const provs = [...new Set(working.map((s) => pkey(s.provider)))];
+  const apps = [...new Map(working.map((s) => [logoKey(s) || s.app, s])).values()];
 
   fill(el, 'hero', `
     <div class="hero-top">
@@ -90,8 +90,8 @@ function update() {
     <div class="hero-num"><span class="num">${tween('ov-working', working.length)}</span><span class="unit">${plural(working.length, 'agent', 'agenti', 'agentů')}</span></div>
     <div class="hero-foot">
       <span class="muted small">${todayCount} ${plural(todayCount, 'session', 'sessions', 'sessions')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</span>
-      <span class="discs" role="img" aria-label="${esc(provs.length ? `Pracují: ${provs.map((p) => PROVIDERS[p].label).join(', ')}` : 'Nikdo nepracuje')}">
-        ${provs.map((p) => `<span class="disc" style="background:${PROVIDERS[p].color}">${glyph(p, { color: PROVIDERS[p].on })}</span>`).join('')}
+      <span class="discs" role="img" aria-label="${esc(apps.length ? `Pracují: ${apps.map((s) => s.app).join(', ')}` : 'Nikdo nepracuje')}">
+        ${apps.slice(0, 5).map((s) => `<span class="disc" title="${esc(s.app)}">${glyph(s)}</span>`).join('')}
       </span>
     </div>`);
 
@@ -114,7 +114,7 @@ function update() {
   fill(el, 'limits', gauges.length || credits.length
     ? `<div class="sec-head"><h2>Limity předplatných</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
        ${gauges.length ? `<div class="gauges">${gauges.slice(0, 3).join('')}</div>` : ''}
-       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}`
+       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}`
     : '');
 
   fill(el, 'activity', all.length ? all.slice(0, 5).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
@@ -126,7 +126,7 @@ function update() {
     .filter((s) => s.spans?.some(([, b]) => b >= from) || rank(s) < 3)
     .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a))
     .slice(0, 7)
-    .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s.provider) }));
+    .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
   fill(el, 'timeline', rows.length ? timeline({ rows, from, to: now + 20 * MIN, now }) : '<div class="empty-inline">Za posledních 12 hodin žádná aktivita agentů.</div>');
 
   const ser = providerSeries(all, v.period, now, v.hidden);
@@ -144,7 +144,7 @@ function update() {
     const top = Object.entries(sp.month.services).sort((a, b) => b[1] - a[1]).slice(0, 3);
     fill(el, 'spend', `
       <div class="spend-mini-top">
-        ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--coral-ink)' : bp >= 80 ? 'var(--saffron)' : 'var(--lagoon)', value: `${Math.round(bp)} %`, label: 'rozpočtu', size: 'sm', reached: bp >= 100 }) : ''}
+        ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: 'rozpočtu', size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
           <span class="big">${tween('ov-spend', sp.month.total, `money:${sp.currency}`)}</span>
           <span class="muted small">${total ? `z ${fmtMoney(total, sp.currency)}` : 'Rozpočet zatím nemáš nastavený'}</span>
@@ -159,7 +159,7 @@ function update() {
   const rts = [...state.runtimes].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
   fill(el, 'runtimes', rts.length
     ? rts.map((r) => `<div class="rt-item${r.running ? '' : ' is-off'}" title="${esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží')}">
-        <span class="rt-disc">${glyph(r.provider)}${r.running ? '<i class="rt-status"></i>' : ''}</span>
+        <span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
         <span class="rt-meta">${r.running ? `CPU ${String(r.cpu).replace('.', ',')} %` : 'neběží'}</span>
       </div>`).join('')

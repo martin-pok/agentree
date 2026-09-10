@@ -32,6 +32,20 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Dirigent umí u které slu
 - **Desktopová aplikace Microsoft Copilot a ChatGPT (chat)**: obsah konverzací není dostupný v čitelném lokálním formátu. Web s rozšířením ano.
 - **Webové aplikace nesdílejí tokeny** — grafy tokenů je proto neobsahují.
 
+## Otevření v aplikaci (`src/openers.js`)
+
+| Zdroj | Otevřít v aplikaci | Pokračovat v Terminálu | Stav ověření |
+|---|---|---|---|
+| Codex | `codex://threads/<id>` — přesně dané vlákno v aplikaci ChatGPT | `codex resume <id>` jen když je Codex CLI v PATH | ✅ schéma a formát nalezeny v aplikaci ChatGPT (používá ho pro odkaz na vlákno); 🧪 otevření ověřit v QA |
+| Claude Code | otevře aplikaci Claude **bez konkrétní session** — aplikace zná `claude://resume`, ale parametry odkazu nejsou veřejně popsané, proto je nepoužíváme | `cd <projekt> && claude --resume <id>` — přesně daná session | ✅ plán testován; 🧪 spuštění ověřit v QA |
+| Cursor, Copilot ve VS Code | otevře složku projektu v editoru | — | 🧪 |
+| Web (rozšíření) | otevře konverzaci v prohlížeči, jen `https://` | — | 🧪 |
+| Cokoli se složkou projektu | „Otevřít složku“ ve Finderu | — | 🧪 |
+
+- Nabídku akcí (`session.open`) počítá server podle nainstalovaných aplikací (`/Applications/*.app`) a CLI v PATH přihlašovacího shellu.
+- Terminál se ovládá přes AppleScript (Terminal.app). Při prvním použití se macOS zeptá na povolení **Automatizace**; odmítnutí vrátí srozumitelnou chybu s návodem.
+- Loga služeb: `public/logos/` z `@lobehub/icons-static-svg` 1.95.0 (MIT), používaná jen k označení napojených služeb.
+
 ## Konektory v detailu
 
 ### Claude Code — `src/connectors/claude-code.js` ✅

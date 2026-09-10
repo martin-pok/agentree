@@ -37,6 +37,7 @@ src/datastore.js            trvalá data ~/.dirigent/data.json (atomický zápis
 src/hooks-installer.js      instalace Claude Code hooků (záloha, idempotence, odinstalace)
 src/secrets.js              API klíče v Klíčence macOS
 src/launch-agent.js         automatický start po přihlášení (LaunchAgent)
+src/openers.js              „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ — bezpečný plán akcí
 src/watch.js                rekurzivní watcher s obnovou, fronta souborů, výpis souborů
 src/connectors/*.js         jeden soubor = jeden zdroj dat (viz docs/CONNECTORS.md)
 public/index.html           kostra aplikace
@@ -45,6 +46,8 @@ public/js/app.js            router, SSE, horní lišta, notifikace, paleta ⌘K
 public/js/state.js          klientský stav a slučování událostí do jednoho snímku
 public/js/views/*.js        obrazovky (mount/update/unmount)
 public/js/charts.js         SVG grafy bez knihoven
+public/js/icons.js          barvy poskytovatelů, loga služeb (glyph/logoKey), ikony UI
+public/logos/               oficiální loga služeb (@lobehub/icons-static-svg 1.95.0, MIT)
 extension/                  rozšíření Chrome MV3 pro webové AI aplikace
 test/                       testy; helpers.mjs spouští server nad dočasnými fixturami
 docs/                       architektura, konektory, datový kontrakt, bezpečnost, testy, produkt, roadmapa
@@ -59,7 +62,7 @@ docs/                       architektura, konektory, datový kontrakt, bezpečno
 - **Mutace API** vyžadují hlavičku `X-Dirigent: 1` a lokální `Origin` (ochrana CSRF). Vstupy od hooků a rozšíření vyžadují `X-Dirigent-Token`. Nové endpointy přidávej do tabulky v `src/http.js` a do `docs/DATA-CONTRACT.md`.
 - **Změna tvaru dat** = upravit současně server, `public/js/state.js`, dotčené obrazovky, `docs/DATA-CONTRACT.md` a testy.
 - **UI texty česky**, věty s malými písmeny (sentence case), aktivní slovesa, tlačítko říká, co se stane. Chybové hlášky říkají, co se stalo a co dělat. Bez anglicismů, kde existuje běžné české slovo.
-- **Design:** 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px.
+- **Design:** identita „koncertní sál“ (eben, mlžná slonovina, samet = rozhodnutí, smaragd = práce, mosaz = akcent), podpisový prvek je scéna s notovou osnovou. 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Loga služeb vkládej jen přes `glyph()` z `public/js/icons.js`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px.
 
 ## 5. Přidání nového konektoru (postup)
 

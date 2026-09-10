@@ -32,7 +32,33 @@ const connEl = document.getElementById('conn-pill');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
-const lights = [...document.querySelectorAll('.band .light')];
+const stageEl = document.querySelector('.stage');
+const notesEl = document.getElementById('stage-notes');
+const narrowMq = window.matchMedia('(max-width: 880px)');
+
+// Scéna: každý aktivní agent je nota na osnově. Poloha je stabilní (hash ID), barva podle stavu.
+const STAFF_LINES = [31.4, 41.4, 51.4, 61.4, 71.4];
+
+function hashId(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function renderStage(all) {
+  const active = all.filter((s) => s.status === 'working' || s.status === 'needs_input' || s.status === 'limited').slice(0, 16);
+  const [x0, span] = narrowMq.matches ? [6, 86] : [24, 62];
+  setHtml(notesEl, active.map((s) => {
+    const h = hashId(s.id);
+    const top = STAFF_LINES[h % 5] + ((h >>> 5) % 2 ? 5 : 0);
+    const left = x0 + (((h >>> 8) % 1000) / 1000) * span;
+    return `<i class="note${s.status === 'working' ? '' : ' note--alert'}" style="left:${left.toFixed(2)}%;top:${top}%"></i>`;
+  }).join(''));
+  stageEl.classList.toggle('is-live', active.some((s) => s.status === 'working'));
+}
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 let current = null;
@@ -136,11 +162,7 @@ function updateChrome() {
   bellBadge.textContent = state.alerts.unread > 99 ? '99+' : String(state.alerts.unread);
   bell.setAttribute('aria-label', state.alerts.unread ? `Upozornění, ${state.alerts.unread} nepřečtených` : 'Upozornění');
 
-  const alertLights = Math.min(4, needs);
-  lights.forEach((l, i) => {
-    l.classList.toggle('is-alert', i < alertLights);
-    l.classList.toggle('is-on', i >= alertLights && i < Math.min(4, needs + working));
-  });
+  renderStage(all);
 
   const conn = state.connection;
   setHtml(connEl, conn === 'live'
@@ -206,6 +228,21 @@ function onAlert(a) {
   }
 }
 
+async function openSession(btn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.classList.add('is-busy');
+  try {
+    const r = await api.openSession(btn.dataset.sessionId, btn.dataset.openTarget);
+    toast(`Otevírám ${r.label}`);
+  } catch (err) {
+    toast(err.message, { tone: 'coral', timeout: 9000 });
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+  }
+}
+
 /* ---------- Paleta ---------- */
 
 const palette = createPalette(
@@ -214,7 +251,7 @@ const palette = createPalette(
     const agentItems = sessionsList()
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
-      .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s.provider) }));
+      .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
     const sections = [['prehled', 'Přehled'], ['agenti', 'Agenti'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['upozorneni', 'Upozornění'], ['nastaveni', 'Nastavení']]
       .filter(([, l]) => !nq || norm(l).includes(nq))
       .map(([k, l]) => ({ group: 'Sekce', label: l, href: `#/${k}`, icon: ICON.arrow }));
@@ -240,6 +277,12 @@ document.addEventListener('click', (e) => {
   if (c) {
     e.preventDefault();
     copy(c.dataset.copy, c.dataset.copyMessage);
+    return;
+  }
+  const opener = e.target.closest('[data-open-target]');
+  if (opener) {
+    e.preventDefault();
+    openSession(opener);
     return;
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }

@@ -110,7 +110,7 @@ function showHover(plot, idx) {
   const rows = c.layers
     .slice()
     .reverse()
-    .map((l) => `<span class="tip-row"><i class="sw" style="background:${l.s.color === '#1E1B22' ? '#fff' : l.s.color}"></i>${esc(l.s.label)}<b>${c.format(l.s.values[idx] || 0)}</b></span>`)
+    .map((l) => `<span class="tip-row"><i class="sw" style="background:${l.s.color === '#16141D' ? '#fff' : l.s.color}"></i>${esc(l.s.label)}<b>${c.format(l.s.values[idx] || 0)}</b></span>`)
     .join('');
   const total = c.stacked && c.layers.length > 1 ? `<span class="tip-row tip-total">Celkem<b>${c.format(c.layers.reduce((a, l) => a + (l.s.values[idx] || 0), 0))}</b></span>` : '';
   const tip = plot.querySelector('.tip');

@@ -37,7 +37,7 @@ function rowHtml(s) {
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} z ${s.progress.total} úkolů"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);
   return `<a class="row" href="${agentHref(s.id)}">
-    <span class="icon-tile">${glyph(s.provider)}<i class="status-dot status-${esc(s.status)}"></i></span>
+    <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${sub}</span>${progress}</span>
     <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '—'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>

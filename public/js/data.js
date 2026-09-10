@@ -5,7 +5,7 @@ export const sessionTotal = (s) => (s.tokens?.input || 0) + (s.tokens?.output ||
 
 export const STATUS_ORDER = { needs_input: 0, limited: 1, working: 2, waiting: 3, idle: 4, archived: 5 };
 
-export const CATEGORICAL = ['#F2921D', '#1E1B22', '#45BEC3', '#E8436B', '#6D5BD0', '#3C7DD9', '#5E9E57', '#C9A227', '#8A8594', '#2E9E8F'];
+export const CATEGORICAL = ['#D97757', '#16141D', '#22A38C', '#C2335A', '#4285F4', '#8250DF', '#C99A3E', '#1F8A96', '#615CED', '#8C8896'];
 
 export function tokensSince(sessions, since, pred) {
   let sum = 0;

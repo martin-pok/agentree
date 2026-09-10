@@ -18,6 +18,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | GET | `/api/state` | Úplný snapshot (viz níže) |
 | GET | `/api/sessions/:id` | `{ session: SessionSummary, transcript: TranscriptEntry[] }` (max 400) |
 | GET | `/api/sessions/:id/transcript?after=<seq>` | `{ entries }` |
+| POST | `/api/sessions/:id/open` | `{ target: "app" \| "terminal" \| "folder" }` → `{ ok, label }`; 404 neznámá session, 422 akce není k dispozici, 502 macOS akci odmítl (zpráva říká proč) |
 | GET | `/api/stream` | Server-Sent Events |
 | POST | `/api/hooks/claude-code` | Vstup Claude Code hooku (token) → `{ ok, id }` |
 | POST | `/api/ingest/web` | Data z rozšíření (token) → `{ ok, id }` |
@@ -70,6 +71,8 @@ interface SessionSummary {
   cwd: string; project: string; model: string; branch: string;
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)
+  stale: boolean;             // tah nebyl ukončen, ale dlouho se nic neděje (nehlásí „dokončeno“)
+  open: { id: 'app' | 'terminal' | 'folder'; label: string }[];  // dostupné akce otevření (podle nainstalovaných aplikací)
   startedAt: number; lastAt: number;   // ms
   turns: number;
   tokens: { input: number; output: number; cacheWrite: number; cacheRead: number };

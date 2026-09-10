@@ -6,7 +6,7 @@ import { gauge, columnChart, donut, areaChart } from '../charts.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
 
 const v = { el: null };
-const KIND_COLORS = { subscription: '#1E1B22', extra: '#E8436B', credits: '#F2921D', api: '#45BEC3' };
+const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
 const money = (x) => fmtMoney(x, state.spend?.currency || 'CZK');
 const serviceColor = (sp, k) => PROVIDERS[pkey(sp.services[k]?.provider)].color;
@@ -146,7 +146,7 @@ function update() {
   fill(el, 'hero', `
     <div class="spend-ring">${gauge({
       pct: total ? pct : 0,
-      color: pct >= 100 ? 'var(--coral-ink)' : pct >= 80 ? 'var(--saffron)' : 'var(--lagoon)',
+      color: pct >= 100 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)',
       value: total ? `${Math.round(pct)} %` : '—',
       label: total ? 'rozpočtu' : 'bez rozpočtu',
       size: 'lg',

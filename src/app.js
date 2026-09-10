@@ -16,6 +16,7 @@ import { createCopilotCliConnector, createVsCodeCopilotConnector } from './conne
 import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createProcessesConnector } from './connectors/processes.js';
+import { detectApps, openTargets, planOpen, executeOpen, ALL_APPS } from './openers.js';
 
 export async function createApp(config = loadConfig()) {
   const datastore = new DataStore(config.dataDir);
@@ -26,6 +27,20 @@ export async function createApp(config = loadConfig()) {
   const alerts = new AlertEngine({ store, datastore, notifier });
   const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '' };
   const log = (...args) => { if (!config.quiet) console.log(...args); };
+
+  let apps = {};
+  store.decorate = (summary) => { summary.open = openTargets(summary, apps); };
+
+  async function openSession(id, target) {
+    const s = store.summary(id);
+    if (!s) return { status: 404, error: 'Session nenalezena.' };
+    if (config.openMode === 'off') return { status: 422, error: 'Otevírání aplikací je dostupné jen na macOS.' };
+    const plan = planOpen(s, target, apps);
+    if (!plan) return { status: 422, error: 'Tuto akci pro session nelze provést.' };
+    const r = await executeOpen(plan, { dry: config.openMode === 'dry' });
+    if (!r.ok) return { status: 502, error: r.error };
+    return { ok: true, label: plan.label, ...(r.dry ? { dry: true, plan } : {}) };
+  }
 
   const ctx = { config, store, datastore, secrets, onSpendChanged: () => spendChanged() };
   const list = [
@@ -112,6 +127,7 @@ export async function createApp(config = loadConfig()) {
   async function start() {
     const t0 = Date.now();
     const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
+    apps = config.openMode === 'dry' ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Dirigent: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await whoami;
@@ -142,5 +158,5 @@ export async function createApp(config = loadConfig()) {
     await datastore.flush();
   }
 
-  return { config, host, datastore, store, alerts, secrets, notifier, connectors, connectorList, spendPayload, spendChanged, integrations, state, start, stop };
+  return { config, host, datastore, store, alerts, secrets, notifier, connectors, connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession };
 }

@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { sparkline, stackBar } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons } from '../ui.js';
 import { sessionTotal } from '../data.js';
 
 const v = { id: null, el: null, rendered: new Map(), follow: true, loading: false };
@@ -186,13 +186,12 @@ function update() {
   }
 
   fill(el, 'head', `
-    <div class="session-kicker"><span class="icon-tile">${glyph(s.provider)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? 'webová aplikace' : 'na tomto Macu'}</span>${s.hooked ? '<span class="badge badge--ok">Okamžité události</span>' : ''}</div>
+    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? 'webová aplikace' : 'na tomto Macu'}</span>${s.hooked ? '<span class="badge badge--ok">Okamžité události</span>' : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}<span class="muted">Poslední aktivita <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     <div class="session-actions">
-      ${s.url ? `<a class="btn btn--primary" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${ICON.external}Otevřít konverzaci</a>` : ''}
-      ${s.resume ? `<button class="btn${s.url ? '' : ' btn--primary'}" type="button" data-copy="${esc(s.resume)}" data-copy-message="Příkaz zkopírován — vlož ho do Terminálu">${ICON.terminal}Kopírovat příkaz pro pokračování</button>` : ''}
-      ${s.cwd ? `<button class="btn" type="button" data-copy="${esc(s.cwd)}">${ICON.folder}Kopírovat cestu</button>` : ''}
+      ${openButtons(s)}
+      ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="Příkaz pro pokračování zkopírován" aria-label="Kopírovat příkaz pro pokračování" title="Kopírovat příkaz pro pokračování">${ICON.copy}</button>` : ''}
     </div>`);
 
   fill(el, 'banner', s.status === 'needs_input'
@@ -234,10 +233,10 @@ function update() {
       </dl>
     </section>
     ${hasTokens ? `<section class="card side-card" aria-labelledby="tok-h"><h3 id="tok-h">Složení tokenů</h3>${stackBar([
-      { label: 'Vstup', value: tok.input || 0, color: '#1E1B22' },
+      { label: 'Vstup', value: tok.input || 0, color: '#16141D' },
       { label: 'Výstup', value: tok.output || 0, color: color.color },
-      { label: 'Zápis do cache', value: tok.cacheWrite || 0, color: '#45BEC3' },
-      { label: 'Čtení z cache', value: tok.cacheRead || 0, color: '#E7E4EA' },
+      { label: 'Zápis do cache', value: tok.cacheWrite || 0, color: '#22A38C' },
+      { label: 'Čtení z cache', value: tok.cacheRead || 0, color: '#E3E1E9' },
     ])}</section>` : ''}
     ${hasTokens ? `<section class="card side-card" aria-labelledby="spark-h"><h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${sparkline(spark, color.ink, { height: 64, fill: true })}</div></section>` : ''}
     ${limits.length ? `<section class="card side-card" aria-labelledby="lim-h"><h3 id="lim-h">Limity</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
