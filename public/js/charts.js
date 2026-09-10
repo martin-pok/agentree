@@ -216,7 +216,7 @@ export function gauge({ pct, color, value, label, sub = '', size = 'md', reached
   const end = 135 + (270 * p) / 100;
   return `<div class="gauge gauge--${size}${reached ? ' is-reached' : ''}" role="img" aria-label="${esc(`${label}: ${value}${sub ? `, ${sub}` : ''}`)}">
     <svg viewBox="0 0 120 120" aria-hidden="true"><path d="${arc(135, 405)}" class="gauge-track"/>${p > 0 ? `<path d="${arc(135, Math.max(135.5, end))}" class="gauge-fill" style="stroke:${color}"/>` : ''}</svg>
-    <div class="gauge-center"><span class="gauge-value">${esc(value)}</span><span class="gauge-label">${esc(label)}</span></div>
+    <div class="gauge-center"><span class="gauge-value${/\d/.test(value) ? '' : ' gauge-value--text'}">${esc(value)}</span><span class="gauge-label">${esc(label)}</span></div>
     ${sub ? `<div class="gauge-sub">${esc(sub)}</div>` : ''}
   </div>`;
 }
