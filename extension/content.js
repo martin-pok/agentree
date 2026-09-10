@@ -1,6 +1,6 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
 (() => {
-  const adapter = window.DirigentSites?.detect(location);
+  const adapter = window.AgentreeSites?.detect(location);
   if (!adapter) return;
 
   let lastSig = '';
@@ -40,7 +40,7 @@
     lastSig = sig;
     lastSentAt = now;
     try {
-      chrome.runtime.sendMessage({ type: 'dirigent:update', payload }).catch(() => {});
+      chrome.runtime.sendMessage({ type: 'agentree:update', payload }).catch(() => {});
     } catch {
       dead = true; // rozšíření bylo znovu načteno — tento skript už nemá spojení
     }

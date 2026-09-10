@@ -5,15 +5,15 @@ import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
 import { installLaunchAgent, uninstallLaunchAgent } from '../src/launch-agent.js';
 
-const HELP = `Dirigent ${VERSION} — všichni AI agenti na jednom místě
+const HELP = `Agentree ${VERSION} — všichni AI agenti na jednom místě
 
 Použití:
-  dirigent                 spustí server a dashboard na http://127.0.0.1:4620
-  dirigent install-agent   spouštět automaticky po přihlášení (macOS LaunchAgent)
-  dirigent uninstall-agent zrušit automatické spouštění
-  dirigent --version       vypíše verzi
+  agentree                 spustí server a dashboard na http://127.0.0.1:4620
+  agentree install-agent   spouštět automaticky po přihlášení (macOS LaunchAgent)
+  agentree uninstall-agent zrušit automatické spouštění
+  agentree --version       vypíše verzi
 
-Proměnné prostředí: PORT, DIRIGENT_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz README.md)`;
+Proměnné prostředí: PORT, AGENTREE_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz README.md)`;
 
 const cmd = process.argv[2];
 
@@ -27,7 +27,7 @@ if (cmd === '--help' || cmd === '-h') {
 }
 if (cmd === 'install-agent') {
   const r = await installLaunchAgent({ script: fileURLToPath(import.meta.url) });
-  console.log(`Hotovo. Dirigent se spouští po přihlášení.\nKonfigurace: ${r.file}\nLogy: ${r.logDir}`);
+  console.log(`Hotovo. Agentree se spouští po přihlášení.\nKonfigurace: ${r.file}\nLogy: ${r.logDir}`);
   process.exit(0);
 }
 if (cmd === 'uninstall-agent') {
@@ -46,13 +46,13 @@ await app.start();
 const server = createHttpServer(app);
 
 server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') console.error(`Port ${config.port} je obsazený. Dirigent už nejspíš běží: http://127.0.0.1:${config.port}`);
-  else console.error('Dirigent: server se nepodařilo spustit:', err.message);
+  if (err.code === 'EADDRINUSE') console.error(`Port ${config.port} je obsazený. Agentree už nejspíš běží: http://127.0.0.1:${config.port}`);
+  else console.error('Agentree: server se nepodařilo spustit:', err.message);
   app.stop().finally(() => process.exit(1));
 });
 
 server.listen(config.port, config.host, () => {
-  console.log(`Dirigent ${VERSION} běží na http://127.0.0.1:${server.address().port}`);
+  console.log(`Agentree ${VERSION} běží na http://127.0.0.1:${server.address().port}`);
 });
 
 let stopping = false;

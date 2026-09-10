@@ -5,7 +5,7 @@ import { loadConfig } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
 
-export async function tempDir(prefix = 'dirigent-test-') {
+export async function tempDir(prefix = 'agentree-test-') {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
@@ -43,19 +43,19 @@ export function fakeDatastore(settings = {}) {
 }
 
 export async function startTestServer(env = {}) {
-  const sourceHome = env.DIRIGENT_SOURCE_HOME || (await tempDir('dirigent-src-'));
-  const dataHome = env.DIRIGENT_HOME || (await tempDir('dirigent-data-'));
+  const sourceHome = env.AGENTREE_SOURCE_HOME || (await tempDir('agentree-src-'));
+  const dataHome = env.AGENTREE_HOME || (await tempDir('agentree-data-'));
   const config = loadConfig({
     PORT: '0',
-    DIRIGENT_SOURCE_HOME: sourceHome,
-    DIRIGENT_HOME: dataHome,
-    DIRIGENT_PROCESSES: '0',
-    DIRIGENT_NATIVE_NOTIFY: '0',
-    DIRIGENT_KEYCHAIN: '0',
-    DIRIGENT_CLOUD: '0',
-    DIRIGENT_SCAN_MS: '60000',
-    DIRIGENT_QUIET: '1',
-    DIRIGENT_OPEN: 'dry',
+    AGENTREE_SOURCE_HOME: sourceHome,
+    AGENTREE_HOME: dataHome,
+    AGENTREE_PROCESSES: '0',
+    AGENTREE_NATIVE_NOTIFY: '0',
+    AGENTREE_KEYCHAIN: '0',
+    AGENTREE_CLOUD: '0',
+    AGENTREE_SCAN_MS: '60000',
+    AGENTREE_QUIET: '1',
+    AGENTREE_OPEN: 'dry',
     ...env,
   });
   const app = await createApp(config);
@@ -107,7 +107,7 @@ export async function openStream(url) {
 
 export const api = (url) => ({
   get: (p) => fetch(url + p).then(async (r) => ({ status: r.status, body: await r.json() })),
-  send: (method, p, body, headers = { 'X-Dirigent': '1' }) =>
+  send: (method, p, body, headers = { 'X-Agentree': '1' }) =>
     fetch(url + p, { method, headers: { 'Content-Type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
       .then(async (r) => ({ status: r.status, body: await r.json() })),
 });

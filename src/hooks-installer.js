@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writeFileAtomic } from './util.js';
 
-// Claude Code hooky posílají události do Dirigentu okamžitě (start, zadání, žádost o povolení, konec tahu).
+// Claude Code hooky posílají události do Agentree okamžitě (start, zadání, žádost o povolení, konec tahu).
 export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
 export const HOOK_PATH = '/api/hooks/claude-code';
 
@@ -10,7 +10,7 @@ export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude
 
 export function hookCommand(port, token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Dirigent-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
+  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agentree-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
 }
 
 const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_PATH);
@@ -70,7 +70,7 @@ async function writeSettings(file, json, raw, now) {
   let backup = null;
   let mode = 0o644;
   if (raw !== null) {
-    backup = `${file}.dirigent-backup-${now}`;
+    backup = `${file}.agentree-backup-${now}`;
     await fs.writeFile(backup, raw);
     try { mode = (await fs.stat(file)).mode & 0o777; } catch { /* výchozí práva */ }
   }

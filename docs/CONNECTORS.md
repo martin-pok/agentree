@@ -1,6 +1,6 @@
 # Podpora služeb a konektory
 
-Tento dokument je **poctivý zdroj pravdy** o tom, co Dirigent umí u které služby. Legenda:
+Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které služby. Legenda:
 
 - ✅ ověřeno na skutečných datech,
 - 🧪 beta — implementováno podle formátu, ale neověřeno na živých datech,
@@ -27,8 +27,8 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Dirigent umí u které slu
 
 ### Proč některé věci nejdou
 
-- **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Dirigent proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
-- **Schválení akce na dálku**: Dirigent umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
+- **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Agentree proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
+- **Schválení akce na dálku**: Agentree umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
 - **Desktopová aplikace Microsoft Copilot a ChatGPT (chat)**: obsah konverzací není dostupný v čitelném lokálním formátu. Web s rozšířením ano.
 - **Webové aplikace nesdílejí tokeny** — grafy tokenů je proto neobsahují.
 
@@ -54,7 +54,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Dirigent umí u které slu
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
 - **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).
-- **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s — nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.dirigent-backup-<čas>`).
+- **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s — nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agentree-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
 
 ### Codex — `src/connectors/codex.js` ✅

@@ -45,7 +45,7 @@ export function normalizeData(raw) {
   };
 }
 
-// Trvalá data aplikace (~/.dirigent/data.json): nastavení, rozpočty, výdaje, upozornění.
+// Trvalá data aplikace (~/.agentree/data.json): nastavení, rozpočty, výdaje, upozornění.
 export class DataStore {
   constructor(dir) {
     this.file = path.join(dir, 'data.json');
@@ -69,7 +69,7 @@ export class DataStore {
     this.scheduleSave.cancel();
     const snapshot = JSON.parse(JSON.stringify(this.data));
     this.writing = this.writing.then(() => writeJsonAtomic(this.file, snapshot)).catch((err) => {
-      console.error('Dirigent: nepodařilo se uložit data', err.message);
+      console.error('Agentree: nepodařilo se uložit data', err.message);
     });
     return this.writing;
   }

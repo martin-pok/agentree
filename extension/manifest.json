@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Dirigent – AI agenti v reálném čase",
-  "short_name": "Dirigent",
-  "version": "0.2.0",
-  "description": "Posílá stav a přepis konverzací z webových AI aplikací do Dirigentu na tomto počítači (127.0.0.1).",
+  "name": "Agentree – AI agenti v reálném čase",
+  "short_name": "Agentree",
+  "version": "0.4.0",
+  "description": "Posílá stav a přepis konverzací z webových AI aplikací do Agentree na tomto počítači (127.0.0.1).",
   "permissions": ["storage"],
   "host_permissions": ["http://127.0.0.1:4620/*"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Dirigent", "default_popup": "popup.html" },
+  "action": { "default_title": "Agentree", "default_popup": "popup.html" },
   "content_scripts": [
     {
       "matches": [

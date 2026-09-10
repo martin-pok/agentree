@@ -23,7 +23,7 @@ flowchart LR
   AL --> N[Notifikace macOS]
   S -->|SSE /api/stream| UI[Dashboard]
   AL -->|SSE alert| UI
-  S <--> D[(~/.dirigent/data.json)]
+  S <--> D[(~/.agentree/data.json)]
 ```
 
 ## Server (`src/`)
@@ -77,7 +77,7 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 
 ## Klient (`public/js/`)
 
-- `app.js` — hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, pás se světly, paleta ⌘K, notifikace.
+- `app.js` — hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
 - `state.js` — jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
 - `views/*.js` — každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
 - `charts.js` — plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
@@ -102,5 +102,5 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 |---|---|---|
 | Bez závislostí, bez buildu | Instalace jedním příkazem, žádný supply-chain risk u nástroje s přístupem k přepisům | Při přechodu na nativní aplikaci nebo týmovou synchronizaci |
 | SSE místo WebSocketu | Jednosměrný tok, automatická obnova, jednodušší server | Pokud UI bude posílat realtime příkazy |
-| Stav v paměti + JSON soubor | Zdroje jsou pravda; Dirigent je jen pohled | Historie > 30 dní nebo více zařízení → SQLite |
+| Stav v paměti + JSON soubor | Zdroje jsou pravda; Agentree je jen pohled | Historie > 30 dní nebo více zařízení → SQLite |
 | Heuristiky stavu v jednom místě | Konzistence mezi zdroji, testovatelnost | — |

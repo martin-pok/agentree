@@ -69,7 +69,7 @@ function openBudgets() {
     title: 'Měsíční rozpočty',
     wide: true,
     submitLabel: 'Uložit rozpočty',
-    body: `<p class="modal-text">Dirigent tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.</p>
+    body: `<p class="modal-text">Agentree tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.</p>
       <div class="form-grid">
         <label class="field"><span>Celkový měsíční rozpočet</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="bez limitu" value="${cfg.total || ''}"></label>
         <label class="field"><span>Hlavní měna</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
@@ -113,7 +113,7 @@ function mount(el, _params, query) {
       <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
       <div data-region="ledger"></div>
     </section>
-    <p class="note">Útratu za API doplní Dirigent sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
+    <p class="note">Útratu za API doplní Agentree sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
   el.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-action]');
     if (!a) return;
@@ -171,7 +171,7 @@ function update() {
         <span class="muted small">${money(b.spent)} z ${money(b.budget)}</span>
       </div>`;
     }).join('')}</div>`
-    : `<div class="cta-card card">${ICON.wallet}<div><strong>Nastav si měsíční rozpočet</strong><p class="muted small">Dirigent tě upozorní, jakmile útrata dosáhne 80 % a 100 %.</p></div><button class="btn" type="button" data-action="budgets">Nastavit rozpočet</button></div>`);
+    : `<div class="cta-card card">${ICON.wallet}<div><strong>Nastav si měsíční rozpočet</strong><p class="muted small">Agentree tě upozorní, jakmile útrata dosáhne 80 % a 100 %.</p></div><button class="btn" type="button" data-action="budgets">Nastavit rozpočet</button></div>`);
 
   const used = [...new Set(sp.months.flatMap((m) => Object.keys(m.services)))];
   fill(el, 'months', columnChart({

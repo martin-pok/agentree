@@ -103,7 +103,7 @@ export function createWebConnector(ctx) {
     provider: 'other',
     kind: 'web',
     verified: false,
-    source: 'Rozšíření Dirigent pro Chrome',
+    source: 'Rozšíření Agentree pro Chrome',
     description: 'ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.',
     async start() {},
     async scan() {},

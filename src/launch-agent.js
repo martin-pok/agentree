@@ -3,11 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { run } from './util.js';
 
-export const LABEL = 'cz.dirigent.agent';
+export const LABEL = 'cz.agentree.agent';
 
 const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// LaunchAgent spustí Dirigent po přihlášení a restartuje ho po pádu — notifikace tak chodí i bez otevřeného prohlížeče.
+// LaunchAgent spustí Agentree po přihlášení a restartuje ho po pádu — notifikace tak chodí i bez otevřeného prohlížeče.
 export function plistXml({ node, script, logDir, pathEnv }) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -22,8 +22,8 @@ export function plistXml({ node, script, logDir, pathEnv }) {
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>ThrottleInterval</key><integer>10</integer>
-  <key>StandardOutPath</key><string>${xml(path.join(logDir, 'dirigent.log'))}</string>
-  <key>StandardErrorPath</key><string>${xml(path.join(logDir, 'dirigent.error.log'))}</string>
+  <key>StandardOutPath</key><string>${xml(path.join(logDir, 'agentree.log'))}</string>
+  <key>StandardErrorPath</key><string>${xml(path.join(logDir, 'agentree.error.log'))}</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key><string>${xml(pathEnv)}</string>
@@ -37,7 +37,7 @@ export const plistPath = (home = os.homedir()) => path.join(home, 'Library', 'La
 
 export async function installLaunchAgent({ script, home = os.homedir(), node = process.execPath }) {
   const file = plistPath(home);
-  const logDir = path.join(home, '.dirigent', 'logs');
+  const logDir = path.join(home, '.agentree', 'logs');
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.mkdir(logDir, { recursive: true });
   const pathEnv = [path.dirname(node), '/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':');

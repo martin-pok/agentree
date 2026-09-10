@@ -14,7 +14,7 @@ npm run check    # node --check pro všechny .js/.mjs
 | `test/spend-alerts-hooks.test.mjs` | Validace výdajů a rozpočtů, opakované platby, převody měn, prognóza, prahy rozpočtu, instalace/odinstalace hooků (zachování nastavení, idempotence, záloha, neplatný JSON), upozornění (rozhodnutí, dokončení, limity, deduplikace), LaunchAgent |
 | `test/http.test.mjs` | Snapshot, ochrana Host/CSRF/token, **latence realtime streamu < 2 s**, hook → „potřebuje rozhodnutí“ → upozornění, výdaje a rozpočty přes API, ingest z rozšíření a párování, instalace hooků přes API, nastavení, statické soubory, path traversal |
 
-Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.dirigent` (vždy `DIRIGENT_SOURCE_HOME` a `DIRIGENT_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
+Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentree` (vždy `AGENTREE_SOURCE_HOME` a `AGENTREE_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
 
 ## Ruční QA checklist (před vydáním)
 
@@ -22,7 +22,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.dirigen
 
 - [ ] `npm start` → přehled se načte do 3 s, konzole bez chyb.
 - [ ] Spusť novou session Claude Code → objeví se v „Dnešní směně“ a v seznamu do 2 s, detail ukazuje přepis a běžící čas.
-- [ ] Zapni okamžité události v Nastavení → v nové session požádá Claude o povolení nástroje → do 1 s karta „Potřebuje tvé rozhodnutí“, notifikace macOS, korálová světla v pásu, číslo v titulku karty.
+- [ ] Zapni okamžité události v Nastavení → v nové session požádá Claude o povolení nástroje → do 1 s karta „Potřebuje tvé rozhodnutí“, notifikace macOS, sametový bod ve scéně, číslo v titulku karty.
 - [ ] Codex v aplikaci ChatGPT: zadej úlohu → „Pracuje“, po dokončení „Čeká na zadání“; limity v Přehledu odpovídají aplikaci.
 - [ ] Útrata: přidej výdaj, nastav rozpočet pod útratu → upozornění 100 %; ukonči předplatné; smaž výdaj.
 - [ ] Detail vlákna Codexu → „Otevřít v Codexu“ otevře aplikaci ChatGPT přímo na daném vláknu.

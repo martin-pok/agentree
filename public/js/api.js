@@ -1,7 +1,7 @@
 export async function request(method, path, body) {
   const init = { method, headers: {} };
   if (method !== 'GET') {
-    init.headers['X-Dirigent'] = '1';
+    init.headers['X-Agentree'] = '1';
     init.headers['Content-Type'] = 'application/json';
     if (body !== undefined) init.body = JSON.stringify(body);
   }
@@ -9,7 +9,7 @@ export async function request(method, path, body) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw Object.assign(new Error('Dirigent server neodpovídá. Běží `npm start`?'), { status: 0 });
+    throw Object.assign(new Error('Agentree server neodpovídá. Běží `npm start`?'), { status: 0 });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
@@ -45,7 +45,7 @@ export function connectStream({ onHello, onEvent, onStatus }) {
   });
   for (const name of EVENTS) {
     es.addEventListener(name, (e) => {
-      try { onEvent(name, JSON.parse(e.data)); } catch (err) { console.error('Dirigent: chybná událost', name, err); }
+      try { onEvent(name, JSON.parse(e.data)); } catch (err) { console.error('Agentree: chybná událost', name, err); }
     });
   }
   es.onerror = () => onStatus(es.readyState === EventSource.CLOSED ? 'offline' : 'reconnecting');

@@ -18,7 +18,7 @@ Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kd
 
 ## Hodnota
 
-| Úloha uživatele | Jak ji Dirigent řeší |
+| Úloha uživatele | Jak ji Agentree řeší |
 |---|---|
 | „Nechci, aby agent 20 minut čekal na moje ano.“ | Okamžité upozornění na rozhodnutí + odkaz rovnou do konverzace |
 | „Chci vědět, co se právě děje, bez proklikávání.“ | Dnešní směna, živý přepis, aktivita a průběh na jednom místě |

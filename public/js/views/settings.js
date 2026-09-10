@@ -21,7 +21,7 @@ function mount(el) {
       <section class="card set-card" data-enter style="--i:3" data-region="notifications" aria-label="Upozornění"></section>
       <section class="card set-card" data-enter style="--i:4" data-region="cloud" aria-label="Cloudová API"></section>
       <section class="card set-card set-card--wide" data-enter style="--i:5" aria-labelledby="conn-h">
-        <div class="set-card-head"><span class="icon-tile">${ICON.plug}</span><div><h2 id="conn-h">Konektory</h2><p class="set-desc">Odkud Dirigent bere data. „Ověřeno“ znamená otestováno na skutečných datech, „Beta“ podle dokumentovaného formátu.</p></div>
+        <div class="set-card-head"><span class="icon-tile">${ICON.plug}</span><div><h2 id="conn-h">Konektory</h2><p class="set-desc">Odkud Agentree bere data. „Ověřeno“ znamená otestováno na skutečných datech, „Beta“ podle dokumentovaného formátu.</p></div>
           <button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}Znovu načíst</button></div>
         <div class="conn-grid" data-region="connectors"></div>
       </section>
@@ -36,7 +36,7 @@ function mount(el) {
     try {
       if (a.dataset.action === 'hooks-install') await installHooks();
       else if (a.dataset.action === 'hooks-uninstall') {
-        if (await confirmDialog({ title: 'Vypnout okamžité události', message: 'Dirigent odebere své hooky z ~/.claude/settings.json. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout' })) {
+        if (await confirmDialog({ title: 'Vypnout okamžité události', message: 'Agentree odebere své hooky z ~/.claude/settings.json. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout' })) {
           state.integrations.claudeHooks = (await api.hooks('uninstall')).claudeHooks;
           toast('Okamžité události vypnuty');
           update();
@@ -114,7 +114,7 @@ async function installHooks() {
   const ok = await modal({
     title: 'Zapnout okamžité události',
     submitLabel: 'Zapnout',
-    body: `<p class="modal-text">Dirigent přidá do <code>~/.claude/settings.json</code> hooky pro události <b>SessionStart, UserPromptSubmit, Notification, Stop a SessionEnd</b>. Každý hook jen pošle krátkou zprávu na tento Mac (127.0.0.1) a nikdy nezablokuje Claude Code.</p>
+    body: `<p class="modal-text">Agentree přidá do <code>~/.claude/settings.json</code> hooky pro události <b>SessionStart, UserPromptSubmit, Notification, Stop a SessionEnd</b>. Každý hook jen pošle krátkou zprávu na tento Mac (127.0.0.1) a nikdy nezablokuje Claude Code.</p>
       <ul class="checklist"><li>Původní soubor se uloží jako záloha vedle něj.</li><li>Tvoje ostatní nastavení a hooky zůstanou beze změny.</li><li>Projeví se v nově spuštěných sessions.</li></ul>${h?.path ? `<p class="small muted">${esc(h.path)}</p>` : ''}`,
   });
   if (!ok) return;
@@ -133,7 +133,7 @@ function update() {
   const hookState = h.error ? ['error', 'Chyba'] : h.installed && h.current ? ['connected', 'Zapnuto'] : h.installed || h.partial ? ['missing', 'Potřebuje obnovit'] : ['idle', 'Vypnuto'];
   fill(el, 'hooks', `
     <div class="set-card-head"><span class="icon-tile">${glyph('anthropic')}</span><div><h2>Okamžité události Claude Code</h2>
-      <p class="set-desc">Žádost o povolení, start a konec tahu uvidíš v řádu milisekund. Bez hooků Dirigent pozná stav z přepisu; žádost o povolení nástroje se v přepisu neobjeví.</p></div>
+      <p class="set-desc">Žádost o povolení, start a konec tahu uvidíš v řádu milisekund. Bez hooků Agentree pozná stav z přepisu; žádost o povolení nástroje se v přepisu neobjeví.</p></div>
       ${stateBadge(...hookState)}</div>
     ${h.error ? `<p class="form-error">${esc(h.error)}</p>` : ''}
     <div class="set-actions">${h.installed && h.current
@@ -144,13 +144,13 @@ function update() {
   const sites = i.extension?.sites || {};
   fill(el, 'extension', `
     <div class="set-card-head"><span class="icon-tile">${ICON.spark}</span><div><h2>Webové AI aplikace <span class="badge">Beta</span></h2>
-      <p class="set-desc">ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot sleduje rozšíření pro Chrome. Data posílá jen do Dirigentu na tomto Macu.</p></div>
+      <p class="set-desc">ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot sleduje rozšíření pro Chrome. Data posílá jen do Agentree na tomto Macu.</p></div>
       ${stateBadge(web?.state || 'missing', web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno')}</div>
     <ol class="steps">
       <li>Otevři <code>chrome://extensions</code> a zapni <b>Režim pro vývojáře</b>.</li>
       <li>Klikni na <b>Načíst rozbalené</b> a vyber složku:
         <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}">${ICON.copy}Kopírovat</button></div></li>
-      <li>Otevři některou z aplikací níže. Rozšíření se s Dirigentem spáruje samo.</li>
+      <li>Otevři některou z aplikací níže. Rozšíření se s Agentree spáruje samo.</li>
     </ol>
     <details class="details"><summary>Ruční spárování</summary><p class="set-desc">Když se rozšíření nespáruje samo, vlož tento klíč do jeho okna.</p>
       <div class="code-line"><code class="secret">••••••••••••${esc(i.extension.token.slice(-6))}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.token)}" data-copy-message="Klíč pro rozšíření zkopírován">${ICON.copy}Kopírovat klíč</button></div></details>
@@ -160,9 +160,9 @@ function update() {
     }).join('')}</div>`);
 
   fill(el, 'notifications', `
-    <div class="set-card-head"><span class="icon-tile">${ICON.bell}</span><div><h2>Upozornění</h2><p class="set-desc">Kdy a jak tě má Dirigent upozornit.</p></div>
+    <div class="set-card-head"><span class="icon-tile">${ICON.bell}</span><div><h2>Upozornění</h2><p class="set-desc">Kdy a jak tě má Agentree upozornit.</p></div>
       <button class="btn btn--sm" type="button" data-action="test-alert">Vyzkoušet</button></div>
-    ${switchRow({ key: 'native', label: 'Notifikace macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Dirigent běží.' : 'Na tomto systému nejsou dostupné.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
+    ${switchRow({ key: 'native', label: 'Notifikace macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Agentree běží.' : 'Na tomto systému nejsou dostupné.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
     ${switchRow({ key: 'browser', label: 'Notifikace prohlížeče', desc: 'Když je dashboard otevřený na pozadí.', checked: n.browser })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: 'Agent potřebuje rozhodnutí', desc: 'Povolení nástroje, otázka nebo schválení plánu.', checked: n.needsInput })}
@@ -195,14 +195,14 @@ function update() {
       ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}
     </article>`).join(''));
 
-  const cmd = 'node ~/dirigent/bin/dirigent.mjs install-agent';
+  const cmd = 'node ~/agentree/bin/agentree.mjs install-agent';
   fill(el, 'system', `
     <div class="set-card-head"><span class="icon-tile">${ICON.terminal}</span><div><h2>Spouštění a data</h2>
-      <p class="set-desc">Aby upozornění chodila vždy, nech Dirigent spouštět automaticky po přihlášení. Při pádu se sám restartuje.</p></div></div>
+      <p class="set-desc">Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Při pádu se sám restartuje.</p></div></div>
     <div class="code-line"><code>${esc(cmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(cmd)}" data-copy-message="Příkaz zkopírován — vlož ho do Terminálu">${ICON.copy}Kopírovat</button></div>
     <dl class="facts facts--row">
       <div><dt>Verze</dt><dd>${esc(state.version)}</dd></div>
-      <div><dt>Data aplikace</dt><dd>~/.dirigent/data.json</dd></div>
+      <div><dt>Data aplikace</dt><dd>~/.agentree/data.json</dd></div>
       <div><dt>Okno sledování</dt><dd>${state.windowDays} dní</dd></div>
       <div><dt>Soukromí</dt><dd>vše zůstává na tomto Macu</dd></div>
     </dl>`);

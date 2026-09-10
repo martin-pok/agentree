@@ -7,8 +7,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | Typ | Požadavek |
 |---|---|
 | Všechny | Hlavička `Host` musí být `127.0.0.1` nebo `localhost` (jinak 403) |
-| Mutace z dashboardu (POST/PUT/PATCH/DELETE) | `X-Dirigent: 1`; pokud je `Origin`, musí být lokální původ serveru (jinak 403) |
-| Hooky a rozšíření | `X-Dirigent-Token: <ingestToken>` (jinak 401) |
+| Mutace z dashboardu (POST/PUT/PATCH/DELETE) | `X-Agentree: 1`; pokud je `Origin`, musí být lokální původ serveru (jinak 403) |
+| Hooky a rozšíření | `X-Agentree-Token: <ingestToken>` (jinak 401) |
 
 ## REST
 
@@ -130,6 +130,6 @@ interface Notifications { needsInput: boolean; limits: boolean; budget: boolean;
 }
 ```
 
-## Trvalá data `~/.dirigent/data.json`
+## Trvalá data `~/.agentree/data.json`
 
 `{ version: 1, ingestToken, settings, spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits }` — zapisováno atomicky s právy 0600.

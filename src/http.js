@@ -109,14 +109,14 @@ export function createHttpServer(app) {
   }
 
   function tokenOk(req) {
-    const given = Buffer.from(String(req.headers['x-dirigent-token'] || ''));
+    const given = Buffer.from(String(req.headers['x-agentree-token'] || ''));
     const expected = Buffer.from(datastore.data.ingestToken);
     return given.length === expected.length && crypto.timingSafeEqual(given, expected);
   }
 
   // Ochrana proti CSRF: vlastní hlavička vynutí CORS preflight, který server nepovolí; navíc kontrola Origin.
   function guardMutation(req) {
-    if (req.headers['x-dirigent'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Dirigent.');
+    if (req.headers['x-agentree'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Agentree.');
     const origin = req.headers.origin;
     if (origin && !allowedOrigins().has(origin)) throw new HttpError(403, 'Nepovolený původ požadavku.');
   }
@@ -170,7 +170,7 @@ export function createHttpServer(app) {
       return r;
     }, { token: true }],
     ['GET', /^\/api\/extension\/pair$/, (req) => {
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Dirigent.');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
       return { token: datastore.data.ingestToken, version: VERSION };
     }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
@@ -220,7 +220,7 @@ export function createHttpServer(app) {
         level: 'action',
         kind: 'test',
         title: 'Testovací upozornění',
-        body: 'Takhle tě Dirigent upozorní, když agent bude potřebovat tvé rozhodnutí.',
+        body: 'Takhle tě Agentree upozorní, když agent bude potřebovat tvé rozhodnutí.',
       });
       return { alert };
     }],
@@ -320,7 +320,7 @@ export function createHttpServer(app) {
   server = http.createServer((req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
-      if (status >= 500) console.error('Dirigent: chyba požadavku', req.method, req.url, err);
+      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, req.url, err);
       if (res.headersSent) {
         res.end();
         return;

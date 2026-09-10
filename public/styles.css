@@ -1,4 +1,4 @@
-/* Dirigent — design systém (8px mřížka, max. váha písma 500, WCAG 2.2 AA) */
+/* Agentree — design systém (8px mřížka, max. váha písma 500, WCAG 2.2 AA) */
 :root {
   /* Koncertní sál: eben (scéna), mlžná slonovina (plocha), samet (rozhodnutí), smaragd (práce), mosaz (akcent). */
   --backdrop: #0C0B10;
@@ -74,14 +74,8 @@ code { font-family: var(--f-mono); font-size: .9em; }
 .stage { position: absolute; inset: 0 0 auto 0; height: var(--band-h); z-index: -1; overflow: hidden; background: linear-gradient(180deg, #1A1722 0%, var(--stage) 100%); }
 .stage::after { content: ''; position: absolute; inset: 0; opacity: .08; mix-blend-mode: overlay; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .stage-glow { position: absolute; left: 34%; top: -70%; width: 56%; height: 240%; background: radial-gradient(closest-side, rgba(201, 154, 62, .2), transparent 72%); pointer-events: none; }
-.stage-staff { position: absolute; inset: 0; width: 100%; height: 100%; }
-.stage-staff path { fill: none; stroke: rgba(244, 243, 247, .11); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.stage-baton { position: absolute; right: 3%; top: 0; height: 100%; width: 30%; }
-.stage-baton path { fill: none; stroke: var(--brass); stroke-width: 1.6; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .85; }
-.stage-baton circle { fill: var(--brass); }
 .stage-notes { position: absolute; inset: 0; }
 .note { position: absolute; width: 15px; height: 11px; margin: -5.5px 0 0 -7.5px; border-radius: 50%; color: var(--teal); background: currentColor; transform: rotate(-22deg); box-shadow: 0 0 0 4px rgba(34, 163, 140, .16), 0 0 18px rgba(34, 163, 140, .55); transition: left .8s var(--ease), top .8s var(--ease); animation: note-in .7s var(--ease) both; }
-.note::after { content: ''; position: absolute; right: 0; bottom: 5px; width: 1.5px; height: 28px; background: currentColor; transform-origin: bottom; }
 .note--alert { color: var(--velvet); box-shadow: 0 0 0 4px rgba(194, 51, 90, .18), 0 0 20px rgba(194, 51, 90, .6); animation: note-in .7s var(--ease) both, note-pulse 1.4s var(--ease) .7s infinite; }
 @keyframes note-in { from { opacity: 0; transform: rotate(-22deg) translateY(10px) scale(.6); } }
 @keyframes note-pulse { 50% { box-shadow: 0 0 0 9px rgba(194, 51, 90, .14), 0 0 28px rgba(194, 51, 90, .75); } }
@@ -92,9 +86,10 @@ code { font-family: var(--f-mono); font-size: .9em; }
 /* ---------- Postranní panel ---------- */
 .sidebar { position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); min-height: 640px; margin: 24px 0 24px 24px; padding: 36px 24px 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; z-index: 2; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
-.brand-mark { width: 32px; height: 32px; }
-.brand-mark circle { fill: var(--brass); }
-.brand-mark path { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; }
+.brand-mark { width: 34px; height: 34px; flex: none; }
+.brand-mark .bm-branch { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.brand-mark .bm-root { fill: var(--brass); }
+.brand-mark .bm-node { fill: var(--ink); }
 .profile { margin-top: 40px; text-align: center; min-height: 208px; }
 .avatar { position: relative; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font: 400 28px/1 var(--f-display); letter-spacing: .02em; }
 .avatar.is-loading { background: var(--line-2); }

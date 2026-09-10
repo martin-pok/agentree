@@ -17,8 +17,15 @@ import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createProcessesConnector } from './connectors/processes.js';
 import { detectApps, openTargets, planOpen, executeOpen, ALL_APPS } from './openers.js';
+import { migrateLegacyData } from './migrate.js';
 
 export async function createApp(config = loadConfig()) {
+  try {
+    const m = await migrateLegacyData({ dataDir: config.dataDir, legacyDir: config.legacyDataDir });
+    if (m.migrated && !config.quiet) console.log(`Agentree: data převzata z ${m.from}`);
+  } catch (err) {
+    console.error('Agentree: převzetí dat ze staré složky selhalo:', err.message);
+  }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
   const store = new Store({ config, datastore });
@@ -129,7 +136,7 @@ export async function createApp(config = loadConfig()) {
     const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
     apps = config.openMode === 'dry' ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
-    results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Dirigent: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
+    results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agentree: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await whoami;
     store.reevaluate();
     store.ready = true;
@@ -147,7 +154,7 @@ export async function createApp(config = loadConfig()) {
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
-    log(`Dirigent: načteno ${store.list().length} sessions za ${Date.now() - t0} ms.`);
+    log(`Agentree: načteno ${store.list().length} sessions za ${Date.now() - t0} ms.`);
   }
 
   async function stop() {

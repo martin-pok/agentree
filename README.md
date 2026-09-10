@@ -1,6 +1,8 @@
-# Dirigent
+<img src="public/brand/agentree-mark.svg" width="64" height="64" alt="">
 
-**Všichni AI agenti na jednom místě, v reálném čase.** Dirigent vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
+# Agentree
+
+**Všichni AI agenti na jednom místě, v reálném čase.** Agentree vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
 > Stav: **v0.2.0 — lokální beta pro macOS.** Běží na tvém Macu, data neopouštějí počítač. Co je ověřené a co ne, přesně popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
@@ -9,7 +11,7 @@
 Potřebuješ macOS a Node.js 22.13 nebo novější. Žádné závislosti, žádný build.
 
 ```bash
-cd ~/dirigent
+cd ~/agentree
 npm start
 ```
 
@@ -22,7 +24,7 @@ Doporučené další kroky přímo v aplikaci (**Nastavení**):
 3. **Spouštění po přihlášení**: aby upozornění chodila vždy:
 
 ```bash
-node ~/dirigent/bin/dirigent.mjs install-agent
+node ~/agentree/bin/agentree.mjs install-agent
 ```
 
 ## Co umí

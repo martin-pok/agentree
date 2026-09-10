@@ -24,7 +24,7 @@ function raw(url, { method = 'GET', headers = {}, body } = {}) {
 }
 
 test('HTTP API, realtime stream a zabezpečení', async (t) => {
-  const srcHome = await tempDir('dirigent-src-');
+  const srcHome = await tempDir('agentree-src-');
   const sid = '11111111-2222-3333-4444-555555555555';
   const file = path.join(srcHome, '.claude', 'projects', '-Users-x-proj', `${sid}.jsonl`);
   const now = Date.now();
@@ -33,7 +33,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     { type: 'user', timestamp: iso(-60000), cwd: '/Users/x/proj', message: { content: 'Vytvoř landing page' } },
     { type: 'assistant', timestamp: iso(-50000), message: { id: 'a1', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo' }], usage: { input_tokens: 5, output_tokens: 7 } } },
   ]);
-  const srv = await startTestServer({ DIRIGENT_SOURCE_HOME: srcHome });
+  const srv = await startTestServer({ AGENTREE_SOURCE_HOME: srcHome });
   t.after(() => srv.close());
   const a = api(srv.url);
   const token = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8')).ingestToken;
@@ -96,7 +96,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
         message: 'Claude needs your permission to use Bash',
         transcript_path: file,
         cwd: '/Users/x/proj',
-      }, { 'X-Dirigent-Token': token });
+      }, { 'X-Agentree-Token': token });
       assert.equal(r.status, 200);
       const ev = await waitFor(() => stream.events.find((e) => e.event === 'alert'));
       assert.equal(ev.data.alert.kind, 'needs_input');
@@ -105,7 +105,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
       assert.equal(st.body.session.reason, 'Claude needs your permission to use Bash');
       assert.ok(st.body.transcript.length >= 3);
 
-      await a.send('POST', '/api/hooks/claude-code', { session_id: sid, hook_event_name: 'Stop' }, { 'X-Dirigent-Token': token });
+      await a.send('POST', '/api/hooks/claude-code', { session_id: sid, hook_event_name: 'Stop' }, { 'X-Agentree-Token': token });
       const after = await a.get(`/api/sessions/${encodeURIComponent(id)}`);
       assert.equal(after.body.session.status, 'waiting');
     } finally {
@@ -115,7 +115,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
 
   await t.test('výdaje: ochrana proti CSRF, validace, rozpočet a upozornění', async () => {
     assert.equal((await a.send('POST', '/api/spend/ledger', { service: 'claude' }, {})).status, 403);
-    const foreign = await raw(`${srv.url}/api/spend/ledger`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Dirigent': '1', Origin: 'https://evil.example' }, body: '{}' });
+    const foreign = await raw(`${srv.url}/api/spend/ledger`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agentree': '1', Origin: 'https://evil.example' }, body: '{}' });
     assert.equal(foreign.status, 403);
     const bad = await a.send('POST', '/api/spend/ledger', { service: 'claude', amount: 'x' });
     assert.equal(bad.status, 422);
@@ -142,7 +142,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
       title: 'Trh AI',
       generating: true,
       messages: [{ role: 'user', text: 'Jak velký je trh?' }],
-    }, { 'X-Dirigent-Token': token });
+    }, { 'X-Agentree-Token': token });
     assert.equal(r.status, 200);
     const st = await a.get('/api/state');
     const s = st.body.sessions.find((x) => x.id === 'web:perplexity:trh-ai-2026');
@@ -171,7 +171,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal((await a.send('PUT', '/api/settings', { notifications: { doneMinSeconds: -1 } })).status, 422);
     const index = await fetch(`${srv.url}/`);
     assert.equal(index.status, 200);
-    assert.match(await index.text(), /Dirigent/);
+    assert.match(await index.text(), /Agentree/);
     const trav = await raw(`${srv.url}/..%2f..%2fpackage.json`);
     assert.ok([403, 404].includes(trav.status), `stav ${trav.status}`);
     assert.equal((await fetch(`${srv.url}/api/neexistuje`)).status, 404);

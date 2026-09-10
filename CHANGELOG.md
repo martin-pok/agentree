@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-09-10
+
+### Změněno
+- **Nový název Agentree** v celém projektu: aplikace, rozšíření, CLI (`bin/agentree.mjs`), balíček, proměnné prostředí (`AGENTREE_*`), hlavičky API (`X-Agentree`, `X-Agentree-Token`), LaunchAgent `cz.agentree.agent`, Klíčenka `cz.agentree.*`, složka projektu a repozitář.
+- **Nové logo:** mosazný kořen (ty) a tři uzly agentů spojené větvemi; favicon a značka v rozšíření.
+- Ze scény v hlavičce odstraněny linky a zlatá křivka; body aktivních agentů zůstávají.
+
+### Migrace
+- Data aplikace se ukládají do `~/.agentree`. Při prvním spuštění se `~/.dirigent/data.json` jednou zkopíruje (upozornění, výdaje, rozpočty, nastavení, token); původní soubor zůstane beze změny.
+
 ## 0.3.0 — 2026-09-10
 
 ### Přidáno

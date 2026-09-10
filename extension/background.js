@@ -1,4 +1,4 @@
-// Service worker: spárování s Dirigentem a odeslání dat na 127.0.0.1 (nikam jinam).
+// Service worker: spárování s Agentree a odeslání dat na 127.0.0.1 (nikam jinam).
 const BASE = 'http://127.0.0.1:4620';
 let token = null;
 
@@ -16,7 +16,7 @@ async function getToken(force = false) {
 const post = (t, payload) =>
   fetch(`${BASE}/api/ingest/web`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Dirigent-Token': t },
+    headers: { 'Content-Type': 'application/json', 'X-Agentree-Token': t },
     body: JSON.stringify(payload),
   });
 
@@ -29,10 +29,10 @@ async function send(payload) {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type === 'dirigent:update') {
+  if (msg?.type === 'agentree:update') {
     send(msg.payload).catch((err) =>
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } }));
-  } else if (msg?.type === 'dirigent:set-token' && typeof msg.token === 'string') {
+  } else if (msg?.type === 'agentree:set-token' && typeof msg.token === 'string') {
     token = msg.token.trim();
     chrome.storage.local.set({ token });
   }

@@ -43,7 +43,7 @@ async function checkServer() {
     $('status').textContent = `Připojeno · ${json.version}`;
     $('dot').className = 'dot ok';
   } catch {
-    $('status').textContent = 'Dirigent neběží';
+    $('status').textContent = 'Agentree neběží';
     $('dot').className = 'dot err';
   }
 }
@@ -54,7 +54,7 @@ $('save').addEventListener('click', async () => {
     $('last').textContent = 'Klíč nemá správný tvar.';
     return;
   }
-  await chrome.runtime.sendMessage({ type: 'dirigent:set-token', token: value });
+  await chrome.runtime.sendMessage({ type: 'agentree:set-token', token: value });
   $('token').value = '';
   $('last').textContent = 'Klíč uložen.';
 });

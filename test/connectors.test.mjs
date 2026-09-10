@@ -14,7 +14,7 @@ import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {
   const home = await tempDir();
-  const config = loadConfig({ DIRIGENT_SOURCE_HOME: home, DIRIGENT_HOME: home });
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
   const datastore = fakeDatastore();
   const store = new Store({ config, datastore });
   const connector = createCodexConnector({ config, store });

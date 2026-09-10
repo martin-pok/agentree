@@ -36,8 +36,8 @@ const stageEl = document.querySelector('.stage');
 const notesEl = document.getElementById('stage-notes');
 const narrowMq = window.matchMedia('(max-width: 880px)');
 
-// Scéna: každý aktivní agent je nota na osnově. Poloha je stabilní (hash ID), barva podle stavu.
-const STAFF_LINES = [31.4, 41.4, 51.4, 61.4, 71.4];
+// Scéna: každý aktivní agent je světelný bod. Poloha je stabilní (hash ID), barva podle stavu.
+const NOTE_ROWS = [31.4, 41.4, 51.4, 61.4, 71.4];
 
 function hashId(str) {
   let h = 2166136261;
@@ -53,7 +53,7 @@ function renderStage(all) {
   const [x0, span] = narrowMq.matches ? [6, 86] : [24, 62];
   setHtml(notesEl, active.map((s) => {
     const h = hashId(s.id);
-    const top = STAFF_LINES[h % 5] + ((h >>> 5) % 2 ? 5 : 0);
+    const top = NOTE_ROWS[h % 5] + ((h >>> 5) % 2 ? 5 : 0);
     const left = x0 + (((h >>> 8) % 1000) / 1000) * span;
     return `<i class="note${s.status === 'working' ? '' : ' note--alert'}" style="left:${left.toFixed(2)}%;top:${top}%"></i>`;
   }).join(''));
@@ -128,7 +128,7 @@ function refresh(topics) {
   try {
     current?.update(topics);
   } catch (err) {
-    console.error('Dirigent: chyba vykreslení', err);
+    console.error('Agentree: chyba vykreslení', err);
   }
   tweenAll(document);
   restoreHover(viewEl);
@@ -142,7 +142,7 @@ function updateChrome() {
   const name = state.host?.fullName || state.host?.user || '';
 
   setHtml(profileEl, state.loaded
-    ? `<div class="avatar${working ? ' is-live' : ''}" aria-hidden="true">${esc(initials(name || 'Dirigent'))}</div>
+    ? `<div class="avatar${working ? ' is-live' : ''}" aria-hidden="true">${esc(initials(name || 'Agentree'))}</div>
        <p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
        <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`
     : '<div class="avatar is-loading" aria-hidden="true"></div>');
@@ -170,9 +170,9 @@ function updateChrome() {
     : conn === 'connecting' ? '<i class="dot"></i><span>Připojuji…</span>' : '<i class="dot dot--down"></i><span>Obnovuji spojení…</span>');
   setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
     ${state.host ? `<span class="source-host">${esc(`${state.host.user}@${state.host.name}`)}</span>` : ''}
-    ${state.version ? `<span class="source-host">Dirigent ${esc(state.version)}</span>` : ''}`);
+    ${state.version ? `<span class="source-host">Agentree ${esc(state.version)}</span>` : ''}`);
 
-  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Dirigent`;
+  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agentree`;
   if (!pop.hidden) renderPopover();
 }
 
