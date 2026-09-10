@@ -39,7 +39,7 @@ node ~/dirigent/bin/dirigent.mjs install-agent
 ## Vývoj
 
 ```bash
-npm test          # 31 testů: parsery, stav, upozornění, rozpočty, hooky, HTTP API, realtime stream
+npm test          # 32 testů: parsery, stav, upozornění, rozpočty, hooky, HTTP API, realtime stream
 npm run check     # syntaktická kontrola všech JS souborů
 npm run dev       # server s automatickým restartem při změně src/
 ```

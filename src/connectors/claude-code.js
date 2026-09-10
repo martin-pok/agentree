@@ -123,6 +123,7 @@ function onUser(st, s, o, ts) {
       });
       if (s.pending?.toolUseId && s.pending.toolUseId === part.tool_use_id) s.pending = null;
     }
+    if (!st.pendingTools.size) s.toolWaitSince = 0;
     if (s.pending?.kind === 'permission' && ts >= s.pending.at) s.pending = null;
     markRunning(s, ts);
     return;
@@ -133,6 +134,7 @@ function onUser(st, s, o, ts) {
     s.running = false;
     s.activity = '';
     s.pending = null;
+    s.toolWaitSince = 0;
     st.pendingTools.clear();
     pushEntry(s, { at: ts, role: 'system', text: 'Přerušeno uživatelem' });
     return;
@@ -180,6 +182,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
         pushEntry(s, { at: ts, role: 'assistant', text: clipBlock(part.text, 4000) });
       } else if (part?.type === 'tool_use') {
         st.pendingTools.set(part.id, { name: part.name, at: ts });
+        if (!s.toolWaitSince) s.toolWaitSince = ts;
         s.turnSteps++;
         s.activity = describeTool(part.name, part.input);
         pushEntry(s, { at: ts, role: 'tool', tool: part.name, text: toolInputText(part.name, part.input) });
@@ -198,6 +201,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
   else if (m.stop_reason === 'end_turn' || m.stop_reason === 'stop_sequence') {
     s.running = false;
     s.activity = '';
+    s.toolWaitSince = 0;
     st.pendingTools.clear();
   } else markRunning(s, ts);
 
@@ -287,7 +291,9 @@ export function createClaudeCodeConnector(ctx) {
     const lines = await f.tail.read(stat.size);
     for (const o of lines) applyClaudeLine(f.st, s, o, hooks);
     setResume(s, f.localId);
-    s.staleMs = s.hookAt && Date.now() - s.hookAt < DAY ? 20 * MIN : f.st.pendingTools.size ? 10 * MIN : 3 * MIN;
+    // Konec tahu je v přepisu explicitní (end_turn, přerušení, chyba API, hook Stop). Dlouhé přemýšlení
+    // modelu nezapisuje nic, proto „pracuje“ drží až 30 min a teprve pak přejde do stavu bez aktivity.
+    s.staleMs = 30 * MIN;
     if (lines.length) lastEventAt = Date.now();
     store.commit(s);
   }
@@ -309,7 +315,8 @@ export function createClaudeCodeConnector(ctx) {
     const s = store.ensure({ connector: 'claude-code', localId: p.session_id, provider: 'anthropic', app: 'Claude Code' });
     s.hookAt = now;
     lastHookAt = now;
-    s.staleMs = 20 * MIN;
+    s.staleMs = 30 * MIN;
+    if (event !== 'Notification') s.toolWaitSince = 0;
     if (typeof p.cwd === 'string' && p.cwd && !s.cwd) {
       s.cwd = p.cwd;
       setResume(s, p.session_id);

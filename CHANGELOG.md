@@ -13,7 +13,12 @@ První verze k reálnému testování.
 - Útrata: výdaje, opakované platby, rozpočty, prognóza, převody měn, historie kreditů Codexu.
 - Obrazovky: Přehled s „Dnešní směnou“, Agenti, Detail agenta s živým přepisem, Statistiky (heatmapa, podíly, projekty, modely, limity), Útrata, Upozornění, Nastavení.
 - Automatický start po přihlášení (`install-agent`).
-- 31 automatických testů, dokumentace pro agentický vývoj.
+- 32 automatických testů, dokumentace pro agentický vývoj.
+
+### Opraveno (během ověření)
+- Falešné upozornění „dokončil úlohu“ při dlouhém generování bez zápisu do přepisu.
+- Projekt session se měnil podle `cd` během práce agenta — nyní platí složka, ve které session začala.
+- Počet u konektorů odpovídá viditelným sessions, ne počtu souborů na disku.
 
 ### Změněno
 - Prototyp v0.1 (jediný `server.mjs` a ukázková data) nahrazen modulární architekturou; ukázková data odstraněna.

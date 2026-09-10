@@ -42,6 +42,24 @@ test('zadání → nástroj → výsledek → konec tahu', () => {
   assert.equal(deriveStatus(s, T0 + 40000).status, 'waiting');
 });
 
+test('dlouhé přemýšlení bez zápisu není „hotovo“; dlouho čekající nástroj bez hooků je „možná čeká na povolení“', () => {
+  const { s, st } = feed([
+    { type: 'user', timestamp: at(0), message: { content: 'Napiš celou aplikaci' } },
+    { type: 'assistant', timestamp: at(5), message: { id: 'x', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'b1', name: 'Bash', input: { command: 'rm -rf dist', description: 'Smazat build' } }] } },
+  ]);
+  s.staleMs = 30 * 60e3;
+  const long = deriveStatus(s, T0 + 5000 + 120e3);
+  assert.equal(long.status, 'working');
+  assert.equal(long.reason, 'Spouští příkaz: Smazat build · možná čeká na tvé povolení');
+  s.hookAt = T0;
+  assert.equal(deriveStatus(s, T0 + 125e3).reason, 'Spouští příkaz: Smazat build', 's hooky víme jistě, proto bez domněnky');
+  applyClaudeLine(st, s, { type: 'user', timestamp: at(130), message: { content: [{ type: 'tool_result', tool_use_id: 'b1', content: 'ok' }] } });
+  assert.equal(s.toolWaitSince, 0);
+  const stale = deriveStatus(s, T0 + 130e3 + 31 * 60e3);
+  assert.equal(stale.status, 'waiting');
+  assert.equal(stale.stale, true, 'bez konce tahu je to jen nečinnost, ne dokončení');
+});
+
 test('AskUserQuestion přepne na „potřebuje rozhodnutí“ a odpověď ho zruší', () => {
   const { s, st } = feed([
     { type: 'user', timestamp: at(0), message: { content: 'Navrhni logo' } },

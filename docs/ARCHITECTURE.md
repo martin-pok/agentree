@@ -69,7 +69,11 @@ Konektor nastavuje fakta, `deriveStatus()` z nich určí stav v tomto pořadí:
 | 6 | `idle` | < 24 h |
 | 7 | `archived` | starší |
 
-`staleMs` podle zdroje: Claude Code 3 min (10 min při rozběhnutém nástroji, 20 min s aktivními hooky), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, web 45 s (heartbeat).
+`staleMs` podle zdroje: Claude Code 30 min (konec tahu je v přepisu explicitní — `end_turn`, přerušení, chyba API, hook `Stop`; model může několik minut generovat bez zápisu), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, web 45 s (heartbeat).
+
+Když `running` vyprší bez explicitního konce, stav je `waiting`/`idle` s příznakem `stale: true` a důvodem „Delší dobu bez aktivity“. **Takový přechod nikdy nevyvolá upozornění „dokončil úlohu“.**
+
+Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „… · možná čeká na tvé povolení“ (heuristika, bez upozornění). S hooky se žádost o povolení hlásí přesně a okamžitě.
 
 ## Klient (`public/js/`)
 

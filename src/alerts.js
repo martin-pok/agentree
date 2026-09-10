@@ -54,7 +54,7 @@ export class AlertEngine {
         body: s.limit?.text || s.title,
         sessionId: s.id,
       });
-    } else if (before === 'working' && (s.status === 'waiting' || s.status === 'idle') && n.done) {
+    } else if (before === 'working' && (s.status === 'waiting' || s.status === 'idle') && !s.stale && n.done) {
       const started = this.turnStart.get(s.id) || s.lastAt;
       if (s.lastAt - started >= n.doneMinSeconds * 1000) {
         this.raise({

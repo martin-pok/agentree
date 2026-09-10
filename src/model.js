@@ -26,6 +26,8 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     minutes: new Set(),
     running: false,
     runningAt: 0,
+    stopAt: 0,
+    toolWaitSince: 0,
     staleMs: 5 * MIN,
     turnStartedAt: 0,
     turnSteps: 0,
@@ -91,22 +93,30 @@ export function takeDirty(s) {
   return out;
 }
 
+// Pořadí pravidel je záměrné — viz docs/ARCHITECTURE.md („Stavový model session“).
+// `stale` = agent formálně neukončil tah, ale dlouho se nic neděje; takový přechod nesmí hlásit „dokončeno“.
 export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
-    if (active) return { status: 'limited', reason: s.limit.text || 'Vyčerpaný limit' };
+    if (active) return { status: 'limited', reason: s.limit.text || 'Vyčerpaný limit', stale: false };
   }
-  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || 'Potřebuje tvé rozhodnutí' };
-  if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) return { status: 'working', reason: s.activity || 'Pracuje' };
-  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Session ukončena' };
-  if (age < 3 * HOUR) return { status: 'waiting', reason: 'Hotovo, čeká na další zadání' };
-  if (age < DAY) return { status: 'idle', reason: '' };
-  return { status: 'archived', reason: '' };
+  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || 'Potřebuje tvé rozhodnutí', stale: false };
+  if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
+    // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
+    const maybePermission = s.toolWaitSince && !s.hookAt && now - s.toolWaitSince > 90e3;
+    const activity = s.activity || 'Pracuje';
+    return { status: 'working', reason: maybePermission ? `${activity} · možná čeká na tvé povolení` : activity, stale: false };
+  }
+  const stale = Boolean(s.running);
+  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Session ukončena', stale: false };
+  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? 'Delší dobu bez aktivity' : 'Hotovo, čeká na další zadání', stale };
+  if (age < DAY) return { status: 'idle', reason: '', stale };
+  return { status: 'archived', reason: '', stale };
 }
 
 export function summarize(s, now, windowMs) {
-  const { status, reason } = deriveStatus(s, now);
+  const { status, reason, stale } = deriveStatus(s, now);
   const since = hourKey(now - windowMs);
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
@@ -124,6 +134,7 @@ export function summarize(s, now, windowMs) {
     branch: s.branch,
     status,
     reason: clip(reason, 200),
+    stale,
     startedAt: s.startedAt,
     lastAt: s.lastAt,
     turns: s.turns,

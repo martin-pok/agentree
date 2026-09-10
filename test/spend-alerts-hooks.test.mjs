@@ -136,6 +136,13 @@ test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () =>
   store.commit(s, now + 3000);
   assert.equal(datastore.data.alerts.at(-1).kind, 'done');
 
+  const quiet = store.ensure({ connector: 'claude-code', localId: 'x2', provider: 'anthropic', app: 'Claude Code' });
+  Object.assign(quiet, { lastAt: now - 200000, startedAt: now - 300000, running: true, runningAt: now - 200000, turnStartedAt: now - 300000, staleMs: 30 * 60e3, title: 'Dlouhé přemýšlení' });
+  store.commit(quiet, now);
+  store.commit(quiet, now + 31 * 60e3);
+  assert.equal(store.summary(quiet.id).stale, true);
+  assert.equal(datastore.data.alerts.filter((a) => a.sessionId === quiet.id).length, 0, 'nečinnost bez konce tahu nehlásí „dokončeno“');
+
   store.setLimit({ id: 'codex:codex:primary', provider: 'openai', app: 'Codex', label: 'Týdenní limit', usedPercent: 70, resetsAt: 5, reached: false, at: 1 });
   store.setLimit({ id: 'codex:codex:primary', provider: 'openai', app: 'Codex', label: 'Týdenní limit', usedPercent: 83, resetsAt: 5, reached: false, at: 2 });
   store.setLimit({ id: 'codex:codex:primary', provider: 'openai', app: 'Codex', label: 'Týdenní limit', usedPercent: 85, resetsAt: 5, reached: false, at: 3 });
