@@ -1,0 +1,93 @@
+# AGENTS.md — jak vyvíjet Dirigent
+
+Tento soubor je závazný pro každého, kdo mění kód: člověka, Claude Code, Codex i jiné agenty. Je krátký schválně. Detaily jsou v `docs/`.
+
+## 1. Poslání a principy produktu
+
+Dirigent ukazuje **v reálném čase a na jednom místě** všechny AI agenty, kteří pro uživatele pracují, a upozorní ho ve chvíli, kdy je potřeba jeho rozhodnutí.
+
+1. **Pravdivost nad efektem.** Nikdy nezobrazuj vymyšlená nebo odhadnutá data jako skutečná. Heuristiku pojmenuj (např. „stav z přepisu“) a zdokumentuj v `docs/CONNECTORS.md`. Neověřený konektor = štítek **Beta**.
+2. **Realtime je jádro.** Změna u zdroje se má v UI projevit do 2 s (souborové zdroje) nebo okamžitě (hooky, rozšíření). Každá změna datové cesty musí mít test latence nebo jej zachovat (`test/http.test.mjs`).
+3. **Local-first a soukromí.** Server poslouchá jen na `127.0.0.1`. Přepisy obsahují citlivý obsah — nikdy je neposílej mimo počítač, nelogguj jejich obsah, nepřidávej telemetrii bez výslovného rozhodnutí vlastníka produktu.
+4. **Do konfigurace jiných nástrojů zasahuj jen na výslovnou akci uživatele**, vždy se zálohou a idempotentně (vzor: `src/hooks-installer.js`).
+5. **Spolehlivost.** Chyba jednoho konektoru nesmí shodit server ani ostatní konektory. Watchery se obnovují, plný průchod běží každých 10 s.
+
+## 2. Příkazy
+
+```bash
+npm start         # server + dashboard na http://127.0.0.1:4620
+npm run dev       # server s restartem při změně src/ a bin/
+npm test          # všechny testy (node:test), ~1 s
+npm run check     # syntaktická kontrola všech .js/.mjs
+```
+
+Proměnné pro vývoj a testy: `PORT`, `DIRIGENT_HOME` (data aplikace), `DIRIGENT_SOURCE_HOME` (odkud číst zdroje — v testech vždy dočasná složka), `DIRIGENT_PROCESSES=0`, `DIRIGENT_NATIVE_NOTIFY=0`, `DIRIGENT_KEYCHAIN=0`, `DIRIGENT_CLOUD=0`, `DIRIGENT_QUIET=1`. Viz `src/config.js`.
+
+## 3. Mapa repozitáře
+
+```
+bin/dirigent.mjs            vstup CLI: start serveru, install-agent / uninstall-agent
+src/app.js                  složení aplikace: konektory → Store → upozornění, časovače, snapshot stavu
+src/http.js                 REST API, SSE stream, statické soubory, bezpečnostní kontroly
+src/model.js                jednotný model session + CENTRÁLNÍ odvození stavu (deriveStatus)
+src/store.js                stav v paměti, události pro SSE a upozornění, limity, kredity
+src/alerts.js               pravidla upozornění, deduplikace, nativní notifikace
+src/spend.js                výdaje, rozpočty, převody měn, prognóza, upozornění na rozpočet
+src/datastore.js            trvalá data ~/.dirigent/data.json (atomický zápis)
+src/hooks-installer.js      instalace Claude Code hooků (záloha, idempotence, odinstalace)
+src/secrets.js              API klíče v Klíčence macOS
+src/launch-agent.js         automatický start po přihlášení (LaunchAgent)
+src/watch.js                rekurzivní watcher s obnovou, fronta souborů, výpis souborů
+src/connectors/*.js         jeden soubor = jeden zdroj dat (viz docs/CONNECTORS.md)
+public/index.html           kostra aplikace
+public/styles.css           design systém a všechny komponenty
+public/js/app.js            router, SSE, horní lišta, notifikace, paleta ⌘K
+public/js/state.js          klientský stav a slučování událostí do jednoho snímku
+public/js/views/*.js        obrazovky (mount/update/unmount)
+public/js/charts.js         SVG grafy bez knihoven
+extension/                  rozšíření Chrome MV3 pro webové AI aplikace
+test/                       testy; helpers.mjs spouští server nad dočasnými fixturami
+docs/                       architektura, konektory, datový kontrakt, bezpečnost, testy, produkt, roadmapa
+```
+
+## 4. Závazná technická pravidla
+
+- **Bez runtime závislostí.** Jen Node.js standardní knihovna a vanilla JS v prohlížeči. Důvod: instalace jedním příkazem, žádný supply-chain risk u nástroje, který čte citlivé přepisy. Výjimku schvaluje vlastník produktu a zapíše se do `docs/ARCHITECTURE.md`.
+- **ES moduly všude** (`"type": "module"`). Rozšíření používá klasické skripty (požadavek MV3 content scripts).
+- **Stav session se odvozuje jen v `src/model.js#deriveStatus`.** Konektor nastavuje fakta (`running`, `pending`, `limit`, `lastAt`, …), nikdy přímo `status`.
+- **Každý dynamický text v HTML jde přes `esc()`** (`public/js/format.js`). Přepisy a titulky jsou nedůvěryhodný vstup. Markdown v přepisu renderuje jen `md()` v `views/session.js` (nejdřív escapuje).
+- **Mutace API** vyžadují hlavičku `X-Dirigent: 1` a lokální `Origin` (ochrana CSRF). Vstupy od hooků a rozšíření vyžadují `X-Dirigent-Token`. Nové endpointy přidávej do tabulky v `src/http.js` a do `docs/DATA-CONTRACT.md`.
+- **Změna tvaru dat** = upravit současně server, `public/js/state.js`, dotčené obrazovky, `docs/DATA-CONTRACT.md` a testy.
+- **UI texty česky**, věty s malými písmeny (sentence case), aktivní slovesa, tlačítko říká, co se stane. Chybové hlášky říkají, co se stalo a co dělat. Bez anglicismů, kde existuje běžné české slovo.
+- **Design:** 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px.
+
+## 5. Přidání nového konektoru (postup)
+
+1. Prozkoumej skutečná data na disku a zapiš **ověřený** formát do `docs/CONNECTORS.md` (bez domněnek; neověřené označ).
+2. Vytvoř `src/connectors/<id>.js` s rozhraním: `id, name, provider, kind, verified, source, description, start(), scan(), stop(), idle(), status()` a volitelně `ingest*()`.
+3. Parsování drž v čisté exportované funkci (`apply…`), aby šla testovat bez souborového systému.
+4. Používej `store.ensure()`, `touch()`, `pushEntry()`, `addTokens()` a `store.commit(s)`. Limity přes `store.setLimit()`, kredity přes `store.setCredits()`.
+5. Zaregistruj v `src/app.js` (a v `SESSION_CONNECTORS`, pokud vytváří sessions) a přidej poskytovatele do `public/js/icons.js#PROVIDERS`, pokud je nový.
+6. Testy: parser (fixtury v testu), stav přes `deriveStatus`, případně HTTP/SSE.
+7. Ruční ověření v prohlížeči na skutečných datech, pak `verified: true`.
+
+## 6. Definice hotového (Definition of Done)
+
+Změna je hotová, až když platí vše:
+
+- [ ] `npm test` a `npm run check` projdou.
+- [ ] Nové chování má test (parser, stav, API nebo stream).
+- [ ] Ověřeno v prohlížeči: desktop 1440 px a mobil 375 px, konzole bez chyb, klávesnice a fokus funguje.
+- [ ] Žádná vymyšlená data; heuristiky a neověřené části popsané v dokumentaci.
+- [ ] Aktualizovaná dokumentace (`docs/*`, tabulky podpory) a záznam v `CHANGELOG.md`.
+- [ ] Commit s popisem proč, ne jen co.
+
+## 7. Poctivý stav k verzi 0.2.0
+
+Ověřeno na skutečných datech (macOS, Node 24): Claude Code / Claude Desktop Code, Codex (ChatGPT app), procesy AI aplikací, Claude Code hooky (automatický test i instalace do dočasného HOME), realtime stream, útrata a rozpočty.
+
+Beta (formát podle dokumentace nebo odvozený, bez dat na vývojovém Macu): Cursor (formát ověřen, ale bez aktivních agentů), GitHub Copilot CLI, Copilot ve VS Code, Gemini CLI, Qwen Code, rozšíření prohlížeče (selektory neověřené proti živým webům), Admin API náklady.
+
+Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, útrata za předplatné a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (nemají veřejné API → ruční zápis), schválení akce agenta na dálku z Dirigentu.
+
+Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).

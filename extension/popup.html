@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Dirigent</title>
+  <style>
+    body { width: 320px; margin: 0; font: 400 14px/1.5 system-ui, -apple-system, sans-serif; color: #1E1B22; background: #F6F5F7; }
+    header { display: flex; align-items: center; gap: 10px; padding: 16px; background: #fff; border-bottom: 1px solid #E4E1E8; }
+    header strong { font-weight: 500; font-size: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6B6770; margin-left: auto; }
+    .dot.ok { background: #1B8F60; box-shadow: 0 0 0 4px rgba(27, 143, 96, .16); }
+    .dot.err { background: #C92F57; }
+    main { padding: 12px 16px 16px; display: grid; gap: 12px; }
+    .muted { color: #6B6770; font-size: 12px; }
+    .sites { display: grid; gap: 4px; }
+    label.site { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #fff; border-radius: 10px; }
+    input[type=checkbox] { width: 16px; height: 16px; accent-color: #1E1B22; }
+    details summary { cursor: pointer; font-size: 13px; }
+    .row { display: flex; gap: 6px; margin-top: 8px; }
+    .row input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid #E4E1E8; border-radius: 8px; }
+    button, a.btn { height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #1E1B22; background: #1E1B22; color: #fff; font: inherit; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    button.sec { background: #fff; color: #1E1B22; height: 32px; }
+  </style>
+</head>
+<body>
+  <header><strong>Dirigent</strong><span class="muted" id="status">Kontroluji…</span><i class="dot" id="dot"></i></header>
+  <main>
+    <p class="muted" id="last">Zatím nic neodesláno.</p>
+    <div class="sites" id="sites"></div>
+    <details>
+      <summary>Ruční spárování</summary>
+      <p class="muted">Klíč najdeš v Dirigentu v Nastavení → Webové AI aplikace.</p>
+      <div class="row"><input id="token" type="password" placeholder="Klíč pro rozšíření" autocomplete="off"><button class="sec" id="save" type="button">Uložit</button></div>
+    </details>
+    <a class="btn" href="http://127.0.0.1:4620/" target="_blank" rel="noopener">Otevřít Dirigent</a>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

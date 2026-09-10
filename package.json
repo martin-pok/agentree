@@ -1,0 +1,20 @@
+{
+  "name": "dirigent",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Dirigent — všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
+  "type": "module",
+  "bin": {
+    "dirigent": "bin/dirigent.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node bin/dirigent.mjs",
+    "dev": "node --watch-path=src --watch-path=bin bin/dirigent.mjs",
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.mjs\"",
+    "check": "node --check bin/dirigent.mjs && node scripts/check-syntax.mjs"
+  },
+  "license": "UNLICENSED"
+}
