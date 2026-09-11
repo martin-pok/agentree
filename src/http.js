@@ -432,7 +432,10 @@ export function createHttpServer(app, existingServer = null) {
       file = path.join(PUBLIC_DIR, 'index.html');
       body = await fs.readFile(file);
     }
-    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
+    // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.
+    const asset = /^\/(logos|fonts|brand)\//.test(rel);
+    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache' });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
 

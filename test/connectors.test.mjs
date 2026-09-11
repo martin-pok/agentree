@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { createSession, deriveStatus } from '../src/model.js';
@@ -10,6 +11,7 @@ import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js
 import { applyCursorComposer } from '../src/connectors/cursor.js';
 import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
+import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample } from '../src/connectors/claude-desktop-usage.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
@@ -221,10 +223,89 @@ test('Procesy: rozpoznání AI aplikací z výpisu ps', () => {
     '83563 10:29 0.0 1024 /Applications/Claude.app/Contents/Helpers/disclaimer -- /Users/m/claude-code/claude',
     '85123 00:31 0.0 2048 /Applications/ChatGPT.app/Contents/Resources/codex -c features.x app-server',
   ].join('\n');
-  const r = Object.fromEntries(parsePs(out).map((x) => [x.id, x]));
+  const r = Object.fromEntries(parsePs(`${out}\n85200 00:12 0.0 3072 /Applications/ChatGPT.app/Contents/MacOS/ChatGPT\n85301 00:05 0.0 4096 /opt/homebrew/bin/codex exec --skip-git-repo-check`).map((x) => [x.id, x]));
   assert.equal(r['claude-desktop'].processes, 1);
   assert.equal(r['claude-code'].processes, 1);
-  assert.equal(r.codex.running, true);
+  assert.equal(r.chatgpt.processes, 1, 'aplikace ChatGPT se pozná ze svého hlavního procesu');
+  assert.equal(r.codex.processes, 1, 'vnitřní codex app-server v ChatGPT.app se nepočítá jako samostatný Codex CLI');
   assert.equal(r.cursor.running, false);
   assert.equal(etimeToSec('01-22:59:09'), 86400 + 22 * 3600 + 59 * 60 + 9);
+});
+
+test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/týden (a extra usage, pokud je)', () => {
+  const home = '/tmp/nepouzito';
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const at = Date.now() - 60000;
+  assert.equal(applyPlanUsageSample(store, { t: at, org: 'org_x', u: { fh: 99, sd: 41, xu: 64.35 } }), true);
+  const byId = Object.fromEntries(store.limitList().map((l) => [l.id, l]));
+  assert.equal(byId['claude:five_hour:history'].usedPercent, 99);
+  assert.equal(byId['claude:five_hour:history'].label, 'Limit 5 h');
+  assert.equal(byId['claude:five_hour:history'].windowMinutes, 300);
+  assert.equal(byId['claude:five_hour:history'].source, 'plan-history');
+  assert.equal(byId['claude:five_hour:history'].kind, 'window');
+  assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
+  assert.equal(byId['claude:seven_day:history'].windowMinutes, 10080);
+  assert.equal(byId['claude:extra_usage:history'].usedPercent, null, 'extra usage není procento, takže se jako procento nepředává');
+  assert.equal(byId['claude:extra_usage:history'].value, 64.35, 'hodnota se nese beze změny — jednotku zdroj neuvádí');
+  assert.equal(byId['claude:extra_usage:history'].label, 'Extra usage');
+  assert.equal(byId['claude:extra_usage:history'].kind, 'spend');
+  // Vlastní id ('…:history') se nikdy nepřepisuje přes id stavového řádku ('claude:five_hour') a naopak —
+  // ui.js#currentLimits dá při souběhu přednost zdroji 'statusline', tahle historie zůstane jen záloha.
+  assert.equal(Object.keys(byId).sort().join(','), 'claude:extra_usage:history,claude:five_hour:history,claude:seven_day:history');
+});
+
+test('Claude Desktop · historie limitů: chybějící xu nic nezapisuje, chybný vzorek se přeskočí', () => {
+  const home = '/tmp/nepouzito';
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  applyPlanUsageSample(store, { t: Date.now(), org: 'org_x', u: { fh: 10, sd: 5 } });
+  assert.equal(store.limitList().length, 2, 'bez xu vzniknou jen dva limity');
+  assert.equal(applyPlanUsageSample(store, { t: 0, u: { fh: 1 } }), false, 'neplatné t se zahodí');
+  assert.equal(applyPlanUsageSample(store, null), false);
+  assert.equal(findLatestSample({ samples: [] }), null);
+  assert.equal(findLatestSample({}), null);
+  assert.deepEqual(findLatestSample({ samples: [{ t: 1 }, { t: 2 }] }), { t: 2 }, 'bere se poslední vzorek');
+});
+
+test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru, chybějící i poškozený soubor server nespadnou', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createClaudeDesktopUsageConnector({ config, store });
+
+  // 1) Soubor zatím neexistuje — konektor nesmí spadnout, stav je „missing“.
+  await connector.start();
+  assert.equal(connector.status().state, 'missing');
+  assert.equal(store.limitList().length, 0);
+  connector.stop();
+
+  // 2) Soubor existuje se vzorky — poslední vzorek se zapíše.
+  const dir = path.join(home, 'Library', 'Application Support', 'Claude');
+  const file = path.join(dir, 'plan-usage-history.json');
+  const now = Date.now();
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(file, JSON.stringify({
+    version: 2,
+    samples: [
+      { t: now - 30 * 60000, org: 'org_x', u: { fh: 20, sd: 10 } },
+      { t: now, org: 'org_x', u: { fh: 99, sd: 41, xu: 64.35 } },
+    ],
+  }));
+  const connector2 = createClaudeDesktopUsageConnector({ config, store });
+  await connector2.start();
+  const byId = Object.fromEntries(store.limitList().map((l) => [l.id, l]));
+  assert.equal(byId['claude:five_hour:history'].usedPercent, 99, 'zapíše se jen poslední vzorek, ne první');
+  assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
+  assert.equal(byId['claude:extra_usage:history'].usedPercent, null, 'extra usage není procento, takže se jako procento nepředává');
+  assert.equal(byId['claude:extra_usage:history'].value, 64.35, 'hodnota se nese beze změny — jednotku zdroj neuvádí');
+  assert.equal(connector2.status().state, 'connected');
+  connector2.stop();
+
+  // 3) Poškozený JSON — nesmí shodit ani zůstat v chybovém zacyklení, jen se nahlásí chyba.
+  await fs.writeFile(file, '{ toto neni platny json');
+  const connector3 = createClaudeDesktopUsageConnector({ config, store });
+  await assert.doesNotReject(connector3.start());
+  assert.equal(connector3.status().state, 'error');
+  connector3.stop();
 });

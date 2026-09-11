@@ -6,7 +6,7 @@ import { gauge, columnChart, donut, timeLine } from '../charts.js';
 import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
 
-const v = { el: null };
+const v = { el: null, onClick: null };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
 // Zůstatek kreditů hlásí každá konverzace zvlášť a několik vzorků často nese stejné razítko času,
@@ -137,7 +137,12 @@ function mount(el, _params, query) {
       <div data-region="ledger"></div>
     </section>
     <p class="note">Útratu za API doplní Agentree sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
-  el.addEventListener('click', async (e) => {
+  // `el` je trvalý uzel #view, který router mezi navigacemi jen vyprazdňuje (innerHTML = ''),
+  // nikdy nenahrazuje — starý posluchač proto musí zmizet, jinak se při každém návratu na
+  // Útratu přidá další a jediný klik pak otevře tolik dialogů, kolik bylo návštěv (nejde zavřít,
+  // protože se hned pod zavřeným objeví další identický).
+  if (v.onClick) el.removeEventListener('click', v.onClick);
+  v.onClick = async (e) => {
     const a = e.target.closest('[data-action]');
     if (!a) return;
     const id = a.dataset.id;
@@ -154,7 +159,8 @@ function mount(el, _params, query) {
     } catch (err) {
       toast(err.message, { tone: 'coral' });
     }
-  });
+  };
+  el.addEventListener('click', v.onClick);
   if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry());
 }
 
@@ -220,12 +226,19 @@ function update() {
     : '<p class="muted">Tento měsíc zatím žádné výdaje.</p>');
 
   const credits = state.credits.filter((c) => c.history?.length >= 2);
-  const spendLimits = state.limits.filter((l) => l.kind === 'spend' && typeof l.usedPercent === 'number');
+  const spendLimits = state.limits.filter((l) => l.kind === 'spend' && (typeof l.usedPercent === 'number' || typeof l.value === 'number'));
   const num = (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 });
+  // Procenta kreslíme jen tam, kde je zdroj skutečně hlásí. Historie Claude Desktopu dává u extra usage
+  // holé číslo bez zdokumentované jednotky — ukáže se jako číslo a označí za neověřené.
+  const spendRow = (l) => {
+    const pct = typeof l.usedPercent === 'number' ? Math.max(0, Math.min(100, l.usedPercent)) : null;
+    const meta = pct === null ? `${num(l.value)} · jednotku zdroj neuvádí` : `vyčerpáno ${Math.round(pct)} %`;
+    const bar = pct === null ? '' : `<span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>`;
+    return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} — ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>${bar}</div>`;
+  };
   fill(el, 'credits', credits.length || spendLimits.length
     ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">${spendLimits.length ? 'zůstatek a čerpání podle aplikace' : 'zůstatek podle aplikace'}</span></div>
-      ${spendLimits.map((l) => `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} — ${esc(l.label)}</strong><span class="muted small">vyčerpáno ${Math.round(l.usedPercent)} %${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>
-        <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(l.usedPercent)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${Math.min(100, l.usedPercent)}%"></i></span></div>`).join('')}
+      ${spendLimits.map(spendRow).join('')}
       ${credits.map((c) => {
       const ups = topUps(c.history);
       const recent = ups.slice(-6).reverse();
@@ -263,5 +276,9 @@ export default {
   query(q) {
     if (q?.get('pridat')) openAddEntry();
   },
-  unmount: () => { v.el = null; },
+  unmount: () => {
+    if (v.el && v.onClick) v.el.removeEventListener('click', v.onClick);
+    v.el = null;
+    v.onClick = null;
+  },
 };

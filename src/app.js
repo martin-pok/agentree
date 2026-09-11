@@ -20,6 +20,7 @@ import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
 import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
+import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
 import { createProcessesConnector } from './connectors/processes.js';
 import { detectApps, openTargets, planOpen, executeOpen, ALL_APPS } from './openers.js';
 import { migrateLegacyData } from './migrate.js';
@@ -130,6 +131,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     createGeminiFamilyConnector(ctx, { id: 'qwen-code', name: 'Qwen Code', dir: '.qwen', provider: 'alibaba', app: 'Qwen Code' }),
     createWebConnector(ctx),
     createCloudBillingConnector(ctx),
+    createClaudeDesktopUsageConnector(ctx),
   ];
   if (config.processes) list.push(createProcessesConnector(ctx));
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));

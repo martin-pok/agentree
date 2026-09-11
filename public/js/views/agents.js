@@ -138,11 +138,13 @@ function update() {
   const all = agentsList();
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
   const q = norm(f.q.trim());
-  const base = all.filter((s) =>
+  // Zdroj, poskytovatel a hledání platí i pro počty u projektů — jsou to nadřazené filtry.
+  const matchFacets = (s) =>
     (f.source === 'all' || (f.source === 'web' ? s.source === 'web' : s.source !== 'web'))
     && (!f.providers.size || f.providers.has(pkey(s.provider)))
-    && matchProject(s)
-    && (!q || norm([s.title, s.project, s.cwd, s.app, s.model, s.branch, s.url, projectById(s.projectId)?.name].join(' ')).includes(q)));
+    && (!q || norm([s.title, s.project, s.cwd, s.app, s.model, s.branch, s.url, projectById(s.projectId)?.name].join(' ')).includes(q));
+  const scoped = all.filter(matchFacets);
+  const base = scoped.filter(matchProject);
 
   fill(el, 'seg', SEGMENTS.map(([k, label]) => {
     const count = base.filter((s) => matchStatus(s, k)).length;
@@ -155,8 +157,8 @@ function update() {
     .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join(''));
 
   const projects = state.projects.items.filter((p) => !p.archived || p.id === f.project);
-  const countIn = (pid) => all.filter((s) => s.projectId === pid).length;
-  const noneCount = all.filter((s) => !s.projectId).length;
+  const countIn = (pid) => scoped.filter((s) => s.projectId === pid).length;
+  const noneCount = scoped.filter((s) => !s.projectId).length;
   fill(el, 'projects', projects.length
     ? `<span class="chips-label">Projekt</span>
       <button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">Všechny</button>

@@ -11,7 +11,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 
 | Služba | Zdroj | Registrace spuštění | Živý přepis | Průběh úlohy | Potřebuje rozhodnutí | Limity | Útrata |
 |---|---|---|---|---|---|---|---|
-| **Claude Code** (CLI i Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“ | ruční zápis |
+| **Claude Code** (CLI i Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | ruční zápis |
 | **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | ruční zápis |
 | **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | ruční zápis |
 | **Claude.ai** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 | ruční zápis |
@@ -69,6 +69,17 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 - **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).
 - **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s — nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agentree-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
+
+### Claude Desktop — historie limitů — `src/connectors/claude-desktop-usage.js` 🧪
+
+- **Proč existuje:** limity 5 h a týden se dnes berou jen ze stavového řádku Claude Code (`claude-code.js#ingestStatusline`), takže bez otevřené konverzace čísla zůstanou zastaralá. Tenhle konektor je záloha — čte historii, kterou si Claude Desktop ukládá sám pro sebe, a doplní čísla i mimo aktivní konverzaci.
+- **Zdroj:** `~/Library/Application Support/Claude/plan-usage-history.json`. Formát **není nikde oficiálně zdokumentovaný** — jde o interní soubor aplikace Claude Desktop, který se může s libovolnou verzí aplikace změnit nebo zmizet.
+- **Struktura (ověřeno osobně, 476 vzorků od 13. 8. 2026):** `{ version: 2, samples: [ { t: <ms epoch>, org: "<id organizace>", u: { fh: <0–100>, sd: <0–100>, xu?: <číslo> } } ] }`. `fh` = vytížení 5hodinového okna v %, `sd` = vytížení týdenního okna v %. Nové vzorky přibývají zhruba po 15 minutách i bez otevřené konverzace.
+- **`xu` (extra usage):** přítomné jen u části vzorků (84 ze 476 v ověřených datech), poslední pozorovaná hodnota 64.35. **Jednotka není ověřená** — nejspíš dolary, ale netvrdíme to. Konektor ji zapíše jako limit s `kind: 'spend'` a `label: 'Extra usage'` jen pokud v daném vzorku existuje; `public/js/views/spend.js` ji zobrazí jako „vyčerpáno X %“, což může být zavádějící, dokud jednotka nebude ověřená.
+- **Použití:** čte se jen **poslední** vzorek pole `samples`. Zapisuje limity s vlastními id `claude:five_hour:history` / `claude:seven_day:history` (a `claude:extra_usage:history`, pokud `xu` existuje), `source: 'plan-history'`, `resetsAt: null` (zdroj obnovu neobsahuje). Stavový řádek (`source: 'statusline'`) má vždy přednost — `public/js/ui.js#currentLimits` schová všechny ostatní anthropic limity, jakmile existuje alespoň jeden záznam se `source: 'statusline'`. Tahle historie se v UI tedy objeví, jen když zrovna neběží žádná konverzace se stavovým řádkem.
+- **Sledování:** změna souboru (mtime) přes `watchTree` na nadřazené složce `~/Library/Application Support/Claude` (reaguje jen na `plan-usage-history.json`) + pravidelný plný průchod v intervalu `config.scanIntervalMs`, stejně jako u ostatních souborových konektorů.
+- **Ověření:** cesta k souboru a tvar `{ t, org, u: { fh, sd, xu } }` ověřeny osobně na reálných datech (poslední 5 h = 99 %, týden = 41 %). **Beta**, protože jde o neveřejný interní formát bez záruky stability mezi verzemi.
+- **Známá omezení:** bez `resetsAt`; vyžaduje nainstalovanou a alespoň jednou spuštěnou aplikaci Claude Desktop, aby soubor vůbec vznikl a dál se aktualizoval.
 
 ### Codex — `src/connectors/codex.js` ✅
 

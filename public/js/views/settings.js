@@ -6,7 +6,7 @@ import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 
-const v = { el: null, observer: null, pairCode: null };
+const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -61,13 +61,49 @@ function mount(el) {
     </div>`;
 
   const nav = el.querySelector('.set-nav');
-  const setCurrent = (id) => {
-    for (const b of nav.querySelectorAll('[data-jump]')) b.toggleAttribute('aria-current', b.dataset.jump === id);
-    if (b(id)) nav.querySelector(`[data-jump="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Vodorovná lišta záložek (mobil) se posouvá přímo přes scrollLeft na `nav` samotné —
+  // nikdy přes scrollIntoView na tlačítku, protože to by mohlo rozhýbat i scroll stránky,
+  // který právě běží vedle (dvě plynulá rolování si pak konkurují a trhají).
+  const scrollNavTo = (btn) => {
+    if (nav.scrollWidth <= nav.clientWidth) return; // desktop: svislá lišta se neposouvá
+    const left = btn.offsetLeft;
+    const right = left + btn.offsetWidth;
+    const viewLeft = nav.scrollLeft;
+    const viewRight = viewLeft + nav.clientWidth;
+    const target = left < viewLeft ? left : right > viewRight ? right - nav.clientWidth : null;
+    if (target === null) return;
+    nav.scrollTo({ left: target, behavior: reduceMotion() ? 'auto' : 'smooth' });
   };
-  const b = (id) => Boolean(nav.querySelector(`[data-jump="${id}"]`));
+
+  const setCurrent = (id) => {
+    for (const btn of nav.querySelectorAll('[data-jump]')) btn.toggleAttribute('aria-current', btn.dataset.jump === id);
+    const btn = nav.querySelector(`[data-jump="${id}"]`);
+    if (btn) scrollNavTo(btn);
+  };
+
+  // Dokud doběhává rolování stránky vyvolané kliknutím na záložku, IntersectionObserver
+  // (sleduje, která sekce je právě vidět) nesmí mezitím přebít aktivní záložku — jinak
+  // bliká mezi cílem a sekcemi, kterými scroll jen prochází.
+  let programmatic = false;
+  let programmaticTimer = null;
+  const endProgrammatic = () => { programmatic = false; };
+  const startProgrammatic = () => {
+    programmatic = true;
+    clearTimeout(programmaticTimer);
+    window.removeEventListener('scrollend', endProgrammatic);
+    if ('onscrollend' in window) window.addEventListener('scrollend', endProgrammatic, { once: true });
+    programmaticTimer = setTimeout(endProgrammatic, reduceMotion() ? 50 : 700);
+  };
+  v.stopProgrammatic = () => {
+    clearTimeout(programmaticTimer);
+    window.removeEventListener('scrollend', endProgrammatic);
+  };
+
   if ('IntersectionObserver' in window) {
     v.observer = new IntersectionObserver((entries) => {
+      if (programmatic) return;
       const visible = entries.filter((e) => e.isIntersecting).sort((x, y) => x.boundingClientRect.top - y.boundingClientRect.top)[0];
       if (visible) setCurrent(visible.target.id);
     }, { rootMargin: '-15% 0px -70% 0px' });
@@ -78,7 +114,8 @@ function mount(el) {
     const jump = e.target.closest('[data-jump]');
     if (jump) {
       const target = document.getElementById(jump.dataset.jump);
-      target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      startProgrammatic();
+      target?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
       setCurrent(jump.dataset.jump);
       return;
     }
@@ -422,6 +459,7 @@ export default {
   update,
   unmount: () => {
     v.observer?.disconnect();
-    Object.assign(v, { el: null, observer: null });
+    v.stopProgrammatic?.();
+    Object.assign(v, { el: null, observer: null, stopProgrammatic: null });
   },
 };

@@ -4,7 +4,8 @@ export const RUNTIMES = [
   { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', test: (a) => a.startsWith('/Applications/Claude.app/Contents/MacOS/Claude') },
   { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', test: (a) => /\/claude(\s|$)/.test(a) && !/disclaimer|chrome-native-host/.test(a) },
   { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', test: (a) => a.startsWith('/Applications/ChatGPT.app/Contents/MacOS/ChatGPT') },
-  { id: 'codex', name: 'Codex', provider: 'openai', test: (a) => /(^|\/)codex(\s|$)/.test(a) },
+  // Aplikace ChatGPT si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
+  { id: 'codex', name: 'Codex', provider: 'openai', test: (a) => /(^|\/)codex(\s|$)/.test(a) && !a.includes('/ChatGPT.app/') },
   { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', test: (a) => /(^|\/)copilot(\s|$)/.test(a) && !a.includes('.app/') },
   { id: 'vscode', name: 'VS Code', provider: 'github', test: (a) => /\/Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\//.test(a) },
   { id: 'cursor', name: 'Cursor', provider: 'cursor', test: (a) => a.startsWith('/Applications/Cursor.app/Contents/MacOS/Cursor') },
