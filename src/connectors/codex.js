@@ -4,6 +4,24 @@ import { touch, pushEntry, resetTranscript } from '../model.js';
 import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
 
 const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TASK_TAG = /^\s*<scheduled-task\s+name="([^"<>]{1,80})"/;
+
+// Plánované spuštění vkládá zadání do značky <scheduled-task name="…">; její název je jediný lidský popis vlákna.
+export const scheduledTaskName = (text) => TASK_TAG.exec(text || '')?.[1]?.trim() || '';
+
+// Pomocné vlákno (automatická kontrola příkazů, spuštěný pomocný agent) nese ID rodičovské konverzace.
+export function subagentOf(meta) {
+  if (typeof meta?.parent_thread_id !== 'string' || !UUID.test(meta.parent_thread_id)) return null;
+  const parentId = `codex:${meta.parent_thread_id}`;
+  const sub = meta.source?.subagent;
+  if (sub?.thread_spawn) {
+    const nick = typeof sub.thread_spawn.agent_nickname === 'string' ? sub.thread_spawn.agent_nickname.trim() : '';
+    return { parentId, kind: 'agent', label: nick ? `Pomocný agent ${clip(nick, 40)}` : 'Pomocný agent' };
+  }
+  if (meta.thread_source === 'guardian_review' || sub?.other === 'guardian') return { parentId, kind: 'review', label: 'Automatická kontrola Codexu' };
+  return { parentId, kind: 'other', label: 'Pomocné vlákno Codexu' };
+}
 
 export function codexAppName(originator = '') {
   if (/desktop/i.test(originator)) return 'Codex · ChatGPT app';
@@ -155,13 +173,19 @@ export function createCodexConnector(ctx) {
     const ts = toTs(o.timestamp);
     const p = o.payload || {};
     switch (o.type) {
-      case 'session_meta':
+      case 'session_meta': {
         if (p.cwd) s.cwd = p.cwd;
         s.app = codexAppName(p.originator);
         if (p.git?.branch) s.branch = p.git.branch;
         if (p.id) s.resume = `codex resume ${p.id}`;
+        const sub = subagentOf(p);
+        if (sub) {
+          s.parentId = sub.parentId;
+          s.subagent = { kind: sub.kind, label: sub.label };
+        }
         touch(s, toTs(p.timestamp) || ts);
         return;
+      }
       case 'turn_context':
         if (p.model) s.model = p.model;
         if (p.cwd) s.cwd = p.cwd;
@@ -222,6 +246,7 @@ export function createCodexConnector(ctx) {
               s.firstPrompt = '';
               s.lastPrompt = '';
             }
+            if (p.item?.type === 'UserMessage' && !s.taskName) s.taskName = scheduledTaskName(textOf(p.item.content));
             const e = mapCodexItem(p.item);
             if (e) addEntry(s, e, ts);
             touch(s, ts);
@@ -239,6 +264,7 @@ export function createCodexConnector(ctx) {
         if (p.type === 'message') {
           const text = textOf(p.content).trim();
           if (!text) return;
+          if (p.role === 'user' && !s.taskName) s.taskName = scheduledTaskName(text);
           if (p.role === 'user' && !isInjectedPrompt(text)) addEntry(s, { role: 'user', text: clipBlock(text, 4000) }, ts);
           else if (p.role === 'assistant') addEntry(s, { role: 'assistant', text: clipBlock(text, 4000) }, ts);
         } else if (p.type === 'function_call' || p.type === 'custom_tool_call') {

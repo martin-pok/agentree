@@ -96,6 +96,11 @@ code { font-family: var(--f-mono); font-size: .9em; }
 .glyph { width: 18px; height: 18px; flex: none; }
 .logo { width: 18px; height: 18px; flex: none; display: block; object-fit: contain; user-select: none; }
 .logo--invert { filter: invert(1); }
+/* Monochromatická loga (OpenAI, GitHub Copilot, Grok, Cursor, Ollama, LM Studio) mají v brand manuálech
+   černou variantu na světlé ploše a bílou na tmavé. V noci tedy obracíme — barevná loga se nikdy nepřebarvují. */
+html[data-theme='dark'] .logo--mono { filter: invert(1); }
+/* Výjimka: bílý čip v živém pásu zůstává bílý i v noci, takže tam platí černá varianta. */
+html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .g { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .gf { fill: currentColor; stroke: none; }
 .muted { color: var(--mute); }
@@ -373,6 +378,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .icon-tile { width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--card); box-shadow: var(--shadow-sm); display: grid; place-items: center; position: relative; flex: none; }
 .icon-tile .icon { width: 18px; height: 18px; color: var(--ink-2); }
 .status-dot { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--paper); }
+/* Kde agent běží: barva nese stav (tečka nahoře), tvar nese místo (odznak dole). */
+.env-badge { position: absolute; left: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--card); border: 2px solid var(--paper); display: grid; place-items: center; }
+.env-badge .icon { width: 10px; height: 10px; stroke-width: 2.4; color: var(--ink-2); }
 .status-needs_input, .status-limited, .status-failed { background: var(--velvet-ink); }
 .status-working { background: var(--teal); }
 .status-waiting { background: var(--brass); }
@@ -480,6 +488,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .seg { display: inline-flex; padding: 4px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow-sm); overflow-x: auto; max-width: 100%; scrollbar-width: none; }
 .seg button { border: 0; background: transparent; height: 36px; padding: 0 14px; border-radius: 12px; color: var(--mute); font-size: 14px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; transition: background-color .2s, color .2s; }
 .seg button .count { font: 500 12px/1 var(--f-mono); opacity: .85; }
+.seg button .icon { width: 16px; height: 16px; }
 .seg button.has-alert .count { background: var(--velvet-ink); color: #fff; padding: 3px 6px; border-radius: 8px; opacity: 1; }
 .seg button:hover { color: var(--ink); }
 .seg button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); }
@@ -563,7 +572,12 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .transcript-bar { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line-2); }
 .transcript-bar h2 { margin: 0; font: 500 16px/1.3 var(--f-body); }
 .transcript-bar .check-inline { margin-left: auto; }
-.transcript-list { list-style: none; margin: 0; padding: 20px 24px 32px; height: clamp(420px, calc(100dvh - 400px), 900px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; }
+/* Přepis nekrade kolečko myši: scrolluje se až poté, co do něj uživatel klikne nebo na něj přejde tabulátorem. */
+.transcript-list { list-style: none; margin: 0; padding: 20px 24px 32px; height: clamp(420px, calc(100dvh - 400px), 900px); overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+.transcript-list.is-clipped { cursor: pointer; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 64px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 64px), transparent); }
+.transcript-list.is-browsing { overflow-y: auto; overscroll-behavior: contain; }
+.transcript-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 16px; background: var(--card); color: var(--ink-2); font-size: 13px; box-shadow: var(--shadow-sm); pointer-events: none; animation: pop .2s var(--ease) both; }
+.transcript-hint .icon { width: 14px; height: 14px; }
 .transcript-list.hide-tools .msg--tool, .transcript-list.hide-tools .msg--result { display: none; }
 .transcript-empty:not(:empty) { padding: 0 24px 24px; }
 .msg { min-width: 0; }
@@ -643,6 +657,12 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .donut-legend b { font: 400 12px/1 var(--f-mono); }
 .credit-chart { margin-top: 24px; }
 .credit-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.spend-limit + .spend-limit { margin-top: 20px; }
+.spend-limit:last-of-type { margin-bottom: 8px; }
+.topups { list-style: none; margin: 16px 0 8px; padding: 0; display: grid; gap: 2px; }
+.topups li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; font-size: 14px; }
+.topups li + li { box-shadow: 0 -1px 0 var(--line-2); }
+.topups b { font: 500 14px/1 var(--f-mono); color: var(--teal-ink); }
 
 /* ---------- Útrata ---------- */
 .spend-hero { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: center; padding: 32px 40px; }

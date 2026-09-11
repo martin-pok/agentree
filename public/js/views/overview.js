@@ -1,4 +1,4 @@
-import { state, sessionsList, emit } from '../state.js';
+import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
@@ -126,7 +126,8 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'launch', 'projects', 'runs', 'usage')) v.launcher?.update();
   if (changed(topics, 'sessions', 'connectors', 'integrations', 'projects', 'settings', 'usage')) fill(el, 'onboard', onboardingHtml());
   const now = Date.now();
-  const all = sessionsList();
+  const everything = sessionsList();
+  const all = agentsList();
   const working = all.filter((s) => s.status === 'working');
   const needs = all
     .filter(needsYou)
@@ -175,8 +176,8 @@ function update(topics = new Set(['all'])) {
         ${hooks && !hooks.installed ? `<a class="link-inline" href="#/nastaveni">Zapnout propojení s Claude Code ${ICON.arrow}</a>` : ''}</div></div>`);
 
   if (changed(topics, 'sessions', 'tick')) {
-    const todayTok = tokensSince(all, today);
-    const avg = Math.max(0, tokensSince(all, startOfDay(now - 7 * DAY)) - todayTok) / 7;
+    const todayTok = tokensSince(everything, today);
+    const avg = Math.max(0, tokensSince(everything,startOfDay(now - 7 * DAY)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     fill(el, 'meter', `
     <div class="meter-row"><span>Zpracované tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
@@ -217,7 +218,7 @@ function update(topics = new Set(['all'])) {
   const chartTickDue = topics.has('tick') && Math.floor(now / H) !== Math.floor(v.chartAt / H);
   const chartImmediate = changed(topics, 'all', 'period', 'legend', 'overview:chart') || chartTickDue;
   if (chartImmediate || (topics.has('sessions') && now - v.chartAt >= CHART_UPDATE_MS)) {
-    const ser = providerSeries(all, v.period, now, v.hidden);
+    const ser = providerSeries(everything, v.period, now, v.hidden);
     const chartChanged = fill(el, 'chart', ser.series.length
       ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Zpracované tokeny', partialLast: true })
       : '<div class="empty-inline">V tomto období žádné tokeny.</div>');

@@ -1,4 +1,4 @@
-import { state, setProjects, sessionsList, projectSessions, projectById } from './state.js';
+import { state, setProjects, agentsList, projectSessions, projectById } from './state.js';
 import { api } from './api.js';
 import { esc, shortPath, plural } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
@@ -61,7 +61,8 @@ export function projectTag(s) {
 }
 
 export function projectStats(p, now = Date.now()) {
-  const { live, older } = projectSessions(p.id);
+  const { live: liveAll, older } = projectSessions(p.id);
+  const live = liveAll.filter((s) => !s.parentId || !state.sessions.has(s.parentId));
   const all = [...live, ...older];
   const since = now - 30 * 864e5;
   const logos = [];
@@ -71,11 +72,12 @@ export function projectStats(p, now = Date.now()) {
   }
   return {
     live,
+    liveAll,
     older,
     total: all.length,
     working: live.filter((s) => s.status === 'working').length,
     needs: live.filter(needsYou).length,
-    tokens: live.filter((s) => s.lastAt >= since).reduce((a, s) => a + sessionTotal(s), 0),
+    tokens: liveAll.filter((s) => s.lastAt >= since).reduce((a, s) => a + sessionTotal(s), 0),
     lastAt: all.reduce((m, s) => Math.max(m, s.lastAt || 0), 0),
     services: logos.map((x) => x.s),
   };
@@ -86,7 +88,7 @@ export const logoStack = (sessions, max = 5) => `<span class="discs discs--sm">$
 export function recentFolders(limit = 6) {
   const seen = new Set();
   const out = [];
-  for (const s of sessionsList()) {
+  for (const s of agentsList()) {
     if (s.source === 'web' || typeof s.cwd !== 'string' || !s.cwd.startsWith('/') || seen.has(s.cwd)) continue;
     seen.add(s.cwd);
     out.push(s.cwd);

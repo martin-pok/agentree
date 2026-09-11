@@ -175,8 +175,11 @@ export function untilLabel(ts, now = Date.now()) {
 }
 
 // Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
+// Vyčerpání dokoupeného extra usage není okno předplatného — patří na Útratu, ne mezi limity plánu.
+export const isSpendLimit = (l) => l.kind === 'spend';
+
 export function currentLimits(limits, now = Date.now()) {
-  const fresh = limits.filter((l) => now - l.at < 7 * DAY);
+  const fresh = limits.filter((l) => !isSpendLimit(l) && now - l.at < 7 * DAY);
   const claudeStatus = fresh.some((l) => l.source === 'statusline');
   return fresh.filter((l) => !(claudeStatus && l.provider === 'anthropic' && l.source !== 'statusline'));
 }
@@ -205,7 +208,7 @@ export function limitWindows(limits, now = Date.now()) {
 
 export function limitGauges(limits, now, { size = 'md', provider } = {}) {
   return limits
-    .filter((l) => !provider || l.provider === provider)
+    .filter((l) => !isSpendLimit(l) && (!provider || l.provider === provider))
     .map((l) => {
       const active = l.reached && (!l.resetsAt || l.resetsAt > now) && now - l.at < 7 * DAY;
       const expired = Boolean(l.resetsAt && l.resetsAt < now);

@@ -1,4 +1,4 @@
-import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, setProjects, launchIntent, projectById } from './state.js';
+import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
@@ -175,8 +175,9 @@ function refresh(topics) {
 
 function updateChrome() {
   const all = sessionsList();
-  const working = all.filter((s) => s.status === 'working').length;
-  const needs = all.filter(needsYou).length;
+  const agents = agentsList();
+  const working = agents.filter((s) => s.status === 'working').length;
+  const needs = agents.filter(needsYou).length;
   const name = state.host?.fullName || state.host?.user || '';
 
   renderProfile(name, working, all);
@@ -316,7 +317,7 @@ async function openSession(btn) {
 const palette = createPalette(
   (q) => {
     const nq = norm(q.trim());
-    const agentItems = sessionsList()
+    const agentItems = agentsList()
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
       .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));

@@ -100,7 +100,7 @@ export function groupTotals(sessions, since, keyOf) {
     if (!key) continue;
     const cur = m.get(key) || { key, value: 0, provider: pkey(s.provider), count: 0 };
     cur.value += value;
-    cur.count++;
+    if (!s.parentId) cur.count++;
     m.set(key, cur);
   }
   return [...m.values()].sort((a, b) => b.value - a.value);

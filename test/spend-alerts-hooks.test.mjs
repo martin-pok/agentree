@@ -136,6 +136,15 @@ test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () =>
   store.commit(s, now + 3000);
   assert.equal(datastore.data.alerts.at(-1).kind, 'done');
 
+  const helper = store.ensure({ connector: 'codex', localId: 'r1', provider: 'openai', app: 'Codex' });
+  Object.assign(helper, { lastAt: now - 120000, startedAt: now - 130000, running: true, runningAt: now, turnStartedAt: now - 120000, parentId: 'claude-code:x1', subagent: { kind: 'review', label: 'Automatická kontrola Codexu' } });
+  const alertsBefore = datastore.data.alerts.length;
+  store.commit(helper, now);
+  helper.running = false;
+  helper.lastAt = now + 3000;
+  store.commit(helper, now + 3000);
+  assert.equal(datastore.data.alerts.length, alertsBefore, 'automatická kontrola nehlásí „dokončeno“ — patří k rodičovské konverzaci');
+
   const quiet = store.ensure({ connector: 'claude-code', localId: 'x2', provider: 'anthropic', app: 'Claude Code' });
   Object.assign(quiet, { lastAt: now - 200000, startedAt: now - 300000, running: true, runningAt: now - 200000, turnStartedAt: now - 300000, staleMs: 30 * 60e3, title: 'Dlouhé přemýšlení' });
   store.commit(quiet, now);

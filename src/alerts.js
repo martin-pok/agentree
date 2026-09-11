@@ -33,6 +33,8 @@ export class AlertEngine {
     const before = this.prevStatus.get(s.id);
     this.prevStatus.set(s.id, s.status);
     if (before === s.status) return;
+    // Pomocná vlákna (automatické kontroly Codexu) patří k rodičovské konverzaci a vlastní upozornění neposílají.
+    if (s.parentId) return;
     // Upozornění projektu: all = vše, decisions = jen co potřebuje člověka (bez „dokončeno“), mute = nic.
     const mode = this.projectNotify(s);
     const n = mode === 'mute' ? {} : mode === 'decisions' ? { ...this.settings, done: false } : this.settings;

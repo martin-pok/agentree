@@ -98,4 +98,14 @@ export const ICON = {
   refresh: svg('<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/>'),
   wallet: svg('<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M16 13h2M3 10h18M7 6V4h10v2"/>'),
   spark: svg('<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>'),
+  cloud: svg('<path d="M7.5 17.5a3.75 3.75 0 0 1 .42-7.48 5.25 5.25 0 0 1 10.06 1.1 3.4 3.4 0 0 1-1.48 6.38z"/>'),
+  mac: svg('<rect x="4.5" y="6" width="15" height="10" rx="2"/><path d="M3.5 19h17"/>'),
 };
+
+// Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.
+export const ENV = {
+  cloud: { icon: ICON.cloud, label: 'Běží v cloudu', short: 'Cloud' },
+  local: { icon: ICON.mac, label: 'Běží na tomto Macu', short: 'Na tomto Macu' },
+};
+
+export const envOf = (s) => (s.source === 'web' ? ENV.cloud : ENV.local);

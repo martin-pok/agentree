@@ -9,6 +9,27 @@ import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
 const v = { el: null };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
+// Zůstatek kreditů hlásí každá konverzace zvlášť a několik vzorků často nese stejné razítko času,
+// takže jedno dobití se v datech objeví jako řada drobných nárůstů. Nárůsty blízko u sebe proto
+// slučujeme do jedné události — jinak by Agentree hlásil násobně víc dobití, než kolik jich bylo.
+const TOPUP_GAP_MS = 15 * 60 * 1000;
+
+function topUps(history) {
+  const out = [];
+  let open = null;
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1];
+    const p = history[i];
+    if (p.balance > prev.balance) {
+      if (open && p.at - open.at <= TOPUP_GAP_MS) Object.assign(open, { at: p.at, to: p.balance });
+      else out.push((open = { at: p.at, from: prev.balance, to: p.balance }));
+    } else if (open && p.at - open.at > TOPUP_GAP_MS) {
+      open = null;
+    }
+  }
+  return out.map((x) => ({ at: x.at, amount: x.to - x.from })).filter((x) => x.amount > 0);
+}
+
 const money = (x) => fmtMoney(x, state.spend?.currency || 'CZK');
 const serviceColor = (sp, k) => PROVIDERS[pkey(sp.services[k]?.provider)].color;
 const monthLabel = (key) => {
@@ -199,12 +220,19 @@ function update() {
     : '<p class="muted">Tento měsíc zatím žádné výdaje.</p>');
 
   const credits = state.credits.filter((c) => c.history?.length >= 2);
-  fill(el, 'credits', credits.length
-    ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">zůstatek podle aplikace</span></div>${credits.map((c) => {
-      const h = c.history.slice(-60);
-      const markers = h.filter((p, i) => i && p.balance > h[i - 1].balance);
-      return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} zbývá · ${markers.length}× dokoupeno</span></div>
-        ${timeLine({ id: `sp-credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
+  const spendLimits = state.limits.filter((l) => l.kind === 'spend' && typeof l.usedPercent === 'number');
+  const num = (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 });
+  fill(el, 'credits', credits.length || spendLimits.length
+    ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">${spendLimits.length ? 'zůstatek a čerpání podle aplikace' : 'zůstatek podle aplikace'}</span></div>
+      ${spendLimits.map((l) => `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} — ${esc(l.label)}</strong><span class="muted small">vyčerpáno ${Math.round(l.usedPercent)} %${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>
+        <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(l.usedPercent)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${Math.min(100, l.usedPercent)}%"></i></span></div>`).join('')}
+      ${credits.map((c) => {
+      const ups = topUps(c.history);
+      const recent = ups.slice(-6).reverse();
+      return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá · ${ups.length}× dokoupeno</span></div>
+        ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}
+        ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
+          <p class="small muted">Dokoupení Agentree pozná z nárůstu zůstatku, který hlásí sama aplikace — vidí tedy jen období, kdy na tomto Macu běžela.</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

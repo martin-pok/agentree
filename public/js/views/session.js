@@ -8,7 +8,7 @@ import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 
-const v = { id: null, el: null, rendered: new Map(), follow: true, loading: false };
+const v = { id: null, el: null, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
 const MAX_RENDERED = 400;
 
 // Bezpečný "markdown-lite": nejdřív escapovat, pak přidat jen kód, zvýraznění a odkazy http(s).
@@ -106,8 +106,9 @@ function mount(el, [id]) {
           <h2 id="tr-h">Přepis</h2><span class="muted small" data-region="tr-count"></span>
           <label class="check-inline"><input type="checkbox" data-tools checked> Zobrazit nástroje</label>
         </div>
-        <ol class="transcript-list" data-list></ol>
+        <ol class="transcript-list" data-list tabindex="0" role="region" aria-label="Přepis konverzace"></ol>
         <div class="transcript-empty" data-region="tr-empty"></div>
+        <span class="transcript-hint" data-hint aria-hidden="true" hidden>${ICON.down}Klikni a procházej přepis</span>
         <button class="jump" type="button" data-jump hidden>${ICON.down}Nové zprávy</button>
         <div data-reply-slot></div>
       </section>
@@ -116,6 +117,31 @@ function mount(el, [id]) {
   </div>`;
   const list = el.querySelector('[data-list]');
   const jump = el.querySelector('[data-jump]');
+  const hint = el.querySelector('[data-hint]');
+  // Přepis nekrade kolečko myši: dokud do něj uživatel neklikne (nebo na něj nepřejde tabulátorem),
+  // scrolluje se celá stránka. Escape nebo kliknutí mimo přepis ho zase uvolní.
+  const setBrowsing = (on) => {
+    if (v.browsing === on) return;
+    v.browsing = on;
+    list.classList.toggle('is-browsing', on);
+    syncHint();
+  };
+  const syncHint = () => {
+    const clipped = !v.browsing && list.scrollHeight - list.clientHeight >= 8;
+    hint.hidden = !clipped;
+    list.classList.toggle('is-clipped', clipped);
+  };
+  v.syncHint = syncHint;
+  list.addEventListener('pointerdown', () => setBrowsing(true));
+  list.addEventListener('focusin', () => setBrowsing(true));
+  list.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !v.browsing) return;
+    e.stopPropagation();
+    setBrowsing(false);
+    list.blur();
+  });
+  v.onDocPointer = (e) => { if (!e.target.closest('.transcript')) setBrowsing(false); };
+  document.addEventListener('pointerdown', v.onDocPointer, true);
   list.addEventListener('scroll', () => {
     v.follow = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     if (v.follow) jump.hidden = true;
@@ -206,6 +232,7 @@ function renderTranscript(el, t) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
   }
+  v.syncHint?.();
 }
 
 function update() {
@@ -259,6 +286,10 @@ function update() {
   }
   const tok = s.tokens || {};
   const hasTokens = sessionTotal(s) + (tok.cacheRead || 0) > 0;
+  const helpers = [...state.sessions.values()].filter((x) => x.parentId === s.id);
+  const reviews = helpers.filter((x) => x.subagent?.kind === 'review');
+  const otherHelpers = helpers.length - reviews.length;
+  const parent = s.parentId ? state.sessions.get(s.parentId) : null;
   const limits = limitGauges(state.limits, now, { size: 'sm', provider: s.provider });
 
   const slot = el.querySelector('[data-reply-slot]');
@@ -300,6 +331,10 @@ function update() {
         <div><dt>Doba trvání</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '—'}</dd></div>
         <div><dt>Zadání</dt><dd>${s.turns ?? '—'}</dd></div>
         <div><dt>Tokeny</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '—'}</dd></div>
+        ${reviews.length ? `<div><dt>Automatické kontroly</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
+        ${otherHelpers ? `<div><dt>Pomocní agenti</dt><dd>${otherHelpers}</dd></div>` : ''}
+        ${s.taskName ? `<div><dt>Spuštění úlohy</dt><dd>${[...state.sessions.values()].filter((x) => x.connector === s.connector && x.taskName === s.taskName).length}</dd></div>` : ''}
+        ${parent ? `<div class="wide"><dt>Patří ke konverzaci</dt><dd><a class="link-inline" href="#/agent/${encodeURIComponent(parent.id)}">${esc(parent.title)}</a></dd></div>` : ''}
         <div class="wide"><dt>ID</dt><dd class="mono-sm">${esc(s.id)}</dd></div>
       </dl>
     </section>
@@ -322,6 +357,7 @@ export default {
   update,
   unmount() {
     state.transcripts.delete(v.id);
-    Object.assign(v, { id: null, el: null, rendered: new Map() });
+    if (v.onDocPointer) document.removeEventListener('pointerdown', v.onDocPointer, true);
+    Object.assign(v, { id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null });
   },
 };

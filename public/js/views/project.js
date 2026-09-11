@@ -1,4 +1,4 @@
-import { state, setProjects, sessionsList, projectById, projectSessions, launchIntent } from '../state.js';
+import { state, setProjects, agentsList, projectById, projectSessions, launchIntent } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, plural, shortPath, dateLong } from '../format.js';
 import { glyph, ICON } from '../icons.js';
@@ -35,7 +35,7 @@ function rowHtml(s, now) {
 }
 
 async function addSessionsDialog(p) {
-  const candidates = sessionsList().filter((s) => s.projectId !== p.id);
+  const candidates = agentsList().filter((s) => s.projectId !== p.id);
   if (!candidates.length) {
     toast('Všechny sledované konverzace už v projektu jsou.');
     return;
@@ -245,7 +245,7 @@ function update() {
       : '<p class="small muted">Bez složky — do projektu patří jen ručně zařazené konverzace.</p>'}`);
 
   const byApp = new Map();
-  for (const s of st.live) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
+  for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
   const bars = [...byApp.entries()].filter(([, val]) => val > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
   fill(el, 'services', `<div class="side-head"><h3>Tokeny podle služby</h3></div>
     ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : '<p class="small muted">Za posledních 30 dní zatím žádné tokeny.</p>'}`);

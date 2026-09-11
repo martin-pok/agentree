@@ -12,6 +12,49 @@ import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
+test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createCodexConnector({ config, store });
+  const parent = '01a090ab-2039-7192-8923-6a97897b911a';
+  const review = '01a090bd-1fc8-78d0-9619-443ffbbed5b2';
+  const spawned = '01a0917b-6cb4-7072-aefb-58791e31bc59';
+  const task = '01a01bba-ebbc-78c2-b292-39b4116d4211';
+  const now = Date.now();
+  const ts = (s) => new Date(now - 120000 + s * 1000).toISOString();
+  const dir = path.join(home, '.codex', 'sessions', '2026', '09', '11');
+  const cwd = '/Users/x/Projects/POKORNY DESIGN';
+  await writeJsonl(path.join(dir, `rollout-2026-09-11T15-32-09-${parent}.jsonl`), [
+    { timestamp: ts(0), type: 'session_meta', payload: { id: parent, cwd, originator: 'codex_work_desktop', source: 'vscode', thread_source: 'user', timestamp: ts(0) } },
+    { timestamp: ts(1), type: 'event_msg', payload: { type: 'item_completed', item: { type: 'UserMessage', content: [{ type: 'text', text: 'Oprav seznam agentů' }] } } },
+  ]);
+  await writeJsonl(path.join(dir, `rollout-2026-09-11T15-51-48-${review}.jsonl`), [
+    { timestamp: ts(2), type: 'session_meta', payload: { id: review, session_id: parent, parent_thread_id: parent, cwd, originator: 'codex_work_desktop', source: { subagent: { other: 'guardian' } }, thread_source: 'guardian_review', timestamp: ts(2) } },
+    { timestamp: ts(3), type: 'event_msg', payload: { type: 'task_started' } },
+    { timestamp: ts(4), type: 'event_msg', payload: { type: 'task_complete' } },
+  ]);
+  await writeJsonl(path.join(dir, `rollout-2026-09-11T19-19-40-${spawned}.jsonl`), [
+    { timestamp: ts(5), type: 'session_meta', payload: { id: spawned, parent_thread_id: parent, cwd, originator: 'codex_work_desktop', source: { subagent: { thread_spawn: { parent_thread_id: parent, depth: 1, agent_nickname: 'Fermat' } } }, thread_source: 'subagent', timestamp: ts(5) } },
+  ]);
+  await writeJsonl(path.join(dir, `rollout-2026-09-11T20-00-00-${task}.jsonl`), [
+    { timestamp: ts(6), type: 'session_meta', payload: { id: task, cwd: home, originator: 'codex_work_desktop', source: 'vscode', timestamp: ts(6) } },
+    { timestamp: ts(7), type: 'event_msg', payload: { type: 'item_completed', item: { type: 'UserMessage', content: [{ type: 'text', text: '<scheduled-task name="pd-intake" file="/x/SKILL.md">Zkontroluj poptávky</scheduled-task>' }] } } },
+  ]);
+  await connector.start();
+  connector.stop();
+  const sum = (id) => store.summary(`codex:${id}`);
+  assert.equal(sum(parent).parentId, null, 'uživatelská konverzace nemá rodiče');
+  assert.equal(sum(parent).title, 'Oprav seznam agentů');
+  assert.equal(sum(review).parentId, `codex:${parent}`);
+  assert.deepEqual(sum(review).subagent, { kind: 'review', label: 'Automatická kontrola Codexu' });
+  assert.equal(sum(review).title, 'Automatická kontrola Codexu', 'ne název složky „POKORNY DESIGN“');
+  assert.equal(sum(spawned).parentId, `codex:${parent}`);
+  assert.equal(sum(spawned).title, 'Pomocný agent Fermat');
+  assert.equal(sum(task).parentId, null, 'plánovaná úloha je samostatné vlákno');
+  assert.equal(sum(task).title, 'Plánovaná úloha · pd-intake', 'ne název domovské složky');
+});
+
 test('Codex: vynulované počítadlo tokenů nezahodí dosavadní spotřebu (součet i hodinový graf sedí)', async () => {
   const home = await tempDir();
   const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });

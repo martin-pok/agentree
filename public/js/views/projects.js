@@ -1,4 +1,4 @@
-import { state, setProjects, sessionsList } from '../state.js';
+import { state, setProjects, agentsList } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY } from '../format.js';
 import { ICON } from '../icons.js';
@@ -29,7 +29,7 @@ function suggestions() {
   const home = state.host?.home || '';
   const covered = state.projects.items.flatMap((p) => p.folders);
   const byCwd = new Map();
-  for (const s of sessionsList()) {
+  for (const s of agentsList()) {
     if (s.source === 'web' || s.projectId || s.projectSource === 'none' || typeof s.cwd !== 'string' || !s.cwd.startsWith('/') || s.cwd === home) continue;
     // Pracovní složky, které si aplikace Codex zakládá sama pro každé vlákno, nejsou projekty.
     if (/\/Codex\/\d{4}-\d{2}-\d{2}(\/|$)/.test(s.cwd)) continue;
@@ -120,7 +120,7 @@ function update() {
     .sort((a, b) => b.last - a.last || a.p.name.localeCompare(b.p.name, 'cs'))
     .map((x) => x.p);
 
-  const unassigned = sessionsList().filter((s) => !s.projectId).length;
+  const unassigned = agentsList().filter((s) => !s.projectId).length;
   const sugg = suggestions();
 
   if (!items.length) {

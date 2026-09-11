@@ -128,6 +128,13 @@ export function deriveStatus(s, now) {
   return { status: 'archived', reason: '', stale };
 }
 
+// Bez názvu i skutečného zadání pojmenuj vlákno podle toho, čím je; název složky až jako poslední možnost.
+function fallbackTitle(s) {
+  if (s.taskName) return `Plánovaná úloha · ${s.taskName}`;
+  if (s.subagent?.label) return s.subagent.label;
+  return lastSegment(s.cwd).replace(/[-_]+/g, ' ') || 'Konverzace bez názvu';
+}
+
 export function summarize(s, now, windowMs) {
   const { status, reason, stale } = deriveStatus(s, now);
   const since = hourKey(now - windowMs);
@@ -140,7 +147,10 @@ export function summarize(s, now, windowMs) {
     provider: s.provider,
     app: s.app,
     source: s.source,
-    title: clip(s.title || s.firstPrompt || lastSegment(s.cwd).replace(/[-_]+/g, ' ') || 'Konverzace bez názvu', 100),
+    parentId: s.parentId || null,
+    subagent: s.subagent || null,
+    taskName: s.taskName || '',
+    title: clip(s.title || s.firstPrompt || fallbackTitle(s), 100),
     cwd: s.cwd,
     project: lastSegment(s.cwd),
     model: s.model,

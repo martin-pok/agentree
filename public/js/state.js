@@ -163,6 +163,21 @@ export function applyEvent(name, data) {
 
 export const sessionsList = () => [...state.sessions.values()].sort((a, b) => b.lastAt - a.lastAt);
 
+const taskKey = (s) => (s.taskName ? `${s.connector}:${s.taskName}` : '');
+
+export const taskRunCount = (s) => (taskKey(s) ? [...state.sessions.values()].filter((x) => taskKey(x) === taskKey(s)).length : 0);
+
+// Seznamy a počty agentů: bez pomocných vláken s viditelným rodičem, z plánované úlohy jen poslední spuštění.
+// Tokeny a statistiky čti ze sessionsList.
+export const agentsList = () => {
+  const latest = new Map();
+  for (const s of state.sessions.values()) {
+    const k = taskKey(s);
+    if (k && (latest.get(k)?.lastAt ?? -1) < s.lastAt) latest.set(k, s);
+  }
+  return sessionsList().filter((s) => (!s.parentId || !state.sessions.has(s.parentId)) && (!taskKey(s) || latest.get(taskKey(s)) === s));
+};
+
 export const projectById = (id) => state.projects.items.find((p) => p.id === id) || null;
 
 // Okamžitá aktualizace po vlastní akci (SSE událost `projects` dorazí vzápětí se stejnými daty).

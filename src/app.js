@@ -210,7 +210,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     const pd = projects();
     const live = new Map(store.list().map((s) => [s.id, s]));
     for (const s of live.values()) {
-      if (s.projectId) pd.snapshots[s.id] = snapshotOf(s);
+      if (s.projectId && !s.parentId) pd.snapshots[s.id] = snapshotOf(s);
       else delete pd.snapshots[s.id];
     }
     for (const [sid, snap] of Object.entries(pd.snapshots)) {

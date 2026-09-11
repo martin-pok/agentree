@@ -1,4 +1,4 @@
-import { state, sessionsList } from '../state.js';
+import { state, sessionsList, agentsList } from '../state.js';
 import { esc, fmtNum, plural } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
@@ -57,7 +57,7 @@ function update() {
 
   fill(el, 'period', PERIODS.map(([k, l]) => `<button type="button" data-period="${k}" aria-pressed="${v.period === k}">${l}</button>`).join(''));
 
-  const active = all.filter((s) => isActiveSince(s, since));
+  const active = agentsList().filter((s) => isActiveSince(s, since));
   const tokens = ser.series.reduce((a, s) => a + s.values.reduce((x, y) => x + y, 0), 0);
   const hours = activeHours(all, since);
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);

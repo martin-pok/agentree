@@ -91,7 +91,10 @@ interface SessionSummary {
   provider: Provider;
   app: string;                // lidský název aplikace, např. "Codex · ChatGPT app"
   source: 'local' | 'web';
-  title: string;
+  parentId: string | null;    // pomocné vlákno (automatická kontrola, pomocný agent) → ID rodičovské konverzace; mimo seznamy a počty agentů, tokeny se počítají
+  subagent: { kind: 'review' | 'agent' | 'other'; label: string } | null;
+  taskName: string;           // plánovaná úloha ze značky <scheduled-task>; spuštění téže úlohy jsou v seznamu agentů jedním řádkem
+  title: string;              // název vlákna → první skutečné zadání → „Plánovaná úloha · <název>“ / popis pomocného vlákna → název složky
   cwd: string; project: string; model: string; branch: string;
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)

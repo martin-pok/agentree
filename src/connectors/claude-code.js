@@ -6,9 +6,11 @@ import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
 // Okna limitů předplatného, která Claude Code předává stavovému řádku (`rate_limits`).
+// `spend_limit` není okno předplatného, ale vyčerpání dokoupeného extra usage — proto vlastní druh.
 export const STATUS_WINDOWS = {
   five_hour: { id: 'claude:five_hour', label: 'Limit 5 h', minutes: 300 },
   seven_day: { id: 'claude:seven_day', label: 'Týdenní limit', minutes: 10080 },
+  spend_limit: { id: 'claude:spend_limit', label: 'Extra usage', minutes: null, kind: 'spend' },
 };
 
 const TOOL_LABELS = {
@@ -389,7 +391,7 @@ export function createClaudeCodeConnector(ctx) {
     const resetsAt = Number(w.resets_at) > 0 ? Math.round(Number(w.resets_at) * 1000) : null;
     const prev = store.limits.get(def.id);
     if (!prev || prev.usedPercent !== used || prev.resetsAt !== resetsAt || now - prev.at > MIN) {
-      store.setLimit({ id: def.id, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline' });
+      store.setLimit({ id: def.id, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });
     }
     return { used, resetsAt };
   }
@@ -399,6 +401,7 @@ export function createClaudeCodeConnector(ctx) {
     const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
     const five = statusLimit('five_hour', rl.five_hour, now);
     const week = statusLimit('seven_day', rl.seven_day, now);
+    statusLimit('spend_limit', rl.spend_limit, now);
     const cw = p.context_window && typeof p.context_window === 'object' ? p.context_window : {};
     const ctxPct = typeof cw.used_percentage === 'number' && Number.isFinite(cw.used_percentage) ? Math.round(Math.max(0, Math.min(100, cw.used_percentage))) : null;
     const s = store.get(`claude-code:${p.session_id}`);

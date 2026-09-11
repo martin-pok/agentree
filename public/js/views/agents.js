@@ -1,6 +1,6 @@
-import { state, sessionsList, projectById } from '../state.js';
+import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { esc, fmtTok, rel, norm, shortPath, plural } from '../format.js';
-import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
+import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
@@ -42,8 +42,9 @@ function rowHtml(s) {
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} z ${s.progress.total} úkolů"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);
   const tag = f.project === 'all' ? projectTag(s) : '';
+  const runs = taskRunCount(s);
   const cells = `
-    <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${sub}</span>${progress}</span>
+    <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} spuštění</span>` : ''}${sub}</span>${progress}</span>
     <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '—'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>
     <span class="cell-num">${total ? fmtTok(total) : '—'}</span>
@@ -54,8 +55,9 @@ function rowHtml(s) {
       <span class="icon-tile icon-tile--check"><input type="checkbox" data-select-session value="${esc(s.id)}"${checked ? ' checked' : ''} aria-label="Vybrat ${esc(s.title)}"></span>${cells}<span></span>
     </label>`;
   }
+  const env = envOf(s);
   return `<a class="row" href="${agentHref(s.id)}" data-session-drag="${esc(s.id)}">
-    <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>${cells}${ICON.chev}
+    <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i><span class="env-badge">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
   </a>`;
 }
 
@@ -133,7 +135,7 @@ function mount(el, _params, query) {
 function update() {
   const el = v.el;
   if (!el) return;
-  const all = sessionsList();
+  const all = agentsList();
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
   const q = norm(f.q.trim());
   const base = all.filter((s) =>
@@ -146,8 +148,8 @@ function update() {
     const count = base.filter((s) => matchStatus(s, k)).length;
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
-  fill(el, 'source', [['all', 'Všechny zdroje'], ['local', 'Na tomto Macu'], ['web', 'Web']]
-    .map(([k, label]) => `<button type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${label}</button>`).join(''));
+  fill(el, 'source', [['all', 'Všechny zdroje', ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
+    .map(([k, label, icon]) => `<button type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
   const present = Object.keys(PROVIDERS).filter((p) => all.some((s) => pkey(s.provider) === p));
   fill(el, 'chips', present
     .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join(''));
