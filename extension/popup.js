@@ -48,15 +48,16 @@ async function checkServer() {
   }
 }
 
-$('save').addEventListener('click', async () => {
-  const value = $('token').value.trim();
-  if (!/^[a-f0-9]{32,}$/.test(value)) {
-    $('last').textContent = 'Klíč nemá správný tvar.';
+$('pair').addEventListener('click', async () => {
+  const code = $('code').value.trim();
+  if (!/^[A-Za-z0-9_-]{16}$/.test(code)) {
+    $('last').textContent = 'Kód nemá správný tvar.';
     return;
   }
-  await chrome.runtime.sendMessage({ type: 'agentree:set-token', token: value });
-  $('token').value = '';
-  $('last').textContent = 'Klíč uložen.';
+  const result = await chrome.runtime.sendMessage({ type: 'agentree:pair', code });
+  if (!result?.ok) { $('last').textContent = result?.error || 'Spárování selhalo.'; return; }
+  $('code').value = '';
+  $('last').textContent = 'Rozšíření je bezpečně připojené.';
 });
 
 render();

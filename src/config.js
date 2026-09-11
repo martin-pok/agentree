@@ -14,6 +14,7 @@ export function loadConfig(env = process.env) {
   return {
     port: env.PORT !== undefined && env.PORT !== '' ? Number(env.PORT) : 4620,
     host: '127.0.0.1',
+    desktop: env.AGENTREE_DESKTOP === '1',
     sourceHome,
     dataDir: env.AGENTREE_HOME || path.join(os.homedir(), '.agentree'),
     // Před přejmenováním (0.4.0) se data ukládala do ~/.dirigent — jednou se zkopírují.

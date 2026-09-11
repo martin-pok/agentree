@@ -7,7 +7,18 @@ import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } fr
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
 import { createLauncher } from '../launcher-ui.js';
 
-const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null };
+const CHART_UPDATE_MS = 500;
+const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
+
+const changed = (topics, ...names) => topics.has('all') || names.some((name) => topics.has(name));
+
+function queueChart(now) {
+  if (v.chartTimer) return;
+  v.chartTimer = setTimeout(() => {
+    v.chartTimer = null;
+    emit('overview:chart');
+  }, Math.max(0, CHART_UPDATE_MS - (now - v.chartAt)));
+}
 
 function onboardingHtml() {
   if (!state.settings || state.settings.onboardingDismissed) return '';
@@ -44,7 +55,7 @@ function mount(el) {
         <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
         <div data-region="decisions"></div>
       </section>
-      <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
+      <section data-enter style="--i:3" data-region="meter" aria-label="Zpracované tokeny dnes"></section>
       <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
       <section data-enter style="--i:5" aria-labelledby="act-h">
         <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
@@ -56,8 +67,8 @@ function mount(el) {
         <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
         <div class="card tl-card" data-region="timeline"></div>
       </section>
-      <section data-enter style="--i:3" aria-labelledby="chart-h">
-        <div class="sec-head"><h2 id="chart-h">Spotřeba tokenů</h2>
+      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
+        <div class="sec-head"><h2 id="chart-h">Zpracované tokeny</h2>
           <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
         </div>
         <div data-region="chart"></div>
@@ -80,7 +91,7 @@ function mount(el) {
   sel.addEventListener('change', () => {
     v.period = sel.value;
     v.drawn = false;
-    update();
+    update(new Set(['period']));
   });
   v.launcher = createLauncher(el.querySelector('[data-launch]'));
   el.addEventListener('click', async (e) => {
@@ -105,15 +116,15 @@ function mount(el) {
     const k = b.dataset.legend;
     if (v.hidden.has(k)) v.hidden.delete(k);
     else v.hidden.add(k);
-    update();
+    update(new Set(['legend']));
   });
 }
 
-function update() {
+function update(topics = new Set(['all'])) {
   const el = v.el;
   if (!el) return;
-  v.launcher?.update();
-  fill(el, 'onboard', onboardingHtml());
+  if (changed(topics, 'launch', 'projects', 'runs', 'usage')) v.launcher?.update();
+  if (changed(topics, 'sessions', 'connectors', 'integrations', 'projects', 'settings', 'usage')) fill(el, 'onboard', onboardingHtml());
   const now = Date.now();
   const all = sessionsList();
   const working = all.filter((s) => s.status === 'working');
@@ -130,8 +141,9 @@ function update() {
   const waiting = all.filter((s) => s.status === 'waiting');
   const live = [...needs, ...working, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
   const STRIP_MAX = 12;
-  el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
-  fill(el, 'hero', `
+  if (changed(topics, 'sessions', 'runtimes')) {
+    el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
+    fill(el, 'hero', `
     <div class="pb-main">
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
@@ -153,56 +165,72 @@ function update() {
         </a></li>`;
       }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
       : '<p class="pb-empty">Žádný agent teď nepracuje ani nečeká na zadání.</p>'}</div>`);
+  }
 
   const hooks = state.integrations?.claudeHooks;
-  fill(el, 'decisions', needs.length
+  if (changed(topics, 'sessions', 'integrations')) fill(el, 'decisions', needs.length
     ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">A dalších ${needs.length - 4}</a>` : ''}`
     : `<div class="calm"><span class="calm-mark">${ICON.check}</span><div><strong>Všechno běží bez tebe</strong>
         <p>Jakmile agent bude chtít souhlas, odpověď nebo narazí na limit, objeví se tady a přijde ti upozornění.</p>
         ${hooks && !hooks.installed ? `<a class="link-inline" href="#/nastaveni">Zapnout propojení s Claude Code ${ICON.arrow}</a>` : ''}</div></div>`);
 
-  const todayTok = tokensSince(all, today);
-  const avg = Math.max(0, tokensSince(all, startOfDay(now - 7 * DAY)) - todayTok) / 7;
-  const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
-  fill(el, 'meter', `
-    <div class="meter-row"><span>Tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
-    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div>`);
+  if (changed(topics, 'sessions', 'tick')) {
+    const todayTok = tokensSince(all, today);
+    const avg = Math.max(0, tokensSince(all, startOfDay(now - 7 * DAY)) - todayTok) / 7;
+    const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
+    fill(el, 'meter', `
+    <div class="meter-row"><span>Zpracované tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
+    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní zpracované tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.</p>`);
+  }
 
-  const windows = limitWindows(state.limits, now);
-  const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-  const claudeExact = state.limits.some((l) => l.source === 'statusline');
-  const usesClaude = all.some((s) => s.connector === 'claude-code');
-  const limitHint = usesClaude && !claudeExact
-    ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
-    : '';
-  fill(el, 'limits', windows || credits.length || limitHint
+  if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {
+    const windows = limitWindows(state.limits, now);
+    const credits = state.credits.filter((c) => Number.isFinite(c.balance));
+    const claudeExact = state.limits.some((l) => l.source === 'statusline');
+    const usesClaude = all.some((s) => s.connector === 'claude-code');
+    const limitHint = usesClaude && !claudeExact
+      ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
+      : '';
+    fill(el, 'limits', windows || credits.length || limitHint
     ? `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
        ${windows}${limitHint}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}`
-    : '');
+      : '');
+  }
 
-  fill(el, 'activity', all.length ? all.slice(0, 5).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
+  if (changed(topics, 'sessions')) fill(el, 'activity', all.length ? all.slice(0, 5).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
 
-  const from = now - 12 * H;
-  const rank = attentionRank;
-  const lastSpan = (s) => (s.spans?.length ? s.spans[s.spans.length - 1][1] : s.lastAt);
-  const rows = all
+  if (changed(topics, 'sessions', 'tick')) {
+    const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;
+    v.timelineNow = timelineNow;
+    const from = timelineNow - 12 * H;
+    const rank = attentionRank;
+    const lastSpan = (s) => (s.spans?.length ? s.spans[s.spans.length - 1][1] : s.lastAt);
+    const rows = all
     .filter((s) => s.spans?.some(([, b]) => b >= from) || rank(s) < 3)
     .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a))
-    .slice(0, 7)
-    .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
-  fill(el, 'timeline', rows.length ? timeline({ rows, from, to: now + 20 * MIN, now }) : '<div class="empty-inline">Za posledních 12 hodin žádná aktivita agentů.</div>');
+      .slice(0, 7)
+      .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
+    fill(el, 'timeline', rows.length ? timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow }) : '<div class="empty-inline">Za posledních 12 hodin žádná aktivita agentů.</div>');
+  }
 
-  const ser = providerSeries(all, v.period, now, v.hidden);
-  const changed = fill(el, 'chart', ser.series.length
-    ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Spotřeba tokenů', partialLast: true })
-    : '<div class="empty-inline">V tomto období žádné tokeny.</div>');
-  if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
-  v.drawn = true;
-  fill(el, 'legend', legendHtml(ser.series, { box: true }));
+  const chartTickDue = topics.has('tick') && Math.floor(now / H) !== Math.floor(v.chartAt / H);
+  const chartImmediate = changed(topics, 'all', 'period', 'legend', 'overview:chart') || chartTickDue;
+  if (chartImmediate || (topics.has('sessions') && now - v.chartAt >= CHART_UPDATE_MS)) {
+    const ser = providerSeries(all, v.period, now, v.hidden);
+    const chartChanged = fill(el, 'chart', ser.series.length
+      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Zpracované tokeny', partialLast: true })
+      : '<div class="empty-inline">V tomto období žádné tokeny.</div>');
+    if (chartChanged && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
+    v.drawn = true;
+    v.chartAt = now;
+    fill(el, 'legend', legendHtml(ser.series, { box: true }));
+  } else if (topics.has('sessions')) {
+    queueChart(now);
+  }
 
   const sp = state.spend;
-  if (sp) {
+  if (sp && changed(topics, 'spend')) {
     const total = sp.budgetsConfig?.total || 0;
     const bp = total ? (sp.month.total / total) * 100 : 0;
     const top = Object.entries(sp.month.services).sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -220,14 +248,16 @@ function update() {
         : `<p class="muted small">Zatím žádné výdaje. <a class="link-inline" href="#/utrata?pridat=1">Zapsat první</a></p>`}`);
   }
 
-  const rts = [...state.runtimes].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
-  fill(el, 'runtimes', rts.length
+  if (changed(topics, 'runtimes')) {
+    const rts = [...state.runtimes].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
+    fill(el, 'runtimes', rts.length
     ? rts.map((r) => `<div class="rt-item${r.running ? '' : ' is-off'}" title="${esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží')}">
         <span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
         <span class="rt-meta">${r.running ? `CPU ${String(r.cpu).replace('.', ',')} %` : 'neběží'}</span>
       </div>`).join('')
-    : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
+      : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
+  }
 }
 
 export default {
@@ -236,7 +266,8 @@ export default {
   mount,
   update,
   unmount: () => {
+    clearTimeout(v.chartTimer);
     v.launcher?.destroy();
-    Object.assign(v, { el: null, launcher: null });
+    Object.assign(v, { el: null, launcher: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
   },
 };

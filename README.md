@@ -4,7 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agentree vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.5.0 — lokální beta pro macOS, připravená k instalaci dalším uživatelům.** Běží na tvém Macu, data neopouštějí počítač. Co je ověřené a co ne, přesně popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.6.0 — desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+
+Pro Mac: rozbal `dist/Agentree-0.6.0-macOS-arm64.zip` a přesuň Agentree.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 
 ## Rychlý start
 
@@ -47,6 +49,7 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | Dokument | Obsah |
 |---|---|
 | [AGENTS.md](AGENTS.md) | Pravidla a postupy pro agentický vývoj, definice hotového, mapa repozitáře |
+| [docs/PRODUCT-AND-ARCHITECTURE.md](docs/PRODUCT-AND-ARCHITECTURE.md) | Produktový kompas, UX/UI standard, vzhledové režimy, hranice konektorů, architektura a releasová brána |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Jak data tečou od zdroje do dashboardu, stavový model, výkon, odolnost |
 | [docs/CONNECTORS.md](docs/CONNECTORS.md) | Podpora jednotlivých služeb: co jde, co nejde a proč, stav ověření |
 | [docs/DATA-CONTRACT.md](docs/DATA-CONTRACT.md) | REST API, SSE události a datové typy |

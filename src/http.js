@@ -20,14 +20,16 @@ const TYPES = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
 };
 
 const SECURITY = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'X-Frame-Options': 'DENY',
+  'Cross-Origin-Resource-Policy': 'same-origin',
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
 class HttpError extends Error {
@@ -38,7 +40,7 @@ class HttpError extends Error {
   }
 }
 
-export function createHttpServer(app) {
+export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
   const clients = new Set();
   let server;
@@ -51,7 +53,11 @@ export function createHttpServer(app) {
   function broadcast(event, data) {
     if (!clients.size) return;
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const res of clients) res.write(msg);
+    for (const res of clients) {
+      // A stalled browser must not grow an unbounded transcript buffer.
+      if (res.writableLength > 1_000_000) { clients.delete(res); res.destroy(); }
+      else res.write(msg);
+    }
   }
 
   const listeners = {
@@ -81,6 +87,7 @@ export function createHttpServer(app) {
   heartbeat.unref?.();
 
   function stream(req, res) {
+    if (clients.size >= 32) throw new HttpError(503, 'Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agentree.');
     res.writeHead(200, {
       ...SECURITY,
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -175,7 +182,7 @@ export function createHttpServer(app) {
   /* ---------- Trasy ---------- */
 
   const routes = [
-    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready })],
+    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
     ['GET', /^\/api\/state$/, () => app.state()],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
@@ -212,10 +219,13 @@ export function createHttpServer(app) {
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
-    ['GET', /^\/api\/extension\/pair$/, (req) => {
+    ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
+    ['POST', /^\/api\/extension\/pair$/, async (req) => {
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
-      return { token: datastore.data.ingestToken, version: VERSION };
-    }],
+      const pair = await app.pairExtension(String(req.headers['x-agentree-pair-code'] || ''));
+      if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agentree.');
+      return pair;
+    }, { token: true }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
       const r = validateEntry(await readBody(req));
       if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
@@ -272,6 +282,11 @@ export function createHttpServer(app) {
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
+      if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
+      if (body.appearance !== undefined) {
+        if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, 'Vzhled musí být světlý, tmavý nebo podle systému.');
+        datastore.data.settings.appearance = body.appearance;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
@@ -428,6 +443,9 @@ export function createHttpServer(app) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
+    if (url.pathname.startsWith('/api/') && req.method === 'GET') {
+      if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
+    }
     if (url.pathname === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (url.pathname.startsWith('/api/')) {
       const route = routes.find(([method, re]) => method === req.method && re.test(url.pathname));
@@ -450,10 +468,11 @@ export function createHttpServer(app) {
     return serveStatic(req, res, url);
   }
 
-  server = http.createServer((req, res) => {
+  server = existingServer || http.createServer();
+  server.on('request', (req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
-      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, req.url, err);
+      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, status);
       if (res.headersSent) {
         res.end();
         return;

@@ -16,6 +16,13 @@ import stats from './views/stats.js';
 import spend from './views/spend.js';
 import alertsView, { markRead } from './views/alerts.js';
 import settings from './views/settings.js';
+import { initSelects } from './selects.js';
+import { initWelcome } from './welcome.js';
+import { applyAppearance, initAppearance } from './appearance.js';
+
+initSelects();
+initWelcome();
+initAppearance();
 
 const ROUTES = [
   [/^\/(?:prehled)?$/, overview],
@@ -149,6 +156,7 @@ function navigate() {
 /* ---------- Vykreslení ---------- */
 
 function refresh(topics) {
+  if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
   if (!state.loaded) {
     if (!viewEl.querySelector(':scope > .loading')) viewEl.insertAdjacentHTML('afterbegin', '<div class="loading" role="status"><span class="loader"></span>Načítám agenty z tohoto Macu…</div>');
@@ -229,7 +237,7 @@ function renderProfile(name, working, all) {
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
   if (hadFocus && !document.activeElement?.closest?.('[data-avatar-cycle]')) slot.querySelector('button')?.focus({ preventScroll: true });
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`);
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">zprac. tokenů dnes</div></div>`);
 }
 
 function tick() {
@@ -408,7 +416,7 @@ function renderOffline(show) {
   const port = location.port || '4620';
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>Agentree server neběží</strong>
-      <p>Agentree se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).</p>
+      <p>${window.agentreeDesktop ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.' : 'Agentree se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).'}</p>
       <p class="small">Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. Adresa: 127.0.0.1:${esc(port)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
   offlineEl.hidden = false;
@@ -435,7 +443,7 @@ offlineEl.addEventListener('click', async (e) => {
   }
 });
 
-if ('serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+if (!window.agentreeDesktop && 'serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('/sw.js').catch(() => { /* bez offline mezipaměti */ });
 }
 
@@ -509,6 +517,7 @@ connectStream({
       .state()
       .then((snap) => {
         applySnapshot(snap);
+        window.webkit?.messageHandlers?.agentree?.postMessage({ type: 'ready' });
         for (const [name, data] of queued.splice(0)) handle(name, data);
       })
       .catch((err) => toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'coral', timeout: 8000 }))

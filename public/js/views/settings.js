@@ -4,8 +4,9 @@ import { esc, rel, initials } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
+import { applyAppearance, normalizeAppearance } from '../appearance.js';
 
-const v = { el: null, observer: null };
+const v = { el: null, observer: null, pairCode: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -14,11 +15,31 @@ const CLOUD = [
   ['anthropic-admin', 'Anthropic', 'anthropic', 'sk-ant-admin01-…', 'Náklady organizace za API Anthropic. Nezahrnuje předplatné Claude.'],
 ];
 
+const WEB_FRESH_MS = 10 * 60 * 1000;
+
+function webSourceCard(id, site, web, now) {
+  const at = web?.sites?.[id] || 0;
+  const fresh = at && now - at < WEB_FRESH_MS;
+  const recent = at && now - at < 24 * 60 * 60 * 1000;
+  const status = fresh ? ['connected', 'Připojeno'] : recent ? ['idle', 'Bez nových dat'] : ['missing', 'Připojit'];
+  const detail = fresh
+    ? 'Rozšíření právě čte otevřenou konverzaci.'
+    : recent
+      ? 'Rozšíření tuto službu vidělo během posledních 24 hodin.'
+      : 'Po propojení rozšíření otevři službu v Chromu.';
+  return `<article class="conn conn--web" data-web-source="${esc(id)}">
+    <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
+    <p>${detail}</p>
+    <div class="conn-foot"><code>Chrome · rozšíření Agentree</code><span class="badge">Zkušební</span></div>
+    ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="link conn-link" type="button" data-action="extension-scroll">Jak propojit</button>'}
+  </article>`;
+}
+
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
 const GROUPS = [
   ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors']],
   ['set-upozorneni', 'Upozornění', ['notifications']],
-  ['set-ucet', 'Profil a licence', ['profile', 'license']],
+  ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
   ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share']],
 ];
@@ -31,6 +52,7 @@ function mount(el) {
         ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
+        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agentree</button>
         ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -65,6 +87,8 @@ function mount(el) {
       setAvatar(pick.dataset.avatarPick === 'i' ? null : Number(pick.dataset.avatarPick));
       return;
     }
+    const appearance = e.target.closest('[data-appearance]');
+    if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
     const a = e.target.closest('[data-action]');
@@ -85,6 +109,12 @@ function mount(el) {
         toast('Zdroje dat jsou načtené znovu');
         update();
         a.disabled = false;
+      } else if (a.dataset.action === 'extension-pair-code') {
+        v.pairCode = await api.extensionPairCode();
+        toast('Jednorázový kód je připravený na 10 minut');
+        update();
+      } else if (a.dataset.action === 'extension-scroll') {
+        document.getElementById('extension')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;
@@ -191,6 +221,22 @@ async function toggleSetting(sw) {
   }
 }
 
+async function setAppearance(value) {
+  const next = normalizeAppearance(value);
+  const previous = normalizeAppearance(state.settings?.appearance);
+  if (next === previous) return;
+  applyAppearance(next);
+  try {
+    state.settings = (await api.saveSettings({ appearance: next })).settings;
+    applyAppearance(state.settings.appearance, { persist: true });
+    toast(next === 'system' ? 'Vzhled se řídí nastavením macOS' : next === 'dark' ? 'Tmavý vzhled je zapnutý' : 'Světlý vzhled je zapnutý');
+    update();
+  } catch (err) {
+    applyAppearance(previous);
+    toast(`Vzhled se neuložil: ${err.message}`, { tone: 'velvet' });
+  }
+}
+
 async function connectClaude() {
   const h = state.integrations?.claudeHooks;
   const ok = await modal({
@@ -212,6 +258,18 @@ function update() {
   const i = state.integrations;
   const n = state.settings?.notifications;
   if (!el || !i || !n) return;
+
+  const appearance = normalizeAppearance(state.settings.appearance);
+  const appearanceOption = (value, icon, label, desc) => `<button class="appearance-option" type="button" data-appearance="${value}" aria-pressed="${appearance === value}">
+    <span class="appearance-icon">${icon}</span><span><strong>${label}</strong><small>${desc}</small></span>
+  </button>`;
+  fill(el, 'appearance', `
+    ${head(ICON.sun, 'Vzhled aplikace', 'Světlý vzhled je výchozí. Volba se uloží jen na tomto Macu a může sledovat nastavení systému.')}
+    <div class="appearance-options" role="group" aria-label="Vyber vzhled aplikace">
+      ${appearanceOption('light', ICON.sun, 'Světlý', 'Výchozí, jasný pracovní prostor')}
+      ${appearanceOption('dark', ICON.moon, 'Tmavý', 'Klidný večerní režim s AA kontrastem')}
+      ${appearanceOption('system', ICON.system, 'Podle systému', 'Automaticky podle macOS')}
+    </div>`);
 
   /* Propojení s Claude Code */
   const h = i.claudeHooks;
@@ -239,10 +297,10 @@ function update() {
       <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
       <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku:
         <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
-      <li>Otevři některou z aplikací níže. Rozšíření se s Agentree propojí samo.</li>
+      <li>Klikni na ikonu rozšíření, vlož jednorázový kód a potvrď připojení.</li>
     </ol>
-    <details class="details"><summary>Rozšíření se nepropojilo samo?</summary><p class="set-desc">Zkopíruj tento klíč a vlož ho do okna rozšíření.</p>
-      <div class="code-line"><code class="secret">••••••••••••${esc(i.extension.token.slice(-6))}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.token)}" data-copy-message="Klíč pro rozšíření zkopírován">${ICON.copy}Kopírovat klíč</button></div></details>
+    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Vytvořit jednorázový kód</button></div>
+    ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}
     <div class="site-grid">${Object.entries(sites).map(([k, s]) => {
       const at = web?.sites?.[k];
       return `<div class="site">${glyph({ connector: 'web', app: s.name, provider: s.provider })}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
@@ -258,13 +316,15 @@ function update() {
         <p>${esc(c.detail || c.description)}</p>
         <div class="conn-foot"><code>${esc(c.source)}</code><span class="badge${c.verified ? ' badge--ok' : ''}">${c.verified ? 'Ověřeno' : 'Zkušební'}</span></div>
         ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}
-      </article>`).join('')}</div>`);
+      </article>`).join('')}</div>
+    <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
+    <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now())).join('')}</div>`);
 
   /* Upozornění */
   fill(el, 'notifications', `
     ${head(ICON.bell, 'Kdy a jak tě upozornit', '', '<button class="btn btn--sm" type="button" data-action="test-alert">Poslat zkušební</button>')}
     ${switchRow({ key: 'native', label: 'Oznámení v macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Agentree běží.' : 'Na tomto systému nejsou dostupná.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
-    ${switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agentree otevřené na pozadí.', checked: n.browser })}
+    ${i.desktop ? '' : switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agentree otevřené na pozadí.', checked: n.browser })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: 'Agent potřebuje tvé rozhodnutí', desc: 'Povolení akce, otázka, schválení plánu nebo selhané spuštění.', checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: 'Docházející limit předplatného', desc: 'Při 80 %, 95 % a vyčerpání.', checked: n.limits })}
@@ -330,8 +390,8 @@ function update() {
   const auto = i.autostart || { supported: false };
   fill(el, 'system', `
     ${head(ICON.terminal, 'Spouštění po přihlášení',
-      'Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
-      auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? 'Zapnuto' : 'Vypnuto') : stateBadge('unavailable', 'Jen macOS'))}
+      i.desktop ? 'Zavřením okna zůstane Agentree na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agentree v Nastavení systému → Obecné → Přihlašovací položky.' : 'Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
+      i.desktop ? stateBadge('connected', 'Aplikace pro Mac') : auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? 'Zapnuto' : 'Vypnuto') : stateBadge('unavailable', 'Jen macOS'))}
     ${auto.supported ? `<div class="set-actions">${auto.installed
       ? '<button class="btn" type="button" data-action="autostart-uninstall">Vypnout spouštění po přihlášení</button>'
       : '<button class="btn btn--primary" type="button" data-action="autostart-install">Spouštět po přihlášení</button>'}</div>
@@ -347,12 +407,12 @@ function update() {
   const installCmd = `npm install -g ./agentree-${state.version}.tgz`;
   fill(el, 'share', `
     ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agentree nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
-    <ol class="steps">
+    ${i.desktop ? '<p class="set-desc">Předej instalační ZIP Agentree pro Mac. Příjemce jej rozbalí a přesune Agentree do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>' : `<ol class="steps">
       <li>Ve složce Agentree vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Pošli soubor <code>dist/agentree-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Aplikaci otevře příkazem <code>agentree --open</code>. Průvodce ho provede propojením.</li>
     </ol>
-    <p class="small muted">Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.</p>`);
+    <p class="small muted">Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.</p>`}`);
 }
 
 export default {

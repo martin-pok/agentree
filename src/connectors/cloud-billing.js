@@ -42,7 +42,7 @@ export function createCloudBillingConnector(ctx) {
     url.searchParams.set('start_time', String(Math.floor((Date.now() - 180 * DAY) / 1000)));
     url.searchParams.set('bucket_width', '1d');
     url.searchParams.set('limit', '180');
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10000) });
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`OpenAI odpověděla ${res.status}`);
     return parseOpenAICosts(await res.json());
   }
@@ -51,7 +51,7 @@ export function createCloudBillingConnector(ctx) {
     const url = new URL('https://api.anthropic.com/v1/organizations/cost_report');
     url.searchParams.set('starting_at', new Date(Date.now() - 180 * DAY).toISOString().slice(0, 10));
     url.searchParams.set('ending_at', new Date().toISOString().slice(0, 10));
-    const res = await fetch(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: AbortSignal.timeout(10000) });
+    const res = await fetch(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'error', signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`Anthropic odpověděla ${res.status}`);
     return parseAnthropicCosts(await res.json());
   }

@@ -134,7 +134,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal(read.body.unread, 0);
   });
 
-  await t.test('webové rozšíření: ingest a párování jen z rozšíření', async () => {
+  await t.test('webové rozšíření: ingest a jednorázové párování', async () => {
     const r = await a.send('POST', '/api/ingest/web', {
       site: 'perplexity',
       conversationId: 'trh-ai-2026',
@@ -148,10 +148,22 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     const s = st.body.sessions.find((x) => x.id === 'web:perplexity:trh-ai-2026');
     assert.equal(s.status, 'working');
     assert.equal(s.app, 'Perplexity');
-    assert.equal((await raw(`${srv.url}/api/extension/pair`)).status, 403);
-    const paired = await raw(`${srv.url}/api/extension/pair`, { headers: { Origin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop' } });
+    assert.equal(st.body.integrations.extension.token, undefined);
+    const code = await a.send('POST', '/api/extension/pair-code', {});
+    assert.equal(code.status, 200);
+    assert.match(code.body.code, /^[A-Za-z0-9_-]{16}$/);
+    assert.ok(code.body.expiresAt > Date.now());
+    assert.equal((await raw(`${srv.url}/api/extension/pair`)).status, 405);
+    const origin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
+    const foreign = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: 'https://evil.example', 'X-Agentree-Pair-Code': code.body.code } });
+    assert.equal(foreign.status, 403);
+    const bad = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': 'A'.repeat(16) } });
+    assert.equal(bad.status, 401);
+    const paired = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code } });
     assert.equal(paired.status, 200);
     assert.equal(JSON.parse(paired.body).token, token);
+    const replay = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code } });
+    assert.equal(replay.status, 401);
   });
 
   await t.test('zapnutí Claude hooků přes API zapíše správný port', async () => {

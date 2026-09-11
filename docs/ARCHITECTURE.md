@@ -1,5 +1,17 @@
 # Architektura
 
+## Desktop pro macOS (0.6.0)
+
+Nativní Swift/AppKit obal s WKWebView a přibaleným Node 24.18.1 arm64. Server i vanilla frontend zůstávají bez runtime balíčků. macOS 14+; build `npm run build:mac` potřebuje Xcode tools. Fonty Urbanist, Onest a Geist Mono jsou přibalené včetně OFL licencí, žádné požadavky na Google Fonts při používání.
+
+`desktop/Agentree.swift` drží atomický `flock` v Application Support/Agentree, takže pouze jedna GUI instance smí spustit server. Zavření okna ponechá dohled na pozadí, ⌘Q ukončí aplikaci i vlastní server. Server má EOF kontrolu rodičovské roury a nezávislý dohled PID rodiče každých 500 ms. Při pádu GUI se ukončí i server; při pádu serveru GUI zkusí nejvýše tři obnovy. Ukončení čeká na flush a ukončení spravovaných běhů včetně pětisekundové eskalace RunManageru.
+
+`desktop/lifecycle.mjs` získá port PŘED načtením či zápisem dat. Při konfliktu nejprve vyčká na probíhající ukončení. Převzetí staršího CLI 0.5 povolí pouze shoda vlastníka procesu, PID vlastníka socketu, skutečné příkazové řádky, skutečných cest, názvu balíčku, datové složky, prázdného seznamu aktivních běhů a SHA-256 auditovaného entrypointu. Použije SIGTERM, nikdy plošné zabíjení podle portu. Novější desktopovou instanci převezme jen při mrtvém GUI rodiči a shodném entrypointu. Neznámou instanci odmítne. Sdílená `~/.agentree/data.json` se při neúspěšném startu ani nenačtou.
+
+Události pro Dock/menubar a nativní oznámení jdou přímo z vlastněného procesu, nezávisle na aktivitě webového okna. WebKit smí načítat jen vlastní lokální origin; externí https/mailto odkazy se otevírají mimo aplikaci. Exporty mají nativní Save panel. JavaScript bridge přijímá pouze signál připravenosti z hlavního lokálního frame.
+
+Ve veřejném vydání je nutný Developer ID podpis a notarizace. Lokální build je ad-hoc podepsaný, s automatickou kontrolou podpisu. Build probíhá mimo iCloud/File Provider, který jinak během podepisování doplňuje nepovolená metadata Finderu.
+
 ## Přehled toku dat
 
 ```mermaid
@@ -81,6 +93,12 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 - `state.js` — jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
 - `views/*.js` — každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
 - `charts.js` — plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
+
+### Vzhled a nativní chrome
+
+`settings.appearance` má povolené hodnoty `light`, `dark`, `system`; DataStore je normalizuje na `light`, aby staré či poškozené nastavení nikdy nespustilo neurčený režim. `public/js/appearance-boot.js` běží před stylesheetem a použije lokální kopii preference pouze proti FOUC. Po snapshotu je autoritou serverová preference. `appearance.js` aplikuje tokeny přes `html[data-theme]`, poslouchá změnu `prefers-color-scheme` při volbě `system` a přes úzký WKWebView bridge předá výsledek Swift obalu. Bridge přijímá jen z hlavního lokálního frame a mění pouze `NSAppearance` a barvu okna.
+
+Paleta dark mode je tokenová, nikoli CSS filter/inverze: `--paper`, `--card`, texty, linky, stíny i semantické tinty mají vlastní kontrastní hodnoty. Regressní browser QA měří definované páry minimálně 4.5:1 a testuje perzistenci i živou reakci volby `system`.
 
 ## Výkon (naměřeno na vývojovém Macu, v0.2.0)
 
