@@ -92,9 +92,51 @@ function parseRoute() {
   return { view: overview, params: [], query: new URLSearchParams(), key: '/prehled' };
 }
 
+/* ---------- Mobilní panel „Více“ ---------- */
+
+const moreBtn = document.querySelector('[data-nav-action="more"]');
+const SECONDARY = new Set([...document.querySelectorAll('.nav .nav-secondary')].map((a) => a.dataset.nav));
+const sheet = document.createElement('div');
+sheet.className = 'sheet-scrim';
+sheet.id = 'more-sheet';
+sheet.hidden = true;
+sheet.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <h2 class="sheet-title" id="sheet-h">Další sekce</h2>
+  <nav class="sheet-nav" aria-label="Další sekce">${[...document.querySelectorAll('.nav .nav-secondary')].map((a) => `<a href="${a.getAttribute('href')}" data-sheet-nav="${a.dataset.nav}">${a.querySelector('svg').outerHTML}<span>${esc(a.querySelector('span').textContent)}</span><b class="nav-badge" data-sheet-badge="${a.dataset.nav}" hidden></b>${ICON.chev}</a>`).join('')}</nav>
+  <div class="sheet-foot" data-sheet-foot></div>
+</div>`;
+document.body.appendChild(sheet);
+
+function openSheet() {
+  sheet.querySelector('[data-sheet-foot]').innerHTML = footEl.innerHTML;
+  sheet.hidden = false;
+  moreBtn.setAttribute('aria-expanded', 'true');
+  document.body.classList.add('has-modal');
+  sheet.querySelector('.sheet-nav a')?.focus();
+}
+function closeSheet({ restoreFocus = false } = {}) {
+  if (sheet.hidden) return;
+  sheet.hidden = true;
+  moreBtn.setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('has-modal');
+  if (restoreFocus) moreBtn.focus();
+}
+sheet.addEventListener('mousedown', (e) => { if (e.target === sheet) closeSheet({ restoreFocus: true }); });
+sheet.addEventListener('click', (e) => { if (e.target.closest('.sheet-nav a')) closeSheet(); });
+sheet.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); closeSheet({ restoreFocus: true }); return; }
+  if (e.key !== 'Tab') return;
+  const f = [...sheet.querySelectorAll('a[href]')];
+  if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+});
+narrowMq.addEventListener('change', () => { if (!narrowMq.matches) closeSheet(); });
+
 function navigate() {
   const r = parseRoute();
   closePopover();
+  closeSheet();
   if (r.key !== currentKey) {
     current?.unmount?.();
     current = r.view;
@@ -114,10 +156,12 @@ function navigate() {
   firstNav = false;
   titleEl.textContent = current.title;
   const nav = NAV_OF[current.id];
-  for (const a of document.querySelectorAll('[data-nav]')) {
-    if (a.dataset.nav === nav) a.setAttribute('aria-current', 'page');
+  for (const a of document.querySelectorAll('[data-nav], [data-sheet-nav]')) {
+    if ((a.dataset.nav || a.dataset.sheetNav) === nav) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
+  if (SECONDARY.has(nav)) moreBtn.setAttribute('aria-current', 'page');
+  else moreBtn.removeAttribute('aria-current');
   refresh(new Set(['all']));
 }
 
@@ -162,6 +206,13 @@ function updateChrome() {
   };
   setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} potřebuje tebe` : `${working} pracuje`);
   setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} nepřečtených`);
+  setBadge('more', state.alerts.unread, 'coral', `${state.alerts.unread} nepřečtených upozornění`);
+  const sheetBadge = sheet.querySelector('[data-sheet-badge="upozorneni"]');
+  if (sheetBadge) {
+    sheetBadge.hidden = !state.alerts.unread;
+    sheetBadge.textContent = state.alerts.unread > 99 ? '99+' : String(state.alerts.unread);
+    sheetBadge.dataset.tone = 'coral';
+  }
 
   bellBadge.hidden = !state.alerts.unread;
   bellBadge.textContent = state.alerts.unread > 99 ? '99+' : String(state.alerts.unread);
@@ -297,6 +348,13 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
+  if (e.target.closest('[data-nav-action="more"]')) { if (sheet.hidden) openSheet(); else closeSheet({ restoreFocus: true }); return; }
+  if (e.target.closest('[data-nav-action="launch"]')) {
+    launchIntent.focus = true;
+    if (location.hash === '#/prehled' || location.hash === '' || location.hash === '#/') navigate();
+    else location.hash = '#/prehled';
+    return;
+  }
   if (e.target.closest('#bell')) { if (pop.hidden) openPopover(); else closePopover(); return; }
   const item = e.target.closest('[data-alert-id]');
   if (item) markRead([item.dataset.alertId]);
