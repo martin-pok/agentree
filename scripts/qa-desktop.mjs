@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { startTestServer, api } from '../test/helpers.mjs';
+import { addTokens } from '../src/model.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 await fs.mkdir('dist/qa', { recursive: true });
@@ -9,6 +10,12 @@ const results = [];
 for (const engine of ['chromium', 'webkit']) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
+  const sample = server.app.store.ensure({ connector: 'codex', localId: 'qa-layout', provider: 'openai', app: 'Codex' });
+  Object.assign(sample, { title: 'QA — kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
+  addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
+  server.app.store.commit(sample);
+  assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
+  for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' }) : webkit.launch());
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
@@ -35,6 +42,20 @@ for (const engine of ['chromium', 'webkit']) {
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
+    for (const selector of ['.token-card', '.calm']) {
+      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+    }
+    const projectPicker = page.locator('[data-l-project] + .picker-trigger');
+    assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
+    await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
+    // Long project names must truncate without pushing the chevron out of the pill.
+    await page.evaluate(() => {
+      const select = document.querySelector('[data-l-project]');
+      select.options[0].textContent = 'Dlouhý název projektu pro kontrolu bezpečného odsazení';
+      select.dispatchEvent(new Event('change'));
+    });
+    assert.ok(await projectPicker.evaluate(el => el.scrollWidth <= el.clientWidth));
+    await page.evaluate(() => { const s = document.querySelector('[data-l-project]'); s.options[0].textContent = 'Bez projektu'; s.dispatchEvent(new Event('change')); });
     await page.locator('[data-action="period"] + .picker-trigger').click();
     await page.keyboard.press('End');
     await page.keyboard.press('Enter');
@@ -43,11 +64,25 @@ for (const engine of ['chromium', 'webkit']) {
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.picker-menu').count(), 0);
     await page.screenshot({ path: `dist/qa/${engine}-overview.png`, fullPage: true });
+    await page.goto(`${server.url}/#/agent/codex%3Aqa-layout`);
+    await page.locator('.gauges--sm .gauge').first().waitFor();
+    for (const width of [375, 900, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      assert.ok(await page.locator('.gauges--sm').evaluate(el => [...el.querySelectorAll('.gauge')].every(g => {
+        const dial = g.querySelector('.gauge-dial').getBoundingClientRect();
+        const value = g.querySelector('.gauge-value').getBoundingClientRect();
+        const label = g.querySelector('.gauge-label').getBoundingClientRect();
+        const sub = g.querySelector('.gauge-sub').getBoundingClientRect();
+        return value.top > dial.top + 16 && value.bottom < dial.bottom - 16 && label.top >= dial.bottom + 7 && sub.top >= label.bottom + 7;
+      })), `${engine} ${width} gauge safe zone`);
+    }
+    await page.locator('.gauges--sm').screenshot({ path: `dist/qa/${engine}-limits-safe-zone.png` });
     for (const route of ['agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'nastaveni']) {
       await page.goto(`${server.url}/#/${route}`);
       await page.waitForTimeout(250);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
+      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
     await page.locator('[data-welcome]').click();

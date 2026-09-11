@@ -70,3 +70,9 @@ První verze k reálnému testování.
 ## 0.1.0 — 2026-09-10
 
 - Klikatelný prototyp: přehled, seznam agentů, spotřeba, konektory; lokální čtení Claude Code a Codexu; ukázková data.
+# Opravy desktopu — 2026-09-11
+
+- Bílé plochy grafu tokenů, klidového stavu a nezařazených konverzací podle tokenu `--card`.
+- Bezpečné odsazení a ořez dlouhých názvů ve vlastních nabídkách; oddělené popisky limitových grafů.
+- Nativní ukládání klíčů bez argv, zákaz přesměrování Admin API, omezení SSE a ochrana poškozené databáze.
+- Regresní ověření v Chromiu/WebKitu a nativní Klíčence. Podmínky veřejné distribuce v `docs/SECURITY.md`.

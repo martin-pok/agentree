@@ -27,6 +27,7 @@ const SECURITY = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'X-Frame-Options': 'DENY',
+  'Cross-Origin-Resource-Policy': 'same-origin',
   'Content-Security-Policy':
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
@@ -52,7 +53,11 @@ export function createHttpServer(app, existingServer = null) {
   function broadcast(event, data) {
     if (!clients.size) return;
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const res of clients) res.write(msg);
+    for (const res of clients) {
+      // A stalled browser must not grow an unbounded transcript buffer.
+      if (res.writableLength > 1_000_000) { clients.delete(res); res.destroy(); }
+      else res.write(msg);
+    }
   }
 
   const listeners = {
@@ -82,6 +87,7 @@ export function createHttpServer(app, existingServer = null) {
   heartbeat.unref?.();
 
   function stream(req, res) {
+    if (clients.size >= 32) throw new HttpError(503, 'Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agentree.');
     res.writeHead(200, {
       ...SECURITY,
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -430,6 +436,9 @@ export function createHttpServer(app, existingServer = null) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
+    if (url.pathname.startsWith('/api/') && req.method === 'GET' && url.pathname !== '/api/extension/pair') {
+      if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
+    }
     if (url.pathname === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (url.pathname.startsWith('/api/')) {
       const route = routes.find(([method, re]) => method === req.method && re.test(url.pathname));
@@ -456,7 +465,7 @@ export function createHttpServer(app, existingServer = null) {
   server.on('request', (req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
-      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, req.url, err);
+      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, status);
       if (res.headersSent) {
         res.end();
         return;

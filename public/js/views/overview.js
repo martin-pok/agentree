@@ -56,7 +56,7 @@ function mount(el) {
         <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
         <div class="card tl-card" data-region="timeline"></div>
       </section>
-      <section data-enter style="--i:3" aria-labelledby="chart-h">
+      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
         <div class="sec-head"><h2 id="chart-h">Spotřeba tokenů</h2>
           <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
         </div>

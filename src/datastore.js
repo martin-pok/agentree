@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { readJson, writeJsonAtomic, randomToken, debounce } from './util.js';
+import fs from 'node:fs/promises';
+import { writeJsonAtomic, randomToken, debounce } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
 
@@ -65,7 +66,13 @@ export class DataStore {
   }
 
   async load() {
-    const raw = await readJson(this.file, null);
+    let raw = null;
+    try {
+      raw = JSON.parse(await fs.readFile(this.file, 'utf8'));
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid data root');
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw new Error('Data Agentree nelze bezpečně načíst. Původní soubor zůstal zachovaný; obnov jej ze zálohy nebo zkontroluj jeho oprávnění.');
+    }
     this.data = normalizeData(raw);
     await this.flush();
     return this.data;

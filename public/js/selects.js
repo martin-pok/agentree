@@ -95,7 +95,7 @@ function sync(select) {
   const button = controls.get(select);
   if (!button) return;
   const text = select.selectedOptions[0]?.textContent || 'Vybrat';
-  if (button.textContent !== text) button.textContent = text;
+  if (button.firstElementChild.textContent !== text) button.firstElementChild.textContent = text;
   button.disabled = select.disabled;
   const label = `${labelOf(select)}: ${text}`;
   if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
@@ -114,6 +114,9 @@ export function initSelects() {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'picker-trigger';
+        const label = document.createElement('span');
+        label.className = 'picker-label';
+        button.append(label);
         button.setAttribute('role', 'combobox');
         button.setAttribute('aria-haspopup', 'listbox');
         button.setAttribute('aria-expanded', 'false');

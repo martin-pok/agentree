@@ -6,7 +6,9 @@
 .picker-trigger[aria-expanded='true'] { border-color: var(--ink); box-shadow: 0 0 0 3px var(--line-2); }
 .picker-trigger:disabled { opacity: .5; cursor: not-allowed; }
 .select .picker-trigger { min-height: 36px; background: transparent; border-color: transparent; font-size: 14px; color: var(--mute); }
-.lselect .picker-trigger { min-height: 30px; padding: 0 2px; background: transparent; border: 0; border-radius: 6px; font-size: inherit; }
+.picker-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lselect .picker-trigger { min-height: 36px; max-width: 240px; padding: 0 16px 0 4px; gap: 12px; background: transparent; border: 0; border-radius: 18px; font-size: 13px; }
+.lselect:focus-within { box-shadow: inset 0 0 0 1px var(--ink); }
 .picker-menu { position: fixed; inset: auto; margin: 0; padding: 6px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); color: var(--ink); box-shadow: var(--shadow-lg); z-index: 10000; font: 400 14px/1.45 var(--f-body); animation: pop .16s var(--ease); }
 .picker-option { position: relative; padding: 10px 34px 10px 12px; border-radius: 10px; cursor: pointer; overflow-wrap: anywhere; }
 .picker-option:hover, .picker-option.is-highlighted { background: var(--paper); }

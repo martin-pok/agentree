@@ -24,9 +24,25 @@ Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'` | `src/projects.js#projectCsv` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
-## Známá rizika (přijatá pro v0.2.0)
+## Zpevnění desktopu — 2026-09-11
 
-- **Klíč v argv při ukládání do Klíčenky.** `security add-generic-password -w <klíč>` je na zlomek sekundy vidět ve výpisu procesů stejného uživatele. Řešení v roadmapě: nativní Keychain API v desktopové aplikaci.
+- API odmítá cizí Origin a cross-site metadata i při čtení a připojení SSE.
+  Cross-Origin-Resource-Policy je `same-origin`. Chybové logy nevypisují URL ani výjimky s možným obsahem dat.
+- SSE má nejvýše 32 klientů; pomalý klient s více než 1 MB neodeslaných dat se odpojí.
+- Admin API požadavky odmítají přesměrování ještě před odesláním klíče na jinou adresu.
+- Desktop používá nativní `SecItem` helper; hodnota klíče jde soukromou stdin rourou,
+  nikdy v argumentech procesu ani do dočasného souboru. Helper přijímá pouze dva známé typy klíčů.
+  CLI bez helperu nové klíče neukládá; bezpečně odmítne akci a nabídne desktop / proměnné prostředí.
+- Nečitelný či poškozený `data.json` zastaví načítání a zůstane beze změny místo přepsání výchozí databází.
+
+Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/updating-and-deleting-keychain-items),
+[odmítnutí přesměrování před únikem](https://developer.mozilla.org/docs/Web/API/Response/redirected).
+
+## Známé hranice a podmínky distribuce
+
+- **Lokální HTTP není izolace od jiných lokálních procesů.** Program běžící pod uživatelem může oslovit API, číst data a spustit povolené akce. Agentree proto není určeno pro nedůvěryhodné sdílené účty. Rozšíření s oprávněním k localhostu je rovněž privilegovaný klient; kontrola `chrome-extension://` sama neprokazuje konkrétní identitu rozšíření.
+- **Veřejný macOS release:** aktuální lokální build je ad-hoc podepsaný. Před distribucí klientům je nutný stabilní Developer ID podpis, notarizace a ověření čisté instalace/aktualizace na dalším Macu. Ad-hoc změna podpisu může znovu vyžádat souhlas Klíčenky.
+- **Licence zdrojů:** `package.json` zatím uvádí `UNLICENSED`. Vlastník musí před prezentací jako open-source zvolit licenci; zveřejnění na GitHubu samo licenci nenahrazuje.
 - **Data v `~/.agentree/data.json` nejsou šifrovaná** (práva 0600). Obsahují výdaje, upozornění a token, ne přepisy.
 - **Agent spuštěný z Agentree má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agentree/prompts` (0600) a výstup běhů v `~/.agentree/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
@@ -36,7 +52,7 @@ Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 ## Soukromí
 
 - Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
-- Obsah přepisů se nikam neukládá (jen v paměti, max. 400 položek na session); logy serveru neobsahují obsah zpráv.
+- Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agentree/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
 - Před případnou cloudovou verzí: end-to-end šifrování, opt-in po zdrojích, zásady zpracování údajů (GDPR), smlouvy se zpracovateli.
 
 ## Hlášení problému

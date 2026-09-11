@@ -283,7 +283,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .decision-title:hover { text-decoration: underline; text-underline-offset: 3px; }
 .decision-reason { margin: 0; font-size: 14px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .decision-actions { grid-column: 2; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.calm { display: flex; gap: 16px; padding: 20px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
+.calm { display: flex; gap: 16px; padding: 24px; background: var(--card); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
 .calm strong { display: block; font-size: 15px; }
 .calm p { margin: 4px 0 8px; font-size: 14px; color: var(--ink-2); }
 .calm-mark { width: 36px; height: 36px; border-radius: 50%; background: var(--teal-tint); color: var(--teal-ink); display: grid; place-items: center; flex: none; }
@@ -297,15 +297,14 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 
 .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .gauges--sm { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-.gauge { position: relative; display: grid; justify-items: center; text-align: center; }
-.gauge svg { width: 100%; max-width: 132px; aspect-ratio: 1; }
-.gauge--sm svg { max-width: 96px; }
-.gauge--lg svg { max-width: 212px; }
+.gauge { display: grid; justify-items: center; align-content: start; gap: 8px; min-width: 0; text-align: center; }
+.gauge-dial { position: relative; width: 100%; max-width: 132px; aspect-ratio: 1; }
+.gauge svg { width: 100%; height: 100%; }
+.gauge--sm .gauge-dial { max-width: 96px; }
+.gauge--lg .gauge-dial { max-width: 212px; }
 .gauge-track { fill: none; stroke: var(--line); stroke-width: 10; stroke-linecap: round; }
 .gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke .4s; }
-.gauge-center { position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 1; max-width: 132px; margin: 0 auto; display: grid; align-content: center; justify-items: center; padding: 0 16px; }
-.gauge--sm .gauge-center { max-width: 96px; }
-.gauge--lg .gauge-center { max-width: 212px; }
+.gauge-center { position: absolute; inset: 22%; display: grid; place-items: center; }
 .gauge-value { font: 400 22px/1 var(--f-display); letter-spacing: -.02em; }
 .gauge--sm .gauge-value { font-size: 16px; }
 .gauge--lg .gauge-value { font-size: 40px; }
@@ -313,9 +312,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .gauge-value--text { font-size: 16px; letter-spacing: 0; }
 .gauge--sm .gauge-value--text { font-size: 12px; }
 .gauge--lg .gauge-value--text { font-size: 26px; }
-.gauge-label { margin-top: 4px; font-size: 11px; line-height: 1.25; color: var(--mute); }
-.gauge--sm .gauge-label { font-size: 10px; }
-.gauge-sub { margin-top: -8px; font-size: 12px; color: var(--ink-2); }
+.gauge-label { font-size: 12px; line-height: 1.5; color: var(--mute); overflow-wrap: anywhere; }
+.gauge-sub { font-size: 12px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
+.token-card { padding: 24px; min-width: 0; }
 .gauge.is-reached .gauge-value { color: var(--velvet-ink); }
 .credit-chip { display: inline-flex; align-items: center; gap: 8px; margin: 16px 8px 0 0; height: 36px; padding: 0 14px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; text-decoration: none; }
 .credit-chip b { font-family: var(--f-mono); }
@@ -1056,7 +1055,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .pcard-stat b { font: 400 15px/1 var(--f-mono); color: var(--ink); margin-right: 2px; }
 .pcard-foot .discs { margin-left: auto; }
 .pcard-time { font-size: 12px; color: var(--mute); }
-.pcard--ghost { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); border-radius: var(--r-lg); align-content: start; }
+.pcard--ghost { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--r-lg); align-content: start; }
 .pcard--ghost::before, .pcard--ghost::after { display: none; }
 .pcard--ghost:hover { box-shadow: inset 0 0 0 1.5px var(--ink); }
 .pghost-mark { width: 32px; height: 32px; border-radius: 10px; background: var(--line-2); display: grid; place-items: center; color: var(--ink-2); }
