@@ -616,6 +616,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   }
 
   async function autostart(action) {
+    if (config.desktop) return { status: 422, error: 'Desktopovou aplikaci přidej v Nastavení systému → Obecné → Přihlašovací položky.' };
     if (config.openMode === 'off') return { status: 422, error: 'Automatické spouštění je dostupné jen na macOS.' };
     if (!dry) {
       try {
@@ -636,9 +637,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       extension: { path: EXTENSION_DIR, sites: WEB_SITES, token: datastore.data.ingestToken },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
-      nativeNotify: notifier.enabled,
+      nativeNotify: config.desktop || notifier.enabled,
+      desktop: config.desktop,
       autostart: {
-        supported: config.openMode !== 'off',
+        supported: !config.desktop && config.openMode !== 'off',
         installed: await isLaunchAgentInstalled(config.sourceHome),
         command: `"${process.execPath}" "${BIN_PATH}" install-agent`,
       },

@@ -31,6 +31,7 @@ function mount(el) {
         ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
+        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agentree</button>
         ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -264,7 +265,7 @@ function update() {
   fill(el, 'notifications', `
     ${head(ICON.bell, 'Kdy a jak tě upozornit', '', '<button class="btn btn--sm" type="button" data-action="test-alert">Poslat zkušební</button>')}
     ${switchRow({ key: 'native', label: 'Oznámení v macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Agentree běží.' : 'Na tomto systému nejsou dostupná.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
-    ${switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agentree otevřené na pozadí.', checked: n.browser })}
+    ${i.desktop ? '' : switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agentree otevřené na pozadí.', checked: n.browser })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: 'Agent potřebuje tvé rozhodnutí', desc: 'Povolení akce, otázka, schválení plánu nebo selhané spuštění.', checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: 'Docházející limit předplatného', desc: 'Při 80 %, 95 % a vyčerpání.', checked: n.limits })}
@@ -330,8 +331,8 @@ function update() {
   const auto = i.autostart || { supported: false };
   fill(el, 'system', `
     ${head(ICON.terminal, 'Spouštění po přihlášení',
-      'Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
-      auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? 'Zapnuto' : 'Vypnuto') : stateBadge('unavailable', 'Jen macOS'))}
+      i.desktop ? 'Zavřením okna zůstane Agentree na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agentree v Nastavení systému → Obecné → Přihlašovací položky.' : 'Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
+      i.desktop ? stateBadge('connected', 'Aplikace pro Mac') : auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? 'Zapnuto' : 'Vypnuto') : stateBadge('unavailable', 'Jen macOS'))}
     ${auto.supported ? `<div class="set-actions">${auto.installed
       ? '<button class="btn" type="button" data-action="autostart-uninstall">Vypnout spouštění po přihlášení</button>'
       : '<button class="btn btn--primary" type="button" data-action="autostart-install">Spouštět po přihlášení</button>'}</div>
@@ -347,12 +348,12 @@ function update() {
   const installCmd = `npm install -g ./agentree-${state.version}.tgz`;
   fill(el, 'share', `
     ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agentree nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
-    <ol class="steps">
+    ${i.desktop ? '<p class="set-desc">Předej instalační ZIP Agentree pro Mac. Příjemce jej rozbalí a přesune Agentree do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>' : `<ol class="steps">
       <li>Ve složce Agentree vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Pošli soubor <code>dist/agentree-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Aplikaci otevře příkazem <code>agentree --open</code>. Průvodce ho provede propojením.</li>
     </ol>
-    <p class="small muted">Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.</p>`);
+    <p class="small muted">Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.</p>`}`);
 }
 
 export default {

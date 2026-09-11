@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dirs = ['bin', 'src', 'public/js', 'extension', 'scripts', 'test'];
+const dirs = ['bin', 'src', 'public/js', 'extension', 'scripts', 'test', 'desktop'];
 const files = [];
 
 function walk(dir) {

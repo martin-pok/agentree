@@ -5,6 +5,7 @@ import { normalizeProjects } from './projects.js';
 
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
+  welcomeCompleted: false,
   notifications: {
     needsInput: true,
     limits: true,
@@ -33,6 +34,7 @@ export function normalizeData(raw) {
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       onboardingDismissed: s.onboardingDismissed === true,
+      welcomeCompleted: s.welcomeCompleted === true,
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
     },
     projects: normalizeProjects(d.projects),

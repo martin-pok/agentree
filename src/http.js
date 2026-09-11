@@ -20,6 +20,7 @@ const TYPES = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
 };
 
 const SECURITY = {
@@ -27,7 +28,7 @@ const SECURITY = {
   'Referrer-Policy': 'no-referrer',
   'X-Frame-Options': 'DENY',
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
 class HttpError extends Error {
@@ -38,7 +39,7 @@ class HttpError extends Error {
   }
 }
 
-export function createHttpServer(app) {
+export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
   const clients = new Set();
   let server;
@@ -175,7 +176,7 @@ export function createHttpServer(app) {
   /* ---------- Trasy ---------- */
 
   const routes = [
-    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready })],
+    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
     ['GET', /^\/api\/state$/, () => app.state()],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
@@ -272,6 +273,7 @@ export function createHttpServer(app) {
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
+      if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
@@ -450,7 +452,8 @@ export function createHttpServer(app) {
     return serveStatic(req, res, url);
   }
 
-  server = http.createServer((req, res) => {
+  server = existingServer || http.createServer();
+  server.on('request', (req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
       if (status >= 500) console.error('Agentree: chyba požadavku', req.method, req.url, err);

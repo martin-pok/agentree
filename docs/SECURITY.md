@@ -35,7 +35,7 @@ Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 
 ## Soukromí
 
-- Žádná telemetrie, žádná analytika, žádná síťová komunikace kromě: Google Fonts (dashboard), Admin API (jen s klíčem uživatele), Ollama na `127.0.0.1`.
+- Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
 - Obsah přepisů se nikam neukládá (jen v paměti, max. 400 položek na session); logy serveru neobsahují obsah zpráv.
 - Před případnou cloudovou verzí: end-to-end šifrování, opt-in po zdrojích, zásady zpracování údajů (GDPR), smlouvy se zpracovateli.
 

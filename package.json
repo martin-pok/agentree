@@ -1,6 +1,6 @@
 {
   "name": "agentree",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Agentree — všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
   "type": "module",
@@ -20,6 +20,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "build:mac": "mkdir -p dist && node scripts/build-macos.mjs",
     "start": "node bin/agentree.mjs",
     "dev": "node --watch-path=src --watch-path=bin bin/agentree.mjs",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.mjs\"",

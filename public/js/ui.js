@@ -245,7 +245,7 @@ function markErrors(form, errors) {
     field.insertAdjacentHTML('afterend', `<span class="field-error" id="${id}">${esc(msg)}</span>`);
     first = first || field;
   }
-  first?.focus();
+  (first?.classList.contains('picker-source') ? first.nextElementSibling : first)?.focus();
 }
 
 export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false }) {
@@ -312,7 +312,7 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
         submit.classList.remove('is-busy');
       }
     });
-    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body select, .modal-body textarea') || submit).focus());
+    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || submit).focus());
   });
 }
 

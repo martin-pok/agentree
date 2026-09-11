@@ -4,6 +4,18 @@ Agentree je dashboard všech AI agentů na tvém Macu. Běží lokálně — tvo
 
 ## Požadavky
 
+### Desktopový balíček pro Mac
+
+`Agentree-0.6.0-macOS-arm64.zip` je samostatná aplikace pro Apple Silicon a macOS 14+. Rozbal a přesuň Agentree.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agentree` zůstanou zachované.
+
+Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agentree → Ukončit Agentree** ukončí i lokální službu a agenty spuštěné z Agentree na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
+
+První spuštění zobrazí čtyřkrokový průvodce. Vrátíš se k němu v Nastavení nebo Nápovědě. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
+
+Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
+
+### Příkazová řádka
+
 - macOS (Linux a Windows: dashboard a projekty fungují, otevírání aplikací a notifikace ne)
 - [Node.js](https://nodejs.org) 22.13 nebo novější (`node --version`)
 
