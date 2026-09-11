@@ -48,6 +48,35 @@ for (const engine of ['chromium', 'webkit']) {
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
+    await projectPicker.click();
+    const pickerMenu = page.locator('.picker-menu');
+    await pickerMenu.waitFor();
+    assert.equal(await projectPicker.evaluate(el => getComputedStyle(el).boxShadow), 'none', `${engine} otevřený picker nekreslí druhý obrys`);
+    const [sourceBox, menuBox] = await Promise.all([projectPicker.boundingBox(), pickerMenu.boundingBox()]);
+    assert.ok(menuBox.y >= sourceBox.y + sourceBox.height + 6, `${engine} nabídka začíná až pod zdrojem`);
+    assert.equal(await pickerMenu.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(18, r.height / 2))?.closest('.picker-menu') === el;
+    }), true, `${engine} nabídka je v horní vrstvě`);
+    await page.screenshot({ path: `dist/qa/${engine}-project-picker-open.png` });
+    await page.evaluate(() => {
+      const chart = document.querySelector('[data-region="chart"]');
+      window.__qaChartMutations = 0;
+      new MutationObserver((entries) => { window.__qaChartMutations += entries.length; }).observe(chart, { childList: true, subtree: true });
+    });
+    for (let i = 0; i < 12; i++) {
+      sample.tokens.input += 1;
+      sample.hourly[new Date().toISOString().slice(0, 13)] = (sample.hourly[new Date().toISOString().slice(0, 13)] || 0) + 1;
+      sample.lastAt = Date.now();
+      server.app.store.commit(sample);
+      await page.waitForTimeout(35);
+    }
+    await page.waitForTimeout(650);
+    assert.equal(await pickerMenu.count(), 1, `${engine} živá data nezavřou otevřený picker`);
+    assert.equal(await projectPicker.getAttribute('aria-expanded'), 'true');
+    assert.ok(await page.evaluate(() => window.__qaChartMutations <= 4), `${engine} graf se nepřekresluje při každé živé události`);
+    await page.keyboard.press('Escape');
+    await pickerMenu.waitFor({ state: 'detached' });
     // Long project names must truncate without pushing the chevron out of the pill.
     await page.evaluate(() => {
       const select = document.querySelector('[data-l-project]');
@@ -104,7 +133,7 @@ for (const engine of ['chromium', 'webkit']) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker keyboard and escape', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     console.log(JSON.stringify({ engine, errors, welcome: await page.locator('.welcome-dialog').textContent().catch(() => 'closed') }));
