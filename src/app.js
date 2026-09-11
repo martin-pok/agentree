@@ -10,7 +10,8 @@ import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, SERVICES, KINDS, CURRENCIES } from './spend.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
-import { run, debounce, clip, HOUR } from './util.js';
+import { run, debounce, clip, uid, HOUR } from './util.js';
+import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
 import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector } from './connectors/claude-code.js';
 import { createCodexConnector } from './connectors/codex.js';
@@ -25,10 +26,10 @@ import { migrateLegacyData } from './migrate.js';
 import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
 import { createLocalChat } from './local-chat.js';
-import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES } from './launcher.js';
+import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
-import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv } from './projects.js';
+import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agentree.mjs');
@@ -49,7 +50,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   const store = new Store({ config, datastore });
   const secrets = createSecrets({ keychain: config.keychain });
   const notifier = createNotifier({ enabled: config.nativeNotify });
-  const alerts = new AlertEngine({ store, datastore, notifier });
+  const alerts = new AlertEngine({
+    store,
+    datastore,
+    notifier,
+    projectNotify: (s) => (s.projectId ? datastore.data.projects.items.find((p) => p.id === s.projectId)?.settings.notify : null) || 'all',
+  });
   const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome };
   const log = (...args) => { if (!config.quiet) console.log(...args); };
   const dry = config.openMode === 'dry';
@@ -92,11 +98,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     if (run.projectId && projects().assignments[s.id] === undefined) assignToProject([s.id], run.projectId);
   }
   const projects = () => datastore.data.projects;
+  const worktreeRoot = path.join(config.dataDir, 'worktrees');
+  const mediaRoot = path.join(config.dataDir, 'media');
 
   let apps = {};
   store.decorate = (summary) => {
     summary.open = openTargets(summary, apps);
-    Object.assign(summary, resolveProject(summary, projects()));
+    Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
 
@@ -207,7 +215,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     }
     for (const [sid, snap] of Object.entries(pd.snapshots)) {
       if (live.has(sid)) continue;
-      const next = resolveProject(snap, pd).projectId;
+      const next = resolveProject(snap, pd, { worktreeRoot }).projectId;
       if (next) snap.projectId = next;
       else delete pd.snapshots[sid];
     }
@@ -244,9 +252,218 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   }
 
   function removeProject(id) {
-    if (!deleteProject(projects(), id)) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!/^[\w-]{1,64}$/.test(id) || !deleteProject(projects(), id)) return { status: 404, error: 'Projekt neexistuje.' };
+    fsp.rm(path.join(mediaRoot, id), { recursive: true, force: true }).catch(() => {});
     projectsChanged();
     return { ok: true };
+  }
+
+  const findProject = (id) => projects().items.find((p) => p.id === id) || null;
+  const repoOf = (p) => p.settings.repo || p.folders[0] || '';
+
+  /* Vzhled projektu: vlastní pozadí karty a logo (PNG, JPG, WebP — obsah se ověřuje podle hlavičky souboru, ne podle přípony). */
+
+  const MEDIA_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
+  const MEDIA_MAX = { cover: 4_000_000, logo: 1_500_000 };
+
+  function sniffImage(buf) {
+    if (buf.length > 8 && buf[0] === 0x89 && buf.toString('latin1', 1, 4) === 'PNG') return 'png';
+    if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg';
+    if (buf.length > 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+    return null;
+  }
+
+  async function setProjectMedia(id, kind, buf) {
+    const p = findProject(id);
+    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!buf.length) return { status: 422, error: 'Soubor je prázdný.' };
+    if (buf.length > MEDIA_MAX[kind]) return { status: 413, error: `Obrázek je příliš velký (nejvýš ${MEDIA_MAX[kind] / 1e6} MB).` };
+    const ext = sniffImage(buf);
+    if (!ext) return { status: 415, error: 'Nahraj obrázek ve formátu PNG, JPG nebo WebP.' };
+    const dir = path.join(mediaRoot, p.id);
+    await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
+    const file = `${kind}-${Date.now()}.${ext}`;
+    await fsp.writeFile(path.join(dir, file), buf, { mode: 0o600 });
+    const old = p[kind]?.file;
+    p[kind] = { file };
+    if (old && old !== file) await fsp.rm(path.join(dir, old), { force: true });
+    p.updatedAt = Date.now();
+    projectsChanged();
+    return { ok: true, project: p, projects: projectsPayload(projects()) };
+  }
+
+  async function removeProjectMedia(id, kind) {
+    const p = findProject(id);
+    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: 'Projekt neexistuje.' };
+    const old = p[kind]?.file;
+    if (old) await fsp.rm(path.join(mediaRoot, p.id, old), { force: true });
+    p[kind] = kind === 'cover' ? { preset: COVER_PRESETS[0] } : null;
+    p.updatedAt = Date.now();
+    projectsChanged();
+    return { ok: true, project: p, projects: projectsPayload(projects()) };
+  }
+
+  async function readProjectMedia(id, kind) {
+    const p = findProject(id);
+    const file = p?.[kind]?.file;
+    if (!file || !MEDIA_FILE.test(file) || !file.startsWith(`${kind}-`)) return { status: 404, error: 'Obrázek neexistuje.' };
+    const body = await fsp.readFile(path.join(mediaRoot, p.id, file)).catch(() => null);
+    if (!body) return { status: 404, error: 'Obrázek neexistuje.' };
+    return { ok: true, type: MEDIA_TYPES[file.split('.').pop()], body };
+  }
+
+  /* Git a tým agentů v projektu. */
+
+  async function projectGit(id) {
+    const p = findProject(id);
+    if (!p) return { status: 404, error: 'Projekt neexistuje.' };
+    const dir = repoOf(p);
+    const repo = dir ? await repoInfo(dir) : null;
+    const active = p.work.filter((w) => w.status === 'active');
+    const work = await Promise.all(active.slice(-12).map(async (w) => {
+      const s = w.sessionId ? store.summary(w.sessionId) : null;
+      const r = w.runId ? runs.get(w.runId) : null;
+      return {
+        ...w,
+        diff: await workDiff({ dir: w.path, base: w.base }).catch(() => null),
+        session: s ? { id: s.id, status: s.status, reason: s.reason, title: s.title, lastAt: s.lastAt } : null,
+        run: r ? { id: r.id, status: r.status, error: r.error } : null,
+      };
+    }));
+    return { ok: true, repo, repoPath: dir, work, history: p.work.filter((w) => w.status !== 'active').slice(-10).reverse() };
+  }
+
+  function composePrompt(p, prompt, attachBrief) {
+    const parts = [prompt.trim()];
+    if (p.settings.instructions.trim()) parts.push(`---\nPravidla projektu ${p.name}:\n${p.settings.instructions.trim()}`);
+    if (attachBrief && p.notes.trim()) parts.push(`---\nBrief projektu ${p.name}:\n${p.notes.trim()}`);
+    return parts.join('\n\n');
+  }
+
+  const AGENT_SHORT = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen' };
+
+  async function launchTeam(id, input) {
+    const p = findProject(id);
+    if (!p) return { status: 404, error: 'Projekt neexistuje.' };
+    const b = input && typeof input === 'object' ? input : {};
+    const prompt = typeof b.prompt === 'string' ? b.prompt.trim() : '';
+    if (!prompt) return { status: 422, error: 'Napiš, co mají agenti udělat.', field: 'prompt' };
+    const agents = Array.isArray(b.agents) ? [...new Set(b.agents)] : p.settings.agents;
+    if (!agents.length || agents.length > 4 || agents.some((a) => !TEAM_AGENTS.includes(a))) return { status: 422, error: 'Vyber 1 až 4 agenty.', field: 'agents' };
+    const targets = new Map(launchPayload().targets.map((t) => [t.id, t]));
+    const missing = agents.filter((a) => !targets.has(a));
+    if (missing.length) return { status: 422, error: `Na tomto Macu není k dispozici: ${missing.join(', ')}. Nainstaluj ho nebo ho z týmu odeber.`, field: 'agents' };
+    const isolate = typeof b.isolate === 'boolean' ? b.isolate : p.settings.isolate;
+    const attachBrief = typeof b.attachBrief === 'boolean' ? b.attachBrief : p.settings.attachBrief;
+    const text = composePrompt(p, prompt, attachBrief);
+    if (text.length > PROMPT_MAX) return { status: 422, error: `Zadání s pravidly a briefem je delší než ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, field: 'prompt' };
+    const repoDir = repoOf(p);
+    if (!repoDir) return { status: 422, error: 'Nastav projektu složku repozitáře (Nastavení projektu → Repozitář).', field: 'repo' };
+    let info = null;
+    let base = '';
+    if (isolate) {
+      info = await repoInfo(repoDir);
+      if (!info.isRepo) return { status: 422, error: 'Složka projektu není Git repozitář. Vyber repozitář, nebo vypni „Každý agent ve vlastní větvi“.', field: 'repo' };
+      base = p.settings.baseBranch || info.branch;
+      if (!base) return { status: 422, error: 'Repozitář není na žádné větvi. Přepni ho na větev (např. main) nebo ji nastav v projektu.', field: 'repo' };
+    }
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const stamp = `${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const slug = slugify(prompt, 20);
+    const results = [];
+    // Postupně: `git worktree add` si zamyká repozitář, souběh by zbytečně selhával.
+    for (const agent of agents) {
+      const t = targets.get(agent);
+      const wanted = ['terminal', 'background'].includes(b.mode) ? b.mode : p.settings.mode;
+      const mode = t.modes.includes(wanted) ? wanted : t.modes.includes('terminal') ? 'terminal' : t.modes[0];
+      let cwd = info?.root || repoDir;
+      let work = null;
+      if (isolate) {
+        const branch = `agentree/${AGENT_SHORT[agent]}-${slug}-${stamp}`;
+        const dir = path.join(worktreeRoot, p.id, `${AGENT_SHORT[agent]}-${slug}-${stamp}`);
+        if (!dry) {
+          const wt = await createWorktree({ repo: info.root, base, branch, dir });
+          if (!wt.ok) {
+            results.push({ agent, ok: false, error: wt.error });
+            continue;
+          }
+          cwd = dir;
+        }
+        work = { branch, path: dir, base };
+      }
+      const r = await launch({ agent, mode, prompt: text, cwd, projectId: p.id, permission: p.settings.permission, sandbox: p.settings.sandbox, skipProjectRules: true });
+      if (r.status) {
+        if (work && !dry) await discardWork({ repo: info.root, dir: work.path, branch: work.branch });
+        results.push({ agent, ok: false, error: r.error });
+        continue;
+      }
+      if (work) {
+        work = { id: uid(), agent, label: r.label, ...work, runId: r.run?.id || null, sessionId: r.sessionId || null, prompt: clip(prompt, 240), status: 'active', createdAt: Date.now(), closedAt: null };
+        if (!dry) p.work.push(work);
+      }
+      results.push({ agent, ok: true, label: r.label, mode, kind: r.kind, sessionId: r.sessionId, run: r.run, work, ...(dry ? { dry: true, plan: r.plan } : {}) });
+    }
+    if (p.work.length > 60) p.work.splice(0, p.work.length - 60);
+    projectsChanged();
+    const ok = results.filter((x) => x.ok).length;
+    if (!ok) return { status: 502, error: results.map((x) => `${x.agent}: ${x.error}`).join(' · ') };
+    return { ok: true, results, started: ok, failed: results.length - ok, ...(dry ? { dry: true } : {}) };
+  }
+
+  async function projectWorkAction(id, workId, action) {
+    const p = findProject(id);
+    const w = p?.work.find((x) => x.id === workId && x.status === 'active');
+    if (!w) return { status: 404, error: 'Pracovní větev nenalezena.' };
+    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agentree — uprav ji ručně.' };
+    const running = (w.runId && ['running', 'stopping'].includes(runs.get(w.runId)?.status)) || (w.sessionId && store.summary(w.sessionId)?.status === 'working');
+    if (running) return { status: 409, error: 'Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.' };
+    if (dry) return { ok: true, dry: true };
+    const info = await repoInfo(repoOf(p));
+    if (!info.isRepo) return { status: 422, error: 'Repozitář projektu není dostupný.' };
+    let r;
+    if (action === 'accept') {
+      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agentree: ${w.label || w.agent} — ${clip(w.prompt, 72)}` });
+      if (r.ok) await cleanupWork({ repo: info.root, dir: w.path, branch: w.branch });
+    } else {
+      r = await discardWork({ repo: info.root, dir: w.path, branch: w.branch });
+    }
+    if (!r.ok) return { status: r.conflict ? 409 : 422, error: r.error };
+    w.status = action === 'accept' ? 'accepted' : 'discarded';
+    w.closedAt = Date.now();
+    projectsChanged();
+    return { ok: true, merged: Boolean(r.merged), nothing: Boolean(r.nothing) };
+  }
+
+  // Měsíční rozpočet tokenů projektu: upozornění při 80 % a 100 %.
+  function projectMonthTokens(pid, now = Date.now()) {
+    const month = new Date(now).toISOString().slice(0, 7);
+    let sum = 0;
+    for (const s of store.list(now)) {
+      if (s.projectId !== pid) continue;
+      for (const [k, v] of Object.entries(s.hourly || {})) if (k.startsWith(month)) sum += v;
+    }
+    return sum;
+  }
+
+  function checkProjectBudgets(now = Date.now()) {
+    if (!datastore.data.settings.notifications.budget) return;
+    const month = new Date(now).toISOString().slice(0, 7);
+    for (const p of projects().items) {
+      const budget = p.settings.tokenBudget;
+      if (!budget || p.archived) continue;
+      const used = projectMonthTokens(p.id, now);
+      const pct = (used / budget) * 100;
+      const hit = [100, 80].find((t) => pct >= t);
+      if (!hit) continue;
+      alerts.raise({
+        key: `project_budget:${p.id}:${month}:${hit}`,
+        level: hit === 100 ? 'critical' : 'warning',
+        kind: 'budget',
+        title: hit === 100 ? `Projekt ${p.name}: rozpočet tokenů vyčerpán` : `Projekt ${p.name}: ${Math.round(pct)} % rozpočtu tokenů`,
+        body: `${used.toLocaleString('cs-CZ')} z ${budget.toLocaleString('cs-CZ')} tokenů tento měsíc.`,
+      });
+    }
   }
 
   function assignToProject(sessionIds, projectId) {
@@ -288,9 +505,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   const runsPayload = () => runs.list().map(({ logFile, ...r }) => r);
 
   async function launch(input) {
-    const body = input && typeof input === 'object' ? input : {};
+    const body = input && typeof input === 'object' ? { ...input } : {};
     const projectId = typeof body.projectId === 'string' && body.projectId ? body.projectId : null;
-    if (projectId && !projects().items.some((p) => p.id === projectId)) return { status: 422, error: 'Projekt neexistuje.', field: 'projectId' };
+    const project = projectId ? findProject(projectId) : null;
+    if (projectId && !project) return { status: 422, error: 'Projekt neexistuje.', field: 'projectId' };
+    // Pravidla projektu jdou s každým zadáním z projektu (tým je skládá sám).
+    if (project && !body.skipProjectRules && typeof body.prompt === 'string' && body.prompt.trim() && project.settings.instructions.trim()) {
+      body.prompt = `${body.prompt.trim()}\n\n---\nPravidla projektu ${project.name}:\n${project.settings.instructions.trim()}`;
+    }
     const uuid = crypto.randomUUID();
     const promptDir = path.join(config.dataDir, 'prompts');
     const r = await planLaunch(body, launchEnv, { promptFile: promptFilePath(promptDir, uuid), sessionUuid: uuid });
@@ -344,6 +566,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       if (r.agent !== 'codex' || r.sessionId || r.cwd !== summary.cwd) continue;
       if (summary.startedAt < r.startedAt - 10000 || summary.startedAt > r.startedAt + 120000) continue;
       runs.update(r.id, { sessionId: summary.id });
+      for (const p of projects().items) {
+        for (const w of p.work) if (w.runId === r.id && !w.sessionId) { w.sessionId = summary.id; datastore.save(); }
+      }
       if (r.projectId && projects().assignments[summary.id] === undefined) assignToProject([summary.id], r.projectId);
       break;
     }
@@ -465,6 +690,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
     every(() => store.reevaluate(), 5000);
     every(() => alerts.checkLimitResets(), 20000);
+    every(() => checkProjectBudgets(), 60000);
     every(async () => {
       for (const c of list) if (c.kind === 'local' && c.id !== 'processes' && c.id !== 'cursor') await c.scan();
     }, config.scanIntervalMs);
@@ -490,6 +716,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
+    setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart,
   };
 }

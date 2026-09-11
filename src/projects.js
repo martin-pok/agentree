@@ -1,12 +1,76 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { uid, hourKey, DAY } from './util.js';
+import { isSafeRef } from './git.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
 export const PROJECT_COLORS = ['#C2335A', '#22A38C', '#C99A3E', '#4285F4', '#8250DF', '#D97757', '#1F8A96', '#16141D'];
-export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000 };
+export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000, instructions: 4000 };
 export const SNAPSHOT_MAX = 3000;
+// Abstraktní pozadí karet (CSS v public/styles.css, třída .cover--<preset>).
+export const COVER_PRESETS = ['aurora', 'dune', 'noir', 'lagoon', 'ember', 'orchid', 'graphite', 'sage'];
+export const NOTIFY_MODES = ['all', 'decisions', 'mute'];
+export const TEAM_AGENTS = ['claude-code', 'codex', 'gemini-cli', 'qwen-code'];
+export const MEDIA_FILE = /^(cover|logo)-\d{10,16}\.(png|jpg|webp)$/;
+export const DEFAULT_PROJECT_SETTINGS = {
+  repo: '',              // složka Git repozitáře, na kterém agenti pracují
+  baseBranch: '',        // výchozí větev (prázdné = aktuální větev repozitáře)
+  isolate: true,         // každý agent ve vlastní větvi a pracovní kopii
+  agents: ['claude-code'],
+  mode: 'background',
+  permission: 'plan',
+  sandbox: 'read-only',
+  instructions: '',      // pravidla připojená ke každému zadání z projektu
+  attachBrief: true,
+  notify: 'all',
+  tokenBudget: 0,        // měsíční rozpočet tokenů (0 = bez rozpočtu)
+};
+
+const bool = (v, d) => (typeof v === 'boolean' ? v : d);
+
+export function normalizeSettings(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const d = DEFAULT_PROJECT_SETTINGS;
+  const agents = Array.isArray(r.agents) ? [...new Set(r.agents.filter((a) => TEAM_AGENTS.includes(a)))].slice(0, 4) : d.agents;
+  return {
+    repo: typeof r.repo === 'string' && path.isAbsolute(r.repo) ? r.repo : '',
+    baseBranch: isSafeRef(r.baseBranch) ? r.baseBranch : '',
+    isolate: bool(r.isolate, d.isolate),
+    agents: agents.length ? agents : d.agents,
+    mode: ['terminal', 'background'].includes(r.mode) ? r.mode : d.mode,
+    permission: ['plan', 'acceptEdits'].includes(r.permission) ? r.permission : d.permission,
+    sandbox: ['read-only', 'workspace-write'].includes(r.sandbox) ? r.sandbox : d.sandbox,
+    instructions: typeof r.instructions === 'string' ? r.instructions.slice(0, LIMITS.instructions) : '',
+    attachBrief: bool(r.attachBrief, d.attachBrief),
+    notify: NOTIFY_MODES.includes(r.notify) ? r.notify : d.notify,
+    tokenBudget: Number.isInteger(r.tokenBudget) && r.tokenBudget >= 0 && r.tokenBudget <= 1e11 ? r.tokenBudget : 0,
+  };
+}
+
+const normalizeCover = (c, i) => (c && MEDIA_FILE.test(c.file || '') && c.file.startsWith('cover-') ? { file: c.file } : { preset: COVER_PRESETS.includes(c?.preset) ? c.preset : COVER_PRESETS[i % COVER_PRESETS.length] });
+const normalizeLogo = (l) => (l && MEDIA_FILE.test(l.file || '') && l.file.startsWith('logo-') ? { file: l.file } : null);
+
+// Pracovní větve agentů spuštěných z projektu (worktree).
+export function normalizeWork(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter((w) => w && typeof w.id === 'string' && isSafeRef(w.branch) && isSafeRef(w.base) && typeof w.path === 'string' && path.isAbsolute(w.path))
+    .map((w) => ({
+      id: w.id,
+      agent: TEAM_AGENTS.includes(w.agent) ? w.agent : 'claude-code',
+      label: typeof w.label === 'string' ? w.label.slice(0, 40) : '',
+      branch: w.branch,
+      base: w.base,
+      path: w.path,
+      runId: typeof w.runId === 'string' ? w.runId : null,
+      sessionId: typeof w.sessionId === 'string' ? w.sessionId.slice(0, 200) : null,
+      prompt: typeof w.prompt === 'string' ? w.prompt.slice(0, 240) : '',
+      status: ['active', 'accepted', 'discarded'].includes(w.status) ? w.status : 'active',
+      createdAt: Number(w.createdAt) || Date.now(),
+      closedAt: Number(w.closedAt) || null,
+    }))
+    .slice(-60);
+}
 // Prázdný řetězec v přiřazení = konverzace je záměrně mimo projekty (přebije automatické pravidlo složky).
 export const NO_PROJECT = '';
 
@@ -38,8 +102,12 @@ export function normalizeProjects(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   const now = Date.now();
   const items = (Array.isArray(r.items) ? r.items : [])
-    .filter((p) => p && typeof p.id === 'string' && typeof p.name === 'string' && p.name.trim())
-    .map((p) => ({
+    .filter((p) => p && typeof p.id === 'string' && /^[\w-]{1,64}$/.test(p.id) && typeof p.name === 'string' && p.name.trim())
+    .map((p, i) => ({
+      cover: normalizeCover(p.cover, i),
+      logo: normalizeLogo(p.logo),
+      settings: normalizeSettings(p.settings),
+      work: normalizeWork(p.work),
       id: p.id,
       name: p.name.replace(/\s+/g, ' ').trim().slice(0, LIMITS.name),
       color: PROJECT_COLORS.includes(p.color) ? p.color : PROJECT_COLORS[0],
@@ -79,8 +147,20 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
   const current = id ? items.find((p) => p.id === id) : null;
   if (id && !current) return { ok: false, status: 404, errors: {}, error: 'Projekt neexistuje.' };
   const next = current
-    ? { ...current, folders: [...current.folders] }
-    : { id: uid(), name: '', color: nextColor(items), description: '', notes: '', folders: [], archived: false, createdAt: now, updatedAt: now };
+    ? { ...current, folders: [...current.folders], settings: { ...current.settings } }
+    : {
+      id: uid(), name: '', color: nextColor(items), description: '', notes: '', folders: [], archived: false, createdAt: now, updatedAt: now,
+      cover: { preset: COVER_PRESETS[items.length % COVER_PRESETS.length] }, logo: null, settings: { ...DEFAULT_PROJECT_SETTINGS }, work: [],
+    };
+  if (body.cover !== undefined) {
+    if (body.cover && COVER_PRESETS.includes(body.cover.preset)) next.cover = { preset: body.cover.preset };
+    else errors.cover = 'Vyber pozadí z nabídky.';
+  }
+  if (body.settings !== undefined) {
+    const r = validateSettings(body.settings, next.settings);
+    Object.assign(errors, r.errors);
+    next.settings = r.value;
+  }
 
   if (!current || body.name !== undefined) {
     const name = typeof body.name === 'string' ? body.name.replace(/\s+/g, ' ').trim() : '';
@@ -128,14 +208,71 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
   return { ok: true, value: next };
 }
 
-export function resolveProject(summary, { items, assignments }) {
+export function validateSettings(input, current = DEFAULT_PROJECT_SETTINGS) {
+  const b = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const v = { ...current };
+  const errors = {};
+  if (b.repo !== undefined) {
+    const repo = typeof b.repo === 'string' ? b.repo.trim() : null;
+    if (repo === '') v.repo = '';
+    else if (!repo || !path.isAbsolute(repo) || /[\n\r\0]/.test(repo)) errors['settings.repo'] = 'Cesta k repozitáři musí začínat lomítkem.';
+    else {
+      let st = null;
+      try { st = fs.statSync(repo); } catch { /* neexistuje */ }
+      if (!st?.isDirectory()) errors['settings.repo'] = 'Složka repozitáře neexistuje.';
+      else v.repo = path.resolve(repo);
+    }
+  }
+  if (b.baseBranch !== undefined) {
+    if (b.baseBranch === '') v.baseBranch = '';
+    else if (isSafeRef(b.baseBranch)) v.baseBranch = b.baseBranch;
+    else errors['settings.baseBranch'] = 'Neplatný název větve.';
+  }
+  for (const k of ['isolate', 'attachBrief']) {
+    if (b[k] === undefined) continue;
+    if (typeof b[k] === 'boolean') v[k] = b[k];
+    else errors[`settings.${k}`] = 'Neplatná hodnota.';
+  }
+  if (b.agents !== undefined) {
+    const list = Array.isArray(b.agents) ? [...new Set(b.agents)] : null;
+    if (!list || !list.length || list.length > 4 || list.some((a) => !TEAM_AGENTS.includes(a))) errors['settings.agents'] = 'Vyber 1 až 4 agenty.';
+    else v.agents = list;
+  }
+  const oneOf = (k, allowed, msg) => {
+    if (b[k] === undefined) return;
+    if (allowed.includes(b[k])) v[k] = b[k];
+    else errors[`settings.${k}`] = msg;
+  };
+  oneOf('mode', ['terminal', 'background'], 'Neplatný režim spuštění.');
+  oneOf('permission', ['plan', 'acceptEdits'], 'Neplatné oprávnění.');
+  oneOf('sandbox', ['read-only', 'workspace-write'], 'Neplatný sandbox.');
+  oneOf('notify', NOTIFY_MODES, 'Neplatné nastavení upozornění.');
+  if (b.instructions !== undefined) {
+    if (typeof b.instructions !== 'string' || b.instructions.length > LIMITS.instructions) errors['settings.instructions'] = `Pravidla mohou mít nejvýš ${LIMITS.instructions} znaků.`;
+    else v.instructions = b.instructions;
+  }
+  if (b.tokenBudget !== undefined) {
+    const n = Number(b.tokenBudget);
+    if (!Number.isInteger(n) || n < 0 || n > 1e11) errors['settings.tokenBudget'] = 'Rozpočet musí být celé nezáporné číslo.';
+    else v.tokenBudget = n;
+  }
+  return { value: v, errors };
+}
+
+export function resolveProject(summary, { items, assignments }, { worktreeRoot = '' } = {}) {
   const manual = assignments[summary.id];
   if (manual !== undefined) return manual === NO_PROJECT ? { projectId: null, projectSource: 'none' } : { projectId: manual, projectSource: 'manual' };
   const cwd = typeof summary.cwd === 'string' ? summary.cwd : '';
   if (cwd) {
+    // Pracovní kopie agentů spuštěných z projektu leží v <worktreeRoot>/<id projektu>/…
+    if (worktreeRoot && cwd.startsWith(worktreeRoot + path.sep)) {
+      const pid = cwd.slice(worktreeRoot.length + 1).split(path.sep)[0];
+      if (items.some((p) => p.id === pid)) return { projectId: pid, projectSource: 'folder' };
+    }
     let best = null;
     for (const p of items) {
-      for (const f of p.folders) {
+      const folders = p.settings?.repo ? [...p.folders, p.settings.repo] : p.folders;
+      for (const f of folders) {
         const inside = cwd === f || cwd.startsWith(f.endsWith(path.sep) ? f : f + path.sep);
         if (inside && (!best || f.length > best.len)) best = { id: p.id, len: f.length };
       }

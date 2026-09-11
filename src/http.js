@@ -139,6 +139,17 @@ export function createHttpServer(app) {
     return r;
   }
 
+  async function readRaw(req, max) {
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of req) {
+      size += chunk.length;
+      if (size > max) throw new HttpError(413, 'Soubor je příliš velký.');
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  }
+
   const sessionParam = (m) => {
     try {
       return decodeURIComponent(m[1]);
@@ -332,6 +343,16 @@ export function createHttpServer(app) {
         body: r.csv,
       };
     }],
+
+    ['GET', /^\/api\/projects\/([\w-]+)\/git$/, async (_req, m) => unwrap(await app.projectGit(m[1]))],
+    ['POST', /^\/api\/projects\/([\w-]+)\/team$/, async (req, m) => unwrap(await app.launchTeam(m[1], await readBody(req)))],
+    ['POST', /^\/api\/projects\/([\w-]+)\/work\/([\w-]+)\/(accept|discard)$/, async (_req, m) => unwrap(await app.projectWorkAction(m[1], m[2], m[3]))],
+    ['GET', /^\/api\/projects\/([\w-]+)\/media\/(cover|logo)$/, async (_req, m) => {
+      const r = unwrap(await app.readProjectMedia(m[1], m[2]));
+      return { raw: true, headers: { 'Content-Type': r.type, 'Cache-Control': 'private, max-age=31536000, immutable', 'Content-Security-Policy': "default-src 'none'; img-src 'self'; sandbox" }, body: r.body };
+    }],
+    ['PUT', /^\/api\/projects\/([\w-]+)\/media\/(cover|logo)$/, async (req, m) => unwrap(await app.setProjectMedia(m[1], m[2], await readRaw(req, 4_500_000)))],
+    ['DELETE', /^\/api\/projects\/([\w-]+)\/media\/(cover|logo)$/, async (_req, m) => unwrap(await app.removeProjectMedia(m[1], m[2]))],
 
     /* Spouštění agentů */
     ['GET', /^\/api\/launch$/, () => app.launchPayload()],

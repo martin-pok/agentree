@@ -5,10 +5,11 @@ const KEY_TTL = 60 * DAY;
 
 // Pravidla upozornění: rozhodnutí, limity, rozpočty, dokončené dlouhé úlohy. Deduplikace podle klíče.
 export class AlertEngine {
-  constructor({ store, datastore, notifier }) {
+  constructor({ store, datastore, notifier, projectNotify = () => 'all' }) {
     this.store = store;
     this.datastore = datastore;
     this.notifier = notifier;
+    this.projectNotify = projectNotify;
     this.prevStatus = new Map();
     this.turnStart = new Map();
   }
@@ -32,7 +33,9 @@ export class AlertEngine {
     const before = this.prevStatus.get(s.id);
     this.prevStatus.set(s.id, s.status);
     if (before === s.status) return;
-    const n = this.settings;
+    // Upozornění projektu: all = vše, decisions = jen co potřebuje člověka (bez „dokončeno“), mute = nic.
+    const mode = this.projectNotify(s);
+    const n = mode === 'mute' ? {} : mode === 'decisions' ? { ...this.settings, done: false } : this.settings;
 
     if (s.status === 'working') this.turnStart.set(s.id, s.turnStartedAt || Date.now());
 
