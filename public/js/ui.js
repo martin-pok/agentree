@@ -248,9 +248,9 @@ function markErrors(form, errors) {
   (first?.classList.contains('picker-source') ? first.nextElementSibling : first)?.focus();
 }
 
-export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false }) {
+export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false, opener: openerOverride = null }) {
   return new Promise((resolve) => {
-    const opener = document.activeElement;
+    const opener = openerOverride || document.activeElement;
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
     const scrim = document.createElement('div');
     scrim.className = 'modal-scrim';
@@ -291,8 +291,14 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
       }
     };
     document.addEventListener('keydown', onKey, true);
-    scrim.addEventListener('mousedown', (e) => { if (e.target === scrim) close(false); });
-    for (const b of scrim.querySelectorAll('[data-close]')) b.addEventListener('click', () => close(false));
+    // Zavření až po clicku brání tomu, aby se po mousedown overlay odstranil a
+    // zbytek gesta propadl na tlačítko pod ním.
+    scrim.addEventListener('click', (e) => { if (e.target === scrim) close(false); });
+    for (const b of scrim.querySelectorAll('[data-close]')) b.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      close(false);
+    });
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearErrors(form);
@@ -339,6 +345,14 @@ export function createPalette(getItems, onPick) {
   let index = 0;
   let opener = null;
 
+  const setActive = ({ scroll = true } = {}) => {
+    for (const option of list.querySelectorAll('[data-i]')) {
+      option.setAttribute('aria-selected', String(Number(option.dataset.i) === index));
+    }
+    input.setAttribute('aria-activedescendant', items.length ? `pl-${index}` : '');
+    if (scroll) list.querySelector(`#pl-${index}`)?.scrollIntoView({ block: 'nearest' });
+  };
+
   const render = () => {
     items = getItems(input.value);
     index = Math.min(index, Math.max(0, items.length - 1));
@@ -349,8 +363,7 @@ export function createPalette(getItems, onPick) {
         return `${head}<li role="option" id="pl-${i}" data-i="${i}" aria-selected="${i === index}">${it.icon || ''}<span class="pl-text"><span>${esc(it.label)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></li>`;
       }).join('')
       : '<li class="pl-group" role="presentation">Nic nenalezeno</li>';
-    input.setAttribute('aria-activedescendant', items.length ? `pl-${index}` : '');
-    list.querySelector(`#pl-${index}`)?.scrollIntoView({ block: 'nearest' });
+    setActive();
   };
   const close = () => {
     if (root.hidden) return;
@@ -365,6 +378,14 @@ export function createPalette(getItems, onPick) {
   };
 
   input.addEventListener('input', () => { index = 0; render(); });
+  // Capture chrání Escape i tehdy, když je fokus v comboboxu nebo v jiném
+  // vloženém ovládacím prvku palety.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || root.hidden) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    close();
+  }, true);
   root.addEventListener('keydown', (e) => {
     const n = Math.max(1, items.length);
     if (e.key === 'Escape') { e.preventDefault(); close(); }
@@ -381,9 +402,10 @@ export function createPalette(getItems, onPick) {
     const li = e.target.closest('[data-i]');
     if (!li || !list.contains(li)) return;
     const next = Number(li.dataset.i);
-    if (next !== index) { index = next; render(); }
+    if (next !== index) { index = next; setActive(); }
   });
-  root.addEventListener('mousedown', (e) => { if (e.target === root) close(); });
+  // Stejná ochrana jako u modalu: neodstraňuj overlay v půlce gesta.
+  root.addEventListener('click', (e) => { if (e.target === root) close(); });
 
   return {
     open() {

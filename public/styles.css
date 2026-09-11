@@ -702,6 +702,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
 .set-nav button[aria-current] { color: var(--ink); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; }
 .set-main { display: grid; gap: 48px; min-width: 0; max-width: 880px; }
+/* Na velmi širokém desktopu drží čitelný sloupec skutečně ve středu okna,
+   ne u levého okraje hlavní plochy vedle navigace. */
+@media (min-width: 2128px) {
+  .set-main { margin-left: min(220px, calc((100vw - 2128px) / 2)); }
+}
 .set-group { display: grid; gap: 16px; scroll-margin-top: 24px; }
 .set-group-title { margin: 0; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
 .set-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); font-size: 13px; }
@@ -771,9 +776,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .state[data-state='unavailable'] { box-shadow: inset 0 0 0 1px var(--line); color: var(--mute); }
 
 /* ---------- Modální okna, paleta, toasty ---------- */
-.modal-scrim { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(30, 27, 34, .4); backdrop-filter: blur(3px); animation: fade .2s both; }
+.modal-scrim { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(30, 27, 34, .4); backdrop-filter: blur(3px); animation: fade .2s both; overscroll-behavior: contain; touch-action: none; }
 .modal-scrim.is-closing { animation: fade .18s reverse both; }
-.modal { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); animation: pop .25s var(--ease) both; }
+.modal { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); animation: pop .25s var(--ease) both; touch-action: pan-y; }
 .modal--wide { width: min(780px, 100%); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 24px 8px; }
 .modal-head h2 { margin: 0; font: 400 26px/1.2 var(--f-display); letter-spacing: -.01em; }

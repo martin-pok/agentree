@@ -319,13 +319,17 @@ export function createLauncher(root) {
   root.addEventListener('change', (e) => {
     if (e.target.matches('[data-l-project]')) {
       prefs.projectId = e.target.value;
+      persist();
+      render();
     } else if (e.target.matches('[data-l-pref]')) {
       prefs[e.target.dataset.lPref] = e.target.value;
+      // Viditelný custom picker už hodnotu synchronizoval. Přestavba celého
+      // ovládacího pásu by při změně modelu zbytečně blikla a sebrala fokus.
+      persist();
     } else if (e.target.matches('[data-l-brief]')) {
       prefs.brief = e.target.checked;
+      persist();
     } else return;
-    persist();
-    render();
   });
 
   let draftTimer = null;

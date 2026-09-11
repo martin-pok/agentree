@@ -7,7 +7,8 @@ const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 await fs.mkdir('dist/qa', { recursive: true });
 const results = [];
-for (const engine of ['chromium', 'webkit']) {
+const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
+for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
   const sample = server.app.store.ensure({ connector: 'codex', localId: 'qa-layout', provider: 'openai', app: 'Codex' });
@@ -71,7 +72,7 @@ for (const engine of ['chromium', 'webkit']) {
       server.app.store.commit(sample);
       await page.waitForTimeout(35);
     }
-    await page.waitForTimeout(650);
+    await page.waitForTimeout(550);
     assert.equal(await pickerMenu.count(), 1, `${engine} živá data nezavřou otevřený picker`);
     assert.equal(await projectPicker.getAttribute('aria-expanded'), 'true');
     assert.ok(await page.evaluate(() => window.__qaChartMutations <= 4), `${engine} graf se nepřekresluje při každé živé události`);
@@ -96,11 +97,34 @@ for (const engine of ['chromium', 'webkit']) {
     assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');
+    await page.evaluate(() => {
+      window.__qaPaletteMutations = 0;
+      new MutationObserver((entries) => { window.__qaPaletteMutations += entries.filter((entry) => entry.type === 'childList').length; }).observe(document.querySelector('.palette-list'), { childList: true, subtree: true });
+    });
     await paletteOptions.nth(1).hover();
     assert.equal(await paletteOptions.nth(1).getAttribute('aria-selected'), 'true', `${engine} paleta reaguje na hover`);
-    assert.notEqual(await paletteOptions.nth(1).evaluate((el) => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} paleta má čitelný hover`);
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.palette-list [role="option"][aria-selected="true"]')).backgroundColor !== 'rgba(0, 0, 0, 0)');
+    assert.equal(await page.evaluate(() => window.__qaPaletteMutations), 0, `${engine} hover palety nepřepisuje seznam a nebliká`);
     await page.screenshot({ path: `dist/qa/${engine}-palette-hover.png` });
     await page.keyboard.press('Escape');
+    await page.locator('.palette').waitFor({ state: 'hidden' });
+    await page.goto(`${server.url}/#/utrata`);
+    const budgetsButton = page.locator('button[data-action="budgets"]').first();
+    await budgetsButton.click();
+    await page.locator('.modal-scrim').waitFor();
+    await page.locator('.modal [data-close]').first().click();
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('button[data-action="budgets"]')), true, `${engine} křížek zavře modal a vrátí fokus`);
+    await budgetsButton.click();
+    await page.locator('.modal-scrim').waitFor();
+    await page.mouse.click(12, 12);
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
+    await page.waitForTimeout(100);
+    assert.equal(await page.locator('.modal-scrim').count(), 0, `${engine} click mimo modal jej zavře bez druhého dialogu`);
+    await budgetsButton.click();
+    await page.locator('.modal-scrim').waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
     await page.goto(`${server.url}/#/agent/codex%3Aqa-layout`);
     await page.locator('.gauges--sm .gauge').first().waitFor();
     for (const width of [375, 900, 1440]) {
@@ -116,7 +140,7 @@ for (const engine of ['chromium', 'webkit']) {
     await page.locator('.gauges--sm').screenshot({ path: `dist/qa/${engine}-limits-safe-zone.png` });
     for (const route of ['agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'nastaveni']) {
       await page.goto(`${server.url}/#/${route}`);
-      await page.waitForTimeout(250);
+      await page.waitForTimeout(100);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
       if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
@@ -160,6 +184,14 @@ for (const engine of ['chromium', 'webkit']) {
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
         await page.locator('button[data-appearance="light"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
+        await page.setViewportSize({ width: 2528, height: 1390 });
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '200px');
+        const settingsCenter = await page.locator('.set-main').evaluate((el) => {
+          const box = el.getBoundingClientRect();
+          return Math.abs(box.left + box.width / 2 - innerWidth / 2);
+        });
+        assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px)`);
+        await page.setViewportSize({ width: 1440, height: 1000 });
       }
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
@@ -169,7 +201,7 @@ for (const engine of ['chromium', 'webkit']) {
     for (const width of [375, 900, 1180]) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'nastaveni']) {
-        await page.goto(`${server.url}/#/${route}`); await page.waitForTimeout(150);
+        await page.goto(`${server.url}/#/${route}`); await page.waitForTimeout(50);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${width} overflow ${route}`);
       }
     }
@@ -182,9 +214,10 @@ for (const engine of ['chromium', 'webkit']) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
+    await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
     console.log(JSON.stringify({ engine, errors, welcome: await page.locator('.welcome-dialog').textContent().catch(() => 'closed') }));
     console.error(error.stack || error);
     throw error;
