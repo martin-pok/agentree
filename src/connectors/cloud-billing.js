@@ -77,7 +77,7 @@ export function createCloudBillingConnector(ctx) {
 
   return {
     id: 'cloud-billing',
-    name: 'Náklady z Admin API',
+    name: 'Náklady za API',
     provider: 'other',
     kind: 'cloud',
     verified: false,

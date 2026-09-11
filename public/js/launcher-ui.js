@@ -26,6 +26,8 @@ function save(prefs) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(prefs)); } catch { /* soukromé okno */ }
 }
 
+const folderLabel = (cwd) => (shortPath(cwd) === '~' ? 'Domovská složka' : shortPath(cwd).split('/').slice(-2).join('/'));
+
 const RUN_LABEL = { running: 'Pracuje', stopping: 'Zastavuji', done: 'Hotovo', failed: 'Selhalo', stopped: 'Zastaveno' };
 
 // Srozumitelný důvod selhání a jak ho opravit (původní chyba zůstává k dispozici).
@@ -193,7 +195,7 @@ export function createLauncher(root) {
       <label class="lselect">${p ? pdot(p) : ICON.folder}<span class="sr-only">Projekt</span><select data-l-project>
         <option value="">Bez projektu</option>${active.map((x) => `<option value="${esc(x.id)}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
       </select></label>
-      ${allowsFolder(t, mode) ? `<button type="button" class="lselect lselect--btn${cwd || !needsFolder(t, mode) ? '' : ' is-empty'}" data-l="folder" title="${esc(cwd || 'Vybrat složku')}">${ICON.folder}<span>${esc(cwd ? shortPath(cwd) : needsFolder(t, mode) ? 'Vybrat složku…' : 'Složka (nepovinné)')}</span></button>` : ''}
+      ${allowsFolder(t, mode) ? `<button type="button" class="lselect lselect--btn${cwd || !needsFolder(t, mode) ? '' : ' is-empty'}" data-l="folder" title="${esc(cwd || 'Vybrat složku')}">${ICON.folder}<span>${esc(cwd ? folderLabel(cwd) : needsFolder(t, mode) ? 'Vybrat složku…' : 'Složka (nepovinné)')}</span></button>` : ''}
       ${t.id === 'claude-code' && mode === 'background' ? `<label class="lselect"><span class="sr-only">Oprávnění</span><select data-l-pref="permission">${Object.entries(t.permissions).map(([k, l]) => `<option value="${k}"${k === prefs.permission ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
       ${t.id === 'codex' && mode === 'background' ? `<label class="lselect"><span class="sr-only">Sandbox</span><select data-l-pref="sandbox">${Object.entries(t.sandboxes).map(([k, l]) => `<option value="${k}"${k === prefs.sandbox ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
       ${t.id === 'ollama' && t.models.length ? `<label class="lselect"><span class="sr-only">Model</span><select data-l-pref="model">${t.models.map((m) => `<option value="${esc(m)}"${m === prefs.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>` : ''}

@@ -1,8 +1,8 @@
 import { state, sessionsList } from '../state.js';
-import { esc, fmtTok, fmtNum, plural, dateLong, DAY } from '../format.js';
-import { glyph, PROVIDERS, pkey } from '../icons.js';
-import { stackedColumns, heatmap, donut, hbars, timeLine } from '../charts.js';
-import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, CATEGORICAL, chartColor } from '../data.js';
+import { esc, fmtNum, plural, DAY } from '../format.js';
+import { glyph } from '../icons.js';
+import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
+import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null };
@@ -23,11 +23,11 @@ function mount(el) {
     </section>
     <div class="grid-2" data-enter style="--i:4">
       <section class="card pad" aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">Kdy agenti pracují</h2><span class="muted small">30 dní</span></div><div data-region="heat"></div></section>
-      <section class="card pad" aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Podíl aplikací</h2></div><div data-region="apps"></div></section>
+      <section class="card pad" aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
     </div>
     <div class="grid-2" data-enter style="--i:5">
-      <section class="card pad" aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Projekty</h2></div><div data-region="projects"></div></section>
-      <section class="card pad" aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Modely</h2></div><div data-region="models"></div></section>
+      <section class="card pad" aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Tokeny podle složky</h2></div><div data-region="projects"></div></section>
+      <section class="card pad" aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Tokeny podle modelu</h2></div><div data-region="models"></div></section>
     </div>
     <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
       <div class="sec-head"><h2 id="lim-h">Limity a kredity</h2></div>
@@ -79,17 +79,17 @@ function update() {
 
   const apps = groupTotals(all, since, (s) => s.app).slice(0, 8);
   fill(el, 'apps', apps.length
-    ? donut({ segments: apps.map((a, i) => ({ label: a.key, value: a.value, color: CATEGORICAL[i % CATEGORICAL.length] })), center: fmtTok(tokens), sub: 'tokenů', format: fmtTok, label: 'Podíl aplikací na tokenech' })
+    ? hbars(apps.map((a) => ({ label: a.key, sub: `${tokens ? Math.round((a.value / tokens) * 100) : 0} %`, value: a.value, color: chartColor(a.provider), icon: glyph(a.provider) })))
     : '<p class="muted">Bez dat.</p>');
 
   const projects = groupTotals(all, since, (s) => s.project).slice(0, 8);
   fill(el, 'projects', projects.length
-    ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: PROVIDERS[p.provider].color, icon: glyph(p.provider) })))
+    ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: chartColor(p.provider), icon: glyph(p.provider) })))
     : '<p class="muted">Bez dat.</p>');
 
   const models = groupTotals(all, since, (s) => s.model).slice(0, 8);
   fill(el, 'models', models.length
-    ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: PROVIDERS[m.provider].color, icon: glyph(m.provider) })))
+    ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) })))
     : '<p class="muted">Bez dat.</p>');
 
   const gauges = limitGauges(state.limits, now);

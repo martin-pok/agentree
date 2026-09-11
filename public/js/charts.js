@@ -322,7 +322,7 @@ export function timeline({ rows, from, to, now }) {
   const ticks = [];
   for (let t = Math.ceil(from / 3600e3) * 3600e3; t <= to; t += 3600e3) if (new Date(t).getHours() % 2 === 0) ticks.push(t);
   return `<div class="tl" style="--now:${(pct(now) / 100).toFixed(4)}">
-    <div class="tl-axis" aria-hidden="true"><span></span><span class="tl-ticks">${ticks.map((t, k) => `<span class="${k % 2 ? 'is-minor' : ''}" style="left:${pct(t)}%">${timeHM(t)}</span>`).join('')}</span></div>
+    <div class="tl-axis" aria-hidden="true"><span></span><span class="tl-ticks">${ticks.filter((t) => Math.abs(pct(t) - pct(now)) > 7 && pct(t) > 3 && pct(t) < 97).map((t, k) => `<span class="${k % 2 ? 'is-minor' : ''}" style="left:${pct(t)}%">${timeHM(t)}</span>`).join('')}</span></div>
     ${rows
       .map((r) => `<a class="tl-row" href="#/agent/${encodeURIComponent(r.id)}" data-status="${r.status}">
         <span class="tl-label">${r.glyph}<span class="tl-text"><span class="tl-title">${esc(r.title)}</span><small>${esc(r.app)}</small></span></span>
