@@ -201,7 +201,8 @@ export function projectForm(existing = null) {
         <label class="field field--wide"><span>Název</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="Např. Kavárna U Mostu — web"></label>
         <label class="field field--wide"><span>Popis <small class="muted">nepovinné</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="Pro koho a co v projektu děláš"></label>
       </div>
-      <fieldset class="swatches"><legend class="form-sub">Barva</legend>${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</fieldset>
+      <p class="form-sub" id="${id}-color">Barva</p>
+      <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
       <p class="form-sub">Složky projektu</p>
       <p class="modal-text">Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.</p>
       <ul class="folder-list" id="${id}-list"></ul>

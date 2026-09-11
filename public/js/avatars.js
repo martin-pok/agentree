@@ -7,12 +7,12 @@ const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true
 
 const AVATARS = [
   svg('#D97757', '<circle cx="46" cy="36" r="20" fill="#F7EEDA"/><circle cx="24" cy="58" r="7" fill="#16141D"/>'),
-  svg('#F1E6D6', '<path d="M12 68V36a24 24 0 0 1 24 24v8z" fill="#16141D"/><circle cx="56" cy="26" r="9" fill="#D97757"/>'),
-  svg('#22A38C', '<path d="M40 14 66 62H14z" fill="#F4F3F7"/><circle cx="40" cy="48" r="6" fill="#0D7A67"/>'),
+  svg('#F3E6D1', '<circle cx="40" cy="46" r="19" fill="#D97757"/><path d="M0 52h80v28H0z" fill="#16141D"/><path d="M6 52h68" stroke="#F7EEDA" stroke-width="2.5" stroke-linecap="round" opacity=".55"/><circle cx="61" cy="22" r="4" fill="#C99A3E"/>'),
+  svg('#0D7A67', '<g transform="rotate(-24 40 42)"><path d="M40 12c15 11 15 49 0 60-15-11-15-49 0-60z" fill="#F4F3F7"/><path d="M40 18v48" stroke="#0D7A67" stroke-width="2.5" stroke-linecap="round" opacity=".5"/></g><circle cx="57" cy="24" r="5" fill="#C99A3E"/>'),
   svg('#16141D', '<path d="M18 52a22 22 0 0 1 44 0" fill="none" stroke="#C99A3E" stroke-width="9" stroke-linecap="round"/><circle cx="40" cy="30" r="5" fill="#F4F3F7"/>'),
   svg('#C99A3E', '<g stroke="#16141D" stroke-width="5" stroke-linecap="round"><path d="M40 16v48M16 40h48M23 23l34 34M57 23 23 57"/></g><circle cx="40" cy="40" r="7" fill="#F7EEDA"/>'),
-  svg('#E6EEEC', '<path d="M8 50c8-10 16-10 24 0s16 10 24 0 16-10 24 0v30H8z" fill="#22A38C"/><circle cx="54" cy="26" r="8" fill="#16141D"/>'),
-  svg('#C2335A', '<path d="M50 16a24 24 0 1 0 0 48 18 18 0 1 1 0-48z" fill="#F7EEDA"/>'),
+  svg('#22313F', '<circle cx="56" cy="24" r="9" fill="#C99A3E"/><circle cx="61" cy="20" r="7.5" fill="#22313F"/><path d="M-2 46c9-7 18-7 27 0s18 7 27 0 18-7 30 0v36H-2z" fill="#1F8A96"/><path d="M-2 56c9-7 18-7 27 0s18 7 27 0 18-7 30 0v26H-2z" fill="#22A38C"/><path d="M-2 66c9-6 18-6 27 0s18 6 27 0 18-6 30 0v16H-2z" fill="#43C9B0"/>'),
+  svg('#C2335A', '<circle cx="38" cy="40" r="21" fill="#F7EEDA"/><circle cx="49" cy="33" r="18" fill="#C2335A"/><circle cx="57" cy="55" r="3" fill="#F3D38E"/><circle cx="50" cy="63" r="2" fill="#F7EEDA" opacity=".85"/>'),
   svg('#6F8F5E', '<g fill="#F4F3F7"><circle cx="40" cy="27" r="11"/><circle cx="40" cy="53" r="11"/><circle cx="27" cy="40" r="11"/><circle cx="53" cy="40" r="11"/></g><circle cx="40" cy="40" r="6" fill="#C99A3E"/>'),
   svg('#8250DF', '<path d="M40 12 62 40 40 68 18 40z" fill="#F4F3F7"/><circle cx="40" cy="40" r="7" fill="#C2335A"/>'),
   svg('#F4F3F7', '<g fill="#16141D"><circle cx="22" cy="22" r="6"/><circle cx="40" cy="22" r="6"/><circle cx="58" cy="22" r="6"/><circle cx="22" cy="40" r="6"/><circle cx="58" cy="40" r="6"/><circle cx="22" cy="58" r="6"/><circle cx="40" cy="58" r="6"/><circle cx="58" cy="58" r="6"/></g><circle cx="40" cy="40" r="8" fill="#D97757"/>'),
@@ -30,6 +30,11 @@ const AVATARS = [
   svg('#F1EDF6', '<g fill="#16141D"><circle cx="24" cy="25" r="7"/><circle cx="56" cy="25" r="7"/><circle cx="24" cy="55" r="7"/><circle cx="56" cy="55" r="7"/></g><path d="M40 14v52M14 40h52" stroke="#8250DF" stroke-width="5"/><circle cx="40" cy="40" r="8" fill="#D97757"/>'),
   svg('#55223A', '<path d="M12 42c7-19 17-28 28-28s21 9 28 28c-7 19-17 28-28 28S19 61 12 42z" fill="#F7EEDA"/><circle cx="40" cy="42" r="13" fill="#C2335A"/><circle cx="40" cy="42" r="5" fill="#16141D"/>'),
   svg('#D7E8E4', '<path d="M15 26h50v28H15z" fill="#16141D"/><circle cx="28" cy="40" r="8" fill="#22A38C"/><circle cx="52" cy="40" r="8" fill="#C99A3E"/><path d="M40 14v52" stroke="#D97757" stroke-width="5" stroke-linecap="round"/>'),
+  svg('#16141D', '<circle cx="40" cy="40" r="25" fill="none" stroke="#F7EEDA" stroke-width="2.5" opacity=".85"/><g stroke="#F7EEDA" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M40 11v5M40 64v5M11 40h5M64 40h5"/></g><path d="M40 17 46 40H34z" fill="#C99A3E"/><path d="M40 63 34 40h12z" fill="#C2335A"/><circle cx="40" cy="40" r="4" fill="#F7EEDA"/>'),
+  svg('#F4F3F7', '<path d="M37 37V15A22 22 0 0 0 15 37z" fill="#22A38C"/><path d="M43 37h22A22 22 0 0 0 43 15z" fill="#D97757"/><path d="M37 43H15a22 22 0 0 0 22 22z" fill="#C99A3E"/><path d="M43 43v22a22 22 0 0 0 22-22z" fill="#16141D"/>'),
+  svg('#8250DF', '<g fill="#F4F3F7"><rect x="19" y="33" width="6" height="14" rx="3"/><rect x="29" y="26" width="6" height="28" rx="3"/><rect x="49" y="28" width="6" height="24" rx="3"/><rect x="59" y="34" width="6" height="12" rx="3"/></g><rect x="37" y="20" width="6" height="40" rx="3" fill="#F3D38E"/>'),
+  svg('#1A3A37', '<g transform="rotate(-18 40 40)"><path d="M13 40a27 9 0 0 1 54 0" fill="none" stroke="#F7EEDA" stroke-width="3"/><circle cx="40" cy="40" r="15" fill="#C99A3E"/><path d="M13 40a27 9 0 0 0 54 0" fill="none" stroke="#F7EEDA" stroke-width="3"/></g><circle cx="61" cy="21" r="4" fill="#43C9B0"/>'),
+  svg('#F1E6D6', '<path d="M66 15 14 40l19 5z" fill="#16141D"/><path d="M66 15 33 45l5 8z" fill="#C99A3E"/><path d="M66 15 38 53l4 12z" fill="#D97757"/><g fill="#16141D" opacity=".25"><circle cx="20" cy="56" r="3"/><circle cx="13" cy="64" r="2"/></g>'),
 ];
 
 export const AVATAR_COUNT = AVATARS.length;
