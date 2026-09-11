@@ -219,10 +219,13 @@ export function createHttpServer(app, existingServer = null) {
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
-    ['GET', /^\/api\/extension\/pair$/, (req) => {
+    ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
+    ['POST', /^\/api\/extension\/pair$/, async (req) => {
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
-      return { token: datastore.data.ingestToken, version: VERSION };
-    }],
+      const pair = await app.pairExtension(String(req.headers['x-agentree-pair-code'] || ''));
+      if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agentree.');
+      return pair;
+    }, { token: true }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
       const r = validateEntry(await readBody(req));
       if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
@@ -436,7 +439,7 @@ export function createHttpServer(app, existingServer = null) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
-    if (url.pathname.startsWith('/api/') && req.method === 'GET' && url.pathname !== '/api/extension/pair') {
+    if (url.pathname.startsWith('/api/') && req.method === 'GET') {
       if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
     }
     if (url.pathname === '/api/stream' && req.method === 'GET') return stream(req, res);

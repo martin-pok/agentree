@@ -5,7 +5,7 @@ import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 
-const v = { el: null, observer: null };
+const v = { el: null, observer: null, pairCode: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -86,6 +86,10 @@ function mount(el) {
         toast('Zdroje dat jsou načtené znovu');
         update();
         a.disabled = false;
+      } else if (a.dataset.action === 'extension-pair-code') {
+        v.pairCode = await api.extensionPairCode();
+        toast('Jednorázový kód je připravený na 10 minut');
+        update();
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;
@@ -240,10 +244,10 @@ function update() {
       <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
       <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku:
         <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
-      <li>Otevři některou z aplikací níže. Rozšíření se s Agentree propojí samo.</li>
+      <li>Klikni na ikonu rozšíření, vlož jednorázový kód a potvrď připojení.</li>
     </ol>
-    <details class="details"><summary>Rozšíření se nepropojilo samo?</summary><p class="set-desc">Zkopíruj tento klíč a vlož ho do okna rozšíření.</p>
-      <div class="code-line"><code class="secret">••••••••••••${esc(i.extension.token.slice(-6))}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.token)}" data-copy-message="Klíč pro rozšíření zkopírován">${ICON.copy}Kopírovat klíč</button></div></details>
+    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Vytvořit jednorázový kód</button></div>
+    ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}
     <div class="site-grid">${Object.entries(sites).map(([k, s]) => {
       const at = web?.sites?.[k];
       return `<div class="site">${glyph({ connector: 'web', app: s.name, provider: s.provider })}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;

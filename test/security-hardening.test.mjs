@@ -19,6 +19,7 @@ test('security: foreign origins cannot read state, transcripts or SSE; same-orig
     assert.equal((await fetch(s.url + '/api/state', { headers: { Origin: s.url } })).status, 200);
     assert.equal((await fetch(s.url + '/')).headers.get('cross-origin-resource-policy'), 'same-origin');
     assert.equal((await api(s.url).send('PUT', '/api/settings', { avatar: 1 }, { 'X-Agentree': '1', Origin: 'https://evil.example' })).status, 403);
+    assert.equal((await api(s.url).send('POST', '/api/extension/pair-code', {}, { Origin: 'https://evil.example' })).status, 403);
   } finally { await s.close(); }
 });
 

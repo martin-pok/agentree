@@ -234,7 +234,7 @@ function renderProfile(name, working, all) {
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
   if (hadFocus && !document.activeElement?.closest?.('[data-avatar-cycle]')) slot.querySelector('button')?.focus({ preventScroll: true });
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`);
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">zprac. tokenů dnes</div></div>`);
 }
 
 function tick() {

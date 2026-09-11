@@ -21,9 +21,11 @@ await fs.copyFile(node, path.join(resources, 'node')); await fs.chmod(path.join(
 await fs.copyFile(path.resolve(node, '../../LICENSE'), path.join(resources, 'NODE-LICENSE.txt'));
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'UserNotifications', 'desktop/Agentree.swift', '-o', path.join(binary, 'Agentree')]);
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'Security', 'desktop/Keychain.swift', '-o', path.join(resources, 'agentree-keychain')]);
-run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-framework', 'AppKit', 'desktop/Icon.swift', '-o', path.join(build, 'icon-builder')]);
-run(path.join(build, 'icon-builder'), [path.join(build, 'Agentree.iconset')]);
-run('iconutil', ['-c', 'icns', path.join(build, 'Agentree.iconset'), '-o', path.join(resources, 'Agentree.icns')]);
+// Keep the reviewed macOS icon as a source asset. Recent macOS releases can
+// reject a freshly generated .iconset despite valid PNG dimensions, which made
+// release builds non-deterministic. The checked-in ICNS is the exact reviewed
+// white-tile Agentree mark used by the app.
+await fs.copyFile(path.join(root, 'desktop', 'Agentree.icns'), path.join(resources, 'Agentree.icns'));
 const identity = process.env.AGENTREE_SIGN_IDENTITY || '-';
 // Finder metadata can be inherited while copying into a .app; strip it only from our generated build.
 run('xattr', ['-cr', app]);
@@ -34,6 +36,11 @@ run('codesign', ['--force', '--sign', identity, ...signature, '--entitlements', 
 run('codesign', ['--verify', '--deep', '--strict', '--verbose=2', app]);
 const archive = path.join(root, 'dist', `Agentree-${version}-macOS-${process.arch}.zip`);
 run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', app, archive]);
-await fs.copyFile(path.join(build, 'Agentree.iconset/icon_512x512@2x.png'), path.join(root, 'dist/Agentree-icon.png'));
+const iconPreview = path.join(root, 'desktop', 'Agentree-icon.png');
+try {
+  await fs.copyFile(iconPreview, path.join(root, 'dist/Agentree-icon.png'));
+} catch {
+  // The app icon remains present; the PNG preview is a convenience artifact.
+}
 await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized: false }, null, 2));
 console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID' }));

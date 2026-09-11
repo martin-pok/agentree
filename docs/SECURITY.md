@@ -10,7 +10,7 @@ Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` | `src/http.js#handle` |
 | Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agentree: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
 | Podvržené události hooků / rozšíření | Náhodný 48znakový token, porovnání v konstantním čase | `src/http.js#tokenOk`, `src/datastore.js` |
-| Web získá token přes párování | `/api/extension/pair` jen pro `Origin: chrome-extension://[a-p]{32}` (prohlížeč `Origin` nedovolí podvrhnout) | `src/http.js` |
+| Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření ho musí ručně předat, server ho porovná v konstantním čase a po prvním použití zneplatní | `src/app.js#pairExtension`, `src/http.js` |
 | XSS z obsahu přepisů | Veškerý dynamický text přes `esc()`; markdown až po escapování; odkazy jen `http(s)` s `rel="noopener noreferrer"`; CSP `script-src 'self'` | `public/js/format.js`, `views/session.js`, `src/http.js#SECURITY` |
 | Clickjacking | `X-Frame-Options: DENY`, `frame-ancestors 'none'` | `src/http.js` |
 | Path traversal na statických souborech | Normalizace cesty a kontrola prefixu `public/` | `src/http.js#serveStatic` |
@@ -40,7 +40,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 
 ## Známé hranice a podmínky distribuce
 
-- **Lokální HTTP není izolace od jiných lokálních procesů.** Program běžící pod uživatelem může oslovit API, číst data a spustit povolené akce. Agentree proto není určeno pro nedůvěryhodné sdílené účty. Rozšíření s oprávněním k localhostu je rovněž privilegovaný klient; kontrola `chrome-extension://` sama neprokazuje konkrétní identitu rozšíření.
+- **Lokální HTTP není izolace od jiných lokálních procesů.** Program běžící pod uživatelem může oslovit API, číst data a spustit povolené akce. Agentree proto není určeno pro nedůvěryhodné sdílené účty. Rozšíření s oprávněním k localhostu je rovněž privilegovaný klient; jednorázový kód snižuje riziko automatického vyzrazení tokenu, ale nechrání proti malwaru pod stejným uživatelem.
 - **Veřejný macOS release:** aktuální lokální build je ad-hoc podepsaný. Před distribucí klientům je nutný stabilní Developer ID podpis, notarizace a ověření čisté instalace/aktualizace na dalším Macu. Ad-hoc změna podpisu může znovu vyžádat souhlas Klíčenky.
 - **Licence zdrojů:** `package.json` zatím uvádí `UNLICENSED`. Vlastník musí před prezentací jako open-source zvolit licenci; zveřejnění na GitHubu samo licenci nenahrazuje.
 - **Data v `~/.agentree/data.json` nejsou šifrovaná** (práva 0600). Obsahují výdaje, upozornění a token, ne přepisy.

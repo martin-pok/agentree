@@ -32,6 +32,7 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  extensionPairCode: () => request('POST', '/api/extension/pair-code', {}),
   createProject: (body) => request('POST', '/api/projects', body),
   updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
   deleteProject: (id) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`),

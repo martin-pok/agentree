@@ -634,7 +634,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: EXTENSION_DIR, sites: WEB_SITES, token: datastore.data.ingestToken },
+      extension: { path: EXTENSION_DIR, sites: WEB_SITES },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -646,6 +646,26 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       },
       install: { bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir, node: process.version },
     };
+  }
+
+  // A browser extension must prove a short-lived code deliberately shown in the
+  // local dashboard. Its long-lived ingest token is never part of /api/state.
+  async function createExtensionPairCode() {
+    const code = crypto.randomBytes(12).toString('base64url');
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    datastore.data.extensionPairing = { code, expiresAt };
+    await datastore.flush();
+    return { code, expiresAt };
+  }
+
+  async function pairExtension(code) {
+    const pair = datastore.data.extensionPairing;
+    if (!pair || pair.expiresAt <= Date.now() || typeof code !== 'string' || code.length !== pair.code.length) return null;
+    const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
+    if (!equal) return null;
+    datastore.data.extensionPairing = null;
+    await datastore.flush();
+    return { token: datastore.data.ingestToken, version: VERSION };
   }
 
   async function state() {
@@ -716,7 +736,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
 
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
-    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession,
+    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

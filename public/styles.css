@@ -294,6 +294,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .meter-row .of { color: var(--mute); }
 .meter-track { height: 8px; margin: 0 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .meter-track i { display: block; height: 100%; border-radius: 4px; background: var(--ink); transition: width .8s var(--ease); }
+.metric-note { margin: 10px 8px 0; color: var(--mute); font-size: 12px; line-height: 1.45; }
 
 .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .gauges--sm { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }

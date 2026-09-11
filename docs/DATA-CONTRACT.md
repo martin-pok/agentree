@@ -22,7 +22,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | GET | `/api/stream` | Server-Sent Events |
 | POST | `/api/hooks/claude-code` | Vstup Claude Code hooku (token) → `{ ok, id }` |
 | POST | `/api/ingest/web` | Data z rozšíření (token) → `{ ok, id }` |
-| GET | `/api/extension/pair` | `{ token, version }` jen pro `Origin: chrome-extension://…` |
+| POST | `/api/extension/pair-code` | Vytvoří `{ code, expiresAt }`; vyžaduje lokální mutační ochranu |
+| POST | `/api/extension/pair` | Hlavička `Origin: chrome-extension://…` a `X-Agentree-Pair-Code` → jednorázově `{ token, version }` |
 | POST | `/api/spend/ledger` | Nový výdaj → 201 `{ entry, spend }`; 422 s `errors` |
 | PATCH | `/api/spend/ledger/:id` | `{ endDate: "RRRR-MM-DD" \| null }` — ukončení předplatného |
 | DELETE | `/api/spend/ledger/:id` | `{ spend }` |
@@ -173,6 +174,6 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
 
 `settings.welcomeCompleted` je samostatný boolean pro čtyřkrokový úvod (výchozí false). `onboardingDismissed` řídí existující checklist napojení. Dokončení úvodu nemění napojení ani souhlas s hooky. `integrations.desktop` označuje nativní obal; desktop nepovolí instalaci soupeřícího CLI LaunchAgentu přes API (422).
 
-`{ version: 1, ingestToken, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` — zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
+`{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` — zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
 
 Další soubory: `~/.agentree/prompts/<uuid>.txt` (zadání pro Terminál, 0600, mazání po 24 h), `~/.agentree/runs/<id>.log` (výstup běhů na pozadí, 0600).

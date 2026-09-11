@@ -29,6 +29,9 @@ export function normalizeData(raw) {
   return {
     version: 1,
     ingestToken: typeof d.ingestToken === 'string' && d.ingestToken.length >= 32 ? d.ingestToken : randomToken(),
+    extensionPairing: d.extensionPairing && typeof d.extensionPairing.code === 'string' && d.extensionPairing.code.length >= 12 && Number(d.extensionPairing.expiresAt) > Date.now()
+      ? { code: d.extensionPairing.code, expiresAt: Number(d.extensionPairing.expiresAt) }
+      : null,
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

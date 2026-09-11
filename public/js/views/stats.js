@@ -17,23 +17,23 @@ function mount(el) {
     </div>
     <div class="kpis" data-enter style="--i:2" data-region="kpis"></div>
     <section class="card pad" data-enter style="--i:3" aria-labelledby="st-chart-h">
-      <div class="sec-head"><h2 id="st-chart-h">Tokeny podle poskytovatele</h2></div>
+      <div class="sec-head"><h2 id="st-chart-h">Zpracované tokeny podle poskytovatele</h2></div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
     </section>
     <div class="grid-2" data-enter style="--i:4">
       <section class="card pad" aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">Kdy agenti pracují</h2><span class="muted small">30 dní</span></div><div data-region="heat"></div></section>
-      <section class="card pad" aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
+      <section class="card pad" aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Zpracované tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
     </div>
     <div class="grid-2" data-enter style="--i:5">
-      <section class="card pad" aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Tokeny podle složky</h2></div><div data-region="projects"></div></section>
-      <section class="card pad" aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Tokeny podle modelu</h2></div><div data-region="models"></div></section>
+      <section class="card pad" aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Zpracované tokeny podle složky</h2></div><div data-region="projects"></div></section>
+      <section class="card pad" aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Zpracované tokeny podle modelu</h2></div><div data-region="models"></div></section>
     </div>
     <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
       <div class="sec-head"><h2 id="lim-h">Limity a kredity</h2></div>
       <div data-region="limits"></div>
     </section>
-    <p class="note">Tokeny = vstup + výstup + zápis do cache. Levné čtení z cache se do grafů nezapočítává. Webové aplikace počty tokenů nesdílejí.</p>`;
+    <p class="note">Zpracované tokeny = vstup + výstup + zápis do cache. Nejsou to peníze ani limit předplatného; čtení z cache se do grafů nezapočítává. Webové aplikace počty tokenů nesdílejí.</p>`;
   el.addEventListener('click', (e) => {
     const p = e.target.closest('[data-period]');
     if (p) { v.period = p.dataset.period; v.drawn = false; update(); return; }
@@ -62,14 +62,14 @@ function update() {
   const hours = activeHours(all, since);
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);
   fill(el, 'kpis', [
-    ['Tokeny', tween(`st-tok-${v.period}`, tokens, 'tok'), 'vstup, výstup a zápis do cache'],
+    ['Zpracované tokeny', tween(`st-tok-${v.period}`, tokens, 'tok'), 'vstup, výstup a zápis do cache; ne cena'],
     ['Aktivní konverzace', tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} aplikací`],
     ['Hodiny s aktivitou', tween(`st-h-${v.period}`, hours), 'hodiny, kdy aspoň jeden agent pracoval'],
     ['Zadání', tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
   ].map(([l, val, sub]) => `<div class="card kpi"><span class="eyebrow">${l}</span><span class="val">${val}</span><small>${esc(sub)}</small></div>`).join(''));
 
   const changed = fill(el, 'chart', ser.series.length
-    ? stackedColumns({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: 'Tokeny podle poskytovatele', partialLast: true })
+    ? stackedColumns({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: 'Zpracované tokeny podle poskytovatele', partialLast: true })
     : emptyState({ title: 'V tomto období žádné tokeny' }));
   if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
   v.drawn = true;
