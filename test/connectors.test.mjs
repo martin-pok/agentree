@@ -12,6 +12,33 @@ import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
+test('Codex: vynulované počítadlo tokenů nezahodí dosavadní spotřebu (součet i hodinový graf sedí)', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createCodexConnector({ config, store });
+  const id = '01a05188-51d8-7903-85aa-9818c9b94627';
+  const t0 = Date.now() - 3 * 3600e3;
+  const at = (min) => new Date(t0 + min * 60e3).toISOString();
+  const usage = (input, cached, output) => ({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: input, cached_input_tokens: cached, output_tokens: output } } } });
+  await writeJsonl(path.join(home, '.codex', 'sessions', '2026', '09', '05', `rollout-2026-09-05T10-00-00-${id}.jsonl`), [
+    { timestamp: at(0), type: 'session_meta', payload: { id, cwd: '/Users/x/web', originator: 'Codex Desktop', timestamp: at(0) } },
+    { timestamp: at(1), ...usage(10000, 4000, 500) },
+    { timestamp: at(2), ...usage(10000, 4000, 500) },
+    { timestamp: at(70), ...usage(30000, 5000, 1000) },
+    { timestamp: at(71), ...usage(3000, 1000, 200) },
+    { timestamp: at(130), ...usage(9000, 2000, 700) },
+  ]);
+  await connector.start();
+  connector.stop();
+  const s = store.get(`codex:${id}`);
+  const total = s.tokens.input + s.tokens.output + s.tokens.cacheWrite;
+  const hourly = Object.values(s.hourly).reduce((a, b) => a + b, 0);
+  assert.equal(total, 26000 + 7700, 'před vynulováním 26 000 + po něm 7 700');
+  assert.equal(hourly, total, 'hodinové součty = celkový počet');
+  assert.equal(s.tokens.cacheRead, 5000 + 2000);
+});
+
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {
   const home = await tempDir();
   const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });

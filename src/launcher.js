@@ -41,18 +41,20 @@ export async function detectLaunchEnv({ ollama }) {
     if (name && p.startsWith('/')) bins[name] = p;
   }
   if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
-  return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), ollama: await ollama.models() };
+  return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
 }
 
 export function launchTargets(env) {
-  const { bins = {}, chatgptApp = false, ollama = { ok: false, models: [] } } = env || {};
+  const { bins = {}, chatgptApp = false, claudeApp = false, ollama = { ok: false, models: [] } } = env || {};
   const out = [];
-  if (bins.claude) {
-    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: ['terminal', 'background'], projectModes: ['terminal', 'background'], permissions: CLAUDE_PERMISSIONS, note: 'Běží na tvém předplatném Claude.' });
+  // Pořadí režimů = doporučení: nejdřív aplikace, pak práce na pozadí, Terminál až nakonec.
+  const claudeModes = [...(claudeApp ? ['app'] : []), ...(bins.claude ? ['background', 'terminal'] : [])];
+  if (claudeModes.length) {
+    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: claudeModes, projectModes: ['background', 'terminal'], optionalFolderModes: ['app'], permissions: CLAUDE_PERMISSIONS, note: 'Běží na tvém předplatném Claude.' });
   }
-  const codexModes = [...(chatgptApp ? ['app'] : []), ...(bins.codex ? ['terminal', 'background'] : [])];
+  const codexModes = [...(chatgptApp ? ['app'] : []), ...(bins.codex ? ['background', 'terminal'] : [])];
   if (codexModes.length) {
-    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['terminal', 'background'], sandboxes: CODEX_SANDBOXES, note: 'Běží na tvém předplatném ChatGPT.' });
+    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['background', 'terminal'], sandboxes: CODEX_SANDBOXES, note: 'Běží na tvém předplatném ChatGPT.' });
   }
   if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'S osobním Google účtem má bezplatný denní limit.' });
   if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'Podle nastavení Qwen Code.' });
@@ -77,7 +79,8 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
   if (prompt.length > PROMPT_MAX) return fail(`Zadání může mít nejvýš ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, 'prompt');
 
   let cwd = null;
-  if (target.projectModes.includes(mode)) {
+  const folderOptional = target.optionalFolderModes?.includes(mode) && typeof input.cwd === 'string' && input.cwd !== '';
+  if (target.projectModes.includes(mode) || folderOptional) {
     if (typeof input.cwd !== 'string' || !path.isAbsolute(input.cwd) || /[\n\r\0]/.test(input.cwd)) return fail('Vyber složku projektu.', 'cwd');
     const st = await fsp.stat(input.cwd).catch(() => null);
     if (!st?.isDirectory()) return fail('Tato složka neexistuje.', 'cwd');
@@ -90,6 +93,15 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
 
   switch (target.id) {
     case 'claude-code': {
+      if (mode === 'app') {
+        // Aplikace Claude: claude://code/new otevře novou konverzaci Claude Code s předvyplněným zadáním ve zvolené složce.
+        const fits = prompt.length <= URL_PROMPT_MAX;
+        const params = new URLSearchParams();
+        if (fits) params.set('q', prompt);
+        if (cwd) params.append('folder', cwd);
+        const query = params.toString();
+        return { ok: true, plan: { ...base, kind: 'open', args: [`claude://code/new${query ? `?${query}` : ''}`], copyPrompt: !fits, handoff: fits ? 'confirm' : 'paste' } };
+      }
       if (mode === 'terminal') {
         return { ok: true, plan: { ...base, kind: 'terminal', sessionId: `claude-code:${sessionUuid}`, command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.claude)} --session-id ${sessionUuid} -- ${promptArg()}` } };
       }
@@ -103,7 +115,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     case 'codex': {
       if (mode === 'app') {
         const fits = prompt.length <= URL_PROMPT_MAX;
-        return { ok: true, plan: { ...base, kind: 'open', args: [fits ? `codex://threads/new?prompt=${encodeURIComponent(prompt)}` : 'codex://threads/new'], copyPrompt: !fits } };
+        return { ok: true, plan: { ...base, kind: 'open', args: [fits ? `codex://threads/new?prompt=${encodeURIComponent(prompt)}` : 'codex://threads/new'], copyPrompt: !fits, handoff: fits ? 'confirm' : 'paste' } };
       }
       if (mode === 'terminal') return { ok: true, plan: { ...base, kind: 'terminal', command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.codex)} -- ${promptArg()}` } };
       const sandbox = input.sandbox ?? 'read-only';
@@ -123,8 +135,8 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     default: {
       const w = WEB[target.id];
       if (!w) return fail('Neznámý agent.', 'agent');
-      const url = w.url && prompt.length <= URL_PROMPT_MAX ? w.url(prompt) : w.base;
-      return { ok: true, plan: { ...base, kind: 'open', args: [url], copyPrompt: true } };
+      const prefilled = Boolean(w.url && prompt.length <= URL_PROMPT_MAX);
+      return { ok: true, plan: { ...base, kind: 'open', args: [prefilled ? w.url(prompt) : w.base], copyPrompt: true, handoff: prefilled ? 'confirm-or-paste' : 'paste' } };
     }
   }
 }

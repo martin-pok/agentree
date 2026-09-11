@@ -171,7 +171,7 @@ function update() {
     fill(el, 'table', emptyState({
       title: 'Zatím tu nejsou žádní agenti',
       text: 'Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.',
-      action: '<a class="btn" href="#/nastaveni">Zkontrolovat konektory</a>',
+      action: '<a class="btn" href="#/nastaveni">Zkontrolovat zdroje dat</a>',
     }));
   } else if (!list.length) {
     fill(el, 'table', emptyState({

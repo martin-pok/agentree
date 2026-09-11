@@ -258,7 +258,7 @@ export function createCopilotCliConnector(ctx) {
       const count = tails.size;
       return {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? `Sleduji ${count} sessions.` : exists ? 'Copilot CLI je nainstalovaný, ale nemá uložené sessions.' : 'Copilot CLI na tomto počítači není.',
+        detail: count ? `Sleduji ${count} konverzací.` : exists ? 'Copilot CLI je nainstalovaný, ale nemá uložené konverzace.' : 'Copilot CLI na tomto počítači není.',
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

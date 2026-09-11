@@ -2,7 +2,7 @@ import { state, sessionsList, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
 import { glyph, logoKey, PROVIDERS, pkey, ICON } from '../icons.js';
-import { areaChart, timeline, hbars, gauge } from '../charts.js';
+import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast } from '../ui.js';
 import { createLauncher } from '../launcher-ui.js';
@@ -14,8 +14,8 @@ function onboardingHtml() {
   const hooks = state.integrations?.claudeHooks;
   const web = state.connectors.find((c) => c.id === 'web');
   const steps = [
-    { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Claude Code, Codex, Cursor, Copilot a další se načítají samy.', cta: '<a class="btn btn--sm" href="#/nastaveni">Konektory</a>' },
-    { done: Boolean(hooks?.installed && hooks?.current), label: 'Okamžité události Claude Code', sub: 'Žádost o povolení uvidíš a dostaneš upozornění do vteřiny.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' },
+    { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Claude Code, Codex, Cursor, Copilot a další se načítají samy.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zdroje dat</a>' },
+    { done: Boolean(hooks?.installed && hooks?.current), label: 'Propojení s Claude Code', sub: 'Žádost o povolení a přesné limity uvidíš hned.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' },
     { done: web?.state === 'connected' || web?.state === 'idle', label: 'Rozšíření pro ChatGPT, Claude.ai a další weby', sub: 'Webové konverzace se zobrazí vedle agentů na Macu.', cta: '<a class="btn btn--sm" href="#/nastaveni">Návod</a>' },
     { done: state.projects.items.length > 0, label: 'První projekt', sub: 'Konverzace ze všech služeb seřazené podle klientů.', cta: '<a class="btn btn--sm" href="#/projekty">Založit</a>' },
     { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agentree', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
@@ -35,11 +35,11 @@ function mount(el) {
   v.el = el;
   v.drawn = false;
   el.innerHTML = `
-  <section class="card launch" data-enter style="--i:0" aria-labelledby="launch-h" data-launch></section>
+  <section class="pulse-bar" data-enter style="--i:0" aria-label="Stav agentů" data-region="hero"></section>
+  <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
   <div class="ov">
     <div class="ov-col">
-      <section class="card hero" data-enter style="--i:1" aria-label="Právě pracuje"><div data-region="hero"></div></section>
       <section data-enter style="--i:2" aria-labelledby="dec-h">
         <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
         <div data-region="decisions"></div>
@@ -69,7 +69,7 @@ function mount(el) {
           <div class="card spend-mini" data-region="spend"></div>
         </section>
         <section aria-labelledby="rt-h">
-          <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Konektory</a></div>
+          <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Zdroje dat</a></div>
           <div class="rt-grid" data-region="runtimes"></div>
         </section>
       </div>
@@ -125,19 +125,24 @@ function update() {
   const running = state.runtimes.filter((r) => r.running).length;
   const apps = [...new Map(working.map((s) => [logoKey(s) || s.app, s])).values()];
 
+  const failedCount = needs.filter((s) => s.status === 'failed').length;
+  const waitingCount = needs.length - failedCount;
+  el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
   fill(el, 'hero', `
-    <div class="hero-top">
-      <span class="eyebrow">Právě pracuje</span>
-      ${needs.length
-        ? `<a class="chip-alert" href="#/agenti?stav=needs_input">${ICON.hand}${needs.length} ${plural(needs.length, 'čeká', 'čekají', 'čeká')} na tebe</a>`
-        : `<span class="chip-calm">${ICON.check}Nikdo nečeká</span>`}
+    <div class="pb-main">
+      <span class="pb-live" aria-hidden="true"></span>
+      <span class="pb-num">${tween('ov-working', working.length)}</span>
+      <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
+        <small>${todayCount} ${plural(todayCount, 'konverzace', 'konverzace', 'konverzací')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
-    <div class="hero-num"><span class="num">${tween('ov-working', working.length)}</span><span class="unit">${plural(working.length, 'agent', 'agenti', 'agentů')}</span></div>
-    <div class="hero-foot">
-      <span class="muted small">${todayCount} ${plural(todayCount, 'session', 'sessions', 'sessions')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</span>
-      <span class="discs" role="img" aria-label="${esc(apps.length ? `Pracují: ${apps.map((s) => s.app).join(', ')}` : 'Nikdo nepracuje')}">
-        ${apps.slice(0, 5).map((s) => `<span class="disc" title="${esc(s.app)}">${glyph(s)}</span>`).join('')}
-      </span>
+    <div class="pb-stats">
+      <a class="pb-stat${waitingCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${waitingCount}</b><span>čeká na tebe</span></a>
+      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${failedCount}</b><span>selhalo</span></a>
+      <a class="pb-stat" href="#/agenti"><b>${todayCount}</b><span>dnes aktivních</span></a>
+    </div>
+    <div class="pb-apps">
+      ${apps.length ? `<span class="discs" role="img" aria-label="${esc(`Pracují: ${apps.map((s) => s.app).join(', ')}`)}">${apps.slice(0, 4).map((s) => `<span class="disc" title="${esc(s.app)}">${glyph(s)}</span>`).join('')}</span>` : ''}
+      <a class="link" href="#/agenti">Všichni agenti ${ICON.arrow}</a>
     </div>`);
 
   const hooks = state.integrations?.claudeHooks;
@@ -145,7 +150,7 @@ function update() {
     ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">A dalších ${needs.length - 4}</a>` : ''}`
     : `<div class="calm"><span class="calm-mark">${ICON.check}</span><div><strong>Všechno běží bez tebe</strong>
         <p>Jakmile agent bude chtít souhlas, odpověď nebo narazí na limit, objeví se tady a přijde ti upozornění.</p>
-        ${hooks && !hooks.installed ? `<a class="link-inline" href="#/nastaveni">Zapnout okamžité události pro Claude Code ${ICON.arrow}</a>` : ''}</div></div>`);
+        ${hooks && !hooks.installed ? `<a class="link-inline" href="#/nastaveni">Zapnout propojení s Claude Code ${ICON.arrow}</a>` : ''}</div></div>`);
 
   const todayTok = tokensSince(all, today);
   const avg = Math.max(0, tokensSince(all, startOfDay(now - 7 * DAY)) - todayTok) / 7;
@@ -159,7 +164,7 @@ function update() {
   const claudeExact = state.limits.some((l) => l.source === 'statusline');
   const usesClaude = all.some((s) => s.connector === 'claude-code');
   const limitHint = usesClaude && !claudeExact
-    ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí okamžitých událostí v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
+    ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
     : '';
   fill(el, 'limits', windows || credits.length || limitHint
     ? `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
@@ -181,11 +186,11 @@ function update() {
 
   const ser = providerSeries(all, v.period, now, v.hidden);
   const changed = fill(el, 'chart', ser.series.length
-    ? areaChart({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Spotřeba tokenů' })
+    ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Spotřeba tokenů', partialLast: true })
     : '<div class="empty-inline">V tomto období žádné tokeny.</div>');
   if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
   v.drawn = true;
-  fill(el, 'legend', legendHtml(ser.series));
+  fill(el, 'legend', legendHtml(ser.series, { box: true }));
 
   const sp = state.spend;
   if (sp) {

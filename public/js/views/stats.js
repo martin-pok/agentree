@@ -1,8 +1,8 @@
 import { state, sessionsList } from '../state.js';
 import { esc, fmtTok, fmtNum, plural, dateLong, DAY } from '../format.js';
 import { glyph, PROVIDERS, pkey } from '../icons.js';
-import { areaChart, heatmap, donut, hbars } from '../charts.js';
-import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, CATEGORICAL } from '../data.js';
+import { stackedColumns, heatmap, donut, hbars, timeLine } from '../charts.js';
+import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, CATEGORICAL, chartColor } from '../data.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null };
@@ -63,17 +63,17 @@ function update() {
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);
   fill(el, 'kpis', [
     ['Tokeny', tween(`st-tok-${v.period}`, tokens, 'tok'), 'vstup, výstup a zápis do cache'],
-    ['Aktivní sessions', tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} aplikací`],
+    ['Aktivní konverzace', tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} aplikací`],
     ['Hodiny s aktivitou', tween(`st-h-${v.period}`, hours), 'hodiny, kdy aspoň jeden agent pracoval'],
-    ['Zadání', tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní session', 'aktivních sessions', 'aktivních sessions')}`],
+    ['Zadání', tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
   ].map(([l, val, sub]) => `<div class="card kpi"><span class="eyebrow">${l}</span><span class="val">${val}</span><small>${esc(sub)}</small></div>`).join(''));
 
   const changed = fill(el, 'chart', ser.series.length
-    ? areaChart({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: 'Tokeny podle poskytovatele' })
+    ? stackedColumns({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: 'Tokeny podle poskytovatele', partialLast: true })
     : emptyState({ title: 'V tomto období žádné tokeny' }));
   if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
   v.drawn = true;
-  fill(el, 'legend', legendHtml(ser.series));
+  fill(el, 'legend', legendHtml(ser.series, { box: true }));
 
   fill(el, 'heat', heatmap(heatGrid(all, now, 30)));
 
@@ -84,7 +84,7 @@ function update() {
 
   const projects = groupTotals(all, since, (s) => s.project).slice(0, 8);
   fill(el, 'projects', projects.length
-    ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'session', 'sessions', 'sessions')}`, value: p.value, color: PROVIDERS[p.provider].color, icon: glyph(p.provider) })))
+    ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: PROVIDERS[p.provider].color, icon: glyph(p.provider) })))
     : '<p class="muted">Bez dat.</p>');
 
   const models = groupTotals(all, since, (s) => s.model).slice(0, 8);
@@ -97,9 +97,9 @@ function update() {
     .filter((c) => c.history?.length >= 2)
     .map((c) => {
       const h = c.history.slice(-60);
-      const markers = h.map((p, i) => (i && p.balance > h[i - 1].balance ? { index: i, value: p.balance, label: `Dokoupeno +${fmtNum(p.balance - h[i - 1].balance)}` } : null)).filter(Boolean);
+      const markers = h.filter((p, i) => i && p.balance > h[i - 1].balance);
       return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${markers.length ? ` · ${markers.length}× dokoupeno` : ''}</span></div>
-        ${areaChart({ id: `credits-${c.id}`, labels: h.map((p) => dateLong(p.at)), series: [{ key: c.id, label: 'Zůstatek', color: PROVIDERS[pkey(c.provider)].color, stroke: PROVIDERS[pkey(c.provider)].ink, values: h.map((p) => p.balance) }], stacked: false, height: 160, format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), markers, label: c.label })}</div>`;
+        ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });
   fill(el, 'limits', gauges.length || creditCharts.length
     ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}`

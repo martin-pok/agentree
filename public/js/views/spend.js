@@ -2,7 +2,8 @@ import { state } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtMoney, fmtNum, localDate, dateLong, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
-import { gauge, columnChart, donut, areaChart } from '../charts.js';
+import { gauge, columnChart, donut, timeLine } from '../charts.js';
+import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
 
 const v = { el: null };
@@ -200,9 +201,9 @@ function update() {
   fill(el, 'credits', credits.length
     ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">zůstatek podle aplikace</span></div>${credits.map((c) => {
       const h = c.history.slice(-60);
-      const markers = h.map((p, i) => (i && p.balance > h[i - 1].balance ? { index: i, value: p.balance, label: `Dokoupeno +${fmtNum(p.balance - h[i - 1].balance)}` } : null)).filter(Boolean);
+      const markers = h.filter((p, i) => i && p.balance > h[i - 1].balance);
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} zbývá · ${markers.length}× dokoupeno</span></div>
-        ${areaChart({ id: `sp-credits-${c.id}`, labels: h.map((p) => dateLong(p.at)), series: [{ key: c.id, label: 'Zůstatek', color: PROVIDERS[pkey(c.provider)].color, stroke: PROVIDERS[pkey(c.provider)].ink, values: h.map((p) => p.balance) }], stacked: false, height: 150, format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: fmtNum, markers, label: c.label })}</div>`;
+        ${timeLine({ id: `sp-credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     }).join('')}</section>`
     : '');
 

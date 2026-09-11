@@ -6,6 +6,7 @@ import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, unti
 import { bindCharts, restoreHover } from './charts.js';
 import { tokensSince, needsYou } from './data.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
+import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
 import overview from './views/overview.js';
 import agents from './views/agents.js';
 import session from './views/session.js';
@@ -60,7 +61,7 @@ function renderStage(all) {
     const h = hashId(s.id);
     const top = NOTE_ROWS[h % 5] + ((h >>> 5) % 2 ? 5 : 0);
     const left = x0 + (((h >>> 8) % 1000) / 1000) * span;
-    return `<i class="note${s.status === 'working' ? '' : ' note--alert'}" style="left:${left.toFixed(2)}%;top:${top}%"></i>`;
+    return `<i class="stage-dot${s.status === 'working' ? '' : ' stage-dot--alert'}" style="left:${left.toFixed(2)}%;top:${top}%"></i>`;
   }).join(''));
   stageEl.classList.toggle('is-live', active.some((s) => s.status === 'working'));
 }
@@ -190,11 +191,7 @@ function updateChrome() {
   const needs = all.filter(needsYou).length;
   const name = state.host?.fullName || state.host?.user || '';
 
-  setHtml(profileEl, state.loaded
-    ? `<div class="avatar${working ? ' is-live' : ''}" aria-hidden="true">${esc(initials(name || 'Agentree'))}</div>
-       <p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
-       <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`
-    : '<div class="avatar is-loading" aria-hidden="true"></div>');
+  renderProfile(name, working, all);
 
   const setBadge = (key, count, tone, label) => {
     const b = document.querySelector(`[data-badge="${key}"]`);
@@ -230,6 +227,29 @@ function updateChrome() {
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agentree`;
   if (!pop.hidden) renderPopover();
+}
+
+// Profil: avatar má vlastní oblast, aby se při každé změně čísel nepřekresloval (a neblikal pod kurzorem).
+function renderProfile(name, working, all) {
+  if (!state.loaded) {
+    setHtml(profileEl, '<div class="avatar is-loading" aria-hidden="true"></div>');
+    return;
+  }
+  if (!profileEl.querySelector('[data-p-avatar]')) {
+    profileEl.innerHTML = '<div data-p-avatar></div><div data-p-text></div>';
+    profileEl._html = null;
+  }
+  const slot = profileEl.querySelector('[data-p-avatar]');
+  const art = hasAvatar(state.settings?.avatar);
+  const hadFocus = Boolean(document.activeElement?.closest?.('[data-avatar-cycle]'));
+  setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="Změnit profilový obrázek" title="Změnit profilový obrázek">
+    <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agentree'))}</span></span>
+    <span class="avatar-change" aria-hidden="true">${ICON.refresh}</span>
+  </button>`);
+  slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
+  if (hadFocus && !document.activeElement?.closest?.('[data-avatar-cycle]')) slot.querySelector('button')?.focus({ preventScroll: true });
+  setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`);
 }
 
 function tick() {
@@ -324,7 +344,7 @@ const palette = createPalette(
       { group: 'Akce', label: 'Nový projekt', run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
       { group: 'Akce', label: 'Přidat výdaj', href: '#/utrata?pridat=1', icon: ICON.plus },
       { group: 'Akce', label: 'Označit upozornění jako přečtená', run: () => markRead('all'), icon: ICON.check },
-      { group: 'Akce', label: 'Zapnout okamžité události Claude Code', href: '#/nastaveni', icon: ICON.bell },
+      { group: 'Akce', label: 'Zapnout propojení s Claude Code', href: '#/nastaveni', icon: ICON.bell },
     ].filter((a) => !nq || norm(a.label).includes(nq));
     return nq ? [...agentItems, ...projectItems, ...sections, ...actions] : [...actions.slice(0, 2), ...sections, ...projectItems, ...agentItems, ...actions.slice(2)];
   },
@@ -352,6 +372,7 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
+  if (e.target.closest('[data-avatar-cycle]')) { cycleAvatar(); return; }
   if (e.target.closest('[data-nav-action="more"]')) { if (sheet.hidden) openSheet(); else closeSheet({ restoreFocus: true }); return; }
   if (e.target.closest('[data-nav-action="launch"]')) {
     launchIntent.focus = true;
@@ -407,7 +428,7 @@ function renderOffline(show) {
   const port = location.port || '4620';
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>Agentree server neběží</strong>
-      <p>Dashboard se připojí sám, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).</p>
+      <p>Agentree se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).</p>
       <p class="small">Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. Adresa: 127.0.0.1:${esc(port)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
   offlineEl.hidden = false;

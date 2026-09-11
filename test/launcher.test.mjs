@@ -18,8 +18,9 @@ const ENV = {
 
 test('nabídka agentů podle toho, co je nainstalované', () => {
   const t = Object.fromEntries(launchTargets(ENV).map((x) => [x.id, x]));
-  assert.deepEqual(t['claude-code'].modes, ['terminal', 'background']);
-  assert.deepEqual(t.codex.modes, ['app', 'terminal', 'background']);
+  assert.deepEqual(t['claude-code'].modes, ['background', 'terminal'], 'bez aplikace Claude jen CLI');
+  assert.deepEqual(t.codex.modes, ['app', 'background', 'terminal'], 'Terminál až jako poslední volba');
+  assert.deepEqual(launchTargets({ ...ENV, claudeApp: true }).find((x) => x.id === 'claude-code').modes, ['app', 'background', 'terminal']);
   assert.deepEqual(t.ollama.models, ['llama3.2:3b']);
   assert.ok(t.chatgpt && t['claude-web'] && t.perplexity && t.gemini && t.grok && t.mscopilot && t.qwen);
   assert.equal(t['gemini-cli'], undefined);
@@ -42,6 +43,26 @@ test('Claude Code: Terminál se zadáním ze souboru, pozadí s ID session a opr
   assert.equal(b.plan.sessionId, 'claude-code:11111111-2222-3333-4444-555555555555');
   assert.equal((await planLaunch({ agent: 'claude-code', mode: 'background', prompt: 'x', cwd: dir }, ENV)).plan.permission, 'plan');
   assert.equal((await planLaunch({ agent: 'claude-code', mode: 'background', prompt: 'x', cwd: dir, permission: 'bypassPermissions' }, ENV)).field, 'permission');
+});
+
+test('Claude Code v aplikaci Claude: nová konverzace se zadáním a složkou, dlouhé zadání přes schránku', async () => {
+  const dir = await tempDir();
+  const env = { ...ENV, claudeApp: true };
+  const r = await planLaunch({ agent: 'claude-code', mode: 'app', prompt: 'Oprav hlavičku & ceník', cwd: dir }, env);
+  assert.equal(r.ok, true);
+  const url = new URL(r.plan.args[0]);
+  assert.equal(`${url.protocol}//${url.host}${url.pathname}`, 'claude://code/new');
+  assert.equal(url.searchParams.get('q'), 'Oprav hlavičku & ceník');
+  assert.equal(url.searchParams.get('folder'), dir);
+  assert.equal(r.plan.handoff, 'confirm');
+  const noFolder = await planLaunch({ agent: 'claude-code', mode: 'app', prompt: 'Ahoj' }, env);
+  assert.equal(noFolder.plan.args[0], 'claude://code/new?q=Ahoj', 'složka je u aplikace nepovinná');
+  assert.equal((await planLaunch({ agent: 'claude-code', mode: 'app', prompt: 'x', cwd: 'relativni' }, env)).field, 'cwd');
+  const long = await planLaunch({ agent: 'claude-code', mode: 'app', prompt: 'x'.repeat(7000) }, env);
+  assert.equal(long.plan.args[0], 'claude://code/new');
+  assert.equal(long.plan.copyPrompt, true);
+  assert.equal(long.plan.handoff, 'paste');
+  assert.equal((await planLaunch({ agent: 'claude-code', mode: 'app', prompt: 'x' }, ENV)).field, 'mode', 'bez nainstalované aplikace Claude režim není');
 });
 
 test('Codex: aplikace s předvyplněným zadáním, exec na pozadí se sandboxem', async () => {

@@ -120,7 +120,7 @@ export class AlertEngine {
         level: 'info',
         kind: 'limit_reset',
         title: `${l.app}: ${name} je obnovený`,
-        body: 'Můžeš zase naplno promptovat.',
+        body: 'Můžeš zase naplno zadávat úkoly.',
       });
       if (a) raised.push(a);
     }

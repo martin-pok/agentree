@@ -9,7 +9,13 @@ export const needsYou = (s) => s.status === 'needs_input' || s.status === 'limit
 // Pořadí v seznamech: nejdřív co potřebuje tebe, pak co pracuje, zbytek podle času.
 export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.working ? STATUS_ORDER[s.status] : STATUS_ORDER.working + 1);
 
-export const CATEGORICAL = ['#D97757', '#16141D', '#22A38C', '#C2335A', '#4285F4', '#8250DF', '#C99A3E', '#1F8A96', '#615CED', '#8C8896'];
+// Barvy grafů: ověřená kategoriální paleta (validátor dataviz: světlost, sytost, rozlišitelnost pro barvoslepé).
+// Barva patří poskytovateli natrvalo — nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
+export const CATEGORICAL = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+export const CHART_ORDER = ['google', 'anthropic', 'openai', 'microsoft', 'cursor', 'perplexity', 'github', 'xai'];
+export const CHART_OTHER = { key: 'other', label: 'Ostatní', color: '#8a8594' };
+export const chartKey = (provider) => (CHART_ORDER.includes(provider) ? provider : 'other');
+export const chartColor = (provider) => (CHART_ORDER.includes(provider) ? CATEGORICAL[CHART_ORDER.indexOf(provider)] : CHART_OTHER.color);
 
 export function tokensSince(sessions, since, pred) {
   let sum = 0;
@@ -55,7 +61,7 @@ export function providerSeries(sessions, period, now, hidden = new Set()) {
   const b = periodBuckets(period, now);
   const data = new Map();
   for (const s of sessions) {
-    const key = pkey(s.provider);
+    const key = chartKey(pkey(s.provider));
     for (const k in s.hourly) {
       const i = b.indexOf(hourTs(k));
       if (i < 0 || i >= b.starts.length) continue;
@@ -63,10 +69,10 @@ export function providerSeries(sessions, period, now, hidden = new Set()) {
       data.get(key)[i] += s.hourly[k];
     }
   }
-  const keys = Object.keys(PROVIDERS).filter((k) => data.has(k));
+  const keys = [...CHART_ORDER, 'other'].filter((k) => data.has(k));
   return {
     ...b,
-    series: keys.map((k) => ({ key: k, label: PROVIDERS[k].label, color: PROVIDERS[k].color, stroke: PROVIDERS[k].ink, values: data.get(k), hidden: hidden.has(k) })),
+    series: keys.map((k) => ({ key: k, label: k === 'other' ? CHART_OTHER.label : PROVIDERS[k].label, color: chartColor(k), values: data.get(k), hidden: hidden.has(k) })),
   };
 }
 

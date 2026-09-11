@@ -2,7 +2,7 @@ import { state, setProjects, sessionsList } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY } from '../format.js';
 import { ICON } from '../icons.js';
-import { sparkline } from '../charts.js';
+import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
 import { projectHref, pdot, projectStats, logoStack, projectForm } from '../projects-ui.js';
 
@@ -55,7 +55,7 @@ function cardHtml(p, now) {
     <span class="pcard-top">${pdot(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="Potřebuje tvé rozhodnutí">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="Právě pracuje"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : 'Ručně zařazené konverzace'))}</span>
-    <span class="pcard-spark" aria-hidden="true">${hasSpark ? sparkline(spark, p.color, { height: 40, fill: true }) : '<i class="pcard-flat"></i>'}</span>
+    <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
       <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '—'}</b> tokenů / 30 dní</span>
@@ -129,7 +129,7 @@ function update() {
         <span class="eyebrow">Projekty</span>
         <h2>Práce agentů seřazená podle klientů a zakázek</h2>
         <p>Založ projekt a Agentree do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.</p>
-        <ul class="checklist"><li>Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt</li><li>Brief projektu po ruce, když spouštíš dalšího agenta</li><li>Export do CSV jako podklad k vyúčtování klientovi</li></ul>
+        <ul class="checklist"><li>Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt</li><li>Podklady projektu po ruce, když spouštíš dalšího agenta</li><li>Export do CSV jako podklad k vyúčtování klientovi</li></ul>
         <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Vytvořit první projekt</button>
       </div>
       <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#C99A3E"></span></div>

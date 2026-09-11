@@ -124,6 +124,18 @@ test('selhání spuštění: stav „Selhalo“ s důvodem, nový tah ho zruší
   assert.equal(deriveStatus(s, now).reason, 'Hotovo, čeká na další zadání');
 });
 
+test('profilový obrázek: uloží se volba, null = iniciály, neplatná hodnota se odmítne', async (t) => {
+  const srv = await startTestServer();
+  t.after(() => srv.close());
+  const a = api(srv.url);
+  assert.equal((await a.get('/api/state')).body.settings.avatar, null, 'výchozí jsou iniciály');
+  assert.equal((await a.send('PUT', '/api/settings', { avatar: 3 })).body.settings.avatar, 3);
+  assert.equal((await a.send('PUT', '/api/settings', { avatar: 999 })).status, 422);
+  assert.equal((await a.send('PUT', '/api/settings', { avatar: 'x' })).status, 422);
+  assert.equal((await a.get('/api/state')).body.settings.avatar, 3);
+  assert.equal((await a.send('PUT', '/api/settings', { avatar: null })).body.settings.avatar, null);
+});
+
 test('běh, který skončí chybou, se v Agentree ukáže jako selhaná session s radou', async (t) => {
   const srv = await startTestServer();
   t.after(() => srv.close());

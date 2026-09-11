@@ -120,7 +120,7 @@ export function deriveStatus(s, now) {
     return { status: 'working', reason: maybePermission ? `${activity} · možná čeká na tvé povolení` : activity, stale: false };
   }
   const stale = Boolean(s.running);
-  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Session ukončena', stale: false };
+  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Konverzace ukončena', stale: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
   if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? 'Delší dobu bez aktivity' : answered ? 'Hotovo, čeká na další zadání' : 'Zatím bez odpovědi agenta', stale };
@@ -140,7 +140,7 @@ export function summarize(s, now, windowMs) {
     provider: s.provider,
     app: s.app,
     source: s.source,
-    title: clip(s.title || s.firstPrompt || lastSegment(s.cwd).replace(/[-_]+/g, ' ') || 'Session bez názvu', 100),
+    title: clip(s.title || s.firstPrompt || lastSegment(s.cwd).replace(/[-_]+/g, ' ') || 'Konverzace bez názvu', 100),
     cwd: s.cwd,
     project: lastSegment(s.cwd),
     model: s.model,

@@ -108,10 +108,10 @@ function mount(el, [id]) {
       </section>
       <aside class="session-side">
         <section class="card side-card" aria-labelledby="brief-h">
-          <div class="side-head"><h3 id="brief-h">Brief a poznámky</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
-          <label class="sr-only" for="brief-${esc(id)}">Brief projektu</label>
-          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu ho můžeš připojit k zadání."></textarea>
-          <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}Kopírovat brief</button></div>
+          <div class="side-head"><h3 id="brief-h">Podklady a poznámky</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
+          <label class="sr-only" for="brief-${esc(id)}">Podklady projektu</label>
+          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání."></textarea>
+          <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}Kopírovat podklady</button></div>
         </section>
         <section class="card side-card" data-region="folders" aria-label="Složky projektu"></section>
         <section class="card side-card" data-region="services" aria-label="Služby v projektu"></section>
@@ -152,8 +152,8 @@ function mount(el, [id]) {
           location.hash = '#/prehled';
           break;
         case 'copy-brief':
-          if (!textarea.value.trim()) { toast('Brief je zatím prázdný.'); textarea.focus(); break; }
-          await copy(`Kontext projektu ${p.name}:\n${textarea.value.trim()}`, 'Brief zkopírován — vlož ho do zadání agenta');
+          if (!textarea.value.trim()) { toast('Podklady jsou zatím prázdné.'); textarea.focus(); break; }
+          await copy(`Podklady projektu ${p.name}:\n${textarea.value.trim()}`, 'Podklady zkopírovány — vlož je do zadání agenta');
           break;
         case 'archive': {
           const r = await api.updateProject(p.id, { archived: !p.archived });
@@ -162,7 +162,7 @@ function mount(el, [id]) {
           break;
         }
         case 'delete':
-          if (await confirmDialog({ title: `Smazat projekt ${p.name}?`, message: 'Konverzace zůstanou v Agentree, jen přestanou být zařazené v tomto projektu. Brief a poznámky projektu se smažou.', confirmLabel: 'Smazat projekt', danger: true })) {
+          if (await confirmDialog({ title: `Smazat projekt ${p.name}?`, message: 'Konverzace zůstanou v Agentree, jen přestanou být zařazené v tomto projektu. Podklady a poznámky projektu se smažou.', confirmLabel: 'Smazat projekt', danger: true })) {
             await api.deleteProject(p.id);
             location.hash = '#/projekty';
             toast(`Projekt ${p.name} smazán`);

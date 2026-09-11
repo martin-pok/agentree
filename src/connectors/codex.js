@@ -190,13 +190,25 @@ export function createCodexConnector(ctx) {
             const t = p.info?.total_token_usage;
             if (t) {
               const cached = t.cached_input_tokens || 0;
-              const processed = (t.input_tokens || 0) - cached + (t.output_tokens || 0);
+              const cur = { input: (t.input_tokens || 0) - cached, output: t.output_tokens || 0, cacheWrite: t.cache_write_input_tokens || 0, cacheRead: cached };
+              const processed = cur.input + cur.output + cur.cacheWrite;
+              // Codex své počítadlo občas vynuluje (např. po zkomprimování kontextu). Spotřeba před vynulováním se nezahazuje.
+              if (st.lastTokens && processed < st.prevProcessed) {
+                for (const key of Object.keys(st.tokenBase)) st.tokenBase[key] += st.lastTokens[key];
+                st.prevProcessed = 0;
+              }
               if (processed > st.prevProcessed) {
                 const k = hourKey(ts);
                 s.hourly[k] = (s.hourly[k] || 0) + (processed - st.prevProcessed);
                 st.prevProcessed = processed;
               }
-              s.tokens = { input: (t.input_tokens || 0) - cached, output: t.output_tokens || 0, cacheWrite: t.cache_write_input_tokens || 0, cacheRead: cached };
+              st.lastTokens = cur;
+              s.tokens = {
+                input: st.tokenBase.input + cur.input,
+                output: st.tokenBase.output + cur.output,
+                cacheWrite: st.tokenBase.cacheWrite + cur.cacheWrite,
+                cacheRead: st.tokenBase.cacheRead + cur.cacheRead,
+              };
             }
             if (p.rate_limits) rateLimits(s, p.rate_limits, ts);
             touch(s, ts);
@@ -257,7 +269,7 @@ export function createCodexConnector(ctx) {
     }
     if (!st) {
       const base = path.basename(file, '.jsonl');
-      st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, prevProcessed: 0 };
+      st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, prevProcessed: 0, lastTokens: null, tokenBase: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 } };
       files.set(file, st);
     }
     const s = store.ensure({ connector: 'codex', localId: st.localId, provider: 'openai', app: 'Codex' });
@@ -299,7 +311,7 @@ export function createCodexConnector(ctx) {
       const count = files.size;
       return {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? `Sleduji ${count} sessions za posledních ${config.windowDays} dní.` : exists ? 'Složka existuje, zatím bez sessions.' : 'Codex na tomto počítači není.',
+        detail: count ? `Sleduji ${count} konverzací za posledních ${config.windowDays} dní.` : exists ? 'Složka existuje, zatím bez konverzací.' : 'Codex na tomto počítači není.',
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

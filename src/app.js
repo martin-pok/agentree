@@ -110,10 +110,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
 
   async function openSession(id, target) {
     const s = store.summary(id);
-    if (!s) return { status: 404, error: 'Session nenalezena.' };
+    if (!s) return { status: 404, error: 'Konverzace nenalezena.' };
     if (config.openMode === 'off') return { status: 422, error: 'Otevírání aplikací je dostupné jen na macOS.' };
     const plan = planOpen(s, target, apps);
-    if (!plan) return { status: 422, error: 'Tuto akci pro session nelze provést.' };
+    if (!plan) return { status: 422, error: 'Tuto akci pro konverzaci nelze provést.' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true, plan } : {}) };
@@ -146,8 +146,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
         const count = visible.filter((s) => s.connector === c.id).length;
         status = { ...status, count };
         if (status.state === 'connected' && c.id !== 'web') {
-          const word = count === 1 ? 'session' : 'sessions';
-          status.detail = `${count} ${word} s aktivitou za ${config.windowDays} dní.${status.hooksActive ? ' Okamžité události jsou aktivní.' : ''}`;
+          const word = count === 1 ? 'konverzace' : count > 1 && count < 5 ? 'konverzace' : 'konverzací';
+          status.detail = `${count} ${word} s aktivitou za ${config.windowDays} dní.${status.hooksActive ? ' Propojení je aktivní.' : ''}`;
         }
       }
       return { id: c.id, name: c.name, provider: c.provider, kind: c.kind, verified: c.verified, source: c.source, description: c.description, ...status };
@@ -336,7 +336,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   function composePrompt(p, prompt, attachBrief) {
     const parts = [prompt.trim()];
     if (p.settings.instructions.trim()) parts.push(`---\nPravidla projektu ${p.name}:\n${p.settings.instructions.trim()}`);
-    if (attachBrief && p.notes.trim()) parts.push(`---\nBrief projektu ${p.name}:\n${p.notes.trim()}`);
+    if (attachBrief && p.notes.trim()) parts.push(`---\nPodklady projektu ${p.name}:\n${p.notes.trim()}`);
     return parts.join('\n\n');
   }
 
@@ -356,7 +356,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     const isolate = typeof b.isolate === 'boolean' ? b.isolate : p.settings.isolate;
     const attachBrief = typeof b.attachBrief === 'boolean' ? b.attachBrief : p.settings.attachBrief;
     const text = composePrompt(p, prompt, attachBrief);
-    if (text.length > PROMPT_MAX) return { status: 422, error: `Zadání s pravidly a briefem je delší než ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, field: 'prompt' };
+    if (text.length > PROMPT_MAX) return { status: 422, error: `Zadání s pravidly a podklady je delší než ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, field: 'prompt' };
     const repoDir = repoOf(p);
     if (!repoDir) return { status: 422, error: 'Nastav projektu složku repozitáře (Nastavení projektu → Repozitář).', field: 'repo' };
     let info = null;
@@ -496,7 +496,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
 
   async function refreshLaunch() {
     if (config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
-    else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, ollama: await ollama.models() };
+    else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
     return payload;
@@ -555,6 +555,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       sessionId,
       run: runInfo,
       copyPrompt: Boolean(plan.copyPrompt),
+      handoff: plan.handoff || null,
       ...(dry ? { dry: true, plan: { ...publicPlan, argv, command } } : {}),
     };
   }

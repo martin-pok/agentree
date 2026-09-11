@@ -102,7 +102,7 @@ export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app,
     kind: 'local',
     verified,
     source: `~/${dir}/tmp/*/chats`,
-    description: 'Přepis chatů, modely a tokeny z uložených sessions.',
+    description: 'Přepis chatů, modely a tokeny z uložených konverzací.',
     async start() {
       await scan();
       watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));

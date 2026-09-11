@@ -2,7 +2,7 @@ import { state, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
-import { sparkline, stackBar } from '../charts.js';
+import { miniBars, stackBar } from '../charts.js';
 import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
@@ -86,7 +86,7 @@ async function load() {
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
   } catch (err) {
     t.loaded = true;
-    t.error = err.status === 404 ? 'Session už není v okně sledování (starší než 30 dní) nebo byla smazána.' : err.message;
+    t.error = err.status === 404 ? 'Konverzace je starší než 30 dní nebo byla smazána.' : err.message;
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);
@@ -225,7 +225,7 @@ function update() {
   }
 
   fill(el, 'head', `
-    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? 'webová aplikace' : 'na tomto Macu'}</span>${s.hooked ? '<span class="badge badge--ok">Okamžité události</span>' : ''}</div>
+    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? 'webová aplikace' : 'na tomto Macu'}</span>${s.hooked ? '<span class="badge badge--ok">Propojeno</span>' : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}<span class="muted">Poslední aktivita <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     <div class="session-actions">
@@ -309,7 +309,7 @@ function update() {
       { label: 'Zápis do cache', value: tok.cacheWrite || 0, color: '#22A38C' },
       { label: 'Čtení z cache', value: tok.cacheRead || 0, color: '#E3E1E9' },
     ])}</section>` : ''}
-    ${hasTokens ? `<section class="card side-card" aria-labelledby="spark-h"><h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${sparkline(spark, color.ink, { height: 64, fill: true })}</div></section>` : ''}
+    ${hasTokens ? `<section class="card side-card" aria-labelledby="spark-h"><h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
     ${limits.length ? `<section class="card side-card" aria-labelledby="lim-h"><h3 id="lim-h">Limity</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
     ${s.lastPrompt ? `<section class="card side-card" aria-labelledby="lp-h"><h3 id="lp-h">Poslední zadání</h3><blockquote class="quote">${esc(s.lastPrompt)}</blockquote></section>` : ''}
   `);

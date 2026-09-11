@@ -33,6 +33,7 @@ export function normalizeData(raw) {
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       onboardingDismissed: s.onboardingDismissed === true,
+      avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
     },
     projects: normalizeProjects(d.projects),
     license: d.license && typeof d.license.key === 'string' && d.license.key.length < 4000 ? { key: d.license.key, activatedAt: Number(d.license.activatedAt) || Date.now() } : null,

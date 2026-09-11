@@ -92,7 +92,7 @@ export function kindLabel(kind) {
 
 export function howToAnswer(s) {
   if (s.source === 'web') return 'Odpověz přímo v konverzaci v prohlížeči.';
-  if (s.connector === 'claude-code') return 'Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde session běží.';
+  if (s.connector === 'claude-code') return 'Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde konverzace běží.';
   if (s.connector === 'codex') return 'Otevři vlákno v Codexu tlačítkem výše a odpověz tam.';
   if (s.connector === 'cursor') return 'Potvrď akci v Cursoru.';
   if (s.connector === 'vscode-copilot') return 'Potvrď akci v panelu Copilotu ve VS Code.';
@@ -141,9 +141,9 @@ export function openButtons(s, { small = false, max = 3 } = {}) {
     .join('');
 }
 
-export function legendHtml(series) {
+export function legendHtml(series, { box = false } = {}) {
   return series
-    .map((s) => `<button class="legend-item" type="button" data-legend="${esc(s.key)}" aria-pressed="${!s.hidden}"><i class="swatch" style="background:${s.stroke || s.color}"></i>${esc(s.label)}</button>`)
+    .map((s) => `<button class="legend-item" type="button" data-legend="${esc(s.key)}" aria-pressed="${!s.hidden}"><i class="swatch${box ? ' swatch--box' : ''}" style="background:${s.stroke || s.color}"></i>${esc(s.label)}</button>`)
     .join('');
 }
 

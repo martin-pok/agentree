@@ -61,6 +61,15 @@ export function dur(ms) {
   return `${Math.floor(h / 24)} d ${h % 24} h`;
 }
 
+// Krátká doba běhu: „23 s“, „4 min 12 s“, „2 h 5 min“.
+export function durShort(ms) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return m < 10 && s % 60 ? `${m} min ${s % 60} s` : `${m} min`;
+  return dur(ms);
+}
+
 export function clock(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);

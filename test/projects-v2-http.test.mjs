@@ -94,7 +94,7 @@ test('projekty 2: nastavení, vzhled, obrázky, git, tým agentů, pravidla a ro
       const promptArg = x.plan.argv.at(-1);
       assert.ok(promptArg.startsWith('Přidej ceník'));
       assert.ok(promptArg.includes('Pravidla projektu Web:\nPiš česky.'));
-      assert.ok(promptArg.includes('Brief projektu Web:\nKlient: kavárna.'));
+      assert.ok(promptArg.includes('Podklady projektu Web:\nKlient: kavárna.'));
     }
     assert.deepEqual((await a.get('/api/projects')).body.projects.items[0].work, []);
 

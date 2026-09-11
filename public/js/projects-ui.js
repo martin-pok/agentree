@@ -6,6 +6,52 @@ import { modal, toast } from './ui.js';
 import { sessionTotal, needsYou } from './data.js';
 
 export const projectHref = (id) => `#/projekt/${encodeURIComponent(id)}`;
+
+export const TEAM_LABELS = { 'claude-code': 'Claude Code', codex: 'Codex', 'gemini-cli': 'Gemini CLI', 'qwen-code': 'Qwen Code' };
+export const COVER_LABELS = { aurora: 'Polární záře', dune: 'Duna', noir: 'Noir', lagoon: 'Laguna', ember: 'Žhavé uhlíky', orchid: 'Orchidej', graphite: 'Grafit', sage: 'Šalvěj' };
+
+export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeURIComponent(p.id)}/media/${kind}?v=${encodeURIComponent(p[kind].file)}` : '');
+
+export function coverHtml(p, cls = '') {
+  const url = mediaUrl(p, 'cover');
+  const preset = p?.cover?.preset || 'aurora';
+  return `<span class="cover ${url ? 'cover--image' : `cover--${esc(preset)}`}${cls ? ` ${cls}` : ''}" aria-hidden="true">${url ? `<img src="${url}" alt="" decoding="async">` : ''}</span>`;
+}
+
+export function projectInitials(name) {
+  const words = String(name || '?').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
+}
+
+export function projectLogo(p, size = 'md') {
+  const url = mediaUrl(p, 'logo');
+  return url
+    ? `<span class="plogo plogo--${size}" aria-hidden="true"><img src="${url}" alt="" decoding="async" data-initials="${esc(projectInitials(p.name))}"></span>`
+    : `<span class="plogo plogo--${size} plogo--mono" style="--pc:${esc(p?.color || '#16141D')}" aria-hidden="true">${esc(projectInitials(p?.name))}</span>`;
+}
+
+// Zmenší obrázek v prohlížeči před nahráním (logo čtvercový ořez), aby byl rychlý a malý.
+export async function prepareImage(file, { max, square = false }) {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('Vyber obrázek PNG, JPG nebo WebP.');
+  const bmp = await createImageBitmap(file);
+  let [sx, sy, sw, sh] = [0, 0, bmp.width, bmp.height];
+  if (square) {
+    const s = Math.min(sw, sh);
+    sx = (sw - s) / 2;
+    sy = (sh - s) / 2;
+    sw = sh = s;
+  }
+  const scale = Math.min(1, max / Math.max(sw, sh));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(sw * scale));
+  canvas.height = Math.max(1, Math.round(sh * scale));
+  canvas.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  bmp.close?.();
+  const toBlob = (type, q) => new Promise((resolve) => canvas.toBlob(resolve, type, q));
+  const webp = await toBlob('image/webp', 0.86);
+  if (webp && webp.type === 'image/webp') return webp;
+  return (await toBlob(square ? 'image/png' : 'image/jpeg', 0.88)) || file;
+}
 export const pdot = (p, cls = '') => `<i class="pdot${cls ? ` ${cls}` : ''}" style="--pc:${esc(p?.color || '#B3AEBA')}" aria-hidden="true"></i>`;
 
 export function projectTag(s) {

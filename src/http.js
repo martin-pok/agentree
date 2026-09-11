@@ -154,7 +154,7 @@ export function createHttpServer(app) {
     try {
       return decodeURIComponent(m[1]);
     } catch {
-      throw new HttpError(400, 'Neplatné ID session.');
+      throw new HttpError(400, 'Neplatné ID konverzace.');
     }
   };
 
@@ -180,12 +180,12 @@ export function createHttpServer(app) {
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
-      if (!session) throw new HttpError(404, 'Session nenalezena.');
+      if (!session) throw new HttpError(404, 'Konverzace nenalezena.');
       return { session, transcript: store.transcript(id) };
     }],
     ['GET', /^\/api\/sessions\/([^/]+)\/transcript$/, (_req, m, url) => {
       const entries = store.transcript(decodeURIComponent(m[1]), { after: Number(url.searchParams.get('after')) || 0 });
-      if (!entries) throw new HttpError(404, 'Session nenalezena.');
+      if (!entries) throw new HttpError(404, 'Konverzace nenalezena.');
       return { entries };
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/open$/, async (req, m) => {
@@ -272,6 +272,11 @@ export function createHttpServer(app) {
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
+      if (body.avatar !== undefined) {
+        const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
+        if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
+        datastore.data.settings.avatar = body.avatar;
+      }
       for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
