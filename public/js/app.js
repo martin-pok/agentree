@@ -312,7 +312,7 @@ const palette = createPalette(
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
       .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
-    const sections = [['prehled', 'Přehled'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['upozorneni', 'Upozornění'], ['nastaveni', 'Nastavení']]
+    const sections = [['prehled', 'Přehled'], ['upozorneni', 'Upozornění'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['nastaveni', 'Nastavení']]
       .filter(([, l]) => !nq || norm(l).includes(nq))
       .map(([k, l]) => ({ group: 'Sekce', label: l, href: `#/${k}`, icon: ICON.arrow }));
     const projectItems = state.projects.items
