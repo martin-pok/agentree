@@ -39,31 +39,11 @@ const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
 const stageEl = document.querySelector('.stage');
-const notesEl = document.getElementById('stage-notes');
 const narrowMq = window.matchMedia('(max-width: 880px)');
 
-// Scéna: každý aktivní agent je světelný bod. Poloha je stabilní (hash ID), barva podle stavu.
-const NOTE_ROWS = [31.4, 41.4, 51.4, 61.4, 71.4];
-
-function hashId(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
+// Scéna nahoře jen jemně ožije, když nějaký agent pracuje. Stav agentů ukazuje pruh v Přehledu, ne dekorace.
 function renderStage(all) {
-  const active = all.filter((s) => s.status === 'working' || needsYou(s)).slice(0, 16);
-  const [x0, span] = narrowMq.matches ? [6, 86] : [24, 62];
-  setHtml(notesEl, active.map((s) => {
-    const h = hashId(s.id);
-    const top = NOTE_ROWS[h % 5] + ((h >>> 5) % 2 ? 5 : 0);
-    const left = x0 + (((h >>> 8) % 1000) / 1000) * span;
-    return `<i class="stage-dot${s.status === 'working' ? '' : ' stage-dot--alert'}" style="left:${left.toFixed(2)}%;top:${top}%"></i>`;
-  }).join(''));
-  stageEl.classList.toggle('is-live', active.some((s) => s.status === 'working'));
+  stageEl.classList.toggle('is-live', all.some((s) => s.status === 'working'));
 }
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -222,7 +202,7 @@ function updateChrome() {
     ? '<i class="dot dot--live"></i><span>Živě</span>'
     : conn === 'connecting' ? '<i class="dot"></i><span>Připojuji…</span>' : '<i class="dot dot--down"></i><span>Obnovuji spojení…</span>');
   setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
-    ${state.host ? `<span class="source-host">${esc(`${state.host.user}@${state.host.name}`)}</span>` : ''}
+    ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<span class="source-host">Agentree ${esc(state.version)}</span>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agentree`;
@@ -451,7 +431,7 @@ offlineEl.addEventListener('click', async (e) => {
   if (ok) location.reload();
   else {
     b.disabled = false;
-    toast('Server pořád neodpovídá. Spusť agentree --open v Terminálu.', { tone: 'velvet' });
+    toast('Server Agentree pořád neodpovídá. Spusť ho v Terminálu příkazem agentree --open.', { tone: 'velvet' });
   }
 });
 

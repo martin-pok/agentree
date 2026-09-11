@@ -1,5 +1,5 @@
 import { state, sessionsList } from '../state.js';
-import { esc, fmtNum, plural, DAY } from '../format.js';
+import { esc, fmtNum, plural } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
@@ -103,7 +103,7 @@ function update() {
     });
   fill(el, 'limits', gauges.length || creditCharts.length
     ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}`
-    : `<p class="muted">Zatím žádné údaje o limitech. Codex je hlásí sám; Claude Code je zapíše při dosažení limitu. Starší než ${Math.round(7 * DAY / DAY)} dní se skryjí.</p>`);
+    : `<p class="muted">Zatím žádné údaje o limitech. Codex je hlásí sám; Claude Code je zapíše při dosažení limitu. Údaje starší než 7 dní se skryjí.</p>`);
 }
 
 export default { id: 'statistiky', title: 'Statistiky', mount, update, unmount: () => { v.el = null; } };

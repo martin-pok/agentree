@@ -194,7 +194,7 @@ export function budgetAlertCandidates(summary) {
       alsoKeys: hit === 100 ? [keyFor(80)] : [],
       level: hit === 100 ? 'critical' : 'warning',
       kind: 'budget',
-      title: hit === 100 ? `Rozpočet překročen: ${b.label}` : `Rozpočet čerpán z ${Math.floor(b.pct)} %: ${b.label}`,
+      title: hit === 100 ? `Rozpočet překročen: ${b.label}` : `Vyčerpáno ${Math.floor(b.pct)} % rozpočtu: ${b.label}`,
       body: `Tento měsíc ${money(b.spent, summary.currency)} z ${money(b.budget, summary.currency)}.`,
     });
   }

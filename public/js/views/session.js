@@ -245,7 +245,7 @@ function update() {
     ? `<div class="live-strip" role="status">
         <span class="pulse" aria-hidden="true"></span>
         <div class="live-text"><span class="live-activity">${esc(s.activity || 'Pracuje')}</span>
-          <span class="live-meta">${s.turnStartedAt ? `Tah běží <span data-clock-from="${s.turnStartedAt}"></span>` : 'Pracuje'}${s.turnSteps ? ` · ${s.turnSteps} ${plural(s.turnSteps, 'krok', 'kroky', 'kroků')}` : ''}</span></div>
+          <span class="live-meta">${s.turnStartedAt ? `Pracuje už <span data-clock-from="${s.turnStartedAt}"></span>` : 'Pracuje'}${s.turnSteps ? ` · ${s.turnSteps} ${plural(s.turnSteps, 'krok', 'kroky', 'kroků')}` : ''}</span></div>
         ${s.progress?.total ? progressHtml(s.progress) : '<div class="indeterminate" aria-hidden="true"><i></i></div>'}
       </div>`
     : s.progress?.total ? `<div class="live-strip is-static">${progressHtml(s.progress)}</div>` : '');
@@ -290,9 +290,9 @@ function update() {
     <section class="card side-card" aria-labelledby="facts-h"><h3 id="facts-h">Detaily</h3>
       <dl class="facts">
         <div><dt>Model</dt><dd>${esc(s.model || '—')}</dd></div>
-        <div><dt>Větev</dt><dd>${esc(s.branch || '—')}${s.worktree ? `<br><span class="muted">worktree ${esc(s.worktree)}</span>` : ''}</dd></div>
+        <div><dt>Větev</dt><dd>${esc(s.branch || '—')}${s.worktree ? `<br><span class="muted">pracovní kopie ${esc(s.worktree)}</span>` : ''}</dd></div>
         ${s.context ? `<div><dt>Kontext</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
-        ${s.effort ? `<div><dt>Úsilí</dt><dd>${esc(s.effort)}</dd></div>` : ''}
+        ${s.effort ? `<div><dt>Úroveň přemýšlení</dt><dd>${esc(s.effort)}</dd></div>` : ''}
         ${s.repo ? `<div><dt>Repozitář</dt><dd>${esc(s.repo)}</dd></div>` : ''}
         ${s.pr ? `<div><dt>Pull request</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
         ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>Cena relace (API ekv.)</dt><dd>${s.costUsd.toLocaleString('cs-CZ', { style: 'currency', currency: 'USD' })}</dd></div>` : ''}

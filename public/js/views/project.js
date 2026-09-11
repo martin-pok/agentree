@@ -13,7 +13,7 @@ const SEGMENTS = [['all', 'Vše'], ['needs', 'Potřebuje tebe'], ['working', 'Pr
 
 function rowHtml(s, now) {
   const sub = s.snapshot
-    ? `<span>${esc(s.app)}</span><span class="dot-sep"></span><span>mimo okno sledování</span>`
+    ? `<span>${esc(s.app)}</span><span class="dot-sep"></span><span>starší než 30 dní</span>`
     : `<span>${esc(s.app)}</span><span class="dot-sep"></span><span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span>${s.projectSource === 'folder' ? '<span class="dot-sep"></span><span title="Zařazeno automaticky podle složky">podle složky</span>' : ''}`;
   const actions = `<button class="icon-btn" type="button" data-unassign="${esc(s.id)}" aria-label="Odebrat z projektu: ${esc(s.title)}" data-tip="Odebrat z projektu">${ICON.close}</button>`;
   if (s.snapshot) {
@@ -216,7 +216,7 @@ function update() {
     </div>`);
 
   fill(el, 'kpis', `
-    <div class="card kpi"><span class="eyebrow">Konverzace</span><span class="val">${st.total}</span><small>${st.older.length ? `z toho ${st.older.length} starších` : 'všechny v okně sledování'}</small></div>
+    <div class="card kpi"><span class="eyebrow">Konverzace</span><span class="val">${st.total}</span><small>${st.older.length ? `z toho ${st.older.length} starších` : 'žádná starší než 30 dní'}</small></div>
     <div class="card kpi"><span class="eyebrow">Právě pracuje</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} na tebe</span>` : 'nikdo nečeká'}</small></div>
     <div class="card kpi"><span class="eyebrow">Tokeny · 30 dní</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>vstup, výstup a zápis do cache</small></div>
     <div class="card kpi"><span class="eyebrow">Služby</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">—</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'zatím bez aktivity'}</small></div>`);
@@ -248,7 +248,7 @@ function update() {
   for (const s of st.live) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
   const bars = [...byApp.entries()].filter(([, val]) => val > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
   fill(el, 'services', `<div class="side-head"><h3>Tokeny podle služby</h3></div>
-    ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : '<p class="small muted">Zatím žádné tokeny v okně sledování.</p>'}`);
+    ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : '<p class="small muted">Za posledních 30 dní zatím žádné tokeny.</p>'}`);
 
   const textarea = el.querySelector('[data-notes]');
   if (document.activeElement !== textarea && !v.saveTimer && !v.saving && textarea.value !== p.notes) textarea.value = p.notes;

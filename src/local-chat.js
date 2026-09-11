@@ -46,7 +46,7 @@ export function createLocalChat({ store, ollama }) {
       chat.messages.push({ role: 'assistant', content: text });
       addTokens(s, Date.now(), { input: usage.tokensIn, output: usage.tokensOut });
     } catch (err) {
-      const message = controller.signal.aborted ? 'Zastaveno uživatelem.' : clip(err.message, 300);
+      const message = controller.signal.aborted ? 'Odpověď zastavena.' : clip(err.message, 300);
       if (text) {
         updateEntry(s, entry, { text });
         chat.messages.push({ role: 'assistant', content: text });

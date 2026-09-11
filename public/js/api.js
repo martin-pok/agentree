@@ -9,7 +9,7 @@ export async function request(method, path, body) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw Object.assign(new Error('Agentree server neodpovídá. Běží `npm start`?'), { status: 0 });
+    throw Object.assign(new Error('Server Agentree neodpovídá. Spusť ho v Terminálu příkazem agentree --open.'), { status: 0 });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }

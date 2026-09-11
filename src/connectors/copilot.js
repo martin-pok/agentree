@@ -243,7 +243,7 @@ export function createCopilotCliConnector(ctx) {
     kind: 'local',
     verified: false,
     source: '~/.copilot/session-state',
-    description: 'Sessions Copilotu v terminálu: zadání, odpovědi, nástroje a stav tahu.',
+    description: 'Konverzace Copilotu v Terminálu: zadání, odpovědi, použité nástroje a průběh práce.',
     async start() {
       await scan();
       watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));

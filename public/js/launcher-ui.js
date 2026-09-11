@@ -40,7 +40,7 @@ export function runProblem(r) {
   }
   if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu — Agentree tě upozorní, až se obnoví.', raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} se nepodařilo spustit`, hint: 'Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.', raw };
-  return { title: `${r.label} skončil chybou`, hint: 'Podrobnosti najdeš v logu.', raw };
+  return { title: `${r.label} skončil chybou`, hint: 'Celé znění chyby najdeš níže v části Původní chyba.', raw };
 }
 
 // Řádek běhu: stav má v každém řádku stejné místo; barvu nese jen ikona a název stavu.

@@ -433,7 +433,7 @@ export function createHttpServer(app) {
       const route = routes.find(([method, re]) => method === req.method && re.test(url.pathname));
       if (!route) {
         const known = routes.some(([, re]) => re.test(url.pathname));
-        throw new HttpError(known ? 405 : 404, known ? 'Metoda není povolena.' : 'Neznámý endpoint.');
+        throw new HttpError(known ? 405 : 404, known ? 'Metoda není povolena.' : 'Neznámá adresa API.');
       }
       const [method, re, handler, opts = {}] = route;
       if (method !== 'GET' && !opts.token) guardMutation(req);

@@ -8,7 +8,7 @@ const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 export function codexAppName(originator = '') {
   if (/desktop/i.test(originator)) return 'Codex · ChatGPT app';
   if (/vscode/i.test(originator)) return 'Codex · VS Code';
-  if (/exec/i.test(originator)) return 'Codex exec';
+  if (/exec/i.test(originator)) return 'Codex · na pozadí';
   return 'Codex CLI';
 }
 
@@ -63,7 +63,7 @@ export function mapCodexItem(item) {
     case 'WebSearch':
       return { role: 'tool', tool: 'Web', text: clip(item.query || item.action?.query || '', 200) };
     case 'ContextCompaction':
-      return { role: 'system', text: 'Kontext byl zhuštěn' };
+      return { role: 'system', text: 'Starší část konverzace byla shrnuta' };
     default:
       return null;
   }
@@ -167,7 +167,7 @@ export function createCodexConnector(ctx) {
         if (p.cwd) s.cwd = p.cwd;
         return;
       case 'compacted':
-        pushEntry(s, { at: ts, role: 'system', text: 'Kontext byl zhuštěn' });
+        pushEntry(s, { at: ts, role: 'system', text: 'Starší část konverzace byla shrnuta' });
         return;
       case 'event_msg':
         switch (p.type) {

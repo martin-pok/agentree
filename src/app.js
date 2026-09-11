@@ -700,7 +700,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
-    log(`Agentree: načteno ${store.list().length} sessions za ${Date.now() - t0} ms.`);
+    log(`Agentree: načteno ${store.list().length} konverzací za ${Date.now() - t0} ms.`);
   }
 
   async function stop() {

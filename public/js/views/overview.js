@@ -1,10 +1,10 @@
 import { state, sessionsList, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
-import { glyph, logoKey, PROVIDERS, pkey, ICON } from '../icons.js';
+import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
 import { createLauncher } from '../launcher-ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null };
@@ -123,27 +123,36 @@ function update() {
   const today = startOfDay(now);
   const todayCount = all.filter((s) => s.lastAt >= today).length;
   const running = state.runtimes.filter((r) => r.running).length;
-  const apps = [...new Map(working.map((s) => [logoKey(s) || s.app, s])).values()];
 
+  // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti (needsYou, stav working/waiting).
   const failedCount = needs.filter((s) => s.status === 'failed').length;
-  const waitingCount = needs.length - failedCount;
+  const decideCount = needs.length - failedCount;
+  const waiting = all.filter((s) => s.status === 'waiting');
+  const live = [...needs, ...working, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
+  const STRIP_MAX = 12;
   el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
   fill(el, 'hero', `
     <div class="pb-main">
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
       <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
-        <small>${todayCount} ${plural(todayCount, 'konverzace', 'konverzace', 'konverzací')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
+        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
-      <a class="pb-stat${waitingCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${waitingCount}</b><span>čeká na tebe</span></a>
+      <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${decideCount}</b><span>potřebuje tebe</span></a>
       <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${failedCount}</b><span>selhalo</span></a>
-      <a class="pb-stat" href="#/agenti"><b>${todayCount}</b><span>dnes aktivních</span></a>
+      <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b>${waiting.length}</b><span>čeká na zadání</span></a>
     </div>
-    <div class="pb-apps">
-      ${apps.length ? `<span class="discs" role="img" aria-label="${esc(`Pracují: ${apps.map((s) => s.app).join(', ')}`)}">${apps.slice(0, 4).map((s) => `<span class="disc" title="${esc(s.app)}">${glyph(s)}</span>`).join('')}</span>` : ''}
-      <a class="link" href="#/agenti">Všichni agenti ${ICON.arrow}</a>
-    </div>`);
+    <a class="link pb-all" href="#/agenti">Všichni agenti ${ICON.arrow}</a>
+    <div class="pb-strip">${live.length
+      ? `<ul class="pb-agents" aria-label="Aktivní agenti">${live.slice(0, STRIP_MAX).map((s) => {
+        const text = s.status === 'working' ? (s.activity || 'Pracuje') : needsYou(s) ? s.reason : 'Čeká na zadání';
+        return `<li><a class="pb-agent" data-state="${needsYou(s) ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
+          <span class="pb-agent-logo">${glyph(s)}</span>
+          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
+        </a></li>`;
+      }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
+      : '<p class="pb-empty">Žádný agent teď nepracuje ani nečeká na zadání.</p>'}</div>`);
 
   const hooks = state.integrations?.claudeHooks;
   fill(el, 'decisions', needs.length
