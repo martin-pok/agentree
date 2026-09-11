@@ -2,6 +2,17 @@
 
 Každá položka má akceptační kritéria. Pořadí je doporučené — nejdřív ověřit hodnotu, potom škálovat.
 
+## v0.6 — z bety k prvnímu prodeji (navazuje na 0.5.0)
+
+| # | Úkol | Akceptační kritéria |
+|---|---|---|
+| 1 | Živé ověření spuštění agentů | Claude Code a Codex v Terminálu i na pozadí spuštěny z UI na reálném projektu; session se zařadí do projektu; zápis do protokolu v `docs/TESTING.md` |
+| 2 | Rozhodnout placené funkce | `PAID_FEATURES` nastavené podle rozhovorů s 10 uživateli; texty v Nastavení a na webu odpovídají |
+| 3 | Platby a vydání klíče | Stripe Checkout → webhook → `scripts/license.mjs issue` → e-mail zákazníkovi do 1 min |
+| 4 | EULA a zásady ochrany údajů | Právně zkontrolováno, odkaz v Nastavení → Licence |
+| 5 | Projekty: štítky a šablony briefu | Filtrování podle štítku; nový projekt ze šablony (agentura, vývoj, marketing) |
+| 6 | Projekty: náklady v Kč | Tokeny projektu přepočtené odhadem ceny API s viditelným označením „odhad“ |
+
 ## v0.3 — spolehlivá beta pro každodenní používání
 
 | # | Úkol | Akceptační kritéria |

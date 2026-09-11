@@ -1,16 +1,42 @@
-import { state, sessionsList } from '../state.js';
+import { state, sessionsList, emit } from '../state.js';
+import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
 import { glyph, logoKey, PROVIDERS, pkey, ICON } from '../icons.js';
 import { areaChart, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER } from '../data.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitGauges } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitGauges, toast } from '../ui.js';
+import { createLauncher } from '../launcher-ui.js';
 
-const v = { period: 'week', hidden: new Set(), drawn: false, el: null };
+const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null };
+
+function onboardingHtml() {
+  if (!state.settings || state.settings.onboardingDismissed) return '';
+  const hooks = state.integrations?.claudeHooks;
+  const web = state.connectors.find((c) => c.id === 'web');
+  const steps = [
+    { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Claude Code, Codex, Cursor, Copilot a další se načítají samy.', cta: '<a class="btn btn--sm" href="#/nastaveni">Konektory</a>' },
+    { done: Boolean(hooks?.installed && hooks?.current), label: 'Okamžité události Claude Code', sub: 'Žádost o povolení uvidíš a dostaneš upozornění do vteřiny.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' },
+    { done: web?.state === 'connected' || web?.state === 'idle', label: 'Rozšíření pro ChatGPT, Claude.ai a další weby', sub: 'Webové konverzace se zobrazí vedle agentů na Macu.', cta: '<a class="btn btn--sm" href="#/nastaveni">Návod</a>' },
+    { done: state.projects.items.length > 0, label: 'První projekt', sub: 'Konverzace ze všech služeb seřazené podle klientů.', cta: '<a class="btn btn--sm" href="#/projekty">Založit</a>' },
+    { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agentree', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
+  ];
+  const done = steps.filter((s) => s.done).length;
+  if (done === steps.length) return '';
+  return `<section class="card onboard" aria-labelledby="ob-h">
+    <div class="onboard-head"><div><h2 id="ob-h">Začni s Agentree</h2><p class="muted small">${done} z ${steps.length} hotovo</p></div>
+      <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="Průvodce nastavením"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
+      <button class="link" type="button" data-onboard-dismiss>Skrýt průvodce</button></div>
+    <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
+      <span class="onboard-text"><span>${s.label}</span><small>${s.sub}</small></span>${s.done ? '<span class="sr-only">hotovo</span>' : s.cta}</li>`).join('')}</ol>
+  </section>`;
+}
 
 function mount(el) {
   v.el = el;
   v.drawn = false;
   el.innerHTML = `
+  <section class="card launch" data-enter style="--i:0" aria-labelledby="launch-h" data-launch></section>
+  <div data-region="onboard"></div>
   <div class="ov">
     <div class="ov-col">
       <section class="card hero" data-enter style="--i:1" aria-label="Právě pracuje"><div data-region="hero"></div></section>
@@ -56,7 +82,24 @@ function mount(el) {
     v.drawn = false;
     update();
   });
-  el.addEventListener('click', (e) => {
+  v.launcher = createLauncher(el.querySelector('[data-launch]'));
+  el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-onboard-launch]')) {
+      const prompt = el.querySelector('[data-l-prompt]');
+      el.querySelector('[data-launch]').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      prompt?.focus({ preventScroll: true });
+      return;
+    }
+    if (e.target.closest('[data-onboard-dismiss]')) {
+      try {
+        state.settings = (await api.saveSettings({ onboardingDismissed: true })).settings;
+        emit('settings');
+        toast('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.');
+      } catch (err) {
+        toast(err.message, { tone: 'velvet' });
+      }
+      return;
+    }
     const b = e.target.closest('[data-legend]');
     if (!b) return;
     const k = b.dataset.legend;
@@ -69,6 +112,8 @@ function mount(el) {
 function update() {
   const el = v.el;
   if (!el) return;
+  v.launcher?.update();
+  fill(el, 'onboard', onboardingHtml());
   const now = Date.now();
   const all = sessionsList();
   const working = all.filter((s) => s.status === 'working');
@@ -166,4 +211,13 @@ function update() {
     : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
 }
 
-export default { id: 'prehled', title: 'Přehled', mount, update, unmount: () => { v.el = null; } };
+export default {
+  id: 'prehled',
+  title: 'Přehled',
+  mount,
+  update,
+  unmount: () => {
+    v.launcher?.destroy();
+    Object.assign(v, { el: null, launcher: null });
+  },
+};

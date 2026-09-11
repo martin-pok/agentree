@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Agentree – AI agenti v reálném čase",
   "short_name": "Agentree",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Posílá stav a přepis konverzací z webových AI aplikací do Agentree na tomto počítači (127.0.0.1).",
   "permissions": ["storage"],
   "host_permissions": ["http://127.0.0.1:4620/*"],

@@ -32,9 +32,24 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  createProject: (body) => request('POST', '/api/projects', body),
+  updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
+  deleteProject: (id) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`),
+  assign: (sessionIds, projectId) => request('POST', '/api/projects/assign', { sessionIds, projectId }),
+  launch: (body) => request('POST', '/api/launch', body),
+  refreshLaunch: () => request('POST', '/api/launch/refresh', {}),
+  stopRun: (id) => request('POST', `/api/runs/${encodeURIComponent(id)}/stop`, {}),
+  runLog: (id) => request('GET', `/api/runs/${encodeURIComponent(id)}/log`),
+  clearRuns: () => request('POST', '/api/runs/clear', {}),
+  reply: (id, text) => request('POST', `/api/sessions/${encodeURIComponent(id)}/reply`, { text }),
+  stopChat: (id) => request('POST', `/api/sessions/${encodeURIComponent(id)}/stop`, {}),
+  activateLicense: (key) => request('PUT', '/api/license', { key }),
+  removeLicense: () => request('DELETE', '/api/license'),
+  autostart: (action) => request('POST', `/api/integrations/autostart/${action}`, {}),
+  folders: (path = '') => request('GET', `/api/fs/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

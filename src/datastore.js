@@ -1,8 +1,10 @@
 import path from 'node:path';
 import { readJson, writeJsonAtomic, randomToken, debounce } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
+import { normalizeProjects } from './projects.js';
 
 export const DEFAULT_SETTINGS = {
+  onboardingDismissed: false,
   notifications: {
     needsInput: true,
     limits: true,
@@ -29,7 +31,11 @@ export function normalizeData(raw) {
       ...s,
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
+      onboardingDismissed: s.onboardingDismissed === true,
     },
+    projects: normalizeProjects(d.projects),
+    license: d.license && typeof d.license.key === 'string' && d.license.key.length < 4000 ? { key: d.license.key, activatedAt: Number(d.license.activatedAt) || Date.now() } : null,
+    usage: { launches: Number(d.usage?.launches) || 0 },
     spend: {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
       rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },

@@ -15,6 +15,11 @@ export const state = {
   alerts: { unread: 0, items: [] },
   settings: null,
   integrations: null,
+  projects: { items: [], assignments: {}, snapshots: {}, colors: [], limits: {} },
+  launch: { targets: [], modes: {}, openMode: 'off' },
+  runs: [],
+  license: null,
+  usage: { launches: 0 },
   transcripts: new Map(),
 };
 
@@ -56,6 +61,11 @@ export function applySnapshot(s) {
     alerts: s.alerts,
     settings: s.settings,
     integrations: s.integrations,
+    projects: s.projects,
+    launch: s.launch,
+    runs: s.runs,
+    license: s.license,
+    usage: s.usage,
   });
   state.loaded = true;
   emit('all');
@@ -126,9 +136,52 @@ export function applyEvent(name, data) {
       state.integrations = data;
       emit('integrations');
       return null;
+    case 'projects':
+      state.projects = data;
+      emit('projects');
+      return null;
+    case 'runs':
+      state.runs = data;
+      emit('runs');
+      return null;
+    case 'launch':
+      state.launch = data;
+      emit('launch');
+      return null;
+    case 'license':
+      state.license = data;
+      emit('license');
+      return null;
+    case 'usage':
+      state.usage = data;
+      emit('usage');
+      return null;
     default:
       return null;
   }
 }
 
 export const sessionsList = () => [...state.sessions.values()].sort((a, b) => b.lastAt - a.lastAt);
+
+export const projectById = (id) => state.projects.items.find((p) => p.id === id) || null;
+
+// Okamžitá aktualizace po vlastní akci (SSE událost `projects` dorazí vzápětí se stejnými daty).
+export function setProjects(payload) {
+  if (!payload) return;
+  state.projects = payload;
+  emit('projects');
+}
+
+// Konverzace projektu: živé sessions + snímky starších konverzací (mimo okno sledování).
+export function projectSessions(id) {
+  const live = sessionsList().filter((s) => s.projectId === id);
+  const liveIds = new Set(live.map((s) => s.id));
+  const older = Object.values(state.projects.snapshots || {})
+    .filter((s) => s.projectId === id && !liveIds.has(s.id) && !state.sessions.has(s.id))
+    .map((s) => ({ ...s, snapshot: true }))
+    .sort((a, b) => b.lastAt - a.lastAt);
+  return { live, older };
+}
+
+// Spouštěč z palety nebo projektu otevře složku/projekt v Přehledu.
+export const launchIntent = { projectId: null, focus: false };

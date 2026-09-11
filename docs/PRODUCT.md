@@ -32,11 +32,25 @@ Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kd
 3. **Nulové tření.** Instalace jedním příkazem, žádný účet pro lokální verzi.
 4. **Klid, dokud není potřeba jednat.** Upozornění jen na to, co vyžaduje člověka.
 
+## Projekty — proč jsou jádrem placené hodnoty (0.5.0)
+
+Kdo pracuje pro klienty (studia, agentury, freelanceři, vývojáři na zakázku), neřeší „jaký nástroj“, ale „na čem pro koho“. Jeden klient znamená Claude Code v repozitáři, Codex vlákna, několik chatů v ChatGPT a rešerši v Perplexity. Žádný dodavatel to nespojí, protože vidí jen sebe.
+
+- **Úspora času:** přehled celé zakázky na jednom místě místo hledání v 5 aplikacích; zařazení podle složky běží samo.
+- **Peníze:** tokeny a aktivita za projekt, export do CSV jako podklad k vyúčtování klientovi a k naceňování dalších zakázek.
+- **Kvalita:** brief projektu po ruce při spuštění dalšího agenta — konzistentní tón a zadání napříč službami.
+- **Návyk:** spouštění agentů z projektu dělá z Agentree výchozí místo, odkud práce začíná (ne jen kam se člověk dívá).
+
+Měřit v betě: počet projektů na uživatele, podíl konverzací v projektech, počet spuštění z Agentree za týden, exporty CSV.
+
 ## Hypotézy monetizace (NEOVĚŘENÉ — návrh pro validaci)
+
+Technicky připraveno v 0.5.0: offline licence a zamykání funkcí (`docs/LICENSING.md`). Dnes je vše odemčené.
 
 | Plán | Obsah | Hypotéza ceny | Co je potřeba postavit |
 |---|---|---|---|
-| **Free** | Lokální dashboard, všechny konektory, upozornění na Macu | 0 | hotovo (v0.2) |
+| **Free** | Lokální dashboard, všechny konektory, upozornění na Macu, 3 aktivní projekty, spouštění v Terminálu, aplikaci a na webu | 0 | hotovo (v0.5) |
+| **Pro (lokální, 0.5)** | Neomezené projekty, export projektů k vyúčtování, běhy agentů na pozadí, lokální chat s Ollamou | jednorázově nebo ročně pro jednotlivce | platby a automatické vydání klíče, EULA |
 | **Pro** | Push notifikace na mobil, historie > 30 dní, více počítačů, export útraty | měsíční předplatné pro jednotlivce | relay pro notifikace, účty, E2E šifrovaná synchronizace, platby |
 | **Team** | Sdílený přehled týmu, rozpočty za tým, role, faktury | cena za uživatele | organizace, oprávnění, agregace útraty, SSO |
 

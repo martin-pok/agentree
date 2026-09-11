@@ -42,7 +42,7 @@ export function fakeDatastore(settings = {}) {
   };
 }
 
-export async function startTestServer(env = {}) {
+export async function startTestServer(env = {}, appOptions = {}) {
   const sourceHome = env.AGENTREE_SOURCE_HOME || (await tempDir('agentree-src-'));
   const dataHome = env.AGENTREE_HOME || (await tempDir('agentree-data-'));
   const config = loadConfig({
@@ -56,9 +56,11 @@ export async function startTestServer(env = {}) {
     AGENTREE_SCAN_MS: '60000',
     AGENTREE_QUIET: '1',
     AGENTREE_OPEN: 'dry',
+    // Nikdy nesahat na skutečnou Ollamu na počítači, kde běží testy (port 9 = discard, spojení odmítnuto).
+    AGENTREE_OLLAMA_URL: 'http://127.0.0.1:9',
     ...env,
   });
-  const app = await createApp(config);
+  const app = await createApp(config, appOptions);
   await app.start();
   const server = createHttpServer(app);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

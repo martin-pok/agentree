@@ -34,6 +34,24 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/integrations/claude-hooks/install` \| `uninstall` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json |
 | PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }` |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
+| GET | `/api/projects` | `{ projects: ProjectsPayload }` |
+| POST | `/api/projects` | `{ name, description?, color?, folders?: string[] }` → 201 `{ project, projects }`; 422 s `errors`; 402 `upgrade` při limitu verze Zdarma (jen je-li zapnutý) |
+| PATCH | `/api/projects/:id` | Částečná změna (`name`, `description`, `color`, `folders`, `notes`, `archived`) → `{ project, projects }`; 404, 422 |
+| DELETE | `/api/projects/:id` | `{ projects }` — konverzace zůstanou, jen se uvolní z projektu |
+| POST | `/api/projects/assign` | `{ sessionIds: string[] (1–1000), projectId: string \| "" \| null }` → `{ projects }`. `id` = ručně do projektu, `""` = mimo projekty (přebije složku), `null` = zpět na pravidlo složky. ID nemusí ještě existovat (webový chat, budoucí session) |
+| GET | `/api/projects/:id/export` | `text/csv` (UTF-8 s BOM, středníky), `Content-Disposition: attachment` |
+| GET | `/api/launch` | `LaunchPayload` |
+| POST | `/api/launch` | `LaunchRequest` → `{ ok, kind, mode, label, sessionId, run, copyPrompt, dry?, plan? }`; 422 s `field`; 402 `upgrade`; 502 macOS akci odmítl |
+| POST | `/api/launch/refresh` | Znovu zjistí nainstalované agenty → `LaunchPayload` |
+| GET | `/api/runs` | `{ runs: Run[] }` |
+| POST | `/api/runs/:id/stop` | `{ runs }`; 404, 409 už skončil |
+| GET | `/api/runs/:id/log` | `{ log }` — posledních 16 kB výstupu |
+| POST | `/api/runs/clear` | Skryje dokončené běhy → `{ runs }` |
+| POST | `/api/sessions/:id/reply` | Jen lokální chat: `{ text }` → `{ ok }`; 404, 409 model odpovídá, 422 |
+| POST | `/api/sessions/:id/stop` | Jen lokální chat → `{ ok }`; 409 model neodpovídá |
+| GET / PUT / DELETE | `/api/license` | PUT `{ key }` → `{ ok, license: LicenseStatus }`; 422 s důvodem. Celý klíč se nikdy nevrací |
+| POST | `/api/integrations/autostart/install` \| `uninstall` | `{ ok, dry?, integrations }` |
+| GET | `/api/fs/folders?path=` | `{ path, home, parent, dirs: [{ name, path, git }] }` — jen složky v domovském adresáři, bez skrytých; 400 relativní, 403 mimo domov, 404 |
 
 ## SSE události (`/api/stream`)
 
@@ -52,6 +70,11 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `connectors` | `ConnectorStatus[]` |
 | `settings` | `Settings` |
 | `integrations` | `Integrations` |
+| `projects` | `ProjectsPayload` |
+| `runs` | `Run[]` |
+| `launch` | `LaunchPayload` |
+| `license` | `LicenseStatus` |
+| `usage` | `{ launches }` |
 
 Každých 15 s komentář `: ping`.
 
@@ -112,6 +135,22 @@ interface SpendPayload {
 }
 
 interface Notifications { needsInput: boolean; limits: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean }
+
+// SessionSummary navíc (0.5.0):
+//   projectId: string | null;
+//   projectSource: 'manual' | 'folder' | 'none' | null;   // none = záměrně mimo projekty
+//   chat?: { available: boolean };                        // jen connector 'local-chat'
+
+interface Project { id: string; name: string; color: string; description: string; notes: string; folders: string[]; archived: boolean; createdAt: number; updatedAt: number }
+interface ProjectSnapshot { id: string; projectId: string; title: string; app: string; provider: Provider; connector: string; source: string; model: string; cwd: string; url: string; resume: string; startedAt: number; lastAt: number; turns: number; tokens: { input: number; output: number; cacheWrite: number } }
+interface ProjectsPayload { items: Project[]; assignments: Record<string, string>; snapshots: Record<string, ProjectSnapshot>; colors: string[]; limits: { name: number; description: number; notes: number; folders: number; assign: number } }
+
+interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; note: string; beta?: boolean; prefill?: boolean }
+type LaunchMode = 'terminal' | 'background' | 'app' | 'web' | 'local';
+interface LaunchPayload { targets: LaunchTarget[]; modes: Record<LaunchMode, string>; openMode: 'exec' | 'dry' | 'off' }
+interface LaunchRequest { agent: string; mode: LaunchMode; prompt: string /* max 20 000 */; cwd?: string; projectId?: string; permission?: 'plan' | 'acceptEdits'; sandbox?: 'read-only' | 'workspace-write'; model?: string }
+interface Run { id: string; agent: string; label: string; cwd: string; prompt: string /* zkráceno */; sessionId: string | null; projectId: string | null; pid: number | null; status: 'running' | 'stopping' | 'done' | 'failed' | 'stopped'; exitCode: number | null; error: string; startedAt: number; endedAt: number | null }
+interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' | 'team'; planLabel: string; reason?: string; expired?: boolean; maskedKey?: string; activatedAt?: number; license?: { id: string; name: string; email: string; plan: string; planLabel: string; seats: number; issuedAt: string; expiresAt: string | null }; paidFeatures: Record<string, string>; plans: Record<string, { label: string; rank: number }> }
 ```
 
 ## Vstup rozšíření (`POST /api/ingest/web`)
@@ -132,4 +171,6 @@ interface Notifications { needsInput: boolean; limits: boolean; budget: boolean;
 
 ## Trvalá data `~/.agentree/data.json`
 
-`{ version: 1, ingestToken, settings, spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits }` — zapisováno atomicky s právy 0600.
+`{ version: 1, ingestToken, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` — zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
+
+Další soubory: `~/.agentree/prompts/<uuid>.txt` (zadání pro Terminál, 0600, mazání po 24 h), `~/.agentree/runs/<id>.log` (výstup běhů na pozadí, 0600).

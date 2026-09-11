@@ -160,5 +160,5 @@ test('LaunchAgent plist escapuje cesty', () => {
   const x = plistXml({ node: '/opt/node & co/bin/node', script: '/Users/a/<agentree>/bin/agentree.mjs', logDir: '/tmp/l', pathEnv: '/usr/bin' });
   assert.ok(x.includes('/opt/node &amp; co/bin/node'));
   assert.ok(x.includes('&lt;agentree&gt;'));
-  assert.ok(x.includes('<key>KeepAlive</key><true/>'));
+  assert.match(x, /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key><false\/>/, 'restart jen po pádu, ne když Agentree už běží');
 });

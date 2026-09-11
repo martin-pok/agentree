@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
 import { loadConfig, VERSION } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
@@ -9,21 +10,30 @@ const HELP = `Agentree ${VERSION} — všichni AI agenti na jednom místě
 
 Použití:
   agentree                 spustí server a dashboard na http://127.0.0.1:4620
+  agentree --open          spustí server a otevře dashboard v prohlížeči
   agentree install-agent   spouštět automaticky po přihlášení (macOS LaunchAgent)
   agentree uninstall-agent zrušit automatické spouštění
   agentree --version       vypíše verzi
 
-Proměnné prostředí: PORT, AGENTREE_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz README.md)`;
+Proměnné prostředí: PORT, AGENTREE_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz docs/INSTALL.md)`;
 
-const cmd = process.argv[2];
+const args = process.argv.slice(2);
+const flags = new Set(args.filter((a) => a.startsWith('-')));
+const cmd = args.find((a) => !a.startsWith('-'));
+const openBrowser = flags.has('--open');
 
-if (cmd === '--version' || cmd === '-v') {
+if (flags.has('--version') || flags.has('-v')) {
   console.log(VERSION);
   process.exit(0);
 }
-if (cmd === '--help' || cmd === '-h') {
+if (flags.has('--help') || flags.has('-h')) {
   console.log(HELP);
   process.exit(0);
+}
+const unknownFlag = [...flags].find((f) => f !== '--open');
+if (unknownFlag) {
+  console.error(`Neznámý přepínač: ${unknownFlag}\n\n${HELP}`);
+  process.exit(1);
 }
 if (cmd === 'install-agent') {
   const r = await installLaunchAgent({ script: fileURLToPath(import.meta.url) });
@@ -41,24 +51,44 @@ if (cmd) {
 }
 
 const config = loadConfig();
+const openUrl = (url) => {
+  if (openBrowser && process.platform === 'darwin') execFile('open', [url], () => {});
+};
+
 const app = await createApp(config);
 await app.start();
 const server = createHttpServer(app);
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') console.error(`Port ${config.port} je obsazený. Agentree už nejspíš běží: http://127.0.0.1:${config.port}`);
-  else console.error('Agentree: server se nepodařilo spustit:', err.message);
-  app.stop().finally(() => process.exit(1));
+server.on('error', async (err) => {
+  const url = `http://127.0.0.1:${config.port}`;
+  if (err.code === 'EADDRINUSE') {
+    // Běží už jiná instance Agentree (např. z LaunchAgentu)? Pak skončit v klidu — launchd ji nebude restartovat.
+    const running = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r) => r.json()).catch(() => null);
+    await app.stop();
+    if (running?.ok) {
+      console.log(`Agentree ${running.version} už běží: ${url}`);
+      openUrl(url);
+      process.exit(0);
+    }
+    console.error(`Port ${config.port} je obsazený jinou aplikací. Spusť Agentree s jiným portem: PORT=4621 agentree`);
+    process.exit(1);
+  }
+  console.error('Agentree: server se nepodařilo spustit:', err.message);
+  await app.stop();
+  process.exit(1);
 });
 
 server.listen(config.port, config.host, () => {
-  console.log(`Agentree ${VERSION} běží na http://127.0.0.1:${server.address().port}`);
+  const url = `http://127.0.0.1:${server.address().port}`;
+  console.log(`Agentree ${VERSION} běží na ${url}`);
+  openUrl(url);
 });
 
 let stopping = false;
 async function shutdown() {
   if (stopping) return;
   stopping = true;
+  app.runs.stopAll();
   server.closeAllConnections?.();
   server.close();
   await app.stop();

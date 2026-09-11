@@ -1,13 +1,16 @@
-import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList } from './state.js';
+import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
-import { esc, rel, clock, norm, initials, startOfDay, STATUS } from './format.js';
+import { esc, rel, clock, norm, initials, startOfDay, plural, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref } from './ui.js';
 import { bindCharts, restoreHover } from './charts.js';
 import { tokensSince } from './data.js';
+import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import overview from './views/overview.js';
 import agents from './views/agents.js';
 import session from './views/session.js';
+import projectsView from './views/projects.js';
+import projectView from './views/project.js';
 import stats from './views/stats.js';
 import spend from './views/spend.js';
 import alertsView, { markRead } from './views/alerts.js';
@@ -17,12 +20,14 @@ const ROUTES = [
   [/^\/(?:prehled)?$/, overview],
   [/^\/agenti$/, agents],
   [/^\/agent\/(.+)$/, session],
+  [/^\/projekty$/, projectsView],
+  [/^\/projekt\/([^/]+)$/, projectView],
   [/^\/statistiky$/, stats],
   [/^\/utrata$/, spend],
   [/^\/upozorneni$/, alertsView],
   [/^\/nastaveni$/, settings],
 ];
-const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', statistiky: 'statistiky', utrata: 'utrata', upozorneni: 'upozorneni', nastaveni: 'nastaveni' };
+const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty: 'projekty', projekt: 'projekty', statistiky: 'statistiky', utrata: 'utrata', upozorneni: 'upozorneni', nastaveni: 'nastaveni' };
 
 const viewEl = document.getElementById('view');
 const titleEl = document.getElementById('page-title');
@@ -252,15 +257,21 @@ const palette = createPalette(
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
       .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
-    const sections = [['prehled', 'Přehled'], ['agenti', 'Agenti'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['upozorneni', 'Upozornění'], ['nastaveni', 'Nastavení']]
+    const sections = [['prehled', 'Přehled'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['upozorneni', 'Upozornění'], ['nastaveni', 'Nastavení']]
       .filter(([, l]) => !nq || norm(l).includes(nq))
       .map(([k, l]) => ({ group: 'Sekce', label: l, href: `#/${k}`, icon: ICON.arrow }));
+    const projectItems = state.projects.items
+      .filter((p) => !p.archived && (!nq || norm([p.name, p.description, ...p.folders].join(' ')).includes(nq)))
+      .slice(0, 6)
+      .map((p) => ({ group: 'Projekty', label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) }));
     const actions = [
+      { group: 'Akce', label: 'Spustit agenta', run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
+      { group: 'Akce', label: 'Nový projekt', run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
       { group: 'Akce', label: 'Přidat výdaj', href: '#/utrata?pridat=1', icon: ICON.plus },
       { group: 'Akce', label: 'Označit upozornění jako přečtená', run: () => markRead('all'), icon: ICON.check },
       { group: 'Akce', label: 'Zapnout okamžité události Claude Code', href: '#/nastaveni', icon: ICON.bell },
     ].filter((a) => !nq || norm(a.label).includes(nq));
-    return nq ? [...agentItems, ...sections, ...actions] : [...sections, ...agentItems, ...actions];
+    return nq ? [...agentItems, ...projectItems, ...sections, ...actions] : [...actions.slice(0, 2), ...sections, ...projectItems, ...agentItems, ...actions.slice(2)];
   },
   (it) => {
     if (it.href) {
@@ -307,6 +318,55 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '/' && !typing && !palette.isOpen) {
     e.preventDefault();
     palette.open();
+  }
+});
+
+/* ---------- Přetažení konverzací do projektu ---------- */
+
+let dragIds = null;
+const clearDrop = () => { for (const x of document.querySelectorAll('.is-drop')) x.classList.remove('is-drop'); };
+
+document.addEventListener('dragstart', (e) => {
+  const row = e.target.closest?.('[data-session-drag]');
+  if (!row) return;
+  const selected = [...document.querySelectorAll('[data-select-session]:checked')].map((x) => x.value);
+  dragIds = selected.includes(row.dataset.sessionDrag) ? selected : [row.dataset.sessionDrag];
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragIds.join('\n'));
+  document.body.classList.add('is-dragging');
+});
+document.addEventListener('dragend', () => {
+  dragIds = null;
+  document.body.classList.remove('is-dragging');
+  clearDrop();
+});
+document.addEventListener('dragover', (e) => {
+  const t = dragIds && e.target.closest?.('[data-project-drop]');
+  if (!t) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (!t.classList.contains('is-drop')) { clearDrop(); t.classList.add('is-drop'); }
+});
+document.addEventListener('dragleave', (e) => {
+  const t = e.target.closest?.('[data-project-drop]');
+  if (t && !t.contains(e.relatedTarget)) t.classList.remove('is-drop');
+});
+document.addEventListener('drop', async (e) => {
+  const t = dragIds && e.target.closest?.('[data-project-drop]');
+  if (!t) return;
+  e.preventDefault();
+  const ids = dragIds;
+  const pid = t.dataset.projectDrop;
+  clearDrop();
+  if (pid === '__dialog') { assignDialog(ids); return; }
+  try {
+    const r = await api.assign(ids, pid === '__none' ? '' : pid);
+    setProjects(r.projects);
+    const p = projectById(pid);
+    const what = `${ids.length} ${plural(ids.length, 'konverzace', 'konverzace', 'konverzací')}`;
+    toast(p ? `${what} v projektu ${p.name}` : `${what} mimo projekty`, p ? { action: { label: 'Otevřít projekt', href: projectHref(p.id) } } : {});
+  } catch (err) {
+    toast(err.message, { tone: 'velvet' });
   }
 });
 

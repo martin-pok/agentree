@@ -1,6 +1,6 @@
 {
   "name": "agentree",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Agentree — všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
   "type": "module",
@@ -10,11 +10,23 @@
   "engines": {
     "node": ">=22.13"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "extension/",
+    "docs/INSTALL.md",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "start": "node bin/agentree.mjs",
     "dev": "node --watch-path=src --watch-path=bin bin/agentree.mjs",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.mjs\"",
-    "check": "node --check bin/agentree.mjs && node scripts/check-syntax.mjs"
+    "check": "node --check bin/agentree.mjs && node scripts/check-syntax.mjs",
+    "pack": "mkdir -p dist && npm pack --pack-destination dist",
+    "smoke": "node scripts/smoke-package.mjs",
+    "license": "node scripts/license.mjs"
   },
   "license": "UNLICENSED"
 }

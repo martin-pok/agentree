@@ -5,6 +5,7 @@
 ```bash
 npm test         # node:test, sériově, bez sítě, nad dočasnými fixturami
 npm run check    # node --check pro všechny .js/.mjs
+npm run smoke    # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
 ```
 
 | Soubor | Pokrývá |
@@ -13,6 +14,11 @@ npm run check    # node --check pro všechny .js/.mjs
 | `test/connectors.test.mjs` | Codex (skutečný konektor nad dočasnými soubory: přepis, stav, tokeny, limity, kredity, přechod mezi formáty), Gemini CLI, Copilot VS Code a CLI, Cursor, web (streamovaná odpověď se aktualizuje na místě), rozpoznání procesů |
 | `test/spend-alerts-hooks.test.mjs` | Validace výdajů a rozpočtů, opakované platby, převody měn, prognóza, prahy rozpočtu, instalace/odinstalace hooků (zachování nastavení, idempotence, záloha, neplatný JSON), upozornění (rozhodnutí, dokončení, limity, deduplikace), LaunchAgent |
 | `test/http.test.mjs` | Snapshot, ochrana Host/CSRF/token, **latence realtime streamu < 2 s**, hook → „potřebuje rozhodnutí“ → upozornění, výdaje a rozpočty přes API, ingest z rozšíření a párování, instalace hooků přes API, nastavení, statické soubory, path traversal |
+
+| `test/projects.test.mjs` | Normalizace a validace projektů, přednost ručního zařazení před složkou (nejdelší shoda, hranice cesty), „mimo projekty“, snímky, mazání, CSV (BOM, uvozovky, ochrana proti vzorcům) |
+| `test/launcher.test.mjs` | Nabídka agentů podle instalace, plány pro Claude Code / Codex / web / Ollama, zadání nikdy v příkazu, validace vstupů, lokální chat nad falešnou Ollamou (stream, historie, 409, chyba modelu) |
+| `test/license-runs.test.mjs` | Licence (platná, podvržená, cizí klíč, formát, vypršení, tarif), zamykání funkcí, běhy na pozadí (hotovo, selhání, zastavení, chybějící program) |
+| `test/projects-launch-http.test.mjs` | Projekty přes API včetně SSE a automatického zařazení, export CSV, spuštění agenta (zkušební režim), 402 bez licence a odemčení licencí, limit projektů, lokální chat, běhy, automatické spouštění, procházení složek |
 
 Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentree` (vždy `AGENTREE_SOURCE_HOME` a `AGENTREE_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
 
@@ -39,6 +45,21 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentre
 - [ ] Přepis obsahuje obě strany bez duplicit; titulek odpovídá konverzaci.
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá přepisy.
 - [ ] Při nefunkčním adaptéru ulož HTML úryvek zprávy a tlačítka Stop jako fixturu a oprav selektory v `extension/sites.js`.
+
+## Protokol ověření — v0.5.0 (11. 9. 2026, macOS, Node 24.18)
+
+Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTREE_HOME` v dočasné složce, `AGENTREE_OPEN=dry`) nad skutečnými přepisy — skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
+
+| Oblast | Výsledek |
+|---|---|
+| `npm test` (63), `npm run check` (70 souborů), `npm run smoke` (79 souborů, 156 kB) | ✅ |
+| Projekty: prázdný stav, návrhy ze složek (bez pracovních složek aplikace Codex), nový projekt s výběrem složky v prohlížeči složek, detail, přidání 3 konverzací s hledáním, brief se uloží sám, export CSV (200, správný název souboru) | ✅ 1440 px |
+| Agenti: filtr projektu s počty, výběr, hromadné zařazení do nového projektu z dialogu | ✅ 1440 px |
+| Detail agenta: karta projektu („Zařazeno ručně“) | ✅ |
+| Přehled: Spustit agenta — Codex na pozadí v projektu se sandboxem, složka z projektu, toast zkušebního režimu, vyčištění zadání | ✅ |
+| Mobil 375 px: Přehled, Projekty, detail projektu, Agenti — bez vodorovného rolování | ✅ |
+| Konzole prohlížeče | ✅ bez chyb |
+| **Neověřeno živě:** skutečné spuštění Claude Code/Codexu v Terminálu a na pozadí (spotřebovalo by limity), Gemini/Qwen CLI (nejsou nainstalované), Ollama (není nainstalovaná; testováno proti falešnému serveru), předvyplnění `?q=` u webových služeb, instalace LaunchAgentu z UI, přetažení myší (logika drop ověřena, nativní drag v náhledu ne) | 🧪 |
 
 ## Protokol ověření — v0.3.0 (10. 9. 2026, macOS, Node 24.18)
 

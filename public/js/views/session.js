@@ -3,8 +3,10 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { sparkline, stackBar } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
 import { sessionTotal } from '../data.js';
+import { projectById } from '../state.js';
+import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 
 const v = { id: null, el: null, rendered: new Map(), follow: true, loading: false };
 const MAX_RENDERED = 400;
@@ -107,6 +109,7 @@ function mount(el, [id]) {
         <ol class="transcript-list" data-list></ol>
         <div class="transcript-empty" data-region="tr-empty"></div>
         <button class="jump" type="button" data-jump hidden>${ICON.down}Nové zprávy</button>
+        <div data-reply-slot></div>
       </section>
       <aside class="session-side" data-region="side"></aside>
     </div>
@@ -122,6 +125,42 @@ function mount(el, [id]) {
     list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
     v.follow = true;
     jump.hidden = true;
+  });
+  el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-action="assign"]')) {
+      const s = state.sessions.get(v.id);
+      if (s) assignDialog([s.id], { current: s.projectId });
+      return;
+    }
+    const stop = e.target.closest('[data-chat-stop]');
+    if (stop) {
+      stop.disabled = true;
+      try { await api.stopChat(v.id); } catch (err) { toast(err.message, { tone: 'velvet' }); } finally { stop.disabled = false; }
+    }
+  });
+  el.addEventListener('submit', async (e) => {
+    const form = e.target.closest('[data-reply]');
+    if (!form) return;
+    e.preventDefault();
+    const input = form.querySelector('textarea');
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    const btn = form.querySelector('[type="submit"]');
+    btn.disabled = true;
+    try {
+      await api.reply(v.id, text);
+      input.value = '';
+      v.follow = true;
+    } catch (err) {
+      btn.disabled = false;
+      toast(err.message, { tone: 'velvet', timeout: 8000 });
+    }
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && e.target.closest('[data-reply] textarea')) {
+      e.preventDefault();
+      e.target.closest('form').requestSubmit();
+    }
   });
   load();
 }
@@ -220,7 +259,32 @@ function update() {
   const hasTokens = sessionTotal(s) + (tok.cacheRead || 0) > 0;
   const limits = limitGauges(state.limits, now, { size: 'sm', provider: s.provider });
 
+  const slot = el.querySelector('[data-reply-slot]');
+  if (s.connector === 'local-chat' && s.chat?.available) {
+    if (!slot.querySelector('[data-reply]')) {
+      slot.innerHTML = `<form class="reply" data-reply>
+        <label class="sr-only" for="reply-in">Zpráva pro model</label>
+        <textarea id="reply-in" rows="2" maxlength="20000" placeholder="Napiš další zprávu…"></textarea>
+        <div class="reply-actions"><span class="muted small"><kbd>⌘</kbd><kbd>↵</kbd> odešle</span><button type="button" class="btn btn--sm" data-chat-stop hidden>Zastavit</button><button type="submit" class="btn btn--sm btn--primary">Odeslat</button></div>
+      </form>`;
+    }
+    const working = s.status === 'working';
+    slot.querySelector('[data-chat-stop]').hidden = !working;
+    slot.querySelector('[type="submit"]').disabled = working;
+  } else if (s.connector === 'local-chat') {
+    const note = '<p class="reply-note">Tahle lokální konverzace skončila restartem Agentree. Novou začneš v Přehledu přes Spustit agenta → Ollama.</p>';
+    if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }
+  } else if (slot.innerHTML) {
+    slot.innerHTML = '';
+  }
+
+  const proj = s.projectId ? projectById(s.projectId) : null;
   fill(el, 'side', `
+    <section class="card side-card" aria-labelledby="proj-h"><div class="side-head"><h3 id="proj-h">Projekt</h3><button class="link" type="button" data-action="assign">${proj ? 'Změnit' : 'Zařadit do projektu'}</button></div>
+      ${proj
+        ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a><p class="small muted side-note">${s.projectSource === 'folder' ? 'Zařazeno automaticky podle složky.' : 'Zařazeno ručně.'}</p>`
+        : `<p class="small muted side-note">${s.projectSource === 'none' ? 'Záměrně mimo projekty.' : 'Zatím v žádném projektu.'}</p>`}
+    </section>
     <section class="card side-card" aria-labelledby="facts-h"><h3 id="facts-h">Detaily</h3>
       <dl class="facts">
         <div><dt>Model</dt><dd>${esc(s.model || '—')}</dd></div>

@@ -19,9 +19,11 @@ npm start         # server + dashboard na http://127.0.0.1:4620
 npm run dev       # server s restartem při změně src/ a bin/
 npm test          # všechny testy (node:test), ~1 s
 npm run check     # syntaktická kontrola všech .js/.mjs
+npm run smoke     # balíček pro zákazníky: pack → instalace do dočasné složky → start → API
+npm run pack      # dist/agentree-<verze>.tgz
 ```
 
-Proměnné pro vývoj a testy: `PORT`, `AGENTREE_HOME` (data aplikace), `AGENTREE_SOURCE_HOME` (odkud číst zdroje — v testech vždy dočasná složka), `AGENTREE_PROCESSES=0`, `AGENTREE_NATIVE_NOTIFY=0`, `AGENTREE_KEYCHAIN=0`, `AGENTREE_CLOUD=0`, `AGENTREE_QUIET=1`. Viz `src/config.js`.
+Proměnné pro vývoj a testy: `PORT`, `AGENTREE_HOME` (data aplikace), `AGENTREE_SOURCE_HOME` (odkud číst zdroje — v testech vždy dočasná složka), `AGENTREE_OPEN=dry` (otevírání a spouštění agentů jen vrátí plán — **povinné v testech a při ručním QA na cizích datech**), `AGENTREE_OLLAMA_URL`, `AGENTREE_PROCESSES=0`, `AGENTREE_NATIVE_NOTIFY=0`, `AGENTREE_KEYCHAIN=0`, `AGENTREE_CLOUD=0`, `AGENTREE_QUIET=1`. Viz `src/config.js`.
 
 ## 3. Mapa repozitáře
 
@@ -38,6 +40,13 @@ src/hooks-installer.js      instalace Claude Code hooků (záloha, idempotence, 
 src/secrets.js              API klíče v Klíčence macOS
 src/launch-agent.js         automatický start po přihlášení (LaunchAgent)
 src/openers.js              „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ — bezpečný plán akcí
+src/projects.js             projekty: validace, zařazení (ručně / podle složky / mimo), snímky, CSV
+src/launcher.js             rychlé spouštění agentů: detekce, plán (argv, bez shellu pro zadání), validace
+src/runs.js                 běhy agentů na pozadí: proces, log, stav, zastavení
+src/ollama.js, local-chat.js  lokální modely v Ollamě jako běžná session s živým přepisem
+src/license.js, plans.js    offline licence (Ed25519) a placené funkce; klíč vydavatele NIKDY v repozitáři
+scripts/license.mjs         vydávání licencí (viz docs/LICENSING.md)
+scripts/smoke-package.mjs   ověření instalačního balíčku
 src/watch.js                rekurzivní watcher s obnovou, fronta souborů, výpis souborů
 src/connectors/*.js         jeden soubor = jeden zdroj dat (viz docs/CONNECTORS.md)
 public/index.html           kostra aplikace
@@ -45,6 +54,8 @@ public/styles.css           design systém a všechny komponenty
 public/js/app.js            router, SSE, horní lišta, notifikace, paleta ⌘K
 public/js/state.js          klientský stav a slučování událostí do jednoho snímku
 public/js/views/*.js        obrazovky (mount/update/unmount)
+public/js/projects-ui.js    formulář projektu, prohlížeč složek, dialog zařazení
+public/js/launcher-ui.js    karta „Spustit agenta“ a běhy na pozadí
 public/js/charts.js         SVG grafy bez knihoven
 public/js/icons.js          barvy poskytovatelů, loga služeb (glyph/logoKey), ikony UI
 public/logos/               oficiální loga služeb (@lobehub/icons-static-svg 1.95.0, MIT)

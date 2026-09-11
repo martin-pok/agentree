@@ -46,6 +46,19 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 - Terminál se ovládá přes AppleScript (Terminal.app). Při prvním použití se macOS zeptá na povolení **Automatizace**; odmítnutí vrátí srozumitelnou chybu s návodem.
 - Loga služeb: `public/logos/` z `@lobehub/icons-static-svg` 1.95.0 (MIT), používaná jen k označení napojených služeb.
 
+## Spuštění agenta (`src/launcher.js`)
+
+| Agent | Režimy | Jak | Stav ověření |
+|---|---|---|---|
+| Claude Code | Terminál, na pozadí | Terminál: `claude --session-id <uuid> -- "<zadání ze souboru>"`; pozadí: `claude -p --session-id <uuid> --permission-mode plan\|acceptEdits -- <zadání>`. Známé ID session → rovnou zařazení do projektu | ✅ přepínače ověřeny v `claude --help` 2.1.212; 🧪 skutečné spuštění |
+| Codex | aplikace, Terminál, na pozadí | Aplikace: `codex://threads/new?prompt=` (schéma nalezeno v aplikaci ChatGPT, zadání do 6 000 znaků); Terminál: `codex -- "<zadání>"`; pozadí: `codex exec --skip-git-repo-check -C <složka> -s read-only\|workspace-write -- <zadání>`. CLI i z aplikace ChatGPT (`Contents/Resources/codex`). Session z pozadí se páruje podle složky a času startu | ✅ přepínače v `codex --help` 0.153.4; 🧪 skutečné spuštění |
+| Gemini CLI, Qwen Code | Terminál | `gemini -i "<zadání>"`, `qwen -i "<zadání>"` — jen když jsou v PATH | 🧪 nenainstalováno na vývojovém Macu |
+| Ollama | lokálně | `POST /api/chat` na `127.0.0.1:11434`, odpověď se streamuje do přepisu v Agentree; konverzace žije do restartu serveru | 🧪 testováno proti falešnému serveru |
+| ChatGPT, Claude.ai, Perplexity, Microsoft Copilot, Grok | web | Otevře `?q=<zadání>` a zadání vždy zkopíruje do schránky (parametr není oficiálně dokumentovaný) | 🧪 |
+| Gemini, Qwen Chat | web | Otevře aplikaci, zadání je ve schránce | 🧪 |
+
+**Zdarma:** Agentree nemá vlastní AI — spuštění běží na předplatných a limitech uživatele. Skutečně zdarma jsou lokální modely v Ollamě a bezplatné úrovně služeb (např. Gemini CLI s osobním účtem Google, bezplatné webové verze).
+
 ## Konektory v detailu
 
 ### Claude Code — `src/connectors/claude-code.js` ✅

@@ -20,7 +20,10 @@ export function plistXml({ node, script, logDir, pathEnv }) {
     <string>${xml(script)}</string>
   </array>
   <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key><false/>
+  </dict>
   <key>ThrottleInterval</key><integer>10</integer>
   <key>StandardOutPath</key><string>${xml(path.join(logDir, 'agentree.log'))}</string>
   <key>StandardErrorPath</key><string>${xml(path.join(logDir, 'agentree.error.log'))}</string>
@@ -34,6 +37,15 @@ export function plistXml({ node, script, logDir, pathEnv }) {
 }
 
 export const plistPath = (home = os.homedir()) => path.join(home, 'Library', 'LaunchAgents', `${LABEL}.plist`);
+
+export async function isLaunchAgentInstalled(home = os.homedir()) {
+  try {
+    await fs.access(plistPath(home));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function installLaunchAgent({ script, home = os.homedir(), node = process.execPath }) {
   const file = plistPath(home);

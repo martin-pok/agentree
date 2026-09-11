@@ -64,6 +64,11 @@ export function createHttpServer(app) {
     connectors: (l) => broadcast('connectors', l),
     settings: (s) => broadcast('settings', s),
     integrations: (i) => broadcast('integrations', i),
+    projects: (p) => broadcast('projects', p),
+    runs: (l) => broadcast('runs', l),
+    launch: (l) => broadcast('launch', l),
+    license: (l) => broadcast('license', l),
+    usage: (u) => broadcast('usage', u),
   };
   for (const [event, fn] of Object.entries(listeners)) store.on(event, fn);
 
@@ -120,6 +125,24 @@ export function createHttpServer(app) {
     const origin = req.headers.origin;
     if (origin && !allowedOrigins().has(origin)) throw new HttpError(403, 'Nepovolený původ požadavku.');
   }
+
+  // Výsledky aplikační vrstvy ve tvaru { status, error, errors?, field?, upgrade? } převede na HTTP chybu.
+  function unwrap(r) {
+    if (r && typeof r.status === 'number' && r.error) {
+      const extra = {};
+      for (const k of ['errors', 'field', 'upgrade']) if (r[k] !== undefined) extra[k] = r[k];
+      throw new HttpError(r.status, r.error, extra);
+    }
+    return r;
+  }
+
+  const sessionParam = (m) => {
+    try {
+      return decodeURIComponent(m[1]);
+    } catch {
+      throw new HttpError(400, 'Neplatné ID session.');
+    }
+  };
 
   const spendResponse = () => ({ spend: app.spendPayload() });
   const ledger = () => datastore.data.spend.ledger;
@@ -228,6 +251,7 @@ export function createHttpServer(app) {
       const body = await readBody(req);
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
+      if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       for (const k of ['needsInput', 'limits', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
@@ -266,6 +290,75 @@ export function createHttpServer(app) {
       await Promise.allSettled(Object.values(app.connectors).map((c) => c.scan()));
       return { connectors: app.connectorList() };
     }],
+
+    /* Projekty */
+    ['GET', /^\/api\/projects$/, () => ({ projects: app.projectsPayload() })],
+    ['POST', /^\/api\/projects\/assign$/, async (req) => {
+      const body = await readBody(req);
+      const pid = body.projectId === null || typeof body.projectId === 'string' ? body.projectId : undefined;
+      if (pid === undefined) throw new HttpError(422, 'Chybí projekt.');
+      unwrap(app.assignToProject(body.sessionIds, pid));
+      return { projects: app.projectsPayload() };
+    }],
+    ['POST', /^\/api\/projects$/, async (req) => {
+      const r = unwrap(app.createProject(await readBody(req)));
+      return { status: 201, body: { project: r.project, projects: app.projectsPayload() } };
+    }],
+    ['PATCH', /^\/api\/projects\/([\w-]+)$/, async (req, m) => {
+      const r = unwrap(app.updateProject(m[1], await readBody(req)));
+      return { project: r.project, projects: app.projectsPayload() };
+    }],
+    ['DELETE', /^\/api\/projects\/([\w-]+)$/, (_req, m) => {
+      unwrap(app.removeProject(m[1]));
+      return { projects: app.projectsPayload() };
+    }],
+    ['GET', /^\/api\/projects\/([\w-]+)\/export$/, (_req, m) => {
+      const r = unwrap(app.exportProject(m[1]));
+      const slug = r.project.name.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'projekt';
+      const d = new Date();
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        raw: true,
+        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agentree-${slug}-${date}.csv"`, 'Cache-Control': 'no-store' },
+        body: r.csv,
+      };
+    }],
+
+    /* Spouštění agentů */
+    ['GET', /^\/api\/launch$/, () => app.launchPayload()],
+    ['POST', /^\/api\/launch\/refresh$/, () => app.refreshLaunch()],
+    ['POST', /^\/api\/launch$/, async (req) => unwrap(await app.launch(await readBody(req)))],
+    ['GET', /^\/api\/runs$/, () => ({ runs: app.runsPayload() })],
+    ['POST', /^\/api\/runs\/clear$/, () => {
+      app.runs.clearFinished();
+      return { runs: app.runsPayload() };
+    }],
+    ['POST', /^\/api\/runs\/([\w-]+)\/stop$/, (_req, m) => {
+      if (!app.runs.get(m[1])) throw new HttpError(404, 'Běh nenalezen.');
+      if (!app.runs.stop(m[1])) throw new HttpError(409, 'Běh už skončil.');
+      return { runs: app.runsPayload() };
+    }],
+    ['GET', /^\/api\/runs\/([\w-]+)\/log$/, (_req, m) => {
+      if (!app.runs.get(m[1])) throw new HttpError(404, 'Běh nenalezen.');
+      return { log: app.runs.tail(m[1], 16000) };
+    }],
+    ['POST', /^\/api\/sessions\/([^/]+)\/reply$/, async (req, m) => {
+      const body = await readBody(req);
+      const r = app.localChat.reply(sessionParam(m), body.text);
+      if (!r.ok) throw new HttpError(r.status, r.error);
+      return { ok: true };
+    }],
+    ['POST', /^\/api\/sessions\/([^/]+)\/stop$/, (_req, m) => {
+      if (!app.localChat.stop(sessionParam(m))) throw new HttpError(409, 'Model právě neodpovídá.');
+      return { ok: true };
+    }],
+
+    /* Licence, systém */
+    ['GET', /^\/api\/license$/, () => ({ license: app.licenseStatus() })],
+    ['PUT', /^\/api\/license$/, async (req) => unwrap(app.activateLicense((await readBody(req)).key))],
+    ['DELETE', /^\/api\/license$/, () => app.removeLicense()],
+    ['POST', /^\/api\/integrations\/autostart\/(install|uninstall)$/, async (_req, m) => unwrap(await app.autostart(m[1]))],
+    ['GET', /^\/api\/fs\/folders$/, async (_req, _m, url) => unwrap(await app.listFolders(url.searchParams.get('path') || ''))],
   ];
 
   /* ---------- Statické soubory ---------- */
@@ -310,6 +403,11 @@ export function createHttpServer(app) {
       const [method, re, handler, opts = {}] = route;
       if (method !== 'GET' && !opts.token) guardMutation(req);
       const result = await handler(req, url.pathname.match(re), url);
+      if (result?.raw) {
+        res.writeHead(200, { ...SECURITY, ...result.headers });
+        res.end(result.body);
+        return;
+      }
       if (result && typeof result.status === 'number' && result.body) return send(res, result.status, result.body);
       return send(res, 200, result);
     }

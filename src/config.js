@@ -25,6 +25,7 @@ export function loadConfig(env = process.env) {
     processes: env.AGENTREE_PROCESSES !== '0',
     // exec = skutečně otevírat aplikace (macOS), dry = jen vrátit plán (testy), off = vypnuto
     openMode: env.AGENTREE_OPEN === 'dry' ? 'dry' : env.AGENTREE_OPEN === '0' || process.platform !== 'darwin' ? 'off' : 'exec',
+    ollamaUrl: env.AGENTREE_OLLAMA_URL || 'http://127.0.0.1:11434',
     scanIntervalMs: Number(env.AGENTREE_SCAN_MS) || 10000,
     processIntervalMs: Number(env.AGENTREE_PROCESS_MS) || 5000,
     quiet: env.AGENTREE_QUIET === '1',
