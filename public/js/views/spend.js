@@ -60,7 +60,7 @@ export function openAddEntry() {
   });
 }
 
-function openBudgets() {
+function openBudgets(opener = null) {
   const sp = state.spend;
   const cfg = sp.budgetsConfig;
   const services = Object.entries(sp.services)
@@ -69,6 +69,7 @@ function openBudgets() {
   modal({
     title: 'Měsíční rozpočty',
     wide: true,
+    opener,
     submitLabel: 'Uložit rozpočty',
     body: `<p class="modal-text">Agentree tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.</p>
       <div class="form-grid">
@@ -121,7 +122,7 @@ function mount(el, _params, query) {
     const id = a.dataset.id;
     try {
       if (a.dataset.action === 'add') openAddEntry();
-      else if (a.dataset.action === 'budgets') openBudgets();
+      else if (a.dataset.action === 'budgets') openBudgets(a);
       else if (a.dataset.action === 'end') {
         const ok = await confirmDialog({ title: 'Ukončit předplatné', message: 'Od příštího měsíce se platba přestane započítávat. Historie zůstane.', confirmLabel: 'Ukončit předplatné' });
         if (ok) { applySpend(await api.endLedger(id, localDate())); toast('Předplatné ukončeno'); }
