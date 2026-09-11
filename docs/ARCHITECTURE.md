@@ -94,6 +94,12 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 - `views/*.js` — každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
 - `charts.js` — plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
 
+### Vzhled a nativní chrome
+
+`settings.appearance` má povolené hodnoty `light`, `dark`, `system`; DataStore je normalizuje na `light`, aby staré či poškozené nastavení nikdy nespustilo neurčený režim. `public/js/appearance-boot.js` běží před stylesheetem a použije lokální kopii preference pouze proti FOUC. Po snapshotu je autoritou serverová preference. `appearance.js` aplikuje tokeny přes `html[data-theme]`, poslouchá změnu `prefers-color-scheme` při volbě `system` a přes úzký WKWebView bridge předá výsledek Swift obalu. Bridge přijímá jen z hlavního lokálního frame a mění pouze `NSAppearance` a barvu okna.
+
+Paleta dark mode je tokenová, nikoli CSS filter/inverze: `--paper`, `--card`, texty, linky, stíny i semantické tinty mají vlastní kontrastní hodnoty. Regressní browser QA měří definované páry minimálně 4.5:1 a testuje perzistenci i živou reakci volby `system`.
+
 ## Výkon (naměřeno na vývojovém Macu, v0.2.0)
 
 - Úvodní načtení 82 sessions (≈106 MB přepisů Claude + 206 souborů Codexu, okno 30 dní): **1,3 s**.

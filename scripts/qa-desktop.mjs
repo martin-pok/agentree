@@ -122,6 +122,44 @@ for (const engine of ['chromium', 'webkit']) {
       if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
       if (route === 'nastaveni') {
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
+        assert.equal(await page.locator('[data-avatar-pick]').count(), 25, `${engine} nabízí iniciály a 24 abstraktních avatarů`);
+        await page.locator('button[data-appearance="dark"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+        assert.equal(await page.locator('button[data-appearance="dark"]').getAttribute('aria-pressed'), 'true');
+        const ratios = await page.evaluate(() => {
+          const hex = (value) => {
+            const match = value.trim().match(/^#([0-9a-f]{6})$/i);
+            if (!match) throw new Error(`Neplatná barva ${value}`);
+            return [0, 2, 4].map((offset) => parseInt(match[1].slice(offset, offset + 2), 16) / 255).map((part) => part <= .04045 ? part / 12.92 : ((part + .055) / 1.055) ** 2.4);
+          };
+          const luminance = (value) => { const [r, g, b] = hex(value); return .2126 * r + .7152 * g + .0722 * b; };
+          const ratio = (foreground, background) => (Math.max(luminance(foreground), luminance(background)) + .05) / (Math.min(luminance(foreground), luminance(background)) + .05);
+          const css = getComputedStyle(document.documentElement);
+          const v = (name) => css.getPropertyValue(name);
+          return {
+            body: ratio(v('--ink'), v('--card')),
+            secondary: ratio(v('--ink-2'), v('--card')),
+            muted: ratio(v('--mute'), v('--card')),
+            teal: ratio(v('--teal-ink'), v('--teal-tint')),
+            velvet: ratio(v('--velvet-ink'), v('--velvet-tint')),
+            brass: ratio(v('--brass-ink'), v('--brass-tint')),
+          };
+        });
+        for (const [name, ratio] of Object.entries(ratios)) assert.ok(ratio >= 4.5, `${engine} dark ${name} kontrast ${ratio.toFixed(2)}:1 je AA`);
+        await page.screenshot({ path: `dist/qa/${engine}-dark-settings.png`, fullPage: true });
+        await page.reload();
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+        await page.goto(`${server.url}/#/prehled`);
+        await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
+        await page.screenshot({ path: `dist/qa/${engine}-dark-overview.png`, fullPage: true });
+        await page.goto(`${server.url}/#/nastaveni`);
+        await page.emulateMedia({ colorScheme: 'dark' });
+        await page.locator('button[data-appearance="system"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.appearance === 'system');
+        await page.emulateMedia({ colorScheme: 'light' });
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+        await page.locator('button[data-appearance="light"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
       }
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
@@ -144,10 +182,11 @@ for (const engine of ['chromium', 'webkit']) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover', 'web sources Perplexity and Grok', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     console.log(JSON.stringify({ engine, errors, welcome: await page.locator('.welcome-dialog').textContent().catch(() => 'closed') }));
+    console.error(error.stack || error);
     throw error;
   } finally { await browser.close(); await server.close(); }
 }

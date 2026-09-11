@@ -20,7 +20,7 @@
 .picker-option[aria-selected='true']::after { content: '✓'; position: absolute; right: 12px; top: 10px; }
 .picker-option[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
 .check input, .check-inline input, input[type='checkbox']:not([role='switch']) { appearance: none; flex: none; width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); display: inline-grid; place-content: center; vertical-align: middle; }
-input[type='checkbox']:not([role='switch']):checked { background: var(--ink); border-color: var(--ink); }
+input[type='checkbox']:not([role='switch']):checked { background: var(--ink-surface); border-color: var(--ink-surface); }
 input[type='checkbox']:not([role='switch']):checked::after { content: ''; width: 8px; height: 4px; border-left: 1.5px solid white; border-bottom: 1.5px solid white; transform: rotate(-45deg) translateY(-1px); }
 .welcome-dialog { padding: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 28px; width: min(920px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); background: var(--card); color: var(--ink); box-shadow: 0 40px 120px rgba(12,11,16,.4); overflow: auto; }
 .welcome-dialog[open] { display: grid; grid-template-columns: .88fr 1.12fr; animation: welcome-in .55s var(--ease) both; }

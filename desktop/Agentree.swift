@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var failedMessage: String?
     var lockFD: Int32 = -1
     let ink = NSColor(srgbRed: 22/255, green: 20/255, blue: 29/255, alpha: 1)
+    let paper = NSColor(srgbRed: 244/255, green: 243/255, blue: 247/255, alpha: 1)
     let qa = ProcessInfo.processInfo.environment["AGENTREE_DESKTOP_QA"] == "1"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -48,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         web.setValue(false, forKey: "drawsBackground")
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.title = "Agentree"; window.titlebarAppearsTransparent = true
-        window.backgroundColor = ink; window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = paper; window.appearance = NSAppearance(named: .aqua)
         window.contentMinSize = NSSize(width: 900, height: 620)
         window.isReleasedWhenClosed = false; window.delegate = self
         window.setFrameAutosaveName(qa ? "Agentree-QA" : "Agentree-Main")
@@ -218,6 +219,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
         if type == "ready" { loading.isHidden = true }
+        if type == "appearance", let theme = data["theme"] as? String {
+            let dark = theme == "dark"
+            window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+            window.backgroundColor = dark ? ink : paper
+        }
     }
     // Status/notifications come from our child process, not a throttled hidden webview.
     func handleDesktopEvent(_ data: [String: Any]) {

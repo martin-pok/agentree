@@ -4,6 +4,7 @@ import { esc, rel, initials } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
+import { applyAppearance, normalizeAppearance } from '../appearance.js';
 
 const v = { el: null, observer: null, pairCode: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
@@ -38,7 +39,7 @@ function webSourceCard(id, site, web, now) {
 const GROUPS = [
   ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors']],
   ['set-upozorneni', 'Upozornění', ['notifications']],
-  ['set-ucet', 'Profil a licence', ['profile', 'license']],
+  ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
   ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share']],
 ];
@@ -86,6 +87,8 @@ function mount(el) {
       setAvatar(pick.dataset.avatarPick === 'i' ? null : Number(pick.dataset.avatarPick));
       return;
     }
+    const appearance = e.target.closest('[data-appearance]');
+    if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
     const a = e.target.closest('[data-action]');
@@ -218,6 +221,22 @@ async function toggleSetting(sw) {
   }
 }
 
+async function setAppearance(value) {
+  const next = normalizeAppearance(value);
+  const previous = normalizeAppearance(state.settings?.appearance);
+  if (next === previous) return;
+  applyAppearance(next);
+  try {
+    state.settings = (await api.saveSettings({ appearance: next })).settings;
+    applyAppearance(state.settings.appearance, { persist: true });
+    toast(next === 'system' ? 'Vzhled se řídí nastavením macOS' : next === 'dark' ? 'Tmavý vzhled je zapnutý' : 'Světlý vzhled je zapnutý');
+    update();
+  } catch (err) {
+    applyAppearance(previous);
+    toast(`Vzhled se neuložil: ${err.message}`, { tone: 'velvet' });
+  }
+}
+
 async function connectClaude() {
   const h = state.integrations?.claudeHooks;
   const ok = await modal({
@@ -239,6 +258,18 @@ function update() {
   const i = state.integrations;
   const n = state.settings?.notifications;
   if (!el || !i || !n) return;
+
+  const appearance = normalizeAppearance(state.settings.appearance);
+  const appearanceOption = (value, icon, label, desc) => `<button class="appearance-option" type="button" data-appearance="${value}" aria-pressed="${appearance === value}">
+    <span class="appearance-icon">${icon}</span><span><strong>${label}</strong><small>${desc}</small></span>
+  </button>`;
+  fill(el, 'appearance', `
+    ${head(ICON.sun, 'Vzhled aplikace', 'Světlý vzhled je výchozí. Volba se uloží jen na tomto Macu a může sledovat nastavení systému.')}
+    <div class="appearance-options" role="group" aria-label="Vyber vzhled aplikace">
+      ${appearanceOption('light', ICON.sun, 'Světlý', 'Výchozí, jasný pracovní prostor')}
+      ${appearanceOption('dark', ICON.moon, 'Tmavý', 'Klidný večerní režim s AA kontrastem')}
+      ${appearanceOption('system', ICON.system, 'Podle systému', 'Automaticky podle macOS')}
+    </div>`);
 
   /* Propojení s Claude Code */
   const h = i.claudeHooks;

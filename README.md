@@ -49,6 +49,7 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | Dokument | Obsah |
 |---|---|
 | [AGENTS.md](AGENTS.md) | Pravidla a postupy pro agentický vývoj, definice hotového, mapa repozitáře |
+| [docs/PRODUCT-AND-ARCHITECTURE.md](docs/PRODUCT-AND-ARCHITECTURE.md) | Produktový kompas, UX/UI standard, vzhledové režimy, hranice konektorů, architektura a releasová brána |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Jak data tečou od zdroje do dashboardu, stavový model, výkon, odolnost |
 | [docs/CONNECTORS.md](docs/CONNECTORS.md) | Podpora jednotlivých služeb: co jde, co nejde a proč, stav ověření |
 | [docs/DATA-CONTRACT.md](docs/DATA-CONTRACT.md) | REST API, SSE události a datové typy |

@@ -73,7 +73,7 @@ docs/                       architektura, konektory, datový kontrakt, bezpečno
 - **Mutace API** vyžadují hlavičku `X-Agentree: 1` a lokální `Origin` (ochrana CSRF). Vstupy od hooků a rozšíření vyžadují `X-Agentree-Token`. Nové endpointy přidávej do tabulky v `src/http.js` a do `docs/DATA-CONTRACT.md`.
 - **Změna tvaru dat** = upravit současně server, `public/js/state.js`, dotčené obrazovky, `docs/DATA-CONTRACT.md` a testy.
 - **UI texty česky**, věty s malými písmeny (sentence case), aktivní slovesa, tlačítko říká, co se stane. Chybové hlášky říkají, co se stalo a co dělat. Bez anglicismů, kde existuje běžné české slovo.
-- **Design:** identita „koncertní sál“ (eben, mlžná slonovina, samet = rozhodnutí, smaragd = práce, mosaz = akcent), podpisový prvek je tmavá scéna, kde každý aktivní agent svítí jako bod (smaragdový pracuje, sametový potřebuje tebe). Logo: `public/brand/`. 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Loga služeb vkládej jen přes `glyph()` z `public/js/icons.js`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px.
+- **Design:** identita „koncertní sál“ (eben, mlžná slonovina, samet = rozhodnutí, smaragd = práce, mosaz = akcent), podpisový prvek je tmavá scéna, kde každý aktivní agent svítí jako bod (smaragdový pracuje, sametový potřebuje tebe). Logo: `public/brand/`. 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Loga služeb vkládej jen přes `glyph()` z `public/js/icons.js`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px. Režimy `light`, `dark`, `system` jsou jeden tokenový systém: žádné lokální inverze, přímé bílé texty na světlé kartě nebo neověřený kontrast. Viz `docs/PRODUCT-AND-ARCHITECTURE.md`.
 
 ## 5. Přidání nového konektoru (postup)
 
@@ -96,7 +96,7 @@ Změna je hotová, až když platí vše:
 - [ ] Aktualizovaná dokumentace (`docs/*`, tabulky podpory) a záznam v `CHANGELOG.md`.
 - [ ] Commit s popisem proč, ne jen co.
 
-## 7. Poctivý stav k verzi 0.2.0
+## 7. Poctivý stav k verzi 0.6.0
 
 Ověřeno na skutečných datech (macOS, Node 24): Claude Code / Claude Desktop Code, Codex (ChatGPT app), procesy AI aplikací, Claude Code hooky (automatický test i instalace do dočasného HOME), realtime stream, útrata a rozpočty.
 
@@ -105,3 +105,13 @@ Beta (formát podle dokumentace nebo odvozený, bez dat na vývojovém Macu): Cu
 Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, útrata za předplatné a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (nemají veřejné API → ruční zápis), schválení akce agenta na dálku z Agentree.
 
 Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## 8. Core operating contract
+
+`AGENTS.md` je krátký závazný kontrakt; úplný produktový, architektonický a releasový kontext je v [docs/PRODUCT-AND-ARCHITECTURE.md](docs/PRODUCT-AND-ARCHITECTURE.md). Před každou změnou jej otevři. Při konfliktu platí pořadí: bezpečnost a skutečná data → tento soubor → datový kontrakt → aktivní kód a testy → starší dokumentace.
+
+- **Zachovej význam metrik.** Tokeny, API náklady, kredity a limity jsou rozdílné hodnoty. Nikdy je nesčítej ani nepřejmenuj jen kvůli hezčímu dashboardu.
+- **Chraň pracovní plynulost.** Živá data nesmějí přepsat otevřený picker, formulář, dialog, scroll pozici ani focus. Nové realtime chování musí mít regresní test.
+- **Přidávej konektor po pravdě.** Bez skutečných dat je stav `Beta`/`Neověřeno`; přihlašování vždy zůstává na stránce dodavatele nebo přes oficiální klíč v Klíčence.
+- **Drž desktop a web spolu.** Změna vzhledu, lifecycle nebo bridge se ověřuje v Chromiu i WebKitu a v macOS buildu. `light` je výchozí; `dark` a `system` musí projít AA kontrastem a změnou bez restartu.
+- **Před releasem dokaž, neodhaduj.** Testy, syntax, screenshoty, bezpečnostní diff, smoke a podpis jsou důkazy. Do GitHub `main` jde změna jen přes green PR.

@@ -7,6 +7,7 @@ import { normalizeProjects } from './projects.js';
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
   welcomeCompleted: false,
+  appearance: 'light',
   notifications: {
     needsInput: true,
     limits: true,
@@ -39,6 +40,7 @@ export function normalizeData(raw) {
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
+      appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
     },
     projects: normalizeProjects(d.projects),

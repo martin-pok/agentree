@@ -5,15 +5,21 @@ import fs from 'node:fs/promises';
 import { startTestServer, api, tempDir, waitFor } from './helpers.mjs';
 import { normalizeData } from '../src/datastore.js';
 
-test('welcome: first-run state is boolean, persisted by API; desktop blocks competing LaunchAgent', async () => {
+test('welcome a vzhled: bezpečné výchozí hodnoty, API persistence; desktop blocks competing LaunchAgent', async () => {
   assert.equal(normalizeData({ settings: { welcomeCompleted: 'yes' } }).settings.welcomeCompleted, false);
+  assert.equal(normalizeData({ settings: { appearance: 'night' } }).settings.appearance, 'light');
   const s = await startTestServer({ AGENTREE_DESKTOP: '1' });
   try {
     const client = api(s.url);
     assert.equal((await client.get('/api/state')).body.settings.welcomeCompleted, false);
+    assert.equal((await client.get('/api/state')).body.settings.appearance, 'light');
     assert.equal((await client.send('PUT', '/api/settings', { welcomeCompleted: true })).body.settings.welcomeCompleted, true);
+    assert.equal((await client.send('PUT', '/api/settings', { appearance: 'dark' })).body.settings.appearance, 'dark');
+    assert.equal((await client.send('PUT', '/api/settings', { appearance: 'system' })).body.settings.appearance, 'system');
+    assert.equal((await client.send('PUT', '/api/settings', { appearance: 'night' })).status, 422);
     await s.app.datastore.flush();
     assert.equal(JSON.parse(await fs.readFile(s.app.datastore.file, 'utf8')).settings.welcomeCompleted, true);
+    assert.equal(JSON.parse(await fs.readFile(s.app.datastore.file, 'utf8')).settings.appearance, 'system');
     const snapshot = (await client.get('/api/state')).body;
     assert.equal(snapshot.integrations.desktop, true);
     assert.equal(snapshot.integrations.autostart.supported, false);

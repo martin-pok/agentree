@@ -18,9 +18,11 @@ import alertsView, { markRead } from './views/alerts.js';
 import settings from './views/settings.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
+import { applyAppearance, initAppearance } from './appearance.js';
 
 initSelects();
 initWelcome();
+initAppearance();
 
 const ROUTES = [
   [/^\/(?:prehled)?$/, overview],
@@ -154,6 +156,7 @@ function navigate() {
 /* ---------- Vykreslení ---------- */
 
 function refresh(topics) {
+  if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
   if (!state.loaded) {
     if (!viewEl.querySelector(':scope > .loading')) viewEl.insertAdjacentHTML('afterbegin', '<div class="loading" role="status"><span class="loader"></span>Načítám agenty z tohoto Macu…</div>');

@@ -283,6 +283,10 @@ export function createHttpServer(app, existingServer = null) {
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
+      if (body.appearance !== undefined) {
+        if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, 'Vzhled musí být světlý, tmavý nebo podle systému.');
+        datastore.data.settings.appearance = body.appearance;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
