@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { esc, shortPath, plural } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
 import { modal, toast } from './ui.js';
-import { sessionTotal } from './data.js';
+import { sessionTotal, needsYou } from './data.js';
 
 export const projectHref = (id) => `#/projekt/${encodeURIComponent(id)}`;
 export const pdot = (p, cls = '') => `<i class="pdot${cls ? ` ${cls}` : ''}" style="--pc:${esc(p?.color || '#B3AEBA')}" aria-hidden="true"></i>`;
@@ -28,7 +28,7 @@ export function projectStats(p, now = Date.now()) {
     older,
     total: all.length,
     working: live.filter((s) => s.status === 'working').length,
-    needs: live.filter((s) => s.status === 'needs_input' || s.status === 'limited').length,
+    needs: live.filter(needsYou).length,
     tokens: live.filter((s) => s.lastAt >= since).reduce((a, s) => a + sessionTotal(s), 0),
     lastAt: all.reduce((m, s) => Math.max(m, s.lastAt || 0), 0),
     services: logos.map((x) => x.s),

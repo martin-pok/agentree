@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
   notifications: {
     needsInput: true,
     limits: true,
+    limitReset: true,
     budget: true,
     done: true,
     doneMinSeconds: 120,

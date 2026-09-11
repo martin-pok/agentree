@@ -36,7 +36,16 @@ export class AlertEngine {
 
     if (s.status === 'working') this.turnStart.set(s.id, s.turnStartedAt || Date.now());
 
-    if (s.status === 'needs_input' && n.needsInput) {
+    if (s.status === 'failed' && n.needsInput) {
+      this.raise({
+        key: `failed:${s.id}:${s.failure?.at || s.lastAt}`,
+        level: 'critical',
+        kind: 'failed',
+        title: `${s.app}: spuštění selhalo`,
+        body: s.reason || s.title,
+        sessionId: s.id,
+      });
+    } else if (s.status === 'needs_input' && n.needsInput) {
       this.raise({
         key: `needs_input:${s.id}:${s.pending?.at || s.lastAt}`,
         level: 'action',
@@ -92,6 +101,27 @@ export class AlertEngine {
       title: `${limit.app}: ${limit.label} na ${Math.round(limit.usedPercent)} %`,
       body: limit.resetsAt ? `Obnoví se ${new Date(limit.resetsAt).toLocaleString('cs-CZ')}.` : 'Blížíš se k limitu.',
     });
+  }
+
+  // Obnovení okna limitu (5 h, týden): upozorní, jakmile čas obnovy uplyne — jen u okna, které se čerpalo.
+  // Okno do 15 minut po obnově; klíč deduplikace přežije restart, takže upozornění přijde jednou.
+  checkLimitResets(now = Date.now()) {
+    if (!this.settings.limitReset) return [];
+    const raised = [];
+    for (const l of this.store.limitList()) {
+      if (!l.resetsAt || l.resetsAt > now || now - l.resetsAt > 15 * 60e3) continue;
+      if (!l.reached && !(typeof l.usedPercent === 'number' && l.usedPercent > 0)) continue;
+      const name = l.windowMinutes === 300 ? '5hodinový limit' : l.windowMinutes === 10080 ? 'týdenní limit' : l.label.toLowerCase();
+      const a = this.raise({
+        key: `limit_reset:${l.id}:${l.resetsAt}`,
+        level: 'info',
+        kind: 'limit_reset',
+        title: `${l.app}: ${name} je obnovený`,
+        body: 'Můžeš zase naplno promptovat.',
+      });
+      if (a) raised.push(a);
+    }
+    return raised;
   }
 
   checkBudgets(summary) {

@@ -5,6 +5,12 @@ import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
 
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
+// Okna limitů předplatného, která Claude Code předává stavovému řádku (`rate_limits`).
+export const STATUS_WINDOWS = {
+  five_hour: { id: 'claude:five_hour', label: 'Limit 5 h', minutes: 300 },
+  seven_day: { id: 'claude:seven_day', label: 'Týdenní limit', minutes: 10080 },
+};
+
 const TOOL_LABELS = {
   Bash: 'Spouští příkaz',
   Read: 'Čte soubor',
@@ -372,6 +378,57 @@ export function createClaudeCodeConnector(ctx) {
     return { ok: true, id: s.id };
   }
 
+  // Stavový řádek Claude Code (src/hooks-installer.js): oficiální limity 5 h a týden, kontext, repozitář, PR.
+  // Neposouvá „poslední aktivitu“ — stavový řádek se překresluje i bez práce agenta.
+  const statusCache = new Map();
+
+  function statusLimit(key, w, now) {
+    if (!w || typeof w.used_percentage !== 'number' || !Number.isFinite(w.used_percentage)) return null;
+    const def = STATUS_WINDOWS[key];
+    const used = Math.max(0, Math.min(100, w.used_percentage));
+    const resetsAt = Number(w.resets_at) > 0 ? Math.round(Number(w.resets_at) * 1000) : null;
+    const prev = store.limits.get(def.id);
+    if (!prev || prev.usedPercent !== used || prev.resetsAt !== resetsAt || now - prev.at > MIN) {
+      store.setLimit({ id: def.id, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline' });
+    }
+    return { used, resetsAt };
+  }
+
+  function ingestStatusline(p, now = Date.now()) {
+    if (!p || typeof p.session_id !== 'string' || !/^[\w-]{8,80}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
+    const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
+    const five = statusLimit('five_hour', rl.five_hour, now);
+    const week = statusLimit('seven_day', rl.seven_day, now);
+    const cw = p.context_window && typeof p.context_window === 'object' ? p.context_window : {};
+    const ctxPct = typeof cw.used_percentage === 'number' && Number.isFinite(cw.used_percentage) ? Math.round(Math.max(0, Math.min(100, cw.used_percentage))) : null;
+    const s = store.get(`claude-code:${p.session_id}`);
+    if (s) {
+      const repo = p.workspace?.repo;
+      const next = {
+        context: ctxPct === null ? null : { usedPercent: ctxPct, size: Number(cw.context_window_size) || null },
+        effort: typeof p.effort?.level === 'string' ? clip(p.effort.level, 12) : '',
+        repo: typeof repo?.owner === 'string' && typeof repo?.name === 'string' ? clip(`${repo.owner}/${repo.name}`, 120) : '',
+        worktree: clip(typeof p.worktree?.name === 'string' ? p.worktree.name : typeof p.workspace?.git_worktree === 'string' ? p.workspace.git_worktree : '', 120),
+        pr: Number.isInteger(p.pr?.number) ? { number: p.pr.number, url: /^https:\/\//.test(p.pr.url || '') ? clip(p.pr.url, 300) : '', state: clip(typeof p.pr.review_state === 'string' ? p.pr.review_state : '', 24) } : null,
+        costUsd: typeof p.cost?.total_cost_usd === 'number' && Number.isFinite(p.cost.total_cost_usd) ? Math.round(p.cost.total_cost_usd * 100) / 100 : null,
+      };
+      if (typeof p.worktree?.branch === 'string' && !s.branch) s.branch = clip(p.worktree.branch, 120);
+      const json = JSON.stringify(next);
+      if (statusCache.get(s.id) !== json) {
+        statusCache.set(s.id, json);
+        Object.assign(s, next);
+        if (s.lastAt) store.commit(s, now);
+      }
+    }
+    const hm = (ts) => new Date(ts).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+    const parts = ['Agentree'];
+    if (typeof p.model?.display_name === 'string') parts.push(clip(p.model.display_name, 40));
+    if (five) parts.push(`5 h ${Math.round(five.used)} %${five.resetsAt ? ` do ${hm(five.resetsAt)}` : ''}`);
+    if (week) parts.push(`týden ${Math.round(week.used)} %`);
+    if (ctxPct !== null) parts.push(`kontext ${ctxPct} %`);
+    return { ok: true, text: parts.join(' · ').replace(/[ -]/g, '') };
+  }
+
   return {
     id: 'claude-code',
     name: 'Claude Code · CLI a Claude Desktop',
@@ -391,6 +448,7 @@ export function createClaudeCodeConnector(ctx) {
     },
     idle: () => queue.idle(),
     ingestHook,
+    ingestStatusline,
     status() {
       const count = files.size;
       return {

@@ -310,7 +310,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .icon-tile { width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--card); box-shadow: var(--shadow-sm); display: grid; place-items: center; position: relative; flex: none; }
 .icon-tile .icon { width: 18px; height: 18px; color: var(--ink-2); }
 .status-dot { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--paper); }
-.status-needs_input, .status-limited { background: var(--velvet-ink); }
+.status-needs_input, .status-limited, .status-failed { background: var(--velvet-ink); }
 .status-working { background: var(--teal); }
 .status-waiting { background: var(--brass); }
 .status-idle, .status-archived { background: var(--line); }
@@ -440,7 +440,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .cell-time { font-size: 13px; color: var(--mute); text-align: right; white-space: nowrap; }
 .pill { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 14px; font-size: 13px; white-space: nowrap; background: var(--line-2); color: var(--ink-2); }
 .pill i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.pill[data-status='needs_input'], .pill[data-status='limited'] { background: var(--velvet-tint); color: var(--velvet-ink); }
+.pill[data-status='needs_input'], .pill[data-status='limited'], .pill[data-status='failed'] { background: var(--velvet-tint); color: var(--velvet-ink); }
 .pill[data-status='working'] { background: var(--teal-tint); color: var(--teal-ink); }
 .pill[data-status='working'] i { animation: blink 1.4s ease-in-out infinite; }
 .pill[data-status='waiting'] { background: var(--brass-tint); color: var(--brass-ink); }
@@ -784,6 +784,31 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .key-form { flex-wrap: wrap; }
   .decision { grid-template-columns: 36px minmax(0, 1fr); }
 }
+
+/* ---------- Výpadek serveru, náhradní loga ---------- */
+.offline { display: flex; align-items: flex-start; gap: 16px; margin: 0 0 28px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow), inset 4px 0 0 var(--velvet-ink); animation: rise .4s var(--ease) both; }
+.offline-mark { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--velvet-tint); color: var(--velvet-ink); flex: none; }
+.offline-text { flex: 1; min-width: 0; }
+.offline-text strong { font-size: 16px; }
+.offline-text p { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.offline-text .small { color: var(--mute); }
+.logo-fallback { display: inline-grid; place-items: center; border-radius: 50%; background: var(--line-2); color: var(--ink-2); font: 500 10px/1 var(--f-body); text-transform: uppercase; }
+
+/* ---------- Okna limitů ---------- */
+.lwin { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lwin-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 14px 12px 10px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
+.lwin-logo { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); }
+.lwin-main { display: grid; gap: 6px; min-width: 0; }
+.lwin-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lwin-top b { font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lwin-pct { font: 500 14px/1 var(--f-mono); }
+.lwin-bar { display: block; height: 6px; border-radius: 3px; background: var(--line-2); overflow: hidden; }
+.lwin-bar i { display: block; height: 100%; border-radius: 3px; background: var(--teal); transition: width .8s var(--ease); }
+.lwin-row[data-tone='low'] .lwin-bar i { background: var(--brass); }
+.lwin-row[data-tone='out'] .lwin-bar i { background: var(--velvet-ink); }
+.lwin-row[data-tone='out'] .lwin-pct { color: var(--velvet-ink); }
+.lwin-sub { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
+.lwin-hint { margin: 10px 4px 0; font-size: 13px; color: var(--ink-2); }
 
 /* ---------- Mobilní navigace: 5 cílů + panel Více ---------- */
 @media (min-width: 881px) {

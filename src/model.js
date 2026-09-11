@@ -1,7 +1,7 @@
 import { hourKey, minuteKey, spansFromMinutes, clip, lastSegment, MIN, HOUR, DAY } from './util.js';
 
 export const TRANSCRIPT_MAX = 400;
-export const STATUSES = ['needs_input', 'limited', 'working', 'waiting', 'idle', 'archived'];
+export const STATUSES = ['needs_input', 'limited', 'failed', 'working', 'waiting', 'idle', 'archived'];
 
 // Jednotný model session pro všechny konektory. Konektor plní pole, stav se odvozuje centrálně.
 export function createSession({ connector, localId, provider, app, source = 'local' }) {
@@ -37,6 +37,13 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     limit: null,
     ended: false,
     hookAt: 0,
+    failure: null,
+    context: null,
+    effort: '',
+    repo: '',
+    worktree: '',
+    pr: null,
+    costUsd: null,
     resume: null,
     url: null,
     transcript: [],
@@ -101,6 +108,10 @@ export function deriveStatus(s, now) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
     if (active) return { status: 'limited', reason: s.limit.text || 'Vyčerpaný limit', stale: false };
   }
+  // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
+  if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {
+    return { status: 'failed', reason: s.failure.text || 'Spuštění selhalo', stale: false };
+  }
   if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || 'Potřebuje tvé rozhodnutí', stale: false };
   if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
     // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
@@ -110,7 +121,9 @@ export function deriveStatus(s, now) {
   }
   const stale = Boolean(s.running);
   if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Session ukončena', stale: false };
-  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? 'Delší dobu bez aktivity' : 'Hotovo, čeká na další zadání', stale };
+  // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
+  const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
+  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? 'Delší dobu bez aktivity' : answered ? 'Hotovo, čeká na další zadání' : 'Zatím bez odpovědi agenta', stale };
   if (age < DAY) return { status: 'idle', reason: '', stale };
   return { status: 'archived', reason: '', stale };
 }
@@ -151,6 +164,13 @@ export function summarize(s, now, windowMs) {
     resume: s.resume,
     url: s.url,
     hooked: Boolean(s.hookAt),
+    failure: s.failure || null,
+    context: s.context || null,
+    effort: s.effort || '',
+    repo: s.repo || '',
+    worktree: s.worktree || '',
+    pr: s.pr || null,
+    costUsd: s.costUsd ?? null,
     transcriptSeq: s.seq,
   };
 }

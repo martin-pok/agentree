@@ -2,9 +2,9 @@ import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, setPro
 import { api, connectStream } from './api.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref } from './ui.js';
+import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
 import { bindCharts, restoreHover } from './charts.js';
-import { tokensSince } from './data.js';
+import { tokensSince, needsYou } from './data.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import overview from './views/overview.js';
 import agents from './views/agents.js';
@@ -54,7 +54,7 @@ function hashId(str) {
 }
 
 function renderStage(all) {
-  const active = all.filter((s) => s.status === 'working' || s.status === 'needs_input' || s.status === 'limited').slice(0, 16);
+  const active = all.filter((s) => s.status === 'working' || needsYou(s)).slice(0, 16);
   const [x0, span] = narrowMq.matches ? [6, 86] : [24, 62];
   setHtml(notesEl, active.map((s) => {
     const h = hashId(s.id);
@@ -187,7 +187,7 @@ function refresh(topics) {
 function updateChrome() {
   const all = sessionsList();
   const working = all.filter((s) => s.status === 'working').length;
-  const needs = all.filter((s) => s.status === 'needs_input' || s.status === 'limited').length;
+  const needs = all.filter(needsYou).length;
   const name = state.host?.fullName || state.host?.user || '';
 
   setHtml(profileEl, state.loaded
@@ -236,6 +236,10 @@ function tick() {
   const now = Date.now();
   for (const el of document.querySelectorAll('[data-ago]')) {
     const t = rel(Number(el.dataset.ago), now);
+    if (el.textContent !== t) el.textContent = t;
+  }
+  for (const el of document.querySelectorAll('[data-until]')) {
+    const t = untilLabel(Number(el.dataset.until), now);
     if (el.textContent !== t) el.textContent = t;
   }
   for (const el of document.querySelectorAll('[data-clock-from]')) el.textContent = clock(now - Number(el.dataset.clockFrom));
@@ -379,6 +383,61 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+/* ---------- Odolnost: loga, výpadek serveru, offline ---------- */
+
+// Když se logo nenačte (výpadek serveru, blokace), nahradí ho monogram — nikdy rozbitý obrázek.
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.classList.contains('logo')) return;
+  const span = document.createElement('span');
+  span.className = 'logo logo-fallback';
+  span.setAttribute('aria-hidden', 'true');
+  span.textContent = (img.dataset.label || '•').charAt(0);
+  img.replaceWith(span);
+}, true);
+
+const offlineEl = document.getElementById('offline');
+let offlineTimer = null;
+
+function renderOffline(show) {
+  if (!show) {
+    offlineEl.hidden = true;
+    return;
+  }
+  const port = location.port || '4620';
+  setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
+    <div class="offline-text"><strong>Agentree server neběží</strong>
+      <p>Dashboard se připojí sám, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).</p>
+      <p class="small">Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. Adresa: 127.0.0.1:${esc(port)}</p></div>
+    <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
+  offlineEl.hidden = false;
+}
+
+function onConnection(s) {
+  state.connection = s;
+  clearTimeout(offlineTimer);
+  if (s === 'live') renderOffline(false);
+  // Krátké výpadky (restart serveru) nezobrazujeme; po 4 s už je to skutečný výpadek.
+  else offlineTimer = setTimeout(() => { if (state.connection !== 'live') renderOffline(true); }, 4000);
+  updateChrome();
+}
+
+offlineEl.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-offline-retry]');
+  if (!b) return;
+  b.disabled = true;
+  const ok = await fetch('/api/health', { cache: 'no-store' }).then((r) => r.ok).catch(() => false);
+  if (ok) location.reload();
+  else {
+    b.disabled = false;
+    toast('Server pořád neodpovídá. Spusť agentree --open v Terminálu.', { tone: 'velvet' });
+  }
+});
+
+if ('serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('/sw.js').catch(() => { /* bez offline mezipaměti */ });
+}
+
 /* ---------- Přetažení konverzací do projektu ---------- */
 
 let dragIds = null;
@@ -443,10 +502,7 @@ function handle(name, data) {
 }
 
 connectStream({
-  onStatus: (s) => {
-    state.connection = s;
-    updateChrome();
-  },
+  onStatus: onConnection,
   onHello: () => {
     loadingSnapshot = api
       .state()

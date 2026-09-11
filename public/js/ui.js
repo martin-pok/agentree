@@ -114,11 +114,12 @@ export function activityItem(s) {
 
 export function decisionCard(s) {
   const limited = s.status === 'limited';
-  const since = s.pending?.at || s.limit?.at || s.lastAt;
+  const failed = s.status === 'failed';
+  const since = s.failure?.at || s.pending?.at || s.limit?.at || s.lastAt;
   return `<li class="decision${limited ? ' is-limit' : ''}">
     <span class="icon-tile">${glyph(s)}</span>
     <div class="decision-body">
-      <span class="decision-kicker">${limited ? 'Vyčerpaný limit' : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
+      <span class="decision-kicker">${failed ? 'Spuštění selhalo' : limited ? 'Vyčerpaný limit' : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
       <p class="decision-reason">${esc(s.reason)}</p>
     </div>
@@ -156,10 +157,50 @@ export function stateBadge(stateName, label) {
 
 export function alertIcon(a) {
   if (a.kind === 'needs_input' || a.kind === 'test') return ICON.hand;
-  if (a.kind === 'limit' || a.kind === 'limit_near') return ICON.alert;
+  if (a.kind === 'limit' || a.kind === 'limit_near' || a.kind === 'failed') return ICON.alert;
+  if (a.kind === 'limit_reset') return ICON.refresh;
   if (a.kind === 'budget') return ICON.wallet;
   if (a.kind === 'done') return ICON.check;
   return ICON.bell;
+}
+
+export function untilLabel(ts, now = Date.now()) {
+  const ms = ts - now;
+  if (ms <= 0) return 'obnoveno';
+  const m = Math.ceil(ms / 60e3);
+  if (m < 60) return `za ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `za ${h} h${m % 60 ? ` ${m % 60} min` : ''}`;
+  return `za ${Math.round(h / 24)} dní`;
+}
+
+// Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
+export function currentLimits(limits, now = Date.now()) {
+  const fresh = limits.filter((l) => now - l.at < 7 * DAY);
+  const claudeStatus = fresh.some((l) => l.source === 'statusline');
+  return fresh.filter((l) => !(claudeStatus && l.provider === 'anthropic' && l.source !== 'statusline'));
+}
+
+// Okna limitů: kolik je vyčerpáno, kdy se obnoví a co z toho plyne pro práci.
+export function limitWindows(limits, now = Date.now()) {
+  const rows = currentLimits(limits, now)
+    .filter((l) => typeof l.usedPercent === 'number' || l.reached)
+    .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9) || a.app.localeCompare(b.app));
+  if (!rows.length) return '';
+  return `<ul class="lwin">${rows.map((l) => {
+    const renewed = Boolean(l.resetsAt && l.resetsAt <= now);
+    const pct = renewed ? 0 : l.reached ? 100 : Math.round(l.usedPercent);
+    const tone = renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free';
+    const advice = renewed ? 'Obnoveno — plná kapacita' : pct >= 100 ? 'Vyčerpáno, počkej na obnovu' : pct >= 80 ? 'Šetři na důležité úlohy' : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy';
+    return `<li class="lwin-row" data-tone="${tone}">
+      <span class="lwin-logo">${glyph(l.id.startsWith('codex') ? { connector: 'codex' } : l.provider)}</span>
+      <span class="lwin-main">
+        <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${renewed ? '0' : pct} %</span></span>
+        <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
+        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>obnova <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}</span>
+      </span>
+    </li>`;
+  }).join('')}</ul>`;
 }
 
 export function limitGauges(limits, now, { size = 'md', provider } = {}) {

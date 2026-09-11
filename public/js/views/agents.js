@@ -1,7 +1,7 @@
 import { state, sessionsList, projectById } from '../state.js';
 import { esc, fmtTok, rel, norm, shortPath, plural } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
-import { sessionTotal, STATUS_ORDER } from '../data.js';
+import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 
@@ -17,9 +17,9 @@ const SEGMENTS = [
   ['archived', 'Archiv'],
 ];
 
-const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? s.status === 'needs_input' || s.status === 'limited' : s.status === st);
+const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
-const rank = (s) => (STATUS_ORDER[s.status] <= 2 ? STATUS_ORDER[s.status] : 3);
+const rank = attentionRank;
 
 function applyQuery(q) {
   if (!q) return;
@@ -37,7 +37,7 @@ function applyQuery(q) {
 function rowHtml(s) {
   let sub;
   if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || 'Pracuje')}`;
-  else if (s.status === 'needs_input' || s.status === 'limited') sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
+  else if (needsYou(s)) sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
   else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} z ${s.progress.total} úkolů"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);

@@ -162,8 +162,8 @@ async function installHooks() {
   const ok = await modal({
     title: 'Zapnout okamžité události',
     submitLabel: 'Zapnout',
-    body: `<p class="modal-text">Agentree přidá do <code>~/.claude/settings.json</code> hooky pro události <b>SessionStart, UserPromptSubmit, Notification, Stop a SessionEnd</b>. Každý hook jen pošle krátkou zprávu na tento Mac (127.0.0.1) a nikdy nezablokuje Claude Code.</p>
-      <ul class="checklist"><li>Původní soubor se uloží jako záloha vedle něj.</li><li>Tvoje ostatní nastavení a hooky zůstanou beze změny.</li><li>Projeví se v nově spuštěných sessions.</li></ul>${h?.path ? `<p class="small muted">${esc(h.path)}</p>` : ''}`,
+    body: `<p class="modal-text">Agentree přidá do <code>~/.claude/settings.json</code> hooky pro události <b>SessionStart, UserPromptSubmit, Notification, Stop a SessionEnd</b> a <b>stavový řádek</b>, přes který Claude Code posílá limity předplatného. Vše jde jen na tento Mac (127.0.0.1) a nikdy nezablokuje Claude Code.</p>
+      <ul class="checklist"><li>Původní soubor se uloží jako záloha vedle něj.</li><li>Tvoje ostatní nastavení a hooky zůstanou beze změny; vlastní stavový řádek nepřepíšeme.</li><li>Pod zadáním v Claude Code uvidíš řádek „Agentree · 5 h 34 % · týden 12 % · kontext 41 %“.</li><li>Projeví se v nově spuštěných sessions.</li></ul>${h?.path ? `<p class="small muted">${esc(h.path)}</p>` : ''}`,
   });
   if (!ok) return;
   state.integrations.claudeHooks = (await api.hooks('install')).claudeHooks;
@@ -181,9 +181,10 @@ function update() {
   const hookState = h.error ? ['error', 'Chyba'] : h.installed && h.current ? ['connected', 'Zapnuto'] : h.installed || h.partial ? ['missing', 'Potřebuje obnovit'] : ['idle', 'Vypnuto'];
   fill(el, 'hooks', `
     <div class="set-card-head"><span class="icon-tile">${glyph('anthropic')}</span><div><h2>Okamžité události Claude Code</h2>
-      <p class="set-desc">Žádost o povolení, start a konec tahu uvidíš v řádu milisekund. Bez hooků Agentree pozná stav z přepisu; žádost o povolení nástroje se v přepisu neobjeví.</p></div>
+      <p class="set-desc">Žádost o povolení, start a konec tahu uvidíš v řádu milisekund a díky stavovému řádku i přesné limity předplatného (5 h a týden) a zaplnění kontextu. Bez toho Agentree pozná stav jen z přepisu.</p></div>
       ${stateBadge(...hookState)}</div>
     ${h.error ? `<p class="form-error">${esc(h.error)}</p>` : ''}
+    ${h.statusLine === 'foreign' ? '<p class="small muted">Máš vlastní stavový řádek Claude Code, proto ho Agentree nepřepisuje. Přesné limity Claude se bez něj nezobrazí.</p>' : ''}
     <div class="set-actions">${h.installed && h.current
       ? '<button class="btn" type="button" data-action="hooks-uninstall">Vypnout</button>'
       : `<button class="btn btn--primary" type="button" data-action="hooks-install">${h.installed || h.partial ? 'Obnovit hooky' : 'Zapnout okamžité události'}</button>`}</div>`);
@@ -215,6 +216,7 @@ function update() {
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: 'Agent potřebuje rozhodnutí', desc: 'Povolení nástroje, otázka nebo schválení plánu.', checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: 'Limity předplatného', desc: 'Při 80 %, 95 % a vyčerpání limitu.', checked: n.limits })}
+    ${switchRow({ key: 'limitReset', label: 'Obnovení limitu', desc: 'Když se obnoví 5hodinový nebo týdenní limit — víš, že můžeš zase naplno promptovat.', checked: n.limitReset !== false })}
     ${switchRow({ key: 'budget', label: 'Rozpočet', desc: 'Při 80 % a 100 % měsíčního rozpočtu.', checked: n.budget })}
     ${switchRow({ key: 'done', label: 'Dokončená úloha', desc: 'Když agent dokončí tah.', checked: n.done })}
     <label class="field field--row"><span>Hlásit dokončené úlohy</span>

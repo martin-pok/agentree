@@ -237,7 +237,9 @@ function update() {
     ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p><p class="small muted">${esc(howToAnswer(s))}</p></div></div>`
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>Vyčerpaný limit</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">Obnoví se ${dateTime(s.limit.resetsAt)}.</p>` : ''}</div></div>`
-      : '');
+      : s.status === 'failed'
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>Spuštění selhalo</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">Agentree ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.</p></div></div>`
+        : '');
 
   fill(el, 'live', s.status === 'working'
     ? `<div class="live-strip" role="status">
@@ -288,7 +290,12 @@ function update() {
     <section class="card side-card" aria-labelledby="facts-h"><h3 id="facts-h">Detaily</h3>
       <dl class="facts">
         <div><dt>Model</dt><dd>${esc(s.model || '—')}</dd></div>
-        <div><dt>Větev</dt><dd>${esc(s.branch || '—')}</dd></div>
+        <div><dt>Větev</dt><dd>${esc(s.branch || '—')}${s.worktree ? `<br><span class="muted">worktree ${esc(s.worktree)}</span>` : ''}</dd></div>
+        ${s.context ? `<div><dt>Kontext</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
+        ${s.effort ? `<div><dt>Úsilí</dt><dd>${esc(s.effort)}</dd></div>` : ''}
+        ${s.repo ? `<div><dt>Repozitář</dt><dd>${esc(s.repo)}</dd></div>` : ''}
+        ${s.pr ? `<div><dt>Pull request</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
+        ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>Cena relace (API ekv.)</dt><dd>${s.costUsd.toLocaleString('cs-CZ', { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
         <div><dt>Zahájeno</dt><dd>${dateTime(s.startedAt)}</dd></div>
         <div><dt>Doba trvání</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '—'}</dd></div>
         <div><dt>Zadání</dt><dd>${s.turns ?? '—'}</dd></div>

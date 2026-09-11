@@ -60,7 +60,7 @@ export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
   if (key) {
     const l = LOGOS[key];
-    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="/logos/${key}.svg" alt="" width="18" height="18" decoding="async" draggable="false">`;
+    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="/logos/${key}.svg" alt="" width="18" height="18" decoding="async" draggable="false" data-label="${l.label}">`;
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;

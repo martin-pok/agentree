@@ -13,6 +13,9 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
@@ -186,6 +189,12 @@ export function createHttpServer(app) {
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
+    ['POST', /^\/api\/hooks\/claude-statusline$/, async (req) => {
+      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      const r = app.connectors['claude-code'].ingestStatusline(await readBody(req));
+      if (!r.ok) throw new HttpError(400, r.error);
+      return { raw: true, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: r.text };
+    }, { token: true }],
     ['POST', /^\/api\/ingest\/web$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
       const r = app.connectors.web.ingest(await readBody(req));
@@ -252,7 +261,7 @@ export function createHttpServer(app) {
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
-      for (const k of ['needsInput', 'limits', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
+      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
         if (!(v >= 0 && v <= 86400)) throw new HttpError(422, 'Minimální délka úlohy musí být 0–86400 sekund.');

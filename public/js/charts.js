@@ -285,7 +285,7 @@ export function timeline({ rows, from, to, now }) {
             const l = pct(a);
             return `<i class="tl-seg" style="left:${l}%;width:${Math.max(0.8, pct(b) - l)}%;background:${r.color}"></i>`;
           })
-          .join('')}${r.status === 'working' ? `<i class="tl-live" style="left:${pct(now)}%;background:${r.color}"></i>` : ''}${r.status === 'needs_input' || r.status === 'limited' ? `<i class="tl-flag" style="left:${pct(r.lastAt)}%"></i>` : ''}</span>
+          .join('')}${r.status === 'working' ? `<i class="tl-live" style="left:${pct(now)}%;background:${r.color}"></i>` : ''}${r.status === 'needs_input' || r.status === 'limited' || r.status === 'failed' ? `<i class="tl-flag" style="left:${pct(r.lastAt)}%"></i>` : ''}</span>
       </a>`)
       .join('')}
     <div class="tl-now" aria-hidden="true"><span>teď</span></div>

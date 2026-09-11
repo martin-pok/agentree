@@ -3,8 +3,8 @@ import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
 import { glyph, logoKey, PROVIDERS, pkey, ICON } from '../icons.js';
 import { areaChart, timeline, hbars, gauge } from '../charts.js';
-import { tokensSince, providerSeries, STATUS_ORDER } from '../data.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitGauges, toast } from '../ui.js';
+import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast } from '../ui.js';
 import { createLauncher } from '../launcher-ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null };
@@ -118,7 +118,7 @@ function update() {
   const all = sessionsList();
   const working = all.filter((s) => s.status === 'working');
   const needs = all
-    .filter((s) => s.status === 'needs_input' || s.status === 'limited')
+    .filter(needsYou)
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.lastAt - a.lastAt);
   const today = startOfDay(now);
   const todayCount = all.filter((s) => s.lastAt >= today).length;
@@ -154,18 +154,23 @@ function update() {
     <div class="meter-row"><span>Tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div>`);
 
-  const gauges = limitGauges(state.limits, now);
+  const windows = limitWindows(state.limits, now);
   const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-  fill(el, 'limits', gauges.length || credits.length
-    ? `<div class="sec-head"><h2>Limity předplatných</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
-       ${gauges.length ? `<div class="gauges">${gauges.slice(0, 3).join('')}</div>` : ''}
+  const claudeExact = state.limits.some((l) => l.source === 'statusline');
+  const usesClaude = all.some((s) => s.connector === 'claude-code');
+  const limitHint = usesClaude && !claudeExact
+    ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí okamžitých událostí v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
+    : '';
+  fill(el, 'limits', windows || credits.length || limitHint
+    ? `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
+       ${windows}${limitHint}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}`
     : '');
 
   fill(el, 'activity', all.length ? all.slice(0, 5).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
 
   const from = now - 12 * H;
-  const rank = (s) => (STATUS_ORDER[s.status] <= 2 ? STATUS_ORDER[s.status] : 3);
+  const rank = attentionRank;
   const lastSpan = (s) => (s.spans?.length ? s.spans[s.spans.length - 1][1] : s.lastAt);
   const rows = all
     .filter((s) => s.spans?.some(([, b]) => b >= from) || rank(s) < 3)

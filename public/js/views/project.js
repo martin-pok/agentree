@@ -4,7 +4,7 @@ import { esc, fmtTok, rel, norm, plural, shortPath, dateLong } from '../format.j
 import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy } from '../ui.js';
-import { sessionTotal } from '../data.js';
+import { sessionTotal, needsYou } from '../data.js';
 import { pdot, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
 
 const v = { el: null, id: null, filter: 'all', saveTimer: null, saving: false, savedAt: 0 };
@@ -231,7 +231,7 @@ function update() {
   if (v.filter !== 'all' && !counts[v.filter]) v.filter = 'all';
 
   const rows = v.filter === 'older' ? st.older
-    : v.filter === 'needs' ? st.live.filter((s) => s.status === 'needs_input' || s.status === 'limited')
+    : v.filter === 'needs' ? st.live.filter(needsYou)
       : v.filter === 'working' ? st.live.filter((s) => s.status === 'working')
         : [...st.live, ...st.older];
   fill(el, 'rows', rows.length

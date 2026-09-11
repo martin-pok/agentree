@@ -109,6 +109,7 @@ export function resetsLabel(ts, now = Date.now()) {
 export const STATUS = {
   needs_input: { label: 'Potřebuje tebe' },
   limited: { label: 'Vyčerpaný limit' },
+  failed: { label: 'Selhalo' },
   working: { label: 'Pracuje' },
   waiting: { label: 'Čeká na zadání' },
   idle: { label: 'Nečinný' },

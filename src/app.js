@@ -10,7 +10,8 @@ import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, SERVICES, KINDS, CURRENCIES } from './spend.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
-import { run, debounce, HOUR } from './util.js';
+import { run, debounce, clip, HOUR } from './util.js';
+import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector } from './connectors/claude-code.js';
 import { createCodexConnector } from './connectors/codex.js';
 import { createCursorConnector } from './connectors/cursor.js';
@@ -55,7 +56,41 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
 
   const ollama = createOllamaClient({ baseUrl: config.ollamaUrl });
   const localChat = createLocalChat({ store, ollama });
-  const runs = new RunManager({ dataDir: config.dataDir, onChange: () => { if (store.ready) store.emit('runs', runsPayload()); } });
+  const runs = new RunManager({
+    dataDir: config.dataDir,
+    onChange: (_list, run) => {
+      if (run?.status === 'failed') recordRunFailure(run);
+      if (store.ready) store.emit('runs', runsPayload());
+    },
+  });
+  const failedRuns = new Set();
+
+  // Běh, který skončil chybou, se musí v session ukázat jako „Selhalo“ s důvodem — nikdy jako „Hotovo“.
+  function recordRunFailure(run) {
+    if (failedRuns.has(run.id)) return;
+    failedRuns.add(run.id);
+    const rawError = String(run.error || `Skončilo s kódem ${run.exitCode}`).trim();
+    const raw = /[.!?]$/.test(rawError) ? rawError : `${rawError}.`;
+    let hint = '';
+    if (/authenticat|oauth|log ?in|unauthori|401|credential/i.test(raw)) {
+      hint = run.agent === 'codex' ? ' Přihlas se v Terminálu příkazem codex login.' : ' Přihlas se znovu: v Terminálu spusť claude a zadej /login.';
+    } else if (/limit|quota|rate/i.test(raw)) {
+      hint = ' Nejspíš vyčerpaný limit předplatného.';
+    }
+    const now = run.endedAt || Date.now();
+    const [connector, localId] = run.sessionId ? [run.sessionId.split(':')[0], run.sessionId.slice(run.sessionId.indexOf(':') + 1)] : ['launch', run.id];
+    const provider = run.agent === 'codex' ? 'openai' : run.agent === 'claude-code' ? 'anthropic' : 'other';
+    const s = store.get(`${connector}:${localId}`) || store.ensure({ connector, localId, provider, app: run.label });
+    if (!s.cwd && run.cwd) s.cwd = run.cwd;
+    if (!s.title && !s.firstPrompt) s.title = run.prompt;
+    if (!s.startedAt) s.startedAt = run.startedAt;
+    s.running = false;
+    s.failure = { text: clip(`${raw}${hint}`, 240), at: now };
+    pushEntry(s, { at: now, role: 'error', text: `Spuštění selhalo: ${raw}${hint}` });
+    touch(s, now);
+    store.commit(s, now);
+    if (run.projectId && projects().assignments[s.id] === undefined) assignToProject([s.id], run.projectId);
+  }
   const projects = () => datastore.data.projects;
 
   let apps = {};
@@ -429,6 +464,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
 
     const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
     every(() => store.reevaluate(), 5000);
+    every(() => alerts.checkLimitResets(), 20000);
     every(async () => {
       for (const c of list) if (c.kind === 'local' && c.id !== 'processes' && c.id !== 'cursor') await c.scan();
     }, config.scanIntervalMs);
