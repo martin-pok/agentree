@@ -377,6 +377,12 @@ export function createPalette(getItems, onPick) {
     const li = e.target.closest('[data-i]');
     if (li) pick(Number(li.dataset.i));
   });
+  list.addEventListener('pointerover', (e) => {
+    const li = e.target.closest('[data-i]');
+    if (!li || !list.contains(li)) return;
+    const next = Number(li.dataset.i);
+    if (next !== index) { index = next; render(); }
+  });
   root.addEventListener('mousedown', (e) => { if (e.target === root) close(); });
 
   return {

@@ -93,6 +93,14 @@ for (const engine of ['chromium', 'webkit']) {
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.picker-menu').count(), 0);
     await page.screenshot({ path: `dist/qa/${engine}-overview.png`, fullPage: true });
+    assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
+    await page.locator('[data-action="palette"]').click();
+    const paletteOptions = page.locator('.palette-list [role="option"]');
+    await paletteOptions.nth(1).hover();
+    assert.equal(await paletteOptions.nth(1).getAttribute('aria-selected'), 'true', `${engine} paleta reaguje na hover`);
+    assert.notEqual(await paletteOptions.nth(1).evaluate((el) => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} paleta má čitelný hover`);
+    await page.screenshot({ path: `dist/qa/${engine}-palette-hover.png` });
+    await page.keyboard.press('Escape');
     await page.goto(`${server.url}/#/agent/codex%3Aqa-layout`);
     await page.locator('.gauges--sm .gauge').first().waitFor();
     for (const width of [375, 900, 1440]) {
@@ -112,6 +120,9 @@ for (const engine of ['chromium', 'webkit']) {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
       if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+      if (route === 'nastaveni') {
+        for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
+      }
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
     await page.locator('[data-welcome]').click();
@@ -133,7 +144,7 @@ for (const engine of ['chromium', 'webkit']) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover', 'web sources Perplexity and Grok', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     console.log(JSON.stringify({ engine, errors, welcome: await page.locator('.welcome-dialog').textContent().catch(() => 'closed') }));

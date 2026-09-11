@@ -138,7 +138,7 @@ export function createLauncher(root) {
       <div class="launch-controls" data-region="controls"></div>
       <div class="launch-foot">
         <p class="launch-note" data-region="note"></p>
-        <span class="launch-kbd muted small"><kbd>⌘</kbd><kbd>↵</kbd></span>
+        <span class="launch-kbd" aria-label="Spustit agenta klávesami Command a Enter"><span>Spustit</span><kbd>⌘</kbd><kbd>↵</kbd></span>
         <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}Spustit</button>
       </div>
     </div>

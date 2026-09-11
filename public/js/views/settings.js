@@ -14,6 +14,26 @@ const CLOUD = [
   ['anthropic-admin', 'Anthropic', 'anthropic', 'sk-ant-admin01-…', 'Náklady organizace za API Anthropic. Nezahrnuje předplatné Claude.'],
 ];
 
+const WEB_FRESH_MS = 10 * 60 * 1000;
+
+function webSourceCard(id, site, web, now) {
+  const at = web?.sites?.[id] || 0;
+  const fresh = at && now - at < WEB_FRESH_MS;
+  const recent = at && now - at < 24 * 60 * 60 * 1000;
+  const status = fresh ? ['connected', 'Připojeno'] : recent ? ['idle', 'Bez nových dat'] : ['missing', 'Připojit'];
+  const detail = fresh
+    ? 'Rozšíření právě čte otevřenou konverzaci.'
+    : recent
+      ? 'Rozšíření tuto službu vidělo během posledních 24 hodin.'
+      : 'Po propojení rozšíření otevři službu v Chromu.';
+  return `<article class="conn conn--web" data-web-source="${esc(id)}">
+    <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
+    <p>${detail}</p>
+    <div class="conn-foot"><code>Chrome · rozšíření Agentree</code><span class="badge">Zkušební</span></div>
+    ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="link conn-link" type="button" data-action="extension-scroll">Jak propojit</button>'}
+  </article>`;
+}
+
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
 const GROUPS = [
   ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors']],
@@ -90,6 +110,8 @@ function mount(el) {
         v.pairCode = await api.extensionPairCode();
         toast('Jednorázový kód je připravený na 10 minut');
         update();
+      } else if (a.dataset.action === 'extension-scroll') {
+        document.getElementById('extension')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;
@@ -263,7 +285,9 @@ function update() {
         <p>${esc(c.detail || c.description)}</p>
         <div class="conn-foot"><code>${esc(c.source)}</code><span class="badge${c.verified ? ' badge--ok' : ''}">${c.verified ? 'Ověřeno' : 'Zkušební'}</span></div>
         ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}
-      </article>`).join('')}</div>`);
+      </article>`).join('')}</div>
+    <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
+    <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now())).join('')}</div>`);
 
   /* Upozornění */
   fill(el, 'notifications', `
