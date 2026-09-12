@@ -207,8 +207,10 @@ export function limitWindows(limits, now = Date.now()) {
 }
 
 export function limitGauges(limits, now, { size = 'md', provider } = {}) {
-  return limits
-    .filter((l) => !isSpendLimit(l) && (!provider || l.provider === provider))
+  // Stejná přednost zdrojů jako v `currentLimits`: jakmile dorazí přesná data ze stavového řádku,
+  // záložní historie se skryje. Jinak by u jednoho limitu svítila dvě různá čísla.
+  return currentLimits(limits, now)
+    .filter((l) => !provider || l.provider === provider)
     .map((l) => {
       const active = l.reached && (!l.resetsAt || l.resetsAt > now) && now - l.at < 7 * DAY;
       const expired = Boolean(l.resetsAt && l.resetsAt < now);

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stackedColumns, timeLine, miniBars } from '../public/js/charts.js';
 import { providerSeries, chartColor, CATEGORICAL } from '../public/js/data.js';
+import { limitGauges } from '../public/js/ui.js';
 
 const hourKey = (d) => d.toISOString().slice(0, 13);
 
@@ -61,4 +62,24 @@ test('grafy: miniaturní sloupce kreslí jen nenulové intervaly', () => {
   const svg = miniBars([0, 5, 0, 10], '#2a78d6', { height: 40 });
   assert.equal((svg.match(/<rect /g) || []).length, 3, 'základní linka + 2 sloupce');
   assert.equal(miniBars([], '#000'), '');
+});
+
+test('limity: jakmile dorazí přesná data ze stavového řádku, záložní historie se skryje', () => {
+  const now = Date.now();
+  const limity = [
+    { id: 'claude:five_hour', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 42, resetsAt: null, reached: false, at: now, source: 'statusline', kind: 'window' },
+    { id: 'claude:five_hour:history', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 13, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
+    { id: 'claude:seven_day:history', provider: 'anthropic', app: 'Claude', label: 'Týdenní limit', usedPercent: 62, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
+    { id: 'codex:codex:primary', provider: 'openai', app: 'Codex', label: 'Limit 5 h', usedPercent: 80, resetsAt: null, reached: false, at: now, source: '', kind: 'window' },
+  ];
+
+  const merice = limitGauges(limity, now);
+  assert.equal(merice.length, 2, 'jeden měřák za Claude a jeden za Codex — ne dvě čísla pro stejný limit');
+  assert.equal(merice.filter((h) => h.includes('42')).length, 1, 'platí přesná hodnota ze stavového řádku');
+  assert.equal(merice.some((h) => h.includes('13')), false, 'záložní historie se nezobrazuje vedle ní');
+  assert.equal(merice.some((h) => h.includes('62')), false, 'týdenní limit z historie se skryje také — zdroj má přednost jako celek');
+  assert.equal(merice.some((h) => h.includes('80')), true, 'Codex zůstává, jeho limit je samostatný');
+
+  const bezStatusline = limitGauges(limity.filter((l) => l.source !== 'statusline'), now);
+  assert.equal(bezStatusline.length, 3, 'bez stavového řádku se historie použije jako záloha');
 });
