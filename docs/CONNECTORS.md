@@ -30,6 +30,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 - **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Agentree proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
 - **Schválení akce na dálku**: Agentree umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
 - **Desktopová aplikace Microsoft Copilot a ChatGPT (chat)**: obsah konverzací není dostupný v čitelném lokálním formátu. Web s rozšířením ano.
+- **Limity aplikace ChatGPT (chat)**: nejsou nikde na disku. Ověřeno 12. 9. 2026 v `~/Library/Application Support/com.openai.chat` — jsou tam konverzace, nápovědy a modely, ale ani jeden soubor neobsahuje `rate_limit`, `quota` ani `usage_limit`. Jediný lokálně čitelný limit OpenAI hlásí Codex sám (`limit_id: codex`); druhý bucket `limit_id: premium` chodí s prázdnými okny (`primary`/`secondary` = `null`, 14 výskytů za 30 dní), takže se nezobrazuje. V kartě Limity a kredity je to uvedené: limit Codexu je oddělený od chatu v ChatGPT a limit běžící aplikace ChatGPT nemá Agentree odkud přečíst.
 - **Webové aplikace nesdílejí tokeny** — grafy tokenů je proto neobsahují.
 
 ## Otevření v aplikaci (`src/openers.js`)

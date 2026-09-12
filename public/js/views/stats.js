@@ -47,6 +47,19 @@ function mount(el) {
   });
 }
 
+// Poctivé pokrytí limitů: co hlásí samy aplikace a co na disku prostě není.
+function coverageNote() {
+  const apps = [...new Set(state.limits.map((l) => l.app))].sort();
+  if (!apps.length) return '';
+  const covered = (name) => apps.some((a) => name === a || name.startsWith(`${a} `) || a.startsWith(`${name} `));
+  const missing = [...new Set((state.runtimes || []).filter((r) => r.running && !covered(r.name)).map((r) => r.name))].sort();
+  const head = `Každá aplikace má vlastní limit — limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí ${apps.join(', ')}.`;
+  const tail = missing.length
+    ? ` ${missing.join(', ')} ${missing.length > 1 ? 'běží, ale své limity na disk nezapisují' : 'běží, ale svůj limit na disk nezapisuje'}, takže ${missing.length > 1 ? 'je' : 'ho'} Agentree nemá odkud přečíst.`
+    : '';
+  return `<p class="note">${esc(head + tail)}</p>`;
+}
+
 function update() {
   const el = v.el;
   if (!el) return;
@@ -102,7 +115,7 @@ function update() {
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });
   fill(el, 'limits', gauges.length || creditCharts.length
-    ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}`
+    ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${coverageNote()}`
     : `<p class="muted">Zatím žádné údaje o limitech. Codex je hlásí sám; Claude Code je zapíše při dosažení limitu. Údaje starší než 7 dní se skryjí.</p>`);
 }
 
