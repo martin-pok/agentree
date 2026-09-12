@@ -196,6 +196,12 @@ export function createHttpServer(app, existingServer = null) {
       if (url.searchParams.get('download') === '1') headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}`;
       return { raw: true, headers, body: skill.text };
     }],
+    ['GET', /^\/api\/usage\/claude$/, async (_req, _m, url) => {
+      const days = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 30));
+      const series = await app.planUsageHistory({ days });
+      if (!series) throw new HttpError(404, 'Historie vytížení plánu na tomto Macu není.');
+      return series;
+    }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
     ['GET', /^\/api\/state$/, () => app.state()],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {

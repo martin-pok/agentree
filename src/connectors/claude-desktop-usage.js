@@ -19,6 +19,42 @@ export function findLatestSample(json) {
   return samples[samples.length - 1];
 }
 
+// Historie vytížení plánu pro graf. Vrací jen čas a hodnotu — identifikátor organizace
+// (`sample.org`) se ven nikdy nedostane, do UI ani do API nepatří.
+export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints = 300 } = {}) {
+  const raw = Array.isArray(json?.samples) ? json.samples : [];
+  const since = now - days * 86400000;
+  const samples = raw
+    .filter((x) => x && typeof x === 'object' && Number.isFinite(Number(x.t)) && Number(x.t) >= since)
+    .sort((a, b) => Number(a.t) - Number(b.t));
+
+  const thin = (points) => {
+    if (points.length <= maxPoints) return points;
+    const step = Math.ceil(points.length / maxPoints);
+    const out = points.filter((_, i) => i % step === 0);
+    const last = points[points.length - 1];
+    if (out[out.length - 1] !== last) out.push(last);
+    return out;
+  };
+  const series = (key, clamp) => thin(samples
+    .filter((x) => typeof x.u?.[key] === 'number' && Number.isFinite(x.u[key]))
+    .map((x) => ({ at: Number(x.t), value: clamp ? Math.max(0, Math.min(100, x.u[key])) : x.u[key] })));
+
+  const fiveHour = series('fh', true);
+  const sevenDay = series('sd', true);
+  const extraUsage = series('xu', false);
+  const times = samples.map((x) => Number(x.t));
+  return {
+    days,
+    samples: samples.length,
+    from: times.length ? times[0] : null,
+    to: times.length ? times[times.length - 1] : null,
+    fiveHour,
+    sevenDay,
+    extraUsage,
+  };
+}
+
 // Čistá funkce bez souborového systému, ať jde snadno testovat.
 export function applyPlanUsageSample(store, sample, now = Date.now()) {
   if (!sample || typeof sample !== 'object') return false;
@@ -126,6 +162,14 @@ export function createClaudeDesktopUsageConnector(ctx) {
       watcher = watchTree(dir, (f) => (f ? queue.schedule(f) : scan()));
     },
     scan,
+    // Historie se čte přímo ze souboru a nikam se neukládá — Agentree z ní nedělá vlastní archiv.
+    async series(opts) {
+      const stat = await statSafe(file);
+      if (!stat?.isFile()) return null;
+      const json = await readJson(file, null);
+      if (!json) return null;
+      return planUsageSeries(json, opts);
+    },
     stop() {
       watcher?.close();
       queue.clear();

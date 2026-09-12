@@ -11,7 +11,7 @@ import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js
 import { applyCursorComposer } from '../src/connectors/cursor.js';
 import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
-import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample } from '../src/connectors/claude-desktop-usage.js';
+import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
@@ -308,4 +308,37 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   await assert.doesNotReject(connector3.start());
   assert.equal(connector3.status().state, 'error');
   connector3.stop();
+});
+
+test('Historie vytížení plánu: filtruje okno, řadí, ředí body a nikdy nevydá identifikátor organizace', () => {
+  const now = Date.UTC(2026, 8, 12, 12, 0, 0);
+  const day = 86400000;
+  const json = {
+    version: 2,
+    samples: [
+      { t: now - 40 * day, org: 'org_tajne', u: { fh: 10, sd: 10, xu: 1 } }, // mimo okno
+      { t: now - 2 * day, org: 'org_tajne', u: { fh: 88, sd: 50 } },
+      { t: now - 3 * day, org: 'org_tajne', u: { fh: 120, sd: -4, xu: 64.35 } }, // pořadí i rozsah
+      { t: 'nesmysl', org: 'org_tajne', u: { fh: 5 } },
+    ],
+  };
+  const out = planUsageSeries(json, { days: 30, now });
+
+  assert.equal(out.samples, 2, 'starý vzorek i vzorek bez času vypadnou');
+  assert.deepEqual(out.fiveHour.map((p) => p.value), [100, 88], 'řazeno podle času, procenta ořezaná na 0–100');
+  assert.deepEqual(out.sevenDay.map((p) => p.value), [0, 50]);
+  assert.deepEqual(out.extraUsage, [{ at: now - 3 * day, value: 64.35 }], 'extra usage se neořezává, jednotku neznáme');
+  assert.equal(out.from, now - 3 * day);
+  assert.equal(out.to, now - 2 * day);
+  assert.equal(JSON.stringify(out).includes('org'), false, 'identifikátor organizace ven nesmí');
+});
+
+test('Historie vytížení plánu: hustá data se naředí a poslední bod zůstane', () => {
+  const now = Date.UTC(2026, 8, 12, 12, 0, 0);
+  const samples = Array.from({ length: 1000 }, (_, i) => ({ t: now - (1000 - i) * 60000, u: { fh: i % 101 } }));
+  const out = planUsageSeries({ samples }, { days: 30, now, maxPoints: 100 });
+
+  assert.ok(out.fiveHour.length <= 101, `bodů má být nejvýš 101, je ${out.fiveHour.length}`);
+  assert.equal(out.fiveHour[out.fiveHour.length - 1].at, now - 60000, 'poslední vzorek se nesmí zahodit');
+  assert.equal(out.samples, 1000);
 });

@@ -190,3 +190,31 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal((await fetch(`${srv.url}/js/app.js`)).headers.get('content-type'), 'text/javascript; charset=utf-8');
   });
 });
+
+test('Historie vytížení plánu přes API: bez souboru 404, se souborem reálná řada bez identifikátoru organizace', async (t) => {
+  const srcHome = await tempDir('agentree-src-');
+  const s = await startTestServer({ AGENTREE_SOURCE_HOME: srcHome });
+  t.after(() => s.close());
+
+  const prazdno = await raw(`${s.url}/api/usage/claude`);
+  assert.equal(prazdno.status, 404, 'když soubor na disku není, API si nic nevymýšlí');
+
+  const now = Date.now();
+  const dir = path.join(srcHome, 'Library', 'Application Support', 'Claude');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'plan-usage-history.json'), JSON.stringify({
+    version: 2,
+    samples: [
+      { t: now - 3 * 86400000, org: 'org_tajne', u: { fh: 40, sd: 20 } },
+      { t: now - 86400000, org: 'org_tajne', u: { fh: 88, sd: 50, xu: 12.5 } },
+    ],
+  }));
+
+  const res = await api(s.url).get('/api/usage/claude?days=7');
+  assert.equal(res.status, 200);
+  const out = res.body;
+  assert.equal(out.samples, 2);
+  assert.deepEqual(out.fiveHour.map((p) => p.value), [40, 88]);
+  assert.deepEqual(out.extraUsage.map((p) => p.value), [12.5]);
+  assert.equal(JSON.stringify(out).includes('org_tajne'), false, 'identifikátor organizace se ven nedostane');
+});

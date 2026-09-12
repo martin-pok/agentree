@@ -1,3 +1,4 @@
+import { api } from '../api.js';
 import { state, sessionsList, agentsList } from '../state.js';
 import { esc, fmtNum, plural } from '../format.js';
 import { glyph } from '../icons.js';
@@ -5,12 +6,13 @@ import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
-const v = { period: 'week', hidden: new Set(), drawn: false, el: null };
+const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
 const PERIODS = [['day', '24 hodin'], ['week', '7 dní'], ['month', '30 dní']];
 
 function mount(el) {
   v.el = el;
   v.drawn = false;
+  if (v.usage === undefined) { v.usage = null; loadUsage(); }
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <div class="seg" role="group" aria-label="Období" data-region="period"></div>
@@ -32,6 +34,7 @@ function mount(el) {
     <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
       <div class="sec-head"><h2 id="lim-h">Limity a kredity</h2></div>
       <div data-region="limits"></div>
+      <div data-region="usage-history"></div>
     </section>
     <p class="note">Zpracované tokeny = vstup + výstup + zápis do cache. Nejsou to peníze ani limit předplatného; čtení z cache se do grafů nezapočítává. Webové aplikace počty tokenů nesdílejí.</p>`;
   el.addEventListener('click', (e) => {
@@ -58,6 +61,34 @@ function coverageNote() {
     ? ` ${missing.join(', ')} ${missing.length > 1 ? 'běží, ale své limity na disk nezapisují' : 'běží, ale svůj limit na disk nezapisuje'}, takže ${missing.length > 1 ? 'je' : 'ho'} Agentree nemá odkud přečíst.`
     : '';
   return `<p class="note">${esc(head + tail)}</p>`;
+}
+
+// Historie vytížení plánu Claude (30 dní) — čte se na vyžádání ze souboru aplikace Claude Desktop.
+async function loadUsage() {
+  try {
+    v.usage = await api.planUsage(30);
+  } catch {
+    v.usage = null; // historie na tomto Macu není; karta se prostě nevykreslí
+  }
+  update();
+}
+
+function usageHistoryHtml() {
+  const u = v.usage;
+  if (!u) return '';
+  const charts = [
+    ['fiveHour', 'Limit 5 h', '%'],
+    ['sevenDay', 'Týdenní limit', '%'],
+    ['extraUsage', 'Extra usage', ''],
+  ].filter(([key]) => (u[key] || []).length >= 2)
+    .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? 'vytížení okna v %' : 'hodnota bez jednotky')}</span></div>
+      ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
+  if (!charts.length) return '';
+  const note = u.extraUsage?.length
+    ? 'Extra usage je hodnota, u které zdroj neuvádí jednotku — Agentree z ní nedělá procenta ani koruny.'
+    : '';
+  return `<div class="usage-history"><div class="sec-head"><h3>Vytížení plánu Claude v čase</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} za 30 dní ze souboru aplikace Claude Desktop</span></div>
+    ${charts.join('')}${note ? `<p class="note">${esc(note)}</p>` : ''}</div>`;
 }
 
 function update() {
@@ -114,6 +145,7 @@ function update() {
       return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${markers.length ? ` · ${markers.length}× dokoupeno` : ''}</span></div>
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });
+  fill(el, 'usage-history', usageHistoryHtml());
   fill(el, 'limits', gauges.length || creditCharts.length
     ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${coverageNote()}`
     : `<p class="muted">Zatím žádné údaje o limitech. Codex je hlásí sám; Claude Code je zapíše při dosažení limitu. Údaje starší než 7 dní se skryjí.</p>`);

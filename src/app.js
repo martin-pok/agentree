@@ -775,5 +775,6 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
+    planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
   };
 }

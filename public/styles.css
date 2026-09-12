@@ -658,6 +658,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .dl-pct { font: 400 12px/1 var(--f-mono); color: var(--mute); }
 .donut-legend b { font: 400 12px/1 var(--f-mono); }
 .credit-chart { margin-top: 24px; }
+.usage-history { margin-top: 32px; padding-top: 24px; box-shadow: 0 -1px 0 var(--line-2); }
+.usage-chart { margin-top: 24px; }
+.usage-history > .sec-head + .usage-chart { margin-top: 16px; }
 .credit-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .spend-limit + .spend-limit { margin-top: 20px; }
 .spend-limit:last-of-type { margin-bottom: 8px; }

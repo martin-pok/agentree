@@ -32,6 +32,7 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  planUsage: (days = 30) => request('GET', `/api/usage/claude?days=${days}`),
   skills: () => request('GET', '/api/skills'),
   // Obsah dovednosti je čistý markdown, ne JSON — proto mimo `request()`.
   async skillText(id) {
