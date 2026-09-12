@@ -31,7 +31,7 @@ function webSourceCard(id, site, web, now) {
     <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
     <p>${detail}</p>
     <div class="conn-foot"><code>Chrome · rozšíření Agentree</code><span class="badge">Zkušební</span></div>
-    ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="link conn-link" type="button" data-action="extension-scroll">Jak propojit</button>'}
+    ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="btn btn--sm conn-cta" type="button" data-action="extension-scroll">Jak propojit</button>'}
   </article>`;
 }
 
@@ -124,7 +124,10 @@ function mount(el) {
       setAvatar(pick.dataset.avatarPick === 'i' ? null : Number(pick.dataset.avatarPick));
       return;
     }
-    const appearance = e.target.closest('[data-appearance]');
+    // Pozor: `data-appearance` nese i kořenové <html> (nastavuje ho appearance.js), takže holý
+    // `[data-appearance]` zachytil úplně každý klik v Nastavení a spolkl ho — žádné tlačítko pak
+    // nefungovalo a v tmavém režimu se navíc appka potichu přepnula do světlé.
+    const appearance = e.target.closest('button[data-appearance]');
     if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
@@ -151,7 +154,16 @@ function mount(el) {
         toast('Jednorázový kód je připravený na 10 minut');
         update();
       } else if (a.dataset.action === 'extension-scroll') {
-        document.getElementById('extension')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+        // Karta rozšíření je `[data-region="extension"]`; dřív se hledalo id="extension", které v aplikaci
+        // není, takže tlačítko nedělalo nic. Kromě skoku je potřeba i ukázat, kam vedl, a dát fokus na první krok.
+        const card = v.el?.querySelector('[data-region="extension"]');
+        if (card) {
+          card.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+          card.classList.remove('is-called-out');
+          void card.offsetWidth;
+          card.classList.add('is-called-out');
+          card.querySelector('[data-action="extension-pair-code"]')?.focus({ preventScroll: true });
+        }
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;

@@ -37,7 +37,7 @@ const ROUTES = [
 ];
 const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty: 'projekty', projekt: 'projekty', statistiky: 'statistiky', utrata: 'utrata', upozorneni: 'upozorneni', nastaveni: 'nastaveni' };
 
-const viewEl = document.getElementById('view');
+let viewEl = document.getElementById('view');
 const titleEl = document.getElementById('page-title');
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
@@ -129,7 +129,12 @@ function navigate() {
     current?.unmount?.();
     current = r.view;
     currentKey = r.key;
-    viewEl.innerHTML = '';
+    // #view byl trvalý uzel a každý pohled si na něj při vstupu přidával posluchače, které nikdo
+    // neodebíral — po N návštěvách se jedna akce provedla N× (dvojí hláška, dvojí dialog).
+    // Výměna za čistou kopii je zahodí všechny naráz; grafy i průvodce se váží na document, ne sem.
+    const nextEl = viewEl.cloneNode(false);
+    viewEl.replaceWith(nextEl);
+    viewEl = nextEl;
     viewEl.classList.remove('is-entering');
     void viewEl.offsetWidth;
     if (!reduceMotion.matches) viewEl.classList.add('is-entering');

@@ -737,6 +737,10 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .set-group-title { margin: 0; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
 .set-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); font-size: 13px; }
 .set-card { padding: 28px; }
+/* Krátké zvýraznění karty, na kterou odkázalo tlačítko — jinak není poznat, kam skok vedl. */
+.is-called-out { animation: callout 1.8s var(--ease) both; }
+@keyframes callout { 0%, 55% { box-shadow: 0 0 0 2px var(--teal-ink), var(--shadow-sm); } 100% { box-shadow: var(--shadow-sm); } }
+@media (prefers-reduced-motion: reduce) { .is-called-out { animation: none; box-shadow: 0 0 0 2px var(--teal-ink), var(--shadow-sm); } }
 .set-card-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
 .set-card-head > div { flex: 1; min-width: 0; }
 .set-card-head h2, .set-card-head h3 { margin: 0 0 4px; font: 500 17px/1.3 var(--f-body); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
