@@ -288,7 +288,8 @@ function update() {
   const hasTokens = sessionTotal(s) + (tok.cacheRead || 0) > 0;
   const helpers = [...state.sessions.values()].filter((x) => x.parentId === s.id);
   const reviews = helpers.filter((x) => x.subagent?.kind === 'review');
-  const otherHelpers = helpers.length - reviews.length;
+  // Pomocní agenti mají vlastní přepis, takže na ně jde prokliknout a vidět, co vlastně dělali.
+  const helperAgents = helpers.filter((x) => x.subagent?.kind !== 'review');
   const parent = s.parentId ? state.sessions.get(s.parentId) : null;
   const limits = limitGauges(state.limits, now, { size: 'sm', provider: s.provider });
 
@@ -332,7 +333,8 @@ function update() {
         <div><dt>Zadání</dt><dd>${s.turns ?? '—'}</dd></div>
         <div><dt>Tokeny</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '—'}</dd></div>
         ${reviews.length ? `<div><dt>Automatické kontroly</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
-        ${otherHelpers ? `<div><dt>Pomocní agenti</dt><dd>${otherHelpers}</dd></div>` : ''}
+        ${helperAgents.length ? `<div><dt>Pomocní agenti</dt><dd>${helperAgents.length} · ${fmtTok(helperAgents.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
+        ${helperAgents.length ? `<div class="wide"><dt>Co dělali</dt><dd><ul class="helper-list">${helperAgents.map((x) => `<li><a class="link-inline" href="#/agent/${encodeURIComponent(x.id)}">${esc(x.title)}</a><span class="muted small">${fmtTok(sessionTotal(x))}</span></li>`).join('')}</ul></dd></div>` : ''}
         ${s.taskName ? `<div><dt>Spuštění úlohy</dt><dd>${[...state.sessions.values()].filter((x) => x.connector === s.connector && x.taskName === s.taskName).length}</dd></div>` : ''}
         ${parent ? `<div class="wide"><dt>Patří ke konverzaci</dt><dd><a class="link-inline" href="#/agent/${encodeURIComponent(parent.id)}">${esc(parent.title)}</a></dd></div>` : ''}
         <div class="wide"><dt>ID</dt><dd class="mono-sm">${esc(s.id)}</dd></div>

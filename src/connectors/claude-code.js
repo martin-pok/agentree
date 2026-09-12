@@ -90,7 +90,17 @@ export function limitKind(text) {
   return { id: 'claude:usage', label: 'Limit využití' };
 }
 
-export const newFileState = () => ({ msgs: new Map(), pendingTools: new Map(), customTitle: false });
+export const newFileState = (subagentFile = false) => ({
+  msgs: new Map(),
+  pendingTools: new Map(),
+  customTitle: false,
+  subagentFile,
+  taskDesc: new Map(), // id volání nástroje Task → krátký popis úlohy
+  subagentTitles: new Map(), // agentId → popis úlohy (z rodičovského přepisu)
+});
+
+// „agentId: a0315452530126137" z výsledku nástroje Task — jediné pojítko mezi rodičem a přepisem pomocníka.
+export const agentIdFrom = (text) => /agentId:\s*([a-z0-9]{6,40})/i.exec(text || '')?.[1] || '';
 
 function meta(s, o) {
   // Projekt = složka, ve které session začala. Agent během práce dělá `cd`, to projekt nemění.
@@ -110,7 +120,7 @@ function onUser(st, s, o, ts) {
   if (o.isMeta) return;
   meta(s, o);
   touch(s, ts);
-  if (o.isSidechain) {
+  if (o.isSidechain && !st.subagentFile) {
     markRunning(s, ts);
     return;
   }
@@ -122,6 +132,11 @@ function onUser(st, s, o, ts) {
       st.pendingTools.delete(part.tool_use_id);
       const raw = typeof part.content === 'string' ? part.content : textOf(part.content);
       const rejected = /doesn't want to proceed|User rejected/i.test(raw);
+      const popis = st.taskDesc.get(part.tool_use_id);
+      if (popis) {
+        const agentId = agentIdFrom(raw);
+        if (agentId) st.subagentTitles.set(agentId, popis);
+      }
       pushEntry(s, {
         at: ts,
         role: 'result',
@@ -184,12 +199,14 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 
   const parts = Array.isArray(m.content) ? m.content : [];
-  if (!o.isSidechain) {
+  if (!o.isSidechain || st.subagentFile) {
     for (const part of parts) {
       if (part?.type === 'text' && part.text?.trim()) {
         pushEntry(s, { at: ts, role: 'assistant', text: clipBlock(part.text, 4000) });
       } else if (part?.type === 'tool_use') {
         st.pendingTools.set(part.id, { name: part.name, at: ts });
+        // Nástroj pro spuštění pomocníka se podle verze Claude Code jmenuje Task nebo Agent.
+        if ((part.name === 'Task' || part.name === 'Agent') && part.input?.description) st.taskDesc.set(part.id, String(part.input.description));
         if (!s.toolWaitSince) s.toolWaitSince = ts;
         s.turnSteps++;
         s.activity = describeTool(part.name, part.input);
@@ -205,7 +222,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
     }
   }
 
-  if (o.isSidechain) markRunning(s, ts);
+  if (o.isSidechain && !st.subagentFile) markRunning(s, ts);
   else if (m.stop_reason === 'end_turn' || m.stop_reason === 'stop_sequence') {
     s.running = false;
     s.activity = '';
@@ -280,8 +297,22 @@ export function createClaudeCodeConnector(ctx) {
     if (s.cwd) s.resume = `cd ${shellQuote(s.cwd)} && claude --resume ${localId}`;
   }
 
+  // Přepisy pomocných agentů (Task) leží o dvě úrovně hlouběji:
+  // <projekt>/<id rodičovské konverzace>/subagents/agent-<id>.jsonl. Bez nich by v Agentree
+  // chyběla veškerá jejich práce i tokeny, které skutečně spotřebovaly.
+  function subagentParent(file) {
+    if (path.basename(path.dirname(file)) !== 'subagents') return '';
+    return path.basename(path.dirname(path.dirname(file)));
+  }
+
+  // agentId → popis úlohy; plní se z rodičovských přepisů, používá se pro název pomocníka.
+  const subagentTitles = new Map();
+
   async function sync(file) {
-    if (!file.endsWith('.jsonl') || depthOf(root, file) !== 1) return;
+    if (!file.endsWith('.jsonl')) return;
+    const depth = depthOf(root, file);
+    const parentLocalId = depth === 3 ? subagentParent(file) : '';
+    if (depth !== 1 && !parentLocalId) return;
     const stat = await statSafe(file);
     if (!stat?.isFile()) return;
     let f = files.get(file);
@@ -292,13 +323,32 @@ export function createClaudeCodeConnector(ctx) {
       f = null;
     }
     if (!f) {
-      f = { tail: new JsonlTail(file), st: newFileState(), localId: path.basename(file, '.jsonl') };
+      f = { tail: new JsonlTail(file), st: newFileState(Boolean(parentLocalId)), localId: path.basename(file, '.jsonl'), parentLocalId };
       files.set(file, f);
     }
     const s = store.ensure({ connector: 'claude-code', localId: f.localId, provider: 'anthropic', app: 'Claude Code' });
+    if (f.parentLocalId) {
+      s.parentId = `claude-code:${f.parentLocalId}`;
+      s.subagent = { kind: 'agent', label: 'Pomocný agent' };
+    }
     const lines = await f.tail.read(stat.size);
     for (const o of lines) applyClaudeLine(f.st, s, o, hooks);
-    setResume(s, f.localId);
+    for (const [agentId, popis] of f.st.subagentTitles) {
+      if (subagentTitles.get(agentId) === popis) continue;
+      subagentTitles.set(agentId, popis);
+      // Rodič se mohl načíst až po pomocníkovi — dotitulkuj, co už je v paměti.
+      const hotovy = store.get(`claude-code:agent-${agentId}`);
+      if (hotovy && hotovy.title !== popis) {
+        hotovy.title = popis;
+        store.commit(hotovy);
+      }
+    }
+    if (f.parentLocalId) {
+      const popis = subagentTitles.get(f.localId.replace(/^agent-/, ''));
+      if (popis) s.title = popis;
+    }
+    // Pomocného agenta nelze samostatně obnovit — příkaz `claude --resume` platí jen pro rodiče.
+    if (!f.parentLocalId) setResume(s, f.localId);
     // Konec tahu je v přepisu explicitní (end_turn, přerušení, chyba API, hook Stop). Dlouhé přemýšlení
     // modelu nezapisuje nic, proto „pracuje“ drží až 30 min a teprve pak přejde do stavu bez aktivity.
     s.staleMs = 30 * MIN;
@@ -308,7 +358,9 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = Boolean(await statSafe(root));
-    for (const f of await listFiles(root, 1, (x) => x.endsWith('.jsonl'))) await queue.run(f);
+    const jsonl = (x) => x.endsWith('.jsonl');
+    for (const f of await listFiles(root, 1, jsonl)) await queue.run(f);
+    for (const f of await listFiles(root, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents')) await queue.run(f);
   }
 
   // Okamžité události z Claude Code hooků (viz src/hooks-installer.js).

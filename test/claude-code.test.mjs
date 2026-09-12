@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { createSession, deriveStatus } from '../src/model.js';
+import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
 import { applyClaudeLine, newFileState, parseResets, describeTool, todosProgress } from '../src/connectors/claude-code.js';
 
 const T0 = Date.parse('2026-09-10T10:00:00Z');
@@ -122,4 +124,41 @@ test('popis nástrojů a průběh úkolů', () => {
   assert.equal(describeTool('Edit', { file_path: '/x/y/app.js' }), 'Upravuje soubor: app.js');
   assert.equal(describeTool('mcp__asana__get_task', {}), 'Používá nástroj: asana · get task');
   assert.deepEqual(todosProgress([{ status: 'completed', content: 'a' }, { status: 'in_progress', content: 'b', activeForm: 'Dělám b' }, { status: 'pending', content: 'c' }]), { done: 1, total: 3, current: 'Dělám b' });
+});
+
+test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se na rodiče', async () => {
+  const home = await tempDir('agentree-src-');
+  const parent = '11111111-2222-3333-4444-555555555555';
+  const now = Date.now();
+  const iso = (ms) => new Date(now + ms).toISOString();
+  const proj = path.join(home, '.claude', 'projects', '-Users-x-proj');
+  await writeJsonl(path.join(proj, `${parent}.jsonl`), [
+    { type: 'user', timestamp: iso(-60000), cwd: '/Users/x/proj', message: { content: 'Zkontroluj bezpečnost' } },
+    { type: 'assistant', timestamp: iso(-59000), message: { id: 'm1', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Spouštím pomocníka' }], usage: { input_tokens: 10, output_tokens: 20 } } },
+    { type: 'assistant', timestamp: iso(-58000), message: { id: 'm1b', model: 'claude-opus-5', content: [{ type: 'tool_use', id: 'toolu_1', name: 'Agent', input: { description: 'Kontrola validace adres' } }], usage: { input_tokens: 0, output_tokens: 0 } } },
+    { type: 'user', timestamp: iso(-57000), message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: [{ type: 'text', text: 'Async agent launched successfully.\nagentId: abc123 (internal ID)' }] }] } },
+  ]);
+  await writeJsonl(path.join(proj, parent, 'subagents', 'agent-abc123.jsonl'), [
+    { type: 'user', isSidechain: true, timestamp: iso(-50000), cwd: '/Users/x/proj', message: { content: 'Projdi validaci adres' } },
+    { type: 'assistant', isSidechain: true, timestamp: iso(-49000), message: { id: 'm2', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo, nic podezřelého' }], usage: { input_tokens: 100, output_tokens: 200, cache_creation_input_tokens: 50 } } },
+  ]);
+
+  const s = await startTestServer({ AGENTREE_SOURCE_HOME: home });
+  try {
+    const stav = (await api(s.url).get('/api/state')).body;
+    const rodic = stav.sessions.find((x) => x.id === `claude-code:${parent}`);
+    const pomocnik = stav.sessions.find((x) => x.id === 'claude-code:agent-abc123');
+
+    assert.ok(rodic, 'rodičovská konverzace musí existovat');
+    assert.ok(pomocnik, 'pomocný agent se musí načíst — jeho práce nesmí zmizet');
+    assert.equal(pomocnik.parentId, `claude-code:${parent}`, 'pomocník je navázaný na rodiče');
+    assert.equal(pomocnik.subagent?.label, 'Pomocný agent');
+    assert.equal(pomocnik.tokens.input + pomocnik.tokens.output + pomocnik.tokens.cacheWrite, 350, 'tokeny pomocníka se počítají');
+    assert.equal(pomocnik.title, 'Kontrola validace adres', 'název se bere z popisu úlohy v rodičovském přepisu');
+    assert.equal(rodic.tokens.input + rodic.tokens.output, 30, 'rodiči se tokeny pomocníka nepřičítají dvakrát');
+    assert.equal(rodic.tokens.input + rodic.tokens.output + rodic.tokens.cacheWrite < 350, true, 'tokeny pomocníka zůstávají u pomocníka');
+    assert.ok(!pomocnik.resume, 'pomocného agenta nelze samostatně obnovit');
+  } finally {
+    await s.close();
+  }
 });
