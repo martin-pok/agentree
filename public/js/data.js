@@ -1,7 +1,9 @@
 import { startOfDay, hourTs, DAY, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
 import { PROVIDERS, pkey } from './icons.js';
 
-export const sessionTotal = (s) => (s.tokens?.input || 0) + (s.tokens?.output || 0) + (s.tokens?.cacheWrite || 0);
+// Vstup + výstup: spotřeba, kterou uživatel pozná i u dodavatele. Zápis a čtení cache jsou
+// technická režie a mají vlastní místo ve složení tokenů, ne v hlavních číslech.
+export const sessionTotal = (s) => (s.tokens?.input || 0) + (s.tokens?.output || 0);
 
 export const STATUS_ORDER = { needs_input: 0, limited: 1, failed: 2, working: 3, waiting: 4, idle: 5, archived: 6 };
 // Stavy, které vyžadují člověka: rozhodnutí, vyčerpaný limit, selhané spuštění.

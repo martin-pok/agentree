@@ -218,7 +218,7 @@ function update() {
   fill(el, 'kpis', `
     <div class="card kpi"><span class="eyebrow">Konverzace</span><span class="val">${st.total}</span><small>${st.older.length ? `z toho ${st.older.length} starších` : 'žádná starší než 30 dní'}</small></div>
     <div class="card kpi"><span class="eyebrow">Právě pracuje</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} na tebe</span>` : 'nikdo nečeká'}</small></div>
-    <div class="card kpi"><span class="eyebrow">Tokeny · 30 dní</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>vstup, výstup a zápis do cache</small></div>
+    <div class="card kpi"><span class="eyebrow">Tokeny · 30 dní</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>vstup a výstup</small></div>
     <div class="card kpi"><span class="eyebrow">Služby</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">—</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'zatím bez aktivity'}</small></div>`);
 
   const counts = {

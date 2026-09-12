@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stackedColumns, timeLine, miniBars } from '../public/js/charts.js';
-import { providerSeries, chartColor, CATEGORICAL } from '../public/js/data.js';
+import { providerSeries, chartColor, CATEGORICAL, sessionTotal } from '../public/js/data.js';
 import { limitGauges } from '../public/js/ui.js';
 
 const hourKey = (d) => d.toISOString().slice(0, 13);
@@ -82,4 +82,16 @@ test('limity: jakmile dorazí přesná data ze stavového řádku, záložní hi
 
   const bezStatusline = limitGauges(limity.filter((l) => l.source !== 'statusline'), now);
   assert.equal(bezStatusline.length, 3, 'bez stavového řádku se historie použije jako záloha');
+});
+
+test('hlavní metrika je vstup + výstup — režie cache ji nesmí nadsadit', () => {
+  // Skutečné hodnoty z jedné dnešní konverzace: zápis do cache je řádově větší než vstup
+  // a výstup dohromady, protože se stejný kontext zapisuje znovu s každým tahem.
+  const s = { tokens: { input: 2948, output: 629841, cacheWrite: 4847361, cacheRead: 266830165 } };
+
+  assert.equal(sessionTotal(s), 632789, 'sčítá se jen vstup a výstup');
+  assert.ok(sessionTotal(s) < s.tokens.cacheWrite, 'režie cache je větší než spotřeba — proto do součtu nepatří');
+  assert.equal(sessionTotal({ tokens: { input: 0, output: 0, cacheWrite: 5_000_000, cacheRead: 0 } }), 0,
+    'konverzace, která jen plnila cache, nesmí hlásit pětimilionovou spotřebu');
+  assert.equal(sessionTotal({}), 0, 'chybějící tokeny nejsou chyba');
 });

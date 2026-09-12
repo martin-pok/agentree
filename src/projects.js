@@ -334,7 +334,7 @@ export function projectCsv(sessions, now = Date.now()) {
   const since = hourKey(now - 30 * DAY);
   const rows = [['Konverzace', 'Aplikace', 'Model', 'Stav', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Tokeny', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Odkaz']];
   for (const s of sessions) {
-    const tokens = (s.tokens?.input || 0) + (s.tokens?.output || 0) + (s.tokens?.cacheWrite || 0);
+    const tokens = (s.tokens?.input || 0) + (s.tokens?.output || 0); // bez režie cache, viz model.js#addTokens
     const hours = Object.entries(s.hourly || {}).filter(([k, v]) => k >= since && v > 0).length;
     rows.push([s.title, s.app, s.model || '', s.status ? STATUS_CS[s.status] || s.status : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }

@@ -216,7 +216,9 @@ export function createCodexConnector(ctx) {
             if (t) {
               const cached = t.cached_input_tokens || 0;
               const cur = { input: (t.input_tokens || 0) - cached, output: t.output_tokens || 0, cacheWrite: t.cache_write_input_tokens || 0, cacheRead: cached };
-              const processed = cur.input + cur.output + cur.cacheWrite;
+              // Stejné měřítko jako u Claude (model.js#addTokens): hlavní metrika je vstup + výstup,
+              // režie cache se drží zvlášť v `s.tokens`.
+              const processed = cur.input + cur.output;
               // Codex své počítadlo občas vynuluje (např. po zkomprimování kontextu). Spotřeba před vynulováním se nezahazuje.
               if (st.lastTokens && processed < st.prevProcessed) {
                 for (const key of Object.keys(st.tokenBase)) st.tokenBase[key] += st.lastTokens[key];

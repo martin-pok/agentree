@@ -62,7 +62,11 @@ const TOKEN_KEYS = ['input', 'output', 'cacheWrite', 'cacheRead'];
 
 export function addTokens(s, ts, delta, sign = 1) {
   for (const k of TOKEN_KEYS) s.tokens[k] += sign * (delta[k] || 0);
-  const amount = sign * ((delta.input || 0) + (delta.output || 0) + (delta.cacheWrite || 0));
+  // Hlavní metrika je jen vstup + výstup — to je spotřeba, kterou uživatel pozná i ve svém
+  // účtu u dodavatele. Zápis do cache je technická režie (stejný kontext se zapisuje znovu
+  // s každým tahem) a dokázal hlavní číslo nadsadit skoro devítinásobně; drží se dál v
+  // `s.tokens.cacheWrite` a zobrazuje se odděleně ve složení tokenů.
+  const amount = sign * ((delta.input || 0) + (delta.output || 0));
   if (!ts || !amount) return;
   const k = hourKey(ts);
   const next = (s.hourly[k] || 0) + amount;

@@ -55,7 +55,7 @@ function mount(el) {
         <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
         <div data-region="decisions"></div>
       </section>
-      <section data-enter style="--i:3" data-region="meter" aria-label="Zpracované tokeny dnes"></section>
+      <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
       <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
       <section data-enter style="--i:5" aria-labelledby="act-h">
         <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
@@ -68,7 +68,7 @@ function mount(el) {
         <div class="card tl-card" data-region="timeline"></div>
       </section>
       <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
-        <div class="sec-head"><h2 id="chart-h">Zpracované tokeny</h2>
+        <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
           <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
         </div>
         <div data-region="chart"></div>
@@ -180,7 +180,7 @@ function update(topics = new Set(['all'])) {
     const avg = Math.max(0, tokensSince(everything,startOfDay(now - 7 * DAY)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     fill(el, 'meter', `
-    <div class="meter-row"><span>Zpracované tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
+    <div class="meter-row"><span>Tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní zpracované tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.</p>`);
   }
 
@@ -220,7 +220,7 @@ function update(topics = new Set(['all'])) {
   if (chartImmediate || (topics.has('sessions') && now - v.chartAt >= CHART_UPDATE_MS)) {
     const ser = providerSeries(everything, v.period, now, v.hidden);
     const chartChanged = fill(el, 'chart', ser.series.length
-      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Zpracované tokeny', partialLast: true })
+      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: 'Tokeny', partialLast: true })
       : '<div class="empty-inline">V tomto období žádné tokeny.</div>');
     if (chartChanged && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
     v.drawn = true;

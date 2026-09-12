@@ -77,6 +77,6 @@ test('projekty: CSV export pro vyúčtování (BOM, středníky, uvozovky, ochra
   const line = csv.split('\r\n')[1];
   assert.ok(line.startsWith(`"'=HYPERLINK(""x"")"`), line);
   assert.ok(line.includes(';Pracuje;'));
-  assert.ok(line.includes(';3;35;2;'), 'zadání, tokeny a hodiny s aktivitou za 30 dní');
+  assert.ok(line.includes(';3;30;2;'), 'zadání, tokeny (vstup + výstup, bez režie cache) a hodiny s aktivitou za 30 dní');
   assert.ok(line.includes('"/Users/x/web; klient"'));
 });

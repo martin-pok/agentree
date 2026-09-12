@@ -39,7 +39,10 @@ test('zadání → nástroj → výsledek → konec tahu', () => {
   assert.equal(s.tokens.input, 11);
   assert.equal(s.tokens.cacheWrite, 100);
   assert.equal(s.tokens.cacheRead, 1000);
-  assert.equal(Object.values(s.hourly).reduce((a, b) => a + b, 0), 171);
+  // Hlavní metrika je vstup + výstup (11 + 60). Zápis do cache je technická režie a do
+  // hodinových přihrádek, ze kterých se kreslí všechny grafy, nepatří — jinak hlavní číslo
+  // vyjde skoro devětkrát vyšší, než kolik uživatel vidí u dodavatele.
+  assert.equal(Object.values(s.hourly).reduce((a, b) => a + b, 0), 71, 'hodinové přihrádky nesmí obsahovat zápis do cache');
   assert.equal(s.running, false);
   assert.equal(deriveStatus(s, T0 + 40000).status, 'waiting');
 });
@@ -153,10 +156,11 @@ test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se n
     assert.ok(pomocnik, 'pomocný agent se musí načíst — jeho práce nesmí zmizet');
     assert.equal(pomocnik.parentId, `claude-code:${parent}`, 'pomocník je navázaný na rodiče');
     assert.equal(pomocnik.subagent?.label, 'Pomocný agent');
-    assert.equal(pomocnik.tokens.input + pomocnik.tokens.output + pomocnik.tokens.cacheWrite, 350, 'tokeny pomocníka se počítají');
+    assert.equal(pomocnik.tokens.input + pomocnik.tokens.output, 300, 'tokeny pomocníka se počítají');
+    assert.equal(pomocnik.tokens.cacheWrite, 50, 'režie cache se drží zvlášť');
     assert.equal(pomocnik.title, 'Kontrola validace adres', 'název se bere z popisu úlohy v rodičovském přepisu');
     assert.equal(rodic.tokens.input + rodic.tokens.output, 30, 'rodiči se tokeny pomocníka nepřičítají dvakrát');
-    assert.equal(rodic.tokens.input + rodic.tokens.output + rodic.tokens.cacheWrite < 350, true, 'tokeny pomocníka zůstávají u pomocníka');
+    assert.equal(rodic.tokens.input + rodic.tokens.output, 30, 'tokeny pomocníka zůstávají u pomocníka');
     assert.ok(!pomocnik.resume, 'pomocného agenta nelze samostatně obnovit');
   } finally {
     await s.close();
