@@ -41,12 +41,35 @@ const GROUPS = [
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
-  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'share', 'privacy']],
+  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'remote', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
 // že míří na tenhle Mac nebo do místní sítě — do karty se proto nic neověřuje „pro jistotu" znovu,
 // jen se poctivě zobrazí, co server vrátil.
+// Vzdálený přístup mimo domov. Agentree nikdy neotevírá cestu ven sám — jen zjistí, jestli má
+// uživatel nainstalovaný tunel, a poradí, který zvolit. Rozdíl mezi privátní sítí a veřejnou
+// adresou říkáme narovinu, protože to má jiný dopad na soukromí.
+function remoteCard() {
+  const t = state.tunnels || { at: 0, list: [], advice: null };
+  const rada = t.advice;
+  const bezi = t.list.find((x) => x.running);
+  return `
+    ${head(ICON.cloud, 'Mimo domov', 'V domácí síti stačí přístup z telefonu. Venku (mobilní data, cizí Wi-Fi) je potřeba tunel, který si spustíš sám — Agentree žádnou cestu ven neotvírá.')}
+    ${bezi ? `<div class="code-line"><code>${esc(bezi.remoteUrl || bezi.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(bezi.remoteUrl || bezi.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat</button></div>
+      <p class="set-note">${esc(bezi.name)} běží. ${esc(bezi.security)}</p>` : ''}
+    ${t.list.length ? `<ul class="privacy-list">${t.list.map((x) => `<li>
+      <div class="custom-agent-head"><b>${esc(x.name)}</b>${x.running ? '<span class="badge badge--ok">běží</span>' : x.installed ? '<span class="badge">nainstalováno</span>' : '<span class="badge badge--beta">není</span>'}${x.kind === 'verejny-tunel' ? '<span class="badge badge--beta">veřejná adresa</span>' : '<span class="badge">privátní síť</span>'}</div>
+      <span>${esc(x.description)}</span>
+      <span class="muted small">${esc(x.security)}</span>
+      ${x.hint ? `<span class="muted small">${esc(x.hint)}</span>` : ''}
+    </li>`).join('')}</ul>` : '<p class="set-note">Zjištění ještě neproběhlo.</p>'}
+    ${rada && rada.doporuceni !== 'zadny' ? `<p class="set-note"><b>Doporučení:</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
+    ${rada?.kroky?.length ? `<ol class="steps steps--compact">${rada.kroky.map((k) => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}
+    <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}Zjistit znovu</button></div>
+    <p class="set-note">Ať zvolíš cokoli, párování kódem a token zůstávají v platnosti — bez spárovaného zařízení se k datům nedostane nikdo, ani kdo zná adresu. Instalovatelná aplikace na domovské obrazovce potřebuje HTTPS; u veřejného tunelu ho dostaneš automaticky, u Tailscale se zapíná v jeho nastavení.</p>`;
+}
+
 // Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
 // Kód i seznam se ukazují jen tady na Macu — z telefonu je server nevydá.
 function phoneCard() {
@@ -275,6 +298,10 @@ function mount(el) {
           toast(r.cleared ? `Smazáno ${r.cleared} upozornění` : 'Nebylo co mazat');
           update();
         }
+      } else if (a.dataset.action === 'remote-detect') {
+        state.tunnels = (await api.detectRemote()).tunnels;
+        toast(state.tunnels.list.some((x) => x.installed) ? 'Zjištěno' : 'Žádný nástroj pro vzdálený přístup není nainstalovaný');
+        update();
       } else if (a.dataset.action === 'lan-pin') {
         v.pin = (await api.lanPin()).pin;
         update();
@@ -512,6 +539,7 @@ function update() {
 
   /* Vlastní agenti */
   fill(el, 'phone', phoneCard());
+  fill(el, 'remote', remoteCard());
   fill(el, 'custom', customAgentsCard());
 
   /* Upozornění */
