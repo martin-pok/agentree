@@ -217,6 +217,7 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .sec-head h3 { font-size: 15px; }
 .link { background: none; border: 0; padding: 4px 0; color: var(--mute); font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .link:hover { color: var(--ink); }
+
 .link-inline { background: none; border: 0; padding: 0; color: var(--ink); font-size: inherit; text-decoration: underline; text-underline-offset: 3px; display: inline-flex; align-items: center; gap: 6px; }
 .link-inline .icon { width: 14px; height: 14px; }
 .note { margin: 24px 0 0; font-size: 13px; color: var(--mute); max-width: 80ch; }
@@ -1345,7 +1346,10 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .appearance-option { min-height: 76px; align-items: center; }
   .launch { padding: 20px 16px 16px; margin-bottom: 32px; }
   .launch-head h2 { font-size: 22px; }
+  /* Bez textu zbyde jen ikona 14×14 a plocha na kliknutí spadne na 14×22 px. WCAG 2.2 žádá
+     aspoň 24×24, na prst je rozumných 32; záporný okraj udrží původní optické zarovnání. */
   .launch-head .link span { display: none; }
+  .launch-head .link { min-width: 32px; min-height: 32px; justify-content: center; padding: 8px; margin: -8px 0; }
   .launch-agents { flex-direction: column; gap: 12px; overflow: visible; }
   .launch-group { min-width: 0; }
   .launch-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding-inline: 16px; scrollbar-width: none; }
