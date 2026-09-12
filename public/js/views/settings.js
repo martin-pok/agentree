@@ -128,7 +128,11 @@ function mount(el) {
   };
 
   const setCurrent = (id) => {
-    for (const btn of nav.querySelectorAll('[data-jump]')) btn.toggleAttribute('aria-current', btn.dataset.jump === id);
+    // aria-current musí mít hodnotu „true"; prázdná hodnota znamená podle specifikace opak.
+    for (const btn of nav.querySelectorAll('[data-jump]')) {
+      if (btn.dataset.jump === id) btn.setAttribute('aria-current', 'true');
+      else btn.removeAttribute('aria-current');
+    }
     const btn = nav.querySelector(`[data-jump="${id}"]`);
     if (btn) scrollNavTo(btn);
   };
