@@ -16,6 +16,7 @@ import stats from './views/stats.js';
 import spend from './views/spend.js';
 import alertsView, { markRead } from './views/alerts.js';
 import settings from './views/settings.js';
+import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { applyAppearance, initAppearance } from './appearance.js';
@@ -33,9 +34,10 @@ const ROUTES = [
   [/^\/statistiky$/, stats],
   [/^\/utrata$/, spend],
   [/^\/upozorneni$/, alertsView],
+  [/^\/dovednosti$/, skills],
   [/^\/nastaveni$/, settings],
 ];
-const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty: 'projekty', projekt: 'projekty', statistiky: 'statistiky', utrata: 'utrata', upozorneni: 'upozorneni', nastaveni: 'nastaveni' };
+const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty: 'projekty', projekt: 'projekty', statistiky: 'statistiky', utrata: 'utrata', upozorneni: 'upozorneni', dovednosti: 'dovednosti', nastaveni: 'nastaveni' };
 
 let viewEl = document.getElementById('view');
 const titleEl = document.getElementById('page-title');
@@ -326,7 +328,7 @@ const palette = createPalette(
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
       .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
-    const sections = [['prehled', 'Přehled'], ['upozorneni', 'Upozornění'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['nastaveni', 'Nastavení']]
+    const sections = [['prehled', 'Přehled'], ['upozorneni', 'Upozornění'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['dovednosti', 'Dovednosti'], ['nastaveni', 'Nastavení']]
       .filter(([, l]) => !nq || norm(l).includes(nq))
       .map(([k, l]) => ({ group: 'Sekce', label: l, href: `#/${k}`, icon: ICON.arrow }));
     const projectItems = state.projects.items

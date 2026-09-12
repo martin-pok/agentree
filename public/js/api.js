@@ -32,6 +32,13 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  skills: () => request('GET', '/api/skills'),
+  // Obsah dovednosti je čistý markdown, ne JSON — proto mimo `request()`.
+  async skillText(id) {
+    const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`);
+    if (!res.ok) throw new Error(res.status === 404 ? 'Soubor dovednosti už na disku není.' : `Dovednost se nepodařilo načíst (chyba ${res.status}).`);
+    return res.text();
+  },
   extensionPairCode: () => request('POST', '/api/extension/pair-code', {}),
   createProject: (body) => request('POST', '/api/projects', body),
   updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
@@ -47,6 +54,7 @@ export const api = {
   activateLicense: (key) => request('PUT', '/api/license', { key }),
   removeLicense: () => request('DELETE', '/api/license'),
   autostart: (action) => request('POST', `/api/integrations/autostart/${action}`, {}),
+  revealInstallPackage: () => request('POST', '/api/install/reveal', {}),
   folders: (path = '') => request('GET', `/api/fs/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`),
   projectGit: (id) => request('GET', `/api/projects/${encodeURIComponent(id)}/git`),
   team: (id, body) => request('POST', `/api/projects/${encodeURIComponent(id)}/team`, body),

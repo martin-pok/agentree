@@ -665,6 +665,20 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .topups li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; font-size: 14px; }
 .topups li + li { box-shadow: 0 -1px 0 var(--line-2); }
 .topups b { font: 500 14px/1 var(--f-mono); color: var(--teal-ink); }
+
+/* ---------- Dovednosti ---------- */
+.skills { display: grid; gap: 12px; }
+.skill { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 20px 24px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
+.skill-main { min-width: 0; display: grid; gap: 6px; }
+.skill-main h3 { margin: 0; font: 500 16px/1.3 var(--f-body); overflow-wrap: anywhere; }
+.skill-main p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.skill-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.skill-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 12px; color: var(--mute); }
+.skill-actions { display: flex; gap: 8px; flex: none; }
+@media (max-width: 720px) {
+  .skill { flex-direction: column; gap: 16px; }
+  .skill-actions { width: 100%; }
+}
 /* Karta „Kredity a extra usage“ a následující „Výdaje“ nemají vlastní odstup od okolních karet (na rozdíl od .grid-2 nebo .cta-card) — drží 32px rytmus stránky Útrata. */
 [aria-labelledby="cr-h"], [aria-labelledby="led-h"] { margin-top: 32px; }
 

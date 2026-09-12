@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
-import { esc, rel, initials } from '../format.js';
+import { esc, rel, initials, dateLong } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
@@ -191,6 +191,9 @@ function mount(el) {
           toast('Spouštění po přihlášení je vypnuté');
           update();
         }
+      } else if (a.dataset.action === 'reveal-install-package') {
+        const r = await api.revealInstallPackage();
+        toast(r.dry ? 'Zkušební režim: Finder se neotevřel' : 'Balíček je vidět ve Finderu');
       } else if (a.dataset.action === 'secret-remove') {
         if (await confirmDialog({ title: 'Odebrat klíč', message: 'Klíč se smaže z Klíčenky a načítání nákladů se zastaví.', confirmLabel: 'Odebrat klíč', danger: true })) {
           state.integrations = (await api.removeSecret(a.dataset.id)).integrations;
@@ -454,9 +457,24 @@ function update() {
 
   const packCmd = 'npm run pack';
   const installCmd = `npm install -g ./agentree-${state.version}.tgz`;
+  const buildCmd = 'npm run build:mac';
+  const pkg = inst.package;
   fill(el, 'share', `
     ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agentree nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
-    ${i.desktop ? '<p class="set-desc">Předej instalační ZIP Agentree pro Mac. Příjemce jej rozbalí a přesune Agentree do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>' : `<ol class="steps">
+    ${i.desktop ? (pkg ? `
+      <p class="set-desc">Předej příjemci tento instalační ZIP Agentree pro Mac. Rozbalí ho a přesune Agentree do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>
+      <dl class="facts">
+        <div><dt>Soubor</dt><dd>${esc(pkg.name)}</dd></div>
+        <div><dt>Velikost</dt><dd>${(pkg.size / 1e6).toFixed(1)} MB</dd></div>
+        <div><dt>Vytvořeno</dt><dd>${esc(dateLong(pkg.createdAt))}</dd></div>
+      </dl>
+      <div class="set-actions">
+        <button class="btn btn--primary" type="button" data-action="reveal-install-package">Ukázat ve Finderu</button>
+        <button class="btn btn--sm" type="button" data-copy="${esc(pkg.path)}" data-copy-message="Cesta k balíčku zkopírována">${ICON.copy}Kopírovat cestu</button>
+      </div>` : `
+      <p class="set-desc">Instalační balíček pro verzi ${esc(state.version)} ještě není vytvořený. Vytvoř ho v Terminálu:</p>
+      <div class="code-line"><code>${esc(buildCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(buildCmd)}">${ICON.copy}Kopírovat</button></div>
+      <p class="small muted">Balíček se uloží do <code>dist/Agentree-${esc(state.version)}-macOS-&lt;architektura&gt;.zip</code>.</p>`) : `<ol class="steps">
       <li>Ve složce Agentree vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Pošli soubor <code>dist/agentree-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Aplikaci otevře příkazem <code>agentree --open</code>. Průvodce ho provede propojením.</li>

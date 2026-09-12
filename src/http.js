@@ -6,6 +6,7 @@ import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets } from './spend.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
+import { createSkills } from './skills.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -181,7 +182,20 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- Trasy ---------- */
 
+  // Dovednosti se čtou přímo z disku podle `config.sourceHome`, nic se nedrží v paměti.
+  const skills = createSkills({ config });
+
   const routes = [
+    ['GET', /^\/api\/skills$/, async () => ({ skills: await skills.list() })],
+    // Obsah se hledá podle id z čerstvého seznamu — cesta nikdy nepochází z požadavku.
+    ['GET', /^\/api\/skills\/([0-9a-f]{12})\/raw$/, async (_req, m, url) => {
+      const skill = await skills.read(m[1]);
+      if (!skill) throw new HttpError(404, 'Dovednost nenalezena.');
+      const safeName = `${skill.name.replace(/[^\p{L}\p{N} ._-]/gu, '').trim() || 'dovednost'}.md`;
+      const headers = { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store' };
+      if (url.searchParams.get('download') === '1') headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}`;
+      return { raw: true, headers, body: skill.text };
+    }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
     ['GET', /^\/api\/state$/, () => app.state()],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
@@ -408,6 +422,7 @@ export function createHttpServer(app, existingServer = null) {
     ['PUT', /^\/api\/license$/, async (req) => unwrap(app.activateLicense((await readBody(req)).key))],
     ['DELETE', /^\/api\/license$/, () => app.removeLicense()],
     ['POST', /^\/api\/integrations\/autostart\/(install|uninstall)$/, async (_req, m) => unwrap(await app.autostart(m[1]))],
+    ['POST', /^\/api\/install\/reveal$/, async () => unwrap(await app.revealInstallPackage())],
     ['GET', /^\/api\/fs\/folders$/, async (_req, _m, url) => unwrap(await app.listFolders(url.searchParams.get('path') || ''))],
   ];
 

@@ -34,12 +34,27 @@ import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSes
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agentree.mjs');
+export const DIST_DIR = path.join(ROOT_DIR, 'dist');
 // Bez licence Pro je možné mít tolik aktivních projektů — platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
+
+// `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agentree-<verze>-macOS-<arch>.zip`.
+// Server odvozuje přesný název sám (verze z package.json, architektura procesu) — nikdy z požadavku klienta.
+export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, arch = process.arch) {
+  const name = `Agentree-${version}-macOS-${arch}.zip`;
+  const file = path.join(distDir, name);
+  try {
+    const st = await fsp.stat(file);
+    if (!st.isFile()) return null;
+    return { name, path: file, size: st.size, createdAt: Math.round(st.birthtimeMs || st.mtimeMs), version, arch };
+  } catch {
+    return null;
+  }
+}
 const HOME_HIDDEN = new Set(['Library']);
 
-export async function createApp(config = loadConfig(), { licensePublicKey } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR } = {}) {
   try {
     const m = await migrateLegacyData({ dataDir: config.dataDir, legacyDir: config.legacyDataDir });
     if (m.migrated && !config.quiet) console.log(`Agentree: data převzata z ${m.from}`);
@@ -646,8 +661,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
         installed: await isLaunchAgentInstalled(config.sourceHome),
         command: `"${process.execPath}" "${BIN_PATH}" install-agent`,
       },
-      install: { bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir, node: process.version },
+      install: { bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir, node: process.version, package: await findInstallPackage(distDir) },
     };
+  }
+
+  // „Ukázat ve Finderu“ pro instalační balíček v Nastavení → Instalace pro další lidi.
+  // Cesta se nikdy nebere z požadavku — server ji odvodí sám ze složky dist (distDir), jinak by šlo
+  // přes tento endpoint otevřít ve Finderu cokoli na disku.
+  async function revealInstallPackage() {
+    const pkg = await findInstallPackage(distDir);
+    if (!pkg) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
+    if (config.openMode === 'off') return { status: 422, error: 'Otevírání Finderu je dostupné jen na macOS.' };
+    const plan = { kind: 'open', args: ['-R', pkg.path], label: 'Finder' };
+    const r = await executeOpen(plan, { dry });
+    if (!r.ok) return { status: 502, error: r.error };
+    return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
   }
 
   // A browser extension must prove a short-lived code deliberately shown in the
@@ -742,6 +770,6 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
   };
 }

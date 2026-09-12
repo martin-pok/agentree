@@ -14,6 +14,14 @@ První spuštění zobrazí čtyřkrokový průvodce. Vrátíš se k němu v Nas
 
 Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
 
+**Kde balíček vzít.** V desktopové aplikaci Nastavení → Aplikace na tomto Macu → *Instalace pro další lidi* ukáže, jestli `dist/Agentree-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje — s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
+
+```bash
+npm run build:mac
+```
+
+Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, architektura, druh podpisu). Server sám ověřuje jen soubor odpovídající aktuální verzi z `package.json` a architektuře procesu — cestu nikdy nebere z prohlížeče.
+
 ### Příkazová řádka
 
 - macOS (Linux a Windows: dashboard a projekty fungují, otevírání aplikací a notifikace ne)
