@@ -457,7 +457,6 @@ function update() {
 
   const packCmd = 'npm run pack';
   const installCmd = `npm install -g ./agentree-${state.version}.tgz`;
-  const buildCmd = 'npm run build:mac';
   const pkg = inst.package;
   fill(el, 'share', `
     ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agentree nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
@@ -472,9 +471,15 @@ function update() {
         <button class="btn btn--primary" type="button" data-action="reveal-install-package">Ukázat ve Finderu</button>
         <button class="btn btn--sm" type="button" data-copy="${esc(pkg.path)}" data-copy-message="Cesta k balíčku zkopírována">${ICON.copy}Kopírovat cestu</button>
       </div>` : `
-      <p class="set-desc">Instalační balíček pro verzi ${esc(state.version)} ještě není vytvořený. Vytvoř ho v Terminálu:</p>
-      <div class="code-line"><code>${esc(buildCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(buildCmd)}">${ICON.copy}Kopírovat</button></div>
-      <p class="small muted">Balíček se uloží do <code>dist/Agentree-${esc(state.version)}-macOS-&lt;architektura&gt;.zip</code>.</p>`) : `<ol class="steps">
+      <p class="set-desc">Pošli příjemci samotnou aplikaci: ve Finderu na ni klikni pravým tlačítkem, zvol <b>Komprimovat</b> a vzniklý ZIP předej. Node.js je uvnitř, příjemce nic doinstalovávat nemusí. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>
+      <dl class="facts">
+        <div class="wide"><dt>Aplikace</dt><dd class="mono-sm">${esc((i.install?.root || '').replace(/\/Contents\/Resources\/app$/, ''))}</dd></div>
+        <div><dt>Verze</dt><dd>${esc(state.version)}</dd></div>
+      </dl>
+      <div class="set-actions">
+        <button class="btn btn--primary" type="button" data-action="reveal-install-package">Ukázat ve Finderu</button>
+        <button class="btn btn--sm" type="button" data-copy="${esc((i.install?.root || '').replace(/\/Contents\/Resources\/app$/, ''))}" data-copy-message="Cesta k aplikaci zkopírována">${ICON.copy}Kopírovat cestu</button>
+      </div>`) : `<ol class="steps">
       <li>Ve složce Agentree vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Pošli soubor <code>dist/agentree-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
       <li>Aplikaci otevře příkazem <code>agentree --open</code>. Průvodce ho provede propojením.</li>

@@ -670,9 +670,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // přes tento endpoint otevřít ve Finderu cokoli na disku.
   async function revealInstallPackage() {
     const pkg = await findInstallPackage(distDir);
-    if (!pkg) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
+    // V nainstalované aplikaci žádné `dist/` není — hotový balíček leží jen ve vývojovém repu.
+    // Uživateli proto ukážeme samotnou aplikaci: ve Finderu si ji zabalí a výsledný ZIP pošle dál.
+    const bundle = path.resolve(ROOT_DIR, '..', '..', '..');
+    const target = pkg?.path || (config.desktop && bundle.endsWith('.app') ? bundle : null);
+    if (!target) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
     if (config.openMode === 'off') return { status: 422, error: 'Otevírání Finderu je dostupné jen na macOS.' };
-    const plan = { kind: 'open', args: ['-R', pkg.path], label: 'Finder' };
+    const plan = { kind: 'open', args: ['-R', target], label: 'Finder' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
