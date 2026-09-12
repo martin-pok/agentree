@@ -37,6 +37,7 @@ export const api = {
   lanPin: () => request('POST', '/api/lan/pin', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),
   pairDevice: (pin, label) => request('POST', '/api/lan/pair', { pin, label }),
+  focusRuntime: (id) => request('POST', `/api/runtimes/${encodeURIComponent(id)}/focus`, {}),
   customAgents: () => request('GET', '/api/custom-agents'),
   addCustomAgent: (body) => request('POST', '/api/custom-agents', body),
   removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),
@@ -70,7 +71,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

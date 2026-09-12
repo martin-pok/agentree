@@ -9,6 +9,7 @@ export const state = {
   sessions: new Map(),
   runtimes: [],
   customAgents: [],
+  localAgents: [],
   lan: { enabled: false, addresses: [], devices: [] },
   limits: [],
   credits: [],
@@ -57,6 +58,7 @@ export function applySnapshot(s) {
     sessions: new Map(s.sessions.map((x) => [x.id, x])),
     runtimes: s.runtimes,
     customAgents: s.customAgents || [],
+    localAgents: s.localAgents || [],
     lan: s.lan || { enabled: false, addresses: [], devices: [] },
     limits: s.limits,
     credits: s.credits,
@@ -106,6 +108,10 @@ export function applyEvent(name, data) {
       break;
     case 'customAgents':
       state.customAgents = data;
+      emit('runtimes');
+      break;
+    case 'localAgents':
+      state.localAgents = data;
       emit('runtimes');
       return null;
     case 'limits':

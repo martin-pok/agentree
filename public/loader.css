@@ -1,0 +1,178 @@
+/*
+ * Agentree — načítací animace značky.
+ *
+ * Nosný efekt: větve značky se postupně „narůstají" přes stroke-dashoffset
+ * (kmen → levá větev → pravá větev), uzly se rozsvěcují, jak je růst dosáhne.
+ * Podpora: jemné nadechnutí celé značky (scale) a doznívající smaragdové halo,
+ * které se rozsvítí po dokreslení a pak pomalu odezní — echo dokončené práce.
+ * Smyčka 2 s: růst a odeznění se prolnou v jedné plynulé animaci beze střihu.
+ *
+ * Animuje se výhradně transform, opacity a stroke-dashoffset (GPU, bez
+ * zásahu do layoutu). Barvy jen z tokenů v public/styles.css :root.
+ */
+
+.loader-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.loader-mark {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex: none;
+  transform-origin: 50% 50%;
+  animation: lm-breathe 2s ease-in-out infinite;
+}
+
+.loader-halo {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--teal) 60%, transparent) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(.85);
+  transform-origin: 50% 50%;
+  animation: lm-halo 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.loader-svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  color: var(--ink);
+}
+
+.lm-root { fill: var(--brass); }
+
+.lm-branches {
+  stroke: currentColor;
+  stroke-dasharray: 100 100;
+  animation: lm-branches 2s ease-in-out infinite;
+}
+
+.lm-node {
+  fill: currentColor;
+  opacity: 0;
+}
+
+.lm-node-a { animation: lm-node-a 2s ease-in-out infinite; }
+.lm-node-b { animation: lm-node-b 2s ease-in-out infinite; }
+.lm-node-c { animation: lm-node-c 2s ease-in-out infinite; }
+
+.loader-text {
+  color: var(--mute);
+  font: 400 14px/1.5 var(--f-body, system-ui, sans-serif);
+}
+
+/* Kmen (0–56 %) → levá větev (do ~74 %) → pravá větev (do 100 % úseku růstu);
+   v 74–90 % se dokreslená značka zároveň stírá a vytrácí (dissolve), takže
+   reset dashoffsetu proběhne, zatímco je neviditelná — beze střihu. */
+@keyframes lm-branches {
+  0%   { stroke-dashoffset: 100; opacity: 1; }
+  56%  { stroke-dashoffset: 0;   opacity: 1; }
+  74%  { stroke-dashoffset: 0;   opacity: 1; }
+  90%  { stroke-dashoffset: 100; opacity: 0; }
+  100% { stroke-dashoffset: 100; opacity: 1; }
+}
+
+@keyframes lm-node-b {
+  0%, 14% { opacity: 0; }
+  22%     { opacity: 1; }
+  74%     { opacity: 1; }
+  84%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+@keyframes lm-node-a {
+  0%, 32% { opacity: 0; }
+  42%     { opacity: 1; }
+  74%     { opacity: 1; }
+  84%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+@keyframes lm-node-c {
+  0%, 50% { opacity: 0; }
+  60%     { opacity: 1; }
+  74%     { opacity: 1; }
+  84%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+@keyframes lm-halo {
+  0%, 50% { opacity: 0;   transform: scale(.85); }
+  60%     { opacity: .55; transform: scale(1); }
+  90%     { opacity: 0;   transform: scale(1.12); }
+  100%    { opacity: 0;   transform: scale(.85); }
+}
+
+@keyframes lm-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
+/* ---------- Skeleton (karty, které se dopočítávají) ---------- */
+
+.skel-wrap {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.skel-row {
+  position: relative;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--line-2);
+  overflow: hidden;
+}
+
+.skel-row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+  transform: translateX(-150%);
+  animation: skel-shine 1.8s ease-in-out infinite;
+}
+
+@keyframes skel-shine {
+  to { transform: translateX(350%); }
+}
+
+/* ---------- Omezený pohyb: statická značka, jen jemné prolnutí ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .loader-mark,
+  .lm-branches,
+  .lm-node-a,
+  .lm-node-b,
+  .lm-node-c,
+  .loader-halo,
+  .skel-row::after {
+    animation: none !important;
+  }
+  .lm-branches { stroke-dashoffset: 0; opacity: 1; }
+  .lm-node-a, .lm-node-b, .lm-node-c { opacity: 1; }
+  .loader-halo { opacity: .16; transform: scale(1); }
+  .skel-row::after { transform: translateX(-150%); opacity: .4; }
+  .loader-wrap { animation: loader-fade-in .3s ease-out both; }
+}
+
+@keyframes loader-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

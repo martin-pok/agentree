@@ -232,6 +232,8 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .note { margin: 24px 0 0; font-size: 13px; color: var(--mute); max-width: 80ch; }
 .badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--line-2); color: var(--ink-2); font: 500 11px/1 var(--f-body); vertical-align: middle; }
 .badge--ok { background: rgba(13, 122, 103, .12); color: var(--ok); }
+/* Odhad, ne ověřený údaj — vlastní a neznámé modely rozpoznané z běžícího procesu. */
+.badge--beta { background: rgba(154, 110, 31, .14); color: var(--brass-ink, var(--brass)); }
 .empty { padding: 56px 24px; text-align: center; color: var(--mute); display: grid; justify-items: center; gap: 8px; }
 .empty strong { color: var(--ink); font-size: 17px; }
 .empty p { margin: 0; max-width: 52ch; }
@@ -687,6 +689,12 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .runtime-note { margin-top: 16px; }
 .runtime-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .runtime-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 16px; border-radius: var(--r-md); background: var(--surface-2); }
+/* Dlaždice běžící aplikace je tlačítko — vizuálně stejná jako ostatní, jen reaguje. */
+.rt-item--go { border: 0; background: transparent; font: inherit; color: inherit; text-align: inherit; cursor: pointer; }
+.rt-item--go:hover { background: var(--paper); }
+.rt-item--go:active { transform: scale(.98); }
+@media (prefers-reduced-motion: reduce) { .rt-item--go:active { transform: none; } }
+.runtime-actions { display: grid; gap: 8px; justify-items: stretch; }
 .runtime-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .runtime-main b { font-weight: 500; }
 .runtime-main p { margin: 0; }

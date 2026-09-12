@@ -1,8 +1,9 @@
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
+import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
-import { fill, statusPill, emptyState, agentHref } from '../ui.js';
+import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
@@ -18,6 +19,9 @@ const SEGMENTS = [
 ];
 
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
+
+// Aplikace, které Agentree umí přepnout do popředí (server má pevný seznam v src/openers.js).
+const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
 // vůbec neobjevily, takže to vypadalo, že Agentree agenta „nezaregistroval". Teď je vidět, že běží,
@@ -39,10 +43,12 @@ const BEZ_PREPISU = {
 
 function bezPrepisuHtml(sessions) {
   const bezi = (state.runtimes || []).filter((r) => r.running && BEZ_PREPISU[r.id]);
-  if (!bezi.length) return '';
+  const lokalni = state.localAgents || [];
+  if (!bezi.length && !lokalni.length) return '';
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
+  const pocet = bezi.length + lokalni.length;
   return `<section class="card pad runtime-note" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">Běží na Macu, ale bez přepisu</h2><span class="muted small">${bezi.length} ${plural(bezi.length, 'aplikace', 'aplikace', 'aplikací')}</span></div>
+    <div class="sec-head"><h2 id="rt-h">Běží na Macu, ale bez přepisu</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
     <ul class="runtime-list">${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
@@ -54,10 +60,34 @@ function bezPrepisuHtml(sessions) {
           <p class="small">${esc(i.duvod)}</p>
           <p class="small muted">${esc(i.rada)}</p>
         </div>
-        <a class="btn btn--sm" href="${esc(i.odkaz.href)}">${esc(i.odkaz.text)}</a>
+        <div class="runtime-actions">
+          ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}Přepnout do aplikace</button>` : ''}
+          <a class="btn btn--sm" href="${esc(i.odkaz.href)}">${esc(i.odkaz.text)}</a>
+        </div>
       </li>`;
-  }).join('')}</ul>
+  }).join('')}${lokalni.map(lokalniHtml).join('')}</ul>
   </section>`;
+}
+
+// Detekovaný lokální agent — od vlastního modelu z Hugging Face po ComfyUI. U rozpoznaných podle
+// heuristiky říkáme narovinu, že je to odhad z běžícího procesu a že u nich Agentree neumí víc.
+function lokalniHtml(a) {
+  const jistota = a.confidence === 'vysoká';
+  const detaily = [
+    a.model ? `model ${a.model}` : '',
+    a.port ? `port ${a.port}` : '',
+    a.processes > 1 ? `${a.processes} ${plural(a.processes, 'proces', 'procesy', 'procesů')}` : '',
+    typeof a.cpu === 'number' ? `CPU ${String(a.cpu).replace('.', ',')} %` : '',
+  ].filter(Boolean).join(' · ');
+  return `<li>
+    <span class="icon-tile">${glyph({ provider: 'local' })}<i class="status-dot status-working"></i></span>
+    <div class="runtime-main">
+      <div class="custom-agent-head"><b>${esc(a.name)}</b><span class="badge${jistota ? '' : ' badge--beta'}">${jistota ? 'Lokální model' : 'Vlastní / neznámý'}</span></div>
+      ${detaily ? `<span class="muted small">${esc(detaily)}</span>` : ''}
+      ${a.note ? `<p class="small muted">${esc(a.note)}</p>` : ''}
+    </div>
+    ${a.port ? `<a class="btn btn--sm" href="#/nastaveni">Přidat jako agenta</a>` : '<span></span>'}
+  </li>`;
 }
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
 const rank = attentionRank;
@@ -135,6 +165,19 @@ function mount(el, _params, query) {
     update();
   });
   el.addEventListener('click', async (e) => {
+    const focus = e.target.closest('[data-focus-runtime]');
+    if (focus) {
+      focus.disabled = true;
+      try {
+        const r = await api.focusRuntime(focus.dataset.focusRuntime);
+        if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`);
+      } catch (err) {
+        toast(err.message, { tone: 'velvet' });
+      } finally {
+        focus.disabled = false;
+      }
+      return;
+    }
     const st = e.target.closest('[data-status-filter]');
     if (st) { f.status = st.dataset.statusFilter; update(); return; }
     const src = e.target.closest('[data-source-filter]');

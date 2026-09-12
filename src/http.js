@@ -86,6 +86,7 @@ export function createHttpServer(app, existingServer = null) {
     'session:remove': (id) => broadcast('session:remove', { id }),
     transcript: (t) => broadcast('transcript', t),
     runtimes: (l) => broadcast('runtimes', l),
+    localAgents: (l) => broadcast('localAgents', l),
     customAgents: (l) => broadcast('customAgents', l),
     limits: (l) => broadcast('limits', l),
     credits: (l) => broadcast('credits', l),
@@ -259,6 +260,7 @@ export function createHttpServer(app, existingServer = null) {
       unwrap(await app.lan.revoke(m[1]));
       return { lan: app.lan.status() };
     }],
+    ['POST', /^\/api\/runtimes\/([\w-]{1,40})\/focus$/, async (_req, m) => unwrap(await app.focusRuntime(m[1]))],
     ['GET', /^\/api\/custom-agents$/, () => ({ agents: app.customAgentsPayload(), types: app.customAgentTypes() })],
     ['POST', /^\/api\/custom-agents$/, async (req) => {
       const body = await readBody(req);

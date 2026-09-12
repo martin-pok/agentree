@@ -15,6 +15,27 @@ export const APPS = {
 
 export const ALL_APPS = { codex: true, claude: true, cursor: true, vscode: true, cli: { claude: true, codex: true, copilot: true } };
 
+// Přepnutí do okna běžící aplikace jedním klikem — hlavní důvod, proč uživatel Agentree drží
+// otevřený: nemusí mezi desítkami oken hledat, které patří kterému agentovi.
+// Název aplikace se nikdy nebere z požadavku, jen z tohoto pevného seznamu.
+export const RUNTIME_APPS = {
+  'claude-desktop': { app: 'Claude', label: 'Claude' },
+  chatgpt: { app: 'ChatGPT', label: 'ChatGPT' },
+  cursor: { app: 'Cursor', label: 'Cursor' },
+  vscode: { app: 'Visual Studio Code', label: 'VS Code' },
+  'ms-copilot': { app: 'Microsoft Copilot', label: 'Microsoft Copilot' },
+  perplexity: { app: 'Perplexity', label: 'Perplexity' },
+  grok: { app: 'Grok', label: 'Grok' },
+  lmstudio: { app: 'LM Studio', label: 'LM Studio' },
+  ollama: { app: 'Ollama', label: 'Ollama' },
+};
+
+export function planRuntimeFocus(id) {
+  const r = RUNTIME_APPS[id];
+  if (!r) return null;
+  return { kind: 'open', args: ['-a', r.app], label: r.label, title: `Přepnout do ${r.label}` };
+}
+
 export async function detectApps() {
   const apps = Object.fromEntries(Object.entries(APPS).map(([k, a]) => [k, fs.existsSync(a.path)]));
   const r = await run('/bin/zsh', ['-lc', 'for c in claude codex copilot; do command -v "$c" >/dev/null 2>&1 && echo "$c"; done'], { timeout: 5000 });

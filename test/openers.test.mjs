@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openTargets, planOpen, ALL_APPS } from '../src/openers.js';
+import { openTargets, planOpen, ALL_APPS, planRuntimeFocus, RUNTIME_APPS } from '../src/openers.js';
 
 const CODEX_ID = '01a0546a-6679-76d3-9454-ba9f37a24013';
 
@@ -35,4 +35,21 @@ test('nebezpečné ID ani neznámý cíl neprojdou', () => {
   assert.equal(planOpen(evil, 'shell', ALL_APPS), null);
   const cursor = { id: 'cursor:k1', connector: 'cursor', source: 'local', cwd: '/Users/x/app' };
   assert.deepEqual(planOpen(cursor, 'app', ALL_APPS).args, ['-a', 'Cursor', '/Users/x/app']);
+});
+
+test('přepnutí do aplikace: plán vzniká jen z pevného seznamu, nikdy z požadavku', () => {
+  const p = planRuntimeFocus('chatgpt');
+  assert.deepEqual(p, { kind: 'open', args: ['-a', 'ChatGPT'], label: 'ChatGPT', title: 'Přepnout do ChatGPT' });
+  assert.equal(planRuntimeFocus('claude-desktop').args[1], 'Claude');
+  assert.equal(planRuntimeFocus('vscode').args[1], 'Visual Studio Code');
+
+  // Nic, co není v seznamu, plán nedostane — ani šikovně poskládaný vstup.
+  for (const id of ['vymysleny', '../../Applications/Calculator', 'Terminal', '', null, undefined, 'chatgpt; rm -rf /']) {
+    assert.equal(planRuntimeFocus(id), null, `${id} nesmí projít`);
+  }
+  // Každá položka seznamu má název aplikace bez cesty a bez shellových metaznaků.
+  for (const [id, r] of Object.entries(RUNTIME_APPS)) {
+    assert.match(id, /^[\w-]{1,40}$/, id);
+    assert.match(r.app, /^[A-Za-z0-9 ]{1,40}$/, r.app);
+  }
 });

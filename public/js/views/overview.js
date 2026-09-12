@@ -10,6 +10,9 @@ import { createLauncher } from '../launcher-ui.js';
 const CHART_UPDATE_MS = 500;
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
 
+// Aplikace, které server umí přepnout do popředí (pevný seznam v src/openers.js).
+const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
+
 const changed = (topics, ...names) => topics.has('all') || names.some((name) => topics.has(name));
 
 function queueChart(now) {
@@ -95,6 +98,19 @@ function mount(el) {
   });
   v.launcher = createLauncher(el.querySelector('[data-launch]'));
   el.addEventListener('click', async (e) => {
+    const prepnout = e.target.closest('[data-focus-runtime]');
+    if (prepnout) {
+      prepnout.disabled = true;
+      try {
+        const r = await api.focusRuntime(prepnout.dataset.focusRuntime);
+        if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`);
+      } catch (err) {
+        toast(err.message, { tone: 'velvet' });
+      } finally {
+        prepnout.disabled = false;
+      }
+      return;
+    }
     if (e.target.closest('[data-onboard-launch]')) {
       const prompt = el.querySelector('[data-l-prompt]');
       el.querySelector('[data-launch]').scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -254,11 +270,18 @@ function update(topics = new Set(['all'])) {
     const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
     const rts = [...state.runtimes, ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
     fill(el, 'runtimes', rts.length
-    ? rts.map((r) => `<div class="rt-item${r.running ? '' : ' is-off'}" title="${esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží')}">
-        <span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
+    ? rts.map((r) => {
+      // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko — hlavní
+      // úspora času: uživatel nemusí mezi okny hledat, kde mu který agent běží.
+      const prepnout = r.running && PREPNUTELNE.has(r.id);
+      const vnitrek = `<span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
-        <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>
-      </div>`).join('')
+        <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>`;
+      const popis = esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží');
+      return prepnout
+        ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="Přepnout do ${esc(r.name)} — ${popis}">${vnitrek}</button>`
+        : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
+    }).join('')
       : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
   }
 }

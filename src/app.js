@@ -22,7 +22,8 @@ import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
 import { createProcessesConnector } from './connectors/processes.js';
-import { detectApps, openTargets, planOpen, executeOpen, ALL_APPS } from './openers.js';
+import { createLocalAgentsConnector } from './connectors/local-agents.js';
+import { detectApps, openTargets, planOpen, executeOpen, planRuntimeFocus, RUNTIME_APPS, ALL_APPS } from './openers.js';
 import { migrateLegacyData } from './migrate.js';
 import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
@@ -155,7 +156,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
   ];
-  if (config.processes) list.push(createProcessesConnector(ctx));
+  if (config.processes) {
+    list.push(createProcessesConnector(ctx));
+    // Detektor všeho ostatního, co na Macu běží jako AI agent — včetně vlastních a neznámých modelů.
+    list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
+  }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
   // Počet u konektorů se sessions = sessions viditelné v okně sledování (ne počet souborů na disku).
@@ -752,6 +757,18 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { agents: emitCustomAgents() };
   }
 
+  // Přepnutí do okna běžící aplikace. Plán se skládá jen z pevného seznamu (openers.js),
+  // z požadavku přichází výhradně id běhového prostředí.
+  async function focusRuntime(id) {
+    const plan = planRuntimeFocus(id);
+    if (!plan) return { status: 404, error: 'Tuhle aplikaci Agentree neumí přepnout do popředí.' };
+    const bezi = store.runtimes.find((r) => r.id === id && r.running);
+    if (!bezi) return { status: 409, error: `${plan.label} teď neběží.` };
+    const r = await executeOpen(plan, { dry });
+    if (!r.ok) return { status: 502, error: r.error };
+    return { ok: true, label: plan.label, ...(r.dry ? { dry: true } : {}) };
+  }
+
   /* ---------- Přístup z telefonu ---------- */
   // Zapnutí přidá druhý listener na místní síť; vypnutí ho zavře a odpáruje všechna zařízení,
   // aby po vypnutí nezůstal nikde platný token. Požadavek na zapnutí smí přijít jen z tohoto Macu
@@ -822,6 +839,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       license: licenseStatus(),
       usage: datastore.data.usage,
       customAgents: customAgentsPayload(),
+      localAgents: store.localAgents,
       lan: local ? lan.status() : { ...lan.status(), pin: null, devices: [] },
     };
   }
@@ -878,7 +896,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, bindLan,
+    lan, setLanAccess, bindLan, focusRuntime,
+    runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };
 }

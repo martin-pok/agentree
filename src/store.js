@@ -19,6 +19,8 @@ export class Store extends EventEmitter {
     this.limits = new Map();
     // Všechny odečty zůstatku kreditů (jen v paměti, do dat na disku se neukládají).
     this.creditRaw = new Map();
+    this.localAgents = [];
+    this.localAgentsJson = '[]';
     this.runtimes = [];
     this.runtimesJson = '';
     this.ready = false;
@@ -131,6 +133,16 @@ export class Store extends EventEmitter {
       ...rec,
       topUps: detectTopUps(this.creditRaw.get(rec.id) || rec.history || []),
     }));
+  }
+
+  // Detekovaní lokální agenti (i vlastní a neznámé modely). Drží se jen v paměti — je to obraz
+  // aktuálně běžících procesů, po restartu se stejně zjistí znovu.
+  setLocalAgents(list) {
+    const json = JSON.stringify(list);
+    if (json === this.localAgentsJson) return;
+    this.localAgentsJson = json;
+    this.localAgents = list;
+    if (this.ready) this.emit('localAgents', list);
   }
 
   setRuntimes(list) {
