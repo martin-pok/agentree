@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSecrets } from '../src/secrets.js';
 import { createCloudBillingConnector } from '../src/connectors/cloud-billing.js';
-import { startTestServer, api } from './helpers.mjs';
+import { startTestServer, api, tempDir } from './helpers.mjs';
 import { DataStore } from '../src/datastore.js';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 test('security: foreign origins cannot read state, transcripts or SSE; same-origin works', async () => {
   const s = await startTestServer();
@@ -74,4 +75,31 @@ test('reliability: corrupt persistent data are never replaced with an empty data
     await assert.rejects(new DataStore(dir).load(), /Původní soubor zůstal/);
     assert.equal(await fs.readFile(file, 'utf8'), input);
   }
+});
+
+test('soukromí: historie upozornění jde smazat a datová složka patří jen vlastníkovi', async (t) => {
+  const dataHome = await tempDir('agentree-data-');
+  const s = await startTestServer({ AGENTREE_HOME: dataHome });
+  t.after(() => s.close());
+
+  const bezHlavicky = await fetch(`${s.url}/api/alerts/clear`, { method: 'POST' });
+  assert.equal(bezHlavicky.status, 403, 'mazání je změna, bez hlavičky X-Agentree neprojde');
+
+  s.app.alerts.raise({ level: 'info', kind: 'done', title: 'Tajný název projektu', body: 'text z konverzace', key: 'k1' });
+  assert.equal(s.app.datastore.data.alerts.length, 1);
+
+  const r = await api(s.url).send('POST', '/api/alerts/clear', {});
+  assert.equal(r.status, 200);
+  assert.equal(r.body.cleared, 1);
+  assert.deepEqual(s.app.datastore.data.alerts, [], 'texty upozornění zmizely z paměti');
+  assert.deepEqual(s.app.datastore.data.alertKeys, {}, 'klíče proti opakování zmizely také');
+
+  await s.app.datastore.flush();
+  const ulozeno = JSON.parse(await fs.readFile(path.join(dataHome, 'data.json'), 'utf8'));
+  assert.equal(ulozeno.alerts.length, 0, 'ani na disku po nich nic nezůstalo');
+
+  const dir = await fs.stat(dataHome);
+  assert.equal(dir.mode & 0o077, 0, `do datové složky nesmí vidět nikdo jiný (má ${(dir.mode & 0o777).toString(8)})`);
+  const soubor = await fs.stat(path.join(dataHome, 'data.json'));
+  assert.equal(soubor.mode & 0o077, 0, 'datový soubor je jen pro vlastníka');
 });

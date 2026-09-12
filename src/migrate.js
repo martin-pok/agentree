@@ -16,7 +16,7 @@ export async function migrateLegacyData({ dataDir, legacyDir }) {
   } catch {
     return { migrated: false, reason: 'no-legacy' };
   }
-  await fs.mkdir(dataDir, { recursive: true });
+  await fs.mkdir(dataDir, { recursive: true, mode: 0o700 });
   try {
     await fs.copyFile(source, target, fs.constants.COPYFILE_EXCL);
   } catch (err) {

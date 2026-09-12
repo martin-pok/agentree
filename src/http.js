@@ -197,6 +197,7 @@ export function createHttpServer(app, existingServer = null) {
       if (url.searchParams.get('download') === '1') headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}`;
       return { raw: true, headers, body: skill.text };
     }],
+    ['POST', /^\/api\/alerts\/clear$/, () => ({ cleared: alerts.clear(), unread: alerts.unread(), items: [] })],
     ['GET', /^\/api\/custom-agents$/, () => ({ agents: app.customAgentsPayload(), types: app.customAgentTypes() })],
     ['POST', /^\/api\/custom-agents$/, async (req) => {
       const body = await readBody(req);

@@ -177,4 +177,15 @@ export class AlertEngine {
   unread() {
     return this.datastore.data.alerts.filter((a) => !a.read).length;
   }
+
+  // Smaže uloženou historii upozornění včetně klíčů proti opakování. Texty upozornění jsou jediná
+  // trvale ukládaná data odvozená z obsahu konverzací — uživatel se jich takhle zbaví jedním klikem.
+  clear() {
+    const count = this.datastore.data.alerts.length;
+    this.datastore.data.alerts = [];
+    this.datastore.data.alertKeys = {};
+    this.datastore.save();
+    this.store.emit('alerts:read', 'all');
+    return count;
+  }
 }

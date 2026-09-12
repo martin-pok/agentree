@@ -41,7 +41,7 @@ const GROUPS = [
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
-  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share']],
+  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -71,6 +71,26 @@ function customAgentsCard() {
       <button class="btn btn--sm btn--primary" type="submit">Přidat agenta</button>
     </form>
     <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agentree odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`;
+}
+
+// Soukromí: karta říká jen ověřitelná fakta — co je v paměti, co na disku a co odchází ven.
+function privacyCard() {
+  const alertCount = state.alerts?.items?.length || 0;
+  const dataFile = `${state.integrations?.install?.dataDir || '~/.agentree'}/data.json`;
+  const keysOn = (state.connectors || []).filter((c) => c.id === 'cloud-billing' && c.state !== 'missing').length > 0;
+  return `
+    ${head(ICON.key, 'Soukromí a bezpečnost', 'Agentree běží jen na tomto Macu. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.')}
+    <ul class="privacy-list">
+      <li><b>Konverzace agentů</b><span>Čtou se ze souborů na disku (${esc(`~/.claude`)}, ${esc(`~/.codex`)} a dalších) a drží se jen v paměti běžícího serveru. Agentree si z nich nedělá vlastní kopii.</span></li>
+      <li><b>Na disku v ~/.agentree/data.json</b><span>Nastavení, projekty, rozpočty a historie upozornění — soubor má práva jen pro tebe (0600) a složka 0700.</span></li>
+      <li><b>Klíče k API</b><span>${keysOn ? 'Uložené v systémové Klíčence, nikdy v souboru aplikace.' : 'Zatím žádné. Když je přidáš, uloží se do systémové Klíčenky, ne do souboru.'}</span></li>
+      <li><b>Ven z Macu</b><span>Jen když si sám zapneš náklady za API — pak se Agentree zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.</span></li>
+    </ul>
+    <div class="set-actions">
+      <button class="btn btn--sm" type="button" data-action="clear-alerts"${alertCount ? '' : ' disabled'}>Smazat historii upozornění${alertCount ? ` (${alertCount})` : ''}</button>
+    </div>
+    <div class="code-line"><code>${esc(dataFile)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(dataFile)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat cestu</button></div>
+    <p class="set-note">Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací. Smazáním zmizí i klíče, podle kterých Agentree pozná, že už upozornil.</p>`;
 }
 
 function mount(el) {
@@ -224,6 +244,13 @@ function mount(el) {
       } else if (a.dataset.action === 'reveal-install-package') {
         const r = await api.revealInstallPackage();
         toast(r.dry ? 'Zkušební režim: Finder se neotevřel' : 'Balíček je vidět ve Finderu');
+      } else if (a.dataset.action === 'clear-alerts') {
+        if (await confirmDialog({ title: 'Smazat historii upozornění', message: 'Všechna uložená upozornění zmizí z tohoto Macu. Práci agentů to nijak neovlivní.', confirmLabel: 'Smazat', danger: true })) {
+          const r = await api.clearAlerts();
+          state.alerts = { unread: r.unread, items: [] };
+          toast(r.cleared ? `Smazáno ${r.cleared} upozornění` : 'Nebylo co mazat');
+          update();
+        }
       } else if (a.dataset.action === 'custom-remove') {
         const agent = (state.customAgents || []).find((x) => x.id === a.dataset.id);
         if (await confirmDialog({ title: 'Odebrat agenta', message: `${agent?.name || 'Agent'} zmizí ze seznamu a Agentree se ho přestane ptát na stav.`, confirmLabel: 'Odebrat', danger: true })) {
@@ -431,6 +458,9 @@ function update() {
       </article>`).join('')}</div>
     <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
     <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now())).join('')}</div>`);
+
+  /* Soukromí */
+  fill(el, 'privacy', privacyCard());
 
   /* Vlastní agenti */
   fill(el, 'custom', customAgentsCard());

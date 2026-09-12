@@ -32,6 +32,7 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  clearAlerts: () => request('POST', '/api/alerts/clear', {}),
   customAgents: () => request('GET', '/api/custom-agents'),
   addCustomAgent: (body) => request('POST', '/api/custom-agents', body),
   removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),

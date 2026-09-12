@@ -71,6 +71,7 @@ export function normalizeData(raw) {
 // Trvalá data aplikace (~/.agentree/data.json): nastavení, rozpočty, výdaje, upozornění.
 export class DataStore {
   constructor(dir) {
+    this.dir = dir;
     this.file = path.join(dir, 'data.json');
     this.data = null;
     this.writing = Promise.resolve();
@@ -87,6 +88,9 @@ export class DataStore {
     }
     this.data = normalizeData(raw);
     await this.flush();
+    // Vlastní datová složka patří jen přihlášenému uživateli — na sdíleném Macu se tak k ní
+    // nedostane nikdo další. Cizí složky (AGENTREE_HOME mimo domov) se tím nemění na nic horšího.
+    await fs.chmod(this.dir, 0o700).catch(() => {});
     return this.data;
   }
 
