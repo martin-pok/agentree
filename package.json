@@ -27,7 +27,10 @@
     "check": "node --check bin/agentree.mjs && node scripts/check-syntax.mjs",
     "pack": "mkdir -p dist && npm pack --pack-destination dist",
     "smoke": "node scripts/smoke-package.mjs",
-    "license": "node scripts/license.mjs"
+    "license": "node scripts/license.mjs",
+    "qa:desktop": "node scripts/qa-desktop.mjs",
+    "qa:keychain": "node scripts/qa-keychain.mjs",
+    "fonts:vendor": "node scripts/vendor-fonts.mjs"
   },
   "license": "UNLICENSED"
 }

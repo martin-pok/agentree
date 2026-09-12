@@ -64,19 +64,6 @@ export const api = {
   projectGit: (id) => request('GET', `/api/projects/${encodeURIComponent(id)}/git`),
   team: (id, body) => request('POST', `/api/projects/${encodeURIComponent(id)}/team`, body),
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
-  removeMedia: (id, kind) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/media/${kind}`),
-  async uploadMedia(id, kind, blob) {
-    let res;
-    try {
-      res = await fetch(`/api/projects/${encodeURIComponent(id)}/media/${kind}`, { method: 'PUT', headers: { 'X-Agentree': '1', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
-    } catch {
-      throw Object.assign(new Error('Agentree server neodpovídá.'), { status: 0 });
-    }
-    let json = null;
-    try { json = await res.json(); } catch { /* prázdná odpověď */ }
-    if (!res.ok) throw Object.assign(new Error(json?.error || `Chyba ${res.status}`), { status: res.status });
-    return json;
-  },
 };
 
 const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];

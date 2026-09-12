@@ -1,6 +1,6 @@
 import { state, projectById, launchIntent } from './state.js';
 import { api } from './api.js';
-import { esc, rel, shortPath, plural, durShort, clock } from './format.js';
+import { esc, rel, shortPath, durShort, clock } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
@@ -369,7 +369,3 @@ export function createLauncher(root) {
   };
 }
 
-export const runsSummary = (runs) => {
-  const n = runs.filter((r) => r.status === 'running').length;
-  return n ? `${n} ${plural(n, 'agent běží', 'agenti běží', 'agentů běží')} na pozadí` : '';
-};

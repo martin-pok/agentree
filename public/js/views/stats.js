@@ -141,7 +141,7 @@ function update() {
     .filter((c) => c.history?.length >= 2)
     .map((c) => {
       const h = c.history.slice(-60);
-      const markers = c.topUps || h.filter((p, i) => i && p.balance > h[i - 1].balance);
+      const markers = c.topUps || []; // rozpoznává server, viz src/credits.js
       return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${markers.length ? ` · ${markers.length}× dokoupeno` : ''}</span></div>
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });

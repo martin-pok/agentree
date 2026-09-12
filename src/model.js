@@ -1,8 +1,6 @@
 import { hourKey, minuteKey, spansFromMinutes, clip, lastSegment, MIN, HOUR, DAY } from './util.js';
 
 export const TRANSCRIPT_MAX = 400;
-export const STATUSES = ['needs_input', 'limited', 'failed', 'working', 'waiting', 'idle', 'archived'];
-
 // Jednotný model session pro všechny konektory. Konektor plní pole, stav se odvozuje centrálně.
 export function createSession({ connector, localId, provider, app, source = 'local' }) {
   return {

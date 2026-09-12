@@ -66,8 +66,6 @@ export function glyph(x, { onDark = false } = {}) {
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
 }
 
-export const logoLabel = (x) => LOGOS[logoKey(x)]?.label || '';
-
 const svg = (d) => `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true" focusable="false">${d}</svg>`;
 
 export const ICON = {
