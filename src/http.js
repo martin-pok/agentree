@@ -221,6 +221,10 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/alerts\/clear$/, () => ({ cleared: alerts.clear(), unread: alerts.unread(), items: [] })],
 
     /* ---------- Přístup z telefonu ---------- */
+    ['POST', /^\/api\/remote\/detect$/, async (req) => {
+      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
+      return { tunnels: await app.refreshTunnels() };
+    }],
     ['GET', /^\/api\/lan$/, (req) => {
       // Kód se ukazuje jen na tomto Macu; z telefonu by jinak stačil jeden dotaz k spárování dalších.
       const s = app.lan.status();

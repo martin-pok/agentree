@@ -1,5 +1,6 @@
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
+import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
@@ -166,10 +167,10 @@ function refresh(topics) {
   if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
   if (!state.loaded) {
-    if (!viewEl.querySelector(':scope > .loading')) viewEl.insertAdjacentHTML('afterbegin', '<div class="loading" role="status"><span class="loader"></span>Načítám agenty z tohoto Macu…</div>');
+    if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml('Načítám agenty z tohoto Macu…'));
     return;
   }
-  viewEl.querySelector(':scope > .loading')?.remove();
+  viewEl.querySelector(':scope > .loader-wrap')?.remove();
   try {
     current?.update(topics);
   } catch (err) {

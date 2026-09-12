@@ -29,6 +29,7 @@ import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
 import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
+import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
@@ -769,6 +770,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true } : {}) };
   }
 
+  // Vzdálený přístup mimo domácí síť: Agentree nic neotvírá sám, jen zjistí, jestli má uživatel
+  // nainstalovaný tunel (Tailscale / Cloudflare / ngrok) a poradí, co s tím. Zjišťuje se na
+  // vyžádání a po startu, ne v každém cyklu — jsou to volání externích binárek.
+  let tunely = { at: 0, list: [], advice: null };
+  async function refreshTunnels() {
+    const list = await detectTunnels();
+    const port = lanPort();
+    tunely = {
+      at: Date.now(),
+      list: list.map((t) => ({ ...t, remoteUrl: t.running ? remoteUrl(t, port) : '' })),
+      advice: remoteAdvice(list),
+    };
+    return tunely;
+  }
+  const tunnelsPayload = () => tunely;
+
   /* ---------- Přístup z telefonu ---------- */
   // Zapnutí přidá druhý listener na místní síť; vypnutí ho zavře a odpáruje všechna zařízení,
   // aby po vypnutí nezůstal nikde platný token. Požadavek na zapnutí smí přijít jen z tohoto Macu
@@ -841,6 +858,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       customAgents: customAgentsPayload(),
       localAgents: store.localAgents,
       lan: local ? lan.status() : { ...lan.status(), pin: null, devices: [] },
+      tunnels: local ? tunnelsPayload() : { at: 0, list: [], advice: null },
     };
   }
 
@@ -896,7 +914,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, bindLan, focusRuntime,
+    lan, setLanAccess, bindLan, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

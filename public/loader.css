@@ -27,11 +27,11 @@
 
 .loader-mark {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   flex: none;
   transform-origin: 50% 50%;
-  animation: lm-breathe 2s ease-in-out infinite;
+  animation: lm-breathe 2.2s ease-in-out infinite;
 }
 
 .loader-halo {
@@ -42,7 +42,7 @@
   opacity: 0;
   transform: scale(.85);
   transform-origin: 50% 50%;
-  animation: lm-halo 2s ease-in-out infinite;
+  animation: lm-halo 2.2s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -60,7 +60,7 @@
 .lm-branches {
   stroke: currentColor;
   stroke-dasharray: 100 100;
-  animation: lm-branches 2s ease-in-out infinite;
+  animation: lm-branches 2.2s ease-in-out infinite;
 }
 
 .lm-node {
@@ -68,9 +68,9 @@
   opacity: 0;
 }
 
-.lm-node-a { animation: lm-node-a 2s ease-in-out infinite; }
-.lm-node-b { animation: lm-node-b 2s ease-in-out infinite; }
-.lm-node-c { animation: lm-node-c 2s ease-in-out infinite; }
+.lm-node-a { animation: lm-node-a 2.2s ease-in-out infinite; }
+.lm-node-b { animation: lm-node-b 2.2s ease-in-out infinite; }
+.lm-node-c { animation: lm-node-c 2.2s ease-in-out infinite; }
 
 .loader-text {
   color: var(--mute);
@@ -82,41 +82,43 @@
    reset dashoffsetu proběhne, zatímco je neviditelná — beze střihu. */
 @keyframes lm-branches {
   0%   { stroke-dashoffset: 100; opacity: 1; }
-  56%  { stroke-dashoffset: 0;   opacity: 1; }
-  74%  { stroke-dashoffset: 0;   opacity: 1; }
-  90%  { stroke-dashoffset: 100; opacity: 0; }
+  38%  { stroke-dashoffset: 0;   opacity: 1; }  /* dokresleno — odsud je značka čitelná */
+  76%  { stroke-dashoffset: 0;   opacity: 1; }  /* … a takhle vydrží většinu smyčky */
+  88%  { stroke-dashoffset: 0;   opacity: 0; }  /* rozplyne se celá, ne po částech */
+  89%  { stroke-dashoffset: 100; opacity: 0; }  /* skok zpět se schová do neviditelnosti */
   100% { stroke-dashoffset: 100; opacity: 1; }
 }
 
 @keyframes lm-node-b {
-  0%, 14% { opacity: 0; }
-  22%     { opacity: 1; }
-  74%     { opacity: 1; }
-  84%     { opacity: 0; }
+  0%, 10% { opacity: 0; }
+  18%     { opacity: 1; }
+  76%     { opacity: 1; }
+  86%     { opacity: 0; }
   100%    { opacity: 0; }
 }
 
 @keyframes lm-node-a {
-  0%, 32% { opacity: 0; }
-  42%     { opacity: 1; }
-  74%     { opacity: 1; }
-  84%     { opacity: 0; }
+  0%, 20% { opacity: 0; }
+  28%     { opacity: 1; }
+  76%     { opacity: 1; }
+  86%     { opacity: 0; }
   100%    { opacity: 0; }
 }
 
 @keyframes lm-node-c {
-  0%, 50% { opacity: 0; }
-  60%     { opacity: 1; }
-  74%     { opacity: 1; }
-  84%     { opacity: 0; }
+  0%, 30% { opacity: 0; }
+  38%     { opacity: 1; }
+  76%     { opacity: 1; }
+  86%     { opacity: 0; }
   100%    { opacity: 0; }
 }
 
 @keyframes lm-halo {
-  0%, 50% { opacity: 0;   transform: scale(.85); }
-  60%     { opacity: .55; transform: scale(1); }
-  90%     { opacity: 0;   transform: scale(1.12); }
-  100%    { opacity: 0;   transform: scale(.85); }
+  0%, 34% { opacity: 0;   transform: scale(.86); }
+  46%     { opacity: .5;  transform: scale(1); }   /* rozsvítí se, až je značka celá */
+  76%     { opacity: .16; transform: scale(1.06); }
+  88%     { opacity: 0;   transform: scale(1.12); }
+  100%    { opacity: 0;   transform: scale(.86); }
 }
 
 @keyframes lm-breathe {

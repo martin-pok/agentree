@@ -35,6 +35,7 @@ export const api = {
   clearAlerts: () => request('POST', '/api/alerts/clear', {}),
   setLanAccess: (on) => request('POST', `/api/lan/${on ? 'enable' : 'disable'}`, {}),
   lanPin: () => request('POST', '/api/lan/pin', {}),
+  detectRemote: () => request('POST', '/api/remote/detect', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),
   pairDevice: (pin, label) => request('POST', '/api/lan/pair', { pin, label }),
   focusRuntime: (id) => request('POST', `/api/runtimes/${encodeURIComponent(id)}/focus`, {}),
