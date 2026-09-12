@@ -32,6 +32,9 @@ export const api = {
   setSecret: (id, value) => request('PUT', `/api/secrets/${encodeURIComponent(id)}`, { value }),
   removeSecret: (id) => request('DELETE', `/api/secrets/${encodeURIComponent(id)}`),
   rescan: () => request('POST', '/api/connectors/rescan', {}),
+  customAgents: () => request('GET', '/api/custom-agents'),
+  addCustomAgent: (body) => request('POST', '/api/custom-agents', body),
+  removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),
   planUsage: (days = 30) => request('GET', `/api/usage/claude?days=${days}`),
   skills: () => request('GET', '/api/skills'),
   // Obsah dovednosti je čistý markdown, ne JSON — proto mimo `request()`.
@@ -75,7 +78,7 @@ export const api = {
   },
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

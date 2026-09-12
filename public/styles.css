@@ -658,6 +658,14 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .dl-pct { font: 400 12px/1 var(--f-mono); color: var(--mute); }
 .donut-legend b { font: 400 12px/1 var(--f-mono); }
 .credit-chart { margin-top: 24px; }
+.custom-agents { display: grid; gap: 8px; margin-bottom: 16px; }
+.custom-agent { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px; border-radius: var(--r-md); background: var(--surface-2); }
+.custom-agent-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.custom-agent-head h4 { font-size: 15px; }
+.custom-agent-main { display: grid; gap: 4px; min-width: 0; }
+.custom-agent-main code { justify-self: start; }
+.custom-agent-form { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: end; }
+.custom-agent-form button { align-self: end; height: 40px; }
 .usage-history { margin-top: 32px; padding-top: 24px; box-shadow: 0 -1px 0 var(--line-2); }
 .usage-chart { margin-top: 24px; }
 .usage-history > .sec-head + .usage-chart { margin-top: 16px; }

@@ -58,6 +58,13 @@ export function normalizeData(raw) {
     alerts: Array.isArray(d.alerts) ? d.alerts.slice(-ALERTS_MAX) : [],
     alertKeys: d.alertKeys && typeof d.alertKeys === 'object' ? d.alertKeys : {},
     credits: d.credits && typeof d.credits === 'object' ? d.credits : {},
+    // Vlastní agenti: jen tvarová kontrola, skutečné ověření adresy dělá src/custom-agents.js při zápisu.
+    customAgents: Array.isArray(d.customAgents)
+      ? d.customAgents
+        .filter((x) => x && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.type === 'string' && typeof x.origin === 'string')
+        .slice(0, 8)
+        .map((x) => ({ id: x.id, name: x.name, type: x.type, origin: x.origin, addedAt: Number(x.addedAt) || Date.now() }))
+      : [],
   };
 }
 

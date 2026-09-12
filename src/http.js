@@ -66,6 +66,7 @@ export function createHttpServer(app, existingServer = null) {
     'session:remove': (id) => broadcast('session:remove', { id }),
     transcript: (t) => broadcast('transcript', t),
     runtimes: (l) => broadcast('runtimes', l),
+    customAgents: (l) => broadcast('customAgents', l),
     limits: (l) => broadcast('limits', l),
     credits: (l) => broadcast('credits', l),
     alert: (a) => broadcast('alert', { alert: a, unread: alerts.unread() }),
@@ -196,6 +197,12 @@ export function createHttpServer(app, existingServer = null) {
       if (url.searchParams.get('download') === '1') headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}`;
       return { raw: true, headers, body: skill.text };
     }],
+    ['GET', /^\/api\/custom-agents$/, () => ({ agents: app.customAgentsPayload(), types: app.customAgentTypes() })],
+    ['POST', /^\/api\/custom-agents$/, async (req) => {
+      const body = await readBody(req);
+      return unwrap(await app.addCustomAgent({ name: body?.name, type: body?.type, url: body?.url }));
+    }],
+    ['DELETE', /^\/api\/custom-agents\/([\w-]{1,32})$/, async (_req, m) => unwrap(await app.removeCustomAgent(m[1]))],
     ['GET', /^\/api\/usage\/claude$/, async (_req, _m, url) => {
       const days = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 30));
       const series = await app.planUsageHistory({ days });

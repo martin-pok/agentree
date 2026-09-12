@@ -250,12 +250,14 @@ function update(topics = new Set(['all'])) {
   }
 
   if (changed(topics, 'runtimes')) {
-    const rts = [...state.runtimes].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
+    // Vlastní agenti patří mezi běžící aplikace — jinak by na Přehledu chyběli.
+    const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
+    const rts = [...state.runtimes, ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
     fill(el, 'runtimes', rts.length
     ? rts.map((r) => `<div class="rt-item${r.running ? '' : ' is-off'}" title="${esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží')}">
         <span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
-        <span class="rt-meta">${r.running ? `CPU ${String(r.cpu).replace('.', ',')} %` : 'neběží'}</span>
+        <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>
       </div>`).join('')
       : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
   }

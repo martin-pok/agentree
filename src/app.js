@@ -27,6 +27,7 @@ import { migrateLegacyData } from './migrate.js';
 import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
 import { createLocalChat } from './local-chat.js';
+import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
@@ -682,6 +683,69 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
   }
 
+  /* ---------- Vlastní agenti (ComfyUI, Ollama, OpenAI-kompatibilní servery) ---------- */
+  // Agentree od nich jen čte stav. Adresa smí mířit výhradně na tenhle počítač nebo do místní sítě
+  // (kontroluje `validateEndpoint` v custom-agents.js), dotaz je vždy GET bez přesměrování, s časovým
+  // limitem a stropem na velikost odpovědi. Žádné přihlašovací údaje se neukládají.
+  const customStatus = new Map();
+  let customJson = '';
+
+  function customAgentsPayload() {
+    return datastore.data.customAgents.map((a) => {
+      const st = customStatus.get(a.id) || {};
+      return {
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        typeLabel: AGENT_TYPES[a.type]?.label || a.type,
+        origin: a.origin,
+        addedAt: a.addedAt,
+        running: Boolean(st.running),
+        ok: Boolean(st.ok),
+        detail: st.detail || '',
+        at: st.at || 0,
+      };
+    });
+  }
+
+  function emitCustomAgents() {
+    const payload = customAgentsPayload();
+    const json = JSON.stringify(payload);
+    if (json === customJson) return payload;
+    customJson = json;
+    if (store.ready) store.emit('customAgents', payload);
+    return payload;
+  }
+
+  async function probeCustomAgents() {
+    const list = datastore.data.customAgents;
+    for (const a of list) customStatus.set(a.id, await probeAgent(a));
+    for (const id of [...customStatus.keys()]) if (!list.some((a) => a.id === id)) customStatus.delete(id);
+    emitCustomAgents();
+  }
+
+  async function addCustomAgent(input) {
+    const list = datastore.data.customAgents;
+    if (list.length >= MAX_AGENTS) return { status: 422, error: `Víc než ${MAX_AGENTS} vlastních agentů Agentree nesleduje.` };
+    const r = normalizeAgent({ ...input, origin: input?.url ?? input?.origin });
+    if (!r.ok) return { status: 400, error: r.error, field: 'url' };
+    if (list.some((a) => a.origin === r.agent.origin && a.type === r.agent.type)) return { status: 409, error: 'Tenhle agent už je v seznamu.', field: 'url' };
+    list.push(r.agent);
+    await datastore.flush();
+    customStatus.set(r.agent.id, await probeAgent(r.agent));
+    return { agents: emitCustomAgents() };
+  }
+
+  async function removeCustomAgent(id) {
+    const list = datastore.data.customAgents;
+    const i = list.findIndex((a) => a.id === id);
+    if (i === -1) return { status: 404, error: 'Takový agent v seznamu není.' };
+    list.splice(i, 1);
+    customStatus.delete(id);
+    await datastore.flush();
+    return { agents: emitCustomAgents() };
+  }
+
   // A browser extension must prove a short-lived code deliberately shown in the
   // local dashboard. Its long-lived ingest token is never part of /api/state.
   async function createExtensionPairCode() {
@@ -723,6 +787,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       runs: runsPayload(),
       license: licenseStatus(),
       usage: datastore.data.usage,
+      customAgents: customAgentsPayload(),
     };
   }
 
@@ -746,6 +811,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
     const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
     every(() => store.reevaluate(), 5000);
+    if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
+    every(() => (datastore.data.customAgents.length ? probeCustomAgents() : null), 30000);
     every(() => alerts.checkLimitResets(), 20000);
     every(() => checkProjectBudgets(), 60000);
     every(async () => {
@@ -776,5 +843,6 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
+    customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };
 }

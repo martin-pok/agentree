@@ -6,7 +6,7 @@ import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 
-const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null };
+const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -37,15 +37,45 @@ function webSourceCard(id, site, web, now) {
 
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
 const GROUPS = [
-  ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors']],
+  ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors', 'custom']],
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
   ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share']],
 ];
 
+// Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
+// že míří na tenhle Mac nebo do místní sítě — do karty se proto nic neověřuje „pro jistotu" znovu,
+// jen se poctivě zobrazí, co server vrátil.
+function customAgentsCard() {
+  const list = state.customAgents || [];
+  const types = v.customTypes || [];
+  const draft = v.customDraft || {}; // co uživatel napsal, přežije překreslení i chybu
+  const rows = list.map((a) => `<article class="custom-agent">
+    <div class="custom-agent-main">
+      <div class="custom-agent-head"><span class="rt-disc">${glyph({ provider: 'local' })}${a.running ? '<i class="rt-status"></i>' : ''}</span>
+        <h4>${esc(a.name)}</h4><span class="badge">${esc(a.typeLabel)}</span></div>
+      <p class="muted small">${esc(a.detail || (a.at ? 'Neodpovídá.' : 'Zatím nezjištěno.'))}${a.at ? ` · zjištěno <span data-ago="${a.at}">${rel(a.at)}</span>` : ''}</p>
+      <code class="skill-path">${esc(a.origin)}</code>
+    </div>
+    <button class="btn btn--sm" type="button" data-action="custom-remove" data-id="${esc(a.id)}">Odebrat</button>
+  </article>`).join('');
+
+  return `
+    ${head(ICON.plug, 'Vlastní agenti', 'Lokální služby, které nemají vlastní konektor — ComfyUI, Ollama nebo server s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agentree se jich jen ptá na stav.')}
+    ${rows ? `<div class="custom-agents">${rows}</div>` : '<p class="set-note">Zatím žádný vlastní agent.</p>'}
+    <form class="custom-agent-form" data-custom-form novalidate>
+      <label class="field"><span>Název</span><input name="name" type="text" maxlength="40" autocomplete="off" placeholder="Třeba ComfyUI na Macu" value="${esc(draft.name || '')}"></label>
+      <label class="field"><span>Typ</span><select name="type">${types.map((t) => `<option value="${esc(t.id)}"${draft.type === t.id ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>
+      <label class="field"><span>Adresa</span><input name="url" type="text" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8188" value="${esc(draft.url || '')}"${v.customError ? ' aria-invalid="true"' : ''}>${v.customError ? `<span class="field-error" role="alert">${esc(v.customError)}</span>` : ''}</label>
+      <button class="btn btn--sm btn--primary" type="submit">Přidat agenta</button>
+    </form>
+    <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agentree odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`;
+}
+
 function mount(el) {
   v.el = el;
+  if (!v.customTypes) api.customAgents().then((r) => { v.customTypes = r.types; state.customAgents = r.agents; update(); }).catch(() => { v.customTypes = []; });
   el.innerHTML = `
     <div class="settings2">
       <nav class="set-nav" aria-label="Sekce nastavení">
@@ -194,6 +224,13 @@ function mount(el) {
       } else if (a.dataset.action === 'reveal-install-package') {
         const r = await api.revealInstallPackage();
         toast(r.dry ? 'Zkušební režim: Finder se neotevřel' : 'Balíček je vidět ve Finderu');
+      } else if (a.dataset.action === 'custom-remove') {
+        const agent = (state.customAgents || []).find((x) => x.id === a.dataset.id);
+        if (await confirmDialog({ title: 'Odebrat agenta', message: `${agent?.name || 'Agent'} zmizí ze seznamu a Agentree se ho přestane ptát na stav.`, confirmLabel: 'Odebrat', danger: true })) {
+          state.customAgents = (await api.removeCustomAgent(a.dataset.id)).agents;
+          toast('Agent odebraný');
+          update();
+        }
       } else if (a.dataset.action === 'secret-remove') {
         if (await confirmDialog({ title: 'Odebrat klíč', message: 'Klíč se smaže z Klíčenky a načítání nákladů se zastaví.', confirmLabel: 'Odebrat klíč', danger: true })) {
           state.integrations = (await api.removeSecret(a.dataset.id)).integrations;
@@ -233,6 +270,29 @@ function mount(el) {
       } catch (err) {
         input.setAttribute('aria-invalid', 'true');
         input.insertAdjacentHTML('afterend', `<span class="field-error" role="alert">${esc(err.message)}</span>`);
+        btn.disabled = false;
+      }
+      return;
+    }
+    const custom = e.target.closest('[data-custom-form]');
+    if (custom) {
+      e.preventDefault();
+      const btn = custom.querySelector('button[type="submit"]');
+      const values = { name: custom.elements.name.value, type: custom.elements.type.value, url: custom.elements.url.value };
+      btn.disabled = true;
+      v.customError = '';
+      v.customDraft = values;
+      try {
+        state.customAgents = (await api.addCustomAgent(values)).agents;
+        v.customDraft = null;
+        toast('Agent přidaný. Stav se obnovuje každou půlminutu.');
+        update();
+      } catch (err) {
+        // Hláška patří do stavu pohledu — karta se překresluje i sama, když dorazí nový stav agentů.
+        v.customError = err.message;
+        update();
+        v.el?.querySelector('[data-custom-form] input[name="url"]')?.focus();
+      } finally {
         btn.disabled = false;
       }
       return;
@@ -371,6 +431,9 @@ function update() {
       </article>`).join('')}</div>
     <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
     <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now())).join('')}</div>`);
+
+  /* Vlastní agenti */
+  fill(el, 'custom', customAgentsCard());
 
   /* Upozornění */
   fill(el, 'notifications', `

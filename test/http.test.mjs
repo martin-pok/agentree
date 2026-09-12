@@ -218,3 +218,44 @@ test('Historie vytížení plánu přes API: bez souboru 404, se souborem reáln
   assert.deepEqual(out.extraUsage.map((p) => p.value), [12.5]);
   assert.equal(JSON.stringify(out).includes('org_tajne'), false, 'identifikátor organizace se ven nedostane');
 });
+
+test('Vlastní agenti přes API: cizí adresa neprojde, zápis chce hlavičku a víc než osm jich není', async (t) => {
+  const s = await startTestServer();
+  t.after(() => s.close());
+  const bezHlavicky = await raw(`${s.url}/api/custom-agents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'x', type: 'comfyui', url: 'http://127.0.0.1:8188' }),
+  });
+  assert.equal(bezHlavicky.status, 403, 'zápis bez hlavičky X-Agentree je odmítnutý');
+
+  const verejna = await api(s.url).send('POST', '/api/custom-agents', { name: 'Cizí', type: 'comfyui', url: 'https://example.com' });
+  assert.equal(verejna.status, 400);
+  assert.match(verejna.body.error, /lokální|privátní/);
+
+  const metadata = await api(s.url).send('POST', '/api/custom-agents', { name: 'Metadata', type: 'comfyui', url: 'http://169.254.169.254/' });
+  assert.equal(metadata.status, 400, 'cloudová metadata se nikdy nezkusí');
+
+  const prvni = await api(s.url).send('POST', '/api/custom-agents', { name: 'ComfyUI', type: 'comfyui', url: 'http://127.0.0.1:8188/queue?x=1' });
+  assert.equal(prvni.status, 200);
+  assert.equal(prvni.body.agents.length, 1);
+  assert.equal(prvni.body.agents[0].origin, 'http://127.0.0.1:8188', 'z adresy zůstane jen origin');
+
+  const znovu = await api(s.url).send('POST', '/api/custom-agents', { name: 'ComfyUI podruhé', type: 'comfyui', url: 'http://127.0.0.1:8188' });
+  assert.equal(znovu.status, 409, 'stejná služba se nepřidá dvakrát');
+
+  for (let i = 0; i < 7; i++) {
+    const r = await api(s.url).send('POST', '/api/custom-agents', { name: `Agent ${i}`, type: 'ollama', url: `http://127.0.0.1:${9000 + i}` });
+    assert.equal(r.status, 200, `agent ${i} se má přidat`);
+  }
+  const devaty = await api(s.url).send('POST', '/api/custom-agents', { name: 'Devátý', type: 'ollama', url: 'http://127.0.0.1:9100' });
+  assert.equal(devaty.status, 422, 'devátý agent se nepřidá');
+
+  const id = prvni.body.agents[0].id;
+  const smazano = await api(s.url).send('DELETE', `/api/custom-agents/${id}`);
+  assert.equal(smazano.status, 200);
+  assert.equal(smazano.body.agents.some((a) => a.id === id), false);
+
+  const stav = await api(s.url).get('/api/state');
+  assert.equal(Array.isArray(stav.body.customAgents), true, 'vlastní agenti jsou součástí stavu');
+});

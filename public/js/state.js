@@ -8,6 +8,7 @@ export const state = {
   windowDays: 30,
   sessions: new Map(),
   runtimes: [],
+  customAgents: [],
   limits: [],
   credits: [],
   connectors: [],
@@ -54,6 +55,7 @@ export function applySnapshot(s) {
     windowDays: s.windowDays,
     sessions: new Map(s.sessions.map((x) => [x.id, x])),
     runtimes: s.runtimes,
+    customAgents: s.customAgents || [],
     limits: s.limits,
     credits: s.credits,
     connectors: s.connectors,
@@ -98,6 +100,10 @@ export function applyEvent(name, data) {
     }
     case 'runtimes':
       state.runtimes = data;
+      emit('runtimes');
+      break;
+    case 'customAgents':
+      state.customAgents = data;
       emit('runtimes');
       return null;
     case 'limits':
