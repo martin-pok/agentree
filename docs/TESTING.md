@@ -52,6 +52,26 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentre
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá přepisy.
 - [ ] Při nefunkčním adaptéru ulož HTML úryvek zprávy a tlačítka Stop jako fixturu a oprav selektory v `extension/sites.js`.
 
+## Protokol ověření — 0.6.0 (12. 9. 2026, macOS, Node 24.18)
+
+Ruční QA na oddělené instanci (port 4621, `AGENTREE_HOME` v dočasné složce, `AGENTREE_OPEN=dry`); skutečná data aplikace zůstala nedotčená.
+
+| Oblast | Výsledek |
+|---|---|
+| `npm test` (140), `npm run check` (98 souborů) | ✅ |
+| Tokeny proti ručnímu přepočtu ze souborů: Codex 6 139 058 = 6 139 058; Claude Code 11 225 911 vs 11 218 348 (0,07 %, hranice hodinových přihrádek) | ✅ |
+| Rozpady podle aplikace, složky a modelu i heatmapa sedí na součet období do posledního tokenu | ✅ |
+| Pomocní agenti Claude Code: 6 vláken z `subagents/`, navázaná na rodiče, 1 133 552 tokenů, název z popisu úlohy | ✅ |
+| Kredity Codexu: zůstatek 5,314314 = surová data; 7 dokoupení od 12. 7. s částkami shodnými se skoky v datech | ✅ |
+| Limity: jeden měřák na limit (přesná data ze stavového řádku vytlačí záložní historii) | ✅ |
+| Vlastní agenti: veřejná adresa, 169.254.169.254, 0.0.0.0 i jméno s heslem odmítnuty; přesměrování se nenásleduje (ověřeno proti skutečnému serveru); ComfyUI na 127.0.0.1:8188 hlásí frontu | ✅ |
+| Kontrast textu: 8 obrazovek × světlý a tmavý režim, žádné podkročení WCAG 2.2 AA | ✅ |
+| Mobil 375 px: 8 obrazovek bez vodorovného rolování, žádný dotykový cíl pod 24 × 24 px | ✅ |
+| Desktop 1440 px po mobilních opravách bez změny | ✅ |
+| Fokus klávesnicí: viditelný obrys 2 px (ověřeno skutečným Tabem, ne programovým focusem) | ✅ |
+| Bezpečnost: zápis bez hlavičky `X-Agentree` → 403, datová složka 0700, `data.json` 0600, procházení složek uzamčené do domovského adresáře | ✅ |
+| **Neověřeno** | Skutečné spuštění agentů z UI na reálném projektu; rozšíření prohlížeče na živých webech; konektory Cursor / Copilot / Gemini / Qwen bez dat na tomto Macu |
+
 ## Protokol ověření — v0.5.0 (11. 9. 2026, macOS, Node 24.18)
 
 Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTREE_HOME` v dočasné složce, `AGENTREE_OPEN=dry`) nad skutečnými přepisy — skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
