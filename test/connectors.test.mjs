@@ -246,13 +246,16 @@ test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/t
   assert.equal(byId['claude:five_hour:history'].kind, 'window');
   assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
   assert.equal(byId['claude:seven_day:history'].windowMinutes, 10080);
-  assert.equal(byId['claude:extra_usage:history'].usedPercent, null, 'extra usage není procento, takže se jako procento nepředává');
-  assert.equal(byId['claude:extra_usage:history'].value, 64.35, 'hodnota se nese beze změny — jednotku zdroj neuvádí');
-  assert.equal(byId['claude:extra_usage:history'].label, 'Extra usage');
-  assert.equal(byId['claude:extra_usage:history'].kind, 'spend');
+  // `xu` je vyčerpaný limit extra usage v procentech (viz komentář v konektoru: sousední fh/sd jsou
+  // procenta, stavový řádek Claude Code hlásí stejnou trojici a hodnota nikdy nepřekročila 100).
+  assert.equal(byId['claude:spend_limit:history'].usedPercent, 64.35);
+  assert.equal(byId['claude:spend_limit:history'].value, 64.35, 'původní hodnota zůstává k dispozici');
+  assert.equal(byId['claude:spend_limit:history'].label, 'Extra usage');
+  assert.equal(byId['claude:spend_limit:history'].kind, 'spend');
+  assert.equal(byId['claude:spend_limit:history'].id.endsWith(':history'), true, 'id se nikdy nesrazí s přesným údajem ze stavového řádku');
   // Vlastní id ('…:history') se nikdy nepřepisuje přes id stavového řádku ('claude:five_hour') a naopak —
   // ui.js#currentLimits dá při souběhu přednost zdroji 'statusline', tahle historie zůstane jen záloha.
-  assert.equal(Object.keys(byId).sort().join(','), 'claude:extra_usage:history,claude:five_hour:history,claude:seven_day:history');
+  assert.equal(Object.keys(byId).sort().join(','), 'claude:five_hour:history,claude:seven_day:history,claude:spend_limit:history');
 });
 
 test('Claude Desktop · historie limitů: chybějící xu nic nezapisuje, chybný vzorek se přeskočí', () => {
@@ -297,8 +300,7 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   const byId = Object.fromEntries(store.limitList().map((l) => [l.id, l]));
   assert.equal(byId['claude:five_hour:history'].usedPercent, 99, 'zapíše se jen poslední vzorek, ne první');
   assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
-  assert.equal(byId['claude:extra_usage:history'].usedPercent, null, 'extra usage není procento, takže se jako procento nepředává');
-  assert.equal(byId['claude:extra_usage:history'].value, 64.35, 'hodnota se nese beze změny — jednotku zdroj neuvádí');
+  assert.equal(byId['claude:spend_limit:history'].usedPercent, 64.35, 'extra usage je procento vyčerpaného limitu');
   assert.equal(connector2.status().state, 'connected');
   connector2.stop();
 

@@ -88,16 +88,22 @@ export function applyPlanUsageSample(store, sample, now = Date.now()) {
   window('seven_day', u.sd);
 
   if (typeof u.xu === 'number' && Number.isFinite(u.xu)) {
+    // `xu` je vyčerpaný limit extra usage v procentech. Jednotku soubor neuvádí, ale tři indicie
+    // to potvrzují: sousední `fh` a `sd` jsou procenta okna, oficiální stavový řádek Claude Code
+    // hlásí přesně trojici five_hour / seven_day / spend_limit, kde spend_limit má `used_percentage`,
+    // a `xu` na skutečných datech nikdy nepřekročilo 100 (18,2 → 64,4 za měsíc). Přesná data ze
+    // stavového řádku mají dál přednost (`claude:spend_limit`), tohle je záloha. 🧪 Beta.
+    const used = Math.max(0, Math.min(100, u.xu));
     store.setLimit({
-      id: 'claude:extra_usage:history',
+      id: 'claude:spend_limit:history',
       provider: 'anthropic',
       app: 'Claude',
       label: 'Extra usage',
-      usedPercent: null, // procenta to nejsou — UI je kreslí jen tam, kde je zdroj skutečně hlásí
-      value: u.xu, // jednotka neověřená (viz docs/CONNECTORS.md), proto se nikde neuvádí
+      usedPercent: used,
+      value: u.xu,
       windowMinutes: null,
       resetsAt: null,
-      reached: false,
+      reached: used >= 100,
       plan: null,
       text: '',
       at,
