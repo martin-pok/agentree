@@ -1,8 +1,10 @@
 import { EventEmitter } from 'node:events';
 import { createSession, summarize, takeDirty, pruneMinutes } from './model.js';
 import { DAY } from './util.js';
+import { detectTopUps } from './credits.js';
 
 const CREDIT_POINTS_MAX = 400;
+const CREDIT_RAW_MAX = 6000; // syrové odečty jen v paměti — slouží k rozpoznání dokoupení
 
 // Centrální stav: sessions, limity, kredity, běhová prostředí. Změny vysílá jako události pro SSE a upozornění.
 export class Store extends EventEmitter {
@@ -15,6 +17,8 @@ export class Store extends EventEmitter {
     this.sessions = new Map();
     this.summaries = new Map();
     this.limits = new Map();
+    // Všechny odečty zůstatku kreditů (jen v paměti, do dat na disku se neukládají).
+    this.creditRaw = new Map();
     this.runtimes = [];
     this.runtimesJson = '';
     this.ready = false;
@@ -95,6 +99,13 @@ export class Store extends EventEmitter {
 
   setCredits({ id, provider, app, label, balance, unlimited = false, at }) {
     if (!Number.isFinite(balance) || !at) return;
+    const syrove = this.creditRaw.get(id) || this.creditRaw.set(id, []).get(id);
+    if (!syrove.some((p) => p.at === at && p.balance === balance)) {
+      let i = syrove.length;
+      while (i > 0 && syrove[i - 1].at > at) i--;
+      syrove.splice(i, 0, { at, balance });
+      if (syrove.length > CREDIT_RAW_MAX) syrove.splice(0, syrove.length - CREDIT_RAW_MAX);
+    }
     const all = this.datastore.data.credits;
     const rec = all[id] || (all[id] = { id, provider, app, label, history: [] });
     Object.assign(rec, { provider, app, label, unlimited });
@@ -114,7 +125,12 @@ export class Store extends EventEmitter {
   }
 
   creditList() {
-    return Object.values(this.datastore.data.credits);
+    // Dokoupení počítáme ze všech odečtů, ne ze zkrácené uložené historie — jinak by vycházely
+    // jiné částky, než jaké kredity skutečně přibyly.
+    return Object.values(this.datastore.data.credits).map((rec) => ({
+      ...rec,
+      topUps: detectTopUps(this.creditRaw.get(rec.id) || rec.history || []),
+    }));
   }
 
   setRuntimes(list) {

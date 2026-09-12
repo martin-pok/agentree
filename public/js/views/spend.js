@@ -240,12 +240,12 @@ function update() {
     ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">${spendLimits.length ? 'zůstatek a čerpání podle aplikace' : 'zůstatek podle aplikace'}</span></div>
       ${spendLimits.map(spendRow).join('')}
       ${credits.map((c) => {
-      const ups = topUps(c.history);
+      const ups = c.topUps || topUps(c.history);
       const recent = ups.slice(-6).reverse();
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá · ${ups.length}× dokoupeno</span></div>
         ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}
         ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">Dokoupení Agentree pozná z nárůstu zůstatku, který hlásí sama aplikace — vidí tedy jen období, kdy na tomto Macu běžela.</p>` : ''}</div>`;
+          <p class="small muted">Dokoupení Agentree pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní — ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

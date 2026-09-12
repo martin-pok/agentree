@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fsp from 'node:fs/promises';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, hourKey, MIN, DAY } from '../util.js';
 import { touch, pushEntry, resetTranscript } from '../model.js';
 import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
@@ -308,6 +309,37 @@ export function createCodexConnector(ctx) {
     store.commit(s);
   }
 
+  // Zůstatek kreditů Codex zapisuje do každé session. Sledované okno je 30 dní, ale historie nákupů
+  // sahá dál — jednorázově proto projdeme i starší soubory a bereme z nich výhradně řádky s kredity
+  // (žádné konverzace, žádné tokeny). Běží na pozadí po prvním průchodu, ať to nezdržuje start.
+  let historieKreditu = false;
+  async function scanCreditHistory() {
+    if (historieKreditu) return 0;
+    historieKreditu = true;
+    const hranice = Date.now() - windowMs;
+    let bodu = 0;
+    for (const f of await listFiles(root, 3, (x) => x.endsWith('.jsonl'))) {
+      const stat = await statSafe(f);
+      if (!stat?.isFile() || stat.mtimeMs >= hranice) continue; // novější soubory čte běžný průchod
+      let text;
+      try { text = await fsp.readFile(f, 'utf8'); } catch { continue; }
+      if (!text.includes('"credits"')) continue;
+      for (const line of text.split('\n')) {
+        if (!line.includes('"credits"')) continue;
+        let o;
+        try { o = JSON.parse(line); } catch { continue; }
+        const rl = o.payload?.info?.rate_limits ?? o.payload?.rate_limits ?? o.payload?.token_count?.rate_limits;
+        const c = rl?.credits;
+        if (!c || !(c.has_credits || Number(c.balance) > 0)) continue;
+        const at = toTs(o.timestamp);
+        if (!at) continue;
+        store.setCredits({ id: 'codex', provider: 'openai', app: 'Codex', label: 'Kredity Codex', balance: Number(c.balance), unlimited: Boolean(c.unlimited), at });
+        bodu++;
+      }
+    }
+    return bodu;
+  }
+
   async function scan() {
     exists = Boolean(await statSafe(root));
     await syncIndex();
@@ -326,8 +358,11 @@ export function createCodexConnector(ctx) {
     async start() {
       await scan();
       watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));
+      // Historie nákupů kreditů doběhne na pozadí; případná chyba nesmí shodit konektor.
+      setTimeout(() => { scanCreditHistory().catch(() => {}); }, 2000).unref?.();
     },
     scan,
+    scanCreditHistory,
     stop() {
       watcher?.close();
       queue.clear();
