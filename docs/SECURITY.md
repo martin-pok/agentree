@@ -58,3 +58,20 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 ## Hlášení problému
 
 Bezpečnostní problém nahlas vlastníkovi repozitáře soukromě (ne veřejnou issue).
+
+## Přístup z telefonu (od 12. 9. 2026)
+
+Výchozí stav: **vypnuto**. Server poslouchá jen na `127.0.0.1`.
+
+Po zapnutí (jen z Macu, `POST /api/lan/enable`):
+
+- Druhý listener na **konkrétní privátní adrese** Macu, ne na `0.0.0.0` (a nikdy na veřejné adrese — `lanAddresses()` vybírá jen 10/8, 172.16/12, 192.168/16).
+- Hlavička `Host` se kontroluje proti pevnému seznamu (`127.0.0.1`, `localhost`, vlastní privátní adresy) — ochrana proti DNS rebindingu.
+- Každý požadavek z místní sítě musí mít token spárovaného zařízení. Výjimky: statické soubory (aby šla zobrazit párovací obrazovka), `/api/health` a `/api/lan/pair`.
+- Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
+- Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash — ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
+- Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
+- Vypnutí zavře listener a smaže všechna zařízení.
+- Zápisy dál procházejí ochranou proti CSRF (`X-Agentree` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
+
+Neřešeno: HTTPS. Bez něj prohlížeč na telefonu nedovolí instalaci PWA (service worker chce zabezpečený kontext) — v prohlížeči aplikace funguje normálně.

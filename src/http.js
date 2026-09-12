@@ -7,6 +7,7 @@ import { validateEntry, validateBudgets } from './spend.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
 import { createSkills } from './skills.js';
+import { isLoopback, cookieValue, COOKIE } from './lan.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -47,7 +48,26 @@ export function createHttpServer(app, existingServer = null) {
   let server;
 
   const port = () => server.address()?.port ?? config.port;
-  const allowedOrigins = () => new Set([`http://127.0.0.1:${port()}`, `http://localhost:${port()}`]);
+  const allowedOrigins = () => {
+    const list = [`http://127.0.0.1:${port()}`, `http://localhost:${port()}`];
+    // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti.
+    if (app.lan) for (const adresa of app.lan.status().addresses) list.push(`http://${adresa}:${port()}`);
+    return new Set(list);
+  };
+
+  // Požadavek z tohoto Macu (desktopová aplikace, prohlížeč na Macu) projde jako dřív.
+  // Cokoli z místní sítě musí mít token spárovaného zařízení — jinak se k datům nedostane.
+  function requireDevice(req, url) {
+    if (!app.lan || isLoopback(req.socket?.remoteAddress)) return;
+    if (!datastore.data.settings.lanAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
+    // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu — jinak by neměl
+    // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
+    const verejne = !url.pathname.startsWith('/api/') && (req.method === 'GET' || req.method === 'HEAD');
+    if (verejne || url.pathname === '/api/lan/pair' || url.pathname === '/api/health') return;
+    if (!app.lan.tokenOk(cookieValue(req.headers.cookie))) {
+      throw new HttpError(401, 'Tohle zařízení není spárované. Zadej kód z Agentree na Macu.');
+    }
+  }
 
   /* ---------- SSE ---------- */
 
@@ -198,6 +218,47 @@ export function createHttpServer(app, existingServer = null) {
       return { raw: true, headers, body: skill.text };
     }],
     ['POST', /^\/api\/alerts\/clear$/, () => ({ cleared: alerts.clear(), unread: alerts.unread(), items: [] })],
+
+    /* ---------- Přístup z telefonu ---------- */
+    ['GET', /^\/api\/lan$/, (req) => {
+      // Kód se ukazuje jen na tomto Macu; z telefonu by jinak stačil jeden dotaz k spárování dalších.
+      const s = app.lan.status();
+      return isLoopback(req.socket?.remoteAddress) ? s : { ...s, pin: null, devices: [] };
+    }],
+    ['POST', /^\/api\/lan\/(enable|disable)$/, async (req, m) => {
+      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      return unwrap(await app.setLanAccess(m[1] === 'enable'));
+    }],
+    ['POST', /^\/api\/lan\/pin$/, (req) => {
+      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
+      if (!datastore.data.settings.lanAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
+      return { pin: app.lan.newPin() };
+    }],
+    ['POST', /^\/api\/lan\/pair$/, async (req, _m, url) => {
+      const body = await readBody(req);
+      const r = unwrap(await app.lan.pair(body?.pin, body?.label));
+      // Token jde do cookie: nedostane se do historie prohlížeče ani k JavaScriptu na stránce,
+      // a EventSource ho posílá sám, takže realtime stream funguje bez dalšího zařizování.
+      const secure = url.protocol === 'https:' ? ' Secure;' : '';
+      // SameSite=Lax, ne Strict: telefon typicky otevře adresu z poznámek, QR kódu nebo dlaždice
+      // na domovské obrazovce — to je přechod z jiného webu a Strict by u něj cookie neposlal,
+      // takže by spárovaný telefon znovu žádal kód. Zápisy dál chrání hlavička X-Agentree
+      // (cizí web ji bez preflightu nepřidá) a kontrola Origin.
+      return {
+        raw: true,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'Set-Cookie': `${COOKIE}=${r.token}; Path=/; Max-Age=${r.maxAgeSec}; HttpOnly; SameSite=Lax;${secure}`,
+        },
+        body: JSON.stringify({ device: r.device }),
+      };
+    }],
+    ['DELETE', /^\/api\/lan\/devices\/([\w-]{1,40})$/, async (req, m) => {
+      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
+      unwrap(await app.lan.revoke(m[1]));
+      return { lan: app.lan.status() };
+    }],
     ['GET', /^\/api\/custom-agents$/, () => ({ agents: app.customAgentsPayload(), types: app.customAgentTypes() })],
     ['POST', /^\/api\/custom-agents$/, async (req) => {
       const body = await readBody(req);
@@ -211,7 +272,7 @@ export function createHttpServer(app, existingServer = null) {
       return series;
     }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
-    ['GET', /^\/api\/state$/, () => app.state()],
+    ['GET', /^\/api\/state$/, (req) => app.state({ local: isLoopback(req.socket?.remoteAddress) })],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
@@ -463,18 +524,23 @@ export function createHttpServer(app, existingServer = null) {
     }
     // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
     // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.
-    const asset = /^\/(logos|fonts|brand)\//.test(rel);
+    const asset = /^\/(logos|fonts|brand|icons)\//.test(rel);
     res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache' });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
 
   async function handle(req, res) {
     const host = String(req.headers.host || '').replace(/:\d+$/, '');
-    if (host !== '127.0.0.1' && host !== 'localhost') {
+    // Hlavička Host se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu): tento Mac
+    // a — jen se zapnutým přístupem z telefonu — jeho vlastní adresy v místní síti.
+    const hostOk = host === '127.0.0.1' || host === 'localhost'
+      || (app.lan && datastore.data.settings.lanAccess && app.lan.status().addresses.includes(host));
+    if (!hostOk) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
+    requireDevice(req, url);
     if (url.pathname.startsWith('/api/') && req.method === 'GET') {
       if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
     }
@@ -500,8 +566,7 @@ export function createHttpServer(app, existingServer = null) {
     return serveStatic(req, res, url);
   }
 
-  server = existingServer || http.createServer();
-  server.on('request', (req, res) => {
+  const onRequest = (req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
       if (status >= 500) console.error('Agentree: chyba požadavku', req.method, status);
@@ -511,6 +576,17 @@ export function createHttpServer(app, existingServer = null) {
       }
       send(res, status, { error: status >= 500 && !err.status ? 'Chyba serveru.' : err.message, ...(err.extra || {}) });
     });
+  };
+
+  server = existingServer || http.createServer();
+  server.on('request', onRequest);
+
+  // Listener pro místní síť obsluhuje tentýž kód (a tedy i stejnou kontrolu tokenu).
+  // Zapne se jen tehdy, když si to uživatel v Nastavení sám zapnul.
+  app.bindLan?.(onRequest, () => port());
+  // Naslouchat pro síť můžeme teprve tehdy, když hlavní server zná svůj port.
+  server.on('listening', () => {
+    if (app.lan && datastore.data.settings.lanAccess) app.lan.start(onRequest, port());
   });
 
   server.on('close', () => {
@@ -518,6 +594,7 @@ export function createHttpServer(app, existingServer = null) {
     for (const [event, fn] of Object.entries(listeners)) store.off(event, fn);
     for (const res of clients) res.end();
     clients.clear();
+    app.lan?.stop().catch(() => {}); // s hlavním serverem zmizí i listener pro telefon
   });
 
   return server;

@@ -18,6 +18,47 @@ const SEGMENTS = [
 ];
 
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
+
+// Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
+// vůbec neobjevily, takže to vypadalo, že Agentree agenta „nezaregistroval". Teď je vidět, že běží,
+// i to, proč u nich nemůže být přepis — a co s tím jde udělat.
+const BEZ_PREPISU = {
+  chatgpt: {
+    duvod: 'Aplikace ChatGPT konverzace neukládá na tento Mac — ověřeno: mezipaměť konverzací se naposledy zapsala v červnu 2025, dnešní chat není nikde na disku a aplikace komunikuje se serverem bez lokálního rozhraní.',
+    rada: 'Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agentree. Kódovací vlákna spuštěná z aplikace ChatGPT (Codex) se sledují normálně.',
+    odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
+  },
+  'ms-copilot': {
+    duvod: 'Desktopová aplikace Microsoft Copilot nemá konverzace v čitelném formátu na disku.',
+    rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.',
+    odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
+  },
+  perplexity: { duvod: 'Aplikace Perplexity konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
+  grok: { duvod: 'Aplikace Grok konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
+};
+
+function bezPrepisuHtml(sessions) {
+  const bezi = (state.runtimes || []).filter((r) => r.running && BEZ_PREPISU[r.id]);
+  if (!bezi.length) return '';
+  const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
+  return `<section class="card pad runtime-note" aria-labelledby="rt-h">
+    <div class="sec-head"><h2 id="rt-h">Běží na Macu, ale bez přepisu</h2><span class="muted small">${bezi.length} ${plural(bezi.length, 'aplikace', 'aplikace', 'aplikací')}</span></div>
+    <ul class="runtime-list">${bezi.map((r) => {
+    const i = BEZ_PREPISU[r.id];
+    const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
+    return `<li>
+        <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
+        <div class="runtime-main">
+          <b>${esc(r.name)}</b>
+          <span class="muted small">běží ${doba(r.uptimeSec || 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` · ${konverzaci} ${plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací')} od téhož poskytovatele` : ''}</span>
+          <p class="small">${esc(i.duvod)}</p>
+          <p class="small muted">${esc(i.rada)}</p>
+        </div>
+        <a class="btn btn--sm" href="${esc(i.odkaz.href)}">${esc(i.odkaz.text)}</a>
+      </li>`;
+  }).join('')}</ul>
+  </section>`;
+}
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
 const rank = attentionRank;
 
@@ -78,6 +119,7 @@ function mount(el, _params, query) {
       <button class="btn btn--sm" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">Vybrat</span></button>
     </div>
     <div class="card table" data-enter style="--i:4" data-region="table"></div>
+    <div data-enter style="--i:5" data-region="runtimes"></div>
     <div class="selbar" data-region="selbar" role="region" aria-label="Hromadné akce"></div>`;
   const input = el.querySelector('[data-q]');
   input.value = f.q;
@@ -187,6 +229,8 @@ function update() {
     fill(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>Agent</span><span>Aplikace a model</span><span>Stav</span><span class="cell-num">Tokeny</span><span class="cell-time">Aktivita</span><span></span></div>
       ${list.map(rowHtml).join('')}`);
   }
+
+  fill(el, 'runtimes', bezPrepisuHtml(all));
 
   const n = f.selected.size;
   fill(el, 'selbar', f.selecting

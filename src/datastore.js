@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
     browser: false,
   },
   disabledConnectors: [],
+  lanAccess: false, // přístup z telefonu; výchozí stav je vypnuto
 };
 
 const ALERTS_MAX = 300;
@@ -38,6 +39,7 @@ export function normalizeData(raw) {
       ...s,
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
+      lanAccess: s.lanAccess === true,
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
@@ -58,6 +60,13 @@ export function normalizeData(raw) {
     alerts: Array.isArray(d.alerts) ? d.alerts.slice(-ALERTS_MAX) : [],
     alertKeys: d.alertKeys && typeof d.alertKeys === 'object' ? d.alertKeys : {},
     credits: d.credits && typeof d.credits === 'object' ? d.credits : {},
+    // Spárované telefony: v datech leží jen hash tokenu, nikdy použitelný token.
+    lanDevices: Array.isArray(d.lanDevices)
+      ? d.lanDevices
+        .filter((x) => x && typeof x.id === 'string' && typeof x.hash === 'string' && /^[0-9a-f]{64}$/.test(x.hash))
+        .slice(0, 10)
+        .map((x) => ({ id: x.id.slice(0, 40), label: typeof x.label === 'string' ? x.label.slice(0, 40) : 'Telefon', hash: x.hash, at: Number(x.at) || Date.now() }))
+      : [],
     // Vlastní agenti: jen tvarová kontrola, skutečné ověření adresy dělá src/custom-agents.js při zápisu.
     customAgents: Array.isArray(d.customAgents)
       ? d.customAgents

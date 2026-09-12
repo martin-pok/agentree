@@ -27,6 +27,7 @@ import { migrateLegacyData } from './migrate.js';
 import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
 import { createLocalChat } from './local-chat.js';
+import { createLanAccess } from './lan.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
@@ -79,6 +80,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   const ollama = createOllamaClient({ baseUrl: config.ollamaUrl });
   const localChat = createLocalChat({ store, ollama });
+  const lan = createLanAccess({
+    datastore,
+    config,
+    onListen: (s) => log(`Agentree: přístup z telefonu je zapnutý na ${s.url}`),
+  });
   const runs = new RunManager({
     dataDir: config.dataDir,
     onChange: (_list, run) => {
@@ -746,6 +752,32 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { agents: emitCustomAgents() };
   }
 
+  /* ---------- Přístup z telefonu ---------- */
+  // Zapnutí přidá druhý listener na místní síť; vypnutí ho zavře a odpáruje všechna zařízení,
+  // aby po vypnutí nezůstal nikde platný token. Požadavek na zapnutí smí přijít jen z tohoto Macu
+  // (hlídá to src/http.js) a bez zapnutí se z místní sítě nedá načíst vůbec nic.
+  let lanHandler = null;
+  let lanPort = () => config.port;
+  const bindLan = (handler, portFn) => { lanHandler = handler; if (portFn) lanPort = portFn; };
+
+  async function setLanAccess(enabled) {
+    if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
+    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti — připoj se na Wi-Fi.' };
+    datastore.data.settings.lanAccess = Boolean(enabled);
+    if (!enabled) datastore.data.lanDevices = [];
+    await datastore.flush();
+    if (enabled) await lan.start(lanHandler, lanPort());
+    else await lan.stop();
+    store.emit('settings', datastore.data.settings);
+    const s = lan.status();
+    if (enabled && !s.listening) {
+      datastore.data.settings.lanAccess = false;
+      await datastore.flush();
+      return { status: 502, error: s.error || 'Přístup z telefonu se nepodařilo otevřít.' };
+    }
+    return { lan: s };
+  }
+
   // A browser extension must prove a short-lived code deliberately shown in the
   // local dashboard. Its long-lived ingest token is never part of /api/state.
   async function createExtensionPairCode() {
@@ -766,7 +798,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { token: datastore.data.ingestToken, version: VERSION };
   }
 
-  async function state() {
+  // `local: false` znamená požadavek z telefonu — ten nesmí dostat párovací kód ani seznam
+  // spárovaných zařízení, jinak by si mohl přizvat další.
+  async function state({ local = true } = {}) {
     return {
       version: VERSION,
       now: Date.now(),
@@ -788,6 +822,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       license: licenseStatus(),
       usage: datastore.data.usage,
       customAgents: customAgentsPayload(),
+      lan: local ? lan.status() : { ...lan.status(), pin: null, devices: [] },
     };
   }
 
@@ -843,6 +878,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
+    lan, setLanAccess, bindLan,
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };
 }

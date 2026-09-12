@@ -1,0 +1,27 @@
+{
+  "name": "Agentree — všichni AI agenti na jednom místě",
+  "short_name": "Agentree",
+  "description": "Stav agentů, limity předplatných a útrata v reálném čase. Data zůstávají na tvém Macu.",
+  "lang": "cs",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#F4F3F7",
+  "theme_color": "#16141D",
+  "categories": ["productivity", "developer", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/brand/agentree-mark-dark.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Agenti", "short_name": "Agenti", "url": "/#/agenti", "description": "Kdo právě pracuje a kdo čeká na rozhodnutí" },
+    { "name": "Upozornění", "short_name": "Upozornění", "url": "/#/upozorneni", "description": "Co potřebuje tvou pozornost" },
+    { "name": "Útrata", "short_name": "Útrata", "url": "/#/utrata", "description": "Limity, kredity a výdaje" }
+  ]
+}

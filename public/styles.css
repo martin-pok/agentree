@@ -76,7 +76,16 @@ html[data-theme='dark'] {
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* V aplikaci na domovské obrazovce nechceme přetahovat celou plochou ani spouštět
+     „potáhni pro obnovení" — data si obnovuje sama po návratu do aplikace. */
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Vodorovné pásy (dlaždice agentů, záložky nastavení) mají na iOS setrvačné rolování a nepřetahují stránku. */
+.launch-chips, .pb-agents, .set-nav, .seg, .table-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 body { margin: 0; background: radial-gradient(1100px 520px at 18% -8%, #2A2334 0%, transparent 62%), radial-gradient(900px 480px at 100% 110%, #1B2A28 0%, transparent 60%), var(--backdrop); background-attachment: fixed; color: var(--ink); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
 body.has-modal { overflow: hidden; }
 b, strong { font-weight: 500; }
@@ -661,6 +670,30 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .credit-chart { margin-top: 24px; }
 .helper-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .helper-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+/* Párovací obrazovka na nespárovaném telefonu — jediné, co takové zařízení uvidí. */
+.pair { min-height: 100dvh; display: grid; place-items: center; padding: 24px max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); background: var(--paper); }
+.pair-box { width: 100%; max-width: 360px; display: grid; justify-items: center; gap: 12px; padding: 32px 24px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow); text-align: center; }
+.pair-box img { border-radius: 16px; }
+.pair-box h1 { margin: 0; font: 400 26px/1.2 var(--f-display); }
+.pair-box p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.pair-box input { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); font: 500 24px/1 var(--f-mono); letter-spacing: .18em; text-align: center; }
+.pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
+.pair-box small { color: var(--mute); font-size: 12px; }
+.pair-error { color: var(--velvet-ink); font-size: 13px; }
+.pin-box { display: grid; gap: 4px; margin-top: 12px; padding: 16px; border-radius: var(--r-md); background: var(--ink-surface); color: var(--on-ink); text-align: center; }
+.pin-box b { font: 500 32px/1 var(--f-mono); letter-spacing: .12em; }
+.pin-box span { color: rgba(255, 255, 255, .72); }
+
+.runtime-note { margin-top: 16px; }
+.runtime-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.runtime-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 16px; border-radius: var(--r-md); background: var(--surface-2); }
+.runtime-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.runtime-main b { font-weight: 500; }
+.runtime-main p { margin: 0; }
+@media (max-width: 560px) {
+  .runtime-list li { grid-template-columns: auto minmax(0, 1fr); }
+  .runtime-list li > .btn { grid-column: 2; justify-self: start; }
+}
 .privacy-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 12px; }
 .privacy-list li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 16px; border-radius: var(--r-md); background: var(--surface-2); }
 .privacy-list b { font-weight: 500; font-size: 14px; }
@@ -688,6 +721,13 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* Prvek mřížky má výchozí `min-width: auto`, takže dlouhá cesta k souboru (nezalomitelná)
    určila minimální šířku karty — na telefonu z toho bylo 890 px na 375px displeji. */
 .skills { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* Plynulost rolování: u dlouhých seznamů (147 dovedností = stránka vysoká 43 000 px) prohlížeč
+   přeskočí layout i kreslení položek mimo obrazovku. `contain-intrinsic-size` drží správnou
+   výšku posuvníku, takže se nic netrhá ani neposkakuje. */
+.skill { content-visibility: auto; contain-intrinsic-size: auto 132px; }
+.alert-item { content-visibility: auto; contain-intrinsic-size: auto 92px; }
+.prow { content-visibility: auto; contain-intrinsic-size: auto 72px; }
+.custom-agent { content-visibility: auto; contain-intrinsic-size: auto 120px; }
 .skill { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 20px 24px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
 .skill-main { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .skill-main h3 { margin: 0; font: 500 16px/1.3 var(--f-body); overflow-wrap: anywhere; }
@@ -913,6 +953,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .facts--row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 880px) {
+  /* iOS Safari přiblíží celou stránku, když má pole menší písmo než 16 px. */
+  input, select, textarea { font-size: 16px; }
+
   .shell { margin: 0; border-radius: 0; min-height: 100dvh; grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: fixed; z-index: 30; top: auto; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); height: auto; min-height: 0; margin: 0; padding: 6px; border-radius: 26px; flex-direction: row; box-shadow: 0 0 0 1px rgba(22, 20, 29, .06), 0 18px 40px -12px rgba(12, 11, 16, .35); }
   .brand, .profile, .side-foot { display: none; }

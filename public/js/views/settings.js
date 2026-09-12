@@ -6,7 +6,7 @@ import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 
-const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null };
+const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -41,12 +41,32 @@ const GROUPS = [
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
-  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'share', 'privacy']],
+  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
 // že míří na tenhle Mac nebo do místní sítě — do karty se proto nic neověřuje „pro jistotu" znovu,
 // jen se poctivě zobrazí, co server vrátil.
+// Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
+// Kód i seznam se ukazují jen tady na Macu — z telefonu je server nevydá.
+function phoneCard() {
+  const l = state.lan || { enabled: false, addresses: [], devices: [] };
+  const pin = v.pin && v.pin.expiresAt > Date.now() ? v.pin : null;
+  const cas = (ms) => new Date(ms).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+  return `
+    ${head(ICON.mac, 'Otevřít na telefonu', 'Agentree normálně poslouchá jen na tomto Macu. Když to zapneš, přidá se adresa v tvé domácí síti — a telefon se k datům dostane jen po spárování jednorázovým kódem.')}
+    ${switchRow({ key: 'lanAccess', label: 'Přístup z domácí sítě', desc: l.addresses.length ? `Adresa tohoto Macu: ${l.addresses.join(', ')}` : 'Mac není v žádné místní síti — připoj se na Wi-Fi.', checked: l.enabled, disabled: !l.addresses.length })}
+    ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
+    ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat adresu</button></div>
+      <div class="set-actions">
+        <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? 'Nový kód' : 'Vytvořit kód pro telefon'}</button>
+      </div>
+      ${pin ? `<div class="pin-box"><b>${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="muted small">Platí do ${cas(pin.expiresAt)} a jen na jedno spárování. Na telefonu otevři adresu výše a kód zadej.</span></div>` : ''}
+      ${l.devices?.length ? `<div class="conn-source-head"><span>Spárované telefony</span><small>Odpárováním přestane zařízení vidět cokoli.</small></div>
+        <ul class="privacy-list">${l.devices.map((d) => `<li><b>${esc(d.label)}</b><span>spárováno ${dateLong(d.at)} · <button class="link-inline" type="button" data-action="lan-forget" data-id="${esc(d.id)}">Odpárovat</button></span></li>`).join('')}</ul>` : '<p class="set-note">Zatím žádný spárovaný telefon.</p>'}` : ''}
+    <p class="set-note">Zapnuté jen doma: adresa je z privátního rozsahu, z internetu se na ni nikdo nedostane. Token má telefon v cookie, kterou nepřečte žádný skript, a v datech aplikace je z něj jen kontrolní součet. Vypnutím se spojení zavře a všechna zařízení se odpárují.</p>`;
+}
+
 function customAgentsCard() {
   const list = state.customAgents || [];
   const types = v.customTypes || [];
@@ -255,6 +275,16 @@ function mount(el) {
           toast(r.cleared ? `Smazáno ${r.cleared} upozornění` : 'Nebylo co mazat');
           update();
         }
+      } else if (a.dataset.action === 'lan-pin') {
+        v.pin = (await api.lanPin()).pin;
+        update();
+      } else if (a.dataset.action === 'lan-forget') {
+        const zarizeni = (state.lan?.devices || []).find((d) => d.id === a.dataset.id);
+        if (await confirmDialog({ title: 'Odpárovat zařízení', message: `${zarizeni?.label || 'Zařízení'} přestane vidět cokoli z Agentree. Znovu se spáruje novým kódem.`, confirmLabel: 'Odpárovat', danger: true })) {
+          state.lan = (await api.lanForget(a.dataset.id)).lan;
+          toast('Zařízení odpárováno');
+          update();
+        }
       } else if (a.dataset.action === 'custom-remove') {
         const agent = (state.customAgents || []).find((x) => x.id === a.dataset.id);
         if (await confirmDialog({ title: 'Odebrat agenta', message: `${agent?.name || 'Agent'} zmizí ze seznamu a Agentree se ho přestane ptát na stav.`, confirmLabel: 'Odebrat', danger: true })) {
@@ -355,6 +385,20 @@ async function toggleSetting(sw) {
     if (perm !== 'granted') { toast('Prohlížeč oznámení nepovolil. Povol je v nastavení webu.', { tone: 'velvet' }); return; }
   }
   sw.setAttribute('aria-checked', String(next));
+  // Přístup z domácí sítě není jen nastavení — otevírá a zavírá spojení, takže má vlastní endpoint
+  // a čeká se na skutečný výsledek (listener mohl selhat, třeba když je port obsazený).
+  if (key === 'lanAccess') {
+    try {
+      state.lan = (await api.setLanAccess(next)).lan;
+      v.pin = null;
+      toast(next ? 'Přístup z telefonu je zapnutý. Vytvoř kód a zadej ho v telefonu.' : 'Přístup z telefonu je vypnutý, zařízení odpárována.');
+      update();
+    } catch (err) {
+      sw.setAttribute('aria-checked', String(!next));
+      toast(err.message, { tone: 'velvet' });
+    }
+    return;
+  }
   try {
     state.settings = (await api.saveSettings({ notifications: { [key]: next } })).settings;
     toast('Uloženo');
@@ -467,6 +511,7 @@ function update() {
   fill(el, 'privacy', privacyCard());
 
   /* Vlastní agenti */
+  fill(el, 'phone', phoneCard());
   fill(el, 'custom', customAgentsCard());
 
   /* Upozornění */

@@ -518,8 +518,18 @@ function handle(name, data) {
   if (alert) onAlert(alert);
 }
 
+// Nespárovaný telefon nedostane ani stav, ani realtime stream — obsluha 401 uvnitř streamu by se
+// tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
+const autorizace = api.state().then(() => true).catch((err) => {
+  if (err.status === 401) {
+    parovaciObrazovka();
+    return false;
+  }
+  return true;
+});
+
 connectStream({
-  onStatus: onConnection,
+  onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
     loadingSnapshot = api
       .state()
@@ -528,7 +538,10 @@ connectStream({
         window.webkit?.messageHandlers?.agentree?.postMessage({ type: 'ready' });
         for (const [name, data] of queued.splice(0)) handle(name, data);
       })
-      .catch((err) => toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'coral', timeout: 8000 }))
+      .catch((err) => {
+        if (err.status === 401) return parovaciObrazovka();
+        return toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'coral', timeout: 8000 });
+      })
       .finally(() => { loadingSnapshot = null; });
   },
   onEvent: (name, data) => {
@@ -536,6 +549,55 @@ connectStream({
     else handle(name, data);
   },
 });
+
+// Telefon, který ještě není spárovaný, dostane od serveru 401. Místo prázdné aplikace se zeptáme
+// na jednorázový kód z Agentree na Macu; po spárování se stránka načte znovu už s daty.
+function parovaciObrazovka(zprava = '') {
+  document.body.innerHTML = `<main class="pair">
+    <form class="pair-box" novalidate>
+      <img src="/icons/icon-192.png" alt="" width="64" height="64">
+      <h1>Připojit telefon</h1>
+      <p>V Agentree na Macu otevři <b>Nastavení → Otevřít na telefonu</b> a vytvoř kód. Platí pět minut a jen na jedno spárování.</p>
+      <label class="sr-only" for="pin">Kód z Macu</label>
+      <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
+      ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
+      <button class="btn btn--primary" type="submit">Spárovat</button>
+      <small>Data zůstávají na tvém Macu. Telefon se k nim dostane jen v tvé domácí síti.</small>
+    </form>
+  </main>`;
+  const form = document.querySelector('.pair-box');
+  const input = form.elements.pin;
+  input.focus();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    try {
+      await api.pairDevice(input.value.replace(/\D/g, ''), `${navigator.platform || 'Telefon'}`);
+      location.reload();
+    } catch (err) {
+      parovaciObrazovka(err.message);
+    }
+  });
+}
+
+// Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po
+// obnovení sítě) proto vždy natáhneme čerstvý stav — jinak by uživatel chvíli koukal na stará čísla.
+let posledniObnova = Date.now();
+async function obnovStav(duvod) {
+  if (document.visibilityState !== 'visible' || loadingSnapshot) return;
+  if (Date.now() - posledniObnova < 3000) return;
+  posledniObnova = Date.now();
+  try {
+    applySnapshot(await api.state());
+  } catch {
+    onConnection('offline');
+    void duvod;
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav('návrat do aplikace'); });
+window.addEventListener('online', () => obnovStav('obnovená síť'));
+window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav('stránka z paměti'); });
 
 navigate();
 setInterval(tick, 1000);
