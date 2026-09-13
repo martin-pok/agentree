@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.2 — 2026-09-13 · na telefonu papír až k hornímu okraji
+
+Na telefonu mizí tmavý pruh nahoře. Byl to dekorační pás `.stage`, na kterém na počítači „plave“
+logo a titulek — na malé obrazovce z něj ale zůstal jen banner, který ubíral místo.
+
+- `.stage` se pod 880 px skrývá a obsah začíná 24 px od horního okraje (plus výřez).
+- `body` má na telefonu papírové pozadí místo tmavého „stolu“. Ten byl vidět jen při přetažení
+  a v pásu pod stavovým řádkem — tedy přesně tam, kde působil jako další pruh.
+- Stavový řádek v appce uložené na plochu je nastavený na `default`: plocha začíná pod ním
+  a jeho pozadí je barva stránky, takže čas a baterka zůstanou čitelné. `black-translucent`
+  by na bílém podkladu kreslil bílý text. **iOS si tenhle údaj čte při ukládání na plochu —
+  appku na ploše je proto potřeba jednou smazat a uložit znovu.**
+
+Rozvržení na počítači se nezměnilo: pruh, odsazení i tmavé pozadí zůstávají přesně jako dřív.
+
 ## 0.8.1 — 2026-09-13 · rozcestník pro rozhraní bez serveru
 
 Rozhraní Agenteeq se dá nahrát i odjinud než z Macu (statická kopie na webhostingu, třeba Vercel).
