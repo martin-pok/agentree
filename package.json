@@ -1,6 +1,6 @@
 {
   "name": "agentree",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Agentree — všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
   "type": "module",

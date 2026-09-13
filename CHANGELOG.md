@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 — 2026-09-13
+
+Vydání s prací z 12. a 13. 9. Číslo verze se zvedlo hlavně proto, aby bylo v aplikaci na první pohled vidět, že běží nová: 0.6.0 zůstávalo i po instalaci nového buildu.
+
+Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstup, bez režie cache), práce pomocných agentů Claude Code, detektor všech lokálních a neznámých agentů, přepnutí do okna aplikace jedním klikem, dovednosti na jednom místě, vlastní agenti, přístup z telefonu s párováním kódem, karta Mimo domov, prémiová načítací animace, PWA a plynulé rolování na mobilu.
+
 ## Vyladěné detaily rozhraní — 2026-09-12
 
 - **Mimo domov** (Nastavení → Aplikace na tomto Macu): Agentree zjistí, jestli máš nainstalovaný Tailscale, Cloudflare Tunnel nebo ngrok, u každého řekne, co znamená pro soukromí (privátní síť vs. veřejná adresa), doporučí nejvhodnější a vypíše kroky. Sám žádnou cestu ven neotvírá. Párování kódem platí i tam — kdo zná adresu, ale nemá spárované zařízení, data nedostane. Patnáct testů, vše s injektovaným spouštěním (žádné skutečné binárky).

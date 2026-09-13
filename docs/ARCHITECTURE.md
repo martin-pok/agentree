@@ -1,6 +1,6 @@
 # Architektura
 
-## Desktop pro macOS (0.6.0)
+## Desktop pro macOS (0.7.0)
 
 Nativní Swift/AppKit obal s WKWebView a přibaleným Node 24.18.1 arm64. Server i vanilla frontend zůstávají bez runtime balíčků. macOS 14+; build `npm run build:mac` potřebuje Xcode tools. Fonty Urbanist, Onest a Geist Mono jsou přibalené včetně OFL licencí, žádné požadavky na Google Fonts při používání.
 

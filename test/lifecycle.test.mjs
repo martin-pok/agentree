@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { VERSION } from '../src/config.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
@@ -90,6 +91,7 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
     assert.equal(await old.exit, 0);
     const state = await api(`http://127.0.0.1:${port}`).get('/api/state');
     assert.equal(state.body.projects.items[0].name, 'Zachovaný projekt');
-    assert.equal(state.body.version, '0.6.0');
+    // Verze se bere ze skutečného package.json — jinak by test padal po každém vydání.
+    assert.equal(state.body.version, VERSION);
   } finally { next.child.stdin.end(); await next.exit; if (old.child.exitCode === null) old.child.kill(); }
 });

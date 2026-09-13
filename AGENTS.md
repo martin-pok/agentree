@@ -96,7 +96,7 @@ Změna je hotová, až když platí vše:
 - [ ] Aktualizovaná dokumentace (`docs/*`, tabulky podpory) a záznam v `CHANGELOG.md`.
 - [ ] Commit s popisem proč, ne jen co.
 
-## 7. Poctivý stav k verzi 0.6.0
+## 7. Poctivý stav k verzi 0.7.0
 
 Ověřeno na skutečných datech (macOS, Node 24): Claude Code / Claude Desktop Code, Codex (ChatGPT app), procesy AI aplikací, Claude Code hooky (automatický test i instalace do dočasného HOME), realtime stream, útrata a rozpočty.
 
