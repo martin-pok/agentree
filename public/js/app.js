@@ -422,11 +422,17 @@ function renderOffline(show) {
     offlineEl.hidden = true;
     return;
   }
-  const port = location.port || '4620';
+  // Adresu bereme z okna, ne natvrdo: na telefonu je 127.0.0.1 sám telefon, ne Mac.
+  const naMacu = window.agenteeqDesktop || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+  const rada = window.agenteeqDesktop
+    ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.'
+    : naMacu
+      ? 'Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).'
+      : 'Agenteeq se připojí samo, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a že na něm Agenteeq běží.';
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>Agenteeq server neběží</strong>
-      <p>${window.agenteeqDesktop ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.' : 'Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).'}</p>
-      <p class="small">Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. Adresa: 127.0.0.1:${esc(port)}</p></div>
+      <p>${rada}</p>
+      <p class="small">${naMacu ? 'Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. ' : ''}Adresa: ${esc(location.host)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
   offlineEl.hidden = false;
 }

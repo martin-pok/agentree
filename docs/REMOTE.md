@@ -11,7 +11,7 @@ Agenteeq jen zjistí, jestli ho máš, a poradí, který z nich použít (`src/t
 
 | Cesta | Dopad na soukromí | Náročnost pro uživatele | Co tím získáš |
 |---|---|---|---|
-| **Tailscale** (doporučeno) | Privátní síť (VPN) jen mezi tvými vlastními zařízeními. Žádná veřejná adresa nikde nevzniká; provoz jde šifrovaným tunelem (WireGuard) přímo mezi Makem a telefonem. | Jedna instalace a přihlášení na obou zařízeních; pak už funguje samo, i po restartu. | Adresu vidí jen tvá vlastní zařízení. Nejbližší náhrada za „jako bys byl doma". |
+| **Tailscale** (doporučeno) | Privátní síť (VPN) jen mezi tvými vlastními zařízeními. Žádná veřejná adresa nikde nevzniká; provoz jde šifrovaným tunelem (WireGuard) přímo mezi Makem a telefonem. | Jedna instalace a přihlášení na obou zařízeních; pak už funguje samo, i po restartu. | Adresu vidí jen tvá vlastní zařízení. Nejbližší náhrada za „jako bys byl doma“. |
 | **Cloudflare Tunnel** (`cloudflared`) | Veřejná adresa. Provoz jde přes Cloudflarovu infrastrukturu; adresu teoreticky získá kdokoli, kdo ji uvidí nebo uhodne. | Jeden příkaz v Terminálu (`cloudflared tunnel --url http://127.0.0.1:PORT`), bez účtu — ale musí zůstat spuštěný v otevřeném okně a po každém spuštění je adresa jiná. | Rychlé vyzkoušení bez registrace. Adresa je automaticky HTTPS. |
 | **ngrok** | Veřejná adresa, stejně jako u Cloudflare, navíc s ngrokovým webovým přehledem provozu (a jejich vlastním logováním požadavků). | Účet, přihlašovací token, pak jeden příkaz (`ngrok http PORT`). | Totéž co Cloudflare Tunnel, plus dashboard a stabilnější adresa na placeném plánu. |
 
@@ -20,6 +20,28 @@ v tomto pořadí: Tailscale, pokud je nainstalovaný; jinak Cloudflare Tunnel s 
 upozorněním na veřejnou adresu; jinak radu nainstalovat Tailscale. Spuštění samotného tunelu
 (příkaz v Terminálu, přihlášení) je vždy ruční krok uživatele — modul nic neinstaluje ani
 nespouští na pozadí.
+
+## Rozhraní na webu (statická kopie)
+
+Samotné rozhraní — `public/` — jsou jen statické soubory a dají se nahrát kamkoli (Vercel,
+Netlify, vlastní webhosting). **Server tím nevzniká.** Taková stránka nemá odkud brát data:
+`/api/*` na ní vrací 404 a `127.0.0.1` je na telefonu sám telefon, ne Mac.
+
+Proto se při startu jednou zeptáme na `/api/health` (`jeStatickaKopie()` v
+`public/js/connect.js`):
+
+- **Odpoví Agenteeq** → načte se aplikace jako vždycky.
+- **Odpoví 404 nebo něco jiného** → místo aplikace se ukáže rozcestník „Kde máš Agenteeq?“:
+  zeptá se na adresu Macu, zapamatuje si ji a prohlížeč tam pošle. Od té chvíle běží všechno
+  na adrese tvého Macu — párování kódem, cookie i stream (`docs/SECURITY.md`).
+- **Spadne samotné spojení** (server neodpovídá) → to je výpadek vlastního Agenteeq, ne cizí
+  hosting: zůstává karta „server neběží“ a čekání na návrat.
+
+Adresa se normalizuje podle toho, jak vypadá: IP v domácí síti nebo jméno `.local` po `http`
+s doplněným portem 4620, tunel venku po `https` na svém vlastním jménu. Jiné schéma než
+`http(s)` a adresa s přihlašovacími údaji se odmítnou — rozcestník nikam jinam neodejde.
+
+Statická kopie tedy nic neukládá ani nepřeposílá; je to jen dveře, za kterými je pořád tvůj Mac.
 
 ## Proč Agenteeq nemá vlastní server v cloudu
 

@@ -679,6 +679,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-box h1 { margin: 0; font: 400 26px/1.2 var(--f-display); }
 .pair-box p { margin: 0; font-size: 14px; color: var(--ink-2); }
 .pair-box input { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); font: 500 24px/1 var(--f-mono); letter-spacing: .18em; text-align: center; }
+.pair-box input.pair-adresa { font: 400 16px/1.4 var(--f-mono); letter-spacing: 0; }
 .pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
 .pair-box small { color: var(--mute); font-size: 12px; }
 .pair-error { color: var(--velvet-ink); font-size: 13px; }

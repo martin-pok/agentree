@@ -1,7 +1,7 @@
 // Service worker Agenteeq: aplikace (HTML, CSS, JS, loga) se načte i při výpadku serveru a ukáže, co dělat.
 // Strategie „nejdřív síť“: když server běží, vždy čerstvá verze; mezipaměť jen jako záloha. API a stream se nikdy neukládají.
-const CACHE = 'agenteeq-shell-v4';
-const PRECACHE = ['/', '/styles.css', '/js/app.js', '/brand/agenteeq-mark-dark.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+const CACHE = 'agenteeq-shell-v5';
+const PRECACHE = ['/', '/styles.css', '/js/boot.js', '/js/connect.js', '/js/app.js', '/brand/agenteeq-mark-dark.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
