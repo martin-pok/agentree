@@ -215,9 +215,15 @@ function updateChrome() {
   renderStage(all);
 
   const conn = state.connection;
-  setHtml(connEl, conn === 'live'
-    ? '<i class="dot dot--live"></i><span>Živě</span>'
-    : conn === 'connecting' ? '<i class="dot"></i><span>Připojuji…</span>' : '<i class="dot dot--down"></i><span>Obnovuji spojení…</span>');
+  // Na úzké obrazovce se vedle dlouhého názvu stránky nevejde celý popisek, ale samotná tečka
+  // nic neříká. Každý stav má proto i krátkou variantu; přepíná se v CSS, ne v JavaScriptu.
+  const STAVY = {
+    live: ['dot--live', 'Živě', 'Živě'],
+    connecting: ['dot', 'Připojuji…', 'Připojuji…'],
+    down: ['dot--down', 'Obnovuji spojení…', 'Bez spojení'],
+  };
+  const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
+  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
   setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<span class="source-host">Agenteeq ${esc(state.version)}</span>` : ''}`);

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.4 — 2026-09-13 · tři opravy na telefonu
+
+- **Stav spojení měl u tečky zase popisek.** Pod 560 px se text schovával a v liště zůstala jen
+  osamocená zelená tečka, která sama o sobě nic neříká. Každý stav má teď i krátkou variantu
+  („Živě“, „Připojuji…“, „Bez spojení“) a přepíná se v CSS. Lišta má na telefonu jen 327 px,
+  takže delší popisek ji dřív zalomil — přednost ustoupit má proto nadpis stránky, ne tlačítka.
+  Ověřeno pro všechny názvy stránek i všechny stavy spojení: nic se nezalomí.
+- **Menu „Další sekce“ už nevypadá jako slepené karty.** Prstenec zaostření leží podle výchozího
+  stylu 3 px vně prvku, ale řádky menu byly 2 px od sebe — prstenec se tak kreslil přes sousední
+  řádky. Změřeno: u zaostřeného řádku 936–992 px sahal prstenec 931–997 px, tedy 3 px do obou
+  sousedů. Nově je prstenec uvnitř řádku a mezera je 6 px.
+- **Karty projektů mají výraznější podbarvení.** Místo skvrny v rohu prosvítá barva projektu
+  horní polovinou karty. Výška 55 % není odhad: patička se statistikami začíná na 57 % a její
+  drobné písmo by na podbarvení nemělo dost kontrastu (4,35 : 1 při plné síle, AA žádá 4,5).
+  Nahoře leží jen název a popis, které i ve špičce gradientu drží 8,6–14,2 : 1.
+
 ## 0.8.3 — 2026-09-13 · přístup z telefonu přežije restart aplikace
 
 Zapnutý přístup z telefonu se po restartu aplikace sám nespustil. V nastavení svítil jako
