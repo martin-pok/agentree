@@ -31,10 +31,26 @@ async function send(payload) {
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
 }
 
+async function takeHandoff(site) {
+  const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
+  if (disabledSites.includes(site)) return { prompt: null };
+  const res = await fetch(`${BASE}/api/extension/handoff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': await getToken() },
+    body: JSON.stringify({ site }),
+  });
+  if (!res.ok) return { prompt: null };
+  const body = await res.json().catch(() => ({}));
+  return { prompt: typeof body.prompt === 'string' ? body.prompt.slice(0, 20000) : null, prefilled: Boolean(body.prefilled) };
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'agenteeq:update') {
     send(msg.payload).catch((err) =>
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } }));
+  } else if (msg?.type === 'agenteeq:handoff' && typeof msg.site === 'string') {
+    takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
+    return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;

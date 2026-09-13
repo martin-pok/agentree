@@ -9,10 +9,11 @@ import { WEB_SITES } from '../src/connectors/web.js';
 // špatný nástroj nebo se nezaregistruje vůbec; to je přesně to, co uživatel hlásí jako
 // „aplikace mi agenta nevidí".
 const okno = { sessionStorage: { getItem: () => null, setItem: () => {} } };
-const kontext = vm.createContext({ window: okno, sessionStorage: okno.sessionStorage });
+class Udalost { constructor(type, init = {}) { this.type = type; Object.assign(this, init); } }
+const kontext = vm.createContext({ window: okno, sessionStorage: okno.sessionStorage, Event: Udalost, InputEvent: Udalost });
 const kod = await fs.readFile(new URL('../extension/sites.js', import.meta.url), 'utf8');
 vm.runInContext(kod, kontext);
-const { SITES, detect } = kontext.window.AgenteeqSites;
+const { SITES, detect, insertPrompt, composerText } = kontext.window.AgenteeqSites;
 
 const loc = (url) => new URL(url);
 
@@ -65,4 +66,59 @@ test('adaptéry běží i nad prázdnou stránkou a nespadnou', () => {
     assert.doesNotThrow(() => s.title(doc), `${s.id}: název spadl`);
     assert.doesNotThrow(() => s.limit(doc), `${s.id}: zjištění limitu spadlo`);
   }
+});
+
+// Pole zprávy — zjednodušené prvky, jak je vidí rozšíření. Stačí na ověření, že se text vloží
+// a editor služby dostane událost `input` (bez ní zůstane tlačítko Odeslat neaktivní).
+function pole({ editable = false, selector = '' } = {}) {
+  const udalosti = [];
+  const el = {
+    selector, disabled: false, value: '', textContent: '', udalosti, fokus: false,
+    isContentEditable: editable,
+    getAttribute: (k) => (k === 'contenteditable' && editable ? 'true' : null),
+    getBoundingClientRect: () => ({ width: 300, height: 40 }),
+    focus() { this.fokus = true; },
+    dispatchEvent(e) { udalosti.push(e.type); return true; },
+    get innerText() { return this.textContent; },
+  };
+  el.ownerDocument = { defaultView: kontext, execCommand: () => false };
+  return el;
+}
+const stranka = (prvky) => ({ title: '', querySelector: () => null, querySelectorAll: (sel) => prvky.filter((p) => sel.split(',').some((s) => s.trim() === p.selector)) });
+
+test('každá služba umí najít pole pro zprávu', () => {
+  for (const s of SITES) assert.equal(typeof s.composer, 'function', `${s.id}: chybí pole zprávy`);
+});
+
+test('Gemini: zadání se vloží do editoru a editor se to dozví', () => {
+  const gemini = SITES.find((s) => s.id === 'gemini');
+  const editor = pole({ editable: true, selector: 'rich-textarea .ql-editor[contenteditable="true"]' });
+  const nalezeno = gemini.composer(stranka([editor]));
+  assert.equal(nalezeno, editor);
+  assert.equal(insertPrompt(editor, 'Navrhni název kavárny\nkrátce'), true);
+  assert.equal(composerText(editor), 'Navrhni název kavárny\nkrátce');
+  assert.ok(editor.fokus, 'pole dostane fokus, aby šlo rovnou odeslat Enterem');
+  assert.deepEqual(editor.udalosti, ['input']);
+});
+
+test('textové pole: hodnota se nastaví a pošle se událost input', () => {
+  const t = pole({ selector: 'textarea' });
+  assert.equal(insertPrompt(t, 'Ahoj'), true);
+  assert.equal(t.value, 'Ahoj');
+  assert.deepEqual(t.udalosti, ['input']);
+});
+
+test('když přesný selektor po redesignu nesedí, použije se obecné pole', () => {
+  const gemini = SITES.find((s) => s.id === 'gemini');
+  const zaloha = pole({ editable: true, selector: 'div[contenteditable="true"]' });
+  assert.equal(gemini.composer(stranka([zaloha])), zaloha);
+});
+
+test('skryté ani zakázané pole se nepoužije', () => {
+  const chatgpt = SITES.find((s) => s.id === 'chatgpt');
+  const skryte = pole({ selector: '#prompt-textarea' });
+  skryte.getBoundingClientRect = () => ({ width: 0, height: 0 });
+  const zakazane = pole({ selector: 'textarea' });
+  zakazane.disabled = true;
+  assert.equal(chatgpt.composer(stranka([skryte, zakazane])), null);
 });

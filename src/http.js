@@ -317,6 +317,12 @@ export function createHttpServer(app, existingServer = null) {
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
+    // Rozšíření si vyzvedne zadání spuštěné z Agenteeq. Jen se svým tokenem, jen jednou.
+    ['POST', /^\/api\/extension\/handoff$/, async (req) => {
+      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      const body = await readBody(req);
+      return app.takeWebHandoff(body && typeof body === 'object' ? body.site : null);
+    }, { token: true }],
     ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');

@@ -99,6 +99,24 @@ export function openTargets(s, apps = {}) {
     .filter(Boolean);
 }
 
+// Schránku plní server, ne okno. WKWebView v aplikaci ani stránka otevřená z telefonu po síti
+// do schránky zapsat nesmí (chybí gesto uživatele nebo zabezpečený kontext) a chyba je tichá.
+//
+// Kódování: změřeno na macOS 26 — `pbcopy` uloží text správně jen tehdy, když NEMÁ nastavené
+// LANG/LC_*. S LANG=…UTF-8 (nebo cs_CZ.UTF-8) přečte vstup jako MacRoman a z „název“ je
+// „n�zev“. Proměnné jazyka se proto odstraní, ať je aplikace spuštěná odkudkoli.
+const LOCALE_VARS = new Set(['LANG', 'LC_ALL', 'LC_CTYPE', 'LC_MESSAGES', '__CF_USER_TEXT_ENCODING']);
+export function clipboardEnv(base = process.env) {
+  return Object.fromEntries(Object.entries(base).filter(([k]) => !LOCALE_VARS.has(k)));
+}
+
+export async function copyToClipboard(text, { dry = false } = {}) {
+  if (dry) return { ok: true, dry: true };
+  if (typeof text !== 'string' || !text) return { ok: false };
+  const r = await run('pbcopy', [], { input: text, timeout: 4000, env: clipboardEnv() });
+  return { ok: r.ok };
+}
+
 const TERMINAL_SCRIPT = ['on run argv', 'tell application "Terminal"', 'activate', 'do script (item 1 of argv)', 'end tell', 'end run'];
 
 export async function executeOpen(plan, { dry = false } = {}) {

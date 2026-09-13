@@ -45,11 +45,11 @@ export function isInjectedPrompt(text) {
   return /^\s*(<|#|The following is|\[Request interrupted|Caveat:)/.test(text || '');
 }
 
-export function run(cmd, args, { timeout = 3000, input } = {}) {
+export function run(cmd, args, { timeout = 3000, input, env } = {}) {
   return new Promise((resolve) => {
     let child;
     try {
-      child = execFile(cmd, args, { maxBuffer: 16 * 1024 * 1024, timeout }, (err, stdout, stderr) =>
+      child = execFile(cmd, args, { maxBuffer: 16 * 1024 * 1024, timeout, ...(env ? { env } : {}) }, (err, stdout, stderr) =>
         resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || ''), code: err?.code ?? 0 }),
       );
     } catch (err) {

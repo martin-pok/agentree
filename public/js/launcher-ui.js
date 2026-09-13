@@ -78,17 +78,22 @@ function runHtml(r, now) {
 // Předání do aplikace nebo webu: přesně řekne, co udělat, zadání má po ruce a sama zmizí.
 let handoffTimer = null;
 
-function showHandoff({ target, label, mode, handoff, prompt }) {
+function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   document.querySelector('.handoff')?.remove();
   clearTimeout(handoffTimer);
-  const steps = handoff === 'confirm'
-    ? ['Zadání je v aplikaci předvyplněné.', 'Zkontroluj ho a potvrď klávesou Enter.']
-    : handoff === 'confirm-or-paste'
-      ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V — je ve schránce.']
-      : ['Zadání máš ve schránce.', `V ${label} ho vlož ⌘V a odešli Enterem.`];
-  const foot = mode === 'web'
-    ? 'Konverzaci uvidíš v Agenteeq, když máš rozšíření pro Chrome.'
-    : 'Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.';
+  // S rozšířením se zadání do webové služby vloží samo; bez něj zůstává schránka.
+  const steps = autofill
+    ? ['Zadání se do okna vloží samo.', 'Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce (⌘V).']
+    : handoff === 'confirm'
+      ? ['Zadání je v aplikaci předvyplněné.', 'Zkontroluj ho a potvrď klávesou Enter.']
+      : handoff === 'confirm-or-paste'
+        ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V — je ve schránce.']
+        : ['Zadání máš ve schránce.', `V ${label} ho vlož ⌘V a odešli Enterem.`];
+  const foot = mode !== 'web'
+    ? 'Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.'
+    : autofill
+      ? 'Konverzaci uvidíš i tady v Agenteeq.'
+      : 'S rozšířením pro Chrome (Nastavení) se zadání vloží samo a konverzaci uvidíš i tady.';
   const el = document.createElement('div');
   el.className = 'handoff';
   el.setAttribute('role', 'status');
@@ -264,7 +269,7 @@ export function createLauncher(root) {
       else if (r.kind === 'local') location.hash = agentHref(r.sessionId);
       else if (r.kind === 'background') toast(`${r.label} pracuje na pozadí`, detail);
       else if (r.kind === 'terminal') toast(`${r.label} běží v Terminálu`, detail);
-      else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief });
+      else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief, autofill: Boolean(r.autofill) });
     } catch (err) {
       if (err.status === 402) toast(err.message, { tone: 'velvet', timeout: 10000, action: { label: 'Licence', href: '#/nastaveni' } });
       else toast(err.message, { tone: 'velvet', timeout: 9000 });

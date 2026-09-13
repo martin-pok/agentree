@@ -36,6 +36,52 @@
     return out;
   }
 
+  // Pole pro zprávu. Nejdřív přesný selektor služby, pak obecná záloha — redesign služby tak
+  // vkládání nerozbije úplně. Skryté a zakázané prvky se přeskočí.
+  const GENERIC_COMPOSER = 'textarea:not([readonly]):not([disabled]), [contenteditable="true"][role="textbox"], div[contenteditable="true"]';
+  const visible = (el) => {
+    const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    return !r || (r.width > 0 && r.height > 0);
+  };
+  const composerFrom = (selector) => (doc) =>
+    all(doc, selector).find((el) => !el.disabled && visible(el)) || all(doc, GENERIC_COMPOSER).find((el) => !el.disabled && visible(el)) || null;
+
+  const isEditable = (el) => Boolean(el.isContentEditable || el.getAttribute?.('contenteditable') === 'true');
+  const composerText = (el) => (isEditable(el) ? text(el) : String(el.value || ''));
+
+  // Vloží zadání tak, jak by ho napsal člověk: editor služby (ProseMirror, Quill, React) se o změně
+  // musí dozvědět, jinak zůstane tlačítko Odeslat neaktivní. Nic se neodesílá.
+  function insertPrompt(el, value) {
+    const doc = el.ownerDocument;
+    const view = doc?.defaultView || globalThis;
+    if (el.focus) el.focus();
+    if (isEditable(el)) {
+      let ok = false;
+      try {
+        const sel = view.getSelection ? view.getSelection() : null;
+        if (sel && doc.createRange) {
+          const range = doc.createRange();
+          range.selectNodeContents(el);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        ok = Boolean(doc.execCommand && doc.execCommand('insertText', false, value));
+      } catch {
+        ok = false;
+      }
+      if (!ok || !text(el).trim()) {
+        el.textContent = value;
+        el.dispatchEvent(new view.InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+      }
+    } else {
+      const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')?.set;
+      if (setter) setter.call(el, value);
+      else el.value = value;
+      el.dispatchEvent(new view.Event('input', { bubbles: true }));
+    }
+    return composerText(el).trim().length > 0;
+  }
+
   function limitNotice(doc) {
     const el = all(doc, '[role="alert"], [data-testid*="limit" i], [class*="limit" i]').find((e) => /(limit|reached|dosažen|vyčerpán|upgrade)/i.test(text(e)));
     return el ? text(el).slice(0, 200) : null;
@@ -54,6 +100,7 @@
         .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.text),
       generating: (doc) => Boolean(doc.querySelector('[data-testid="stop-button"]')) || Boolean(stopButton(doc)),
       title: (doc) => cleanTitle(doc.title, [/^Codex\s*[-–|]\s*/i, /\s*[-–|]\s*Codex$/i, /\s*[-–|]\s*ChatGPT$/i]),
+      composer: composerFrom('#prompt-textarea, textarea[name="prompt-textarea"]'),
     },
     {
       id: 'chatgpt',
@@ -65,6 +112,7 @@
       generating: (doc) => Boolean(doc.querySelector('[data-testid="stop-button"]')) || Boolean(stopButton(doc)),
       title: (doc) => cleanTitle(doc.title, [/^ChatGPT\s*[-–|]\s*/i, /\s*[-–|]\s*ChatGPT$/i]),
       model: (doc) => text(doc.querySelector('[data-testid="model-switcher-dropdown-button"]')).slice(0, 60),
+      composer: composerFrom('#prompt-textarea, textarea[name="prompt-textarea"]'),
     },
     {
       id: 'claude',
@@ -75,6 +123,7 @@
         .filter((m) => m.text),
       generating: (doc) => Boolean(doc.querySelector('[data-is-streaming="true"]')) || Boolean(stopButton(doc)),
       title: (doc) => cleanTitle(doc.title, [/\s*[-–|]\s*Claude$/i]),
+      composer: composerFrom('div.ProseMirror[contenteditable="true"], [data-testid="chat-input"] [contenteditable="true"]'),
     },
     {
       id: 'gemini',
@@ -85,9 +134,10 @@
         .filter((m) => m.text),
       generating: (doc) => Boolean(stopButton(doc)),
       title: (doc) => cleanTitle(doc.title, [/^Gemini\s*[-–|]?\s*/i]),
+      composer: composerFrom('rich-textarea .ql-editor[contenteditable="true"], .ql-editor[contenteditable="true"]'),
     },
     { id: 'mscopilot', hosts: ['copilot.microsoft.com'], conversationId: (loc) => idFrom(loc, /\/chats\/([\w-]+)/) || tabId() },
-    { id: 'perplexity', hosts: ['www.perplexity.ai', 'perplexity.ai'], conversationId: (loc) => idFrom(loc, /\/search\/([\w.-]+)/) || tabId() },
+    { id: 'perplexity', hosts: ['www.perplexity.ai', 'perplexity.ai'], conversationId: (loc) => idFrom(loc, /\/search\/([\w.-]+)/) || tabId(), composer: composerFrom('#ask-input, textarea') },
     { id: 'grok', hosts: ['grok.com'], conversationId: (loc) => idFrom(loc, /\/(?:c|chat)\/([\w-]+)/) || tabId() },
     { id: 'qwen', hosts: ['chat.qwen.ai'], conversationId: (loc) => idFrom(loc, /\/c\/([\w-]+)/) || tabId() },
     { id: 'github-copilot', hosts: ['github.com'], path: /^\/copilot/, conversationId: (loc) => idFrom(loc, /\/copilot\/c\/([\w-]+)/) || tabId() },
@@ -97,11 +147,14 @@
     title: (doc) => String(doc.title || '').trim(),
     model: () => '',
     limit: limitNotice,
+    composer: composerFrom(GENERIC_COMPOSER),
     ...s,
   }));
 
   window.AgenteeqSites = {
     SITES,
+    insertPrompt,
+    composerText,
     detect(loc) {
       return SITES.find((s) => s.hosts.includes(loc.hostname) && (!s.path || s.path.test(loc.pathname))) || null;
     },

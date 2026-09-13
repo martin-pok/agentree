@@ -24,7 +24,7 @@ import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
 import { createProcessesConnector } from './connectors/processes.js';
 import { createLocalAgentsConnector } from './connectors/local-agents.js';
-import { detectApps, openTargets, planOpen, executeOpen, planRuntimeFocus, RUNTIME_APPS, ALL_APPS } from './openers.js';
+import { detectApps, openTargets, planOpen, executeOpen, planRuntimeFocus, RUNTIME_APPS, ALL_APPS, copyToClipboard } from './openers.js';
 import { migrateLegacyData } from './migrate.js';
 import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
@@ -557,11 +557,15 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
     let sessionId = plan.sessionId || null;
     let runInfo = null;
+    let copied = false;
     if (plan.kind === 'terminal') {
       if (!dry) await writePromptFile(promptDir, plan.prompt, uuid);
       const x = await executeOpen({ kind: 'terminal', command: plan.command, label: 'Terminál' }, { dry });
       if (!x.ok) return { status: 502, error: x.error };
     } else if (plan.kind === 'open') {
+      // Zadání musí být ve schránce dřív, než se okno služby otevře a uživatel sáhne po ⌘V.
+      if (plan.copyPrompt) copied = (await copyToClipboard(plan.prompt, { dry })).ok;
+      if (plan.mode === 'web') offerWebHandoff(plan.agent, plan.prompt, plan.handoff === 'confirm-or-paste');
       const x = await executeOpen({ kind: 'open', args: plan.args, label: plan.label }, { dry });
       if (!x.ok) return { status: 502, error: x.error };
     } else if (plan.kind === 'background') {
@@ -588,6 +592,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       sessionId,
       run: runInfo,
       copyPrompt: Boolean(plan.copyPrompt),
+      copied,
+      autofill: plan.mode === 'web' && extensionConnected(),
       handoff: plan.handoff || null,
       ...(dry ? { dry: true, plan: { ...publicPlan, argv, command } } : {}),
     };
@@ -815,6 +821,29 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { lan: s };
   }
 
+  // Předání zadání do webové služby, která ho neumí převzít z adresy (Gemini, Qwen) nebo je na
+  // adresu příliš dlouhé. Rozšíření si ho po otevření stránky vyzvedne a vloží do pole zprávy.
+  // Drží se jen v paměti, jednou, dvě minuty a jen pro tu službu — nikam se neukládá.
+  const HANDOFF_TTL = 2 * 60 * 1000;
+  const HANDOFF_SITE = { 'claude-web': 'claude' };
+  const webHandoffs = new Map();
+
+  function offerWebHandoff(agent, prompt, prefilled) {
+    webHandoffs.set(HANDOFF_SITE[agent] || agent, { prompt, prefilled, at: Date.now() });
+  }
+
+  function takeWebHandoff(site) {
+    const h = typeof site === 'string' ? webHandoffs.get(site) : null;
+    if (!h) return { prompt: null };
+    webHandoffs.delete(site);
+    return Date.now() - h.at <= HANDOFF_TTL ? { prompt: h.prompt, prefilled: Boolean(h.prefilled) } : { prompt: null };
+  }
+
+  function extensionConnected() {
+    const st = connectorList().find((c) => c.id === 'web')?.state;
+    return st === 'connected' || st === 'idle';
+  }
+
   // A browser extension must prove a short-lived code deliberately shown in the
   // local dashboard. Its long-lived ingest token is never part of /api/state.
   async function createExtensionPairCode() {
@@ -915,7 +944,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
-    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension,
+    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

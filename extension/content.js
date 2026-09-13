@@ -50,7 +50,35 @@
     if (!timer) timer = setTimeout(tick, 400);
   };
 
+  // Zadání spuštěné z Agenteeq: vyzvednout, počkat, až se objeví pole zprávy, a vložit ho.
+  // Neodesílá se — to potvrdí uživatel. Když služba zadání převzala sama z adresy (?q=) nebo
+  // stránka už konverzaci má, nic se nevkládá, aby se text nezdvojil.
+  function handoff() {
+    let asked;
+    try {
+      asked = chrome.runtime.sendMessage({ type: 'agenteeq:handoff', site: adapter.id });
+    } catch {
+      return;
+    }
+    Promise.resolve(asked).then((r) => {
+      const prompt = r && typeof r.prompt === 'string' ? r.prompt : '';
+      if (!prompt) return;
+      const { insertPrompt, composerText } = window.AgenteeqSites;
+      const until = Date.now() + 20000;
+      const attempt = () => {
+        const el = adapter.composer(document);
+        if (el) {
+          if (composerText(el).trim() || adapter.messages(document).length) return;
+          if (insertPrompt(el, prompt)) return;
+        }
+        if (Date.now() < until) setTimeout(attempt, 250);
+      };
+      setTimeout(attempt, r.prefilled ? 2000 : 400);
+    }).catch(() => {});
+  }
+
   new MutationObserver(schedule).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+  handoff();
   setInterval(schedule, 5000);
   window.addEventListener('popstate', schedule);
   schedule();
