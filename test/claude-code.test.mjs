@@ -130,7 +130,7 @@ test('popis nástrojů a průběh úkolů', () => {
 });
 
 test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se na rodiče', async () => {
-  const home = await tempDir('agentree-src-');
+  const home = await tempDir('agenteeq-src-');
   const parent = '11111111-2222-3333-4444-555555555555';
   const now = Date.now();
   const iso = (ms) => new Date(now + ms).toISOString();
@@ -146,7 +146,7 @@ test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se n
     { type: 'assistant', isSidechain: true, timestamp: iso(-49000), message: { id: 'm2', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo, nic podezřelého' }], usage: { input_tokens: 100, output_tokens: 200, cache_creation_input_tokens: 50 } } },
   ]);
 
-  const s = await startTestServer({ AGENTREE_SOURCE_HOME: home });
+  const s = await startTestServer({ AGENTEEQ_SOURCE_HOME: home });
   try {
     const stav = (await api(s.url).get('/api/state')).body;
     const rodic = stav.sessions.find((x) => x.id === `claude-code:${parent}`);

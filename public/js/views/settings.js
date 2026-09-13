@@ -30,7 +30,7 @@ function webSourceCard(id, site, web, now) {
   return `<article class="conn conn--web" data-web-source="${esc(id)}">
     <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
     <p>${detail}</p>
-    <div class="conn-foot"><code>Chrome · rozšíření Agentree</code><span class="badge">Zkušební</span></div>
+    <div class="conn-foot"><code>Chrome · rozšíření Agenteeq</code><span class="badge">Zkušební</span></div>
     ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="btn btn--sm conn-cta" type="button" data-action="extension-scroll">Jak propojit</button>'}
   </article>`;
 }
@@ -47,7 +47,7 @@ const GROUPS = [
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
 // že míří na tenhle Mac nebo do místní sítě — do karty se proto nic neověřuje „pro jistotu" znovu,
 // jen se poctivě zobrazí, co server vrátil.
-// Vzdálený přístup mimo domov. Agentree nikdy neotevírá cestu ven sám — jen zjistí, jestli má
+// Vzdálený přístup mimo domov. Agenteeq nikdy neotevírá cestu ven sám — jen zjistí, jestli má
 // uživatel nainstalovaný tunel, a poradí, který zvolit. Rozdíl mezi privátní sítí a veřejnou
 // adresou říkáme narovinu, protože to má jiný dopad na soukromí.
 function remoteCard() {
@@ -55,7 +55,7 @@ function remoteCard() {
   const rada = t.advice;
   const bezi = t.list.find((x) => x.running);
   return `
-    ${head(ICON.cloud, 'Mimo domov', 'V domácí síti stačí přístup z telefonu. Venku (mobilní data, cizí Wi-Fi) je potřeba tunel, který si spustíš sám — Agentree žádnou cestu ven neotvírá.')}
+    ${head(ICON.cloud, 'Mimo domov', 'V domácí síti stačí přístup z telefonu. Venku (mobilní data, cizí Wi-Fi) je potřeba tunel, který si spustíš sám — Agenteeq žádnou cestu ven neotvírá.')}
     ${bezi ? `<div class="code-line"><code>${esc(bezi.remoteUrl || bezi.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(bezi.remoteUrl || bezi.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat</button></div>
       <p class="set-note">${esc(bezi.name)} běží. ${esc(bezi.security)}</p>` : ''}
     ${t.list.length ? `<ul class="privacy-list">${t.list.map((x) => `<li>
@@ -77,7 +77,7 @@ function phoneCard() {
   const pin = v.pin && v.pin.expiresAt > Date.now() ? v.pin : null;
   const cas = (ms) => new Date(ms).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   return `
-    ${head(ICON.mac, 'Otevřít na telefonu', 'Agentree normálně poslouchá jen na tomto Macu. Když to zapneš, přidá se adresa v tvé domácí síti — a telefon se k datům dostane jen po spárování jednorázovým kódem.')}
+    ${head(ICON.mac, 'Otevřít na telefonu', 'Agenteeq normálně poslouchá jen na tomto Macu. Když to zapneš, přidá se adresa v tvé domácí síti — a telefon se k datům dostane jen po spárování jednorázovým kódem.')}
     ${switchRow({ key: 'lanAccess', label: 'Přístup z domácí sítě', desc: l.addresses.length ? `Adresa tohoto Macu: ${l.addresses.join(', ')}` : 'Mac není v žádné místní síti — připoj se na Wi-Fi.', checked: l.enabled, disabled: !l.addresses.length })}
     ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
     ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat adresu</button></div>
@@ -105,7 +105,7 @@ function customAgentsCard() {
   </article>`).join('');
 
   return `
-    ${head(ICON.plug, 'Vlastní agenti', 'Lokální služby, které nemají vlastní konektor — ComfyUI, Ollama nebo server s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agentree se jich jen ptá na stav.')}
+    ${head(ICON.plug, 'Vlastní agenti', 'Lokální služby, které nemají vlastní konektor — ComfyUI, Ollama nebo server s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agenteeq se jich jen ptá na stav.')}
     ${rows ? `<div class="custom-agents">${rows}</div>` : '<p class="set-note">Zatím žádný vlastní agent.</p>'}
     <form class="custom-agent-form" data-custom-form novalidate>
       <label class="field"><span>Název</span><input name="name" type="text" maxlength="40" autocomplete="off" placeholder="Třeba ComfyUI na Macu" value="${esc(draft.name || '')}"></label>
@@ -113,27 +113,27 @@ function customAgentsCard() {
       <label class="field"><span>Adresa</span><input name="url" type="text" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8188" value="${esc(draft.url || '')}"${v.customError ? ' aria-invalid="true"' : ''}>${v.customError ? `<span class="field-error" role="alert">${esc(v.customError)}</span>` : ''}</label>
       <button class="btn btn--sm btn--primary" type="submit">Přidat agenta</button>
     </form>
-    <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agentree odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`;
+    <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`;
 }
 
 // Soukromí: karta říká jen ověřitelná fakta — co je v paměti, co na disku a co odchází ven.
 function privacyCard() {
   const alertCount = state.alerts?.items?.length || 0;
-  const dataFile = `${state.integrations?.install?.dataDir || '~/.agentree'}/data.json`;
+  const dataFile = `${state.integrations?.install?.dataDir || '~/.agenteeq'}/data.json`;
   const keysOn = (state.connectors || []).filter((c) => c.id === 'cloud-billing' && c.state !== 'missing').length > 0;
   return `
-    ${head(ICON.key, 'Soukromí a bezpečnost', 'Agentree běží jen na tomto Macu. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.')}
+    ${head(ICON.key, 'Soukromí a bezpečnost', 'Agenteeq běží jen na tomto Macu. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.')}
     <ul class="privacy-list">
-      <li><b>Konverzace agentů</b><span>Čtou se ze souborů na disku (${esc(`~/.claude`)}, ${esc(`~/.codex`)} a dalších) a drží se jen v paměti běžícího serveru. Agentree si z nich nedělá vlastní kopii.</span></li>
-      <li><b>Na disku v ~/.agentree/data.json</b><span>Nastavení, projekty, rozpočty a historie upozornění — soubor má práva jen pro tebe (0600) a složka 0700.</span></li>
+      <li><b>Konverzace agentů</b><span>Čtou se ze souborů na disku (${esc(`~/.claude`)}, ${esc(`~/.codex`)} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.</span></li>
+      <li><b>Na disku v ~/.agenteeq/data.json</b><span>Nastavení, projekty, rozpočty a historie upozornění — soubor má práva jen pro tebe (0600) a složka 0700.</span></li>
       <li><b>Klíče k API</b><span>${keysOn ? 'Uložené v systémové Klíčence, nikdy v souboru aplikace.' : 'Zatím žádné. Když je přidáš, uloží se do systémové Klíčenky, ne do souboru.'}</span></li>
-      <li><b>Ven z Macu</b><span>Jen když si sám zapneš náklady za API — pak se Agentree zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.</span></li>
+      <li><b>Ven z Macu</b><span>Jen když si sám zapneš náklady za API — pak se Agenteeq zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.</span></li>
     </ul>
     <div class="set-actions">
       <button class="btn btn--sm" type="button" data-action="clear-alerts"${alertCount ? '' : ' disabled'}>Smazat historii upozornění${alertCount ? ` (${alertCount})` : ''}</button>
     </div>
     <div class="code-line"><code>${esc(dataFile)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(dataFile)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat cestu</button></div>
-    <p class="set-note">Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací. Smazáním zmizí i klíče, podle kterých Agentree pozná, že už upozornil.</p>`;
+    <p class="set-note">Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací. Smazáním zmizí i klíče, podle kterých Agenteeq pozná, že už upozornil.</p>`;
 }
 
 function mount(el) {
@@ -145,7 +145,7 @@ function mount(el) {
         ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agentree</button>
+        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agenteeq</button>
         ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -233,7 +233,7 @@ function mount(el) {
     try {
       if (a.dataset.action === 'claude-connect') await connectClaude();
       else if (a.dataset.action === 'claude-disconnect') {
-        if (await confirmDialog({ title: 'Vypnout propojení s Claude Code', message: 'Agentree odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout propojení' })) {
+        if (await confirmDialog({ title: 'Vypnout propojení s Claude Code', message: 'Agenteeq odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout propojení' })) {
           state.integrations.claudeHooks = (await api.hooks('uninstall')).claudeHooks;
           toast('Propojení s Claude Code je vypnuté');
           update();
@@ -269,20 +269,20 @@ function mount(el) {
         }
       } else if (a.dataset.action === 'autostart-install') {
         const ok = await modal({
-          title: 'Spouštět Agentree po přihlášení',
+          title: 'Spouštět Agenteeq po přihlášení',
           submitLabel: 'Zapnout',
-          body: `<p class="modal-text">macOS pak Agentree spustí po každém přihlášení, a když nečekaně spadne, znovu ho zapne. Upozornění tak chodí, i když aplikaci nemáš otevřenou.</p>
-            <ul class="checklist"><li>Vypneš to kdykoli jedním kliknutím tady.</li><li>Když už Agentree běží (třeba spuštěný ručně), druhá kopie se sama v klidu ukončí.</li></ul>
-            <p class="small muted">Technicky: soubor ~/Library/LaunchAgents/cz.agentree.agent.plist</p>`,
+          body: `<p class="modal-text">macOS pak Agenteeq spustí po každém přihlášení, a když nečekaně spadne, znovu ho zapne. Upozornění tak chodí, i když aplikaci nemáš otevřenou.</p>
+            <ul class="checklist"><li>Vypneš to kdykoli jedním kliknutím tady.</li><li>Když už Agenteeq běží (třeba spuštěný ručně), druhá kopie se sama v klidu ukončí.</li></ul>
+            <p class="small muted">Technicky: soubor ~/Library/LaunchAgents/cz.agenteeq.agent.plist</p>`,
         });
         if (ok) {
           const r = await api.autostart('install');
           state.integrations = r.integrations;
-          toast(r.dry ? 'Zkušební režim: spouštění po přihlášení se nezapnulo' : 'Agentree se bude spouštět po přihlášení');
+          toast(r.dry ? 'Zkušební režim: spouštění po přihlášení se nezapnulo' : 'Agenteeq se bude spouštět po přihlášení');
           update();
         }
       } else if (a.dataset.action === 'autostart-uninstall') {
-        if (await confirmDialog({ title: 'Vypnout spouštění po přihlášení', message: 'Agentree se přestane spouštět po přihlášení. Pokud právě běží tímto způsobem, ukončí se a bude nedostupný, dokud ho znovu nespustíš.', confirmLabel: 'Vypnout' })) {
+        if (await confirmDialog({ title: 'Vypnout spouštění po přihlášení', message: 'Agenteeq se přestane spouštět po přihlášení. Pokud právě běží tímto způsobem, ukončí se a bude nedostupný, dokud ho znovu nespustíš.', confirmLabel: 'Vypnout' })) {
           const r = await api.autostart('uninstall');
           state.integrations = r.integrations;
           toast('Spouštění po přihlášení je vypnuté');
@@ -307,14 +307,14 @@ function mount(el) {
         update();
       } else if (a.dataset.action === 'lan-forget') {
         const zarizeni = (state.lan?.devices || []).find((d) => d.id === a.dataset.id);
-        if (await confirmDialog({ title: 'Odpárovat zařízení', message: `${zarizeni?.label || 'Zařízení'} přestane vidět cokoli z Agentree. Znovu se spáruje novým kódem.`, confirmLabel: 'Odpárovat', danger: true })) {
+        if (await confirmDialog({ title: 'Odpárovat zařízení', message: `${zarizeni?.label || 'Zařízení'} přestane vidět cokoli z Agenteeq. Znovu se spáruje novým kódem.`, confirmLabel: 'Odpárovat', danger: true })) {
           state.lan = (await api.lanForget(a.dataset.id)).lan;
           toast('Zařízení odpárováno');
           update();
         }
       } else if (a.dataset.action === 'custom-remove') {
         const agent = (state.customAgents || []).find((x) => x.id === a.dataset.id);
-        if (await confirmDialog({ title: 'Odebrat agenta', message: `${agent?.name || 'Agent'} zmizí ze seznamu a Agentree se ho přestane ptát na stav.`, confirmLabel: 'Odebrat', danger: true })) {
+        if (await confirmDialog({ title: 'Odebrat agenta', message: `${agent?.name || 'Agent'} zmizí ze seznamu a Agenteeq se ho přestane ptát na stav.`, confirmLabel: 'Odebrat', danger: true })) {
           state.customAgents = (await api.removeCustomAgent(a.dataset.id)).agents;
           toast('Agent odebraný');
           update();
@@ -456,8 +456,8 @@ async function connectClaude() {
   const ok = await modal({
     title: 'Zapnout propojení s Claude Code',
     submitLabel: 'Zapnout propojení',
-    body: `<p class="modal-text">Agentree zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného. Vše zůstává jen na tomto Macu a Claude Code to nikdy nezpomalí.</p>
-      <ul class="checklist"><li>Původní nastavení se uloží jako záloha.</li><li>Tvoje ostatní nastavení zůstane beze změny. Vlastní informační řádek, pokud ho máš, nepřepíšeme.</li><li>Pod zadáním v Claude Code uvidíš: „Agentree · 5 h 34 % · týden 12 % · kontext 41 %“.</li><li>Platí pro nově otevřené konverzace v Claude Code.</li></ul>${h?.path ? `<p class="small muted">Soubor: ${esc(h.path)}</p>` : ''}`,
+    body: `<p class="modal-text">Agenteeq zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného. Vše zůstává jen na tomto Macu a Claude Code to nikdy nezpomalí.</p>
+      <ul class="checklist"><li>Původní nastavení se uloží jako záloha.</li><li>Tvoje ostatní nastavení zůstane beze změny. Vlastní informační řádek, pokud ho máš, nepřepíšeme.</li><li>Pod zadáním v Claude Code uvidíš: „Agenteeq · 5 h 34 % · týden 12 % · kontext 41 %“.</li><li>Platí pro nově otevřené konverzace v Claude Code.</li></ul>${h?.path ? `<p class="small muted">Soubor: ${esc(h.path)}</p>` : ''}`,
   });
   if (!ok) return;
   state.integrations.claudeHooks = (await api.hooks('install')).claudeHooks;
@@ -491,11 +491,11 @@ function update() {
   const claudeState = h.error ? ['error', 'Chyba'] : h.installed && h.current ? ['connected', 'Zapnuto'] : outdated ? ['missing', 'Je potřeba obnovit'] : ['idle', 'Vypnuto'];
   fill(el, 'claude', `
     ${head(glyph('anthropic'), 'Propojení s Claude Code',
-      'Agentree se hned dozví, když Claude Code začne pracovat, dokončí úkol nebo čeká na tvé povolení. Uvidíš i přesné limity předplatného (5 hodin a týden) a zaplnění paměti konverzace. Bez propojení vidí Agentree jen historii konverzací — se zpožděním a bez žádostí o povolení.',
+      'Agenteeq se hned dozví, když Claude Code začne pracovat, dokončí úkol nebo čeká na tvé povolení. Uvidíš i přesné limity předplatného (5 hodin a týden) a zaplnění paměti konverzace. Bez propojení vidí Agenteeq jen historii konverzací — se zpožděním a bez žádostí o povolení.',
       stateBadge(...claudeState))}
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
-    ${outdated ? '<p class="set-note">Propojení vzniklo ve starší verzi Agentree. Obnov ho, aby se zobrazovaly i limity předplatného.</p>' : ''}
-    ${h.statusLine === 'foreign' ? '<p class="set-note">V Claude Code máš vlastní informační řádek pod zadáním, proto ho Agentree nemění. Přesné limity Claude se kvůli tomu nezobrazí.</p>' : ''}
+    ${outdated ? '<p class="set-note">Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.</p>' : ''}
+    ${h.statusLine === 'foreign' ? '<p class="set-note">V Claude Code máš vlastní informační řádek pod zadáním, proto ho Agenteeq nemění. Přesné limity Claude se kvůli tomu nezobrazí.</p>' : ''}
     <div class="set-actions">${h.installed && h.current
       ? '<button class="btn" type="button" data-action="claude-disconnect">Vypnout propojení</button>'
       : `<button class="btn btn--primary" type="button" data-action="claude-connect">${outdated ? 'Obnovit propojení' : 'Zapnout propojení'}</button>`}</div>`);
@@ -505,7 +505,7 @@ function update() {
   const sites = i.extension?.sites || {};
   fill(el, 'extension', `
     ${head(ICON.spark, 'Webové AI aplikace <span class="badge">Zkušební</span>',
-      'Konverzace z ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot uvidíš díky rozšíření pro Chrome. Rozšíření posílá data jen do Agentree na tomto Macu.',
+      'Konverzace z ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot uvidíš díky rozšíření pro Chrome. Rozšíření posílá data jen do Agenteeq na tomto Macu.',
       stateBadge(web?.state || 'missing', web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno'))}
     <ol class="steps">
       <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
@@ -522,7 +522,7 @@ function update() {
 
   /* Zdroje dat */
   fill(el, 'connectors', `
-    ${head(ICON.plug, 'Zdroje dat', 'Odkud Agentree čte práci agentů na tomto Macu. „Ověřeno“ znamená vyzkoušeno na skutečných datech, „Zkušební“ podle dokumentace výrobce.',
+    ${head(ICON.plug, 'Zdroje dat', 'Odkud Agenteeq čte práci agentů na tomto Macu. „Ověřeno“ znamená vyzkoušeno na skutečných datech, „Zkušební“ podle dokumentace výrobce.',
       `<button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}Načíst znovu</button>`)}
     <div class="conn-grid">${state.connectors.map((c) => `
       <article class="conn">
@@ -545,8 +545,8 @@ function update() {
   /* Upozornění */
   fill(el, 'notifications', `
     ${head(ICON.bell, 'Kdy a jak tě upozornit', '', '<button class="btn btn--sm" type="button" data-action="test-alert">Poslat zkušební</button>')}
-    ${switchRow({ key: 'native', label: 'Oznámení v macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Agentree běží.' : 'Na tomto systému nejsou dostupná.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
-    ${i.desktop ? '' : switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agentree otevřené na pozadí.', checked: n.browser })}
+    ${switchRow({ key: 'native', label: 'Oznámení v macOS', desc: i.nativeNotify ? 'Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.' : 'Na tomto systému nejsou dostupná.', checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
+    ${i.desktop ? '' : switchRow({ key: 'browser', label: 'Oznámení v prohlížeči', desc: 'Když máš Agenteeq otevřené na pozadí.', checked: n.browser })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: 'Agent potřebuje tvé rozhodnutí', desc: 'Povolení akce, otázka, schválení plánu nebo selhané spuštění.', checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: 'Docházející limit předplatného', desc: 'Při 80 %, 95 % a vyčerpání.', checked: n.limits })}
@@ -562,7 +562,7 @@ function update() {
   fill(el, 'profile', `
     ${head(hasAvatar(current) ? `<span class="avatar-mini">${avatarSvg(current)}</span>` : ICON.spark, 'Profilový obrázek', 'Rychlá změna: v postranním panelu na obrázek najeď a klikni — pokaždé se ukáže jiný.')}
     <div class="avatar-grid" role="group" aria-label="Vyber profilový obrázek">
-      <button class="avatar-pick" type="button" data-avatar-pick="i" aria-pressed="${!hasAvatar(current)}" aria-label="Iniciály">${esc(initials(who || 'Agentree'))}</button>
+      <button class="avatar-pick" type="button" data-avatar-pick="i" aria-pressed="${!hasAvatar(current)}" aria-label="Iniciály">${esc(initials(who || 'Agenteeq'))}</button>
       ${Array.from({ length: AVATAR_COUNT }, (_, k) => `<button class="avatar-pick" type="button" data-avatar-pick="${k}" aria-pressed="${current === k}" aria-label="Abstraktní obrázek ${k + 1}">${avatarSvg(k)}</button>`).join('')}
     </div>`);
 
@@ -572,7 +572,7 @@ function update() {
     const locked = Object.entries(lic.paidFeatures || {});
     const expires = lic.license?.expiresAt ? new Date(lic.license.expiresAt).toLocaleDateString('cs-CZ') : 'bez omezení';
     fill(el, 'license', `
-      ${head(ICON.key, 'Licence', lic.valid ? `Agentree ${esc(lic.planLabel)} pro ${esc(lic.license.name)}.` : locked.length ? 'Verze Zdarma. Licence Pro odemkne placené funkce.' : 'Všechny funkce jsou teď odemčené. Licenční klíč si schovej pro budoucí verze.',
+      ${head(ICON.key, 'Licence', lic.valid ? `Agenteeq ${esc(lic.planLabel)} pro ${esc(lic.license.name)}.` : locked.length ? 'Verze Zdarma. Licence Pro odemkne placené funkce.' : 'Všechny funkce jsou teď odemčené. Licenční klíč si schovej pro budoucí verze.',
         stateBadge(lic.valid ? 'connected' : lic.expired ? 'missing' : 'idle', lic.valid ? lic.planLabel : lic.expired ? 'Vypršela' : 'Zdarma'))}
       ${lic.valid ? `<dl class="facts">
           <div><dt>Držitel</dt><dd>${esc(lic.license.name)}</dd></div>
@@ -612,7 +612,7 @@ function update() {
   const auto = i.autostart || { supported: false };
   fill(el, 'system', `
     ${head(ICON.terminal, 'Spouštění po přihlášení',
-      i.desktop ? 'Zavřením okna zůstane Agentree na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agentree v Nastavení systému → Obecné → Přihlašovací položky.' : 'Aby upozornění chodila vždy, nech Agentree spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
+      i.desktop ? 'Zavřením okna zůstane Agenteeq na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agenteeq v Nastavení systému → Obecné → Přihlašovací položky.' : 'Aby upozornění chodila vždy, nech Agenteeq spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.',
       i.desktop ? stateBadge('connected', 'Aplikace pro Mac') : auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? 'Zapnuto' : 'Vypnuto') : stateBadge('unavailable', 'Jen macOS'))}
     ${auto.supported ? `<div class="set-actions">${auto.installed
       ? '<button class="btn" type="button" data-action="autostart-uninstall">Vypnout spouštění po přihlášení</button>'
@@ -620,18 +620,18 @@ function update() {
     <details class="details"><summary>Raději přes Terminál?</summary><div class="code-line"><code>${esc(auto.command || '')}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(auto.command || '')}" data-copy-message="Příkaz zkopírován — vlož ho do Terminálu">${ICON.copy}Kopírovat</button></div></details>` : ''}
     <dl class="facts facts--row">
       <div><dt>Verze</dt><dd>${esc(state.version)}</dd></div>
-      <div><dt>Data aplikace</dt><dd>${esc((inst.dataDir || '~/.agentree').replace(/^\/Users\/[^/]+/, '~'))}</dd></div>
+      <div><dt>Data aplikace</dt><dd>${esc((inst.dataDir || '~/.agenteeq').replace(/^\/Users\/[^/]+/, '~'))}</dd></div>
       <div><dt>Historie</dt><dd>posledních ${state.windowDays} dní</dd></div>
       <div><dt>Soukromí</dt><dd>vše zůstává na tomto Macu</dd></div>
     </dl>`);
 
   const packCmd = 'npm run pack';
-  const installCmd = `npm install -g ./agentree-${state.version}.tgz`;
+  const installCmd = `npm install -g ./agenteeq-${state.version}.tgz`;
   const pkg = inst.package;
   fill(el, 'share', `
-    ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agentree nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
+    ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
     ${i.desktop ? (pkg ? `
-      <p class="set-desc">Předej příjemci tento instalační ZIP Agentree pro Mac. Rozbalí ho a přesune Agentree do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>
+      <p class="set-desc">Předej příjemci tento instalační ZIP Agenteeq pro Mac. Rozbalí ho a přesune Agenteeq do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>
       <dl class="facts">
         <div><dt>Soubor</dt><dd>${esc(pkg.name)}</dd></div>
         <div><dt>Velikost</dt><dd>${(pkg.size / 1e6).toFixed(1)} MB</dd></div>
@@ -650,9 +650,9 @@ function update() {
         <button class="btn btn--primary" type="button" data-action="reveal-install-package">Ukázat ve Finderu</button>
         <button class="btn btn--sm" type="button" data-copy="${esc((i.install?.root || '').replace(/\/Contents\/Resources\/app$/, ''))}" data-copy-message="Cesta k aplikaci zkopírována">${ICON.copy}Kopírovat cestu</button>
       </div>`) : `<ol class="steps">
-      <li>Ve složce Agentree vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
-      <li>Pošli soubor <code>dist/agentree-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
-      <li>Aplikaci otevře příkazem <code>agentree --open</code>. Průvodce ho provede propojením.</li>
+      <li>Ve složce Agenteeq vytvoř instalační balíček:<div class="code-line"><code>${esc(packCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(packCmd)}">${ICON.copy}Kopírovat</button></div></li>
+      <li>Pošli soubor <code>dist/agenteeq-${esc(state.version)}.tgz</code>. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}Kopírovat</button></div></li>
+      <li>Aplikaci otevře příkazem <code>agenteeq --open</code>. Průvodce ho provede propojením.</li>
     </ol>
     <p class="small muted">Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.</p>`}`);
 }

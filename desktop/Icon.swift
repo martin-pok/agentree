@@ -1,5 +1,5 @@
 import AppKit
-// Exact geometry of public/brand/agentree-mark.svg, on a white macOS icon tile.
+// Exact geometry of public/brand/agenteeq-mark.svg, on a white macOS icon tile.
 let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
 for (points, scale) in [(16,1),(16,2),(32,1),(32,2),(128,1),(128,2),(256,1),(256,2),(512,1),(512,2)] {

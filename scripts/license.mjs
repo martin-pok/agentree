@@ -10,7 +10,7 @@ import { signLicense, verifyLicense } from '../src/license.js';
 import { PLANS } from '../src/plans.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const KEY_FILE = process.env.AGENTREE_SIGNING_KEY || path.join(os.homedir(), '.agentree-vendor', 'license-signing-key.pem');
+const KEY_FILE = process.env.AGENTEEQ_SIGNING_KEY || path.join(os.homedir(), '.agenteeq-vendor', 'license-signing-key.pem');
 const PUBLIC_FILE = path.join(ROOT, 'src', 'license-public-key.js');
 
 const HELP = `Použití:

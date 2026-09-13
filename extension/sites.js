@@ -6,10 +6,10 @@
 
   function tabId() {
     try {
-      let id = sessionStorage.getItem('agentree-tab');
+      let id = sessionStorage.getItem('agenteeq-tab');
       if (!id) {
         id = `tab-${Math.random().toString(36).slice(2, 10)}`;
-        sessionStorage.setItem('agentree-tab', id);
+        sessionStorage.setItem('agenteeq-tab', id);
       }
       return id;
     } catch {
@@ -87,7 +87,7 @@
     ...s,
   }));
 
-  window.AgentreeSites = {
+  window.AgenteeqSites = {
     SITES,
     detect(loc) {
       return SITES.find((s) => s.hosts.includes(loc.hostname) && (!s.path || s.path.test(loc.pathname))) || null;

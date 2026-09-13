@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writeFileAtomic } from './util.js';
 
-// Claude Code hooky posílají události do Agentree okamžitě (start, zadání, žádost o povolení, konec tahu).
+// Claude Code hooky posílají události do Agenteeq okamžitě (start, zadání, žádost o povolení, konec tahu).
 export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
 export const HOOK_PATH = '/api/hooks/claude-code';
 
@@ -10,17 +10,17 @@ export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude
 
 export function hookCommand(port, token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agentree-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
+  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
 }
 
 const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_PATH);
 
-// Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agentree vrátí krátký text k zobrazení.
+// Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agenteeq vrátí krátký text k zobrazení.
 export const STATUSLINE_PATH = '/api/hooks/claude-statusline';
 
 export function statuslineCommand(port, token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 1 -X POST -H 'Content-Type: application/json' -H 'X-Agentree-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${STATUSLINE_PATH} 2>/dev/null || printf 'Agentree neběží'`;
+  return `curl -s -m 1 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${STATUSLINE_PATH} 2>/dev/null || printf 'Agenteeq neběží'`;
 }
 
 const isOurStatusLine = (sl) => typeof sl?.command === 'string' && sl.command.includes(STATUSLINE_PATH);
@@ -59,7 +59,7 @@ export async function hooksStatus(file, token) {
   return {
     installed: events.length === HOOK_EVENTS.length,
     partial: events.length > 0 && events.length < HOOK_EVENTS.length,
-    // Aktuální = hooky s platným tokenem a stavový řádek Agentree (cizí stavový řádek nepřepisujeme).
+    // Aktuální = hooky s platným tokenem a stavový řádek Agenteeq (cizí stavový řádek nepřepisujeme).
     current: hooksCurrent && (statusLine === 'foreign' || statusLineCurrent),
     events,
     statusLine,
@@ -84,7 +84,7 @@ async function writeSettings(file, json, raw, now) {
   let backup = null;
   let mode = 0o644;
   if (raw !== null) {
-    backup = `${file}.agentree-backup-${now}`;
+    backup = `${file}.agenteeq-backup-${now}`;
     await fs.writeFile(backup, raw);
     try { mode = (await fs.stat(file)).mode & 0o777; } catch { /* výchozí práva */ }
   }

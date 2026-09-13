@@ -21,7 +21,7 @@ test('Lokální agenti: pozná známé nástroje, heuristikou i neznámý python
     '201 00:40 0.5 51200 /Applications/Safari.app/Contents/MacOS/Safari',
     '202 00:05 0.1 5120 /System/Library/Frameworks/CoreServices.framework/Versions/A/Support/mdworker_shared',
     '203 00:01 0.0 20480 node --test test/local-agents.test.mjs',
-    '204 00:03 0.2 40960 /Users/m/agentree/bin/agentree.mjs',
+    '204 00:03 0.2 40960 /Users/m/agenteeq/bin/agenteeq.mjs',
   ].join('\n');
 
   const found = detectLocalAgents(lines);
@@ -43,7 +43,7 @@ test('Lokální agenti: pozná známé nástroje, heuristikou i neznámý python
   assert.ok(unknown.note.length > 0, 'heuristika musí vysvětlit, proč proces označila');
 
   for (const id of ['finder', 'safari', 'mdworker']) assert.equal(id in byId, false);
-  assert.equal(found.some((f) => f.pid === 203 || f.pid === 204), false, 'node --test i Agentree sám se nikdy neoznačí');
+  assert.equal(found.some((f) => f.pid === 203 || f.pid === 204), false, 'node --test i Agenteeq sám se nikdy neoznačí');
 });
 
 test('Heuristika: neznámý proces se souborem modelu se pozná i bez katalogu', () => {

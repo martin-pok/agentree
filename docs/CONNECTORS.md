@@ -1,6 +1,6 @@
 # Podpora služeb a konektory
 
-Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které služby. Legenda:
+Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které služby. Legenda:
 
 - ✅ ověřeno na skutečných datech,
 - 🧪 beta — implementováno podle formátu, ale neověřeno na živých datech,
@@ -27,15 +27,15 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 
 ### Proč některé věci nejdou
 
-- **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Agentree proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
-- **Schválení akce na dálku**: Agentree umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
+- **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Agenteeq proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
+- **Schválení akce na dálku**: Agenteeq umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
 - **Desktopová aplikace Microsoft Copilot a ChatGPT (chat)**: obsah konverzací není dostupný v čitelném lokálním formátu. Web s rozšířením ano.
 - **Kredity Codexu a dokoupení** (`src/credits.js`): zůstatek hlásí každá session zvlášť v `rate_limits.credits.balance`; paralelní session posílají zastaralé hodnoty, proto se z pouhého nárůstu nedá usuzovat na nákup. `detectTopUps` bere nárůst jako dokoupení jen tehdy, když se udrží (medián odečtů v následujících 30 min zůstane nad původní úrovní), a dva nárůsty do 15 min slučuje. Počítá se ze všech odečtů v paměti, ne ze zkrácené uložené historie. Starší soubory než sledované okno se jednorázově projdou jen kvůli řádkům s kredity (`scanCreditHistory`, ~1,2 s na 449 MB). Ověřeno proti ručnímu přepočtu: 7 dokoupení od 12. 7. 2026, zůstatek 5,314314.
 - **Pomocní agenti Claude Code**: přepisy leží v `~/.claude/projects/<projekt>/<id konverzace>/subagents/agent-<agentId>.jsonl` (hloubka 3, všechny zprávy `isSidechain: true`). Načítají se jako samostatné session s `parentId` rodiče a `subagent.label = 'Pomocný agent'`; v seznamech se skrývají pod rodičem, tokeny se počítají u nich (ne dvakrát). Název = `input.description` volání nástroje `Agent`/`Task` v rodičovském přepisu, spárované přes `agentId:` ve výsledku nástroje. Ověřeno na 6 vláknech (Claude Code 2.1.266).
 - **Vlastní agenti** (`src/custom-agents.js`): uživatelem zadané lokální služby (ComfyUI `/queue`, Ollama `/api/tags`, OpenAI-kompatibilní `/v1/models`). Povolený hostitel: loopback (127.0.0.0/8, `::1`), 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, `localhost`, `*.local`; zakázáno 169.254.0.0/16 a 0.0.0.0, veřejné adresy a přihlašovací údaje v URL. Zapamatuje se jen origin. Dotaz: GET, `redirect: 'manual'`, timeout 1,5 s, strop 64 kB, výjimka se nikdy nepropaguje. Stav se obnovuje každých 30 s. 🧪 Beta — ověřeno proti lokálnímu testovacímu serveru, ne proti všem verzím těchto služeb.
 - **Extra usage Claude** (`u.xu` v `plan-usage-history.json`): procento vyčerpaného limitu extra usage. Jednotka není zdokumentovaná; mapování na `rate_limits.spend_limit.used_percentage` ze stavového řádku Claude Code opíráme o tři fakty — sousední `fh`/`sd` jsou procenta oken, stavový řádek hlásí stejnou trojici a `xu` na reálných datech (81 vzorků, 13.–27. 8. 2026) nepřekročilo 100 (18,2 → 64,4). Zobrazuje se v Útratě jako graf čerpání + skoky nárůstu, označené 🧪 Beta. Přesná data ze stavového řádku (`claude:spend_limit`) mají přednost před historií (`claude:spend_limit:history`).
-- **Historie vytížení plánu Claude**: `~/Library/Application Support/Claude/plan-usage-history.json` obsahuje ~30 dní vzorků (`t`, `org`, `u.fh`, `u.sd`, `u.xu`), Agentree je vydává přes `GET /api/usage/claude?days=…` pro graf ve Statistikách. Pole `org` se nikdy neposílá do UI ani do API. Formát je interní a nezdokumentovaný → 🧪 Beta.
-- **Limity aplikace ChatGPT (chat)**: nejsou nikde na disku. Ověřeno 12. 9. 2026 v `~/Library/Application Support/com.openai.chat` — jsou tam konverzace, nápovědy a modely, ale ani jeden soubor neobsahuje `rate_limit`, `quota` ani `usage_limit`. Jediný lokálně čitelný limit OpenAI hlásí Codex sám (`limit_id: codex`); druhý bucket `limit_id: premium` chodí s prázdnými okny (`primary`/`secondary` = `null`, 14 výskytů za 30 dní), takže se nezobrazuje. V kartě Limity a kredity je to uvedené: limit Codexu je oddělený od chatu v ChatGPT a limit běžící aplikace ChatGPT nemá Agentree odkud přečíst.
+- **Historie vytížení plánu Claude**: `~/Library/Application Support/Claude/plan-usage-history.json` obsahuje ~30 dní vzorků (`t`, `org`, `u.fh`, `u.sd`, `u.xu`), Agenteeq je vydává přes `GET /api/usage/claude?days=…` pro graf ve Statistikách. Pole `org` se nikdy neposílá do UI ani do API. Formát je interní a nezdokumentovaný → 🧪 Beta.
+- **Limity aplikace ChatGPT (chat)**: nejsou nikde na disku. Ověřeno 12. 9. 2026 v `~/Library/Application Support/com.openai.chat` — jsou tam konverzace, nápovědy a modely, ale ani jeden soubor neobsahuje `rate_limit`, `quota` ani `usage_limit`. Jediný lokálně čitelný limit OpenAI hlásí Codex sám (`limit_id: codex`); druhý bucket `limit_id: premium` chodí s prázdnými okny (`primary`/`secondary` = `null`, 14 výskytů za 30 dní), takže se nezobrazuje. V kartě Limity a kredity je to uvedené: limit Codexu je oddělený od chatu v ChatGPT a limit běžící aplikace ChatGPT nemá Agenteeq odkud přečíst.
 - **Webové aplikace nesdílejí tokeny** — grafy tokenů je proto neobsahují.
 
 ## Otevření v aplikaci (`src/openers.js`)
@@ -59,11 +59,11 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 | Claude Code | Terminál, na pozadí | Terminál: `claude --session-id <uuid> -- "<zadání ze souboru>"`; pozadí: `claude -p --session-id <uuid> --permission-mode plan\|acceptEdits -- <zadání>`. Známé ID session → rovnou zařazení do projektu | ✅ přepínače ověřeny v `claude --help` 2.1.212; 🧪 skutečné spuštění |
 | Codex | aplikace, Terminál, na pozadí | Aplikace: `codex://threads/new?prompt=` (schéma nalezeno v aplikaci ChatGPT, zadání do 6 000 znaků); Terminál: `codex -- "<zadání>"`; pozadí: `codex exec --skip-git-repo-check -C <složka> -s read-only\|workspace-write -- <zadání>`. CLI i z aplikace ChatGPT (`Contents/Resources/codex`). Session z pozadí se páruje podle složky a času startu | ✅ přepínače v `codex --help` 0.153.4; 🧪 skutečné spuštění |
 | Gemini CLI, Qwen Code | Terminál | `gemini -i "<zadání>"`, `qwen -i "<zadání>"` — jen když jsou v PATH | 🧪 nenainstalováno na vývojovém Macu |
-| Ollama | lokálně | `POST /api/chat` na `127.0.0.1:11434`, odpověď se streamuje do přepisu v Agentree; konverzace žije do restartu serveru | 🧪 testováno proti falešnému serveru |
+| Ollama | lokálně | `POST /api/chat` na `127.0.0.1:11434`, odpověď se streamuje do přepisu v Agenteeq; konverzace žije do restartu serveru | 🧪 testováno proti falešnému serveru |
 | ChatGPT, Claude.ai, Perplexity, Microsoft Copilot, Grok | web | Otevře `?q=<zadání>` a zadání vždy zkopíruje do schránky (parametr není oficiálně dokumentovaný) | 🧪 |
 | Gemini, Qwen Chat | web | Otevře aplikaci, zadání je ve schránce | 🧪 |
 
-**Zdarma:** Agentree nemá vlastní AI — spuštění běží na předplatných a limitech uživatele. Skutečně zdarma jsou lokální modely v Ollamě a bezplatné úrovně služeb (např. Gemini CLI s osobním účtem Google, bezplatné webové verze).
+**Zdarma:** Agenteeq nemá vlastní AI — spuštění běží na předplatných a limitech uživatele. Skutečně zdarma jsou lokální modely v Ollamě a bezplatné úrovně služeb (např. Gemini CLI s osobním účtem Google, bezplatné webové verze).
 
 ## Konektory v detailu
 
@@ -73,7 +73,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agentree umí u které slu
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
 - **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).
-- **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s — nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agentree-backup-<čas>`).
+- **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s — nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agenteeq-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
 
 ### Claude Desktop — historie limitů — `src/connectors/claude-desktop-usage.js` 🧪

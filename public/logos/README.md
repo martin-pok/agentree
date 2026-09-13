@@ -17,7 +17,7 @@ Soubory `*.svg` pocházejí z balíčku [`@lobehub/icons-static-svg`](https://gi
 | ollama.svg | icons/ollama.svg |
 | lmstudio.svg | icons/lmstudio.svg |
 
-Loga jsou ochranné známky svých vlastníků. Agentree je používá výhradně k označení služeb, se kterými se propojuje, a nenaznačuje spolupráci ani podporu ze strany těchto společností. Před veřejnou distribucí zkontroluj pravidla používání značek jednotlivých společností.
+Loga jsou ochranné známky svých vlastníků. Agenteeq je používá výhradně k označení služeb, se kterými se propojuje, a nenaznačuje spolupráci ani podporu ze strany těchto společností. Před veřejnou distribucí zkontroluj pravidla používání značek jednotlivých společností.
 
 ## Licence balíčku (MIT)
 

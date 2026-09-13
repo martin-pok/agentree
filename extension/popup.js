@@ -43,7 +43,7 @@ async function checkServer() {
     $('status').textContent = `Připojeno · ${json.version}`;
     $('dot').className = 'dot ok';
   } catch {
-    $('status').textContent = 'Agentree neběží';
+    $('status').textContent = 'Agenteeq neběží';
     $('dot').className = 'dot err';
   }
 }
@@ -54,7 +54,7 @@ $('pair').addEventListener('click', async () => {
     $('last').textContent = 'Kód nemá správný tvar.';
     return;
   }
-  const result = await chrome.runtime.sendMessage({ type: 'agentree:pair', code });
+  const result = await chrome.runtime.sendMessage({ type: 'agenteeq:pair', code });
   if (!result?.ok) { $('last').textContent = result?.error || 'Spárování selhalo.'; return; }
   $('code').value = '';
   $('last').textContent = 'Rozšíření je bezpečně připojené.';

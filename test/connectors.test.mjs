@@ -16,7 +16,7 @@ import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
   const connector = createCodexConnector({ config, store });
   const parent = '01a090ab-2039-7192-8923-6a97897b911a';
@@ -59,7 +59,7 @@ test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovan
 
 test('Codex: vynulované počítadlo tokenů nezahodí dosavadní spotřebu (součet i hodinový graf sedí)', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
   const connector = createCodexConnector({ config, store });
   const id = '01a05188-51d8-7903-85aa-9818c9b94627';
@@ -86,7 +86,7 @@ test('Codex: vynulované počítadlo tokenů nezahodí dosavadní spotřebu (sou
 
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const datastore = fakeDatastore();
   const store = new Store({ config, datastore });
   const connector = createCodexConnector({ config, store });
@@ -234,7 +234,7 @@ test('Procesy: rozpoznání AI aplikací z výpisu ps', () => {
 
 test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/týden (a extra usage, pokud je)', () => {
   const home = '/tmp/nepouzito';
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
   const at = Date.now() - 60000;
   assert.equal(applyPlanUsageSample(store, { t: at, org: 'org_x', u: { fh: 99, sd: 41, xu: 64.35 } }), true);
@@ -260,7 +260,7 @@ test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/t
 
 test('Claude Desktop · historie limitů: chybějící xu nic nezapisuje, chybný vzorek se přeskočí', () => {
   const home = '/tmp/nepouzito';
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
   applyPlanUsageSample(store, { t: Date.now(), org: 'org_x', u: { fh: 10, sd: 5 } });
   assert.equal(store.limitList().length, 2, 'bez xu vzniknou jen dva limity');
@@ -273,7 +273,7 @@ test('Claude Desktop · historie limitů: chybějící xu nic nezapisuje, chybn�
 
 test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru, chybějící i poškozený soubor server nespadnou', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
   const connector = createClaudeDesktopUsageConnector({ config, store });
 

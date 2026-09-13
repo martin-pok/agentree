@@ -57,7 +57,7 @@ export function createFileQueue(worker, delay = 60) {
     const prev = chains.get(file) || Promise.resolve();
     const next = prev
       .then(() => worker(file))
-      .catch((err) => console.error(`Agentree: chyba při zpracování ${file}:`, err.message));
+      .catch((err) => console.error(`Agenteeq: chyba při zpracování ${file}:`, err.message));
     chains.set(file, next);
     next.finally(() => {
       if (chains.get(file) === next) chains.delete(file);

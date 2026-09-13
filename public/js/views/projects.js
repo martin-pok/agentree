@@ -128,7 +128,7 @@ function update() {
       <div class="pintro-text">
         <span class="eyebrow">Projekty</span>
         <h2>Práce agentů seřazená podle klientů a zakázek</h2>
-        <p>Založ projekt a Agentree do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.</p>
+        <p>Založ projekt a Agenteeq do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.</p>
         <ul class="checklist"><li>Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt</li><li>Podklady projektu po ruce, když spouštíš dalšího agenta</li><li>Export do CSV jako podklad k vyúčtování klientovi</li></ul>
         <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Vytvořit první projekt</button>
       </div>

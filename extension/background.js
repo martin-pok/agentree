@@ -1,4 +1,4 @@
-// Service worker: spárování s Agentree a odeslání dat na 127.0.0.1 (nikam jinam).
+// Service worker: spárování s Agenteeq a odeslání dat na 127.0.0.1 (nikam jinam).
 const BASE = 'http://127.0.0.1:4620';
 let token = null;
 
@@ -6,11 +6,11 @@ async function getToken() {
   if (token) return token;
   const stored = await chrome.storage.local.get(['token']);
   if (stored.token) return (token = stored.token);
-  throw new Error('Rozšíření není spárované. Klikni na jeho ikonu a vlož jednorázový kód z Agentree.');
+  throw new Error('Rozšíření není spárované. Klikni na jeho ikonu a vlož jednorázový kód z Agenteeq.');
 }
 
 async function pair(code) {
-  const res = await fetch(`${BASE}/api/extension/pair`, { method: 'POST', headers: { 'X-Agentree-Pair-Code': code } });
+  const res = await fetch(`${BASE}/api/extension/pair`, { method: 'POST', headers: { 'X-Agenteeq-Pair-Code': code } });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
@@ -20,7 +20,7 @@ async function pair(code) {
 const post = (t, payload) =>
   fetch(`${BASE}/api/ingest/web`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Agentree-Token': t },
+    headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
     body: JSON.stringify(payload),
   });
 
@@ -32,10 +32,10 @@ async function send(payload) {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === 'agentree:update') {
+  if (msg?.type === 'agenteeq:update') {
     send(msg.payload).catch((err) =>
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } }));
-  } else if (msg?.type === 'agentree:pair' && typeof msg.code === 'string') {
+  } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   }

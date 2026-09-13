@@ -6,16 +6,16 @@ import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
 import { installLaunchAgent, uninstallLaunchAgent } from '../src/launch-agent.js';
 
-const HELP = `Agentree ${VERSION} — všichni AI agenti na jednom místě
+const HELP = `Agenteeq ${VERSION} — všichni AI agenti na jednom místě
 
 Použití:
-  agentree                 spustí server a dashboard na http://127.0.0.1:4620
-  agentree --open          spustí server a otevře dashboard v prohlížeči
-  agentree install-agent   spouštět automaticky po přihlášení (macOS LaunchAgent)
-  agentree uninstall-agent zrušit automatické spouštění
-  agentree --version       vypíše verzi
+  agenteeq                 spustí server a dashboard na http://127.0.0.1:4620
+  agenteeq --open          spustí server a otevře dashboard v prohlížeči
+  agenteeq install-agent   spouštět automaticky po přihlášení (macOS LaunchAgent)
+  agenteeq uninstall-agent zrušit automatické spouštění
+  agenteeq --version       vypíše verzi
 
-Proměnné prostředí: PORT, AGENTREE_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz docs/INSTALL.md)`;
+Proměnné prostředí: PORT, AGENTEEQ_HOME, OPENAI_ADMIN_KEY, ANTHROPIC_ADMIN_KEY (viz docs/INSTALL.md)`;
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith('-')));
@@ -37,7 +37,7 @@ if (unknownFlag) {
 }
 if (cmd === 'install-agent') {
   const r = await installLaunchAgent({ script: fileURLToPath(import.meta.url) });
-  console.log(`Hotovo. Agentree se spouští po přihlášení.\nKonfigurace: ${r.file}\nLogy: ${r.logDir}`);
+  console.log(`Hotovo. Agenteeq se spouští po přihlášení.\nKonfigurace: ${r.file}\nLogy: ${r.logDir}`);
   process.exit(0);
 }
 if (cmd === 'uninstall-agent') {
@@ -62,25 +62,25 @@ const server = createHttpServer(app);
 server.on('error', async (err) => {
   const url = `http://127.0.0.1:${config.port}`;
   if (err.code === 'EADDRINUSE') {
-    // Běží už jiná instance Agentree (např. z LaunchAgentu)? Pak skončit v klidu — launchd ji nebude restartovat.
+    // Běží už jiná instance Agenteeq (např. z LaunchAgentu)? Pak skončit v klidu — launchd ji nebude restartovat.
     const running = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r) => r.json()).catch(() => null);
     await app.stop();
     if (running?.ok) {
-      console.log(`Agentree ${running.version} už běží: ${url}`);
+      console.log(`Agenteeq ${running.version} už běží: ${url}`);
       openUrl(url);
       process.exit(0);
     }
-    console.error(`Port ${config.port} je obsazený jinou aplikací. Spusť Agentree s jiným portem: PORT=4621 agentree`);
+    console.error(`Port ${config.port} je obsazený jinou aplikací. Spusť Agenteeq s jiným portem: PORT=4621 agenteeq`);
     process.exit(1);
   }
-  console.error('Agentree: server se nepodařilo spustit:', err.message);
+  console.error('Agenteeq: server se nepodařilo spustit:', err.message);
   await app.stop();
   process.exit(1);
 });
 
 server.listen(config.port, config.host, () => {
   const url = `http://127.0.0.1:${server.address().port}`;
-  console.log(`Agentree ${VERSION} běží na ${url}`);
+  console.log(`Agenteeq ${VERSION} běží na ${url}`);
   openUrl(url);
 });
 

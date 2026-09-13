@@ -1,6 +1,6 @@
 // Musí běžet před CSS: lokální kopie preference zabrání záblesku světlého vzhledu.
 (() => {
-  const key = 'agentree.appearance';
+  const key = 'agenteeq.appearance';
   const valid = new Set(['light', 'dark', 'system']);
   let preference = 'light';
   try {

@@ -1,6 +1,6 @@
 import { esc, fmtTok, fmtAxis, timeHM, dateTime } from './format.js';
 
-// Pravidla grafů Agentree: kreslí se jen naměřené hodnoty. Žádné vyhlazování mezi body (vymýšlelo by hodnoty),
+// Pravidla grafů Agenteeq: kreslí se jen naměřené hodnoty. Žádné vyhlazování mezi body (vymýšlelo by hodnoty),
 // intervaly jako sloupce, stav v čase jako schodovitá čára na skutečné časové ose, popisky se nesmí překrývat.
 
 export function niceMax(v) {

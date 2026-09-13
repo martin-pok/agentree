@@ -1,4 +1,4 @@
-const KEY = 'agentree.appearance';
+const KEY = 'agenteeq.appearance';
 const VALID = new Set(['light', 'dark', 'system']);
 const media = window.matchMedia('(prefers-color-scheme: dark)');
 let preference = 'light';
@@ -14,7 +14,7 @@ export function resolvedAppearance(value = preference) {
 
 function notifyDesktop(theme) {
   try {
-    window.webkit?.messageHandlers?.agentree?.postMessage({ type: 'appearance', theme });
+    window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'appearance', theme });
   } catch { /* prohlížeč bez macOS bridge */ }
 }
 

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>cz.agentree.desktop</string>
-<key>CFBundleName</key><string>Agentree</string>
-<key>CFBundleDisplayName</key><string>Agentree</string>
-<key>CFBundleExecutable</key><string>Agentree</string>
-<key>CFBundleIconFile</key><string>Agentree</string>
+<key>CFBundleIdentifier</key><string>cz.agenteeq.desktop</string>
+<key>CFBundleName</key><string>Agenteeq</string>
+<key>CFBundleDisplayName</key><string>Agenteeq</string>
+<key>CFBundleExecutable</key><string>Agenteeq</string>
+<key>CFBundleIconFile</key><string>Agenteeq</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.6.0</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
-<key>NSAppleEventsUsageDescription</key><string>Agentree otevírá zvolenou konverzaci a spouští agenty v Terminálu na tvůj pokyn.</string>
+<key>NSAppleEventsUsageDescription</key><string>Agenteeq otevírá zvolenou konverzaci a spouští agenty v Terminálu na tvůj pokyn.</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 </dict></plist>

@@ -8,7 +8,7 @@ import { tempDir } from './helpers.mjs';
 test('migrace dat: jednou zkopíruje, nepřepíše, original zůstane', async () => {
   const root = await tempDir();
   const legacyDir = path.join(root, '.legacy');
-  const dataDir = path.join(root, '.agentree');
+  const dataDir = path.join(root, '.agenteeq');
   await fs.mkdir(legacyDir, { recursive: true });
   const original = JSON.stringify({ ingestToken: 'a'.repeat(48), alerts: [{ id: 'x' }] });
   await fs.writeFile(path.join(legacyDir, 'data.json'), original);

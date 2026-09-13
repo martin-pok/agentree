@@ -11,7 +11,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 const g = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
 test('projekty 2: nastavení, vzhled, obrázky, git, tým agentů, pravidla a rozpočet', async (t) => {
-  const srcHome = await tempDir('agentree-src-');
+  const srcHome = await tempDir('agenteeq-src-');
   const repo = path.join(srcHome, 'klienti', 'web');
   await fs.mkdir(repo, { recursive: true });
   g(repo, 'init', '-q', '-b', 'main');
@@ -26,7 +26,7 @@ test('projekty 2: nastavení, vzhled, obrázky, git, tým agentů, pravidla a ro
     { type: 'user', timestamp: new Date(Date.now() - 60000).toISOString(), cwd: repo, message: { content: 'Uprav web' } },
     { type: 'assistant', timestamp: new Date(Date.now() - 50000).toISOString(), message: { id: 'z1', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo' }], usage: { input_tokens: 100, output_tokens: 800 } } },
   ]);
-  const srv = await startTestServer({ AGENTREE_SOURCE_HOME: srcHome });
+  const srv = await startTestServer({ AGENTEEQ_SOURCE_HOME: srcHome });
   t.after(() => srv.close());
   const a = api(srv.url);
   let project;
@@ -54,7 +54,7 @@ test('projekty 2: nastavení, vzhled, obrázky, git, tým agentů, pravidla a ro
   });
 
   await t.test('logo: nahrání PNG, ověření obsahu a velikosti, ochrana, smazání', async () => {
-    const put = (body, headers = { 'X-Agentree': '1', 'Content-Type': 'image/png' }) => fetch(`${srv.url}/api/projects/${project.id}/media/logo`, { method: 'PUT', headers, body });
+    const put = (body, headers = { 'X-Agenteeq': '1', 'Content-Type': 'image/png' }) => fetch(`${srv.url}/api/projects/${project.id}/media/logo`, { method: 'PUT', headers, body });
     assert.equal((await put(PNG, { 'Content-Type': 'image/png' })).status, 403, 'CSRF');
     assert.equal((await put(Buffer.from('<svg onload=alert(1)>'))).status, 415, 'SVG ani text nejsou povolené');
     const big = Buffer.concat([PNG, Buffer.alloc(1_600_000)]);
@@ -88,7 +88,7 @@ test('projekty 2: nastavení, vzhled, obrázky, git, tým agentů, pravidla a ro
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.equal(r.body.started, 2);
     for (const x of r.body.results) {
-      assert.match(x.work.branch, new RegExp(`^agentree/${x.agent === 'codex' ? 'codex' : 'claude'}-pridej-cenik-\\d{4}-\\d{6}$`));
+      assert.match(x.work.branch, new RegExp(`^agenteeq/${x.agent === 'codex' ? 'codex' : 'claude'}-pridej-cenik-\\d{4}-\\d{6}$`));
       assert.ok(x.work.path.startsWith(path.join(srv.dataHome, 'worktrees', project.id) + path.sep));
       assert.equal(await fs.stat(x.work.path).catch(() => null), null, 'zkušební režim nic nevytváří');
       const promptArg = x.plan.argv.at(-1);

@@ -1,5 +1,5 @@
 /*
- * Agentree — načítací animace značky.
+ * Agenteeq — načítací animace značky.
  *
  * Nosný efekt: větve značky se postupně „narůstají" přes stroke-dashoffset
  * (kmen → levá větev → pravá větev), uzly se rozsvěcují, jak je růst dosáhne.

@@ -8,11 +8,11 @@ guard CommandLine.arguments.count == 3,
 let action = CommandLine.arguments[1]
 let id = CommandLine.arguments[2]
 var query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-    kSecAttrService as String: "cz.agentree.\(id)", kSecAttrAccount as String: "agentree"]
-#if AGENTREE_KEYCHAIN_QA
-// Test build cannot read or overwrite real Agentree keys.
-guard let namespace = ProcessInfo.processInfo.environment["AGENTREE_QA_NAMESPACE"], UUID(uuidString: namespace) != nil else { exit(64) }
-query[kSecAttrService as String] = "cz.agentree.qa.\(namespace).\(id)"
+    kSecAttrService as String: "cz.agenteeq.\(id)", kSecAttrAccount as String: "agenteeq"]
+#if AGENTEEQ_KEYCHAIN_QA
+// Test build cannot read or overwrite real Agenteeq keys.
+guard let namespace = ProcessInfo.processInfo.environment["AGENTEEQ_QA_NAMESPACE"], UUID(uuidString: namespace) != nil else { exit(64) }
+query[kSecAttrService as String] = "cz.agenteeq.qa.\(namespace).\(id)"
 #endif
 var status: OSStatus = errSecParam
 switch action {

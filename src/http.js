@@ -64,8 +64,9 @@ export function createHttpServer(app, existingServer = null) {
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
     const verejne = !url.pathname.startsWith('/api/') && (req.method === 'GET' || req.method === 'HEAD');
     if (verejne || url.pathname === '/api/lan/pair' || url.pathname === '/api/health') return;
-    if (!app.lan.tokenOk(cookieValue(req.headers.cookie))) {
-      throw new HttpError(401, 'Tohle zařízení není spárované. Zadej kód z Agentree na Macu.');
+    // Spárované telefony mají cookie ještě pod starým názvem — platí obě.
+    if (!app.lan.tokenOk(cookieValue(req.headers.cookie) || cookieValue(req.headers.cookie, 'agentree_device'))) {
+      throw new HttpError(401, 'Tohle zařízení není spárované. Zadej kód z Agenteeq na Macu.');
     }
   }
 
@@ -110,7 +111,7 @@ export function createHttpServer(app, existingServer = null) {
   heartbeat.unref?.();
 
   function stream(req, res) {
-    if (clients.size >= 32) throw new HttpError(503, 'Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agentree.');
+    if (clients.size >= 32) throw new HttpError(503, 'Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agenteeq.');
     res.writeHead(200, {
       ...SECURITY,
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -147,14 +148,16 @@ export function createHttpServer(app, existingServer = null) {
   }
 
   function tokenOk(req) {
-    const given = Buffer.from(String(req.headers['x-agentree-token'] || ''));
+    // Po přejmenování na Agenteeq bereme i starou hlavičku — hooky a rozšíření nainstalované
+    // pod názvem Agentree tak fungují dál, dokud je uživatel nepřepojí.
+    const given = Buffer.from(String(req.headers['x-agenteeq-token'] || req.headers['x-agentree-token'] || ''));
     const expected = Buffer.from(datastore.data.ingestToken);
     return given.length === expected.length && crypto.timingSafeEqual(given, expected);
   }
 
   // Ochrana proti CSRF: vlastní hlavička vynutí CORS preflight, který server nepovolí; navíc kontrola Origin.
   function guardMutation(req) {
-    if (req.headers['x-agentree'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Agentree.');
+    if (req.headers['x-agenteeq'] !== '1' && req.headers['x-agentree'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Agenteeq.');
     const origin = req.headers.origin;
     if (origin && !allowedOrigins().has(origin)) throw new HttpError(403, 'Nepovolený původ požadavku.');
   }
@@ -247,7 +250,7 @@ export function createHttpServer(app, existingServer = null) {
       const secure = url.protocol === 'https:' ? ' Secure;' : '';
       // SameSite=Lax, ne Strict: telefon typicky otevře adresu z poznámek, QR kódu nebo dlaždice
       // na domovské obrazovce — to je přechod z jiného webu a Strict by u něj cookie neposlal,
-      // takže by spárovaný telefon znovu žádal kód. Zápisy dál chrání hlavička X-Agentree
+      // takže by spárovaný telefon znovu žádal kód. Zápisy dál chrání hlavička X-Agenteeq
       // (cizí web ji bez preflightu nepřidá) a kontrola Origin.
       return {
         raw: true,
@@ -316,9 +319,9 @@ export function createHttpServer(app, existingServer = null) {
     }, { token: true }],
     ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
-      const pair = await app.pairExtension(String(req.headers['x-agentree-pair-code'] || ''));
-      if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agentree.');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      const pair = await app.pairExtension(String(req.headers['x-agenteeq-pair-code'] || ''));
+      if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agenteeq.');
       return pair;
     }, { token: true }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
@@ -368,7 +371,7 @@ export function createHttpServer(app, existingServer = null) {
         level: 'action',
         kind: 'test',
         title: 'Testovací upozornění',
-        body: 'Takhle tě Agentree upozorní, když agent bude potřebovat tvé rozhodnutí.',
+        body: 'Takhle tě Agenteeq upozorní, když agent bude potřebovat tvé rozhodnutí.',
       });
       return { alert };
     }],
@@ -454,7 +457,7 @@ export function createHttpServer(app, existingServer = null) {
       const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return {
         raw: true,
-        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agentree-${slug}-${date}.csv"`, 'Cache-Control': 'no-store' },
+        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agenteeq-${slug}-${date}.csv"`, 'Cache-Control': 'no-store' },
         body: r.csv,
       };
     }],
@@ -575,7 +578,7 @@ export function createHttpServer(app, existingServer = null) {
   const onRequest = (req, res) => {
     handle(req, res).catch((err) => {
       const status = err.status || 500;
-      if (status >= 500) console.error('Agentree: chyba požadavku', req.method, status);
+      if (status >= 500) console.error('Agenteeq: chyba požadavku', req.method, status);
       if (res.headersSent) {
         res.end();
         return;

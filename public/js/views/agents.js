@@ -20,25 +20,25 @@ const SEGMENTS = [
 
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
 
-// Aplikace, které Agentree umí přepnout do popředí (server má pevný seznam v src/openers.js).
+// Aplikace, které Agenteeq umí přepnout do popředí (server má pevný seznam v src/openers.js).
 const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
-// vůbec neobjevily, takže to vypadalo, že Agentree agenta „nezaregistroval". Teď je vidět, že běží,
+// vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,
 // i to, proč u nich nemůže být přepis — a co s tím jde udělat.
 const BEZ_PREPISU = {
   chatgpt: {
     duvod: 'Aplikace ChatGPT konverzace neukládá na tento Mac — ověřeno: mezipaměť konverzací se naposledy zapsala v červnu 2025, dnešní chat není nikde na disku a aplikace komunikuje se serverem bez lokálního rozhraní.',
-    rada: 'Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agentree. Kódovací vlákna spuštěná z aplikace ChatGPT (Codex) se sledují normálně.',
+    rada: 'Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agenteeq. Kódovací vlákna spuštěná z aplikace ChatGPT (Codex) se sledují normálně.',
     odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
   },
   'ms-copilot': {
     duvod: 'Desktopová aplikace Microsoft Copilot nemá konverzace v čitelném formátu na disku.',
-    rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.',
+    rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.',
     odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
   },
-  perplexity: { duvod: 'Aplikace Perplexity konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
-  grok: { duvod: 'Aplikace Grok konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agentree se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
+  perplexity: { duvod: 'Aplikace Perplexity konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
+  grok: { duvod: 'Aplikace Grok konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
 };
 
 function bezPrepisuHtml(sessions) {
@@ -70,7 +70,7 @@ function bezPrepisuHtml(sessions) {
 }
 
 // Detekovaný lokální agent — od vlastního modelu z Hugging Face po ComfyUI. U rozpoznaných podle
-// heuristiky říkáme narovinu, že je to odhad z běžícího procesu a že u nich Agentree neumí víc.
+// heuristiky říkáme narovinu, že je to odhad z běžícího procesu a že u nich Agenteeq neumí víc.
 function lokalniHtml(a) {
   const jistota = a.confidence === 'vysoká';
   const detaily = [

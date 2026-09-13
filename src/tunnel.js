@@ -154,8 +154,8 @@ export function remoteAdvice(tunnels) {
       doporuceni: 'tailscale',
       text: 'Tailscale má nejlepší poměr bezpečnosti a pohodlí: vytvoří privátní síť jen mezi tvými zařízeními, žádná veřejná adresa nikde nevzniká.',
       kroky: tailscale.running
-        ? ['Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako na Macu.', 'V appce Tailscale na telefonu otevři adresu Agentree.']
-        : ['Na Macu se přihlas do Tailscale ("tailscale up").', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.', 'V appce Tailscale na telefonu otevři adresu Agentree.'],
+        ? ['Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako na Macu.', 'V appce Tailscale na telefonu otevři adresu Agenteeq.']
+        : ['Na Macu se přihlas do Tailscale ("tailscale up").', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.', 'V appce Tailscale na telefonu otevři adresu Agenteeq.'],
     };
   }
   if (cloudflared?.installed) {
@@ -173,7 +173,7 @@ export function remoteAdvice(tunnels) {
 }
 
 // Sestaví celou adresu, na kterou se uživatel z telefonu připojí. U privátní sítě (Tailscale)
-// je zjištěná adresa jen jméno/IP zařízení bez portu — port Agentree se připojuje až tady.
+// je zjištěná adresa jen jméno/IP zařízení bez portu — port Agenteeq se připojuje až tady.
 // U veřejných tunelů (Cloudflare, ngrok) je adresa od tunelu už kompletní veřejná URL.
 export function remoteUrl(tunnel, port) {
   if (!tunnel || !tunnel.url) return '';

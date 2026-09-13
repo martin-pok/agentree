@@ -5,14 +5,14 @@ import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
 
-const STORE_KEY = 'agentree.launch';
+const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
 const MODE_HINT = {
   terminal: 'Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.',
   background: 'Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.',
   app: 'Otevře aplikaci s předvyplněným zadáním — v ní ho jen potvrdíš.',
   web: 'Otevře službu v prohlížeči; zadání je navíc ve schránce (⌘V).',
-  local: 'Model běží na tvém Macu — zdarma a bez odesílání dat. Odpovídá přímo v Agentree.',
+  local: 'Model běží na tvém Macu — zdarma a bez odesílání dat. Odpovídá přímo v Agenteeq.',
 };
 
 function load() {
@@ -38,7 +38,7 @@ export function runProblem(r) {
       ? { title: 'Přihlášení Codexu vypršelo', hint: 'V Terminálu spusť příkaz níže a přihlas se. Potom úkol spusť znovu.', fix: 'codex login', raw }
       : { title: 'Přihlášení Claude Code vypršelo', hint: 'V Terminálu spusť příkaz níže a zadej /login. Potom úkol spusť znovu.', fix: 'claude', raw };
   }
-  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu — Agentree tě upozorní, až se obnoví.', raw };
+  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu — Agenteeq tě upozorní, až se obnoví.', raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} se nepodařilo spustit`, hint: 'Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.', raw };
   return { title: `${r.label} skončil chybou`, hint: 'Celé znění chyby najdeš níže v části Původní chyba.', raw };
 }
@@ -87,7 +87,7 @@ function showHandoff({ target, label, mode, handoff, prompt }) {
       ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V — je ve schránce.']
       : ['Zadání máš ve schránce.', `V ${label} ho vlož ⌘V a odešli Enterem.`];
   const foot = mode === 'web'
-    ? 'Konverzaci uvidíš v Agentree, když máš rozšíření pro Chrome.'
+    ? 'Konverzaci uvidíš v Agenteeq, když máš rozšíření pro Chrome.'
     : 'Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.';
   const el = document.createElement('div');
   el.className = 'handoff';

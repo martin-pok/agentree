@@ -168,7 +168,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
       watcher = watchTree(dir, (f) => (f ? queue.schedule(f) : scan()));
     },
     scan,
-    // Historie se čte přímo ze souboru a nikam se neukládá — Agentree z ní nedělá vlastní archiv.
+    // Historie se čte přímo ze souboru a nikam se neukládá — Agenteeq z ní nedělá vlastní archiv.
     async series(opts) {
       const stat = await statSafe(file);
       if (!stat?.isFile()) return null;

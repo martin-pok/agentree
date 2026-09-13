@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Agentree – AI agenti v reálném čase",
-  "short_name": "Agentree",
+  "name": "Agenteeq – AI agenti v reálném čase",
+  "short_name": "Agenteeq",
   "version": "0.5.0",
-  "description": "Posílá stav a přepis konverzací z webových AI aplikací do Agentree na tomto počítači (127.0.0.1).",
+  "description": "Posílá stav a přepis konverzací z webových AI aplikací do Agenteeq na tomto počítači (127.0.0.1).",
   "permissions": ["storage"],
   "host_permissions": ["http://127.0.0.1:4620/*"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Agentree", "default_popup": "popup.html" },
+  "action": { "default_title": "Agenteeq", "default_popup": "popup.html" },
   "content_scripts": [
     {
       "matches": [

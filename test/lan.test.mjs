@@ -35,7 +35,7 @@ test('přístup z telefonu: čtení cookie', () => {
 
 test('párování: kód platí jen jednou, chybný pokus se počítá a po pěti se zruší', async () => {
   const datastore = fakeDatastore();
-  const lan = createLanAccess({ datastore, config: loadConfig({ PORT: '0', AGENTREE_HOME: '/tmp/x', AGENTREE_SOURCE_HOME: '/tmp/x' }) });
+  const lan = createLanAccess({ datastore, config: loadConfig({ PORT: '0', AGENTEEQ_HOME: '/tmp/x', AGENTEEQ_SOURCE_HOME: '/tmp/x' }) });
 
   assert.equal((await lan.pair('123456')).status, 403, 'vypnutý přístup nepáruje');
   datastore.data.settings.lanAccess = true;
@@ -65,7 +65,7 @@ test('párování: kód platí jen jednou, chybný pokus se počítá a po pěti
 test('párování: odpárování zařízení zneplatní jeho token', async () => {
   const datastore = fakeDatastore();
   datastore.data.settings.lanAccess = true;
-  const lan = createLanAccess({ datastore, config: loadConfig({ PORT: '0', AGENTREE_HOME: '/tmp/x', AGENTREE_SOURCE_HOME: '/tmp/x' }) });
+  const lan = createLanAccess({ datastore, config: loadConfig({ PORT: '0', AGENTEEQ_HOME: '/tmp/x', AGENTEEQ_SOURCE_HOME: '/tmp/x' }) });
   const { code } = lan.newPin();
   const { token, device } = await lan.pair(code, 'Telefon');
   assert.equal(lan.tokenOk(token), true);
@@ -75,8 +75,8 @@ test('párování: odpárování zařízení zneplatní jeho token', async () =>
 });
 
 test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to jde jen z Macu', async (t) => {
-  const dataHome = await tempDir('agentree-data-');
-  const s = await startTestServer({ AGENTREE_HOME: dataHome });
+  const dataHome = await tempDir('agenteeq-data-');
+  const s = await startTestServer({ AGENTEEQ_HOME: dataHome });
   t.after(() => s.close());
 
   // Skutečný požadavek z místní sítě: spojení jde na síťovou adresu tohoto Macu, takže server
@@ -109,15 +109,15 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
     const r = await zLan(cesta);
     assert.equal(r.status, 401, `${cesta} musí bez spárování vrátit 401`);
   }
-  assert.equal((await zLan('/api/lan/pin', { method: 'POST', headers: { 'X-Agentree': '1' } })).status, 401, 'bez tokenu se z telefonu nedá ani vytvořit kód');
+  assert.equal((await zLan('/api/lan/pin', { method: 'POST', headers: { 'X-Agenteeq': '1' } })).status, 401, 'bez tokenu se z telefonu nedá ani vytvořit kód');
 
   // 4) Párování: chybný kód neprojde, správný vrátí cookie a otevře data.
   const { pin } = (await api(s.url).send('POST', '/api/lan/pin', {})).body;
   assert.match(pin.code, /^\d{6}$/);
-  const spatne = await zLan('/api/lan/pair', { method: 'POST', headers: { 'X-Agentree': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: '000000' }) });
+  const spatne = await zLan('/api/lan/pair', { method: 'POST', headers: { 'X-Agenteeq': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: '000000' }) });
   assert.equal(spatne.status, 401);
 
-  const dobre = await zLan('/api/lan/pair', { method: 'POST', headers: { 'X-Agentree': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: pin.code, label: 'iPhone' }) });
+  const dobre = await zLan('/api/lan/pair', { method: 'POST', headers: { 'X-Agenteeq': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: pin.code, label: 'iPhone' }) });
   assert.equal(dobre.status, 200, dobre.body);
   const dobreTelo = JSON.parse(dobre.body);
   const cookie = String(dobre.cookie?.[0] || '');
@@ -131,7 +131,7 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
 
   // 5) Ani spárovaný telefon nesmí párovat další zařízení, zapínat přístup, nic odpárovat
   //    — a nesmí se dozvědět kód ani seznam zařízení.
-  const sCookie = { headers: { Cookie: token, 'X-Agentree': '1' }, method: 'POST' };
+  const sCookie = { headers: { Cookie: token, 'X-Agenteeq': '1' }, method: 'POST' };
   assert.equal((await zLan('/api/lan/pin', sCookie)).status, 403, 'kód smí vytvořit jen Mac');
   assert.equal((await zLan('/api/lan/enable', sCookie)).status, 403, 'zapínat smí jen Mac');
   assert.equal((await zLan(`/api/lan/devices/${dobreTelo.device.id}`, { ...sCookie, method: 'DELETE' })).status, 403, 'odpárovat smí jen Mac');
@@ -150,5 +150,5 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   assert.deepEqual(s.app.datastore.data.lanDevices, [], 'vypnutím zmizí i tokeny');
   assert.equal(s.app.lan.tokenOk(token.split('=')[1]), false, 'token po vypnutí neplatí');
   await assert.rejects(() => zLan('/api/state', { headers: { Cookie: token } }), /ECONNREFUSED/, 'po vypnutí na síti nikdo neposlouchá');
-  assert.equal((await api(s.url).get('/api/state')).status, 200, 'na Macu funguje Agentree dál bez omezení');
+  assert.equal((await api(s.url).get('/api/state')).status, 200, 'na Macu funguje Agenteeq dál bez omezení');
 });

@@ -138,7 +138,7 @@ test('Konektor: bez klíče je stav "missing" a tokeny/náklady jsou prázdné',
   assert.deepEqual(connector.autoEntries(), []);
 });
 
-test('Konektor: AGENTREE_CLOUD=0 (config.cloudFetch=false) nikdy nezavolá síť', async () => {
+test('Konektor: AGENTEEQ_CLOUD=0 (config.cloudFetch=false) nikdy nezavolá síť', async () => {
   const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }, { cloudFetch: false }), {
     fetchImpl: async () => { throw new Error('nemělo se volat'); },
   });

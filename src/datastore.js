@@ -77,7 +77,7 @@ export function normalizeData(raw) {
   };
 }
 
-// Trvalá data aplikace (~/.agentree/data.json): nastavení, rozpočty, výdaje, upozornění.
+// Trvalá data aplikace (~/.agenteeq/data.json): nastavení, rozpočty, výdaje, upozornění.
 export class DataStore {
   constructor(dir) {
     this.dir = dir;
@@ -93,12 +93,12 @@ export class DataStore {
       raw = JSON.parse(await fs.readFile(this.file, 'utf8'));
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid data root');
     } catch (err) {
-      if (err.code !== 'ENOENT') throw new Error('Data Agentree nelze bezpečně načíst. Původní soubor zůstal zachovaný; obnov jej ze zálohy nebo zkontroluj jeho oprávnění.');
+      if (err.code !== 'ENOENT') throw new Error('Data Agenteeq nelze bezpečně načíst. Původní soubor zůstal zachovaný; obnov jej ze zálohy nebo zkontroluj jeho oprávnění.');
     }
     this.data = normalizeData(raw);
     await this.flush();
     // Vlastní datová složka patří jen přihlášenému uživateli — na sdíleném Macu se tak k ní
-    // nedostane nikdo další. Cizí složky (AGENTREE_HOME mimo domov) se tím nemění na nic horšího.
+    // nedostane nikdo další. Cizí složky (AGENTEEQ_HOME mimo domov) se tím nemění na nic horšího.
     await fs.chmod(this.dir, 0o700).catch(() => {});
     return this.data;
   }
@@ -111,7 +111,7 @@ export class DataStore {
     this.scheduleSave.cancel();
     const snapshot = JSON.parse(JSON.stringify(this.data));
     this.writing = this.writing.then(() => writeJsonAtomic(this.file, snapshot)).catch((err) => {
-      console.error('Agentree: nepodařilo se uložit data', err.message);
+      console.error('Agenteeq: nepodařilo se uložit data', err.message);
     });
     return this.writing;
   }

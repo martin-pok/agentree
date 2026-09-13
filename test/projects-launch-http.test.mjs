@@ -31,7 +31,7 @@ function mockOllama() {
 test('projekty, rychlé spouštění, licence a složky přes HTTP', async (t) => {
   const ollama = await mockOllama();
   t.after(() => ollama.close());
-  const srcHome = await tempDir('agentree-src-');
+  const srcHome = await tempDir('agenteeq-src-');
   const projDir = path.join(srcHome, 'klienti', 'kavarna');
   await fs.mkdir(path.join(projDir, 'web'), { recursive: true });
   await fs.mkdir(path.join(projDir, '.git'));
@@ -43,7 +43,7 @@ test('projekty, rychlé spouštění, licence a složky přes HTTP', async (t) =
   ]);
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
   const srv = await startTestServer(
-    { AGENTREE_SOURCE_HOME: srcHome, AGENTREE_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}` },
+    { AGENTEEQ_SOURCE_HOME: srcHome, AGENTEEQ_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}` },
     { licensePublicKey: publicKey.export({ type: 'spki', format: 'pem' }) },
   );
   t.after(() => srv.close());
@@ -113,7 +113,7 @@ test('projekty, rychlé spouštění, licence a složky přes HTTP', async (t) =
     const res = await fetch(`${srv.url}/api/projects/${project.id}/export`);
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type'), /^text\/csv/);
-    assert.match(res.headers.get('content-disposition'), /filename="agentree-kavarna-u-mostu-\d{4}-\d{2}-\d{2}\.csv"/);
+    assert.match(res.headers.get('content-disposition'), /filename="agenteeq-kavarna-u-mostu-\d{4}-\d{2}-\d{2}\.csv"/);
     const bytes = Buffer.from(await res.arrayBuffer());
     assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'BOM pro Excel');
     assert.ok(bytes.toString('utf8').includes('Navrhni menu'));

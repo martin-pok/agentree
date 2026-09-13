@@ -32,12 +32,12 @@ function onboardingHtml() {
     { done: Boolean(hooks?.installed && hooks?.current), label: 'Propojení s Claude Code', sub: 'Žádost o povolení a přesné limity uvidíš hned.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' },
     { done: web?.state === 'connected' || web?.state === 'idle', label: 'Rozšíření pro ChatGPT, Claude.ai a další weby', sub: 'Webové konverzace se zobrazí vedle agentů na Macu.', cta: '<a class="btn btn--sm" href="#/nastaveni">Návod</a>' },
     { done: state.projects.items.length > 0, label: 'První projekt', sub: 'Konverzace ze všech služeb seřazené podle klientů.', cta: '<a class="btn btn--sm" href="#/projekty">Založit</a>' },
-    { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agentree', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
+    { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agenteeq', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
   ];
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return '';
   return `<section class="card onboard" aria-labelledby="ob-h">
-    <div class="onboard-head"><div><h2 id="ob-h">Začni s Agentree</h2><p class="muted small">${done} z ${steps.length} hotovo</p></div>
+    <div class="onboard-head"><div><h2 id="ob-h">Začni s Agenteeq</h2><p class="muted small">${done} z ${steps.length} hotovo</p></div>
       <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="Průvodce nastavením"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
       <button class="link" type="button" data-onboard-dismiss>Skrýt průvodce</button></div>
     <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>

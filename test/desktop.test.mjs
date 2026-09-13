@@ -8,7 +8,7 @@ import { normalizeData } from '../src/datastore.js';
 test('welcome a vzhled: bezpečné výchozí hodnoty, API persistence; desktop blocks competing LaunchAgent', async () => {
   assert.equal(normalizeData({ settings: { welcomeCompleted: 'yes' } }).settings.welcomeCompleted, false);
   assert.equal(normalizeData({ settings: { appearance: 'night' } }).settings.appearance, 'light');
-  const s = await startTestServer({ AGENTREE_DESKTOP: '1' });
+  const s = await startTestServer({ AGENTEEQ_DESKTOP: '1' });
   try {
     const client = api(s.url);
     assert.equal((await client.get('/api/state')).body.settings.welcomeCompleted, false);
@@ -33,17 +33,17 @@ test('welcome a vzhled: bezpečné výchozí hodnoty, API persistence; desktop b
 });
 
 test('desktop: owns its server, closes on parent EOF, rejects occupied ports', async () => {
-  const dir = await tempDir('agentree-desktop-');
-  const env = { ...process.env, PORT: '0', AGENTREE_SOURCE_HOME: dir, AGENTREE_HOME: dir, AGENTREE_PROCESSES: '0', AGENTREE_CLOUD: '0', AGENTREE_NATIVE_NOTIFY: '0', AGENTREE_KEYCHAIN: '0', AGENTREE_OPEN: 'dry', AGENTREE_QUIET: '1', AGENTREE_OLLAMA_URL: 'http://127.0.0.1:9' };
+  const dir = await tempDir('agenteeq-desktop-');
+  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
   const child = spawn(process.execPath, ['desktop/server.mjs'], { env, stdio: ['pipe','pipe','pipe'] });
   let output = '';
   child.stdout.on('data', (s) => { output += s; });
   const exited = new Promise((r) => child.once('exit', r));
   try {
-    const ready = await waitFor(() => output.split('\n').filter((x) => x.startsWith('AGENTREE_DESKTOP ')).map((x) => JSON.parse(x.slice(17))).find((x) => x.ready), 15000);
+    const ready = await waitFor(() => output.split('\n').filter((x) => x.startsWith('AGENTEEQ_DESKTOP ')).map((x) => JSON.parse(x.slice(17))).find((x) => x.ready), 15000);
     assert.equal((await fetch(`http://127.0.0.1:${ready.port}/api/health`).then((r) => r.json())).ready, true);
-    const occupiedDir = await tempDir('agentree-occupied-');
-    const second = spawn(process.execPath, ['desktop/server.mjs'], { env: { ...env, PORT: String(ready.port), AGENTREE_HOME: occupiedDir }, stdio: ['pipe','pipe','pipe'] });
+    const occupiedDir = await tempDir('agenteeq-occupied-');
+    const second = spawn(process.execPath, ['desktop/server.mjs'], { env: { ...env, PORT: String(ready.port), AGENTEEQ_HOME: occupiedDir }, stdio: ['pipe','pipe','pipe'] });
     let secondOutput = '';
     second.stdout.on('data', (s) => { secondOutput += s; });
     assert.equal(await new Promise((r) => second.once('exit', r)), 1);

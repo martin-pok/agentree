@@ -3,7 +3,7 @@
 ## ROOT CAUSE
 
 Na portu 4620 byl při diagnostice samostatný Node proces spuštěný přes
-`/Users/martinpokorny/agentree/bin/agentree.mjs` (verze 0.5.0), nikoli server
+`/Users/martinpokorny/agenteeq/bin/agenteeq.mjs` (verze 0.5.0), nikoli server
 vlastněný nativním oknem. CLI má SIGINT/SIGTERM shutdown, ale nemá smlouvu
 o životnosti s GUI, kontrolu rodiče ani desktopový single-instance lock.
 Samotné zavření okna tak ukončení tohoto procesu nezaručuje. Historický
@@ -30,7 +30,7 @@ Port už byl volný, GUI a jeho zámek však žily dál. Finální verze místo 
 
 ## FILES CHANGED — lifecycle
 
-`desktop/Agentree.swift`, `desktop/server.mjs`, `desktop/lifecycle.mjs`,
+`desktop/Agenteeq.swift`, `desktop/server.mjs`, `desktop/lifecycle.mjs`,
 `src/http.js`, `test/desktop.test.mjs`, `test/lifecycle.test.mjs`.
 Ostatní změny na větvi `feat/macos-desktop` souvisejí s původním zadáním
 nativního balíčku, ikonou, lokálními fonty, průvodcem a vlastními selecty.
@@ -46,7 +46,7 @@ nativního balíčku, ikonou, lokálními fonty, průvodcem a vlastními selecty
   persistence, klávesnice selectů, všechny hlavní stránky, šířky 375/900/1180/1440,
   lokální fonty, žádné viditelné nativní selecty ani JS chyby.
 - Finální Swift build úspěšně zkompilován; `codesign --verify --deep --strict` prošel
-  i po instalaci do `/Users/martinpokorny/Applications/Agentree.app`.
+  i po instalaci do `/Users/martinpokorny/Applications/Agenteeq.app`.
 - Nativní UI: skutečná data na přehledu; ⌘Q odstranilo GUI PID 69365 i server
   PID 69374 a uvolnilo port 4620 (ověřeno ps/lsof).
 - Finální nativní executable na izolovaných datech: tři cykly start/ukončení,

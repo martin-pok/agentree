@@ -74,7 +74,7 @@ function openBudgets(opener = null) {
     wide: true,
     opener,
     submitLabel: 'Uložit rozpočty',
-    body: `<p class="modal-text">Agentree tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.</p>
+    body: `<p class="modal-text">Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.</p>
       <div class="form-grid">
         <label class="field"><span>Celkový měsíční rozpočet</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="bez limitu" value="${cfg.total || ''}"></label>
         <label class="field"><span>Hlavní měna</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
@@ -123,7 +123,7 @@ function mount(el, _params, query) {
       <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
       <div data-region="ledger"></div>
     </section>
-    <p class="note">Útratu za API doplní Agentree sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
+    <p class="note">Útratu za API doplní Agenteeq sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
   // `el` je trvalý uzel #view, který router mezi navigacemi jen vyprazdňuje (innerHTML = ''),
   // nikdy nenahrazuje — starý posluchač proto musí zmizet, jinak se při každém návratu na
   // Útratu přidá další a jediný klik pak otevře tolik dialogů, kolik bylo návštěv (nejde zavřít,
@@ -187,7 +187,7 @@ function update() {
         <span class="muted small">${money(b.spent)} z ${money(b.budget)}</span>
       </div>`;
     }).join('')}</div>`
-    : `<div class="cta-card card">${ICON.wallet}<div><strong>Nastav si měsíční rozpočet</strong><p class="muted small">Agentree tě upozorní, jakmile útrata dosáhne 80 % a 100 %.</p></div><button class="btn" type="button" data-action="budgets">Nastavit rozpočet</button></div>`);
+    : `<div class="cta-card card">${ICON.wallet}<div><strong>Nastav si měsíční rozpočet</strong><p class="muted small">Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.</p></div><button class="btn" type="button" data-action="budgets">Nastavit rozpočet</button></div>`);
 
   const used = [...new Set(sp.months.flatMap((m) => Object.keys(m.services)))];
   fill(el, 'months', columnChart({
@@ -241,7 +241,7 @@ function update() {
         <span class="muted small">vyčerpáno ${num(body[body.length - 1].value)} % · ${od} – ${doKdy}</span></div>
       ${timeLine({ id: 'sp-claude-xu', points: body, height: 150, color: chartColor('anthropic'), format: (x) => `${num(x)} %`, axisFormat: (x) => `${Math.round(x)}`, label: 'Extra usage Claude', riseLabel: 'Přibylo čerpání' })}
       ${skoky.length ? `<ul class="topups">${skoky.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)} %</b></li>`).join('')}</ul>` : ''}
-      <p class="small muted">Claude ukládá vytížení plánu do vlastního souboru; Agentree z něj čte i čerpání extra usage. Jednotku soubor neuvádí — že jde o procenta, plyne z toho, že vedle leží 5hodinové a týdenní okno také v procentech a stavový řádek Claude Code hlásí stejnou trojici. 🧪 Neověřeno oficiální dokumentací.</p></div>`;
+      <p class="small muted">Claude ukládá vytížení plánu do vlastního souboru; Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí — že jde o procenta, plyne z toho, že vedle leží 5hodinové a týdenní okno také v procentech a stavový řádek Claude Code hlásí stejnou trojici. 🧪 Neověřeno oficiální dokumentací.</p></div>`;
   };
 
   const spendRow = (l) => {
@@ -260,7 +260,7 @@ function update() {
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá · ${ups.length}× dokoupeno</span></div>
         ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}
         ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">Dokoupení Agentree pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní — ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
+          <p class="small muted">Dokoupení Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní — ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

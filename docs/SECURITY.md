@@ -1,14 +1,14 @@
 # Bezpečnost a soukromí
 
-Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské informace, prompty). Bezpečnost je proto součást produktu, ne doplněk.
+Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské informace, prompty). Bezpečnost je proto součást produktu, ne doplněk.
 
 ## Model hrozeb
 
 | Hrozba | Opatření | Kde |
 |---|---|---|
-| Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1` | `bin/agentree.mjs`, `src/config.js` |
+| Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1` | `bin/agenteeq.mjs`, `src/config.js` |
 | Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` | `src/http.js#handle` |
-| Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agentree: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
+| Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agenteeq: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
 | Podvržené události hooků / rozšíření | Náhodný 48znakový token, porovnání v konstantním čase | `src/http.js#tokenOk`, `src/datastore.js` |
 | Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření ho musí ručně předat, server ho porovná v konstantním čase a po prvním použití zneplatní | `src/app.js#pairExtension`, `src/http.js` |
 | XSS z obsahu přepisů | Veškerý dynamický text přes `esc()`; markdown až po escapování; odkazy jen `http(s)` s `rel="noopener noreferrer"`; CSP `script-src 'self'` | `public/js/format.js`, `views/session.js`, `src/http.js#SECURITY` |
@@ -40,19 +40,19 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 
 ## Známé hranice a podmínky distribuce
 
-- **Lokální HTTP není izolace od jiných lokálních procesů.** Program běžící pod uživatelem může oslovit API, číst data a spustit povolené akce. Agentree proto není určeno pro nedůvěryhodné sdílené účty. Rozšíření s oprávněním k localhostu je rovněž privilegovaný klient; jednorázový kód snižuje riziko automatického vyzrazení tokenu, ale nechrání proti malwaru pod stejným uživatelem.
+- **Lokální HTTP není izolace od jiných lokálních procesů.** Program běžící pod uživatelem může oslovit API, číst data a spustit povolené akce. Agenteeq proto není určeno pro nedůvěryhodné sdílené účty. Rozšíření s oprávněním k localhostu je rovněž privilegovaný klient; jednorázový kód snižuje riziko automatického vyzrazení tokenu, ale nechrání proti malwaru pod stejným uživatelem.
 - **Veřejný macOS release:** aktuální lokální build je ad-hoc podepsaný. Před distribucí klientům je nutný stabilní Developer ID podpis, notarizace a ověření čisté instalace/aktualizace na dalším Macu. Ad-hoc změna podpisu může znovu vyžádat souhlas Klíčenky.
 - **Licence zdrojů:** `package.json` zatím uvádí `UNLICENSED`. Vlastník musí před prezentací jako open-source zvolit licenci; zveřejnění na GitHubu samo licenci nenahrazuje.
-- **Data v `~/.agentree/data.json` nejsou šifrovaná** (práva 0600). Obsahují výdaje, upozornění a token, ne přepisy.
-- **Agent spuštěný z Agentree má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agentree/prompts` (0600) a výstup běhů v `~/.agentree/runs` (0600).
+- **Data v `~/.agenteeq/data.json` nejsou šifrovaná** (práva 0600). Obsahují výdaje, upozornění a token, ne přepisy.
+- **Agent spuštěný z Agenteeq má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agenteeq/prompts` (0600) a výstup běhů v `~/.agenteeq/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
-- **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agentree — to je vlastnost macOS, ne Agentree.
+- **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq — to je vlastnost macOS, ne Agenteeq.
 - **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy.
 
 ## Soukromí
 
 - Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
-- Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agentree/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
+- Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agenteeq/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
 - Před případnou cloudovou verzí: end-to-end šifrování, opt-in po zdrojích, zásady zpracování údajů (GDPR), smlouvy se zpracovateli.
 
 ## Hlášení problému
@@ -72,6 +72,6 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash — ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
 - Vypnutí zavře listener a smaže všechna zařízení.
-- Zápisy dál procházejí ochranou proti CSRF (`X-Agentree` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
+- Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 
 Neřešeno: HTTPS. Bez něj prohlížeč na telefonu nedovolí instalaci PWA (service worker chce zabezpečený kontext) — v prohlížeči aplikace funguje normálně.

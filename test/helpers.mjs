@@ -5,7 +5,7 @@ import { loadConfig } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
 
-export async function tempDir(prefix = 'agentree-test-') {
+export async function tempDir(prefix = 'agenteeq-test-') {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
@@ -43,21 +43,21 @@ export function fakeDatastore(settings = {}) {
 }
 
 export async function startTestServer(env = {}, appOptions = {}) {
-  const sourceHome = env.AGENTREE_SOURCE_HOME || (await tempDir('agentree-src-'));
-  const dataHome = env.AGENTREE_HOME || (await tempDir('agentree-data-'));
+  const sourceHome = env.AGENTEEQ_SOURCE_HOME || (await tempDir('agenteeq-src-'));
+  const dataHome = env.AGENTEEQ_HOME || (await tempDir('agenteeq-data-'));
   const config = loadConfig({
     PORT: '0',
-    AGENTREE_SOURCE_HOME: sourceHome,
-    AGENTREE_HOME: dataHome,
-    AGENTREE_PROCESSES: '0',
-    AGENTREE_NATIVE_NOTIFY: '0',
-    AGENTREE_KEYCHAIN: '0',
-    AGENTREE_CLOUD: '0',
-    AGENTREE_SCAN_MS: '60000',
-    AGENTREE_QUIET: '1',
-    AGENTREE_OPEN: 'dry',
+    AGENTEEQ_SOURCE_HOME: sourceHome,
+    AGENTEEQ_HOME: dataHome,
+    AGENTEEQ_PROCESSES: '0',
+    AGENTEEQ_NATIVE_NOTIFY: '0',
+    AGENTEEQ_KEYCHAIN: '0',
+    AGENTEEQ_CLOUD: '0',
+    AGENTEEQ_SCAN_MS: '60000',
+    AGENTEEQ_QUIET: '1',
+    AGENTEEQ_OPEN: 'dry',
     // Nikdy nesahat na skutečnou Ollamu na počítači, kde běží testy (port 9 = discard, spojení odmítnuto).
-    AGENTREE_OLLAMA_URL: 'http://127.0.0.1:9',
+    AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
     ...env,
   });
   const app = await createApp(config, appOptions);
@@ -109,7 +109,7 @@ export async function openStream(url) {
 
 export const api = (url) => ({
   get: (p) => fetch(url + p).then(async (r) => ({ status: r.status, body: await r.json() })),
-  send: (method, p, body, headers = { 'X-Agentree': '1' }) =>
+  send: (method, p, body, headers = { 'X-Agenteeq': '1' }) =>
     fetch(url + p, { method, headers: { 'Content-Type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
       .then(async (r) => ({ status: r.status, body: await r.json() })),
 });

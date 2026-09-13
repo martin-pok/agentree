@@ -158,7 +158,7 @@ export async function acceptWork({ repo, dir, branch, base, message }) {
   if (!wt.ok) return { ok: false, error: 'Pracovní kopie agenta není dostupná.' };
   if (wt.stdout.trim()) {
     const add = await git(dir, ['add', '-A']);
-    const commit = add.ok ? await git(dir, ['commit', '-m', clip(message || `Agentree: práce na ${branch}`, 200)], 30000) : add;
+    const commit = add.ok ? await git(dir, ['commit', '-m', clip(message || `Agenteeq: práce na ${branch}`, 200)], 30000) : add;
     if (!commit.ok) {
       const identity = /user\.name|user\.email|identity/i.test(commit.stderr);
       return { ok: false, error: identity ? 'Git nezná tvoje jméno a e-mail. Nastav je v Terminálu: git config --global user.name "Jméno" a git config --global user.email "email".' : `Změny se nepodařilo uložit: ${clip(commit.stderr.trim().split('\n').pop(), 160)}` };

@@ -10,8 +10,8 @@ import { identifyRetiredServer } from '../desktop/lifecycle.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 async function fixture() {
-  const dir = await tempDir('agentree-lifecycle-');
-  const env = { ...process.env, PORT: '0', AGENTREE_SOURCE_HOME: dir, AGENTREE_HOME: dir, AGENTREE_PROCESSES: '0', AGENTREE_CLOUD: '0', AGENTREE_NATIVE_NOTIFY: '0', AGENTREE_KEYCHAIN: '0', AGENTREE_OPEN: 'dry', AGENTREE_QUIET: '1', AGENTREE_OLLAMA_URL: 'http://127.0.0.1:9' };
+  const dir = await tempDir('agenteeq-lifecycle-');
+  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
   return { dir, env };
 }
 function start(env, script = path.join(root, 'desktop/server.mjs')) {
@@ -20,7 +20,7 @@ function start(env, script = path.join(root, 'desktop/server.mjs')) {
   child.stdout.on('data', (s) => { output += s; });
   child.stderr.on('data', () => {});
   const exit = new Promise((r) => child.once('exit', r));
-  return { child, exit, ready: () => waitFor(() => output.split('\n').filter((s) => s.startsWith('AGENTREE_DESKTOP ')).map((s) => JSON.parse(s.slice(17))).find((s) => s.ready), 15000) };
+  return { child, exit, ready: () => waitFor(() => output.split('\n').filter((s) => s.startsWith('AGENTEEQ_DESKTOP ')).map((s) => JSON.parse(s.slice(17))).find((s) => s.ready), 15000) };
 }
 
 test('lifecycle: 6 immediate restarts release the port; a simultaneous second start cannot steal it', async () => {
@@ -58,7 +58,7 @@ test('lifecycle: spoofed health from another server never authorizes termination
   const { dir, env } = await fixture();
   const foreign = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(req.url === '/api/health' ? { ok: true, ready: true, version: '0.5.0' } : { runs: [], integrations: { install: { root, bin: path.join(root, 'bin/agentree.mjs'), dataDir: dir } } }));
+    res.end(JSON.stringify(req.url === '/api/health' ? { ok: true, ready: true, version: '0.5.0' } : { runs: [], integrations: { install: { root, bin: path.join(root, 'bin/agenteeq.mjs'), dataDir: dir } } }));
   });
   await new Promise((r) => foreign.listen(0, '127.0.0.1', r));
   const port = foreign.address().port;
@@ -75,8 +75,8 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
   for (const sub of ['src','bin']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
-  await fs.writeFile(path.join(legacyRoot, 'package.json'), '{"name":"agentree","version":"0.5.0","type":"module"}');
-  const old = start(env, path.join(legacyRoot, 'bin/agentree.mjs'));
+  await fs.writeFile(path.join(legacyRoot, 'package.json'), '{"name":"agenteeq","version":"0.5.0","type":"module"}');
+  const old = start(env, path.join(legacyRoot, 'bin/agenteeq.mjs'));
   t.after(() => { if (old.child.exitCode === null) old.child.kill(); });
   let oldOutput = '';
   old.child.stdout.on('data', (s) => { oldOutput += s; });

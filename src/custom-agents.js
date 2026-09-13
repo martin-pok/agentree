@@ -1,5 +1,5 @@
 // Vlastní agenti = lokální služba, kterou si uživatel sám zaregistruje (ComfyUI, Ollama,
-// OpenAI-kompatibilní server jako LM Studio nebo vLLM). Agentree jen čte její stav přes GET —
+// OpenAI-kompatibilní server jako LM Studio nebo vLLM). Agenteeq jen čte její stav přes GET —
 // nikdy nic nezapisuje a nikdy nesahá mimo lokální/privátní síť. Bezpečnost tohoto souboru
 // (validateEndpoint) má přednost před vším ostatním: co neprojde, se nikdy nezavolá.
 
@@ -167,7 +167,7 @@ export async function probeAgent(agent, { fetchImpl = globalThis.fetch, timeoutM
     });
 
     if (res.status >= 300 && res.status < 400) {
-      return { ok: false, running: false, detail: 'Služba odpovídá přesměrováním, to Agentree nenásleduje.', at };
+      return { ok: false, running: false, detail: 'Služba odpovídá přesměrováním, to Agenteeq nenásleduje.', at };
     }
     if (res.status < 200 || res.status >= 300) {
       return { ok: false, running: false, detail: `Služba odpověděla ${res.status}.`, at };

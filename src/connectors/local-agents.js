@@ -32,7 +32,7 @@ export const KNOWN_LOCAL = [
 ];
 
 // Procesy, které se nikdy nesmí označit — vlastní proces, systémové služby a testovací běh.
-const EXCLUDE = /agentree|node --test|xcode|spotlight|mdworker|finder|safari|chrome|chrome_crashpad|windowserver|kernel_task/i;
+const EXCLUDE = /agenteeq|node --test|xcode|spotlight|mdworker|finder|safari|chrome|chrome_crashpad|windowserver|kernel_task/i;
 
 // Slabé signály neznámého modelu — samy o sobě stačí, jen když proces něco reálně dělá
 // (cpu > 0) nebo drží typický inferenční port. Bez toho jde často jen o slovo v cestě
@@ -85,7 +85,7 @@ function parseRow(line) {
   return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
 }
 
-const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu — vlastní nebo neznámý model, Agentree u něj neumí číst konverzace ani limity.';
+const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu — vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
 
 /**
  * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde

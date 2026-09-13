@@ -162,7 +162,7 @@ function mount(el, [id]) {
           break;
         }
         case 'delete':
-          if (await confirmDialog({ title: `Smazat projekt ${p.name}?`, message: 'Konverzace zůstanou v Agentree, jen přestanou být zařazené v tomto projektu. Podklady a poznámky projektu se smažou.', confirmLabel: 'Smazat projekt', danger: true })) {
+          if (await confirmDialog({ title: `Smazat projekt ${p.name}?`, message: 'Konverzace zůstanou v Agenteeq, jen přestanou být zařazené v tomto projektu. Podklady a poznámky projektu se smažou.', confirmLabel: 'Smazat projekt', danger: true })) {
             await api.deleteProject(p.id);
             location.hash = '#/projekty';
             toast(`Projekt ${p.name} smazán`);

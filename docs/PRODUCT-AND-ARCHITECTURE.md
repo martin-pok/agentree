@@ -1,10 +1,10 @@
-# Agentree — produktový a architektonický kompas
+# Agenteeq — produktový a architektonický kompas
 
 Tento dokument je společný zdroj pravdy pro produktové rozhodování, návrh rozhraní a další agentický vývoj. Nenahrazuje detailní kontrakty v `docs/DATA-CONTRACT.md`, bezpečnostní hranice v `docs/SECURITY.md` ani seznam konektorů v `docs/CONNECTORS.md`; určuje, jak tyto části držet v jednom soudržném produktu.
 
-## 1. Co Agentree je
+## 1. Co Agenteeq je
 
-Agentree je lokální macOS pracovní velín pro člověka, který souběžně používá více AI agentů. Zkracuje tři nejdražší mezery v práci:
+Agenteeq je lokální macOS pracovní velín pro člověka, který souběžně používá více AI agentů. Zkracuje tři nejdražší mezery v práci:
 
 1. **Pozornost:** ukáže, že agent čeká na člověka, dřív než se práce zbytečně zastaví.
 2. **Kontext:** spojí vlákna, složky a projekty napříč nástroji, bez ručního hledání v chatových aplikacích.
@@ -14,7 +14,7 @@ Primární uživatel je jednotlivec nebo malé studio na macOS. Produkt je local
 
 ## 2. Produktová pravda a uživatelské sliby
 
-| Oblast | Co Agentree smí slíbit | Co nesmí tvrdit bez živého ověření |
+| Oblast | Co Agenteeq smí slíbit | Co nesmí tvrdit bez živého ověření |
 |---|---|---|
 | Aktivita agentů | Stav odvozený z lokálního přepisu, procesu, hooku nebo párovaného rozšíření | Že agent skutečně pracuje, pokud je k dispozici jen staré datum souboru |
 | Tokeny | Lokálně zpracované tokeny z podporovaných přepisů | Cena, vyčerpaný kredit nebo limit předplatného, pokud zdroj neposkytl přesnou hodnotu |
@@ -32,7 +32,7 @@ Uživatel otevře Přehled a během několika sekund ví: co běží, co potřeb
 
 ### Reakce na zaseknutého agenta
 
-Upozornění vede na konkrétní session a následně do původní aplikace či terminálu. Agentree nemá předstírat vzdálené schvalování, pokud nástroj takové bezpečné API nenabízí.
+Upozornění vede na konkrétní session a následně do původní aplikace či terminálu. Agenteeq nemá předstírat vzdálené schvalování, pokud nástroj takové bezpečné API nenabízí.
 
 ### Spuštění práce z projektu
 
@@ -40,7 +40,7 @@ Uživatel zvolí projekt, pracovní složku a agenta. Server sestaví bezpečný
 
 ### Připojení další služby
 
-Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede krátký pairing flow rozšíření Chrome. Přihlašování do cizích služeb nedělá Agentree za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence.
+Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede krátký pairing flow rozšíření Chrome. Přihlašování do cizích služeb nedělá Agenteeq za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence.
 
 ## 4. Designový systém a vzhled
 
@@ -75,7 +75,7 @@ flowchart LR
   API --> Store
   Store --> SSE[SSE stream]
   Store --> Alerts[Upozornění]
-  Store <--> Data[~/.agentree/data.json]
+  Store <--> Data[~/.agenteeq/data.json]
   SSE --> Web[Vanilla dashboard]
   Alerts --> Native[macOS notifikace]
   Web <--> Bridge[WKWebView bridge]
@@ -141,6 +141,6 @@ Před předáním:
 
 ## 9. Co zatím nepatří do slibu produkční verze
 
-- Neexistuje univerzální SSO, které by bezpečně přihlásilo uživatele do ChatGPT, Claude, Perplexity, Groku a dalších nezávislých dodavatelů. Agentree může usnadnit autorizaci přes jejich vlastní login nebo oficiální API klíče, nesmí fungovat jako sběrač hesel.
+- Neexistuje univerzální SSO, které by bezpečně přihlásilo uživatele do ChatGPT, Claude, Perplexity, Groku a dalších nezávislých dodavatelů. Agenteeq může usnadnit autorizaci přes jejich vlastní login nebo oficiální API klíče, nesmí fungovat jako sběrač hesel.
 - Přesná cena a předplatné napříč dodavateli nejsou odvoditelné z tokenů. Kde není důvěryhodné API, musí zůstat ruční položka nebo jasně popsaná absence dat.
 - Ad-hoc podepsaný lokální build není veřejně distribuovatelný release. Před konferencí, klientskou distribucí nebo Mac App Store je nutný samostatný release proces z `docs/SECURITY.md`.

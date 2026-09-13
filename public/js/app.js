@@ -174,7 +174,7 @@ function refresh(topics) {
   try {
     current?.update(topics);
   } catch (err) {
-    console.error('Agentree: chyba vykreslení', err);
+    console.error('Agenteeq: chyba vykreslení', err);
   }
   tweenAll(document);
   restoreHover(viewEl);
@@ -220,9 +220,9 @@ function updateChrome() {
     : conn === 'connecting' ? '<i class="dot"></i><span>Připojuji…</span>' : '<i class="dot dot--down"></i><span>Obnovuji spojení…</span>');
   setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
-    ${state.version ? `<span class="source-host">Agentree ${esc(state.version)}</span>` : ''}`);
+    ${state.version ? `<span class="source-host">Agenteeq ${esc(state.version)}</span>` : ''}`);
 
-  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agentree`;
+  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agenteeq`;
   if (!pop.hidden) renderPopover();
 }
 
@@ -240,7 +240,7 @@ function renderProfile(name, working, all) {
   const art = hasAvatar(state.settings?.avatar);
   const hadFocus = Boolean(document.activeElement?.closest?.('[data-avatar-cycle]'));
   setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="Změnit profilový obrázek" title="Změnit profilový obrázek">
-    <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agentree'))}</span></span>
+    <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agenteeq'))}</span></span>
     <span class="avatar-change" aria-hidden="true">${ICON.refresh}</span>
   </button>`);
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
@@ -424,8 +424,8 @@ function renderOffline(show) {
   }
   const port = location.port || '4620';
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
-    <div class="offline-text"><strong>Agentree server neběží</strong>
-      <p>${window.agentreeDesktop ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.' : 'Agentree se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agentree --open</code> (ve složce projektu <code>npm start</code>).'}</p>
+    <div class="offline-text"><strong>Agenteeq server neběží</strong>
+      <p>${window.agenteeqDesktop ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.' : 'Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).'}</p>
       <p class="small">Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. Adresa: 127.0.0.1:${esc(port)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
   offlineEl.hidden = false;
@@ -448,11 +448,11 @@ offlineEl.addEventListener('click', async (e) => {
   if (ok) location.reload();
   else {
     b.disabled = false;
-    toast('Server Agentree pořád neodpovídá. Spusť ho v Terminálu příkazem agentree --open.', { tone: 'velvet' });
+    toast('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.', { tone: 'velvet' });
   }
 });
 
-if (!window.agentreeDesktop && 'serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+if (!window.agenteeqDesktop && 'serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('/sw.js').catch(() => { /* bez offline mezipaměti */ });
 }
 
@@ -536,7 +536,7 @@ connectStream({
       .state()
       .then((snap) => {
         applySnapshot(snap);
-        window.webkit?.messageHandlers?.agentree?.postMessage({ type: 'ready' });
+        window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
         for (const [name, data] of queued.splice(0)) handle(name, data);
       })
       .catch((err) => {
@@ -552,13 +552,13 @@ connectStream({
 });
 
 // Telefon, který ještě není spárovaný, dostane od serveru 401. Místo prázdné aplikace se zeptáme
-// na jednorázový kód z Agentree na Macu; po spárování se stránka načte znovu už s daty.
+// na jednorázový kód z Agenteeq na Macu; po spárování se stránka načte znovu už s daty.
 function parovaciObrazovka(zprava = '') {
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
       <h1>Připojit telefon</h1>
-      <p>V Agentree na Macu otevři <b>Nastavení → Otevřít na telefonu</b> a vytvoř kód. Platí pět minut a jen na jedno spárování.</p>
+      <p>V Agenteeq na Macu otevři <b>Nastavení → Otevřít na telefonu</b> a vytvoř kód. Platí pět minut a jen na jedno spárování.</p>
       <label class="sr-only" for="pin">Kód z Macu</label>
       <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}

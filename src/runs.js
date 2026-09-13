@@ -6,7 +6,7 @@ import { uid, clip } from './util.js';
 const MAX_RUNS = 50;
 const KILL_GRACE_MS = 5000;
 
-// Agenti spuštění z Agentree na pozadí: proces, log, stav, zastavení.
+// Agenti spuštění z Agenteeq na pozadí: proces, log, stav, zastavení.
 export class RunManager {
   constructor({ dataDir, onChange = () => {}, spawnImpl = spawn }) {
     this.dir = path.join(dataDir, 'runs');

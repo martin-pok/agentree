@@ -149,7 +149,7 @@ export class AlertEngine {
     this.store.emit('alert', alert);
     if (this.settings.native) {
       this.notifier
-        .native({ title: alert.title, body: alert.body || '', subtitle: 'Agentree', sound: alert.level === 'action' || alert.level === 'critical' })
+        .native({ title: alert.title, body: alert.body || '', subtitle: 'Agenteeq', sound: alert.level === 'action' || alert.level === 'critical' })
         .catch(() => {});
     }
     return alert;

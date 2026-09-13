@@ -40,7 +40,7 @@ function mount(el) {
       <div class="seg seg--light" role="group" aria-label="Filtrovat podle zdroje" data-region="sources"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">Hledat dovednost</span><input type="search" data-q placeholder="Název nebo popis…" autocomplete="off"></label>
     </div>
-    <p class="note" data-enter style="--i:2">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu — od Claude, jeho pluginů a Codexu. Agentree je jen čte; zkopírovaný text můžeš vložit jiné službě nebo agentovi.</p>
+    <p class="note" data-enter style="--i:2">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu — od Claude, jeho pluginů a Codexu. Agenteeq je jen čte; zkopírovaný text můžeš vložit jiné službě nebo agentovi.</p>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {
@@ -83,7 +83,7 @@ function update() {
     ? `<div class="skills">${list.map(rowHtml).join('')}</div>`
     : emptyState({
       title: v.items.length ? 'Tomuto filtru neodpovídá žádná dovednost' : 'Na tomto Macu zatím žádné dovednosti nejsou',
-      text: v.items.length ? 'Zkus jiný zdroj nebo hledaný výraz.' : 'Agentree hledá soubory SKILL.md u Claude (včetně pluginů a plánovaných úloh) a u Codexu.',
+      text: v.items.length ? 'Zkus jiný zdroj nebo hledaný výraz.' : 'Agenteeq hledá soubory SKILL.md u Claude (včetně pluginů a plánovaných úloh) a u Codexu.',
     }));
 }
 

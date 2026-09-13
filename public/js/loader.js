@@ -1,4 +1,4 @@
-// Agentree — HTML pro prémiovou načítací animaci značky a skeleton karet.
+// Agenteeq — HTML pro prémiovou načítací animaci značky a skeleton karet.
 // Bez runtime závislostí; jen čisté SVG/DOM řetězce. Styly v public/loader.css.
 
 function escapeHtml(str) {
@@ -12,7 +12,7 @@ function escapeHtml(str) {
 }
 
 /**
- * Vrátí hotový HTML řetězec s animovanou značkou Agentree (rostoucí větve,
+ * Vrátí hotový HTML řetězec s animovanou značkou Agenteeq (rostoucí větve,
  * jemné nadechnutí, doznívající halo) a textem stavu.
  * @param {string} text - oznamovaný stav (výchozí: „Načítám data z tvého Macu…“)
  */

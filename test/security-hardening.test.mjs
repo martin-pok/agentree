@@ -19,7 +19,7 @@ test('security: foreign origins cannot read state, transcripts or SSE; same-orig
     }
     assert.equal((await fetch(s.url + '/api/state', { headers: { Origin: s.url } })).status, 200);
     assert.equal((await fetch(s.url + '/')).headers.get('cross-origin-resource-policy'), 'same-origin');
-    assert.equal((await api(s.url).send('PUT', '/api/settings', { avatar: 1 }, { 'X-Agentree': '1', Origin: 'https://evil.example' })).status, 403);
+    assert.equal((await api(s.url).send('PUT', '/api/settings', { avatar: 1 }, { 'X-Agenteeq': '1', Origin: 'https://evil.example' })).status, 403);
     assert.equal((await api(s.url).send('POST', '/api/extension/pair-code', {}, { Origin: 'https://evil.example' })).status, 403);
   } finally { await s.close(); }
 });
@@ -49,7 +49,7 @@ test('security: keychain values travel on stdin only; no insecure argv fallback'
   assert.equal(calls[0][2].input, value);
   assert.ok(!JSON.stringify(calls[0].slice(0, 2)).includes(value));
   await assert.rejects(secrets.set('openai-admin', 'sk-' + 'a'.repeat(5000)));
-  await assert.rejects(createSecrets({ keychain: true }, { helper: '/nonexistent/agentree-keychain' }).set('openai-admin', value), /desktopovou/);
+  await assert.rejects(createSecrets({ keychain: true }, { helper: '/nonexistent/agenteeq-keychain' }).set('openai-admin', value), /desktopovou/);
 });
 
 test('security: billing credentials never follow redirects; failures remain contained', async (t) => {
@@ -68,7 +68,7 @@ test('security: billing credentials never follow redirects; failures remain cont
 });
 
 test('reliability: corrupt persistent data are never replaced with an empty database', async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agentree-corrupt-qa-');
+  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
   const file = dir + '/data.json';
   for (const input of ['{"unfinished":', 'null', '[]']) {
     await fs.writeFile(file, input, { mode: 0o600 });
@@ -78,12 +78,12 @@ test('reliability: corrupt persistent data are never replaced with an empty data
 });
 
 test('soukromí: historie upozornění jde smazat a datová složka patří jen vlastníkovi', async (t) => {
-  const dataHome = await tempDir('agentree-data-');
-  const s = await startTestServer({ AGENTREE_HOME: dataHome });
+  const dataHome = await tempDir('agenteeq-data-');
+  const s = await startTestServer({ AGENTEEQ_HOME: dataHome });
   t.after(() => s.close());
 
   const bezHlavicky = await fetch(`${s.url}/api/alerts/clear`, { method: 'POST' });
-  assert.equal(bezHlavicky.status, 403, 'mazání je změna, bez hlavičky X-Agentree neprojde');
+  assert.equal(bezHlavicky.status, 403, 'mazání je změna, bez hlavičky X-Agenteeq neprojde');
 
   s.app.alerts.raise({ level: 'info', kind: 'done', title: 'Tajný název projektu', body: 'text z konverzace', key: 'k1' });
   assert.equal(s.app.datastore.data.alerts.length, 1);

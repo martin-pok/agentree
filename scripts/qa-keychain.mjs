@@ -4,11 +4,11 @@ import crypto from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 
-const dir = await fs.mkdtemp('/private/tmp/agentree-keychain-qa-');
+const dir = await fs.mkdtemp('/private/tmp/agenteeq-keychain-qa-');
 const helper = path.join(dir, 'keychain-qa');
-execFileSync('xcrun', ['swiftc', '-D', 'AGENTREE_KEYCHAIN_QA', '-framework', 'Security', 'desktop/Keychain.swift', '-o', helper]);
+execFileSync('xcrun', ['swiftc', '-D', 'AGENTEEQ_KEYCHAIN_QA', '-framework', 'Security', 'desktop/Keychain.swift', '-o', helper]);
 execFileSync('codesign', ['--force', '--sign', '-', helper]);
-const env = { ...process.env, AGENTREE_QA_NAMESPACE: crypto.randomUUID() };
+const env = { ...process.env, AGENTEEQ_QA_NAMESPACE: crypto.randomUUID() };
 const run = (action, id, input = '') => new Promise(resolve => {
   const p = spawn(helper, [action, id], { env, stdio: ['pipe', 'pipe', 'ignore'] });
   let output = '';

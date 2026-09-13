@@ -21,7 +21,7 @@ test('Dovednosti: hlavička souboru se čte, název chybí → vezme se složka'
 
 test('Dovednosti: najdou se u Claude, v pluginech i u Codexu; seznam je řazený', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   await writeSkill(home, ['.claude', 'skills', 'shrnuti', 'SKILL.md'], '---\nname: Shrnutí změn\ndescription: Popíše diff\n---\nobsah');
   await writeSkill(home, ['.claude', 'plugins', 'cache', 'balik', 'skills', 'zaloha', 'SKILL.md'], '---\nname: Záloha\n---\nobsah');
   await writeSkill(home, ['.codex', 'skills', '.system', 'review-agent', 'SKILL.md'], '---\nname: Revize\ndescription: Kontrola příkazů\n---\nobsah');
@@ -39,7 +39,7 @@ test('Dovednosti: najdou se u Claude, v pluginech i u Codexu; seznam je řazený
 
 test('Dovednosti: obsah se vydá jen podle id ze seznamu, cesta z požadavku se nepoužije', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   await writeSkill(home, ['.claude', 'skills', 'test', 'SKILL.md'], '---\nname: Test\n---\nskutečný obsah');
   await fs.writeFile(path.join(home, 'tajne.md'), 'tohle se nesmí vydat');
 
@@ -54,7 +54,7 @@ test('Dovednosti: obsah se vydá jen podle id ze seznamu, cesta z požadavku se 
 
 test('Dovednosti: prázdný a chybějící domov nic nerozbije', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const skills = createSkills({ config });
   assert.deepEqual(await skills.list(), []);
 });

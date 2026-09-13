@@ -4,8 +4,9 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/util.js';
 
-// Audited 0.5 CLI. Never authorize takeover from a process name or HTTP claim alone.
-const LEGACY_CLI_SHA = 'd07a50ddff833176873954dfb6ddf4ebb9348bd9373a9fea04fe7c4133cfc8d1';
+// Otisk CLI, které smí být převzato. Mění se s obsahem bin/agenteeq.mjs — naposledy při
+// přejmenování Agentree → Agenteeq (0.8.0). Nikdy nepovolujeme převzetí jen podle názvu procesu.
+const LEGACY_CLI_SHA = 'fdcf57f0240b5415d8ef415ffb47f95487b134c91535359aaaca4671969a0fa2';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 export const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code !== 'ESRCH'; } };
@@ -42,7 +43,7 @@ export async function identifyRetiredServer(config) {
     const actual = await fs.realpath(script);
     const root = await fs.realpath(install.root);
     const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
-    if (manifest.name !== 'agentree' || !actual.startsWith(root + path.sep) || digest(await fs.readFile(actual)) !== expectedHash) return null;
+    if (manifest.name !== 'agenteeq' || !actual.startsWith(root + path.sep) || digest(await fs.readFile(actual)) !== expectedHash) return null;
     const info = await run('/bin/ps', ['-ww', '-p', String(pid), '-o', 'uid=,args='], { timeout: 1200 });
     const executableInfo = await run('/bin/ps', ['-ww', '-p', String(pid), '-o', 'comm='], { timeout: 1200 });
     const line = info.stdout.trim();
@@ -77,7 +78,7 @@ export async function bindDesktop(server, config) {
   }
   const retired = await identifyRetiredServer(config);
   if (retired) {
-    // The PID still owns this exact listening socket. SIGTERM invokes Agentree's flush.
+    // The PID still owns this exact listening socket. SIGTERM invokes Agenteeq's flush.
     if (await listenerPid(config.port) === retired.pid) process.kill(retired.pid, 'SIGTERM');
     for (let n = 0; n < 40; n++) {
       await sleep(150);

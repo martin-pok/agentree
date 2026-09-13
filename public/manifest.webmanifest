@@ -1,6 +1,6 @@
 {
-  "name": "Agentree — všichni AI agenti na jednom místě",
-  "short_name": "Agentree",
+  "name": "Agenteeq — všichni AI agenti na jednom místě",
+  "short_name": "Agenteeq",
   "description": "Stav agentů, limity předplatných a útrata v reálném čase. Data zůstávají na tvém Macu.",
   "lang": "cs",
   "dir": "ltr",
@@ -17,7 +17,7 @@
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "/brand/agentree-mark-dark.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "/brand/agenteeq-mark-dark.svg", "sizes": "any", "type": "image/svg+xml" }
   ],
   "shortcuts": [
     { "name": "Agenti", "short_name": "Agenti", "url": "/#/agenti", "description": "Kdo právě pracuje a kdo čeká na rozhodnutí" },

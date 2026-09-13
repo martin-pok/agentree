@@ -37,16 +37,16 @@ import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 
-export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agentree.mjs');
+export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
 // Bez licence Pro je možné mít tolik aktivních projektů — platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
 
-// `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agentree-<verze>-macOS-<arch>.zip`.
+// `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agenteeq-<verze>-macOS-<arch>.zip`.
 // Server odvozuje přesný název sám (verze z package.json, architektura procesu) — nikdy z požadavku klienta.
 export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, arch = process.arch) {
-  const name = `Agentree-${version}-macOS-${arch}.zip`;
+  const name = `Agenteeq-${version}-macOS-${arch}.zip`;
   const file = path.join(distDir, name);
   try {
     const st = await fsp.stat(file);
@@ -60,10 +60,10 @@ const HOME_HIDDEN = new Set(['Library']);
 
 export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR } = {}) {
   try {
-    const m = await migrateLegacyData({ dataDir: config.dataDir, legacyDir: config.legacyDataDir });
-    if (m.migrated && !config.quiet) console.log(`Agentree: data převzata z ${m.from}`);
+    const m = await migrateLegacyData({ dataDir: config.dataDir, legacyDirs: config.legacyDataDirs });
+    if (m.migrated && !config.quiet) console.log(`Agenteeq: data převzata z ${m.from}`);
   } catch (err) {
-    console.error('Agentree: převzetí dat ze staré složky selhalo:', err.message);
+    console.error('Agenteeq: převzetí dat ze staré složky selhalo:', err.message);
   }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
@@ -85,7 +85,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const lan = createLanAccess({
     datastore,
     config,
-    onListen: (s) => log(`Agentree: přístup z telefonu je zapnutý na ${s.url}`),
+    onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${s.url}`),
   });
   const runs = new RunManager({
     dataDir: config.dataDir,
@@ -410,7 +410,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       let cwd = info?.root || repoDir;
       let work = null;
       if (isolate) {
-        const branch = `agentree/${AGENT_SHORT[agent]}-${slug}-${stamp}`;
+        const branch = `agenteeq/${AGENT_SHORT[agent]}-${slug}-${stamp}`;
         const dir = path.join(worktreeRoot, p.id, `${AGENT_SHORT[agent]}-${slug}-${stamp}`);
         if (!dry) {
           const wt = await createWorktree({ repo: info.root, base, branch, dir });
@@ -445,7 +445,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const p = findProject(id);
     const w = p?.work.find((x) => x.id === workId && x.status === 'active');
     if (!w) return { status: 404, error: 'Pracovní větev nenalezena.' };
-    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agentree — uprav ji ručně.' };
+    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq — uprav ji ručně.' };
     const running = (w.runId && ['running', 'stopping'].includes(runs.get(w.runId)?.status)) || (w.sessionId && store.summary(w.sessionId)?.status === 'working');
     if (running) return { status: 409, error: 'Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.' };
     if (dry) return { ok: true, dry: true };
@@ -453,7 +453,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!info.isRepo) return { status: 422, error: 'Repozitář projektu není dostupný.' };
     let r;
     if (action === 'accept') {
-      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agentree: ${w.label || w.agent} — ${clip(w.prompt, 72)}` });
+      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} — ${clip(w.prompt, 72)}` });
       if (r.ok) await cleanupWork({ repo: info.root, dir: w.path, branch: w.branch });
     } else {
       r = await discardWork({ repo: info.root, dir: w.path, branch: w.branch });
@@ -628,7 +628,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     try {
       entries = await fsp.readdir(target, { withFileTypes: true });
     } catch (err) {
-      return { status: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 404 : 403, error: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 'Složka neexistuje.' : 'Do této složky nemá Agentree přístup.' };
+      return { status: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 404 : 403, error: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 'Složka neexistuje.' : 'Do této složky nemá Agenteeq přístup.' };
     }
     const atHome = target === home;
     const dirs = entries
@@ -696,7 +696,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   /* ---------- Vlastní agenti (ComfyUI, Ollama, OpenAI-kompatibilní servery) ---------- */
-  // Agentree od nich jen čte stav. Adresa smí mířit výhradně na tenhle počítač nebo do místní sítě
+  // Agenteeq od nich jen čte stav. Adresa smí mířit výhradně na tenhle počítač nebo do místní sítě
   // (kontroluje `validateEndpoint` v custom-agents.js), dotaz je vždy GET bez přesměrování, s časovým
   // limitem a stropem na velikost odpovědi. Žádné přihlašovací údaje se neukládají.
   const customStatus = new Map();
@@ -738,7 +738,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function addCustomAgent(input) {
     const list = datastore.data.customAgents;
-    if (list.length >= MAX_AGENTS) return { status: 422, error: `Víc než ${MAX_AGENTS} vlastních agentů Agentree nesleduje.` };
+    if (list.length >= MAX_AGENTS) return { status: 422, error: `Víc než ${MAX_AGENTS} vlastních agentů Agenteeq nesleduje.` };
     const r = normalizeAgent({ ...input, origin: input?.url ?? input?.origin });
     if (!r.ok) return { status: 400, error: r.error, field: 'url' };
     if (list.some((a) => a.origin === r.agent.origin && a.type === r.agent.type)) return { status: 409, error: 'Tenhle agent už je v seznamu.', field: 'url' };
@@ -762,7 +762,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // z požadavku přichází výhradně id běhového prostředí.
   async function focusRuntime(id) {
     const plan = planRuntimeFocus(id);
-    if (!plan) return { status: 404, error: 'Tuhle aplikaci Agentree neumí přepnout do popředí.' };
+    if (!plan) return { status: 404, error: 'Tuhle aplikaci Agenteeq neumí přepnout do popředí.' };
     const bezi = store.runtimes.find((r) => r.id === id && r.running);
     if (!bezi) return { status: 409, error: `${plan.label} teď neběží.` };
     const r = await executeOpen(plan, { dry });
@@ -770,7 +770,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true } : {}) };
   }
 
-  // Vzdálený přístup mimo domácí síť: Agentree nic neotvírá sám, jen zjistí, jestli má uživatel
+  // Vzdálený přístup mimo domácí síť: Agenteeq nic neotvírá sám, jen zjistí, jestli má uživatel
   // nainstalovaný tunel (Tailscale / Cloudflare / ngrok) a poradí, co s tím. Zjišťuje se na
   // vyžádání a po startu, ne v každém cyklu — jsou to volání externích binárek.
   let tunely = { at: 0, list: [], advice: null };
@@ -868,10 +868,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function start() {
     const t0 = Date.now();
     const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
-    const launchReady = refreshLaunch().catch((err) => console.error('Agentree: zjištění spustitelných agentů selhalo:', err.message));
+    const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
     apps = dry ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
-    results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agentree: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
+    results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await Promise.all([whoami, launchReady]);
     store.reevaluate();
     store.ready = true;
@@ -894,7 +894,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
-    log(`Agentree: načteno ${store.list().length} konverzací za ${Date.now() - t0} ms.`);
+    log(`Agenteeq: načteno ${store.list().length} konverzací za ${Date.now() - t0} ms.`);
   }
 
   async function stop() {

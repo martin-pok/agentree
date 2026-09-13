@@ -265,7 +265,7 @@ function update() {
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>Vyčerpaný limit</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">Obnoví se ${dateTime(s.limit.resetsAt)}.</p>` : ''}</div></div>`
       : s.status === 'failed'
-        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>Spuštění selhalo</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">Agentree ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.</p></div></div>`
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>Spuštění selhalo</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.</p></div></div>`
         : '');
 
   fill(el, 'live', s.status === 'working'
@@ -306,7 +306,7 @@ function update() {
     slot.querySelector('[data-chat-stop]').hidden = !working;
     slot.querySelector('[type="submit"]').disabled = working;
   } else if (s.connector === 'local-chat') {
-    const note = '<p class="reply-note">Tahle lokální konverzace skončila restartem Agentree. Novou začneš v Přehledu přes Spustit agenta → Ollama.</p>';
+    const note = '<p class="reply-note">Tahle lokální konverzace skončila restartem Agenteeq. Novou začneš v Přehledu přes Spustit agenta → Ollama.</p>';
     if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }
   } else if (slot.innerHTML) {
     slot.innerHTML = '';

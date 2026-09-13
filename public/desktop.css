@@ -1,4 +1,4 @@
-/* Agentree desktop craft: all values derive from the existing concert-hall identity. */
+/* Agenteeq desktop craft: all values derive from the existing concert-hall identity. */
 .picker-source { display: none !important; }
 .picker-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; max-width: 100%; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--card); color: var(--ink); text-align: left; font: inherit; }
 .picker-trigger::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); flex: none; opacity: .6; }

@@ -7,18 +7,18 @@ import { findInstallPackage } from '../src/app.js';
 import { VERSION } from '../src/config.js';
 
 // Instalace pro další lidi (Nastavení → Aplikace na tomto Macu): server zjišťuje, jestli hotový
-// instalační balíček (dist/Agentree-<verze>-macOS-<arch>.zip, viz scripts/build-macos.mjs) existuje,
+// instalační balíček (dist/Agenteeq-<verze>-macOS-<arch>.zip, viz scripts/build-macos.mjs) existuje,
 // a nabízí „Ukázat ve Finderu“. Cesta se vždy odvozuje ze serveru (distDir), nikdy z požadavku klienta.
 
 test('findInstallPackage: chybějící balíček vrací null', async () => {
-  const dir = await tempDir('agentree-dist-empty-');
+  const dir = await tempDir('agenteeq-dist-empty-');
   assert.equal(await findInstallPackage(dir), null);
   assert.equal(await findInstallPackage(dir, '9.9.9', 'arm64'), null);
 });
 
 test('findInstallPackage: existující balíček vrátí název, cestu a velikost', async () => {
-  const dir = await tempDir('agentree-dist-');
-  const name = 'Agentree-1.2.3-macOS-arm64.zip';
+  const dir = await tempDir('agenteeq-dist-');
+  const name = 'Agenteeq-1.2.3-macOS-arm64.zip';
   const file = path.join(dir, name);
   const body = Buffer.alloc(12345, 1);
   await fs.writeFile(file, body);
@@ -38,7 +38,7 @@ test('findInstallPackage: existující balíček vrátí název, cestu a velikos
 });
 
 test('/api/state a /api/install/reveal: balíček chybí, pak existuje (režim dry nic nespouští)', async () => {
-  const distDir = await tempDir('agentree-dist-http-');
+  const distDir = await tempDir('agenteeq-dist-http-');
   const s = await startTestServer({}, { distDir });
   try {
     const client = api(s.url);
@@ -56,7 +56,7 @@ test('/api/state a /api/install/reveal: balíček chybí, pak existuje (režim d
     assert.equal(noHeader.status, 403);
 
     // 2) Balíček se objeví na disku (přesně tak, jak ho ukládá scripts/build-macos.mjs).
-    const name = `Agentree-${VERSION}-macOS-${process.arch}.zip`;
+    const name = `Agenteeq-${VERSION}-macOS-${process.arch}.zip`;
     const file = path.join(distDir, name);
     const body = Buffer.alloc(4096, 7);
     await fs.writeFile(file, body);

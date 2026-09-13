@@ -131,7 +131,7 @@ test('lokální chat přes Ollamu: streamovaná odpověď, historie, tokeny a ch
     const ollama = createOllamaClient({ baseUrl });
     assert.deepEqual((await ollama.models()).models.map((m) => m.name), ['llama3.2:3b']);
     const home = await tempDir();
-    const store = new Store({ config: loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home }), datastore: fakeDatastore() });
+    const store = new Store({ config: loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home }), datastore: fakeDatastore() });
     const chat = createLocalChat({ store, ollama });
 
     const id = chat.start({ model: 'llama3.2:3b', prompt: 'Pozdrav mě' });

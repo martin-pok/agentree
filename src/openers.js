@@ -15,7 +15,7 @@ export const APPS = {
 
 export const ALL_APPS = { codex: true, claude: true, cursor: true, vscode: true, cli: { claude: true, codex: true, copilot: true } };
 
-// Přepnutí do okna běžící aplikace jedním klikem — hlavní důvod, proč uživatel Agentree drží
+// Přepnutí do okna běžící aplikace jedním klikem — hlavní důvod, proč uživatel Agenteeq drží
 // otevřený: nemusí mezi desítkami oken hledat, které patří kterému agentovi.
 // Název aplikace se nikdy nebere z požadavku, jen z tohoto pevného seznamu.
 export const RUNTIME_APPS = {

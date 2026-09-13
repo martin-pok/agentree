@@ -1,10 +1,10 @@
-# AGENTS.md — jak vyvíjet Agentree
+# AGENTS.md — jak vyvíjet Agenteeq
 
 Tento soubor je závazný pro každého, kdo mění kód: člověka, Claude Code, Codex i jiné agenty. Je krátký schválně. Detaily jsou v `docs/`.
 
 ## 1. Poslání a principy produktu
 
-Agentree ukazuje **v reálném čase a na jednom místě** všechny AI agenty, kteří pro uživatele pracují, a upozorní ho ve chvíli, kdy je potřeba jeho rozhodnutí.
+Agenteeq ukazuje **v reálném čase a na jednom místě** všechny AI agenty, kteří pro uživatele pracují, a upozorní ho ve chvíli, kdy je potřeba jeho rozhodnutí.
 
 1. **Pravdivost nad efektem.** Nikdy nezobrazuj vymyšlená nebo odhadnutá data jako skutečná. Heuristiku pojmenuj (např. „stav z přepisu“) a zdokumentuj v `docs/CONNECTORS.md`. Neověřený konektor = štítek **Beta**.
 2. **Realtime je jádro.** Změna u zdroje se má v UI projevit do 2 s (souborové zdroje) nebo okamžitě (hooky, rozšíření). Každá změna datové cesty musí mít test latence nebo jej zachovat (`test/http.test.mjs`).
@@ -20,22 +20,22 @@ npm run dev       # server s restartem při změně src/ a bin/
 npm test          # všechny testy (node:test), ~1 s
 npm run check     # syntaktická kontrola všech .js/.mjs
 npm run smoke     # balíček pro zákazníky: pack → instalace do dočasné složky → start → API
-npm run pack      # dist/agentree-<verze>.tgz
+npm run pack      # dist/agenteeq-<verze>.tgz
 ```
 
-Proměnné pro vývoj a testy: `PORT`, `AGENTREE_HOME` (data aplikace), `AGENTREE_SOURCE_HOME` (odkud číst zdroje — v testech vždy dočasná složka), `AGENTREE_OPEN=dry` (otevírání a spouštění agentů jen vrátí plán — **povinné v testech a při ručním QA na cizích datech**), `AGENTREE_OLLAMA_URL`, `AGENTREE_PROCESSES=0`, `AGENTREE_NATIVE_NOTIFY=0`, `AGENTREE_KEYCHAIN=0`, `AGENTREE_CLOUD=0`, `AGENTREE_QUIET=1`. Viz `src/config.js`.
+Proměnné pro vývoj a testy: `PORT`, `AGENTEEQ_HOME` (data aplikace), `AGENTEEQ_SOURCE_HOME` (odkud číst zdroje — v testech vždy dočasná složka), `AGENTEEQ_OPEN=dry` (otevírání a spouštění agentů jen vrátí plán — **povinné v testech a při ručním QA na cizích datech**), `AGENTEEQ_OLLAMA_URL`, `AGENTEEQ_PROCESSES=0`, `AGENTEEQ_NATIVE_NOTIFY=0`, `AGENTEEQ_KEYCHAIN=0`, `AGENTEEQ_CLOUD=0`, `AGENTEEQ_QUIET=1`. Viz `src/config.js`.
 
 ## 3. Mapa repozitáře
 
 ```
-bin/agentree.mjs            vstup CLI: start serveru, install-agent / uninstall-agent
+bin/agenteeq.mjs            vstup CLI: start serveru, install-agent / uninstall-agent
 src/app.js                  složení aplikace: konektory → Store → upozornění, časovače, snapshot stavu
 src/http.js                 REST API, SSE stream, statické soubory, bezpečnostní kontroly
 src/model.js                jednotný model session + CENTRÁLNÍ odvození stavu (deriveStatus)
 src/store.js                stav v paměti, události pro SSE a upozornění, limity, kredity
 src/alerts.js               pravidla upozornění, deduplikace, nativní notifikace
 src/spend.js                výdaje, rozpočty, převody měn, prognóza, upozornění na rozpočet
-src/datastore.js            trvalá data ~/.agentree/data.json (atomický zápis)
+src/datastore.js            trvalá data ~/.agenteeq/data.json (atomický zápis)
 src/hooks-installer.js      instalace Claude Code hooků (záloha, idempotence, odinstalace)
 src/secrets.js              API klíče v Klíčence macOS
 src/launch-agent.js         automatický start po přihlášení (LaunchAgent)
@@ -70,7 +70,7 @@ docs/                       architektura, konektory, datový kontrakt, bezpečno
 - **ES moduly všude** (`"type": "module"`). Rozšíření používá klasické skripty (požadavek MV3 content scripts).
 - **Stav session se odvozuje jen v `src/model.js#deriveStatus`.** Konektor nastavuje fakta (`running`, `pending`, `limit`, `lastAt`, …), nikdy přímo `status`.
 - **Každý dynamický text v HTML jde přes `esc()`** (`public/js/format.js`). Přepisy a titulky jsou nedůvěryhodný vstup. Markdown v přepisu renderuje jen `md()` v `views/session.js` (nejdřív escapuje).
-- **Mutace API** vyžadují hlavičku `X-Agentree: 1` a lokální `Origin` (ochrana CSRF). Vstupy od hooků a rozšíření vyžadují `X-Agentree-Token`. Nové endpointy přidávej do tabulky v `src/http.js` a do `docs/DATA-CONTRACT.md`.
+- **Mutace API** vyžadují hlavičku `X-Agenteeq: 1` a lokální `Origin` (ochrana CSRF). Vstupy od hooků a rozšíření vyžadují `X-Agenteeq-Token`. Nové endpointy přidávej do tabulky v `src/http.js` a do `docs/DATA-CONTRACT.md`.
 - **Změna tvaru dat** = upravit současně server, `public/js/state.js`, dotčené obrazovky, `docs/DATA-CONTRACT.md` a testy.
 - **UI texty česky**, věty s malými písmeny (sentence case), aktivní slovesa, tlačítko říká, co se stane. Chybové hlášky říkají, co se stalo a co dělat. Bez anglicismů, kde existuje běžné české slovo.
 - **Design:** identita „koncertní sál“ (eben, mlžná slonovina, samet = rozhodnutí, smaragd = práce, mosaz = akcent), podpisový prvek je tmavá scéna, kde každý aktivní agent svítí jako bod (smaragdový pracuje, sametový potřebuje tebe). Logo: `public/brand/`. 8px mřížka, **max. váha písma 500** (žádný bold 700), fonty Urbanist / Onest / Geist Mono, paleta a tokeny v `public/styles.css :root`. Loga služeb vkládej jen přes `glyph()` z `public/js/icons.js`. Texty na barvách používají varianty `*-ink` kvůli kontrastu WCAG 2.2 AA. Viditelný fokus, `prefers-reduced-motion`, žádné vodorovné rolování na 360 px. Režimy `light`, `dark`, `system` jsou jeden tokenový systém: žádné lokální inverze, přímé bílé texty na světlé kartě nebo neověřený kontrast. Viz `docs/PRODUCT-AND-ARCHITECTURE.md`.
@@ -96,13 +96,13 @@ Změna je hotová, až když platí vše:
 - [ ] Aktualizovaná dokumentace (`docs/*`, tabulky podpory) a záznam v `CHANGELOG.md`.
 - [ ] Commit s popisem proč, ne jen co.
 
-## 7. Poctivý stav k verzi 0.7.0
+## 7. Poctivý stav k verzi 0.8.0
 
 Ověřeno na skutečných datech (macOS, Node 24): Claude Code / Claude Desktop Code, Codex (ChatGPT app), procesy AI aplikací, Claude Code hooky (automatický test i instalace do dočasného HOME), realtime stream, útrata a rozpočty.
 
 Beta (formát podle dokumentace nebo odvozený, bez dat na vývojovém Macu): Cursor (formát ověřen, ale bez aktivních agentů), GitHub Copilot CLI, Copilot ve VS Code, Gemini CLI, Qwen Code, rozšíření prohlížeče (selektory neověřené proti živým webům), Admin API náklady.
 
-Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, útrata za předplatné a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (nemají veřejné API → ruční zápis), schválení akce agenta na dálku z Agentree.
+Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, útrata za předplatné a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (nemají veřejné API → ruční zápis), schválení akce agenta na dálku z Agenteeq.
 
 Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).
 

@@ -6,7 +6,7 @@ Tento dokument je pro vlastníka produktu. Zákaznický návod je v [INSTALL.md]
 
 - Klíč má tvar `AGT1.<data>.<podpis>`: data jsou JSON (`v`, `id`, `name`, `email`, `plan`, `seats`, `issuedAt`, `expiresAt`), podpis je Ed25519.
 - Aplikace ověřuje klíč **offline** veřejným klíčem v `src/license-public-key.js`. Žádný licenční server, žádné odesílání dat.
-- Soukromý podpisový klíč leží **mimo repozitář**: `~/.agentree-vendor/license-signing-key.pem` (práva 0600). `.gitignore` navíc blokuje `*.pem`. Balíček pro zákazníky ho neobsahuje (hlídá `npm run smoke`).
+- Soukromý podpisový klíč leží **mimo repozitář**: `~/.agenteeq-vendor/license-signing-key.pem` (práva 0600). `.gitignore` navíc blokuje `*.pem`. Balíček pro zákazníky ho neobsahuje (hlídá `npm run smoke`).
 - Klientovi se nikdy nevrací celý klíč — jen maskovaný (`AGT1.eyJ2…abc123`).
 
 > **Záloha:** bez souboru `license-signing-key.pem` nepůjde vydávat další licence a nový klíč by zneplatnil všechny vydané. Ulož ho do správce hesel nebo na šifrované médium.
@@ -41,7 +41,7 @@ Doporučení (hypotéza k ověření, viz [PRODUCT.md](PRODUCT.md)): zdarma nech
 ```bash
 npm test && npm run check   # musí projít
 npm run smoke               # zabalí, nainstaluje do dočasné složky, spustí a ověří API
-npm run pack                # dist/agentree-<verze>.tgz → poslat zákazníkovi
+npm run pack                # dist/agenteeq-<verze>.tgz → poslat zákazníkovi
 ```
 
 ## Co offline licence neumí (poctivě)
@@ -54,5 +54,5 @@ npm run pack                # dist/agentree-<verze>.tgz → poslat zákazníkovi
 
 - Licenční podmínky (EULA) a zásady ochrany osobních údajů — nechat zkontrolovat právníkem.
 - Platební brána a automatické vydání klíče po zaplacení (např. Stripe Checkout → webhook → `issue`).
-- Značka a doména; ověřit dostupnost názvu Agentree.
+- Značka a doména; ověřit dostupnost názvu Agenteeq.
 - Podepsaná a notarizovaná macOS aplikace (dnes instalace přes Node.js a npm).

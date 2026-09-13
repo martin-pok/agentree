@@ -16,7 +16,7 @@ test('stavový řádek: instalace vedle hooků, cizí stavový řádek se nepře
   let json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.statusLine.type, 'command');
   assert.ok(json.statusLine.command.includes(STATUSLINE_PATH) && json.statusLine.command.includes(TOKEN));
-  assert.match(json.statusLine.command, /\|\| printf 'Agentree neběží'$/, 'když Agentree neběží, stavový řádek to poctivě řekne');
+  assert.match(json.statusLine.command, /\|\| printf 'Agenteeq neběží'$/, 'když Agenteeq neběží, stavový řádek to poctivě řekne');
   let st = await hooksStatus(file, TOKEN);
   assert.equal(st.statusLine, 'ours');
   assert.equal(st.current, true);
@@ -40,14 +40,14 @@ test('stavový řádek: instalace vedle hooků, cizí stavový řádek se nepře
 });
 
 test('stavový řádek přes API: limity 5 h a týden, kontext, repozitář, PR; bez posunu aktivity', async (t) => {
-  const srcHome = await tempDir('agentree-src-');
+  const srcHome = await tempDir('agenteeq-src-');
   const sid = '77777777-2222-3333-4444-555555555555';
   const lastMsg = Date.now() - 120000;
   await writeJsonl(path.join(srcHome, '.claude', 'projects', '-Users-x-web', `${sid}.jsonl`), [
     { type: 'user', timestamp: new Date(lastMsg - 5000).toISOString(), cwd: '/Users/x/web', message: { content: 'Uprav hlavičku' } },
     { type: 'assistant', timestamp: new Date(lastMsg).toISOString(), message: { id: 'm1', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo' }], usage: { input_tokens: 3, output_tokens: 4 } } },
   ]);
-  const srv = await startTestServer({ AGENTREE_SOURCE_HOME: srcHome });
+  const srv = await startTestServer({ AGENTEEQ_SOURCE_HOME: srcHome });
   t.after(() => srv.close());
   const token = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8')).ingestToken;
   const id = `claude-code:${sid}`;
@@ -65,11 +65,11 @@ test('stavový řádek přes API: limity 5 h a týden, kontext, repozitář, PR;
   const post = (headers) => fetch(`${srv.url}/api/hooks/claude-statusline`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(payload) });
 
   assert.equal((await post({})).status, 401);
-  const res = await post({ 'X-Agentree-Token': token });
+  const res = await post({ 'X-Agenteeq-Token': token });
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type'), /^text\/plain/);
   const text = await res.text();
-  assert.match(text, /^Agentree · Opus 5 · 5 h 34 % do \d{2}:\d{2} · týden 13 % · kontext 41 %$/);
+  assert.match(text, /^Agenteeq · Opus 5 · 5 h 34 % do \d{2}:\d{2} · týden 13 % · kontext 41 %$/);
 
   const st = (await api(srv.url).get('/api/state')).body;
   const five = st.limits.find((l) => l.id === 'claude:five_hour');
@@ -87,7 +87,7 @@ test('stavový řádek přes API: limity 5 h a týden, kontext, repozitář, PR;
   assert.deepEqual(s.pr, { number: 12, url: 'https://github.com/studio/web/pull/12', state: 'approved' });
   assert.equal(s.lastAt, before, 'stavový řádek není aktivita agenta');
 
-  const bad = await fetch(`${srv.url}/api/hooks/claude-statusline`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agentree-Token': token }, body: JSON.stringify({ session_id: '../x' }) });
+  const bad = await fetch(`${srv.url}/api/hooks/claude-statusline`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': token }, body: JSON.stringify({ session_id: '../x' }) });
   assert.equal(bad.status, 400);
 });
 
@@ -136,7 +136,7 @@ test('profilový obrázek: uloží se volba, null = iniciály, neplatná hodnota
   assert.equal((await a.send('PUT', '/api/settings', { avatar: null })).body.settings.avatar, null);
 });
 
-test('běh, který skončí chybou, se v Agentree ukáže jako selhaná session s radou', async (t) => {
+test('běh, který skončí chybou, se v Agenteeq ukáže jako selhaná session s radou', async (t) => {
   const srv = await startTestServer();
   t.after(() => srv.close());
   const cwd = await tempDir();

@@ -10,25 +10,33 @@ export const VERSION = JSON.parse(readFileSync(path.join(ROOT_DIR, 'package.json
 
 // Veškerá konfigurace přes proměnné prostředí — testy tak běží nad fixturami, ne nad skutečným HOME.
 export function loadConfig(env = process.env) {
-  const sourceHome = env.AGENTREE_SOURCE_HOME || os.homedir();
+  // Přejmenování z Agentree na Agenteeq (0.8.0): staré proměnné prostředí i stará datová složka
+  // dál fungují, aby se nikomu uprostřed práce nerozbil běžící systém.
+  const e = new Proxy(env, {
+    get: (cil, klic) => (typeof klic === 'string' && klic.startsWith('AGENTEEQ_') && cil[klic] === undefined
+      ? cil[klic.replace('AGENTEEQ_', 'AGENTREE_')]
+      : cil[klic]),
+  });
+  env = e;
+  const sourceHome = env.AGENTEEQ_SOURCE_HOME || os.homedir();
   return {
     port: env.PORT !== undefined && env.PORT !== '' ? Number(env.PORT) : 4620,
     host: '127.0.0.1',
-    desktop: env.AGENTREE_DESKTOP === '1',
+    desktop: env.AGENTEEQ_DESKTOP === '1',
     sourceHome,
-    dataDir: env.AGENTREE_HOME || path.join(os.homedir(), '.agentree'),
-    // Před přejmenováním (0.4.0) se data ukládala do ~/.dirigent — jednou se zkopírují.
-    legacyDataDir: env.AGENTREE_HOME ? null : path.join(os.homedir(), '.dirigent'),
-    windowDays: Number(env.AGENTREE_WINDOW_DAYS) || 30,
-    nativeNotify: env.AGENTREE_NATIVE_NOTIFY !== '0' && process.platform === 'darwin',
-    cloudFetch: env.AGENTREE_CLOUD !== '0',
-    keychain: env.AGENTREE_KEYCHAIN !== '0' && process.platform === 'darwin',
-    processes: env.AGENTREE_PROCESSES !== '0',
+    dataDir: env.AGENTEEQ_HOME || path.join(os.homedir(), '.agenteeq'),
+    // Data ze starších názvů se jednou zkopírují: ~/.agentree (do 0.7.0) a ~/.dirigent (do 0.4.0).
+    legacyDataDirs: env.AGENTEEQ_HOME ? [] : [path.join(os.homedir(), '.agentree'), path.join(os.homedir(), '.dirigent')],
+    windowDays: Number(env.AGENTEEQ_WINDOW_DAYS) || 30,
+    nativeNotify: env.AGENTEEQ_NATIVE_NOTIFY !== '0' && process.platform === 'darwin',
+    cloudFetch: env.AGENTEEQ_CLOUD !== '0',
+    keychain: env.AGENTEEQ_KEYCHAIN !== '0' && process.platform === 'darwin',
+    processes: env.AGENTEEQ_PROCESSES !== '0',
     // exec = skutečně otevírat aplikace (macOS), dry = jen vrátit plán (testy), off = vypnuto
-    openMode: env.AGENTREE_OPEN === 'dry' ? 'dry' : env.AGENTREE_OPEN === '0' || process.platform !== 'darwin' ? 'off' : 'exec',
-    ollamaUrl: env.AGENTREE_OLLAMA_URL || 'http://127.0.0.1:11434',
-    scanIntervalMs: Number(env.AGENTREE_SCAN_MS) || 10000,
-    processIntervalMs: Number(env.AGENTREE_PROCESS_MS) || 5000,
-    quiet: env.AGENTREE_QUIET === '1',
+    openMode: env.AGENTEEQ_OPEN === 'dry' ? 'dry' : env.AGENTEEQ_OPEN === '0' || process.platform !== 'darwin' ? 'off' : 'exec',
+    ollamaUrl: env.AGENTEEQ_OLLAMA_URL || 'http://127.0.0.1:11434',
+    scanIntervalMs: Number(env.AGENTEEQ_SCAN_MS) || 10000,
+    processIntervalMs: Number(env.AGENTEEQ_PROCESS_MS) || 5000,
+    quiet: env.AGENTEEQ_QUIET === '1',
   };
 }

@@ -1,4 +1,4 @@
-// Tarify Agentree. Rozhodnutí o cenách a o tom, co bude placené, patří vlastníkovi produktu (docs/LICENSING.md).
+// Tarify Agenteeq. Rozhodnutí o cenách a o tom, co bude placené, patří vlastníkovi produktu (docs/LICENSING.md).
 export const PLANS = {
   free: { label: 'Zdarma', rank: 0 },
   pro: { label: 'Pro', rank: 1 },

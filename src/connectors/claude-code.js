@@ -298,7 +298,7 @@ export function createClaudeCodeConnector(ctx) {
   }
 
   // Přepisy pomocných agentů (Task) leží o dvě úrovně hlouběji:
-  // <projekt>/<id rodičovské konverzace>/subagents/agent-<id>.jsonl. Bez nich by v Agentree
+  // <projekt>/<id rodičovské konverzace>/subagents/agent-<id>.jsonl. Bez nich by v Agenteeq
   // chyběla veškerá jejich práce i tokeny, které skutečně spotřebovaly.
   function subagentParent(file) {
     if (path.basename(path.dirname(file)) !== 'subagents') return '';
@@ -476,7 +476,7 @@ export function createClaudeCodeConnector(ctx) {
       }
     }
     const hm = (ts) => new Date(ts).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-    const parts = ['Agentree'];
+    const parts = ['Agenteeq'];
     if (typeof p.model?.display_name === 'string') parts.push(clip(p.model.display_name, 40));
     if (five) parts.push(`5 h ${Math.round(five.used)} %${five.resetsAt ? ` do ${hm(five.resetsAt)}` : ''}`);
     if (week) parts.push(`týden ${Math.round(week.used)} %`);

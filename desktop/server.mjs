@@ -6,7 +6,7 @@ import http from 'node:http';
 import { bindDesktop, alive } from './lifecycle.mjs';
 
 let app, server, stopping = false;
-const report = (data) => process.stdout.write(`AGENTREE_DESKTOP ${JSON.stringify(data)}\n`);
+const report = (data) => process.stdout.write(`AGENTEEQ_DESKTOP ${JSON.stringify(data)}\n`);
 async function stop(code = 0) {
   if (stopping) return;
   stopping = true;
@@ -27,7 +27,7 @@ process.on('SIGINT', () => stop());
 // EOF means the owner crashed/quit: no orphan server and no orphan paid runs.
 process.stdin.resume();
 process.stdin.on('end', () => stop());
-const ownerPid = Number(process.env.AGENTREE_PARENT_PID) || process.ppid;
+const ownerPid = Number(process.env.AGENTEEQ_PARENT_PID) || process.ppid;
 // A second independent guard covers a leaked/inherited stdin write handle.
 const ownerWatch = setInterval(() => { if (process.ppid !== ownerPid || !alive(ownerPid)) stop(); }, 500);
 ownerWatch.unref();
@@ -38,7 +38,7 @@ try {
   config.lifecycle = { pid: process.pid, ownerPid };
   // Acquire the port BEFORE loading/flushing shared data or starting watchers.
   server = http.createServer();
-  const starting = (_req, res) => { res.writeHead(503, { 'Content-Type': 'application/json', 'Retry-After': '1' }); res.end('{"error":"Agentree se připravuje."}'); };
+  const starting = (_req, res) => { res.writeHead(503, { 'Content-Type': 'application/json', 'Retry-After': '1' }); res.end('{"error":"Agenteeq se připravuje."}'); };
   server.on('request', starting);
   await bindDesktop(server, config);
   app = await createApp(config);
@@ -56,6 +56,6 @@ try {
   report({ ready: true, port: server.address().port, version: VERSION });
   badge();
 } catch (err) {
-  report({ error: err.code === 'EADDRINUSE' ? 'Port 4620 používá jiná aplikace nebo starší Agentree. Ukonči původní server a zkus to znovu.' : 'Lokální službu se nepodařilo spustit. Zkus aplikaci otevřít znovu.' });
+  report({ error: err.code === 'EADDRINUSE' ? 'Port 4620 používá jiná aplikace nebo starší Agenteeq. Ukonči původní server a zkus to znovu.' : 'Lokální službu se nepodařilo spustit. Zkus aplikaci otevřít znovu.' });
   await stop(1);
 }

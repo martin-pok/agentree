@@ -18,7 +18,7 @@ Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kd
 
 ## Hodnota
 
-| Úloha uživatele | Jak ji Agentree řeší |
+| Úloha uživatele | Jak ji Agenteeq řeší |
 |---|---|
 | „Nechci, aby agent 20 minut čekal na moje ano.“ | Okamžité upozornění na rozhodnutí + odkaz rovnou do konverzace |
 | „Chci vědět, co se právě děje, bez proklikávání.“ | Dnešní směna, živý přepis, aktivita a průběh na jednom místě |
@@ -39,9 +39,9 @@ Kdo pracuje pro klienty (studia, agentury, freelanceři, vývojáři na zakázku
 - **Úspora času:** přehled celé zakázky na jednom místě místo hledání v 5 aplikacích; zařazení podle složky běží samo.
 - **Peníze:** tokeny a aktivita za projekt, export do CSV jako podklad k vyúčtování klientovi a k naceňování dalších zakázek.
 - **Kvalita:** brief projektu po ruce při spuštění dalšího agenta — konzistentní tón a zadání napříč službami.
-- **Návyk:** spouštění agentů z projektu dělá z Agentree výchozí místo, odkud práce začíná (ne jen kam se člověk dívá).
+- **Návyk:** spouštění agentů z projektu dělá z Agenteeq výchozí místo, odkud práce začíná (ne jen kam se člověk dívá).
 
-Měřit v betě: počet projektů na uživatele, podíl konverzací v projektech, počet spuštění z Agentree za týden, exporty CSV.
+Měřit v betě: počet projektů na uživatele, podíl konverzací v projektech, počet spuštění z Agenteeq za týden, exporty CSV.
 
 ## Hypotézy monetizace (NEOVĚŘENÉ — návrh pro validaci)
 

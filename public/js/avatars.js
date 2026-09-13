@@ -2,7 +2,7 @@ import { state, emit } from './state.js';
 import { api } from './api.js';
 import { toast } from './ui.js';
 
-// Abstraktní profilové obrázky: jednoduché tvary v teplé paletě Agentree. Index se ukládá do nastavení (settings.avatar).
+// Abstraktní profilové obrázky: jednoduché tvary v teplé paletě Agenteeq. Index se ukládá do nastavení (settings.avatar).
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
 
 const AVATARS = [

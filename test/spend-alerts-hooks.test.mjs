@@ -109,7 +109,7 @@ test('neplatný settings.json se nepřepíše', async () => {
 
 test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () => {
   const home = await tempDir();
-  const config = loadConfig({ AGENTREE_SOURCE_HOME: home, AGENTREE_HOME: home });
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const datastore = fakeDatastore({ doneMinSeconds: 60 });
   const store = new Store({ config, datastore });
   const sent = [];
@@ -166,8 +166,8 @@ test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () =>
 });
 
 test('LaunchAgent plist escapuje cesty', () => {
-  const x = plistXml({ node: '/opt/node & co/bin/node', script: '/Users/a/<agentree>/bin/agentree.mjs', logDir: '/tmp/l', pathEnv: '/usr/bin' });
+  const x = plistXml({ node: '/opt/node & co/bin/node', script: '/Users/a/<agenteeq>/bin/agenteeq.mjs', logDir: '/tmp/l', pathEnv: '/usr/bin' });
   assert.ok(x.includes('/opt/node &amp; co/bin/node'));
-  assert.ok(x.includes('&lt;agentree&gt;'));
-  assert.match(x, /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key><false\/>/, 'restart jen po pádu, ne když Agentree už běží');
+  assert.ok(x.includes('&lt;agenteeq&gt;'));
+  assert.match(x, /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key><false\/>/, 'restart jen po pádu, ne když Agenteeq už běží');
 });

@@ -24,7 +24,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/license-runs.test.mjs` | Licence (platná, podvržená, cizí klíč, formát, vypršení, tarif), zamykání funkcí, běhy na pozadí (hotovo, selhání, zastavení, chybějící program) |
 | `test/projects-launch-http.test.mjs` | Projekty přes API včetně SSE a automatického zařazení, export CSV, spuštění agenta (zkušební režim), 402 bez licence a odemčení licencí, limit projektů, lokální chat, běhy, automatické spouštění, procházení složek |
 
-Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentree` (vždy `AGENTREE_SOURCE_HOME` a `AGENTREE_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
+Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agenteeq` (vždy `AGENTEEQ_SOURCE_HOME` a `AGENTEEQ_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
 
 ## Ruční QA checklist (před vydáním)
 
@@ -54,7 +54,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentre
 
 ## Protokol ověření — 0.6.0 (12. 9. 2026, macOS, Node 24.18)
 
-Ruční QA na oddělené instanci (port 4621, `AGENTREE_HOME` v dočasné složce, `AGENTREE_OPEN=dry`); skutečná data aplikace zůstala nedotčená.
+Ruční QA na oddělené instanci (port 4621, `AGENTEEQ_HOME` v dočasné složce, `AGENTEEQ_OPEN=dry`); skutečná data aplikace zůstala nedotčená.
 
 | Oblast | Výsledek |
 |---|---|
@@ -69,12 +69,12 @@ Ruční QA na oddělené instanci (port 4621, `AGENTREE_HOME` v dočasné složc
 | Mobil 375 px: 8 obrazovek bez vodorovného rolování, žádný dotykový cíl pod 24 × 24 px | ✅ |
 | Desktop 1440 px po mobilních opravách bez změny | ✅ |
 | Fokus klávesnicí: viditelný obrys 2 px (ověřeno skutečným Tabem, ne programovým focusem) | ✅ |
-| Bezpečnost: zápis bez hlavičky `X-Agentree` → 403, datová složka 0700, `data.json` 0600, procházení složek uzamčené do domovského adresáře | ✅ |
+| Bezpečnost: zápis bez hlavičky `X-Agenteeq` → 403, datová složka 0700, `data.json` 0600, procházení složek uzamčené do domovského adresáře | ✅ |
 | **Neověřeno** | Skutečné spuštění agentů z UI na reálném projektu; rozšíření prohlížeče na živých webech; konektory Cursor / Copilot / Gemini / Qwen bez dat na tomto Macu |
 
 ## Protokol ověření — v0.5.0 (11. 9. 2026, macOS, Node 24.18)
 
-Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTREE_HOME` v dočasné složce, `AGENTREE_OPEN=dry`) nad skutečnými přepisy — skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
+Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v dočasné složce, `AGENTEEQ_OPEN=dry`) nad skutečnými přepisy — skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
 
 | Oblast | Výsledek |
 |---|---|
