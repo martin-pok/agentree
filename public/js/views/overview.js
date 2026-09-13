@@ -69,6 +69,7 @@ function mount(el) {
       </div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
+      <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity — ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
     </section>
     <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
     <section data-enter style="--i:4" aria-labelledby="sp-h">

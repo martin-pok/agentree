@@ -294,6 +294,8 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .link-inline { background: none; border: 0; padding: 0; color: var(--ink); font-size: inherit; text-decoration: underline; text-underline-offset: 3px; display: inline-flex; align-items: center; gap: 6px; }
 .link-inline .icon { width: 14px; height: 14px; }
 .note { margin: 24px 0 0; font-size: 13px; color: var(--mute); max-width: 80ch; }
+/* Poznámka uvnitř karty sedí těsněji než ta pod sekcí. */
+.note--tight { margin: 12px 0 0; }
 .badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--line-2); color: var(--ink-2); font: 500 11px/1 var(--f-body); vertical-align: middle; }
 .badge--ok { background: rgba(13, 122, 103, .12); color: var(--ok); }
 /* Odhad, ne ověřený údaj — vlastní a neznámé modely rozpoznané z běžícího procesu. */

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.9.9 — 2026-09-13 · prověření čísel v grafech
+
+Čísla v grafu vypadají vysoko, tak jsem je prověřil proti zdrojovým souborům. **Sedí.** Graf
+nesčítá cache ani nic nenadsazuje; hodinové přihrádky obsahují jen vstup + výstup, stejně jako
+hlavní metrika od verze 0.7.0.
+
+Ověřeno třemi nezávislými způsoby:
+
+- **Běžící sezení Claude Code:** aplikace 1 450 795, ruční přepočet ze souboru po odstranění
+  duplicit 1 452 210 — rozdíl 0,1 %. (Claude Code zapisuje tutéž zprávu do přepisu opakovaně;
+  aplikace duplicity odstraňuje podle `message.id`. Naivní součet dá 4 517 400, tedy trojnásobek
+  — na tohle je při jakékoli kontrole potřeba dát pozor.)
+- **Codex, 30. 8.:** aplikace 901 970, přepočet ze souborů 901 970 — na token přesně.
+- **Nejvyšší přihrádka v datech** (8 071 892 za jedinou hodinu 15. 8.) odpovídá souboru na token.
+  Že celá částka padla do jedné hodiny, není chyba aplikace: Codex v tom souboru orazítkoval
+  všech 21 záznamů stejnou vteřinou.
+
+Proč tedy miliony: u Codexu se s každým tahem posílá znovu necachovaná část kontextu, takže
+souhrn za dlouhé sezení jde do milionů. Je to technická metrika z přepisů, ne kredity ani cena.
+Graf to teď říká i sám pod sebou a odkazuje na Útratu, kde jsou skutečné náklady — dřív to bylo
+napsané jen u měřáku nad ním.
+
+Nic v historických datech jsem neupravoval. Čísla odpovídají zdrojům a měnit je znamená lhát.
+
 ## 0.9.8 — 2026-09-13 · ploché karty místo stínů
 
 Karty se vznášely nad stránkou na měkkých stínech. Místo nich je drží vlasová linka: hrany jsou
