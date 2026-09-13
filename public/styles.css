@@ -137,7 +137,12 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @keyframes sweep { to { transform: translateX(100%); } }
 
 /* ---------- Postranní panel ---------- */
-.sidebar { position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); min-height: 640px; margin: 24px 0 24px 24px; padding: 36px 24px 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; z-index: 2; }
+/* Panel je karta s pevnou výškou — nesmí z ní nic vylézt. Dřív měl `min-height: 640px` a žádné
+   `overflow`, takže na nižším okně patička i poslední položky nabídky visely mimo bílou plochu
+   na pozadí (naměřeno 112 px ven při okně 800 px). Teď kartu drží `overflow: hidden`, značka
+   sedí nahoře, stav dole a prostor mezi nimi patří nabídce — když se nevejde, roluje se uvnitř. */
+.sidebar { position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); margin: 24px 0 24px 24px; padding: 36px 24px 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
+.sidebar > .brand, .sidebar > .profile, .sidebar > .side-foot { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
 .brand-mark { width: 34px; height: 34px; flex: none; }
 .brand-mark .bm-branch { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -154,7 +159,10 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .budget { margin-top: 24px; }
 .budget-num { font: 400 34px/1.1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .budget-label { color: var(--mute); font-size: 14px; }
-.nav { margin-top: 32px; display: grid; gap: 4px; }
+/* Nabídka je pružná část karty: vezme si, co zbude, a když je toho málo, roluje se sama.
+   Posuvník schováváme — na kartě by rušil a hranici tvoří linka nad stavem spojení. */
+.nav { margin-top: 32px; display: grid; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
 .nav a { position: relative; display: flex; align-items: center; gap: 16px; padding: 11px 16px; border-radius: var(--r-sm); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
 .nav a svg { width: 20px; height: 20px; flex: none; }
 .nav .fill { fill: currentColor; opacity: .55; }
@@ -166,7 +174,43 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
 .nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; background: var(--teal); color: var(--ink); font: 500 12px/24px var(--f-mono); text-align: center; }
 .nav-badge[data-tone='coral'] { background: var(--velvet-solid); color: #fff; }
-.side-foot { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }
+/* Na nižších oknech ustupuje nejdřív dekorace, ne navigace: profil se stáhne, aby se všechny
+   položky vešly bez rolování. Hodnoty jsou spočítané — při okně 800 px chybělo 56 px. */
+/* Na nižším okně ustupuje dekorace, ne navigace. Profil se z vysokého sloupce (avatar nad jménem
+   nad číslem, 214 px) překlopí do řádku: avatar vlevo, jméno vedle, číslo pod tím. Ušetří to přes
+   sto pixelů a všechny položky nabídky zůstanou vidět bez rolování. */
+@media (min-width: 881px) and (max-height: 940px) {
+  .sidebar { padding-top: 28px; }
+  .profile { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; margin-top: 24px; min-height: 0; text-align: left; }
+  .avatar { width: 48px; height: 48px; font-size: 18px; }
+  .avatar::after { inset: -4px; }
+  .welcome { margin: 0; font-size: 0; }
+  .welcome b { font-size: 15px; }
+  .budget { grid-column: 1 / -1; margin-top: 10px; display: flex; align-items: baseline; gap: 8px; }
+  .budget-num { font-size: 26px; }
+  .nav { margin-top: 20px; }
+}
+@media (min-width: 881px) and (max-height: 800px) {
+  .sidebar { padding-top: 24px; padding-bottom: 20px; }
+  .nav a { padding-top: 9px; padding-bottom: 9px; }
+  .side-foot { margin-top: 14px; padding-top: 14px; }
+}
+/* Nejnižší stupeň: na malém okně se vejde všech osm položek jen tak, že ubereme i v nabídce
+   a v patičce. Řádek nabídky má pak 34 px, pořád nad hranicí WCAG pro cíl prstu. Jméno Macu
+   a verze zmizí — jsou v Nastavení, kdežto navigace musí být vidět vždycky. */
+@media (min-width: 881px) and (max-height: 760px) {
+  .sidebar { padding: 20px 20px 16px; }
+  .profile { margin-top: 18px; gap: 2px 12px; }
+  .avatar { width: 40px; height: 40px; font-size: 15px; }
+  .budget { margin-top: 8px; }
+  .budget-num { font-size: 22px; }
+  .nav { margin-top: 16px; gap: 2px; }
+  .nav a { padding-top: 7px; padding-bottom: 7px; }
+  .nav a[aria-current='page']::before { left: -20px; }
+  .side-foot { margin-top: 12px; padding-top: 12px; }
+  .side-foot .source-host { display: none; }
+}
+.side-foot { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }
 .source-state { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .source-host { font: 400 11px/1.4 var(--f-mono); color: var(--mute); overflow-wrap: anywhere; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); flex: none; }

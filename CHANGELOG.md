@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.5 — 2026-09-13 · postranní panel drží pohromadě
+
+Na nižším okně končila bílá karta panelu dřív než její obsah: poslední položky nabídky a stav
+spojení visely mimo ni na pozadí. Naměřeno při okně 800 px — patička přesahovala **112 px ven**.
+Příčinou byla pevná spodní hranice výšky (`min-height: 640px`) a chybějící omezení přetečení,
+takže kartu nic nedrželo.
+
+Panel je teď postavený jako karta s kotvami: značka nahoře, stav spojení dole, nabídka mezi nimi.
+Z karty nemůže vylézt nic; kdyby se nabídka přece jen nevešla, roluje se uvnitř.
+
+Aby k rolování vůbec nedošlo, ustupuje na nižším okně **dekorace, ne navigace**. Profil se ve třech
+krocích překlopí z vysokého sloupce (avatar nad jménem nad číslem) do řádku — avatar vlevo, jméno
+vedle, číslo pod tím:
+
+| Výška okna | Profil | Položky nabídky |
+|---|---|---|
+| 1080 px | 223 px, avatar 80 px | všech 8 vidět |
+| 800 px | 90 px, avatar 48 px | všech 8 vidět, neroluje |
+| 700 px | 56 px, avatar 40 px | všech 8 vidět, neroluje |
+| 620 px | 56 px | roluje o 5 px, vše zůstává v kartě |
+
+Řádek nabídky má i v nejmenším kroku 46 px, tedy s rezervou nad hranicí WCAG 2.2 pro cíl prstu.
+Karta má nově stejnou mezeru dole jako nahoře (48 px). Na telefonu se nemění nic — všechna
+pravidla platí až od 881 px šířky.
+
 ## 0.9.4 — 2026-09-13 · Codex na webu a prověřený řetězec rozšíření
 
 - **Codex na webu se sleduje jako samostatný nástroj.** Běží na stejné doméně jako ChatGPT
