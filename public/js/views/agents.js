@@ -28,15 +28,34 @@ const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'm
 // vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,
 // i to, proč u nich nemůže být přepis — a co s tím jde udělat.
 
+// Konverzace v prohlížeči (Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Copilot, Qwen) vidí
+// Agenteeq výhradně přes rozšíření — do stránky v prohlížeči se odjinud dostat nedá. Dokud
+// rozšíření nikdy nic neposlalo, musí to aplikace říct: mlčet a tvářit se, že nic neběží, je
+// k nerozeznání od chyby.
+function webBezRozsireniHtml() {
+  const web = (state.connectors || []).find((c) => c.id === 'web');
+  if (!web || web.state !== 'missing') return '';
+  return `<li class="runtime-web">
+    <span class="icon-tile">${ICON.cloud}</span>
+    <div class="runtime-main">
+      <b>Konverzace v prohlížeči se nesledují</b>
+      <span class="muted small">rozšíření zatím neposlalo žádná data</span>
+      <p class="small">Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví — stránku v prohlížeči odjinud přečíst nelze.</p>
+      <a class="link-inline" href="#/nastaveni">Nastavit rozšíření ${ICON.arrow}</a>
+    </div>
+  </li>`;
+}
+
 function bezPrepisuHtml(sessions) {
   const bezi = (state.runtimes || []).filter((r) => r.running && BEZ_PREPISU[r.id]);
   const lokalni = state.localAgents || [];
-  if (!bezi.length && !lokalni.length) return '';
+  const web = webBezRozsireniHtml();
+  if (!bezi.length && !lokalni.length && !web) return '';
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
-  const pocet = bezi.length + lokalni.length;
+  const pocet = bezi.length + lokalni.length + (web ? 1 : 0);
   return `<section class="card pad runtime-note" aria-labelledby="rt-h">
     <div class="sec-head"><h2 id="rt-h">Běží na Macu, ale bez přepisu</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
-    <ul class="runtime-list">${bezi.map((r) => {
+    <ul class="runtime-list">${web}${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
     return `<li>

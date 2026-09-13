@@ -291,6 +291,9 @@ function update(topics = new Set(['all'])) {
     // Vlastní agenti patří mezi běžící aplikace — jinak by na Přehledu chyběli.
     const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
     const rts = [...state.runtimes, ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
+    // Konverzace v prohlížeči vidí Agenteeq jen přes rozšíření. Dokud nikdy nic neposlalo, patří
+    // sem dlaždice, která to řekne — jinak uživatel otevře Gemini na webu a aplikace mlčí.
+    const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
     fill(el, 'runtimes', rts.length
     ? rts.map((r) => {
       // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko — hlavní
@@ -310,7 +313,14 @@ function update(topics = new Set(['all'])) {
       return prepnout
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="Přepnout do ${esc(r.name)} — ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
-    }).join('')
+    }).join('') + (webChybi
+      ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome.">
+          <span class="rt-disc">${ICON.cloud}</span>
+          <span class="rt-name">Web</span>
+          <span class="rt-meta">nesleduje se</span>
+          <span class="rt-flag">bez rozšíření</span>
+        </a>`
+      : '')
       : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
   }
 }

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.1 — 2026-09-13 · aplikace řekne, když konverzace z prohlížeče nevidí
+
+Otevřít Gemini v prohlížeči a nevidět v Agenteeq nic vypadá jako chyba. Chyba to je — ale ne
+v rozpoznávání: konverzace ve webových nástrojích (Gemini, ChatGPT, Claude.ai, Perplexity, Grok,
+Microsoft Copilot, Qwen Chat) se do Agenteeq dostanou **výhradně přes rozšíření pro Chrome**.
+Stránku otevřenou v prohlížeči odjinud přečíst nelze. Dokud rozšíření není připojené, aplikace
+o takové konverzaci vědět nemůže.
+
+Špatně bylo, že o tom aplikace mlčela. Nově:
+
+- Na **Přehledu** je mezi běžícími aplikacemi dlaždice **Web — nesleduje se · bez rozšíření**,
+  která vede rovnou do Nastavení.
+- Na **Agentech** přibyla položka v sekci „Běží na Macu, ale bez přepisu“ s vysvětlením, kterých
+  služeb se to týká a proč to jinak nejde.
+
+Obojí se ukazuje jen dokud rozšíření nikdy nic neposlalo; po připojení zmizí.
+
 ## 0.10.0 — 2026-09-13 · původ dovedností, živá Útrata a nový widget
 
 **Počet tokenů v panelu se už neláme.** Řádek má 146 px a číslo s popiskem dohromady přesně
