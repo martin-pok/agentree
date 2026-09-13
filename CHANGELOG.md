@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.3 — 2026-09-13 · přístup z telefonu přežije restart aplikace
+
+Zapnutý přístup z telefonu se po restartu aplikace sám nespustil. V nastavení svítil jako
+zapnutý, ale listener pro místní síť neběžel — telefon se prostě nepřipojil a vypadalo to,
+že je rozbitý.
+
+Příčina: listener se věšel na událost `listening` hlavního serveru. Desktopová aplikace si ale
+port zabírá schválně dřív, než vůbec načte data (aby se o něj dvě instance nepraly), takže
+událost proběhla dávno předtím, než se na ni bylo možné navěsit. V `npm start` je pořadí
+opačné, a proto to nikdy nespadlo v testech.
+
+Nově se stav serveru kontroluje rovnou: když už naslouchá, listener se spustí okamžitě.
+Hlídají to dva testy — jeden ověřuje, že se spustí, druhý že se bez zapnutého nastavení
+neotevře nic.
+
 ## 0.8.2 — 2026-09-13 · na telefonu papír až k hornímu okraji
 
 Na telefonu mizí tmavý pruh nahoře. Byl to dekorační pás `.stage`, na kterém na počítači „plave“

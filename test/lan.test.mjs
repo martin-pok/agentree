@@ -152,3 +152,63 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   await assert.rejects(() => zLan('/api/state', { headers: { Cookie: token } }), /ECONNREFUSED/, 'po vypnutí na síti nikdo neposlouchá');
   assert.equal((await api(s.url).get('/api/state')).status, 200, 'na Macu funguje Agenteeq dál bez omezení');
 });
+
+// Desktopová aplikace si port zabírá dřív, než načte data — server tedy už naslouchá ve chvíli,
+// kdy se staví HTTP vrstva. Dokud se listener pro telefon věšel jen na událost „listening“,
+// zapnutý přístup z telefonu se po restartu aplikace nikdy sám nespustil.
+test('přístup z telefonu: po restartu se listener spustí i na serveru, který už naslouchá', async () => {
+  const { createApp } = await import('../src/app.js');
+  const { createHttpServer } = await import('../src/http.js');
+  const config = loadConfig({
+    PORT: '0',
+    AGENTEEQ_SOURCE_HOME: await tempDir('agenteeq-src-'),
+    AGENTEEQ_HOME: await tempDir('agenteeq-data-'),
+    AGENTEEQ_PROCESSES: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0',
+    AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
+    AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
+  });
+  const app = await createApp(config);
+  await app.start();
+  const volani = [];
+  app.lan.start = async (_handler, port) => { volani.push(port); return app.lan.status(); };
+
+  // Přesně v pořadí, v jakém to dělá desktop/server.mjs: nejdřív zabrat port, pak postavit HTTP.
+  const server = http.createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    app.datastore.data.settings.lanAccess = true;
+    createHttpServer(app, server);
+    await new Promise((r) => setImmediate(r));
+    assert.deepEqual(volani, [server.address().port], 'listener pro telefon se měl spustit hned');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await app.stop?.();
+  }
+});
+
+test('přístup z telefonu: vypnutý zůstane vypnutý i na serveru, který už naslouchá', async () => {
+  const { createApp } = await import('../src/app.js');
+  const { createHttpServer } = await import('../src/http.js');
+  const config = loadConfig({
+    PORT: '0',
+    AGENTEEQ_SOURCE_HOME: await tempDir('agenteeq-src-'),
+    AGENTEEQ_HOME: await tempDir('agenteeq-data-'),
+    AGENTEEQ_PROCESSES: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0',
+    AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
+    AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
+  });
+  const app = await createApp(config);
+  await app.start();
+  let spusteno = 0;
+  app.lan.start = async () => { spusteno++; return app.lan.status(); };
+  const server = http.createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    createHttpServer(app, server);
+    await new Promise((r) => setImmediate(r));
+    assert.equal(spusteno, 0, 'bez zapnutého nastavení se nesmí otevřít nic');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await app.stop?.();
+  }
+});

@@ -593,10 +593,13 @@ export function createHttpServer(app, existingServer = null) {
   // Listener pro místní síť obsluhuje tentýž kód (a tedy i stejnou kontrolu tokenu).
   // Zapne se jen tehdy, když si to uživatel v Nastavení sám zapnul.
   app.bindLan?.(onRequest, () => port());
-  // Naslouchat pro síť můžeme teprve tehdy, když hlavní server zná svůj port.
-  server.on('listening', () => {
-    if (app.lan && datastore.data.settings.lanAccess) app.lan.start(onRequest, port());
-  });
+  // Naslouchat pro síť můžeme teprve tehdy, když hlavní server zná svůj port. Desktopová
+  // aplikace si ale port zabírá dřív, než se vůbec načtou data — událost „listening“ tam tedy
+  // proběhla už předtím, než jsme se na ni stihli navěsit. Čekat na ni by znamenalo nespustit
+  // listener pro telefon nikdy, i když ho uživatel v Nastavení má zapnutý.
+  const spustLan = () => { if (app.lan && datastore.data.settings.lanAccess) app.lan.start(onRequest, port()); };
+  if (server.listening) spustLan();
+  else server.on('listening', spustLan);
 
   server.on('close', () => {
     clearInterval(heartbeat);
