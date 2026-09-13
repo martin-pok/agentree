@@ -71,6 +71,10 @@ function mount(el) {
       <div class="legend" data-region="legend"></div>
       <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity — ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
     </section>
+    <section data-enter style="--i:4" aria-labelledby="td-h">
+      <div class="sec-head"><h2 id="td-h">Kam dnes šly tokeny</h2><a class="link" href="#/statistiky">Statistiky</a></div>
+      <div class="card pad" data-region="today-apps"></div>
+    </section>
     <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
     <section data-enter style="--i:4" aria-labelledby="sp-h">
       <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
@@ -194,6 +198,28 @@ function update(topics = new Set(['all'])) {
     fill(el, 'meter', `
     <div class="meter-row"><span>Tokeny dnes</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} za den</span></span></div>
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní zpracované tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.</p>`);
+  }
+
+  // Souhrn „kolik dnes" je nahoře; tohle odpovídá na druhou půlku otázky — který nástroj to byl.
+  // Počítá se ze stejných hodinových přihrádek jako měřák, takže se čísla nemůžou rozejít.
+  if (changed(topics, 'sessions', 'tick')) {
+    const odRana = startOfDay(now);
+    const nastroje = new Map();
+    for (const s of everything) {
+      const n = tokensSince([s], odRana);
+      if (!n) continue;
+      const klic = s.app || 'Ostatní';
+      const d = nastroje.get(klic) || { value: 0, provider: s.provider, runtime: s.runtime };
+      d.value += n;
+      nastroje.set(klic, d);
+    }
+    const polozky = [...nastroje.entries()]
+      .map(([label, d]) => ({ label, value: d.value, icon: glyph({ app: label, provider: d.provider, runtime: d.runtime }) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+    fill(el, 'today-apps', polozky.length
+      ? hbars(polozky)
+      : '<p class="empty-inline">Dnes zatím žádné tokeny. Jakmile agent začne pracovat, uvidíš tady, kam jdou.</p>');
   }
 
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {

@@ -4,9 +4,12 @@ import { ICON } from '../icons.js';
 import { fill, emptyState, toast, copy, modal } from '../ui.js';
 import { renderMarkdown, splitFrontMatter } from '../markdown.js';
 
-const v = { el: null, items: null, q: '', source: 'all', sort: 'name', error: '' };
+const v = { el: null, items: null, q: '', source: 'all', origin: 'all', sort: 'name', error: '' };
 
 const kb = (bytes) => `${fmtNum(Math.max(1, Math.round(bytes / 1024)))} kB`;
+
+// Pořadí od nejužitečnějšího: uživatel nejčastěji hledá to svoje.
+const PUVOD = [['own', 'Moje'], ['anthropic', 'Od Anthropicu'], ['openai', 'Od OpenAI'], ['plugin', 'Z pluginu']];
 
 const RAZENI = [
   ['name', 'Podle názvu'],
@@ -43,7 +46,7 @@ function cardHtml(s) {
       ${s.description ? `<p>${esc(s.description)}</p>` : '<p class="muted">Bez popisu v hlavičce souboru.</p>'}
     </div>
     <div class="skill-meta">
-      <span class="badge">${esc(s.source)}</span>
+      <span class="badge">${esc(s.source)}</span>${s.origin === 'own' ? '<span class="badge badge--ok">Moje</span>' : ''}
       <span class="muted small">${kb(s.bytes)} · upraveno <span data-ago="${s.at}">${rel(s.at)}</span></span>
     </div>
     <code class="skill-path" title="${esc(s.dir)}">${esc(shortPath(s.dir))}</code>
@@ -127,6 +130,10 @@ function mount(el) {
       <p class="note">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu — od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
       <div class="seg seg--light seg--sm" role="group" aria-label="Řazení" data-region="sort"></div>
     </div>
+    <div class="sk-filtry" data-enter style="--i:2">
+      <span class="sk-filtr-popis">Původ</span>
+      <div class="seg seg--light seg--sm" role="group" aria-label="Filtrovat podle původu" data-region="origins"></div>
+    </div>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {
@@ -134,6 +141,8 @@ function mount(el) {
     if (src) { v.source = src.dataset.sourceFilter; update(); return; }
     const sort = e.target.closest('[data-sort]');
     if (sort) { v.sort = sort.dataset.sort; update(); return; }
+    const orig = e.target.closest('[data-origin-filter]');
+    if (orig) { v.origin = orig.dataset.originFilter; update(); return; }
     const open = e.target.closest('[data-open-skill]');
     if (open) { openReader(open.dataset.openSkill, open); return; }
     const btn = e.target.closest('[data-copy-skill]');
@@ -174,9 +183,14 @@ function update() {
   fill(el, 'sources', [['all', 'Vše'], ...sources.map((s) => [s, s])]
     .map(([k, label]) => `<button type="button" data-source-filter="${esc(k)}" aria-pressed="${v.source === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.source === k).length}</span></button>`).join(''));
   fill(el, 'sort', RAZENI.map(([k, label]) => `<button type="button" data-sort="${k}" aria-pressed="${v.sort === k}">${esc(label)}</button>`).join(''));
+  // Ukazujeme jen původy, které se mezi dovednostmi opravdu vyskytují — prázdné tlačítko nemá smysl.
+  const pritomne = PUVOD.filter(([k]) => v.items.some((s) => s.origin === k));
+  fill(el, 'origins', [['all', 'Vše'], ...pritomne]
+    .map(([k, label]) => `<button type="button" data-origin-filter="${esc(k)}" aria-pressed="${v.origin === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.origin === k).length}</span></button>`).join(''));
 
   const q = norm(v.q.trim());
   const list = serad(v.items.filter((s) => (v.source === 'all' || s.source === v.source)
+    && (v.origin === 'all' || s.origin === v.origin)
     && (!q || norm(`${s.name} ${s.description} ${s.dir}`).includes(q))));
   fill(el, 'list', list.length
     ? `<div class="skills">${list.map(cardHtml).join('')}</div>`

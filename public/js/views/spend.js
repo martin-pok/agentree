@@ -113,12 +113,15 @@ function mount(el, _params, query) {
       </div>
     </div>
     <div class="spend-hero card" data-enter style="--i:2" data-region="hero"></div>
-    <div data-enter style="--i:3" data-region="budgets"></div>
-    <div class="grid-2 grid-2--wide" data-enter style="--i:4">
+    <!-- Kredity a extra usage jsou jediná část Útraty, kterou Agenteeq zná sám ze souborů na disku;
+         výdaje, rozpočty a předplatné si uživatel zapisuje ručně. Patří proto nahoru, hned pod
+         souhrn — dřív byly až pod třemi prázdnými bloky s nulami a stránka působila mrtvě. -->
+    <div data-enter style="--i:3" data-region="credits"></div>
+    <div data-enter style="--i:4" data-region="budgets"></div>
+    <div class="grid-2 grid-2--wide" data-enter style="--i:5">
       <section class="card pad" aria-labelledby="mo-h"><div class="sec-head"><h2 id="mo-h">Posledních 6 měsíců</h2></div><div data-region="months"></div><div class="legend legend--static" data-region="mlegend"></div></section>
       <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">Za co platíš</h2><span class="muted small">tento měsíc</span></div><div data-region="kinds"></div></section>
     </div>
-    <div data-enter style="--i:5" data-region="credits"></div>
     <section class="card pad" data-enter style="--i:6" aria-labelledby="led-h">
       <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
       <div data-region="ledger"></div>

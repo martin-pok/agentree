@@ -33,6 +33,24 @@ export function parseFrontMatter(text) {
   return out;
 }
 
+// Odkud dovednost pochází. Zdroj (`source`) říká, který nástroj ji čte; původ říká, kdo ji napsal —
+// a to je to, co uživatel hledá, když má mezi 147 dovednostmi najít ty svoje dvě.
+// Rozlišuje se podle cesty, protože v souboru samotném o původu nic není.
+export const ORIGINS = {
+  anthropic: 'Od Anthropicu',
+  openai: 'Od OpenAI',
+  plugin: 'Z pluginu',
+  own: 'Moje',
+};
+
+export function originOf(dir) {
+  const d = String(dir || '');
+  if (/\/plugins\/(marketplaces|cache)\/claude-plugins-official\//.test(d)) return 'anthropic';
+  if (/\/\.codex\/skills\/\.system\//.test(d)) return 'openai';
+  if (/\/plugins\/(marketplaces|cache)\//.test(d)) return 'plugin';
+  return 'own';
+}
+
 const idOf = (file) => crypto.createHash('sha1').update(file).digest('hex').slice(0, 12);
 
 async function findSkillFiles(root, depth) {
@@ -85,6 +103,7 @@ export function createSkills({ config }) {
           description: clip(fm.description || '', 240),
           source: src.label,
           sourceId: src.id,
+          origin: originOf(path.dirname(file)),
           dir: path.dirname(file),
           bytes: stat.size,
           at: Math.round(stat.mtimeMs),

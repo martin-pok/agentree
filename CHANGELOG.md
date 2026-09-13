@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.10.0 — 2026-09-13 · původ dovedností, živá Útrata a nový widget
+
+**Počet tokenů v panelu se už neláme.** Řádek má 146 px a číslo s popiskem dohromady přesně
+146 px, takže flexbox zlomil obojí doprostřed — „482 tis.“ na dvou řádcích. Ani číslo, ani
+popisek se teď nelámou; když na sebe vedle sebe nezbude místo, popisek se přesune celý pod číslo.
+
+**Dovednosti jdou filtrovat podle původu.** Zdroj říká, který nástroj dovednost čte; původ říká,
+kdo ji napsal — a to je to, co hledáš, když máš mezi 147 dovednostmi najít ty svoje dvě. Rozlišuje
+se podle cesty na disku: Od Anthropicu (137), Od OpenAI (6), Z pluginu (2), Moje (2). Vlastní
+dovednosti navíc nesou zelený štítek. Hlídá to sedm testů včetně případů, kdy se slovo z cesty
+vyskytne jinde.
+
+**Útrata už nevede nulami.** Blok „Kredity a extra usage“ je jediná část stránky, kterou Agenteeq
+zná sám ze souborů na disku — a byl schovaný úplně dole, pod třemi prázdnými bloky. Je vysoký
+1200 px a je v něm skutečný obsah (zůstatek kreditů, historie dobití, vyčerpané extra usage
+u Claude). Přesunul se nahoru hned pod souhrn; výdaje, rozpočty a předplatné, které si zapisuješ
+ručně, jsou pod ním.
+
+**Nový widget „Kam dnes šly tokeny.“** Souhrn nahoře odpovídá na „kolik dnes“, tohle na druhou
+půlku otázky — který nástroj to byl. Počítá se ze stejných hodinových přihrádek jako měřák, takže
+se čísla nemůžou rozejít; ověřeno, že panel, měřák i widget ukazují shodně 504 386. Zaplnil taky
+prázdné místo na Přehledu: rozdíl sloupců klesl z 210 px na 36 px.
+
 ## 0.9.9 — 2026-09-13 · prověření čísel v grafech a oprava tažení okna
 
 **Okno nešlo chytit za horní pruh.** První pokus pověsil plochu k uchopení dovnitř webového
