@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.8 — 2026-09-13 · ploché karty místo stínů
+
+Karty se vznášely nad stránkou na měkkých stínech. Místo nich je drží vlasová linka: hrany jsou
+ostré, takže je vidět, že jsou přesně zarovnané, a nic se nerozmazává do okolí.
+
+- Stín karet měl tři vrstvy včetně rozmazání do 46 px. Nově je to jedna linka o šířce 1 px.
+  V tmavém režimu je zřetelnější, protože karta se tam od podkladu liší jen o 0,006 jasu —
+  hranu tedy nese výhradně ona.
+- **Stín nad „Okna limitů“** vrhal pruh se stavem agentů. Jako jediný blok ve stránce měl
+  vyzdvižení určené pro plovoucí prvky — 80 px rozmazání, které padalo dolů na sloupce pod ním.
+  Tmavá výplň na světlém podkladu ho oddělí sama. Vyzdvižení zůstává jen tomu, co se nad stránku
+  opravdu vysouvá: dialogům, nabídkám, paletě příkazů a plovoucí liště na telefonu.
+- Bloky Přehledu naskakují naráz. Postupné naskakování po 60 ms mělo smysl, dokud o pořadí
+  rozhodoval kód; teď o rozmístění rozhoduje sazba, takže by vypadalo náhodně — a během něj
+  bloky chvíli neseděly v řadě, což vypadalo jako křivý layout.
+
+Zarovnání ověřeno měřením: oba sloupce 484 px, levé hrany karet přesně na 0 a 556 px, pravé na
+484 a 1040 px, **žádné desetinné pixely**, mezery 40 px mezi bloky a 16 px pod nadpisy.
+
 ## 0.9.7 — 2026-09-13 · Přehled se vyvažuje sám, přepis je zase čitelný
 
 **Tmavý text na tmavé bublině v přepisu — moje chyba z 0.9.0.** Třídu `.md` používá jak čtečka

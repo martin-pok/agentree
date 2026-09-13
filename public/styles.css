@@ -35,8 +35,11 @@
   --r-lg: 24px;
   --r-md: 16px;
   --r-sm: 12px;
-  --shadow: 0 0 0 1px rgba(22, 20, 29, .05), 0 1px 2px rgba(22, 20, 29, .04), 0 22px 46px -20px rgba(22, 20, 29, .2);
-  --shadow-sm: 0 0 0 1px rgba(22, 20, 29, .05), 0 1px 2px rgba(22, 20, 29, .05), 0 10px 24px -14px rgba(22, 20, 29, .22);
+  /* Karty leží v ploše, nevznášejí se. Místo měkkého stínu je drží vlasová linka: hrany jsou
+     ostré, takže je vidět, že jsou zarovnané — a nic se nerozmazává do okolí. Skutečné vyzdvižení
+     (--shadow-lg) zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy a nabídky. */
+  --shadow: 0 0 0 1px rgba(22, 20, 29, .085);
+  --shadow-sm: 0 0 0 1px rgba(22, 20, 29, .07);
   --shadow-lg: 0 32px 80px -24px rgba(12, 11, 16, .5);
   --ease: cubic-bezier(.2, .8, .2, 1);
   --band-h: clamp(112px, 9.4vw, 148px);
@@ -70,8 +73,11 @@ html[data-theme='dark'] {
   --brass-tint: #3B2E17;
   --ivory: #EFEAF2;
   --ok: #76E6CD;
-  --shadow: 0 0 0 1px rgba(0, 0, 0, .32), 0 1px 2px rgba(0, 0, 0, .22), 0 22px 46px -20px rgba(0, 0, 0, .62);
-  --shadow-sm: 0 0 0 1px rgba(0, 0, 0, .28), 0 1px 2px rgba(0, 0, 0, .2), 0 10px 24px -14px rgba(0, 0, 0, .54);
+  /* V tmavém režimu linku nedělá tmavší barva, ale nepatrné zesvětlení hrany. */
+  /* V tmavém režimu se karta od podkladu liší jen o 0,006 jasu, takže hranu nese výhradně linka
+     — musí být proto zřetelnější než ve světlém. */
+  --shadow: 0 0 0 1px rgba(255, 255, 255, .14);
+  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, .11);
   --shadow-lg: 0 32px 80px -24px rgba(0, 0, 0, .76);
 }
 
@@ -261,6 +267,9 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 /* ---------- Obecné ---------- */
 .view { outline: none; }
 .view.is-entering [data-enter] { animation: rise .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
+/* O rozmístění bloků Přehledu rozhoduje sazba, ne pořadí v kódu — postupné naskakování by proto
+   vypadalo náhodně a během něj by bloky chvíli neseděly v řadě. Naskočí tedy naráz. */
+.view.is-entering .ov > [data-enter] { animation-delay: 120ms; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: translateY(-6px) scale(.98); opacity: 0; } }
@@ -347,7 +356,10 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .ov > * { break-inside: avoid; margin-bottom: 40px; }
 .ov > *:last-child { margin-bottom: 0; }
 /* Pruh „Právě pracuje“: nejdůležitější informace přes celou šířku. */
-.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; box-shadow: var(--shadow-lg); }
+/* Pruh se stavem agentů leží ve stránce, nevznáší se nad ní — velké vyzdvižení (80px rozmazání)
+   z něj kropilo měkký stín dolů na sloupce pod ním. Tmavá výplň na světlém podkladu ho oddělí
+   sama. Vyzdvižení zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy, nabídky, paleta. */
+.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; }
 .pulse-bar::before { content: ''; position: absolute; right: 12%; top: -120%; width: 420px; height: 340%; background: radial-gradient(closest-side, rgba(34, 163, 140, .22), transparent 70%); pointer-events: none; }
 .pulse-bar > * { position: relative; }
 .pb-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
