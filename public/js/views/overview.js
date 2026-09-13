@@ -54,32 +54,36 @@ function mount(el) {
   <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
   <div class="ov">
-    <section data-enter style="--i:2" aria-labelledby="dec-h">
-      <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
-      <div data-region="decisions"></div>
-    </section>
-    <section data-enter style="--i:2" aria-labelledby="tl-h">
-      <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
-      <div class="card tl-card" data-region="timeline"></div>
-    </section>
-    <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
-    <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
-      <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
-        <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
-      </div>
-      <div data-region="chart"></div>
-      <div class="legend" data-region="legend"></div>
-      <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity — ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
-    </section>
-    <section data-enter style="--i:4" aria-labelledby="td-h">
-      <div class="sec-head"><h2 id="td-h">Kam dnes šly tokeny</h2><a class="link" href="#/statistiky">Statistiky</a></div>
-      <div class="card pad" data-region="today-apps"></div>
-    </section>
-    <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
-    <section data-enter style="--i:4" aria-labelledby="sp-h">
-      <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
-      <div class="card spend-mini" data-region="spend"></div>
-    </section>
+    <div class="ov-col">
+      <section data-enter style="--i:2" aria-labelledby="dec-h">
+        <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
+        <div data-region="decisions"></div>
+      </section>
+      <section data-enter style="--i:2" aria-labelledby="tl-h">
+        <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
+        <div class="card tl-card" data-region="timeline"></div>
+      </section>
+      <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
+      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
+        <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
+          <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
+        </div>
+        <div data-region="chart"></div>
+        <div class="legend" data-region="legend"></div>
+        <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity — ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
+      </section>
+    </div>
+    <div class="ov-col">
+      <section data-enter style="--i:4" aria-labelledby="td-h">
+        <div class="sec-head"><h2 id="td-h">Kam dnes šly tokeny</h2><a class="link" href="#/statistiky">Statistiky</a></div>
+        <div class="card pad" data-region="today-apps"></div>
+      </section>
+      <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
+      <section data-enter style="--i:4" aria-labelledby="sp-h">
+        <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
+        <div class="card spend-mini" data-region="spend"></div>
+      </section>
+    </div>
   </div>
   <section class="ov-wide" data-enter style="--i:5" aria-labelledby="rt-h">
     <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Zdroje dat</a></div>

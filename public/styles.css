@@ -272,7 +272,7 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .view.is-entering [data-enter] { animation: rise .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
 /* O rozmístění bloků Přehledu rozhoduje sazba, ne pořadí v kódu — postupné naskakování by proto
    vypadalo náhodně a během něj by bloky chvíli neseděly v řadě. Naskočí tedy naráz. */
-.view.is-entering .ov > [data-enter] { animation-delay: 120ms; }
+.view.is-entering .ov [data-enter] { animation-delay: 120ms; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: translateY(-6px) scale(.98); opacity: 0; } }
@@ -352,14 +352,18 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .select select:hover { color: var(--ink); background-color: var(--line-2); }
 
 /* ---------- Přehled ---------- */
-/* Přehled se vyvažuje sám. Dřív měl dva pevné sloupce s natvrdo přiřazenými bloky — jenže
-   jejich výška závisí na datech: jednou je dlouhý seznam rozhodnutí, jindy graf a dlaždice.
-   Kterýkoli sloupec pak skončil dřív a vedle druhého zůstala prázdná plocha (naměřeno až
-   1242 px rozdílu). Sloupcová sazba rozdělí bloky tak, aby oba sloupce končily stejně vysoko,
-   ať jsou data jakákoli. Blok se nikdy neroztrhne napůl. */
-.ov { columns: 2; column-gap: 72px; }
-.ov > * { break-inside: avoid; margin-bottom: 40px; }
-.ov > *:last-child { margin-bottom: 0; }
+/* Přehled má dva sloupce s pevně určeným obsahem. Sloupcová sazba (`columns: 2`) si o zalomení
+   rozhodovala sama, takže se pořadí bloků měnilo s šířkou okna i s daty a nešlo zaručit, co je
+   nahoře. Pevné sloupce to určují jednoznačně a oba začínají zarovnané na stejné výšce.
+   Rozdíl výšek (data jsou pokaždé jiná) dorovná poslední karta ve sloupci — místo prázdné
+   plochy pod ní se protáhne dolů. */
+.ov { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: stretch; }
+.ov-col { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
+.ov-col > *:last-child { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.ov-col > *:last-child > *:last-child { flex: 1 1 auto; }
+/* Blok, který zrovna nemá co ukázat (žádná okna limitů, měřák před prvním načtením), zmizí
+   úplně. Jinak by po sobě nechal prázdnou mezeru uprostřed sloupce. */
+.ov-col > section:empty { display: none; }
 /* Pruh „Právě pracuje“: nejdůležitější informace přes celou šířku. */
 /* Pruh se stavem agentů leží ve stránce, nevznáší se nad ní — velké vyzdvižení (80px rozmazání)
    z něj kropilo měkký stín dolů na sloupce pod ním. Tmavá výplň na světlém podkladu ho oddělí
@@ -553,7 +557,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .legend-item[aria-pressed='false'] .swatch { opacity: .3; }
 .legend--static { padding-left: 72px; }
 
-.spend-mini { padding: 20px 24px; display: grid; gap: 16px; }
+/* Když karta dorovnává výšku sloupce, obsah zůstane nahoře a protáhne se prázdné místo pod ním. */
+.spend-mini { padding: 20px 24px; display: grid; align-content: start; gap: 16px; }
 .spend-mini-top { display: flex; align-items: center; gap: 16px; }
 .spend-mini-top .gauge { width: 96px; flex: none; }
 .spend-mini-num { display: grid; gap: 2px; min-width: 0; }
@@ -1109,7 +1114,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* ---------- Responzivita ---------- */
 @media (max-width: 1360px) {
   .main { padding-left: 48px; padding-right: 40px; }
-  .ov { column-gap: 48px; }
+  .ov { gap: 48px; }
   .row { grid-template-columns: 40px minmax(0, 2fr) minmax(0, 1.2fr) 150px 88px 16px; }
   .row .cell-time { display: none; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1129,7 +1134,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .shell { grid-template-columns: 240px minmax(0, 1fr); }
   .sidebar { padding: 28px 16px 20px; }
   /* Na telefonu jeden sloupec — bloky jdou prostě pod sebou v pořadí, v jakém jsou v kódu. */
-  .ov { columns: 1; }
+  .ov { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .session-grid, .grid-2, .grid-2--wide { grid-template-columns: minmax(0, 1fr); }
   .spend-hero { grid-template-columns: 180px minmax(0, 1fr); gap: 24px; padding: 28px; }
   .search-field { margin-left: 0; }
