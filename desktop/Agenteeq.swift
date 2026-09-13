@@ -113,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     @objc func showWindow() { window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     @objc func settings() { showWindow(); web?.evaluateJavaScript("location.hash='#/nastaveni'") }
     @objc func welcome() { showWindow(); web?.evaluateJavaScript("window.dispatchEvent(new Event('agenteeq-welcome'))") }
-    @objc func about() { NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agenteeq", .applicationVersion: "0.6.0", .credits: NSAttributedString(string: "Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.")]) }
+    @objc func about() { NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agenteeq", .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "", .credits: NSAttributedString(string: "Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.")]) }
     @objc func retry() { guard child?.isRunning != true else { return }; retries = 0; startServer() }
 
     func startServer() {

@@ -15,6 +15,10 @@ telefon: rada, která nemohla nikdy vést k cíli.
   — `javascript:`, `data:`, `file:`, adresa s heslem — se odmítne.
 - Karta „server neběží“ na spárovaném telefonu už neukazuje `127.0.0.1`, ale skutečnou adresu,
   na které je stránka otevřená, a radí zkontrolovat Mac místo Terminálu.
+- **Verze aplikace v macOS už nezůstává pozadu.** `Info.plist` měl natvrdo 0.6.0, takže Finder
+  i okno „O aplikaci“ hlásily starou verzi i po instalaci nové. Číslo se teď razítkuje při
+  každém buildu z `package.json` (`scripts/plist-version.mjs`) a okno „O aplikaci“ si ho bere
+  z balíčku. Hlídají to dva testy.
 
 ## 0.8.0 — 2026-09-13 · nový název Agenteeq
 

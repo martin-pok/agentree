@@ -53,3 +53,21 @@ test('desktop: owns its server, closes on parent EOF, rejects occupied ports', a
     await assert.rejects(fetch(`http://127.0.0.1:${ready.port}/api/health`));
   } finally { if (child.exitCode === null) child.kill(); }
 });
+
+test('Info.plist dostane verzi z package.json — v aplikaci nikdy nesvítí stará', async () => {
+  const { stampVersion } = await import('../scripts/plist-version.mjs');
+  const zdroj = await fs.readFile(new URL('../desktop/Info.plist', import.meta.url), 'utf8');
+  const balicek = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const out = stampVersion(zdroj, balicek.version);
+  assert.match(out, new RegExp(`<key>CFBundleShortVersionString</key><string>${balicek.version.replace(/\./g, '\\.')}</string>`));
+  assert.match(out, new RegExp(`<key>CFBundleVersion</key><string>${balicek.version.replace(/\./g, '\\.')}</string>`));
+  // Zbytek souboru zůstane nedotčený.
+  assert.ok(out.includes('<string>cz.agenteeq.desktop</string>'));
+  assert.throws(() => stampVersion(zdroj, 'nesmysl'), /nemá tvar/);
+});
+
+test('okno O aplikaci si verzi bere z balíčku, ne z natvrdo psaného čísla', async () => {
+  const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
+  assert.ok(swift.includes('CFBundleShortVersionString'), 'verze se čte z Info.plist');
+  assert.doesNotMatch(swift, /applicationVersion:\s*"\d/, 'žádná verze natvrdo ve zdrojáku');
+});
