@@ -60,10 +60,6 @@ function mount(el) {
       </section>
       <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
       <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
-      <section data-enter style="--i:5" aria-labelledby="act-h">
-        <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
-        <ul class="activity" data-region="activity"></ul>
-      </section>
     </div>
     <div class="ov-col">
       <section data-enter style="--i:2" aria-labelledby="tl-h">
@@ -88,7 +84,11 @@ function mount(el) {
         </section>
       </div>
     </div>
-  </div>`;
+  </div>
+  <section class="ov-wide" data-enter style="--i:6" aria-labelledby="act-h">
+    <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
+    <ul class="activity" data-region="activity"></ul>
+  </section>`;
   const sel = el.querySelector('[data-action="period"]');
   sel.value = v.period;
   sel.addEventListener('change', () => {
@@ -215,7 +215,7 @@ function update(topics = new Set(['all'])) {
       : '');
   }
 
-  if (changed(topics, 'sessions')) fill(el, 'activity', all.length ? all.slice(0, 5).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
+  if (changed(topics, 'sessions')) fill(el, 'activity', all.length ? all.slice(0, 6).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
 
   if (changed(topics, 'sessions', 'tick')) {
     const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;

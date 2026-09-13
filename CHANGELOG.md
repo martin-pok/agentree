@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.0 — 2026-09-13 · dovednosti se dají číst v aplikaci
+
+**Obsah dovednosti si přečteš rovnou v Agenteeq.** Doteď šel jen zkopírovat nebo stáhnout —
+což znamenalo otevřít editor kvůli tomu, aby ses podíval, co ta dovednost vlastně dělá.
+Klik na kartu (nebo na Číst) otevře čtečku s vysázeným textem: nadpisy, seznamy, bloky kódu
+s názvem jazyka, citace, tabulky i odkazy. Vedle textu je cesta k souboru na jedno klepnutí
+do schránky, hlavička souboru a tlačítka Kopírovat vše a Stáhnout. Zavírá se Esc a zaostření
+se vrací tam, odkud se čtečka otevřela.
+
+Markdown si Agenteeq sází sám (`public/js/markdown.js`, žádná knihovna navíc). Text se nejdřív
+celý proescapuje a značky se hledají až nad ním, takže HTML ze souboru se nikdy nestane HTML
+stránky; odkaz projde jen na http, https a mailto. Hlídá to deset testů a ověření proti všem
+147 skutečným souborům SKILL.md na tomto Macu — všechny se vykreslily, žádná uniklá značka,
+žádná obsluha události, žádná výjimka.
+
+**Stránka Dovednosti dostala tvar.** Nad seznamem je souhrn (kolik jich je, z kolika zdrojů,
+kolik textu celkem, kdy se naposledy něco změnilo), přibylo řazení podle názvu, poslední úpravy
+a velikosti, a hledá se i v cestě k souboru. Karty mají jasnou hierarchii a vedlejší akce jen
+jako ikony, takže se do řádku vejde víc sloupců: při 1024 px dva, při 1440 px tři, při 1800 px
+čtyři. Stránka tím spadla z 27 036 px na 9 164 px.
+
+**Poslední aktivita na Přehledu je přes celou šířku.** Držela se v úzkém levém sloupci a táhla
+ho o 263 px pod pravý, kde zůstávalo prázdno. Teď je pod mřížkou přes celou šířku a položky se
+skládají do sloupců podle místa (3 / 2 / 1). Rozdíl výšky sloupců klesl z 263 px na 133 px.
+
 ## 0.8.5 — 2026-09-13 · prostor na širokém displeji
 
 - **Vyhledávací pole už při kliknutí neuskočí.** Rostlo ze 280 na 320 px, a protože je zarovnané

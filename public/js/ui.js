@@ -253,18 +253,22 @@ function markErrors(form, errors) {
   (first?.classList.contains('picker-source') ? first.nextElementSibling : first)?.focus();
 }
 
-export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false, opener: openerOverride = null }) {
+// `size` přidá variantu okna (např. 'reader' pro čtení souboru), `footer` nahradí výchozí dvojici
+// tlačítek vlastním obsahem a `onOpen` dostane kořen okna hned po vložení do stránky —
+// díky tomu má i vlastní patička kde navěsit obsluhu, aniž by se duplikovala práce s Esc,
+// zámkem tabulátoru a vrácením zaostření.
+export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {
   return new Promise((resolve) => {
     const opener = openerOverride || document.activeElement;
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
     const scrim = document.createElement('div');
     scrim.className = 'modal-scrim';
-    scrim.innerHTML = `<div class="modal${wide ? ' modal--wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="${id}">
+    scrim.innerHTML = `<div class="modal${wide ? ' modal--wide' : ''}${size ? ` modal--${size}` : ''}" role="dialog" aria-modal="true" aria-labelledby="${id}">
       <form novalidate>
         <header class="modal-head"><h2 id="${id}">${esc(title)}</h2><button type="button" class="icon-btn" data-close aria-label="Zavřít">${ICON.close}</button></header>
         <div class="modal-body">${body}</div>
         <p class="form-error" role="alert" hidden></p>
-        <footer class="modal-foot"><button type="button" class="btn" data-close>${esc(cancelLabel)}</button><button type="submit" class="btn ${danger ? 'btn--danger' : 'btn--primary'}">${esc(submitLabel)}</button></footer>
+        <footer class="modal-foot">${footer ?? `<button type="button" class="btn" data-close>${esc(cancelLabel)}</button><button type="submit" class="btn ${danger ? 'btn--danger' : 'btn--primary'}">${esc(submitLabel)}</button>`}</footer>
       </form>
     </div>`;
     document.body.appendChild(scrim);
@@ -296,6 +300,7 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
       }
     };
     document.addEventListener('keydown', onKey, true);
+    onOpen?.(scrim, close);
     // Zavření až po clicku brání tomu, aby se po mousedown overlay odstranil a
     // zbytek gesta propadl na tlačítko pod ním.
     scrim.addEventListener('click', (e) => { if (e.target === scrim) close(false); });
@@ -323,7 +328,7 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
         submit.classList.remove('is-busy');
       }
     });
-    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || submit).focus());
+    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || submit || scrim.querySelector('button')).focus());
   });
 }
 

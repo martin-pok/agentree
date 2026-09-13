@@ -382,7 +382,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .credit-chip { display: inline-flex; align-items: center; gap: 8px; margin: 16px 8px 0 0; height: 36px; padding: 0 14px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; text-decoration: none; }
 .credit-chip b { font-family: var(--f-mono); }
 
-.activity { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+/* Poslední aktivita je pod mřížkou a v celé šířce: v úzkém sloupci zbytečně prodlužovala levou
+   stranu, zatímco vpravo dole zůstávalo prázdno. Položky se skládají do sloupců podle místa,
+   takže se řádek nikdy neroztáhne přes celou stránku s dírou uprostřed. */
+.ov-wide { display: block; margin-top: 40px; }
+.activity { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr)); gap: 4px 24px; }
 .act-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 16px; align-items: center; gap: 14px; padding: 8px; margin: 0 -8px; border-radius: var(--r-sm); text-decoration: none; transition: background-color .2s; }
 .act-item:hover { background: var(--card); }
 .act-text { min-width: 0; display: grid; }
@@ -736,29 +740,46 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .topups b { font: 500 14px/1 var(--f-mono); color: var(--teal-ink); }
 
 /* ---------- Dovednosti ---------- */
+/* Souhrn nad seznamem: čtyři čísla, která dávají smysl dřív, než začneš hledat. */
+.sk-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; margin-bottom: 24px; border-radius: var(--r-md); background: var(--line-2); overflow: hidden; box-shadow: var(--shadow-sm); }
+.sk-sum-item { display: grid; gap: 2px; padding: 16px 20px; background: var(--card); }
+.sk-sum-item b { font: 400 24px/1.1 var(--f-display); letter-spacing: -.01em; }
+.sk-sum-item span { font-size: 12px; color: var(--mute); }
+.sk-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
+.sk-bar .note { margin: 0; flex: 1 1 320px; }
+.seg--sm button { height: 30px; padding: 0 12px; font-size: 13px; }
+
 /* Prvek mřížky má výchozí `min-width: auto`, takže dlouhá cesta k souboru (nezalomitelná)
    určila minimální šířku karty — na telefonu z toho bylo 890 px na 375px displeji. */
 /* Na širokém displeji je 147 dovedností v jednom sloupci 27 000 px dlouhá stránka, kde 80 %
-   šířky zůstává prázdných. Řádky se proto samy skládají do více sloupců — `min(560px, 100%)`
-   drží dost místa pro popis i obě tlačítka a na úzkém displeji nikdy nepřeteče. */
-.skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr)); gap: 12px; }
-/* Plynulost rolování: u dlouhých seznamů (147 dovedností = stránka vysoká 43 000 px) prohlížeč
-   přeskočí layout i kreslení položek mimo obrazovku. `contain-intrinsic-size` drží správnou
-   výšku posuvníku, takže se nic netrhá ani neposkakuje. */
-.skill { content-visibility: auto; contain-intrinsic-size: auto 132px; }
+   šířky zůstává prázdných. Karty se proto samy skládají do sloupců. Práh 300 px je změřený:
+   při okně 1024 px zbývá na obsah 648 px a dva sloupce se vejdou jen pod 306 px. `min(…, 100%)`
+   drží jistotu, že na úzkém displeji nikdy nepřeteče. */
+.skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 12px; align-items: start; }
+/* Plynulost rolování: u dlouhých seznamů (147 dovedností) prohlížeč přeskočí layout i kreslení
+   položek mimo obrazovku. `contain-intrinsic-size` drží správnou výšku posuvníku. */
+.skill { content-visibility: auto; contain-intrinsic-size: auto 196px; }
 .alert-item { content-visibility: auto; contain-intrinsic-size: auto 92px; }
 .prow { content-visibility: auto; contain-intrinsic-size: auto 72px; }
 .custom-agent { content-visibility: auto; contain-intrinsic-size: auto 120px; }
-.skill { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 20px 24px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
-.skill-main { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
-.skill-main h3 { margin: 0; font: 500 16px/1.3 var(--f-body); overflow-wrap: anywhere; }
+.skill { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 20px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); cursor: pointer; transition: box-shadow .2s var(--ease), transform .2s var(--ease); }
+.skill:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.skill:has(.skill-open:focus-visible) { box-shadow: var(--shadow); }
+.skill-main { min-width: 0; display: grid; gap: 6px; }
+.skill-name { margin: 0; font: 500 16px/1.3 var(--f-body); }
+/* Název je tlačítko, ale má vypadat jako nadpis — klikací je stejně celá karta. */
+.skill-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; overflow-wrap: anywhere; }
+.skill-open:hover { color: var(--brass-ink, var(--brass)); }
 .skill-main p { margin: 0; font-size: 14px; color: var(--ink-2); }
 .skill-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.skill-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 12px; color: var(--mute); }
-.skill-actions { display: flex; gap: 8px; flex: none; }
+.skill-path { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 12px; color: var(--mute); }
+.skill-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+/* Vedlejší akce nesou jen ikonu — název má jen ta hlavní. Karta tím zůstane nízká a do řádku
+   se jich vejde víc. Přístupný název nese skrytý text, cíl pro prst zůstává 32 px. */
+.btn--ico { width: 32px; padding: 0; justify-content: center; flex: none; }
 @media (max-width: 720px) {
-  .skill { flex-direction: column; gap: 16px; }
-  .skill-actions { width: 100%; }
+  /* Na úzké kartě si tlačítka rozdělí celý řádek, ať se na ně dobře míří prstem. */
+  .skill-actions .btn { flex: 1 1 auto; justify-content: center; }
 }
 /* Karta „Kredity a extra usage“ a následující „Výdaje“ nemají vlastní odstup od okolních karet (na rozdíl od .grid-2 nebo .cta-card) — drží 32px rytmus stránky Útrata. */
 [aria-labelledby="cr-h"], [aria-labelledby="led-h"] { margin-top: 32px; }
@@ -915,6 +936,50 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .form-grid--services { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .modal-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px 24px; }
+
+/* ---------- Čtečka dovednosti ---------- */
+/* Okno na čtení je vyšší a širší než formulářové: text se čte, ne vyplňuje. Roluje se tělo,
+   hlavička s názvem a patička s akcemi zůstávají na místě. */
+.modal--reader { width: min(860px, 100%); height: min(880px, calc(100dvh - 32px)); max-height: none; display: flex; overflow: hidden; }
+.modal--reader > form { display: flex; flex-direction: column; min-height: 0; width: 100%; }
+.modal--reader .modal-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px; }
+.modal--reader .modal-foot { border-top: 1px solid var(--line-2); }
+.modal--reader .modal-foot .btn { flex: none; }
+.reader:focus { outline: none; }
+.reader-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.reader-lead { margin: 0 0 12px; font-size: 15px; color: var(--ink-2); max-width: 68ch; }
+.reader-path { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: 0; border-radius: var(--r-sm); background: var(--paper); color: var(--mute); text-align: left; }
+.reader-path:hover { color: var(--ink-2); }
+.reader-path .icon { width: 14px; height: 14px; flex: none; }
+.reader-path code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.reader-front { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; margin: 12px 0 0; padding: 12px; border-radius: var(--r-sm); background: var(--paper); font-size: 13px; }
+.reader-front dt { color: var(--mute); font: 500 12px/1.6 var(--f-mono); }
+.reader-front dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* ---------- Vykreslený Markdown ---------- */
+.md { margin-top: 20px; max-width: 72ch; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
+.md > *:first-child { margin-top: 0; }
+.md h2, .md h3, .md h4, .md h5, .md h6 { margin: 28px 0 8px; color: var(--ink); font-family: var(--f-display); font-weight: 400; line-height: 1.25; letter-spacing: -.01em; }
+.md h2 { font-size: 24px; }
+.md h3 { font-size: 19px; }
+.md h4, .md h5, .md h6 { font: 500 16px/1.3 var(--f-body); }
+.md p { margin: 0 0 12px; }
+.md ul, .md ol { margin: 0 0 12px; padding-left: 22px; }
+.md li { margin: 4px 0; }
+.md li > ul, .md li > ol { margin: 4px 0 0; }
+.md a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--brass); }
+.md code { padding: 1px 5px; border-radius: 5px; background: var(--line-2); color: var(--ink); font: 400 .88em/1.4 var(--f-mono); overflow-wrap: anywhere; }
+.md pre { margin: 0 0 16px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--stage-2, #1E1B26); color: #F4F3F7; overflow-x: auto; }
+.md pre code { padding: 0; background: none; color: inherit; font-size: 13px; line-height: 1.6; white-space: pre; }
+.md pre[data-jazyk]::before { content: attr(data-jazyk); display: block; margin-bottom: 8px; font: 500 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 243, 247, .5); }
+.md blockquote { margin: 0 0 16px; padding: 2px 0 2px 16px; box-shadow: inset 3px 0 0 var(--brass); color: var(--ink-2); }
+.md blockquote p:last-child { margin-bottom: 0; }
+.md hr { margin: 24px 0; border: 0; border-top: 1px solid var(--line); }
+.md-table { margin: 0 0 16px; overflow-x: auto; }
+.md-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.md-table th, .md-table td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-2); }
+.md-table th { color: var(--ink); font-weight: 500; white-space: nowrap; }
+.md strong { font-weight: 500; color: var(--ink); }
 .palette { position: fixed; inset: 0; z-index: 60; display: grid; justify-items: center; align-items: start; padding: 12vh 16px 16px; background: rgba(30, 27, 34, .32); backdrop-filter: blur(3px); animation: fade .2s both; }
 .palette-box { width: min(600px, 100%); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; animation: pop .25s var(--ease) both; }
 .palette-input { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
