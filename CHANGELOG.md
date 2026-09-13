@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.5 — 2026-09-13 · prostor na širokém displeji
+
+- **Vyhledávací pole už při kliknutí neuskočí.** Rostlo ze 280 na 320 px, a protože je zarovnané
+  doprava, celé se posunulo o 40 px stranou. Šířka je teď stálá; zpětnou vazbu dává rámeček.
+  (300 px nešlo — při té šířce se lišta na 1440 px láme na dva řádky.)
+- **Detail agenta nemá vedle bočního sloupce díru.** Přepis měl pevnou výšku, takže levý sloupec
+  skončil a zbytek řádku zůstal prázdný: naměřeno 903 px prázdna na ploše široké 980 px. Oba
+  sloupce teď sahají stejně hluboko a místo díry je vidět víc konverzace. Ověřeno ve třech
+  situacích: dlouhý přepis (ořeže se), krátký přepis (nikde nic nechybí) i krátký boční sloupec
+  (přepis si drží spodní hranici výšky).
+- **Dovednosti se skládají do více sloupců.** 147 dovedností v jednom sloupci dělalo stránku
+  vysokou 27 036 px, ve které zůstávalo 80 % šířky prázdných. Na širokém displeji jsou teď dva
+  sloupce a stránka měří 13 604 px; na užším displeji zůstává jeden sloupec a na telefonu se
+  nic nemění.
+
 ## 0.8.4 — 2026-09-13 · tři opravy na telefonu
 
 - **Stav spojení měl u tečky zase popisek.** Pod 560 px se text schovával a v liště zůstala jen
