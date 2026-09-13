@@ -86,7 +86,12 @@ html {
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 /* Vodorovné pásy (dlaždice agentů, záložky nastavení) mají na iOS setrvačné rolování a nepřetahují stránku. */
 .launch-chips, .pb-agents, .set-nav, .seg, .table-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-body { margin: 0; background: radial-gradient(1100px 520px at 18% -8%, #2A2334 0%, transparent 62%), radial-gradient(900px 480px at 100% 110%, #1B2A28 0%, transparent 60%), var(--backdrop); background-attachment: fixed; color: var(--ink); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+/* Pozadí je „stůl“ pod aplikací. Dřív bylo na těle s `background-attachment: fixed`, což nutí
+   prohlížeč překreslit obě velké přechodové plochy v každém snímku rolování — při 120 Hz
+   stodvacetkrát za vteřinu. Teď leží na vlastní pevné vrstvě, kterou kompozitor nakreslí jednou
+   a pak už s ní jen posouvá. Vzhled je stejný. */
+body { margin: 0; background: var(--backdrop); color: var(--ink); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(1100px 520px at 18% -8%, #2A2334 0%, transparent 62%), radial-gradient(900px 480px at 100% 110%, #1B2A28 0%, transparent 60%); }
 body.has-modal { overflow: hidden; }
 b, strong { font-weight: 500; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -121,7 +126,9 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .shell { position: relative; margin: 24px; min-height: calc(100dvh - 48px); background: var(--paper); border-radius: var(--r-xl); display: grid; grid-template-columns: 280px minmax(0, 1fr); isolation: isolate; overflow: clip; }
 /* Scéna — podpisový prvek. Světelné body = aktivní agenti. */
 .stage { position: absolute; inset: 0 0 auto 0; height: var(--band-h); z-index: -1; overflow: hidden; background: linear-gradient(180deg, #1A1722 0%, var(--stage) 100%); }
-.stage::after { content: ''; position: absolute; inset: 0; opacity: .08; mix-blend-mode: overlay; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+/* Bez `mix-blend-mode`: míchání vrstev nutí prohlížeč při každém překreslení znovu načíst
+   podklad. Při této průhlednosti je rozdíl ve vzhledu neznatelný, v ceně za snímek velký. */
+.stage::after { content: ''; position: absolute; inset: 0; opacity: .06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .stage-glow { position: absolute; left: 34%; top: -70%; width: 56%; height: 240%; background: radial-gradient(closest-side, rgba(201, 154, 62, .2), transparent 72%); pointer-events: none; }
 @keyframes note-in { from { opacity: 0; transform: rotate(-22deg) translateY(10px) scale(.6); } }
 @keyframes note-pulse { 50% { box-shadow: 0 0 0 9px rgba(194, 51, 90, .14), 0 0 28px rgba(194, 51, 90, .75); } }
@@ -216,9 +223,12 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .loading { display: flex; align-items: center; gap: 12px; color: var(--mute); padding: 32px 0; }
 .loader { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.skeleton { height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--line-2), var(--line), var(--line-2)); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; margin: 8px 0; }
+/* Posouvání `background-position` překresluje kostru v každém snímku — a to zrovna ve chvíli,
+   kdy se aplikace načítá a procesor má nejvíc práce. Posouvá se proto vrstva transformací. */
+.skeleton { position: relative; overflow: hidden; height: 14px; border-radius: 7px; background: var(--line-2); margin: 8px 0; }
+.skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--line), transparent); transform: translateX(-100%); animation: shimmer 1.4s linear infinite; }
 .skeleton--lg { height: 32px; width: 70%; }
-@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes shimmer { to { transform: translateX(100%); } }
 
 .card { background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); }
 .pad { padding: 28px 32px; }
@@ -292,8 +302,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pulse-bar::before { content: ''; position: absolute; right: 12%; top: -120%; width: 420px; height: 340%; background: radial-gradient(closest-side, rgba(34, 163, 140, .22), transparent 70%); pointer-events: none; }
 .pulse-bar > * { position: relative; }
 .pb-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.pb-live { width: 12px; height: 12px; border-radius: 50%; background: rgba(244, 243, 247, .28); flex: none; }
-.pulse-bar.is-live .pb-live { background: var(--teal); animation: live 1.8s var(--ease) infinite; }
+.pb-live { position: relative; width: 12px; height: 12px; border-radius: 50%; background: rgba(244, 243, 247, .28); flex: none; }
+.pulse-bar.is-live .pb-live { background: var(--teal); }
+.pulse-bar.is-live .pb-live::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--teal); animation: live 1.8s var(--ease) infinite; pointer-events: none; }
 .pb-num { font: 300 56px/1 var(--f-display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .pb-label { display: grid; gap: 2px; min-width: 0; }
 .pb-label b { font: 400 20px/1.2 var(--f-display); white-space: nowrap; }
@@ -421,8 +432,12 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .tl-text small { font-size: 11px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl-track { position: relative; height: 14px; border-radius: 7px; background: var(--line-2); }
 .tl-seg { position: absolute; top: 0; bottom: 0; border-radius: 7px; min-width: 4px; }
-.tl-live { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 3px solid var(--card); animation: live 1.8s var(--ease) infinite; }
-@keyframes live { 0% { box-shadow: 0 0 0 0 rgba(34, 163, 140, .5); } 100% { box-shadow: 0 0 0 10px rgba(34, 163, 140, 0); } }
+.tl-live { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 3px solid var(--card); }
+.tl-live::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: var(--teal); animation: live 1.8s var(--ease) infinite; pointer-events: none; }
+/* Prstenec kolem živé tečky. Dřív se animoval `box-shadow`, což znamená překreslit prvek
+   v každém snímku — a běželo to napořád, u každé tečky na stránce. Transformace a průhlednost
+   zvládne kompozitor sám, bez překreslování. */
+@keyframes live { from { transform: scale(1); opacity: .5; } to { transform: scale(2.6); opacity: 0; } }
 .tl-flag { position: absolute; top: -5px; width: 4px; height: 24px; margin-left: -2px; border-radius: 2px; background: var(--velvet-ink); }
 .tl-now { position: absolute; top: 18px; bottom: 0; left: calc(var(--tl-label) + (100% - var(--tl-label)) * var(--now)); border-left: 1px dashed var(--ink); pointer-events: none; }
 .tl-now span { position: absolute; top: -18px; left: 0; transform: translateX(-50%); font: 500 10px/1 var(--f-mono); background: var(--ink-surface); color: var(--on-ink); padding: 3px 5px; border-radius: 4px; }
@@ -574,7 +589,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .banner--limit > .icon { color: var(--brass-ink); }
 .live-strip { display: flex; align-items: center; gap: 16px; margin-top: 24px; padding: 16px 24px; border-radius: var(--r-lg); background: var(--ink-surface); color: var(--on-ink); }
 .live-strip.is-static { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
-.pulse { position: relative; width: 12px; height: 12px; border-radius: 50%; background: var(--teal); flex: none; animation: live 1.8s var(--ease) infinite; }
+.pulse { position: relative; width: 12px; height: 12px; border-radius: 50%; background: var(--teal); flex: none; }
+.pulse::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--teal); animation: live 1.8s var(--ease) infinite; pointer-events: none; }
 .live-text { display: grid; min-width: 0; flex: 1; }
 .live-activity { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .live-meta { font: 400 12px/1.5 var(--f-mono); color: rgba(255, 255, 255, .72); }
@@ -762,6 +778,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .alert-item { content-visibility: auto; contain-intrinsic-size: auto 92px; }
 .prow { content-visibility: auto; contain-intrinsic-size: auto 72px; }
 .custom-agent { content-visibility: auto; contain-intrinsic-size: auto 120px; }
+/* Řádek seznamu agentů je mřížka o sedmi sloupcích s logy — mimo obrazovku ji není třeba počítat. */
+.row { content-visibility: auto; contain-intrinsic-size: auto 68px; }
 .skill { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 20px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); cursor: pointer; transition: box-shadow .2s var(--ease), transform .2s var(--ease); }
 .skill:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
 .skill:has(.skill-open:focus-visible) { box-shadow: var(--shadow); }
@@ -1045,6 +1063,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   /* Na telefonu žádný tmavý „stůl“ pod aplikací: karta zabírá celou plochu, takže by byl vidět
      jen při přetažení a v pásu pod stavovým řádkem — tedy přesně tam, kde vypadá jako pruh. */
   body { background: var(--paper); }
+  body::before { display: none; }
   .shell { margin: 0; border-radius: 0; min-height: 100dvh; grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: fixed; z-index: 30; top: auto; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); height: auto; min-height: 0; margin: 0; padding: 6px; border-radius: 26px; flex-direction: row; box-shadow: 0 0 0 1px rgba(22, 20, 29, .06), 0 18px 40px -12px rgba(12, 11, 16, .35); }
   .brand, .profile, .side-foot { display: none; }

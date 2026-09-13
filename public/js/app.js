@@ -255,17 +255,51 @@ function renderProfile(name, working, all) {
     <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`);
 }
 
-function tick() {
+// Přepisování časových údajů je jediná práce, kterou aplikace dělá sama od sebe pořád dokola.
+// Musí proto být co nejlevnější a hlavně nesmí padnout doprostřed rolování: zápis do textu
+// zneplatní layout a jeho přepočet stál na Přehledu až 22 ms — při 120 Hz je rozpočet 8,3 ms,
+// takže z toho byl každou vteřinu viditelný záškub.
+//
+//   1. Na skrytou kartu se nesahá vůbec.
+//   2. Během rolování se tiknutí odloží; dožene se, jakmile se prst zastaví.
+//   3. Zapisuje se jen tam, kde se text opravdu změnil — jinak se layout vůbec nezneplatní.
+//
+// Zápisy schválně nejdou přes requestAnimationFrame: ten se v nezobrazeném okně nevolá a údaje
+// by pak zamrzly. Proti škubání stačí odklad během rolování.
+let roluje = 0;
+window.addEventListener('scroll', () => { roluje = Date.now(); }, { passive: true });
+const behemRolovani = () => Date.now() - roluje < 180;
+
+function prepis(uzly, text) {
+  for (const el of uzly) {
+    const t = text(el);
+    if (el.textContent !== t) el.textContent = t;
+  }
+}
+
+// Relativní časy se mění nejdřív po minutě (`rel()` pod 45 s hlásí „právě teď"), takže je nemá
+// smysl počítat každou vteřinu.
+// `hned` obchází ochranu proti rolování: `scrollend` přichází ještě uvnitř jejího okna, takže
+// bez toho by se údaje doháněly až dalším intervalem — u štítků klidně za deset vteřin.
+function tickLabels(hned = false) {
+  if (document.hidden || (!hned && behemRolovani())) return;
   const now = Date.now();
-  for (const el of document.querySelectorAll('[data-ago]')) {
-    const t = rel(Number(el.dataset.ago), now);
-    if (el.textContent !== t) el.textContent = t;
-  }
-  for (const el of document.querySelectorAll('[data-until]')) {
-    const t = untilLabel(Number(el.dataset.until), now);
-    if (el.textContent !== t) el.textContent = t;
-  }
-  for (const el of document.querySelectorAll('[data-clock-from]')) el.textContent = clock(now - Number(el.dataset.clockFrom));
+  prepis(document.querySelectorAll('[data-ago]'), (el) => rel(Number(el.dataset.ago), now));
+  prepis(document.querySelectorAll('[data-until]'), (el) => untilLabel(Number(el.dataset.until), now));
+}
+
+// Běžící stopky jsou jediné, co skutečně potřebuje vteřinový krok — a jen když nějaké existují.
+function tickClock(hned = false) {
+  if (document.hidden || (!hned && behemRolovani())) return;
+  const uzly = document.querySelectorAll('[data-clock-from]');
+  if (!uzly.length) return;
+  const now = Date.now();
+  prepis(uzly, (el) => clock(now - Number(el.dataset.clockFrom)));
+}
+
+function tick(hned = false) {
+  tickLabels(hned);
+  tickClock(hned);
 }
 
 /* ---------- Upozornění ---------- */
@@ -520,7 +554,31 @@ document.addEventListener('drop', async (e) => {
 /* ---------- Start ---------- */
 
 bindCharts(document);
-subscribe((topics) => refresh(topics));
+
+// Překreslení pohledu je nejdražší práce v aplikaci a při běžícím agentovi chodí pořád. Kdyby
+// padlo doprostřed rolování, je z toho škubnutí přesně ve chvíli, kdy je nejvíc vidět. Během
+// gesta se proto témata jen posbírají a vykreslí se, jakmile se rolování zastaví — data tím
+// zestárnou nanejvýš o zlomek vteřiny, ale pohyb zůstane plynulý.
+let odlozenaTemata = null;
+let odlozenyCasovac = 0;
+
+function vykresliOdlozene() {
+  clearTimeout(odlozenyCasovac);
+  odlozenyCasovac = 0;
+  if (!odlozenaTemata) return;
+  const t = odlozenaTemata;
+  odlozenaTemata = null;
+  refresh(t);
+}
+
+subscribe((topics) => {
+  if (!behemRolovani()) { refresh(topics); return; }
+  if (!odlozenaTemata) odlozenaTemata = new Set();
+  for (const t of topics) odlozenaTemata.add(t);
+  // `scrollend` umí i Safari, ale spoléhat se jen na něj by znamenalo riskovat zaseknutou frontu.
+  if (!odlozenyCasovac) odlozenyCasovac = setTimeout(vykresliOdlozene, 220);
+});
+window.addEventListener('scrollend', vykresliOdlozene);
 window.addEventListener('hashchange', navigate);
 
 let loadingSnapshot = null;
@@ -613,5 +671,9 @@ window.addEventListener('online', () => obnovStav('obnovená síť'));
 window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav('stránka z paměti'); });
 
 navigate();
-setInterval(tick, 1000);
+setInterval(tickClock, 1000);
+setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);
+// Po návratu k aplikaci nebo po dorolování dožene údaje hned, ať nikde nesvítí starý čas.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(true); });
+window.addEventListener('scrollend', () => tick(true));

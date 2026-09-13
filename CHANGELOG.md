@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.9.1 — 2026-09-13 · plynulost na 120 a 240 Hz
+
+Při 120 Hz má prohlížeč na jeden snímek 8,3 ms, při 240 Hz jen 4,2 ms. Cokoli, co se v každém
+snímku překresluje, se v takovém rozpočtu pozná. Audit našel čtyři takové věci a jednu, která
+sekala jinak — překreslením pohledu uprostřed gesta.
+
+**Překreslování v každém snímku rolování:**
+
+- `background-attachment: fixed` na těle stránky nutilo prohlížeč překreslit obě velké
+  přechodové plochy pokaždé, když se stránka pohnula. Pozadí má teď vlastní pevnou vrstvu,
+  kterou kompozitor nakreslí jednou. Vzhled je stejný.
+- Zrnitost v horním pruhu se míchala přes `mix-blend-mode: overlay`, což znamená při každém
+  překreslení znovu načíst podklad. Teď je to obyčejná průhledná vrstva.
+- Prstenec kolem živé tečky se animoval přes `box-shadow` — a běžel napořád, u každé tečky na
+  stránce. Nově je to transformace a průhlednost, tedy práce pro kompozitor, ne pro překreslování.
+- Kostry při načítání posouvaly `background-position`. Také přepsáno na transformaci — a to
+  zrovna ve chvíli, kdy má procesor nejvíc práce.
+
+**Práce, která padala doprostřed gesta:**
+
+- Překreslení pohledu chodí ze streamu pokaždé, když agent něco udělá. Naměřený přepočet stylů
+  a layoutu má medián 0,7–1,9 ms, ale špičky 12 až 26 ms podle stránky — každá taková špička je
+  při 120 Hz zahozený snímek, při 240 Hz jich je až šest. Během rolování se teď témata jen
+  sbírají a vykreslí se, jakmile se pohyb zastaví.
+- Přepisování časových údajů běželo každou vteřinu a třikrát procházelo celý dokument. `rel()`
+  přitom jemněji než na minuty nepočítá, takže štítky stačí jednou za deset vteřin; vteřinový
+  krok zůstal jen běžícím stopkám, a jen když nějaké na stránce jsou. Během rolování se nesahá
+  na text vůbec a po zastavení se údaje hned doženou (ověřeno: 12,5 s souvislého rolování bez
+  jediného zápisu, dohnáno do 200 ms po zastavení).
+- Řádek v seznamu agentů se mimo obrazovku nepočítá ani nekreslí.
+
 ## 0.9.0 — 2026-09-13 · dovednosti se dají číst v aplikaci
 
 **Obsah dovednosti si přečteš rovnou v Agenteeq.** Doteď šel jen zkopírovat nebo stáhnout —
