@@ -42,6 +42,19 @@
   }
 
   const SITES = [
+    // Codex na webu běží na stejné doméně jako ChatGPT, ale je to jiný nástroj a patří do
+    // Agenteeq zvlášť. Musí být v seznamu před ChatGPT, jinak by ho pohltil obecnější záznam.
+    {
+      id: 'codex-web',
+      hosts: ['chatgpt.com', 'chat.openai.com'],
+      path: /^\/codex(\/|$)/,
+      conversationId: (loc) => idFrom(loc, /\/codex\/(?:tasks|task|c)\/([\w-]+)/) || idFrom(loc, /\/codex\/([\w-]+)/) || tabId(),
+      messages: (doc) => all(doc, '[data-message-author-role]')
+        .map((el) => ({ role: el.getAttribute('data-message-author-role'), text: text(el) }))
+        .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.text),
+      generating: (doc) => Boolean(doc.querySelector('[data-testid="stop-button"]')) || Boolean(stopButton(doc)),
+      title: (doc) => cleanTitle(doc.title, [/^Codex\s*[-–|]\s*/i, /\s*[-–|]\s*Codex$/i, /\s*[-–|]\s*ChatGPT$/i]),
+    },
     {
       id: 'chatgpt',
       hosts: ['chatgpt.com', 'chat.openai.com'],

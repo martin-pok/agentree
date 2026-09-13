@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.4 — 2026-09-13 · Codex na webu a prověřený řetězec rozšíření
+
+- **Codex na webu se sleduje jako samostatný nástroj.** Běží na stejné doméně jako ChatGPT
+  (`chatgpt.com/codex`), takže ho dřív pohltil obecnější záznam a úloha se zařadila pod ChatGPT.
+  Nově má vlastní adaptér i vlastní jméno „Codex · web“. Šest testů hlídá rozpoznávání adres:
+  že `/codex/tasks/…` je Codex, `/c/…` je ChatGPT, `/codexfoo` není Codex, že cizí stránka se
+  nerozpozná jako AI nástroj a že každý adaptér ustojí i prázdnou stránku.
+- Každá služba z rozšíření musí být známá i serveru — jinak by se konverzace zahodila jako
+  „Neznámá služba“. Hlídá to test.
+
+Ověřeno proti běžícímu serveru: příjem konverzace bez tokenu i s cizím tokenem vrací 401,
+párování bez hlavičky Origin nebo z cizí adresy se odmítne, párovací kód platí jen jednou,
+čtení stavu z cizí stránky vrací 403 a zápis bez ochranné hlavičky také 403. Spouštění agentů
+prověřeno ve všech režimech (v aplikaci, na pozadí, v Terminálu, na webu) včetně chybových
+stavů: neznámý agent, prázdné zadání, nepodporovaný režim a zadání nad 20 000 znaků.
+
 ## 0.9.3 — 2026-09-13 · rozšíření do prohlížeče dotažené do konce
 
 Konverzace z ChatGPT, Claude.ai a dalších webových aplikací se dají sledovat jen přes rozšíření

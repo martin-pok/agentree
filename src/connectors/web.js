@@ -4,6 +4,7 @@ import { touch, pushEntry, updateEntry, resetTranscript } from '../model.js';
 // Webové AI aplikace posílá rozšíření prohlížeče (extension/). Server data validuje a normalizuje.
 export const WEB_SITES = {
   chatgpt: { name: 'ChatGPT', provider: 'openai' },
+  'codex-web': { name: 'Codex · web', provider: 'openai' },
   claude: { name: 'Claude.ai', provider: 'anthropic' },
   gemini: { name: 'Gemini', provider: 'google' },
   mscopilot: { name: 'Microsoft Copilot', provider: 'microsoft' },
