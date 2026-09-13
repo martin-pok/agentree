@@ -3,6 +3,14 @@ import WebKit
 import UserNotifications
 import Darwin
 
+/// Horní pruh okna, za který se dá okno chytit a přesunout. Systémové záhlaví je sice průhledné
+/// a táhnout se za něj dá, ale je úzké — tenhle pruh uchopení rozšiřuje na celou dekorativní
+/// plochu nad kartami. Nic pod ním se neztratí: postranní panel začíná až na 44 px a obsah
+/// stránky ještě níž, takže tu není co proklikávat.
+final class DragStrip: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKDownloadDelegate, UNUserNotificationCenterDelegate {
     var window: NSWindow!
     var web: WKWebView!
@@ -65,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         window.setFrameAutosaveName(qa ? "Agenteeq-QA" : "Agenteeq-Main")
         window.center(); window.contentView = web
         buildLoading()
+        buildDragStrip()
         buildStatusItem()
         UNUserNotificationCenter.current().delegate = self
         showWindow()
@@ -95,6 +104,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let help = NSMenu(title: "Nápověda"); helpItem.submenu = help
         help.addItem(withTitle: "Průvodce Agenteeq", action: #selector(welcome), keyEquivalent: "")
         NSApp.mainMenu = menu
+    }
+
+    // Výška odpovídá odsazení v `public/desktop.css` (`html.is-desktop .sidebar { margin-top: 44px }`):
+    // pruh končí přesně tam, kde začíná první karta.
+    func buildDragStrip() {
+        let drag = DragStrip()
+        drag.translatesAutoresizingMaskIntoConstraints = false
+        web.addSubview(drag)
+        NSLayoutConstraint.activate([
+            drag.leadingAnchor.constraint(equalTo: web.leadingAnchor),
+            drag.trailingAnchor.constraint(equalTo: web.trailingAnchor),
+            drag.topAnchor.constraint(equalTo: web.topAnchor),
+            drag.heightAnchor.constraint(equalToConstant: 44),
+        ])
     }
 
     func buildStatusItem() {

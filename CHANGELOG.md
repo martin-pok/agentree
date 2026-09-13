@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.9.7 — 2026-09-13 · Přehled se vyvažuje sám, přepis je zase čitelný
+
+**Tmavý text na tmavé bublině v přepisu — moje chyba z 0.9.0.** Třídu `.md` používá jak čtečka
+dovedností, tak přepis konverzace. Když jsem pro čtečku přidal obecné pravidlo s barvou textu,
+přebilo to styly přepisu: zpráva uživatele dostala tmavě šedou na tmavém pozadí a odkazy v ní
+zčernaly. Pravidla čtečky jsou teď omezená na `.reader`, takže přepis si drží vlastní bílý text
+i světlé odkazy. Doloženo v servírovaném souboru: barvu v `.md` nastavuje už jen čtečka.
+
+**Prázdná plocha na Přehledu.** Dva pevné sloupce s natvrdo přiřazenými bloky nemohly vyjít:
+výška bloků závisí na datech — jednou je dlouhý seznam rozhodnutí, jindy graf a dlaždice.
+Kterýkoli sloupec pak skončil dřív a vedle druhého zůstala díra; naměřeno až **1242 px** rozdílu.
+
+Přehled je nově sloupcová sazba, která bloky rozdělí tak, aby oba sloupce končily stejně vysoko,
+ať jsou data jakákoli. Blok se přitom nikdy neroztrhne napůl. Rozdíl sloupců klesl na **138 px**,
+což je při nedělitelných blocích minimum.
+
+**Běží na tomto Macu** se přesunulo pod mřížku přes celou šířku. V půlce sloupce se osm dlaždic
+skládalo do čtyř řad; přes celou šířku jsou v jedné řadě a sekce měří 129 px místo stovek.
+
+Na telefonu zůstává jeden sloupec a bloky jdou pod sebou v logickém pořadí.
+
 ## 0.9.6 — 2026-09-13 · tmavé záhlaví okna
 
 Bílý systémový pruh nad aplikací rušil. Okno teď nemá vlastní titulkový pruh: obsah sahá až

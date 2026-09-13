@@ -54,38 +54,32 @@ function mount(el) {
   <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
   <div class="ov">
-    <div class="ov-col">
-      <section data-enter style="--i:2" aria-labelledby="dec-h">
-        <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
-        <div data-region="decisions"></div>
-      </section>
-      <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
-      <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
-    </div>
-    <div class="ov-col">
-      <section data-enter style="--i:2" aria-labelledby="tl-h">
-        <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
-        <div class="card tl-card" data-region="timeline"></div>
-      </section>
-      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
-        <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
-          <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
-        </div>
-        <div data-region="chart"></div>
-        <div class="legend" data-region="legend"></div>
-      </section>
-      <div class="ov-pair" data-enter style="--i:4">
-        <section aria-labelledby="sp-h">
-          <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
-          <div class="card spend-mini" data-region="spend"></div>
-        </section>
-        <section aria-labelledby="rt-h">
-          <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Zdroje dat</a></div>
-          <div class="rt-grid" data-region="runtimes"></div>
-        </section>
+    <section data-enter style="--i:2" aria-labelledby="dec-h">
+      <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
+      <div data-region="decisions"></div>
+    </section>
+    <section data-enter style="--i:2" aria-labelledby="tl-h">
+      <div class="sec-head"><h2 id="tl-h">Dnešní směna</h2><span class="muted small">posledních 12 hodin</span></div>
+      <div class="card tl-card" data-region="timeline"></div>
+    </section>
+    <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
+    <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
+      <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
+        <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
       </div>
-    </div>
+      <div data-region="chart"></div>
+      <div class="legend" data-region="legend"></div>
+    </section>
+    <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
+    <section data-enter style="--i:4" aria-labelledby="sp-h">
+      <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
+      <div class="card spend-mini" data-region="spend"></div>
+    </section>
   </div>
+  <section class="ov-wide" data-enter style="--i:5" aria-labelledby="rt-h">
+    <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Zdroje dat</a></div>
+    <div class="rt-grid" data-region="runtimes"></div>
+  </section>
   <section class="ov-wide" data-enter style="--i:6" aria-labelledby="act-h">
     <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
     <ul class="activity" data-region="activity"></ul>

@@ -338,9 +338,14 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .select select:hover { color: var(--ink); background-color: var(--line-2); }
 
 /* ---------- Přehled ---------- */
-.ov { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 0 72px; }
-.ov-col { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
-.ov-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+/* Přehled se vyvažuje sám. Dřív měl dva pevné sloupce s natvrdo přiřazenými bloky — jenže
+   jejich výška závisí na datech: jednou je dlouhý seznam rozhodnutí, jindy graf a dlaždice.
+   Kterýkoli sloupec pak skončil dřív a vedle druhého zůstala prázdná plocha (naměřeno až
+   1242 px rozdílu). Sloupcová sazba rozdělí bloky tak, aby oba sloupce končily stejně vysoko,
+   ať jsou data jakákoli. Blok se nikdy neroztrhne napůl. */
+.ov { columns: 2; column-gap: 72px; }
+.ov > * { break-inside: avoid; margin-bottom: 40px; }
+.ov > *:last-child { margin-bottom: 0; }
 /* Pruh „Právě pracuje“: nejdůležitější informace přes celou šířku. */
 .pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; box-shadow: var(--shadow-lg); }
 .pulse-bar::before { content: ''; position: absolute; right: 12%; top: -120%; width: 420px; height: 340%; background: radial-gradient(closest-side, rgba(34, 163, 140, .22), transparent 70%); pointer-events: none; }
@@ -1023,30 +1028,33 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .reader-front dt { color: var(--mute); font: 500 12px/1.6 var(--f-mono); }
 .reader-front dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
 
-/* ---------- Vykreslený Markdown ---------- */
-.md { margin-top: 20px; max-width: 72ch; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
-.md > *:first-child { margin-top: 0; }
-.md h2, .md h3, .md h4, .md h5, .md h6 { margin: 28px 0 8px; color: var(--ink); font-family: var(--f-display); font-weight: 400; line-height: 1.25; letter-spacing: -.01em; }
-.md h2 { font-size: 24px; }
-.md h3 { font-size: 19px; }
-.md h4, .md h5, .md h6 { font: 500 16px/1.3 var(--f-body); }
-.md p { margin: 0 0 12px; }
-.md ul, .md ol { margin: 0 0 12px; padding-left: 22px; }
-.md li { margin: 4px 0; }
-.md li > ul, .md li > ol { margin: 4px 0 0; }
-.md a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--brass); }
-.md code { padding: 1px 5px; border-radius: 5px; background: var(--line-2); color: var(--ink); font: 400 .88em/1.4 var(--f-mono); overflow-wrap: anywhere; }
-.md pre { margin: 0 0 16px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--stage-2, #1E1B26); color: #F4F3F7; overflow-x: auto; }
-.md pre code { padding: 0; background: none; color: inherit; font-size: 13px; line-height: 1.6; white-space: pre; }
-.md pre[data-jazyk]::before { content: attr(data-jazyk); display: block; margin-bottom: 8px; font: 500 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 243, 247, .5); }
-.md blockquote { margin: 0 0 16px; padding: 2px 0 2px 16px; box-shadow: inset 3px 0 0 var(--brass); color: var(--ink-2); }
-.md blockquote p:last-child { margin-bottom: 0; }
-.md hr { margin: 24px 0; border: 0; border-top: 1px solid var(--line); }
-.md-table { margin: 0 0 16px; overflow-x: auto; }
-.md-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
-.md-table th, .md-table td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-2); }
-.md-table th { color: var(--ink); font-weight: 500; white-space: nowrap; }
-.md strong { font-weight: 500; color: var(--ink); }
+/* ---------- Vykreslený Markdown ve čtečce ---------- */
+/* Pozor na rozsah: třídu `.md` používá i přepis konverzace. Když tahle pravidla platila obecně,
+   přebila jeho vlastní styly — text uživatelovy zprávy dostal tmavou barvu na tmavé bublině
+   a odkazy zmizely. Proto je všechno omezené na `.reader`. */
+.reader .md { margin-top: 20px; max-width: 72ch; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
+.reader .md > *:first-child { margin-top: 0; }
+.reader .md h2, .reader .md h3, .reader .md h4, .reader .md h5, .reader .md h6 { margin: 28px 0 8px; color: var(--ink); font-family: var(--f-display); font-weight: 400; line-height: 1.25; letter-spacing: -.01em; }
+.reader .md h2 { font-size: 24px; }
+.reader .md h3 { font-size: 19px; }
+.reader .md h4, .reader .md h5, .reader .md h6 { font: 500 16px/1.3 var(--f-body); }
+.reader .md p { margin: 0 0 12px; }
+.reader .md ul, .reader .md ol { margin: 0 0 12px; padding-left: 22px; }
+.reader .md li { margin: 4px 0; }
+.reader .md li > ul, .reader .md li > ol { margin: 4px 0 0; }
+.reader .md a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--brass); }
+.reader .md code { padding: 1px 5px; border-radius: 5px; background: var(--line-2); color: var(--ink); font: 400 .88em/1.4 var(--f-mono); overflow-wrap: anywhere; }
+.reader .md pre { margin: 0 0 16px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--stage-2, #1E1B26); color: #F4F3F7; overflow-x: auto; }
+.reader .md pre code { padding: 0; background: none; color: inherit; font-size: 13px; line-height: 1.6; white-space: pre; }
+.reader .md pre[data-jazyk]::before { content: attr(data-jazyk); display: block; margin-bottom: 8px; font: 500 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 243, 247, .5); }
+.reader .md blockquote { margin: 0 0 16px; padding: 2px 0 2px 16px; box-shadow: inset 3px 0 0 var(--brass); color: var(--ink-2); }
+.reader .md blockquote p:last-child { margin-bottom: 0; }
+.reader .md hr { margin: 24px 0; border: 0; border-top: 1px solid var(--line); }
+.reader .md-table { margin: 0 0 16px; overflow-x: auto; }
+.reader .md-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.reader .md-table th, .reader .md-table td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-2); }
+.reader .md-table th { color: var(--ink); font-weight: 500; white-space: nowrap; }
+.reader .md strong { font-weight: 500; color: var(--ink); }
 .palette { position: fixed; inset: 0; z-index: 60; display: grid; justify-items: center; align-items: start; padding: 12vh 16px 16px; background: rgba(30, 27, 34, .32); backdrop-filter: blur(3px); animation: fade .2s both; }
 .palette-box { width: min(600px, 100%); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; animation: pop .25s var(--ease) both; }
 .palette-input { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
@@ -1080,7 +1088,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* ---------- Responzivita ---------- */
 @media (max-width: 1360px) {
   .main { padding-left: 48px; padding-right: 40px; }
-  .ov { gap: 0 48px; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); }
+  .ov { column-gap: 48px; }
   .row { grid-template-columns: 40px minmax(0, 2fr) minmax(0, 1.2fr) 150px 88px 16px; }
   .row .cell-time { display: none; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1099,7 +1107,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .pb-strip { margin-top: 2px; }
   .shell { grid-template-columns: 240px minmax(0, 1fr); }
   .sidebar { padding: 28px 16px 20px; }
-  .ov { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  /* Na telefonu jeden sloupec — bloky jdou prostě pod sebou v pořadí, v jakém jsou v kódu. */
+  .ov { columns: 1; }
   .session-grid, .grid-2, .grid-2--wide { grid-template-columns: minmax(0, 1fr); }
   .spend-hero { grid-template-columns: 180px minmax(0, 1fr); gap: 24px; padding: 28px; }
   .search-field { margin-left: 0; }
@@ -1139,7 +1148,6 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .search-btn span, .search-btn kbd { display: none; }
   .search-btn { padding: 0 11px; }
   .conn-pill { height: 36px; padding: 0 12px; }
-  .ov-pair { grid-template-columns: minmax(0, 1fr); }
   .row { grid-template-columns: 40px minmax(0, 1fr) auto; row-gap: 6px; }
   .row .cell-app, .row .cell-num, .row > .icon, .row-head { display: none; }
   .search-field, .search-field input, .search-field input:focus { width: 100%; }
