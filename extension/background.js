@@ -44,6 +44,39 @@ async function takeHandoff(site) {
   return { prompt: typeof body.prompt === 'string' ? body.prompt.slice(0, 20000) : null, prefilled: Boolean(body.prefilled) };
 }
 
+// Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
+// zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
+async function hello() {
+  let t;
+  try {
+    t = await getToken();
+  } catch {
+    return { paired: false };
+  }
+  try {
+    const res = await fetch(`${BASE}/api/extension/hello`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
+      body: JSON.stringify({ version: chrome.runtime.getManifest().version }),
+    });
+    if (res.status === 401) {
+      token = null;
+      await chrome.storage.local.remove('token');
+      return { paired: false, revoked: true };
+    }
+    const body = await res.json().catch(() => ({}));
+    return { paired: true, online: res.ok, status: body };
+  } catch {
+    return { paired: true, online: false };
+  }
+}
+
+const HELLO_ALARM = 'agenteeq-hello';
+const armHello = () => chrome.alarms.create(HELLO_ALARM, { periodInMinutes: 30 });
+chrome.runtime.onInstalled.addListener(() => { armHello(); hello(); });
+chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
+chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'agenteeq:update') {
     send(msg.payload).catch((err) =>
@@ -52,7 +85,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
-    pair(msg.code.trim()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  } else if (msg?.type === 'agenteeq:hello') {
+    hello().then(sendResponse, () => sendResponse({ paired: false }));
     return true;
   }
 });

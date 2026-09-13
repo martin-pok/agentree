@@ -481,7 +481,7 @@ export function createClaudeCodeConnector(ctx) {
     if (five) parts.push(`5 h ${Math.round(five.used)} %${five.resetsAt ? ` do ${hm(five.resetsAt)}` : ''}`);
     if (week) parts.push(`týden ${Math.round(week.used)} %`);
     if (ctxPct !== null) parts.push(`kontext ${ctxPct} %`);
-    return { ok: true, text: parts.join(' · ').replace(/[ -]/g, '') };
+    return { ok: true, text: parts.join(' · ').replace(/[\x00-\x1f\x7f]/g, '') };
   }
 
   return {

@@ -7,6 +7,7 @@ import { normalizeProjects } from './projects.js';
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
   welcomeCompleted: false,
+  lastSeenVersion: '',
   appearance: 'light',
   notifications: {
     needsInput: true,
@@ -34,6 +35,13 @@ export function normalizeData(raw) {
     extensionPairing: d.extensionPairing && typeof d.extensionPairing.code === 'string' && d.extensionPairing.code.length >= 12 && Number(d.extensionPairing.expiresAt) > Date.now()
       ? { code: d.extensionPairing.code, expiresAt: Number(d.extensionPairing.expiresAt) }
       : null,
+    // Rozšíření pro Chrome: kdy bylo spárováno a kdy se naposledy ozvalo. Uloženo, aby aplikace
+    // po restartu neukazovala „nenainstalováno“, dokud rozšíření zrovna neposílá konverzaci.
+    extension: {
+      pairedAt: Number(d.extension?.pairedAt) > 0 ? Number(d.extension.pairedAt) : 0,
+      seenAt: Number(d.extension?.seenAt) > 0 ? Number(d.extension.seenAt) : 0,
+      version: typeof d.extension?.version === 'string' && /^\d+\.\d+\.\d+$/.test(d.extension.version) ? d.extension.version : '',
+    },
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,
@@ -42,6 +50,7 @@ export function normalizeData(raw) {
       lanAccess: s.lanAccess === true,
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
+      lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
     },

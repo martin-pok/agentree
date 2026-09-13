@@ -26,7 +26,9 @@ test('předání zadání do webové služby přes rozšíření', async (t) => 
     assert.equal(r.status, 200);
     assert.equal(r.body.copyPrompt, true);
     assert.equal(r.body.copied, true, 'schránku plní server, ne okno');
-    assert.equal(r.body.autofill, false, 'bez spárovaného rozšíření se nesmí slibovat samočinné vložení');
+    // Rozšíření se už v předchozím kroku ozvalo s platným tokenem, takže vložení slíbit lze.
+    // Stav bez spárování hlídá test/extension-presence.test.mjs.
+    assert.equal(r.body.autofill, true);
   });
 
   await t.test('bez tokenu rozšíření zadání nedostane nikdo', async () => {

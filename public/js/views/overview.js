@@ -7,6 +7,7 @@ import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } fr
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
 import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
+import { goToExtension } from '../jump.js';
 
 const CHART_UPDATE_MS = 500;
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
@@ -27,11 +28,11 @@ function queueChart(now) {
 function onboardingHtml() {
   if (!state.settings || state.settings.onboardingDismissed) return '';
   const hooks = state.integrations?.claudeHooks;
-  const web = state.connectors.find((c) => c.id === 'web');
+  const ext = state.integrations?.extension;
   const steps = [
     { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Claude Code, Codex, Cursor, Copilot a další se načítají samy.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zdroje dat</a>' },
     { done: Boolean(hooks?.installed && hooks?.current), label: 'Propojení s Claude Code', sub: 'Žádost o povolení a přesné limity uvidíš hned.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' },
-    { done: web?.state === 'connected' || web?.state === 'idle', label: 'Rozšíření pro ChatGPT, Claude.ai a další weby', sub: 'Webové konverzace se zobrazí vedle agentů na Macu.', cta: '<a class="btn btn--sm" href="#/nastaveni">Návod</a>' },
+    { done: Boolean(ext && ext.state !== 'missing'), label: 'Rozšíření pro Chrome', sub: 'Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.', cta: '<button class="btn btn--sm" type="button" data-go-extension>Nainstalovat</button>' },
     { done: state.projects.items.length > 0, label: 'První projekt', sub: 'Konverzace ze všech služeb seřazené podle klientů.', cta: '<a class="btn btn--sm" href="#/projekty">Založit</a>' },
     { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agenteeq', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
   ];
@@ -102,6 +103,7 @@ function mount(el) {
   });
   v.launcher = createLauncher(el.querySelector('[data-launch]'));
   el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-go-extension]')) { goToExtension(); return; }
     const prepnout = e.target.closest('[data-focus-runtime]');
     if (prepnout) {
       prepnout.disabled = true;

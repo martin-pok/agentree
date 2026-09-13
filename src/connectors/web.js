@@ -50,7 +50,10 @@ export function applyWebPayload(s, v, now = Date.now()) {
   s.url = v.url;
   if (v.title) s.title = v.title;
   if (v.model) s.model = v.model;
-  s.staleMs = 45e3;
+  // Chrome v kartě na pozadí (skryté déle než 5 minut) pouští časovače nejvýš jednou za minutu.
+  // Při 45 s by dlouho běžící úloha — Codex na webu, hloubkový výzkum — uprostřed práce spadla
+  // na „bez aktivity“. 150 s pokryje minutový takt s rezervou na zpožděné doručení.
+  s.staleMs = 150e3;
 
   // Synchronizace přepisu: shodný prefix se ponechá, rozepsaná poslední zpráva se aktualizuje na místě.
   const firstChanged = st.hashes.length && v.messages.length && st.hashes[0].text !== v.messages[0].text;
@@ -95,7 +98,7 @@ export function applyWebPayload(s, v, now = Date.now()) {
 }
 
 export function createWebConnector(ctx) {
-  const { store } = ctx;
+  const { store, extensionRecord = () => null } = ctx;
   const lastSeen = new Map();
 
   return {
@@ -125,9 +128,21 @@ export function createWebConnector(ctx) {
       const now = Date.now();
       const active = [...lastSeen.entries()].filter(([, at]) => now - at < 10 * MIN).map(([k]) => WEB_SITES[k].name);
       const recent = [...lastSeen.values()].some((at) => now - at < DAY);
+      // Spárované rozšíření bez otevřené konverzace není „nenalezeno“ — jen nemá co poslat.
+      const ext = extensionRecord() || {};
+      const paired = ext.pairedAt > 0;
+      const heard = paired && now - ext.seenAt < 2 * 60 * MIN;
       return {
-        state: active.length ? 'connected' : recent ? 'idle' : 'missing',
-        detail: active.length ? `Aktivní: ${active.join(', ')}.` : recent ? 'Rozšíření posílalo data během dne.' : 'Rozšíření zatím neposlalo žádná data. Nainstaluj ho v Nastavení.',
+        state: active.length ? 'connected' : recent || paired ? 'idle' : 'missing',
+        detail: active.length
+          ? `Aktivní: ${active.join(', ')}.`
+          : recent
+            ? 'Rozšíření posílalo data během dne.'
+            : heard
+              ? 'Rozšíření je připojené. Jakmile otevřeš konverzaci v Chromu, objeví se tady.'
+              : paired
+                ? 'Rozšíření je spárované, ale teď se neozývá — Chrome je zavřený nebo je rozšíření vypnuté.'
+                : 'Rozšíření zatím neposlalo žádná data. Nainstaluj ho v Nastavení.',
         count: lastSeen.size,
         watching: true,
         lastEventAt: Math.max(0, ...lastSeen.values()),

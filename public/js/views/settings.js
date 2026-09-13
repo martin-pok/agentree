@@ -5,6 +5,7 @@ import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
+import { takeJump } from '../jump.js';
 
 const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
@@ -17,7 +18,7 @@ const CLOUD = [
 
 const WEB_FRESH_MS = 10 * 60 * 1000;
 
-function webSourceCard(id, site, web, now) {
+function webSourceCard(id, site, web, now, paired = false) {
   const at = web?.sites?.[id] || 0;
   const fresh = at && now - at < WEB_FRESH_MS;
   const recent = at && now - at < 24 * 60 * 60 * 1000;
@@ -26,7 +27,7 @@ function webSourceCard(id, site, web, now) {
     ? 'Rozšíření právě čte otevřenou konverzaci.'
     : recent
       ? 'Rozšíření tuto službu vidělo během posledních 24 hodin.'
-      : 'Po propojení rozšíření otevři službu v Chromu.';
+      : paired ? 'Rozšíření je připojené. Otevři službu v Chromu a konverzace se objeví.' : 'Po propojení rozšíření otevři službu v Chromu.';
   return `<article class="conn conn--web" data-web-source="${esc(id)}">
     <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
     <p>${detail}</p>
@@ -136,8 +137,32 @@ function privacyCard() {
     <p class="set-note">Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací. Smazáním zmizí i klíče, podle kterých Agenteeq pozná, že už upozornil.</p>`;
 }
 
+// Karta rozšíření je `[data-region="extension"]`. Kromě skoku je potřeba ukázat, kam vedl,
+// a dát fokus na tlačítko s kódem (nebo na rozbalení instalace, když už je spárováno).
+function calloutExtension() {
+  const card = v.el?.querySelector('[data-region="extension"]');
+  if (!card) return;
+  // Stránka má v CSS `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule —
+  // a v okně, které zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá
+  // přesně a u skrytého okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou.
+  const instant = document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 96);
+  window.scrollTo({ top, behavior: instant ? 'instant' : 'smooth' });
+  card.classList.remove('is-called-out');
+  void card.offsetWidth;
+  card.classList.add('is-called-out');
+  card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary')?.focus({ preventScroll: true });
+}
+
+// Skok až po dokončení přechodu: router po vykreslení posune stránku nahoru a dá fokus nadpisu,
+// takže okamžitý skok by se hned přepsal. Časovač místo requestAnimationFrame běží i ve skrytém okně.
+function onJump() {
+  if (takeJump() === 'extension') setTimeout(calloutExtension, 80);
+}
+
 function mount(el) {
   v.el = el;
+  window.addEventListener('agenteeq-jump', onJump);
   if (!v.customTypes) api.customAgents().then((r) => { v.customTypes = r.types; state.customAgents = r.agents; update(); }).catch(() => { v.customTypes = []; });
   el.innerHTML = `
     <div class="settings2">
@@ -251,16 +276,7 @@ function mount(el) {
         toast('Jednorázový kód je připravený na 10 minut');
         update();
       } else if (a.dataset.action === 'extension-scroll') {
-        // Karta rozšíření je `[data-region="extension"]`; dřív se hledalo id="extension", které v aplikaci
-        // není, takže tlačítko nedělalo nic. Kromě skoku je potřeba i ukázat, kam vedl, a dát fokus na první krok.
-        const card = v.el?.querySelector('[data-region="extension"]');
-        if (card) {
-          card.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-          card.classList.remove('is-called-out');
-          void card.offsetWidth;
-          card.classList.add('is-called-out');
-          card.querySelector('[data-action="extension-pair-code"]')?.focus({ preventScroll: true });
-        }
+        calloutExtension();
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;
@@ -500,25 +516,46 @@ function update() {
       ? '<button class="btn" type="button" data-action="claude-disconnect">Vypnout propojení</button>'
       : `<button class="btn btn--primary" type="button" data-action="claude-connect">${outdated ? 'Obnovit propojení' : 'Zapnout propojení'}</button>`}</div>`);
 
-  /* Webové AI aplikace */
+  /* Rozšíření pro Chrome */
   const web = state.connectors.find((c) => c.id === 'web');
-  const sites = i.extension?.sites || {};
+  const ext = i.extension || {};
+  const sites = ext.sites || {};
+  const paired = Boolean(ext.state && ext.state !== 'missing');
+  const EXT_BADGE = { active: ['connected', 'Aktivní'], ready: ['connected', 'Připojeno'], quiet: ['idle', 'Neozývá se'], missing: ['missing', 'Nenainstalováno'] };
+  const badge = ext.outdated ? ['idle', 'Obnov rozšíření'] : EXT_BADGE[ext.state] || EXT_BADGE.missing;
+  const seen = ext.seenAt ? `<span data-ago="${ext.seenAt}">${rel(ext.seenAt)}</span>` : '';
+  const statusLine = {
+    active: `Rozšíření ${esc(ext.version)} právě čte otevřenou konverzaci.`,
+    ready: `Rozšíření ${esc(ext.version || '')} je připojené, naposledy se ozvalo ${seen}. Jakmile otevřeš konverzaci v Chromu, objeví se v přehledu.`,
+    quiet: `Rozšíření je spárované, ale naposledy se ozvalo ${seen}. Chrome je zavřený, nebo je rozšíření vypnuté v <code>chrome://extensions</code>.`,
+  }[ext.state];
+  const installSteps = `<ol class="steps">
+      <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.
+        <div class="code-line"><code>chrome://extensions</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="chrome://extensions" data-copy-message="Adresa zkopírována — vlož ji do Chromu">${ICON.copy}Kopírovat</button></div></li>
+      <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku. Leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije:
+        <div class="code-line"><code>${esc(ext.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(ext.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
+      <li>Připni si ikonu Agenteeq v liště Chromu (dílek skládačky), otevři ji a vlož jednorázový kód:
+        <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Vytvořit jednorázový kód</button></div>
+        ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}</li>
+    </ol>`;
   fill(el, 'extension', `
-    ${head(ICON.spark, 'Webové AI aplikace <span class="badge">Zkušební</span>',
-      'Konverzace z ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot uvidíš díky rozšíření pro Chrome. Rozšíření posílá data jen do Agenteeq na tomto Macu.',
-      stateBadge(web?.state || 'missing', web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno'))}
-    <ol class="steps">
-      <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
-      <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku (leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije):
-        <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
-      <li>Klikni na ikonu rozšíření, vlož jednorázový kód a potvrď připojení.</li>
-    </ol>
-    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Vytvořit jednorázový kód</button></div>
-    ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}
-    <div class="site-grid">${Object.entries(sites).map(([k, s]) => {
+    ${head(ICON.spark, 'Rozšíření pro Chrome',
+      'Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči. Rozšíření posílá data jen do Agenteeq na tomto Macu (127.0.0.1) — nic neodchází na internet.',
+      stateBadge(...badge))}
+    <div class="ext-feats">
+      <div class="ext-feat"><span class="ext-feat-ico">${ICON.open}</span><div><b>Agenti z webu v přehledu</b><span>ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot — stav, přepis i dosažený limit živě.</span></div></div>
+      <div class="ext-feat"><span class="ext-feat-ico">${ICON.spark}</span><div><b>Zadání se vloží samo</b><span>Spustíš webovou službu ze „Spustit agenta“ a zadání čeká v jejím poli zprávy. Odešleš ho Enterem.</span></div></div>
+    </div>
+    ${ext.outdated ? `<p class="set-note set-note--warn">V Chromu běží rozšíření ${esc(ext.version)}, aplikace má ${esc(ext.expectedVersion)}. Otevři <code>chrome://extensions</code> a u Agenteeq klikni na šipku obnovení ↻.</p>` : ''}
+    ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
+    ${paired ? `<details class="ext-reinstall"><summary>Instalace a spárování znovu</summary>${installSteps}</details>` : installSteps}
+    <p class="small muted">Rozšíření se instaluje v režimu pro vývojáře, dokud nebude v Chrome Web Store. Funguje i v prohlížečích Brave, Arc a Edge.</p>
+    <div class="site-grid">${Object.entries(sites).map(([k, site]) => {
       const at = web?.sites?.[k];
-      return `<div class="site">${glyph({ connector: 'web', app: s.name, provider: s.provider })}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
+      return `<div class="site">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<span>${esc(site.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
     }).join('')}</div>`);
+  // Přišel sem odkaz z průvodce, prvních kroků nebo „Co je nového“ — ukázat kartu rozšíření.
+  onJump();
 
   /* Zdroje dat */
   fill(el, 'connectors', `
@@ -532,7 +569,7 @@ function update() {
         ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}
       </article>`).join('')}</div>
     <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
-    <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now())).join('')}</div>`);
+    <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now(), Boolean(i.extension?.pairedAt))).join('')}</div>`);
 
   /* Soukromí */
   fill(el, 'privacy', privacyCard());
@@ -663,6 +700,7 @@ export default {
   mount,
   update,
   unmount: () => {
+    window.removeEventListener('agenteeq-jump', onJump);
     v.observer?.disconnect();
     v.stopProgrammatic?.();
     Object.assign(v, { el: null, observer: null, stopProgrammatic: null });

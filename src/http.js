@@ -315,13 +315,20 @@ export function createHttpServer(app, existingServer = null) {
       if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
       const r = app.connectors.web.ingest(await readBody(req));
       if (!r.ok) throw new HttpError(400, r.error);
+      app.extensionSeen();
       return r;
     }, { token: true }],
     // Rozšíření si vyzvedne zadání spuštěné z Agenteeq. Jen se svým tokenem, jen jednou.
     ['POST', /^\/api\/extension\/handoff$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
       const body = await readBody(req);
+      app.extensionSeen();
       return app.takeWebHandoff(body && typeof body === 'object' ? body.site : null);
+    }, { token: true }],
+    // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
+    ['POST', /^\/api\/extension\/hello$/, async (req) => {
+      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      return app.extensionSeen(await readBody(req));
     }, { token: true }],
     ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
@@ -387,6 +394,10 @@ export function createHttpServer(app, existingServer = null) {
       const cur = datastore.data.settings.notifications;
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
+      if (body.lastSeenVersion !== undefined) {
+        if (typeof body.lastSeenVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(body.lastSeenVersion)) throw new HttpError(422, 'Neplatná verze.');
+        datastore.data.settings.lastSeenVersion = body.lastSeenVersion;
+      }
       if (body.appearance !== undefined) {
         if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, 'Vzhled musí být světlý, tmavý nebo podle systému.');
         datastore.data.settings.appearance = body.appearance;

@@ -36,16 +36,23 @@ export function subscribe(fn) {
 }
 
 // Změny se slévají do jednoho snímku (requestAnimationFrame) — plynulé i při stovkách událostí.
+// Skryté nebo zakryté okno ale snímky nekreslí a requestAnimationFrame v něm nepřijde vůbec: načtený
+// stav pak čekal, až se na okno někdo podívá, a aplikace mezitím ukazovala „Načítám agenty“.
+// Časovač proto doručí změny nejpozději za 250 ms; při viditelném okně vyhraje snímek.
+const EMIT_FALLBACK_MS = 250;
+function flush() {
+  if (!pending) return;
+  const t = pending;
+  pending = null;
+  for (const fn of listeners) {
+    try { fn(t); } catch (err) { console.error(err); }
+  }
+}
 export function emit(...topics) {
   if (!pending) {
     pending = new Set();
-    requestAnimationFrame(() => {
-      const t = pending;
-      pending = null;
-      for (const fn of listeners) {
-        try { fn(t); } catch (err) { console.error(err); }
-      }
-    });
+    requestAnimationFrame(flush);
+    setTimeout(flush, EMIT_FALLBACK_MS);
   }
   for (const x of topics) pending.add(x);
 }

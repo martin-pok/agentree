@@ -20,10 +20,12 @@ import settings from './views/settings.js';
 import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
+import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
 
 initSelects();
 initWelcome();
+initWhatsNew();
 initAppearance();
 
 const ROUTES = [
@@ -226,7 +228,7 @@ function updateChrome() {
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
   setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
-    ${state.version ? `<span class="source-host">Agenteeq ${esc(state.version)}</span>` : ''}`);
+    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>Co je nového</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agenteeq`;
   if (!pop.hidden) renderPopover();
@@ -591,7 +593,12 @@ function handle(name, data) {
 
 // Nespárovaný telefon nedostane ani stav, ani realtime stream — obsluha 401 uvnitř streamu by se
 // tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
-const autorizace = api.state().then(() => true).catch((err) => {
+const autorizace = api.state().then((snap) => {
+  // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
+  // proudu — když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
+  if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
+  return true;
+}).catch((err) => {
   if (err.status === 401) {
     parovaciObrazovka();
     return false;
@@ -599,16 +606,39 @@ const autorizace = api.state().then(() => true).catch((err) => {
   return true;
 });
 
+function prijmiSnimek(snap) {
+  applySnapshot(snap);
+  window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
+  for (const [name, data] of queued.splice(0)) handle(name, data);
+}
+
+// Pojistka pro první načtení: dokud stav není načtený, zkouší se ho stáhnout znovu (4 s, 6 s, 8 s…
+// nejvýš po 15 s). Běží jen do prvního úspěchu; živé změny pak dál nese proud.
+let pokusyNacteni = 0;
+function hlidejNacteni() {
+  if (state.loaded) return;
+  setTimeout(async () => {
+    if (state.loaded) return;
+    if (!loadingSnapshot) {
+      try {
+        prijmiSnimek(await api.state());
+        return;
+      } catch (err) {
+        if (err.status === 401) return;
+      }
+    }
+    pokusyNacteni++;
+    hlidejNacteni();
+  }, Math.min(15000, 4000 + pokusyNacteni * 2000));
+}
+hlidejNacteni();
+
 connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
     loadingSnapshot = api
       .state()
-      .then((snap) => {
-        applySnapshot(snap);
-        window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
-        for (const [name, data] of queued.splice(0)) handle(name, data);
-      })
+      .then(prijmiSnimek)
       .catch((err) => {
         if (err.status === 401) return parovaciObrazovka();
         return toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'coral', timeout: 8000 });

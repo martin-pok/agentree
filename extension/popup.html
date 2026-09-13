@@ -2,38 +2,123 @@
 <html lang="cs">
 <head>
   <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
   <title>Agenteeq</title>
   <style>
-    body { width: 320px; margin: 0; font: 400 14px/1.5 system-ui, -apple-system, sans-serif; color: #1E1B22; background: #F6F5F7; }
-    header { display: flex; align-items: center; gap: 10px; padding: 16px; background: #fff; border-bottom: 1px solid #E4E1E8; }
-    header strong { font-weight: 500; font-size: 16px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6B6770; margin-left: auto; }
-    .dot.ok { background: #1B8F60; box-shadow: 0 0 0 4px rgba(27, 143, 96, .16); }
-    .dot.err { background: #C92F57; }
-    main { padding: 12px 16px 16px; display: grid; gap: 12px; }
-    .muted { color: #6B6770; font-size: 12px; }
-    .sites { display: grid; gap: 4px; }
-    label.site { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #fff; border-radius: 10px; }
-    input[type=checkbox] { width: 16px; height: 16px; accent-color: #1E1B22; }
-    details summary { cursor: pointer; font-size: 13px; }
-    .row { display: flex; gap: 6px; margin-top: 8px; }
-    .row input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid #E4E1E8; border-radius: 8px; }
-    button, a.btn { height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #1E1B22; background: #1E1B22; color: #fff; font: inherit; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-    button.sec { background: #fff; color: #1E1B22; height: 32px; }
+    :root {
+      --paper: #F4F3F7; --card: #FFFFFF; --ink: #16141D; --ink-2: #3D3945; --mute: #6B6772; --line: #E6E3EB;
+      --brass: #C99A3E; --teal: #1F8A6C; --teal-tint: rgba(31, 138, 108, .12); --velvet: #B32E55; --velvet-tint: rgba(179, 46, 85, .1);
+      --stage: #16141D; --stage-2: #2A2233; --on-stage: #F4F3F7; --on-stage-mute: #B9B3C5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --paper: #0F0E13; --card: #1A1820; --ink: #F1EFF4; --ink-2: #D2CED8; --mute: #9C97A5; --line: #2C2934; --teal: #4CCBA6; --teal-tint: rgba(76, 203, 166, .14); --velvet: #F08AA7; --velvet-tint: rgba(240, 138, 167, .12); }
+    }
+    * { box-sizing: border-box; }
+    body { width: 344px; margin: 0; background: var(--paper); color: var(--ink); font: 400 13px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    b, strong { font-weight: 500; }
+    [hidden] { display: none !important; }
+
+    .hero { position: relative; padding: 16px 16px 20px; background: linear-gradient(120deg, var(--stage-2), var(--stage) 62%); color: var(--on-stage); overflow: hidden; }
+    .hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, var(--brass), rgba(201, 154, 62, 0) 70%); }
+    .brand { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .brand svg { flex: none; }
+    .pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: rgba(244, 243, 247, .1); color: var(--on-stage); font-size: 12px; }
+    .pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--on-stage-mute); }
+    .pill[data-tone="ok"] i { background: #51D8B9; box-shadow: 0 0 0 3px rgba(81, 216, 185, .2); }
+    .pill[data-tone="warn"] i { background: #E8B85A; }
+    .pill[data-tone="err"] i { background: #F08AA7; }
+    .headline { margin: 16px 0 4px; font-size: 20px; line-height: 1.25; font-weight: 400; letter-spacing: -.01em; }
+    .sub { margin: 0; color: var(--on-stage-mute); font-size: 13px; }
+
+    main { display: grid; gap: 12px; padding: 12px; }
+    .card { background: var(--card); border-radius: 16px; padding: 14px; }
+    .label { margin: 0 0 8px; color: var(--mute); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+
+    .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: s; }
+    .steps li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; color: var(--ink-2); }
+    .steps li::before { counter-increment: s; content: counter(s); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); font-size: 12px; }
+    .pair { display: flex; gap: 8px; margin-top: 12px; }
+    input[type=text] { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: 400 13px ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .02em; }
+    input[type=text]:focus { outline: none; border-color: var(--ink); }
+    .msg { margin: 8px 0 0; font-size: 12px; color: var(--mute); min-height: 18px; }
+    .msg[data-tone="err"] { color: var(--velvet); }
+    .msg[data-tone="ok"] { color: var(--teal); }
+
+    .feats { display: grid; gap: 12px; }
+    .feat { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; }
+    .feat-ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--paper); color: var(--ink-2); }
+    .feat b { display: block; font-size: 13px; }
+    .feat span { color: var(--mute); font-size: 12px; }
+
+    .sites { display: grid; gap: 2px; margin: 0 -6px; }
+    .site { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 6px; border-radius: 10px; cursor: pointer; }
+    .site:hover { background: var(--paper); }
+    .site .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .site .name { flex: 1; }
+    .site .seen { color: var(--mute); font-size: 11px; }
+    .switch { position: relative; width: 34px; height: 20px; flex: none; }
+    .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+    .switch i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background-color .2s; pointer-events: none; }
+    .switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+    .switch input:checked + i { background: var(--teal); }
+    .switch input:checked + i::after { transform: translateX(14px); }
+    .switch input:focus-visible + i { box-shadow: 0 0 0 3px var(--teal-tint); }
+
+    .note { display: flex; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--velvet-tint); color: var(--ink-2); font-size: 12px; }
+    .btn { height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--ink); color: var(--paper); font: 500 13px/1 inherit; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn--ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+    .btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 16px 16px; color: var(--mute); font-size: 11px; }
+    footer .btn { height: 32px; padding: 0 12px; font-size: 12px; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 <body>
-  <header><svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke="#16141D" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="8.5" r="4.2" fill="#C99A3E"/><circle cx="10.5" cy="31" r="3.4" fill="#16141D"/><circle cx="20" cy="31" r="3.4" fill="#16141D"/><circle cx="29.5" cy="31" r="3.4" fill="#16141D"/></svg><strong>Agenteeq</strong><span class="muted" id="status">Kontroluji…</span><i class="dot" id="dot"></i></header>
+  <section class="hero">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke="#F4F3F7" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="8.5" r="4.2" fill="#C99A3E"/><circle cx="10.5" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="20" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="29.5" cy="31" r="3.4" fill="#F4F3F7"/></svg>
+      <span>Agenteeq</span>
+      <span class="pill" id="pill" role="status"><i></i><span id="pill-text">Kontroluji…</span></span>
+    </div>
+    <h1 class="headline" id="headline">Chvilku…</h1>
+    <p class="sub" id="sub">Zjišťuji, jestli Agenteeq na tomto Macu běží.</p>
+  </section>
+
   <main>
-    <p class="muted" id="last">Zatím nic neodesláno.</p>
-    <div class="sites" id="sites"></div>
-    <details>
-      <summary>Připojit rozšíření</summary>
-      <p class="muted">V Agenteeq otevři Nastavení → Webové AI aplikace, vytvoř jednorázový kód a vlož ho sem. Platí 10 minut a po použití zmizí.</p>
-      <div class="row"><input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false"><button class="sec" id="pair" type="button">Připojit</button></div>
-    </details>
-    <a class="btn" href="http://127.0.0.1:4620/" target="_blank" rel="noopener">Otevřít Agenteeq</a>
+    <section class="note" id="outdated" hidden></section>
+
+    <section class="card" id="pairing" hidden>
+      <p class="label">Spárování</p>
+      <ol class="steps">
+        <li><span>V Agenteeq otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b>.</span></li>
+        <li><span>Klikni na <b>Vytvořit jednorázový kód</b> a vlož ho sem.</span></li>
+      </ol>
+      <form class="pair" id="pair-form">
+        <input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false" aria-label="Jednorázový kód z Agenteeq">
+        <button class="btn" id="pair" type="submit">Spárovat</button>
+      </form>
+      <p class="msg" id="pair-msg" role="status">Kód platí 10 minut a po použití zmizí.</p>
+    </section>
+
+    <section class="card" id="feats">
+      <p class="label">Co rozšíření dělá</p>
+      <div class="feats">
+        <div class="feat"><span class="feat-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>Agenti z webu v přehledu</b><span>Stav, přepis i dosažený limit konverzací v ChatGPT, Gemini, Claude.ai a dalších.</span></div></div>
+        <div class="feat"><span class="feat-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><div><b>Zadání se vloží samo</b><span>Spustíš službu z Agenteeq a zadání čeká v poli zprávy. Odešleš ho Enterem.</span></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="label">Sledované služby</p>
+      <div class="sites" id="sites"></div>
+    </section>
   </main>
+
+  <footer>
+    <span>Data jdou jen do Agenteeq na tomto Macu.</span>
+    <a class="btn btn--ghost" href="http://127.0.0.1:4620/" target="_blank" rel="noopener">Otevřít Agenteeq</a>
+  </footer>
   <script src="popup.js"></script>
 </body>
 </html>

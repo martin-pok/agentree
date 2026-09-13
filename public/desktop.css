@@ -107,3 +107,31 @@ html.is-desktop .offline code { display: none; }
   .welcome-dialog, .welcome-copy, .welcome-providers > span, .welcome-dot.attention, .picker-menu { animation: none !important; }
   .welcome-dots span { transition: none; }
 }
+
+/* Průvodce: krok s rozšířením pro Chrome — okno prohlížeče, ve kterém agent pracuje a zadání čeká. */
+.welcome-action { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; padding: 0; border: 0; background: none; color: var(--ink); font: 500 15px/1.4 var(--f-body); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--brass); }
+.welcome-action .icon { width: 16px; height: 16px; }
+.welcome-browser { width: 280px; border: 1px solid #393140; border-radius: 16px; overflow: hidden; background: var(--stage-2); animation: welcome-copy .55s var(--ease) both; }
+.wb-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid #393140; }
+.wb-bar i { width: 8px; height: 8px; border-radius: 50%; background: #4A4152; }
+.wb-bar span { margin-left: 8px; flex: 1; height: 20px; border-radius: 10px; background: rgba(244, 243, 247, .06); color: #B9B3C5; font: 400 11px/20px var(--f-mono); text-align: center; }
+.wb-body { display: grid; gap: 12px; padding: 16px; }
+.wb-agent { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.wb-agent .glyph, .wb-agent .logo { width: 20px; height: 20px; }
+.wb-agent em { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-style: normal; font-size: 11px; color: #B9B3C5; }
+.wb-input { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: rgba(244, 243, 247, .07); box-shadow: inset 0 0 0 1px rgba(201, 154, 62, .45); }
+.wb-input span { font-size: 13px; color: var(--ivory); }
+.wb-input small { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--brass); }
+.wb-input small .icon { width: 12px; height: 12px; }
+.welcome-browser-sites { display: flex; gap: 8px; margin-top: 20px; }
+.welcome-browser-sites span { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--card); animation: welcome-copy .65s var(--ease) both; }
+.welcome-browser-sites span:nth-child(2) { animation-delay: .06s; }
+.welcome-browser-sites span:nth-child(3) { animation-delay: .12s; }
+.welcome-browser-sites span:nth-child(4) { animation-delay: .18s; }
+.welcome-browser-sites span:nth-child(5) { animation-delay: .24s; }
+.welcome-browser-sites .glyph, .welcome-browser-sites .logo { width: 20px; height: 20px; }
+@media (max-width: 680px) {
+  .welcome-browser { width: 240px; transform: scale(.85); margin: -12px 0; }
+  .welcome-browser-sites { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .welcome-browser, .welcome-browser-sites span { animation: none !important; } }

@@ -147,7 +147,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true, plan } : {}) };
   }
 
-  const ctx = { config, store, datastore, secrets, onSpendChanged: () => spendChanged() };
+  const ctx = { config, store, datastore, secrets, onSpendChanged: () => spendChanged(), extensionRecord: () => datastore.data.extension };
   const list = [
     createClaudeCodeConnector(ctx),
     createCodexConnector(ctx),
@@ -673,7 +673,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: extensionPath, sites: WEB_SITES },
+      extension: { path: extensionPath, sites: WEB_SITES, ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -839,9 +839,36 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return Date.now() - h.at <= HANDOFF_TTL ? { prompt: h.prompt, prefilled: Boolean(h.prefilled) } : { prompt: null };
   }
 
+  // Rozšíření se ozývá při startu Chromu, každých 30 minut a při každé konverzaci. Dvě hodiny ticha
+  // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté — to se uživateli řekne na rovinu.
+  const EXTENSION_QUIET_MS = 2 * 60 * 60 * 1000;
+
+  function extensionStatus(now = Date.now()) {
+    const e = datastore.data.extension;
+    const active = connectors.web.status().state === 'connected';
+    const state = !e.pairedAt ? 'missing' : active ? 'active' : now - e.seenAt <= EXTENSION_QUIET_MS ? 'ready' : 'quiet';
+    return { state, pairedAt: e.pairedAt, seenAt: e.seenAt, version: e.version, expectedVersion: VERSION, outdated: Boolean(e.version) && e.version !== VERSION };
+  }
+
+  // Volá se po každém požadavku, který prokázal token rozšíření. Na disk jen při změně nebo jednou
+  // za minutu, aby konverzace posílaná každých pár sekund nezapisovala pořád dokola.
+  function extensionSeen(body, now = Date.now()) {
+    const e = datastore.data.extension;
+    const version = body && typeof body.version === 'string' && /^\d+\.\d+\.\d+$/.test(body.version) ? body.version : e.version;
+    const before = extensionStatus(now).state;
+    const persist = !e.pairedAt || version !== e.version || now - e.seenAt > 60 * 1000;
+    if (!e.pairedAt) e.pairedAt = now;
+    e.seenAt = now;
+    e.version = version;
+    if (persist) datastore.save();
+    const after = extensionStatus(now);
+    if (persist || before !== after.state) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
+    return after;
+  }
+
   function extensionConnected() {
-    const st = connectorList().find((c) => c.id === 'web')?.state;
-    return st === 'connected' || st === 'idle';
+    const st = extensionStatus().state;
+    return st === 'active' || st === 'ready';
   }
 
   // A browser extension must prove a short-lived code deliberately shown in the
@@ -860,7 +887,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
     if (!equal) return null;
     datastore.data.extensionPairing = null;
+    Object.assign(datastore.data.extension, { pairedAt: Date.now(), seenAt: Date.now() });
     await datastore.flush();
+    integrations().then((v) => store.emit('integrations', v)).catch(() => {});
     return { token: datastore.data.ingestToken, version: VERSION };
   }
 
@@ -944,7 +973,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
-    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff,
+    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
