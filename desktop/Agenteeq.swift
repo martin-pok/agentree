@@ -9,6 +9,18 @@ import Darwin
 /// stránky ještě níž, takže tu není co proklikávat.
 final class DragStrip: NSView {
     override var mouseDownCanMoveWindow: Bool { true }
+
+    // `mouseDownCanMoveWindow` je jen sdělení systému, že by se tady okno táhnout mohlo — a uvnitř
+    // webového pohledu se na něj nedá spolehnout, protože ten si obsluhu myši řeší sám. Proto
+    // tažení spouštíme výslovně; `performDrag` je k tomu určené API a chová se přesně jako záhlaví.
+    override func mouseDown(with event: NSEvent) {
+        // Dvojklik na záhlaví okno zvětší nebo zmenší — tohle chování musí pruh zachovat.
+        if event.clickCount == 2 {
+            window?.zoom(nil)
+            return
+        }
+        window?.performDrag(with: event)
+    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKDownloadDelegate, UNUserNotificationCenterDelegate {
@@ -59,8 +71,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         web.setValue(false, forKey: "drawsBackground")
         // Obsah sahá až pod záhlaví okna: místo systémového bílého pruhu je za tlačítky vidět
         // tmavý pruh aplikace i s jeho přechodem. Název okna je skrytý — značka je v panelu.
-        // Záhlaví zůstává průhledné, ale pořád existuje, takže se za něj dá okno normálně táhnout;
-        // proto nesaháme na `isMovableByWindowBackground`, které by rušilo označování textu.
+        // Za horní pruh se okno chytá a přesouvá (viz DragStrip). `isMovableByWindowBackground`
+        // schválně nezapínáme — táhlo by okno i při označování textu uvnitř aplikace.
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Agenteeq"
         window.titleVisibility = .hidden
@@ -71,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         window.contentMinSize = NSSize(width: 900, height: 620)
         window.isReleasedWhenClosed = false; window.delegate = self
         window.setFrameAutosaveName(qa ? "Agenteeq-QA" : "Agenteeq-Main")
-        window.center(); window.contentView = web
+        window.center()
         buildLoading()
         buildDragStrip()
         buildStatusItem()
@@ -108,16 +120,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
 
     // Výška odpovídá odsazení v `public/desktop.css` (`html.is-desktop .sidebar { margin-top: 44px }`):
     // pruh končí přesně tam, kde začíná první karta.
+    // Obsah okna je kontejner se dvěma sourozenci: webový pohled přes celou plochu a nad ním pruh
+    // k uchopení. Sourozenec dostane události myši běžnou cestou AppKitu — kdyby ležel uvnitř
+    // webového pohledu, přebírala by je jeho vlastní obsluha a okno by se táhnout nedalo.
     func buildDragStrip() {
+        let root = NSView()
+        web.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(web)
         let drag = DragStrip()
         drag.translatesAutoresizingMaskIntoConstraints = false
-        web.addSubview(drag)
+        root.addSubview(drag, positioned: .above, relativeTo: web)
         NSLayoutConstraint.activate([
-            drag.leadingAnchor.constraint(equalTo: web.leadingAnchor),
-            drag.trailingAnchor.constraint(equalTo: web.trailingAnchor),
-            drag.topAnchor.constraint(equalTo: web.topAnchor),
+            web.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            web.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            web.topAnchor.constraint(equalTo: root.topAnchor),
+            web.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            drag.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            drag.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            drag.topAnchor.constraint(equalTo: root.topAnchor),
             drag.heightAnchor.constraint(equalToConstant: 44),
         ])
+        window.contentView = root
     }
 
     func buildStatusItem() {

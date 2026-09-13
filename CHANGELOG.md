@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.9.9 — 2026-09-13 · prověření čísel v grafech
+## 0.9.9 — 2026-09-13 · prověření čísel v grafech a oprava tažení okna
+
+**Okno nešlo chytit za horní pruh.** První pokus pověsil plochu k uchopení dovnitř webového
+pohledu — ten si ale obsluhu myši řeší sám, takže se `mouseDownCanMoveWindow` neuplatnilo
+a pruh jen polykal kliknutí. Obsah okna je teď kontejner se dvěma sourozenci: webový pohled
+přes celou plochu a nad ním pruh k uchopení, který události myši dostává běžnou cestou AppKitu.
+Tažení navíc spouští výslovně přes `performDrag` místo spoléhání na systémovou heuristiku
+a dvojklik na pruh okno zvětší, jako na běžném záhlaví.
 
 Čísla v grafu vypadají vysoko, tak jsem je prověřil proti zdrojovým souborům. **Sedí.** Graf
 nesčítá cache ani nic nenadsazuje; hodinové přihrádky obsahují jen vstup + výstup, stejně jako
