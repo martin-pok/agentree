@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.2 — 2026-09-13 · žádná běžící aplikace už nezůstane bez odpovědi
+
+Nejčastější stížnost na Agenteeq zní „běží mi agent a aplikace ho nezaregistrovala". Tohle vydání
+ji řeší u kořene — a to i v případě, kdy za to Agenteeq nemůže.
+
+**Co se dělo.** Když agent běžel v aplikaci ChatGPT, Přehled ukazoval, že ChatGPT běží, ale
+v seznamu agentů po něm nebyla stopa a nikde nebylo vysvětlení proč. Vysvětlivka existovala,
+ale jen dole na stránce Agenti, kam se nikdo nedívá. Vypadalo to jako chyba.
+
+**Ověřeno za běhu takové úlohy (13. 9. 2026):** aplikace ChatGPT o konverzaci na tento Mac
+nezapisuje nic. Složka aplikace nezapsala za 40 minut jediný soubor, v `~/.codex/sessions` je
+nejnovější záznam z 6. 9., v datech Codexu se změnily jen cookies, TLS a mezipaměť sítě a text
+konverzace není nikde na disku. Není co číst — a produkt to musí říct, ne mlčet.
+
+**Co se změnilo:**
+
+- Dlaždice běžící aplikace na Přehledu nese značku **bez přepisu**, vede na vysvětlení a po
+  najetí myší ukáže celý ověřený důvod. Uživatel se to dozví tam, kde se dívá.
+- Přibylo vysvětlení pro **Claude Desktop**: chaty z něj jsou na serveru, ale sezení Claude Code
+  z něj se čtou normálně — ověřeno, 82 z 83 sezení desktopové aplikace má přepis na tomto Macu.
+- Seznam „co umíme číst" a „co ne" je nově na jednom místě (`public/js/no-transcript.js`)
+  a **hlídají ho čtyři testy**: každá známá aplikace musí být právě v jedné z obou skupin, nesmí
+  být v obou, nesmí tam zůstat aplikace, která už neexistuje, a každé vysvětlení musí mít
+  ověřený důvod, radu a odkaz. Nová aplikace tedy neprojde do vydání bez zařazení.
+
 ## 0.9.1 — 2026-09-13 · plynulost na 120 a 240 Hz
 
 Při 120 Hz má prohlížeč na jeden snímek 8,3 ms, při 240 Hz jen 4,2 ms. Cokoli, co se v každém

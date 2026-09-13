@@ -509,6 +509,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .rt-status { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); border: 2px solid var(--card); }
 .rt-name { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rt-meta { font: 400 11px/1 var(--f-mono); color: var(--mute); }
+/* Aplikace běží, ale konverzace na tento Mac neukládá. Dlaždice to říká rovnou a vede
+   na vysvětlení, místo aby uživatel hledal, proč agenta nikde nevidí. */
+.rt-item--note { text-decoration: none; color: inherit; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--brass-tint, rgba(201, 154, 62, .35)); }
+.rt-item--note:hover { box-shadow: var(--shadow), inset 0 0 0 1px var(--brass); }
+.rt-flag { margin-top: 2px; padding: 1px 7px; border-radius: 9px; background: var(--brass-tint, rgba(201, 154, 62, .16)); color: var(--brass-ink, var(--brass)); font: 500 10px/1.6 var(--f-body); white-space: nowrap; }
 
 [data-tip] { position: relative; }
 [data-tip]::before { content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translate(-50%, 4px); padding: 6px 10px; border-radius: 8px; background: var(--ink-surface); color: var(--on-ink); font: 400 12px/1.4 var(--f-body); white-space: pre; pointer-events: none; opacity: 0; transition: opacity .15s, transform .15s var(--ease); z-index: 5; }

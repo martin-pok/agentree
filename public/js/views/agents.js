@@ -5,6 +5,7 @@ import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
+import { BEZ_PREPISU } from '../no-transcript.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
 const v = { el: null, visible: [] };
@@ -26,20 +27,6 @@ const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'm
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
 // vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,
 // i to, proč u nich nemůže být přepis — a co s tím jde udělat.
-const BEZ_PREPISU = {
-  chatgpt: {
-    duvod: 'Aplikace ChatGPT konverzace neukládá na tento Mac — ověřeno: mezipaměť konverzací se naposledy zapsala v červnu 2025, dnešní chat není nikde na disku a aplikace komunikuje se serverem bez lokálního rozhraní.',
-    rada: 'Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agenteeq. Kódovací vlákna spuštěná z aplikace ChatGPT (Codex) se sledují normálně.',
-    odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
-  },
-  'ms-copilot': {
-    duvod: 'Desktopová aplikace Microsoft Copilot nemá konverzace v čitelném formátu na disku.',
-    rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.',
-    odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' },
-  },
-  perplexity: { duvod: 'Aplikace Perplexity konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
-  grok: { duvod: 'Aplikace Grok konverzace na disk neukládá.', rada: 'Ve prohlížeči s rozšířením Agenteeq se sleduje.', odkaz: { href: '#/nastaveni', text: 'Nastavit rozšíření' } },
-};
 
 function bezPrepisuHtml(sessions) {
   const bezi = (state.runtimes || []).filter((r) => r.running && BEZ_PREPISU[r.id]);

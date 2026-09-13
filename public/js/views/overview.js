@@ -5,6 +5,7 @@ import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
+import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 
 const CHART_UPDATE_MS = 500;
@@ -274,10 +275,17 @@ function update(topics = new Set(['all'])) {
       // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko — hlavní
       // úspora času: uživatel nemusí mezi okny hledat, kde mu který agent běží.
       const prepnout = r.running && PREPNUTELNE.has(r.id);
+      // Aplikace, která běží, ale své konverzace na tento Mac neukládá, musí to říct rovnou tady.
+      // Jinak uživatel vidí, že aplikace běží, v seznamu agentů po ní není stopa — a vypadá to,
+      // že ji Agenteeq nezaregistroval.
+      const bez = r.running ? BEZ_PREPISU[r.id] : null;
       const vnitrek = `<span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
-        <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>`;
+        <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>
+        ${bez ? '<span class="rt-flag">bez přepisu</span>' : ''}`;
       const popis = esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží');
+      // Dlaždice bez přepisu vede na Agenty, kde je celé vysvětlení — ne do slepé uličky.
+      if (bez) return `<a class="rt-item rt-item--note" href="#/agenti" title="${esc(bez.duvod)}">${vnitrek}</a>`;
       return prepnout
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="Přepnout do ${esc(r.name)} — ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
