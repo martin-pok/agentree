@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.3 — 2026-09-13 · rozšíření do prohlížeče dotažené do konce
+
+Konverzace z ChatGPT, Claude.ai a dalších webových aplikací se dají sledovat jen přes rozšíření
+v prohlížeči — lokálně o nich na disku nic není. Serverová část byla hotová, ale rozšíření samo
+mělo dvě vady, kvůli kterým se nedalo spolehlivě používat.
+
+- **Aktualizace aplikace rozšíření rozbíjela.** Chrome si u rozbaleného rozšíření pamatuje cestu
+  ke složce a čte ji při každém startu. Ta složka ležela uvnitř balíčku aplikace, který se při
+  aktualizaci celý nahradí — Chrome pak našel prázdné místo a rozšíření si sám vypnul. Aplikace
+  si teď při startu udělá kopii do datové složky (`~/.agenteeq/extension`), kterou aktualizace
+  nesmaže, a v návodu ukazuje právě ji. Kopie se obnoví jen při změně verze.
+- **Rozšíření nemělo ikonu.** V liště Chromu byl šedý dílek skládačky, i když návod říká „klikni
+  na ikonu rozšíření". Teď má ikony ve všech velikostech, které Chrome používá.
+- Verze rozšíření se drží verze aplikace; hlídá to test.
+
+Celý řetězec ověřen od začátku do konce: jednorázový kód → spárování jako rozšíření Chromu →
+odeslání konverzace → konverzace je v Agenteeq vidět jako běžící agent. Šest testů navíc hlídá
+kopírování, přežití aktualizace, ikony i to, že rozšíření nemluví s ničím jiným než
+s Agenteeq na `127.0.0.1`.
+
 ## 0.9.2 — 2026-09-13 · žádná běžící aplikace už nezůstane bez odpovědi
 
 Nejčastější stížnost na Agenteeq zní „běží mi agent a aplikace ho nezaregistrovala". Tohle vydání

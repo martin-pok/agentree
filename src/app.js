@@ -3,6 +3,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { loadConfig, VERSION, EXTENSION_DIR, ROOT_DIR } from './config.js';
+import { syncExtension } from './extension-install.js';
 import { DataStore } from './datastore.js';
 import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
@@ -59,6 +60,8 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 
 export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR } = {}) {
+  // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
+  let extensionPath = EXTENSION_DIR;
   try {
     const m = await migrateLegacyData({ dataDir: config.dataDir, legacyDirs: config.legacyDataDirs });
     if (m.migrated && !config.quiet) console.log(`Agenteeq: data převzata z ${m.from}`);
@@ -664,7 +667,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: EXTENSION_DIR, sites: WEB_SITES },
+      extension: { path: extensionPath, sites: WEB_SITES },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -867,6 +870,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function start() {
     const t0 = Date.now();
+    // Kopie rozšíření mimo balíček aplikace, ať ho aktualizace Agenteeq nerozbije.
+    const ext = await syncExtension({ zdroj: EXTENSION_DIR, dataDir: config.dataDir });
+    extensionPath = ext.path;
+    if (ext.reason && !config.quiet) console.error('Agenteeq:', ext.reason);
     const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
     const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
     apps = dry ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};

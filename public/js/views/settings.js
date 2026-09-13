@@ -509,7 +509,7 @@ function update() {
       stateBadge(web?.state || 'missing', web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno'))}
     <ol class="steps">
       <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
-      <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku:
+      <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku (leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije):
         <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
       <li>Klikni na ikonu rozšíření, vlož jednorázový kód a potvrď připojení.</li>
     </ol>
