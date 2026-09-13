@@ -22,6 +22,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var lockFD: Int32 = -1
     let ink = NSColor(srgbRed: 22/255, green: 20/255, blue: 29/255, alpha: 1)
     let paper = NSColor(srgbRed: 244/255, green: 243/255, blue: 247/255, alpha: 1)
+    // --backdrop ze stylů aplikace: „stůl“, na kterém karty leží.
+    let backdrop = NSColor(srgbRed: 12/255, green: 11/255, blue: 16/255, alpha: 1)
     let qa = ProcessInfo.processInfo.environment["AGENTEEQ_DESKTOP_QA"] == "1"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -47,9 +49,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         web.navigationDelegate = self; web.uiDelegate = self
         web.isInspectable = qa
         web.setValue(false, forKey: "drawsBackground")
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Agenteeq"; window.titlebarAppearsTransparent = true
-        window.backgroundColor = paper; window.appearance = NSAppearance(named: .aqua)
+        // Obsah sahá až pod záhlaví okna: místo systémového bílého pruhu je za tlačítky vidět
+        // tmavý pruh aplikace i s jeho přechodem. Název okna je skrytý — značka je v panelu.
+        // Záhlaví zůstává průhledné, ale pořád existuje, takže se za něj dá okno normálně táhnout;
+        // proto nesaháme na `isMovableByWindowBackground`, které by rušilo označování textu.
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window.title = "Agenteeq"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        // Podklad je tmavý v obou režimech vzhledu — stejně jako „stůl“, na kterém aplikace leží.
+        window.backgroundColor = backdrop
+        window.appearance = NSAppearance(named: .aqua)
         window.contentMinSize = NSSize(width: 900, height: 620)
         window.isReleasedWhenClosed = false; window.delegate = self
         window.setFrameAutosaveName(qa ? "Agenteeq-QA" : "Agenteeq-Main")
@@ -222,7 +232,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         if type == "appearance", let theme = data["theme"] as? String {
             let dark = theme == "dark"
             window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-            window.backgroundColor = dark ? ink : paper
+            // Pozadí okna zůstává tmavé v obou režimech: je vidět jen v pruhu za tlačítky okna
+            // a při změně velikosti, a tam patří podklad, ne barva karet.
+            window.backgroundColor = backdrop
         }
     }
     // Status/notifications come from our child process, not a throttled hidden webview.

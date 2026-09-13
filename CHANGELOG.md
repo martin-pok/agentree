@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.6 — 2026-09-13 · tmavé záhlaví okna
+
+Bílý systémový pruh nad aplikací rušil. Okno teď nemá vlastní titulkový pruh: obsah sahá až
+k hornímu okraji, takže se za tlačítky okna roztáhne tmavý pruh aplikace i s jeho přechodem.
+Název okna je skrytý — značka je v postranním panelu a dvakrát tam nepatří.
+
+- Plocha zůstává od kraje ke kraji; ustoupí jen postranní panel, aby se jeho roh nepotkal
+  s tlačítky okna. Ta sahají do 28 px, panel začíná na 44 px a na stejné výšce se zastaví
+  i při rolování. Dole má stejných 44 px.
+- Pozadí okna je tmavé v obou režimech vzhledu. Je vidět jen při změně velikosti okna a patří
+  tam podklad, ne barva karet.
+- Táhnout okno jde dál za horní pruh — záhlaví existuje, jen je průhledné. Záměrně nesaháme na
+  `isMovableByWindowBackground`, které by rušilo označování textu uvnitř aplikace.
+
 ## 0.9.5 — 2026-09-13 · postranní panel drží pohromadě
 
 Na nižším okně končila bílá karta panelu dřív než její obsah: poslední položky nabídky a stav
