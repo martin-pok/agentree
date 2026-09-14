@@ -277,7 +277,9 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/usage\/claude$/, async (_req, _m, url) => {
       const days = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 30));
       const series = await app.planUsageHistory({ days });
-      if (!series) throw new HttpError(404, 'Historie vytížení plánu na tomto Macu není.');
+      // Chybějící historie (Mac bez aplikace Claude Desktop) není chyba — 404 plnila konzoli
+      // hláškami „Failed to load resource“ u každého nového uživatele.
+      if (!series) return { available: false, message: 'Historie vytížení plánu na tomto Macu není.' };
       return series;
     }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],

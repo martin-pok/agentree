@@ -804,6 +804,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .runtime-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .runtime-main b { font-weight: 500; }
 .runtime-main p { margin: 0; }
+/* Samostatný odkaz pod textem není odkaz ve větě: potřebuje dotykovou plochu aspoň 24 px (WCAG 2.2, 2.5.8). */
+.runtime-main > .link-inline { min-height: 32px; justify-self: start; }
 @media (max-width: 560px) {
   .runtime-list li { grid-template-columns: auto minmax(0, 1fr); }
   .runtime-list li > .btn { grid-column: 2; justify-self: start; }

@@ -191,13 +191,18 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
   });
 });
 
-test('Historie vytížení plánu přes API: bez souboru 404, se souborem reálná řada bez identifikátoru organizace', async (t) => {
+test('Historie vytížení plánu přes API: bez souboru „není k dispozici“, se souborem reálná řada bez identifikátoru organizace', async (t) => {
   const srcHome = await tempDir('agenteeq-src-');
   const s = await startTestServer({ AGENTEEQ_SOURCE_HOME: srcHome });
   t.after(() => s.close());
 
-  const prazdno = await raw(`${s.url}/api/usage/claude`);
-  assert.equal(prazdno.status, 404, 'když soubor na disku není, API si nic nevymýšlí');
+  // Chybějící soubor není chyba serveru (dřív 404 plnila konzoli každého nového uživatele),
+  // ale API si pořád nic nevymýšlí: žádná řada, jen „není k dispozici“.
+  const prazdno = await api(s.url).get('/api/usage/claude');
+  assert.equal(prazdno.status, 200);
+  assert.equal(prazdno.body.available, false);
+  assert.equal(prazdno.body.samples, undefined, 'bez souboru žádné vzorky');
+  assert.equal(prazdno.body.fiveHour, undefined, 'bez souboru žádná řada');
 
   const now = Date.now();
   const dir = path.join(srcHome, 'Library', 'Application Support', 'Claude');

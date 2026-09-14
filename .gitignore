@@ -7,3 +7,6 @@ coverage/
 *.tmp
 dist/
 *.pem
+
+# Izolované pracovní kopie subagentů Claude Code — nikdy do repozitáře
+.claude/worktrees/

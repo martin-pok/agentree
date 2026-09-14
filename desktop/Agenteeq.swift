@@ -208,6 +208,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                     if let port = msg["port"] as? Int, msg["ready"] as? Bool == true {
                         self.baseURL = URL(string: "http://127.0.0.1:\(port)")!
                         self.web.load(URLRequest(url: self.baseURL!))
+                        // Počítadlo restartů chrání jen před smyčkou pádů hned po startu. Když server
+                        // vydrží minutu, vynuluje se — jinak by aplikace běžící týdny po třetím
+                        // náhodném pádu zůstala viset a čekala na ruční „Zkusit znovu“.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
+                            guard let self, self.generation == currentGeneration, self.child?.isRunning == true else { return }
+                            self.retries = 0
+                        }
                     }
                 }
             }

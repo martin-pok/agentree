@@ -66,7 +66,8 @@ function coverageNote() {
 // Historie vytížení plánu Claude (30 dní) — čte se na vyžádání ze souboru aplikace Claude Desktop.
 async function loadUsage() {
   try {
-    v.usage = await api.planUsage(30);
+    const r = await api.planUsage(30);
+    v.usage = r && r.available !== false ? r : null;
   } catch {
     v.usage = null; // historie na tomto Macu není; karta se prostě nevykreslí
   }
