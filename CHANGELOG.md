@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.11.1 — 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
+
+Z testu čisté instalace, testu odolnosti a zátěžového testu:
+
+- **Poškozený data.json** aplikaci neshodí: poškozený soubor zůstane bajt po bajtu jako
+  `data.json.poskozeno-<čas>`, data se obnoví z `data.json.bak` (vzniká před každým zápisem),
+  bez zálohy od výchozích hodnot — vždy s kritickým upozorněním. Chyba oprávnění start dál zastaví.
+- **Selhání zápisu** se nehlásí jako úspěch: `PUT /api/settings` vrátí 500, selhání na pozadí ukáže
+  pruh „Změny se nedaří uložit na disk“ (zmizí sám). Test hlídá řetězec emit → SSE → EVENTS → applyEvent.
+- **Desktop:** počítadlo automatických restartů serveru se po minutě stabilního běhu vynuluje.
+- **Konektory:** symbolické odkazy na projekty se procházejí, smazaný přepis zmizí hned, budoucí
+  časová razítka se ořízou na teď.
+- **Čistá instalace:** `/api/usage/claude` bez dat vrací `{ available: false }` místo 404; Přehled
+  nenabízí propojení s Claude Code bez Claude Code; odkaz „Nastavit rozšíření“ má 32 px.
+- **Vydání:** `build:mac` umí notarizaci (`AGENTEEQ_NOTARY_PROFILE`), INSTALL.md odpovídá aplikaci.
+
 ## 0.11.0 — 2026-09-13 · rozšíření pro Chrome vysvětlené všude, Co je nového, spolehlivé načítání
 
 - **Průvodce** má nový krok „Agenti i v prohlížeči“ s tlačítkem na instalaci. **První kroky** na Přehledu

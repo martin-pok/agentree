@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.11.1',
+    date: '2026-09-14',
+    title: 'Připraveno na dlouhý provoz',
+    items: [
+      'Když se soubor s daty poškodí, aplikace naběhne dál: data obnoví z poslední zálohy a řekne ti, co se stalo. Poškozený soubor nechá uložený vedle.',
+      'Když se změny nedaří uložit na disk (plný disk, práva ke složce), uvidíš to hned v horní části okna — nic se neztratí potichu.',
+      'Po náhodném pádu se lokální služba obnoví sama i po týdnech běhu, ne jen třikrát za celou dobu.',
+      'Smazaná konverzace z přehledu zmizí hned, projekty připojené odkazem jsou vidět a agent se špatně nastavenými hodinami nesvítí „pracuje“ navždy.',
+      'Na Macu bez Claude Code se nenabízí propojení, které nejde použít, a na telefonu jsou menší odkazy lépe trefitelné.',
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-09-13',
     title: 'Rozšíření pro Chrome, které víš, že máš',
