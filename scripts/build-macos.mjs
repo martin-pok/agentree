@@ -14,7 +14,11 @@ const binary = path.join(app, 'Contents', 'MacOS');
 await fs.mkdir(binary, { recursive: true });
 await fs.mkdir(path.join(resources, 'app'), { recursive: true });
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' });
-for (const dir of ['src', 'public', 'bin', 'extension', 'docs', 'desktop']) await fs.cp(path.join(root, dir), path.join(resources, 'app', dir), { recursive: true });
+for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) await fs.cp(path.join(root, dir), path.join(resources, 'app', dir), { recursive: true });
+// Zákazník dostane jen návod. Ostatní dokumenty jsou interní (licence a podpisový klíč, obchodní
+// strategie, QA) a do prodávaného balíčku nepatří — stejně jako v npm balíčku (package.json → files).
+await fs.mkdir(path.join(resources, 'app', 'docs'), { recursive: true });
+for (const doc of ['INSTALL.md']) await fs.copyFile(path.join(root, 'docs', doc), path.join(resources, 'app', 'docs', doc));
 for (const file of ['package.json', 'README.md', 'CHANGELOG.md']) await fs.copyFile(path.join(root, file), path.join(resources, 'app', file));
 await fs.writeFile(path.join(app, 'Contents/Info.plist'), stampVersion(await fs.readFile(path.join(root, 'desktop/Info.plist'), 'utf8'), version));
 const node = process.env.AGENTEEQ_NODE_BINARY || process.execPath;
