@@ -183,7 +183,25 @@ function refresh(topics) {
   tick();
 }
 
+// Úložiště: když se data nedaří zapsat na disk, uživatel to musí vidět hned — jinak by po restartu
+// potichu přišel o změny. Pruh zmizí sám, jakmile další zápis projde.
+const storageEl = document.getElementById('storage-alert');
+function renderStorage() {
+  const st = state.storage;
+  if (!storageEl) return;
+  if (!st || st.ok) {
+    if (!storageEl.hidden) storageEl.hidden = true;
+    return;
+  }
+  setHtml(storageEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
+    <div class="offline-text"><strong>Změny se nedaří uložit na disk</strong>
+      <p>Agenteeq dál běží, ale nové nastavení, projekty a výdaje se neuloží. Zkontroluj volné místo na disku a oprávnění ke složce <code>~/.agenteeq</code>.</p>
+      <p class="small">${esc(st.error || '')}</p></div>`);
+  storageEl.hidden = false;
+}
+
 function updateChrome() {
+  renderStorage();
   const all = sessionsList();
   const agents = agentsList();
   const working = agents.filter((s) => s.status === 'working').length;

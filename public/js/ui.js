@@ -157,7 +157,7 @@ export function stateBadge(stateName, label) {
 
 export function alertIcon(a) {
   if (a.kind === 'needs_input' || a.kind === 'test') return ICON.hand;
-  if (a.kind === 'limit' || a.kind === 'limit_near' || a.kind === 'failed') return ICON.alert;
+  if (a.kind === 'limit' || a.kind === 'limit_near' || a.kind === 'failed' || a.kind === 'system') return ICON.alert;
   if (a.kind === 'limit_reset') return ICON.refresh;
   if (a.kind === 'budget') return ICON.wallet;
   if (a.kind === 'done') return ICON.check;

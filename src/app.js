@@ -895,11 +895,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // `local: false` znamená požadavek z telefonu — ten nesmí dostat párovací kód ani seznam
   // spárovaných zařízení, jinak by si mohl přizvat další.
+  function storageStatus() {
+    const r = datastore.recovery;
+    return {
+      ok: !datastore.writeError,
+      error: datastore.writeError ? datastore.writeError.message : null,
+      recovery: r ? { at: r.at, from: r.from, preserved: path.basename(r.preserved) } : null,
+    };
+  }
+
   async function state({ local = true } = {}) {
     return {
       version: VERSION,
       now: Date.now(),
       ready: store.ready,
+      // Úložiště: rozhraní musí ukázat, když se data nedaří zapsat, a jednou i obnovu po poškození.
+      storage: storageStatus(),
       windowDays: config.windowDays,
       host,
       sessions: store.list(),
@@ -959,6 +970,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
+    // Selhání zápisu na pozadí (upozornění, projekty, výdaje) dřív skončilo jen v logu.
+    let storageJson = JSON.stringify(storageStatus());
+    every(() => {
+      const next = JSON.stringify(storageStatus());
+      if (next !== storageJson) { storageJson = next; store.emit('storage', JSON.parse(next)); }
+    }, 5000);
     log(`Agenteeq: načteno ${store.list().length} konverzací za ${Date.now() - t0} ms.`);
   }
 

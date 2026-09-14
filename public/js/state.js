@@ -79,6 +79,7 @@ export function applySnapshot(s) {
     projects: s.projects,
     launch: s.launch,
     runs: s.runs,
+    storage: s.storage || { ok: true, error: null, recovery: null },
     license: s.license,
     usage: s.usage,
   });
@@ -111,6 +112,10 @@ export function applyEvent(name, data) {
       emit(`transcript:${data.id}`);
       return null;
     }
+    case 'storage':
+      state.storage = data;
+      emit('storage');
+      return null;
     case 'runtimes':
       state.runtimes = data;
       emit('runtimes');

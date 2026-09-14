@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { readdirSafe } from './util.js';
+import { readdirSafe, statSafe } from './util.js';
 
 // Rekurzivní sledování složky (macOS FSEvents). Když složka neexistuje nebo watcher spadne, zkouší to znovu.
 export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
@@ -86,14 +86,27 @@ export function createFileQueue(worker, delay = 60) {
   };
 }
 
-// Soubory přesně v hloubce `depth` pod `root` (0 = přímo v root).
+// Soubory přesně v hloubce `depth` pod `root` (0 = přímo v root). Symbolické odkazy se následují
+// (projekt připojený odkazem jinam by jinak zůstal neviditelný); smyčka odkazů se pozná podle
+// skutečné cesty a projde se jen jednou.
 export async function listFiles(root, depth, filter = () => true) {
   const out = [];
+  const seen = new Set();
   async function walk(dir, level) {
+    const real = await fs.promises.realpath(dir).catch(() => dir);
+    if (seen.has(real)) return;
+    seen.add(real);
     for (const e of await readdirSafe(dir)) {
       const full = path.join(dir, e.name);
-      if (e.isDirectory() && level < depth) await walk(full, level + 1);
-      else if (e.isFile() && level === depth && filter(full)) out.push(full);
+      let isDir = e.isDirectory();
+      let isFile = e.isFile();
+      if (e.isSymbolicLink()) {
+        const st = await statSafe(full);
+        isDir = Boolean(st?.isDirectory());
+        isFile = Boolean(st?.isFile());
+      }
+      if (isDir && level < depth) await walk(full, level + 1);
+      else if (isFile && level === depth && filter(full)) out.push(full);
     }
   }
   await walk(root, 0);

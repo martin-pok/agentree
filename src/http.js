@@ -102,6 +102,7 @@ export function createHttpServer(app, existingServer = null) {
     launch: (l) => broadcast('launch', l),
     license: (l) => broadcast('license', l),
     usage: (u) => broadcast('usage', u),
+    storage: (st) => broadcast('storage', st),
   };
   for (const [event, fn] of Object.entries(listeners)) store.on(event, fn);
 
@@ -415,8 +416,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!(v >= 0 && v <= 86400)) throw new HttpError(422, 'Minimální délka úlohy musí být 0–86400 sekund.');
         cur.doneMinSeconds = Math.round(v);
       }
-      datastore.save();
+      // Uložení se čeká: dřív se hned vrátilo 200 a zápis, který potom selhal (plný disk, práva),
+      // skončil jen v logu — po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
+      if (!(await datastore.flush())) throw new HttpError(500, 'Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.');
       return { settings: datastore.data.settings };
     }],
     ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall)$/, async (_req, m) => {

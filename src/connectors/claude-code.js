@@ -110,6 +110,8 @@ function meta(s, o) {
 }
 
 function markRunning(s, ts) {
+  // Časové razítko z budoucnosti (posunuté hodiny) by drželo „pracuje“ navždy — ořízne se na teď.
+  ts = Math.min(ts, Date.now());
   if (ts < (s.stopAt || 0)) return;
   s.running = true;
   s.ended = false;
@@ -314,7 +316,15 @@ export function createClaudeCodeConnector(ctx) {
     const parentLocalId = depth === 3 ? subagentParent(file) : '';
     if (depth !== 1 && !parentLocalId) return;
     const stat = await statSafe(file);
-    if (!stat?.isFile()) return;
+    if (!stat?.isFile()) {
+      // Přepis zmizel (uživatel konverzaci smazal): nesmí v přehledu viset jako duch až do restartu.
+      const gone = files.get(file);
+      if (gone) {
+        store.remove(`claude-code:${gone.localId}`);
+        files.delete(file);
+      }
+      return;
+    }
     let f = files.get(file);
     if (!f && Date.now() - stat.mtimeMs > windowMs) return;
     if (f && stat.size < f.tail.offset) {
@@ -358,6 +368,8 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = Boolean(await statSafe(root));
+    // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou — ta je z přehledu odebere.
+    for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
     const jsonl = (x) => x.endsWith('.jsonl');
     for (const f of await listFiles(root, 1, jsonl)) await queue.run(f);
     for (const f of await listFiles(root, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents')) await queue.run(f);

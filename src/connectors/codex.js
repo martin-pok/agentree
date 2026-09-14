@@ -137,7 +137,7 @@ export function createCodexConnector(ctx) {
       s.lastPrompt = e.text;
       if (!s.firstPrompt) s.firstPrompt = e.text;
     }
-    if (s.running && ts > s.runningAt) s.runningAt = ts;
+    if (s.running && ts > s.runningAt) s.runningAt = Math.min(ts, Date.now());
   }
 
   function rateLimits(s, rl, ts) {
@@ -199,7 +199,7 @@ export function createCodexConnector(ctx) {
           case 'task_started':
             s.turns++;
             s.running = true;
-            s.runningAt = ts;
+            s.runningAt = Math.min(ts, Date.now());
             s.turnStartedAt = ts;
             s.turnSteps = 0;
             s.activity = 'Přemýšlí…';
@@ -288,7 +288,15 @@ export function createCodexConnector(ctx) {
   async function sync(file) {
     if (!file.endsWith('.jsonl') || depthOf(root, file) !== 3) return;
     const stat = await statSafe(file);
-    if (!stat?.isFile()) return;
+    if (!stat?.isFile()) {
+      // Přepis zmizel: odebrat z přehledu hned, ne až po restartu.
+      const gone = files.get(file);
+      if (gone) {
+        store.remove(`codex:${gone.localId}`);
+        files.delete(file);
+      }
+      return;
+    }
     let st = files.get(file);
     if (!st && Date.now() - stat.mtimeMs > windowMs) return;
     if (st && stat.size < st.tail.offset) {
@@ -344,6 +352,7 @@ export function createCodexConnector(ctx) {
 
   async function scan() {
     exists = Boolean(await statSafe(root));
+    for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
     await syncIndex();
     const list = await listFiles(root, 3, (f) => f.endsWith('.jsonl'));
     for (const f of list) await queue.run(f);

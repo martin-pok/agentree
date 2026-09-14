@@ -67,13 +67,56 @@ test('security: billing credentials never follow redirects; failures remain cont
   assert.ok(!JSON.stringify(c.providers()).includes('QA-only'));
 });
 
-test('reliability: corrupt persistent data are never replaced with an empty database', async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
-  const file = dir + '/data.json';
+// Poškozená data se nikdy neztratí: původní bajty zůstanou v souboru „data.json.poskozeno-…“, data se
+// obnoví z poslední dobré zálohy, a aplikace přitom naběhne. Dřív kvůli ochraně dat nenaběhla vůbec —
+// s automatickým spouštěním to byl nekonečný pád bez vysvětlení.
+test('reliability: corrupt persistent data are preserved byte-for-byte and restored from backup', async () => {
   for (const input of ['{"unfinished":', 'null', '[]']) {
+    const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+    const file = dir + '/data.json';
+
+    // Dobrý stav s nastavením → uložení vytvoří zálohu → soubor se poškodí mimo aplikaci.
+    const prvni = new DataStore(dir);
+    await prvni.load();
+    prvni.data.settings.appearance = 'dark';
+    await prvni.flush();
+    prvni.data.settings.appearance = 'system';
+    await prvni.flush();
     await fs.writeFile(file, input, { mode: 0o600 });
-    await assert.rejects(new DataStore(dir).load(), /Původní soubor zůstal/);
-    assert.equal(await fs.readFile(file, 'utf8'), input);
+
+    const druhy = new DataStore(dir);
+    await druhy.load();
+    assert.equal(druhy.recovery.from, 'backup');
+    assert.equal(druhy.data.settings.appearance, 'dark', 'data jsou z poslední dobré zálohy, ne prázdná');
+    const zachovano = (await fs.readdir(dir)).find((f) => f.startsWith('data.json.poskozeno-'));
+    assert.ok(zachovano, 'poškozený soubor zůstal vedle');
+    assert.equal(await fs.readFile(`${dir}/${zachovano}`, 'utf8'), input, 'původní bajty beze změny');
+    const upozorneni = druhy.data.alerts.find((x) => x.kind === 'system');
+    assert.ok(upozorneni && upozorneni.body.includes(zachovano), 'uživatel se dozví, co se stalo a kde je původní soubor');
+  }
+});
+
+test('reliability: corrupt data without a backup start from defaults, loudly, and keep the original', async () => {
+  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+  await fs.writeFile(dir + '/data.json', '{"projects": [', { mode: 0o600 });
+  const ds = new DataStore(dir);
+  await ds.load();
+  assert.equal(ds.recovery.from, 'defaults');
+  assert.equal(ds.data.alerts.filter((x) => x.kind === 'system' && x.level === 'critical').length, 1);
+  const soubory = await fs.readdir(dir);
+  const zachovano = soubory.find((f) => f.startsWith('data.json.poskozeno-'));
+  assert.equal(await fs.readFile(`${dir}/${zachovano}`, 'utf8'), '{"projects": [');
+  assert.ok(soubory.includes('data.json'), 'nový platný soubor vznikl');
+});
+
+test('reliability: a permission problem is not masked as corruption', { skip: process.getuid?.() === 0 }, async () => {
+  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+  await fs.writeFile(dir + '/data.json', '{}', { mode: 0o000 });
+  try {
+    await assert.rejects(new DataStore(dir).load(), /oprávnění/);
+    assert.equal((await fs.readdir(dir)).some((f) => f.startsWith('data.json.poskozeno-')), false, 'nic se nepřejmenovalo');
+  } finally {
+    await fs.chmod(dir + '/data.json', 0o600);
   }
 });
 

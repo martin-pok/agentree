@@ -72,7 +72,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

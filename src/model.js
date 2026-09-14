@@ -53,6 +53,8 @@ export function createSession({ connector, localId, provider, app, source = 'loc
 
 export function touch(s, ts) {
   if (!ts || !Number.isFinite(ts)) return;
+  // Razítko z budoucnosti (posunuté hodiny u zdroje) by konverzaci navždy drželo „čerstvou“.
+  ts = Math.min(ts, Date.now());
   if (!s.startedAt || ts < s.startedAt) s.startedAt = ts;
   if (ts > s.lastAt) s.lastAt = ts;
   s.minutes.add(minuteKey(ts));

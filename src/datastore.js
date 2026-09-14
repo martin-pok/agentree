@@ -87,11 +87,28 @@ export function normalizeData(raw) {
 }
 
 // Trvalá data aplikace (~/.agenteeq/data.json): nastavení, rozpočty, výdaje, upozornění.
+// Načte a ověří datový soubor. Poškozený obsah dostane kód EBADDATA, aby se dal odlišit od chyby
+// oprávnění (tu nejde „opravit“ novým souborem a nesmí se zamaskovat).
+async function readDataFile(file) {
+  const text = await fs.readFile(file, 'utf8');
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw Object.assign(new Error('Neplatný JSON'), { code: 'EBADDATA' });
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw Object.assign(new Error('Neplatný kořen dat'), { code: 'EBADDATA' });
+  return raw;
+}
+
 export class DataStore {
   constructor(dir) {
     this.dir = dir;
     this.file = path.join(dir, 'data.json');
+    this.backupFile = path.join(dir, 'data.json.bak');
     this.data = null;
+    this.writeError = null;
+    this.recovery = null;
     this.writing = Promise.resolve();
     this.scheduleSave = debounce(() => { this.flush(); }, 300);
   }
@@ -99,12 +116,17 @@ export class DataStore {
   async load() {
     let raw = null;
     try {
-      raw = JSON.parse(await fs.readFile(this.file, 'utf8'));
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid data root');
+      raw = await readDataFile(this.file);
     } catch (err) {
-      if (err.code !== 'ENOENT') throw new Error('Data Agenteeq nelze bezpečně načíst. Původní soubor zůstal zachovaný; obnov jej ze zálohy nebo zkontroluj jeho oprávnění.');
+      if (err.code === 'EBADDATA') {
+        raw = await this.recover();
+      } else if (err.code !== 'ENOENT') {
+        // Oprávnění nebo složka místo souboru: nový soubor by nepomohl a přepsal by skutečná data.
+        throw new Error('Data Agenteeq nelze načíst — nemám oprávnění ke složce ~/.agenteeq. Původní soubor zůstal zachovaný.');
+      }
     }
     this.data = normalizeData(raw);
+    if (this.recovery) this.data.alerts.push(this.recovery.alert);
     await this.flush();
     // Vlastní datová složka patří jen přihlášenému uživateli — na sdíleném Macu se tak k ní
     // nedostane nikdo další. Cizí složky (AGENTEEQ_HOME mimo domov) se tím nemění na nic horšího.
@@ -112,15 +134,59 @@ export class DataStore {
     return this.data;
   }
 
+  // Poškozený data.json aplikaci neshodí (dřív: pád při každém startu, s LaunchAgentem pořád dokola).
+  // Soubor se zachová vedle pod jiným jménem, data se vezmou z poslední dobré zálohy, a když ani ta
+  // není, začne se od výchozích hodnot. Uživatel se to dozví upozorněním — nic se neděje potichu.
+  async recover() {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const preserved = `${this.file}.poskozeno-${stamp}`;
+    await fs.rename(this.file, preserved).catch(() => {});
+    let raw = null;
+    try {
+      raw = await readDataFile(this.backupFile);
+    } catch {
+      raw = null;
+    }
+    const name = path.basename(preserved);
+    this.recovery = {
+      at: Date.now(),
+      from: raw ? 'backup' : 'defaults',
+      preserved,
+      alert: {
+        id: `recovery-${Date.now()}`,
+        at: Date.now(),
+        read: false,
+        key: `data-recovery:${stamp}`,
+        level: 'critical',
+        kind: 'system',
+        title: raw ? 'Data Agenteeq byla poškozená — obnovena ze zálohy' : 'Data Agenteeq byla poškozená',
+        body: raw
+          ? `Použil jsem poslední dobrou zálohu, přijít jsi mohl nejvýš o poslední změny. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq.`
+          : `Záloha nebyla k dispozici, nastavení začíná od výchozích hodnot. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq — projekty a výdaje z něj jde obnovit.`,
+      },
+    };
+    console.error(`Agenteeq: data.json byl poškozený, ${raw ? 'obnoveno ze zálohy' : 'začínám od výchozích hodnot'}; původní soubor: ${preserved}`);
+    return raw;
+  }
+
   save() {
     this.scheduleSave();
   }
 
+  // Vrací true/false podle toho, jestli zápis skutečně prošel. Před zápisem se poslední platný soubor
+  // uloží jako záloha — z ní se obnoví, kdyby se data.json poškodil mimo aplikaci.
   flush() {
     this.scheduleSave.cancel();
     const snapshot = JSON.parse(JSON.stringify(this.data));
-    this.writing = this.writing.then(() => writeJsonAtomic(this.file, snapshot)).catch((err) => {
+    this.writing = this.writing.then(async () => {
+      await readDataFile(this.file).then(() => fs.copyFile(this.file, this.backupFile)).catch(() => {});
+      await writeJsonAtomic(this.file, snapshot);
+      this.writeError = null;
+      return true;
+    }).catch((err) => {
+      this.writeError = { message: err.message, at: Date.now() };
       console.error('Agenteeq: nepodařilo se uložit data', err.message);
+      return false;
     });
     return this.writing;
   }
