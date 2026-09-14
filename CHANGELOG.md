@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.11.0 — 2026-09-13 · rozšíření pro Chrome vysvětlené všude, Co je nového, spolehlivé načítání
+
+- **Průvodce** má nový krok „Agenti i v prohlížeči“ s tlačítkem na instalaci. **První kroky** na Přehledu
+  i **karta v Nastavení** vysvětlují, co rozšíření dělá (agenti z webu v přehledu, zadání vložené samo).
+- **Pravdivý stav rozšíření:** spárování a poslední ozvání se ukládají, po restartu aplikace už neukazuje
+  „nenainstalováno“. Rozšíření se hlásí při startu Chromu, každých 30 minut a při otevření okna. Stavy:
+  aktivní / připojeno / neozývá se / chybí, plus upozornění na zastaralou verzi v Chromu.
+- **Nové okno rozšíření:** stav, spárování ve dvou krocích, přepínače služeb, tmavý režim.
+- **Co je nového:** po aktualizaci se ukáže, co se změnilo; znovu přes verzi v postranním panelu.
+- **Spolehlivost:** překreslení nečeká na snímek obrazovky (skryté okno ho nevykreslí), první stažený stav
+  se použije hned a načítání má pojistku, když živý proud nepozdraví. Webový agent v kartě na pozadí
+  nespadne na „bez aktivity“ (150 s místo 45 s).
+
+## 0.10.2 — 2026-09-13 · zadání vždy ve schránce, do Gemini se vloží samo
+
+- Zadání do schránky zapisuje server (`pbcopy`), ne okno — to v aplikaci i na telefonu tiše selhávalo.
+  Proměnné jazyka se `pbcopy` odebírají, jinak rozbije diakritiku (změřeno).
+- Gemini a Qwen neumí převzít zadání z adresy: rozšíření si ho vyzvedne (jednou, 2 minuty, jen pro danou
+  službu, jen s tokenem) a vloží do pole zprávy. Neodesílá.
+- Přehled má pevné sloupce místo sloupcové sazby; prázdný blok nenechává mezeru.
+
 ## 0.10.1 — 2026-09-13 · aplikace řekne, když konverzace z prohlížeče nevidí
 
 Otevřít Gemini v prohlížeči a nevidět v Agenteeq nic vypadá jako chyba. Chyba to je — ale ne

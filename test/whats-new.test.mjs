@@ -33,3 +33,10 @@ test('porovnání verzí je číselné, ne textové', () => {
   assert.ok(compareVersions('1.0.0', '0.99.99') > 0);
   assert.equal(compareVersions('0.11.0', '0.11.0'), 0);
 });
+
+// Technický záznam změn pro vydavatele a podporu musí držet krok s aplikací stejně jako „Co je nového“.
+test('CHANGELOG.md má záznam pro aktuální verzi', async () => {
+  const { version } = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const log = await fs.readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  assert.match(log, new RegExp(`^## ${version.replace(/\./g, '\\.')} — `, 'm'), `CHANGELOG.md nemá sekci „## ${version} — …“`);
+});

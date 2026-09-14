@@ -37,11 +37,29 @@ run('codesign', ['--force', '--sign', identity, ...signature, '--entitlements', 
 run('codesign', ['--verify', '--deep', '--strict', '--verbose=2', app]);
 const archive = path.join(root, 'dist', `Agenteeq-${version}-macOS-${process.arch}.zip`);
 run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', app, archive]);
+
+// Notarizace pro veřejné vydání. Bez ní Gatekeeper staženou aplikaci odmítne („rejected“).
+// Spustí se jen s podpisem Developer ID a uloženým profilem notarytool:
+//   xcrun notarytool store-credentials agenteeq-notary --apple-id … --team-id … --password <app-specific>
+//   AGENTEEQ_SIGN_IDENTITY="Developer ID Application: …" AGENTEEQ_NOTARY_PROFILE=agenteeq-notary npm run build:mac
+// Po schválení se lístek přišpendlí k aplikaci a archiv se vytvoří znovu, aby fungoval i offline.
+const notaryProfile = process.env.AGENTEEQ_NOTARY_PROFILE || '';
+let notarized = false;
+if (notaryProfile) {
+  if (identity === '-') throw new Error('Notarizace vyžaduje podpis Developer ID (AGENTEEQ_SIGN_IDENTITY).');
+  run('xcrun', ['notarytool', 'submit', archive, '--keychain-profile', notaryProfile, '--wait']);
+  run('xcrun', ['stapler', 'staple', app]);
+  run('xcrun', ['stapler', 'validate', app]);
+  await fs.rm(archive, { force: true });
+  run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', app, archive]);
+  run('spctl', ['--assess', '--type', 'execute', '--verbose=2', app]);
+  notarized = true;
+}
 const iconPreview = path.join(root, 'desktop', 'Agenteeq-icon.png');
 try {
   await fs.copyFile(iconPreview, path.join(root, 'dist/Agenteeq-icon.png'));
 } catch {
   // The app icon remains present; the PNG preview is a convenience artifact.
 }
-await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized: false }, null, 2));
-console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID' }));
+await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }, null, 2));
+console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }));

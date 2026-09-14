@@ -6,11 +6,11 @@ Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně — tvo
 
 ### Desktopový balíček pro Mac
 
-`Agenteeq-0.6.0-macOS-arm64.zip` je samostatná aplikace pro Apple Silicon a macOS 14+. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
+`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Mac s čipem Apple (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel zatím podporovaný není. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agenteeq → Ukončit Agenteeq** ukončí i lokální službu a agenty spuštěné z Agenteeq na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 
-První spuštění zobrazí čtyřkrokový průvodce. Vrátíš se k němu v Nastavení nebo Nápovědě. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
+První spuštění zobrazí pětikrokový průvodce. Vrátíš se k němu v Nastavení tlačítkem **Prohlédnout průvodce Agenteeq**. Co se změnilo v nové verzi, ukáže aplikace po aktualizaci sama; znovu to otevřeš kliknutím na verzi dole v postranním panelu. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
 
 Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
 
@@ -32,7 +32,7 @@ Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, archite
 Od dodavatele dostaneš soubor `agenteeq-<verze>.tgz`. V Terminálu ve složce se souborem spusť:
 
 ```bash
-npm install -g ./agenteeq-0.5.0.tgz
+npm install -g ./agenteeq-<verze>.tgz
 ```
 
 Pak Agenteeq spusť a otevři:
@@ -48,20 +48,43 @@ Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede 
 | Služba | Jak se napojí |
 | --- | --- |
 | Claude Code, Codex, Cursor, GitHub Copilot (VS Code i CLI), Gemini CLI, Qwen Code | Samy — Agenteeq čte jejich lokální přepisy. |
-| Okamžité události Claude Code (žádost o povolení) | Nastavení → Okamžité události → Zapnout. |
-| ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat | Rozšíření pro Chrome: Nastavení → Webové AI aplikace (návod krok za krokem). |
-| Náklady API OpenAI a Anthropic | Nastavení → Náklady z API → Admin klíč (uloží se do Klíčenky). |
+| Okamžité události Claude Code (žádost o povolení, přesné limity) | Nastavení → Propojení → Propojení s Claude Code → Zapnout propojení. |
+| ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot | Rozšíření pro Chrome — viz kapitola níže. |
+| Náklady API OpenAI a Anthropic | Nastavení → Náklady za API → Admin klíč (uloží se do Klíčenky). |
+
+## Rozšíření pro Chrome
+
+Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči, a zadání se do webových služeb nevkládá samo (jen se zkopíruje do schránky). Rozšíření posílá data jen do Agenteeq na tomto Macu (`127.0.0.1`), nic neodchází na internet. Funguje v Chromu, Brave, Arcu i Edge.
+
+1. V Agenteeq otevři **Nastavení → Propojení → Rozšíření pro Chrome**.
+2. V Chromu otevři `chrome://extensions` a vpravo nahoře zapni **Režim pro vývojáře**.
+3. Klikni na **Načíst rozbalené** a vyber složku `~/.agenteeq/extension` (cestu zkopíruješ tlačítkem na kartě). Složka leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije.
+4. Připni si ikonu Agenteeq v liště Chromu, otevři ji a vlož jednorázový kód z karty (platí 10 minut).
+
+Karta pak ukáže **Připojeno** a čas posledního ozvání. Když Agenteeq aktualizuje rozšíření na novou verzi, karta i okno rozšíření vyzvou k obnovení v `chrome://extensions` (šipka ↻).
 | Lokální modely zdarma | Nainstaluj [Ollama](https://ollama.com) a stáhni model (`ollama pull llama3.2`). V Přehledu → Spustit agenta → Ollama. |
 
 ## Automatické spouštění
 
-Nastavení → Spouštění a data → **Spouštět po přihlášení**. Vypnout jde tamtéž, případně `agenteeq uninstall-agent`.
+- **Desktopová aplikace:** Nastavení systému → Obecné → Přihlašovací položky → přidej Agenteeq.
+- **Příkazová řádka:** Nastavení → Aplikace na tomto Macu → **Spouštění po přihlášení**. Vypnout jde tamtéž, případně `agenteeq uninstall-agent`.
 
 ## Licence
 
-Nastavení → Licence → vlož klíč začínající `AGT1.` a klikni na **Aktivovat**. Klíč se ověřuje offline, bez připojení k internetu.
+Nastavení → Profil a vzhled → Licence → vlož klíč začínající `AGT1.` a klikni na **Aktivovat**. Klíč se ověřuje offline, bez připojení k internetu.
 
 ## Aktualizace a odinstalace
+
+### Desktopová aplikace
+
+- **Aktualizace:** ukonči Agenteeq (⌘Q), nahraď Agenteeq.app v Aplikacích novou verzí a spusť ji. Data v `~/.agenteeq` i spárování zůstanou; rozšíření pro Chrome se aktualizuje samo do své složky a v `chrome://extensions` ho jen obnovíš.
+- **Odinstalace — pořadí je důležité:**
+  1. V Agenteeq **Nastavení → Propojení → Propojení s Claude Code → Vypnout propojení**. Jinak Claude Code dál zkouší posílat události a v jeho stavovém řádku zůstane „Agenteeq neběží“.
+  2. V `chrome://extensions` odeber rozšíření Agenteeq.
+  3. Ukonči Agenteeq (⌘Q), odeber ho z Přihlašovacích položek a přesuň Agenteeq.app do Koše.
+  4. Data smažeš složkou `~/.agenteeq` (výdaje, upozornění, projekty, nastavení). Přepisy agentů patří jejich aplikacím a zůstanou.
+
+### Příkazová řádka
 
 - Aktualizace: `npm install -g ./agenteeq-<nová verze>.tgz` — data zůstanou.
 - Odinstalace: `agenteeq uninstall-agent`, pak `npm uninstall -g agenteeq`. Data smažeš složkou `~/.agenteeq`.
@@ -70,4 +93,6 @@ Nastavení → Licence → vlož klíč začínající `AGT1.` a klikni na **Akt
 
 - **Port 4620 je obsazený** — Agenteeq už běží (otevři odkaz výše), nebo spusť `PORT=4621 agenteeq --open`.
 - **Otevření v Terminálu nefunguje** — povol ovládání Terminálu: Nastavení systému → Soukromí a zabezpečení → Automatizace.
-- **Agent se nezobrazuje** — Nastavení → Konektory → Znovu načíst. Sledují se konverzace za posledních 30 dní.
+- **Agent se nezobrazuje** — Nastavení → Propojení → Zdroje dat → **Načíst znovu**. Sledují se konverzace za posledních 30 dní. Webové služby (ChatGPT, Gemini…) potřebují rozšíření pro Chrome.
+- **„Agenteeq nelze otevřít, protože vývojář nemůže být ověřen“** — build není notarizovaný. Veřejné vydání musí být podepsané a notarizované vydavatelem; plošné vypínání Gatekeeperu nepoužívej.
+- **Rozšíření ukazuje „Neozývá se“** — Chrome je zavřený nebo je rozšíření vypnuté v `chrome://extensions`. Po otevření Chromu se do minuty ozve samo.
