@@ -109,9 +109,11 @@ function staticServer(dir) {
   const TYPY = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8' };
   const server = http.createServer(async (req, res) => {
     const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html';
+    const koren = path.resolve(dir) + path.sep;
     for (const kandidat of [rel, `${rel}/index.html`, 'index.html']) {
-      const soubor = path.join(dir, kandidat);
-      if (!soubor.startsWith(dir)) break;
+      // Porovnání s oddělovačem na konci: bez něj by `dist/web-jine` prošlo jako `dist/web`.
+      const soubor = path.resolve(dir, kandidat);
+      if (!soubor.startsWith(koren)) break;
       try {
         const body = await fs.readFile(soubor);
         res.writeHead(200, { 'Content-Type': TYPY[path.extname(soubor)] || 'application/octet-stream' }).end(body);

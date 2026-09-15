@@ -33,6 +33,10 @@
   cizí párovací PIN i `POST /api/launch`. Nově takový požadavek potřebuje spárované zařízení
   jako každé jiné vzdálené. Přibyl regresní test a do `allowedOrigins()` vlastní adresa
   `https://…`, aby se z telefonu po HTTPS dalo spárovat.
+- **Listener se po pozdější chybě uklidí.** Obsluha selhání startu zůstávala navěšená i po
+  úspěšném otevření: chyba na už naslouchajícím socketu by ho vyřadila z evidence, ale nezavřela,
+  takže `stop()` by ho neměl jak zavřít a další zapnutí by narazilo na obsazený port. Teď se
+  obsluha po úspěšném startu odvěsí a listener se v takovém případě zavře sám.
 - **Cookie s tokenem dostane `Secure` za HTTPS proxy.** Příznak se odvozoval z `url.protocol`,
   jenže `url` se staví nad pevným `http://127.0.0.1`, takže se nenastavil nikdy. Dokud HTTPS nebyla
   podporovaná cesta, nevadilo to; s `tailscale serve` ano. Nově se pozná podle

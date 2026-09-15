@@ -35,9 +35,12 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/integrations/claude-hooks/install` \| `uninstall` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json |
 | PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }` |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
-| GET | `/api/lan` | `LanStatus`; z telefonu bez `pin` a `devices` |
-| POST | `/api/lan/enable` \| `disable` | Přístup z domácí sítě → `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 422 bez privátní adresy, 502 když listener nelze otevřít |
-| POST | `/api/tailscale/enable` \| `disable` | Přístup z vlastní sítě Tailscale → `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 422 bez běžícího Tailscale, 502 když listener nelze otevřít |
+| GET | `/api/lan` | `LanStatus`; jinam než na tento Mac bez `pin` a `devices` |
+
+> **„Jen z tohoto Macu“** znamená obojí zároveň: spojení po smyčce **a** hlavička `Host` rovná `127.0.0.1`/`localhost`, **a** žádné hlavičky od reverzní proxy (`X-Forwarded-*`, `Forwarded`, `Tailscale-User-*`). Samotná adresa protistrany nestačí — `tailscale serve` se na server obrací z `127.0.0.1` za cizí zařízení. Viz `docs/SECURITY.md`.
+
+| POST | `/api/lan/enable` \| `disable` | Přístup z domácí sítě → `{ lan: LanStatus }`; jen z tohoto Macu (403, viz níž), 422 bez privátní adresy, 502 když listener nelze otevřít |
+| POST | `/api/tailscale/enable` \| `disable` | Přístup z vlastní sítě Tailscale → `{ lan: LanStatus }`; jen z tohoto Macu (403 — loopback **a** `Host: 127.0.0.1`/`localhost`, bez stop po proxy), 422 když Tailscale neběží nebo Mac ještě nemá adresu v tailnetu, 502 když listener nelze otevřít |
 | POST | `/api/lan/pin` | `{ pin: { code, expiresAt } }`; jen z `127.0.0.1` (403), 409 s vypnutými oběma cestami |
 | POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |

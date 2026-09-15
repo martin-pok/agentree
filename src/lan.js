@@ -201,12 +201,23 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   function open(address, port) {
     return new Promise((resolve) => {
       const s = http.createServer(handler);
-      s.once('error', (err) => {
+      const selhalStart = (err) => {
         errors.set(address, err.code === 'EADDRINUSE' ? `Port ${port} už někdo obsadil.` : `Nepodařilo se otevřít přístup: ${err.code || err.message}`);
         servers.delete(address);
         resolve();
-      });
+      };
+      s.once('error', selhalStart);
       s.listen(port, address, () => {
+        // Obsluha selhání startu se hned odvěsí. Kdyby zůstala, pozdější chyba na už naslouchajícím
+        // socketu (třeba došlé popisovače při přijetí spojení) by ho vyřadila z evidence, ale
+        // nezavřela: `stop()` by ho pak neměl jak zavřít a další zapnutí by narazilo na obsazený
+        // port. Listener se proto od téhle chvíle uklidí sám a teprve pak zmizí ze seznamu.
+        s.off('error', selhalStart);
+        s.on('error', (err) => {
+          errors.set(address, `Spojení se přerušilo: ${err.code || err.message}`);
+          servers.delete(address);
+          s.close(() => {});
+        });
         errors.delete(address);
         servers.set(address, s);
         resolve();
