@@ -111,15 +111,14 @@ struct Hodnota {
 
 class Ctecka {
  public:
-  explicit Ctecka(const std::wstring& s) : s_(s) {}
+  // Kopie, ne odkaz. Volá se to s dočasným řetězcem (radek.substr(...)), který by
+  // odkazu zemřel pod rukama hned po vytvoření čtečky.
+  explicit Ctecka(std::wstring s) : s_(std::move(s)) {}
 
-  bool cti(Hodnota& out) {
-    preskocBile();
-    return ctiHodnotu(out) && (preskocBile(), i_ >= s_.size() || true);
-  }
+  bool cti(Hodnota& out) { return ctiHodnotu(out); }
 
  private:
-  const std::wstring& s_;
+  const std::wstring s_;
   size_t i_ = 0;
 
   void preskocBile() { while (i_ < s_.size() && (s_[i_] == L' ' || s_[i_] == L'\t' || s_[i_] == L'\r' || s_[i_] == L'\n')) i_++; }
@@ -246,6 +245,23 @@ static std::wstring dataSlozka(const wchar_t* podslozka) {
   return out;
 }
 
+// Do HTML jde i text chyby ze serveru. Escapování pro JavaScript na to nestačí:
+// „<“ a „&“ by se braly jako značky. Stejné pravidlo jako esc() v rozhraní.
+static std::wstring escapujProHtml(const std::wstring& s) {
+  std::wstring out;
+  for (wchar_t c : s) {
+    switch (c) {
+      case L'&': out += L"&amp;"; break;
+      case L'<': out += L"&lt;"; break;
+      case L'>': out += L"&gt;"; break;
+      case L'"': out += L"&quot;"; break;
+      case L'\'': out += L"&#39;"; break;
+      default: out.push_back(c);
+    }
+  }
+  return out;
+}
+
 static std::wstring escapujProJs(const std::wstring& s) {
   std::wstring out;
   for (wchar_t c : s) {
@@ -286,7 +302,7 @@ static std::wstring strankaPlaste(const std::wstring& zprava, bool sTlacitkem) {
       L"  button:focus-visible { outline: 2px solid #C99A3E; outline-offset: 2px; }"
       L"</style></head><body><div class=\"kryt\">"
       L"<h1>Agenteeq</h1><p>";
-  html += escapujProJs(zprava);  // stejné escapování stačí i pro text v HTML bez značek
+  html += escapujProHtml(zprava);
   html += L"</p>";
   if (sTlacitkem) {
     html +=
@@ -346,7 +362,7 @@ class Aplikace {
   std::wstring cestaOznameni_;     // kam skočit po kliknutí na oznámení
 
   static LRESULT CALLBACK Obsluha(HWND, UINT, WPARAM, LPARAM);
-  LRESULT Zprava(UINT, WPARAM, LPARAM);
+  LRESULT Zprava(HWND, UINT, WPARAM, LPARAM);
 
   bool VytvorOkno();
   void VytvorWebView();
@@ -371,12 +387,15 @@ static Aplikace* g_app = nullptr;
 // ── Okno ─────────────────────────────────────────────────────────────────────
 
 LRESULT CALLBACK Aplikace::Obsluha(HWND okno, UINT zprava, WPARAM w, LPARAM l) {
-  if (g_app && g_app->okno_ == nullptr && zprava == WM_NCCREATE) g_app->okno_ = okno;
-  if (g_app) return g_app->Zprava(zprava, w, l);
-  return DefWindowProcW(okno, zprava, w, l);
+  // Pozor na pořadí: WM_GETMINMAXINFO přijde dřív než WM_NCCREATE a dřív, než
+  // CreateWindowExW vůbec vrátí popisovač. Kdyby se obsluha spoléhala na okno_,
+  // sáhla by v tu chvíli do prázdna — proto se popisovač předává z parametru.
+  if (!g_app) return DefWindowProcW(okno, zprava, w, l);
+  if (zprava == WM_NCCREATE) g_app->okno_ = okno;
+  return g_app->Zprava(okno, zprava, w, l);
 }
 
-LRESULT Aplikace::Zprava(UINT zprava, WPARAM w, LPARAM l) {
+LRESULT Aplikace::Zprava(HWND okno, UINT zprava, WPARAM w, LPARAM l) {
   switch (zprava) {
     case WM_SIZE:
       ZmenVelikost();
@@ -385,7 +404,7 @@ LRESULT Aplikace::Zprava(UINT zprava, WPARAM w, LPARAM l) {
     case WM_GETMINMAXINFO: {
       // Minimální rozměr drží rozhraní použitelné; pod tím se karty lámou.
       auto* info = reinterpret_cast<MINMAXINFO*>(l);
-      UINT dpi = GetDpiForWindow(okno_);
+      UINT dpi = okno ? GetDpiForWindow(okno) : 0;
       if (!dpi) dpi = 96;
       info->ptMinTrackSize.x = MulDiv(MIN_SIRKA, dpi, 96);
       info->ptMinTrackSize.y = MulDiv(MIN_VYSKA, dpi, 96);
@@ -395,7 +414,7 @@ LRESULT Aplikace::Zprava(UINT zprava, WPARAM w, LPARAM l) {
     case WM_ERASEBKGND: {
       // Bez tohohle při zvětšování okna problikne bílá, než WebView překreslí.
       RECT r;
-      GetClientRect(okno_, &r);
+      GetClientRect(okno, &r);
       HBRUSH stetec = CreateSolidBrush(BACKDROP);
       FillRect(reinterpret_cast<HDC>(w), &r, stetec);
       DeleteObject(stetec);
@@ -454,16 +473,24 @@ LRESULT Aplikace::Zprava(UINT zprava, WPARAM w, LPARAM l) {
 
     case WM_CLOSE:
       // Zavření okna aplikaci ukončí – na Windows se to tak čeká (na macOS ne).
-      DestroyWindow(okno_);
+      DestroyWindow(okno);
       return 0;
 
-    case WM_DESTROY:
+    case WM_DESTROY: {
       koncime_ = true;
       UkonciServer(true);
+      // Ikona se odebírá tady, dokud okno ještě existuje. Po DestroyWindow už
+      // Shell_NotifyIcon nemá co adresovat a ikona by v oblasti zůstala viset.
+      NOTIFYICONDATAW ikona = {};
+      ikona.cbSize = sizeof(ikona);
+      ikona.hWnd = okno;
+      ikona.uID = IKONA_ID;
+      Shell_NotifyIconW(NIM_DELETE, &ikona);
       PostQuitMessage(0);
       return 0;
+    }
   }
-  return DefWindowProcW(okno_, zprava, w, l);
+  return DefWindowProcW(okno, zprava, w, l);
 }
 
 bool Aplikace::VytvorOkno() {
@@ -595,14 +622,17 @@ void Aplikace::ZmenOdznak(int pocet) {
     }
   }
 
+  // Bitmapa musí být z kontextu odvybraná dřív, než se z ní udělá ikona – jinak
+  // nemusí být kresba dokončená a v odznaku by chyběly čáry.
+  SelectObject(pamet, puvodni);
+  GdiFlush();
+
   ICONINFO ikona = {};
   ikona.fIcon = TRUE;
   ikona.hbmColor = barvy;
   ikona.hbmMask = CreateBitmap(velikost, velikost, 1, 1, nullptr);
   ikonaOdznaku_ = CreateIconIndirect(&ikona);
   DeleteObject(ikona.hbmMask);
-
-  SelectObject(pamet, puvodni);
   DeleteObject(barvy);
   DeleteDC(pamet);
   ReleaseDC(nullptr, obrazovka);
@@ -646,6 +676,8 @@ struct KontextCteni {
   int generace;
 };
 
+// Roura patří vláknu: zavře ji, až samo skončí. Kdyby ji zavíral někdo jiný,
+// zavíral by popisovač, na kterém vlákno právě blokuje v ReadFile.
 static DWORD WINAPI VlaknoCteni(LPVOID parametr) {
   std::unique_ptr<KontextCteni> ctx(static_cast<KontextCteni*>(parametr));
   std::string bajty;
@@ -666,6 +698,7 @@ static DWORD WINAPI VlaknoCteni(LPVOID parametr) {
       if (!PostMessageW(ctx->okno, ZPRAVA_RADEK, reinterpret_cast<WPARAM>(siroky), ctx->generace)) delete siroky;
     }
   }
+  CloseHandle(ctx->roura);
   PostMessageW(ctx->okno, ZPRAVA_KONEC_DITETE, 0, ctx->generace);
   return 0;
 }
@@ -761,6 +794,13 @@ void Aplikace::SpustServer() {
 
   auto* ctx = new KontextCteni{vystupDitete_, okno_, generace_};
   vlaknoCteni_ = CreateThread(nullptr, 0, VlaknoCteni, ctx, 0, nullptr);
+  if (vlaknoCteni_) {
+    vystupDitete_ = nullptr;  // od téhle chvíle roura patří vláknu
+  } else {
+    delete ctx;
+    CloseHandle(vystupDitete_);
+    vystupDitete_ = nullptr;
+  }
 
   SetTimer(okno_, 2, 60000, nullptr);  // do minuty se musí ozvat
 }
@@ -782,7 +822,7 @@ void Aplikace::UkonciServer(bool pockej) {
     CloseHandle(dite_.hThread);
     dite_ = {};
   }
-  if (vystupDitete_) { CloseHandle(vystupDitete_); vystupDitete_ = nullptr; }
+  // vystupDitete_ se tu nezavírá — po předání vláknu je nullptr a zavře si ji samo.
   if (vlaknoCteni_) { CloseHandle(vlaknoCteni_); vlaknoCteni_ = nullptr; }
 }
 
@@ -968,7 +1008,10 @@ int Aplikace::Spust(HINSTANCE instance) {
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
   if (!VytvorOkno()) return 1;
-  CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&hlavniPanel_));
+  if (SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&hlavniPanel_)))) {
+    // Bez HrInit() rozhraní existuje, ale SetOverlayIcon tiše nic neudělá.
+    if (FAILED(hlavniPanel_->HrInit())) hlavniPanel_.Reset();
+  }
 
   ShowWindow(okno_, SW_SHOW);
   UpdateWindow(okno_);
