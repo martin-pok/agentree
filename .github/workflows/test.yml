@@ -42,3 +42,9 @@ jobs:
 
       - name: Testy
         run: npm test
+
+      # Testy ověřují jednotlivé kusy. Tenhle krok ověřuje, co z nich nevyplývá:
+      # že se celá aplikace na daném systému spustí a obslouží rozhraní přes HTTP.
+      # Je to jediný důkaz o Windows, který nestojí na domněnce.
+      - name: Aplikace opravdu nastartuje
+        run: npm run smoke:server

@@ -30,6 +30,7 @@
     "check": "node --check bin/agenteeq.mjs && node scripts/check-syntax.mjs",
     "pack": "mkdir -p dist && npm pack --pack-destination dist",
     "smoke": "node scripts/smoke-package.mjs",
+    "smoke:server": "node scripts/smoke-server.mjs",
     "license": "node scripts/license.mjs",
     "qa:desktop": "node scripts/qa-desktop.mjs",
     "qa:contrast": "node scripts/qa-contrast.mjs",
