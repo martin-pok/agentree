@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { syncExtension } from '../src/extension-install.js';
 import { tempDir } from './helpers.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 async function fakeExtension(dir, verze) {
   await fs.mkdir(path.join(dir, 'icons'), { recursive: true });

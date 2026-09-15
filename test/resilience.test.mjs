@@ -9,7 +9,11 @@ import { touch } from '../src/model.js';
 
 // Nálezy z testu odolnosti (14. 9. 2026). Každý test drží jednu opravu.
 
-test('uložení nastavení, které na disku selže, se nehlásí jako úspěch', { skip: process.getuid?.() === 0 }, async (t) => {
+// Test si nedostupnost zápisu vyrábí přes chmod. Na Windows chmod na složku nic neudělá,
+// takže by se netestovalo selhání zápisu, ale to, že se zápis povedl.
+const BEZ_CHMOD = process.platform === 'win32' && 'chmod na složku na Windows nic nemění';
+
+test('uložení nastavení, které na disku selže, se nehlásí jako úspěch', { skip: BEZ_CHMOD || process.getuid?.() === 0 }, async (t) => {
   const dataHome = await tempDir('agenteeq-data-');
   const s = await startTestServer({ AGENTEEQ_HOME: dataHome });
   t.after(async () => { await fs.chmod(dataHome, 0o700).catch(() => {}); await s.close(); });

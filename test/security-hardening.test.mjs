@@ -110,7 +110,11 @@ test('reliability: corrupt data without a backup start from defaults, loudly, an
   assert.ok(soubory.includes('data.json'), 'nový platný soubor vznikl');
 });
 
-test('reliability: a permission problem is not masked as corruption', { skip: process.getuid?.() === 0 }, async () => {
+// Obě kontroly níž si nedostupnost vyrábějí přes POSIXová práva (mode). Windows je nemá:
+// soubor v profilu uživatele chrání ACL, které zdědí, a chmod 0o000 tam nic nezamkne.
+const BEZ_PRAV = process.platform === 'win32' && 'Windows nemá POSIXová práva (mode), chrání ACL profilu';
+
+test('reliability: a permission problem is not masked as corruption', { skip: BEZ_PRAV || process.getuid?.() === 0 }, async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{}', { mode: 0o000 });
   try {
@@ -142,8 +146,10 @@ test('soukromí: historie upozornění jde smazat a datová složka patří jen 
   const ulozeno = JSON.parse(await fs.readFile(path.join(dataHome, 'data.json'), 'utf8'));
   assert.equal(ulozeno.alerts.length, 0, 'ani na disku po nich nic nezůstalo');
 
-  const dir = await fs.stat(dataHome);
-  assert.equal(dir.mode & 0o077, 0, `do datové složky nesmí vidět nikdo jiný (má ${(dir.mode & 0o777).toString(8)})`);
-  const soubor = await fs.stat(path.join(dataHome, 'data.json'));
-  assert.equal(soubor.mode & 0o077, 0, 'datový soubor je jen pro vlastníka');
+  if (!BEZ_PRAV) {
+    const dir = await fs.stat(dataHome);
+    assert.equal(dir.mode & 0o077, 0, `do datové složky nesmí vidět nikdo jiný (má ${(dir.mode & 0o777).toString(8)})`);
+    const soubor = await fs.stat(path.join(dataHome, 'data.json'));
+    assert.equal(soubor.mode & 0o077, 0, 'datový soubor je jen pro vlastníka');
+  }
 });

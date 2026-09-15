@@ -15,6 +15,9 @@ async function makeRepo() {
   g(dir, 'config', 'user.email', 'test@example.com');
   g(dir, 'config', 'commit.gpgsign', 'false');
   g(dir, 'config', 'core.hooksPath', path.join(dir, '.no-hooks'));
+  // Git na Windows si ve výchozím stavu překládá konce řádků (core.autocrlf=true).
+  // Agenteeq do obsahu souborů nesahá, takže by test porovnával chování Gitu, ne naše.
+  g(dir, 'config', 'core.autocrlf', 'false');
   await fs.writeFile(path.join(dir, 'README.md'), '# Web\n');
   g(dir, 'add', '-A');
   g(dir, 'commit', '-q', '-m', 'Začátek');

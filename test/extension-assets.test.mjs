@@ -4,10 +4,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
+import { fileURLToPath } from 'node:url';
 import { zip, buildExtension } from '../scripts/build-extension.mjs';
 import { tempDir } from './helpers.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const hash = async (p) => crypto.createHash('sha256').update(await fs.readFile(p)).digest('hex');
 
 // Okno rozšíření má vypadat jako menší sestra aplikace — a to stojí a padá s tím, že používá

@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildSite, manifestProWeb, serviceWorkerProWeb, APP_PATH } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 // Na jedné adrese žijí dvě věci: landing page v kořeni a rozhraní aplikace na /app. Rozhraní
 // odkazuje na své soubory absolutně, takže sestavení musí obojí složit tak, aby si nepřekáželo.
