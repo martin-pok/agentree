@@ -1,0 +1,36 @@
+// Prostředky pro Agenteeq.exe. Verze se doplňuje při sestavení z package.json
+// (scripts/build-windows.mjs), aby existovala na jednom místě — stejně jako
+// u Info.plist na macOS.
+#include <windows.h>
+
+1 ICON "Agenteeq.ico"
+1 RT_MANIFEST "Agenteeq.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION __VERZE_CISLA__
+  PRODUCTVERSION __VERZE_CISLA__
+  FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+  FILEFLAGS 0x0L
+  FILEOS VOS_NT_WINDOWS32
+  FILETYPE VFT_APP
+  FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    // 0405 = čeština, 04B0 = Unicode
+    BLOCK "040504B0"
+    BEGIN
+      VALUE "CompanyName",      "Agenteeq"
+      VALUE "FileDescription",  "Agenteeq — všichni AI agenti na jednom místě"
+      VALUE "FileVersion",      "__VERZE__"
+      VALUE "InternalName",     "Agenteeq"
+      VALUE "OriginalFilename", "Agenteeq.exe"
+      VALUE "ProductName",      "Agenteeq"
+      VALUE "ProductVersion",   "__VERZE__"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x405, 1200
+  END
+END

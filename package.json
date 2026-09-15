@@ -22,6 +22,8 @@
   "scripts": {
     "build:mac": "mkdir -p dist && node scripts/build-macos.mjs",
     "build:extension": "node scripts/build-extension.mjs",
+    "build:windows": "node scripts/build-windows.mjs",
+    "icon:windows": "node scripts/make-ico.mjs",
     "build:site": "node scripts/build-site.mjs",
     "release:mac": "node scripts/release-mac.mjs",
     "start": "node bin/agenteeq.mjs",

@@ -78,6 +78,10 @@ html.is-desktop .shell { margin: 0; border-radius: 0; min-height: 100dvh; }
 html.is-desktop { --band-h: 88px; }
 html.is-desktop .sidebar { margin-top: 44px; top: 44px; bottom: 24px; height: calc(100dvh - 88px); }
 html.is-desktop .offline code { display: none; }
+/* Na Windows má okno běžný titulkový pruh, pod který obsah nezajíždí. Odsazení 44 px,
+   které na macOS uhýbá tlačítkům okna, by tam bylo jen prázdné místo navrchu. */
+html.is-windows { --band-h: 44px; }
+html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100dvh - 24px); }
 @keyframes welcome-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
 @keyframes welcome-copy { from { opacity: 0; transform: translateY(8px); } }
 @keyframes welcome-signal { 50% { box-shadow: 0 0 0 9px rgba(194,51,90,.06); } }

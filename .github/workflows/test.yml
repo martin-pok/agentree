@@ -48,3 +48,40 @@ jobs:
       # Je to jediný důkaz o Windows, který nestojí na domněnce.
       - name: Aplikace opravdu nastartuje
         run: npm run smoke:server
+
+  # Plášť pro Windows (desktop/windows/Agenteeq.cpp) se tu překládá, aby se chyba
+  # nenašla až při vydání. Překlad není důkaz, že okno vypadá správně — to umí
+  # jen člověk u skutečného Windows. Je to důkaz, že je co spustit.
+  windows-plast:
+    name: plášť pro Windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Nástroje Visual Studio
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Sestavit
+        run: npm run build:windows
+
+      - name: Výsledek
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
+          '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
+
+      # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
+      # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Agenteeq-Windows
+          path: dist/Agenteeq-*-Windows-x64.zip
+          retention-days: 14
