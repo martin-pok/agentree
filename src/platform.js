@@ -84,9 +84,15 @@ export async function processList(runImpl = run) {
  */
 export function openCommand(cil) {
   if (JE_MAC) return { cmd: 'open', args: [cil] };
-  // `start` je vestavěná funkce cmd.exe, ne program; první uvozovkový argument
-  // si bere jako titulek okna, proto ty prázdné uvozovky.
-  if (JE_WINDOWS) return { cmd: 'cmd.exe', args: ['/c', 'start', '', cil] };
+  // Nabízí se `cmd.exe /c start "" <cíl>`, ale cmd.exe si argumenty znovu rozebere:
+  // ve složce pojmenované „Design & Web“ by se z ampersandu stal oddělovač příkazů
+  // a spustilo by se to, co za ním následuje. Tudy se otevírají i cesty od uživatele,
+  // takže to nesmí být bezpečné jen náhodou.
+  //
+  // explorer.exe je obyčejný program: argumenty dostane přímo, žádný shell je nečte.
+  // Zvládne adresu i složku. Vrací nenulový kód i při úspěchu — volající se proto
+  // nesmí řídit návratovým kódem, jen tím, že se okno otevře.
+  if (JE_WINDOWS) return { cmd: 'explorer.exe', args: [cil] };
   return null;
 }
 

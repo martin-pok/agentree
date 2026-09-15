@@ -29,8 +29,18 @@ test('appSupportDir vychází ze zadaného domova a nikdy nesáhne mimo něj', (
 test('openCommand vrací příkaz pro tento systém, nebo poctivě nic', () => {
   const p = openCommand('http://127.0.0.1:4620');
   if (JE_MAC) assert.deepEqual(p, { cmd: 'open', args: ['http://127.0.0.1:4620'] });
-  else if (JE_WINDOWS) assert.deepEqual(p, { cmd: 'cmd.exe', args: ['/c', 'start', '', 'http://127.0.0.1:4620'] });
+  else if (JE_WINDOWS) assert.deepEqual(p, { cmd: 'explorer.exe', args: ['http://127.0.0.1:4620'] });
   else assert.equal(p, null, 'co neumíme, nehádáme');
+});
+
+test('otevírání nikdy neposílá cíl přes shell, který by ho znovu rozebral', () => {
+  // Složka „Design & Web“ je běžné jméno. Kdyby cíl procházel cmd.exe, byl by
+  // ampersand oddělovačem příkazů — a otevření složky by spustilo cizí program.
+  const zakerna = JE_WINDOWS ? 'C:\\Users\\jana\\Design & Web' : '/Users/jana/Design & Web';
+  const p = openCommand(zakerna);
+  if (!p) return;
+  assert.equal(p.args.at(-1), zakerna, 'cíl jde jako jeden celý argument');
+  assert.ok(!/^(cmd|powershell|sh|bash)/i.test(p.cmd), `${p.cmd} by cíl znovu rozebral`);
 });
 
 test('tailscalePaths vrací jen absolutní cesty pro tento systém', () => {
