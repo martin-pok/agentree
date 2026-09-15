@@ -23,7 +23,8 @@ Každá položka má akceptační kritéria. Pořadí je doporučené – nejdř
 | 5 | Upozornění s akcí | Klik na notifikaci macOS otevře detail agenta (nativní helper nebo `terminal-notifier`-like řešení bez závislosti) |
 | 6 | Ukládání klíčů bez argv | Klíč se nikdy neobjeví ve výpisu procesů |
 | 7 | Konfigurovatelný port i v rozšíření | Změna portu nevyžaduje úpravu manifestu |
-| 8 | Linux a Windows cesty | Konektory hledají dokumentované cesty pro obě platformy; testy s fixturami |
+| 8 | ~~Linux a Windows cesty~~ **hotovo v 0.12.0** | Cesty řeší `appSupportDir()` v `src/platform.js`, testy s fixturami běží. Zbývá **ověřit je na skutečném Windows** a označit v `docs/CONNECTORS.md` ✅ místo 🧪 – viz [WINDOWS.md](WINDOWS.md) |
+| 9 | Plášť aplikace pro Windows | Vlastní okno nad WebView2, ikona v hlavním panelu, systémové toasty; podepsaný build. Rozhodnutí A/B v [WINDOWS.md](WINDOWS.md) |
 
 ## v0.4 – nativní aplikace a historie
 
