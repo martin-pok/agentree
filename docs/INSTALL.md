@@ -24,7 +24,10 @@ Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, archite
 
 ### Příkazová řádka
 
-- macOS (Linux a Windows: dashboard a projekty fungují, otevírání aplikací a notifikace ne)
+- macOS — plná podpora
+- Windows a Linux — server, rozhraní, projekty a statistiky fungují (ověřuje CI na všech
+  třech systémech); otevírání aplikací, nativní oznámení, Klíčenka a automatický start ne.
+  Podrobně, včetně toho, co je a co není ověřené: [WINDOWS.md](WINDOWS.md)
 - [Node.js](https://nodejs.org) 22.13 nebo novější (`node --version`)
 
 ## Instalace

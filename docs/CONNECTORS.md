@@ -25,6 +25,30 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 | **OpenAI / Anthropic API** | Admin API | — | — | — | — | — | 🧪 automaticky |
 | AI aplikace na Macu | `ps`, Ollama API | ✅ procesy | — | — | — | — | — |
 
+### Kde konektory hledají data na kterém systému
+
+Agenteeq je vyvíjený a ověřovaný na macOS. Jádro běží i na Windows (doloženo v CI, viz
+`docs/WINDOWS.md`), ale **to, kde tam ty nástroje opravdu ukládají, ověřené není** — a dokud
+to někdo nepotvrdí na skutečném stroji, patří sem 🧪, ne ✅.
+
+| Konektor | macOS | Windows | Stav Windows |
+|---|---|---|---|
+| Claude Code | `~/.claude/projects` | `%USERPROFILE%\.claude\projects` | 🧪 cesta se poskládá sama, neověřeno |
+| Codex | `~/.codex/sessions` | `%USERPROFILE%\.codex\sessions` | 🧪 neověřeno |
+| Copilot CLI | `~/.copilot/session-state` | `%USERPROFILE%\.copilot\session-state` | 🧪 neověřeno |
+| Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/tmp` | `%USERPROFILE%\.gemini\tmp`, `…\.qwen\tmp` | 🧪 neověřeno |
+| Cursor | `~/Library/Application Support/Cursor/User` | `%APPDATA%\Cursor\User` | 🧪 neověřeno |
+| Copilot ve VS Code | `~/Library/Application Support/Code/User` | `%APPDATA%\Code\User` | 🧪 neověřeno |
+| Claude Desktop (historie limitů) | `~/Library/Application Support/Claude` | `%APPDATA%\Claude` | 🧪 neověřeno |
+| Běžící aplikace | `ps` | PowerShell `Win32_Process` | 🧪 mechanismus hotový, katalog aplikací zná zatím jen `.app` |
+| Lokální agenti | `ps` + `lsof` | `Win32_Process` + `Get-NetTCPConnection` | 🧪 totéž |
+| Webové aplikace | rozšíření pro Chrome → HTTP | totéž | ✅ na systému nezávislé |
+| Náklady z Admin API | HTTPS | totéž | ✅ na systému nezávislé |
+
+Základ složky řeší jediná funkce `appSupportDir()` v `src/platform.js`; struktura pod ní je
+na obou systémech stejná. Konektory, které běžící procesy zjistit nedokážou, hlásí **„nevíme“**,
+nikdy „nic neběží“ — rozdíl mezi selháním zjišťování a zjištěným stavem se tu nesmí stírat.
+
 ### Proč některé věci nejdou
 
 - **Předplatné a extra usage** (ChatGPT, Claude, Gemini, Perplexity, Grok, Qwen, Copilot): žádná z těchto služeb neposkytuje veřejné API pro útratu jednotlivce. Agenteeq proto nabízí ruční zápis s rozpočty. Výjimka: zůstatek kreditů Codexu, který Codex sám zapisuje do sessions.
