@@ -17,7 +17,7 @@ Agenteeq ukazuje **v reálném čase a na jednom místě** všechny AI agenty, k
 ```bash
 npm start         # server + dashboard na http://127.0.0.1:4620
 npm run dev       # server s restartem při změně src/ a bin/
-npm test          # všechny testy (node:test), ~1 s
+npm test          # všechny testy (node:test), ~20 s
 npm run check     # syntaktická kontrola všech .js/.mjs
 npm run smoke     # balíček pro zákazníky: pack → instalace do dočasné složky → start → API
 npm run pack      # dist/agenteeq-<verze>.tgz

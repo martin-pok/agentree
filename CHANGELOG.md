@@ -41,7 +41,7 @@
   a padalo na `ENOTEMPTY` — kontrola přitom prošla. Teď se počká na konec procesu (po dvou
   vteřinách `SIGKILL`) a teprve pak se maže. Bez toho by se na téhle chybě zastavil `release:mac`.
 - **Testy běží i mimo macOS.** Testy závislé na `lsof` a na cestě `/private/tmp` se místo padání
-  přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (281 testů).
+  přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (295 testů, 3 přeskočené).
 
 ## 0.11.1 — 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
 

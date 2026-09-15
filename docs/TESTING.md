@@ -89,7 +89,7 @@ potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 281 testů prošlo, 3 přeskočeny s důvodem (vyžadují macOS) |
+| `npm test` | 295 testů, 292 prošlo, 3 přeskočeny s důvodem (vyžadují macOS) |
 | `npm run check` | 136 souborů bez syntaktické chyby |
 | `npm run build:extension` | `dist/agenteeq-extension-0.12.0.zip`, 18 souborů, 179 kB; rozbalení ověřeno |
 | `npm run build:site` | `dist/web`, 71 souborů; landing page v kořeni, rozhraní na `/app` |
