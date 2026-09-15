@@ -25,9 +25,10 @@ Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, archite
 ### Příkazová řádka
 
 - macOS – plná podpora
-- Windows a Linux – server, rozhraní, projekty a statistiky fungují (ověřuje CI na všech
-  třech systémech); otevírání aplikací, nativní oznámení, Klíčenka a automatický start ne.
-  Podrobně, včetně toho, co je a co není ověřené: [WINDOWS.md](WINDOWS.md)
+- Windows – aplikace i s vlastním oknem existuje (`npm run build:windows`, CI ji překládá
+  a přikládá k běhu), ale zatím ji nikdo nespustil na skutečném stroji. Otevírání aplikací,
+  Klíčenka a automatický start na Windows nefungují. Podrobně: [WINDOWS.md](WINDOWS.md)
+- Linux – server, rozhraní, projekty a statistiky fungují; desktopová aplikace není
 - [Node.js](https://nodejs.org) 22.13 nebo novější (`node --version`)
 
 ## Instalace

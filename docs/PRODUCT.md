@@ -77,4 +77,4 @@ Validace před stavbou placené verze:
 | Selektory webových aplikací se mění | Rozšíření přestane rozpoznávat stav | Generické zálohy, hlášení z rozšíření, fixtury z reálného DOM |
 | Podmínky služeb / Chrome Web Store | Nelze distribuovat rozšíření | Právní kontrola před zveřejněním, čtení jen obsahu zobrazeného uživateli |
 | Dodavatelé postaví vlastní přehled | Menší hodnota pro jednotlivé služby | Hodnota je v napříč-dodavatelském pohledu a útratě |
-| Aplikace ke stažení jen pro macOS | Omezený trh | Jádro na Windows i Linuxu běží a ověřuje to CI; chybí plášť (okno, ikona, oznámení) – [WINDOWS.md](WINDOWS.md) |
+| Aplikace ke stažení jen pro macOS | Omezený trh | Jádro i plášť pro Windows jsou hotové a CI je překládá; zbývá je spustit na skutečném Windows – [WINDOWS.md](WINDOWS.md) |

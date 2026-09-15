@@ -8,14 +8,17 @@ Zdroj důkazů: `.github/workflows/test.yml` – testy a `npm run smoke:server` 
 
 ## Krátká odpověď
 
-**Jádro Agenteeq na Windows běží.** Není to macOS aplikace, kterou by šlo na Windows jen
-přenést – je to server v čistém Node bez jediné závislosti, a ten je přenositelný ze své
-podstaty. Co na Windows chybí, není jádro, ale **plášť**: okno aplikace, ikona v hlavním
-panelu, systémová oznámení a ty funkce, které sahají na macOS (Klíčenka, otevírání `.app`,
-LaunchAgent).
+**Jádro Agenteeq na Windows běží a plášť pro Windows existuje.** Není to macOS aplikace,
+kterou by šlo na Windows jen přenést – je to server v čistém Node bez jediné závislosti,
+a ten je přenositelný ze své podstaty.
 
-Jinými slovy: **od „běží na Windows“ jsme dál, než by se čekalo. Od „aplikace pro Windows,
-za kterou někdo zaplatí“ nás dělí plášť a ověření na skutečném stroji.**
+Plášť (`desktop/windows/Agenteeq.cpp`) je protějšek toho ve Swiftu: vlastní okno nad
+WebView2, ikona v hlavním panelu s odznakem, ikona v oznamovací oblasti a systémová
+oznámení. CI ho překládá při každé změně a hotový balíček přikládá k běhu.
+
+**Co zbývá, je jediná věc, kterou z Macu ani z CI udělat nejde: pustit to na skutečném
+Windows a podívat se na to.** Překlad dokazuje, že je co spustit. Nedokazuje, že okno
+vypadá, jak má.
 
 ## Co je doložené
 
@@ -25,6 +28,8 @@ za kterou někdo zaplatí“ nás dělí plášť a ověření na skutečném st
 | Aplikace nastartuje a obslouží rozhraní (`npm run smoke:server`) | ✅ | ✅ |
 | Rozhraní, stav, konektory přes HTTP | ✅ | ✅ |
 | Zákaz cesty ven z `public/`, ochrana proti CSRF | ✅ | ✅ |
+| Plášť se přeloží a sestaví se balíček | ✅ | ✅ |
+| **Okno opravdu vypadá a chová se, jak má** | ✅ | ⛔ **neověřeno** – chce skutečný stroj |
 
 Smoke nesahá do vnitřku aplikace – mluví s ní jen přes HTTP, stejně jako prohlížeč. To, že
 projde na `windows-latest`, znamená, že se aplikace na Windows opravdu spustí a rozhraní
@@ -70,7 +75,7 @@ Kód je napojený, ale **Windows varianta není ověřená na skutečném stroji
 
 | Co | Proč | Co by to chtělo |
 |---|---|---|
-| Nativní oznámení | `osascript` je macOS | Toast přes WinRT – potřebuje balíčkovanou aplikaci s AppUserModelID |
+| ~~Nativní oznámení~~ **hotovo** | `osascript` je macOS | Plášť je posílá přes ikonu v oznamovací oblasti; Windows 10 i 11 z nich udělají systémový toast a klik vede na dotčené místo v aplikaci |
 | Klíčenka pro API klíče | `/usr/bin/security` je macOS | DPAPI nebo Credential Manager přes malý nativní pomocník. **Obejde se proměnnou prostředí, ta funguje všude** |
 | Otevření session v aplikaci | `open -a` a cesty `/Applications/*.app` | Hledání v registru a `%LOCALAPPDATA%\Programs`; „přepni do okna aplikace“ nemá na Windows přímou obdobu |
 | Pokračování v Terminálu | AppleScript nad Terminal.app | Windows Terminal (`wt.exe`), ale příkaz by se musel skládat pro `cmd.exe`, ne pro shell |
@@ -102,7 +107,10 @@ protokol `AGENTEEQ_DESKTOP {json}` a zobrazí okno.
 **Ten protokol je přesně ten šev, na kterém se dá stavět jinde.** `desktop/server.mjs` je
 obyčejný Node a nic macOSového v sobě nemá.
 
-Zbývá tedy hostitel pro Windows. Dvě cesty:
+**Rozhodnuto: vlastní okno nad WebView2** (varianta B v tabulce níž). Postavené je
+v `desktop/windows/Agenteeq.cpp`, sestavuje ho `npm run build:windows`.
+
+Dvě zvažované cesty a proč zvítězila B:
 
 | | A) Přibalený Node + Edge v režimu `--app` | B) Vlastní okno nad WebView2 |
 |---|---|---|
@@ -112,8 +120,21 @@ Zbývá tedy hostitel pro Windows. Dvě cesty:
 | Kdy je hotovo | dny | týdny |
 | Dojem | „spustili mi prohlížeč“ | prémiový |
 
-**Doporučuju B.** A je rychlejší, ale prodává se dojem, a okno prohlížeče bez ovládacích
-prvků poznají lidé na první pohled. Zároveň by A byla práce, která se pak celá zahodí.
+A je rychlejší, ale prodává se dojem, a okno prohlížeče bez ovládacích prvků poznají lidé
+na první pohled. Zároveň by A byla práce, která se pak celá zahodí.
+
+**Co plášť umí:** tmavé záhlaví a zaoblené rohy (DWM), takže okno vypadá jako součást
+aplikace; odznak na ikoně v hlavním panelu v barvě rozhodnutí; ikonu v oznamovací oblasti
+a systémová oznámení s proklikem na dotčené místo; jedinou instanci; job object, aby se
+serverem zmizelo i všechno, co spustil. Navigace ven z aplikace se otevře v prohlížeči,
+nikdy uvnitř okna. Načítání i chybová hláška jsou HTML, takže typografie sedí s aplikací.
+
+**Co plášť zatím neumí:** stahování souborů dialogem, výběr souboru z aplikace a nabídku
+v hlavním panelu. Nic z toho dnešní rozhraní nepotřebuje.
+
+**Žádná knihovna navíc** – jen Win32, COM a WebView2, a zavaděč je slinkovaný staticky,
+takže vedle `.exe` neleží žádná DLL. Běhové prostředí WebView2 je součástí Windows 11
+a na Windows 10 ho přináší Edge; když přesto chybí, okno to řekne česky a nespadne.
 
 Jedna věc k tomu patří a bude se rozhodovat: spousta vývojářů na Windows pouští AI nástroje
 uvnitř **WSL2**. Tam `~/.claude` neleží v profilu Windows, ale pod `\\wsl$\<distribuce>\home\…`.
@@ -140,12 +161,15 @@ build je ten správný, je starost naše, ne uživatelova.
 Podle pravidla v `CLAUDE.md` („Nevymýšlej data. Neověřené = Beta.“) se tlačítko
 **„Stáhnout pro Windows“ na web nedává, dokud tohle neproběhne:**
 
-1. Spustit Agenteeq na skutečném Windows a projít rozhraní očima.
+1. **Spustit Agenteeq na skutečném Windows a projít rozhraní očima.** Balíček je ke stažení
+   u každého běhu CI (artefakt „Agenteeq-Windows“). Tohle je jediný zbývající krok, který
+   nejde udělat odjinud.
 2. Ověřit, kam na Windows ukládají Claude Code, Codex, Cursor, VS Code a Claude Desktop,
    a zapsat to do `docs/CONNECTORS.md`.
 3. Přepsat katalog běžících aplikací na windowsové názvy.
-4. Rozhodnout plášť (A/B výš) a postavit ho.
+4. ~~Rozhodnout plášť a postavit ho.~~ **Hotovo** – vlastní okno nad WebView2.
 5. Podepsat build. Bez podpisu ukáže SmartScreen varování a část lidí instalaci vzdá.
+   Skript `build:windows` podpis umí, chybí jen certifikát (`AGENTEEQ_WINDOWS_CERT`).
 
 Kroky 1–3 jde udělat hned, jakmile bude po ruce Windows. Krok 5 je otázka certifikátu, ne
 kódu.
