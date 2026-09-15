@@ -124,6 +124,11 @@ Aby se z telefonu po HTTPS dalo vůbec spárovat, je v seznamu povolených `Orig
 `http://<adresa>:<port>` i `https://<vlastní jméno>` — je to pořád naše vlastní adresa
 a cizí web si `Origin` podvrhnout nemůže.
 
+Cookie s tokenem dostane příznak `Secure`, když proxy hlásí `X-Forwarded-Proto: https`. Server sám
+TLS nezakončuje, takže jinak HTTPS nepozná; hlavičce se věří jen u spojení po smyčce, tedy od
+proxy běžící na tomhle Macu. Podvržení téhle hlavičky nic neotevírá — jen přidá `Secure`, kterým
+si útočník zavře vlastní spojení po `http`.
+
 ### HTTPS přes `tailscale serve`
 
 Proxy s certifikátem od Let's Encrypt je jediná cesta, jak si telefon uloží aplikaci na plochu

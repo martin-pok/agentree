@@ -33,6 +33,10 @@
   cizí párovací PIN i `POST /api/launch`. Nově takový požadavek potřebuje spárované zařízení
   jako každé jiné vzdálené. Přibyl regresní test a do `allowedOrigins()` vlastní adresa
   `https://…`, aby se z telefonu po HTTPS dalo spárovat.
+- **Cookie s tokenem dostane `Secure` za HTTPS proxy.** Příznak se odvozoval z `url.protocol`,
+  jenže `url` se staví nad pevným `http://127.0.0.1`, takže se nenastavil nikdy. Dokud HTTPS nebyla
+  podporovaná cesta, nevadilo to; s `tailscale serve` ano. Nově se pozná podle
+  `X-Forwarded-Proto` od proxy na tomhle Macu.
 - **Přepínač Tailscale se odemkne, až když Tailscale opravdu běží.** Adresa z rozsahu
   `100.64.0.0/10` sama nestačí — je to rozsah pro CGNAT a od některých operátorů ji Mac dostane
   i bez Tailscale; naslouchání by se otevřelo do sítě operátora.

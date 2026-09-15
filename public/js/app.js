@@ -681,7 +681,7 @@ function parovaciObrazovka(zprava = '') {
       <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="submit">Spárovat</button>
-      <small>Data zůstávají na tvém Macu. Telefon se k nim dostane jen v tvé domácí síti.</small>
+      <small>Data zůstávají na tvém Macu. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.</small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');

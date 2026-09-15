@@ -84,6 +84,15 @@ export function createHttpServer(app, existingServer = null) {
     return !PROXY_HLAVICKY.some((h) => req.headers[h] !== undefined);
   }
 
+  // Jelo to po HTTPS? Server sám TLS nezakončuje, takže se to pozná jedině podle proxy před ním
+  // (`tailscale serve`), která to hlásí v `X-Forwarded-Proto`. Hlavičce se věří jen u spojení po
+  // smyčce, tedy od proxy běžící na tomhle Macu. Podvržení téhle hlavičky nic neotevírá — jen
+  // přidá cookie příznak Secure, kterým si útočník zavře vlastní spojení po http.
+  function jeHttps(req) {
+    if (!isLoopback(req.socket?.remoteAddress)) return false;
+    return String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https';
+  }
+
   // Požadavek z tohoto Macu (desktopová aplikace, prohlížeč na Macu) projde jako dřív.
   // Cokoli z místní sítě musí mít token spárovaného zařízení — jinak se k datům nedostane.
   function requireDevice(req, url) {
@@ -276,12 +285,12 @@ export function createHttpServer(app, existingServer = null) {
       if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
       return { pin: app.lan.newPin() };
     }],
-    ['POST', /^\/api\/lan\/pair$/, async (req, _m, url) => {
+    ['POST', /^\/api\/lan\/pair$/, async (req) => {
       const body = await readBody(req);
       const r = unwrap(await app.lan.pair(body?.pin, body?.label));
       // Token jde do cookie: nedostane se do historie prohlížeče ani k JavaScriptu na stránce,
       // a EventSource ho posílá sám, takže realtime stream funguje bez dalšího zařizování.
-      const secure = url.protocol === 'https:' ? ' Secure;' : '';
+      const secure = jeHttps(req) ? ' Secure;' : '';
       // SameSite=Lax, ne Strict: telefon typicky otevře adresu z poznámek, QR kódu nebo dlaždice
       // na domovské obrazovce — to je přechod z jiného webu a Strict by u něj cookie neposlal,
       // takže by spárovaný telefon znovu žádal kód. Zápisy dál chrání hlavička X-Agenteeq

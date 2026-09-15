@@ -253,6 +253,47 @@ test('HTTP: požadavek přeposlaný proxy z tohoto Macu nedostane práva desktop
   assert.equal(sProxyHlavickou.body.includes('"pin"'), false, 'stopa po proxy znamená, že PIN se nevydá');
 });
 
+// Cookie s tokenem má mít příznak Secure, když spojení jelo po HTTPS. Server sám TLS nezakončuje,
+// takže to pozná jedině podle proxy před ním. Dřív se odvozovalo z `url.protocol`, jenže `url` se
+// staví nad pevným http://127.0.0.1 — příznak se tedy nenastavil nikdy.
+test('párování: cookie dostane Secure, když proxy hlásí HTTPS', async (t) => {
+  const s = await startTestServer();
+  t.after(() => s.close());
+  const port = Number(new URL(s.url).port);
+
+  // Testovací stroj nemá adresu z domácí sítě, takže přepínač zapneme rovnou v datech — tenhle
+  // test je o cookie, ne o otevírání naslouchání (to má vlastní testy výš).
+  s.app.datastore.data.settings.lanAccess = true;
+  t.after(() => { s.app.datastore.data.settings.lanAccess = false; });
+
+  let pin = '';
+  const sparuj = (hlavicky) => new Promise((resolve, reject) => {
+    const telo = JSON.stringify({ pin, label: 'iPhone' });
+    const req = http.request({
+      host: '127.0.0.1', port, path: '/api/lan/pair', method: 'POST',
+      headers: { Host: `127.0.0.1:${port}`, 'Content-Type': 'application/json', 'X-Agenteeq': '1', 'Content-Length': Buffer.byteLength(telo), ...hlavicky },
+    }, (res) => {
+      let data = '';
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => resolve({ status: res.statusCode, cookie: String(res.headers['set-cookie'] || '') }));
+    });
+    req.on('error', reject);
+    req.write(telo);
+    req.end();
+  });
+
+  pin = (await api(s.url).send('POST', '/api/lan/pin', {})).body.pin.code;
+  const poHttp = await sparuj({});
+  assert.equal(poHttp.status, 200, 'párování po http projde');
+  assert.equal(/Secure/i.test(poHttp.cookie), false, 'po http se Secure nenastaví — jinak by cookie nešla poslat zpátky');
+  assert.match(poHttp.cookie, /HttpOnly/);
+
+  pin = (await api(s.url).send('POST', '/api/lan/pin', {})).body.pin.code;
+  const poHttps = await sparuj({ 'X-Forwarded-Proto': 'https' });
+  assert.equal(poHttps.status, 200, 'párování za proxy s HTTPS projde');
+  assert.match(poHttps.cookie, /Secure/, 'za HTTPS proxy cookie dostane Secure');
+});
+
 test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" se pozná podle portu', async () => {
   const fileExists = (p) => p.includes('Tailscale.app');
   const run = async (cmd, args) => {
