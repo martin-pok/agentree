@@ -88,6 +88,11 @@ v datech, CSRF, zákaz správy z telefonu). Liší se jen adresa, na které serv
 - Hlavička `Host` se rozšíří o adresu v tailnetu a o jméno v MagicDNS (`mac.tailnet.ts.net`,
   porovnává se malými písmeny). Jméno pochází z `tailscale status --json`; když ho tailnet nemá
   zapnuté, zůstane prázdné a pracuje se jen s adresou — nic se nedomýšlí.
+- **Jméno se před vpuštěním do seznamu ověří** (`magicDnsName()` v `src/lan.js`): musí to být běžné
+  DNS jméno malými písmeny, nejvýš 253 znaků, aspoň dvě části, žádný port, lomítko, mezera ani
+  prázdná část. Je to jediná hodnota v téhle ochraně, která přichází z výstupu cizího programu,
+  takže se do ní nesmí dostat nic neočekávaného. Co tvarem neprojde, se zahodí a pracuje se
+  jen s adresou.
 - Obě cesty jsou nezávislé: vypnutí jedné nezavře listener druhé a spárované telefony se mažou,
   teprve když se zavírá **poslední** otevřená cesta.
 - Zapnutí, které nedokáže otevřít listener, se vrátí zpět na vypnuto a řekne proč (`502`). Rozhraní

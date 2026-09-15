@@ -41,7 +41,11 @@ který uživatel spustí sám.
 ## Rozhraní na webu (statická kopie)
 
 Samotné rozhraní — `public/` — jsou jen statické soubory a dají se nahrát kamkoli (Vercel,
-Netlify, vlastní webhosting). **Server tím nevzniká.** Taková stránka nemá odkud brát data:
+Netlify, vlastní webhosting). **Server tím nevzniká.**
+
+Na našem vlastním webu leží rozhraní na **`/app`**; v kořeni je landing page (`site/`).
+Skládá to `scripts/build-site.mjs` do `dist/web` a při té příležitosti přepíše manifest PWA
+i `sw.js`, aby instalace na plochu otevřela rozhraní, ne marketingovou stránku. Taková stránka nemá odkud brát data:
 `/api/*` na ní vrací 404 a `127.0.0.1` je na telefonu sám telefon, ne Mac.
 
 Proto se při startu jednou zeptáme na `/api/health` (`jeStatickaKopie()` v

@@ -27,6 +27,16 @@ const sixDigits = () => String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
 
 export const stripTrailingDot = (s) => String(s || '').replace(/\.$/, '');
 
+// Jméno Macu v MagicDNS přichází z výstupu cizího programu (`tailscale status --json`) a míří
+// rovnou do seznamu povolených hodnot hlavičky Host. Proto se napřed ověří jeho tvar: běžné DNS
+// jméno malými písmeny, aspoň dvě části, nic jiného. Cokoli s portem, lomítkem, mezerou nebo
+// prázdnou částí se zahodí — do ochrany proti DNS rebindingu se nesmí dostat nic neočekávaného.
+const DNS_JMENO = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
+export function magicDnsName(raw) {
+  const jmeno = stripTrailingDot(raw).trim().toLowerCase();
+  return jmeno.length <= 253 && DNS_JMENO.test(jmeno) ? jmeno : '';
+}
+
 // Adresy, na kterých je Agenteeq z místní sítě vidět. Veřejné adresy sem nepatří — vybíráme
 // jen privátní rozsahy, aby se odkaz nedal omylem otevřít z internetu.
 export function lanAddresses(interfaces = os.networkInterfaces()) {
@@ -95,7 +105,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   function hosts() {
     const out = bindAddresses();
     if (tailscaleOn()) {
-      const name = stripTrailingDot(tailscaleName()).toLowerCase();
+      const name = magicDnsName(tailscaleName());
       if (name) out.push(name);
     }
     return [...new Set(out)];
@@ -115,7 +125,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     prune(now);
     const addresses = lanAddresses(interfaces());
     const tsAddresses = tailscaleAddresses(interfaces());
-    const tsName = stripTrailingDot(tailscaleName());
+    const tsName = magicDnsName(tailscaleName());
     // Port bereme z běžícího listeneru — hlavní server mohl dostat jiný než z konfigurace.
     const port = [...servers.values()][0]?.address()?.port || boundPort || config.port;
     // Adresa pro Tailscale: přednost má jméno v MagicDNS (zapamatovatelné a přežije změnu IP),

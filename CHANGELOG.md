@@ -26,6 +26,11 @@
 - **Vydání.** `npm run release:mac` projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
   `--install` vymění i aplikaci v `/Applications` — předchozí verzi přitom nemaže, odloží ji
   do `~/.agenteeq/zalohy`.
+- **Z bezpečnostní revize vlastního kódu:** jméno z MagicDNS se před vpuštěním do seznamu
+  povolených hodnot hlavičky `Host` ověří na tvar běžného DNS jména (`magicDnsName()`) — je to
+  jediná hodnota v téhle ochraně, která přichází z výstupu cizího programu. A stav
+  `tailscale serve` porovnává port jako port, ne jako podřetězec: `includes(':4620')` sedělo
+  i na proxy mířící na `:46200` a rozhraní by ohlásilo HTTPS, které nikam nevede.
 - **Kontrast měřený, ne odhadovaný.** Nový `npm run qa:contrast` projde každý viditelný text
   v aplikaci (8 obrazovek × světlý/tmavý × 1440/375 px), na landing page i v okně rozšíření
   a spočítá jeho kontrast proti pozadí, které pod ním doopravdy leží, včetně poloprůhledných vrstev.

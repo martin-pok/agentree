@@ -130,6 +130,24 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 - OpenAI: `GET /v1/organization/costs?start_time&bucket_width=1d` (Bearer admin klíč). Anthropic: `GET /v1/organizations/cost_report?starting_at&ending_at` (`x-api-key`, `anthropic-version: 2023-06-01`). Tolerantní čtení částky (`amount` číslo / řetězec / `{value}`), měna USD, obnova 1 h.
 - **Neověřeno proti skutečným klíčům.** Při prvním připojení zkontroluj tvar odpovědi a uprav `parse*Costs` + test.
 
+### Vzdálený přístup přes Tailscale — `src/tunnel.js` + `src/lan.js` 🧪
+
+Není to konektor (nečte žádnou konverzaci), ale čte stav externího nástroje, a platí tu proto
+totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
+
+| Část | Zdroj | Stav |
+|---|---|---|
+| Je Tailscale nainstalovaný | `/Applications/Tailscale.app/Contents/MacOS/Tailscale` nebo `tailscale` v PATH | ✅ ověřeno jednotkovými testy nad vstřiknutým `run`/`fileExists` |
+| Běží a pod jakým jménem | `tailscale status --json` → `BackendState`, `Self.DNSName`, `Self.TailscaleIPs`, `CurrentTailnet.MagicDNSSuffix` | 🧪 formát podle dokumentace a výstupu CLI; **neověřeno proti živému tailnetu** |
+| Adresa Macu v tailnetu | síťová rozhraní Macu, IPv4 z `100.64.0.0/10` | ✅ hranice rozsahu pokryté testem (`test/tailscale.test.mjs`) |
+| HTTPS přes `tailscale serve` | `tailscale serve status --json` → `Web[host:443].Handlers[cesta].Proxy` | 🧪 **neověřeno proti živému tailnetu.** Čte se obranně: co se nerozpozná, hlásí se jako neznámé, nikdy jako zapnuté |
+
+- **Co Agenteeq nedělá:** neinstaluje Tailscale, nespouští `tailscale up` ani `tailscale serve`,
+  nepřihlašuje se za uživatele a adresu tailnetu nikam neposílá.
+- **Ověření před označením ✅:** na Macu s přihlášeným Tailscale zapnout přepínač, otevřít adresu
+  z telefonu ve stejném tailnetu, spárovat kódem; pak `tailscale serve` zapnout i vypnout a ověřit,
+  že to karta v Nastavení pozná. Postup je v `docs/TESTING.md`.
+
 ### Procesy — `src/connectors/processes.js` ✅
 
 - `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `http://127.0.0.1:11434/api/ps`.

@@ -79,8 +79,11 @@ function readServe(stdout, port) {
   for (const [hostPort, entry] of Object.entries(web)) {
     const handlers = entry?.Handlers && typeof entry.Handlers === 'object' ? entry.Handlers : {};
     for (const handler of Object.values(handlers)) {
-      const proxy = String(handler?.Proxy || '');
-      if (!proxy.includes(`:${port}`)) continue;
+      // Port se porovnává jako port, ne jako kus textu: `includes(':4620')` by sedělo
+      // i na proxy mířící na :46200 a rozhraní by ohlásilo HTTPS, které nikam nevede.
+      let cil = null;
+      try { cil = new URL(String(handler?.Proxy || '')); } catch { cil = null; }
+      if (!cil || cil.port !== String(port)) continue;
       // Klíč má tvar "jmeno.tailnet.ts.net:443"; port 443 v adrese neopakujeme.
       const host = String(hostPort).replace(/:443$/, '');
       return { running: true, unknown: false, url: `https://${host}/` };

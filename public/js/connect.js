@@ -61,7 +61,7 @@ export function pripojovaciObrazovka(zprava = '') {
       <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="submit">Otevřít</button>
-      <small>Adresu najdeš v Agenteeq na Macu v <b>Nastavení → Otevřít na telefonu</b>. Mimo domov ji zpřístupní tunel (Tailscale nebo Cloudflare) — návod je tamtéž v části <b>Mimo domov</b>.</small>
+      <small>Adresu najdeš v Agenteeq na Macu v <b>Nastavení → Otevřít na telefonu</b>. Mimo domov ji zpřístupní <b>Přístup přes Tailscale</b> o kartu níž.</small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');

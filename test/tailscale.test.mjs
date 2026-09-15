@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLanAccess, tailscaleAddresses, lanAddresses } from '../src/lan.js';
+import { createLanAccess, tailscaleAddresses, lanAddresses, magicDnsName } from '../src/lan.js';
 import { loadConfig } from '../src/config.js';
+import http from 'node:http';
 import { detectTunnels } from '../src/tunnel.js';
 import { startTestServer, api } from './helpers.mjs';
 
@@ -57,6 +58,35 @@ test('tailnet: stav a adresa se skládají z MagicDNS jména, teprve pak z adres
   assert.deepEqual(s.tailscale.addresses, ['100.101.102.103']);
   assert.equal(s.tailscale.url, `http://100.101.102.103:${s.port}`);
   assert.equal(s.tailscale.available, true);
+});
+
+// Jméno z MagicDNS chodí z výstupu cizího programu a míří do ochrany proti DNS rebindingu.
+// Proto musí projít jen tvar běžného DNS jména — nic s portem, cestou ani prázdnou částí.
+test('tailnet: do seznamu povolených jmen se dostane jen pořádné DNS jméno', () => {
+  for (const [vstup, cekano] of [
+    ['mac-mini.tailabcd.ts.net.', 'mac-mini.tailabcd.ts.net'],
+    ['Mac-Mini.Tailabcd.TS.NET', 'mac-mini.tailabcd.ts.net'],
+    ['  mac.ts.net  ', 'mac.ts.net'],
+  ]) assert.equal(magicDnsName(vstup), cekano, vstup);
+
+  for (const zle of [
+    '', 'mac', 'mac.ts.net:4620', 'http://mac.ts.net', 'mac.ts.net/cesta', 'mac..ts.net',
+    '.mac.ts.net', '-mac.ts.net', 'mac-.ts.net', 'mac ts.net', 'mac.ts.net evil.com',
+    'utocnik@mac.ts.net', '100.64.0.5:80', `${'a'.repeat(250)}.ts.net`, null, undefined, 42,
+  ]) assert.equal(magicDnsName(zle), '', JSON.stringify(zle));
+});
+
+test('tailnet: nesmyslné jméno z „tailscale status“ se do allowlistu nedostane', () => {
+  const datastore = fakeDatastore({ tailscaleAccess: true });
+  const lan = createLanAccess({
+    datastore,
+    config: config(),
+    tailscaleName: () => 'mac.ts.net:4620 utocnik.example.com',
+    interfaces: () => ROZHRANI,
+  });
+  assert.deepEqual(lan.hosts(), ['100.101.102.103'], 'projde jen adresa, jméno se zahodí');
+  assert.equal(lan.status().tailscale.name, '');
+  assert.equal(lan.status().tailscale.url, `http://100.101.102.103:${lan.status().port}`);
 });
 
 test('tailnet: hlavička Host projde jen se zapnutým přepínačem — a s ním i jméno v MagicDNS', () => {
@@ -118,6 +148,44 @@ test('HTTP: bez běžícího Tailscale se přístup nezapne a nastavení zůstan
   assert.equal((await api(s.url).send('POST', '/api/tailscale/disable', {})).status, 200);
 });
 
+// Ochrana proti DNS rebindingu je jediné, co stojí mezi škodlivou stránkou a daty na tomhle Macu:
+// server smí odpovědět jen na hlavičku Host, kterou sám zná. Tailscale ten seznam rozšiřuje
+// o adresu v tailnetu a o jméno v MagicDNS, takže tady se ověřuje, že rozšíření prochází přes
+// lan.hosts() — tedy že je opravdu vázané na zapnutý přepínač, a ne natvrdo povolené.
+test('HTTP: na cizí hlavičku Host server neodpoví, na vlastní jméno v MagicDNS ano', async (t) => {
+  const s = await startTestServer();
+  t.after(() => s.close());
+  const port = Number(new URL(s.url).port);
+  const JMENO = 'mac-mini.tailabcd.ts.net';
+
+  const zeptejSe = (host) => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, path: '/api/health', headers: { Host: host } }, (res) => {
+      let data = '';
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  // Výchozí stav: obě cesty vypnuté, takže projde jen tenhle Mac.
+  assert.equal((await zeptejSe(`127.0.0.1:${port}`)).status, 200);
+  assert.equal((await zeptejSe(`localhost:${port}`)).status, 200);
+  assert.equal((await zeptejSe(`${JMENO}:${port}`)).status, 403, 'jméno v MagicDNS bez zapnutého přepínače neprojde');
+  assert.equal((await zeptejSe('utocnik.example.com')).status, 403);
+  assert.equal((await zeptejSe('100.64.0.5')).status, 403, 'ani holá adresa z rozsahu tailnetu');
+
+  // Se zapnutým přístupem přes Tailscale se seznam rozšíří přesně o to, co vrátí lan.hosts().
+  const puvodni = s.app.lan.hosts;
+  s.app.lan.hosts = () => [JMENO, '100.64.0.5'];
+  t.after(() => { s.app.lan.hosts = puvodni; });
+  assert.equal((await zeptejSe(`${JMENO}:${port}`)).status, 200, 'vlastní jméno v MagicDNS projde');
+  assert.equal((await zeptejSe(`${JMENO.toUpperCase()}:${port}`)).status, 200, 'velikost písmen nerozhoduje');
+  assert.equal((await zeptejSe('100.64.0.5')).status, 200, 'adresa v tailnetu projde');
+  assert.equal((await zeptejSe('utocnik.example.com')).status, 403, 'cizí jméno neprojde ani pak');
+  assert.equal((await zeptejSe('zly.mac-mini.tailabcd.ts.net')).status, 403, 'ani podvržená předpona');
+});
+
 test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" se pozná podle portu', async () => {
   const fileExists = (p) => p.includes('Tailscale.app');
   const run = async (cmd, args) => {
@@ -164,6 +232,11 @@ test('detekce: "serve" pro cizí port nebo nesrozumitelný výstup se nikdy nehl
   };
   let [ts] = await detectTunnels({ run, fileExists, fetchJson: async () => null, port: 4620 });
   assert.deepEqual(ts.serve, { running: false, unknown: false }, 'proxy na cizí port není naše HTTPS');
+
+  // Podřetězec nestačí: proxy na :46200 není naše HTTPS na :4620.
+  serveStdout = JSON.stringify({ Web: { 'mac.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:46200' } } } } });
+  [ts] = await detectTunnels({ run, fileExists, fetchJson: async () => null, port: 4620 });
+  assert.deepEqual(ts.serve, { running: false, unknown: false }, 'port se porovnává jako port, ne jako kus textu');
 
   serveStdout = 'command not supported';
   [ts] = await detectTunnels({ run, fileExists, fetchJson: async () => null, port: 4620 });
