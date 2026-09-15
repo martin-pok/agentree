@@ -26,7 +26,7 @@
     "release:mac": "node scripts/release-mac.mjs",
     "start": "node bin/agenteeq.mjs",
     "dev": "node --watch-path=src --watch-path=bin bin/agenteeq.mjs",
-    "test": "node --test --test-concurrency=1 \"test/**/*.test.mjs\"",
+    "test": "node --test --test-concurrency=1 --test-reporter=spec \"test/**/*.test.mjs\"",
     "check": "node --check bin/agenteeq.mjs && node scripts/check-syntax.mjs",
     "pack": "mkdir -p dist && npm pack --pack-destination dist",
     "smoke": "node scripts/smoke-package.mjs",
