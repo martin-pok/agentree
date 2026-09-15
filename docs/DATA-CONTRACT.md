@@ -35,6 +35,13 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/integrations/claude-hooks/install` \| `uninstall` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json |
 | PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }` |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
+| GET | `/api/lan` | `LanStatus`; z telefonu bez `pin` a `devices` |
+| POST | `/api/lan/enable` \| `disable` | Přístup z domácí sítě → `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 422 bez privátní adresy, 502 když listener nelze otevřít |
+| POST | `/api/tailscale/enable` \| `disable` | Přístup z vlastní sítě Tailscale → `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 422 bez běžícího Tailscale, 502 když listener nelze otevřít |
+| POST | `/api/lan/pin` | `{ pin: { code, expiresAt } }`; jen z `127.0.0.1` (403), 409 s vypnutými oběma cestami |
+| POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
+| DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
+| POST | `/api/remote/detect` | `{ tunnels: { at, list: Tunnel[], advice } }`; jen z `127.0.0.1` (403) |
 | GET | `/api/projects` | `{ projects: ProjectsPayload }` |
 | POST | `/api/projects` | `{ name, description?, color?, folders?: string[] }` → 201 `{ project, projects }`; 422 s `errors`; 402 `upgrade` při limitu verze Zdarma (jen je-li zapnutý) |
 | PATCH | `/api/projects/:id` | Částečná změna (`name`, `description`, `color`, `folders`, `notes`, `archived`) → `{ project, projects }`; 404, 422 |
@@ -152,6 +159,31 @@ interface ProjectsPayload { items: Project[]; assignments: Record<string, string
 interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; note: string; beta?: boolean; prefill?: boolean }
 type LaunchMode = 'terminal' | 'background' | 'app' | 'web' | 'local';
 interface LaunchPayload { targets: LaunchTarget[]; modes: Record<LaunchMode, string>; openMode: 'exec' | 'dry' | 'off' }
+interface LanStatus {
+  enabled: boolean; listening: boolean; error: string; port: number;
+  addresses: string[]; // privátní adresy Macu v domácí síti (10/8, 172.16/12, 192.168/16)
+  url: string;
+  tailscale: {
+    enabled: boolean;      // přepínač „Přístup přes Tailscale"
+    available: boolean;    // Mac má adresu v tailnetu, takže je co zapnout
+    listening: boolean;    // listener na té adrese skutečně běží
+    error: string;
+    addresses: string[];   // jen IPv4 z rozsahu 100.64.0.0/10
+    name: string;          // jméno v MagicDNS, prázdné když ho tailnet nemá
+    url: string;           // adresa pro telefon: jméno má přednost před adresou
+  };
+  pin: { code: string; expiresAt: number } | null; // jen na Macu
+  devices: { id: string; label: string; at: number }[]; // jen na Macu
+}
+
+interface Tunnel {
+  id: 'tailscale' | 'cloudflared' | 'ngrok'; name: string; installed: boolean; running: boolean;
+  url: string; remoteUrl: string; kind: 'privatni-sit' | 'verejny-tunel'; security: string; hint: string;
+  // jen u tailscale:
+  dnsName?: string; ips?: string[]; tailnet?: string;
+  serve?: { running: boolean; unknown: boolean; url?: string }; // HTTPS přes „tailscale serve"; unknown = nezjištěno
+}
+
 interface LaunchRequest { agent: string; mode: LaunchMode; prompt: string /* max 20 000 */; cwd?: string; projectId?: string; permission?: 'plan' | 'acceptEdits'; sandbox?: 'read-only' | 'workspace-write'; model?: string }
 interface Run { id: string; agent: string; label: string; cwd: string; prompt: string /* zkráceno */; sessionId: string | null; projectId: string | null; pid: number | null; status: 'running' | 'stopping' | 'done' | 'failed' | 'stopped'; exitCode: number | null; error: string; startedAt: number; endedAt: number | null }
 interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' | 'team'; planLabel: string; reason?: string; expired?: boolean; maskedKey?: string; activatedAt?: number; license?: { id: string; name: string; email: string; plan: string; planLabel: string; seats: number; issuedAt: string; expiresAt: string | null }; paidFeatures: Record<string, string>; plans: Record<string, { label: string; rank: number }> }

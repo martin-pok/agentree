@@ -85,10 +85,18 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   const ollama = createOllamaClient({ baseUrl: config.ollamaUrl });
   const localChat = createLocalChat({ store, ollama });
+  // Stav tunelů (Tailscale / Cloudflare / ngrok). Deklarovaný takhle vysoko schválně: čte ho
+  // i přístup z telefonu níž, a `let` v dočasné mrtvé zóně by při čtení shodil celý start.
+  let tunely = { at: 0, list: [], advice: null };
+
+  // Jméno Macu v MagicDNS bere přístup z telefonu z detekce Tailscale (tunnelsPayload) — aby
+  // adresa mac.tailnet.ts.net prošla kontrolou hlavičky Host. Když MagicDNS zapnutý není,
+  // zůstane prázdné a pracuje se s adresou 100.x; nic se nedomýšlí.
   const lan = createLanAccess({
     datastore,
     config,
-    onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${s.url}`),
+    tailscaleName: () => tunely.list.find((t) => t.id === 'tailscale' && t.running)?.url || '',
+    onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${[s.enabled && s.url, s.tailscale.enabled && s.tailscale.url].filter(Boolean).join(' a ')}`),
   });
   const runs = new RunManager({
     dataDir: config.dataDir,
@@ -782,10 +790,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // Vzdálený přístup mimo domácí síť: Agenteeq nic neotvírá sám, jen zjistí, jestli má uživatel
   // nainstalovaný tunel (Tailscale / Cloudflare / ngrok) a poradí, co s tím. Zjišťuje se na
   // vyžádání a po startu, ne v každém cyklu — jsou to volání externích binárek.
-  let tunely = { at: 0, list: [], advice: null };
   async function refreshTunnels() {
-    const list = await detectTunnels();
     const port = lanPort();
+    const list = await detectTunnels({ port });
     tunely = {
       at: Date.now(),
       list: list.map((t) => ({ ...t, remoteUrl: t.running ? remoteUrl(t, port) : '' })),
@@ -806,19 +813,39 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function setLanAccess(enabled) {
     if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
     if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti — připoj se na Wi-Fi.' };
-    datastore.data.settings.lanAccess = Boolean(enabled);
-    if (!enabled) datastore.data.lanDevices = [];
+    return applyAccess('lanAccess', enabled, 'Přístup z telefonu se nepodařilo otevřít.');
+  }
+
+  // Přístup z vlastní privátní sítě Tailscale. Chová se stejně jako přístup z domácí sítě —
+  // jen se naslouchá na adrese 100.x místo 192.168.x a adresa nikde veřejně neexistuje.
+  // Párování kódem a token platí i tady: bez spárovaného zařízení se nepřečte nic.
+  async function setTailscaleAccess(enabled) {
+    if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
+    if (enabled && !lan.status().tailscale.available) return { status: 422, error: 'Tailscale na tomto Macu neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.' };
+    return applyAccess('tailscaleAccess', enabled, 'Přístup přes Tailscale se nepodařilo otevřít.');
+  }
+
+  // Společné přepnutí obou cest. Odpárování zařízení nastává, teprve když se zavírá poslední
+  // otevřená cesta — jinak by vypnutí Tailscale odhlásilo i telefon spárovaný v domácí síti.
+  async function applyAccess(key, enabled, selhani) {
+    const druhy = key === 'lanAccess' ? 'tailscaleAccess' : 'lanAccess';
+    datastore.data.settings[key] = Boolean(enabled);
+    if (!enabled && !datastore.data.settings[druhy]) datastore.data.lanDevices = [];
     await datastore.flush();
-    if (enabled) await lan.start(lanHandler, lanPort());
+    if (datastore.data.settings.lanAccess || datastore.data.settings.tailscaleAccess) await lan.start(lanHandler, lanPort());
     else await lan.stop();
     store.emit('settings', datastore.data.settings);
     const s = lan.status();
-    if (enabled && !s.listening) {
-      datastore.data.settings.lanAccess = false;
+    const bezi = key === 'lanAccess' ? s.listening : s.tailscale.listening;
+    if (enabled && !bezi) {
+      datastore.data.settings[key] = false;
       await datastore.flush();
-      return { status: 502, error: s.error || 'Přístup z telefonu se nepodařilo otevřít.' };
+      if (!datastore.data.settings[druhy]) await lan.stop();
+      else await lan.start(lanHandler, lanPort());
+      const chyba = key === 'lanAccess' ? s.error : s.tailscale.error;
+      return { status: 502, error: chyba || selhani };
     }
-    return { lan: s };
+    return { lan: lan.status() };
   }
 
   // Předání zadání do webové služby, která ho neumí převzít z adresy (Gemini, Qwen) nebo je na
@@ -996,7 +1023,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, bindLan, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, setLanAccess, setTailscaleAccess, bindLan, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

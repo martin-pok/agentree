@@ -42,7 +42,7 @@ const GROUPS = [
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
-  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'remote', 'share', 'privacy']],
+  ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -69,6 +69,37 @@ function remoteCard() {
     ${rada?.kroky?.length ? `<ol class="steps steps--compact">${rada.kroky.map((k) => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}
     <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}Zjistit znovu</button></div>
     <p class="set-note">Ať zvolíš cokoli, párování kódem a token zůstávají v platnosti — bez spárovaného zařízení se k datům nedostane nikdo, ani kdo zná adresu. Instalovatelná aplikace na domovské obrazovce potřebuje HTTPS; u veřejného tunelu ho dostaneš automaticky, u Tailscale se zapíná v jeho nastavení.</p>`;
+}
+
+// Tailscale: privátní síť jen mezi vlastními zařízeními. Na rozdíl od karty „Mimo domov“ tady
+// Agenteeq nejen radí — se zapnutým přepínačem začne naslouchat i na adrese tohoto Macu v tailnetu
+// (100.x, respektive jméno v MagicDNS). Žádná veřejná adresa nikde nevzniká a párování kódem
+// platí i tady: bez spárovaného telefonu se z tailnetu nepřečte nic.
+function tailscaleCard() {
+  const t = (state.lan || {}).tailscale || { enabled: false, available: false, addresses: [], name: '', url: '', error: '' };
+  const detekce = (state.tunnels?.list || []).find((x) => x.id === 'tailscale') || null;
+  const serve = detekce?.serve || null;
+  const popis = t.available
+    ? `Adresa tohoto Macu v síti Tailscale: ${t.name || t.addresses[0]}`
+    : detekce?.installed
+      ? 'Tailscale je nainstalovaný, ale nejsi přihlášený — spusť „tailscale up“.'
+      : 'Tailscale na tomto Macu není. Nainstaluj ho z tailscale.com a přihlas se.';
+  return `
+    ${head(ICON.shield, 'Přístup přes Tailscale', 'Privátní síť jen mezi tvými vlastními zařízeními. Telefon se k Macu dostane odkudkoli — z mobilních dat i z cizí Wi-Fi — a adresa přitom nikde veřejně neexistuje.')}
+    ${switchRow({ key: 'tailscaleAccess', label: 'Přístup ze sítě Tailscale', desc: esc(popis), checked: t.enabled, disabled: !t.available })}
+    ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
+    ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat adresu</button></div>
+      <p class="set-note">Tuhle adresu otevři na telefonu, který je přihlášený do stejné sítě Tailscale. Kód pro spárování vytvoříš o kartu výš.</p>` : ''}
+    ${t.enabled && t.addresses.length > 1 ? `<p class="set-note">Další adresy v síti Tailscale: ${esc(t.addresses.slice(1).join(', '))}</p>` : ''}
+    ${serve && !serve.unknown ? `<p class="set-note">${serve.running
+      ? `HTTPS přes „tailscale serve“ běží na <code>${esc(serve.url || '')}</code>  Na téhle adrese si aplikaci uložíš na plochu telefonu.`
+      : 'HTTPS zatím zapnuté není. Bez něj aplikace v prohlížeči funguje normálně, jen si ji telefon neuloží na plochu. Zapneš ho příkazem <code>tailscale serve</code> — Agenteeq ho sám nespouští.'}</p>` : ''}
+    ${!t.available ? `<ol class="steps steps--compact">
+      <li>Nainstaluj Tailscale (tailscale.com nebo <code>brew install --cask tailscale</code>).</li>
+      <li>Přihlas se na Macu (<code>tailscale up</code>) i v appce na telefonu — stejným účtem.</li>
+      <li>Vrať se sem, zapni přepínač a spáruj telefon kódem.</li>
+    </ol>` : ''}
+    <p class="set-note">Provoz jde šifrovaným tunelem (WireGuard) přímo mezi tvými zařízeními. Agenteeq nic neinstaluje ani nespouští — jen se zapnutým přepínačem začne naslouchat na adrese, kterou ti Tailscale už přidělil. Vypnutím naslouchání skončí.</p>`;
 }
 
 // Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
@@ -430,11 +461,16 @@ async function toggleSetting(sw) {
   sw.setAttribute('aria-checked', String(next));
   // Přístup z domácí sítě není jen nastavení — otevírá a zavírá spojení, takže má vlastní endpoint
   // a čeká se na skutečný výsledek (listener mohl selhat, třeba když je port obsazený).
-  if (key === 'lanAccess') {
+  if (key === 'lanAccess' || key === 'tailscaleAccess') {
+    const tailscale = key === 'tailscaleAccess';
     try {
-      state.lan = (await api.setLanAccess(next)).lan;
+      state.lan = (await (tailscale ? api.setTailscaleAccess(next) : api.setLanAccess(next))).lan;
       v.pin = null;
-      toast(next ? 'Přístup z telefonu je zapnutý. Vytvoř kód a zadej ho v telefonu.' : 'Přístup z telefonu je vypnutý, zařízení odpárována.');
+      const zap = tailscale ? 'Přístup přes Tailscale je zapnutý. Vytvoř kód a zadej ho v telefonu.' : 'Přístup z telefonu je zapnutý. Vytvoř kód a zadej ho v telefonu.';
+      const vyp = state.lan?.enabled || state.lan?.tailscale?.enabled
+        ? 'Vypnuto. Druhá cesta i spárované telefony zůstávají.'
+        : 'Vypnuto, zařízení odpárována.';
+      toast(next ? zap : vyp);
       update();
     } catch (err) {
       sw.setAttribute('aria-checked', String(!next));
@@ -576,6 +612,7 @@ function update() {
 
   /* Vlastní agenti */
   fill(el, 'phone', phoneCard());
+  fill(el, 'tailscale', tailscaleCard());
   fill(el, 'remote', remoteCard());
   fill(el, 'custom', customAgentsCard());
 

@@ -38,11 +38,37 @@ Doporučení (hypotéza k ověření, viz [PRODUCT.md](PRODUCT.md)): zdarma nech
 
 ## Distribuce
 
+Celé vydání pro macOS má jeden příkaz. Projde testy, smoke, sestaví rozšíření, web i aplikaci
+a na konci vypíše, co ještě zbývá udělat ručně na GitHubu:
+
+```bash
+npm run release:mac                    # testy → smoke → rozšíření → web → .app + zip
+npm run release:mac -- --install       # navíc vymění aplikaci v /Applications
+```
+
+Přepínač `--install` je jediná část, která sahá na už nainstalovanou aplikaci, a proto se nikdy
+nespustí sám. Starou verzi nemaže: odloží ji do `~/.agenteeq/zalohy`, takže návrat zpět je jeden
+přesun ve Finderu. Běžící aplikaci nejdřív požádá o ukončení; když se neukončí, vydání se zastaví.
+
+Pro veřejné vydání (jinak ho Gatekeeper na cizím Macu odmítne):
+
+```bash
+AGENTEEQ_SIGN_IDENTITY="Developer ID Application: …" \
+AGENTEEQ_NOTARY_PROFILE=agenteeq-notary npm run release:mac
+```
+
+Jednotlivé kroky jdou spustit i zvlášť:
+
 ```bash
 npm test && npm run check   # musí projít
 npm run smoke               # zabalí, nainstaluje do dočasné složky, spustí a ověří API
 npm run pack                # dist/agenteeq-<verze>.tgz → poslat zákazníkovi
+npm run build:extension     # dist/agenteeq-extension-<verze>.zip → Chrome Web Store nebo ruční instalace
+npm run build:site          # dist/web → hosting (Vercel si ho sestaví sám podle vercel.json)
 ```
+
+Po sestavení vytvoř na GitHubu vydání s tagem `v<verze>` a přilož `Agenteeq-<verze>-macOS-<arch>.zip`
+i balíček rozšíření. Bez vydání nemá tlačítko **Stáhnout pro Mac** na webu kam vést.
 
 ## Co offline licence neumí (poctivě)
 
@@ -55,4 +81,5 @@ npm run pack                # dist/agenteeq-<verze>.tgz → poslat zákazníkovi
 - Licenční podmínky (EULA) a zásady ochrany osobních údajů — nechat zkontrolovat právníkem.
 - Platební brána a automatické vydání klíče po zaplacení (např. Stripe Checkout → webhook → `issue`).
 - Značka a doména; ověřit dostupnost názvu Agenteeq.
-- Podepsaná a notarizovaná macOS aplikace (dnes instalace přes Node.js a npm).
+- Podepsaná a notarizovaná macOS aplikace (build ji umí, chybí Developer ID účet).
+- Vydání na GitHubu, na které míří tlačítko „Stáhnout pro Mac“ na landing page.

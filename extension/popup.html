@@ -4,72 +4,98 @@
   <meta charset="utf-8">
   <meta name="color-scheme" content="light dark">
   <title>Agenteeq</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
   <style>
+    /* Okno rozšíření je menší sestra aplikace: tytéž tokeny (public/styles.css :root), tatáž
+       písma, tatáž podpisová scéna nahoře. Jednodušší schválně — rozšíření řeší jen dvě věci,
+       spárování a stav. Maximální váha písma 500, 8px mřížka, karty drží vlasová linka místo
+       stínu (stejné rozhodnutí jako v aplikaci). */
     :root {
-      --paper: #F4F3F7; --card: #FFFFFF; --ink: #16141D; --ink-2: #3D3945; --mute: #6B6772; --line: #E6E3EB;
-      --brass: #C99A3E; --teal: #1F8A6C; --teal-tint: rgba(31, 138, 108, .12); --velvet: #B32E55; --velvet-tint: rgba(179, 46, 85, .1);
-      --stage: #16141D; --stage-2: #2A2233; --on-stage: #F4F3F7; --on-stage-mute: #B9B3C5;
+      --stage: #121019; --stage-2: #1D1A26; --on-stage: #F4F3F7; --on-stage-mute: #B9B3C1;
+      --paper: #F4F3F7; --card: #FFFFFF; --ink: #16141D; --ink-2: #3A3743; --mute: #686472; --line: #E3E1E9;
+      --brass: #C99A3E; --brass-ink: #86620F; --brass-tint: #F7EEDA;
+      --teal: #0D7A67; --teal-tint: #E0F3EF; --velvet: #A8254A; --velvet-tint: #FBE8EE;
+      --on-ink: #FFFFFF;
+      --hairline: 0 0 0 1px rgba(22, 20, 29, .085);
+      --f-display: 'Urbanist', 'Avenir Next', system-ui, sans-serif;
+      --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --f-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --ease: cubic-bezier(.2, .8, .2, 1);
     }
+    /* Noční sál: vrstvy odlišuje hloubka, ne křiklavá barva. Hodnoty odpovídají
+       html[data-theme='dark'] v aplikaci, aby oba povrchy vypadaly stejně. */
     @media (prefers-color-scheme: dark) {
-      :root { --paper: #0F0E13; --card: #1A1820; --ink: #F1EFF4; --ink-2: #D2CED8; --mute: #9C97A5; --line: #2C2934; --teal: #4CCBA6; --teal-tint: rgba(76, 203, 166, .14); --velvet: #F08AA7; --velvet-tint: rgba(240, 138, 167, .12); }
+      :root {
+        --paper: #181620; --card: #211F2A; --ink: #F5F2F8; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #3B3747;
+        --teal: #76E6CD; --teal-tint: #153C37; --velvet: #FFB3C7; --velvet-tint: #43202E;
+        --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #3B2E17;
+        --on-ink: #16141D;
+        --hairline: 0 0 0 1px rgba(255, 255, 255, .14);
+      }
     }
     * { box-sizing: border-box; }
-    body { width: 344px; margin: 0; background: var(--paper); color: var(--ink); font: 400 13px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { width: 344px; margin: 0; background: var(--paper); color: var(--ink); font: 400 13px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
     b, strong { font-weight: 500; }
     [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 8px; }
 
-    .hero { position: relative; padding: 16px 16px 20px; background: linear-gradient(120deg, var(--stage-2), var(--stage) 62%); color: var(--on-stage); overflow: hidden; }
-    .hero::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, var(--brass), rgba(201, 154, 62, 0) 70%); }
-    .brand { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    /* ---------- Scéna ---------- */
+    .hero { position: relative; padding: 16px 16px 20px; background: linear-gradient(180deg, #1A1722 0%, var(--stage) 100%); color: var(--on-stage); overflow: hidden; }
+    .hero::before { content: ''; position: absolute; left: 30%; top: -90%; width: 60%; height: 260%; background: radial-gradient(closest-side, rgba(201, 154, 62, .22), transparent 72%); pointer-events: none; }
+    .hero::after { content: ''; position: absolute; inset: 0; opacity: .06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    .brand { position: relative; display: flex; align-items: center; gap: 8px; font-family: var(--f-display); font-size: 15px; letter-spacing: -.01em; }
     .brand svg { flex: none; }
     .pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: rgba(244, 243, 247, .1); color: var(--on-stage); font-size: 12px; }
-    .pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--on-stage-mute); }
-    .pill[data-tone="ok"] i { background: #51D8B9; box-shadow: 0 0 0 3px rgba(81, 216, 185, .2); }
-    .pill[data-tone="warn"] i { background: #E8B85A; }
-    .pill[data-tone="err"] i { background: #F08AA7; }
-    .headline { margin: 16px 0 4px; font-size: 20px; line-height: 1.25; font-weight: 400; letter-spacing: -.01em; }
-    .sub { margin: 0; color: var(--on-stage-mute); font-size: 13px; }
+    .pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--on-stage-mute); flex: none; }
+    /* Smaragd = pracuje, samet = potřebuje tě, mosaz = pozor. Stejný jazyk jako body na scéně v aplikaci. */
+    .pill[data-tone="ok"] i { background: #43D1B1; box-shadow: 0 0 0 3px rgba(67, 209, 177, .2); }
+    .pill[data-tone="warn"] i { background: var(--brass); }
+    .pill[data-tone="err"] i { background: #E87498; }
+    .headline { position: relative; margin: 16px 0 4px; font-family: var(--f-display); font-size: 21px; line-height: 1.2; font-weight: 500; letter-spacing: -.015em; }
+    .sub { position: relative; margin: 0; color: var(--on-stage-mute); font-size: 13px; }
 
-    main { display: grid; gap: 12px; padding: 12px; }
-    .card { background: var(--card); border-radius: 16px; padding: 14px; }
-    .label { margin: 0 0 8px; color: var(--mute); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+    /* ---------- Plocha ---------- */
+    main { display: grid; gap: 8px; padding: 8px; }
+    .card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--hairline); }
+    .label { margin: 0 0 12px; color: var(--mute); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 
-    .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: s; }
-    .steps li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; color: var(--ink-2); }
-    .steps li::before { counter-increment: s; content: counter(s); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); font-size: 12px; }
-    .pair { display: flex; gap: 8px; margin-top: 12px; }
-    input[type=text] { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: 400 13px ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .02em; }
-    input[type=text]:focus { outline: none; border-color: var(--ink); }
+    .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: s; }
+    .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; color: var(--ink-2); }
+    .steps li::before { counter-increment: s; content: counter(s); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .pair { display: flex; gap: 8px; margin-top: 16px; }
+    input[type=text] { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: 400 13px var(--f-mono); letter-spacing: .02em; }
+    input[type=text]:focus-visible { outline-offset: 1px; border-color: var(--ink); }
     .msg { margin: 8px 0 0; font-size: 12px; color: var(--mute); min-height: 18px; }
     .msg[data-tone="err"] { color: var(--velvet); }
     .msg[data-tone="ok"] { color: var(--teal); }
 
-    .feats { display: grid; gap: 12px; }
-    .feat { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; }
+    .feats { display: grid; gap: 16px; }
+    .feat { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; }
     .feat-ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--paper); color: var(--ink-2); }
     .feat b { display: block; font-size: 13px; }
     .feat span { color: var(--mute); font-size: 12px; }
 
-    .sites { display: grid; gap: 2px; margin: 0 -6px; }
-    .site { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 6px; border-radius: 10px; cursor: pointer; }
+    .sites { display: grid; gap: 2px; margin: 0 -8px -4px; }
+    .site { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px; border-radius: 10px; cursor: pointer; }
     .site:hover { background: var(--paper); }
     .site .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
     .site .name { flex: 1; }
     .site .seen { color: var(--mute); font-size: 11px; }
     .switch { position: relative; width: 34px; height: 20px; flex: none; }
     .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-    .switch i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background-color .2s; pointer-events: none; }
-    .switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+    .switch i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background-color .2s var(--ease); pointer-events: none; }
+    .switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .2s var(--ease); }
     .switch input:checked + i { background: var(--teal); }
     .switch input:checked + i::after { transform: translateX(14px); }
-    .switch input:focus-visible + i { box-shadow: 0 0 0 3px var(--teal-tint); }
+    .switch input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 3px; }
 
-    .note { display: flex; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--velvet-tint); color: var(--ink-2); font-size: 12px; }
-    .btn { height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--ink); color: var(--paper); font: 500 13px/1 inherit; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    /* Upozornění na zastaralou verzi: mosaz = pozor. Text jde přes variantu --brass-ink,
+       aby kontrast vyšel v obou režimech (stejné pravidlo jako v aplikaci). */
+    .note { display: flex; gap: 8px; padding: 12px; border-radius: 12px; background: var(--brass-tint); color: var(--brass-ink); font-size: 12px; }
+    .btn { height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--ink); color: var(--on-ink); font: 500 13px/1 var(--f-body); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; }
     .btn:disabled { opacity: .5; cursor: default; }
     .btn--ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-    .btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
-    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 16px 16px; color: var(--mute); font-size: 11px; }
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px 16px; color: var(--mute); font-size: 11px; }
     footer .btn { height: 32px; padding: 0 12px; font-size: 12px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
@@ -77,7 +103,7 @@
 <body>
   <section class="hero">
     <div class="brand">
-      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke="#F4F3F7" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="8.5" r="4.2" fill="#C99A3E"/><circle cx="10.5" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="20" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="29.5" cy="31" r="3.4" fill="#F4F3F7"/></svg>
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke="#F4F3F7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="8.5" r="4.2" fill="#C99A3E"/><circle cx="10.5" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="20" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="29.5" cy="31" r="3.4" fill="#F4F3F7"/></svg>
       <span>Agenteeq</span>
       <span class="pill" id="pill" role="status"><i></i><span id="pill-text">Kontroluji…</span></span>
     </div>

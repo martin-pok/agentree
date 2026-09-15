@@ -15,11 +15,28 @@ Agenteeq jen zjistí, jestli ho máš, a poradí, který z nich použít (`src/t
 | **Cloudflare Tunnel** (`cloudflared`) | Veřejná adresa. Provoz jde přes Cloudflarovu infrastrukturu; adresu teoreticky získá kdokoli, kdo ji uvidí nebo uhodne. | Jeden příkaz v Terminálu (`cloudflared tunnel --url http://127.0.0.1:PORT`), bez účtu — ale musí zůstat spuštěný v otevřeném okně a po každém spuštění je adresa jiná. | Rychlé vyzkoušení bez registrace. Adresa je automaticky HTTPS. |
 | **ngrok** | Veřejná adresa, stejně jako u Cloudflare, navíc s ngrokovým webovým přehledem provozu (a jejich vlastním logováním požadavků). | Účet, přihlašovací token, pak jeden příkaz (`ngrok http PORT`). | Totéž co Cloudflare Tunnel, plus dashboard a stabilnější adresa na placeném plánu. |
 
-Agenteeq tyto tři cesty jen **detekuje** (`detectTunnels()`) a **doporučí** (`remoteAdvice()`) —
-v tomto pořadí: Tailscale, pokud je nainstalovaný; jinak Cloudflare Tunnel s výslovným
-upozorněním na veřejnou adresu; jinak radu nainstalovat Tailscale. Spuštění samotného tunelu
-(příkaz v Terminálu, přihlášení) je vždy ruční krok uživatele — modul nic neinstaluje ani
-nespouští na pozadí.
+U Cloudflare Tunnelu a ngroku Agenteeq jen **detekuje** (`detectTunnels()`) a **doporučí**
+(`remoteAdvice()`); spuštění samotného tunelu je vždy ruční krok uživatele v Terminálu — modul nic
+neinstaluje ani nespouští na pozadí.
+
+**Tailscale je od 0.12.0 napojený přímo** (`Nastavení → Aplikace na tomto Macu → Přístup přes
+Tailscale`). Nezůstává u rady: se zapnutým přepínačem začne Agenteeq naslouchat i na adrese, kterou
+tomuto Macu přidělil tailnet, takže telefon otevře aplikaci odkudkoli bez jediného příkazu navíc.
+
+## Jak je Tailscale napojený
+
+| Co | Jak |
+|---|---|
+| Adresa | `tailscaleAddresses()` v `src/lan.js` bere z rozhraní Macu jen IPv4 z rozsahu `100.64.0.0/10` (CGNAT), který Tailscale přiděluje. Veřejná adresa tam být nemůže. |
+| Jméno | `tailscale status --json` → `Self.DNSName` (MagicDNS, třeba `mac-mini.tailabcd.ts.net`). Bez zapnutého MagicDNS zůstane prázdné a pracuje se jen s adresou — nic se nedomýšlí. |
+| Listener | Vzniká výhradně po zapnutí přepínače (`POST /api/tailscale/enable`, jen z Macu) a jen na té konkrétní adrese, nikdy na `0.0.0.0`. Vypnutí ho zavře. |
+| Ochrana | Beze změny: párování šestimístným PINem, token v `HttpOnly` cookie, v datech jen jeho hash, kontrola `Host` a `Origin`, CSRF hlavička. Viz `docs/SECURITY.md`. |
+| Nezávislost | Domácí síť a Tailscale jsou dva samostatné přepínače. Vypnutí jednoho nezavře druhý a telefony se odpárují, teprve když se zavírá poslední otevřená cesta. |
+| HTTPS | Stav `tailscale serve` se jen **čte** (`tailscale serve status --json`) a hlásí se jako zapnutý jen tehdy, když proxy skutečně míří na port Agenteeq. Čemu modul nerozumí, hlásí jako neznámé. **Beta:** ověřeno proti dokumentaci, ne proti živému tailnetu. |
+
+Co Agenteeq **nedělá**: neinstaluje Tailscale, nespouští `tailscale up` ani `tailscale serve`,
+nepřihlašuje se za uživatele a nikam neposílá adresu tailnetu. Zapnutí HTTPS zůstává příkaz,
+který uživatel spustí sám.
 
 ## Rozhraní na webu (statická kopie)
 
@@ -63,7 +80,8 @@ certifikátem, ne jen `http://`:
   certifikátu. Tailscale nabízí `tailscale cert` (vydá certifikát od Let's Encrypt pro tvou
   `*.ts.net` adresu) a `tailscale serve`/`funnel` (proxy s HTTPS před tvým portem). Potřeba je
   zapnout HTTPS v nastavení tailnetu a buď vydat certifikát ručně, nebo prohnat provoz přes
-  `tailscale serve`.
+  `tailscale serve`. Karta v Nastavení stav téhle proxy ukáže, jakmile ji spustíš — a řekne
+  i to, že zapnutá není. Spouštět ji za tebe nebude.
 - **cloudflared**: HTTPS má automaticky — `*.trycloudflare.com` adresa už je `https://` s
   platným certifikátem od chvíle, kdy tunel vznikne. Nic navíc není potřeba.
 - **ngrok**: stejně jako u cloudflared — `https://` adresa s platným certifikátem hned po

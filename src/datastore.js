@@ -20,7 +20,8 @@ export const DEFAULT_SETTINGS = {
     browser: false,
   },
   disabledConnectors: [],
-  lanAccess: false, // přístup z telefonu; výchozí stav je vypnuto
+  lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
+  tailscaleAccess: false, // přístup z vlastní privátní sítě Tailscale; výchozí stav je vypnuto
 };
 
 const ALERTS_MAX = 300;
@@ -48,6 +49,7 @@ export function normalizeData(raw) {
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       lanAccess: s.lanAccess === true,
+      tailscaleAccess: s.tailscaleAccess === true,
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',

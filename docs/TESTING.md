@@ -3,10 +3,18 @@
 ## Automatické testy
 
 ```bash
-npm test         # node:test, sériově, bez sítě, nad dočasnými fixturami
-npm run check    # node --check pro všechny .js/.mjs
-npm run smoke    # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
+npm test          # node:test, sériově, bez sítě, nad dočasnými fixturami
+npm run check     # node --check pro všechny .js/.mjs
+npm run smoke     # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
+npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno rozšíření)
 ```
+
+`qa:contrast` nepočítá dvojice tokenů, ale **každý viditelný text**: projde ho v aplikaci
+(8 obrazovek × světlý a tmavý režim × 1440 a 375 px), na landing page a v okně rozšíření
+a spočítá kontrast proti pozadí, které pod textem doopravdy leží — včetně poloprůhledných vrstev
+nad sebou a přechodů (u těch bere nejsvětlejší zastávku, tedy nejhorší případ). Odhalí tak i to,
+co kontrola tokenů v `qa-desktop.mjs` minout musí: oba tokeny v pořádku, jejich kombinace na
+konkrétním místě ne. Vyžaduje Playwright (`PLAYWRIGHT_PATH` nebo globální instalace).
 
 Browserová regresní sada `scripts/qa-desktop.mjs` běží nad dočasným serverem ve **Chromiu i WebKitu**. Vedle tras, custom pickerů, živých aktualizací, mobilních šířek a nulových chyb konzole ověřuje i světlý/tmavý režim: výchozí light, perzistenci dark přes reload, reakci `system` na změnu media preference, 24 abstraktních avatarů a AA kontrast základních textových/semantických tokenů. Screenshoty ukládá do `dist/qa/`.
 
@@ -23,6 +31,11 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/launcher.test.mjs` | Nabídka agentů podle instalace, plány pro Claude Code / Codex / web / Ollama, zadání nikdy v příkazu, validace vstupů, lokální chat nad falešnou Ollamou (stream, historie, 409, chyba modelu) |
 | `test/license-runs.test.mjs` | Licence (platná, podvržená, cizí klíč, formát, vypršení, tarif), zamykání funkcí, běhy na pozadí (hotovo, selhání, zastavení, chybějící program) |
 | `test/projects-launch-http.test.mjs` | Projekty přes API včetně SSE a automatického zařazení, export CSV, spuštění agenta (zkušební režim), 402 bez licence a odemčení licencí, limit projektů, lokální chat, běhy, automatické spouštění, procházení složek |
+| `test/tailscale.test.mjs` | Adresy v tailnetu (hranice rozsahu `100.64.0.0/10`), MagicDNS jméno a jeho přednost před adresou, povolené hodnoty hlavičky `Host`, poctivé selhání listeneru na adrese, kterou Mac nemá, a odmítnutí zapnutí bez běžícího Tailscale přes API |
+| `test/extension-assets.test.mjs` | Shoda písem a barevných tokenů rozšíření s aplikací, licence písem, maximální váha 500, platnost a determinismus vlastního ZIP balíčku |
+| `test/site.test.mjs` | Sestavení webu (landing page v kořeni, rozhraní na `/app`, přepis manifestu a `sw.js`), existence všech odkazovaných souborů, design systém a váhy písma, popisek „Ukázka rozhraní“ u každého panelu |
+
+Testy závislé na macOS (`lsof` při převzetí portu, chování `/private/tmp`) se na jiném systému **přeskočí s důvodem**, ne přeskočí tiše a ne spadnou: `npm test` je proto zelený na Macu i na Linuxu.
 
 Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agenteeq` (vždy `AGENTEEQ_SOURCE_HOME` a `AGENTEEQ_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
 
@@ -44,6 +57,23 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] V Nastavení přepni Světlý / Tmavý / Podle systému; změna je okamžitá, po restartu zůstane a `Podle systému` zareaguje na změnu macOS bez restartu.
 - [ ] Dark mode: běžný text, pomocný text, badge, ovládací prvky, grafy a fokus mají čitelný kontrast; žádná světlá karta nemá světlý text a žádný tmavý povrch tmavý text.
 
+### Přístup z telefonu a Tailscale
+
+- [ ] Nastavení → **Přístup přes Tailscale**: bez nainstalovaného Tailscale je přepínač vypnutý a karta nabízí kroky k instalaci.
+- [ ] S přihlášeným Tailscale zapni přepínač → karta ukáže adresu (`jméno.tailnet.ts.net:4620`) a kopírování funguje.
+- [ ] Z telefonu ve stejném tailnetu otevři tu adresu → objeví se párovací obrazovka; bez kódu se nenačte nic.
+- [ ] Vytvoř kód na Macu, zadej ho na telefonu → přehled se načte a živě se aktualizuje.
+- [ ] Zapni k tomu i **Přístup z domácí sítě** a jednu z cest vypni → druhá dál funguje a telefon zůstává spárovaný.
+- [ ] Vypni obě → z telefonu se nepřipojí nic a spárovaná zařízení zmizí ze seznamu.
+- [ ] Spusť `tailscale serve` → karta ohlásí HTTPS adresu; po `tailscale serve reset` zase ne.
+
+### Web (landing page)
+
+- [ ] `npm run build:site` → `dist/web`, otevři kořen: stránka se načte, konzole bez chyb.
+- [ ] `/app` otevře rozhraní aplikace (rozcestník „Kde máš Agenteeq?“, když za ním žádný server není).
+- [ ] Šířky 1440 a 375 px bez vodorovného rolování; světlý i tmavý režim; Tab projde všechny odkazy s viditelným fokusem.
+- [ ] Tlačítko „Stáhnout pro Mac“ vede na existující vydání na GitHubu.
+
 ### Rozšíření (pro každý web: ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
 
 - [ ] Načti `extension/` jako rozbalené, otevři web, pošli zprávu.
@@ -51,6 +81,27 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Přepis obsahuje obě strany bez duplicit; titulek odpovídá konverzaci.
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá přepisy.
 - [ ] Při nefunkčním adaptéru ulož HTML úryvek zprávy a tlačítka Stop jako fixturu a oprav selektory v `extension/sites.js`.
+
+## Protokol ověření — 0.12.0 (15. 9. 2026, Linux kontejner, Node 22.22)
+
+Tohle vydání vzniklo mimo macOS, takže se rozpadá na dvě části: co šlo doložit tady a co musí
+potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 281 testů prošlo, 3 přeskočeny s důvodem (vyžadují macOS) |
+| `npm run check` | 136 souborů bez syntaktické chyby |
+| `npm run build:extension` | `dist/agenteeq-extension-0.12.0.zip`, 18 souborů, 179 kB; rozbalení ověřeno |
+| `npm run build:site` | `dist/web`, 71 souborů; landing page v kořeni, rozhraní na `/app` |
+| Landing page v Chromiu | 1440 px a 375 px, světlý i tmavý režim: konzole bez chyb, žádné vodorovné rolování |
+| Kontrast WCAG 2.2 AA (landing page) | Všechny texty splňují AA — měřeno nad vykreslenou stránkou (1440 px light/dark, 375 px light/dark) |
+| Kontrast WCAG 2.2 AA (okno rozšíření) | Všechny texty splňují AA — 344 px, světlý i tmavý režim, spárované i nespárované |
+| `npm run qa:contrast` (aplikace) | Všech 8 obrazovek × světlý/tmavý × 1440/375 px splňuje AA. Nalezena a opravena skutečná chyba: odznak „Ověřeno“ 4,45:1 → token `--ok` ztmaven na `#0B6F5F` |
+| Tailscale: jednotky a HTTP | Detekce adres, MagicDNS, `Host`, selhání listeneru a odmítnutí zapnutí bez tailnetu (`test/tailscale.test.mjs`) |
+
+**Zbývá ověřit na macOS** (`npm run release:mac`): build `.app` (swiftc, codesign, notarizace),
+výměna aplikace v `/Applications`, nativní oznámení, Klíčenka, převzetí portu po starší verzi,
+ruční QA checklist výše — zvlášť část „Přístup z telefonu a Tailscale“ proti živému tailnetu.
 
 ## Protokol ověření — 0.6.0 (12. 9. 2026, macOS, Node 24.18)
 

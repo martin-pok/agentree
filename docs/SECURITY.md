@@ -6,8 +6,8 @@ Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 
 | Hrozba | Opatření | Kde |
 |---|---|---|
-| Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1` | `bin/agenteeq.mjs`, `src/config.js` |
-| Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` | `src/http.js#handle` |
+| Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1`; další adresa vznikne výhradně po výslovném zapnutí uživatelem (domácí síť nebo Tailscale) a i pak jen se spárovaným zařízením | `bin/agenteeq.mjs`, `src/config.js`, `src/lan.js` |
+| Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` a než vlastní zapnuté adresy (`lan.hosts()`) | `src/http.js#handle` |
 | Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agenteeq: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
 | Podvržené události hooků / rozšíření | Náhodný 48znakový token, porovnání v konstantním čase | `src/http.js#tokenOk`, `src/datastore.js` |
 | Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření ho musí ručně předat, server ho porovná v konstantním čase a po prvním použití zneplatní | `src/app.js#pairExtension`, `src/http.js` |
@@ -71,7 +71,35 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
 - Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash — ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
-- Vypnutí zavře listener a smaže všechna zařízení.
+- Vypnutí zavře listener a smaže všechna zařízení — pokud zároveň není zapnutá druhá cesta (Tailscale).
 - Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 
-Neřešeno: HTTPS. Bez něj prohlížeč na telefonu nedovolí instalaci PWA (service worker chce zabezpečený kontext) — v prohlížeči aplikace funguje normálně.
+## Přístup přes Tailscale (od 15. 9. 2026)
+
+Druhá, nezávislá cesta ke stejným datům — pro situace mimo domácí síť. Výchozí stav: **vypnuto**
+(`settings.tailscaleAccess`), zapíná se jen z Macu (`POST /api/tailscale/enable`).
+
+Platí **beze změny všechno z předchozí kapitoly** (párování PINem, token v `HttpOnly` cookie, hash
+v datech, CSRF, zákaz správy z telefonu). Liší se jen adresa, na které server naslouchá:
+
+- Listener na **konkrétní adrese tohoto Macu v tailnetu** (`tailscaleAddresses()` v `src/lan.js`
+  bere jen IPv4 z rozsahu `100.64.0.0/10`), ne na `0.0.0.0`. Adresu přiděluje Tailscale a dostane
+  se na ni jen zařízení přihlášené do stejného tailnetu — veřejně neexistuje a není dohledatelná.
+- Hlavička `Host` se rozšíří o adresu v tailnetu a o jméno v MagicDNS (`mac.tailnet.ts.net`,
+  porovnává se malými písmeny). Jméno pochází z `tailscale status --json`; když ho tailnet nemá
+  zapnuté, zůstane prázdné a pracuje se jen s adresou — nic se nedomýšlí.
+- Obě cesty jsou nezávislé: vypnutí jedné nezavře listener druhé a spárované telefony se mažou,
+  teprve když se zavírá **poslední** otevřená cesta.
+- Zapnutí, které nedokáže otevřít listener, se vrátí zpět na vypnuto a řekne proč (`502`). Rozhraní
+  nikdy neohlásí zapnutý přístup, který ve skutečnosti neposlouchá.
+- Agenteeq Tailscale **neinstaluje ani nespouští** a nespouští ani `tailscale serve`. Jen se ptá na
+  stav a naslouchá na adrese, kterou už uživatel má (princip 4 v `AGENTS.md`).
+
+HTTPS: `tailscale serve` umí před port postavit proxy s certifikátem od Let's Encrypt, a teprve
+s ním si telefon uloží aplikaci na plochu jako PWA. Agenteeq stav téhle proxy jen **čte**
+(`tailscale serve status --json`) a co nerozezná, hlásí jako neznámé — nikdy jako zapnuté.
+Tahle detekce je ověřená proti dokumentaci, ne proti živému tailnetu: v `docs/REMOTE.md` je proto
+vedená jako **Beta**.
+
+Bez `tailscale serve` jede aplikace po `http://` uvnitř tailnetu — v prohlížeči funguje normálně,
+jen ji telefon neuloží na plochu.

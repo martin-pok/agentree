@@ -64,6 +64,36 @@ Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči
 Karta pak ukáže **Připojeno** a čas posledního ozvání. Když Agenteeq aktualizuje rozšíření na novou verzi, karta i okno rozšíření vyzvou k obnovení v `chrome://extensions` (šipka ↻).
 | Lokální modely zdarma | Nainstaluj [Ollama](https://ollama.com) a stáhni model (`ollama pull llama3.2`). V Přehledu → Spustit agenta → Ollama. |
 
+## Agenti na telefonu
+
+Agenteeq normálně poslouchá jen na tomhle Macu. Když chceš vidět agenty i z telefonu, zapni si
+jednu ze dvou cest v **Nastavení → Aplikace na tomto Macu**. Obě vyžadují spárování telefonu
+jednorázovým kódem, takže bez něj se k datům nedostane nikdo, ani kdo zná adresu.
+
+| Kde jsi | Co zapnout | Co potřebuješ |
+|---|---|---|
+| Doma na stejné Wi-Fi | **Otevřít na telefonu** | Nic navíc. |
+| Kdekoli (mobilní data, cizí Wi-Fi) | **Přístup přes Tailscale** | [Tailscale](https://tailscale.com) na Macu i na telefonu, přihlášený stejným účtem. |
+
+Přes Tailscale to vypadá takhle:
+
+1. Nainstaluj Tailscale na Mac (`brew install --cask tailscale`) i na telefon a přihlas se **stejným
+   účtem** na obou. Na Macu ověř příkazem `tailscale status`, že jsi přihlášený.
+2. V Agenteeq zapni **Nastavení → Aplikace na tomto Macu → Přístup přes Tailscale**. Karta ukáže
+   adresu tvého Macu, například `mac-mini.tvuj-tailnet.ts.net:4620`.
+3. Tamtéž o kartu výš klikni na **Vytvořit kód pro telefon** (šestimístný, platí 5 minut, na jedno použití).
+4. Na telefonu otevři adresu z bodu 2 a kód zadej. Od té chvíle vidíš přehled odkudkoli.
+
+Žádná veřejná adresa přitom nevzniká: provoz jde šifrovaným tunelem přímo mezi tvými zařízeními
+a mimo tvůj tailnet se na tu adresu nikdo nepřipojí. Agenteeq Tailscale neinstaluje ani nespouští,
+jen umí naslouchat na adrese, kterou ti přidělil.
+
+**Aplikace na domovské obrazovce (PWA)** potřebuje HTTPS. Uvnitř tailnetu ho vytvoří příkaz
+`tailscale serve https / http://127.0.0.1:4620` — Agenteeq stav téhle proxy jen ukáže, spouštět ji
+za tebe nebude. Bez ní aplikace v prohlížeči telefonu funguje normálně, jen ji nejde uložit na plochu.
+
+Vypnutím přepínače se spojení zavře. Když vypneš i druhou cestu, odpárují se všechna zařízení.
+
 ## Automatické spouštění
 
 - **Desktopová aplikace:** Nastavení systému → Obecné → Přihlašovací položky → přidej Agenteeq.

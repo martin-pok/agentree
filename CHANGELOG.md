@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.12.0 — 2026-09-15 · Tailscale jako plnohodnotná cesta z telefonu, web a rozšíření na úrovni aplikace
+
+- **Tailscale je napojený, ne jen detekovaný.** Nové nastavení `settings.tailscaleAccess` a endpoint
+  `POST /api/tailscale/enable|disable` (jen z `127.0.0.1`). Se zapnutým přepínačem přidá `src/lan.js`
+  listener na adrese Macu v tailnetu (`tailscaleAddresses()`, výhradně IPv4 z `100.64.0.0/10`).
+  Domácí síť a Tailscale jsou dvě nezávislé cesty: vypnutí jedné nezavře listener druhé a spárovaná
+  zařízení se mažou, teprve když se zavírá poslední z nich.
+- **Bezpečnost beze změny.** Párování šestimístným PINem, token v `HttpOnly` cookie a hash v datech
+  platí i pro tailnet. Kontrola hlavičky `Host` a `Origin` jde nově přes `lan.hosts()`, což kromě
+  adresy pustí i jméno v MagicDNS (`mac.tailnet.ts.net`, porovnání malými písmeny).
+- **Poctivý stav místo domněnek.** `src/tunnel.js` čte z `tailscale status --json` jméno, adresy
+  i tailnet a z `tailscale serve status --json` stav HTTPS. Čemu nerozumí nebo na co se neptal,
+  hlásí jako neznámé, nikdy jako vypnuté. Detekce `serve` je vedená jako **Beta**
+  (ověřeno proti dokumentaci, ne proti živému tailnetu) — viz `docs/REMOTE.md`.
+- **Neúspěšné zapnutí se vrátí zpět.** Když listener nejde otevřít, přepínač se přepne zpátky na
+  vypnuto a řekne proč (502). Rozhraní neohlásí zapnutý přístup, který neposlouchá.
+- **Rozšíření pro Chrome** používá tatáž písma (Urbanist, Onest, Geist Mono) a tytéž barevné tokeny
+  jako aplikace, včetně nočního režimu. Shodu písem i tokenů hlídá `test/extension-assets.test.mjs`.
+  Nový `npm run build:extension` složí `dist/agenteeq-extension-<verze>.zip` bez závislostí
+  a deterministicky (dvě sestavení téhož kódu dají tentýž soubor).
+- **Web.** `site/` je landing page, `npm run build:site` z ní a z `public/` složí `dist/web`:
+  stránka v kořeni, rozhraní aplikace na `/app` (manifest PWA a `sw.js` se přepíšou na novou adresu).
+  Kontrast textů ověřen na WCAG 2.2 AA v obou režimech na 1440 px i 375 px.
+- **Vydání.** `npm run release:mac` projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
+  `--install` vymění i aplikaci v `/Applications` — předchozí verzi přitom nemaže, odloží ji
+  do `~/.agenteeq/zalohy`.
+- **Kontrast měřený, ne odhadovaný.** Nový `npm run qa:contrast` projde každý viditelný text
+  v aplikaci (8 obrazovek × světlý/tmavý × 1440/375 px), na landing page i v okně rozšíření
+  a spočítá jeho kontrast proti pozadí, které pod ním doopravdy leží, včetně poloprůhledných vrstev.
+  Našel tím skutečnou chybu: odznak „Ověřeno“ a stav „Připojeno“ měly na světlé ploše 4,45:1, tedy
+  těsně pod AA pro text 11 px. Token `--ok` je proto tmavší (`#0B6F5F`) a podklad odznaku světlejší;
+  po opravě prochází AA všechno.
+- **Testy běží i mimo macOS.** Testy závislé na `lsof` a na cestě `/private/tmp` se místo padání
+  přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (281 testů).
+
 ## 0.11.1 — 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
 
 Z testu čisté instalace, testu odolnosti a zátěžového testu:

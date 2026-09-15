@@ -50,8 +50,9 @@ export function createHttpServer(app, existingServer = null) {
   const port = () => server.address()?.port ?? config.port;
   const allowedOrigins = () => {
     const list = [`http://127.0.0.1:${port()}`, `http://localhost:${port()}`];
-    // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti.
-    if (app.lan) for (const adresa of app.lan.status().addresses) list.push(`http://${adresa}:${port()}`);
+    // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti
+    // a v jeho privátní síti Tailscale (včetně jména v MagicDNS).
+    if (app.lan) for (const adresa of app.lan.hosts()) list.push(`http://${adresa}:${port()}`);
     return new Set(list);
   };
 
@@ -59,7 +60,7 @@ export function createHttpServer(app, existingServer = null) {
   // Cokoli z místní sítě musí mít token spárovaného zařízení — jinak se k datům nedostane.
   function requireDevice(req, url) {
     if (!app.lan || isLoopback(req.socket?.remoteAddress)) return;
-    if (!datastore.data.settings.lanAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
+    if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
     // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu — jinak by neměl
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
     const verejne = !url.pathname.startsWith('/api/') && (req.method === 'GET' || req.method === 'HEAD');
@@ -234,13 +235,17 @@ export function createHttpServer(app, existingServer = null) {
       const s = app.lan.status();
       return isLoopback(req.socket?.remoteAddress) ? s : { ...s, pin: null, devices: [] };
     }],
+    ['POST', /^\/api\/tailscale\/(enable|disable)$/, async (req, m) => {
+      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      return unwrap(await app.setTailscaleAccess(m[1] === 'enable'));
+    }],
     ['POST', /^\/api\/lan\/(enable|disable)$/, async (req, m) => {
       if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
       return unwrap(await app.setLanAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/pin$/, (req) => {
       if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
-      if (!datastore.data.settings.lanAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
+      if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
       return { pin: app.lan.newPin() };
     }],
     ['POST', /^\/api\/lan\/pair$/, async (req, _m, url) => {
@@ -565,7 +570,7 @@ export function createHttpServer(app, existingServer = null) {
     // Hlavička Host se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu): tento Mac
     // a — jen se zapnutým přístupem z telefonu — jeho vlastní adresy v místní síti.
     const hostOk = host === '127.0.0.1' || host === 'localhost'
-      || (app.lan && datastore.data.settings.lanAccess && app.lan.status().addresses.includes(host));
+      || Boolean(app.lan && app.lan.hosts().includes(host.toLowerCase()));
     if (!hostOk) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
       return;
@@ -619,7 +624,7 @@ export function createHttpServer(app, existingServer = null) {
   // aplikace si ale port zabírá dřív, než se vůbec načtou data — událost „listening“ tam tedy
   // proběhla už předtím, než jsme se na ni stihli navěsit. Čekat na ni by znamenalo nespustit
   // listener pro telefon nikdy, i když ho uživatel v Nastavení má zapnutý.
-  const spustLan = () => { if (app.lan && datastore.data.settings.lanAccess) app.lan.start(onRequest, port()); };
+  const spustLan = () => { if (app.lan && (datastore.data.settings.lanAccess || datastore.data.settings.tailscaleAccess)) app.lan.start(onRequest, port()); };
   if (server.listening) spustLan();
   else server.on('listening', spustLan);
 

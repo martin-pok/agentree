@@ -5,6 +5,7 @@ import { createCloudBillingConnector } from '../src/connectors/cloud-billing.js'
 import { startTestServer, api, tempDir } from './helpers.mjs';
 import { DataStore } from '../src/datastore.js';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 
 test('security: foreign origins cannot read state, transcripts or SSE; same-origin works', async () => {
@@ -72,7 +73,7 @@ test('security: billing credentials never follow redirects; failures remain cont
 // s automatickým spouštěním to byl nekonečný pád bez vysvětlení.
 test('reliability: corrupt persistent data are preserved byte-for-byte and restored from backup', async () => {
   for (const input of ['{"unfinished":', 'null', '[]']) {
-    const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
     const file = dir + '/data.json';
 
     // Dobrý stav s nastavením → uložení vytvoří zálohu → soubor se poškodí mimo aplikaci.
@@ -97,7 +98,7 @@ test('reliability: corrupt persistent data are preserved byte-for-byte and resto
 });
 
 test('reliability: corrupt data without a backup start from defaults, loudly, and keep the original', async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{"projects": [', { mode: 0o600 });
   const ds = new DataStore(dir);
   await ds.load();
@@ -110,7 +111,7 @@ test('reliability: corrupt data without a backup start from defaults, loudly, an
 });
 
 test('reliability: a permission problem is not masked as corruption', { skip: process.getuid?.() === 0 }, async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{}', { mode: 0o000 });
   try {
     await assert.rejects(new DataStore(dir).load(), /oprávnění/);

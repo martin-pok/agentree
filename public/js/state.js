@@ -1,4 +1,9 @@
 // Klientský stav: plní se snapshotem z /api/state a udržuje živě přes SSE události.
+
+// Přístup z telefonu má dvě nezávislé cesty (domácí síť a Tailscale). Starší server nebo odpověď
+// bez tohoto bloku nesmí shodit Nastavení, takže výchozí tvar vzniká vždycky znovu a čerstvý.
+const prazdnyLan = () => ({ enabled: false, addresses: [], devices: [], tailscale: { enabled: false, available: false, listening: false, addresses: [], name: '', url: '', error: '' } });
+
 export const state = {
   loaded: false,
   ready: false,
@@ -10,7 +15,7 @@ export const state = {
   runtimes: [],
   customAgents: [],
   localAgents: [],
-  lan: { enabled: false, addresses: [], devices: [] },
+  lan: prazdnyLan(),
   tunnels: { at: 0, list: [], advice: null },
   limits: [],
   credits: [],
@@ -67,7 +72,7 @@ export function applySnapshot(s) {
     runtimes: s.runtimes,
     customAgents: s.customAgents || [],
     localAgents: s.localAgents || [],
-    lan: s.lan || { enabled: false, addresses: [], devices: [] },
+    lan: s.lan ? { ...prazdnyLan(), ...s.lan, tailscale: { ...prazdnyLan().tailscale, ...(s.lan.tailscale || {}) } } : prazdnyLan(),
     tunnels: s.tunnels || { at: 0, list: [], advice: null },
     limits: s.limits,
     credits: s.credits,

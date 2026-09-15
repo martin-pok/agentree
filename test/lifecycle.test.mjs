@@ -71,7 +71,9 @@ test('lifecycle: spoofed health from another server never authorizes termination
   } finally { foreign.closeAllConnections(); await new Promise((r) => foreign.close(r)); }
 });
 
-test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', async (t) => {
+// Převzetí portu po starší verzi se opírá o `lsof` a je záměrně jen pro macOS
+// (desktop/lifecycle.mjs vrací mimo darwin null) — jinde není co ověřovat.
+test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', { skip: process.platform !== 'darwin' && 'jen macOS: převzetí portu se opírá o lsof' }, async (t) => {
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
   for (const sub of ['src','bin']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });

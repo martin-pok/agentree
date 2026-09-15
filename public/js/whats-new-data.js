@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.12.0',
+    date: '2026-09-15',
+    title: 'Agenti na telefonu odkudkoli, přes tvou vlastní síť',
+    items: [
+      'Nová karta v Nastavení: Přístup přes Tailscale. Jedním přepínačem začne Agenteeq naslouchat i na adrese, kterou tomuhle Macu přidělil tvůj tailnet — a ty vidíš agenty z telefonu i mimo domov.',
+      'Žádná veřejná adresa přitom nevzniká. Párování telefonu kódem a token platí dál a domácí síť zůstává samostatný přepínač, takže vypnutí jednoho nezavře druhý.',
+      'Aplikace ukáže i to, jestli máš přes „tailscale serve“ zapnuté HTTPS. Bez něj si telefon aplikaci neuloží na plochu; spouštět ho za tebe Agenteeq nebude.',
+      'Okno rozšíření pro Chrome má teď stejná písma a barvy jako aplikace, včetně nočního režimu.',
+      'Agenteeq má vlastní web s popisem a stahováním. Rozhraní na něm zůstává na adrese /app.',
+    ],
+  },
+  {
     version: '0.11.1',
     date: '2026-09-14',
     title: 'Připraveno na dlouhý provoz',

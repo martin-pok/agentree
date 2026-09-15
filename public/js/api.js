@@ -34,6 +34,7 @@ export const api = {
   rescan: () => request('POST', '/api/connectors/rescan', {}),
   clearAlerts: () => request('POST', '/api/alerts/clear', {}),
   setLanAccess: (on) => request('POST', `/api/lan/${on ? 'enable' : 'disable'}`, {}),
+  setTailscaleAccess: (on) => request('POST', `/api/tailscale/${on ? 'enable' : 'disable'}`, {}),
   lanPin: () => request('POST', '/api/lan/pin', {}),
   detectRemote: () => request('POST', '/api/remote/detect', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),

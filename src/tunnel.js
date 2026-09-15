@@ -26,7 +26,7 @@ export const TUNNELS = [
     description: 'Vytvoří privátní síť (VPN) jen mezi tvými vlastními zařízeními — telefon se k Macu připojí, jako by byl doma.',
     kind: 'privatni-sit',
     security: 'Provoz jde šifrovaným tunelem jen mezi tvými zařízeními a adresa nikde veřejně neexistuje — nejbezpečnější a doporučená volba.',
-    detectedBy: `binárka ${TAILSCALE_APP_BIN} nebo "tailscale" v PATH; stav a adresa z "tailscale status --json" (pole Self.DNSName a TailscaleIPs)`,
+    detectedBy: `binárka ${TAILSCALE_APP_BIN} nebo "tailscale" v PATH; stav a adresa z "tailscale status --json" (pole Self.DNSName a TailscaleIPs), HTTPS z "tailscale serve status --json"`,
     startedBy: 'uživatel spustí "tailscale up" na Macu a nainstaluje appku Tailscale na telefonu se stejným účtem',
   },
   {
@@ -62,13 +62,41 @@ async function defaultFetchJson(url, { timeoutMs = 600 } = {}) {
   }
 }
 
-async function detectTailscale({ run, fileExists }) {
+// HTTPS pro tailnet. Adresa 100.x ani jméno v MagicDNS certifikát nemají, takže aplikace jede
+// po http — a bez zabezpečeného kontextu ji telefon neuloží na plochu jako PWA. Tailscale to řeší
+// příkazem "tailscale serve", který před port postaví proxy s certifikátem od Let's Encrypt.
+//
+// Zjišťujeme jen stav, nic nespouštíme. Výstup "tailscale serve status --json" popisuje proxy
+// v poli Web (host:port → Handlers → cesta → Proxy). Čteme ho obranně: co nerozeznáme, hlásíme
+// jako neznámé, nikdy jako zapnuté. Ověřeno proti dokumentaci, ne proti živému tailnetu —
+// v docs/REMOTE.md je proto tahle část vedená jako Beta.
+function readServe(stdout, port) {
+  let data = null;
+  try { data = JSON.parse(stdout); } catch { return { running: false, unknown: true }; }
+  if (!data || typeof data !== 'object') return { running: false, unknown: true };
+  const web = data.Web && typeof data.Web === 'object' ? data.Web : null;
+  if (!web) return { running: false, unknown: false };
+  for (const [hostPort, entry] of Object.entries(web)) {
+    const handlers = entry?.Handlers && typeof entry.Handlers === 'object' ? entry.Handlers : {};
+    for (const handler of Object.values(handlers)) {
+      const proxy = String(handler?.Proxy || '');
+      if (!proxy.includes(`:${port}`)) continue;
+      // Klíč má tvar "jmeno.tailnet.ts.net:443"; port 443 v adrese neopakujeme.
+      const host = String(hostPort).replace(/:443$/, '');
+      return { running: true, unknown: false, url: `https://${host}/` };
+    }
+  }
+  return { running: false, unknown: false };
+}
+
+async function detectTailscale({ run, fileExists, port }) {
   const m = meta('tailscale');
+  const zaklad = { id: m.id, name: m.name, kind: m.kind, security: m.security, dnsName: '', ips: [], tailnet: '', serve: { running: false, unknown: true } };
   try {
     const appPresent = Boolean(fileExists(TAILSCALE_APP_BIN));
     const bin = appPresent ? TAILSCALE_APP_BIN : ((await run('which', ['tailscale'], { timeout: 1000 }))?.ok ? 'tailscale' : null);
     if (!bin) {
-      return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.' };
+      return { ...zaklad, installed: false, running: false, url: '', hint: 'Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.' };
     }
     const res = await run(bin, ['status', '--json'], { timeout: 1500 });
     let data = null;
@@ -76,16 +104,19 @@ async function detectTailscale({ run, fileExists }) {
       try { data = JSON.parse(res.stdout); } catch { data = null; }
     }
     const running = data?.BackendState === 'Running';
-    let url = '';
-    if (running) {
-      const dns = stripTrailingDot(data?.Self?.DNSName);
-      const ip = Array.isArray(data?.Self?.TailscaleIPs) ? data.Self.TailscaleIPs[0] : '';
-      url = dns || ip || '';
-    }
+    const dns = running ? stripTrailingDot(data?.Self?.DNSName) : '';
+    const ips = running && Array.isArray(data?.Self?.TailscaleIPs) ? data.Self.TailscaleIPs.filter((x) => typeof x === 'string') : [];
+    const tailnet = running ? stripTrailingDot(data?.CurrentTailnet?.MagicDNSSuffix || '') : '';
+    const url = running ? (dns || ips[0] || '') : '';
+    // Na HTTPS se ptáme, jen když Tailscale opravdu běží — jinak by příkaz jen zbytečně čekal.
+    const serveRes = running ? await run(bin, ['serve', 'status', '--json'], { timeout: 1500 }) : null;
+    // Na co jsme se nezeptali (odhlášený Tailscale) nebo čemu jsme nerozuměli, je neznámé —
+    // nikdy ne „vypnuté“. Rozhraní o HTTPS mlčí, dokud to neví jistě.
+    const serve = serveRes?.ok ? readServe(serveRes.stdout, port) : { running: false, unknown: true };
     const hint = running ? '' : 'Přihlas se v Tailscale — na Macu "tailscale up", v appce na telefonu stejným účtem.';
-    return { id: m.id, name: m.name, installed: true, running, url, kind: m.kind, security: m.security, hint };
+    return { ...zaklad, installed: true, running, url, dnsName: dns, ips, tailnet, serve, hint };
   } catch {
-    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Stav Tailscale se nepodařilo zjistit.' };
+    return { ...zaklad, installed: false, running: false, url: '', hint: 'Stav Tailscale se nepodařilo zjistit.' };
   }
 }
 
@@ -132,9 +163,9 @@ async function detectNgrok({ run, fetchJson }) {
 // Zjistí stav podporovaných tunelů. Nic nespouští ani neinstaluje — jen se ptá na to, co už
 // na počítači běží nebo je nainstalované. Chyba jednoho nástroje (chybějící binárka, timeout,
 // nesmyslná odpověď) se nikdy nepropaguje ven jako výjimka a nesmí ovlivnit ostatní nástroje.
-export async function detectTunnels({ run = execRun, fileExists = fs.existsSync, fetchJson = defaultFetchJson } = {}) {
+export async function detectTunnels({ run = execRun, fileExists = fs.existsSync, fetchJson = defaultFetchJson, port = 4620 } = {}) {
   const [tailscale, cloudflared, ngrok] = await Promise.all([
-    detectTailscale({ run, fileExists }),
+    detectTailscale({ run, fileExists, port }),
     detectCloudflared({ run }),
     detectNgrok({ run, fetchJson }),
   ]);
@@ -154,8 +185,8 @@ export function remoteAdvice(tunnels) {
       doporuceni: 'tailscale',
       text: 'Tailscale má nejlepší poměr bezpečnosti a pohodlí: vytvoří privátní síť jen mezi tvými zařízeními, žádná veřejná adresa nikde nevzniká.',
       kroky: tailscale.running
-        ? ['Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako na Macu.', 'V appce Tailscale na telefonu otevři adresu Agenteeq.']
-        : ['Na Macu se přihlas do Tailscale ("tailscale up").', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.', 'V appce Tailscale na telefonu otevři adresu Agenteeq.'],
+        ? ['Zapni výš přepínač „Přístup přes Tailscale“ — Agenteeq začne poslouchat i na adrese v tvé privátní síti.', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako na Macu.', 'Vytvoř v Agenteeq jednorázový kód a na telefonu otevři adresu z karty Tailscale.']
+        : ['Na Macu se přihlas do Tailscale ("tailscale up").', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.', 'Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon kódem.'],
     };
   }
   if (cloudflared?.installed) {

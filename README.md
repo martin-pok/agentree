@@ -4,9 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.8.0 — desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.12.0 — desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
-Pro Mac: rozbal `dist/Agenteeq-0.8.0-macOS-arm64.zip` a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
+Pro Mac: rozbal `dist/Agenteeq-0.12.0-macOS-arm64.zip` a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 
 ## Rychlý start
 
@@ -36,11 +36,20 @@ Instalace pro zákazníka nebo kolegu: `npm run pack` a návod [docs/INSTALL.md]
 ## Vývoj
 
 ```bash
-npm test          # 140 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream
+npm test          # 281 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
+
+npm run build:extension   # balíček rozšíření pro Chrome
+npm run build:site        # web: landing page + rozhraní aplikace na /app
+npm run release:mac       # celé vydání pro macOS (viz docs/LICENSING.md)
 ```
+
+## Web
+
+`site/` je veřejná landing page, `public/` je rozhraní aplikace. `npm run build:site` z obou složí
+`dist/web`: stránka v kořeni, rozhraní na `/app`. Hosting (`vercel.json`) si build spustí sám.
 
 Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.md)**.
 
@@ -58,5 +67,6 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | [docs/INSTALL.md](docs/INSTALL.md) | Instalace a napojení pro zákazníky |
 | [docs/LICENSING.md](docs/LICENSING.md) | Vydávání licencí, placené funkce, distribuce (pro vydavatele) |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vize, zákazník, hodnota, hypotézy monetizace (neověřené) |
+| [docs/REMOTE.md](docs/REMOTE.md) | Přístup z telefonu mimo domácí síť: napojení na Tailscale, veřejné tunely, hranice |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Cesta z lokální bety k SaaS, s akceptačními kritérii |
 | [CHANGELOG.md](CHANGELOG.md) | Historie verzí |
