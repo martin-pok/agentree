@@ -44,7 +44,10 @@ export const ORIGINS = {
 };
 
 export function originOf(dir) {
-  const d = String(dir || '');
+  // Původ se pozná ze struktury cesty, a ta se na Windows píše zpětným lomítkem.
+  // Kdyby se porovnávalo jen s „/“, na Windows by se každá dovednost z pluginu
+  // označila za vlastní — tedy tiše špatně, což je horší než nepoznat ji vůbec.
+  const d = String(dir || '').replace(/\\/g, '/');
   if (/\/plugins\/(marketplaces|cache)\/claude-plugins-official\//.test(d)) return 'anthropic';
   if (/\/\.codex\/skills\/\.system\//.test(d)) return 'openai';
   if (/\/plugins\/(marketplaces|cache)\//.test(d)) return 'plugin';

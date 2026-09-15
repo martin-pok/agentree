@@ -12,6 +12,7 @@ import { applyCursorComposer } from '../src/connectors/cursor.js';
 import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
+import { appSupportDir } from '../src/platform.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
@@ -284,7 +285,7 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   connector.stop();
 
   // 2) Soubor existuje se vzorky — poslední vzorek se zapíše.
-  const dir = path.join(home, 'Library', 'Application Support', 'Claude');
+  const dir = path.join(appSupportDir(home), 'Claude');
   const file = path.join(dir, 'plan-usage-history.json');
   const now = Date.now();
   await fs.mkdir(dir, { recursive: true });

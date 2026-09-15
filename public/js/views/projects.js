@@ -1,6 +1,6 @@
 import { state, setProjects, agentsList } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY } from '../format.js';
+import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY, jeAbsolutniCesta } from '../format.js';
 import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
@@ -30,7 +30,7 @@ function suggestions() {
   const covered = state.projects.items.flatMap((p) => p.folders);
   const byCwd = new Map();
   for (const s of agentsList()) {
-    if (s.source === 'web' || s.projectId || s.projectSource === 'none' || typeof s.cwd !== 'string' || !s.cwd.startsWith('/') || s.cwd === home) continue;
+    if (s.source === 'web' || s.projectId || s.projectSource === 'none' || typeof s.cwd !== 'string' || !jeAbsolutniCesta(s.cwd) || s.cwd === home) continue;
     // Pracovní složky, které si aplikace Codex zakládá sama pro každé vlákno, nejsou projekty.
     if (/\/Codex\/\d{4}-\d{2}-\d{2}(\/|$)/.test(s.cwd)) continue;
     if (covered.some((f) => s.cwd === f || s.cwd.startsWith(`${f}/`))) continue;

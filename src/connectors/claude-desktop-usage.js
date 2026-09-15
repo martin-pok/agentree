@@ -2,6 +2,7 @@ import path from 'node:path';
 import { statSafe, readJson } from '../util.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { STATUS_WINDOWS } from './claude-code.js';
+import { appSupportDir, JE_WINDOWS } from '../platform.js';
 
 // Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů — nejde o veřejně
 // zdokumentovaný formát, jen soubor, který jsme na disku našli a ověřili proti skutečným datům
@@ -119,7 +120,7 @@ export function applyPlanUsageSample(store, sample, now = Date.now()) {
 
 export function createClaudeDesktopUsageConnector(ctx) {
   const { store, config } = ctx;
-  const dir = path.join(config.sourceHome, 'Library', 'Application Support', 'Claude');
+  const dir = path.join(appSupportDir(config.sourceHome), 'Claude');
   const file = path.join(dir, FILE_NAME);
   let watcher = null;
   let exists = false;
@@ -161,7 +162,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
     provider: 'anthropic',
     kind: 'local',
     verified: false,
-    source: `~/Library/Application Support/Claude/${FILE_NAME}`,
+    source: `${JE_WINDOWS ? '%APPDATA%\\Claude' : '~/Library/Application Support/Claude'}/${FILE_NAME}`,
     description: 'Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) — doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.',
     async start() {
       await scan();

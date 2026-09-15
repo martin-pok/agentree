@@ -47,7 +47,17 @@ export async function isLaunchAgentInstalled(home = os.homedir()) {
   }
 }
 
+// LaunchAgent je mechanismus macOS. Stráž stojí schválně před prvním zápisem, ne až u
+// process.getuid(): bez ní se na Windows nejdřív založí ~/Library/LaunchAgents a zapíše se
+// tam plist, a teprve pak to spadne na tom, že getuid() na Windows neexistuje. Zůstala by
+// po tom složka, která tam nepatří, a chyba, které uživatel nerozumí.
+function jenNaMacu() {
+  if (process.platform === 'darwin') return;
+  throw new Error('Automatické spouštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).');
+}
+
 export async function installLaunchAgent({ script, home = os.homedir(), node = process.execPath }) {
+  jenNaMacu();
   const file = plistPath(home);
   const logDir = path.join(home, '.agenteeq', 'logs');
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -62,6 +72,7 @@ export async function installLaunchAgent({ script, home = os.homedir(), node = p
 }
 
 export async function uninstallLaunchAgent({ home = os.homedir() } = {}) {
+  jenNaMacu();
   const file = plistPath(home);
   await run('launchctl', ['bootout', `gui/${process.getuid()}`, file]);
   await fs.rm(file, { force: true });

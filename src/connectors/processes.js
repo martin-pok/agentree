@@ -1,4 +1,4 @@
-import { run } from '../util.js';
+import { processList } from '../platform.js';
 
 export const RUNTIMES = [
   { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', test: (a) => a.startsWith('/Applications/Claude.app/Contents/MacOS/Claude') },
@@ -53,7 +53,7 @@ export function createProcessesConnector(ctx) {
   let lastOk = 0;
 
   async function poll() {
-    const res = await run('ps', ['-axo', 'pid=,etime=,%cpu=,rss=,args=']);
+    const res = await processList();
     const runtimes = res.ok ? parsePs(res.stdout) : store.runtimes;
     try {
       const r = await fetch('http://127.0.0.1:11434/api/ps', { signal: AbortSignal.timeout(600) });
@@ -91,9 +91,13 @@ export function createProcessesConnector(ctx) {
     idle: async () => {},
     status() {
       const running = store.runtimes.filter((r) => r.running).length;
+      // Dokud se výpis procesů ani jednou nepovedl, nevíme nic — a „0 aplikací běží“
+      // by byla lež, ne údaj. Ollamu poznáme i tak, ta jde přes HTTP.
       return {
         state: lastOk ? 'connected' : 'error',
-        detail: `${running} AI aplikací běží${ollama.ok ? ` · Ollama: ${ollama.models.length} modelů` : ''}.`,
+        detail: lastOk
+          ? `${running} AI aplikací běží${ollama.ok ? ` · Ollama: ${ollama.models.length} modelů` : ''}.`
+          : `Seznam běžících aplikací se na tomto systému nepodařilo získat${ollama.ok ? `, Ollama ale odpovídá: ${ollama.models.length} modelů` : ''}.`,
         count: running,
         watching: Boolean(timer),
         lastEventAt: lastOk,

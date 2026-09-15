@@ -5,6 +5,7 @@ import { loadConfig, VERSION } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
 import { installLaunchAgent, uninstallLaunchAgent } from '../src/launch-agent.js';
+import { openCommand } from '../src/platform.js';
 
 const HELP = `Agenteeq ${VERSION} — všichni AI agenti na jednom místě
 
@@ -52,7 +53,12 @@ if (cmd) {
 
 const config = loadConfig();
 const openUrl = (url) => {
-  if (openBrowser && process.platform === 'darwin') execFile('open', [url], () => {});
+  if (!openBrowser) return;
+  const p = openCommand(url);
+  // Když systém neumíme otevřít, adresa se aspoň vypíše — mlčet by znamenalo nechat
+  // uživatele čekat na prohlížeč, který nepřijde.
+  if (p) execFile(p.cmd, p.args, () => {});
+  else console.log(`Otevři v prohlížeči: ${url}`);
 };
 
 const app = await createApp(config);

@@ -1,6 +1,6 @@
 import { state, projectById, launchIntent } from './state.js';
 import { api } from './api.js';
-import { esc, rel, shortPath, durShort, clock } from './format.js';
+import { esc, rel, shortPath, durShort, clock, castiCesty } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
@@ -26,7 +26,7 @@ function save(prefs) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(prefs)); } catch { /* soukromé okno */ }
 }
 
-const folderLabel = (cwd) => (shortPath(cwd) === '~' ? 'Domovská složka' : shortPath(cwd).split('/').slice(-2).join('/'));
+const folderLabel = (cwd) => (shortPath(cwd) === '~' ? 'Domovská složka' : castiCesty(shortPath(cwd)).slice(-2).join('/'));
 
 const RUN_LABEL = { running: 'Pracuje', stopping: 'Zastavuji', done: 'Hotovo', failed: 'Selhalo', stopped: 'Zastaveno' };
 

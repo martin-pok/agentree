@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { appSupportDir } from '../src/platform.js';
 import { startTestServer, writeJsonl, openStream, waitFor, api, tempDir } from './helpers.mjs';
 
 const localDate = () => {
@@ -205,7 +206,7 @@ test('Historie vytížení plánu přes API: bez souboru „není k dispozici“
   assert.equal(prazdno.body.fiveHour, undefined, 'bez souboru žádná řada');
 
   const now = Date.now();
-  const dir = path.join(srcHome, 'Library', 'Application Support', 'Claude');
+  const dir = path.join(appSupportDir(srcHome), 'Claude');
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, 'plan-usage-history.json'), JSON.stringify({
     version: 2,

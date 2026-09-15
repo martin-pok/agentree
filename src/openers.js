@@ -1,3 +1,4 @@
+import path from 'node:path';
 import fs from 'node:fs';
 import { run, shellQuote } from './util.js';
 
@@ -45,7 +46,7 @@ export async function detectApps() {
 }
 
 const localIdOf = (s) => String(s.id || '').slice(String(s.connector || '').length + 1);
-const hasFolder = (s) => typeof s.cwd === 'string' && s.cwd.startsWith('/') && !s.cwd.includes('\n');
+const hasFolder = (s) => typeof s.cwd === 'string' && path.isAbsolute(s.cwd) && !s.cwd.includes('\n');
 
 function terminalCommand(s, apps) {
   const id = localIdOf(s);

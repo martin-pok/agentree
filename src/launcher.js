@@ -38,7 +38,7 @@ export async function detectLaunchEnv({ ollama }) {
   for (const line of r.stdout.split('\n')) {
     const [name, ...rest] = line.trim().split('=');
     const p = rest.join('=');
-    if (name && p.startsWith('/')) bins[name] = p;
+    if (name && path.isAbsolute(p)) bins[name] = p;
   }
   if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
   return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };

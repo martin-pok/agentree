@@ -3,6 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { statSafe, readJson, toTs, clip, clipBlock, isInjectedPrompt, MIN, DAY } from '../util.js';
 import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { todosProgress } from './claude-code.js';
+import { appSupportDir, JE_WINDOWS } from '../platform.js';
+
+// Cesta k datům Cursoru se liší jen základem složky; zbytek struktury je všude stejný.
+// Windows varianta zatím není ověřená na skutečném stroji — proto je v docs/CONNECTORS.md
+// vedená jako Beta.
+const CURSOR_ZDROJ = JE_WINDOWS
+  ? '%APPDATA%\\Cursor\\User\\…\\state.vscdb'
+  : '~/Library/Application Support/Cursor/…/state.vscdb';
 
 const BUBBLES_MAX = 120;
 
@@ -56,7 +64,7 @@ export function applyCursorComposer(s, { header, head, data, bubbles, folder, no
 
 export function createCursorConnector(ctx) {
   const { store, config } = ctx;
-  const base = path.join(config.sourceHome, 'Library', 'Application Support', 'Cursor', 'User');
+  const base = path.join(appSupportDir(config.sourceHome), 'Cursor', 'User');
   const dbPath = path.join(base, 'globalStorage', 'state.vscdb');
   const windowMs = config.windowDays * DAY;
   const seen = new Map();
@@ -143,7 +151,7 @@ export function createCursorConnector(ctx) {
     provider: 'cursor',
     kind: 'local',
     verified: true,
-    source: '~/Library/Application Support/Cursor/…/state.vscdb',
+    source: CURSOR_ZDROJ,
     description: 'Agenti v Cursoru: přepis, nástroje, plán úkolů, generování a čekání na schválení.',
     async start() {
       await poll();

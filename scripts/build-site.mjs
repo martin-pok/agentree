@@ -70,12 +70,15 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   // 5. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
   await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n`);
 
+  // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.
+  // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede — proto
+  // se oddělovač vždy narovná na lomítko, ať se web sestavuje odkudkoli.
   const soubory = [];
   const projdi = async (dir) => {
     for (const e of await fs.readdir(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) await projdi(p);
-      else soubory.push(path.relative(out, p));
+      else soubory.push(path.relative(out, p).split(path.sep).join('/'));
     }
   };
   await projdi(out);

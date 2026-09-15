@@ -4,7 +4,8 @@
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') — nikdy se netváří jako ověřená data.
 import { etimeToSec } from './processes.js';
-import { clip, run } from '../util.js';
+import { clip } from '../util.js';
+import { processList, listeningPorts } from '../platform.js';
 
 // Katalog známých lokálních běhových prostředí. `match` dostane celý řetězec argumentů
 // jednoho procesu (`ps ... args=`) a vrátí, jestli proces patří k tomuto nástroji.
@@ -173,10 +174,7 @@ export function createLocalAgentsConnector(ctx) {
   let lastOk = 0;
 
   async function poll() {
-    const [psRes, lsofRes] = await Promise.all([
-      run('ps', ['-axo', 'pid=,etime=,%cpu=,rss=,args=']),
-      run('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN']),
-    ]);
+    const [psRes, lsofRes] = await Promise.all([processList(), listeningPorts()]);
     const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
     list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports });
     if (psRes.ok) lastOk = Date.now();
@@ -203,8 +201,13 @@ export function createLocalAgentsConnector(ctx) {
     },
     idle: async () => {},
     status() {
+      // Bez úspěšného výpisu procesů se neví nic. Hlásit „nic neběží“ by znamenalo
+      // vydávat selhání zjišťování za zjištěný stav — přesně to, co se tu dělat nesmí.
+      if (!lastOk) {
+        return { state: 'error', detail: 'Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.', count: 0 };
+      }
       return {
-        state: lastOk ? (list.length ? 'connected' : 'idle') : 'idle',
+        state: list.length ? 'connected' : 'idle',
         detail: list.length ? `${list.length} lokálních agentů mimo známý seznam.` : 'Žádný neznámý ani lokální agent teď neběží.',
         count: list.length,
       };
