@@ -14,14 +14,25 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agenteeq-smoke-'));
 const step = (msg) => console.log(`• ${msg}`);
 let child = null;
 
-function fail(msg) {
+async function fail(msg) {
   console.error(`✗ ${msg}`);
-  cleanup();
+  await cleanup();
   process.exit(1);
 }
-function cleanup() {
-  if (child && child.exitCode === null) child.kill('SIGTERM');
-  fs.rmSync(tmp, { recursive: true, force: true });
+
+// Úklid musí počkat, až server opravdu skončí. Dokud běží, drží soubory v dočasném prefixu
+// otevřené a smazání složky spadne na ENOTEMPTY — z pohledu volajícího jako by celý smoke test
+// selhal, přestože kontrola prošla. Proto: SIGTERM, počkat, po dvou vteřinách SIGKILL, a teprve
+// pak mazat (s několika pokusy, než systém uvolní poslední popisovače).
+async function cleanup() {
+  if (child && child.exitCode === null) {
+    const konec = new Promise((resolve) => child.once('exit', resolve));
+    child.kill('SIGTERM');
+    const kill = setTimeout(() => child.kill('SIGKILL'), 2000);
+    await Promise.race([konec, new Promise((r) => setTimeout(r, 5000))]);
+    clearTimeout(kill);
+  }
+  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
 }
 
 const freePort = () => new Promise((resolve) => {
@@ -37,9 +48,9 @@ try {
   const packed = JSON.parse(execFileSync('npm', ['pack', '--json', '--pack-destination', tmp], { cwd: root, encoding: 'utf8' }))[0];
   const files = packed.files.map((f) => f.path);
   const forbidden = files.filter((f) => /^(test|scripts)\/|\.pem$|agenteeq-vendor|^\.claude|^dist\//.test(f));
-  if (forbidden.length) fail(`Balíček obsahuje soubory, které k zákazníkovi nepatří: ${forbidden.join(', ')}`);
+  if (forbidden.length) await fail(`Balíček obsahuje soubory, které k zákazníkovi nepatří: ${forbidden.join(', ')}`);
   for (const must of ['bin/agenteeq.mjs', 'src/license-public-key.js', 'public/index.html', 'extension/manifest.json', 'docs/INSTALL.md']) {
-    if (!files.includes(must)) fail(`V balíčku chybí ${must}`);
+    if (!files.includes(must)) await fail(`V balíčku chybí ${must}`);
   }
   step(`${packed.filename}: ${files.length} souborů, ${(packed.size / 1024).toFixed(0)} kB`);
 
@@ -48,7 +59,7 @@ try {
   execFileSync('npm', ['install', '-g', '--prefix', prefix, path.join(tmp, packed.filename)], { stdio: 'ignore' });
   const bin = path.join(prefix, 'bin', 'agenteeq');
   const version = execFileSync(bin, ['--version'], { encoding: 'utf8' }).trim();
-  if (version !== pkg.version) fail(`agenteeq --version vrací ${version}, očekáváno ${pkg.version}`);
+  if (version !== pkg.version) await fail(`agenteeq --version vrací ${version}, očekáváno ${pkg.version}`);
 
   step('spuštění nainstalované aplikace');
   const port = await freePort();
@@ -77,20 +88,20 @@ try {
     health = await fetch(`${url}/api/health`).then((r) => r.json()).catch(() => null);
     if (!health) await new Promise((r) => setTimeout(r, 200));
   }
-  if (!health?.ok) fail(`Server nenaběhl.\n${output}`);
+  if (!health?.ok) await fail(`Server nenaběhl.\n${output}`);
   const html = await fetch(url).then((r) => r.text());
-  if (!html.includes('Agenteeq')) fail('Dashboard nevrací HTML Agenteeq.');
+  if (!html.includes('Agenteeq')) await fail('Dashboard nevrací HTML Agenteeq.');
   const st = await fetch(`${url}/api/state`).then((r) => r.json());
-  if (!Array.isArray(st.projects?.items) || !st.launch || st.license?.plan !== 'free') fail('Stav neobsahuje projekty, spouštění nebo licenci.');
+  if (!Array.isArray(st.projects?.items) || !st.launch || st.license?.plan !== 'free') await fail('Stav neobsahuje projekty, spouštění nebo licenci.');
   const proj = await fetch(`${url}/api/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agenteeq': '1' }, body: JSON.stringify({ name: 'Smoke test' }) });
-  if (proj.status !== 201) fail(`Vytvoření projektu vrátilo ${proj.status}`);
+  if (proj.status !== 201) await fail(`Vytvoření projektu vrátilo ${proj.status}`);
   for (const asset of ['/js/views/projects.js', '/js/launcher-ui.js', '/styles.css', '/brand/agenteeq-mark-dark.svg']) {
     const r = await fetch(url + asset);
-    if (r.status !== 200) fail(`${asset} vrací ${r.status}`);
+    if (r.status !== 200) await fail(`${asset} vrací ${r.status}`);
   }
   console.log(`✓ Balíček ${packed.filename} se nainstaluje a běží (verze ${health.version}).`);
-  cleanup();
+  await cleanup();
   process.exit(0);
 } catch (err) {
-  fail(err.stack || err.message);
+  await fail(err.stack || err.message);
 }

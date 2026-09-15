@@ -32,6 +32,9 @@
   Našel tím skutečnou chybu: odznak „Ověřeno“ a stav „Připojeno“ měly na světlé ploše 4,45:1, tedy
   těsně pod AA pro text 11 px. Token `--ok` je proto tmavší (`#0B6F5F`) a podklad odznaku světlejší;
   po opravě prochází AA všechno.
+- **`npm run smoke` už neselhává na úklidu.** Mazání dočasné složky nečekalo, až server skončí,
+  a padalo na `ENOTEMPTY` — kontrola přitom prošla. Teď se počká na konec procesu (po dvou
+  vteřinách `SIGKILL`) a teprve pak se maže. Bez toho by se na téhle chybě zastavil `release:mac`.
 - **Testy běží i mimo macOS.** Testy závislé na `lsof` a na cestě `/private/tmp` se místo padání
   přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (281 testů).
 
