@@ -89,7 +89,7 @@ potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 295 testů, 292 prošlo, 3 přeskočeny s důvodem (vyžadují macOS) |
+| `npm test` | 297 testů, 294 prošlo, 3 přeskočeny s důvodem (vyžadují macOS) |
 | `npm run check` | 136 souborů bez syntaktické chyby |
 | `npm run build:extension` | `dist/agenteeq-extension-0.12.0.zip`, 18 souborů, 179 kB; rozbalení ověřeno |
 | `npm run build:site` | `dist/web`, 71 souborů; landing page v kořeni, rozhraní na `/app` |
@@ -97,6 +97,7 @@ potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
 | Kontrast WCAG 2.2 AA (landing page) | Všechny texty splňují AA — měřeno nad vykreslenou stránkou (1440 px light/dark, 375 px light/dark) |
 | Kontrast WCAG 2.2 AA (okno rozšíření) | Všechny texty splňují AA — 344 px, světlý i tmavý režim, spárované i nespárované |
 | `npm run smoke` | Balíček 0.12.0 (132 souborů, 744 kB) se nainstaluje a běží; písma rozšíření jsou v balíčku |
+| Ochrana proti DNS rebindingu a proxy | Požadavek přeposlaný proxy z tohoto Macu nedostane práva desktopové aplikace: PIN, přepínače ani `/api/launch` se za ním nevydají (`test/tailscale.test.mjs`) |
 | `npm run qa:contrast` (aplikace) | Všech 8 obrazovek × světlý/tmavý × 1440/375 px splňuje AA. Nalezena a opravena skutečná chyba: odznak „Ověřeno“ 4,45:1 → token `--ok` ztmaven na `#0B6F5F` |
 | Tailscale: jednotky a HTTP | Detekce adres, MagicDNS, `Host`, selhání listeneru a odmítnutí zapnutí bez tailnetu (`test/tailscale.test.mjs`) |
 

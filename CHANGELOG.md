@@ -23,7 +23,7 @@
 - **Web.** `site/` je landing page, `npm run build:site` z ní a z `public/` složí `dist/web`:
   stránka v kořeni, rozhraní aplikace na `/app` (manifest PWA a `sw.js` se přepíšou na novou adresu).
   Kontrast textů ověřen na WCAG 2.2 AA v obou režimech na 1440 px i 375 px.
-- **Vydání.** `npm run release:mac` projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
+- **Vydání.** `npm run release:mac` nejdřív ověří, že jsou po ruce nástroje Xcode (jinak by chybějící `swiftc` vysvitl až po testech a smoke), pak projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
   `--install` vymění i aplikaci v `/Applications` — předchozí verzi přitom nemaže, odloží ji
   do `~/.agenteeq/zalohy`.
 - **Z bezpečnostní revize (nález s vysokým dopadem):** o tom, jestli je požadavek „z tohoto Macu“,
@@ -59,7 +59,7 @@
   a padalo na `ENOTEMPTY` — kontrola přitom prošla. Teď se počká na konec procesu (po dvou
   vteřinách `SIGKILL`) a teprve pak se maže. Bez toho by se na téhle chybě zastavil `release:mac`.
 - **Testy běží i mimo macOS.** Testy závislé na `lsof` a na cestě `/private/tmp` se místo padání
-  přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (295 testů, 3 přeskočené).
+  přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (297 testů, 3 přeskočené).
 
 ## 0.11.1 — 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
 

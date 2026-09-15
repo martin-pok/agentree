@@ -41,6 +41,31 @@ const tise = (command, cmdArgs) => {
 
 console.log(`Agenteeq ${version} — vydání pro macOS (${process.arch})`);
 
+// Nástroje se ověřují hned na začátku. Bez toho by chybějící Xcode vysvitlo až v pátém kroku,
+// tedy po testech a smoke — po pěti minutách čekání na chybu, která byla vidět od začátku.
+krok(0, 'Kontrola nástrojů');
+const chybi = [];
+for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which']]) {
+  const nalezeno = kde === 'xcrun' ? tise('xcrun', ['--find', nastroj]) : tise('which', [nastroj]);
+  if (!nalezeno) chybi.push(nastroj);
+}
+if (chybi.length) {
+  console.error(`Chybí: ${chybi.join(', ')}.`);
+  console.error('Nainstaluj vývojářské nástroje příkazem `xcode-select --install` a spusť to znovu.');
+  process.exit(1);
+}
+if (process.env.AGENTEEQ_NOTARY_PROFILE) {
+  if (!process.env.AGENTEEQ_SIGN_IDENTITY) {
+    console.error('AGENTEEQ_NOTARY_PROFILE je nastavený, ale AGENTEEQ_SIGN_IDENTITY ne — notarizace bez podpisu Developer ID nedává smysl.');
+    process.exit(1);
+  }
+  if (!tise('xcrun', ['--find', 'notarytool'])) {
+    console.error('notarytool není k dispozici. Notarizace vyžaduje plný Xcode, ne jen vývojářské nástroje.');
+    process.exit(1);
+  }
+}
+console.log(`V pořádku${process.env.AGENTEEQ_SIGN_IDENTITY ? ' (podpis Developer ID)' : ' (ad-hoc podpis)'}.`);
+
 if (preskocitTesty) {
   console.log('\nPozor: --skip-tests. Vydáváš něco, co neprošlo testy. Dělej to jen při opakovaném pokusu po neúspěšném podpisu.');
 } else {
