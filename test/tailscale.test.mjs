@@ -137,8 +137,16 @@ test('HTTP: bez běžícího Tailscale se přístup nezapne a nastavení zůstan
   assert.equal(pred.body.lan.tailscale.available, false, 'testovací stroj tailnet nemá');
 
   const r = await api(s.url).send('POST', '/api/tailscale/enable', {});
-  assert.equal(r.status, 422, 'bez tailnetu není co zapnout');
+  assert.equal(r.status, 422, 'bez běžícího Tailscale není co zapnout');
   assert.match(r.body.error, /Tailscale/);
+
+  // Adresa z rozsahu 100.64.0.0/10 sama nestačí: je to rozsah pro CGNAT (RFC 6598) a Mac ji
+  // může dostat i od operátora. Kdyby o ni šlo, otevřeli bychom naslouchání do sítě operátora.
+  const puvodni = s.app.lan.status;
+  s.app.lan.status = () => ({ ...puvodni.call(s.app.lan), tailscale: { enabled: false, available: true, listening: false, error: '', addresses: ['100.64.0.5'], name: '', url: '' } });
+  t.after(() => { s.app.lan.status = puvodni; });
+  const sAdresou = await api(s.url).send('POST', '/api/tailscale/enable', {});
+  assert.equal(sAdresou.status, 422, 'samotná adresa z rozsahu CGNAT přepínač neodemkne');
 
   const po = await api(s.url).get('/api/state');
   assert.equal(po.body.settings.tailscaleAccess, false, 'neúspěšné zapnutí nesmí nic přepnout');
@@ -158,8 +166,8 @@ test('HTTP: na cizí hlavičku Host server neodpoví, na vlastní jméno v Magic
   const port = Number(new URL(s.url).port);
   const JMENO = 'mac-mini.tailabcd.ts.net';
 
-  const zeptejSe = (host) => new Promise((resolve, reject) => {
-    const req = http.request({ host: '127.0.0.1', port, path: '/api/health', headers: { Host: host } }, (res) => {
+  const zeptejSe = (host, cesta = '/api/health') => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, path: cesta, headers: { Host: host } }, (res) => {
       let data = '';
       res.on('data', (c) => { data += c; });
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
@@ -176,14 +184,73 @@ test('HTTP: na cizí hlavičku Host server neodpoví, na vlastní jméno v Magic
   assert.equal((await zeptejSe('100.64.0.5')).status, 403, 'ani holá adresa z rozsahu tailnetu');
 
   // Se zapnutým přístupem přes Tailscale se seznam rozšíří přesně o to, co vrátí lan.hosts().
+  s.app.datastore.data.settings.tailscaleAccess = true;
   const puvodni = s.app.lan.hosts;
   s.app.lan.hosts = () => [JMENO, '100.64.0.5'];
-  t.after(() => { s.app.lan.hosts = puvodni; });
+  t.after(() => { s.app.lan.hosts = puvodni; s.app.datastore.data.settings.tailscaleAccess = false; });
+
   assert.equal((await zeptejSe(`${JMENO}:${port}`)).status, 200, 'vlastní jméno v MagicDNS projde');
   assert.equal((await zeptejSe(`${JMENO.toUpperCase()}:${port}`)).status, 200, 'velikost písmen nerozhoduje');
   assert.equal((await zeptejSe('100.64.0.5')).status, 200, 'adresa v tailnetu projde');
   assert.equal((await zeptejSe('utocnik.example.com')).status, 403, 'cizí jméno neprojde ani pak');
   assert.equal((await zeptejSe('zly.mac-mini.tailabcd.ts.net')).status, 403, 'ani podvržená předpona');
+});
+
+// Regrese k bezpečnostní chybě z revize 0.12.0. `tailscale serve` je reverzní proxy běžící
+// na tomhle Macu: cizí zařízení z tailnetu se připojí na HTTPS, proxy zakončí TLS a na server
+// se obrátí z 127.0.0.1. Kdyby se „je to z Macu“ posuzovalo jen podle adresy protistrany,
+// dostal by takový požadavek výjimku pro desktopovou aplikaci — tedy PIN, seznam zařízení,
+// spouštění agentů a všechna data bez jediného tokenu. Rozhoduje proto i hlavička Host.
+test('HTTP: požadavek přeposlaný proxy z tohoto Macu nedostane práva desktopové aplikace', async (t) => {
+  const s = await startTestServer();
+  t.after(() => s.close());
+  const port = Number(new URL(s.url).port);
+  const JMENO = 'mac-mini.tailabcd.ts.net';
+
+  s.app.datastore.data.settings.tailscaleAccess = true;
+  const puvodni = s.app.lan.hosts;
+  s.app.lan.hosts = () => [JMENO];
+  t.after(() => { s.app.lan.hosts = puvodni; s.app.datastore.data.settings.tailscaleAccess = false; });
+
+  // Přesně to, co vidí server za `tailscale serve`: spojení po smyčce, ale cizí Host.
+  const jakoProxy = (cesta, { method = 'GET', headers = {} } = {}) => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, path: cesta, method, headers: { Host: JMENO, ...headers } }, (res) => {
+      let data = '';
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  // 1. Data bez tokenu nedostane.
+  for (const cesta of ['/api/state', '/api/skills']) {
+    assert.equal((await jakoProxy(cesta)).status, 401, `${cesta} musí bez spárování vrátit 401`);
+  }
+
+  // 2. Jednorázový PIN ani seznam zařízení se za proxy nevydá — jinak by si útočník počkal
+  //    na kód, který si vyrobí sám vlastník, a spároval se natrvalo.
+  const lan = await jakoProxy('/api/lan');
+  assert.equal(lan.status, 401, 'stav přístupu je za proxy bez tokenu nedostupný');
+  assert.equal(lan.body.includes('"pin"'), false);
+
+  // 3. Nic se nedá přepnout ani spustit.
+  for (const [cesta, metoda] of [['/api/lan/pin', 'POST'], ['/api/tailscale/enable', 'POST'], ['/api/lan/enable', 'POST'], ['/api/launch', 'POST']]) {
+    const r = await jakoProxy(cesta, { method: metoda, headers: { 'X-Agenteeq': '1' } });
+    assert.equal(r.status, 401, `${metoda} ${cesta} musí skončit na 401`);
+  }
+
+  // 4. Hlavička od proxy sama o sobě výjimku ruší, i když se požadavek hlásí na 127.0.0.1.
+  const sProxyHlavickou = await new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, path: '/api/lan', headers: { Host: `127.0.0.1:${port}`, 'X-Forwarded-For': '100.64.0.9' } }, (res) => {
+      let data = '';
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(sProxyHlavickou.body.includes('"pin"'), false, 'stopa po proxy znamená, že PIN se nevydá');
 });
 
 test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" se pozná podle portu', async () => {

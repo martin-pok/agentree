@@ -80,7 +80,8 @@ Druhá, nezávislá cesta ke stejným datům — pro situace mimo domácí síť
 (`settings.tailscaleAccess`), zapíná se jen z Macu (`POST /api/tailscale/enable`).
 
 Platí **beze změny všechno z předchozí kapitoly** (párování PINem, token v `HttpOnly` cookie, hash
-v datech, CSRF, zákaz správy z telefonu). Liší se jen adresa, na které server naslouchá:
+v datech, CSRF, zákaz správy z telefonu) — včetně situace, kdy je před serverem `tailscale serve`
+(viz níž). Liší se jen adresa, na které server naslouchá:
 
 - Listener na **konkrétní adrese tohoto Macu v tailnetu** (`tailscaleAddresses()` v `src/lan.js`
   bere jen IPv4 z rozsahu `100.64.0.0/10`), ne na `0.0.0.0`. Adresu přiděluje Tailscale a dostane
@@ -100,11 +101,42 @@ v datech, CSRF, zákaz správy z telefonu). Liší se jen adresa, na které serv
 - Agenteeq Tailscale **neinstaluje ani nespouští** a nespouští ani `tailscale serve`. Jen se ptá na
   stav a naslouchá na adrese, kterou už uživatel má (princip 4 v `AGENTS.md`).
 
-HTTPS: `tailscale serve` umí před port postavit proxy s certifikátem od Let's Encrypt, a teprve
-s ním si telefon uloží aplikaci na plochu jako PWA. Agenteeq stav téhle proxy jen **čte**
-(`tailscale serve status --json`) a co nerozezná, hlásí jako neznámé — nikdy jako zapnuté.
-Tahle detekce je ověřená proti dokumentaci, ne proti živému tailnetu: v `docs/REMOTE.md` je proto
-vedená jako **Beta**.
+### Co je „požadavek z tohoto Macu“ (a proč nestačí adresa protistrany)
+
+Desktopová aplikace a prohlížeč na Macu mají výjimku: nepotřebují token a jen jim se vydá PIN,
+seznam zařízení a plný `/api/state`. Rozhodnout, kdo tu výjimku dostane, **nejde podle adresy
+protistrany samotné**. `tailscale serve` — a každá jiná reverzní proxy běžící na tomhle Macu —
+zakončí TLS pro cizí zařízení z tailnetu a na server se obrátí z `127.0.0.1`. Kdyby stačila
+adresa, spuštěním jediného příkazu by kterýkoli uzel v tailnetu získal práva desktopové aplikace:
+data bez tokenu, cizí PIN ještě před jeho použitím a `POST /api/launch`, tedy spuštění agenta.
+
+`zTohotoMacu()` v `src/http.js` proto vyžaduje **obojí zároveň**:
+
+1. spojení přišlo po smyčce (`isLoopback`), **a**
+2. požadavek se hlásí na `Host: 127.0.0.1` nebo `localhost`, **a**
+3. nenese hlavičky, které přidává reverzní proxy (`X-Forwarded-*`, `Forwarded`, `Tailscale-User-*`).
+
+Požadavek přeposlaný přes `tailscale serve` nese jméno v MagicDNS, takže výjimku nedostane
+a chová se jako každé jiné vzdálené zařízení: musí být spárovaný. Hlídá to regresní test
+v `test/tailscale.test.mjs`.
+
+Aby se z telefonu po HTTPS dalo vůbec spárovat, je v seznamu povolených `Origin` kromě
+`http://<adresa>:<port>` i `https://<vlastní jméno>` — je to pořád naše vlastní adresa
+a cizí web si `Origin` podvrhnout nemůže.
+
+### HTTPS přes `tailscale serve`
+
+Proxy s certifikátem od Let's Encrypt je jediná cesta, jak si telefon uloží aplikaci na plochu
+jako PWA. Agenteeq stav téhle proxy jen **čte** (`tailscale serve status --json`) a co nerozezná,
+hlásí jako neznámé — nikdy jako zapnuté. Sám ji nespouští. Detekce je ověřená proti dokumentaci,
+ne proti živému tailnetu: v `docs/REMOTE.md` je proto vedená jako **Beta**.
+
+### Proč nestačí adresa v rozsahu 100.64.0.0/10
+
+Přepínač se odemkne, teprve když `tailscale status --json` potvrdí, že Tailscale **běží**.
+Samotná adresa z toho rozsahu Tailscale nedokazuje: je to rozsah pro CGNAT (RFC 6598) a od
+některých operátorů ji Mac dostane i bez něj. Bez té kontroly by se naslouchání otevřelo do sítě
+operátora a rozhraní by o té adrese tvrdilo, že je „v síti Tailscale“.
 
 Bez `tailscale serve` jede aplikace po `http://` uvnitř tailnetu — v prohlížeči funguje normálně,
 jen ji telefon neuloží na plochu.

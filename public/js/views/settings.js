@@ -79,14 +79,20 @@ function tailscaleCard() {
   const t = (state.lan || {}).tailscale || { enabled: false, available: false, addresses: [], name: '', url: '', error: '' };
   const detekce = (state.tunnels?.list || []).find((x) => x.id === 'tailscale') || null;
   const serve = detekce?.serve || null;
-  const popis = t.available
+  // Přepínač se nabízí, teprve když Tailscale opravdu běží. Adresa z rozsahu 100.64.0.0/10
+  // sama nestačí — je to rozsah pro CGNAT a od některých operátorů ji Mac dostane i bez Tailscale.
+  const bezi = Boolean(detekce?.running);
+  const pripraveno = bezi && t.available;
+  const popis = pripraveno
     ? `Adresa tohoto Macu v síti Tailscale: ${t.name || t.addresses[0]}`
-    : detekce?.installed
-      ? 'Tailscale je nainstalovaný, ale nejsi přihlášený — spusť „tailscale up“.'
-      : 'Tailscale na tomto Macu není. Nainstaluj ho z tailscale.com a přihlas se.';
+    : bezi
+      ? 'Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu.'
+      : detekce?.installed
+        ? 'Tailscale je nainstalovaný, ale nejsi přihlášený — spusť „tailscale up“.'
+        : 'Tailscale na tomto Macu není. Nainstaluj ho z tailscale.com a přihlas se.';
   return `
     ${head(ICON.shield, 'Přístup přes Tailscale', 'Privátní síť jen mezi tvými vlastními zařízeními. Telefon se k Macu dostane odkudkoli — z mobilních dat i z cizí Wi-Fi — a adresa přitom nikde veřejně neexistuje.')}
-    ${switchRow({ key: 'tailscaleAccess', label: 'Přístup ze sítě Tailscale', desc: esc(popis), checked: t.enabled, disabled: !t.available })}
+    ${switchRow({ key: 'tailscaleAccess', label: 'Přístup ze sítě Tailscale', desc: esc(popis), checked: t.enabled, disabled: !pripraveno })}
     ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
     ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="Adresa zkopírována">${ICON.copy}Kopírovat adresu</button></div>
       <p class="set-note">Tuhle adresu otevři na telefonu, který je přihlášený do stejné sítě Tailscale. Kód pro spárování vytvoříš o kartu výš.</p>` : ''}
@@ -94,7 +100,7 @@ function tailscaleCard() {
     ${serve && !serve.unknown ? `<p class="set-note">${serve.running
       ? `HTTPS přes „tailscale serve“ běží na <code>${esc(serve.url || '')}</code>  Na téhle adrese si aplikaci uložíš na plochu telefonu.`
       : 'HTTPS zatím zapnuté není. Bez něj aplikace v prohlížeči funguje normálně, jen si ji telefon neuloží na plochu. Zapneš ho příkazem <code>tailscale serve</code> — Agenteeq ho sám nespouští.'}</p>` : ''}
-    ${!t.available ? `<ol class="steps steps--compact">
+    ${!pripraveno ? `<ol class="steps steps--compact">
       <li>Nainstaluj Tailscale (tailscale.com nebo <code>brew install --cask tailscale</code>).</li>
       <li>Přihlas se na Macu (<code>tailscale up</code>) i v appce na telefonu — stejným účtem.</li>
       <li>Vrať se sem, zapni přepínač a spáruj telefon kódem.</li>

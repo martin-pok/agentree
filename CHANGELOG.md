@@ -26,6 +26,16 @@
 - **Vydání.** `npm run release:mac` projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
   `--install` vymění i aplikaci v `/Applications` — předchozí verzi přitom nemaže, odloží ji
   do `~/.agenteeq/zalohy`.
+- **Z bezpečnostní revize (nález s vysokým dopadem):** o tom, jestli je požadavek „z tohoto Macu“,
+  nerozhoduje jen adresa protistrany, ale i hlavička `Host` a stopy po reverzní proxy. `tailscale
+  serve`, který karta sama doporučuje kvůli HTTPS, se totiž na server obrací z `127.0.0.1` —
+  a výjimka pro desktopovou aplikaci by tak kterémukoli uzlu v tailnetu dala data bez tokenu,
+  cizí párovací PIN i `POST /api/launch`. Nově takový požadavek potřebuje spárované zařízení
+  jako každé jiné vzdálené. Přibyl regresní test a do `allowedOrigins()` vlastní adresa
+  `https://…`, aby se z telefonu po HTTPS dalo spárovat.
+- **Přepínač Tailscale se odemkne, až když Tailscale opravdu běží.** Adresa z rozsahu
+  `100.64.0.0/10` sama nestačí — je to rozsah pro CGNAT a od některých operátorů ji Mac dostane
+  i bez Tailscale; naslouchání by se otevřelo do sítě operátora.
 - **Z bezpečnostní revize vlastního kódu:** jméno z MagicDNS se před vpuštěním do seznamu
   povolených hodnot hlavičky `Host` ověří na tvar běžného DNS jména (`magicDnsName()`) — je to
   jediná hodnota v téhle ochraně, která přichází z výstupu cizího programu. A stav

@@ -821,7 +821,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // Párování kódem a token platí i tady: bez spárovaného zařízení se nepřečte nic.
   async function setTailscaleAccess(enabled) {
     if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
-    if (enabled && !lan.status().tailscale.available) return { status: 422, error: 'Tailscale na tomto Macu neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.' };
+    if (enabled) {
+      // Adresa z rozsahu 100.64.0.0/10 sama o sobě Tailscale nedokazuje: je to rozsah pro
+      // CGNAT (RFC 6598) a od některých operátorů ji Mac dostane i bez něj. Zeptáme se proto
+      // přímo Tailscale, jestli běží — jinak bychom otevřeli naslouchání do sítě operátora
+      // a v rozhraní tvrdili, že je to „adresa v síti Tailscale“.
+      const stav = (await refreshTunnels()).list.find((t) => t.id === 'tailscale');
+      if (!stav?.running) {
+        return {
+          status: 422,
+          error: stav?.installed
+            ? 'Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.'
+            : 'Tailscale na tomto Macu neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.',
+        };
+      }
+      if (!lan.status().tailscale.available) return { status: 422, error: 'Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu. Zkus to za chvíli.' };
+    }
     return applyAccess('tailscaleAccess', enabled, 'Přístup přes Tailscale se nepodařilo otevřít.');
   }
 

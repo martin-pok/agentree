@@ -52,14 +52,42 @@ export function createHttpServer(app, existingServer = null) {
     const list = [`http://127.0.0.1:${port()}`, `http://localhost:${port()}`];
     // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti
     // a v jeho privátní síti Tailscale (včetně jména v MagicDNS).
-    if (app.lan) for (const adresa of app.lan.hosts()) list.push(`http://${adresa}:${port()}`);
+    //
+    // Varianta https bez portu je tu kvůli `tailscale serve`: ta stránku vydává na vlastním
+    // jméně po 443, takže prohlížeč pošle Origin `https://jmeno.tailnet.ts.net`. Pořád je to
+    // naše vlastní adresa — cizí web si Origin podvrhnout nemůže — a bez ní by se z telefonu
+    // po HTTPS nedalo ani spárovat.
+    if (app.lan) {
+      for (const adresa of app.lan.hosts()) {
+        list.push(`http://${adresa}:${port()}`);
+        list.push(`https://${adresa}`);
+      }
+    }
     return new Set(list);
   };
+
+  // Hlavičky, které před server staví reverzní proxy. Desktopová aplikace ani prohlížeč na Macu
+  // je neposílají, takže jejich přítomnost znamená, že požadavek někdo přeposlal.
+  const PROXY_HLAVICKY = ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'forwarded', 'tailscale-user-login', 'tailscale-user-name'];
+  const hostHlavicka = (req) => String(req.headers.host || '').replace(/:\d+$/, '').toLowerCase();
+
+  // Co je „požadavek z tohoto Macu“. Samotná adresa protistrany nestačí: `tailscale serve`
+  // (a každá jiná reverzní proxy běžící na tomhle Macu) se na server připojí z 127.0.0.1,
+  // ale požadavek za ní pochází z cizího zařízení v tailnetu. Kdyby si takový požadavek mohl
+  // vzít výjimku pro desktopovou aplikaci, zmizelo by spuštěním jediného příkazu párování,
+  // token i všechna omezení „tohle jde jen na Macu“ — a to je celá ochrana těchhle dat.
+  // Proto musí platit obojí: spojení po smyčce A hlášení se na adresu smyčky, bez stop po proxy.
+  function zTohotoMacu(req) {
+    if (!isLoopback(req.socket?.remoteAddress)) return false;
+    const host = hostHlavicka(req);
+    if (host !== '127.0.0.1' && host !== 'localhost') return false;
+    return !PROXY_HLAVICKY.some((h) => req.headers[h] !== undefined);
+  }
 
   // Požadavek z tohoto Macu (desktopová aplikace, prohlížeč na Macu) projde jako dřív.
   // Cokoli z místní sítě musí mít token spárovaného zařízení — jinak se k datům nedostane.
   function requireDevice(req, url) {
-    if (!app.lan || isLoopback(req.socket?.remoteAddress)) return;
+    if (!app.lan || zTohotoMacu(req)) return;
     if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
     // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu — jinak by neměl
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
@@ -227,24 +255,24 @@ export function createHttpServer(app, existingServer = null) {
 
     /* ---------- Přístup z telefonu ---------- */
     ['POST', /^\/api\/remote\/detect$/, async (req) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
       return { tunnels: await app.refreshTunnels() };
     }],
     ['GET', /^\/api\/lan$/, (req) => {
       // Kód se ukazuje jen na tomto Macu; z telefonu by jinak stačil jeden dotaz k spárování dalších.
       const s = app.lan.status();
-      return isLoopback(req.socket?.remoteAddress) ? s : { ...s, pin: null, devices: [] };
+      return zTohotoMacu(req) ? s : { ...s, pin: null, devices: [] };
     }],
     ['POST', /^\/api\/tailscale\/(enable|disable)$/, async (req, m) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
       return unwrap(await app.setTailscaleAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/(enable|disable)$/, async (req, m) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
       return unwrap(await app.setLanAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/pin$/, (req) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
       if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
       return { pin: app.lan.newPin() };
     }],
@@ -269,7 +297,7 @@ export function createHttpServer(app, existingServer = null) {
       };
     }],
     ['DELETE', /^\/api\/lan\/devices\/([\w-]{1,40})$/, async (req, m) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
       unwrap(await app.lan.revoke(m[1]));
       return { lan: app.lan.status() };
     }],
@@ -289,7 +317,7 @@ export function createHttpServer(app, existingServer = null) {
       return series;
     }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
-    ['GET', /^\/api\/state$/, (req) => app.state({ local: isLoopback(req.socket?.remoteAddress) })],
+    ['GET', /^\/api\/state$/, (req) => app.state({ local: zTohotoMacu(req) })],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
@@ -566,11 +594,11 @@ export function createHttpServer(app, existingServer = null) {
   }
 
   async function handle(req, res) {
-    const host = String(req.headers.host || '').replace(/:\d+$/, '');
+    const host = hostHlavicka(req);
     // Hlavička Host se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu): tento Mac
     // a — jen se zapnutým přístupem z telefonu — jeho vlastní adresy v místní síti.
     const hostOk = host === '127.0.0.1' || host === 'localhost'
-      || Boolean(app.lan && app.lan.hosts().includes(host.toLowerCase()));
+      || Boolean(app.lan && app.lan.hosts().includes(host));
     if (!hostOk) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
       return;
