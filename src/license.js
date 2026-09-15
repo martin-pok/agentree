@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { PLANS } from './plans.js';
 import { LICENSE_PUBLIC_KEY } from './license-public-key.js';
 
-// Licenční klíč: AGT1.<base64url JSON>.<base64url Ed25519 podpis>. Ověření je offline — bez serveru a bez vazby na vydavatele.
+// Licenční klíč: AGT1.<base64url JSON>.<base64url Ed25519 podpis>. Ověření je offline – bez serveru a bez vazby na vydavatele.
 export const LICENSE_PREFIX = 'AGT1';
 
 const enc = (buf) => Buffer.from(buf).toString('base64url');

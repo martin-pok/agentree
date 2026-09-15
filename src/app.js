@@ -40,12 +40,12 @@ import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
-// Bez licence Pro je možné mít tolik aktivních projektů — platí jen, když je `projectsUnlimited` v PAID_FEATURES.
+// Bez licence Pro je možné mít tolik aktivních projektů – platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
 
 // `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agenteeq-<verze>-macOS-<arch>.zip`.
-// Server odvozuje přesný název sám (verze z package.json, architektura procesu) — nikdy z požadavku klienta.
+// Server odvozuje přesný název sám (verze z package.json, architektura procesu) – nikdy z požadavku klienta.
 export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, arch = process.arch) {
   const name = `Agenteeq-${version}-macOS-${arch}.zip`;
   const file = path.join(distDir, name);
@@ -89,7 +89,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // i přístup z telefonu níž, a `let` v dočasné mrtvé zóně by při čtení shodil celý start.
   let tunely = { at: 0, list: [], advice: null };
 
-  // Jméno Macu v MagicDNS bere přístup z telefonu z detekce Tailscale (tunnelsPayload) — aby
+  // Jméno Macu v MagicDNS bere přístup z telefonu z detekce Tailscale (tunnelsPayload) – aby
   // adresa mac.tailnet.ts.net prošla kontrolou hlavičky Host. Když MagicDNS zapnutý není,
   // zůstane prázdné a pracuje se s adresou 100.x; nic se nedomýšlí.
   const lan = createLanAccess({
@@ -107,7 +107,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   });
   const failedRuns = new Set();
 
-  // Běh, který skončil chybou, se musí v session ukázat jako „Selhalo“ s důvodem — nikdy jako „Hotovo“.
+  // Běh, který skončil chybou, se musí v session ukázat jako „Selhalo“ s důvodem – nikdy jako „Hotovo“.
   function recordRunFailure(run) {
     if (failedRuns.has(run.id)) return;
     failedRuns.add(run.id);
@@ -170,7 +170,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   ];
   if (config.processes) {
     list.push(createProcessesConnector(ctx));
-    // Detektor všeho ostatního, co na Macu běží jako AI agent — včetně vlastních a neznámých modelů.
+    // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
@@ -244,7 +244,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   /* ---------- Projekty ---------- */
 
-  // Snímky konverzací v projektech se ukládají s odstupem — při živé práci se data.json nepřepisuje každou vteřinu.
+  // Snímky konverzací v projektech se ukládají s odstupem – při živé práci se data.json nepřepisuje každou vteřinu.
   const persistSnapshots = debounce(() => datastore.save(), 15000);
 
   function syncSnapshots() {
@@ -302,7 +302,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const findProject = (id) => projects().items.find((p) => p.id === id) || null;
   const repoOf = (p) => p.settings.repo || p.folders[0] || '';
 
-  /* Vzhled projektu: vlastní pozadí karty a logo (PNG, JPG, WebP — obsah se ověřuje podle hlavičky souboru, ne podle přípony). */
+  /* Vzhled projektu: vlastní pozadí karty a logo (PNG, JPG, WebP – obsah se ověřuje podle hlavičky souboru, ne podle přípony). */
 
   const MEDIA_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
   const MEDIA_MAX = { cover: 4_000_000, logo: 1_500_000 };
@@ -456,7 +456,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const p = findProject(id);
     const w = p?.work.find((x) => x.id === workId && x.status === 'active');
     if (!w) return { status: 404, error: 'Pracovní větev nenalezena.' };
-    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq — uprav ji ručně.' };
+    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq – uprav ji ručně.' };
     const running = (w.runId && ['running', 'stopping'].includes(runs.get(w.runId)?.status)) || (w.sessionId && store.summary(w.sessionId)?.status === 'working');
     if (running) return { status: 409, error: 'Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.' };
     if (dry) return { ok: true, dry: true };
@@ -464,7 +464,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!info.isRepo) return { status: 422, error: 'Repozitář projektu není dostupný.' };
     let r;
     if (action === 'accept') {
-      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} — ${clip(w.prompt, 72)}` });
+      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} – ${clip(w.prompt, 72)}` });
       if (r.ok) await cleanupWork({ repo: info.root, dir: w.path, branch: w.branch });
     } else {
       r = await discardWork({ repo: info.root, dir: w.path, branch: w.branch });
@@ -607,7 +607,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     };
   }
 
-  // Kódex spuštěný na pozadí nemá předem známé ID session — spáruje se podle složky a času startu.
+  // Kódex spuštěný na pozadí nemá předem známé ID session – spáruje se podle složky a času startu.
   function linkRun(summary) {
     if (summary.connector !== 'codex' || !summary.cwd) return;
     for (const r of runs.list()) {
@@ -696,11 +696,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // „Ukázat ve Finderu“ pro instalační balíček v Nastavení → Instalace pro další lidi.
-  // Cesta se nikdy nebere z požadavku — server ji odvodí sám ze složky dist (distDir), jinak by šlo
+  // Cesta se nikdy nebere z požadavku – server ji odvodí sám ze složky dist (distDir), jinak by šlo
   // přes tento endpoint otevřít ve Finderu cokoli na disku.
   async function revealInstallPackage() {
     const pkg = await findInstallPackage(distDir);
-    // V nainstalované aplikaci žádné `dist/` není — hotový balíček leží jen ve vývojovém repu.
+    // V nainstalované aplikaci žádné `dist/` není – hotový balíček leží jen ve vývojovém repu.
     // Uživateli proto ukážeme samotnou aplikaci: ve Finderu si ji zabalí a výsledný ZIP pošle dál.
     const bundle = path.resolve(ROOT_DIR, '..', '..', '..');
     const target = pkg?.path || (config.desktop && bundle.endsWith('.app') ? bundle : null);
@@ -789,7 +789,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Vzdálený přístup mimo domácí síť: Agenteeq nic neotvírá sám, jen zjistí, jestli má uživatel
   // nainstalovaný tunel (Tailscale / Cloudflare / ngrok) a poradí, co s tím. Zjišťuje se na
-  // vyžádání a po startu, ne v každém cyklu — jsou to volání externích binárek.
+  // vyžádání a po startu, ne v každém cyklu – jsou to volání externích binárek.
   async function refreshTunnels() {
     const port = lanPort();
     const list = await detectTunnels({ port });
@@ -812,11 +812,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function setLanAccess(enabled) {
     if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
-    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti — připoj se na Wi-Fi.' };
+    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti – připoj se na Wi-Fi.' };
     return applyAccess('lanAccess', enabled, 'Přístup z telefonu se nepodařilo otevřít.');
   }
 
-  // Přístup z vlastní privátní sítě Tailscale. Chová se stejně jako přístup z domácí sítě —
+  // Přístup z vlastní privátní sítě Tailscale. Chová se stejně jako přístup z domácí sítě –
   // jen se naslouchá na adrese 100.x místo 192.168.x a adresa nikde veřejně neexistuje.
   // Párování kódem a token platí i tady: bez spárovaného zařízení se nepřečte nic.
   async function setTailscaleAccess(enabled) {
@@ -824,7 +824,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (enabled) {
       // Adresa z rozsahu 100.64.0.0/10 sama o sobě Tailscale nedokazuje: je to rozsah pro
       // CGNAT (RFC 6598) a od některých operátorů ji Mac dostane i bez něj. Zeptáme se proto
-      // přímo Tailscale, jestli běží — jinak bychom otevřeli naslouchání do sítě operátora
+      // přímo Tailscale, jestli běží – jinak bychom otevřeli naslouchání do sítě operátora
       // a v rozhraní tvrdili, že je to „adresa v síti Tailscale“.
       const stav = (await refreshTunnels()).list.find((t) => t.id === 'tailscale');
       if (!stav?.running) {
@@ -841,7 +841,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Společné přepnutí obou cest. Odpárování zařízení nastává, teprve když se zavírá poslední
-  // otevřená cesta — jinak by vypnutí Tailscale odhlásilo i telefon spárovaný v domácí síti.
+  // otevřená cesta – jinak by vypnutí Tailscale odhlásilo i telefon spárovaný v domácí síti.
   async function applyAccess(key, enabled, selhani) {
     const druhy = key === 'lanAccess' ? 'tailscaleAccess' : 'lanAccess';
     datastore.data.settings[key] = Boolean(enabled);
@@ -865,7 +865,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Předání zadání do webové služby, která ho neumí převzít z adresy (Gemini, Qwen) nebo je na
   // adresu příliš dlouhé. Rozšíření si ho po otevření stránky vyzvedne a vloží do pole zprávy.
-  // Drží se jen v paměti, jednou, dvě minuty a jen pro tu službu — nikam se neukládá.
+  // Drží se jen v paměti, jednou, dvě minuty a jen pro tu službu – nikam se neukládá.
   const HANDOFF_TTL = 2 * 60 * 1000;
   const HANDOFF_SITE = { 'claude-web': 'claude' };
   const webHandoffs = new Map();
@@ -882,7 +882,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Rozšíření se ozývá při startu Chromu, každých 30 minut a při každé konverzaci. Dvě hodiny ticha
-  // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté — to se uživateli řekne na rovinu.
+  // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté – to se uživateli řekne na rovinu.
   const EXTENSION_QUIET_MS = 2 * 60 * 60 * 1000;
 
   function extensionStatus(now = Date.now()) {
@@ -935,7 +935,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { token: datastore.data.ingestToken, version: VERSION };
   }
 
-  // `local: false` znamená požadavek z telefonu — ten nesmí dostat párovací kód ani seznam
+  // `local: false` znamená požadavek z telefonu – ten nesmí dostat párovací kód ani seznam
   // spárovaných zařízení, jinak by si mohl přizvat další.
   function storageStatus() {
     const r = datastore.recovery;

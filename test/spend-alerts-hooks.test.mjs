@@ -143,7 +143,7 @@ test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () =>
   helper.running = false;
   helper.lastAt = now + 3000;
   store.commit(helper, now + 3000);
-  assert.equal(datastore.data.alerts.length, alertsBefore, 'automatická kontrola nehlásí „dokončeno“ — patří k rodičovské konverzaci');
+  assert.equal(datastore.data.alerts.length, alertsBefore, 'automatická kontrola nehlásí „dokončeno“ – patří k rodičovské konverzaci');
 
   const quiet = store.ensure({ connector: 'claude-code', localId: 'x2', provider: 'anthropic', app: 'Claude Code' });
   Object.assign(quiet, { lastAt: now - 200000, startedAt: now - 300000, running: true, runningAt: now - 200000, turnStartedAt: now - 300000, staleMs: 30 * 60e3, title: 'Dlouhé přemýšlení' });

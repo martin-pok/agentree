@@ -10,9 +10,9 @@ const PROMPT_MAX = 20000;
 const MODE_HINT = {
   terminal: 'Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.',
   background: 'Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.',
-  app: 'Otevře aplikaci s předvyplněným zadáním — v ní ho jen potvrdíš.',
+  app: 'Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.',
   web: 'Otevře službu v prohlížeči; zadání je navíc ve schránce (⌘V).',
-  local: 'Model běží na tvém Macu — zdarma a bez odesílání dat. Odpovídá přímo v Agenteeq.',
+  local: 'Model běží na tvém Macu – zdarma a bez odesílání dat. Odpovídá přímo v Agenteeq.',
 };
 
 function load() {
@@ -38,7 +38,7 @@ export function runProblem(r) {
       ? { title: 'Přihlášení Codexu vypršelo', hint: 'V Terminálu spusť příkaz níže a přihlas se. Potom úkol spusť znovu.', fix: 'codex login', raw }
       : { title: 'Přihlášení Claude Code vypršelo', hint: 'V Terminálu spusť příkaz níže a zadej /login. Potom úkol spusť znovu.', fix: 'claude', raw };
   }
-  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu — Agenteeq tě upozorní, až se obnoví.', raw };
+  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.', raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} se nepodařilo spustit`, hint: 'Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.', raw };
   return { title: `${r.label} skončil chybou`, hint: 'Celé znění chyby najdeš níže v části Původní chyba.', raw };
 }
@@ -68,7 +68,7 @@ function runHtml(r, now) {
       <strong>${esc(problem.title)}</strong>
       <p>${esc(problem.hint)}</p>
       <div class="run-problem-actions">
-        ${problem.fix ? `<span class="run-cmd"><code>${esc(problem.fix)}</code><button type="button" data-copy="${esc(problem.fix)}" data-copy-message="Příkaz zkopírován — vlož ho do Terminálu" aria-label="Kopírovat příkaz ${esc(problem.fix)}" title="Kopírovat příkaz">${ICON.copy}</button></span>` : ''}
+        ${problem.fix ? `<span class="run-cmd"><code>${esc(problem.fix)}</code><button type="button" data-copy="${esc(problem.fix)}" data-copy-message="Příkaz zkopírován – vlož ho do Terminálu" aria-label="Kopírovat příkaz ${esc(problem.fix)}" title="Kopírovat příkaz">${ICON.copy}</button></span>` : ''}
         <details class="run-raw"><summary>Původní chyba</summary><pre>${esc(problem.raw)}</pre></details>
       </div>
     </div>` : ''}
@@ -87,7 +87,7 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
     : handoff === 'confirm'
       ? ['Zadání je v aplikaci předvyplněné.', 'Zkontroluj ho a potvrď klávesou Enter.']
       : handoff === 'confirm-or-paste'
-        ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V — je ve schránce.']
+        ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V – je ve schránce.']
         : ['Zadání máš ve schránce.', `V ${label} ho vlož ⌘V a odešli Enterem.`];
   const foot = mode !== 'web'
     ? 'Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.'
@@ -251,7 +251,7 @@ export function createLauncher(root) {
       return;
     }
     if (mode === 'web') {
-      try { await navigator.clipboard.writeText(withBrief); } catch { /* schránka nedostupná — server stejně otevře web */ }
+      try { await navigator.clipboard.writeText(withBrief); } catch { /* schránka nedostupná – server stejně otevře web */ }
     }
     busy = true;
     goBtn.disabled = true;

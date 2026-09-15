@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { run, shellQuote } from './util.js';
 
-// Otevření session přímo v aplikaci, kde běží. Plán se skládá jen ze serverových dat — nikdy z textu od klienta.
+// Otevření session přímo v aplikaci, kde běží. Plán se skládá jen ze serverových dat – nikdy z textu od klienta.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAFE_ID = /^[\w.-]{1,120}$/;
@@ -16,7 +16,7 @@ export const APPS = {
 
 export const ALL_APPS = { codex: true, claude: true, cursor: true, vscode: true, cli: { claude: true, codex: true, copilot: true } };
 
-// Přepnutí do okna běžící aplikace jedním klikem — hlavní důvod, proč uživatel Agenteeq drží
+// Přepnutí do okna běžící aplikace jedním klikem – hlavní důvod, proč uživatel Agenteeq drží
 // otevřený: nemusí mezi desítkami oken hledat, které patří kterému agentovi.
 // Název aplikace se nikdy nebere z požadavku, jen z tohoto pevného seznamu.
 export const RUNTIME_APPS = {
@@ -103,7 +103,7 @@ export function openTargets(s, apps = {}) {
 // Schránku plní server, ne okno. WKWebView v aplikaci ani stránka otevřená z telefonu po síti
 // do schránky zapsat nesmí (chybí gesto uživatele nebo zabezpečený kontext) a chyba je tichá.
 //
-// Kódování: změřeno na macOS 26 — `pbcopy` uloží text správně jen tehdy, když NEMÁ nastavené
+// Kódování: změřeno na macOS 26 – `pbcopy` uloží text správně jen tehdy, když NEMÁ nastavené
 // LANG/LC_*. S LANG=…UTF-8 (nebo cs_CZ.UTF-8) přečte vstup jako MacRoman a z „název“ je
 // „n�zev“. Proměnné jazyka se proto odstraní, ať je aplikace spuštěná odkudkoli.
 const LOCALE_VARS = new Set(['LANG', 'LC_ALL', 'LC_CTYPE', 'LC_MESSAGES', '__CF_USER_TEXT_ENCODING']);

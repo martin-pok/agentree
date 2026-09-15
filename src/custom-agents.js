@@ -1,5 +1,5 @@
 // Vlastní agenti = lokální služba, kterou si uživatel sám zaregistruje (ComfyUI, Ollama,
-// OpenAI-kompatibilní server jako LM Studio nebo vLLM). Agenteeq jen čte její stav přes GET —
+// OpenAI-kompatibilní server jako LM Studio nebo vLLM). Agenteeq jen čte její stav přes GET –
 // nikdy nic nezapisuje a nikdy nesahá mimo lokální/privátní síť. Bezpečnost tohoto souboru
 // (validateEndpoint) má přednost před vším ostatním: co neprojde, se nikdy nezavolá.
 
@@ -34,13 +34,13 @@ function inIpv4Range(host, base, prefix) {
   return (ip & mask) === (baseInt & mask);
 }
 
-// Hostitel smí být jen lokální nebo v privátní síti — nikdy veřejná doména ani cloudová metadata.
+// Hostitel smí být jen lokální nebo v privátní síti – nikdy veřejná doména ani cloudová metadata.
 function isAllowedHost(hostname) {
   const host = hostname.toLowerCase();
   if (host === 'localhost' || host === '::1' || host === '[::1]') return true;
   if (host.endsWith('.local')) return true;
   if (ipv4ToInt(host) === null) return false; // není to IPv4 a není to nic z výše uvedeného
-  if (inIpv4Range(host, '169.254.0.0', 16)) return false; // link-local a cloudová metadata — vždy odmítnout
+  if (inIpv4Range(host, '169.254.0.0', 16)) return false; // link-local a cloudová metadata – vždy odmítnout
   if (host === '0.0.0.0') return false;
   if (inIpv4Range(host, '127.0.0.0', 8)) return true;
   if (inIpv4Range(host, '10.0.0.0', 8)) return true;
@@ -49,7 +49,7 @@ function isAllowedHost(hostname) {
   return false;
 }
 
-// Ověří a znormalizuje adresu lokální služby. Nikdy nic síťově nevolá — jen parsuje řetězec.
+// Ověří a znormalizuje adresu lokální služby. Nikdy nic síťově nevolá – jen parsuje řetězec.
 export function validateEndpoint(raw) {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_INPUT_LEN) {
     return { ok: false, error: 'Adresa je povinná a smí mít nejvýš 200 znaků.' };
@@ -58,7 +58,7 @@ export function validateEndpoint(raw) {
   try {
     url = new URL(raw);
   } catch {
-    return { ok: false, error: 'Adresa nedává smysl — zkontroluj formát (např. http://127.0.0.1:8188).' };
+    return { ok: false, error: 'Adresa nedává smysl – zkontroluj formát (např. http://127.0.0.1:8188).' };
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return { ok: false, error: 'Podporuje se jen http:// nebo https://.' };
@@ -69,7 +69,7 @@ export function validateEndpoint(raw) {
   if (!isAllowedHost(url.hostname)) {
     return { ok: false, error: 'Hostitel musí být lokální nebo v privátní síti (localhost, 127.0.0.1, 10.x, 172.16–31.x, 192.168.x nebo .local).' };
   }
-  // Origin bez cesty, dotazu a fragmentu — přes adresu se tak nedá propašovat jiný požadavek.
+  // Origin bez cesty, dotazu a fragmentu – přes adresu se tak nedá propašovat jiný požadavek.
   return { ok: true, origin: url.origin };
 }
 
@@ -152,7 +152,7 @@ function summarize(type, json) {
   return { running: true, detail: 'Odpovídá' };
 }
 
-// Zjistí stav zaregistrované lokální služby jedním GET požadavkem. Nikdy nevyhazuje výjimku ven —
+// Zjistí stav zaregistrované lokální služby jedním GET požadavkem. Nikdy nevyhazuje výjimku ven –
 // timeout, odmítnuté spojení i neočekávaná odpověď se vždy promění na klidné { ok: false }.
 export async function probeAgent(agent, { fetchImpl = globalThis.fetch, timeoutMs = 1500, maxBytes = 65536 } = {}) {
   const at = Date.now();

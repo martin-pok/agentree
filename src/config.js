@@ -8,7 +8,7 @@ export const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 export const EXTENSION_DIR = path.join(ROOT_DIR, 'extension');
 export const VERSION = JSON.parse(readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')).version;
 
-// Veškerá konfigurace přes proměnné prostředí — testy tak běží nad fixturami, ne nad skutečným HOME.
+// Veškerá konfigurace přes proměnné prostředí – testy tak běží nad fixturami, ne nad skutečným HOME.
 export function loadConfig(env = process.env) {
   // Přejmenování z Agentree na Agenteeq (0.8.0): staré proměnné prostředí i stará datová složka
   // dál fungují, aby se nikomu uprostřed práce nerozbil běžící systém.

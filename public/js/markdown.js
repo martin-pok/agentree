@@ -1,11 +1,11 @@
 import { esc } from './format.js';
 
-// Malý převodník Markdownu pro čtení souborů SKILL.md přímo v aplikaci. Záměrně neumí všechno —
+// Malý převodník Markdownu pro čtení souborů SKILL.md přímo v aplikaci. Záměrně neumí všechno –
 // umí to, co se v těch souborech skutečně vyskytuje: nadpisy, seznamy, kód, citace, tabulky,
 // odkazy a zvýraznění.
 //
 // Bezpečnost: text se nejdřív celý proescapuje a teprve nad escapovaným řetězcem se hledají
-// značky. Do výstupu se tedy nikdy nedostane HTML ze souboru — ani z odkazu, u kterého navíc
+// značky. Do výstupu se tedy nikdy nedostane HTML ze souboru – ani z odkazu, u kterého navíc
 // propouštíme jen http, https a mailto.
 
 const ODRAZKA = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/;
@@ -33,13 +33,13 @@ export function splitFrontMatter(src) {
   return { front, body: text.slice(m[0].length) };
 }
 
-// Adresa odkazu. Cokoli jiného než http(s) a mailto se zahodí a zůstane jen text —
+// Adresa odkazu. Cokoli jiného než http(s) a mailto se zahodí a zůstane jen text –
 // `javascript:` ani `data:` se do stránky nedostanou.
 function bezpecnyOdkaz(url) {
   const u = String(url || '').trim();
   if (!/^(https?:\/\/|mailto:)/i.test(u)) return '';
   // Text sem přichází už proescapovaný, takže uvozovka má podobu &quot;. V atributu by se sice
-  // neuplatnila, ale skutečná adresa ji neobsahuje — a co nedává smysl, radši nepustíme dál.
+  // neuplatnila, ale skutečná adresa ji neobsahuje – a co nedává smysl, radši nepustíme dál.
   if (/[\s<>"']/.test(u) || /&(quot|apos|#3[49]|lt|gt);/i.test(u)) return '';
   return u;
 }

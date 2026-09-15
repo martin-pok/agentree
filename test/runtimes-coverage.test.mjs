@@ -7,13 +7,13 @@ import { MA_PREPIS, BEZ_PREPISU } from '../public/js/no-transcript.js';
 // chyba, jindy fakt o té aplikaci (ChatGPT konverzace na disk neukládá). Nepřijatelné je jen jedno:
 // aby aplikace běžela a Agenteeq o ní mlčel. Tyhle testy to hlídají za nás.
 
-test('každá známá aplikace je buď čtená, nebo má vysvětlení — nikdy ani jedno', () => {
+test('každá známá aplikace je buď čtená, nebo má vysvětlení – nikdy ani jedno', () => {
   const nezarazene = RUNTIMES.filter((r) => !MA_PREPIS.has(r.id) && !BEZ_PREPISU[r.id]);
   assert.deepEqual(
     nezarazene.map((r) => r.id),
     [],
     'Tahle aplikace by běžela a uživatel by nevěděl proč po ní není stopa. Přidej ji do MA_PREPIS '
-    + '(umíme číst její přepisy), nebo do BEZ_PREPISU s ověřeným důvodem — v public/js/no-transcript.js.',
+    + '(umíme číst její přepisy), nebo do BEZ_PREPISU s ověřeným důvodem – v public/js/no-transcript.js.',
   );
 });
 

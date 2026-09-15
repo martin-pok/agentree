@@ -1,13 +1,13 @@
-// Kontrast podle WCAG 2.2 AA — měřený na skutečně vykreslené ploše: `npm run qa:contrast`
+// Kontrast podle WCAG 2.2 AA – měřený na skutečně vykreslené ploše: `npm run qa:contrast`
 //
 // Rozdíl oproti kontrole v `scripts/qa-desktop.mjs`: ta porovnává dvojice tokenů z `:root`, tedy
 // to, co jsme zamýšleli. Tenhle skript projde **každý viditelný text** a spočítá jeho kontrast
-// proti pozadí, které pod ním doopravdy leží — včetně poloprůhledných vrstev nad sebou. Odhalí
+// proti pozadí, které pod ním doopravdy leží – včetně poloprůhledných vrstev nad sebou. Odhalí
 // tak i případ, kdy jsou oba tokeny v pořádku, ale jejich kombinace na konkrétním místě ne
 // (přesně tak se našel odznak „Ověřeno“ s poměrem 4,45:1).
 //
 // Pokrývá aplikaci (všechny obrazovky, světlý i tmavý režim, 1440 a 375 px), landing page
-// a okno rozšíření pro Chrome. Playwright se bere stejně jako v qa-desktop.mjs — z PLAYWRIGHT_PATH
+// a okno rozšíření pro Chrome. Playwright se bere stejně jako v qa-desktop.mjs – z PLAYWRIGHT_PATH
 // nebo z globální instalace, aby projekt zůstal bez závislostí.
 import { createRequire } from 'node:module';
 import fs from 'node:fs/promises';
@@ -98,12 +98,12 @@ function vypis(kde, nalezy) {
   if (!nalezy.length) { console.log(`  ${kde}: v pořádku`); return; }
   console.log(`  ${kde}: NEVYHOVUJE (${nalezy.length})`);
   for (const n of nalezy) {
-    console.log(`     „${n.text}“ — ${n.pomer}:1, potřeba ${n.pozadovano}:1 (${n.px}px/${n.vaha}, ${n.popredi} na ${n.pozadi}) ${n.prvek}`);
+    console.log(`     „${n.text}“ – ${n.pomer}:1, potřeba ${n.pozadovano}:1 (${n.px}px/${n.vaha}, ${n.popredi} na ${n.pozadi}) ${n.prvek}`);
     problemy.push({ kde, ...n });
   }
 }
 
-// Malý statický server pro sestavený web — hosting se tu simulovat nedá a `file://` by rozbilo
+// Malý statický server pro sestavený web – hosting se tu simulovat nedá a `file://` by rozbilo
 // absolutní cesty, na kterých stránka stojí.
 function staticServer(dir) {
   const TYPY = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8' };

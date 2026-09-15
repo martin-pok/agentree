@@ -26,7 +26,7 @@ export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
         watcher = null;
         schedule();
       });
-      // Složka mohla vzniknout mezi skenem a sledováním — ohlásit plný průchod.
+      // Složka mohla vzniknout mezi skenem a sledováním – ohlásit plný průchod.
       onChange(null);
     } catch {
       watcher = null;

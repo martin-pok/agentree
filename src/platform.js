@@ -69,7 +69,7 @@ Get-CimInstance Win32_Process | ForEach-Object {
 
 /**
  * Seznam běžících procesů v jednotném tvaru. Když ho systém neumí dát, vrátí
- * `{ ok: false }` — volající pak drží poslední známý stav a nic si nedomýšlí.
+ * `{ ok: false }` – volající pak drží poslední známý stav a nic si nedomýšlí.
  */
 export async function processList(runImpl = run) {
   if (JE_WINDOWS) {
@@ -80,7 +80,7 @@ export async function processList(runImpl = run) {
 
 /**
  * Otevře cestu nebo adresu v tom, co je pro ni v systému nastavené.
- * Vrací `null`, když to systém neumí — nikdy nehádá jiný příkaz.
+ * Vrací `null`, když to systém neumí – nikdy nehádá jiný příkaz.
  */
 export function openCommand(cil) {
   if (JE_MAC) return { cmd: 'open', args: [cil] };
@@ -90,7 +90,7 @@ export function openCommand(cil) {
   // takže to nesmí být bezpečné jen náhodou.
   //
   // explorer.exe je obyčejný program: argumenty dostane přímo, žádný shell je nečte.
-  // Zvládne adresu i složku. Vrací nenulový kód i při úspěchu — volající se proto
+  // Zvládne adresu i složku. Vrací nenulový kód i při úspěchu – volající se proto
   // nesmí řídit návratovým kódem, jen tím, že se okno otevře.
   if (JE_WINDOWS) return { cmd: 'explorer.exe', args: [cil] };
   return null;
@@ -124,7 +124,7 @@ export const whichCommand = JE_WINDOWS ? 'where.exe' : 'which';
 
 const LSOF_ARGS = ['-nP', '-iTCP', '-sTCP:LISTEN'];
 
-// Get-NetTCPConnection zná port i PID, jméno procesu ne — to se dopáruje z Get-Process.
+// Get-NetTCPConnection zná port i PID, jméno procesu ne – to se dopáruje z Get-Process.
 // Výstup se skládá do téhož tvaru, jaký dává `lsof`, aby ho četl jeden parser.
 const PORTY_WINDOWS = `
 $ErrorActionPreference = 'SilentlyContinue'

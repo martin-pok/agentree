@@ -4,7 +4,7 @@ import { touch, pushEntry, updateEntry, addTokens } from './model.js';
 const TEXT_MAX = 20000;
 
 // Lokální chat s modelem v Ollamě jako běžná session v Agenteeq (živý přepis, stav, tokeny).
-// Konverzace žije v paměti serveru — po restartu zůstane jen do dalšího spuštění.
+// Konverzace žije v paměti serveru – po restartu zůstane jen do dalšího spuštění.
 export function createLocalChat({ store, ollama }) {
   const chats = new Map();
 

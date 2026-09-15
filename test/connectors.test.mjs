@@ -254,7 +254,7 @@ test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/t
   assert.equal(byId['claude:spend_limit:history'].label, 'Extra usage');
   assert.equal(byId['claude:spend_limit:history'].kind, 'spend');
   assert.equal(byId['claude:spend_limit:history'].id.endsWith(':history'), true, 'id se nikdy nesrazí s přesným údajem ze stavového řádku');
-  // Vlastní id ('…:history') se nikdy nepřepisuje přes id stavového řádku ('claude:five_hour') a naopak —
+  // Vlastní id ('…:history') se nikdy nepřepisuje přes id stavového řádku ('claude:five_hour') a naopak –
   // ui.js#currentLimits dá při souběhu přednost zdroji 'statusline', tahle historie zůstane jen záloha.
   assert.equal(Object.keys(byId).sort().join(','), 'claude:five_hour:history,claude:seven_day:history,claude:spend_limit:history');
 });
@@ -278,13 +278,13 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   const store = new Store({ config, datastore: fakeDatastore() });
   const connector = createClaudeDesktopUsageConnector({ config, store });
 
-  // 1) Soubor zatím neexistuje — konektor nesmí spadnout, stav je „missing“.
+  // 1) Soubor zatím neexistuje – konektor nesmí spadnout, stav je „missing“.
   await connector.start();
   assert.equal(connector.status().state, 'missing');
   assert.equal(store.limitList().length, 0);
   connector.stop();
 
-  // 2) Soubor existuje se vzorky — poslední vzorek se zapíše.
+  // 2) Soubor existuje se vzorky – poslední vzorek se zapíše.
   const dir = path.join(appSupportDir(home), 'Claude');
   const file = path.join(dir, 'plan-usage-history.json');
   const now = Date.now();
@@ -305,7 +305,7 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   assert.equal(connector2.status().state, 'connected');
   connector2.stop();
 
-  // 3) Poškozený JSON — nesmí shodit ani zůstat v chybovém zacyklení, jen se nahlásí chyba.
+  // 3) Poškozený JSON – nesmí shodit ani zůstat v chybovém zacyklení, jen se nahlásí chyba.
   await fs.writeFile(file, '{ toto neni platny json');
   const connector3 = createClaudeDesktopUsageConnector({ config, store });
   await assert.doesNotReject(connector3.start());

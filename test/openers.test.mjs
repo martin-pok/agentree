@@ -43,7 +43,7 @@ test('přepnutí do aplikace: plán vzniká jen z pevného seznamu, nikdy z pož
   assert.equal(planRuntimeFocus('claude-desktop').args[1], 'Claude');
   assert.equal(planRuntimeFocus('vscode').args[1], 'Visual Studio Code');
 
-  // Nic, co není v seznamu, plán nedostane — ani šikovně poskládaný vstup.
+  // Nic, co není v seznamu, plán nedostane – ani šikovně poskládaný vstup.
   for (const id of ['vymysleny', '../../Applications/Calculator', 'Terminal', '', null, undefined, 'chatgpt; rm -rf /']) {
     assert.equal(planRuntimeFocus(id), null, `${id} nesmí projít`);
   }

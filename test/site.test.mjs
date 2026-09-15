@@ -22,7 +22,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   assert.match(aplikace, /<aside class="sidebar">/, 'rozhraní aplikace patří na /app');
   assert.equal(aplikace, await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8'), 'kopie se nesmí lišit od aplikace');
 
-  // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) — musí tam být, jinak je /app rozbité.
+  // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) – musí tam být, jinak je /app rozbité.
   for (const soubor of ['styles.css', 'js/app.js', 'js/boot.js', 'fonts/fonts.css', 'brand/agenteeq-mark-dark.svg', 'logos/claude.svg']) {
     assert.ok(r.files.includes(soubor), `v sestavení chybí ${soubor}`);
   }
@@ -67,7 +67,7 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
   // Klíčové barvy identity „koncertní sál" musí sedět na aplikaci, ne být přibližné.
   for (const token of ['--stage: #121019', '--paper: #F4F3F7', '--ink: #16141D', '--brass: #C99A3E', '--velvet: #C2335A', '--teal: #22A38C']) {
     assert.ok(css.includes(token), `landing page nemá token ${token}`);
-    assert.ok(app.includes(token), `aplikace nemá token ${token} — sjednoť obě strany`);
+    assert.ok(app.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
   for (const rodina of ["--f-display: 'Urbanist'", "--f-body: 'Onest'", "--f-mono: 'Geist Mono'"]) {
     assert.ok(css.includes(rodina), rodina);

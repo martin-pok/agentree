@@ -40,7 +40,7 @@ export function subscribe(fn) {
   return () => listeners.delete(fn);
 }
 
-// Změny se slévají do jednoho snímku (requestAnimationFrame) — plynulé i při stovkách událostí.
+// Změny se slévají do jednoho snímku (requestAnimationFrame) – plynulé i při stovkách událostí.
 // Skryté nebo zakryté okno ale snímky nekreslí a requestAnimationFrame v něm nepřijde vůbec: načtený
 // stav pak čekal, až se na okno někdo podívá, a aplikace mezitím ukazovala „Načítám agenty“.
 // Časovač proto doručí změny nejpozději za 250 ms; při viditelném okně vyhraje snímek.

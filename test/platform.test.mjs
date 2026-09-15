@@ -35,7 +35,7 @@ test('openCommand vrací příkaz pro tento systém, nebo poctivě nic', () => {
 
 test('otevírání nikdy neposílá cíl přes shell, který by ho znovu rozebral', () => {
   // Složka „Design & Web“ je běžné jméno. Kdyby cíl procházel cmd.exe, byl by
-  // ampersand oddělovačem příkazů — a otevření složky by spustilo cizí program.
+  // ampersand oddělovačem příkazů – a otevření složky by spustilo cizí program.
   const zakerna = JE_WINDOWS ? 'C:\\Users\\jana\\Design & Web' : '/Users/jana/Design & Web';
   const p = openCommand(zakerna);
   if (!p) return;

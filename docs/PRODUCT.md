@@ -2,7 +2,7 @@
 
 ## Vize
 
-Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kdo pracuje, kdo čeká na rozhodnutí a kolik to stojí — bez přepínání mezi deseti okny a bez překvapení na faktuře.
+Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kdo pracuje, kdo čeká na rozhodnutí a kolik to stojí – bez přepínání mezi deseti okny a bez překvapení na faktuře.
 
 ## Problém
 
@@ -32,18 +32,18 @@ Každý, kdo pracuje s více AI agenty najednou, má **jeden velín**: vidí, kd
 3. **Nulové tření.** Instalace jedním příkazem, žádný účet pro lokální verzi.
 4. **Klid, dokud není potřeba jednat.** Upozornění jen na to, co vyžaduje člověka.
 
-## Projekty — proč jsou jádrem placené hodnoty (0.5.0)
+## Projekty – proč jsou jádrem placené hodnoty (0.5.0)
 
 Kdo pracuje pro klienty (studia, agentury, freelanceři, vývojáři na zakázku), neřeší „jaký nástroj“, ale „na čem pro koho“. Jeden klient znamená Claude Code v repozitáři, Codex vlákna, několik chatů v ChatGPT a rešerši v Perplexity. Žádný dodavatel to nespojí, protože vidí jen sebe.
 
 - **Úspora času:** přehled celé zakázky na jednom místě místo hledání v 5 aplikacích; zařazení podle složky běží samo.
 - **Peníze:** tokeny a aktivita za projekt, export do CSV jako podklad k vyúčtování klientovi a k naceňování dalších zakázek.
-- **Kvalita:** brief projektu po ruce při spuštění dalšího agenta — konzistentní tón a zadání napříč službami.
+- **Kvalita:** brief projektu po ruce při spuštění dalšího agenta – konzistentní tón a zadání napříč službami.
 - **Návyk:** spouštění agentů z projektu dělá z Agenteeq výchozí místo, odkud práce začíná (ne jen kam se člověk dívá).
 
 Měřit v betě: počet projektů na uživatele, podíl konverzací v projektech, počet spuštění z Agenteeq za týden, exporty CSV.
 
-## Hypotézy monetizace (NEOVĚŘENÉ — návrh pro validaci)
+## Hypotézy monetizace (NEOVĚŘENÉ – návrh pro validaci)
 
 Technicky připraveno v 0.5.0: offline licence a zamykání funkcí (`docs/LICENSING.md`). Dnes je vše odemčené.
 
@@ -58,7 +58,7 @@ Validace před stavbou placené verze:
 
 - 10 rozhovorů s cílovými uživateli (problém „agent čeká na mě“ a „útrata“).
 - Landing page **hotová** (`site/`, od 0.12.0): vysvětluje problém, ukazuje rozhraní a vede na
-  stažení. Čekací listina ani volba plánu na ní zatím nejsou — bez funkčního příjmu e-mailů by
+  stažení. Čekací listina ani volba plánu na ní zatím nejsou – bez funkčního příjmu e-mailů by
   to bylo tlačítko, které nic nedělá. Až bude kam e-maily posílat, přibude blok „dej vědět, až
   bude Pro“ a s ním i měřitelný cíl konverze.
 - Měřit v betě (lokálně, se souhlasem): kolik upozornění „potřebuje rozhodnutí“ denně, reakční doba před/po.

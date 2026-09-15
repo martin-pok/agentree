@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 — 2026-09-15 · Tailscale jako plnohodnotná cesta z telefonu, web a rozšíření na úrovni aplikace
+## 0.12.0 – 2026-09-15 · Tailscale jako plnohodnotná cesta z telefonu, web a rozšíření na úrovni aplikace
 
 - **Tailscale je napojený, ne jen detekovaný.** Nové nastavení `settings.tailscaleAccess` a endpoint
   `POST /api/tailscale/enable|disable` (jen z `127.0.0.1`). Se zapnutým přepínačem přidá `src/lan.js`
@@ -13,7 +13,7 @@
 - **Poctivý stav místo domněnek.** `src/tunnel.js` čte z `tailscale status --json` jméno, adresy
   i tailnet a z `tailscale serve status --json` stav HTTPS. Čemu nerozumí nebo na co se neptal,
   hlásí jako neznámé, nikdy jako vypnuté. Detekce `serve` je vedená jako **Beta**
-  (ověřeno proti dokumentaci, ne proti živému tailnetu) — viz `docs/REMOTE.md`.
+  (ověřeno proti dokumentaci, ne proti živému tailnetu) – viz `docs/REMOTE.md`.
 - **Neúspěšné zapnutí se vrátí zpět.** Když listener nejde otevřít, přepínač se přepne zpátky na
   vypnuto a řekne proč (502). Rozhraní neohlásí zapnutý přístup, který neposlouchá.
 - **Rozšíření pro Chrome** používá tatáž písma (Urbanist, Onest, Geist Mono) a tytéž barevné tokeny
@@ -24,11 +24,11 @@
   stránka v kořeni, rozhraní aplikace na `/app` (manifest PWA a `sw.js` se přepíšou na novou adresu).
   Kontrast textů ověřen na WCAG 2.2 AA v obou režimech na 1440 px i 375 px.
 - **Vydání.** `npm run release:mac` nejdřív ověří, že jsou po ruce nástroje Xcode (jinak by chybějící `swiftc` vysvitl až po testech a smoke), pak projde testy, smoke, rozšíření, web a build aplikace. S přepínačem
-  `--install` vymění i aplikaci v `/Applications` — předchozí verzi přitom nemaže, odloží ji
+  `--install` vymění i aplikaci v `/Applications` – předchozí verzi přitom nemaže, odloží ji
   do `~/.agenteeq/zalohy`.
 - **Z bezpečnostní revize (nález s vysokým dopadem):** o tom, jestli je požadavek „z tohoto Macu“,
   nerozhoduje jen adresa protistrany, ale i hlavička `Host` a stopy po reverzní proxy. `tailscale
-  serve`, který karta sama doporučuje kvůli HTTPS, se totiž na server obrací z `127.0.0.1` —
+  serve`, který karta sama doporučuje kvůli HTTPS, se totiž na server obrací z `127.0.0.1` –
   a výjimka pro desktopovou aplikaci by tak kterémukoli uzlu v tailnetu dala data bez tokenu,
   cizí párovací PIN i `POST /api/launch`. Nově takový požadavek potřebuje spárované zařízení
   jako každé jiné vzdálené. Přibyl regresní test a do `allowedOrigins()` vlastní adresa
@@ -42,10 +42,10 @@
   podporovaná cesta, nevadilo to; s `tailscale serve` ano. Nově se pozná podle
   `X-Forwarded-Proto` od proxy na tomhle Macu.
 - **Přepínač Tailscale se odemkne, až když Tailscale opravdu běží.** Adresa z rozsahu
-  `100.64.0.0/10` sama nestačí — je to rozsah pro CGNAT a od některých operátorů ji Mac dostane
+  `100.64.0.0/10` sama nestačí – je to rozsah pro CGNAT a od některých operátorů ji Mac dostane
   i bez Tailscale; naslouchání by se otevřelo do sítě operátora.
 - **Z bezpečnostní revize vlastního kódu:** jméno z MagicDNS se před vpuštěním do seznamu
-  povolených hodnot hlavičky `Host` ověří na tvar běžného DNS jména (`magicDnsName()`) — je to
+  povolených hodnot hlavičky `Host` ověří na tvar běžného DNS jména (`magicDnsName()`) – je to
   jediná hodnota v téhle ochraně, která přichází z výstupu cizího programu. A stav
   `tailscale serve` porovnává port jako port, ne jako podřetězec: `includes(':4620')` sedělo
   i na proxy mířící na `:46200` a rozhraní by ohlásilo HTTPS, které nikam nevede.
@@ -56,18 +56,18 @@
   těsně pod AA pro text 11 px. Token `--ok` je proto tmavší (`#0B6F5F`) a podklad odznaku světlejší;
   po opravě prochází AA všechno.
 - **`npm run smoke` už neselhává na úklidu.** Mazání dočasné složky nečekalo, až server skončí,
-  a padalo na `ENOTEMPTY` — kontrola přitom prošla. Teď se počká na konec procesu (po dvou
+  a padalo na `ENOTEMPTY` – kontrola přitom prošla. Teď se počká na konec procesu (po dvou
   vteřinách `SIGKILL`) a teprve pak se maže. Bez toho by se na téhle chybě zastavil `release:mac`.
 - **Testy běží i mimo macOS.** Testy závislé na `lsof` a na cestě `/private/tmp` se místo padání
   přeskočí s důvodem; `npm test` je tak zelený na Linuxu i na Macu (297 testů, 3 přeskočené).
 
-## 0.11.1 — 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
+## 0.11.1 – 2026-09-14 · připraveno na dlouhý provoz a čistou instalaci
 
 Z testu čisté instalace, testu odolnosti a zátěžového testu:
 
 - **Poškozený data.json** aplikaci neshodí: poškozený soubor zůstane bajt po bajtu jako
   `data.json.poskozeno-<čas>`, data se obnoví z `data.json.bak` (vzniká před každým zápisem),
-  bez zálohy od výchozích hodnot — vždy s kritickým upozorněním. Chyba oprávnění start dál zastaví.
+  bez zálohy od výchozích hodnot – vždy s kritickým upozorněním. Chyba oprávnění start dál zastaví.
 - **Selhání zápisu** se nehlásí jako úspěch: `PUT /api/settings` vrátí 500, selhání na pozadí ukáže
   pruh „Změny se nedaří uložit na disk“ (zmizí sám). Test hlídá řetězec emit → SSE → EVENTS → applyEvent.
 - **Desktop:** počítadlo automatických restartů serveru se po minutě stabilního běhu vynuluje.
@@ -77,7 +77,7 @@ Z testu čisté instalace, testu odolnosti a zátěžového testu:
   nenabízí propojení s Claude Code bez Claude Code; odkaz „Nastavit rozšíření“ má 32 px.
 - **Vydání:** `build:mac` umí notarizaci (`AGENTEEQ_NOTARY_PROFILE`), INSTALL.md odpovídá aplikaci.
 
-## 0.11.0 — 2026-09-13 · rozšíření pro Chrome vysvětlené všude, Co je nového, spolehlivé načítání
+## 0.11.0 – 2026-09-13 · rozšíření pro Chrome vysvětlené všude, Co je nového, spolehlivé načítání
 
 - **Průvodce** má nový krok „Agenti i v prohlížeči“ s tlačítkem na instalaci. **První kroky** na Přehledu
   i **karta v Nastavení** vysvětlují, co rozšíření dělá (agenti z webu v přehledu, zadání vložené samo).
@@ -90,17 +90,17 @@ Z testu čisté instalace, testu odolnosti a zátěžového testu:
   se použije hned a načítání má pojistku, když živý proud nepozdraví. Webový agent v kartě na pozadí
   nespadne na „bez aktivity“ (150 s místo 45 s).
 
-## 0.10.2 — 2026-09-13 · zadání vždy ve schránce, do Gemini se vloží samo
+## 0.10.2 – 2026-09-13 · zadání vždy ve schránce, do Gemini se vloží samo
 
-- Zadání do schránky zapisuje server (`pbcopy`), ne okno — to v aplikaci i na telefonu tiše selhávalo.
+- Zadání do schránky zapisuje server (`pbcopy`), ne okno – to v aplikaci i na telefonu tiše selhávalo.
   Proměnné jazyka se `pbcopy` odebírají, jinak rozbije diakritiku (změřeno).
 - Gemini a Qwen neumí převzít zadání z adresy: rozšíření si ho vyzvedne (jednou, 2 minuty, jen pro danou
   službu, jen s tokenem) a vloží do pole zprávy. Neodesílá.
 - Přehled má pevné sloupce místo sloupcové sazby; prázdný blok nenechává mezeru.
 
-## 0.10.1 — 2026-09-13 · aplikace řekne, když konverzace z prohlížeče nevidí
+## 0.10.1 – 2026-09-13 · aplikace řekne, když konverzace z prohlížeče nevidí
 
-Otevřít Gemini v prohlížeči a nevidět v Agenteeq nic vypadá jako chyba. Chyba to je — ale ne
+Otevřít Gemini v prohlížeči a nevidět v Agenteeq nic vypadá jako chyba. Chyba to je – ale ne
 v rozpoznávání: konverzace ve webových nástrojích (Gemini, ChatGPT, Claude.ai, Perplexity, Grok,
 Microsoft Copilot, Qwen Chat) se do Agenteeq dostanou **výhradně přes rozšíření pro Chrome**.
 Stránku otevřenou v prohlížeči odjinud přečíst nelze. Dokud rozšíření není připojené, aplikace
@@ -108,40 +108,40 @@ o takové konverzaci vědět nemůže.
 
 Špatně bylo, že o tom aplikace mlčela. Nově:
 
-- Na **Přehledu** je mezi běžícími aplikacemi dlaždice **Web — nesleduje se · bez rozšíření**,
+- Na **Přehledu** je mezi běžícími aplikacemi dlaždice **Web – nesleduje se · bez rozšíření**,
   která vede rovnou do Nastavení.
 - Na **Agentech** přibyla položka v sekci „Běží na Macu, ale bez přepisu“ s vysvětlením, kterých
   služeb se to týká a proč to jinak nejde.
 
 Obojí se ukazuje jen dokud rozšíření nikdy nic neposlalo; po připojení zmizí.
 
-## 0.10.0 — 2026-09-13 · původ dovedností, živá Útrata a nový widget
+## 0.10.0 – 2026-09-13 · původ dovedností, živá Útrata a nový widget
 
 **Počet tokenů v panelu se už neláme.** Řádek má 146 px a číslo s popiskem dohromady přesně
-146 px, takže flexbox zlomil obojí doprostřed — „482 tis.“ na dvou řádcích. Ani číslo, ani
+146 px, takže flexbox zlomil obojí doprostřed – „482 tis.“ na dvou řádcích. Ani číslo, ani
 popisek se teď nelámou; když na sebe vedle sebe nezbude místo, popisek se přesune celý pod číslo.
 
 **Dovednosti jdou filtrovat podle původu.** Zdroj říká, který nástroj dovednost čte; původ říká,
-kdo ji napsal — a to je to, co hledáš, když máš mezi 147 dovednostmi najít ty svoje dvě. Rozlišuje
+kdo ji napsal – a to je to, co hledáš, když máš mezi 147 dovednostmi najít ty svoje dvě. Rozlišuje
 se podle cesty na disku: Od Anthropicu (137), Od OpenAI (6), Z pluginu (2), Moje (2). Vlastní
 dovednosti navíc nesou zelený štítek. Hlídá to sedm testů včetně případů, kdy se slovo z cesty
 vyskytne jinde.
 
 **Útrata už nevede nulami.** Blok „Kredity a extra usage“ je jediná část stránky, kterou Agenteeq
-zná sám ze souborů na disku — a byl schovaný úplně dole, pod třemi prázdnými bloky. Je vysoký
+zná sám ze souborů na disku – a byl schovaný úplně dole, pod třemi prázdnými bloky. Je vysoký
 1200 px a je v něm skutečný obsah (zůstatek kreditů, historie dobití, vyčerpané extra usage
 u Claude). Přesunul se nahoru hned pod souhrn; výdaje, rozpočty a předplatné, které si zapisuješ
 ručně, jsou pod ním.
 
 **Nový widget „Kam dnes šly tokeny.“** Souhrn nahoře odpovídá na „kolik dnes“, tohle na druhou
-půlku otázky — který nástroj to byl. Počítá se ze stejných hodinových přihrádek jako měřák, takže
+půlku otázky – který nástroj to byl. Počítá se ze stejných hodinových přihrádek jako měřák, takže
 se čísla nemůžou rozejít; ověřeno, že panel, měřák i widget ukazují shodně 504 386. Zaplnil taky
 prázdné místo na Přehledu: rozdíl sloupců klesl z 210 px na 36 px.
 
-## 0.9.9 — 2026-09-13 · prověření čísel v grafech a oprava tažení okna
+## 0.9.9 – 2026-09-13 · prověření čísel v grafech a oprava tažení okna
 
 **Okno nešlo chytit za horní pruh.** První pokus pověsil plochu k uchopení dovnitř webového
-pohledu — ten si ale obsluhu myši řeší sám, takže se `mouseDownCanMoveWindow` neuplatnilo
+pohledu – ten si ale obsluhu myši řeší sám, takže se `mouseDownCanMoveWindow` neuplatnilo
 a pruh jen polykal kliknutí. Obsah okna je teď kontejner se dvěma sourozenci: webový pohled
 přes celou plochu a nad ním pruh k uchopení, který události myši dostává běžnou cestou AppKitu.
 Tažení navíc spouští výslovně přes `performDrag` místo spoléhání na systémovou heuristiku
@@ -154,50 +154,50 @@ hlavní metrika od verze 0.7.0.
 Ověřeno třemi nezávislými způsoby:
 
 - **Běžící sezení Claude Code:** aplikace 1 450 795, ruční přepočet ze souboru po odstranění
-  duplicit 1 452 210 — rozdíl 0,1 %. (Claude Code zapisuje tutéž zprávu do přepisu opakovaně;
+  duplicit 1 452 210 – rozdíl 0,1 %. (Claude Code zapisuje tutéž zprávu do přepisu opakovaně;
   aplikace duplicity odstraňuje podle `message.id`. Naivní součet dá 4 517 400, tedy trojnásobek
-  — na tohle je při jakékoli kontrole potřeba dát pozor.)
-- **Codex, 30. 8.:** aplikace 901 970, přepočet ze souborů 901 970 — na token přesně.
+  – na tohle je při jakékoli kontrole potřeba dát pozor.)
+- **Codex, 30. 8.:** aplikace 901 970, přepočet ze souborů 901 970 – na token přesně.
 - **Nejvyšší přihrádka v datech** (8 071 892 za jedinou hodinu 15. 8.) odpovídá souboru na token.
   Že celá částka padla do jedné hodiny, není chyba aplikace: Codex v tom souboru orazítkoval
   všech 21 záznamů stejnou vteřinou.
 
 Proč tedy miliony: u Codexu se s každým tahem posílá znovu necachovaná část kontextu, takže
 souhrn za dlouhé sezení jde do milionů. Je to technická metrika z přepisů, ne kredity ani cena.
-Graf to teď říká i sám pod sebou a odkazuje na Útratu, kde jsou skutečné náklady — dřív to bylo
+Graf to teď říká i sám pod sebou a odkazuje na Útratu, kde jsou skutečné náklady – dřív to bylo
 napsané jen u měřáku nad ním.
 
 Nic v historických datech jsem neupravoval. Čísla odpovídají zdrojům a měnit je znamená lhát.
 
-## 0.9.8 — 2026-09-13 · ploché karty místo stínů
+## 0.9.8 – 2026-09-13 · ploché karty místo stínů
 
 Karty se vznášely nad stránkou na měkkých stínech. Místo nich je drží vlasová linka: hrany jsou
 ostré, takže je vidět, že jsou přesně zarovnané, a nic se nerozmazává do okolí.
 
 - Stín karet měl tři vrstvy včetně rozmazání do 46 px. Nově je to jedna linka o šířce 1 px.
-  V tmavém režimu je zřetelnější, protože karta se tam od podkladu liší jen o 0,006 jasu —
+  V tmavém režimu je zřetelnější, protože karta se tam od podkladu liší jen o 0,006 jasu –
   hranu tedy nese výhradně ona.
 - **Stín nad „Okna limitů“** vrhal pruh se stavem agentů. Jako jediný blok ve stránce měl
-  vyzdvižení určené pro plovoucí prvky — 80 px rozmazání, které padalo dolů na sloupce pod ním.
+  vyzdvižení určené pro plovoucí prvky – 80 px rozmazání, které padalo dolů na sloupce pod ním.
   Tmavá výplň na světlém podkladu ho oddělí sama. Vyzdvižení zůstává jen tomu, co se nad stránku
   opravdu vysouvá: dialogům, nabídkám, paletě příkazů a plovoucí liště na telefonu.
 - Bloky Přehledu naskakují naráz. Postupné naskakování po 60 ms mělo smysl, dokud o pořadí
-  rozhodoval kód; teď o rozmístění rozhoduje sazba, takže by vypadalo náhodně — a během něj
+  rozhodoval kód; teď o rozmístění rozhoduje sazba, takže by vypadalo náhodně – a během něj
   bloky chvíli neseděly v řadě, což vypadalo jako křivý layout.
 
 Zarovnání ověřeno měřením: oba sloupce 484 px, levé hrany karet přesně na 0 a 556 px, pravé na
 484 a 1040 px, **žádné desetinné pixely**, mezery 40 px mezi bloky a 16 px pod nadpisy.
 
-## 0.9.7 — 2026-09-13 · Přehled se vyvažuje sám, přepis je zase čitelný
+## 0.9.7 – 2026-09-13 · Přehled se vyvažuje sám, přepis je zase čitelný
 
-**Tmavý text na tmavé bublině v přepisu — moje chyba z 0.9.0.** Třídu `.md` používá jak čtečka
+**Tmavý text na tmavé bublině v přepisu – moje chyba z 0.9.0.** Třídu `.md` používá jak čtečka
 dovedností, tak přepis konverzace. Když jsem pro čtečku přidal obecné pravidlo s barvou textu,
 přebilo to styly přepisu: zpráva uživatele dostala tmavě šedou na tmavém pozadí a odkazy v ní
 zčernaly. Pravidla čtečky jsou teď omezená na `.reader`, takže přepis si drží vlastní bílý text
 i světlé odkazy. Doloženo v servírovaném souboru: barvu v `.md` nastavuje už jen čtečka.
 
 **Prázdná plocha na Přehledu.** Dva pevné sloupce s natvrdo přiřazenými bloky nemohly vyjít:
-výška bloků závisí na datech — jednou je dlouhý seznam rozhodnutí, jindy graf a dlaždice.
+výška bloků závisí na datech – jednou je dlouhý seznam rozhodnutí, jindy graf a dlaždice.
 Kterýkoli sloupec pak skončil dřív a vedle druhého zůstala díra; naměřeno až **1242 px** rozdílu.
 
 Přehled je nově sloupcová sazba, která bloky rozdělí tak, aby oba sloupce končily stejně vysoko,
@@ -209,24 +209,24 @@ skládalo do čtyř řad; přes celou šířku jsou v jedné řadě a sekce mě�
 
 Na telefonu zůstává jeden sloupec a bloky jdou pod sebou v logickém pořadí.
 
-## 0.9.6 — 2026-09-13 · tmavé záhlaví okna
+## 0.9.6 – 2026-09-13 · tmavé záhlaví okna
 
 Bílý systémový pruh nad aplikací rušil. Okno teď nemá vlastní titulkový pruh: obsah sahá až
 k hornímu okraji, takže se za tlačítky okna roztáhne tmavý pruh aplikace i s jeho přechodem.
-Název okna je skrytý — značka je v postranním panelu a dvakrát tam nepatří.
+Název okna je skrytý – značka je v postranním panelu a dvakrát tam nepatří.
 
 - Plocha zůstává od kraje ke kraji; ustoupí jen postranní panel, aby se jeho roh nepotkal
   s tlačítky okna. Ta sahají do 28 px, panel začíná na 44 px a na stejné výšce se zastaví
   i při rolování. Dole má stejných 44 px.
 - Pozadí okna je tmavé v obou režimech vzhledu. Je vidět jen při změně velikosti okna a patří
   tam podklad, ne barva karet.
-- Táhnout okno jde dál za horní pruh — záhlaví existuje, jen je průhledné. Záměrně nesaháme na
+- Táhnout okno jde dál za horní pruh – záhlaví existuje, jen je průhledné. Záměrně nesaháme na
   `isMovableByWindowBackground`, které by rušilo označování textu uvnitř aplikace.
 
-## 0.9.5 — 2026-09-13 · postranní panel drží pohromadě
+## 0.9.5 – 2026-09-13 · postranní panel drží pohromadě
 
 Na nižším okně končila bílá karta panelu dřív než její obsah: poslední položky nabídky a stav
-spojení visely mimo ni na pozadí. Naměřeno při okně 800 px — patička přesahovala **112 px ven**.
+spojení visely mimo ni na pozadí. Naměřeno při okně 800 px – patička přesahovala **112 px ven**.
 Příčinou byla pevná spodní hranice výšky (`min-height: 640px`) a chybějící omezení přetečení,
 takže kartu nic nedrželo.
 
@@ -234,7 +234,7 @@ Panel je teď postavený jako karta s kotvami: značka nahoře, stav spojení do
 Z karty nemůže vylézt nic; kdyby se nabídka přece jen nevešla, roluje se uvnitř.
 
 Aby k rolování vůbec nedošlo, ustupuje na nižším okně **dekorace, ne navigace**. Profil se ve třech
-krocích překlopí z vysokého sloupce (avatar nad jménem nad číslem) do řádku — avatar vlevo, jméno
+krocích překlopí z vysokého sloupce (avatar nad jménem nad číslem) do řádku – avatar vlevo, jméno
 vedle, číslo pod tím:
 
 | Výška okna | Profil | Položky nabídky |
@@ -245,17 +245,17 @@ vedle, číslo pod tím:
 | 620 px | 56 px | roluje o 5 px, vše zůstává v kartě |
 
 Řádek nabídky má i v nejmenším kroku 46 px, tedy s rezervou nad hranicí WCAG 2.2 pro cíl prstu.
-Karta má nově stejnou mezeru dole jako nahoře (48 px). Na telefonu se nemění nic — všechna
+Karta má nově stejnou mezeru dole jako nahoře (48 px). Na telefonu se nemění nic – všechna
 pravidla platí až od 881 px šířky.
 
-## 0.9.4 — 2026-09-13 · Codex na webu a prověřený řetězec rozšíření
+## 0.9.4 – 2026-09-13 · Codex na webu a prověřený řetězec rozšíření
 
 - **Codex na webu se sleduje jako samostatný nástroj.** Běží na stejné doméně jako ChatGPT
   (`chatgpt.com/codex`), takže ho dřív pohltil obecnější záznam a úloha se zařadila pod ChatGPT.
   Nově má vlastní adaptér i vlastní jméno „Codex · web“. Šest testů hlídá rozpoznávání adres:
   že `/codex/tasks/…` je Codex, `/c/…` je ChatGPT, `/codexfoo` není Codex, že cizí stránka se
   nerozpozná jako AI nástroj a že každý adaptér ustojí i prázdnou stránku.
-- Každá služba z rozšíření musí být známá i serveru — jinak by se konverzace zahodila jako
+- Každá služba z rozšíření musí být známá i serveru – jinak by se konverzace zahodila jako
   „Neznámá služba“. Hlídá to test.
 
 Ověřeno proti běžícímu serveru: příjem konverzace bez tokenu i s cizím tokenem vrací 401,
@@ -264,15 +264,15 @@ párování bez hlavičky Origin nebo z cizí adresy se odmítne, párovací kó
 prověřeno ve všech režimech (v aplikaci, na pozadí, v Terminálu, na webu) včetně chybových
 stavů: neznámý agent, prázdné zadání, nepodporovaný režim a zadání nad 20 000 znaků.
 
-## 0.9.3 — 2026-09-13 · rozšíření do prohlížeče dotažené do konce
+## 0.9.3 – 2026-09-13 · rozšíření do prohlížeče dotažené do konce
 
 Konverzace z ChatGPT, Claude.ai a dalších webových aplikací se dají sledovat jen přes rozšíření
-v prohlížeči — lokálně o nich na disku nic není. Serverová část byla hotová, ale rozšíření samo
+v prohlížeči – lokálně o nich na disku nic není. Serverová část byla hotová, ale rozšíření samo
 mělo dvě vady, kvůli kterým se nedalo spolehlivě používat.
 
 - **Aktualizace aplikace rozšíření rozbíjela.** Chrome si u rozbaleného rozšíření pamatuje cestu
   ke složce a čte ji při každém startu. Ta složka ležela uvnitř balíčku aplikace, který se při
-  aktualizaci celý nahradí — Chrome pak našel prázdné místo a rozšíření si sám vypnul. Aplikace
+  aktualizaci celý nahradí – Chrome pak našel prázdné místo a rozšíření si sám vypnul. Aplikace
   si teď při startu udělá kopii do datové složky (`~/.agenteeq/extension`), kterou aktualizace
   nesmaže, a v návodu ukazuje právě ji. Kopie se obnoví jen při změně verze.
 - **Rozšíření nemělo ikonu.** V liště Chromu byl šedý dílek skládačky, i když návod říká „klikni
@@ -284,10 +284,10 @@ odeslání konverzace → konverzace je v Agenteeq vidět jako běžící agent.
 kopírování, přežití aktualizace, ikony i to, že rozšíření nemluví s ničím jiným než
 s Agenteeq na `127.0.0.1`.
 
-## 0.9.2 — 2026-09-13 · žádná běžící aplikace už nezůstane bez odpovědi
+## 0.9.2 – 2026-09-13 · žádná běžící aplikace už nezůstane bez odpovědi
 
 Nejčastější stížnost na Agenteeq zní „běží mi agent a aplikace ho nezaregistrovala". Tohle vydání
-ji řeší u kořene — a to i v případě, kdy za to Agenteeq nemůže.
+ji řeší u kořene – a to i v případě, kdy za to Agenteeq nemůže.
 
 **Co se dělo.** Když agent běžel v aplikaci ChatGPT, Přehled ukazoval, že ChatGPT běží, ale
 v seznamu agentů po něm nebyla stopa a nikde nebylo vysvětlení proč. Vysvětlivka existovala,
@@ -296,24 +296,24 @@ ale jen dole na stránce Agenti, kam se nikdo nedívá. Vypadalo to jako chyba.
 **Ověřeno za běhu takové úlohy (13. 9. 2026):** aplikace ChatGPT o konverzaci na tento Mac
 nezapisuje nic. Složka aplikace nezapsala za 40 minut jediný soubor, v `~/.codex/sessions` je
 nejnovější záznam z 6. 9., v datech Codexu se změnily jen cookies, TLS a mezipaměť sítě a text
-konverzace není nikde na disku. Není co číst — a produkt to musí říct, ne mlčet.
+konverzace není nikde na disku. Není co číst – a produkt to musí říct, ne mlčet.
 
 **Co se změnilo:**
 
 - Dlaždice běžící aplikace na Přehledu nese značku **bez přepisu**, vede na vysvětlení a po
   najetí myší ukáže celý ověřený důvod. Uživatel se to dozví tam, kde se dívá.
 - Přibylo vysvětlení pro **Claude Desktop**: chaty z něj jsou na serveru, ale sezení Claude Code
-  z něj se čtou normálně — ověřeno, 82 z 83 sezení desktopové aplikace má přepis na tomto Macu.
+  z něj se čtou normálně – ověřeno, 82 z 83 sezení desktopové aplikace má přepis na tomto Macu.
 - Seznam „co umíme číst" a „co ne" je nově na jednom místě (`public/js/no-transcript.js`)
   a **hlídají ho čtyři testy**: každá známá aplikace musí být právě v jedné z obou skupin, nesmí
   být v obou, nesmí tam zůstat aplikace, která už neexistuje, a každé vysvětlení musí mít
   ověřený důvod, radu a odkaz. Nová aplikace tedy neprojde do vydání bez zařazení.
 
-## 0.9.1 — 2026-09-13 · plynulost na 120 a 240 Hz
+## 0.9.1 – 2026-09-13 · plynulost na 120 a 240 Hz
 
 Při 120 Hz má prohlížeč na jeden snímek 8,3 ms, při 240 Hz jen 4,2 ms. Cokoli, co se v každém
 snímku překresluje, se v takovém rozpočtu pozná. Audit našel čtyři takové věci a jednu, která
-sekala jinak — překreslením pohledu uprostřed gesta.
+sekala jinak – překreslením pohledu uprostřed gesta.
 
 **Překreslování v každém snímku rolování:**
 
@@ -322,15 +322,15 @@ sekala jinak — překreslením pohledu uprostřed gesta.
   kterou kompozitor nakreslí jednou. Vzhled je stejný.
 - Zrnitost v horním pruhu se míchala přes `mix-blend-mode: overlay`, což znamená při každém
   překreslení znovu načíst podklad. Teď je to obyčejná průhledná vrstva.
-- Prstenec kolem živé tečky se animoval přes `box-shadow` — a běžel napořád, u každé tečky na
+- Prstenec kolem živé tečky se animoval přes `box-shadow` – a běžel napořád, u každé tečky na
   stránce. Nově je to transformace a průhlednost, tedy práce pro kompozitor, ne pro překreslování.
-- Kostry při načítání posouvaly `background-position`. Také přepsáno na transformaci — a to
+- Kostry při načítání posouvaly `background-position`. Také přepsáno na transformaci – a to
   zrovna ve chvíli, kdy má procesor nejvíc práce.
 
 **Práce, která padala doprostřed gesta:**
 
 - Překreslení pohledu chodí ze streamu pokaždé, když agent něco udělá. Naměřený přepočet stylů
-  a layoutu má medián 0,7–1,9 ms, ale špičky 12 až 26 ms podle stránky — každá taková špička je
+  a layoutu má medián 0,7–1,9 ms, ale špičky 12 až 26 ms podle stránky – každá taková špička je
   při 120 Hz zahozený snímek, při 240 Hz jich je až šest. Během rolování se teď témata jen
   sbírají a vykreslí se, jakmile se pohyb zastaví.
 - Přepisování časových údajů běželo každou vteřinu a třikrát procházelo celý dokument. `rel()`
@@ -340,9 +340,9 @@ sekala jinak — překreslením pohledu uprostřed gesta.
   jediného zápisu, dohnáno do 200 ms po zastavení).
 - Řádek v seznamu agentů se mimo obrazovku nepočítá ani nekreslí.
 
-## 0.9.0 — 2026-09-13 · dovednosti se dají číst v aplikaci
+## 0.9.0 – 2026-09-13 · dovednosti se dají číst v aplikaci
 
-**Obsah dovednosti si přečteš rovnou v Agenteeq.** Doteď šel jen zkopírovat nebo stáhnout —
+**Obsah dovednosti si přečteš rovnou v Agenteeq.** Doteď šel jen zkopírovat nebo stáhnout –
 což znamenalo otevřít editor kvůli tomu, aby ses podíval, co ta dovednost vlastně dělá.
 Klik na kartu (nebo na Číst) otevře čtečku s vysázeným textem: nadpisy, seznamy, bloky kódu
 s názvem jazyka, citace, tabulky i odkazy. Vedle textu je cesta k souboru na jedno klepnutí
@@ -352,7 +352,7 @@ se vrací tam, odkud se čtečka otevřela.
 Markdown si Agenteeq sází sám (`public/js/markdown.js`, žádná knihovna navíc). Text se nejdřív
 celý proescapuje a značky se hledají až nad ním, takže HTML ze souboru se nikdy nestane HTML
 stránky; odkaz projde jen na http, https a mailto. Hlídá to deset testů a ověření proti všem
-147 skutečným souborům SKILL.md na tomto Macu — všechny se vykreslily, žádná uniklá značka,
+147 skutečným souborům SKILL.md na tomto Macu – všechny se vykreslily, žádná uniklá značka,
 žádná obsluha události, žádná výjimka.
 
 **Stránka Dovednosti dostala tvar.** Nad seznamem je souhrn (kolik jich je, z kolika zdrojů,
@@ -365,11 +365,11 @@ jako ikony, takže se do řádku vejde víc sloupců: při 1024 px dva, při 144
 ho o 263 px pod pravý, kde zůstávalo prázdno. Teď je pod mřížkou přes celou šířku a položky se
 skládají do sloupců podle místa (3 / 2 / 1). Rozdíl výšky sloupců klesl z 263 px na 133 px.
 
-## 0.8.5 — 2026-09-13 · prostor na širokém displeji
+## 0.8.5 – 2026-09-13 · prostor na širokém displeji
 
 - **Vyhledávací pole už při kliknutí neuskočí.** Rostlo ze 280 na 320 px, a protože je zarovnané
   doprava, celé se posunulo o 40 px stranou. Šířka je teď stálá; zpětnou vazbu dává rámeček.
-  (300 px nešlo — při té šířce se lišta na 1440 px láme na dva řádky.)
+  (300 px nešlo – při té šířce se lišta na 1440 px láme na dva řádky.)
 - **Detail agenta nemá vedle bočního sloupce díru.** Přepis měl pevnou výšku, takže levý sloupec
   skončil a zbytek řádku zůstal prázdný: naměřeno 903 px prázdna na ploše široké 980 px. Oba
   sloupce teď sahají stejně hluboko a místo díry je vidět víc konverzace. Ověřeno ve třech
@@ -380,15 +380,15 @@ skládají do sloupců podle místa (3 / 2 / 1). Rozdíl výšky sloupců klesl 
   sloupce a stránka měří 13 604 px; na užším displeji zůstává jeden sloupec a na telefonu se
   nic nemění.
 
-## 0.8.4 — 2026-09-13 · tři opravy na telefonu
+## 0.8.4 – 2026-09-13 · tři opravy na telefonu
 
 - **Stav spojení měl u tečky zase popisek.** Pod 560 px se text schovával a v liště zůstala jen
   osamocená zelená tečka, která sama o sobě nic neříká. Každý stav má teď i krátkou variantu
   („Živě“, „Připojuji…“, „Bez spojení“) a přepíná se v CSS. Lišta má na telefonu jen 327 px,
-  takže delší popisek ji dřív zalomil — přednost ustoupit má proto nadpis stránky, ne tlačítka.
+  takže delší popisek ji dřív zalomil – přednost ustoupit má proto nadpis stránky, ne tlačítka.
   Ověřeno pro všechny názvy stránek i všechny stavy spojení: nic se nezalomí.
 - **Menu „Další sekce“ už nevypadá jako slepené karty.** Prstenec zaostření leží podle výchozího
-  stylu 3 px vně prvku, ale řádky menu byly 2 px od sebe — prstenec se tak kreslil přes sousední
+  stylu 3 px vně prvku, ale řádky menu byly 2 px od sebe – prstenec se tak kreslil přes sousední
   řádky. Změřeno: u zaostřeného řádku 936–992 px sahal prstenec 931–997 px, tedy 3 px do obou
   sousedů. Nově je prstenec uvnitř řádku a mezera je 6 px.
 - **Karty projektů mají výraznější podbarvení.** Místo skvrny v rohu prosvítá barva projektu
@@ -396,10 +396,10 @@ skládají do sloupců podle místa (3 / 2 / 1). Rozdíl výšky sloupců klesl 
   drobné písmo by na podbarvení nemělo dost kontrastu (4,35 : 1 při plné síle, AA žádá 4,5).
   Nahoře leží jen název a popis, které i ve špičce gradientu drží 8,6–14,2 : 1.
 
-## 0.8.3 — 2026-09-13 · přístup z telefonu přežije restart aplikace
+## 0.8.3 – 2026-09-13 · přístup z telefonu přežije restart aplikace
 
 Zapnutý přístup z telefonu se po restartu aplikace sám nespustil. V nastavení svítil jako
-zapnutý, ale listener pro místní síť neběžel — telefon se prostě nepřipojil a vypadalo to,
+zapnutý, ale listener pro místní síť neběžel – telefon se prostě nepřipojil a vypadalo to,
 že je rozbitý.
 
 Příčina: listener se věšel na událost `listening` hlavního serveru. Desktopová aplikace si ale
@@ -408,28 +408,28 @@ událost proběhla dávno předtím, než se na ni bylo možné navěsit. V `npm
 opačné, a proto to nikdy nespadlo v testech.
 
 Nově se stav serveru kontroluje rovnou: když už naslouchá, listener se spustí okamžitě.
-Hlídají to dva testy — jeden ověřuje, že se spustí, druhý že se bez zapnutého nastavení
+Hlídají to dva testy – jeden ověřuje, že se spustí, druhý že se bez zapnutého nastavení
 neotevře nic.
 
-## 0.8.2 — 2026-09-13 · na telefonu papír až k hornímu okraji
+## 0.8.2 – 2026-09-13 · na telefonu papír až k hornímu okraji
 
 Na telefonu mizí tmavý pruh nahoře. Byl to dekorační pás `.stage`, na kterém na počítači „plave“
-logo a titulek — na malé obrazovce z něj ale zůstal jen banner, který ubíral místo.
+logo a titulek – na malé obrazovce z něj ale zůstal jen banner, který ubíral místo.
 
 - `.stage` se pod 880 px skrývá a obsah začíná 24 px od horního okraje (plus výřez).
 - `body` má na telefonu papírové pozadí místo tmavého „stolu“. Ten byl vidět jen při přetažení
-  a v pásu pod stavovým řádkem — tedy přesně tam, kde působil jako další pruh.
+  a v pásu pod stavovým řádkem – tedy přesně tam, kde působil jako další pruh.
 - Stavový řádek v appce uložené na plochu je nastavený na `default`: plocha začíná pod ním
   a jeho pozadí je barva stránky, takže čas a baterka zůstanou čitelné. `black-translucent`
-  by na bílém podkladu kreslil bílý text. **iOS si tenhle údaj čte při ukládání na plochu —
+  by na bílém podkladu kreslil bílý text. **iOS si tenhle údaj čte při ukládání na plochu –
   appku na ploše je proto potřeba jednou smazat a uložit znovu.**
 
 Rozvržení na počítači se nezměnilo: pruh, odsazení i tmavé pozadí zůstávají přesně jako dřív.
 
-## 0.8.1 — 2026-09-13 · rozcestník pro rozhraní bez serveru
+## 0.8.1 – 2026-09-13 · rozcestník pro rozhraní bez serveru
 
 Rozhraní Agenteeq se dá nahrát i odjinud než z Macu (statická kopie na webhostingu, třeba Vercel).
-Taková stránka ale nemá za sebou žádný server — data leží vždycky na Macu. Doteď v ní aplikace
+Taková stránka ale nemá za sebou žádný server – data leží vždycky na Macu. Doteď v ní aplikace
 hlásila „Agenteeq server neběží“ a ukazovala adresu `127.0.0.1:4620`, což je na telefonu sám
 telefon: rada, která nemohla nikdy vést k cíli.
 
@@ -438,7 +438,7 @@ telefon: rada, která nemohla nikdy vést k cíli.
   Adresa se zapamatuje, takže příště stačí jedno klepnutí (`public/js/connect.js`).
 - Adresa v domácí síti (IP nebo jméno `.local`) jede po `http` a doplní se jí port 4620; tunel
   venku (Tailscale, Cloudflare) po `https` na svém vlastním jménu. Cokoli jiného než `http(s)`
-  — `javascript:`, `data:`, `file:`, adresa s heslem — se odmítne.
+  – `javascript:`, `data:`, `file:`, adresa s heslem – se odmítne.
 - Karta „server neběží“ na spárovaném telefonu už neukazuje `127.0.0.1`, ale skutečnou adresu,
   na které je stránka otevřená, a radí zkontrolovat Mac místo Terminálu.
 - **Verze aplikace v macOS už nezůstává pozadu.** `Info.plist` měl natvrdo 0.6.0, takže Finder
@@ -446,9 +446,9 @@ telefon: rada, která nemohla nikdy vést k cíli.
   každém buildu z `package.json` (`scripts/plist-version.mjs`) a okno „O aplikaci“ si ho bere
   z balíčku. Hlídají to dva testy.
 
-## 0.8.0 — 2026-09-13 · nový název Agenteeq
+## 0.8.0 – 2026-09-13 · nový název Agenteeq
 
-Produkt se jmenuje **Agenteeq**. Přejmenováno je všechno viditelné i vnitřní: rozhraní, okno aplikace, dokumentace, balíček (`agenteeq`), příkaz (`agenteeq`), aplikace (`Agenteeq.app`), značka, ikony, PWA manifest, datová složka (`~/.agenteeq`), proměnné prostředí (`AGENTEEQ_*`), služba v Klíčence (`cz.agenteeq.*`) i položka pro spouštění po přihlášení. Typografie ani velikosti se nezměnily — jen text.
+Produkt se jmenuje **Agenteeq**. Přejmenováno je všechno viditelné i vnitřní: rozhraní, okno aplikace, dokumentace, balíček (`agenteeq`), příkaz (`agenteeq`), aplikace (`Agenteeq.app`), značka, ikony, PWA manifest, datová složka (`~/.agenteeq`), proměnné prostředí (`AGENTEEQ_*`), služba v Klíčence (`cz.agenteeq.*`) i položka pro spouštění po přihlášení. Typografie ani velikosti se nezměnily – jen text.
 
 Aby se nikomu nerozbil běžící systém, zůstávají čtyři mosty:
 
@@ -457,60 +457,60 @@ Aby se nikomu nerozbil běžící systém, zůstávají čtyři mosty:
 - hooky Claude Code a rozšíření prohlížeče nainstalované pod starým názvem fungují dál (server bere i hlavičky `X-Agentree` a `X-Agentree-Token`),
 - spárované telefony se starou cookie zůstávají spárované.
 
-Klíče v Klíčence uložené pod starým názvem služby se nepřenášejí — ty je potřeba vložit znovu v Nastavení.
+Klíče v Klíčence uložené pod starým názvem služby se nepřenášejí – ty je potřeba vložit znovu v Nastavení.
 
-## 0.7.0 — 2026-09-13
+## 0.7.0 – 2026-09-13
 
 Vydání s prací z 12. a 13. 9. Číslo verze se zvedlo hlavně proto, aby bylo v aplikaci na první pohled vidět, že běží nová: 0.6.0 zůstávalo i po instalaci nového buildu.
 
 Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstup, bez režie cache), práce pomocných agentů Claude Code, detektor všech lokálních a neznámých agentů, přepnutí do okna aplikace jedním klikem, dovednosti na jednom místě, vlastní agenti, přístup z telefonu s párováním kódem, karta Mimo domov, prémiová načítací animace, PWA a plynulé rolování na mobilu.
 
-## Vyladěné detaily rozhraní — 2026-09-12
+## Vyladěné detaily rozhraní – 2026-09-12
 
-- **Mimo domov** (Nastavení → Aplikace na tomto Macu): Agenteeq zjistí, jestli máš nainstalovaný Tailscale, Cloudflare Tunnel nebo ngrok, u každého řekne, co znamená pro soukromí (privátní síť vs. veřejná adresa), doporučí nejvhodnější a vypíše kroky. Sám žádnou cestu ven neotvírá. Párování kódem platí i tam — kdo zná adresu, ale nemá spárované zařízení, data nedostane. Patnáct testů, vše s injektovaným spouštěním (žádné skutečné binárky).
-- **Audit cloudových API** (`docs/CLOUD-ACCOUNTS.md`): pro sedm poskytovatelů ověřeno v dokumentaci, co přes oficiální API opravdu jde. Výsledek je nutné znát: **obsah konverzací ani stav běžícího agenta nedává v reálném čase žádný poskytovatel** a spotřebitelská předplatná (ChatGPT Plus/Pro, Claude Pro/Max, Gemini Advanced, Perplexity Pro, Grok, Copilot Individual) nemají veřejné API vůbec. Firemní účty s Admin klíčem dávají náklady, tokeny a část limitů — u Anthropicu, OpenAI, xAI, Mistralu a GitHub Copilotu. Konektor nákladů proto umí i **spotřebu tokenů** (`/v1/organization/usage/completions` a `/v1/organizations/usage_report/messages`); tokeny se nikdy nesčítají s penězi. Patnáct nových testů bez sítě.
+- **Mimo domov** (Nastavení → Aplikace na tomto Macu): Agenteeq zjistí, jestli máš nainstalovaný Tailscale, Cloudflare Tunnel nebo ngrok, u každého řekne, co znamená pro soukromí (privátní síť vs. veřejná adresa), doporučí nejvhodnější a vypíše kroky. Sám žádnou cestu ven neotvírá. Párování kódem platí i tam – kdo zná adresu, ale nemá spárované zařízení, data nedostane. Patnáct testů, vše s injektovaným spouštěním (žádné skutečné binárky).
+- **Audit cloudových API** (`docs/CLOUD-ACCOUNTS.md`): pro sedm poskytovatelů ověřeno v dokumentaci, co přes oficiální API opravdu jde. Výsledek je nutné znát: **obsah konverzací ani stav běžícího agenta nedává v reálném čase žádný poskytovatel** a spotřebitelská předplatná (ChatGPT Plus/Pro, Claude Pro/Max, Gemini Advanced, Perplexity Pro, Grok, Copilot Individual) nemají veřejné API vůbec. Firemní účty s Admin klíčem dávají náklady, tokeny a část limitů – u Anthropicu, OpenAI, xAI, Mistralu a GitHub Copilotu. Konektor nákladů proto umí i **spotřebu tokenů** (`/v1/organization/usage/completions` a `/v1/organizations/usage_report/messages`); tokeny se nikdy nesčítají s penězi. Patnáct nových testů bez sítě.
 - **Nová načítací obrazovka.** Místo obyčejného kolečka se dokresluje samotná značka Agenteeq: kmen, pak obě větve, uzly se rozsvěcují, jak k nim růst dorazí, a po dokončení se jemně rozsvítí halo. Smyčka 2,2 s bez viditelného střihu, animuje se jen `transform`, `opacity` a `stroke-dashoffset` (běží na GPU, nebrzdí rolování). Po prvním nasazení jsem časování přepracoval: logo bylo čitelné jen 360 ms z každé smyčky, teď drží dokreslené 38–76 % času, a značka narostla ze 72 na 96 px, aby na celé obrazovce nepůsobila ztraceně. Při zapnutém omezení pohybu se nic nehýbe a značka je hned celá. K tomu skeleton pro karty, které se dopočítávají.
-- **Agenteeq teď najde i agenty, o kterých nemá ponětí.** Nový detektor (`src/connectors/local-agents.js`) čte běžící procesy a otevřené porty: zná dvacet lokálních prostředí (Ollama, LM Studio, llama.cpp, vLLM, ComfyUI, koboldcpp, Jan, GPT4All, LocalAI, Open WebUI, MLX, SGLang, TabbyAPI, LiteLLM, whisper.cpp, A1111, InvokeAI a další) a k tomu heuristiku pro cokoli neznámého — vlastní model z Hugging Face pozná podle `.gguf`/`.safetensors`, přepínače `--model` nebo obsazeného portu pro lokální inferenci. U takových je v seznamu odznak **Vlastní / neznámý** a poctivá věta, že u nich Agenteeq neumí číst konverzace ani limity. Ověřeno na skutečných 504 procesech: falešný model `qwen2.5-7b-instruct-q4` na portu 8000 se objevil do deseti sekund včetně jména a portu, systémové procesy ani Agenteeq sám se neoznačí nikdy. Osm testů.
-- **Přepnutí do okna jedním klikem.** Na Přehledu jsou dlaždice běžících aplikací tlačítka a na Agentech je u každé běžící aplikace „Přepnout do aplikace“ — Claude, ChatGPT, Cursor, VS Code, Microsoft Copilot, Perplexity, Grok, LM Studio i Ollama. Konec hledání okna mezi dvaceti dalšími. Název aplikace se nikdy nebere z požadavku, jen z pevného seznamu v `src/openers.js`, a hlídá to test i na pokusy o podstrčení cizí cesty.
-- **Agenteeq jde otevřít na telefonu** (Nastavení → Otevřít na telefonu). Výchozí stav je vypnuto: server pak poslouchá jen na `127.0.0.1` jako dosud. Po zapnutí se přidá listener na adresu Macu v domácí síti, telefon si zobrazí párovací obrazovku a jednorázovým šestimístným kódem (5 minut, pět pokusů) se spáruje. Token má telefon v cookie `HttpOnly`, v datech aplikace leží jen jeho SHA-256 hash. Bez spárování nedostane z místní sítě žádná data (401) — vydá se mu jen statická aplikace, aby měl z čeho zobrazit párování. Kód, seznam zařízení, zapínání i odpárování jsou dostupné výhradně z Macu; hlavička `Host` se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu) a vypnutí zavře spojení a odpáruje všechna zařízení. Hlídá to šest testů, včetně skutečného spojení přes síťovou adresu.
+- **Agenteeq teď najde i agenty, o kterých nemá ponětí.** Nový detektor (`src/connectors/local-agents.js`) čte běžící procesy a otevřené porty: zná dvacet lokálních prostředí (Ollama, LM Studio, llama.cpp, vLLM, ComfyUI, koboldcpp, Jan, GPT4All, LocalAI, Open WebUI, MLX, SGLang, TabbyAPI, LiteLLM, whisper.cpp, A1111, InvokeAI a další) a k tomu heuristiku pro cokoli neznámého – vlastní model z Hugging Face pozná podle `.gguf`/`.safetensors`, přepínače `--model` nebo obsazeného portu pro lokální inferenci. U takových je v seznamu odznak **Vlastní / neznámý** a poctivá věta, že u nich Agenteeq neumí číst konverzace ani limity. Ověřeno na skutečných 504 procesech: falešný model `qwen2.5-7b-instruct-q4` na portu 8000 se objevil do deseti sekund včetně jména a portu, systémové procesy ani Agenteeq sám se neoznačí nikdy. Osm testů.
+- **Přepnutí do okna jedním klikem.** Na Přehledu jsou dlaždice běžících aplikací tlačítka a na Agentech je u každé běžící aplikace „Přepnout do aplikace“ – Claude, ChatGPT, Cursor, VS Code, Microsoft Copilot, Perplexity, Grok, LM Studio i Ollama. Konec hledání okna mezi dvaceti dalšími. Název aplikace se nikdy nebere z požadavku, jen z pevného seznamu v `src/openers.js`, a hlídá to test i na pokusy o podstrčení cizí cesty.
+- **Agenteeq jde otevřít na telefonu** (Nastavení → Otevřít na telefonu). Výchozí stav je vypnuto: server pak poslouchá jen na `127.0.0.1` jako dosud. Po zapnutí se přidá listener na adresu Macu v domácí síti, telefon si zobrazí párovací obrazovku a jednorázovým šestimístným kódem (5 minut, pět pokusů) se spáruje. Token má telefon v cookie `HttpOnly`, v datech aplikace leží jen jeho SHA-256 hash. Bez spárování nedostane z místní sítě žádná data (401) – vydá se mu jen statická aplikace, aby měl z čeho zobrazit párování. Kód, seznam zařízení, zapínání i odpárování jsou dostupné výhradně z Macu; hlavička `Host` se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu) a vypnutí zavře spojení a odpáruje všechna zařízení. Hlídá to šest testů, včetně skutečného spojení přes síťovou adresu.
 - **Běžící aplikace bez přepisu jsou vidět na Agentech.** ChatGPT (a stejně tak Microsoft Copilot, Perplexity, Grok) v aplikaci žádné konverzace na disk neukládá, takže se v seznamu nikdy neobjevil a vypadalo to, že ho Agenteeq „nezaregistroval“. Teď má vlastní sekci „Běží na Macu, ale bez přepisu“ s dobou běhu a vysvětlením, proč u něj přepis být nemůže a co s tím jde udělat (rozšíření v prohlížeči). Ověřeno: mezipaměť konverzací aplikace ChatGPT se naposledy zapsala 1. 6. 2025, za poslední tři hodiny nezapsala nic, v `~/.codex/state_5.sqlite` (včetně WAL) je nejnovější vlákno z předchozího dne a fulltextové hledání unikátního slova z dnešního chatu nenašlo na disku nic.
 - **PWA**: přidán `manifest.webmanifest` (dosud chyběl, přitom ho service worker načítal), ikony 192/512/apple-touch, hlavičky pro domovskou obrazovku iOS a theme-color zvlášť pro světlý a tmavý režim. Service worker v3: navigation preload, kód a styly vždy ze sítě (`no-store`), API se necachuje nikdy.
-- **Plynulost na telefonu**: dlouhé seznamy dostaly `content-visibility` — vynucený layout na Dovednostech spadl z 30 ms na 0,4 ms, na Statistikách a Přehledu po odrolování z 14–30 ms na 2 ms. Pole mají na mobilu 16 px (Safari už nepřibližuje stránku při kliknutí), `overscroll-behavior` brání přetahování celé plochy a vodorovné pásy mají setrvačné rolování.
-- **Vždy čerstvá data**: po návratu do aplikace, obnovení sítě i probuzení stránky si Agenteeq sám znovu natáhne stav — telefon spojení se streamem uspí a bez toho by chvíli ukazoval stará čísla.
-- **Historie extra usage u Claude** je v Útratě vedle kreditů Codexu: graf čerpání za období, které pokrývá historie plánu, a seznam skoků, kdy čerpání narostlo (naposledy +16,1 % dne 21. 8.). Hodnota se zobrazuje jako procento vyčerpaného limitu — jednotku soubor neuvádí, ale plyne ze tří věcí: vedle leží 5hodinové a týdenní okno také v procentech, oficiální stavový řádek Claude Code hlásí stejnou trojici `five_hour` / `seven_day` / `spend_limit` (kde `spend_limit` má `used_percentage`) a hodnota na skutečných datech nikdy nepřekročila 100 (18,2 → 64,4 za měsíc). Přesná data ze stavového řádku mají dál přednost. 🧪 Beta, protože to Anthropic nikde nedokumentuje.
-- **KRITICKÉ: hlavní čísla tokenů byla o řád vyšší, než kolik jsi doopravdy spotřeboval.** Do součtu se počítal i zápis do cache — technická režie, kdy se stejný kontext zapisuje znovu s každým tahem. Dnešní realita: vstup 2 948 + výstup 629 841 = **632 789 tokenů**, ale zápis do cache 4 847 361, takže aplikace hlásila 5 480 150. Hlavní metrika je teď vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele; režie cache (zápis i čtení) zůstává ve složení tokenů u konkrétní konverzace, kam patří. Sjednoceno pro Claude i Codex, popisky přejmenované ze „zpracovaných tokenů“ na „tokeny“ a hlídají to tři testy. Ověřeno proti ručnímu přepočtu ze souborů: Codex 6 139 058 na token přesně, Claude 2 242 340 vs 2 252 120 (0,4 %, hranice hodinových přihrádek).
-- **Úklid kódu.** Z rozhraní zmizely pozůstatky po odstraněné funkci obálek a log projektu — sedm pomocných funkcí v `projects-ui.js`, dvě metody pro nahrávání v `api.js` (nikdo je nevolal a odpovídající CSS v projektu vůbec není), plus `logoLabel`, `runsSummary` a `STATUSES`, které nepoužíval ani jejich vlastní soubor. Po dnešní změně kreditů zmizel i dopočet dokoupení v prohlížeči: rozpoznává je server nad všemi odečty, v UI by na to byla jen zkrácená historie. Tři skripty, které ležely ve `scripts/` bez jakéhokoli odkazu, mají teď vlastní příkazy (`npm run qa:desktop`, `qa:keychain`, `fonts:vendor`).
-- **Na telefonu se rozjížděl obsah Dovedností a Nastavení mimo obrazovku.** Karty jsou prvky mřížky a ty mají výchozí `min-width: auto`, takže minimální šířku určila nejdelší nezalomitelná cesta k souboru — z karty dovednosti bylo 890 px na 375px displeji a v Nastavení se stejně rozjely všechny sekce. Mřížky teď mají `minmax(0, 1fr)` a dlouhá cesta se zkrátí třemi tečkami. Ověřeno na všech osmi obrazovkách: nula přetékajících prvků na 375 px, desktop 1440 px bez změny.
+- **Plynulost na telefonu**: dlouhé seznamy dostaly `content-visibility` – vynucený layout na Dovednostech spadl z 30 ms na 0,4 ms, na Statistikách a Přehledu po odrolování z 14–30 ms na 2 ms. Pole mají na mobilu 16 px (Safari už nepřibližuje stránku při kliknutí), `overscroll-behavior` brání přetahování celé plochy a vodorovné pásy mají setrvačné rolování.
+- **Vždy čerstvá data**: po návratu do aplikace, obnovení sítě i probuzení stránky si Agenteeq sám znovu natáhne stav – telefon spojení se streamem uspí a bez toho by chvíli ukazoval stará čísla.
+- **Historie extra usage u Claude** je v Útratě vedle kreditů Codexu: graf čerpání za období, které pokrývá historie plánu, a seznam skoků, kdy čerpání narostlo (naposledy +16,1 % dne 21. 8.). Hodnota se zobrazuje jako procento vyčerpaného limitu – jednotku soubor neuvádí, ale plyne ze tří věcí: vedle leží 5hodinové a týdenní okno také v procentech, oficiální stavový řádek Claude Code hlásí stejnou trojici `five_hour` / `seven_day` / `spend_limit` (kde `spend_limit` má `used_percentage`) a hodnota na skutečných datech nikdy nepřekročila 100 (18,2 → 64,4 za měsíc). Přesná data ze stavového řádku mají dál přednost. 🧪 Beta, protože to Anthropic nikde nedokumentuje.
+- **KRITICKÉ: hlavní čísla tokenů byla o řád vyšší, než kolik jsi doopravdy spotřeboval.** Do součtu se počítal i zápis do cache – technická režie, kdy se stejný kontext zapisuje znovu s každým tahem. Dnešní realita: vstup 2 948 + výstup 629 841 = **632 789 tokenů**, ale zápis do cache 4 847 361, takže aplikace hlásila 5 480 150. Hlavní metrika je teď vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele; režie cache (zápis i čtení) zůstává ve složení tokenů u konkrétní konverzace, kam patří. Sjednoceno pro Claude i Codex, popisky přejmenované ze „zpracovaných tokenů“ na „tokeny“ a hlídají to tři testy. Ověřeno proti ručnímu přepočtu ze souborů: Codex 6 139 058 na token přesně, Claude 2 242 340 vs 2 252 120 (0,4 %, hranice hodinových přihrádek).
+- **Úklid kódu.** Z rozhraní zmizely pozůstatky po odstraněné funkci obálek a log projektu – sedm pomocných funkcí v `projects-ui.js`, dvě metody pro nahrávání v `api.js` (nikdo je nevolal a odpovídající CSS v projektu vůbec není), plus `logoLabel`, `runsSummary` a `STATUSES`, které nepoužíval ani jejich vlastní soubor. Po dnešní změně kreditů zmizel i dopočet dokoupení v prohlížeči: rozpoznává je server nad všemi odečty, v UI by na to byla jen zkrácená historie. Tři skripty, které ležely ve `scripts/` bez jakéhokoli odkazu, mají teď vlastní příkazy (`npm run qa:desktop`, `qa:keychain`, `fonts:vendor`).
+- **Na telefonu se rozjížděl obsah Dovedností a Nastavení mimo obrazovku.** Karty jsou prvky mřížky a ty mají výchozí `min-width: auto`, takže minimální šířku určila nejdelší nezalomitelná cesta k souboru – z karty dovednosti bylo 890 px na 375px displeji a v Nastavení se stejně rozjely všechny sekce. Mřížky teď mají `minmax(0, 1fr)` a dlouhá cesta se zkrátí třemi tečkami. Ověřeno na všech osmi obrazovkách: nula přetékajících prvků na 375 px, desktop 1440 px bez změny.
 - Na telefonu se u karty „Spustit agenta“ schovává text tlačítka pro obnovení nabídky, takže na kliknutí zbývala plocha 14×22 px. WCAG 2.2 žádá aspoň 24×24; teď má 32×32 a díky zápornému okraji se vzhled nezměnil.
-- **Historie dokoupených kreditů sahá tam, kam sahají data** — ne jen 30 dní zpět. Agenteeq jednorázově projde i starší konverzace Codexu a vytáhne z nich výhradně řádky se zůstatkem kreditů (žádné přepisy, žádné tokeny); na tomto Macu tím přibylo pět dřívějších dokoupení od 12. 7.
-- **Částky u dokoupení odpovídají skutečnosti.** Codex hlásí zůstatek z každé konverzace zvlášť a starší konverzace posílá zastaralé hodnoty, takže řada skáče nahoru a dolů — Agenteeq z toho dřív dopočítal i nákupy, které se nestaly, a u skutečných ukazoval nižší částky (třeba +19,6 místo +108,5). Nákup se teď pozná podle toho, že se nárůst udrží: medián následujících odečtů musí zůstat nad původní úrovní. Detekce běží na serveru nad všemi odečty, ne nad zkrácenou uloženou historií, a má vlastní testy.
-- **U jednoho limitu svítila dvě různá čísla.** Jakmile dorazila přesná data ze stavového řádku Claude Code, měřáky ve Statistikách a v detailu agenta kreslily vedle sebe i záložní hodnotu z historie plánu — tedy „5 h 42 %“ a hned pod tím „5 h 13 %“. Měřáky teď respektují stejnou přednost zdrojů jako zbytek aplikace: přesná data vyhrávají, záloha se skryje. Hlídá to test.
-- Aktivní záložka v Nastavení hlásí `aria-current="true"` místo prázdné hodnoty, která podle specifikace znamená opak — odečítače obrazovky teď řeknou, ve které sekci uživatel je. Vzhled se nemění, styl se váže na přítomnost atributu.
-- **Práce pomocných agentů se už neztrácí.** Claude Code píše jejich přepisy do `<projekt>/<konverzace>/subagents/agent-*.jsonl`, tedy o dvě úrovně hlouběji, než konektor četl — dnešních 1 133 552 tokenů (23 % práce Claude) tak v Agenteeq vůbec nebylo. Teď se načtou jako samostatné konverzace navázané na rodiče: v seznamu agentů zůstávají skryté pod ním, ale mají vlastní přepis, stav i tokeny. Jméno dostanou z popisu úlohy v rodičovském přepisu (párování přes `agentId`), takže v detailu rodiče je vidět „Pomocní agenti: 6 · 1,13 M“ a proklik na to, co každý dělal.
-- **Soukromí a bezpečnost** (Nastavení → Aplikace na tomto Macu): karta říká narovinu, co kde leží — konverzace se jen čtou z disku a drží v paměti, trvale se ukládá jen nastavení, projekty, rozpočty a historie upozornění, klíče k API patří do Klíčenky a ven z Macu nejde nic kromě volitelného dotazu na náklady tvým vlastním klíčem. Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací a teď je jde jedním tlačítkem smazat (i s klíči proti opakování). Datová složka se nově zakládá s právy 0700 a při startu se na ně srovná; soubor měl 0600 už dřív.
-- **Vlastní agenti** (Nastavení → Propojení): lokální služby bez vlastního konektoru — ComfyUI, Ollama a servery s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agenteeq se jich ptá jen na stav a ukazuje je i mezi běžícími aplikacemi na Přehledu. Bezpečnost na prvním místě: adresa smí mířit výhradně na tento Mac nebo do místní sítě (loopback, 10.x, 172.16–31.x, 192.168.x, .local), cloudová metadata na 169.254.x jsou zakázaná natvrdo, z adresy zůstane jen origin (cesta ani dotaz se nepřenesou), dotaz je vždy GET, nenásleduje přesměrování, má časový limit 1,5 s a strop 64 kB na odpověď. Přihlašovací údaje se neukládají, agentů je nejvýš osm a zápis vyžaduje stejnou ochranu proti CSRF jako ostatní změny.
-- **Historie vytížení plánu Claude** ve Statistikách: 30 dní skutečných vzorků z historie, kterou si zapisuje aplikace Claude Desktop — graf 5hodinového okna, týdenního okna a extra usage. Čte se na vyžádání (`GET /api/usage/claude`), nikam se neukládá a identifikátor organizace ze vzorků se ven nedostane. U extra usage zůstává poznámka, že zdroj neuvádí jednotku.
+- **Historie dokoupených kreditů sahá tam, kam sahají data** – ne jen 30 dní zpět. Agenteeq jednorázově projde i starší konverzace Codexu a vytáhne z nich výhradně řádky se zůstatkem kreditů (žádné přepisy, žádné tokeny); na tomto Macu tím přibylo pět dřívějších dokoupení od 12. 7.
+- **Částky u dokoupení odpovídají skutečnosti.** Codex hlásí zůstatek z každé konverzace zvlášť a starší konverzace posílá zastaralé hodnoty, takže řada skáče nahoru a dolů – Agenteeq z toho dřív dopočítal i nákupy, které se nestaly, a u skutečných ukazoval nižší částky (třeba +19,6 místo +108,5). Nákup se teď pozná podle toho, že se nárůst udrží: medián následujících odečtů musí zůstat nad původní úrovní. Detekce běží na serveru nad všemi odečty, ne nad zkrácenou uloženou historií, a má vlastní testy.
+- **U jednoho limitu svítila dvě různá čísla.** Jakmile dorazila přesná data ze stavového řádku Claude Code, měřáky ve Statistikách a v detailu agenta kreslily vedle sebe i záložní hodnotu z historie plánu – tedy „5 h 42 %“ a hned pod tím „5 h 13 %“. Měřáky teď respektují stejnou přednost zdrojů jako zbytek aplikace: přesná data vyhrávají, záloha se skryje. Hlídá to test.
+- Aktivní záložka v Nastavení hlásí `aria-current="true"` místo prázdné hodnoty, která podle specifikace znamená opak – odečítače obrazovky teď řeknou, ve které sekci uživatel je. Vzhled se nemění, styl se váže na přítomnost atributu.
+- **Práce pomocných agentů se už neztrácí.** Claude Code píše jejich přepisy do `<projekt>/<konverzace>/subagents/agent-*.jsonl`, tedy o dvě úrovně hlouběji, než konektor četl – dnešních 1 133 552 tokenů (23 % práce Claude) tak v Agenteeq vůbec nebylo. Teď se načtou jako samostatné konverzace navázané na rodiče: v seznamu agentů zůstávají skryté pod ním, ale mají vlastní přepis, stav i tokeny. Jméno dostanou z popisu úlohy v rodičovském přepisu (párování přes `agentId`), takže v detailu rodiče je vidět „Pomocní agenti: 6 · 1,13 M“ a proklik na to, co každý dělal.
+- **Soukromí a bezpečnost** (Nastavení → Aplikace na tomto Macu): karta říká narovinu, co kde leží – konverzace se jen čtou z disku a drží v paměti, trvale se ukládá jen nastavení, projekty, rozpočty a historie upozornění, klíče k API patří do Klíčenky a ven z Macu nejde nic kromě volitelného dotazu na náklady tvým vlastním klíčem. Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací a teď je jde jedním tlačítkem smazat (i s klíči proti opakování). Datová složka se nově zakládá s právy 0700 a při startu se na ně srovná; soubor měl 0600 už dřív.
+- **Vlastní agenti** (Nastavení → Propojení): lokální služby bez vlastního konektoru – ComfyUI, Ollama a servery s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agenteeq se jich ptá jen na stav a ukazuje je i mezi běžícími aplikacemi na Přehledu. Bezpečnost na prvním místě: adresa smí mířit výhradně na tento Mac nebo do místní sítě (loopback, 10.x, 172.16–31.x, 192.168.x, .local), cloudová metadata na 169.254.x jsou zakázaná natvrdo, z adresy zůstane jen origin (cesta ani dotaz se nepřenesou), dotaz je vždy GET, nenásleduje přesměrování, má časový limit 1,5 s a strop 64 kB na odpověď. Přihlašovací údaje se neukládají, agentů je nejvýš osm a zápis vyžaduje stejnou ochranu proti CSRF jako ostatní změny.
+- **Historie vytížení plánu Claude** ve Statistikách: 30 dní skutečných vzorků z historie, kterou si zapisuje aplikace Claude Desktop – graf 5hodinového okna, týdenního okna a extra usage. Čte se na vyžádání (`GET /api/usage/claude`), nikam se neukládá a identifikátor organizace ze vzorků se ven nedostane. U extra usage zůstává poznámka, že zdroj neuvádí jednotku.
 - Karta **Limity a kredity** říká pravdu o pokrytí: každá aplikace má vlastní limit (Codex odděleně od chatu v ChatGPT) a pod měřáky se vypíše, které aplikace limity hlásí a která běžící aplikace svůj limit na disk nezapisuje, takže ho Agenteeq nemá odkud přečíst. Seznam se odvozuje ze skutečného stavu, nic se nedoplňuje odhadem.
-- Instalace pro další lidi v nainstalované aplikaci: složka `dist/` existuje jen ve vývojovém repu, takže běžný uživatel dřív viděl vývojářský příkaz `npm run build:mac`, se kterým nic nezmůže. Karta teď ukáže samotnou aplikaci s tlačítky Ukázat ve Finderu a Kopírovat cestu a poradí, že ji stačí ve Finderu zabalit (Komprimovat) — Node.js je uvnitř, příjemce nic doinstalovávat nemusí.
-- Nová sekce **Dovednosti**: na jednom místě všechny soubory `SKILL.md`, které máš na Macu — u Claude, v jeho pluginech a plánovaných úlohách i u Codexu. Každá položka ukazuje název a popis z hlavičky souboru, zdroj, velikost, kdy byla naposledy upravena a cestu (stejné názvy z různých pluginů tak jdou rozlišit). Obsah se dá jedním klikem zkopírovat a použít u jiné služby nebo agenta, nebo stáhnout jako `.md`. Filtr podle zdroje a hledání v názvu i popisu. Agenteeq soubory jen čte a nikam je neodesílá; obsah vydává výhradně podle id z čerstvě projitého seznamu, takže přes tuto cestu nejde přečíst jiný soubor na disku.
+- Instalace pro další lidi v nainstalované aplikaci: složka `dist/` existuje jen ve vývojovém repu, takže běžný uživatel dřív viděl vývojářský příkaz `npm run build:mac`, se kterým nic nezmůže. Karta teď ukáže samotnou aplikaci s tlačítky Ukázat ve Finderu a Kopírovat cestu a poradí, že ji stačí ve Finderu zabalit (Komprimovat) – Node.js je uvnitř, příjemce nic doinstalovávat nemusí.
+- Nová sekce **Dovednosti**: na jednom místě všechny soubory `SKILL.md`, které máš na Macu – u Claude, v jeho pluginech a plánovaných úlohách i u Codexu. Každá položka ukazuje název a popis z hlavičky souboru, zdroj, velikost, kdy byla naposledy upravena a cestu (stejné názvy z různých pluginů tak jdou rozlišit). Obsah se dá jedním klikem zkopírovat a použít u jiné služby nebo agenta, nebo stáhnout jako `.md`. Filtr podle zdroje a hledání v názvu i popisu. Agenteeq soubory jen čte a nikam je neodesílá; obsah vydává výhradně podle id z čerstvě projitého seznamu, takže přes tuto cestu nejde přečíst jiný soubor na disku.
 
 - Nastavení → Instalace pro další lidi (desktopová aplikace): karta dřív jen napsala „předej instalační ZIP“ a nedala žádný způsob, jak ho získat. Server teď sám zjistí, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního `npm run build:mac` existuje (velikost, datum), a karta podle toho ukáže buď název souboru s tlačítky **Ukázat ve Finderu** a Kopírovat cestu, nebo návod, jak balíček vytvořit. Nový endpoint `/api/install/reveal` odvozuje cestu vždy sám ze složky `dist/` na serveru (nikdy z požadavku), má stejnou ochranu proti CSRF jako ostatní mutace a v režimu `AGENTEEQ_OPEN=dry` jen vrátí plán.
-- V Nastavení nefungovalo žádné tlačítko: klik spolkla hned první podmínka obsluhy, protože `[data-appearance]` nese i kořenové `<html>` a `closest()` k němu dolezl. „Jak propojit“, „Načíst znovu“, „Poslat zkušební“ ani odebrání licence a klíčů tak nic nedělaly — a v tmavém režimu klik navíc potichu přepnul vzhled na světlý. Podmínka teď míří jen na tlačítka volby vzhledu.
+- V Nastavení nefungovalo žádné tlačítko: klik spolkla hned první podmínka obsluhy, protože `[data-appearance]` nese i kořenové `<html>` a `closest()` k němu dolezl. „Jak propojit“, „Načíst znovu“, „Poslat zkušební“ ani odebrání licence a klíčů tak nic nedělaly – a v tmavém režimu klik navíc potichu přepnul vzhled na světlý. Podmínka teď míří jen na tlačítka volby vzhledu.
 - „Jak propojit“ u webových zdrojů skutečně vede k cíli: odroluje na kartu rozšíření, krátce ji zvýrazní a přesune fokus na první krok. Místo odkazu bez obrysu je z něj plnohodnotné tlačítko.
-- Router při přepnutí obrazovky vyměňuje uzel `#view` za čistou kopii, takže posluchače předchozího pohledu zmizí. Dosud se hromadily a po N návštěvách se jedna akce provedla N× — stejná příčina jako u nezavíratelných dialogů na Útratě, teď vyřešená pro všechny obrazovky naráz.
+- Router při přepnutí obrazovky vyměňuje uzel `#view` za čistou kopii, takže posluchače předchozího pohledu zmizí. Dosud se hromadily a po N návštěvách se jedna akce provedla N× – stejná příčina jako u nezavíratelných dialogů na Útratě, teď vyřešená pro všechny obrazovky naráz.
 
 - Dlaždice výběru vzhledu (Světlý / Tmavý / Podle systému) mají stejný vnitřní okraj nahoře i dole; pevná minimální výška je pryč, obsah se svisle vystředí.
 - Dialog projektu: „Barva“ už nezasahuje do pole Popis. Skupina barev je místo `fieldset` s `legend` (kde prohlížeč ignoruje horní okraj) běžný podnadpis a `role="radiogroup"` s popiskem, takže odstup odpovídá zbytku formuláře.
-- Limity Claude (5 h a týden) zůstávají aktuální, i když zrovna neběží žádná konverzace. Agenteeq je bere ze záložního zdroje — historie vytížení plánu, kterou si sama zapisuje aplikace Claude Desktop. Přesná data ze stavového řádku Claude Code mají dál přednost a záloha se skryje, jakmile dorazí. Formát souboru je interní a nezdokumentovaný, proto 🧪 Beta.
-- Extra usage z téhož zdroje se zobrazí jen jako číslo a s poznámkou, že zdroj neuvádí jednotku — Agenteeq z něj nedělá procenta ani koruny.
-- Útrata: dialogy „Přidat výdaj“ a „Měsíční rozpočty“ jde zavřít křížkem, kliknutím mimo i Escapem. Posluchač kliknutí se přidával na trvalý uzel `#view` při každém vstupu na stránku a nikdy se neodebíral, takže jeden klik otevřel tolik dialogů, kolik bylo návštěv — zavřený jen odhalil identický pod sebou.
+- Limity Claude (5 h a týden) zůstávají aktuální, i když zrovna neběží žádná konverzace. Agenteeq je bere ze záložního zdroje – historie vytížení plánu, kterou si sama zapisuje aplikace Claude Desktop. Přesná data ze stavového řádku Claude Code mají dál přednost a záloha se skryje, jakmile dorazí. Formát souboru je interní a nezdokumentovaný, proto 🧪 Beta.
+- Extra usage z téhož zdroje se zobrazí jen jako číslo a s poznámkou, že zdroj neuvádí jednotku – Agenteeq z něj nedělá procenta ani koruny.
+- Útrata: dialogy „Přidat výdaj“ a „Měsíční rozpočty“ jde zavřít křížkem, kliknutím mimo i Escapem. Posluchač kliknutí se přidával na trvalý uzel `#view` při každém vstupu na stránku a nikdy se neodebíral, takže jeden klik otevřel tolik dialogů, kolik bylo návštěv – zavřený jen odhalil identický pod sebou.
 - Nastavení: skok na sekci je plynulý. Lišta záložek se posouvá vlastním `scrollLeft` místo `scrollIntoView`, které rozhýbalo i rolování stránky, a po dobu rolování nepřepisuje aktivní záložku sledovač viditelnosti. Respektuje omezení pohybu v systému.
 - Ikony a fonty už neproblikávají: loga, fonty a brand se servírují s trvalou cache (dosud `no-cache`, tedy revalidace u každého překreslení) a obrázky se dekódují synchronně.
-- Agenti: zdroj je nadřazený filtr nad projekty — po přepnutí na Cloud ukazují nulu i počty u projektů, ne jen seznam.
+- Agenti: zdroj je nadřazený filtr nad projekty – po přepnutí na Cloud ukazují nulu i počty u projektů, ne jen seznam.
 - Sledování procesů: vnitřní `codex app-server`, který si spouští aplikace ChatGPT, se už nepočítá jako samostatný Codex CLI. ChatGPT je detekovaný samostatně.
-- Kolekce profilových obrázků má 29 variant: přepracované #1, #2, #5 a #6 (u #6 se kvůli neplatnému oblouku dosud nevykreslil srpek vůbec) a pět nových — kompas, mozaika, rytmus, planeta s prstencem a papírový drak.
+- Kolekce profilových obrázků má 29 variant: přepracované #1, #2, #5 a #6 (u #6 se kvůli neplatnému oblouku dosud nevykreslil srpek vůbec) a pět nových – kompas, mozaika, rytmus, planeta s prstencem a papírový drak.
 
-## Přehlednější seznam agentů a pravdivá útrata — 2026-09-11
+## Přehlednější seznam agentů a pravdivá útrata – 2026-09-11
 
 - Seznam agentů u každé konverzace ukazuje, kde běží: ikona notebooku pro tento Mac, ikona mraku pro webové aplikace. Stejné ikony má filtr zdroje; podrobnosti o službě zůstávají na stránce agenta.
 - Automatické kontroly Codexu (`guardian_review`) a pomocní agenti se už nezobrazují jako samostatní agenti s názvem složky (dříve např. 9× „POKORNY DESIGN“). Patří k rodičovské konverzaci podle `parent_thread_id`, její detail ukazuje jejich počet a tokeny; ve statistikách a útratě se tokeny dál počítají a vlastní upozornění neposílají.
@@ -519,25 +519,25 @@ Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstu
 - Tmavý režim: monochromatická loga (OpenAI, GitHub Copilot, Grok, Cursor, Ollama, LM Studio) mají podle brand manuálů bílou variantu, kontrast 1,29 : 1 → 16,23 : 1. Barevná loga beze změny.
 - Útrata: čerpání dokoupeného extra usage Claude ze stavového řádku (`rate_limits.spend_limit`). Dokoupení kreditů Codexu se slučuje, takže jedno dokoupení se už nepočítá několikrát (na reálných datech 22 → 10), a zobrazí se seznam s datem a částkou.
 
-## Stabilita ovládání — 2026-09-11
+## Stabilita ovládání – 2026-09-11
 
 - Nastavení se na širokých desktopových oknech vycentruje podle skutečné osy aplikace, zatímco navigace zůstává čitelně po ruce.
 - Modal „Měsíční rozpočty“ se spolehlivě zavře křížkem, kliknutím mimo dialog i klávesou Esc; click už nemůže propadnout do stránky pod overlayem a fokus se vrací na prvek, který dialog otevřel, i ve WebKitu.
-- Rychlé hledání při hoveru už nepřekresluje celý seznam a volba modelu ve spouštěči nepřestavuje celý ovládací pás — obě interakce zůstávají plynulé bez blikání a ztráty fokusu.
+- Rychlé hledání při hoveru už nepřekresluje celý seznam a volba modelu ve spouštěči nepřestavuje celý ovládací pás – obě interakce zůstávají plynulé bez blikání a ztráty fokusu.
 
-## Vzhled a vývojový standard — 2026-09-11
+## Vzhled a vývojový standard – 2026-09-11
 
 - Přidaný plnohodnotný tmavý režim se třemi volbami v Nastavení: výchozí Světlý, Tmavý a Podle systému. Volba se trvale ukládá na tomto Macu, před prvním vykreslením neblikne opačný režim a synchronizuje i nativní chrome macOS.
 - Dark mode používá vlastní kontrastní tokeny namísto inverze; automatická browser QA měří AA kontrast textových a stavových kombinací v Chromiu i WebKitu.
 - Kolekce lokálních abstraktních SVG profilových obrázků má 24 variant (dvojnásobek), bez externích požadavků a bez změny existujících indexů.
 - Přidaný `docs/PRODUCT-AND-ARCHITECTURE.md`: produktový kompas, systém pravdivosti dat, UX/UI a theme contract, architektura, vývojový protokol a releasová brána.
 
-## Vylepšení desktopu — 2026-09-11
+## Vylepšení desktopu – 2026-09-11
 
 - Nastavení ukazuje samostatný stav všech osmi webových zdrojů rozšíření, včetně Perplexity a Groku; žádný z nich se neoznačuje za připojený před prvními skutečnými daty.
 - Paleta vyhledávání reaguje na ukazatel myši, zkratka pro spuštění agenta má čitelný kontrast a posuvníky používají jemný vzhled Agenteeq.
 
-## 0.6.0 — 2026-09-11
+## 0.6.0 – 2026-09-11
 
 - Samostatná macOS aplikace: Swift/AppKit, WKWebView, přibalený Node, Retina ikona s původním logem na bílé ploše, menu a klávesové zkratky, Dock/menubar, nativní export a oznámení s návratem do konverzace.
 - Čtyřkrokový první průvodce, trvalé dokončení, opakování v Nastavení/Nápovědě, animace respektující omezení pohybu.
@@ -545,7 +545,7 @@ Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstu
 - Lifecycle: atomický single-instance zámek, vlastnictví serveru, úklid při EOF/SIGTERM/SIGINT i pádu rodiče, omezená obnova po pádu, čekání při rychlém restartu, bezpečné převzetí ověřené starší CLI instance, cizí proces se neukončuje. Port se získá před přístupem ke sdíleným datům.
 - Desktop nespouští druhý CLI LaunchAgent ani service worker. Upozornění přicházejí přímo ze služby i při zavřeném okně.
 
-## 0.5.0 — 2026-09-11
+## 0.5.0 – 2026-09-11
 
 ### Přidáno
 - **Projekty:** konverzace ze všech služeb seřazené podle klientů a zakázek. Automatické zařazení podle složky (nejdelší shoda, i podsložky), ruční zařazení libovolné konverzace včetně webových chatů, „mimo projekty“, přetažení řádku na projekt, hromadný výběr v Agentech, filtr podle projektu. Detail projektu: KPI, stav a tokeny, brief s automatickým ukládáním, složky, tokeny podle služby, archiv, export do CSV (Excel/Numbers, ochrana proti vzorcům). Konverzace zůstávají v projektu i po vypadnutí z 30denního okna (snímky). Návrhy projektů ze složek, kde agenti pracují.
@@ -560,7 +560,7 @@ Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstu
 - LaunchAgent restartuje Agenteeq jen po pádu; když už Agenteeq běží, druhá instance se v klidu ukončí.
 - Příkaz pro automatické spouštění se v Nastavení skládá podle skutečné instalace (dřív pevná cesta `~/agenteeq`).
 
-## 0.4.0 — 2026-09-10
+## 0.4.0 – 2026-09-10
 
 ### Změněno
 - **Nový název Agenteeq** v celém projektu: aplikace, rozšíření, CLI (`bin/agenteeq.mjs`), balíček, proměnné prostředí (`AGENTEEQ_*`), hlavičky API (`X-Agenteeq`, `X-Agenteeq-Token`), LaunchAgent `cz.agenteeq.agent`, Klíčenka `cz.agenteeq.*`, složka projektu a repozitář.
@@ -570,18 +570,18 @@ Hlavní změny (podrobně níž): pravdivé počítání tokenů (vstup + výstu
 ### Migrace
 - Data aplikace se ukládají do `~/.agenteeq`. Při prvním spuštění se `~/.dirigent/data.json` jednou zkopíruje (upozornění, výdaje, rozpočty, nastavení, token); původní soubor zůstane beze změny.
 
-## 0.3.0 — 2026-09-10
+## 0.3.0 – 2026-09-10
 
 ### Přidáno
 - **Otevřít v aplikaci:** vlákno Codexu přímo v aplikaci ChatGPT (`codex://threads/<id>`), aplikace Claude, projekt v Cursoru a VS Code, webová konverzace v prohlížeči. **Pokračovat v Terminálu** otevře Terminál s `claude --resume <id>` (resp. `codex resume`, `copilot --resume`, pokud je CLI v PATH). **Otevřít složku** ve Finderu. Nabídku akcí počítá server podle nainstalovaných aplikací.
 - Oficiální loga služeb (Claude, Codex, ChatGPT, Gemini, GitHub Copilot, Microsoft Copilot, Perplexity, Grok, Qwen, Cursor, Ollama, LM Studio) z `@lobehub/icons-static-svg` 1.95.0 (MIT).
-- Vlastní vizuální identita „koncertní sál“: ebenová scéna s notovou osnovou (každý aktivní agent je nota — smaragdová pracuje, sametová potřebuje tebe), tmavá hlavní karta, mosazné akcenty, jemná zrnitost.
+- Vlastní vizuální identita „koncertní sál“: ebenová scéna s notovou osnovou (každý aktivní agent je nota – smaragdová pracuje, sametová potřebuje tebe), tmavá hlavní karta, mosazné akcenty, jemná zrnitost.
 
 ### Změněno
 - Paleta: samet `#C2335A`, smaragd `#22A38C`, mosaz `#C99A3E`, eben `#121019`, mlžná slonovina `#F4F3F7`; barvy poskytovatelů podle jejich značek.
 - Kopírování příkazu je jen doplňková ikona; hlavní akcí je otevření.
 
-## 0.2.0 — 2026-09-10
+## 0.2.0 – 2026-09-10
 
 První verze k reálnému testování.
 
@@ -598,16 +598,16 @@ První verze k reálnému testování.
 
 ### Opraveno (během ověření)
 - Falešné upozornění „dokončil úlohu“ při dlouhém generování bez zápisu do přepisu.
-- Projekt session se měnil podle `cd` během práce agenta — nyní platí složka, ve které session začala.
+- Projekt session se měnil podle `cd` během práce agenta – nyní platí složka, ve které session začala.
 - Počet u konektorů odpovídá viditelným sessions, ne počtu souborů na disku.
 
 ### Změněno
 - Prototyp v0.1 (jediný `server.mjs` a ukázková data) nahrazen modulární architekturou; ukázková data odstraněna.
 
-## 0.1.0 — 2026-09-10
+## 0.1.0 – 2026-09-10
 
 - Klikatelný prototyp: přehled, seznam agentů, spotřeba, konektory; lokální čtení Claude Code a Codexu; ukázková data.
-# Opravy desktopu — 2026-09-11
+# Opravy desktopu – 2026-09-11
 
 - Přehled při rychlých živých datech aktualizuje jen dotčené části; časová osa se nepřekresluje pro každý tokenový přírůstek a graf má omezenou obnovovací frekvenci.
 - Otevřený výběr projektu drží nad obsahem vlastní vrstvu bez kolidujícího tmavého obrysu zdrojového ovládacího prvku.

@@ -1,7 +1,7 @@
 // Balíček rozšíření pro Chrome: dist/agenteeq-extension-<verze>.zip
 //
 // ZIP se skládá vlastní rutinou místo volání `zip` nebo `ditto`. Důvod je stejný jako u zbytku
-// projektu — žádné závislosti a žádné překvapení podle toho, na čem se buildí: `ditto` přibaluje
+// projektu – žádné závislosti a žádné překvapení podle toho, na čem se buildí: `ditto` přibaluje
 // metadata macOS (__MACOSX), která Chrome Web Store nemá rád, a `zip` nemusí být nainstalovaný.
 // Archiv je navíc deterministický (pevné datum), takže dvě sestavení téhož kódu dají tentýž soubor.
 import fs from 'node:fs/promises';
@@ -39,7 +39,7 @@ function crc32(buf) {
   return (c ^ 0xFFFFFFFF) >>> 0;
 }
 
-// Pevné datum (1. 1. 2000) v MS-DOS formátu — archiv pak nezávisí na čase sestavení.
+// Pevné datum (1. 1. 2000) v MS-DOS formátu – archiv pak nezávisí na čase sestavení.
 const DOS_TIME = 0;
 const DOS_DATE = ((2000 - 1980) << 9) | (1 << 5) | 1;
 

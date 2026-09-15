@@ -129,7 +129,7 @@ export function decisionCard(s) {
   </li>`;
 }
 
-// Tlačítka „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ — nabídku sestavuje server (session.open).
+// Tlačítka „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ – nabídku sestavuje server (session.open).
 export function openButtons(s, { small = false, max = 3 } = {}) {
   const icons = { terminal: ICON.terminal, folder: ICON.folder };
   return (s.open || [])
@@ -175,7 +175,7 @@ export function untilLabel(ts, now = Date.now()) {
 }
 
 // Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
-// Vyčerpání dokoupeného extra usage není okno předplatného — patří na Útratu, ne mezi limity plánu.
+// Vyčerpání dokoupeného extra usage není okno předplatného – patří na Útratu, ne mezi limity plánu.
 export const isSpendLimit = (l) => l.kind === 'spend';
 
 export function currentLimits(limits, now = Date.now()) {
@@ -194,7 +194,7 @@ export function limitWindows(limits, now = Date.now()) {
     const renewed = Boolean(l.resetsAt && l.resetsAt <= now);
     const pct = renewed ? 0 : l.reached ? 100 : Math.round(l.usedPercent);
     const tone = renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free';
-    const advice = renewed ? 'Obnoveno — plná kapacita' : pct >= 100 ? 'Vyčerpáno, počkej na obnovu' : pct >= 80 ? 'Šetři na důležité úlohy' : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy';
+    const advice = renewed ? 'Obnoveno – plná kapacita' : pct >= 100 ? 'Vyčerpáno, počkej na obnovu' : pct >= 80 ? 'Šetři na důležité úlohy' : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy';
     return `<li class="lwin-row" data-tone="${tone}">
       <span class="lwin-logo">${glyph(l.id.startsWith('codex') ? { connector: 'codex' } : l.provider)}</span>
       <span class="lwin-main">
@@ -254,7 +254,7 @@ function markErrors(form, errors) {
 }
 
 // `size` přidá variantu okna (např. 'reader' pro čtení souboru), `footer` nahradí výchozí dvojici
-// tlačítek vlastním obsahem a `onOpen` dostane kořen okna hned po vložení do stránky —
+// tlačítek vlastním obsahem a `onOpen` dostane kořen okna hned po vložení do stránky –
 // díky tomu má i vlastní patička kde navěsit obsluhu, aniž by se duplikovala práce s Esc,
 // zámkem tabulátoru a vrácením zaostření.
 export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {

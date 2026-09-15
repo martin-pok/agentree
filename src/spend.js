@@ -24,7 +24,7 @@ export const KINDS = {
 
 export const CURRENCIES = ['CZK', 'USD', 'EUR'];
 
-// Kurzy jsou "kolik CZK za 1 jednotku". Výchozí hodnoty jsou orientační — uživatel je upravuje v nastavení.
+// Kurzy jsou "kolik CZK za 1 jednotku". Výchozí hodnoty jsou orientační – uživatel je upravuje v nastavení.
 export const DEFAULT_SPEND = {
   currency: 'CZK',
   rates: { CZK: 1, USD: 23, EUR: 25 },

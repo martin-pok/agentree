@@ -6,7 +6,7 @@ import { startTestServer, api } from './helpers.mjs';
 import { normalizeData } from '../src/datastore.js';
 
 // Aplikace musí o rozšíření říkat pravdu. Dřív „věděla“ o rozšíření jen z konverzací poslaných
-// za posledních pár minut a jen v paměti — po restartu ukazovala „nenainstalováno“, i když bylo
+// za posledních pár minut a jen v paměti – po restartu ukazovala „nenainstalováno“, i když bylo
 // spárované, a nesliboval se vklad zadání, který by přitom fungoval.
 
 const ORIGIN = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
@@ -60,7 +60,7 @@ test('stav rozšíření: nespárováno, spárováno, ozvalo se, zastaralá verz
     assert.equal(r.body.version, verze);
   });
 
-  await t.test('spárování i verze se ukládají na disk — přežijí restart', async () => {
+  await t.test('spárování i verze se ukládají na disk – přežijí restart', async () => {
     await new Promise((r) => setTimeout(r, 400));
     const data = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8'));
     assert.ok(data.extension.pairedAt > 0);

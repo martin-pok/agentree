@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 import os from 'node:os';
 
-// Přístup z telefonu. Výchozí stav je vypnuto — dokud ho uživatel sám nezapne, server poslouchá
+// Přístup z telefonu. Výchozí stav je vypnuto – dokud ho uživatel sám nezapne, server poslouchá
 // jen na 127.0.0.1 jako dřív. Zapnout jde dvě nezávislé cesty a obě přidají další listener:
 //
 //   settings.lanAccess        adresy tohoto Macu v domácí síti (10.x, 192.168.x, 172.16–31.x)
@@ -12,7 +12,7 @@ import os from 'node:os';
 //
 //   1. Na Macu se ukáže šestimístný PIN s platností 5 minut a na jedno použití.
 //   2. Telefon ho jednou zadá a dostane token do cookie (HttpOnly, SameSite=Strict).
-//   3. V souboru aplikace leží jen SHA-256 hash tokenu — ze zálohy dat se přihlásit nedá.
+//   3. V souboru aplikace leží jen SHA-256 hash tokenu – ze zálohy dat se přihlásit nedá.
 //
 // Zápisy navíc dál procházejí ochranou proti CSVF/CSRF (hlavička X-Agenteeq + kontrola Origin).
 
@@ -30,14 +30,14 @@ export const stripTrailingDot = (s) => String(s || '').replace(/\.$/, '');
 // Jméno Macu v MagicDNS přichází z výstupu cizího programu (`tailscale status --json`) a míří
 // rovnou do seznamu povolených hodnot hlavičky Host. Proto se napřed ověří jeho tvar: běžné DNS
 // jméno malými písmeny, aspoň dvě části, nic jiného. Cokoli s portem, lomítkem, mezerou nebo
-// prázdnou částí se zahodí — do ochrany proti DNS rebindingu se nesmí dostat nic neočekávaného.
+// prázdnou částí se zahodí – do ochrany proti DNS rebindingu se nesmí dostat nic neočekávaného.
 const DNS_JMENO = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
 export function magicDnsName(raw) {
   const jmeno = stripTrailingDot(raw).trim().toLowerCase();
   return jmeno.length <= 253 && DNS_JMENO.test(jmeno) ? jmeno : '';
 }
 
-// Adresy, na kterých je Agenteeq z místní sítě vidět. Veřejné adresy sem nepatří — vybíráme
+// Adresy, na kterých je Agenteeq z místní sítě vidět. Veřejné adresy sem nepatří – vybíráme
 // jen privátní rozsahy, aby se odkaz nedal omylem otevřít z internetu.
 export function lanAddresses(interfaces = os.networkInterfaces()) {
   const out = [];
@@ -51,7 +51,7 @@ export function lanAddresses(interfaces = os.networkInterfaces()) {
 }
 
 // Adresa tohoto Macu v jeho vlastní privátní síti Tailscale. Tailscale přiděluje zařízením IPv4
-// z rozsahu 100.64.0.0/10 (CGNAT) — není to veřejná adresa: připojí se na ni jen zařízení
+// z rozsahu 100.64.0.0/10 (CGNAT) – není to veřejná adresa: připojí se na ni jen zařízení
 // přihlášená do stejného tailnetu. Bereme výhradně IPv4: Tailscale ji přiděluje vždy a odpadá
 // s ní hranatá závorka v adrese i v hlavičce Host.
 export function tailscaleAddresses(interfaces = os.networkInterfaces()) {
@@ -80,7 +80,7 @@ export const cookieValue = (header, name = COOKIE) => {
 };
 
 // `interfaces` a `tailscaleName` jdou vstřiknout, aby šly cesty ven otestovat bez skutečné sítě
-// a bez nainstalovaného Tailscale — stejně jako se injektuje `run` v src/tunnel.js.
+// a bez nainstalovaného Tailscale – stejně jako se injektuje `run` v src/tunnel.js.
 export function createLanAccess({ datastore, config, onListen = () => {}, tailscaleName = () => '', interfaces = () => os.networkInterfaces() }) {
   const servers = new Map(); // adresa → naslouchající listener
   const errors = new Map(); // adresa → proč se ji nepodařilo otevřít
@@ -101,7 +101,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   }
 
   // Hodnoty hlavičky Host, které smí projít (ochrana proti DNS rebindingu). Kromě adres je to
-  // u Tailscale i jméno v MagicDNS — bez něj by adresa mac.tailnet.ts.net skončila na 403.
+  // u Tailscale i jméno v MagicDNS – bez něj by adresa mac.tailnet.ts.net skončila na 403.
   function hosts() {
     const out = bindAddresses();
     if (tailscaleOn()) {
@@ -126,7 +126,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     const addresses = lanAddresses(interfaces());
     const tsAddresses = tailscaleAddresses(interfaces());
     const tsName = magicDnsName(tailscaleName());
-    // Port bereme z běžícího listeneru — hlavní server mohl dostat jiný než z konfigurace.
+    // Port bereme z běžícího listeneru – hlavní server mohl dostat jiný než z konfigurace.
     const port = [...servers.values()][0]?.address()?.port || boundPort || config.port;
     // Adresa pro Tailscale: přednost má jméno v MagicDNS (zapamatovatelné a přežije změnu IP),
     // teprve když ho tailnet nemá zapnuté, ukážeme adresu 100.x.
@@ -157,7 +157,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     return { code: pin.code, expiresAt: pin.expiresAt };
   }
 
-  // Spáruje telefon. Vrací token jen jednou — v datech zůstane pouze jeho hash.
+  // Spáruje telefon. Vrací token jen jednou – v datech zůstane pouze jeho hash.
   async function pair(code, label, now = Date.now()) {
     if (!lanOn() && !tailscaleOn()) return { status: 403, error: 'Přístup z telefonu je vypnutý.' };
     if (!pin || pin.expiresAt <= now) return { status: 410, error: 'Kód vypršel. Vytvoř na Macu nový.' };
@@ -196,7 +196,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   }
 
   // Jeden listener na jednu adresu. Poslouchá přímo na síťových adresách tohoto Macu, ne na
-  // 0.0.0.0 — ten by kolidoval s už obsazeným portem na 127.0.0.1 (EADDRINUSE) a tiše by se
+  // 0.0.0.0 – ten by kolidoval s už obsazeným portem na 127.0.0.1 (EADDRINUSE) a tiše by se
   // nespustil. Listener na 127.0.0.1 běží nezávisle a nikdy se nevypíná.
   function open(address, port) {
     return new Promise((resolve) => {
@@ -228,7 +228,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   // Srovná skutečně otevřené listenery s tím, co mají zapnuté přepínače: zavře, co tam nepatří,
   // a otevře, co chybí. Volá se při startu i po každém přepnutí, takže zapnutí Tailscale nikdy
   // neshodí už fungující přístup z domácí sítě a naopak.
-  // Vrací se teprve tehdy, když listenery skutečně naslouchají (nebo selhaly) — rozhraní tak
+  // Vrací se teprve tehdy, když listenery skutečně naslouchají (nebo selhaly) – rozhraní tak
   // nikdy neohlásí „zapnuto", dokud to není pravda.
   async function start(requestHandler, port = config.port) {
     if (requestHandler) handler = requestHandler;

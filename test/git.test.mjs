@@ -24,7 +24,7 @@ async function makeRepo() {
   return dir;
 }
 
-test('git: pomocné funkce — bezpečné větve, slug, adresa bez hesla, status', () => {
+test('git: pomocné funkce – bezpečné větve, slug, adresa bez hesla, status', () => {
   for (const ok of ['main', 'agenteeq/claude-cenik-1430', 'feature/x.y']) assert.equal(isSafeRef(ok), true, ok);
   for (const bad of ['-rf', 'a..b', 'x.lock', 'a b', 'refs//x', '', 'x/', 'x@{1}', '$(rm)']) assert.equal(isSafeRef(bad), false, bad);
   assert.equal(slugify('Přidej ceník & testy!'), 'pridej-cenik-testy');
@@ -73,10 +73,10 @@ test('git: pracovní kopie agenta → změny → přijetí (commit + sloučení)
   assert.ok(diff.files.some((f) => f.file === 'cenik.html' && f.untracked));
 
   await fs.writeFile(path.join(repo, 'rozpracovano.txt'), 'nesmí vadit');
-  const accepted = await acceptWork({ repo, dir, branch: 'agenteeq/claude-cenik', base: 'main', message: 'Agenteeq: Claude Code — ceník' });
+  const accepted = await acceptWork({ repo, dir, branch: 'agenteeq/claude-cenik', base: 'main', message: 'Agenteeq: Claude Code – ceník' });
   assert.deepEqual(accepted, { ok: true, merged: true });
   assert.equal(await fs.readFile(path.join(repo, 'cenik.html'), 'utf8'), '<h1>Ceník</h1>\n');
-  assert.match(g(repo, 'log', '--oneline', '-3'), /Agenteeq: Claude Code — ceník/);
+  assert.match(g(repo, 'log', '--oneline', '-3'), /Agenteeq: Claude Code – ceník/);
 
   const cleaned = await cleanupWork({ repo, dir, branch: 'agenteeq/claude-cenik' });
   assert.deepEqual(cleaned, { ok: true, branchDeleted: true });

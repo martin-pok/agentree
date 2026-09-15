@@ -79,7 +79,7 @@ export async function startTestServer(env = {}, appOptions = {}) {
   };
 }
 
-// Minimalistický SSE klient nad fetch — sbírá události do pole.
+// Minimalistický SSE klient nad fetch – sbírá události do pole.
 export async function openStream(url) {
   const controller = new AbortController();
   const res = await fetch(`${url}/api/stream`, { signal: controller.signal });

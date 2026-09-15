@@ -38,7 +38,7 @@ test('kopie přežije, když se balíček aplikace celý vymění', async () => 
   const obsah = await fs.readFile(path.join(prvni.path, 'manifest.json'), 'utf8');
   assert.equal(JSON.parse(obsah).version, '1.0.0', 'rozšíření zůstalo na svém místě');
 
-  // Nový balíček s novou verzí kopii obnoví na stejné cestě — Chrome nemusí nic přenastavovat.
+  // Nový balíček s novou verzí kopii obnoví na stejné cestě – Chrome nemusí nic přenastavovat.
   await fakeExtension(zdroj, '2.0.0');
   const druhy = await syncExtension({ zdroj, dataDir: data });
   assert.equal(druhy.path, prvni.path, 'cesta se nemění');

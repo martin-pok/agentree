@@ -1,4 +1,4 @@
-/* Písma rozšíření jsou bajt po bajtu tatáž jako v aplikaci (public/fonts) — okno rozšíření tak
+/* Písma rozšíření jsou bajt po bajtu tatáž jako v aplikaci (public/fonts) – okno rozšíření tak
    vypadá jako její menší sestra, ne jako cizí stránka. Kopie tu leží schválně: Chrome načítá
    rozšíření jako samostatnou složku a k souborům aplikace se nedostane. Shodu hlídá test
    test/extension-assets.test.mjs, aby se verze nikdy nerozešly. Maximální váha 500. */

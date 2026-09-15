@@ -1,8 +1,8 @@
-// Konektor „Neznámí a lokální agenti“ — na rozdíl od processes.js (pevný seznam 14 aplikací)
+// Konektor „Neznámí a lokální agenti“ – na rozdíl od processes.js (pevný seznam 14 aplikací)
 // se snaží nepřehlédnout ŽÁDNÝ lokální AI běhový proces: zná desítky konkrétních nástrojů
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
-// (source: 'heuristika', confidence: 'nízká') — nikdy se netváří jako ověřená data.
+// (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
 import { etimeToSec } from './processes.js';
 import { clip } from '../util.js';
 import { processList, listeningPorts } from '../platform.js';
@@ -32,14 +32,14 @@ export const KNOWN_LOCAL = [
   { id: 'transformers-serve', name: 'Transformers serve', kind: 'cli', match: /(^|\s)transformers(-cli)?\s+serve(\s|$)/i },
 ];
 
-// Procesy, které se nikdy nesmí označit — vlastní proces, systémové služby a testovací běh.
+// Procesy, které se nikdy nesmí označit – vlastní proces, systémové služby a testovací běh.
 const EXCLUDE = /agenteeq|node --test|xcode|spotlight|mdworker|finder|safari|chrome|chrome_crashpad|windowserver|kernel_task/i;
 
-// Slabé signály neznámého modelu — samy o sobě stačí, jen když proces něco reálně dělá
+// Slabé signály neznámého modelu – samy o sobě stačí, jen když proces něco reálně dělá
 // (cpu > 0) nebo drží typický inferenční port. Bez toho jde často jen o slovo v cestě
 // k domovské složce (repozitář „moje-llama-app“ apod.) a nic to neznamená.
 const WEAK_KEYWORDS = /\b(llama|mistral|qwen|gemma|phi|deepseek|whisper|diffusion|transformers|torchrun|inference|serve)\b/i;
-// Silné signály — model na disku nebo explicitní --model — stačí samy o sobě.
+// Silné signály – model na disku nebo explicitní --model – stačí samy o sobě.
 const MODEL_FILE = /\.(gguf|safetensors|mlx)\b/i;
 const MODEL_FLAG = /(^|\s)--model(\s|=)/;
 const MODELS_DIR = /models\//i;
@@ -64,7 +64,7 @@ function matchesHeuristic(args, port, cpu) {
   return false;
 }
 
-// Vytáhne název modelu z `--model X` (přednostně) nebo `-m X` — basename bez přípony souboru.
+// Vytáhne název modelu z `--model X` (přednostně) nebo `-m X` – basename bez přípony souboru.
 // `--model` má přednost, protože `-m` u pythonu často znamená spouštěný modul (`python -m vllm…`),
 // ne cestu k modelu.
 function extractModel(args) {
@@ -86,11 +86,11 @@ function parseRow(line) {
   return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
 }
 
-const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu — vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
+const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
 
 /**
  * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde
- * všechny lokální AI běhy — známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
+ * všechny lokální AI běhy – známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
  * na síť a nevyhodí výjimku; na nesmyslném vstupu vrátí [].
  */
 export function detectLocalAgents(psOutput, { ports = [], now = Date.now() } = {}) {
@@ -188,7 +188,7 @@ export function createLocalAgentsConnector(ctx) {
     kind: 'local',
     verified: false,
     source: 'ps · lsof',
-    description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací — podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
+    description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), 10000);
@@ -202,7 +202,7 @@ export function createLocalAgentsConnector(ctx) {
     idle: async () => {},
     status() {
       // Bez úspěšného výpisu procesů se neví nic. Hlásit „nic neběží“ by znamenalo
-      // vydávat selhání zjišťování za zjištěný stav — přesně to, co se tu dělat nesmí.
+      // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
       if (!lastOk) {
         return { state: 'error', detail: 'Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.', count: 0 };
       }

@@ -91,7 +91,7 @@ export function createProcessesConnector(ctx) {
     idle: async () => {},
     status() {
       const running = store.runtimes.filter((r) => r.running).length;
-      // Dokud se výpis procesů ani jednou nepovedl, nevíme nic — a „0 aplikací běží“
+      // Dokud se výpis procesů ani jednou nepovedl, nevíme nic – a „0 aplikací běží“
       // by byla lež, ne údaj. Ollamu poznáme i tak, ta jde přes HTTP.
       return {
         state: lastOk ? 'connected' : 'error',

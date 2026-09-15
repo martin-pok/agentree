@@ -12,7 +12,7 @@ export const needsYou = (s) => s.status === 'needs_input' || s.status === 'limit
 export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.working ? STATUS_ORDER[s.status] : STATUS_ORDER.working + 1);
 
 // Barvy grafů: ověřená kategoriální paleta (validátor dataviz: světlost, sytost, rozlišitelnost pro barvoslepé).
-// Barva patří poskytovateli natrvalo — nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
+// Barva patří poskytovateli natrvalo – nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
 export const CATEGORICAL = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 export const CHART_ORDER = ['google', 'anthropic', 'openai', 'microsoft', 'cursor', 'perplexity', 'github', 'xai'];
 export const CHART_OTHER = { key: 'other', label: 'Ostatní', color: '#8a8594' };

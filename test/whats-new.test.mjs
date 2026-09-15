@@ -38,5 +38,5 @@ test('porovnání verzí je číselné, ne textové', () => {
 test('CHANGELOG.md má záznam pro aktuální verzi', async () => {
   const { version } = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const log = await fs.readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
-  assert.match(log, new RegExp(`^## ${version.replace(/\./g, '\\.')} — `, 'm'), `CHANGELOG.md nemá sekci „## ${version} — …“`);
+  assert.match(log, new RegExp(`^## ${version.replace(/\./g, '\\.')} – `, 'm'), `CHANGELOG.md nemá sekci „## ${version} – …“`);
 });

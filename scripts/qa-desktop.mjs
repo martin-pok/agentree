@@ -12,7 +12,7 @@ for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
   const sample = server.app.store.ensure({ connector: 'codex', localId: 'qa-layout', provider: 'openai', app: 'Codex' });
-  Object.assign(sample, { title: 'QA — kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
+  Object.assign(sample, { title: 'QA – kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
   addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
   server.app.store.commit(sample);
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);

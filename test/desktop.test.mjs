@@ -54,7 +54,7 @@ test('desktop: owns its server, closes on parent EOF, rejects occupied ports', a
   } finally { if (child.exitCode === null) child.kill(); }
 });
 
-test('Info.plist dostane verzi z package.json — v aplikaci nikdy nesvítí stará', async () => {
+test('Info.plist dostane verzi z package.json – v aplikaci nikdy nesvítí stará', async () => {
   const { stampVersion } = await import('../scripts/plist-version.mjs');
   const zdroj = await fs.readFile(new URL('../desktop/Info.plist', import.meta.url), 'utf8');
   const balicek = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));

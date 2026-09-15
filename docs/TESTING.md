@@ -11,14 +11,14 @@ npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno 
 
 `qa:contrast` nepočítá dvojice tokenů, ale **každý viditelný text**: projde ho v aplikaci
 (8 obrazovek × světlý a tmavý režim × 1440 a 375 px), na landing page a v okně rozšíření
-a spočítá kontrast proti pozadí, které pod textem doopravdy leží — včetně poloprůhledných vrstev
+a spočítá kontrast proti pozadí, které pod textem doopravdy leží – včetně poloprůhledných vrstev
 nad sebou a přechodů (u těch bere nejsvětlejší zastávku, tedy nejhorší případ). Odhalí tak i to,
 co kontrola tokenů v `qa-desktop.mjs` minout musí: oba tokeny v pořádku, jejich kombinace na
 konkrétním místě ne. Vyžaduje Playwright (`PLAYWRIGHT_PATH` nebo globální instalace).
 
 Browserová regresní sada `scripts/qa-desktop.mjs` běží nad dočasným serverem ve **Chromiu i WebKitu**. Vedle tras, custom pickerů, živých aktualizací, mobilních šířek a nulových chyb konzole ověřuje i světlý/tmavý režim: výchozí light, perzistenci dark přes reload, reakci `system` na změnu media preference, 24 abstraktních avatarů a AA kontrast základních textových/semantických tokenů. Screenshoty ukládá do `dist/qa/`.
 
-Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat fokusu na spouštěcí tlačítko. Paleta a změna hodnoty custom pickeru se nesmějí testovat jen podle výsledného textu — ověř i to, že při hoveru či změně modelu nedojde k přepsání celého listu/ovládacího pásu a neztratí se fokus.
+Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat fokusu na spouštěcí tlačítko. Paleta a změna hodnoty custom pickeru se nesmějí testovat jen podle výsledného textu – ověř i to, že při hoveru či změně modelu nedojde k přepsání celého listu/ovládacího pásu a neztratí se fokus.
 
 | Soubor | Pokrývá |
 |---|---|
@@ -82,7 +82,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá přepisy.
 - [ ] Při nefunkčním adaptéru ulož HTML úryvek zprávy a tlačítka Stop jako fixturu a oprav selektory v `extension/sites.js`.
 
-## Protokol ověření — 0.12.0 (15. 9. 2026, Linux kontejner, Node 22.22)
+## Protokol ověření – 0.12.0 (15. 9. 2026, Linux kontejner, Node 22.22)
 
 Tohle vydání vzniklo mimo macOS, takže se rozpadá na dvě části: co šlo doložit tady a co musí
 potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
@@ -94,8 +94,8 @@ potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
 | `npm run build:extension` | `dist/agenteeq-extension-0.12.0.zip`, 18 souborů, 179 kB; rozbalení ověřeno |
 | `npm run build:site` | `dist/web`, 71 souborů; landing page v kořeni, rozhraní na `/app` |
 | Landing page v Chromiu | 1440 px a 375 px, světlý i tmavý režim: konzole bez chyb, žádné vodorovné rolování |
-| Kontrast WCAG 2.2 AA (landing page) | Všechny texty splňují AA — měřeno nad vykreslenou stránkou (1440 px light/dark, 375 px light/dark) |
-| Kontrast WCAG 2.2 AA (okno rozšíření) | Všechny texty splňují AA — 344 px, světlý i tmavý režim, spárované i nespárované |
+| Kontrast WCAG 2.2 AA (landing page) | Všechny texty splňují AA – měřeno nad vykreslenou stránkou (1440 px light/dark, 375 px light/dark) |
+| Kontrast WCAG 2.2 AA (okno rozšíření) | Všechny texty splňují AA – 344 px, světlý i tmavý režim, spárované i nespárované |
 | `npm run smoke` | Balíček 0.12.0 (132 souborů, 744 kB) se nainstaluje a běží; písma rozšíření jsou v balíčku |
 | Ochrana proti DNS rebindingu a proxy | Požadavek přeposlaný proxy z tohoto Macu nedostane práva desktopové aplikace: PIN, přepínače ani `/api/launch` se za ním nevydají (`test/tailscale.test.mjs`) |
 | `npm run qa:contrast` (aplikace) | Všech 8 obrazovek × světlý/tmavý × 1440/375 px splňuje AA. Nalezena a opravena skutečná chyba: odznak „Ověřeno“ 4,45:1 → token `--ok` ztmaven na `#0B6F5F` |
@@ -103,9 +103,9 @@ potvrdit Mac. Nic z druhé skupiny se nevydává za ověřené.
 
 **Zbývá ověřit na macOS** (`npm run release:mac`): build `.app` (swiftc, codesign, notarizace),
 výměna aplikace v `/Applications`, nativní oznámení, Klíčenka, převzetí portu po starší verzi,
-ruční QA checklist výše — zvlášť část „Přístup z telefonu a Tailscale“ proti živému tailnetu.
+ruční QA checklist výše – zvlášť část „Přístup z telefonu a Tailscale“ proti živému tailnetu.
 
-## Protokol ověření — 0.6.0 (12. 9. 2026, macOS, Node 24.18)
+## Protokol ověření – 0.6.0 (12. 9. 2026, macOS, Node 24.18)
 
 Ruční QA na oddělené instanci (port 4621, `AGENTEEQ_HOME` v dočasné složce, `AGENTEEQ_OPEN=dry`); skutečná data aplikace zůstala nedotčená.
 
@@ -125,9 +125,9 @@ Ruční QA na oddělené instanci (port 4621, `AGENTEEQ_HOME` v dočasné složc
 | Bezpečnost: zápis bez hlavičky `X-Agenteeq` → 403, datová složka 0700, `data.json` 0600, procházení složek uzamčené do domovského adresáře | ✅ |
 | **Neověřeno** | Skutečné spuštění agentů z UI na reálném projektu; rozšíření prohlížeče na živých webech; konektory Cursor / Copilot / Gemini / Qwen bez dat na tomto Macu |
 
-## Protokol ověření — v0.5.0 (11. 9. 2026, macOS, Node 24.18)
+## Protokol ověření – v0.5.0 (11. 9. 2026, macOS, Node 24.18)
 
-Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v dočasné složce, `AGENTEEQ_OPEN=dry`) nad skutečnými přepisy — skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
+Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v dočasné složce, `AGENTEEQ_OPEN=dry`) nad skutečnými přepisy – skutečná data aplikace zůstala nedotčená a nic se reálně nespustilo.
 
 | Oblast | Výsledek |
 |---|---|
@@ -135,12 +135,12 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | Projekty: prázdný stav, návrhy ze složek (bez pracovních složek aplikace Codex), nový projekt s výběrem složky v prohlížeči složek, detail, přidání 3 konverzací s hledáním, brief se uloží sám, export CSV (200, správný název souboru) | ✅ 1440 px |
 | Agenti: filtr projektu s počty, výběr, hromadné zařazení do nového projektu z dialogu | ✅ 1440 px |
 | Detail agenta: karta projektu („Zařazeno ručně“) | ✅ |
-| Přehled: Spustit agenta — Codex na pozadí v projektu se sandboxem, složka z projektu, toast zkušebního režimu, vyčištění zadání | ✅ |
-| Mobil 375 px: Přehled, Projekty, detail projektu, Agenti — bez vodorovného rolování | ✅ |
+| Přehled: Spustit agenta – Codex na pozadí v projektu se sandboxem, složka z projektu, toast zkušebního režimu, vyčištění zadání | ✅ |
+| Mobil 375 px: Přehled, Projekty, detail projektu, Agenti – bez vodorovného rolování | ✅ |
 | Konzole prohlížeče | ✅ bez chyb |
 | **Neověřeno živě:** skutečné spuštění Claude Code/Codexu v Terminálu a na pozadí (spotřebovalo by limity), Gemini/Qwen CLI (nejsou nainstalované), Ollama (není nainstalovaná; testováno proti falešnému serveru), předvyplnění `?q=` u webových služeb, instalace LaunchAgentu z UI, přetažení myší (logika drop ověřena, nativní drag v náhledu ne) | 🧪 |
 
-## Protokol ověření — v0.3.0 (10. 9. 2026, macOS, Node 24.18)
+## Protokol ověření – v0.3.0 (10. 9. 2026, macOS, Node 24.18)
 
 | Ověření | Výsledek |
 |---|---|
@@ -150,9 +150,9 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | Loga | 16 log na přehledu načteno, žádné rozbité |
 | Nabídka otevření | Codex vlákno → „Otevřít v Codexu“ + „Otevřít složku“ (Codex CLI není v PATH, proto bez Terminálu); Claude Code → „Otevřít Claude“ + „Pokračovat v Terminálu“ + „Otevřít složku“; neplatný cíl → 422 |
 | Vzhled | Scéna s notovou osnovou, nová paleta, tmavá hlavní karta; desktop 1440 px a mobil 375 px bez vodorovného rolování |
-| **Neověřeno** | Skutečné spuštění akcí otevření na tomto Macu (záměrně nespuštěno automaticky — přebírá fokus a u Claude by v Terminálu obnovilo právě běžící session); ověřit ručně podle checklistu: otevřít Codex vlákno, Terminál s `claude --resume`, složku ve Finderu |
+| **Neověřeno** | Skutečné spuštění akcí otevření na tomto Macu (záměrně nespuštěno automaticky – přebírá fokus a u Claude by v Terminálu obnovilo právě běžící session); ověřit ručně podle checklistu: otevřít Codex vlákno, Terminál s `claude --resume`, složku ve Finderu |
 
-## Protokol ověření — v0.2.0 (10. 9. 2026, macOS, Node 24.18)
+## Protokol ověření – v0.2.0 (10. 9. 2026, macOS, Node 24.18)
 
 | Ověření | Výsledek |
 |---|---|
@@ -161,6 +161,6 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | `npm run check` | 48 souborů bez chyby |
 | Latence streamu (automatický test) | nový řádek přepisu → SSE událost pod 2 s (celý test 111 ms) |
 | Skutečná data vývojového Macu | 82 sessions (Claude Code 4, Codex 78) načteno za 1 314 ms; živá session „Pracuje“ s aktuálním nástrojem, počtem kroků a časem tahu; limity a historie kreditů Codexu; 4 běžící AI aplikace |
-| Obrazovky v prohlížeči | Přehled, Agenti, Detail agenta (266 položek přepisu), Statistiky, Útrata (validace formuláře, fokus na chybné pole), Nastavení, paleta ⌘K, panel upozornění — konzole bez chyb |
+| Obrazovky v prohlížeči | Přehled, Agenti, Detail agenta (266 položek přepisu), Statistiky, Útrata (validace formuláře, fokus na chybné pole), Nastavení, paleta ⌘K, panel upozornění – konzole bez chyb |
 | Mobil 375 px | bez vodorovného rolování |
 | **Neověřeno** | rozšíření na živých webech, Cursor s aktivním agentem, Copilot CLI / VS Code / Gemini CLI / Qwen Code s reálnými daty, Admin API s klíči, instalace hooků do skutečného `~/.claude/settings.json` (ověřeno jen v dočasném HOME), LaunchAgent (ověřen jen vygenerovaný plist) |

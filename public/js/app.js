@@ -135,7 +135,7 @@ function navigate() {
     current = r.view;
     currentKey = r.key;
     // #view byl trvalý uzel a každý pohled si na něj při vstupu přidával posluchače, které nikdo
-    // neodebíral — po N návštěvách se jedna akce provedla N× (dvojí hláška, dvojí dialog).
+    // neodebíral – po N návštěvách se jedna akce provedla N× (dvojí hláška, dvojí dialog).
     // Výměna za čistou kopii je zahodí všechny naráz; grafy i průvodce se váží na document, ne sem.
     const nextEl = viewEl.cloneNode(false);
     viewEl.replaceWith(nextEl);
@@ -183,7 +183,7 @@ function refresh(topics) {
   tick();
 }
 
-// Úložiště: když se data nedaří zapsat na disk, uživatel to musí vidět hned — jinak by po restartu
+// Úložiště: když se data nedaří zapsat na disk, uživatel to musí vidět hned – jinak by po restartu
 // potichu přišel o změny. Pruh zmizí sám, jakmile další zápis projde.
 const storageEl = document.getElementById('storage-alert');
 function renderStorage() {
@@ -277,12 +277,12 @@ function renderProfile(name, working, all) {
 
 // Přepisování časových údajů je jediná práce, kterou aplikace dělá sama od sebe pořád dokola.
 // Musí proto být co nejlevnější a hlavně nesmí padnout doprostřed rolování: zápis do textu
-// zneplatní layout a jeho přepočet stál na Přehledu až 22 ms — při 120 Hz je rozpočet 8,3 ms,
+// zneplatní layout a jeho přepočet stál na Přehledu až 22 ms – při 120 Hz je rozpočet 8,3 ms,
 // takže z toho byl každou vteřinu viditelný záškub.
 //
 //   1. Na skrytou kartu se nesahá vůbec.
 //   2. Během rolování se tiknutí odloží; dožene se, jakmile se prst zastaví.
-//   3. Zapisuje se jen tam, kde se text opravdu změnil — jinak se layout vůbec nezneplatní.
+//   3. Zapisuje se jen tam, kde se text opravdu změnil – jinak se layout vůbec nezneplatní.
 //
 // Zápisy schválně nejdou přes requestAnimationFrame: ten se v nezobrazeném okně nevolá a údaje
 // by pak zamrzly. Proti škubání stačí odklad během rolování.
@@ -300,7 +300,7 @@ function prepis(uzly, text) {
 // Relativní časy se mění nejdřív po minutě (`rel()` pod 45 s hlásí „právě teď"), takže je nemá
 // smysl počítat každou vteřinu.
 // `hned` obchází ochranu proti rolování: `scrollend` přichází ještě uvnitř jejího okna, takže
-// bez toho by se údaje doháněly až dalším intervalem — u štítků klidně za deset vteřin.
+// bez toho by se údaje doháněly až dalším intervalem – u štítků klidně za deset vteřin.
 function tickLabels(hned = false) {
   if (document.hidden || (!hned && behemRolovani())) return;
   const now = Date.now();
@@ -308,7 +308,7 @@ function tickLabels(hned = false) {
   prepis(document.querySelectorAll('[data-until]'), (el) => untilLabel(Number(el.dataset.until), now));
 }
 
-// Běžící stopky jsou jediné, co skutečně potřebuje vteřinový krok — a jen když nějaké existují.
+// Běžící stopky jsou jediné, co skutečně potřebuje vteřinový krok – a jen když nějaké existují.
 function tickClock(hned = false) {
   if (document.hidden || (!hned && behemRolovani())) return;
   const uzly = document.querySelectorAll('[data-clock-from]');
@@ -351,7 +351,7 @@ function closePopover() {
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
-  toast(`${a.title}${a.body ? ` — ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'coral' : urgent ? 'action' : 'ink', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
+  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'coral' : urgent ? 'action' : 'ink', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
   const n = state.settings?.notifications;
   if (n?.browser && 'Notification' in window && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
     try {
@@ -463,7 +463,7 @@ document.addEventListener('keydown', (e) => {
 
 /* ---------- Odolnost: loga, výpadek serveru, offline ---------- */
 
-// Když se logo nenačte (výpadek serveru, blokace), nahradí ho monogram — nikdy rozbitý obrázek.
+// Když se logo nenačte (výpadek serveru, blokace), nahradí ho monogram – nikdy rozbitý obrázek.
 document.addEventListener('error', (e) => {
   const img = e.target;
   if (!(img instanceof HTMLImageElement) || !img.classList.contains('logo')) return;
@@ -577,7 +577,7 @@ bindCharts(document);
 
 // Překreslení pohledu je nejdražší práce v aplikaci a při běžícím agentovi chodí pořád. Kdyby
 // padlo doprostřed rolování, je z toho škubnutí přesně ve chvíli, kdy je nejvíc vidět. Během
-// gesta se proto témata jen posbírají a vykreslí se, jakmile se rolování zastaví — data tím
+// gesta se proto témata jen posbírají a vykreslí se, jakmile se rolování zastaví – data tím
 // zestárnou nanejvýš o zlomek vteřiny, ale pohyb zůstane plynulý.
 let odlozenaTemata = null;
 let odlozenyCasovac = 0;
@@ -609,11 +609,11 @@ function handle(name, data) {
   if (alert) onAlert(alert);
 }
 
-// Nespárovaný telefon nedostane ani stav, ani realtime stream — obsluha 401 uvnitř streamu by se
+// Nespárovaný telefon nedostane ani stav, ani realtime stream – obsluha 401 uvnitř streamu by se
 // tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
 const autorizace = api.state().then((snap) => {
   // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
-  // proudu — když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
+  // proudu – když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
   if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
   return true;
 }).catch((err) => {
@@ -701,7 +701,7 @@ function parovaciObrazovka(zprava = '') {
 }
 
 // Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po
-// obnovení sítě) proto vždy natáhneme čerstvý stav — jinak by uživatel chvíli koukal na stará čísla.
+// obnovení sítě) proto vždy natáhneme čerstvý stav – jinak by uživatel chvíli koukal na stará čísla.
 let posledniObnova = Date.now();
 async function obnovStav(duvod) {
   if (document.visibilityState !== 'visible' || loadingSnapshot) return;

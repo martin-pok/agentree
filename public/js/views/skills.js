@@ -32,7 +32,7 @@ function souhrnHtml(items) {
     [fmtNum(items.length), items.length === 1 ? 'dovednost' : 'dovedností'],
     [String(zdroje), zdroje === 1 ? 'zdroj' : zdroje < 5 ? 'zdroje' : 'zdrojů'],
     [kb(bajtu), 'textu celkem'],
-    [posledni ? rel(posledni) : '—', 'poslední úprava'],
+    [posledni ? rel(posledni) : '–', 'poslední úprava'],
   ];
   return `<section class="sk-sum" aria-label="Souhrn dovedností">
     ${dlazdice.map(([cislo, popis]) => `<div class="sk-sum-item"><b>${esc(cislo)}</b><span>${esc(popis)}</span></div>`).join('')}
@@ -127,7 +127,7 @@ function mount(el) {
       <label class="search-field">${ICON.search}<span class="sr-only">Hledat dovednost</span><input type="search" data-q placeholder="Název, popis nebo cesta…" autocomplete="off"></label>
     </div>
     <div class="sk-bar" data-enter style="--i:2">
-      <p class="note">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu — od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
+      <p class="note">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
       <div class="seg seg--light seg--sm" role="group" aria-label="Řazení" data-region="sort"></div>
     </div>
     <div class="sk-filtry" data-enter style="--i:2">
@@ -147,7 +147,7 @@ function mount(el) {
     if (open) { openReader(open.dataset.openSkill, open); return; }
     const btn = e.target.closest('[data-copy-skill]');
     if (!btn) {
-      // Klik kamkoli do karty mimo tlačítka otevře čtení — myš tak nemusí mířit na odkaz.
+      // Klik kamkoli do karty mimo tlačítka otevře čtení – myš tak nemusí mířit na odkaz.
       const karta = e.target.closest('.skill');
       if (karta && !e.target.closest('a, button')) openReader(karta.dataset.skill, karta.querySelector('.skill-open'));
       return;
@@ -183,7 +183,7 @@ function update() {
   fill(el, 'sources', [['all', 'Vše'], ...sources.map((s) => [s, s])]
     .map(([k, label]) => `<button type="button" data-source-filter="${esc(k)}" aria-pressed="${v.source === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.source === k).length}</span></button>`).join(''));
   fill(el, 'sort', RAZENI.map(([k, label]) => `<button type="button" data-sort="${k}" aria-pressed="${v.sort === k}">${esc(label)}</button>`).join(''));
-  // Ukazujeme jen původy, které se mezi dovednostmi opravdu vyskytují — prázdné tlačítko nemá smysl.
+  // Ukazujeme jen původy, které se mezi dovednostmi opravdu vyskytují – prázdné tlačítko nemá smysl.
   const pritomne = PUVOD.filter(([k]) => v.items.some((s) => s.origin === k));
   fill(el, 'origins', [['all', 'Vše'], ...pritomne]
     .map(([k, label]) => `<button type="button" data-origin-filter="${esc(k)}" aria-pressed="${v.origin === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.origin === k).length}</span></button>`).join(''));

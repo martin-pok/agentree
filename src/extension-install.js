@@ -1,13 +1,13 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
-// Rozšíření pro Chrome se do prohlížeče přidává jako „rozbalené“ — Chrome si zapamatuje cestu ke
+// Rozšíření pro Chrome se do prohlížeče přidává jako „rozbalené“ – Chrome si zapamatuje cestu ke
 // složce a čte ji při každém startu. Kdyby tou složkou byla ta uvnitř balíčku aplikace, každá
 // aktualizace Agenteeq (balíček se při ní celý nahradí) by rozšíření rozbila: Chrome by našel
 // prázdné místo a sám ho vypnul.
 //
 // Proto si aplikace při startu udělá kopii do datové složky uživatele, kterou žádná aktualizace
-// nesmaže, a Chromu ukazuje právě tu. Kopie se obnoví, jen když se liší verze — jinak se nesahá
+// nesmaže, a Chromu ukazuje právě tu. Kopie se obnoví, jen když se liší verze – jinak se nesahá
 // na nic, aby Chrome neviděl zbytečné změny.
 
 const KOPIROVAT = ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons'];
@@ -35,7 +35,7 @@ async function zkopiruj(zdroj, cil) {
 }
 
 // Vrací cestu, kterou má uživatel vybrat v Chromu. Když se kopie nepodaří vytvořit (práva, plný
-// disk), vrátí se původní složka — rozšíření pak půjde nainstalovat aspoň odtud.
+// disk), vrátí se původní složka – rozšíření pak půjde nainstalovat aspoň odtud.
 export async function syncExtension({ zdroj, dataDir }) {
   const cil = path.join(dataDir, 'extension');
   try {

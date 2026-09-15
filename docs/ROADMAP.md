@@ -1,8 +1,8 @@
 # Roadmapa
 
-Každá položka má akceptační kritéria. Pořadí je doporučené — nejdřív ověřit hodnotu, potom škálovat.
+Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
 
-## v0.6 — z bety k prvnímu prodeji (navazuje na 0.5.0)
+## v0.6 – z bety k prvnímu prodeji (navazuje na 0.5.0)
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
@@ -13,7 +13,7 @@ Každá položka má akceptační kritéria. Pořadí je doporučené — nejdř
 | 5 | Projekty: štítky a šablony briefu | Filtrování podle štítku; nový projekt ze šablony (agentura, vývoj, marketing) |
 | 6 | Projekty: náklady v Kč | Tokeny projektu přepočtené odhadem ceny API s viditelným označením „odhad“ |
 
-## v0.3 — spolehlivá beta pro každodenní používání
+## v0.3 – spolehlivá beta pro každodenní používání
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
@@ -25,7 +25,7 @@ Každá položka má akceptační kritéria. Pořadí je doporučené — nejdř
 | 7 | Konfigurovatelný port i v rozšíření | Změna portu nevyžaduje úpravu manifestu |
 | 8 | Linux a Windows cesty | Konektory hledají dokumentované cesty pro obě platformy; testy s fixturami |
 
-## v0.4 — nativní aplikace a historie
+## v0.4 – nativní aplikace a historie
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
@@ -34,7 +34,7 @@ Každá položka má akceptační kritéria. Pořadí je doporučené — nejdř
 | 3 | Export útraty (CSV) | Export odpovídá tabulce výdajů včetně převodu měn |
 | 4 | Pravidla upozornění | Uživatel nastaví ticho (noc), prioritu podle projektu, souhrn místo jednotlivých notifikací |
 
-## v1.0 — SaaS (Pro a Team)
+## v1.0 – SaaS (Pro a Team)
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
@@ -49,6 +49,6 @@ Každá položka má akceptační kritéria. Pořadí je doporučené — nejdř
 
 - Dlouho běžící nástroj bez hooků vypadá jako „pracuje“ až 10 minut, i když čeká na povolení.
 - Webové adaptéry posílají jen vykreslené zprávy (virtualizované seznamy).
-- Codex nezapisuje žádosti o schválení — nelze detekovat „potřebuje rozhodnutí“.
+- Codex nezapisuje žádosti o schválení – nelze detekovat „potřebuje rozhodnutí“.
 - Kurzy měn jsou ruční (výchozí hodnoty orientační).
 - Časová osa ukazuje max. 7 agentů.

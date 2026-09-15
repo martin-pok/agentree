@@ -1,6 +1,6 @@
 # Instalace Agenteeq
 
-Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně — tvoje konverzace, klíče ani projekty nikam neodcházejí.
+Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně – tvoje konverzace, klíče ani projekty nikam neodcházejí.
 
 ## Požadavky
 
@@ -14,18 +14,18 @@ První spuštění zobrazí pětikrokový průvodce. Vrátíš se k němu v Nast
 
 Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
 
-**Kde balíček vzít.** V desktopové aplikaci Nastavení → Aplikace na tomto Macu → *Instalace pro další lidi* ukáže, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje — s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
+**Kde balíček vzít.** V desktopové aplikaci Nastavení → Aplikace na tomto Macu → *Instalace pro další lidi* ukáže, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje – s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
 
 ```bash
 npm run build:mac
 ```
 
-Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, architektura, druh podpisu). Server sám ověřuje jen soubor odpovídající aktuální verzi z `package.json` a architektuře procesu — cestu nikdy nebere z prohlížeče.
+Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, architektura, druh podpisu). Server sám ověřuje jen soubor odpovídající aktuální verzi z `package.json` a architektuře procesu – cestu nikdy nebere z prohlížeče.
 
 ### Příkazová řádka
 
-- macOS — plná podpora
-- Windows a Linux — server, rozhraní, projekty a statistiky fungují (ověřuje CI na všech
+- macOS – plná podpora
+- Windows a Linux – server, rozhraní, projekty a statistiky fungují (ověřuje CI na všech
   třech systémech); otevírání aplikací, nativní oznámení, Klíčenka a automatický start ne.
   Podrobně, včetně toho, co je a co není ověřené: [WINDOWS.md](WINDOWS.md)
 - [Node.js](https://nodejs.org) 22.13 nebo novější (`node --version`)
@@ -50,9 +50,9 @@ Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede 
 
 | Služba | Jak se napojí |
 | --- | --- |
-| Claude Code, Codex, Cursor, GitHub Copilot (VS Code i CLI), Gemini CLI, Qwen Code | Samy — Agenteeq čte jejich lokální přepisy. |
+| Claude Code, Codex, Cursor, GitHub Copilot (VS Code i CLI), Gemini CLI, Qwen Code | Samy – Agenteeq čte jejich lokální přepisy. |
 | Okamžité události Claude Code (žádost o povolení, přesné limity) | Nastavení → Propojení → Propojení s Claude Code → Zapnout propojení. |
-| ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot | Rozšíření pro Chrome — viz kapitola níže. |
+| ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot | Rozšíření pro Chrome – viz kapitola níže. |
 | Náklady API OpenAI a Anthropic | Nastavení → Náklady za API → Admin klíč (uloží se do Klíčenky). |
 
 ## Rozšíření pro Chrome
@@ -92,7 +92,7 @@ a mimo tvůj tailnet se na tu adresu nikdo nepřipojí. Agenteeq Tailscale neins
 jen umí naslouchat na adrese, kterou ti přidělil.
 
 **Aplikace na domovské obrazovce (PWA)** potřebuje HTTPS. Uvnitř tailnetu ho vytvoří příkaz
-`tailscale serve https / http://127.0.0.1:4620` — Agenteeq stav téhle proxy jen ukáže, spouštět ji
+`tailscale serve https / http://127.0.0.1:4620` – Agenteeq stav téhle proxy jen ukáže, spouštět ji
 za tebe nebude. Bez ní aplikace v prohlížeči telefonu funguje normálně, jen ji nejde uložit na plochu.
 
 Vypnutím přepínače se spojení zavře. Když vypneš i druhou cestu, odpárují se všechna zařízení.
@@ -111,7 +111,7 @@ Nastavení → Profil a vzhled → Licence → vlož klíč začínající `AGT1
 ### Desktopová aplikace
 
 - **Aktualizace:** ukonči Agenteeq (⌘Q), nahraď Agenteeq.app v Aplikacích novou verzí a spusť ji. Data v `~/.agenteeq` i spárování zůstanou; rozšíření pro Chrome se aktualizuje samo do své složky a v `chrome://extensions` ho jen obnovíš.
-- **Odinstalace — pořadí je důležité:**
+- **Odinstalace – pořadí je důležité:**
   1. V Agenteeq **Nastavení → Propojení → Propojení s Claude Code → Vypnout propojení**. Jinak Claude Code dál zkouší posílat události a v jeho stavovém řádku zůstane „Agenteeq neběží“.
   2. V `chrome://extensions` odeber rozšíření Agenteeq.
   3. Ukonči Agenteeq (⌘Q), odeber ho z Přihlašovacích položek a přesuň Agenteeq.app do Koše.
@@ -119,13 +119,13 @@ Nastavení → Profil a vzhled → Licence → vlož klíč začínající `AGT1
 
 ### Příkazová řádka
 
-- Aktualizace: `npm install -g ./agenteeq-<nová verze>.tgz` — data zůstanou.
+- Aktualizace: `npm install -g ./agenteeq-<nová verze>.tgz` – data zůstanou.
 - Odinstalace: `agenteeq uninstall-agent`, pak `npm uninstall -g agenteeq`. Data smažeš složkou `~/.agenteeq`.
 
 ## Řešení potíží
 
-- **Port 4620 je obsazený** — Agenteeq už běží (otevři odkaz výše), nebo spusť `PORT=4621 agenteeq --open`.
-- **Otevření v Terminálu nefunguje** — povol ovládání Terminálu: Nastavení systému → Soukromí a zabezpečení → Automatizace.
-- **Agent se nezobrazuje** — Nastavení → Propojení → Zdroje dat → **Načíst znovu**. Sledují se konverzace za posledních 30 dní. Webové služby (ChatGPT, Gemini…) potřebují rozšíření pro Chrome.
-- **„Agenteeq nelze otevřít, protože vývojář nemůže být ověřen“** — build není notarizovaný. Veřejné vydání musí být podepsané a notarizované vydavatelem; plošné vypínání Gatekeeperu nepoužívej.
-- **Rozšíření ukazuje „Neozývá se“** — Chrome je zavřený nebo je rozšíření vypnuté v `chrome://extensions`. Po otevření Chromu se do minuty ozve samo.
+- **Port 4620 je obsazený** – Agenteeq už běží (otevři odkaz výše), nebo spusť `PORT=4621 agenteeq --open`.
+- **Otevření v Terminálu nefunguje** – povol ovládání Terminálu: Nastavení systému → Soukromí a zabezpečení → Automatizace.
+- **Agent se nezobrazuje** – Nastavení → Propojení → Zdroje dat → **Načíst znovu**. Sledují se konverzace za posledních 30 dní. Webové služby (ChatGPT, Gemini…) potřebují rozšíření pro Chrome.
+- **„Agenteeq nelze otevřít, protože vývojář nemůže být ověřen“** – build není notarizovaný. Veřejné vydání musí být podepsané a notarizované vydavatelem; plošné vypínání Gatekeeperu nepoužívej.
+- **Rozšíření ukazuje „Neozývá se“** – Chrome je zavřený nebo je rozšíření vypnuté v `chrome://extensions`. Po otevření Chromu se do minuty ozve samo.

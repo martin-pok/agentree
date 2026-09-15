@@ -4,7 +4,7 @@ import { watchTree, createFileQueue } from '../watch.js';
 import { STATUS_WINDOWS } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 
-// Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů — nejde o veřejně
+// Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů – nejde o veřejně
 // zdokumentovaný formát, jen soubor, který jsme na disku našli a ověřili proti skutečným datům
 // (viz docs/CONNECTORS.md). Slouží jako záložní zdroj: přesná data ze stavového řádku Claude Code
 // (`ingestStatusline` v claude-code.js) mají vždy přednost, tahle historie doplní čísla ve chvíli,
@@ -13,14 +13,14 @@ const FILE_NAME = 'plan-usage-history.json';
 
 // Poslední vzorek pole `samples`: { t: <ms epoch>, org, u: { fh, sd, xu? } }.
 // fh = vytížení 5hodinového okna v %, sd = vytížení týdenního okna v %.
-// xu = „extra usage“ — jednotka není ověřená (nejspíš dolary), proto se nikde netvrdí.
+// xu = „extra usage“ – jednotka není ověřená (nejspíš dolary), proto se nikde netvrdí.
 export function findLatestSample(json) {
   const samples = Array.isArray(json?.samples) ? json.samples : null;
   if (!samples || !samples.length) return null;
   return samples[samples.length - 1];
 }
 
-// Historie vytížení plánu pro graf. Vrací jen čas a hodnotu — identifikátor organizace
+// Historie vytížení plánu pro graf. Vrací jen čas a hodnotu – identifikátor organizace
 // (`sample.org`) se ven nikdy nedostane, do UI ani do API nepatří.
 export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints = 300 } = {}) {
   const raw = Array.isArray(json?.samples) ? json.samples : [];
@@ -163,13 +163,13 @@ export function createClaudeDesktopUsageConnector(ctx) {
     kind: 'local',
     verified: false,
     source: `${JE_WINDOWS ? '%APPDATA%\\Claude' : '~/Library/Application Support/Claude'}/${FILE_NAME}`,
-    description: 'Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) — doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.',
+    description: 'Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) – doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.',
     async start() {
       await scan();
       watcher = watchTree(dir, (f) => (f ? queue.schedule(f) : scan()));
     },
     scan,
-    // Historie se čte přímo ze souboru a nikam se neukládá — Agenteeq z ní nedělá vlastní archiv.
+    // Historie se čte přímo ze souboru a nikam se neukládá – Agenteeq z ní nedělá vlastní archiv.
     async series(opts) {
       const stat = await statSafe(file);
       if (!stat?.isFile()) return null;

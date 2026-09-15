@@ -45,7 +45,7 @@ export const api = {
   removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),
   planUsage: (days = 30) => request('GET', `/api/usage/claude?days=${days}`),
   skills: () => request('GET', '/api/skills'),
-  // Obsah dovednosti je čistý markdown, ne JSON — proto mimo `request()`.
+  // Obsah dovednosti je čistý markdown, ne JSON – proto mimo `request()`.
   async skillText(id) {
     const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`);
     if (!res.ok) throw new Error(res.status === 404 ? 'Soubor dovednosti už na disku není.' : `Dovednost se nepodařilo načíst (chyba ${res.status}).`);

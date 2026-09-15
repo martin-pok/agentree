@@ -7,7 +7,7 @@ import { createHttpServer } from '../src/http.js';
 import { installLaunchAgent, uninstallLaunchAgent } from '../src/launch-agent.js';
 import { openCommand } from '../src/platform.js';
 
-const HELP = `Agenteeq ${VERSION} — všichni AI agenti na jednom místě
+const HELP = `Agenteeq ${VERSION} – všichni AI agenti na jednom místě
 
 Použití:
   agenteeq                 spustí server a dashboard na http://127.0.0.1:4620
@@ -55,7 +55,7 @@ const config = loadConfig();
 const openUrl = (url) => {
   if (!openBrowser) return;
   const p = openCommand(url);
-  // Když systém neumíme otevřít, adresa se aspoň vypíše — mlčet by znamenalo nechat
+  // Když systém neumíme otevřít, adresa se aspoň vypíše – mlčet by znamenalo nechat
   // uživatele čekat na prohlížeč, který nepřijde.
   if (p) execFile(p.cmd, p.args, () => {});
   else console.log(`Otevři v prohlížeči: ${url}`);
@@ -68,7 +68,7 @@ const server = createHttpServer(app);
 server.on('error', async (err) => {
   const url = `http://127.0.0.1:${config.port}`;
   if (err.code === 'EADDRINUSE') {
-    // Běží už jiná instance Agenteeq (např. z LaunchAgentu)? Pak skončit v klidu — launchd ji nebude restartovat.
+    // Běží už jiná instance Agenteeq (např. z LaunchAgentu)? Pak skončit v klidu – launchd ji nebude restartovat.
     const running = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r) => r.json()).catch(() => null);
     await app.stop();
     if (running?.ok) {

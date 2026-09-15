@@ -24,7 +24,7 @@ Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'` | `src/projects.js#projectCsv` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
-## Zpevnění desktopu — 2026-09-11
+## Zpevnění desktopu – 2026-09-11
 
 - API odmítá cizí Origin a cross-site metadata i při čtení a připojení SSE.
   Cross-Origin-Resource-Policy je `same-origin`. Chybové logy nevypisují URL ani výjimky s možným obsahem dat.
@@ -46,7 +46,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Data v `~/.agenteeq/data.json` nejsou šifrovaná** (práva 0600). Obsahují výdaje, upozornění a token, ne přepisy.
 - **Agent spuštěný z Agenteeq má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agenteeq/prompts` (0600) a výstup běhů v `~/.agenteeq/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
-- **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq — to je vlastnost macOS, ne Agenteeq.
+- **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq – to je vlastnost macOS, ne Agenteeq.
 - **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy.
 
 ## Soukromí
@@ -65,30 +65,30 @@ Výchozí stav: **vypnuto**. Server poslouchá jen na `127.0.0.1`.
 
 Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 
-- Druhý listener na **konkrétní privátní adrese** Macu, ne na `0.0.0.0` (a nikdy na veřejné adrese — `lanAddresses()` vybírá jen 10/8, 172.16/12, 192.168/16).
-- Hlavička `Host` se kontroluje proti pevnému seznamu (`127.0.0.1`, `localhost`, vlastní privátní adresy) — ochrana proti DNS rebindingu.
+- Druhý listener na **konkrétní privátní adrese** Macu, ne na `0.0.0.0` (a nikdy na veřejné adrese – `lanAddresses()` vybírá jen 10/8, 172.16/12, 192.168/16).
+- Hlavička `Host` se kontroluje proti pevnému seznamu (`127.0.0.1`, `localhost`, vlastní privátní adresy) – ochrana proti DNS rebindingu.
 - Každý požadavek z místní sítě musí mít token spárovaného zařízení. Výjimky: statické soubory (aby šla zobrazit párovací obrazovka), `/api/health` a `/api/lan/pair`.
 - Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
-- Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash — ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
+- Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash – ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
-- Vypnutí zavře listener a smaže všechna zařízení — pokud zároveň není zapnutá druhá cesta (Tailscale).
+- Vypnutí zavře listener a smaže všechna zařízení – pokud zároveň není zapnutá druhá cesta (Tailscale).
 - Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 
 ## Přístup přes Tailscale (od 15. 9. 2026)
 
-Druhá, nezávislá cesta ke stejným datům — pro situace mimo domácí síť. Výchozí stav: **vypnuto**
+Druhá, nezávislá cesta ke stejným datům – pro situace mimo domácí síť. Výchozí stav: **vypnuto**
 (`settings.tailscaleAccess`), zapíná se jen z Macu (`POST /api/tailscale/enable`).
 
 Platí **beze změny všechno z předchozí kapitoly** (párování PINem, token v `HttpOnly` cookie, hash
-v datech, CSRF, zákaz správy z telefonu) — včetně situace, kdy je před serverem `tailscale serve`
+v datech, CSRF, zákaz správy z telefonu) – včetně situace, kdy je před serverem `tailscale serve`
 (viz níž). Liší se jen adresa, na které server naslouchá:
 
 - Listener na **konkrétní adrese tohoto Macu v tailnetu** (`tailscaleAddresses()` v `src/lan.js`
   bere jen IPv4 z rozsahu `100.64.0.0/10`), ne na `0.0.0.0`. Adresu přiděluje Tailscale a dostane
-  se na ni jen zařízení přihlášené do stejného tailnetu — veřejně neexistuje a není dohledatelná.
+  se na ni jen zařízení přihlášené do stejného tailnetu – veřejně neexistuje a není dohledatelná.
 - Hlavička `Host` se rozšíří o adresu v tailnetu a o jméno v MagicDNS (`mac.tailnet.ts.net`,
   porovnává se malými písmeny). Jméno pochází z `tailscale status --json`; když ho tailnet nemá
-  zapnuté, zůstane prázdné a pracuje se jen s adresou — nic se nedomýšlí.
+  zapnuté, zůstane prázdné a pracuje se jen s adresou – nic se nedomýšlí.
 - **Jméno se před vpuštěním do seznamu ověří** (`magicDnsName()` v `src/lan.js`): musí to být běžné
   DNS jméno malými písmeny, nejvýš 253 znaků, aspoň dvě části, žádný port, lomítko, mezera ani
   prázdná část. Je to jediná hodnota v téhle ochraně, která přichází z výstupu cizího programu,
@@ -105,7 +105,7 @@ v datech, CSRF, zákaz správy z telefonu) — včetně situace, kdy je před se
 
 Desktopová aplikace a prohlížeč na Macu mají výjimku: nepotřebují token a jen jim se vydá PIN,
 seznam zařízení a plný `/api/state`. Rozhodnout, kdo tu výjimku dostane, **nejde podle adresy
-protistrany samotné**. `tailscale serve` — a každá jiná reverzní proxy běžící na tomhle Macu —
+protistrany samotné**. `tailscale serve` – a každá jiná reverzní proxy běžící na tomhle Macu –
 zakončí TLS pro cizí zařízení z tailnetu a na server se obrátí z `127.0.0.1`. Kdyby stačila
 adresa, spuštěním jediného příkazu by kterýkoli uzel v tailnetu získal práva desktopové aplikace:
 data bez tokenu, cizí PIN ještě před jeho použitím a `POST /api/launch`, tedy spuštění agenta.
@@ -121,19 +121,19 @@ a chová se jako každé jiné vzdálené zařízení: musí být spárovaný. H
 v `test/tailscale.test.mjs`.
 
 Aby se z telefonu po HTTPS dalo vůbec spárovat, je v seznamu povolených `Origin` kromě
-`http://<adresa>:<port>` i `https://<vlastní jméno>` — je to pořád naše vlastní adresa
+`http://<adresa>:<port>` i `https://<vlastní jméno>` – je to pořád naše vlastní adresa
 a cizí web si `Origin` podvrhnout nemůže.
 
 Cookie s tokenem dostane příznak `Secure`, když proxy hlásí `X-Forwarded-Proto: https`. Server sám
 TLS nezakončuje, takže jinak HTTPS nepozná; hlavičce se věří jen u spojení po smyčce, tedy od
-proxy běžící na tomhle Macu. Podvržení téhle hlavičky nic neotevírá — jen přidá `Secure`, kterým
+proxy běžící na tomhle Macu. Podvržení téhle hlavičky nic neotevírá – jen přidá `Secure`, kterým
 si útočník zavře vlastní spojení po `http`.
 
 ### HTTPS přes `tailscale serve`
 
 Proxy s certifikátem od Let's Encrypt je jediná cesta, jak si telefon uloží aplikaci na plochu
 jako PWA. Agenteeq stav téhle proxy jen **čte** (`tailscale serve status --json`) a co nerozezná,
-hlásí jako neznámé — nikdy jako zapnuté. Sám ji nespouští. Detekce je ověřená proti dokumentaci,
+hlásí jako neznámé – nikdy jako zapnuté. Sám ji nespouští. Detekce je ověřená proti dokumentaci,
 ne proti živému tailnetu: v `docs/REMOTE.md` je proto vedená jako **Beta**.
 
 ### Proč nestačí adresa v rozsahu 100.64.0.0/10
@@ -143,5 +143,5 @@ Samotná adresa z toho rozsahu Tailscale nedokazuje: je to rozsah pro CGNAT (RFC
 některých operátorů ji Mac dostane i bez něj. Bez té kontroly by se naslouchání otevřelo do sítě
 operátora a rozhraní by o té adrese tvrdilo, že je „v síti Tailscale“.
 
-Bez `tailscale serve` jede aplikace po `http://` uvnitř tailnetu — v prohlížeči funguje normálně,
+Bez `tailscale serve` jede aplikace po `http://` uvnitř tailnetu – v prohlížeči funguje normálně,
 jen ji telefon neuloží na plochu.

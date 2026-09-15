@@ -1,4 +1,4 @@
-// Klient Ollamy — lokální modely běží na počítači uživatele, zdarma a bez odesílání dat.
+// Klient Ollamy – lokální modely běží na počítači uživatele, zdarma a bez odesílání dat.
 
 export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchImpl = globalThis.fetch } = {}) {
   const url = (p) => `${baseUrl.replace(/\/$/, '')}${p}`;

@@ -14,9 +14,9 @@ test('Lokální agenti: pozná známé nástroje, heuristikou i neznámý python
     '103 00:30 15.0 307200 /usr/bin/python3 /Users/x/ComfyUI/main.py --listen',
     // vLLM.
     '104 00:15 20.0 409600 python3 -m vllm.entrypoints.openai.api_server --model mistral-7b',
-    // Neznámý python proces s modelem — musí spadnout do heuristiky, ne do katalogu.
+    // Neznámý python proces s modelem – musí spadnout do heuristiky, ne do katalogu.
     '105 00:02 1.0 20480 python3 /Users/x/run_model.py --model mistral-7b --port 5001',
-    // Pět nesouvisejících procesů — nikdy se nesmí objevit ve výsledku.
+    // Pět nesouvisejících procesů – nikdy se nesmí objevit ve výsledku.
     '200 01:00 0.0 10240 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder',
     '201 00:40 0.5 51200 /Applications/Safari.app/Contents/MacOS/Safari',
     '202 00:05 0.1 5120 /System/Library/Frameworks/CoreServices.framework/Versions/A/Support/mdworker_shared',

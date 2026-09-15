@@ -1,4 +1,4 @@
-/* Agenteeq — landing page.
+/* Agenteeq – landing page.
    Stejný design systém jako aplikace (public/styles.css): identita „koncertní sál“, 8px mřížka,
    maximální váha písma 500, karty drží vlasová linka místo stínu, WCAG 2.2 AA.
    Tokeny se sem opisují schválně: stránka musí být samostatná a nesmí záviset na tom, jestli se
@@ -173,7 +173,7 @@ p { margin: 0; text-wrap: pretty; }
 .trust svg { width: 16px; height: 16px; flex: none; color: var(--teal-ink); }
 
 /* Ukázka rozhraní: postavená ze stejných dílů jako aplikace, aby stránka neslibovala jiný produkt,
-   než jaký se po instalaci otevře. Je to ilustrace, ne snímek skutečných dat — a je tak popsaná. */
+   než jaký se po instalaci otevře. Je to ilustrace, ne snímek skutečných dat – a je tak popsaná. */
 .shot { position: relative; }
 .shot-frame { padding: 20px; box-shadow: 0 40px 90px -40px rgba(12, 11, 16, .55); }
 .shot-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 18px; }
@@ -271,7 +271,7 @@ section { padding: clamp(64px, 8vw, 112px) 0; scroll-margin-top: 88px; }
 .ext-sw { margin-left: auto; width: 32px; height: 19px; border-radius: 10px; background: var(--teal-ink); position: relative; flex: none; }
 .ext-sw::after { content: ''; position: absolute; top: 2px; right: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; }
 
-/* Soukromí — na scéně, protože je to nejsilnější argument. */
+/* Soukromí – na scéně, protože je to nejsilnější argument. */
 .privacy { color: var(--on-stage); padding: clamp(40px, 5vw, 72px); }
 .privacy h2 { color: var(--on-stage); margin: 12px 0 16px; }
 .privacy .lead { color: var(--on-stage-mute); }

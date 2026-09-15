@@ -74,23 +74,23 @@ test('limity: jakmile dorazí přesná data ze stavového řádku, záložní hi
   ];
 
   const merice = limitGauges(limity, now);
-  assert.equal(merice.length, 2, 'jeden měřák za Claude a jeden za Codex — ne dvě čísla pro stejný limit');
+  assert.equal(merice.length, 2, 'jeden měřák za Claude a jeden za Codex – ne dvě čísla pro stejný limit');
   assert.equal(merice.filter((h) => h.includes('42')).length, 1, 'platí přesná hodnota ze stavového řádku');
   assert.equal(merice.some((h) => h.includes('13')), false, 'záložní historie se nezobrazuje vedle ní');
-  assert.equal(merice.some((h) => h.includes('62')), false, 'týdenní limit z historie se skryje také — zdroj má přednost jako celek');
+  assert.equal(merice.some((h) => h.includes('62')), false, 'týdenní limit z historie se skryje také – zdroj má přednost jako celek');
   assert.equal(merice.some((h) => h.includes('80')), true, 'Codex zůstává, jeho limit je samostatný');
 
   const bezStatusline = limitGauges(limity.filter((l) => l.source !== 'statusline'), now);
   assert.equal(bezStatusline.length, 3, 'bez stavového řádku se historie použije jako záloha');
 });
 
-test('hlavní metrika je vstup + výstup — režie cache ji nesmí nadsadit', () => {
+test('hlavní metrika je vstup + výstup – režie cache ji nesmí nadsadit', () => {
   // Skutečné hodnoty z jedné dnešní konverzace: zápis do cache je řádově větší než vstup
   // a výstup dohromady, protože se stejný kontext zapisuje znovu s každým tahem.
   const s = { tokens: { input: 2948, output: 629841, cacheWrite: 4847361, cacheRead: 266830165 } };
 
   assert.equal(sessionTotal(s), 632789, 'sčítá se jen vstup a výstup');
-  assert.ok(sessionTotal(s) < s.tokens.cacheWrite, 'režie cache je větší než spotřeba — proto do součtu nepatří');
+  assert.ok(sessionTotal(s) < s.tokens.cacheWrite, 'režie cache je větší než spotřeba – proto do součtu nepatří');
   assert.equal(sessionTotal({ tokens: { input: 0, output: 0, cacheWrite: 5_000_000, cacheRead: 0 } }), 0,
     'konverzace, která jen plnila cache, nesmí hlásit pětimilionovou spotřebu');
   assert.equal(sessionTotal({}), 0, 'chybějící tokeny nejsou chyba');

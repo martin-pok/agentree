@@ -9,7 +9,7 @@ import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
 const v = { el: null, onClick: null, usage: undefined };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
-// Dokoupení kreditů rozpoznává server ze všech odečtů zůstatku (src/credits.js) — v prohlížeči
+// Dokoupení kreditů rozpoznává server ze všech odečtů zůstatku (src/credits.js) – v prohlížeči
 // by na to byla jen zkrácená historie, ze které vycházejí jiné částky.
 
 const money = (x) => fmtMoney(x, state.spend?.currency || 'CZK');
@@ -99,7 +99,7 @@ function openBudgets(opener = null) {
 
 function mount(el, _params, query) {
   v.el = el;
-  // Historie extra usage Claude — čte se jednou za návštěvu, na vyžádání.
+  // Historie extra usage Claude – čte se jednou za návštěvu, na vyžádání.
   if (v.usage === undefined) {
     v.usage = null;
     api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { v.usage = null; });
@@ -115,7 +115,7 @@ function mount(el, _params, query) {
     <div class="spend-hero card" data-enter style="--i:2" data-region="hero"></div>
     <!-- Kredity a extra usage jsou jediná část Útraty, kterou Agenteeq zná sám ze souborů na disku;
          výdaje, rozpočty a předplatné si uživatel zapisuje ručně. Patří proto nahoru, hned pod
-         souhrn — dřív byly až pod třemi prázdnými bloky s nulami a stránka působila mrtvě. -->
+         souhrn – dřív byly až pod třemi prázdnými bloky s nulami a stránka působila mrtvě. -->
     <div data-enter style="--i:3" data-region="credits"></div>
     <div data-enter style="--i:4" data-region="budgets"></div>
     <div class="grid-2 grid-2--wide" data-enter style="--i:5">
@@ -126,9 +126,9 @@ function mount(el, _params, query) {
       <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
       <div data-region="ledger"></div>
     </section>
-    <p class="note">Útratu za API doplní Agenteeq sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně — tyto služby útratu přes API nesdílejí.</p>`;
+    <p class="note">Útratu za API doplní Agenteeq sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně – tyto služby útratu přes API nesdílejí.</p>`;
   // `el` je trvalý uzel #view, který router mezi navigacemi jen vyprazdňuje (innerHTML = ''),
-  // nikdy nenahrazuje — starý posluchač proto musí zmizet, jinak se při každém návratu na
+  // nikdy nenahrazuje – starý posluchač proto musí zmizet, jinak se při každém návratu na
   // Útratu přidá další a jediný klik pak otevře tolik dialogů, kolik bylo návštěv (nejde zavřít,
   // protože se hned pod zavřeným objeví další identický).
   if (v.onClick) el.removeEventListener('click', v.onClick);
@@ -166,7 +166,7 @@ function update() {
     <div class="spend-ring">${gauge({
       pct: total ? pct : 0,
       color: pct >= 100 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)',
-      value: total ? `${Math.round(pct)} %` : '—',
+      value: total ? `${Math.round(pct)} %` : '–',
       label: total ? 'rozpočtu' : 'bez rozpočtu',
       size: 'lg',
       reached: pct >= 100,
@@ -219,7 +219,7 @@ function update() {
   const spendLimits = state.limits.filter((l) => l.kind === 'spend' && (typeof l.usedPercent === 'number' || typeof l.value === 'number'));
   const num = (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 });
   // Procenta kreslíme jen tam, kde je zdroj skutečně hlásí. Historie Claude Desktopu dává u extra usage
-  // holé číslo bez zdokumentované jednotky — ukáže se jako číslo a označí za neověřené.
+  // holé číslo bez zdokumentované jednotky – ukáže se jako číslo a označí za neověřené.
   // Historie extra usage Claude: kumulativní procento za období + skoky, kdy čerpání narostlo.
   // Čte se ze stejné historie plánu jako limity (na vyžádání, nikam se neukládá).
   const extraSeries = () => (v.usage?.extraUsage || []).filter((p) => Number.isFinite(p.value));
@@ -240,18 +240,18 @@ function update() {
     const skoky = extraJumps(body).slice(-6).reverse();
     const od = dateLong(body[0].at);
     const doKdy = dateLong(body[body.length - 1].at);
-    return `<div class="credit-chart"><div class="credit-head">${glyph('anthropic')}<strong>Claude — extra usage</strong>
+    return `<div class="credit-chart"><div class="credit-head">${glyph('anthropic')}<strong>Claude – extra usage</strong>
         <span class="muted small">vyčerpáno ${num(body[body.length - 1].value)} % · ${od} – ${doKdy}</span></div>
       ${timeLine({ id: 'sp-claude-xu', points: body, height: 150, color: chartColor('anthropic'), format: (x) => `${num(x)} %`, axisFormat: (x) => `${Math.round(x)}`, label: 'Extra usage Claude', riseLabel: 'Přibylo čerpání' })}
       ${skoky.length ? `<ul class="topups">${skoky.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)} %</b></li>`).join('')}</ul>` : ''}
-      <p class="small muted">Claude ukládá vytížení plánu do vlastního souboru; Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí — že jde o procenta, plyne z toho, že vedle leží 5hodinové a týdenní okno také v procentech a stavový řádek Claude Code hlásí stejnou trojici. 🧪 Neověřeno oficiální dokumentací.</p></div>`;
+      <p class="small muted">Claude ukládá vytížení plánu do vlastního souboru; Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí – že jde o procenta, plyne z toho, že vedle leží 5hodinové a týdenní okno také v procentech a stavový řádek Claude Code hlásí stejnou trojici. 🧪 Neověřeno oficiální dokumentací.</p></div>`;
   };
 
   const spendRow = (l) => {
     const pct = typeof l.usedPercent === 'number' ? Math.max(0, Math.min(100, l.usedPercent)) : null;
     const meta = pct === null ? `${num(l.value)} · jednotku zdroj neuvádí` : `vyčerpáno ${Math.round(pct)} %`;
     const bar = pct === null ? '' : `<span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>`;
-    return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} — ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>${bar}</div>`;
+    return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} – ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>${bar}</div>`;
   };
   fill(el, 'credits', credits.length || spendLimits.length || extraSeries().length >= 2
     ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">Kredity a extra usage</h2><span class="muted small">${spendLimits.length ? 'zůstatek a čerpání podle aplikace' : 'zůstatek podle aplikace'}</span></div>
@@ -263,7 +263,7 @@ function update() {
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá · ${ups.length}× dokoupeno</span></div>
         ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}
         ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">Dokoupení Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní — ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
+          <p class="small muted">Dokoupení Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní – ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

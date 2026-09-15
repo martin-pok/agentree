@@ -39,10 +39,10 @@ const tise = (command, cmdArgs) => {
   try { return execFileSync(command, cmdArgs, { cwd: root, encoding: 'utf8' }).trim(); } catch { return ''; }
 };
 
-console.log(`Agenteeq ${version} — vydání pro macOS (${process.arch})`);
+console.log(`Agenteeq ${version} – vydání pro macOS (${process.arch})`);
 
 // Nástroje se ověřují hned na začátku. Bez toho by chybějící Xcode vysvitlo až v pátém kroku,
-// tedy po testech a smoke — po pěti minutách čekání na chybu, která byla vidět od začátku.
+// tedy po testech a smoke – po pěti minutách čekání na chybu, která byla vidět od začátku.
 krok(0, 'Kontrola nástrojů');
 const chybi = [];
 for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which']]) {
@@ -56,7 +56,7 @@ if (chybi.length) {
 }
 if (process.env.AGENTEEQ_NOTARY_PROFILE) {
   if (!process.env.AGENTEEQ_SIGN_IDENTITY) {
-    console.error('AGENTEEQ_NOTARY_PROFILE je nastavený, ale AGENTEEQ_SIGN_IDENTITY ne — notarizace bez podpisu Developer ID nedává smysl.');
+    console.error('AGENTEEQ_NOTARY_PROFILE je nastavený, ale AGENTEEQ_SIGN_IDENTITY ne – notarizace bez podpisu Developer ID nedává smysl.');
     process.exit(1);
   }
   if (!tise('xcrun', ['--find', 'notarytool'])) {
@@ -95,11 +95,11 @@ if (install) {
   krok(6, 'Výměna aplikace v /Applications');
   const bezi = tise('pgrep', ['-x', 'Agenteeq']);
   if (bezi) {
-    console.log('Agenteeq běží — žádám ho, ať se ukončí.');
+    console.log('Agenteeq běží – žádám ho, ať se ukončí.');
     tise('osascript', ['-e', 'quit app "Agenteeq"']);
     for (let i = 0; i < 20 && tise('pgrep', ['-x', 'Agenteeq']); i++) execFileSync('sleep', ['0.5']);
     if (tise('pgrep', ['-x', 'Agenteeq'])) {
-      console.error('Agenteeq se neukončil. Zavři ho ručně a spusť příkaz znovu — na běžící aplikaci se nesahá.');
+      console.error('Agenteeq se neukončil. Zavři ho ručně a spusť příkaz znovu – na běžící aplikaci se nesahá.');
       process.exit(1);
     }
   }

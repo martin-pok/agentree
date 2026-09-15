@@ -1,6 +1,6 @@
 // Doopravdy spustí Agenteeq a zeptá se ho, jestli žije: `npm run smoke:server`
 //
-// Testy ověřují chování jednotlivých kusů. Tenhle skript ověřuje to, co z nich nevyplývá —
+// Testy ověřují chování jednotlivých kusů. Tenhle skript ověřuje to, co z nich nevyplývá –
 // že se celá aplikace na tomhle systému spustí jedním příkazem a obslouží rozhraní. Proto
 // nesahá do vnitřku: mluví s ní jen přes HTTP, stejně jako prohlížeč.
 //
@@ -19,7 +19,7 @@ const zapis = (ok, text) => { kroky.push({ ok, text }); console.log(`${ok ? '  �
 const domov = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-smoke-'));
 const data = path.join(domov, 'data');
 
-console.log(`Agenteeq — smoke na ${process.platform} (${process.arch}), Node ${process.versions.node}`);
+console.log(`Agenteeq – smoke na ${process.platform} (${process.arch}), Node ${process.versions.node}`);
 console.log(`Dočasný domov: ${domov}`);
 
 const dite = spawn(process.execPath, [path.join(root, 'bin', 'agenteeq.mjs')], {
@@ -30,7 +30,7 @@ const dite = spawn(process.execPath, [path.join(root, 'bin', 'agenteeq.mjs')], {
     AGENTEEQ_SOURCE_HOME: domov,
     AGENTEEQ_HOME: data,
     AGENTEEQ_CLOUD: '0',
-    // Ollama na portu 9 (discard) — nikdy nesahat na skutečnou instanci na tomhle počítači.
+    // Ollama na portu 9 (discard) – nikdy nesahat na skutečnou instanci na tomhle počítači.
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
   },
   stdio: ['pipe', 'pipe', 'pipe'],
@@ -66,7 +66,7 @@ try {
   url = await pockejNaAdresu();
   zapis(true, `server nastartoval: ${url}`);
 } catch (err) {
-  zapis(false, `server nenastartoval — ${err.message}`);
+  zapis(false, `server nenastartoval – ${err.message}`);
   console.error(`\nVýstup serveru:\n${vystup.trim() || '(prázdný)'}`);
   await ukonci(1);
 }
@@ -92,7 +92,7 @@ try {
   const stav = await ziskej('/api/state');
   zapis(stav.status === 200 && Array.isArray(stav.telo?.sessions), `/api/state vrací seznam session (${stav.telo?.sessions?.length ?? '?'})`);
 
-  // Konektory smějí hlásit „nic“, ale nesmějí padat — a hlavně nesmějí tvrdit,
+  // Konektory smějí hlásit „nic“, ale nesmějí padat – a hlavně nesmějí tvrdit,
   // že nic neběží, když se to na tomhle systému vůbec nedá zjistit.
   const konektory = stav.telo?.connectors || [];
   zapis(konektory.length > 0, `konektory se nahlásily (${konektory.length})`);
@@ -108,7 +108,7 @@ try {
   const bezHlavicky = await fetch(`${url}/api/alerts/clear`, { method: 'POST', signal: AbortSignal.timeout(5000) });
   zapis(bezHlavicky.status === 403, 'změna bez hlavičky X-Agenteeq je zamítnutá');
 } catch (err) {
-  zapis(false, `dotaz selhal — ${err.message}`);
+  zapis(false, `dotaz selhal – ${err.message}`);
 }
 
 const spadlo = kroky.filter((k) => !k.ok);

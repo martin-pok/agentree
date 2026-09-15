@@ -16,7 +16,7 @@ await fs.mkdir(path.join(resources, 'app'), { recursive: true });
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' });
 for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) await fs.cp(path.join(root, dir), path.join(resources, 'app', dir), { recursive: true });
 // Zákazník dostane jen návod. Ostatní dokumenty jsou interní (licence a podpisový klíč, obchodní
-// strategie, QA) a do prodávaného balíčku nepatří — stejně jako v npm balíčku (package.json → files).
+// strategie, QA) a do prodávaného balíčku nepatří – stejně jako v npm balíčku (package.json → files).
 await fs.mkdir(path.join(resources, 'app', 'docs'), { recursive: true });
 for (const doc of ['INSTALL.md']) await fs.copyFile(path.join(root, 'docs', doc), path.join(resources, 'app', 'docs', doc));
 for (const file of ['package.json', 'README.md', 'CHANGELOG.md']) await fs.copyFile(path.join(root, file), path.join(resources, 'app', file));

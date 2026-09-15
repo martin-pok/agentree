@@ -73,7 +73,7 @@ function mount(el) {
         </div>
         <div data-region="chart"></div>
         <div class="legend" data-region="legend"></div>
-        <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity — ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
+        <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity – ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
       </section>
     </div>
     <div class="ov-col">
@@ -208,7 +208,7 @@ function update(topics = new Set(['all'])) {
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Dnešní zpracované tokeny vůči průměru za 7 dní"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.</p>`);
   }
 
-  // Souhrn „kolik dnes" je nahoře; tohle odpovídá na druhou půlku otázky — který nástroj to byl.
+  // Souhrn „kolik dnes" je nahoře; tohle odpovídá na druhou půlku otázky – který nástroj to byl.
   // Počítá se ze stejných hodinových přihrádek jako měřák, takže se čísla nemůžou rozejít.
   if (changed(topics, 'sessions', 'tick')) {
     const odRana = startOfDay(now);
@@ -236,7 +236,7 @@ function update(topics = new Set(['all'])) {
     const claudeExact = state.limits.some((l) => l.source === 'statusline');
     const usesClaude = all.some((s) => s.connector === 'claude-code');
     const limitHint = usesClaude && !claudeExact
-      ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> — Claude Code je pak posílá sám.</p>`
+      ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> – Claude Code je pak posílá sám.</p>`
       : '';
     fill(el, 'limits', windows || credits.length || limitHint
     ? `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
@@ -296,19 +296,19 @@ function update(topics = new Set(['all'])) {
   }
 
   if (changed(topics, 'runtimes')) {
-    // Vlastní agenti patří mezi běžící aplikace — jinak by na Přehledu chyběli.
+    // Vlastní agenti patří mezi běžící aplikace – jinak by na Přehledu chyběli.
     const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
     const rts = [...state.runtimes, ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
     // Konverzace v prohlížeči vidí Agenteeq jen přes rozšíření. Dokud nikdy nic neposlalo, patří
-    // sem dlaždice, která to řekne — jinak uživatel otevře Gemini na webu a aplikace mlčí.
+    // sem dlaždice, která to řekne – jinak uživatel otevře Gemini na webu a aplikace mlčí.
     const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
     fill(el, 'runtimes', rts.length
     ? rts.map((r) => {
-      // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko — hlavní
+      // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko – hlavní
       // úspora času: uživatel nemusí mezi okny hledat, kde mu který agent běží.
       const prepnout = r.running && PREPNUTELNE.has(r.id);
       // Aplikace, která běží, ale své konverzace na tento Mac neukládá, musí to říct rovnou tady.
-      // Jinak uživatel vidí, že aplikace běží, v seznamu agentů po ní není stopa — a vypadá to,
+      // Jinak uživatel vidí, že aplikace běží, v seznamu agentů po ní není stopa – a vypadá to,
       // že ji Agenteeq nezaregistroval.
       const bez = r.running ? BEZ_PREPISU[r.id] : null;
       const vnitrek = `<span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
@@ -316,10 +316,10 @@ function update(topics = new Set(['all'])) {
         <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || 'odpovídá') : `CPU ${String(r.cpu).replace('.', ',')} %`) : 'neběží'}</span>
         ${bez ? '<span class="rt-flag">bez přepisu</span>' : ''}`;
       const popis = esc(r.running ? `${r.processes} procesů · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : 'Neběží');
-      // Dlaždice bez přepisu vede na Agenty, kde je celé vysvětlení — ne do slepé uličky.
+      // Dlaždice bez přepisu vede na Agenty, kde je celé vysvětlení – ne do slepé uličky.
       if (bez) return `<a class="rt-item rt-item--note" href="#/agenti" title="${esc(bez.duvod)}">${vnitrek}</a>`;
       return prepnout
-        ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="Přepnout do ${esc(r.name)} — ${popis}">${vnitrek}</button>`
+        ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="Přepnout do ${esc(r.name)} – ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
     }).join('') + (webChybi
       ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome.">

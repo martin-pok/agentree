@@ -1,14 +1,14 @@
-// Sestavení webu do dist/web — to, co se nahrává na hosting (vercel.json → outputDirectory).
+// Sestavení webu do dist/web – to, co se nahrává na hosting (vercel.json → outputDirectory).
 //
 // Na jedné adrese žijí dvě různé věci a tenhle skript je poskládá tak, aby si nepřekážely:
 //
-//   /       landing page (site/) — jediné, co má vidět někdo, kdo o Agenteeq slyší poprvé
-//   /app    statická kopie rozhraní aplikace (public/) — rozcestník „Kde máš Agenteeq?“
+//   /       landing page (site/) – jediné, co má vidět někdo, kdo o Agenteeq slyší poprvé
+//   /app    statická kopie rozhraní aplikace (public/) – rozcestník „Kde máš Agenteeq?“
 //           pro telefon mimo domácí síť, viz docs/REMOTE.md
 //
 // Rozhraní odkazuje na své soubory absolutně (/js/app.js, /styles.css), takže všechno z public/
 // zůstává v kořeni a stěhuje se jen jeho index.html. Díky tomu se nemusí sahat do aplikace kvůli
-// webu — a zároveň marketingová stránka nikdy neskončí v balíčku aplikace (site/ je mimo public/).
+// webu – a zároveň marketingová stránka nikdy neskončí v balíčku aplikace (site/ je mimo public/).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,10 +31,10 @@ export function manifestProWeb(text, appPath = APP_PATH) {
 }
 
 // Service worker si dopředu ukládá „/“ jako skořápku aplikace. Na hostingu je v kořeni landing
-// page, takže by si offline uložil marketing místo rozhraní — proto se cesta přepíše na /app.
+// page, takže by si offline uložil marketing místo rozhraní – proto se cesta přepíše na /app.
 export function serviceWorkerProWeb(text, appPath = APP_PATH) {
   const puvodni = "const PRECACHE = ['/',";
-  if (!text.includes(puvodni)) throw new Error('sw.js změnil tvar seznamu PRECACHE — uprav scripts/build-site.mjs.');
+  if (!text.includes(puvodni)) throw new Error('sw.js změnil tvar seznamu PRECACHE – uprav scripts/build-site.mjs.');
   return text.replace(puvodni, `const PRECACHE = ['${appPath}',`);
 }
 
@@ -71,7 +71,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n`);
 
   // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.
-  // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede — proto
+  // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede – proto
   // se oddělovač vždy narovná na lomítko, ať se web sestavuje odkudkoli.
   const soubory = [];
   const projdi = async (dir) => {

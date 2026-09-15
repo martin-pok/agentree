@@ -21,7 +21,7 @@ async function fail(msg) {
 }
 
 // Úklid musí počkat, až server opravdu skončí. Dokud běží, drží soubory v dočasném prefixu
-// otevřené a smazání složky spadne na ENOTEMPTY — z pohledu volajícího jako by celý smoke test
+// otevřené a smazání složky spadne na ENOTEMPTY – z pohledu volajícího jako by celý smoke test
 // selhal, přestože kontrola prošla. Proto: SIGTERM, počkat, po dvou vteřinách SIGKILL, a teprve
 // pak mazat (s několika pokusy, než systém uvolní poslední popisovače).
 async function cleanup() {

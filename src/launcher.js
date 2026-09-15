@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { run, shellQuote } from './util.js';
 
-// Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů — klient nikdy neposílá příkaz.
+// Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů – klient nikdy neposílá příkaz.
 
 export const PROMPT_MAX = 20000;
 const URL_PROMPT_MAX = 6000;
@@ -21,7 +21,7 @@ export const MODES = {
   local: 'Lokálně',
 };
 
-// Parametr ?q= není u webových služeb oficiálně dokumentovaný — zadání se proto vždy i zkopíruje do schránky.
+// Parametr ?q= není u webových služeb oficiálně dokumentovaný – zadání se proto vždy i zkopíruje do schránky.
 const WEB = {
   chatgpt: { label: 'ChatGPT', logo: 'openai', provider: 'openai', url: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}`, base: 'https://chatgpt.com/' },
   'claude-web': { label: 'Claude.ai', logo: 'claude', provider: 'anthropic', url: (q) => `https://claude.ai/new?q=${encodeURIComponent(q)}`, base: 'https://claude.ai/new' },
@@ -59,7 +59,7 @@ export function launchTargets(env) {
   if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'S osobním Google účtem má bezplatný denní limit.' });
   if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'Podle nastavení Qwen Code.' });
   if (ollama.ok) {
-    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu — zdarma, data nikam neodcházejí.' : 'Ollama běží, ale nemá stažený žádný model (ollama pull llama3.2).' });
+    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale nemá stažený žádný model (ollama pull llama3.2).' });
   }
   for (const [id, w] of Object.entries(WEB)) {
     out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Otevře novou konverzaci se zadáním (zadání je i ve schránce).' : 'Otevře aplikaci; zadání vložíš ze schránky (⌘V).' });
@@ -141,7 +141,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
   }
 }
 
-// Soubory se zadáním pro Terminál (0600) — mazání starších než den.
+// Soubory se zadáním pro Terminál (0600) – mazání starších než den.
 export const promptFilePath = (dir, name) => path.join(dir, `${name}.txt`);
 
 export async function writePromptFile(dir, prompt, name = crypto.randomUUID()) {

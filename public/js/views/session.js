@@ -321,17 +321,17 @@ function update() {
     </section>
     <section class="card side-card" aria-labelledby="facts-h"><h3 id="facts-h">Detaily</h3>
       <dl class="facts">
-        <div><dt>Model</dt><dd>${esc(s.model || '—')}</dd></div>
-        <div><dt>Větev</dt><dd>${esc(s.branch || '—')}${s.worktree ? `<br><span class="muted">pracovní kopie ${esc(s.worktree)}</span>` : ''}</dd></div>
+        <div><dt>Model</dt><dd>${esc(s.model || '–')}</dd></div>
+        <div><dt>Větev</dt><dd>${esc(s.branch || '–')}${s.worktree ? `<br><span class="muted">pracovní kopie ${esc(s.worktree)}</span>` : ''}</dd></div>
         ${s.context ? `<div><dt>Kontext</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
         ${s.effort ? `<div><dt>Úroveň přemýšlení</dt><dd>${esc(s.effort)}</dd></div>` : ''}
         ${s.repo ? `<div><dt>Repozitář</dt><dd>${esc(s.repo)}</dd></div>` : ''}
         ${s.pr ? `<div><dt>Pull request</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
         ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>Cena relace (API ekv.)</dt><dd>${s.costUsd.toLocaleString('cs-CZ', { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
         <div><dt>Zahájeno</dt><dd>${dateTime(s.startedAt)}</dd></div>
-        <div><dt>Doba trvání</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '—'}</dd></div>
-        <div><dt>Zadání</dt><dd>${s.turns ?? '—'}</dd></div>
-        <div><dt>Tokeny</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '—'}</dd></div>
+        <div><dt>Doba trvání</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
+        <div><dt>Zadání</dt><dd>${s.turns ?? '–'}</dd></div>
+        <div><dt>Tokeny</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '–'}</dd></div>
         ${reviews.length ? `<div><dt>Automatické kontroly</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
         ${helperAgents.length ? `<div><dt>Pomocní agenti</dt><dd>${helperAgents.length} · ${fmtTok(helperAgents.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
         ${helperAgents.length ? `<div class="wide"><dt>Co dělali</dt><dd><ul class="helper-list">${helperAgents.map((x) => `<li><a class="link-inline" href="#/agent/${encodeURIComponent(x.id)}">${esc(x.title)}</a><span class="muted small">${fmtTok(sessionTotal(x))}</span></li>`).join('')}</ul></dd></div>` : ''}

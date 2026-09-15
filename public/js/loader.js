@@ -1,4 +1,4 @@
-// Agenteeq — HTML pro prémiovou načítací animaci značky a skeleton karet.
+// Agenteeq – HTML pro prémiovou načítací animaci značky a skeleton karet.
 // Bez runtime závislostí; jen čisté SVG/DOM řetězce. Styly v public/loader.css.
 
 function escapeHtml(str) {

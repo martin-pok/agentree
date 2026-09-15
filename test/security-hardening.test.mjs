@@ -69,7 +69,7 @@ test('security: billing credentials never follow redirects; failures remain cont
 });
 
 // Poškozená data se nikdy neztratí: původní bajty zůstanou v souboru „data.json.poskozeno-…“, data se
-// obnoví z poslední dobré zálohy, a aplikace přitom naběhne. Dřív kvůli ochraně dat nenaběhla vůbec —
+// obnoví z poslední dobré zálohy, a aplikace přitom naběhne. Dřív kvůli ochraně dat nenaběhla vůbec –
 // s automatickým spouštěním to byl nekonečný pád bez vysvětlení.
 test('reliability: corrupt persistent data are preserved byte-for-byte and restored from backup', async () => {
   for (const input of ['{"unfinished":', 'null', '[]']) {

@@ -7,7 +7,7 @@ export const LABEL = 'cz.agenteeq.agent';
 
 const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// LaunchAgent spustí Agenteeq po přihlášení a restartuje ho po pádu — notifikace tak chodí i bez otevřeného prohlížeče.
+// LaunchAgent spustí Agenteeq po přihlášení a restartuje ho po pádu – notifikace tak chodí i bez otevřeného prohlížeče.
 export function plistXml({ node, script, logDir, pathEnv }) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

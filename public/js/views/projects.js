@@ -10,7 +10,7 @@ const v = { el: null, tab: 'active', q: '' };
 
 const prettify = (seg) => seg.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());
 
-// Aktivita po dnech za 14 dní — z hodinových součtů tokenů.
+// Aktivita po dnech za 14 dní – z hodinových součtů tokenů.
 function dailyActivity(sessions, now = Date.now()) {
   const days = 14;
   const start = startOfDay(now) - (days - 1) * DAY;
@@ -58,7 +58,7 @@ function cardHtml(p, now) {
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
-      <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '—'}</b> tokenů / 30 dní</span>
+      <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '–'}</b> tokenů / 30 dní</span>
       ${st.services.length ? logoStack(st.services, 4) : ''}
     </span>
     <span class="pcard-time">${st.lastAt ? `Aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'Zatím bez aktivity'}</span>
@@ -92,7 +92,7 @@ function mount(el) {
       try {
         const r = await api.createProject({ name: sug.dataset.name, folders: [sug.dataset.suggest] });
         setProjects(r.projects);
-        toast(`Projekt ${r.project.name} vytvořen — konverzace ze složky se zařadily samy`, { action: { label: 'Otevřít', href: projectHref(r.project.id) } });
+        toast(`Projekt ${r.project.name} vytvořen – konverzace ze složky se zařadily samy`, { action: { label: 'Otevřít', href: projectHref(r.project.id) } });
         update();
       } catch (err) {
         sug.disabled = false;

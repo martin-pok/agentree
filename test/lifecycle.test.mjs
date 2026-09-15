@@ -15,7 +15,7 @@ async function fixture() {
   return { dir, env };
 }
 // Windows signály nedoručuje: kill('SIGTERM') proces rovnou zabije, takže by se netestovalo
-// korektní ukončení, ale zabití. Hostitelská aplikace tam server ukončuje zavřením stdin —
+// korektní ukončení, ale zabití. Hostitelská aplikace tam server ukončuje zavřením stdin –
 // cestu, kterou desktop/server.mjs hlídá stejně pečlivě jako SIGTERM. Test jede tou z nich,
 // kterou na dané platformě aplikace opravdu používá.
 const ukoncit = (child) => (process.platform === 'win32' ? child.stdin.end() : child.kill('SIGTERM'));
@@ -78,7 +78,7 @@ test('lifecycle: spoofed health from another server never authorizes termination
 });
 
 // Převzetí portu po starší verzi se opírá o `lsof` a je záměrně jen pro macOS
-// (desktop/lifecycle.mjs vrací mimo darwin null) — jinde není co ověřovat.
+// (desktop/lifecycle.mjs vrací mimo darwin null) – jinde není co ověřovat.
 test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', { skip: process.platform !== 'darwin' && 'jen macOS: převzetí portu se opírá o lsof' }, async (t) => {
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
@@ -99,7 +99,7 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
     assert.equal(await old.exit, 0);
     const state = await api(`http://127.0.0.1:${port}`).get('/api/state');
     assert.equal(state.body.projects.items[0].name, 'Zachovaný projekt');
-    // Verze se bere ze skutečného package.json — jinak by test padal po každém vydání.
+    // Verze se bere ze skutečného package.json – jinak by test padal po každém vydání.
     assert.equal(state.body.version, VERSION);
   } finally { next.child.stdin.end(); await next.exit; if (old.child.exitCode === null) old.child.kill(); }
 });

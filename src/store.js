@@ -4,7 +4,7 @@ import { DAY } from './util.js';
 import { detectTopUps } from './credits.js';
 
 const CREDIT_POINTS_MAX = 400;
-const CREDIT_RAW_MAX = 6000; // syrové odečty jen v paměti — slouží k rozpoznání dokoupení
+const CREDIT_RAW_MAX = 6000; // syrové odečty jen v paměti – slouží k rozpoznání dokoupení
 
 // Centrální stav: sessions, limity, kredity, běhová prostředí. Změny vysílá jako události pro SSE a upozornění.
 export class Store extends EventEmitter {
@@ -127,7 +127,7 @@ export class Store extends EventEmitter {
   }
 
   creditList() {
-    // Dokoupení počítáme ze všech odečtů, ne ze zkrácené uložené historie — jinak by vycházely
+    // Dokoupení počítáme ze všech odečtů, ne ze zkrácené uložené historie – jinak by vycházely
     // jiné částky, než jaké kredity skutečně přibyly.
     return Object.values(this.datastore.data.credits).map((rec) => ({
       ...rec,
@@ -135,7 +135,7 @@ export class Store extends EventEmitter {
     }));
   }
 
-  // Detekovaní lokální agenti (i vlastní a neznámé modely). Drží se jen v paměti — je to obraz
+  // Detekovaní lokální agenti (i vlastní a neznámé modely). Drží se jen v paměti – je to obraz
   // aktuálně běžících procesů, po restartu se stejně zjistí znovu.
   setLocalAgents(list) {
     const json = JSON.stringify(list);

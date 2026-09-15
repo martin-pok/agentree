@@ -37,7 +37,7 @@ test('markdown: HTML ze souboru se nikdy nestane HTML stránky', () => {
   const out = renderMarkdown(utok);
   assert.doesNotMatch(out, /<script/i);
   assert.doesNotMatch(out, /<img/i);
-  // „onerror" ve výstupu být smí — jako escapovaný text uvnitř odstavce. Nesmí být atributem značky.
+  // „onerror" ve výstupu být smí – jako escapovaný text uvnitř odstavce. Nesmí být atributem značky.
   assert.doesNotMatch(out, /<[a-z]+[^>]*\son[a-z]+=/i);
   assert.match(out, /&lt;img src=x onerror=/);
   assert.match(out, /&lt;script&gt;/);

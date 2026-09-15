@@ -1,6 +1,6 @@
 import { HOUR, DAY, round2 } from '../util.js';
 
-// Náklady a spotřeba organizace z oficiálních Admin API. Neověřeno proti skutečným klíčům — viz docs/CONNECTORS.md
+// Náklady a spotřeba organizace z oficiálních Admin API. Neověřeno proti skutečným klíčům – viz docs/CONNECTORS.md
 // a docs/CLOUD-ACCOUNTS.md (matice schopností a zdroje pro každý poskytovatele).
 const amountOf = (r) => {
   const a = r?.amount ?? r?.cost ?? r?.value;
@@ -10,7 +10,7 @@ const amountOf = (r) => {
   return 0;
 };
 
-// Číslo, nebo 0 — API teoreticky může poslat chybějící/neplatné pole, nikdy si tokeny nevymýšlíme.
+// Číslo, nebo 0 – API teoreticky může poslat chybějící/neplatné pole, nikdy si tokeny nevymýšlíme.
 const numOf = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
 // Přečte tělo odpovědi jen do stropu bajtů, jinak vrátí null (přetečení se řeší jako chyba, ne pádem).
@@ -44,7 +44,7 @@ export function parseAnthropicCosts(json) {
   return daily;
 }
 
-// Denní spotřeba tokenů organizace u OpenAI — GET /v1/organization/usage/completions (Admin klíč).
+// Denní spotřeba tokenů organizace u OpenAI – GET /v1/organization/usage/completions (Admin klíč).
 // Tokeny se nikdy nesčítají do částky útraty (jiná metrika, viz AGENTS.md „Zachovej význam metrik“).
 export function parseOpenAIUsage(json) {
   const daily = {};
@@ -61,7 +61,7 @@ export function parseOpenAIUsage(json) {
   return daily;
 }
 
-// Denní spotřeba tokenů organizace u Anthropic — GET /v1/organizations/usage_report/messages (Admin klíč).
+// Denní spotřeba tokenů organizace u Anthropic – GET /v1/organizations/usage_report/messages (Admin klíč).
 export function parseAnthropicUsage(json) {
   const daily = {};
   for (const bucket of json?.data || []) {
@@ -106,7 +106,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
   }
 
   // Spotřeba tokenů OpenAI (Admin klíč, stejný jako pro náklady). Nenásleduje přesměrování a
-  // odpověď se čte jen do stropu 5 MB — chyba se vždy vrátí jako Error, nikdy nepropadne dál.
+  // odpověď se čte jen do stropu 5 MB – chyba se vždy vrátí jako Error, nikdy nepropadne dál.
   async function fetchOpenAIUsage(key) {
     const url = new URL('https://api.openai.com/v1/organization/usage/completions');
     url.searchParams.set('start_time', String(Math.floor((Date.now() - 180 * DAY) / 1000)));
@@ -146,7 +146,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       }
       try {
         st.daily = await fetcher(key);
-        // Spotřeba tokenů je vedlejší — chybu nebo výpadek jen zaznamenáme do detailu, náklady zůstávají platné.
+        // Spotřeba tokenů je vedlejší – chybu nebo výpadek jen zaznamenáme do detailu, náklady zůstávají platné.
         try {
           st.usage = await USAGE_FETCHERS[id](key);
         } catch {
@@ -188,7 +188,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       }
       return out;
     },
-    // Denní spotřeba tokenů organizace podle poskytovatele — samostatná metrika, nikdy nesčítat s útratou.
+    // Denní spotřeba tokenů organizace podle poskytovatele – samostatná metrika, nikdy nesčítat s útratou.
     tokenUsage() {
       return Object.fromEntries(Object.entries(state).map(([k, v]) => [k, v.usage]));
     },

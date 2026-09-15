@@ -7,8 +7,8 @@ import { detectTunnels } from '../src/tunnel.js';
 import { startTestServer, api } from './helpers.mjs';
 
 // Tailscale jako plnohodnotná cesta k Agenteeq z telefonu: server smí naslouchat i na adrese,
-// kterou tomuto Macu přidělil tailnet. Adresa 100.x není veřejná — dostane se na ni jen zařízení
-// přihlášené do stejného tailnetu — ale i tak platí párování kódem a token (test/lan.test.mjs).
+// kterou tomuto Macu přidělil tailnet. Adresa 100.x není veřejná – dostane se na ni jen zařízení
+// přihlášené do stejného tailnetu – ale i tak platí párování kódem a token (test/lan.test.mjs).
 
 const config = () => loadConfig({ PORT: '0', AGENTEEQ_HOME: '/tmp/x', AGENTEEQ_SOURCE_HOME: '/tmp/x' });
 const fakeDatastore = (settings = {}) => {
@@ -27,7 +27,7 @@ const ROZHRANI = {
 };
 
 test('tailnet: poznají se jen adresy z rozsahu 100.64.0.0/10, nic jiného', () => {
-  assert.deepEqual(tailscaleAddresses(ROZHRANI), ['100.101.102.103'], 'IPv6 se nebere — pracujeme jen s IPv4');
+  assert.deepEqual(tailscaleAddresses(ROZHRANI), ['100.101.102.103'], 'IPv6 se nebere – pracujeme jen s IPv4');
   assert.deepEqual(lanAddresses(ROZHRANI), ['192.168.1.20'], 'adresa z tailnetu není adresa domácí sítě');
 
   // Hranice rozsahu: 100.63.x a 100.128.x jsou veřejné adresy a do tailnetu nepatří.
@@ -51,7 +51,7 @@ test('tailnet: stav a adresa se skládají z MagicDNS jména, teprve pak z adres
   assert.equal(vypnuto.name, 'mac-mini.tailabcd.ts.net', 'tečka na konci DNS jména se ořízne');
   assert.match(vypnuto.url, /^http:\/\/mac-mini\.tailabcd\.ts\.net:\d+$/);
 
-  // Bez MagicDNS (tailnet ho nemá zapnutý) se nic nedomýšlí — spadne se na adresu 100.x.
+  // Bez MagicDNS (tailnet ho nemá zapnutý) se nic nedomýšlí – spadne se na adresu 100.x.
   const bezDns = createLanAccess({ datastore, config: config(), tailscaleName: () => '', interfaces: () => ROZHRANI });
   const s = bezDns.status();
   assert.equal(s.tailscale.name, '');
@@ -61,7 +61,7 @@ test('tailnet: stav a adresa se skládají z MagicDNS jména, teprve pak z adres
 });
 
 // Jméno z MagicDNS chodí z výstupu cizího programu a míří do ochrany proti DNS rebindingu.
-// Proto musí projít jen tvar běžného DNS jména — nic s portem, cestou ani prázdnou částí.
+// Proto musí projít jen tvar běžného DNS jména – nic s portem, cestou ani prázdnou částí.
 test('tailnet: do seznamu povolených jmen se dostane jen pořádné DNS jméno', () => {
   for (const [vstup, cekano] of [
     ['mac-mini.tailabcd.ts.net.', 'mac-mini.tailabcd.ts.net'],
@@ -89,7 +89,7 @@ test('tailnet: nesmyslné jméno z „tailscale status“ se do allowlistu nedos
   assert.equal(lan.status().tailscale.url, `http://100.101.102.103:${lan.status().port}`);
 });
 
-test('tailnet: hlavička Host projde jen se zapnutým přepínačem — a s ním i jméno v MagicDNS', () => {
+test('tailnet: hlavička Host projde jen se zapnutým přepínačem – a s ním i jméno v MagicDNS', () => {
   const datastore = fakeDatastore();
   const lan = createLanAccess({ datastore, config: config(), tailscaleName: () => 'Mac-Mini.Tailabcd.ts.net', interfaces: () => ROZHRANI });
 
@@ -102,7 +102,7 @@ test('tailnet: hlavička Host projde jen se zapnutým přepínačem — a s ním
   assert.equal(hosts.includes('192.168.1.20'), false, 'zapnutý Tailscale sám o sobě neotvírá domácí síť');
 });
 
-test('tailnet: adresa, kterou Mac nemá, skončí poctivou chybou — nikdy tichým „zapnuto“', async (t) => {
+test('tailnet: adresa, kterou Mac nemá, skončí poctivou chybou – nikdy tichým „zapnuto“', async (t) => {
   // Testovací stroj tailnet nemá, takže pokus o naslouchání na adrese 100.x musí selhat. Právě to
   // je tu k ověření: chyba se zapíše, `listening` zůstane false a nic se nevyhodí ven. Rozhraní
   // tak nemůže ohlásit zapnutý přístup, který ve skutečnosti neposlouchá.
@@ -121,7 +121,7 @@ test('tailnet: adresa, kterou Mac nemá, skončí poctivou chybou — nikdy tich
   assert.match(stav.tailscale.error, /\S/, 'a proč, to se řekne');
   assert.equal(lan.listening, false);
 
-  // Vypnutí přepínače chybu uklidí — nezůstane viset u vypnuté cesty.
+  // Vypnutí přepínače chybu uklidí – nezůstane viset u vypnuté cesty.
   datastore.data.settings.tailscaleAccess = false;
   const po = await lan.start(null, 0);
   assert.equal(po.tailscale.error, '');
@@ -152,14 +152,14 @@ test('HTTP: bez běžícího Tailscale se přístup nezapne a nastavení zůstan
   assert.equal(po.body.settings.tailscaleAccess, false, 'neúspěšné zapnutí nesmí nic přepnout');
   assert.equal(po.body.lan.tailscale.listening, false);
 
-  // Vypnout jde vždy, i když zapnuté nebylo — je to idempotentní a nic neshodí.
+  // Vypnout jde vždy, i když zapnuté nebylo – je to idempotentní a nic neshodí.
   assert.equal((await api(s.url).send('POST', '/api/tailscale/disable', {})).status, 200);
 });
 
 // Ochrana proti DNS rebindingu je jediné, co stojí mezi škodlivou stránkou a daty na tomhle Macu:
 // server smí odpovědět jen na hlavičku Host, kterou sám zná. Tailscale ten seznam rozšiřuje
 // o adresu v tailnetu a o jméno v MagicDNS, takže tady se ověřuje, že rozšíření prochází přes
-// lan.hosts() — tedy že je opravdu vázané na zapnutý přepínač, a ne natvrdo povolené.
+// lan.hosts() – tedy že je opravdu vázané na zapnutý přepínač, a ne natvrdo povolené.
 test('HTTP: na cizí hlavičku Host server neodpoví, na vlastní jméno v MagicDNS ano', async (t) => {
   const s = await startTestServer();
   t.after(() => s.close());
@@ -199,7 +199,7 @@ test('HTTP: na cizí hlavičku Host server neodpoví, na vlastní jméno v Magic
 // Regrese k bezpečnostní chybě z revize 0.12.0. `tailscale serve` je reverzní proxy běžící
 // na tomhle Macu: cizí zařízení z tailnetu se připojí na HTTPS, proxy zakončí TLS a na server
 // se obrátí z 127.0.0.1. Kdyby se „je to z Macu“ posuzovalo jen podle adresy protistrany,
-// dostal by takový požadavek výjimku pro desktopovou aplikaci — tedy PIN, seznam zařízení,
+// dostal by takový požadavek výjimku pro desktopovou aplikaci – tedy PIN, seznam zařízení,
 // spouštění agentů a všechna data bez jediného tokenu. Rozhoduje proto i hlavička Host.
 test('HTTP: požadavek přeposlaný proxy z tohoto Macu nedostane práva desktopové aplikace', async (t) => {
   const s = await startTestServer();
@@ -228,7 +228,7 @@ test('HTTP: požadavek přeposlaný proxy z tohoto Macu nedostane práva desktop
     assert.equal((await jakoProxy(cesta)).status, 401, `${cesta} musí bez spárování vrátit 401`);
   }
 
-  // 2. Jednorázový PIN ani seznam zařízení se za proxy nevydá — jinak by si útočník počkal
+  // 2. Jednorázový PIN ani seznam zařízení se za proxy nevydá – jinak by si útočník počkal
   //    na kód, který si vyrobí sám vlastník, a spároval se natrvalo.
   const lan = await jakoProxy('/api/lan');
   assert.equal(lan.status, 401, 'stav přístupu je za proxy bez tokenu nedostupný');
@@ -255,13 +255,13 @@ test('HTTP: požadavek přeposlaný proxy z tohoto Macu nedostane práva desktop
 
 // Cookie s tokenem má mít příznak Secure, když spojení jelo po HTTPS. Server sám TLS nezakončuje,
 // takže to pozná jedině podle proxy před ním. Dřív se odvozovalo z `url.protocol`, jenže `url` se
-// staví nad pevným http://127.0.0.1 — příznak se tedy nenastavil nikdy.
+// staví nad pevným http://127.0.0.1 – příznak se tedy nenastavil nikdy.
 test('párování: cookie dostane Secure, když proxy hlásí HTTPS', async (t) => {
   const s = await startTestServer();
   t.after(() => s.close());
   const port = Number(new URL(s.url).port);
 
-  // Testovací stroj nemá adresu z domácí sítě, takže přepínač zapneme rovnou v datech — tenhle
+  // Testovací stroj nemá adresu z domácí sítě, takže přepínač zapneme rovnou v datech – tenhle
   // test je o cookie, ne o otevírání naslouchání (to má vlastní testy výš).
   s.app.datastore.data.settings.lanAccess = true;
   t.after(() => { s.app.datastore.data.settings.lanAccess = false; });
@@ -285,7 +285,7 @@ test('párování: cookie dostane Secure, když proxy hlásí HTTPS', async (t) 
   pin = (await api(s.url).send('POST', '/api/lan/pin', {})).body.pin.code;
   const poHttp = await sparuj({});
   assert.equal(poHttp.status, 200, 'párování po http projde');
-  assert.equal(/Secure/i.test(poHttp.cookie), false, 'po http se Secure nenastaví — jinak by cookie nešla poslat zpátky');
+  assert.equal(/Secure/i.test(poHttp.cookie), false, 'po http se Secure nenastaví – jinak by cookie nešla poslat zpátky');
   assert.match(poHttp.cookie, /HttpOnly/);
 
   pin = (await api(s.url).send('POST', '/api/lan/pin', {})).body.pin.code;
@@ -349,7 +349,7 @@ test('detekce: "serve" pro cizí port nebo nesrozumitelný výstup se nikdy nehl
   serveStdout = 'command not supported';
   [ts] = await detectTunnels({ run, fileExists, fetchJson: async () => null, port: 4620 });
   assert.equal(ts.serve.running, false);
-  assert.equal(ts.serve.unknown, true, 'čemu nerozumíme, hlásíme jako neznámé — nikdy jako zapnuté');
+  assert.equal(ts.serve.unknown, true, 'čemu nerozumíme, hlásíme jako neznámé – nikdy jako zapnuté');
 });
 
 test('detekce: odhlášený Tailscale se na HTTPS vůbec neptá a nic si nedomýšlí', async () => {

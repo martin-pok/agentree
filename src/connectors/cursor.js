@@ -6,7 +6,7 @@ import { todosProgress } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 
 // Cesta k datům Cursoru se liší jen základem složky; zbytek struktury je všude stejný.
-// Windows varianta zatím není ověřená na skutečném stroji — proto je v docs/CONNECTORS.md
+// Windows varianta zatím není ověřená na skutečném stroji – proto je v docs/CONNECTORS.md
 // vedená jako Beta.
 const CURSOR_ZDROJ = JE_WINDOWS
   ? '%APPDATA%\\Cursor\\User\\…\\state.vscdb'

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 // Přehled měl dřív sloupcovou sazbu (`columns: 2`). O tom, co skončí nahoře v pravém sloupci,
-// rozhodoval prohlížeč podle výšky bloků — takže se s jinou šířkou okna nebo jinými daty nad
+// rozhodoval prohlížeč podle výšky bloků – takže se s jinou šířkou okna nebo jinými daty nad
 // widget „Kam dnes šly tokeny" vysunul cizí blok i s prázdnou mezerou. Tyhle testy hlídají,
 // že rozvržení zůstane určené kódem, ne náhodou.
 
@@ -38,7 +38,7 @@ test('mřížka Přehledu nepoužívá sloupcovou sazbu', () => {
 });
 
 // Blok bez obsahu (žádná okna limitů) je neviditelný, ale v pružném sloupci by po sobě nechal
-// mezeru 40 px — díru uprostřed stránky, kterou uživatel vidí a nepozná její příčinu.
+// mezeru 40 px – díru uprostřed stránky, kterou uživatel vidí a nepozná její příčinu.
 test('blok bez obsahu ve sloupci zmizí i s mezerou', () => {
   assert.match(css, /\.ov-col > section:empty \{ display: none; \}/);
 });

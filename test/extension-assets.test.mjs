@@ -11,7 +11,7 @@ import { tempDir } from './helpers.mjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const hash = async (p) => crypto.createHash('sha256').update(await fs.readFile(p)).digest('hex');
 
-// Okno rozšíření má vypadat jako menší sestra aplikace — a to stojí a padá s tím, že používá
+// Okno rozšíření má vypadat jako menší sestra aplikace – a to stojí a padá s tím, že používá
 // tatáž písma. Kopie v extension/fonts je nutná (Chrome vidí jen složku rozšíření), a právě proto
 // se musí hlídat: jinak by se po výměně písma v aplikaci obě plochy tiše rozešly.
 test('rozšíření: písma jsou bajt po bajtu tatáž jako v aplikaci', async () => {
@@ -37,7 +37,7 @@ test('rozšíření: okno používá tokeny aplikace a nekreslí těžší písm
   // Klíčové barvy identity „koncertní sál“ musí být shodné s :root aplikace, ne přibližné.
   for (const token of ['--stage: #121019', '--paper: #F4F3F7', '--ink: #16141D', '--brass: #C99A3E']) {
     assert.ok(popup.includes(token), `okno rozšíření nemá token ${token}`);
-    assert.ok(styles.includes(token), `aplikace nemá token ${token} — sjednoť obě strany`);
+    assert.ok(styles.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
   assert.ok(popup.includes('fonts/fonts.css'), 'okno načítá písma aplikace');
   const vahy = [...popup.matchAll(/font-weight:\s*(\d{3})/g)].map((m) => Number(m[1]));
