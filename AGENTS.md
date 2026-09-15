@@ -71,7 +71,7 @@ scripts/build-site.mjs      složí dist/web: site/ do kořene, public/ pod /app
 scripts/build-extension.mjs balíček rozšíření (vlastní ZIP, bez závislostí)
 scripts/release-mac.mjs     vydání jedním příkazem
 test/                       testy; helpers.mjs spouští server nad dočasnými fixturami
-docs/                       architektura, konektory, datový kontrakt, bezpečnost, testy, produkt, roadmapa
+docs/                       architektura, konektory, datový kontrakt, bezpečnost, testy, produkt, roadmapa, jméno produktu
 ```
 
 ## 4. Závazná technická pravidla

@@ -57,7 +57,10 @@ Technicky připraveno v 0.5.0: offline licence a zamykání funkcí (`docs/LICEN
 Validace před stavbou placené verze:
 
 - 10 rozhovorů s cílovými uživateli (problém „agent čeká na mě“ a „útrata“).
-- Landing page s čekací listinou a volbou plánu; cíl ≥ 5 % konverze návštěva → registrace.
+- Landing page **hotová** (`site/`, od 0.12.0): vysvětluje problém, ukazuje rozhraní a vede na
+  stažení. Čekací listina ani volba plánu na ní zatím nejsou — bez funkčního příjmu e-mailů by
+  to bylo tlačítko, které nic nedělá. Až bude kam e-maily posílat, přibude blok „dej vědět, až
+  bude Pro“ a s ním i měřitelný cíl konverze.
 - Měřit v betě (lokálně, se souhlasem): kolik upozornění „potřebuje rozhodnutí“ denně, reakční doba před/po.
 
 ## Metriky úspěchu
