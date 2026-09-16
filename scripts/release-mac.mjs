@@ -131,11 +131,33 @@ if (install) {
 
 console.log('\nHotovo. Výstupy v dist/:');
 for (const f of (await fs.readdir(path.join(root, 'dist')).catch(() => [])).sort()) console.log(`  dist/${f}`);
-console.log(`
-Zbývá ručně (vydání na GitHubu, aby fungovalo tlačítko „Stáhnout pro Mac" na webu):
-  1. git push
-  2. Vytvoř vydání s tagem v${version} a přilož:
-       ${path.relative(root, archiv)}
-       dist/agenteeq-extension-${version}.zip
-  3. Zkontroluj, že https://github.com/martin-pok/agentree/releases/latest vede na nové vydání.
-  4. Web: dist/web nahraj na hosting (Vercel použije vercel.json a sestaví si ho sám).`);
+
+// Poslední krok je vydání na GitHubu a bez něj vede tlačítko „Stáhnout pro Mac" na prázdno.
+// Skript ho schválně nedělá sám: vydání je veřejná publikace a ta patří do rukou člověka.
+// Co ale udělat může, je nenechat ho hádat — ověří, že přílohy opravdu existují, a vypíše
+// přesný příkaz, který stačí zkopírovat.
+const prilohy = [archiv, path.join(root, 'dist', `agenteeq-extension-${version}.zip`)];
+const chybejici = [];
+for (const soubor of prilohy) {
+  if (!(await fs.stat(soubor).then(() => true, () => false))) chybejici.push(path.relative(root, soubor));
+}
+
+const maGh = Boolean(tise('which', ['gh']));
+const seznam = prilohy.map((f) => `"${path.relative(root, f)}"`).join(' ');
+
+console.log('\nZbývá vydání na GitHubu — bez něj vede tlačítko „Stáhnout pro Mac" na prázdno.\n');
+if (chybejici.length) {
+  console.log(`  Pozor: chybí přílohy ${chybejici.join(', ')}. Spusť build znovu bez --skip-tests.`);
+} else if (maGh) {
+  console.log('  1. git push');
+  console.log(`  2. gh release create v${version} ${seznam} --title "Agenteeq ${version}" --notes-from-tag`);
+  console.log('     (bez --notes-from-tag ti gh nabídne popis napsat)');
+} else {
+  console.log('  1. git push');
+  console.log(`  2. Vytvoř vydání s tagem v${version} na https://github.com/martin-pok/agentree/releases/new`);
+  console.log('     a přilož k němu:');
+  for (const f of prilohy) console.log(`       ${path.relative(root, f)}`);
+  console.log('     (s nainstalovaným `gh` by to byl jeden příkaz — brew install gh)');
+}
+console.log('  3. Ověř, že https://github.com/martin-pok/agentree/releases/latest vede na nové vydání.');
+console.log('  4. Web: dist/web nahraj na hosting (Vercel použije vercel.json a sestaví si ho sám).');
