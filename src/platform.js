@@ -157,3 +157,43 @@ export async function listeningPorts(runImpl = run) {
   }
   return runImpl('lsof', LSOF_ARGS);
 }
+
+// ── Běží proces, jehož příkazová řádka odpovídá vzoru? ───────────────────────
+
+/**
+ * Protějšek `pgrep -f` – hledá ve VŠECH argumentech, ne jen ve jménu programu.
+ *
+ * Nabízelo by se volat `pgrep` tam, kde je, a výpis procesů jen na Windows. Jenže
+ * převádět regulární výraz na vzor pro pgrep je křehké a obě cesty by se pak lišily
+ * v tom, co ještě považují za shodu. Výpis procesů je společný, tak se hledá v něm
+ * všude stejně – je to o něco dražší, ale volá se při obnově stavu, ne ve smyčce.
+ *
+ * Vrací `{ ok }`; nikdy nevyhodí výjimku a nikdy si nedomýšlí, že něco běží.
+ */
+export async function bezziProces(vzor, runImpl = run) {
+  const r = await processList(runImpl);
+  if (!r?.ok) return { ok: false, stdout: '' };
+  const radky = String(r.stdout || '').split('\n').filter((radek) => vzor.test(radek));
+  return { ok: radky.length > 0, stdout: radky.join('\n') };
+}
+
+// ── Celé jméno uživatele ─────────────────────────────────────────────────────
+
+/**
+ * Jméno pro pozdrav v rozhraní. Když ho systém nedá, vrátí prázdno – volající si
+ * vystačí s přihlašovacím jménem a nic si nedomýšlí.
+ */
+export async function fullUserName(runImpl = run) {
+  if (JE_MAC) {
+    const r = await runImpl('id', ['-F'], { timeout: 2000 });
+    return r?.ok ? r.stdout.trim() : '';
+  }
+  if (JE_WINDOWS) {
+    // Get-LocalUser zná celé jméno u místních účtů; u účtů Microsoftu bývá prázdné
+    // a to je v pořádku – prázdno je poctivější než přihlašovací jméno vydávané za jméno.
+    const r = await runImpl('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      '(Get-LocalUser -Name $env:USERNAME -ErrorAction SilentlyContinue).FullName'], { timeout: 4000 });
+    return r?.ok ? r.stdout.trim() : '';
+  }
+  return '';
+}

@@ -37,6 +37,7 @@ import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
+import { fullUserName } from './platform.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -994,7 +995,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const ext = await syncExtension({ zdroj: EXTENSION_DIR, dataDir: config.dataDir });
     extensionPath = ext.path;
     if (ext.reason && !config.quiet) console.error('Agenteeq:', ext.reason);
-    const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
+    const whoami = fullUserName().then((jmeno) => { if (jmeno) host.fullName = jmeno; });
     const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
     apps = dry ? ALL_APPS : config.openApps && config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));

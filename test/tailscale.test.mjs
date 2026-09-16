@@ -5,6 +5,12 @@ import { loadConfig } from '../src/config.js';
 import http from 'node:http';
 import { detectTunnels } from '../src/tunnel.js';
 import { startTestServer, api } from './helpers.mjs';
+import { tailscalePaths } from '../src/platform.js';
+
+// Kde Tailscale bydlí, se liší systém od systému (balíček .app, Program Files, /usr/bin).
+// Testy proto nepředstírají jednu konkrétní cestu, ale tu, kterou pro tenhle systém
+// hlásí platformový šev – jinak by ověřovaly macOS, ne naši logiku.
+const NAINSTALOVANY_TAILSCALE = tailscalePaths()[0];
 
 // Tailscale jako plnohodnotná cesta k Agenteeq z telefonu: server smí naslouchat i na adrese,
 // kterou tomuto Macu přidělil tailnet. Adresa 100.x není veřejná – dostane se na ni jen zařízení
@@ -295,9 +301,9 @@ test('párování: cookie dostane Secure, když proxy hlásí HTTPS', async (t) 
 });
 
 test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" se pozná podle portu', async () => {
-  const fileExists = (p) => p.includes('Tailscale.app');
+  const fileExists = (p) => p === NAINSTALOVANY_TAILSCALE;
   const run = async (cmd, args) => {
-    if (String(cmd).includes('Tailscale') && args[0] === 'status') {
+    if (String(cmd).toLowerCase().includes('tailscale') && args[0] === 'status') {
       return {
         ok: true,
         code: 0,
@@ -309,7 +315,7 @@ test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" s
         }),
       };
     }
-    if (String(cmd).includes('Tailscale') && args[0] === 'serve') {
+    if (String(cmd).toLowerCase().includes('tailscale') && args[0] === 'serve') {
       return {
         ok: true,
         code: 0,
@@ -331,7 +337,7 @@ test('detekce: Tailscale vrátí jméno, adresy i tailnet; HTTPS přes "serve" s
 });
 
 test('detekce: "serve" pro cizí port nebo nesrozumitelný výstup se nikdy nehlásí jako zapnuté HTTPS', async () => {
-  const fileExists = (p) => p.includes('Tailscale.app');
+  const fileExists = (p) => p === NAINSTALOVANY_TAILSCALE;
   let serveStdout = JSON.stringify({ Web: { 'mac.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:8080' } } } } });
   const run = async (cmd, args) => {
     if (args[0] === 'status') return { ok: true, code: 0, stderr: '', stdout: JSON.stringify({ BackendState: 'Running', Self: { DNSName: 'mac.ts.net.', TailscaleIPs: ['100.64.0.5'] } }) };
@@ -359,7 +365,7 @@ test('detekce: odhlášený Tailscale se na HTTPS vůbec neptá a nic si nedomý
     if (args[0] === 'status') return { ok: true, code: 0, stderr: '', stdout: JSON.stringify({ BackendState: 'NeedsLogin' }) };
     return { ok: false, stdout: '', stderr: '', code: 1 };
   };
-  const [ts] = await detectTunnels({ run, fileExists: (p) => p.includes('Tailscale.app'), fetchJson: async () => null, port: 4620 });
+  const [ts] = await detectTunnels({ run, fileExists: (p) => p === NAINSTALOVANY_TAILSCALE, fetchJson: async () => null, port: 4620 });
   assert.equal(ts.running, false);
   assert.equal(ts.dnsName, '');
   assert.deepEqual(ts.ips, []);

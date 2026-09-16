@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TUNNELS, detectTunnels, remoteAdvice, remoteUrl } from '../src/tunnel.js';
+import { tailscalePaths } from '../src/platform.js';
+
+// Cesta k Tailscale se liší systém od systému; test proto předstírá tu, kterou
+// pro tenhle systém hlásí platformový šev, ne jednu konkrétní z macOS.
+const NAINSTALOVANY_TAILSCALE = tailscalePaths()[0];
 
 const noRun = async () => ({ ok: false, stdout: '', stderr: '', code: 1 });
 const noFetch = async () => null;
@@ -18,9 +23,9 @@ test('katalog TUNNELS má tři nástroje se všemi povinnými poli', () => {
 });
 
 test('detekce: Tailscale nainstalovaný a přihlášený vrátí adresu z JSON bez tečky na konci', async () => {
-  const fileExists = (p) => p.includes('Tailscale.app');
+  const fileExists = (p) => p === NAINSTALOVANY_TAILSCALE;
   const run = async (cmd, args) => {
-    if (String(cmd).includes('Tailscale') && args[0] === 'status') {
+    if (String(cmd).toLowerCase().includes('tailscale') && args[0] === 'status') {
       return {
         ok: true,
         stdout: JSON.stringify({ BackendState: 'Running', Self: { DNSName: 'mac-mini.tailabcd.ts.net.', TailscaleIPs: ['100.101.102.103'] } }),
@@ -71,7 +76,9 @@ test('detekce: Tailscale vůbec nenainstalovaný (žádná appka, "which" neusp�
 
 test('detekce: cloudflared nainstalovaný, ale neběžící', async () => {
   const run = async (cmd, args) => {
-    if (cmd === 'which' && args[0] === 'cloudflared') return { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 };
+    if (String(cmd).startsWith('which') || String(cmd).startsWith('where')) {
+      return args[0] === 'cloudflared' ? { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 };
+    }
     if (cmd === 'pgrep') return { ok: false, stdout: '', stderr: '', code: 1 };
     return { ok: false, stdout: '', stderr: '', code: 1 };
   };
@@ -84,8 +91,14 @@ test('detekce: cloudflared nainstalovaný, ale neběžící', async () => {
 
 test('detekce: cloudflared nainstalovaný a proces běží', async () => {
   const run = async (cmd, args) => {
-    if (cmd === 'which' && args[0] === 'cloudflared') return { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 };
-    if (cmd === 'pgrep') return { ok: true, stdout: '4242\n', stderr: '', code: 0 };
+    if (String(cmd).startsWith('which') || String(cmd).startsWith('where')) {
+      return args[0] === 'cloudflared' ? { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 };
+    }
+    // Běžící tunel se hledá ve výpisu procesů (stejně na všech systémech), ne přes pgrep:
+    // převádět regulární výraz na vzor pro pgrep je křehké a obě cesty by se rozešly.
+    if (String(cmd) === 'ps' || String(cmd).includes('powershell')) {
+      return { ok: true, stdout: '4242 00:10 0.5 2048 /usr/local/bin/cloudflared tunnel --url http://127.0.0.1:4620\n', stderr: '', code: 0 };
+    }
     return { ok: false, stdout: '', stderr: '', code: 1 };
   };
   const tunnels = await detectTunnels({ run, fileExists: () => false, fetchJson: noFetch });

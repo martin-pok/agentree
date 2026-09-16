@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { tailscalePaths, whichCommand, bezziProces } from './platform.js';
 import { run as execRun } from './util.js';
 
 // Vzdálený přístup mimo domácí síť – postavený na tunelu, který si uživatel spustí sám.
@@ -16,7 +17,9 @@ import { run as execRun } from './util.js';
 // `fileExists` (existence souboru) injektovat, aby šel celý modul otestovat bez systému,
 // na kterém běží.
 
-const TAILSCALE_APP_BIN = '/Applications/Tailscale.app/Contents/MacOS/Tailscale';
+// Kde Tailscale bydlí, ví src/platform.js – na macOS je to balíček .app, na Windows
+// program v Program Files. Tady se jen zkusí jedna cesta po druhé a pak PATH.
+const TAILSCALE_BINARKY = tailscalePaths();
 const NGROK_API = 'http://127.0.0.1:4040/api/tunnels';
 
 export const TUNNELS = [
@@ -26,7 +29,7 @@ export const TUNNELS = [
     description: 'Vytvoří privátní síť (VPN) jen mezi tvými vlastními zařízeními – telefon se k Macu připojí, jako by byl doma.',
     kind: 'privatni-sit',
     security: 'Provoz jde šifrovaným tunelem jen mezi tvými zařízeními a adresa nikde veřejně neexistuje – nejbezpečnější a doporučená volba.',
-    detectedBy: `binárka ${TAILSCALE_APP_BIN} nebo "tailscale" v PATH; stav a adresa z "tailscale status --json" (pole Self.DNSName a TailscaleIPs), HTTPS z "tailscale serve status --json"`,
+    detectedBy: `binárka (${TAILSCALE_BINARKY.join(', ')}) nebo "tailscale" v PATH; stav a adresa z "tailscale status --json" (pole Self.DNSName a TailscaleIPs), HTTPS z "tailscale serve status --json"`,
     startedBy: 'uživatel spustí "tailscale up" na Macu a nainstaluje appku Tailscale na telefonu se stejným účtem',
   },
   {
@@ -96,8 +99,8 @@ async function detectTailscale({ run, fileExists, port }) {
   const m = meta('tailscale');
   const zaklad = { id: m.id, name: m.name, kind: m.kind, security: m.security, dnsName: '', ips: [], tailnet: '', serve: { running: false, unknown: true } };
   try {
-    const appPresent = Boolean(fileExists(TAILSCALE_APP_BIN));
-    const bin = appPresent ? TAILSCALE_APP_BIN : ((await run('which', ['tailscale'], { timeout: 1000 }))?.ok ? 'tailscale' : null);
+    const nainstalovana = TAILSCALE_BINARKY.find((cesta) => fileExists(cesta)) || null;
+    const bin = nainstalovana || ((await run(whichCommand, ['tailscale'], { timeout: 1000 }))?.ok ? 'tailscale' : null);
     if (!bin) {
       return { ...zaklad, installed: false, running: false, url: '', hint: 'Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.' };
     }
@@ -126,14 +129,14 @@ async function detectTailscale({ run, fileExists, port }) {
 async function detectCloudflared({ run }) {
   const m = meta('cloudflared');
   try {
-    const which = await run('which', ['cloudflared'], { timeout: 1000 });
+    const which = await run(whichCommand, ['cloudflared'], { timeout: 1000 });
     const installed = Boolean(which?.ok);
     if (!installed) {
       return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Nainstaluj cloudflared (brew install cloudflared).' };
     }
     // Quick tunnel nemá lokální API – adresu vypisuje jen do stdout ve chvíli spuštění.
     // Poctivě proto zjišťujeme jen to, jestli proces běží, adresu si nevymýšlíme.
-    const proc = await run('pgrep', ['-f', 'cloudflared tunnel'], { timeout: 800 });
+    const proc = await bezziProces(/cloudflared[^\n]*tunnel/i, run);
     const running = Boolean(proc?.ok && String(proc.stdout || '').trim());
     const hint = running
       ? 'Tunel běží – veřejnou adresu najdeš ve výstupu příkazu v Terminálu (řádek končící na trycloudflare.com).'
@@ -147,7 +150,7 @@ async function detectCloudflared({ run }) {
 async function detectNgrok({ run, fetchJson }) {
   const m = meta('ngrok');
   try {
-    const which = await run('which', ['ngrok'], { timeout: 1000 });
+    const which = await run(whichCommand, ['ngrok'], { timeout: 1000 });
     const installed = Boolean(which?.ok);
     const data = await fetchJson(NGROK_API, { timeoutMs: 600 });
     const tunnels = Array.isArray(data?.tunnels) ? data.tunnels : [];
