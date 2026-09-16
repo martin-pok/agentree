@@ -139,7 +139,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   let apps = {};
   store.decorate = (summary) => {
-    summary.open = openTargets(summary, apps);
+    summary.open = openTargets(summary, apps, { aplikace: config.openApps });
     Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
@@ -147,8 +147,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function openSession(id, target) {
     const s = store.summary(id);
     if (!s) return { status: 404, error: 'Konverzace nenalezena.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Otevírání aplikací je dostupné jen na macOS.' };
-    const plan = planOpen(s, target, apps);
+    if (config.openMode === 'off') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
+    // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
+    if (!config.openApps && (target === 'app' || target === 'terminal')) {
+      return { status: 422, error: target === 'terminal'
+        ? 'Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.'
+        : 'Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.' };
+    }
+    const plan = planOpen(s, target, apps, { aplikace: config.openApps });
     if (!plan) return { status: 422, error: 'Tuto akci pro konverzaci nelze provést.' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
@@ -531,12 +537,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function launchPayload() {
     let targets = launchTargets(launchEnv);
-    if (config.openMode === 'off') targets = targets.filter((t) => t.group === 'local');
+    if (!config.launchAgents) targets = targets.filter((t) => t.group === 'local' || t.group === 'web');
     return { targets, modes: MODES, openMode: config.openMode };
   }
 
   async function refreshLaunch() {
-    if (config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
+    if (config.launchAgents && config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
     else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
@@ -559,7 +565,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const r = await planLaunch(body, launchEnv, { promptFile: promptFilePath(promptDir, uuid), sessionUuid: uuid });
     if (!r.ok) return { status: 422, error: r.error, field: r.field };
     const plan = r.plan;
-    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: 'Spouštění aplikací je dostupné jen na macOS.' };
+    if (!config.launchAgents && plan.kind !== 'local') return { status: 422, error: 'Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.' };
     const gate = plan.kind === 'background' ? locked('launchBackground') : plan.kind === 'local' ? locked('localChat') : null;
     if (gate) return gate;
 
@@ -664,7 +670,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function autostart(action) {
     if (config.desktop) return { status: 422, error: 'Desktopovou aplikaci přidej v Nastavení systému → Obecné → Přihlašovací položky.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Automatické spouštění je dostupné jen na macOS.' };
+    if (!config.autostart) return { status: 422, error: 'Spuštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).' };
     if (!dry) {
       try {
         if (action === 'install') await installLaunchAgent({ script: BIN_PATH, home: config.sourceHome });
@@ -687,7 +693,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       nativeNotify: config.desktop || notifier.enabled,
       desktop: config.desktop,
       autostart: {
-        supported: !config.desktop && config.openMode !== 'off',
+        supported: !config.desktop && config.autostart,
         installed: await isLaunchAgentInstalled(config.sourceHome),
         command: `"${process.execPath}" "${BIN_PATH}" install-agent`,
       },
@@ -705,8 +711,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const bundle = path.resolve(ROOT_DIR, '..', '..', '..');
     const target = pkg?.path || (config.desktop && bundle.endsWith('.app') ? bundle : null);
     if (!target) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Otevírání Finderu je dostupné jen na macOS.' };
-    const plan = { kind: 'open', args: ['-R', target], label: 'Finder' };
+    if (config.openMode === 'off') return { status: 422, error: 'Ukázat balíček ve správci souborů tenhle systém neumí.' };
+    // -R (ukázat v nadřazené složce) zná jen `open` na macOS; jinde se otevře samotná složka.
+    const plan = config.openApps
+      ? { kind: 'open', args: ['-R', target], label: 'Finder' }
+      : { kind: 'open', args: [path.dirname(target)], label: 'Správce souborů' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
@@ -987,7 +996,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (ext.reason && !config.quiet) console.error('Agenteeq:', ext.reason);
     const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
     const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
-    apps = dry ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};
+    apps = dry ? ALL_APPS : config.openApps && config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await Promise.all([whoami, launchReady]);

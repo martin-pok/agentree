@@ -117,6 +117,16 @@ export function tailscalePaths() {
   return ['/usr/bin/tailscale', '/usr/local/bin/tailscale'];
 }
 
+/**
+ * Je to absolutní cesta – v POSIXovém i windowsovém tvaru?
+ *
+ * `path.isAbsolute` zná jen tvar toho systému, na kterém zrovna běží. To by ale
+ * znamenalo, že rozhraní nabídne „Otevřít složku“ a server tutéž cestu odmítne,
+ * protože se na ni každý dívá jinak. Obojí proto používá stejné pravidlo
+ * (`jeAbsolutniCesta` v public/js/format.js je jeho protějšek pro prohlížeč).
+ */
+export const jeAbsolutniCesta = (p) => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(String(p || ''));
+
 /** Příkaz, kterým se v systému hledá program v PATH. */
 export const whichCommand = JE_WINDOWS ? 'where.exe' : 'which';
 

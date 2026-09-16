@@ -1,6 +1,6 @@
-import path from 'node:path';
 import fs from 'node:fs';
 import { run, shellQuote } from './util.js';
+import { openCommand, JE_MAC, jeAbsolutniCesta } from './platform.js';
 
 // Otevření session přímo v aplikaci, kde běží. Plán se skládá jen ze serverových dat – nikdy z textu od klienta.
 
@@ -46,7 +46,7 @@ export async function detectApps() {
 }
 
 const localIdOf = (s) => String(s.id || '').slice(String(s.connector || '').length + 1);
-const hasFolder = (s) => typeof s.cwd === 'string' && path.isAbsolute(s.cwd) && !s.cwd.includes('\n');
+const hasFolder = (s) => typeof s.cwd === 'string' && jeAbsolutniCesta(s.cwd) && !s.cwd.includes('\n');
 
 function terminalCommand(s, apps) {
   const id = localIdOf(s);
@@ -79,22 +79,38 @@ function appPlan(s, apps) {
   }
 }
 
-export function planOpen(s, target, apps = {}) {
+// `aplikace` říká, jestli systém umí otevřít session v konkrétní aplikaci a Terminálu.
+// Mimo macOS to neumí, ale složku a odkaz otevřít umí – a právě o ty by uživatel
+// na Windows zbytečně přišel, kdyby o všem rozhodoval jeden vypínač.
+//
+// Výchozí je „umí“: tahle funkce jen skládá plán a o schopnostech systému rozhoduje
+// volající (src/app.js podle config.openApps). Kdyby si to funkce zjišťovala sama,
+// nešla by otestovat pro jiný systém, než na kterém zrovna běží test.
+export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   if (!s) return null;
-  if (target === 'app') return appPlan(s, apps);
+  if (target === 'app') {
+    // Odkaz na webovou konverzaci otevře prohlížeč, a ten je všude – na rozdíl od `open -a`.
+    const plan = appPlan(s, apps);
+    if (!plan) return null;
+    return aplikace || (s.source === 'web' && plan.args.length === 1) ? plan : null;
+  }
   if (target === 'terminal') {
+    if (!aplikace) return null;
     const command = terminalCommand(s, apps);
     return command ? { kind: 'terminal', command, label: 'Terminál', title: 'Pokračovat v Terminálu' } : null;
   }
-  if (target === 'folder') return hasFolder(s) && s.source !== 'web' ? { kind: 'open', args: [s.cwd], label: 'Finder', title: 'Otevřít složku' } : null;
+  if (target === 'folder') {
+    if (!hasFolder(s) || s.source === 'web') return null;
+    return { kind: 'open', args: [s.cwd], label: aplikace ? 'Finder' : 'Správce souborů', title: 'Otevřít složku' };
+  }
   return null;
 }
 
 // Nabídka akcí pro UI (pořadí = důležitost).
-export function openTargets(s, apps = {}) {
+export function openTargets(s, apps = {}, moznosti = {}) {
   return ['app', 'terminal', 'folder']
     .map((id) => {
-      const plan = planOpen(s, id, apps);
+      const plan = planOpen(s, id, apps, moznosti);
       return plan ? { id, label: plan.title } : null;
     })
     .filter(Boolean);
@@ -123,6 +139,16 @@ const TERMINAL_SCRIPT = ['on run argv', 'tell application "Terminal"', 'activate
 export async function executeOpen(plan, { dry = false } = {}) {
   if (dry) return { ok: true, dry: true };
   if (plan.kind === 'open') {
+    // Přepínače `open` (-a, -R) zná jen macOS. Jinde je plán vždycky jediný cíl –
+    // cesta nebo adresa – a ten se předá tomu, co systém pro otevírání má.
+    if (!JE_MAC) {
+      const cil = plan.args[plan.args.length - 1];
+      const prikaz = openCommand(cil);
+      if (!prikaz) return { ok: false, error: `${plan.label}: tenhle systém otevírání neumí` };
+      // explorer.exe vrací nenulový kód i při úspěchu, takže se podle něj nedá řídit.
+      await run(prikaz.cmd, prikaz.args, { timeout: 8000 });
+      return { ok: true };
+    }
     const r = await run('open', plan.args, { timeout: 8000 });
     return r.ok ? { ok: true } : { ok: false, error: `${plan.label}: ${r.stderr.trim() || 'aplikaci se nepodařilo otevřít'}` };
   }

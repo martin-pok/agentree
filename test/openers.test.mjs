@@ -53,3 +53,33 @@ test('přepnutí do aplikace: plán vzniká jen z pevného seznamu, nikdy z pož
     assert.match(r.app, /^[A-Za-z0-9 ]{1,40}$/, r.app);
   }
 });
+
+// Na systému, kde `open -a` ani AppleScript nejsou, nesmí zmizet všechno.
+// Dřív o celé nabídce rozhodoval jeden vypínač, takže na Windows neměla žádná
+// session jediné tlačítko — přitom otevřít složku v Průzkumníku a konverzaci
+// v prohlížeči jde tam stejně dobře jako na Macu.
+const BEZ_APLIKACI = { aplikace: false };
+
+test('bez podpory aplikací zůstane složka a odkaz, zmizí jen Terminál a otevření v aplikaci', () => {
+  const codex = { id: `codex:${CODEX_ID}`, connector: 'codex', source: 'local', cwd: 'C:\\Users\\jana\\web' };
+  assert.deepEqual(openTargets(codex, ALL_APPS, BEZ_APLIKACI).map((t) => t.id), ['folder'],
+    'z lokální session zbude otevření složky');
+  assert.deepEqual(planOpen(codex, 'folder', ALL_APPS, BEZ_APLIKACI).args, ['C:\\Users\\jana\\web']);
+  assert.equal(planOpen(codex, 'folder', ALL_APPS, BEZ_APLIKACI).label, 'Správce souborů',
+    'popisek nemluví o Finderu tam, kde žádný není');
+  assert.equal(planOpen(codex, 'terminal', ALL_APPS, BEZ_APLIKACI), null);
+  assert.equal(planOpen(codex, 'app', ALL_APPS, BEZ_APLIKACI), null);
+});
+
+test('konverzaci z webu otevře prohlížeč i tam, kde aplikace otevřít neumíme', () => {
+  const web = { id: 'web:1', connector: 'web', source: 'web', url: 'https://chatgpt.com/c/abc' };
+  const plan = planOpen(web, 'app', ALL_APPS, BEZ_APLIKACI);
+  assert.deepEqual(plan?.args, ['https://chatgpt.com/c/abc'], 'odkaz otevře prohlížeč, ten je všude');
+  assert.deepEqual(openTargets(web, ALL_APPS, BEZ_APLIKACI).map((t) => t.id), ['app'],
+    'u webové konverzace není co otevřít ve složce');
+});
+
+test('plán bez zadané schopnosti počítá s plnou podporou — o systému rozhoduje volající', () => {
+  const s = { id: `codex:${CODEX_ID}`, connector: 'codex', source: 'local', cwd: '/Users/x/web' };
+  assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app', 'terminal', 'folder']);
+});
