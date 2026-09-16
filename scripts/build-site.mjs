@@ -38,6 +38,15 @@ export function serviceWorkerProWeb(text, appPath = APP_PATH) {
   return text.replace(puvodni, `const PRECACHE = ['${appPath}',`);
 }
 
+// Značka „tohle je kopie na webu, žádný server tu není“. Vkládá se hned za <head>,
+// aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
+export function znackaStatickeKopie(html) {
+  const znacka = '<meta name="agenteeq-staticka-kopie" content="1">';
+  if (html.includes('agenteeq-staticka-kopie')) return html;
+  if (!html.includes('<head>')) throw new Error('public/index.html nemá <head> — uprav scripts/build-site.mjs.');
+  return html.replace('<head>', `<head>\n${znacka}`);
+}
+
 async function copyDir(from, to, { skip = () => false } = {}) {
   await fs.mkdir(to, { recursive: true });
   for (const entry of await fs.readdir(from, { withFileTypes: true })) {
@@ -56,9 +65,14 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   // 1. Rozhraní aplikace: všechno kromě jeho index.html zůstane v kořeni.
   await copyDir(path.join(root, 'public'), out, { skip: (rel) => rel === path.join('public', 'index.html') });
 
-  // 2. index.html aplikace se přestěhuje na /app (čistá adresa bez přípony).
+  // 2. index.html aplikace se přestěhuje na /app (čistá adresa bez přípony) a dostane značku,
+  //    že je to kopie na webu. Rozhraní se pak neptá neexistujícího serveru, jestli žije –
+  //    ušetří dotaz a hlavně nenechá na veřejné stránce 404 v konzoli.
   await fs.mkdir(path.join(out, 'app'), { recursive: true });
-  await fs.copyFile(path.join(root, 'public', 'index.html'), path.join(out, 'app', 'index.html'));
+  await fs.writeFile(
+    path.join(out, 'app', 'index.html'),
+    znackaStatickeKopie(await fs.readFile(path.join(root, 'public', 'index.html'), 'utf8')),
+  );
 
   // 3. Manifest a service worker se narovnají na novou adresu rozhraní.
   await fs.writeFile(path.join(out, 'manifest.webmanifest'), manifestProWeb(await fs.readFile(path.join(root, 'public', 'manifest.webmanifest'), 'utf8')));

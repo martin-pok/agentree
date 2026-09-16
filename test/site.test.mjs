@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSite, manifestProWeb, serviceWorkerProWeb, APP_PATH } from '../scripts/build-site.mjs';
+import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, APP_PATH } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -20,7 +20,11 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
 
   const aplikace = await fs.readFile(path.join(out, 'app/index.html'), 'utf8');
   assert.match(aplikace, /<aside class="sidebar">/, 'rozhraní aplikace patří na /app');
-  assert.equal(aplikace, await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8'), 'kopie se nesmí lišit od aplikace');
+  // Kopie se od aplikace smí lišit přesně v jedné věci: značce „tady žádný server není“.
+  // Cokoli dalšího by znamenalo, že se rozhraní na webu začalo rozcházet s tím v aplikaci.
+  const zdroj = await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8');
+  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">', '');
+  assert.equal(bezZnacky, zdroj, 'kopie se od aplikace nesmí lišit v ničem jiném než ve značce');
 
   // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) – musí tam být, jinak je /app rozbité.
   for (const soubor of ['styles.css', 'js/app.js', 'js/boot.js', 'fonts/fonts.css', 'brand/agenteeq-mark-dark.svg', 'logos/claude.svg']) {
@@ -101,4 +105,29 @@ test('web: stránka je česky, má popis pro vyhledávače a odkaz na stažení'
   assert.ok(html.includes('releases/latest'), 'hlavní výzva vede na stažení');
   // Alternativní text u obrázků: prázdný u dekorace, vyplněný u obsahových.
   for (const m of html.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
+});
+
+// Kopie rozhraní na webu o sobě musí vědět předem. Bez značky by se ptala neexistujícího
+// serveru, jestli žije, a nechala by na veřejné stránce 404 v konzoli – přesně to, co
+// CLAUDE.md zakazuje („čistá konzole“).
+test('web: kopie rozhraní na /app ví, že za ní žádný server není', async () => {
+  const out = await tempDir('web-znacka-');
+  await buildSite({ out });
+
+  const naWebu = await fs.readFile(path.join(out, 'app', 'index.html'), 'utf8');
+  assert.match(naWebu, /<meta name="agenteeq-staticka-kopie" content="1">/, 'kopie na webu značku má');
+
+  const vAplikaci = await fs.readFile(path.join(ROOT, 'public', 'index.html'), 'utf8');
+  assert.doesNotMatch(vAplikaci, /agenteeq-staticka-kopie/,
+    'v aplikaci značka být nesmí – tam server je a rozhraní se ho ptát má');
+
+  // Značka se vkládá do <head>, aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
+  assert.ok(naWebu.indexOf('agenteeq-staticka-kopie') < naWebu.indexOf('</head>'));
+});
+
+test('značka se do stránky nepřidá dvakrát', () => {
+  const jednou = znackaStatickeKopie('<!doctype html><html><head>\n<title>x</title></head></html>');
+  assert.equal(jednou.match(/agenteeq-staticka-kopie/g).length, 1);
+  assert.equal(znackaStatickeKopie(jednou), jednou, 'opakované sestavení nic nepřidá');
+  assert.throws(() => znackaStatickeKopie('<html><body>bez hlavičky</body></html>'), /head/);
 });

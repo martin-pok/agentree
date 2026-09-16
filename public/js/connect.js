@@ -11,8 +11,14 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 // Agenteeq se pozná podle odpovědi /api/health. Cokoli jiného (404 z hostingu, HTML místo JSON)
 // znamená, že tady žádný server není. Síťová chyba naopak znamená výpadek vlastního serveru –
 // tam zůstává původní hláška „server neběží“ a čekání na návrat.
-export async function jeStatickaKopie(fetchFn = fetch) {
+// `doc` jde přes globalThis, ne přímo: v testech (Node) žádný dokument není a holý
+// `document` by vyhodil ReferenceError dřív, než se funkce vůbec rozběhne.
+export async function jeStatickaKopie(fetchFn = fetch, doc = globalThis.document) {
   if (location.protocol === 'file:') return false;
+  // Kopie rozhraní na webu o sobě ví předem (značku vkládá scripts/build-site.mjs), takže
+  // se na neexistující server vůbec neptá. Bez toho by každé otevření /app nechalo
+  // v konzoli 404 – na veřejné stránce zbytečná špína a dotaz navíc.
+  if (doc?.querySelector?.('meta[name="agenteeq-staticka-kopie"]')) return true;
   try {
     const res = await fetchFn('/api/health', { cache: 'no-store' });
     if (!res.ok) return true;
