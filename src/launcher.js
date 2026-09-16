@@ -62,7 +62,7 @@ export function launchTargets(env) {
     out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale nemá stažený žádný model (ollama pull llama3.2).' });
   }
   for (const [id, w] of Object.entries(WEB)) {
-    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Otevře novou konverzaci se zadáním (zadání je i ve schránce).' : 'Otevře aplikaci; zadání vložíš ze schránky (⌘V).' });
+    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Zadání se předvyplní do nové konverzace; zůstane i ve schránce (⌘V).' : 'Zadání čeká ve schránce (⌘V) – vložíš ho do pole zprávy.' });
   }
   return out;
 }

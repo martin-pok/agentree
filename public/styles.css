@@ -604,6 +604,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .seg button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); }
 .seg--light { box-shadow: none; background: transparent; padding: 0; gap: 4px; }
 .seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+/* Rolovatelný přepínač: doznění na straně, kam se dá ještě posunout (značky nastavuje ui.js).
+   Bez něj se poslední popisek usekne uprostřed slova a vypadá to jako chyba sazby. */
+.seg.je-vpravo { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
+.seg.je-vlevo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px); mask-image: linear-gradient(90deg, transparent, #000 32px); }
+.seg.je-vlevo.je-vpravo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { height: 36px; padding: 0 14px 0 10px; border-radius: 18px; border: 1px solid var(--line); background: transparent; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); transition: all .2s; }
 .chip:hover { border-color: var(--ink); }
@@ -1189,6 +1194,12 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 }
 @media (max-width: 560px) {
   .chart-x span.is-minor, .tl-ticks span.is-minor { display: none; }
+  /* Na telefonu si stavový štítek bral 84 px z 223, které v řádku zbyly, a na název konverzace
+     zůstalo 123 px – „Zmigruj f…“. Přitom stav nese i barevná tečka na dlaždici s logem.
+     Štítek proto jde pod název, do druhé řádky téhož sloupce, a název smí být dvouřádkový. */
+  .row { grid-template-columns: 40px minmax(0, 1fr); }
+  .row .cell-status { grid-column: 2; justify-self: start; }
+  .row .cell-title b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .pulse-bar { grid-template-columns: minmax(0, 1fr); padding: 16px 18px 0; gap: 12px; margin-bottom: 24px; }
   .pb-main { gap: 12px; }
   .pb-num { font-size: 44px; }

@@ -193,7 +193,10 @@ function update() {
     : `<div class="cta-card card">${ICON.wallet}<div><strong>Nastav si měsíční rozpočet</strong><p class="muted small">Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.</p></div><button class="btn" type="button" data-action="budgets">Nastavit rozpočet</button></div>`);
 
   const used = [...new Set(sp.months.flatMap((m) => Object.keys(m.services)))];
-  fill(el, 'months', columnChart({
+  // Osa je tvrzení o řádu čísel. Když se za půl roku nic nezapsalo, nakreslil by graf
+  // stupnici „4 Kč, 3 Kč, 2 Kč…“ nad prázdnou plochou – vymyšlené měřítko místo dat.
+  const jeCoUkazat = sp.months.some((m) => m.total > 0) || total > 0;
+  fill(el, 'months', jeCoUkazat ? columnChart({
     columns: sp.months.map((m) => {
       const [y, mm] = m.key.split('-').map(Number);
       return {
@@ -207,8 +210,8 @@ function update() {
     format: money,
     axisFormat: (x) => fmtMoney(x, sp.currency, { compact: true }),
     label: 'Útrata za posledních 6 měsíců',
-  }));
-  fill(el, 'mlegend', used.map((k) => `<span class="legend-item"><i class="swatch" style="background:${serviceColor(sp, k)}"></i>${esc(sp.services[k]?.label || k)}</span>`).join(''));
+  }) : emptyState({ title: 'Zatím žádná útrata', text: 'Jakmile zapíšeš první výdaj, uvidíš tu vývoj po měsících.' }));
+  fill(el, 'mlegend', jeCoUkazat ? used.map((k) => `<span class="legend-item"><i class="swatch" style="background:${serviceColor(sp, k)}"></i>${esc(sp.services[k]?.label || k)}</span>`).join('') : '');
 
   const kinds = Object.entries(sp.month.kinds).filter(([, x]) => x > 0);
   fill(el, 'kinds', kinds.length

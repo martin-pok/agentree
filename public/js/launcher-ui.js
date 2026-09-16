@@ -7,12 +7,15 @@ import { pickFolder, recentFolders, pdot } from './projects-ui.js';
 
 const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
+// Nápověda k režimu se skládá s poznámkou cíle (`t.note`) do jedné věty za druhou. Každá
+// proto říká něco jiného: režim to, kde se agent otevře, poznámka to, co je na daném cíli
+// zvláštní. Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy.
 const MODE_HINT = {
   terminal: 'Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.',
   background: 'Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.',
   app: 'Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.',
-  web: 'Otevře službu v prohlížeči; zadání je navíc ve schránce (⌘V).',
-  local: 'Model běží na tvém Macu – zdarma a bez odesílání dat. Odpovídá přímo v Agenteeq.',
+  web: 'Otevře službu v prohlížeči.',
+  local: 'Agent odpovídá přímo tady v Agenteeq.',
 };
 
 function load() {

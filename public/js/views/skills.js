@@ -8,6 +8,29 @@ const v = { el: null, items: null, q: '', source: 'all', origin: 'all', sort: 'n
 
 const kb = (bytes) => `${fmtNum(Math.max(1, Math.round(bytes / 1024)))} kB`;
 
+// `hidden` vezme prvek i klávesnici a čtečkám obrazovky, ne jen očím.
+function ukaz(el, blok, ano) {
+  const uzel = el.querySelector(`[data-blok="${blok}"]`);
+  if (uzel) uzel.hidden = !ano;
+}
+
+/**
+ * Které ovládací prvky mají nad daným seznamem vůbec smysl.
+ *
+ * Ovládání, které nemá co ovládat, jen zabírá místo a budí dojem, že je něco skryté:
+ * při jediném zdroji vrátí „Vše“ i ten zdroj tentýž seznam a nad prázdným seznamem nemá
+ * smysl ani hledání, ani řazení. Zbude prázdný stav, který řekne, co Agenteeq hledá.
+ */
+export function ovladani({ pocet, zdroju, puvodu }) {
+  return {
+    hledani: pocet > 0,
+    zdroje: zdroju > 1,
+    popis: pocet > 0,
+    razeni: pocet > 1,
+    puvod: puvodu > 1,
+  };
+}
+
 // Pořadí od nejužitečnějšího: uživatel nejčastěji hledá to svoje.
 const PUVOD = [['own', 'Moje'], ['anthropic', 'Od Anthropicu'], ['openai', 'Od OpenAI'], ['plugin', 'Z pluginu']];
 
@@ -122,15 +145,15 @@ function mount(el) {
   v.el = el;
   el.innerHTML = `
     <div data-enter style="--i:0" data-region="sum"></div>
-    <div class="toolbar" data-enter style="--i:1">
-      <div class="seg seg--light" role="group" aria-label="Filtrovat podle zdroje" data-region="sources"></div>
+    <div class="toolbar" data-enter style="--i:1" data-blok="hledani">
+      <div class="seg seg--light" role="group" aria-label="Filtrovat podle zdroje" data-region="sources" data-blok="zdroje"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">Hledat dovednost</span><input type="search" data-q placeholder="Název, popis nebo cesta…" autocomplete="off"></label>
     </div>
-    <div class="sk-bar" data-enter style="--i:2">
+    <div class="sk-bar" data-enter style="--i:2" data-blok="popis">
       <p class="note">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
-      <div class="seg seg--light seg--sm" role="group" aria-label="Řazení" data-region="sort"></div>
+      <div class="seg seg--light seg--sm" role="group" aria-label="Řazení" data-region="sort" data-blok="razeni"></div>
     </div>
-    <div class="sk-filtry" data-enter style="--i:2">
+    <div class="sk-filtry" data-enter style="--i:2" data-blok="puvod">
       <span class="sk-filtr-popis">Původ</span>
       <div class="seg seg--light seg--sm" role="group" aria-label="Filtrovat podle původu" data-region="origins"></div>
     </div>
@@ -180,13 +203,22 @@ function update() {
   fill(el, 'sum', v.items.length ? souhrnHtml(v.items) : '');
 
   const sources = [...new Set(v.items.map((s) => s.source))];
+  const pritomne = PUVOD.filter(([k]) => v.items.some((s) => s.origin === k));
+  // Filtr, který se chystáme schovat, nesmí zůstat zapnutý – uživatel by pak koukal na
+  // zúžený seznam a neměl čím ho vrátit zpátky.
+  const viditelne = ovladani({ pocet: v.items.length, zdroju: sources.length, puvodu: pritomne.length });
+  if (!viditelne.zdroje) v.source = 'all';
+  if (!viditelne.puvod) v.origin = 'all';
+  if (!viditelne.razeni) v.sort = 'name';
+
   fill(el, 'sources', [['all', 'Vše'], ...sources.map((s) => [s, s])]
     .map(([k, label]) => `<button type="button" data-source-filter="${esc(k)}" aria-pressed="${v.source === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.source === k).length}</span></button>`).join(''));
   fill(el, 'sort', RAZENI.map(([k, label]) => `<button type="button" data-sort="${k}" aria-pressed="${v.sort === k}">${esc(label)}</button>`).join(''));
   // Ukazujeme jen původy, které se mezi dovednostmi opravdu vyskytují – prázdné tlačítko nemá smysl.
-  const pritomne = PUVOD.filter(([k]) => v.items.some((s) => s.origin === k));
   fill(el, 'origins', [['all', 'Vše'], ...pritomne]
     .map(([k, label]) => `<button type="button" data-origin-filter="${esc(k)}" aria-pressed="${v.origin === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.origin === k).length}</span></button>`).join(''));
+
+  for (const [blok, ano] of Object.entries(viditelne)) ukaz(el, blok, ano);
 
   const q = norm(v.q.trim());
   const list = serad(v.items.filter((s) => (v.source === 'all' || s.source === v.source)

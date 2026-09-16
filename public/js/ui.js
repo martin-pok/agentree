@@ -8,8 +8,44 @@ export function fill(root, name, html) {
   if (!el || el._html === html) return false;
   el.innerHTML = html;
   el._html = html;
+  oznacRolovani();
   return true;
 }
+
+/* ---------- Vodorovné rolování: dát najevo, že řádek pokračuje ---------- */
+//
+// Segmentované přepínače se na úzkém okně rolují vodorovně a posuvník je schovaný. Bez
+// další značky se poslední popisek useknul uprostřed slova („Od největ“) a vypadalo to
+// jako chyba sazby, ne jako „vpravo je toho víc“. Značky zapnou měkké doznění na té
+// straně, kam se dá ještě posunout – když se vejde všechno, nekreslí se nic, jinak by
+// doznění zbytečně stmívalo krajní tlačítko.
+
+function znacky(el) {
+  const zbyva = el.scrollWidth - el.clientWidth;
+  el.classList.toggle('je-vlevo', zbyva > 1 && el.scrollLeft > 1);
+  el.classList.toggle('je-vpravo', zbyva > 1 && el.scrollLeft < zbyva - 1);
+}
+
+let naplanovano = false;
+export function oznacRolovani() {
+  // Mimo prohlížeč (testy nad těmito moduly běží v Node) není co značit.
+  if (typeof document === 'undefined' || typeof requestAnimationFrame !== 'function') return;
+  if (naplanovano) return;
+  naplanovano = true;
+  // Po vložení HTML ještě neproběhlo rozvržení; měřit hned by dalo scrollWidth starého obsahu.
+  requestAnimationFrame(() => {
+    naplanovano = false;
+    for (const el of document.querySelectorAll('.seg')) {
+      if (!el._rolovani) {
+        el._rolovani = true;
+        el.addEventListener('scroll', () => znacky(el), { passive: true });
+      }
+      znacky(el);
+    }
+  });
+}
+
+if (typeof window !== 'undefined') window.addEventListener('resize', oznacRolovani, { passive: true });
 
 /* ---------- Animovaná čísla ---------- */
 
