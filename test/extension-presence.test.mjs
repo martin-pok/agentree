@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { startTestServer, api } from './helpers.mjs';
+import { startTestServer, api, waitFor } from './helpers.mjs';
 import { normalizeData } from '../src/datastore.js';
 
 // Aplikace musí o rozšíření říkat pravdu. Dřív „věděla“ o rozšíření jen z konverzací poslaných
@@ -61,8 +61,14 @@ test('stav rozšíření: nespárováno, spárováno, ozvalo se, zastaralá verz
   });
 
   await t.test('spárování i verze se ukládají na disk – přežijí restart', async () => {
-    await new Promise((r) => setTimeout(r, 400));
-    const data = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8'));
+    // Datastore zapisuje se zpožděním (debounce 300 ms v src/datastore.js). Čekat pevnou
+    // dobu je závod: na vytíženém stroji se zápis nestihne a test spadne na tom, že soubor
+    // ještě nemá verzi – přesně tak padal běh na macOS runneru. Čeká se proto na stav,
+    // ne na čas; co se ověřuje, zůstává stejné.
+    const data = await waitFor(async () => {
+      const d = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8'));
+      return d.extension?.pairedAt > 0 && /^\d+\.\d+\.\d+$/.test(d.extension.version || '') ? d : null;
+    });
     assert.ok(data.extension.pairedAt > 0);
     assert.match(data.extension.version, /^\d+\.\d+\.\d+$/);
   });
