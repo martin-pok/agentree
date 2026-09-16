@@ -180,7 +180,24 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
   };
 }
 
-const money = (v, currency) => `${Math.round(v).toLocaleString('cs-CZ')} ${currency}`;
+// Peníze v upozornění musí vypadat stejně jako na obrazovce Útrata. Dřív tu stál kód měny
+// („1 319 CZK“), zatímco rozhraní psalo „1 319 Kč“ – jedna a tatáž částka dvěma způsoby.
+// Pravidla jsou schválně shodná s `fmtMoney` v public/js/format.js; test hlídá, že se
+// obě strany nerozejdou.
+const money = (v, currency) => {
+  try {
+    return new Intl.NumberFormat('cs-CZ', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: currency === 'CZK' ? 0 : 2,
+      minimumFractionDigits: 0,
+    }).format(v || 0);
+  } catch {
+    return `${Math.round(v).toLocaleString('cs-CZ')} ${currency}`;
+  }
+};
+
+export const castkaProUpozorneni = money;
 
 // Upozornění na rozpočet: vždy jen nejvyšší překročený práh, nižší prahy se označí jako vyřízené.
 export function budgetAlertCandidates(summary) {
@@ -194,7 +211,7 @@ export function budgetAlertCandidates(summary) {
       alsoKeys: hit === 100 ? [keyFor(80)] : [],
       level: hit === 100 ? 'critical' : 'warning',
       kind: 'budget',
-      title: hit === 100 ? `Rozpočet překročen: ${b.label}` : `Vyčerpáno ${Math.floor(b.pct)} % rozpočtu: ${b.label}`,
+      title: hit === 100 ? `Rozpočet překročen: ${b.label}` : `Vyčerpáno ${Math.round(b.pct)} % rozpočtu: ${b.label}`,
       body: `Tento měsíc ${money(b.spent, summary.currency)} z ${money(b.budget, summary.currency)}.`,
     });
   }
