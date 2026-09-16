@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { appSupportDir, openCommand, tailscalePaths, JE_MAC, JE_WINDOWS } from '../src/platform.js';
 import { originOf } from '../src/skills.js';
+import { RUNTIMES } from '../src/connectors/processes.js';
+import { detectLocalAgents } from '../src/connectors/local-agents.js';
 import { jeAbsolutniCesta, castiCesty, shortPath } from '../public/js/format.js';
 
 test('appSupportDir vychází ze zadaného domova a nikdy nesáhne mimo něj', () => {
@@ -89,4 +91,55 @@ test('domovská složka se v rozhraní zkrátí na vlnovku na všech systémech'
   assert.equal(shortPath('/opt/nastroje'), '/opt/nastroje', 'co není domov, se nezkracuje');
   assert.equal(shortPath('C:\\Program Files\\x'), 'C:\\Program Files\\x');
   assert.equal(shortPath(''), '');
+});
+
+// ── Rozpoznání běžících aplikací na obou systémech ───────────────────────────
+//
+// Výpis procesů vypadá na každém systému jinak: /Applications/Cursor.app/… proti
+// C:\…\Cursor.exe. Dřív tu stály výrazy psané jen pro macOS, takže na Windows
+// nesedl ani jeden a konektor hlásil nulu, i když výpis procesů fungoval.
+
+test('běžící aplikace se poznají z macOS i windowsového výpisu', () => {
+  const pripady = [
+    ['/Applications/Cursor.app/Contents/MacOS/Cursor', 'cursor'],
+    ['C:\\Users\\jana\\AppData\\Local\\Programs\\cursor\\Cursor.exe', 'cursor'],
+    ['/usr/local/bin/claude --session-id x', 'claude-code'],
+    ['C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe -p', 'claude-code'],
+    ['/opt/homebrew/bin/codex exec', 'codex'],
+    ['C:\\Users\\jana\\AppData\\Roaming\\npm\\codex.exe exec', 'codex'],
+    ['/Applications/Visual Studio Code.app/Contents/MacOS/Electron', 'vscode'],
+    ['C:\\Users\\x\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe', 'vscode'],
+    ['/Applications/ChatGPT.app/Contents/MacOS/ChatGPT', 'chatgpt'],
+    ['C:\\Program Files\\Ollama\\ollama.exe serve', 'ollama'],
+  ];
+  for (const [radek, cekany] of pripady) {
+    assert.equal(RUNTIMES.find((r) => r.test(radek))?.id, cekany, radek);
+  }
+});
+
+test('Claude Code a Claude Desktop se nespletou — rozhoduje velikost písmene', () => {
+  // `claude` je nástroj příkazové řádky, `Claude` desktopová aplikace. Na macOS se tím
+  // ty dva odlišují spolehlivě a stejná zvyklost platí i pro claude.exe vs Claude.exe.
+  const desktop = ['/Applications/Claude.app/Contents/MacOS/Claude', 'C:\\Users\\x\\AppData\\Local\\AnthropicClaude\\Claude.exe'];
+  const cli = ['/usr/local/bin/claude -p', 'C:\\Users\\x\\AppData\\Roaming\\npm\\claude.exe --version'];
+  for (const a of desktop) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-desktop', a);
+  for (const a of cli) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
+});
+
+test('vnitřní codex aplikace ChatGPT se nepočítá jako samostatné Codex CLI', () => {
+  assert.equal(RUNTIMES.find((r) => r.test('/Applications/ChatGPT.app/Contents/Resources/codex -c x app-server')), undefined);
+});
+
+test('lokální agenti se najdou i ve windowsovém výpisu a systémové procesy ne', () => {
+  const vypis = [
+    '1234 00:20 10.0 204800 C:\\Program Files\\Ollama\\ollama.exe serve',
+    '2345 00:30 15.0 307200 C:\\Python312\\python.exe C:\\Users\\jana\\ComfyUI\\main.py --listen',
+    '3456 00:05 2.0 51200 C:\\Users\\jana\\AppData\\Local\\Programs\\LM Studio\\LM Studio.exe',
+    '5678 00:12 8.0 102400 C:\\tools\\llama-server.exe -m C:\\modely\\qwen2.5-7b.gguf --port 8000',
+    // Systémové procesy Windows: ve System32 leží stovky procesů se slovy jako „serve“.
+    '4567 00:40 0.5 51200 C:\\Windows\\System32\\svchost.exe -k NetworkService',
+    '4568 00:40 0.5 51200 C:\\Windows\\SysWOW64\\rundll32.exe inference.dll',
+  ].join('\n');
+  const nalezeni = detectLocalAgents(vypis, { ports: [] });
+  assert.deepEqual(nalezeni.map((a) => a.id).sort(), ['comfyui', 'llama-cpp', 'lmstudio', 'ollama']);
 });

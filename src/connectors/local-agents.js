@@ -3,21 +3,21 @@
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
-import { etimeToSec } from './processes.js';
+import { etimeToSec, program, aplikace } from './processes.js';
 import { clip } from '../util.js';
-import { processList, listeningPorts } from '../platform.js';
+import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
 
 // Katalog známých lokálních běhových prostředí. `match` dostane celý řetězec argumentů
 // jednoho procesu (`ps ... args=`) a vrátí, jestli proces patří k tomuto nástroji.
 export const KNOWN_LOCAL = [
-  { id: 'ollama', name: 'Ollama', kind: 'server', match: /(^|\/)ollama(\s|$)/, ports: [11434] },
-  { id: 'lmstudio', name: 'LM Studio', kind: 'app', match: (a) => a.includes('/LM Studio.app/Contents/MacOS/') || /(^|\/)lms(\s|$)/.test(a), ports: [1234] },
-  { id: 'llama-cpp', name: 'llama.cpp', kind: 'cli', match: (a) => /(^|\/)(llama-server|llama-cli)(\s|$)/.test(a) || (/(^|\/)main(\s|$)/.test(a) && /\.gguf\b/i.test(a)) },
+  { id: 'ollama', name: 'Ollama', kind: 'server', match: program('ollama'), ports: [11434] },
+  { id: 'lmstudio', name: 'LM Studio', kind: 'app', match: (a) => aplikace('LM Studio').test(a) || program('lms').test(a), ports: [1234] },
+  { id: 'llama-cpp', name: 'llama.cpp', kind: 'cli', match: (a) => program('llama-server', 'llama-cli').test(a) || (program('main').test(a) && /\.gguf\b/i.test(a)) },
   { id: 'vllm', name: 'vLLM', kind: 'server', match: /vllm\.entrypoints|python3?\s+-m\s+vllm\b/, ports: [8000] },
   { id: 'comfyui', name: 'ComfyUI', kind: 'server', match: (a) => /ComfyUI/i.test(a) && /main\.py/.test(a), ports: [8188] },
   { id: 'text-generation-webui', name: 'Text Generation WebUI', kind: 'server', match: /text-generation-webui/i, ports: [7860] },
   { id: 'koboldcpp', name: 'KoboldCpp', kind: 'server', match: /koboldcpp/i, ports: [5001] },
-  { id: 'jan', name: 'Jan', kind: 'app', match: /\/Jan\.app\/Contents\/MacOS\//i },
+  { id: 'jan', name: 'Jan', kind: 'app', match: aplikace('Jan') },
   { id: 'gpt4all', name: 'GPT4All', kind: 'app', match: /GPT4All/i },
   { id: 'localai', name: 'LocalAI', kind: 'server', match: /local-ai|localai/i, ports: [8080] },
   { id: 'open-webui', name: 'Open WebUI', kind: 'server', match: /open[-_]webui/i, ports: [8080] },
@@ -46,9 +46,16 @@ const MODELS_DIR = /models\//i;
 const PY_OR_NODE = /(^|\/)(python3?|node)(\s|$)/;
 const INFERENCE_PORTS = new Set([11434, 1234, 8188, 5000, 5001, 7860, 8000, 8080, 30000]);
 
+// Systémové procesy, které se nikdy neoznačují. Každý systém je má jinde a heuristika
+// pro „neznámý model“ by na nich jinak našla kdeco – ve Windows\\System32 leží stovky
+// procesů se slovy jako „serve“ nebo „inference“ v cestě.
+// Windows nemusí být na disku C, takže se nesrovnává s jednou cestou, ale se vzorem.
+// Pokrývá System32, SysWOW64, WinSxS i všechno ostatní pod systémovou složkou.
+const SYSTEMOVE = /^(\/System\/Library|[A-Za-z]:\\Windows\\)/;
+
 function isExcluded(args) {
   if (!args) return true;
-  if (args.startsWith('/System/Library')) return true;
+  if (SYSTEMOVE.test(args)) return true;
   return EXCLUDE.test(args);
 }
 
@@ -187,7 +194,7 @@ export function createLocalAgentsConnector(ctx) {
     provider: 'local',
     kind: 'local',
     verified: false,
-    source: 'ps · lsof',
+    source: JE_WINDOWS ? 'Win32_Process · Get-NetTCPConnection' : 'ps · lsof',
     description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
     async start() {
       await poll();

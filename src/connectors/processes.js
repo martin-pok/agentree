@@ -1,21 +1,57 @@
-import { processList } from '../platform.js';
+import { processList, JE_WINDOWS } from '../platform.js';
+
+// ── Jak se pozná program v příkazové řádce ───────────────────────────────────
+//
+// Výpis procesů vypadá na každém systému jinak:
+//
+//   macOS    /Applications/Cursor.app/Contents/MacOS/Cursor
+//   Windows  C:\Users\jana\AppData\Local\Programs\cursor\Cursor.exe
+//
+// Dřív tu stály regulární výrazy psané jen pro macOS – s lomítkem a bez přípony –
+// takže na Windows nesedl ani jeden a konektor hlásil nulu, i když výpis procesů
+// fungoval. Místo osmnácti platformových výjimek jsou tu dva pomocníci.
+
+const utec = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Přípona .exe se píše různě, jméno programu ale ne.
+const EXE = '(\\.[eE][xX][eE])?';
+
+/**
+ * Program spuštěný z příkazové řádky – pozná se podle jména bez ohledu na to, jestli
+ * je cesta psaná lomítkem nebo zpětným lomítkem a jestli má příponu `.exe`.
+ * `program('claude')` sedne na `/usr/local/bin/claude`, `C:\…\claude.exe` i `claude --help`.
+ *
+ * Na velikosti písmen ZÁLEŽÍ, a je to schválně: `claude` je nástroj příkazové řádky,
+ * `Claude` je desktopová aplikace. Na macOS se tím ty dva odlišují spolehlivě a stejná
+ * zvyklost platí i pro `claude.exe` vs `Claude.exe`.
+ */
+export const program = (...jmena) =>
+  new RegExp(`(^|[\\\\/])(${jmena.map(utec).join('|')})${EXE}(\\s|$)`);
+
+/**
+ * Desktopová aplikace – na macOS balíček `.app`, na Windows spustitelný soubor.
+ * Windows jména jsou zvyklost, ne ověřený údaj: viz docs/CONNECTORS.md, kde jsou
+ * vedená jako 🧪 Beta, dokud je někdo nepotvrdí na skutečném stroji.
+ */
+export const aplikace = (bundle, exe = bundle) =>
+  new RegExp(`[\\\\/]${utec(bundle)}\\.app[\\\\/]Contents[\\\\/]MacOS[\\\\/]|[\\\\/]${utec(exe)}${EXE.replace('?', '')}(\\s|$)`);
 
 export const RUNTIMES = [
-  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', test: (a) => a.startsWith('/Applications/Claude.app/Contents/MacOS/Claude') },
-  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', test: (a) => /\/claude(\s|$)/.test(a) && !/disclaimer|chrome-native-host/.test(a) },
-  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', test: (a) => a.startsWith('/Applications/ChatGPT.app/Contents/MacOS/ChatGPT') },
+  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', test: (a) => aplikace('Claude').test(a) },
+  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', test: (a) => program('claude').test(a) && !/disclaimer|chrome-native-host/.test(a) },
+  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', test: (a) => aplikace('ChatGPT').test(a) },
   // Aplikace ChatGPT si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
-  { id: 'codex', name: 'Codex', provider: 'openai', test: (a) => /(^|\/)codex(\s|$)/.test(a) && !a.includes('/ChatGPT.app/') },
-  { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', test: (a) => /(^|\/)copilot(\s|$)/.test(a) && !a.includes('.app/') },
-  { id: 'vscode', name: 'VS Code', provider: 'github', test: (a) => /\/Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\//.test(a) },
-  { id: 'cursor', name: 'Cursor', provider: 'cursor', test: (a) => a.startsWith('/Applications/Cursor.app/Contents/MacOS/Cursor') },
-  { id: 'ms-copilot', name: 'Microsoft Copilot', provider: 'microsoft', test: (a) => /\/(Microsoft )?Copilot\.app\/Contents\/MacOS\//.test(a) },
-  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', test: (a) => /(^|\/)gemini(\s|$)/.test(a) },
-  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', test: (a) => /(^|\/)qwen(\s|$)/.test(a) },
-  { id: 'perplexity', name: 'Perplexity', provider: 'perplexity', test: (a) => /\/Perplexity\.app\/Contents\/MacOS\//.test(a) },
-  { id: 'grok', name: 'Grok', provider: 'xai', test: (a) => /\/Grok\.app\/Contents\/MacOS\//.test(a) },
-  { id: 'ollama', name: 'Ollama', provider: 'local', test: (a) => /(^|\/)ollama(\s|$)/.test(a) || a.includes('/Ollama.app/Contents/MacOS/') },
-  { id: 'lmstudio', name: 'LM Studio', provider: 'local', test: (a) => a.includes('/LM Studio.app/Contents/MacOS/') },
+  { id: 'codex', name: 'Codex', provider: 'openai', test: (a) => program('codex').test(a) && !/[\\/]ChatGPT\.app[\\/]/.test(a) },
+  { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', test: (a) => program('copilot').test(a) && !/\.app[\\/]/.test(a) },
+  { id: 'vscode', name: 'VS Code', provider: 'github', test: (a) => aplikace('Visual Studio Code', 'Code').test(a) || aplikace('Visual Studio Code - Insiders', 'Code - Insiders').test(a) },
+  { id: 'cursor', name: 'Cursor', provider: 'cursor', test: (a) => aplikace('Cursor').test(a) },
+  { id: 'ms-copilot', name: 'Microsoft Copilot', provider: 'microsoft', test: (a) => aplikace('Copilot').test(a) || aplikace('Microsoft Copilot', 'Microsoft.Copilot').test(a) },
+  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', test: (a) => program('gemini').test(a) },
+  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', test: (a) => program('qwen').test(a) },
+  { id: 'perplexity', name: 'Perplexity', provider: 'perplexity', test: (a) => aplikace('Perplexity').test(a) },
+  { id: 'grok', name: 'Grok', provider: 'xai', test: (a) => aplikace('Grok').test(a) },
+  { id: 'ollama', name: 'Ollama', provider: 'local', test: (a) => program('ollama').test(a) || aplikace('Ollama').test(a) },
+  { id: 'lmstudio', name: 'LM Studio', provider: 'local', test: (a) => aplikace('LM Studio').test(a) || program('lms').test(a) },
 ];
 
 export function etimeToSec(t) {
@@ -73,11 +109,11 @@ export function createProcessesConnector(ctx) {
 
   return {
     id: 'processes',
-    name: 'Aplikace na tomto Macu',
+    name: JE_WINDOWS ? 'Aplikace na tomto počítači' : 'Aplikace na tomto Macu',
     provider: 'other',
     kind: 'local',
     verified: true,
-    source: 'ps · localhost:11434',
+    source: JE_WINDOWS ? 'Win32_Process · localhost:11434' : 'ps · localhost:11434',
     description: 'Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.',
     async start() {
       await poll();
