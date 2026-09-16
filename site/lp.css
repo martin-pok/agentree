@@ -166,6 +166,9 @@ p { margin: 0; text-wrap: pretty; }
 .hero h1 { margin: 16px 0 24px; }
 .hero .lead { margin-bottom: 32px; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.cta-note { margin: 14px 0 0; max-width: 46ch; font-size: 14px; color: var(--mute); }
+.cta-note a { color: inherit; text-underline-offset: 3px; }
+.on-stage .cta-note { color: rgba(244, 243, 247, .72); }
 @media (max-width: 460px) { .cta-row { display: grid; } .cta-row .btn { width: 100%; } }
 .trust { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 28px; font-size: 14px; color: var(--mute); }
 .trust li { list-style: none; display: flex; align-items: center; gap: 8px; }
