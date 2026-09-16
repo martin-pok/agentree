@@ -1,0 +1,178 @@
+# Vydání sestavené v CI: `git tag v0.12.0 && git push --tags`.
+#
+# Proč to existuje vedle `npm run release:mac`: ten skript umí celou cestu, ale běží jen na
+# macOS s nástroji Xcode. Když u Macu zrovna nejsi, nejde vydat vůbec nic. Tady se .app
+# sestaví na runneru s macOS, plášť pro Windows na runneru s Windows a rozšíření kdekoli.
+#
+# Co tenhle workflow zásadně nedělá: nepublikuje. Vydání vzniká jako **koncept** (`--draft`),
+# protože zveřejnění je krok ven ke stažení a ten patří člověku. Zveřejníš ho jedním
+# kliknutím na stránce vydání, nebo příkazem `gh release edit v<verze> --draft=false`.
+#
+# Podpis: build použije Developer ID, jen když je v proměnných prostředí. Bez něj podepíše
+# ad-hoc a `scripts/release-notes.mjs` to napíše do popisu i s příkazem na sundání karantény.
+# Nic se nepředstírá — popis vydání odpovídá tomu, co se opravdu sestavilo.
+name: Vydání
+
+on:
+  push:
+    tags: ['v*']
+  # Ruční spuštění nad existujícím tagem: užitečné, když jeden runner spadne a stačí to zopakovat.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag, ze kterého se vydání sestaví (např. v0.12.0)'
+        required: true
+
+permissions:
+  contents: write # bez práva zápisu nejde vydání založit
+
+jobs:
+  mac:
+    name: aplikace pro Mac (Apple Silicon)
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.tag || github.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      # Vydává se jen to, co prošlo. Testy tu nejsou formalita: na Macu běží i ty, které se
+      # na Linuxu přeskakují. Stačí jednou — Intel build níž překládá tentýž kód.
+      - name: Kontrola a testy
+        run: npm run check && npm test
+
+      - name: Sestavit aplikaci
+        env:
+          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
+          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
+        run: npm run build:mac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64
+          path: |
+            dist/Agenteeq-*-macOS-*.zip
+            dist/latest-build.json
+          if-no-files-found: error
+
+  # Starší Macy s Intelem. Aplikace v sobě nese binárku Node, a ta je vázaná na architekturu,
+  # takže jeden archiv obě nezvládne.
+  #
+  # Vlastní úloha, ne další větev matice: `vydani` níž na ni čeká, ale nevyžaduje její úspěch.
+  # Kdyby GitHub runner `macos-13` vyřadil, vydání vznikne bez aplikace pro Intel a popis ji
+  # nebude zmiňovat — `scripts/release-notes.mjs` píše jen o souborech, které opravdu jsou.
+  mac-intel:
+    name: aplikace pro Mac (Intel)
+    runs-on: macos-13
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.tag || github.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Sestavit aplikaci
+        env:
+          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
+          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
+        run: npm run build:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-x64
+          path: dist/Agenteeq-*-macOS-*.zip
+          if-no-files-found: error
+
+  windows:
+    name: aplikace pro Windows
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.tag || github.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: ilammy/msvc-dev-cmd@v1
+        with: { arch: x64 }
+      - name: Sestavit plášť
+        run: npm run build:windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/Agenteeq-*-Windows-x64.zip
+          if-no-files-found: error
+
+  rozsireni:
+    name: rozšíření pro Chrome
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.tag || github.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Sestavit rozšíření
+        run: npm run build:extension
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rozsireni
+          path: dist/agenteeq-extension-*.zip
+          if-no-files-found: error
+
+  vydani:
+    name: koncept vydání
+    # `mac-intel` je v seznamu schválně: čeká se, až doběhne, aby se nezačalo vydávat dřív,
+    # než nahraje přílohu. Podmínka níž pak na jejím výsledku netrvá — na rozdíl od ostatních.
+    needs: [mac, mac-intel, windows, rozsireni]
+    if: >-
+      always()
+      && needs.mac.result == 'success'
+      && needs.windows.result == 'success'
+      && needs.rozsireni.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.tag || github.ref }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - uses: actions/download-artifact@v4
+        with: { path: stazeno }
+
+      # Přílohy z různých úloh chodí každá ve své složce; vydání je chce pohromadě.
+      - name: Srovnat přílohy
+        run: |
+          mkdir -p prilohy
+          find stazeno -name '*.zip' -exec cp {} prilohy/ \;
+          # latest-build.json zapisuje build a je v něm pravda o podpisu. Bereme ten
+          # z Apple Silicon, protože to je hlavní build; když není, popis bude opatrnější.
+          cp stazeno/mac-arm64/latest-build.json prilohy/ 2>/dev/null || true
+          ls -l prilohy
+
+      - name: Popis vydání
+        id: popis
+        run: |
+          VERZE="${{ inputs.tag || github.ref_name }}"
+          VERZE="${VERZE#v}"
+          node scripts/release-notes.mjs "$VERZE" prilohy > poznamky.md
+          echo "verze=$VERZE" >> "$GITHUB_OUTPUT"
+          cat poznamky.md
+
+      # `gh` je na runnerech předinstalované, takže nepřibývá žádná cizí akce.
+      # `--draft`: vydání čeká na člověka, dokud ho sám nezveřejní.
+      - name: Založit koncept vydání
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" prilohy/*.zip --clobber
+            gh release edit "$TAG" --notes-file poznamky.md
+          else
+            gh release create "$TAG" prilohy/*.zip \
+              --draft \
+              --title "Agenteeq ${{ steps.popis.outputs.verze }}" \
+              --notes-file poznamky.md
+          fi
+          gh release view "$TAG" --json isDraft,url,assets
