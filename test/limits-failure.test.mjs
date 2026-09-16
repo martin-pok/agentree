@@ -16,7 +16,10 @@ test('stavový řádek: instalace vedle hooků, cizí stavový řádek se nepře
   let json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.statusLine.type, 'command');
   assert.ok(json.statusLine.command.includes(STATUSLINE_PATH) && json.statusLine.command.includes(TOKEN));
-  assert.match(json.statusLine.command, /\|\| printf 'Agenteeq neběží'$/, 'když Agenteeq neběží, stavový řádek to poctivě řekne');
+  // Záleží na tom, že to stavový řádek poctivě řekne – ne na tom, kterým shellem.
+  // Na Windows je tvar pro cmd.exe a bez diakritiky, kterou by jeho kódová stránka rozsypala.
+  assert.match(json.statusLine.command, /\|\| (printf 'Agenteeq neběží'|echo Agenteeq nebezi)$/,
+    'když Agenteeq neběží, stavový řádek to poctivě řekne');
   let st = await hooksStatus(file, TOKEN);
   assert.equal(st.statusLine, 'ours');
   assert.equal(st.current, true);

@@ -7,6 +7,10 @@ import { tailscalePaths } from '../src/platform.js';
 // pro tenhle systém hlásí platformový šev, ne jednu konkrétní z macOS.
 const NAINSTALOVANY_TAILSCALE = tailscalePaths()[0];
 
+// Hledání programu v PATH se jmenuje `which` i `where.exe` podle systému. Testy proto
+// nesmějí porovnávat s jedním jménem – jinak ověřují macOS, ne naši logiku.
+const jeHledani = (cmd) => /^(which|where)/.test(String(cmd));
+
 const noRun = async () => ({ ok: false, stdout: '', stderr: '', code: 1 });
 const noFetch = async () => null;
 
@@ -116,7 +120,7 @@ test('detekce: cloudflared vůbec nenainstalovaný', async () => {
 });
 
 test('detekce: ngrok běžící vrátí adresu z jeho lokálního API', async () => {
-  const run = async (cmd, args) => (cmd === 'which' && args[0] === 'ngrok' ? { ok: true, stdout: '/opt/homebrew/bin/ngrok\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 });
+  const run = async (cmd, args) => (jeHledani(cmd) && args[0] === 'ngrok' ? { ok: true, stdout: '/opt/homebrew/bin/ngrok\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 });
   const fetchJson = async (url) => (url.includes('4040') ? { tunnels: [{ public_url: 'http://abc123.ngrok-free.app', proto: 'http' }, { public_url: 'https://abc123.ngrok-free.app', proto: 'https' }] } : null);
   const tunnels = await detectTunnels({ run, fileExists: () => false, fetchJson });
   const ng = tunnels.find((t) => t.id === 'ngrok');
@@ -126,7 +130,7 @@ test('detekce: ngrok běžící vrátí adresu z jeho lokálního API', async ()
 });
 
 test('detekce: ngrok API neběží (odmítnuté spojení / timeout) → running false, žádná adresa', async () => {
-  const run = async (cmd, args) => (cmd === 'which' && args[0] === 'ngrok' ? { ok: true, stdout: '/opt/homebrew/bin/ngrok\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 });
+  const run = async (cmd, args) => (jeHledani(cmd) && args[0] === 'ngrok' ? { ok: true, stdout: '/opt/homebrew/bin/ngrok\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 });
   const tunnels = await detectTunnels({ run, fileExists: () => false, fetchJson: noFetch });
   const ng = tunnels.find((t) => t.id === 'ngrok');
   assert.equal(ng.installed, true);
