@@ -45,6 +45,14 @@ to někdo nepotvrdí na skutečném stroji, patří sem 🧪, ne ✅.
 | Webové aplikace | rozšíření pro Chrome → HTTP | totéž | ✅ na systému nezávislé |
 | Náklady z Admin API | HTTPS | totéž | ✅ na systému nezávislé |
 
+**Hooky Claude Code** jsou příkaz pro shell, a ten je na každém systému jiný. Na macOS a Linuxu
+se zapíše POSIXový tvar, na Windows tvar pro `cmd.exe` (`curl.exe`, dvojité uvozovky, `>NUL`,
+`|| ver >NUL` místo `|| true`). 🧪 **Neověřeno:** že Claude Code na Windows hooky opravdu
+spouští přes `cmd.exe`. Je to podložený předpoklad — Node se `shell: true` tam používá
+`ComSpec`, tedy `cmd.exe` — ne ale ověřený fakt. Stavový řádek je na Windows schválně bez
+diakritiky, protože kódová stránka `cmd.exe` by z „neběží“ udělala nesmysl přímo ve stavovém
+řádku Claude Code.
+
 Základ složky řeší jediná funkce `appSupportDir()` v `src/platform.js`; struktura pod ní je
 na obou systémech stejná. Konektory, které běžící procesy zjistit nedokážou, hlásí **„nevíme“**,
 nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěným stavem se tu nesmí stírat.

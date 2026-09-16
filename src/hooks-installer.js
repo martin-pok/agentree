@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writeFileAtomic } from './util.js';
+import { JE_WINDOWS } from './platform.js';
 
 // Claude Code hooky posílají události do Agenteeq okamžitě (start, zadání, žádost o povolení, konec tahu).
 export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
@@ -8,9 +9,37 @@ export const HOOK_PATH = '/api/hooks/claude-code';
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
 
-export function hookCommand(port, token) {
+// Hook je příkaz pro shell, a ten je na každém systému jiný.
+//
+// Na macOS a Linuxu ho Claude Code spustí v POSIXovém shellu. Na Windows ho spustí
+// přes ComSpec, tedy cmd.exe – a ten nezná jednoduché uvozovky, `/dev/null` ani
+// `|| true`. Kdyby se tam zapsal POSIXový tvar, hook by se nainstaloval, aplikace by
+// hlásila „propojeno“ a ve skutečnosti by nikdy nic neposlal. Právě takovou tichou
+// lež tu mít nesmíme.
+//
+// `curl.exe` je součástí Windows od verze 10 (1803). `ver` vždy uspěje, takže nahrazuje
+// `|| true` – bez toho by nespuštěný Agenteeq vypadal jako selhaný hook.
+//
+// 🧪 Neověřeno na skutečném stroji: že Claude Code na Windows hooky opravdu spouští
+// přes cmd.exe. Viz docs/CONNECTORS.md a docs/WINDOWS.md.
+const HLAVICKY = (token) => [
+  ['Content-Type', 'application/json'],
+  ['X-Agenteeq-Token', token],
+];
+
+function overToken(token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
+}
+
+export function hookCommand(port, token, { windows = JE_WINDOWS } = {}) {
+  overToken(token);
+  const url = `http://127.0.0.1:${Number(port)}${HOOK_PATH}`;
+  if (windows) {
+    const h = HLAVICKY(token).map(([k, v]) => `-H "${k}: ${v}"`).join(' ');
+    return `curl.exe -s -m 2 -X POST ${h} --data-binary @- ${url} >NUL 2>&1 || ver >NUL`;
+  }
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  return `curl -s -m 2 -X POST ${h} --data-binary @- ${url} >/dev/null 2>&1 || true`;
 }
 
 const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_PATH);
@@ -18,9 +47,17 @@ const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_
 // Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agenteeq vrátí krátký text k zobrazení.
 export const STATUSLINE_PATH = '/api/hooks/claude-statusline';
 
-export function statuslineCommand(port, token) {
-  if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 1 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${STATUSLINE_PATH} 2>/dev/null || printf 'Agenteeq neběží'`;
+export function statuslineCommand(port, token, { windows = JE_WINDOWS } = {}) {
+  overToken(token);
+  const url = `http://127.0.0.1:${Number(port)}${STATUSLINE_PATH}`;
+  if (windows) {
+    // Bez diakritiky schválně: cmd.exe běží v kódové stránce, ve které by se z „neběží“
+    // stala hromada nesmyslů přímo ve stavovém řádku Claude Code.
+    const h = HLAVICKY(token).map(([k, v]) => `-H "${k}: ${v}"`).join(' ');
+    return `curl.exe -s -m 1 -X POST ${h} --data-binary @- ${url} 2>NUL || echo Agenteeq nebezi`;
+  }
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  return `curl -s -m 1 -X POST ${h} --data-binary @- ${url} 2>/dev/null || printf 'Agenteeq neběží'`;
 }
 
 const isOurStatusLine = (sl) => typeof sl?.command === 'string' && sl.command.includes(STATUSLINE_PATH);

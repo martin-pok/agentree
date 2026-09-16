@@ -77,10 +77,10 @@ Kód je napojený, ale **Windows varianta není ověřená na skutečném stroji
 |---|---|---|
 | ~~Nativní oznámení~~ **hotovo** | `osascript` je macOS | Plášť je posílá přes ikonu v oznamovací oblasti; Windows 10 i 11 z nich udělají systémový toast a klik vede na dotčené místo v aplikaci |
 | Klíčenka pro API klíče | `/usr/bin/security` je macOS | DPAPI nebo Credential Manager přes malý nativní pomocník. **Obejde se proměnnou prostředí, ta funguje všude** |
-| Otevření session v aplikaci | `open -a` a cesty `/Applications/*.app` | Hledání v registru a `%LOCALAPPDATA%\Programs`; „přepni do okna aplikace“ nemá na Windows přímou obdobu |
+| Otevření session v aplikaci | `open -a` a cesty `/Applications/*.app` | Hledání v registru a `%LOCALAPPDATA%\Programs`; „přepni do okna aplikace“ nemá na Windows přímou obdobu. **Otevřít složku v Průzkumníku a konverzaci v prohlížeči už ale jde** – dřív to schovával jeden hrubý vypínač |
 | Pokračování v Terminálu | AppleScript nad Terminal.app | Windows Terminal (`wt.exe`), ale příkaz by se musel skládat pro `cmd.exe`, ne pro shell |
 | Automatický start po přihlášení | LaunchAgent | Složka Po spuštění nebo Plánovač úloh |
-| Hooky Claude Code | zapsaný příkaz je shellový (`\|\| true`, `>/dev/null`) | Varianta pro `cmd.exe` nebo PowerShell |
+| ~~Hooky Claude Code~~ **hotovo, neověřeno** | zapsaný příkaz byl POSIXový | Zapisuje se tvar pro `cmd.exe` (`curl.exe`, `>NUL`, `\|\| ver >NUL`). 🧪 Zbývá potvrdit, že Claude Code na Windows hooky opravdu spouští přes `cmd.exe` |
 | Spouštění agentů na pozadí | `execFile` bez shellu neumí na Windows spustit `.cmd` | npm na Windows vyrábí pro `claude`/`codex` právě `.cmd` – chce to vlastní cestu |
 
 Žádná z těchhle věcí nepadá. Server je odmítne čistou hláškou a běží dál.
