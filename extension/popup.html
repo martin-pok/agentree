@@ -57,7 +57,7 @@
     /* ---------- Plocha ---------- */
     main { display: grid; gap: 8px; padding: 8px; }
     .card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--hairline); }
-    .label { margin: 0 0 12px; color: var(--mute); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+    .label { margin: 0 0 12px; color: var(--mute); font-size: 12px; letter-spacing: .02em; }
 
     .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: s; }
     .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; color: var(--ink-2); }
@@ -80,7 +80,7 @@
     .site:hover { background: var(--paper); }
     .site .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
     .site .name { flex: 1; }
-    .site .seen { color: var(--mute); font-size: 11px; }
+    .site .seen { color: var(--mute); font-size: 12px; }
     .switch { position: relative; width: 34px; height: 20px; flex: none; }
     .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
     .switch i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background-color .2s var(--ease); pointer-events: none; }
@@ -95,8 +95,12 @@
     .btn { height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--ink); color: var(--on-ink); font: 500 13px/1 var(--f-body); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; }
     .btn:disabled { opacity: .5; cursor: default; }
     .btn--ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px 16px; color: var(--mute); font-size: 11px; }
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px 16px; color: var(--mute); font-size: 12px; }
     footer .btn { height: 32px; padding: 0 12px; font-size: 12px; }
+    .btn, footer .btn, input[type=text], .site { min-height: 44px; }
+    .hero { background: var(--stage); }
+    .hero::before, .hero::after { display: none; }
+    .privacy { margin: 0; padding: 8px; font-size: 12px; color: var(--mute); }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
@@ -121,7 +125,7 @@
         <li><span>Klikni na <b>Vytvořit jednorázový kód</b> a vlož ho sem.</span></li>
       </ol>
       <form class="pair" id="pair-form">
-        <input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false" aria-label="Jednorázový kód z Agenteeq">
+        <input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false" aria-label="Jednorázový kód z Agenteeq" aria-describedby="pair-msg" maxlength="16">
         <button class="btn" id="pair" type="submit">Spárovat</button>
       </form>
       <p class="msg" id="pair-msg" role="status">Kód platí 10 minut a po použití zmizí.</p>
@@ -136,7 +140,7 @@
     </section>
 
     <section class="card">
-      <p class="label">Sledované služby</p>
+      <p class="label">Sledované služby · beta</p>
       <div class="sites" id="sites"></div>
     </section>
   </main>

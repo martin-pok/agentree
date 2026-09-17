@@ -126,3 +126,11 @@ Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).
 - **Přidávej konektor po pravdě.** Bez skutečných dat je stav `Beta`/`Neověřeno`; přihlašování vždy zůstává na stránce dodavatele nebo přes oficiální klíč v Klíčence.
 - **Drž desktop a web spolu.** Změna vzhledu, lifecycle nebo bridge se ověřuje v Chromiu i WebKitu a v macOS buildu. `light` je výchozí; `dark` a `system` musí projít AA kontrastem a změnou bez restartu.
 - **Před releasem dokaž, neodhaduj.** Testy, syntax, screenshoty, bezpečnostní diff, smoke a podpis jsou důkazy. Do GitHub `main` jde změna jen přes green PR.
+
+## 9. Standard celé produktové rodiny
+
+Web, aplikace i rozšíření jsou jeden produkt a mají stejný standard řemesla: prémiový, srozumitelný UX/UI, jasná hierarchie a seskupení souvisejících informací, WCAG 2.2 AA a skutečně ověřená funkčnost. Nový vzhled musí navazovat na identitu Agenteeq, ne na obecnou šablonu. Pohyb vysvětluje změnu stavu; dekorativní nekonečné animace nepřidávat. Web má být stručný, responzivní a mít správná metadata, canonical a indexační soubory. Každá prodejní výzva musí vést na skutečně dostupný výsledek.
+
+Vzdálený přístup se testuje také po restartu, výpadku sítě, odebrání zařízení a vypnutí jedné z cest. Vysvětluj rozdíl mezi zavřeným oknem, ukončeným serverem a vypnutým či uspaným hostitelem. Přístup při vypnutém hostiteli vyžaduje samostatné rozhodnutí o trvale běžícím serveru; neslibovat ho pouze změnou rozhraní.
+
+Při souběžné práci rozdělit vlastnictví souborů, ponechat hlavnímu agentovi designový směr a integraci a ověřit výsledný společný diff. Průběžně předávat ověřené odkazy a výsledky, nejen závěrečný report.

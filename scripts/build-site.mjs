@@ -82,7 +82,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await copyDir(path.join(root, 'site'), out);
 
   // 5. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
-  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n`);
+  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
 
   // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.
   // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede – proto

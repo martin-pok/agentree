@@ -81,22 +81,34 @@ export const cookieValue = (header, name = COOKIE) => {
 
 // `interfaces` a `tailscaleName` jdou vstřiknout, aby šly cesty ven otestovat bez skutečné sítě
 // a bez nainstalovaného Tailscale – stejně jako se injektuje `run` v src/tunnel.js.
-export function createLanAccess({ datastore, config, onListen = () => {}, tailscaleName = () => '', interfaces = () => os.networkInterfaces() }) {
+export function createLanAccess({ datastore, config, onListen = () => {}, onAuthorizationChange = () => {}, tailscaleName = () => '', tailscaleIps = null, interfaces = () => os.networkInterfaces() }) {
   const servers = new Map(); // adresa → naslouchající listener
   const errors = new Map(); // adresa → proč se ji nepodařilo otevřít
   let handler = null;
   let boundPort = 0;
   let pin = null; // { code, expiresAt, tries }
+  let pending = Promise.resolve();
+  const serialize = (work) => {
+    const next = pending.then(work);
+    pending = next.catch(() => {});
+    return next;
+  };
   const devices = () => datastore.data.lanDevices;
   const lanOn = () => Boolean(datastore.data.settings.lanAccess);
   const tailscaleOn = () => Boolean(datastore.data.settings.tailscaleAccess);
+  // A CGNAT address alone is not proof of membership in this tailnet.
+  const verifiedTailscaleAddresses = () => tailscaleAddresses(interfaces()).filter((a) => !tailscaleIps || tailscaleIps().includes(a));
+  const closeServer = (s) => new Promise((resolve) => {
+    s.close(resolve);
+    s.closeAllConnections(); // includes active SSE; close() alone waits forever for it
+  });
 
   // Adresy, na kterých má Agenteeq naslouchat kromě 127.0.0.1. Vychází výhradně ze zapnutých
   // přepínačů: vypnutý přepínač znamená, že listener na té cestě vůbec nevznikne.
   function bindAddresses() {
     const out = [];
     if (lanOn()) out.push(...lanAddresses(interfaces()));
-    if (tailscaleOn()) out.push(...tailscaleAddresses(interfaces()));
+    if (tailscaleOn()) out.push(...verifiedTailscaleAddresses());
     return [...new Set(out)];
   }
 
@@ -124,7 +136,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   function status(now = Date.now()) {
     prune(now);
     const addresses = lanAddresses(interfaces());
-    const tsAddresses = tailscaleAddresses(interfaces());
+    const tsAddresses = verifiedTailscaleAddresses();
     const tsName = magicDnsName(tailscaleName());
     // Port bereme z běžícího listeneru – hlavní server mohl dostat jiný než z konfigurace.
     const port = [...servers.values()][0]?.address()?.port || boundPort || config.port;
@@ -176,6 +188,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     const device = { id: crypto.randomUUID().slice(0, 8), label: String(label || 'Telefon').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 40) || 'Telefon', hash: hash(token), at: now };
     devices().push(device);
     if (devices().length > DEVICES_MAX) devices().splice(0, devices().length - DEVICES_MAX);
+    onAuthorizationChange();
     await datastore.flush();
     return { token, device: { id: device.id, label: device.label, at: device.at }, maxAgeSec: Math.floor(TOKEN_TTL_MS / 1000) };
   }
@@ -191,6 +204,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     const i = devices().findIndex((d) => d.id === id);
     if (i === -1) return { status: 404, error: 'Takové zařízení v seznamu není.' };
     devices().splice(i, 1);
+    onAuthorizationChange();
     await datastore.flush();
     return { ok: true };
   }
@@ -216,7 +230,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
         s.on('error', (err) => {
           errors.set(address, `Spojení se přerušilo: ${err.code || err.message}`);
           servers.delete(address);
-          s.close(() => {});
+          closeServer(s).catch(() => {});
         });
         errors.delete(address);
         servers.set(address, s);
@@ -230,14 +244,14 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
   // neshodí už fungující přístup z domácí sítě a naopak.
   // Vrací se teprve tehdy, když listenery skutečně naslouchají (nebo selhaly) – rozhraní tak
   // nikdy neohlásí „zapnuto", dokud to není pravda.
-  async function start(requestHandler, port = config.port) {
+  async function reconcile(requestHandler, port = config.port) {
     if (requestHandler) handler = requestHandler;
     boundPort = port;
     const want = handler ? bindAddresses() : [];
     for (const [address, s] of [...servers]) {
       if (want.includes(address)) continue;
       servers.delete(address);
-      await new Promise((resolve) => s.close(resolve));
+      await closeServer(s);
     }
     for (const address of [...errors.keys()]) if (!want.includes(address)) errors.delete(address);
     if (lanOn() && !lanAddresses(interfaces()).length) errors.set('lan', 'Mac není v žádné místní síti.');
@@ -248,12 +262,15 @@ export function createLanAccess({ datastore, config, onListen = () => {}, tailsc
     return s;
   }
 
-  async function stop() {
+  async function closeListeners() {
     const list = [...servers.values()];
     servers.clear();
     errors.clear();
-    await Promise.all(list.map((s) => new Promise((resolve) => s.close(resolve))));
+    await Promise.all(list.map(closeServer));
   }
+
+  const start = (requestHandler, port = config.port) => serialize(() => reconcile(requestHandler, port));
+  const stop = () => serialize(closeListeners);
 
   return { status, hosts, newPin, pair, tokenOk, revoke, start, stop, get listening() { return servers.size > 0; } };
 }

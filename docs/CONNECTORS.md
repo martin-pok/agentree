@@ -45,13 +45,11 @@ to někdo nepotvrdí na skutečném stroji, patří sem 🧪, ne ✅.
 | Webové aplikace | rozšíření pro Chrome → HTTP | totéž | ✅ na systému nezávislé |
 | Náklady z Admin API | HTTPS | totéž | ✅ na systému nezávislé |
 
-**Hooky Claude Code** jsou příkaz pro shell, a ten je na každém systému jiný. Na macOS a Linuxu
-se zapíše POSIXový tvar, na Windows tvar pro `cmd.exe` (`curl.exe`, dvojité uvozovky, `>NUL`,
-`|| ver >NUL` místo `|| true`). 🧪 **Neověřeno:** že Claude Code na Windows hooky opravdu
-spouští přes `cmd.exe`. Je to podložený předpoklad — Node se `shell: true` tam používá
-`ComSpec`, tedy `cmd.exe` — ne ale ověřený fakt. Stavový řádek je na Windows schválně bez
-diakritiky, protože kódová stránka `cmd.exe` by z „neběží“ udělala nesmysl přímo ve stavovém
-řádku Claude Code.
+**Hooky Claude Code:** macOS/Linux používají POSIX příkaz, Windows explicitní
+`powershell.exe -EncodedCommand` a `curl.exe`. Vnější Git Bash/PowerShell tak neinterpretuje
+vnitřní uvozovky ani fallback. Příkaz i stavový řádek předávají UTF-8 a při nedostupném
+serveru končí úspěšně, aby nezablokovaly Claude. Nativní Windows test ověřuje HTTP přenos
+a výpadek; skutečné vyvolání hooku uvnitř Claude Code zůstává samostatným integračním QA.
 
 Základ složky řeší jediná funkce `appSupportDir()` v `src/platform.js`; struktura pod ní je
 na obou systémech stejná. Konektory, které běžící procesy zjistit nedokážou, hlásí **„nevíme“**,

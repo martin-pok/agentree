@@ -84,7 +84,7 @@ test('instalace Claude hooků zachová nastavení uživatele a je idempotentní'
   assert.equal(json.theme, 'dark');
   assert.deepEqual(json.permissions, original.permissions);
   for (const ev of HOOK_EVENTS) {
-    const ours = json.hooks[ev].flatMap((g) => g.hooks).filter((h) => h.command.includes('/api/hooks/claude-code'));
+    const ours = json.hooks[ev].flatMap((g) => g.hooks).filter((h) => plainCommand(h.command).includes('/api/hooks/claude-code'));
     assert.equal(ours.length, 1, `${ev}: právě jeden hook`);
   }
   assert.ok(json.hooks.Stop.some((g) => g.hooks.some((h) => h.command === 'say hotovo')), 'uživatelův hook zůstal');
@@ -172,9 +172,10 @@ test('LaunchAgent plist escapuje cesty', () => {
   assert.match(x, /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key><false\/>/, 'restart jen po pádu, ne když Agenteeq už běží');
 });
 
-// Hook je příkaz pro shell a ten je na každém systému jiný. Kdyby se na Windows
-// zapsal POSIXový tvar, hook by se „nainstaloval“, aplikace by hlásila propojeno
-// a nikdy by nic neposlala – tichá lež, jakou tu mít nesmíme.
+function plainCommand(command) {
+  return command.includes(' -EncodedCommand ') ? Buffer.from(command.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : command;
+}
+
 test('příkaz hooku odpovídá shellu daného systému', () => {
   const token = 'b'.repeat(40);
 
@@ -184,17 +185,17 @@ test('příkaz hooku odpovídá shellu daného systému', () => {
   assert.match(posix, />\/dev\/null 2>&1 \|\| true$/, 'ticho a nenulový kód se spolkne');
 
   const win = hookCommand(4620, token, { windows: true });
-  assert.match(win, /^curl\.exe -s/, 'Windows volá curl.exe, který je součástí systému');
-  assert.match(win, /"Content-Type: application\/json"/, 'cmd.exe zná jen dvojité uvozovky');
-  assert.match(win, />NUL 2>&1 \|\| ver >NUL$/, 'ver vždy uspěje, takže nahrazuje || true');
-  assert.doesNotMatch(win, /'|\/dev\/null|\|\| true/, 'nic z POSIXového shellu tam nezbylo');
+  assert.match(win, /^powershell\.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand [A-Za-z0-9+/=]+$/, 'vnější shell nemá co expandovat');
+  assert.match(plainCommand(win), /& curl\.exe -s/);
+  assert.match(plainCommand(win), /Console\]::InputEncoding = \[Console\]::OutputEncoding/);
+  assert.match(plainCommand(win), /exit 0$/);
 
-  for (const p of [posix, win]) assert.ok(p.includes(token) && p.includes(HOOK_PATH));
+  for (const p of [posix, win].map(plainCommand)) assert.ok(p.includes(token) && p.includes(HOOK_PATH));
 });
 
-test('stavový řádek na Windows nepíše diakritiku, kterou by cmd.exe rozsypal', () => {
+test('stavový řádek na Windows obsahuje fallback i při chybě spuštění curl', () => {
   const token = 'c'.repeat(40);
-  assert.match(statuslineCommand(4620, token, { windows: true }), /\|\| echo Agenteeq nebezi$/);
+  assert.match(plainCommand(statuslineCommand(4620, token, { windows: true })), /catch \{ Write-Output 'Agenteeq nebezi' \}/);
   assert.match(statuslineCommand(4620, token, { windows: false }), /\|\| printf 'Agenteeq neběží'$/);
 });
 

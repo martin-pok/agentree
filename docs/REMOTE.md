@@ -1,5 +1,12 @@
 # Vzdálený přístup mimo domácí síť
 
+## Dostupnost hostitele
+
+Zavření okna červeným tlačítkem na macOS ponechá aplikaci a server běžet. Cmd+Q server ukončí. Uspaný nebo vypnutý Mac data neposkytne; Tailscale ani statický web ho nenahradí. Nepřetržitý přístup vyžaduje zapnutý a bdělý hostitel, případně samostatný trvale běžící server po rozhodnutí o umístění dat. Desktop a CLI LaunchAgent nespouštěj současně na stejném portu.
+
+Po startu a každých 30 sekund aplikace obnovuje povolené listenery a ověřuje identitu Tailscale. IP musí odpovídat systémovému rozhraní i výstupu Tailscale. Odebrání zařízení ukončí jeho aktivní SSE stream; vypnutí Tailscale odmítne i již spuštěnou loopback proxy. Obnova připojení neznamená probuzení počítače.
+
+
 Agenteeq z principu poslouchá jen v domácí síti (`docs/SECURITY.md#přístup-z-telefonu`). To
 stačí, dokud jsi doma. Mimo domov (mobilní data, cizí Wi-Fi) se k Macu bez dalšího kroku
 nedostaneš – a to je záměr, ne chyba: server nikdy sám neotvírá cestu ven.

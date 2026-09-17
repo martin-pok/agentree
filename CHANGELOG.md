@@ -1,5 +1,15 @@
 # Changelog
 
+### Revize 0.12.0 · 2026-09-17
+
+- Odebrání zařízení ukončí i otevřený živý proud. Každá událost znovu kontroluje autorizaci; vypnutí Tailscale blokuje i zbývající lokální proxy.
+- Obnova vzdálených listenerů ověřuje MagicDNS a vlastnictví Tailscale IP po startu i změně sítě. Zastavení čeká na rozpracovanou obnovu.
+- Windows otevírá webové konverzace bez macOS funkcí. Hooky používají explicitní PowerShell místo předpokladu cmd.exe; Windows CI testuje UTF-8 i nedostupný server. Intel build má podporovaný runner.
+- Kratší web s interaktivní prohlídkou, pravdivými instalačními pokyny, responzivitou, reduced-motion variantou, canonical, sitemap a llms.txt.
+- Přehled nenatahuje prázdné karty; scéna nemá nekonečný dekorativní přejezd. Rozšíření má čitelnější texty, větší ovládací cíle a přístupné chyby párování.
+- Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
+
+
 ## 0.12.0 – 2026-09-15 · Tailscale jako plnohodnotná cesta z telefonu, web a rozšíření na úrovni aplikace
 
 - **Tailscale je napojený, ne jen detekovaný.** Nové nastavení `settings.tailscaleAccess` a endpoint

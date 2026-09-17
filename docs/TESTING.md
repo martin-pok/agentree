@@ -7,6 +7,9 @@ npm test          # node:test, sériově, bez sítě, nad dočasnými fixturami
 npm run check     # node --check pro všechny .js/.mjs
 npm run smoke     # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
 npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno rozšíření)
+npm run qa:site      # prohlídka webu: Chromium/WebKit, light/dark, 360–1440 px, klávesnice a omezení pohybu
+npm run qa:extension # párování, výpadek, odebrání oprávnění a služby v popupu
+npm run showcase    # prohlídka skutečného UI se smyšlenými daty a izolovaným serverem
 ```
 
 `qa:contrast` nepočítá dvojice tokenů, ale **každý viditelný text**: projde ho v aplikaci
@@ -16,7 +19,9 @@ nad sebou a přechodů (u těch bere nejsvětlejší zastávku, tedy nejhorší 
 co kontrola tokenů v `qa-desktop.mjs` minout musí: oba tokeny v pořádku, jejich kombinace na
 konkrétním místě ne. Vyžaduje Playwright (`PLAYWRIGHT_PATH` nebo globální instalace).
 
-Browserová regresní sada `scripts/qa-desktop.mjs` běží nad dočasným serverem ve **Chromiu i WebKitu**. Vedle tras, custom pickerů, živých aktualizací, mobilních šířek a nulových chyb konzole ověřuje i světlý/tmavý režim: výchozí light, perzistenci dark přes reload, reakci `system` na změnu media preference, 24 abstraktních avatarů a AA kontrast základních textových/semantických tokenů. Screenshoty ukládá do `dist/qa/`.
+Browserová regresní sada `scripts/qa-desktop.mjs` běží nad dočasným serverem ve **Chromiu i WebKitu**. Vedle tras, custom pickerů, živých aktualizací, mobilních šířek a nulových chyb konzole ověřuje i světlý/tmavý režim: výchozí light, perzistenci dark přes reload, reakci `system` na změnu media preference, dostupné abstraktní avatary a AA kontrast základních textových/semantických tokenů. Screenshoty ukládá do `dist/qa/`.
+
+GitHub CI má samostatnou browserovou bránu s připnutým Playwrightem 1.62.1; neinstaluje se jako runtime závislost produktu. Lokálně lze použít `PLAYWRIGHT_PATH` a `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (absolutní cesta k dostupnému Chromiu/Chromu). V CI se používají prohlížeče dodané Playwrightem. Automatický kontrast a klávesnicové testy jsou dílčí důkaz, nikoli certifikace kompletní shody WCAG; doplňuje je vizuální audit a ověření skutečných nativních integrací.
 
 Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat fokusu na spouštěcí tlačítko. Paleta a změna hodnoty custom pickeru se nesmějí testovat jen podle výsledného textu – ověř i to, že při hoveru či změně modelu nedojde k přepsání celého listu/ovládacího pásu a neztratí se fokus.
 

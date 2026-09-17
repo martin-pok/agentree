@@ -44,7 +44,7 @@ class HttpError extends Error {
 
 export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
-  const clients = new Set();
+  const clients = new Map(); // response → original authorization context
   let server;
 
   const port = () => server.address()?.port ?? config.port;
@@ -97,6 +97,9 @@ export function createHttpServer(app, existingServer = null) {
   // Cokoli z místní sítě musí mít token spárovaného zařízení – jinak se k datům nedostane.
   function requireDevice(req, url) {
     if (!app.lan || zTohotoMacu(req)) return;
+    // Loopback proxies are the Tailscale Serve route, never the direct LAN listener.
+    // Turning off Tailscale must also disable a proxy still running outside Agenteeq.
+    if (isLoopback(req.socket?.remoteAddress) && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup přes Tailscale je vypnutý.');
     if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
     // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu – jinak by neměl
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
@@ -110,10 +113,31 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- SSE ---------- */
 
+  function authorizedStream(res, req) {
+    try {
+      requireDevice(req, new URL('/api/stream', 'http://127.0.0.1'));
+      const host = hostHlavicka(req);
+      if (host !== '127.0.0.1' && host !== 'localhost' && !app.lan?.hosts().includes(host)) throw new Error('Access removed');
+      return true;
+    } catch {
+      clients.delete(res);
+      res.destroy();
+      return false;
+    }
+  }
+  const authorizationChanged = ({ disconnectRemote = false } = {}) => {
+    for (const [res, req] of clients) {
+      if (disconnectRemote && !zTohotoMacu(req)) { clients.delete(res); res.destroy(); }
+      else authorizedStream(res, req);
+    }
+  };
+  store.on('remote:authorization', authorizationChanged);
+
   function broadcast(event, data) {
     if (!clients.size) return;
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const res of clients) {
+    for (const [res, req] of clients) {
+      if (!authorizedStream(res, req)) continue;
       // A stalled browser must not grow an unbounded transcript buffer.
       if (res.writableLength > 1_000_000) { clients.delete(res); res.destroy(); }
       else res.write(msg);
@@ -145,7 +169,7 @@ export function createHttpServer(app, existingServer = null) {
   for (const [event, fn] of Object.entries(listeners)) store.on(event, fn);
 
   const heartbeat = setInterval(() => {
-    for (const res of clients) res.write(': ping\n\n');
+    for (const [res, req] of clients) if (authorizedStream(res, req)) res.write(': ping\n\n');
   }, 15000);
   heartbeat.unref?.();
 
@@ -158,7 +182,7 @@ export function createHttpServer(app, existingServer = null) {
       Connection: 'keep-alive',
     });
     res.write(`retry: 2000\nevent: hello\ndata: ${JSON.stringify({ version: VERSION, now: Date.now(), ready: store.ready })}\n\n`);
-    clients.add(res);
+    clients.set(res, req);
     req.on('close', () => clients.delete(res));
   }
 
@@ -661,14 +685,15 @@ export function createHttpServer(app, existingServer = null) {
   // aplikace si ale port zabírá dřív, než se vůbec načtou data – událost „listening“ tam tedy
   // proběhla už předtím, než jsme se na ni stihli navěsit. Čekat na ni by znamenalo nespustit
   // listener pro telefon nikdy, i když ho uživatel v Nastavení má zapnutý.
-  const spustLan = () => { if (app.lan && (datastore.data.settings.lanAccess || datastore.data.settings.tailscaleAccess)) app.lan.start(onRequest, port()); };
+  const spustLan = () => { app.restoreRemoteAccess?.().catch(() => {}); };
   if (server.listening) spustLan();
   else server.on('listening', spustLan);
 
   server.on('close', () => {
     clearInterval(heartbeat);
     for (const [event, fn] of Object.entries(listeners)) store.off(event, fn);
-    for (const res of clients) res.end();
+    store.off('remote:authorization', authorizationChanged);
+    for (const res of clients.keys()) res.end();
     clients.clear();
     app.lan?.stop().catch(() => {}); // s hlavním serverem zmizí i listener pro telefon
   });

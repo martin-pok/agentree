@@ -9,19 +9,9 @@ export const HOOK_PATH = '/api/hooks/claude-code';
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
 
-// Hook je příkaz pro shell, a ten je na každém systému jiný.
-//
-// Na macOS a Linuxu ho Claude Code spustí v POSIXovém shellu. Na Windows ho spustí
-// přes ComSpec, tedy cmd.exe – a ten nezná jednoduché uvozovky, `/dev/null` ani
-// `|| true`. Kdyby se tam zapsal POSIXový tvar, hook by se nainstaloval, aplikace by
-// hlásila „propojeno“ a ve skutečnosti by nikdy nic neposlal. Právě takovou tichou
-// lež tu mít nesmíme.
-//
-// `curl.exe` je součástí Windows od verze 10 (1803). `ver` vždy uspěje, takže nahrazuje
-// `|| true` – bez toho by nespuštěný Agenteeq vypadal jako selhaný hook.
-//
-// 🧪 Neověřeno na skutečném stroji: že Claude Code na Windows hooky opravdu spouští
-// přes cmd.exe. Viz docs/CONNECTORS.md a docs/WINDOWS.md.
+// Claude Code používá na Windows Git Bash nebo PowerShell, ne nutně cmd.exe.
+// Explicitní PowerShell s -EncodedCommand funguje z obou shellů a nepustí jejich
+// expanzi do skriptu. UTF-16LE je kontrakt PowerShellu, nikoli šifrování tokenu.
 const HLAVICKY = (token) => [
   ['Content-Type', 'application/json'],
   ['X-Agenteeq-Token', token],
@@ -31,18 +21,34 @@ function overToken(token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
 }
 
+function windowsCommand(url, token, statusline) {
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  const output = statusline
+    ? "if ($LASTEXITCODE -ne 0) { Write-Output 'Agenteeq nebezi' } else { $reply }"
+    : '';
+  const fallback = statusline ? "Write-Output 'Agenteeq nebezi'" : '';
+  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); $reply = $body | & curl.exe -s -m ${statusline ? 1 : 2} -X POST ${h} --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
+  return `powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(script, 'utf16le').toString('base64')}`;
+}
+
+// Rozpoznává i staré příkazy: instalace je nahradí a odinstalace je odstraní.
+const commandText = (command) => {
+  if (typeof command !== 'string') return '';
+  const encoded = command.match(/^powershell\.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ([A-Za-z0-9+/=]+)$/);
+  return encoded ? Buffer.from(encoded[1], 'base64').toString('utf16le') : command;
+};
+
 export function hookCommand(port, token, { windows = JE_WINDOWS } = {}) {
   overToken(token);
   const url = `http://127.0.0.1:${Number(port)}${HOOK_PATH}`;
   if (windows) {
-    const h = HLAVICKY(token).map(([k, v]) => `-H "${k}: ${v}"`).join(' ');
-    return `curl.exe -s -m 2 -X POST ${h} --data-binary @- ${url} >NUL 2>&1 || ver >NUL`;
+    return windowsCommand(url, token, false);
   }
   const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
   return `curl -s -m 2 -X POST ${h} --data-binary @- ${url} >/dev/null 2>&1 || true`;
 }
 
-const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_PATH);
+const isOurs = (h) => commandText(h?.command).includes(HOOK_PATH);
 
 // Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agenteeq vrátí krátký text k zobrazení.
 export const STATUSLINE_PATH = '/api/hooks/claude-statusline';
@@ -51,16 +57,13 @@ export function statuslineCommand(port, token, { windows = JE_WINDOWS } = {}) {
   overToken(token);
   const url = `http://127.0.0.1:${Number(port)}${STATUSLINE_PATH}`;
   if (windows) {
-    // Bez diakritiky schválně: cmd.exe běží v kódové stránce, ve které by se z „neběží“
-    // stala hromada nesmyslů přímo ve stavovém řádku Claude Code.
-    const h = HLAVICKY(token).map(([k, v]) => `-H "${k}: ${v}"`).join(' ');
-    return `curl.exe -s -m 1 -X POST ${h} --data-binary @- ${url} 2>NUL || echo Agenteeq nebezi`;
+    return windowsCommand(url, token, true);
   }
   const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
   return `curl -s -m 1 -X POST ${h} --data-binary @- ${url} 2>/dev/null || printf 'Agenteeq neběží'`;
 }
 
-const isOurStatusLine = (sl) => typeof sl?.command === 'string' && sl.command.includes(STATUSLINE_PATH);
+const isOurStatusLine = (sl) => commandText(sl?.command).includes(STATUSLINE_PATH);
 
 async function readSettings(file) {
   let raw = null;
@@ -90,9 +93,10 @@ export async function hooksStatus(file, token) {
   }
   const has = (ev, pred) => (Array.isArray(json.hooks?.[ev]) ? json.hooks[ev] : []).some((g) => (g?.hooks || []).some(pred));
   const events = HOOK_EVENTS.filter((ev) => has(ev, isOurs));
-  const hooksCurrent = Boolean(token) && HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && h.command.includes(token)));
+  const current = (command) => commandText(command).includes(token) && !command.includes('>NUL');
+  const hooksCurrent = Boolean(token) && HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && current(h.command)));
   const statusLine = !json.statusLine ? 'none' : isOurStatusLine(json.statusLine) ? 'ours' : 'foreign';
-  const statusLineCurrent = statusLine === 'ours' && Boolean(token) && json.statusLine.command.includes(token);
+  const statusLineCurrent = statusLine === 'ours' && Boolean(token) && current(json.statusLine.command);
   return {
     installed: events.length === HOOK_EVENTS.length,
     partial: events.length > 0 && events.length < HOOK_EVENTS.length,

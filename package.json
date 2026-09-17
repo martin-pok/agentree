@@ -36,6 +36,9 @@
     "license": "node scripts/license.mjs",
     "qa:desktop": "node scripts/qa-desktop.mjs",
     "qa:contrast": "node scripts/qa-contrast.mjs",
+    "qa:site": "node scripts/qa-site.mjs",
+    "qa:extension": "node scripts/qa-extension.mjs",
+    "showcase": "node scripts/showcase.mjs",
     "qa:keychain": "node scripts/qa-keychain.mjs",
     "fonts:vendor": "node scripts/vendor-fonts.mjs"
   },

@@ -43,7 +43,7 @@ test('blok bez obsahu ve sloupci zmizí i s mezerou', () => {
   assert.match(css, /\.ov-col > section:empty \{ display: none; \}/);
 });
 
-test('poslední karta ve sloupci dorovná rozdíl výšek', () => {
-  assert.match(css, /\.ov-col > \*:last-child \{[^}]*flex: 1 1 auto/);
-  assert.match(css, /\.ov-col > \*:last-child > \*:last-child \{ flex: 1 1 auto; \}/);
+test('karty mají přirozenou výšku bez natahování grafu podle druhého sloupce', () => {
+  assert.match(css, /\.ov \{[^}]*align-items: start/);
+  assert.doesNotMatch(css, /\.ov-col > \*:last-child \{[^}]*flex: 1 1 auto/);
 });

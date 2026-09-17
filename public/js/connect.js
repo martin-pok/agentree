@@ -62,7 +62,7 @@ export function pripojovaciObrazovka(zprava = '') {
     <form class="pair-box" novalidate>
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
       <h1>Kde máš Agenteeq?</h1>
-      <p>Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží.</p>
+      <p>Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.</p>
       <label class="sr-only" for="adresa">Adresa Macu</label>
       <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}

@@ -66,7 +66,9 @@ async function renderSites(lastStatus) {
 
 async function render() {
   const { lastStatus } = await chrome.storage.local.get(['lastStatus']);
-  renderSites(lastStatus);
+  await renderSites(lastStatus);
+  $('feats').hidden = false;
+  $('outdated').hidden = true;
 
   let health = null;
   try {
@@ -106,10 +108,12 @@ $('pair-form').addEventListener('submit', async (e) => {
   const code = $('code').value.trim();
   const msg = $('pair-msg');
   if (!/^[A-Za-z0-9_-]{16}$/.test(code)) {
+    $('code').setAttribute('aria-invalid', 'true');
     msg.dataset.tone = 'err';
     msg.textContent = 'Kód má 16 znaků – zkopíruj ho z Agenteeq celý.';
     return;
   }
+  $('code').removeAttribute('aria-invalid');
   $('pair').disabled = true;
   const result = await chrome.runtime.sendMessage({ type: 'agenteeq:pair', code }).catch(() => null);
   $('pair').disabled = false;

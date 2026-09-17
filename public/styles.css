@@ -139,7 +139,7 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @keyframes note-in { from { opacity: 0; transform: rotate(-22deg) translateY(10px) scale(.6); } }
 @keyframes note-pulse { 50% { box-shadow: 0 0 0 9px rgba(194, 51, 90, .14), 0 0 28px rgba(194, 51, 90, .75); } }
 .stage-sweep { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent 0%, rgba(244, 243, 247, .07) 50%, transparent 100%); transform: translateX(-100%); }
-.stage.is-live .stage-sweep { opacity: 1; animation: sweep 7s linear infinite; }
+.stage.is-live .stage-sweep { opacity: 1; animation: sweep 1.2s var(--ease) 1 both; }
 @keyframes sweep { to { transform: translateX(100%); } }
 
 /* ---------- Postranní panel ---------- */
@@ -355,12 +355,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* Přehled má dva sloupce s pevně určeným obsahem. Sloupcová sazba (`columns: 2`) si o zalomení
    rozhodovala sama, takže se pořadí bloků měnilo s šířkou okna i s daty a nešlo zaručit, co je
    nahoře. Pevné sloupce to určují jednoznačně a oba začínají zarovnané na stejné výšce.
-   Rozdíl výšek (data jsou pokaždé jiná) dorovná poslední karta ve sloupci – místo prázdné
-   plochy pod ní se protáhne dolů. */
-.ov { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: stretch; }
-.ov-col { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
-.ov-col > *:last-child { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.ov-col > *:last-child > *:last-child { flex: 1 1 auto; }
+   Karty mají přirozenou výšku; prázdné místo nesmí natahovat metriky ani grafy. */
+.ov { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+.ov-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
 /* Blok, který zrovna nemá co ukázat (žádná okna limitů, měřák před prvním načtením), zmizí
    úplně. Jinak by po sobě nechal prázdnou mezeru uprostřed sloupce. */
 .ov-col > section:empty { display: none; }
@@ -573,6 +570,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .hb-track i { display: block; height: 100%; border-radius: 3px; transition: width .8s var(--ease); }
 
 .rt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
+.rt-grid > .empty-inline { grid-column: 1 / -1; margin: 0; padding: 20px 24px; text-align: left; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
 .rt-item { display: grid; justify-items: center; gap: 4px; padding: 14px 8px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); text-align: center; min-width: 0; }
 .rt-item.is-off { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
 .rt-item.is-off .rt-disc .glyph, .rt-item.is-off .rt-disc .logo { opacity: .4; filter: grayscale(1); }

@@ -95,14 +95,20 @@ test('web: každá ukázka rozhraní je jako ukázka popsaná', async () => {
   for (const m of html.matchAll(/class="shot-note"[^>]*>([^<]+)/g)) assert.match(m[1], /Ukázka rozhraní/);
 });
 
-test('web: stránka je česky, má popis pro vyhledávače a odkaz na stažení', async () => {
+test('web: stránka je česky a nabízí skutečnou prohlídku a instalační postup', async () => {
   const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
   assert.match(html, /<html lang="cs">/);
   assert.match(html, /<meta name="description" content="[^"]{80,}"/, 'popis pro vyhledávače');
   assert.match(html, /<meta property="og:title"/);
   assert.match(html, /<meta name="viewport"[^>]*width=device-width/);
   assert.match(html, /<a class="skip" href="#obsah">/, 'přeskočení na obsah pro klávesnici');
-  assert.ok(html.includes('releases/latest'), 'hlavní výzva vede na stažení');
+  assert.ok(html.includes('href="#vyzkouset"'), 'výzva vede na dostupný instalační postup');
+  assert.equal(html.includes('releases/latest'), false, 'soukromý repozitář bez release nesmí slibovat veřejné stažení');
+  assert.match(html, /chrome:\/\/extensions/);
+  assert.match(html, /Mac musí být zapnutý/);
+  const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
+  assert.equal(graph[0].about['@id'], graph[1]['@id']);
+  assert.match(html, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/"/);
   // Alternativní text u obrázků: prázdný u dekorace, vyplněný u obsahových.
   for (const m of html.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
 });

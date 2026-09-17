@@ -80,7 +80,7 @@ Kód je napojený, ale **Windows varianta není ověřená na skutečném stroji
 | Otevření session v aplikaci | `open -a` a cesty `/Applications/*.app` | Hledání v registru a `%LOCALAPPDATA%\Programs`; „přepni do okna aplikace“ nemá na Windows přímou obdobu. **Otevřít složku v Průzkumníku a konverzaci v prohlížeči už ale jde** – dřív to schovával jeden hrubý vypínač |
 | Pokračování v Terminálu | AppleScript nad Terminal.app | Windows Terminal (`wt.exe`), ale příkaz by se musel skládat pro `cmd.exe`, ne pro shell |
 | Automatický start po přihlášení | LaunchAgent | Složka Po spuštění nebo Plánovač úloh |
-| ~~Hooky Claude Code~~ **hotovo, neověřeno** | zapsaný příkaz byl POSIXový | Zapisuje se tvar pro `cmd.exe` (`curl.exe`, `>NUL`, `\|\| ver >NUL`). 🧪 Zbývá potvrdit, že Claude Code na Windows hooky opravdu spouští přes `cmd.exe` |
+| Hooky Claude Code | příkaz nesmí záviset na vnějším shellu | Explicitní `powershell.exe -EncodedCommand`, UTF-8 a `curl.exe`; Windows CI testuje doručení i offline fallback. Skutečné vyvolání v Claude Code je samostatné integrační QA. |
 | Spouštění agentů na pozadí | `execFile` bez shellu neumí na Windows spustit `.cmd` | npm na Windows vyrábí pro `claude`/`codex` právě `.cmd` – chce to vlastní cestu |
 
 Žádná z těchhle věcí nepadá. Server je odmítne čistou hláškou a běží dál.

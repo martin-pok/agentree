@@ -60,7 +60,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 }
 const HOME_HIDDEN = new Set(['Library']);
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -97,6 +97,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     datastore,
     config,
     tailscaleName: () => tunely.list.find((t) => t.id === 'tailscale' && t.running)?.url || '',
+    tailscaleIps: () => tunely.list.find((t) => t.id === 'tailscale' && t.running)?.ips || [],
+    ...(networkInterfaces ? { interfaces: networkInterfaces } : {}),
+    onAuthorizationChange: () => store.emit('remote:authorization'),
     onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${[s.enabled && s.url, s.tailscale.enabled && s.tailscale.url].filter(Boolean).join(' a ')}`),
   });
   const runs = new RunManager({
@@ -150,7 +153,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!s) return { status: 404, error: 'Konverzace nenalezena.' };
     if (config.openMode === 'off') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
     // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
-    if (!config.openApps && (target === 'app' || target === 'terminal')) {
+    if (!config.openApps && (target === 'terminal' || (target === 'app' && s.connector !== 'web'))) {
       return { status: 422, error: target === 'terminal'
         ? 'Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.'
         : 'Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.' };
@@ -566,7 +569,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const r = await planLaunch(body, launchEnv, { promptFile: promptFilePath(promptDir, uuid), sessionUuid: uuid });
     if (!r.ok) return { status: 422, error: r.error, field: r.field };
     const plan = r.plan;
-    if (!config.launchAgents && plan.kind !== 'local') return { status: 422, error: 'Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.' };
+    const webOpen = plan.kind === 'open' && plan.mode === 'web';
+    if (!config.launchAgents && plan.kind !== 'local' && !webOpen) return { status: 422, error: 'Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.' };
+    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
     const gate = plan.kind === 'background' ? locked('launchBackground') : plan.kind === 'local' ? locked('localChat') : null;
     if (gate) return gate;
 
@@ -802,7 +807,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // vyžádání a po startu, ne v každém cyklu – jsou to volání externích binárek.
   async function refreshTunnels() {
     const port = lanPort();
-    const list = await detectTunnels({ port });
+    const list = await tunnelDetector({ port });
     tunely = {
       at: Date.now(),
       list: list.map((t) => ({ ...t, remoteUrl: t.running ? remoteUrl(t, port) : '' })),
@@ -819,6 +824,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let lanHandler = null;
   let lanPort = () => config.port;
   const bindLan = (handler, portFn) => { lanHandler = handler; if (portFn) lanPort = portFn; };
+  let restoringRemote = null;
+  let stoppingRemote = false;
+  function restoreRemoteAccess() {
+    if (stoppingRemote || !lanHandler || (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess)) return Promise.resolve();
+    if (restoringRemote) return restoringRemote;
+    restoringRemote = (async () => {
+      if (datastore.data.settings.tailscaleAccess) {
+        try { await refreshTunnels(); }
+        catch { tunely = { at: Date.now(), list: [], advice: null }; }
+      }
+      if (stoppingRemote) return;
+      store.emit('remote:authorization');
+      await lan.start(lanHandler, lanPort());
+    })().finally(() => { restoringRemote = null; });
+    return restoringRemote;
+  }
 
   async function setLanAccess(enabled) {
     if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
@@ -856,6 +877,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const druhy = key === 'lanAccess' ? 'tailscaleAccess' : 'lanAccess';
     datastore.data.settings[key] = Boolean(enabled);
     if (!enabled && !datastore.data.settings[druhy]) datastore.data.lanDevices = [];
+    if (!enabled) store.emit('remote:authorization');
     await datastore.flush();
     if (datastore.data.settings.lanAccess || datastore.data.settings.tailscaleAccess) await lan.start(lanHandler, lanPort());
     else await lan.stop();
@@ -1010,6 +1032,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
     const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
     every(() => store.reevaluate(), 5000);
+    // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
+    every(() => restoreRemoteAccess(), 30000);
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
     every(() => (datastore.data.customAgents.length ? probeCustomAgents() : null), 30000);
     every(() => alerts.checkLimitResets(), 20000);
@@ -1032,7 +1056,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function stop() {
+    stoppingRemote = true;
     for (const t of timers) clearInterval(t);
+    await restoringRemote;
+    await lan.stop();
     for (const c of list) {
       try { c.stop(); } catch { /* ignorovat při ukončení */ }
     }
@@ -1048,7 +1075,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, setTailscaleAccess, bindLan, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

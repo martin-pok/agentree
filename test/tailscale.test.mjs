@@ -295,6 +295,7 @@ test('párování: cookie dostane Secure, když proxy hlásí HTTPS', async (t) 
   assert.match(poHttp.cookie, /HttpOnly/);
 
   pin = (await api(s.url).send('POST', '/api/lan/pin', {})).body.pin.code;
+  s.app.datastore.data.settings.tailscaleAccess = true;
   const poHttps = await sparuj({ 'X-Forwarded-Proto': 'https' });
   assert.equal(poHttps.status, 200, 'párování za proxy s HTTPS projde');
   assert.match(poHttps.cookie, /Secure/, 'za HTTPS proxy cookie dostane Secure');

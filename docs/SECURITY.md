@@ -1,5 +1,7 @@
 # Bezpečnost a soukromí
 
+Autorizace SSE se kontroluje před každou událostí i heartbeat. Odebrání zařízení zavře jeho stávající stream okamžitě. Vypnutí Tailscale odmítne také vzdálený požadavek přes loopback proxy, i když domácí síť zůstane zapnutá. Ověřená Tailscale IP musí být současně na místním rozhraní a v identitě hlášené Tailscale; samotný CGNAT rozsah nestačí.
+
 Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské informace, prompty). Bezpečnost je proto součást produktu, ne doplněk.
 
 ## Model hrozeb
