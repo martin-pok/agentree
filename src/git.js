@@ -174,7 +174,7 @@ export async function acceptWork({ repo, dir, branch, base, message }) {
   const merge = await git(repo, ['merge', '--no-ff', '--no-edit', branch], 60000);
   if (!merge.ok) {
     await git(repo, ['merge', '--abort']);
-    return { ok: false, conflict: true, error: 'Změny se nedají sloučit automaticky (konflikt v souborech). Nic se nezměnilo — požádej agenta, ať se přizpůsobí aktuální větvi, nebo to vyřeš ručně.' };
+    return { ok: false, conflict: true, error: 'Změny se nedají sloučit automaticky (konflikt v souborech). Nic se nezměnilo – požádej agenta, ať se přizpůsobí aktuální větvi, nebo to vyřeš ručně.' };
   }
   return { ok: true, merged: true };
 }

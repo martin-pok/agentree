@@ -8,7 +8,7 @@ import {
   createCloudBillingConnector,
 } from '../src/connectors/cloud-billing.js';
 
-// Testovací tajný klíč — nikdy se nesmí objevit v žádném výstupu konektoru (stav, detail chyby, útrata, tokeny).
+// Testovací tajný klíč – nikdy se nesmí objevit v žádném výstupu konektoru (stav, detail chyby, útrata, tokeny).
 const OPENAI_KEY = 'sk-tajny-openai-klic-nikdy-nezverejnit';
 const ANTHROPIC_KEY = 'sk-ant-admin01-tajny-anthropic-klic-nikdy-nezverejnit';
 
@@ -107,7 +107,7 @@ test('parseAnthropicUsage: bucket bez starting_at se přeskočí, chybějící c
   assert.deepEqual(daily['2026-01-03'], { input: 10, output: 0, cacheRead: 0, cacheWrite: 0 });
 });
 
-// Existující chování (náklady) zůstává beze změny — regresní test parserů z předchozí verze konektoru.
+// Existující chování (náklady) zůstává beze změny – regresní test parserů z předchozí verze konektoru.
 test('parseOpenAICosts a parseAnthropicCosts: beze změny (regresní test)', () => {
   const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: { value: 1.5 } }, { amount: '0.5' }] }] });
   assert.equal(openai['2026-01-01'], 2);
@@ -172,7 +172,7 @@ test('Konektor: úspěšné napojení natáhne náklady i spotřebu tokenů odd�
   const tokenUsage = connector.tokenUsage();
   assert.deepEqual(tokenUsage['openai-admin'], providers['openai-admin'].tokens);
 
-  // Náklady (autoEntries, v USD) nejsou ovlivněné tím, že přibyla spotřeba tokenů — jiná metrika, jiné pole.
+  // Náklady (autoEntries, v USD) nejsou ovlivněné tím, že přibyla spotřeba tokenů – jiná metrika, jiné pole.
   const entries = connector.autoEntries();
   assert.equal(entries.length, 2);
   assert.ok(entries.every((e) => typeof e.amount === 'number' && e.currency === 'USD'));
@@ -222,7 +222,7 @@ test('Konektor: timeout/výpadek sítě se nikdy nepropaguje jako výjimka ven z
   assertNoSecret(providers, OPENAI_KEY, ANTHROPIC_KEY);
 });
 
-test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) — stav zůstává "connected", tokeny prázdné', async () => {
+test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) – stav zůstává "connected", tokeny prázdné', async () => {
   const openaiCosts = { data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: 1 }] }] };
   const fetchImpl = routedFetch([
     ['api.openai.com/v1/organization/costs', () => okJson(openaiCosts)],

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { WEB_SITES } from '../src/connectors/web.js';
 
-// Adaptéry běží v prohlížeči, ale jsou to obyčejné funkce — spustíme je tady nad falešným
+// Adaptéry běží v prohlížeči, ale jsou to obyčejné funkce – spustíme je tady nad falešným
 // `location` a `document`. Chyba v rozpoznávání služby znamená, že se konverzace zařadí pod
 // špatný nástroj nebo se nezaregistruje vůbec; to je přesně to, co uživatel hlásí jako
 // „aplikace mi agenta nevidí".
@@ -19,7 +19,7 @@ const loc = (url) => new URL(url);
 
 test('každá služba z adaptérů je známá i serveru', () => {
   for (const s of SITES) {
-    assert.ok(WEB_SITES[s.id], `server nezná službu „${s.id}" — konverzace by se zahodila jako „Neznámá služba"`);
+    assert.ok(WEB_SITES[s.id], `server nezná službu „${s.id}" – konverzace by se zahodila jako „Neznámá služba"`);
   }
 });
 
@@ -68,7 +68,7 @@ test('adaptéry běží i nad prázdnou stránkou a nespadnou', () => {
   }
 });
 
-// Pole zprávy — zjednodušené prvky, jak je vidí rozšíření. Stačí na ověření, že se text vloží
+// Pole zprávy – zjednodušené prvky, jak je vidí rozšíření. Stačí na ověření, že se text vloží
 // a editor služby dostane událost `input` (bez ní zůstane tlačítko Odeslat neaktivní).
 function pole({ editable = false, selector = '' } = {}) {
   const udalosti = [];

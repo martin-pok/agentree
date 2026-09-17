@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { validateEntry, validateBudgets, monthlyTotals, spendSummary, budgetAlertCandidates, convert, addMonths, DEFAULT_SPEND } from '../src/spend.js';
-import { installHooks, uninstallHooks, hooksStatus, HOOK_EVENTS } from '../src/hooks-installer.js';
+import { installHooks, uninstallHooks, hooksStatus, hookCommand, statuslineCommand, HOOK_EVENTS, HOOK_PATH } from '../src/hooks-installer.js';
 import { AlertEngine } from '../src/alerts.js';
 import { Store } from '../src/store.js';
 import { loadConfig } from '../src/config.js';
@@ -84,7 +84,7 @@ test('instalace Claude hooků zachová nastavení uživatele a je idempotentní'
   assert.equal(json.theme, 'dark');
   assert.deepEqual(json.permissions, original.permissions);
   for (const ev of HOOK_EVENTS) {
-    const ours = json.hooks[ev].flatMap((g) => g.hooks).filter((h) => h.command.includes('/api/hooks/claude-code'));
+    const ours = json.hooks[ev].flatMap((g) => g.hooks).filter((h) => plainCommand(h.command).includes('/api/hooks/claude-code'));
     assert.equal(ours.length, 1, `${ev}: právě jeden hook`);
   }
   assert.ok(json.hooks.Stop.some((g) => g.hooks.some((h) => h.command === 'say hotovo')), 'uživatelův hook zůstal');
@@ -143,7 +143,7 @@ test('upozornění: rozhodnutí, dokončení, limity a deduplikace', async () =>
   helper.running = false;
   helper.lastAt = now + 3000;
   store.commit(helper, now + 3000);
-  assert.equal(datastore.data.alerts.length, alertsBefore, 'automatická kontrola nehlásí „dokončeno“ — patří k rodičovské konverzaci');
+  assert.equal(datastore.data.alerts.length, alertsBefore, 'automatická kontrola nehlásí „dokončeno“ – patří k rodičovské konverzaci');
 
   const quiet = store.ensure({ connector: 'claude-code', localId: 'x2', provider: 'anthropic', app: 'Claude Code' });
   Object.assign(quiet, { lastAt: now - 200000, startedAt: now - 300000, running: true, runningAt: now - 200000, turnStartedAt: now - 300000, staleMs: 30 * 60e3, title: 'Dlouhé přemýšlení' });
@@ -170,4 +170,38 @@ test('LaunchAgent plist escapuje cesty', () => {
   assert.ok(x.includes('/opt/node &amp; co/bin/node'));
   assert.ok(x.includes('&lt;agenteeq&gt;'));
   assert.match(x, /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key><false\/>/, 'restart jen po pádu, ne když Agenteeq už běží');
+});
+
+function plainCommand(command) {
+  return command.includes(' -EncodedCommand ') ? Buffer.from(command.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : command;
+}
+
+test('příkaz hooku odpovídá shellu daného systému', () => {
+  const token = 'b'.repeat(40);
+
+  const posix = hookCommand(4620, token, { windows: false });
+  assert.match(posix, /^curl -s/, 'POSIX volá curl');
+  assert.match(posix, /'Content-Type: application\/json'/, 'jednoduché uvozovky');
+  assert.match(posix, />\/dev\/null 2>&1 \|\| true$/, 'ticho a nenulový kód se spolkne');
+
+  const win = hookCommand(4620, token, { windows: true });
+  assert.match(win, /^powershell\.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand [A-Za-z0-9+/=]+$/, 'vnější shell nemá co expandovat');
+  assert.match(plainCommand(win), /& curl\.exe -s/);
+  assert.match(plainCommand(win), /Console\]::InputEncoding = \[Console\]::OutputEncoding/);
+  assert.match(plainCommand(win), /exit 0$/);
+
+  for (const p of [posix, win].map(plainCommand)) assert.ok(p.includes(token) && p.includes(HOOK_PATH));
+});
+
+test('stavový řádek na Windows obsahuje fallback i při chybě spuštění curl', () => {
+  const token = 'c'.repeat(40);
+  assert.match(plainCommand(statuslineCommand(4620, token, { windows: true })), /catch \{ Write-Output 'Agenteeq nebezi' \}/);
+  assert.match(statuslineCommand(4620, token, { windows: false }), /\|\| printf 'Agenteeq neběží'$/);
+});
+
+test('neplatný token neprojde ani do jednoho tvaru příkazu', () => {
+  for (const windows of [true, false]) {
+    assert.throws(() => hookCommand(4620, 'krátký', { windows }), /token/i);
+    assert.throws(() => statuslineCommand(4620, '; rm -rf /', { windows }), /token/i);
+  }
 });

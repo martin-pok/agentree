@@ -8,7 +8,7 @@ const steps = [
   { tag: 'Tvůj nový pracovní prostor', title: 'Všichni agenti.\nJeden přehled.', text: 'Méně hledání konverzací. Více soustředění na práci. Agenteeq propojí dění napříč tvými AI nástroji na jednom místě.', visual: 'orchestra' },
   { tag: 'V pravou chvíli', title: 'Víš, kdy je\nřada na tobě.', text: 'Sleduj práci, dokončení i selhání. Když agent potřebuje rozhodnutí, otevři jeho konverzaci přímo z přehledu.', visual: 'attention' },
   { tag: 'Pořádek v každé zakázce', title: 'Konverzace patří\nk projektům.', text: 'Spoj agenty podle klienta nebo složky. Uchovej brief, sleduj aktivitu a zadávej další práci ze stejného místa.', visual: 'projects' },
-  { tag: 'Agenti i v prohlížeči', title: 'ChatGPT, Gemini\na Claude.ai taky.', text: 'Rozšíření pro Chrome přidá do přehledu konverzace z webu — stav, přepis i dosažený limit. A zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.', visual: 'browser', action: 'Nainstalovat rozšíření' },
+  { tag: 'Agenti i v prohlížeči', title: 'ChatGPT, Gemini\na Claude.ai taky.', text: 'Rozšíření pro Chrome přidá do přehledu konverzace z webu – stav, přepis i dosažený limit. A zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.', visual: 'browser', action: 'Nainstalovat rozšíření' },
   { tag: 'Připraveno na tvém Macu', title: 'Tvá práce.\nTvá data.', text: 'Lokální přepisy zůstávají na tomto počítači. Claude Code a Codex se načítají automaticky. Další zdroje připojíš v Nastavení.', visual: 'privacy' },
 ];
 
@@ -45,7 +45,7 @@ export function showWelcome() {
     busy = true;
     dialog.querySelectorAll('button').forEach((b) => { b.disabled = true; });
     try {
-      // Kdo prošel průvodce, zná aktuální verzi — „Co je nového“ se mu ukáže až po další aktualizaci.
+      // Kdo prošel průvodce, zná aktuální verzi – „Co je nového“ se mu ukáže až po další aktualizaci.
       state.settings = (await api.saveSettings({ welcomeCompleted: true, ...(state.version ? { lastSeenVersion: state.version } : {}) })).settings;
       dialog.close(); dialog.remove(); dialog = null;
       if (target === 'extension') goToExtension();

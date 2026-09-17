@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writeFileAtomic } from './util.js';
+import { JE_WINDOWS } from './platform.js';
 
 // Claude Code hooky posílají události do Agenteeq okamžitě (start, zadání, žádost o povolení, konec tahu).
 export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
@@ -8,22 +9,61 @@ export const HOOK_PATH = '/api/hooks/claude-code';
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
 
-export function hookCommand(port, token) {
+// Claude Code používá na Windows Git Bash nebo PowerShell, ne nutně cmd.exe.
+// Explicitní PowerShell s -EncodedCommand funguje z obou shellů a nepustí jejich
+// expanzi do skriptu. UTF-16LE je kontrakt PowerShellu, nikoli šifrování tokenu.
+const HLAVICKY = (token) => [
+  ['Content-Type', 'application/json'],
+  ['X-Agenteeq-Token', token],
+];
+
+function overToken(token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${HOOK_PATH} >/dev/null 2>&1 || true`;
 }
 
-const isOurs = (h) => typeof h?.command === 'string' && h.command.includes(HOOK_PATH);
+function windowsCommand(url, token, statusline) {
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  const output = statusline
+    ? "if ($LASTEXITCODE -ne 0) { Write-Output 'Agenteeq nebezi' } else { $reply }"
+    : '';
+  const fallback = statusline ? "Write-Output 'Agenteeq nebezi'" : '';
+  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); $reply = $body | & curl.exe -s -m ${statusline ? 1 : 2} -X POST ${h} --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
+  return `powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(script, 'utf16le').toString('base64')}`;
+}
+
+// Rozpoznává i staré příkazy: instalace je nahradí a odinstalace je odstraní.
+const commandText = (command) => {
+  if (typeof command !== 'string') return '';
+  const encoded = command.match(/^powershell\.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ([A-Za-z0-9+/=]+)$/);
+  return encoded ? Buffer.from(encoded[1], 'base64').toString('utf16le') : command;
+};
+
+export function hookCommand(port, token, { windows = JE_WINDOWS } = {}) {
+  overToken(token);
+  const url = `http://127.0.0.1:${Number(port)}${HOOK_PATH}`;
+  if (windows) {
+    return windowsCommand(url, token, false);
+  }
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  return `curl -s -m 2 -X POST ${h} --data-binary @- ${url} >/dev/null 2>&1 || true`;
+}
+
+const isOurs = (h) => commandText(h?.command).includes(HOOK_PATH);
 
 // Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agenteeq vrátí krátký text k zobrazení.
 export const STATUSLINE_PATH = '/api/hooks/claude-statusline';
 
-export function statuslineCommand(port, token) {
-  if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
-  return `curl -s -m 1 -X POST -H 'Content-Type: application/json' -H 'X-Agenteeq-Token: ${token}' --data-binary @- http://127.0.0.1:${Number(port)}${STATUSLINE_PATH} 2>/dev/null || printf 'Agenteeq neběží'`;
+export function statuslineCommand(port, token, { windows = JE_WINDOWS } = {}) {
+  overToken(token);
+  const url = `http://127.0.0.1:${Number(port)}${STATUSLINE_PATH}`;
+  if (windows) {
+    return windowsCommand(url, token, true);
+  }
+  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+  return `curl -s -m 1 -X POST ${h} --data-binary @- ${url} 2>/dev/null || printf 'Agenteeq neběží'`;
 }
 
-const isOurStatusLine = (sl) => typeof sl?.command === 'string' && sl.command.includes(STATUSLINE_PATH);
+const isOurStatusLine = (sl) => commandText(sl?.command).includes(STATUSLINE_PATH);
 
 async function readSettings(file) {
   let raw = null;
@@ -53,9 +93,10 @@ export async function hooksStatus(file, token) {
   }
   const has = (ev, pred) => (Array.isArray(json.hooks?.[ev]) ? json.hooks[ev] : []).some((g) => (g?.hooks || []).some(pred));
   const events = HOOK_EVENTS.filter((ev) => has(ev, isOurs));
-  const hooksCurrent = Boolean(token) && HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && h.command.includes(token)));
+  const current = (command) => commandText(command).includes(token) && !command.includes('>NUL');
+  const hooksCurrent = Boolean(token) && HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && current(h.command)));
   const statusLine = !json.statusLine ? 'none' : isOurStatusLine(json.statusLine) ? 'ours' : 'foreign';
-  const statusLineCurrent = statusLine === 'ours' && Boolean(token) && json.statusLine.command.includes(token);
+  const statusLineCurrent = statusLine === 'ours' && Boolean(token) && current(json.statusLine.command);
   return {
     installed: events.length === HOOK_EVENTS.length,
     partial: events.length > 0 && events.length < HOOK_EVENTS.length,

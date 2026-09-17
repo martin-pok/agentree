@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { originOf, ORIGINS } from '../src/skills.js';
 
-// Zdroj říká, který nástroj dovednost čte. Původ říká, kdo ji napsal — a to je to, co uživatel
+// Zdroj říká, který nástroj dovednost čte. Původ říká, kdo ji napsal – a to je to, co uživatel
 // potřebuje, když má mezi stovkou dovedností od výrobce najít dvě vlastní.
 
 test('dovednosti z oficiálního katalogu Anthropicu se poznají v obou umístěních', () => {
@@ -22,7 +22,7 @@ test('plugin od někoho třetího není ani Anthropic, ani moje', () => {
   assert.equal(originOf('/Users/x/.claude/plugins/cache/superwhisper/skills/dictate'), 'plugin');
 });
 
-test('všechno ostatní je moje — vlastní složky, plánované úlohy i paměť Codexu', () => {
+test('všechno ostatní je moje – vlastní složky, plánované úlohy i paměť Codexu', () => {
   for (const d of [
     '/Users/x/.claude/skills/muj-postup',
     '/Users/x/.claude/scheduled-tasks/pd-intake',
@@ -43,7 +43,7 @@ test('každý původ má český název pro rozhraní', () => {
 });
 
 // Slovo „cache" je v cestě pluginu i jinde; tenhle test hlídá, že se nechytá kdekoli.
-test('samotné slovo v cestě nestačí — rozhoduje celá struktura', () => {
+test('samotné slovo v cestě nestačí – rozhoduje celá struktura', () => {
   assert.equal(originOf('/Users/x/.claude/skills/cache-warmer'), 'own');
   assert.equal(originOf('/Users/x/projekty/marketplaces/neco'), 'own');
 });

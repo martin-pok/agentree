@@ -98,6 +98,8 @@ export const ICON = {
   spark: svg('<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>'),
   cloud: svg('<path d="M7.5 17.5a3.75 3.75 0 0 1 .42-7.48 5.25 5.25 0 0 1 10.06 1.1 3.4 3.4 0 0 1-1.48 6.38z"/>'),
   mac: svg('<rect x="4.5" y="6" width="15" height="10" rx="2"/><path d="M3.5 19h17"/>'),
+  // Štít se zámkem: privátní síť, kam se nedostane nikdo zvenčí (karta Tailscale).
+  shield: svg('<path d="M12 3l7 3v5.5c0 4.3-2.9 7.6-7 8.5-4.1-.9-7-4.2-7-8.5V6z"/><path d="M10.5 12.5h3M12 12.5v3"/>'),
 };
 
 // Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.

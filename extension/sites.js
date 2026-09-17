@@ -1,4 +1,4 @@
-// Adaptéry webových AI aplikací. Selektory se mění s redesignem služeb — generické zálohy drží základní funkci.
+// Adaptéry webových AI aplikací. Selektory se mění s redesignem služeb – generické zálohy drží základní funkci.
 (() => {
   const text = (el) => (el ? (el.innerText || el.textContent || '').replace(/\n{3,}/g, '\n\n').trim() : '');
   const all = (doc, sel) => Array.from(doc.querySelectorAll(sel));
@@ -36,7 +36,7 @@
     return out;
   }
 
-  // Pole pro zprávu. Nejdřív přesný selektor služby, pak obecná záloha — redesign služby tak
+  // Pole pro zprávu. Nejdřív přesný selektor služby, pak obecná záloha – redesign služby tak
   // vkládání nerozbije úplně. Skryté a zakázané prvky se přeskočí.
   const GENERIC_COMPOSER = 'textarea:not([readonly]):not([disabled]), [contenteditable="true"][role="textbox"], div[contenteditable="true"]';
   const visible = (el) => {

@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { syncExtension } from '../src/extension-install.js';
 import { tempDir } from './helpers.mjs';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 async function fakeExtension(dir, verze) {
   await fs.mkdir(path.join(dir, 'icons'), { recursive: true });
@@ -37,7 +38,7 @@ test('kopie přežije, když se balíček aplikace celý vymění', async () => 
   const obsah = await fs.readFile(path.join(prvni.path, 'manifest.json'), 'utf8');
   assert.equal(JSON.parse(obsah).version, '1.0.0', 'rozšíření zůstalo na svém místě');
 
-  // Nový balíček s novou verzí kopii obnoví na stejné cestě — Chrome nemusí nic přenastavovat.
+  // Nový balíček s novou verzí kopii obnoví na stejné cestě – Chrome nemusí nic přenastavovat.
   await fakeExtension(zdroj, '2.0.0');
   const druhy = await syncExtension({ zdroj, dataDir: data });
   assert.equal(druhy.path, prvni.path, 'cesta se nemění');

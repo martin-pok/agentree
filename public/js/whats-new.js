@@ -19,7 +19,7 @@ async function markSeen() {
   if (!state.version || state.settings?.lastSeenVersion === state.version) return;
   try {
     state.settings = (await api.saveSettings({ lastSeenVersion: state.version })).settings;
-  } catch { /* příště se ukáže znovu — lepší než tiše ztratit informaci */ }
+  } catch { /* příště se ukáže znovu – lepší než tiše ztratit informaci */ }
 }
 
 let open = false;

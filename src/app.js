@@ -37,15 +37,16 @@ import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
+import { fullUserName } from './platform.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
-// Bez licence Pro je možné mít tolik aktivních projektů — platí jen, když je `projectsUnlimited` v PAID_FEATURES.
+// Bez licence Pro je možné mít tolik aktivních projektů – platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
 
 // `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agenteeq-<verze>-macOS-<arch>.zip`.
-// Server odvozuje přesný název sám (verze z package.json, architektura procesu) — nikdy z požadavku klienta.
+// Server odvozuje přesný název sám (verze z package.json, architektura procesu) – nikdy z požadavku klienta.
 export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, arch = process.arch) {
   const name = `Agenteeq-${version}-macOS-${arch}.zip`;
   const file = path.join(distDir, name);
@@ -59,7 +60,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 }
 const HOME_HIDDEN = new Set(['Library']);
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -85,10 +86,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   const ollama = createOllamaClient({ baseUrl: config.ollamaUrl });
   const localChat = createLocalChat({ store, ollama });
+  // Stav tunelů (Tailscale / Cloudflare / ngrok). Deklarovaný takhle vysoko schválně: čte ho
+  // i přístup z telefonu níž, a `let` v dočasné mrtvé zóně by při čtení shodil celý start.
+  let tunely = { at: 0, list: [], advice: null };
+
+  // Jméno Macu v MagicDNS bere přístup z telefonu z detekce Tailscale (tunnelsPayload) – aby
+  // adresa mac.tailnet.ts.net prošla kontrolou hlavičky Host. Když MagicDNS zapnutý není,
+  // zůstane prázdné a pracuje se s adresou 100.x; nic se nedomýšlí.
   const lan = createLanAccess({
     datastore,
     config,
-    onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${s.url}`),
+    tailscaleName: () => tunely.list.find((t) => t.id === 'tailscale' && t.running)?.url || '',
+    tailscaleIps: () => tunely.list.find((t) => t.id === 'tailscale' && t.running)?.ips || [],
+    ...(networkInterfaces ? { interfaces: networkInterfaces } : {}),
+    onAuthorizationChange: () => store.emit('remote:authorization'),
+    onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${[s.enabled && s.url, s.tailscale.enabled && s.tailscale.url].filter(Boolean).join(' a ')}`),
   });
   const runs = new RunManager({
     dataDir: config.dataDir,
@@ -99,7 +111,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   });
   const failedRuns = new Set();
 
-  // Běh, který skončil chybou, se musí v session ukázat jako „Selhalo“ s důvodem — nikdy jako „Hotovo“.
+  // Běh, který skončil chybou, se musí v session ukázat jako „Selhalo“ s důvodem – nikdy jako „Hotovo“.
   function recordRunFailure(run) {
     if (failedRuns.has(run.id)) return;
     failedRuns.add(run.id);
@@ -131,7 +143,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   let apps = {};
   store.decorate = (summary) => {
-    summary.open = openTargets(summary, apps);
+    summary.open = openTargets(summary, apps, { aplikace: config.openApps });
     Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
@@ -139,8 +151,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function openSession(id, target) {
     const s = store.summary(id);
     if (!s) return { status: 404, error: 'Konverzace nenalezena.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Otevírání aplikací je dostupné jen na macOS.' };
-    const plan = planOpen(s, target, apps);
+    if (config.openMode === 'off') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
+    // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
+    if (!config.openApps && (target === 'terminal' || (target === 'app' && s.connector !== 'web'))) {
+      return { status: 422, error: target === 'terminal'
+        ? 'Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.'
+        : 'Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.' };
+    }
+    const plan = planOpen(s, target, apps, { aplikace: config.openApps });
     if (!plan) return { status: 422, error: 'Tuto akci pro konverzaci nelze provést.' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
@@ -162,7 +180,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   ];
   if (config.processes) {
     list.push(createProcessesConnector(ctx));
-    // Detektor všeho ostatního, co na Macu běží jako AI agent — včetně vlastních a neznámých modelů.
+    // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
@@ -236,7 +254,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   /* ---------- Projekty ---------- */
 
-  // Snímky konverzací v projektech se ukládají s odstupem — při živé práci se data.json nepřepisuje každou vteřinu.
+  // Snímky konverzací v projektech se ukládají s odstupem – při živé práci se data.json nepřepisuje každou vteřinu.
   const persistSnapshots = debounce(() => datastore.save(), 15000);
 
   function syncSnapshots() {
@@ -294,7 +312,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const findProject = (id) => projects().items.find((p) => p.id === id) || null;
   const repoOf = (p) => p.settings.repo || p.folders[0] || '';
 
-  /* Vzhled projektu: vlastní pozadí karty a logo (PNG, JPG, WebP — obsah se ověřuje podle hlavičky souboru, ne podle přípony). */
+  /* Vzhled projektu: vlastní pozadí karty a logo (PNG, JPG, WebP – obsah se ověřuje podle hlavičky souboru, ne podle přípony). */
 
   const MEDIA_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
   const MEDIA_MAX = { cover: 4_000_000, logo: 1_500_000 };
@@ -448,7 +466,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const p = findProject(id);
     const w = p?.work.find((x) => x.id === workId && x.status === 'active');
     if (!w) return { status: 404, error: 'Pracovní větev nenalezena.' };
-    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq — uprav ji ručně.' };
+    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq – uprav ji ručně.' };
     const running = (w.runId && ['running', 'stopping'].includes(runs.get(w.runId)?.status)) || (w.sessionId && store.summary(w.sessionId)?.status === 'working');
     if (running) return { status: 409, error: 'Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.' };
     if (dry) return { ok: true, dry: true };
@@ -456,7 +474,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!info.isRepo) return { status: 422, error: 'Repozitář projektu není dostupný.' };
     let r;
     if (action === 'accept') {
-      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} — ${clip(w.prompt, 72)}` });
+      r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} – ${clip(w.prompt, 72)}` });
       if (r.ok) await cleanupWork({ repo: info.root, dir: w.path, branch: w.branch });
     } else {
       r = await discardWork({ repo: info.root, dir: w.path, branch: w.branch });
@@ -523,12 +541,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function launchPayload() {
     let targets = launchTargets(launchEnv);
-    if (config.openMode === 'off') targets = targets.filter((t) => t.group === 'local');
+    if (!config.launchAgents) targets = targets.filter((t) => t.group === 'local' || t.group === 'web');
     return { targets, modes: MODES, openMode: config.openMode };
   }
 
   async function refreshLaunch() {
-    if (config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
+    if (config.launchAgents && config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
     else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
@@ -551,7 +569,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const r = await planLaunch(body, launchEnv, { promptFile: promptFilePath(promptDir, uuid), sessionUuid: uuid });
     if (!r.ok) return { status: 422, error: r.error, field: r.field };
     const plan = r.plan;
-    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: 'Spouštění aplikací je dostupné jen na macOS.' };
+    const webOpen = plan.kind === 'open' && plan.mode === 'web';
+    if (!config.launchAgents && plan.kind !== 'local' && !webOpen) return { status: 422, error: 'Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.' };
+    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
     const gate = plan.kind === 'background' ? locked('launchBackground') : plan.kind === 'local' ? locked('localChat') : null;
     if (gate) return gate;
 
@@ -599,7 +619,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     };
   }
 
-  // Kódex spuštěný na pozadí nemá předem známé ID session — spáruje se podle složky a času startu.
+  // Kódex spuštěný na pozadí nemá předem známé ID session – spáruje se podle složky a času startu.
   function linkRun(summary) {
     if (summary.connector !== 'codex' || !summary.cwd) return;
     for (const r of runs.list()) {
@@ -656,7 +676,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function autostart(action) {
     if (config.desktop) return { status: 422, error: 'Desktopovou aplikaci přidej v Nastavení systému → Obecné → Přihlašovací položky.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Automatické spouštění je dostupné jen na macOS.' };
+    if (!config.autostart) return { status: 422, error: 'Spuštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).' };
     if (!dry) {
       try {
         if (action === 'install') await installLaunchAgent({ script: BIN_PATH, home: config.sourceHome });
@@ -679,7 +699,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       nativeNotify: config.desktop || notifier.enabled,
       desktop: config.desktop,
       autostart: {
-        supported: !config.desktop && config.openMode !== 'off',
+        supported: !config.desktop && config.autostart,
         installed: await isLaunchAgentInstalled(config.sourceHome),
         command: `"${process.execPath}" "${BIN_PATH}" install-agent`,
       },
@@ -688,17 +708,20 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // „Ukázat ve Finderu“ pro instalační balíček v Nastavení → Instalace pro další lidi.
-  // Cesta se nikdy nebere z požadavku — server ji odvodí sám ze složky dist (distDir), jinak by šlo
+  // Cesta se nikdy nebere z požadavku – server ji odvodí sám ze složky dist (distDir), jinak by šlo
   // přes tento endpoint otevřít ve Finderu cokoli na disku.
   async function revealInstallPackage() {
     const pkg = await findInstallPackage(distDir);
-    // V nainstalované aplikaci žádné `dist/` není — hotový balíček leží jen ve vývojovém repu.
+    // V nainstalované aplikaci žádné `dist/` není – hotový balíček leží jen ve vývojovém repu.
     // Uživateli proto ukážeme samotnou aplikaci: ve Finderu si ji zabalí a výsledný ZIP pošle dál.
     const bundle = path.resolve(ROOT_DIR, '..', '..', '..');
     const target = pkg?.path || (config.desktop && bundle.endsWith('.app') ? bundle : null);
     if (!target) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Otevírání Finderu je dostupné jen na macOS.' };
-    const plan = { kind: 'open', args: ['-R', target], label: 'Finder' };
+    if (config.openMode === 'off') return { status: 422, error: 'Ukázat balíček ve správci souborů tenhle systém neumí.' };
+    // -R (ukázat v nadřazené složce) zná jen `open` na macOS; jinde se otevře samotná složka.
+    const plan = config.openApps
+      ? { kind: 'open', args: ['-R', target], label: 'Finder' }
+      : { kind: 'open', args: [path.dirname(target)], label: 'Správce souborů' };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
@@ -781,11 +804,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Vzdálený přístup mimo domácí síť: Agenteeq nic neotvírá sám, jen zjistí, jestli má uživatel
   // nainstalovaný tunel (Tailscale / Cloudflare / ngrok) a poradí, co s tím. Zjišťuje se na
-  // vyžádání a po startu, ne v každém cyklu — jsou to volání externích binárek.
-  let tunely = { at: 0, list: [], advice: null };
+  // vyžádání a po startu, ne v každém cyklu – jsou to volání externích binárek.
   async function refreshTunnels() {
-    const list = await detectTunnels();
     const port = lanPort();
+    const list = await tunnelDetector({ port });
     tunely = {
       at: Date.now(),
       list: list.map((t) => ({ ...t, remoteUrl: t.running ? remoteUrl(t, port) : '' })),
@@ -802,28 +824,80 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let lanHandler = null;
   let lanPort = () => config.port;
   const bindLan = (handler, portFn) => { lanHandler = handler; if (portFn) lanPort = portFn; };
+  let restoringRemote = null;
+  let stoppingRemote = false;
+  function restoreRemoteAccess() {
+    if (stoppingRemote || !lanHandler || (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess)) return Promise.resolve();
+    if (restoringRemote) return restoringRemote;
+    restoringRemote = (async () => {
+      if (datastore.data.settings.tailscaleAccess) {
+        try { await refreshTunnels(); }
+        catch { tunely = { at: Date.now(), list: [], advice: null }; }
+      }
+      if (stoppingRemote) return;
+      store.emit('remote:authorization');
+      await lan.start(lanHandler, lanPort());
+    })().finally(() => { restoringRemote = null; });
+    return restoringRemote;
+  }
 
   async function setLanAccess(enabled) {
     if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
-    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti — připoj se na Wi-Fi.' };
-    datastore.data.settings.lanAccess = Boolean(enabled);
-    if (!enabled) datastore.data.lanDevices = [];
+    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti – připoj se na Wi-Fi.' };
+    return applyAccess('lanAccess', enabled, 'Přístup z telefonu se nepodařilo otevřít.');
+  }
+
+  // Přístup z vlastní privátní sítě Tailscale. Chová se stejně jako přístup z domácí sítě –
+  // jen se naslouchá na adrese 100.x místo 192.168.x a adresa nikde veřejně neexistuje.
+  // Párování kódem a token platí i tady: bez spárovaného zařízení se nepřečte nic.
+  async function setTailscaleAccess(enabled) {
+    if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
+    if (enabled) {
+      // Adresa z rozsahu 100.64.0.0/10 sama o sobě Tailscale nedokazuje: je to rozsah pro
+      // CGNAT (RFC 6598) a od některých operátorů ji Mac dostane i bez něj. Zeptáme se proto
+      // přímo Tailscale, jestli běží – jinak bychom otevřeli naslouchání do sítě operátora
+      // a v rozhraní tvrdili, že je to „adresa v síti Tailscale“.
+      const stav = (await refreshTunnels()).list.find((t) => t.id === 'tailscale');
+      if (!stav?.running) {
+        return {
+          status: 422,
+          error: stav?.installed
+            ? 'Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.'
+            : 'Tailscale na tomto Macu neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.',
+        };
+      }
+      if (!lan.status().tailscale.available) return { status: 422, error: 'Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu. Zkus to za chvíli.' };
+    }
+    return applyAccess('tailscaleAccess', enabled, 'Přístup přes Tailscale se nepodařilo otevřít.');
+  }
+
+  // Společné přepnutí obou cest. Odpárování zařízení nastává, teprve když se zavírá poslední
+  // otevřená cesta – jinak by vypnutí Tailscale odhlásilo i telefon spárovaný v domácí síti.
+  async function applyAccess(key, enabled, selhani) {
+    const druhy = key === 'lanAccess' ? 'tailscaleAccess' : 'lanAccess';
+    datastore.data.settings[key] = Boolean(enabled);
+    if (!enabled && !datastore.data.settings[druhy]) datastore.data.lanDevices = [];
+    if (!enabled) store.emit('remote:authorization');
     await datastore.flush();
-    if (enabled) await lan.start(lanHandler, lanPort());
+    if (datastore.data.settings.lanAccess || datastore.data.settings.tailscaleAccess) await lan.start(lanHandler, lanPort());
     else await lan.stop();
     store.emit('settings', datastore.data.settings);
     const s = lan.status();
-    if (enabled && !s.listening) {
-      datastore.data.settings.lanAccess = false;
+    const bezi = key === 'lanAccess' ? s.listening : s.tailscale.listening;
+    if (enabled && !bezi) {
+      datastore.data.settings[key] = false;
       await datastore.flush();
-      return { status: 502, error: s.error || 'Přístup z telefonu se nepodařilo otevřít.' };
+      if (!datastore.data.settings[druhy]) await lan.stop();
+      else await lan.start(lanHandler, lanPort());
+      const chyba = key === 'lanAccess' ? s.error : s.tailscale.error;
+      return { status: 502, error: chyba || selhani };
     }
-    return { lan: s };
+    return { lan: lan.status() };
   }
 
   // Předání zadání do webové služby, která ho neumí převzít z adresy (Gemini, Qwen) nebo je na
   // adresu příliš dlouhé. Rozšíření si ho po otevření stránky vyzvedne a vloží do pole zprávy.
-  // Drží se jen v paměti, jednou, dvě minuty a jen pro tu službu — nikam se neukládá.
+  // Drží se jen v paměti, jednou, dvě minuty a jen pro tu službu – nikam se neukládá.
   const HANDOFF_TTL = 2 * 60 * 1000;
   const HANDOFF_SITE = { 'claude-web': 'claude' };
   const webHandoffs = new Map();
@@ -840,7 +914,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Rozšíření se ozývá při startu Chromu, každých 30 minut a při každé konverzaci. Dvě hodiny ticha
-  // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté — to se uživateli řekne na rovinu.
+  // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté – to se uživateli řekne na rovinu.
   const EXTENSION_QUIET_MS = 2 * 60 * 60 * 1000;
 
   function extensionStatus(now = Date.now()) {
@@ -893,7 +967,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { token: datastore.data.ingestToken, version: VERSION };
   }
 
-  // `local: false` znamená požadavek z telefonu — ten nesmí dostat párovací kód ani seznam
+  // `local: false` znamená požadavek z telefonu – ten nesmí dostat párovací kód ani seznam
   // spárovaných zařízení, jinak by si mohl přizvat další.
   function storageStatus() {
     const r = datastore.recovery;
@@ -943,9 +1017,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const ext = await syncExtension({ zdroj: EXTENSION_DIR, dataDir: config.dataDir });
     extensionPath = ext.path;
     if (ext.reason && !config.quiet) console.error('Agenteeq:', ext.reason);
-    const whoami = run('id', ['-F']).then((r) => { if (r.ok) host.fullName = r.stdout.trim(); });
+    const whoami = fullUserName().then((jmeno) => { if (jmeno) host.fullName = jmeno; });
     const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
-    apps = dry ? ALL_APPS : config.openMode === 'exec' ? await detectApps() : {};
+    apps = dry ? ALL_APPS : config.openApps && config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await Promise.all([whoami, launchReady]);
@@ -958,6 +1032,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
     const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
     every(() => store.reevaluate(), 5000);
+    // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
+    every(() => restoreRemoteAccess(), 30000);
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
     every(() => (datastore.data.customAgents.length ? probeCustomAgents() : null), 30000);
     every(() => alerts.checkLimitResets(), 20000);
@@ -980,7 +1056,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function stop() {
+    stoppingRemote = true;
     for (const t of timers) clearInterval(t);
+    await restoringRemote;
+    await lan.stop();
     for (const c of list) {
       try { c.stop(); } catch { /* ignorovat při ukončení */ }
     }
@@ -996,7 +1075,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, bindLan, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

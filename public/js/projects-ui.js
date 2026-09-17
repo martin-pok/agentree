@@ -1,9 +1,17 @@
 import { state, setProjects, agentsList, projectSessions, projectById } from './state.js';
 import { api } from './api.js';
-import { esc, shortPath, plural } from './format.js';
+import { esc, shortPath, plural, jeAbsolutniCesta, castiCesty } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
 import { modal, toast } from './ui.js';
 import { sessionTotal, needsYou } from './data.js';
+
+// Rada u ručně zadané cesty musí ukazovat tvar, který na daném systému opravdu platí.
+// Server posílá domovskou složku, takže se pozná z ní – ne z prohlížeče, ten běží
+// klidně na telefonu s Androidem, zatímco Agenteeq je na Macu.
+const jeWindowsHost = () => String(state.host?.home || '').includes('\\');
+const CESTA_RADA = () => (jeWindowsHost()
+  ? 'Zadej celou cestu, např. C:\\Users\\jana\\klient.'
+  : 'Zadej celou cestu, např. /Users/jana/klient.');
 
 export const projectHref = (id) => `#/projekt/${encodeURIComponent(id)}`;
 
@@ -44,7 +52,7 @@ export function recentFolders(limit = 6) {
   const seen = new Set();
   const out = [];
   for (const s of agentsList()) {
-    if (s.source === 'web' || typeof s.cwd !== 'string' || !s.cwd.startsWith('/') || seen.has(s.cwd)) continue;
+    if (s.source === 'web' || typeof s.cwd !== 'string' || !jeAbsolutniCesta(s.cwd) || seen.has(s.cwd)) continue;
     seen.add(s.cwd);
     out.push(s.cwd);
     if (out.length >= limit) break;
@@ -81,10 +89,13 @@ export function folderBrowser(root, { onPick, start = '' }) {
       if (my !== seq) return;
       current = r.path;
       pickBtn.disabled = false;
-      const rel = r.path === r.home ? [] : r.path.slice(r.home.length + 1).split('/');
+      const rel = r.path === r.home ? [] : castiCesty(r.path.slice(r.home.length + 1));
+      // Cesta se skládá tím oddělovačem, kterým ji poslal server. Natvrdo lomítko by
+      // na Windows vyrobilo „C:\\Users\\jana/web“ – kříženec, kterým se nikam nedostaneme.
+      const sep = r.home.includes('\\') ? '\\' : '/';
       let acc = r.home;
       crumbs.innerHTML = `<button type="button" class="fb-crumb" data-fb-go="${esc(r.home)}">${ICON.folder}Domů</button>${rel.map((seg) => {
-        acc = `${acc}/${seg}`;
+        acc = `${acc}${sep}${seg}`;
         return `<span class="fb-sep" aria-hidden="true">/</span><button type="button" class="fb-crumb" data-fb-go="${esc(acc)}">${esc(seg)}</button>`;
       }).join('')}`;
       list.innerHTML = r.dirs.length
@@ -104,7 +115,7 @@ export function folderBrowser(root, { onPick, start = '' }) {
     if (recent) { onPick(recent.dataset.fbRecent); return; }
     if (e.target.closest('[data-fb-manual]')) {
       const v = input.value.trim();
-      if (!v.startsWith('/')) { toast('Cesta musí začínat lomítkem, např. /Users/jana/klient.', { tone: 'velvet' }); input.focus(); return; }
+      if (!jeAbsolutniCesta(v)) { toast(CESTA_RADA(), { tone: 'velvet' }); input.focus(); return; }
       onPick(v);
     }
   });
@@ -153,7 +164,7 @@ export function projectForm(existing = null) {
     submitLabel: existing ? 'Uložit změny' : 'Vytvořit projekt',
     wide: true,
     body: `<div class="form-grid">
-        <label class="field field--wide"><span>Název</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="Např. Kavárna U Mostu — web"></label>
+        <label class="field field--wide"><span>Název</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="Např. Kavárna U Mostu – web"></label>
         <label class="field field--wide"><span>Popis <small class="muted">nepovinné</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="Pro koho a co v projektu děláš"></label>
       </div>
       <p class="form-sub" id="${id}-color">Barva</p>
@@ -182,7 +193,7 @@ export function projectForm(existing = null) {
   const render = () => {
     listEl.innerHTML = folders.length
       ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="Odebrat složku ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
-      : '<li class="folder-empty">Zatím žádná složka — projekt bude jen pro ručně zařazené konverzace.</li>';
+      : '<li class="folder-empty">Zatím žádná složka – projekt bude jen pro ručně zařazené konverzace.</li>';
   };
   listEl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove]');

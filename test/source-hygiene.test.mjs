@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Zdrojový soubor se syrovým řídicím znakem (např. nulovým bajtem v regulárním výrazu) funguje,
 // ale nástroje ho považují za binární: `grep` v něm potichu nic nenajde. Tak se při auditu
 // spolehlivosti málem „ztratila“ celá logika stavu Claude Code. Řídicí znaky patří do kódu
 // jen jako escape (\x00), nikdy doslova.
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIRS = ['src', 'public', 'extension', 'bin', 'scripts', 'test'];
 const EXT = /\.(m?js|css|html|json|md)$/;
 

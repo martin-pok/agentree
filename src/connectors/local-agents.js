@@ -1,22 +1,23 @@
-// Konektor „Neznámí a lokální agenti“ — na rozdíl od processes.js (pevný seznam 14 aplikací)
+// Konektor „Neznámí a lokální agenti“ – na rozdíl od processes.js (pevný seznam 14 aplikací)
 // se snaží nepřehlédnout ŽÁDNÝ lokální AI běhový proces: zná desítky konkrétních nástrojů
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
-// (source: 'heuristika', confidence: 'nízká') — nikdy se netváří jako ověřená data.
-import { etimeToSec } from './processes.js';
-import { clip, run } from '../util.js';
+// (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
+import { etimeToSec, program, aplikace } from './processes.js';
+import { clip } from '../util.js';
+import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
 
 // Katalog známých lokálních běhových prostředí. `match` dostane celý řetězec argumentů
 // jednoho procesu (`ps ... args=`) a vrátí, jestli proces patří k tomuto nástroji.
 export const KNOWN_LOCAL = [
-  { id: 'ollama', name: 'Ollama', kind: 'server', match: /(^|\/)ollama(\s|$)/, ports: [11434] },
-  { id: 'lmstudio', name: 'LM Studio', kind: 'app', match: (a) => a.includes('/LM Studio.app/Contents/MacOS/') || /(^|\/)lms(\s|$)/.test(a), ports: [1234] },
-  { id: 'llama-cpp', name: 'llama.cpp', kind: 'cli', match: (a) => /(^|\/)(llama-server|llama-cli)(\s|$)/.test(a) || (/(^|\/)main(\s|$)/.test(a) && /\.gguf\b/i.test(a)) },
+  { id: 'ollama', name: 'Ollama', kind: 'server', match: program('ollama'), ports: [11434] },
+  { id: 'lmstudio', name: 'LM Studio', kind: 'app', match: (a) => aplikace('LM Studio').test(a) || program('lms').test(a), ports: [1234] },
+  { id: 'llama-cpp', name: 'llama.cpp', kind: 'cli', match: (a) => program('llama-server', 'llama-cli').test(a) || (program('main').test(a) && /\.gguf\b/i.test(a)) },
   { id: 'vllm', name: 'vLLM', kind: 'server', match: /vllm\.entrypoints|python3?\s+-m\s+vllm\b/, ports: [8000] },
   { id: 'comfyui', name: 'ComfyUI', kind: 'server', match: (a) => /ComfyUI/i.test(a) && /main\.py/.test(a), ports: [8188] },
   { id: 'text-generation-webui', name: 'Text Generation WebUI', kind: 'server', match: /text-generation-webui/i, ports: [7860] },
   { id: 'koboldcpp', name: 'KoboldCpp', kind: 'server', match: /koboldcpp/i, ports: [5001] },
-  { id: 'jan', name: 'Jan', kind: 'app', match: /\/Jan\.app\/Contents\/MacOS\//i },
+  { id: 'jan', name: 'Jan', kind: 'app', match: aplikace('Jan') },
   { id: 'gpt4all', name: 'GPT4All', kind: 'app', match: /GPT4All/i },
   { id: 'localai', name: 'LocalAI', kind: 'server', match: /local-ai|localai/i, ports: [8080] },
   { id: 'open-webui', name: 'Open WebUI', kind: 'server', match: /open[-_]webui/i, ports: [8080] },
@@ -31,23 +32,30 @@ export const KNOWN_LOCAL = [
   { id: 'transformers-serve', name: 'Transformers serve', kind: 'cli', match: /(^|\s)transformers(-cli)?\s+serve(\s|$)/i },
 ];
 
-// Procesy, které se nikdy nesmí označit — vlastní proces, systémové služby a testovací běh.
+// Procesy, které se nikdy nesmí označit – vlastní proces, systémové služby a testovací běh.
 const EXCLUDE = /agenteeq|node --test|xcode|spotlight|mdworker|finder|safari|chrome|chrome_crashpad|windowserver|kernel_task/i;
 
-// Slabé signály neznámého modelu — samy o sobě stačí, jen když proces něco reálně dělá
+// Slabé signály neznámého modelu – samy o sobě stačí, jen když proces něco reálně dělá
 // (cpu > 0) nebo drží typický inferenční port. Bez toho jde často jen o slovo v cestě
 // k domovské složce (repozitář „moje-llama-app“ apod.) a nic to neznamená.
 const WEAK_KEYWORDS = /\b(llama|mistral|qwen|gemma|phi|deepseek|whisper|diffusion|transformers|torchrun|inference|serve)\b/i;
-// Silné signály — model na disku nebo explicitní --model — stačí samy o sobě.
+// Silné signály – model na disku nebo explicitní --model – stačí samy o sobě.
 const MODEL_FILE = /\.(gguf|safetensors|mlx)\b/i;
 const MODEL_FLAG = /(^|\s)--model(\s|=)/;
 const MODELS_DIR = /models\//i;
 const PY_OR_NODE = /(^|\/)(python3?|node)(\s|$)/;
 const INFERENCE_PORTS = new Set([11434, 1234, 8188, 5000, 5001, 7860, 8000, 8080, 30000]);
 
+// Systémové procesy, které se nikdy neoznačují. Každý systém je má jinde a heuristika
+// pro „neznámý model“ by na nich jinak našla kdeco – ve Windows\\System32 leží stovky
+// procesů se slovy jako „serve“ nebo „inference“ v cestě.
+// Windows nemusí být na disku C, takže se nesrovnává s jednou cestou, ale se vzorem.
+// Pokrývá System32, SysWOW64, WinSxS i všechno ostatní pod systémovou složkou.
+const SYSTEMOVE = /^(\/System\/Library|[A-Za-z]:\\Windows\\)/;
+
 function isExcluded(args) {
   if (!args) return true;
-  if (args.startsWith('/System/Library')) return true;
+  if (SYSTEMOVE.test(args)) return true;
   return EXCLUDE.test(args);
 }
 
@@ -63,7 +71,7 @@ function matchesHeuristic(args, port, cpu) {
   return false;
 }
 
-// Vytáhne název modelu z `--model X` (přednostně) nebo `-m X` — basename bez přípony souboru.
+// Vytáhne název modelu z `--model X` (přednostně) nebo `-m X` – basename bez přípony souboru.
 // `--model` má přednost, protože `-m` u pythonu často znamená spouštěný modul (`python -m vllm…`),
 // ne cestu k modelu.
 function extractModel(args) {
@@ -85,11 +93,11 @@ function parseRow(line) {
   return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
 }
 
-const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu — vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
+const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
 
 /**
  * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde
- * všechny lokální AI běhy — známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
+ * všechny lokální AI běhy – známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
  * na síť a nevyhodí výjimku; na nesmyslném vstupu vrátí [].
  */
 export function detectLocalAgents(psOutput, { ports = [], now = Date.now() } = {}) {
@@ -173,10 +181,7 @@ export function createLocalAgentsConnector(ctx) {
   let lastOk = 0;
 
   async function poll() {
-    const [psRes, lsofRes] = await Promise.all([
-      run('ps', ['-axo', 'pid=,etime=,%cpu=,rss=,args=']),
-      run('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN']),
-    ]);
+    const [psRes, lsofRes] = await Promise.all([processList(), listeningPorts()]);
     const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
     list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports });
     if (psRes.ok) lastOk = Date.now();
@@ -189,8 +194,8 @@ export function createLocalAgentsConnector(ctx) {
     provider: 'local',
     kind: 'local',
     verified: false,
-    source: 'ps · lsof',
-    description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací — podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
+    source: JE_WINDOWS ? 'Win32_Process · Get-NetTCPConnection' : 'ps · lsof',
+    description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), 10000);
@@ -203,8 +208,13 @@ export function createLocalAgentsConnector(ctx) {
     },
     idle: async () => {},
     status() {
+      // Bez úspěšného výpisu procesů se neví nic. Hlásit „nic neběží“ by znamenalo
+      // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
+      if (!lastOk) {
+        return { state: 'error', detail: 'Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.', count: 0 };
+      }
       return {
-        state: lastOk ? (list.length ? 'connected' : 'idle') : 'idle',
+        state: list.length ? 'connected' : 'idle',
         detail: list.length ? `${list.length} lokálních agentů mimo známý seznam.` : 'Žádný neznámý ani lokální agent teď neběží.',
         count: list.length,
       };

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="cz.agenteeq.desktop" version="1.0.0.0" processorArchitecture="amd64"/>
+  <description>Agenteeq — všichni AI agenti na jednom místě</description>
+
+  <!-- Aplikace nikdy nepotřebuje správcovská práva: čte domovskou složku uživatele
+       a naslouchá na 127.0.0.1. Vyžádat si je by byl jen zbytečný dialog navíc. -->
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
+  <!-- Bez tohohle Windows okno na displeji s vyšším DPI rozmaže. PerMonitorV2 navíc
+       zvládne přetažení mezi displeji s různým měřítkem bez rozostření. -->
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">permonitorv2,permonitor</dpiAwareness>
+      <!-- Cesty s diakritikou musí projít i v ANSI volání CRT. -->
+      <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+    </windowsSettings>
+  </application>
+
+  <!-- Verze systému, na kterých je aplikace ověřená. Bez seznamu hlásí Windows
+       aplikaci starší verzi systému, než na které běží. -->
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/><!-- Windows 10 a 11 -->
+      <supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/><!-- Windows 8.1 -->
+    </application>
+  </compatibility>
+
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0"
+                        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
+</assembly>

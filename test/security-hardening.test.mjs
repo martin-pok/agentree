@@ -5,6 +5,7 @@ import { createCloudBillingConnector } from '../src/connectors/cloud-billing.js'
 import { startTestServer, api, tempDir } from './helpers.mjs';
 import { DataStore } from '../src/datastore.js';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 
 test('security: foreign origins cannot read state, transcripts or SSE; same-origin works', async () => {
@@ -68,11 +69,11 @@ test('security: billing credentials never follow redirects; failures remain cont
 });
 
 // Poškozená data se nikdy neztratí: původní bajty zůstanou v souboru „data.json.poskozeno-…“, data se
-// obnoví z poslední dobré zálohy, a aplikace přitom naběhne. Dřív kvůli ochraně dat nenaběhla vůbec —
+// obnoví z poslední dobré zálohy, a aplikace přitom naběhne. Dřív kvůli ochraně dat nenaběhla vůbec –
 // s automatickým spouštěním to byl nekonečný pád bez vysvětlení.
 test('reliability: corrupt persistent data are preserved byte-for-byte and restored from backup', async () => {
   for (const input of ['{"unfinished":', 'null', '[]']) {
-    const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
     const file = dir + '/data.json';
 
     // Dobrý stav s nastavením → uložení vytvoří zálohu → soubor se poškodí mimo aplikaci.
@@ -97,7 +98,7 @@ test('reliability: corrupt persistent data are preserved byte-for-byte and resto
 });
 
 test('reliability: corrupt data without a backup start from defaults, loudly, and keep the original', async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{"projects": [', { mode: 0o600 });
   const ds = new DataStore(dir);
   await ds.load();
@@ -109,8 +110,12 @@ test('reliability: corrupt data without a backup start from defaults, loudly, an
   assert.ok(soubory.includes('data.json'), 'nový platný soubor vznikl');
 });
 
-test('reliability: a permission problem is not masked as corruption', { skip: process.getuid?.() === 0 }, async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agenteeq-corrupt-qa-');
+// Obě kontroly níž si nedostupnost vyrábějí přes POSIXová práva (mode). Windows je nemá:
+// soubor v profilu uživatele chrání ACL, které zdědí, a chmod 0o000 tam nic nezamkne.
+const BEZ_PRAV = process.platform === 'win32' && 'Windows nemá POSIXová práva (mode), chrání ACL profilu';
+
+test('reliability: a permission problem is not masked as corruption', { skip: BEZ_PRAV || process.getuid?.() === 0 }, async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{}', { mode: 0o000 });
   try {
     await assert.rejects(new DataStore(dir).load(), /oprávnění/);
@@ -141,8 +146,10 @@ test('soukromí: historie upozornění jde smazat a datová složka patří jen 
   const ulozeno = JSON.parse(await fs.readFile(path.join(dataHome, 'data.json'), 'utf8'));
   assert.equal(ulozeno.alerts.length, 0, 'ani na disku po nich nic nezůstalo');
 
-  const dir = await fs.stat(dataHome);
-  assert.equal(dir.mode & 0o077, 0, `do datové složky nesmí vidět nikdo jiný (má ${(dir.mode & 0o777).toString(8)})`);
-  const soubor = await fs.stat(path.join(dataHome, 'data.json'));
-  assert.equal(soubor.mode & 0o077, 0, 'datový soubor je jen pro vlastníka');
+  if (!BEZ_PRAV) {
+    const dir = await fs.stat(dataHome);
+    assert.equal(dir.mode & 0o077, 0, `do datové složky nesmí vidět nikdo jiný (má ${(dir.mode & 0o777).toString(8)})`);
+    const soubor = await fs.stat(path.join(dataHome, 'data.json'));
+    assert.equal(soubor.mode & 0o077, 0, 'datový soubor je jen pro vlastníka');
+  }
 });

@@ -1,6 +1,6 @@
 # Architektura
 
-## Desktop pro macOS (0.8.0)
+## Desktop pro macOS (0.12.0)
 
 Nativní Swift/AppKit obal s WKWebView a přibaleným Node 24.18.1 arm64. Server i vanilla frontend zůstávají bez runtime balíčků. macOS 14+; build `npm run build:mac` potřebuje Xcode tools. Fonty Urbanist, Onest a Geist Mono jsou přibalené včetně OFL licencí, žádné požadavky na Google Fonts při používání.
 
@@ -9,6 +9,18 @@ Nativní Swift/AppKit obal s WKWebView a přibaleným Node 24.18.1 arm64. Server
 `desktop/lifecycle.mjs` získá port PŘED načtením či zápisem dat. Při konfliktu nejprve vyčká na probíhající ukončení. Převzetí staršího CLI 0.5 povolí pouze shoda vlastníka procesu, PID vlastníka socketu, skutečné příkazové řádky, skutečných cest, názvu balíčku, datové složky, prázdného seznamu aktivních běhů a SHA-256 auditovaného entrypointu. Použije SIGTERM, nikdy plošné zabíjení podle portu. Novější desktopovou instanci převezme jen při mrtvém GUI rodiči a shodném entrypointu. Neznámou instanci odmítne. Sdílená `~/.agenteeq/data.json` se při neúspěšném startu ani nenačtou.
 
 Události pro Dock/menubar a nativní oznámení jdou přímo z vlastněného procesu, nezávisle na aktivitě webového okna. WebKit smí načítat jen vlastní lokální origin; externí https/mailto odkazy se otevírají mimo aplikaci. Exporty mají nativní Save panel. JavaScript bridge přijímá pouze signál připravenosti z hlavního lokálního frame.
+
+## Kdo se k serveru dostane
+
+Server poslouchá na `127.0.0.1`. Další adresa vzniká jen po výslovném zapnutí v Nastavení –
+buď v domácí síti (`settings.lanAccess`), nebo v privátní síti Tailscale (`settings.tailscaleAccess`).
+Jsou to dvě nezávislé cesty a `src/lan.js` je smiřuje jedním průchodem: zavře, co tam nepatří,
+a otevře, co chybí, takže zapnutí jedné nikdy neshodí druhou.
+
+Výjimku „tohle je z Macu“ (bez tokenu, s přístupem k PINu a seznamu zařízení) dostane požadavek
+jen tehdy, když přišel po smyčce **a** hlásí se na `Host: 127.0.0.1`/`localhost` **a** nenese
+hlavičky od reverzní proxy. Samotná adresa protistrany nestačí: `tailscale serve` se na server
+obrací z `127.0.0.1` za cizí zařízení v tailnetu. Podrobně v `docs/SECURITY.md`.
 
 Ve veřejném vydání je nutný Developer ID podpis a notarizace. Lokální build je ad-hoc podepsaný, s automatickou kontrolou podpisu. Build probíhá mimo iCloud/File Provider, který jinak během podepisování doplňuje nepovolená metadata Finderu.
 
@@ -55,7 +67,7 @@ flowchart LR
 ### Životní cyklus
 
 1. `createApp()` načte `data.json` (vytvoří token pro hooky a rozšíření).
-2. `start()` spustí všechny konektory paralelně (`Promise.allSettled` — chyba jednoho neblokuje ostatní).
+2. `start()` spustí všechny konektory paralelně (`Promise.allSettled` – chyba jednoho neblokuje ostatní).
 3. Po úvodním skenu: `store.reevaluate()`, `store.ready = true`, `alerts.start()` si zapamatuje výchozí stavy (staré události tak nevyvolají notifikace), kontrola rozpočtů.
 4. Časovače: přehodnocení stavů 5 s, plný průchod souborů 10 s (pojistka proti ztraceným událostem watcheru), seznam konektorů 5 s, rozpočty 1 h.
 5. Teprve potom server začne poslouchat. Hooky během startu tiše selžou (curl `-m 2 || true`), Claude Code nezdržují.
@@ -81,7 +93,7 @@ Konektor nastavuje fakta, `deriveStatus()` z nich určí stav v tomto pořadí:
 | 6 | `idle` | < 24 h |
 | 7 | `archived` | starší |
 
-`staleMs` podle zdroje: Claude Code 30 min (konec tahu je v přepisu explicitní — `end_turn`, přerušení, chyba API, hook `Stop`; model může několik minut generovat bez zápisu), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, web 45 s (heartbeat).
+`staleMs` podle zdroje: Claude Code 30 min (konec tahu je v přepisu explicitní – `end_turn`, přerušení, chyba API, hook `Stop`; model může několik minut generovat bez zápisu), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, web 45 s (heartbeat).
 
 Když `running` vyprší bez explicitního konce, stav je `waiting`/`idle` s příznakem `stale: true` a důvodem „Delší dobu bez aktivity“. **Takový přechod nikdy nevyvolá upozornění „dokončil úlohu“.**
 
@@ -89,10 +101,10 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 
 ## Klient (`public/js/`)
 
-- `app.js` — hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
-- `state.js` — jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
-- `views/*.js` — každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
-- `charts.js` — plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
+- `app.js` – hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
+- `state.js` – jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
+- `views/*.js` – každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
+- `charts.js` – plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
 
 ### Vzhled a nativní chrome
 
@@ -121,4 +133,4 @@ Paleta dark mode je tokenová, nikoli CSS filter/inverze: `--paper`, `--card`, t
 | Bez závislostí, bez buildu | Instalace jedním příkazem, žádný supply-chain risk u nástroje s přístupem k přepisům | Při přechodu na nativní aplikaci nebo týmovou synchronizaci |
 | SSE místo WebSocketu | Jednosměrný tok, automatická obnova, jednodušší server | Pokud UI bude posílat realtime příkazy |
 | Stav v paměti + JSON soubor | Zdroje jsou pravda; Agenteeq je jen pohled | Historie > 30 dní nebo více zařízení → SQLite |
-| Heuristiky stavu v jednom místě | Konzistence mezi zdroji, testovatelnost | — |
+| Heuristiky stavu v jednom místě | Konzistence mezi zdroji, testovatelnost | – |

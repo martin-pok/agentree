@@ -108,7 +108,7 @@ export class AlertEngine {
     });
   }
 
-  // Obnovení okna limitu (5 h, týden): upozorní, jakmile čas obnovy uplyne — jen u okna, které se čerpalo.
+  // Obnovení okna limitu (5 h, týden): upozorní, jakmile čas obnovy uplyne – jen u okna, které se čerpalo.
   // Okno do 15 minut po obnově; klíč deduplikace přežije restart, takže upozornění přijde jednou.
   checkLimitResets(now = Date.now()) {
     if (!this.settings.limitReset) return [];
@@ -179,7 +179,7 @@ export class AlertEngine {
   }
 
   // Smaže uloženou historii upozornění včetně klíčů proti opakování. Texty upozornění jsou jediná
-  // trvale ukládaná data odvozená z obsahu konverzací — uživatel se jich takhle zbaví jedním klikem.
+  // trvale ukládaná data odvozená z obsahu konverzací – uživatel se jich takhle zbaví jedním klikem.
   clear() {
     const count = this.datastore.data.alerts.length;
     this.datastore.data.alerts = [];

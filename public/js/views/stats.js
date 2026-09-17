@@ -36,7 +36,7 @@ function mount(el) {
       <div data-region="limits"></div>
       <div data-region="usage-history"></div>
     </section>
-    <p class="note">Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří — najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.</p>`;
+    <p class="note">Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří – najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.</p>`;
   el.addEventListener('click', (e) => {
     const p = e.target.closest('[data-period]');
     if (p) { v.period = p.dataset.period; v.drawn = false; update(); return; }
@@ -56,14 +56,14 @@ function coverageNote() {
   if (!apps.length) return '';
   const covered = (name) => apps.some((a) => name === a || name.startsWith(`${a} `) || a.startsWith(`${name} `));
   const missing = [...new Set((state.runtimes || []).filter((r) => r.running && !covered(r.name)).map((r) => r.name))].sort();
-  const head = `Každá aplikace má vlastní limit — limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí ${apps.join(', ')}.`;
+  const head = `Každá aplikace má vlastní limit – limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí ${apps.join(', ')}.`;
   const tail = missing.length
     ? ` ${missing.join(', ')} ${missing.length > 1 ? 'běží, ale své limity na disk nezapisují' : 'běží, ale svůj limit na disk nezapisuje'}, takže ${missing.length > 1 ? 'je' : 'ho'} Agenteeq nemá odkud přečíst.`
     : '';
   return `<p class="note">${esc(head + tail)}</p>`;
 }
 
-// Historie vytížení plánu Claude (30 dní) — čte se na vyžádání ze souboru aplikace Claude Desktop.
+// Historie vytížení plánu Claude (30 dní) – čte se na vyžádání ze souboru aplikace Claude Desktop.
 async function loadUsage() {
   try {
     const r = await api.planUsage(30);
@@ -86,7 +86,7 @@ function usageHistoryHtml() {
       ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
   if (!charts.length) return '';
   const note = u.extraUsage?.length
-    ? 'Extra usage je hodnota, u které zdroj neuvádí jednotku — Agenteeq z ní nedělá procenta ani koruny.'
+    ? 'Extra usage je hodnota, u které zdroj neuvádí jednotku – Agenteeq z ní nedělá procenta ani koruny.'
     : '';
   return `<div class="usage-history"><div class="sec-head"><h3>Vytížení plánu Claude v čase</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} za 30 dní ze souboru aplikace Claude Desktop</span></div>
     ${charts.join('')}${note ? `<p class="note">${esc(note)}</p>` : ''}</div>`;

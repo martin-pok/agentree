@@ -1,4 +1,4 @@
-// Dokoupení kreditů se nikde nehlásí — pozná se jen z nárůstu zůstatku, který aplikace sama zapisuje
+// Dokoupení kreditů se nikde nehlásí – pozná se jen z nárůstu zůstatku, který aplikace sama zapisuje
 // do svých session. Jenže Codex jich má běžně několik naráz a starší session hlásí zastaralý zůstatek,
 // takže řada čísel skáče nahoru a dolů, i když se nic nekoupilo. Skutečný nákup se od zastaralého
 // snímku pozná tím, že se udrží: následující odečty zůstanou nad původní úrovní.
@@ -26,7 +26,7 @@ export function detectTopUps(readings, { drziMs = DRZI_MS, sloucitMs = SLOUCIT_M
     const po = body[i].balance;
     if (po <= pred + PRAH) continue;
 
-    // Udrží se vzestup? Bereme medián odečtů v následujícím okně — jednotlivý zastaralý snímek
+    // Udrží se vzestup? Bereme medián odečtů v následujícím okně – jednotlivý zastaralý snímek
     // tak výsledek nepřeváží, ale návrat na původní úroveň ano.
     const nasledujici = [];
     for (let j = i + 1; j < body.length && body[j].at - body[i].at <= drziMs; j++) nasledujici.push(body[j].balance);

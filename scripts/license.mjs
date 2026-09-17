@@ -34,13 +34,13 @@ function fail(msg) {
 const cmd = process.argv[2];
 
 if (cmd === 'keygen') {
-  if (fs.existsSync(KEY_FILE)) fail(`Podpisový klíč už existuje: ${KEY_FILE}\nNepřepisuji ho — všechny vydané licence by přestaly platit.`);
+  if (fs.existsSync(KEY_FILE)) fail(`Podpisový klíč už existuje: ${KEY_FILE}\nNepřepisuji ho – všechny vydané licence by přestaly platit.`);
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
   fs.mkdirSync(path.dirname(KEY_FILE), { recursive: true, mode: 0o700 });
   fs.writeFileSync(KEY_FILE, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600 });
   const pub = publicKey.export({ type: 'spki', format: 'pem' });
   fs.writeFileSync(PUBLIC_FILE, `// Veřejný klíč vydavatele licencí (vytvořen: node scripts/license.mjs keygen). Soukromý klíč není v repozitáři.\nexport const LICENSE_PUBLIC_KEY = ${JSON.stringify(pub)};\n`);
-  console.log(`Hotovo.\nSoukromý klíč: ${KEY_FILE} (zálohuj ho bezpečně — bez něj nepůjde vydávat licence)\nVeřejný klíč: ${PUBLIC_FILE}`);
+  console.log(`Hotovo.\nSoukromý klíč: ${KEY_FILE} (zálohuj ho bezpečně – bez něj nepůjde vydávat licence)\nVeřejný klíč: ${PUBLIC_FILE}`);
 } else if (cmd === 'issue') {
   if (!fs.existsSync(KEY_FILE)) fail(`Chybí podpisový klíč ${KEY_FILE}. Nejdřív spusť: node scripts/license.mjs keygen`);
   const name = arg('name');

@@ -3,6 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { JsonlTail, statSafe, readJson, readdirSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, MIN, DAY } from '../util.js';
 import { touch, pushEntry, resetTranscript, addTokens } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
+import { appSupportDir, JE_WINDOWS } from '../platform.js';
+
+// Totéž co u Cursoru: mění se jen základ složky, struktura pod ním ne.
+const VSCODE_ZDROJ = JE_WINDOWS
+  ? '%APPDATA%\\Code\\User\\…\\chatSessions'
+  : '~/Library/Application Support/Code/User/…/chatSessions';
 
 /* ---------- GitHub Copilot v VS Code (chatSessions/*.json) ---------- */
 
@@ -60,7 +66,7 @@ async function workspaceFolder(chatFile) {
 
 export function createVsCodeCopilotConnector(ctx) {
   const { store, config } = ctx;
-  const base = path.join(config.sourceHome, 'Library', 'Application Support');
+  const base = appSupportDir(config.sourceHome);
   const editions = ['Code', 'Code - Insiders'];
   const windowMs = config.windowDays * DAY;
   const seen = new Map();
@@ -107,7 +113,7 @@ export function createVsCodeCopilotConnector(ctx) {
     provider: 'github',
     kind: 'local',
     verified: false,
-    source: '~/Library/Application Support/Code/User/…/chatSessions',
+    source: VSCODE_ZDROJ,
     description: 'Chaty a agentní režim Copilotu ve VS Code: přepis, nástroje a model.',
     async start() {
       await scan();

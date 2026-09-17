@@ -29,7 +29,7 @@ function rowHtml(s, now) {
       <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
       <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="live-dot"></span>${esc(s.activity)}` : sub}</span></span>
     </a>
-    <span class="prow-meta">${statusPill(s.status)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '—'}</span></span>
+    <span class="prow-meta">${statusPill(s.status)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '–'}</span></span>
     <span class="prow-actions">${actions}</span>
   </li>`;
 }
@@ -153,7 +153,7 @@ function mount(el, [id]) {
           break;
         case 'copy-brief':
           if (!textarea.value.trim()) { toast('Podklady jsou zatím prázdné.'); textarea.focus(); break; }
-          await copy(`Podklady projektu ${p.name}:\n${textarea.value.trim()}`, 'Podklady zkopírovány — vlož je do zadání agenta');
+          await copy(`Podklady projektu ${p.name}:\n${textarea.value.trim()}`, 'Podklady zkopírovány – vlož je do zadání agenta');
           break;
         case 'archive': {
           const r = await api.updateProject(p.id, { archived: !p.archived });
@@ -219,7 +219,7 @@ function update() {
     <div class="card kpi"><span class="eyebrow">Konverzace</span><span class="val">${st.total}</span><small>${st.older.length ? `z toho ${st.older.length} starších` : 'žádná starší než 30 dní'}</small></div>
     <div class="card kpi"><span class="eyebrow">Právě pracuje</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} na tebe</span>` : 'nikdo nečeká'}</small></div>
     <div class="card kpi"><span class="eyebrow">Tokeny · 30 dní</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>vstup a výstup</small></div>
-    <div class="card kpi"><span class="eyebrow">Služby</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">—</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'zatím bez aktivity'}</small></div>`);
+    <div class="card kpi"><span class="eyebrow">Služby</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">–</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'zatím bez aktivity'}</small></div>`);
 
   const counts = {
     all: st.total,
@@ -242,7 +242,7 @@ function update() {
     ${p.folders.length
       ? `<ul class="folder-list folder-list--plain">${p.folders.map((f) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button class="icon-btn" type="button" data-copy="${esc(f)}" data-copy-message="Cesta zkopírována" aria-label="Kopírovat cestu">${ICON.copy}</button></li>`).join('')}</ul>
          <p class="small muted">Agenti spuštění v těchto složkách se zařadí automaticky.</p>`
-      : '<p class="small muted">Bez složky — do projektu patří jen ručně zařazené konverzace.</p>'}`);
+      : '<p class="small muted">Bez složky – do projektu patří jen ručně zařazené konverzace.</p>'}`);
 
   const byApp = new Map();
   for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));

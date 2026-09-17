@@ -1,4 +1,4 @@
-# Desktop 0.6.0 — ověření 2026-09-11
+# Desktop 0.6.0 – ověření 2026-09-11
 
 ## ROOT CAUSE
 
@@ -28,7 +28,7 @@ Port už byl volný, GUI a jeho zámek však žily dál. Finální verze místo 
   při ukončování vlastního dítěte. V QA se použil také k simulaci pádu GUI.
 - Zavření okna ponechává monitoring běžet záměrně; ⌘Q ukončuje celou aplikaci.
 
-## FILES CHANGED — lifecycle
+## FILES CHANGED – lifecycle
 
 `desktop/Agenteeq.swift`, `desktop/server.mjs`, `desktop/lifecycle.mjs`,
 `src/http.js`, `test/desktop.test.mjs`, `test/lifecycle.test.mjs`.
@@ -57,5 +57,5 @@ nativního balíčku, ikonou, lokálními fonty, průvodcem a vlastními selecty
 Lokální arm64 build pro macOS 14+ je ad-hoc podepsaný, není notarizovaný.
 Veřejná distribuce vyžaduje Developer ID a notarizaci. QA není tvrzení, že
 každý externí poskytovatel byl ověřen živým placeným spuštěním; zkušební
-konektory zůstávají v UI výslovně označené. Supabase nebyl přidán — lokální
+konektory zůstávají v UI výslovně označené. Supabase nebyl přidán – lokální
 backend požadované funkce již obsluhuje a data neopouštějí Mac kvůli této úpravě.

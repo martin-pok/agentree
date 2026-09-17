@@ -18,7 +18,7 @@ export const SOURCES = [
 ];
 
 // Hlavička souboru je YAML mezi dvěma řádky `---`. Bereme jen `name` a `description`,
-// nic dalšího neodhadujeme — když hlavička chybí, název vezmeme z názvu složky.
+// nic dalšího neodhadujeme – když hlavička chybí, název vezmeme z názvu složky.
 export function parseFrontMatter(text) {
   const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text || '');
   if (!m) return {};
@@ -33,7 +33,7 @@ export function parseFrontMatter(text) {
   return out;
 }
 
-// Odkud dovednost pochází. Zdroj (`source`) říká, který nástroj ji čte; původ říká, kdo ji napsal —
+// Odkud dovednost pochází. Zdroj (`source`) říká, který nástroj ji čte; původ říká, kdo ji napsal –
 // a to je to, co uživatel hledá, když má mezi 147 dovednostmi najít ty svoje dvě.
 // Rozlišuje se podle cesty, protože v souboru samotném o původu nic není.
 export const ORIGINS = {
@@ -44,7 +44,10 @@ export const ORIGINS = {
 };
 
 export function originOf(dir) {
-  const d = String(dir || '');
+  // Původ se pozná ze struktury cesty, a ta se na Windows píše zpětným lomítkem.
+  // Kdyby se porovnávalo jen s „/“, na Windows by se každá dovednost z pluginu
+  // označila za vlastní – tedy tiše špatně, což je horší než nepoznat ji vůbec.
+  const d = String(dir || '').replace(/\\/g, '/');
   if (/\/plugins\/(marketplaces|cache)\/claude-plugins-official\//.test(d)) return 'anthropic';
   if (/\/\.codex\/skills\/\.system\//.test(d)) return 'openai';
   if (/\/plugins\/(marketplaces|cache)\//.test(d)) return 'plugin';
@@ -113,7 +116,7 @@ export function createSkills({ config }) {
     return items.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
   }
 
-  // Obsah se hledá podle id v čerstvě projitém seznamu — cesta nikdy nepřichází z požadavku,
+  // Obsah se hledá podle id v čerstvě projitém seznamu – cesta nikdy nepřichází z požadavku,
   // takže se přes tenhle endpoint nedá přečíst libovolný soubor na disku.
   async function read(id) {
     if (typeof id !== 'string' || !/^[0-9a-f]{12}$/.test(id)) return null;

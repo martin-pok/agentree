@@ -16,7 +16,9 @@ test('migrace dat: jednou zkopíruje, nepřepíše, original zůstane', async ()
   const first = await migrateLegacyData({ dataDir, legacyDir });
   assert.equal(first.migrated, true);
   assert.equal(await fs.readFile(path.join(dataDir, 'data.json'), 'utf8'), original);
-  assert.equal((await fs.stat(path.join(dataDir, 'data.json'))).mode & 0o777, 0o600);
+  // Windows práva souborů přes mode neřeší – dědí je z ACL domovské složky, která
+  // je už jen pro vlastníka. Na POSIXu to ale musí sedět na bit přesně.
+  if (process.platform !== 'win32') assert.equal((await fs.stat(path.join(dataDir, 'data.json'))).mode & 0o777, 0o600);
   assert.equal(await fs.readFile(path.join(legacyDir, 'data.json'), 'utf8'), original, 'originál beze změny');
 
   await fs.writeFile(path.join(dataDir, 'data.json'), '{"novy":true}');

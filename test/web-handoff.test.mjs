@@ -5,7 +5,7 @@ import path from 'node:path';
 import { startTestServer, api } from './helpers.mjs';
 
 // Gemini ani Qwen neumí převzít zadání z adresy. Po spuštění z Agenteeq si ho proto vyzvedne
-// rozšíření v prohlížeči a vloží do pole zprávy. Zadání je text uživatele — nesmí ho dostat nikdo
+// rozšíření v prohlížeči a vloží do pole zprávy. Zadání je text uživatele – nesmí ho dostat nikdo
 // jiný, nesmí se dát vyzvednout dvakrát a nesmí zůstat viset.
 
 test('předání zadání do webové služby přes rozšíření', async (t) => {

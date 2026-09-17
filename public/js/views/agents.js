@@ -26,10 +26,10 @@ const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'm
 
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
 // vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,
-// i to, proč u nich nemůže být přepis — a co s tím jde udělat.
+// i to, proč u nich nemůže být přepis – a co s tím jde udělat.
 
 // Konverzace v prohlížeči (Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Copilot, Qwen) vidí
-// Agenteeq výhradně přes rozšíření — do stránky v prohlížeči se odjinud dostat nedá. Dokud
+// Agenteeq výhradně přes rozšíření – do stránky v prohlížeči se odjinud dostat nedá. Dokud
 // rozšíření nikdy nic neposlalo, musí to aplikace říct: mlčet a tvářit se, že nic neběží, je
 // k nerozeznání od chyby.
 function webBezRozsireniHtml() {
@@ -40,7 +40,7 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b>Konverzace v prohlížeči se nesledují</b>
       <span class="muted small">rozšíření zatím neposlalo žádná data</span>
-      <p class="small">Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví — stránku v prohlížeči odjinud přečíst nelze.</p>
+      <p class="small">Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví – stránku v prohlížeči odjinud přečíst nelze.</p>
       <a class="link-inline" href="#/nastaveni">Nastavit rozšíření ${ICON.arrow}</a>
     </div>
   </li>`;
@@ -75,7 +75,7 @@ function bezPrepisuHtml(sessions) {
   </section>`;
 }
 
-// Detekovaný lokální agent — od vlastního modelu z Hugging Face po ComfyUI. U rozpoznaných podle
+// Detekovaný lokální agent – od vlastního modelu z Hugging Face po ComfyUI. U rozpoznaných podle
 // heuristiky říkáme narovinu, že je to odhad z běžícího procesu a že u nich Agenteeq neumí víc.
 function lokalniHtml(a) {
   const jistota = a.confidence === 'vysoká';
@@ -122,9 +122,9 @@ function rowHtml(s) {
   const runs = taskRunCount(s);
   const cells = `
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} spuštění</span>` : ''}${sub}</span>${progress}</span>
-    <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '—'))}</small></span>
+    <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '–'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>
-    <span class="cell-num">${total ? fmtTok(total) : '—'}</span>
+    <span class="cell-num">${total ? fmtTok(total) : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;
   if (f.selecting) {
     const checked = f.selected.has(s.id);
@@ -229,7 +229,7 @@ function update() {
   const all = agentsList();
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
   const q = norm(f.q.trim());
-  // Zdroj, poskytovatel a hledání platí i pro počty u projektů — jsou to nadřazené filtry.
+  // Zdroj, poskytovatel a hledání platí i pro počty u projektů – jsou to nadřazené filtry.
   const matchFacets = (s) =>
     (f.source === 'all' || (f.source === 'web' ? s.source === 'web' : s.source !== 'web'))
     && (!f.providers.size || f.providers.has(pkey(s.provider)))

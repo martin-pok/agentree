@@ -4,17 +4,17 @@ import UserNotifications
 import Darwin
 
 /// Horní pruh okna, za který se dá okno chytit a přesunout. Systémové záhlaví je sice průhledné
-/// a táhnout se za něj dá, ale je úzké — tenhle pruh uchopení rozšiřuje na celou dekorativní
+/// a táhnout se za něj dá, ale je úzké – tenhle pruh uchopení rozšiřuje na celou dekorativní
 /// plochu nad kartami. Nic pod ním se neztratí: postranní panel začíná až na 44 px a obsah
 /// stránky ještě níž, takže tu není co proklikávat.
 final class DragStrip: NSView {
     override var mouseDownCanMoveWindow: Bool { true }
 
-    // `mouseDownCanMoveWindow` je jen sdělení systému, že by se tady okno táhnout mohlo — a uvnitř
+    // `mouseDownCanMoveWindow` je jen sdělení systému, že by se tady okno táhnout mohlo – a uvnitř
     // webového pohledu se na něj nedá spolehnout, protože ten si obsluhu myši řeší sám. Proto
     // tažení spouštíme výslovně; `performDrag` je k tomu určené API a chová se přesně jako záhlaví.
     override func mouseDown(with event: NSEvent) {
-        // Dvojklik na záhlaví okno zvětší nebo zmenší — tohle chování musí pruh zachovat.
+        // Dvojklik na záhlaví okno zvětší nebo zmenší – tohle chování musí pruh zachovat.
         if event.clickCount == 2 {
             window?.zoom(nil)
             return
@@ -70,14 +70,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         web.isInspectable = qa
         web.setValue(false, forKey: "drawsBackground")
         // Obsah sahá až pod záhlaví okna: místo systémového bílého pruhu je za tlačítky vidět
-        // tmavý pruh aplikace i s jeho přechodem. Název okna je skrytý — značka je v panelu.
+        // tmavý pruh aplikace i s jeho přechodem. Název okna je skrytý – značka je v panelu.
         // Za horní pruh se okno chytá a přesouvá (viz DragStrip). `isMovableByWindowBackground`
-        // schválně nezapínáme — táhlo by okno i při označování textu uvnitř aplikace.
+        // schválně nezapínáme – táhlo by okno i při označování textu uvnitř aplikace.
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Agenteeq"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
-        // Podklad je tmavý v obou režimech vzhledu — stejně jako „stůl“, na kterém aplikace leží.
+        // Podklad je tmavý v obou režimech vzhledu – stejně jako „stůl“, na kterém aplikace leží.
         window.backgroundColor = backdrop
         window.appearance = NSAppearance(named: .aqua)
         window.contentMinSize = NSSize(width: 900, height: 620)
@@ -121,7 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // Výška odpovídá odsazení v `public/desktop.css` (`html.is-desktop .sidebar { margin-top: 44px }`):
     // pruh končí přesně tam, kde začíná první karta.
     // Obsah okna je kontejner se dvěma sourozenci: webový pohled přes celou plochu a nad ním pruh
-    // k uchopení. Sourozenec dostane události myši běžnou cestou AppKitu — kdyby ležel uvnitř
+    // k uchopení. Sourozenec dostane události myši běžnou cestou AppKitu – kdyby ležel uvnitř
     // webového pohledu, přebírala by je jeho vlastní obsluha a okno by se táhnout nedalo.
     func buildDragStrip() {
         let root = NSView()
@@ -146,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = NSImage(systemSymbolName: "point.3.connected.trianglepath.dotted", accessibilityDescription: "Agenteeq")
-        statusItem.button?.toolTip = "Agenteeq — zobrazit přehled"
+        statusItem.button?.toolTip = "Agenteeq – zobrazit přehled"
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
 
@@ -209,7 +209,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                         self.baseURL = URL(string: "http://127.0.0.1:\(port)")!
                         self.web.load(URLRequest(url: self.baseURL!))
                         // Počítadlo restartů chrání jen před smyčkou pádů hned po startu. Když server
-                        // vydrží minutu, vynuluje se — jinak by aplikace běžící týdny po třetím
+                        // vydrží minutu, vynuluje se – jinak by aplikace běžící týdny po třetím
                         // náhodném pádu zůstala viset a čekala na ruční „Zkusit znovu“.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
                             guard let self, self.generation == currentGeneration, self.child?.isRunning == true else { return }

@@ -40,7 +40,7 @@ test('zadání → nástroj → výsledek → konec tahu', () => {
   assert.equal(s.tokens.cacheWrite, 100);
   assert.equal(s.tokens.cacheRead, 1000);
   // Hlavní metrika je vstup + výstup (11 + 60). Zápis do cache je technická režie a do
-  // hodinových přihrádek, ze kterých se kreslí všechny grafy, nepatří — jinak hlavní číslo
+  // hodinových přihrádek, ze kterých se kreslí všechny grafy, nepatří – jinak hlavní číslo
   // vyjde skoro devětkrát vyšší, než kolik uživatel vidí u dodavatele.
   assert.equal(Object.values(s.hourly).reduce((a, b) => a + b, 0), 71, 'hodinové přihrádky nesmí obsahovat zápis do cache');
   assert.equal(s.running, false);
@@ -153,7 +153,7 @@ test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se n
     const pomocnik = stav.sessions.find((x) => x.id === 'claude-code:agent-abc123');
 
     assert.ok(rodic, 'rodičovská konverzace musí existovat');
-    assert.ok(pomocnik, 'pomocný agent se musí načíst — jeho práce nesmí zmizet');
+    assert.ok(pomocnik, 'pomocný agent se musí načíst – jeho práce nesmí zmizet');
     assert.equal(pomocnik.parentId, `claude-code:${parent}`, 'pomocník je navázaný na rodiče');
     assert.equal(pomocnik.subagent?.label, 'Pomocný agent');
     assert.equal(pomocnik.tokens.input + pomocnik.tokens.output, 300, 'tokeny pomocníka se počítají');

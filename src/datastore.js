@@ -20,7 +20,8 @@ export const DEFAULT_SETTINGS = {
     browser: false,
   },
   disabledConnectors: [],
-  lanAccess: false, // přístup z telefonu; výchozí stav je vypnuto
+  lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
+  tailscaleAccess: false, // přístup z vlastní privátní sítě Tailscale; výchozí stav je vypnuto
 };
 
 const ALERTS_MAX = 300;
@@ -48,6 +49,7 @@ export function normalizeData(raw) {
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       lanAccess: s.lanAccess === true,
+      tailscaleAccess: s.tailscaleAccess === true,
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
@@ -122,13 +124,13 @@ export class DataStore {
         raw = await this.recover();
       } else if (err.code !== 'ENOENT') {
         // Oprávnění nebo složka místo souboru: nový soubor by nepomohl a přepsal by skutečná data.
-        throw new Error('Data Agenteeq nelze načíst — nemám oprávnění ke složce ~/.agenteeq. Původní soubor zůstal zachovaný.');
+        throw new Error('Data Agenteeq nelze načíst – nemám oprávnění ke složce ~/.agenteeq. Původní soubor zůstal zachovaný.');
       }
     }
     this.data = normalizeData(raw);
     if (this.recovery) this.data.alerts.push(this.recovery.alert);
     await this.flush();
-    // Vlastní datová složka patří jen přihlášenému uživateli — na sdíleném Macu se tak k ní
+    // Vlastní datová složka patří jen přihlášenému uživateli – na sdíleném Macu se tak k ní
     // nedostane nikdo další. Cizí složky (AGENTEEQ_HOME mimo domov) se tím nemění na nic horšího.
     await fs.chmod(this.dir, 0o700).catch(() => {});
     return this.data;
@@ -136,7 +138,7 @@ export class DataStore {
 
   // Poškozený data.json aplikaci neshodí (dřív: pád při každém startu, s LaunchAgentem pořád dokola).
   // Soubor se zachová vedle pod jiným jménem, data se vezmou z poslední dobré zálohy, a když ani ta
-  // není, začne se od výchozích hodnot. Uživatel se to dozví upozorněním — nic se neděje potichu.
+  // není, začne se od výchozích hodnot. Uživatel se to dozví upozorněním – nic se neděje potichu.
   async recover() {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const preserved = `${this.file}.poskozeno-${stamp}`;
@@ -159,10 +161,10 @@ export class DataStore {
         key: `data-recovery:${stamp}`,
         level: 'critical',
         kind: 'system',
-        title: raw ? 'Data Agenteeq byla poškozená — obnovena ze zálohy' : 'Data Agenteeq byla poškozená',
+        title: raw ? 'Data Agenteeq byla poškozená – obnovena ze zálohy' : 'Data Agenteeq byla poškozená',
         body: raw
           ? `Použil jsem poslední dobrou zálohu, přijít jsi mohl nejvýš o poslední změny. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq.`
-          : `Záloha nebyla k dispozici, nastavení začíná od výchozích hodnot. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq — projekty a výdaje z něj jde obnovit.`,
+          : `Záloha nebyla k dispozici, nastavení začíná od výchozích hodnot. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq – projekty a výdaje z něj jde obnovit.`,
       },
     };
     console.error(`Agenteeq: data.json byl poškozený, ${raw ? 'obnoveno ze zálohy' : 'začínám od výchozích hodnot'}; původní soubor: ${preserved}`);
@@ -174,7 +176,7 @@ export class DataStore {
   }
 
   // Vrací true/false podle toho, jestli zápis skutečně prošel. Před zápisem se poslední platný soubor
-  // uloží jako záloha — z ní se obnoví, kdyby se data.json poškodil mimo aplikaci.
+  // uloží jako záloha – z ní se obnoví, kdyby se data.json poškodil mimo aplikaci.
   flush() {
     this.scheduleSave.cancel();
     const snapshot = JSON.parse(JSON.stringify(this.data));

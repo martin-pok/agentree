@@ -1,6 +1,6 @@
 import { run } from './util.js';
 
-// Nativní notifikace macOS přes osascript. Text jde jako argumenty (argv), ne do skriptu — žádná injekce.
+// Nativní notifikace macOS přes osascript. Text jde jako argumenty (argv), ne do skriptu – žádná injekce.
 export function createNotifier({ enabled }) {
   return {
     enabled,

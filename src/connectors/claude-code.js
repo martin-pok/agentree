@@ -6,7 +6,7 @@ import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
 // Okna limitů předplatného, která Claude Code předává stavovému řádku (`rate_limits`).
-// `spend_limit` není okno předplatného, ale vyčerpání dokoupeného extra usage — proto vlastní druh.
+// `spend_limit` není okno předplatného, ale vyčerpání dokoupeného extra usage – proto vlastní druh.
 export const STATUS_WINDOWS = {
   five_hour: { id: 'claude:five_hour', label: 'Limit 5 h', minutes: 300 },
   seven_day: { id: 'claude:seven_day', label: 'Týdenní limit', minutes: 10080 },
@@ -99,7 +99,7 @@ export const newFileState = (subagentFile = false) => ({
   subagentTitles: new Map(), // agentId → popis úlohy (z rodičovského přepisu)
 });
 
-// „agentId: a0315452530126137" z výsledku nástroje Task — jediné pojítko mezi rodičem a přepisem pomocníka.
+// „agentId: a0315452530126137" z výsledku nástroje Task – jediné pojítko mezi rodičem a přepisem pomocníka.
 export const agentIdFrom = (text) => /agentId:\s*([a-z0-9]{6,40})/i.exec(text || '')?.[1] || '';
 
 function meta(s, o) {
@@ -110,7 +110,7 @@ function meta(s, o) {
 }
 
 function markRunning(s, ts) {
-  // Časové razítko z budoucnosti (posunuté hodiny) by drželo „pracuje“ navždy — ořízne se na teď.
+  // Časové razítko z budoucnosti (posunuté hodiny) by drželo „pracuje“ navždy – ořízne se na teď.
   ts = Math.min(ts, Date.now());
   if (ts < (s.stopAt || 0)) return;
   s.running = true;
@@ -242,7 +242,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
       cacheRead: u.cache_read_input_tokens || 0,
       ts,
     };
-    // Streamované zprávy se v přepisu opakují se stejným id — platí poslední záznam.
+    // Streamované zprávy se v přepisu opakují se stejným id – platí poslední záznam.
     const prev = st.msgs.get(id);
     if (prev) addTokens(s, prev.ts, prev, -1);
     addTokens(s, ts, cur);
@@ -346,7 +346,7 @@ export function createClaudeCodeConnector(ctx) {
     for (const [agentId, popis] of f.st.subagentTitles) {
       if (subagentTitles.get(agentId) === popis) continue;
       subagentTitles.set(agentId, popis);
-      // Rodič se mohl načíst až po pomocníkovi — dotitulkuj, co už je v paměti.
+      // Rodič se mohl načíst až po pomocníkovi – dotitulkuj, co už je v paměti.
       const hotovy = store.get(`claude-code:agent-${agentId}`);
       if (hotovy && hotovy.title !== popis) {
         hotovy.title = popis;
@@ -357,7 +357,7 @@ export function createClaudeCodeConnector(ctx) {
       const popis = subagentTitles.get(f.localId.replace(/^agent-/, ''));
       if (popis) s.title = popis;
     }
-    // Pomocného agenta nelze samostatně obnovit — příkaz `claude --resume` platí jen pro rodiče.
+    // Pomocného agenta nelze samostatně obnovit – příkaz `claude --resume` platí jen pro rodiče.
     if (!f.parentLocalId) setResume(s, f.localId);
     // Konec tahu je v přepisu explicitní (end_turn, přerušení, chyba API, hook Stop). Dlouhé přemýšlení
     // modelu nezapisuje nic, proto „pracuje“ drží až 30 min a teprve pak přejde do stavu bez aktivity.
@@ -368,7 +368,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = Boolean(await statSafe(root));
-    // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou — ta je z přehledu odebere.
+    // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou – ta je z přehledu odebere.
     for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
     const jsonl = (x) => x.endsWith('.jsonl');
     for (const f of await listFiles(root, 1, jsonl)) await queue.run(f);
@@ -445,7 +445,7 @@ export function createClaudeCodeConnector(ctx) {
   }
 
   // Stavový řádek Claude Code (src/hooks-installer.js): oficiální limity 5 h a týden, kontext, repozitář, PR.
-  // Neposouvá „poslední aktivitu“ — stavový řádek se překresluje i bez práce agenta.
+  // Neposouvá „poslední aktivitu“ – stavový řádek se překresluje i bez práce agenta.
   const statusCache = new Map();
 
   function statusLimit(key, w, now) {

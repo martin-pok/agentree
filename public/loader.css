@@ -1,10 +1,10 @@
 /*
- * Agenteeq — načítací animace značky.
+ * Agenteeq – načítací animace značky.
  *
  * Nosný efekt: větve značky se postupně „narůstají" přes stroke-dashoffset
  * (kmen → levá větev → pravá větev), uzly se rozsvěcují, jak je růst dosáhne.
  * Podpora: jemné nadechnutí celé značky (scale) a doznívající smaragdové halo,
- * které se rozsvítí po dokreslení a pak pomalu odezní — echo dokončené práce.
+ * které se rozsvítí po dokreslení a pak pomalu odezní – echo dokončené práce.
  * Smyčka 2 s: růst a odeznění se prolnou v jedné plynulé animaci beze střihu.
  *
  * Animuje se výhradně transform, opacity a stroke-dashoffset (GPU, bez
@@ -79,10 +79,10 @@
 
 /* Kmen (0–56 %) → levá větev (do ~74 %) → pravá větev (do 100 % úseku růstu);
    v 74–90 % se dokreslená značka zároveň stírá a vytrácí (dissolve), takže
-   reset dashoffsetu proběhne, zatímco je neviditelná — beze střihu. */
+   reset dashoffsetu proběhne, zatímco je neviditelná – beze střihu. */
 @keyframes lm-branches {
   0%   { stroke-dashoffset: 100; opacity: 1; }
-  38%  { stroke-dashoffset: 0;   opacity: 1; }  /* dokresleno — odsud je značka čitelná */
+  38%  { stroke-dashoffset: 0;   opacity: 1; }  /* dokresleno – odsud je značka čitelná */
   76%  { stroke-dashoffset: 0;   opacity: 1; }  /* … a takhle vydrží většinu smyčky */
   88%  { stroke-dashoffset: 0;   opacity: 0; }  /* rozplyne se celá, ne po částech */
   89%  { stroke-dashoffset: 100; opacity: 0; }  /* skok zpět se schová do neviditelnosti */

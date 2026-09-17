@@ -4,9 +4,14 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/util.js';
 
-// Otisk CLI, které smí být převzato. Mění se s obsahem bin/agenteeq.mjs — naposledy při
-// přejmenování Agentree → Agenteeq (0.8.0). Nikdy nepovolujeme převzetí jen podle názvu procesu.
-const LEGACY_CLI_SHA = 'fdcf57f0240b5415d8ef415ffb47f95487b134c91535359aaaca4671969a0fa2';
+// Otisk CLI, které smí být převzato. Mění se s obsahem bin/agenteeq.mjs – naposledy při
+// otevírání prohlížeče mimo macOS (0.12.0), předtím při přejmenování Agentree → Agenteeq (0.8.0).
+// Nikdy nepovolujeme převzetí jen podle názvu procesu.
+//
+// Ta konstanta je pojistka, ne administrativa: test v test/lifecycle.test.mjs spadne pokaždé,
+// když se vstupní bod změní, a vynutí si tím, aby se znovu přečetl. Přepsat ji bez přečtení
+// toho, co se v bin/agenteeq.mjs opravdu změnilo, znamená tu pojistku zahodit.
+const LEGACY_CLI_SHA = 'c7a5a28e2d2085a9ffed82f06628b0269e615788b209de1dc270648f5c2b1358';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 export const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code !== 'ESRCH'; } };

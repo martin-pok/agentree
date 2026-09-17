@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { appSupportDir } from '../src/platform.js';
 import { startTestServer, writeJsonl, openStream, waitFor, api, tempDir } from './helpers.mjs';
 
 const localDate = () => {
@@ -172,7 +173,10 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal(r.body.claudeHooks.installed, true);
     const json = JSON.parse(await fs.readFile(path.join(srcHome, '.claude', 'settings.json'), 'utf8'));
     const port = new URL(srv.url).port;
-    assert.ok(json.hooks.Notification[0].hooks[0].command.includes(`127.0.0.1:${port}/api/hooks/claude-code`));
+    const rawCommand = json.hooks.Notification[0].hooks[0].command;
+    const command = rawCommand.includes(' -EncodedCommand ')
+      ? Buffer.from(rawCommand.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : rawCommand;
+    assert.ok(command.includes(`127.0.0.1:${port}/api/hooks/claude-code`));
     const off = await a.send('POST', '/api/integrations/claude-hooks/uninstall');
     assert.equal(off.body.claudeHooks.installed, false);
   });
@@ -205,7 +209,7 @@ test('Historie vytížení plánu přes API: bez souboru „není k dispozici“
   assert.equal(prazdno.body.fiveHour, undefined, 'bez souboru žádná řada');
 
   const now = Date.now();
-  const dir = path.join(srcHome, 'Library', 'Application Support', 'Claude');
+  const dir = path.join(appSupportDir(srcHome), 'Claude');
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, 'plan-usage-history.json'), JSON.stringify({
     version: 2,

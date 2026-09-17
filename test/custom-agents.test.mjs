@@ -32,7 +32,7 @@ test('validateEndpoint: odmítne link-local/cloudovou metadata adresu a 0.0.0.0 
   assert.equal(validateEndpoint('http://0.0.0.0:8188').ok, false);
 });
 
-test('validateEndpoint: zahodí cestu, dotaz i fragment — origin je jen schéma+host+port', () => {
+test('validateEndpoint: zahodí cestu, dotaz i fragment – origin je jen schéma+host+port', () => {
   const result = validateEndpoint('http://127.0.0.1:8188/queue?x=1#y');
   assert.deepEqual(result, { ok: true, origin: 'http://127.0.0.1:8188' });
 });
@@ -75,7 +75,7 @@ test('normalizeAgent: neplatný čas se nahradí hodnotou now', () => {
   assert.equal(result.agent.addedAt, 12345);
 });
 
-test('probeAgent: ComfyUI fronta — detail obsahuje počty běžících a čekajících úloh', async () => {
+test('probeAgent: ComfyUI fronta – detail obsahuje počty běžících a čekajících úloh', async () => {
   const agent = { origin: 'http://127.0.0.1:8188', type: 'comfyui' };
   const fetchImpl = async () => ({
     status: 200,
@@ -90,7 +90,7 @@ test('probeAgent: ComfyUI fronta — detail obsahuje počty běžících a čeka
   assert.ok(typeof result.at === 'number');
 });
 
-test('probeAgent: Ollama a OpenAI — detail obsahuje počet modelů', async () => {
+test('probeAgent: Ollama a OpenAI – detail obsahuje počet modelů', async () => {
   const ollama = { origin: 'http://127.0.0.1:11434', type: 'ollama' };
   const ollamaFetch = async () => ({ status: 200, body: null, text: async () => JSON.stringify({ models: [{}, {}, {}] }) });
   const ollamaResult = await probeAgent(ollama, { fetchImpl: ollamaFetch });

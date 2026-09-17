@@ -1,6 +1,6 @@
 import { state, setProjects, agentsList } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY } from '../format.js';
+import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY, jeAbsolutniCesta } from '../format.js';
 import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
@@ -10,7 +10,7 @@ const v = { el: null, tab: 'active', q: '' };
 
 const prettify = (seg) => seg.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());
 
-// Aktivita po dnech za 14 dní — z hodinových součtů tokenů.
+// Aktivita po dnech za 14 dní – z hodinových součtů tokenů.
 function dailyActivity(sessions, now = Date.now()) {
   const days = 14;
   const start = startOfDay(now) - (days - 1) * DAY;
@@ -30,7 +30,7 @@ function suggestions() {
   const covered = state.projects.items.flatMap((p) => p.folders);
   const byCwd = new Map();
   for (const s of agentsList()) {
-    if (s.source === 'web' || s.projectId || s.projectSource === 'none' || typeof s.cwd !== 'string' || !s.cwd.startsWith('/') || s.cwd === home) continue;
+    if (s.source === 'web' || s.projectId || s.projectSource === 'none' || typeof s.cwd !== 'string' || !jeAbsolutniCesta(s.cwd) || s.cwd === home) continue;
     // Pracovní složky, které si aplikace Codex zakládá sama pro každé vlákno, nejsou projekty.
     if (/\/Codex\/\d{4}-\d{2}-\d{2}(\/|$)/.test(s.cwd)) continue;
     if (covered.some((f) => s.cwd === f || s.cwd.startsWith(`${f}/`))) continue;
@@ -58,7 +58,7 @@ function cardHtml(p, now) {
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
-      <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '—'}</b> tokenů / 30 dní</span>
+      <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '–'}</b> tokenů / 30 dní</span>
       ${st.services.length ? logoStack(st.services, 4) : ''}
     </span>
     <span class="pcard-time">${st.lastAt ? `Aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'Zatím bez aktivity'}</span>
@@ -92,7 +92,7 @@ function mount(el) {
       try {
         const r = await api.createProject({ name: sug.dataset.name, folders: [sug.dataset.suggest] });
         setProjects(r.projects);
-        toast(`Projekt ${r.project.name} vytvořen — konverzace ze složky se zařadily samy`, { action: { label: 'Otevřít', href: projectHref(r.project.id) } });
+        toast(`Projekt ${r.project.name} vytvořen – konverzace ze složky se zařadily samy`, { action: { label: 'Otevřít', href: projectHref(r.project.id) } });
         update();
       } catch (err) {
         sug.disabled = false;

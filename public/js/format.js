@@ -44,7 +44,7 @@ export const plural = (n, one, few, many) => {
 };
 
 export function rel(ts, now = Date.now()) {
-  if (!ts) return '—';
+  if (!ts) return '–';
   const d = now - ts;
   if (d < 45e3) return 'právě teď';
   if (d < H) return `před ${Math.max(1, Math.round(d / MIN))} min`;
@@ -79,10 +79,19 @@ export function clock(ms) {
 }
 
 export const dateTime = (ts) =>
-  ts ? new Date(ts).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  ts ? new Date(ts).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
 export const dateLong = (ts) => new Date(ts).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
 export const timeHM = (ts) => new Date(ts).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-export const shortPath = (p) => String(p || '').replace(/^\/Users\/[^/]+/, '~');
+// Cesty chodí ze serveru tak, jak je napsal systém uživatele: na Macu a Linuxu
+// „/Users/jana/web“, na Windows „C:\\Users\\jana\\web“ nebo „\\\\server\\sdileni“.
+// Rozhraní je jedno a totéž, takže musí umět obojí – jinak by se na Windows ztratila
+// tlačítka u session i návrhy projektů, protože nic „nezačíná lomítkem“.
+export const jeAbsolutniCesta = (p) => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(String(p || ''));
+
+/** Rozdělí cestu na části bez ohledu na to, jakým oddělovačem je psaná. */
+export const castiCesty = (p) => String(p || '').split(/[\\/]+/).filter(Boolean);
+
+export const shortPath = (p) => String(p || '').replace(/^(\/Users\/[^/]+|[A-Za-z]:\\Users\\[^\\]+|\/home\/[^/]+)/, '~');
 
 export function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);

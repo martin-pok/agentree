@@ -34,6 +34,7 @@ export const api = {
   rescan: () => request('POST', '/api/connectors/rescan', {}),
   clearAlerts: () => request('POST', '/api/alerts/clear', {}),
   setLanAccess: (on) => request('POST', `/api/lan/${on ? 'enable' : 'disable'}`, {}),
+  setTailscaleAccess: (on) => request('POST', `/api/tailscale/${on ? 'enable' : 'disable'}`, {}),
   lanPin: () => request('POST', '/api/lan/pin', {}),
   detectRemote: () => request('POST', '/api/remote/detect', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),
@@ -44,7 +45,7 @@ export const api = {
   removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),
   planUsage: (days = 30) => request('GET', `/api/usage/claude?days=${days}`),
   skills: () => request('GET', '/api/skills'),
-  // Obsah dovednosti je čistý markdown, ne JSON — proto mimo `request()`.
+  // Obsah dovednosti je čistý markdown, ne JSON – proto mimo `request()`.
   async skillText(id) {
     const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`);
     if (!res.ok) throw new Error(res.status === 404 ? 'Soubor dovednosti už na disku není.' : `Dovednost se nepodařilo načíst (chyba ${res.status}).`);

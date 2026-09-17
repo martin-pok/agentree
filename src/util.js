@@ -40,7 +40,7 @@ export function textOf(content) {
     .join('\n');
 }
 
-// Systémový kontext vkládaný nástroji do "uživatelských" zpráv — není to zadání od člověka.
+// Systémový kontext vkládaný nástroji do "uživatelských" zpráv – není to zadání od člověka.
 export function isInjectedPrompt(text) {
   return /^\s*(<|#|The following is|\[Request interrupted|Caveat:)/.test(text || '');
 }
@@ -104,7 +104,7 @@ export async function readJson(file, fallback) {
 }
 
 export async function writeFileAtomic(file, content, mode) {
-  // Složky s daty Agenteeq zakládáme rovnou jen pro vlastníka (0700) — u existujících složek
+  // Složky s daty Agenteeq zakládáme rovnou jen pro vlastníka (0700) – u existujících složek
   // mkdir nic nemění, takže tím nikomu nepřepíšeme jeho vlastní nastavení práv.
   await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
   const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;

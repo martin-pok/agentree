@@ -42,7 +42,7 @@
     try {
       chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }).catch(() => {});
     } catch {
-      dead = true; // rozšíření bylo znovu načteno — tento skript už nemá spojení
+      dead = true; // rozšíření bylo znovu načteno – tento skript už nemá spojení
     }
   }
 
@@ -51,7 +51,7 @@
   };
 
   // Zadání spuštěné z Agenteeq: vyzvednout, počkat, až se objeví pole zprávy, a vložit ho.
-  // Neodesílá se — to potvrdí uživatel. Když služba zadání převzala sama z adresy (?q=) nebo
+  // Neodesílá se – to potvrdí uživatel. Když služba zadání převzala sama z adresy (?q=) nebo
   // stránka už konverzaci má, nic se nevkládá, aby se text nezdvojil.
   function handoff() {
     let asked;

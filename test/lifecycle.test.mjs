@@ -14,6 +14,12 @@ async function fixture() {
   const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
   return { dir, env };
 }
+// Windows signály nedoručuje: kill('SIGTERM') proces rovnou zabije, takže by se netestovalo
+// korektní ukončení, ale zabití. Hostitelská aplikace tam server ukončuje zavřením stdin –
+// cestu, kterou desktop/server.mjs hlídá stejně pečlivě jako SIGTERM. Test jede tou z nich,
+// kterou na dané platformě aplikace opravdu používá.
+const ukoncit = (child) => (process.platform === 'win32' ? child.stdin.end() : child.kill('SIGTERM'));
+
 function start(env, script = path.join(root, 'desktop/server.mjs')) {
   const child = spawn(process.execPath, [script], { env, stdio: ['pipe', 'pipe', 'pipe'] });
   let output = '';
@@ -35,7 +41,7 @@ test('lifecycle: 6 immediate restarts release the port; a simultaneous second st
         assert.equal(await duplicate.exit, 1);
         assert.equal((await fetch(`http://127.0.0.1:${port}/api/health`).then((r) => r.json())).lifecycle.pid, current.child.pid);
       }
-      current.child.kill('SIGTERM');
+      ukoncit(current.child);
       assert.equal(await current.exit, 0);
       await assert.rejects(fetch(`http://127.0.0.1:${port}/api/health`));
     } finally { if (current.child.exitCode === null) current.child.kill(); }
@@ -71,7 +77,9 @@ test('lifecycle: spoofed health from another server never authorizes termination
   } finally { foreign.closeAllConnections(); await new Promise((r) => foreign.close(r)); }
 });
 
-test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', async (t) => {
+// Převzetí portu po starší verzi se opírá o `lsof` a je záměrně jen pro macOS
+// (desktop/lifecycle.mjs vrací mimo darwin null) – jinde není co ověřovat.
+test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', { skip: process.platform !== 'darwin' && 'jen macOS: převzetí portu se opírá o lsof' }, async (t) => {
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
   for (const sub of ['src','bin']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
@@ -91,7 +99,7 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
     assert.equal(await old.exit, 0);
     const state = await api(`http://127.0.0.1:${port}`).get('/api/state');
     assert.equal(state.body.projects.items[0].name, 'Zachovaný projekt');
-    // Verze se bere ze skutečného package.json — jinak by test padal po každém vydání.
+    // Verze se bere ze skutečného package.json – jinak by test padal po každém vydání.
     assert.equal(state.body.version, VERSION);
   } finally { next.child.stdin.end(); await next.exit; if (old.child.exitCode === null) old.child.kill(); }
 });

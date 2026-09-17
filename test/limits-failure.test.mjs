@@ -15,8 +15,12 @@ test('stavový řádek: instalace vedle hooků, cizí stavový řádek se nepře
   await installHooks(file, { port: 4620, token: TOKEN, now: 1 });
   let json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.statusLine.type, 'command');
-  assert.ok(json.statusLine.command.includes(STATUSLINE_PATH) && json.statusLine.command.includes(TOKEN));
-  assert.match(json.statusLine.command, /\|\| printf 'Agenteeq neběží'$/, 'když Agenteeq neběží, stavový řádek to poctivě řekne');
+  const command = json.statusLine.command.includes(' -EncodedCommand ')
+    ? Buffer.from(json.statusLine.command.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : json.statusLine.command;
+  assert.ok(command.includes(STATUSLINE_PATH) && command.includes(TOKEN));
+  // Záleží na tom, že to stavový řádek poctivě řekne – ne na tom, kterým shellem.
+  assert.match(command, /Agenteeq (neběží|nebezi)/,
+    'když Agenteeq neběží, stavový řádek to poctivě řekne');
   let st = await hooksStatus(file, TOKEN);
   assert.equal(st.statusLine, 'ours');
   assert.equal(st.current, true);

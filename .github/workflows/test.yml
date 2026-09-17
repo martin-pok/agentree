@@ -1,0 +1,112 @@
+# Testy na všech třech systémech.
+#
+# macOS je cílová platforma, ale Linux a Windows tu nejsou pro parádu: Agenteeq je čistý Node
+# bez závislostí a právě tahle matice je jediný způsob, jak poctivě zjistit, co z něj jinde
+# opravdu funguje a co jen předpokládáme. Windows běh je zároveň podklad pro rozhodnutí
+# o verzi pro Windows (docs/WINDOWS.md) — netvrdíme nic, co tenhle workflow neukázal.
+name: Testy
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      # Jeden systém nesmí shodit ostatní — potřebujeme vidět výsledek všech tří.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Projekt nemá žádné závislosti, takže žádná instalace není potřeba — jen Node.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verze Node
+        run: node --version
+
+      - name: Kontrola syntaxe
+        run: npm run check
+
+      - name: Testy
+        run: npm test
+
+      # Testy ověřují jednotlivé kusy. Tenhle krok ověřuje, co z nich nevyplývá:
+      # že se celá aplikace na daném systému spustí a obslouží rozhraní přes HTTP.
+      # Je to jediný důkaz o Windows, který nestojí na domněnce.
+      - name: Aplikace opravdu nastartuje
+        run: npm run smoke:server
+
+  # Plášť pro Windows (desktop/windows/Agenteeq.cpp) se tu překládá, aby se chyba
+  # nenašla až při vydání. Překlad není důkaz, že okno vypadá správně — to umí
+  # jen člověk u skutečného Windows. Je to důkaz, že je co spustit.
+  windows-plast:
+    name: plášť pro Windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Nástroje Visual Studio
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Sestavit
+        run: npm run build:windows
+
+      - name: Výsledek
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
+          '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
+
+      # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
+      # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Agenteeq-Windows
+          path: dist/Agenteeq-*-Windows-x64.zip
+          retention-days: 14
+
+  browser-qa:
+    name: rozhraní a přístupnost
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      # Výhradně nástroj QA; nevstupuje do runtime balíčku ani package.json.
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run qa:desktop
+      - run: npm run qa:site
+      - run: npm run qa:extension
+      - run: npm run qa:contrast
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-qa
+          path: |
+            dist/qa/
+            dist/qa-site/
+            dist/qa-extension/
+          retention-days: 14

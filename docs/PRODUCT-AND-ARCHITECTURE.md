@@ -1,4 +1,4 @@
-# Agenteeq — produktový a architektonický kompas
+# Agenteeq – produktový a architektonický kompas
 
 Tento dokument je společný zdroj pravdy pro produktové rozhodování, návrh rozhraní a další agentický vývoj. Nenahrazuje detailní kontrakty v `docs/DATA-CONTRACT.md`, bezpečnostní hranice v `docs/SECURITY.md` ani seznam konektorů v `docs/CONNECTORS.md`; určuje, jak tyto části držet v jednom soudržném produktu.
 

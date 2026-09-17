@@ -1,13 +1,25 @@
-// Co je nového — lidsky, česky, z pohledu uživatele. Každé vydání sem MUSÍ přidat záznam
+// Co je nového – lidsky, česky, z pohledu uživatele. Každé vydání sem MUSÍ přidat záznam
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
+  {
+    version: '0.12.0',
+    date: '2026-09-15',
+    title: 'Agenti na telefonu odkudkoli, přes tvou vlastní síť',
+    items: [
+      'Nová karta v Nastavení: Přístup přes Tailscale. Jedním přepínačem začne Agenteeq naslouchat i na adrese, kterou tomuhle Macu přidělil tvůj tailnet – a ty vidíš agenty z telefonu i mimo domov.',
+      'Žádná veřejná adresa přitom nevzniká. Párování telefonu kódem a token platí dál a domácí síť zůstává samostatný přepínač, takže vypnutí jednoho nezavře druhý.',
+      'Aplikace ukáže i to, jestli máš přes „tailscale serve“ zapnuté HTTPS. Bez něj si telefon aplikaci neuloží na plochu; spouštět ho za tebe Agenteeq nebude.',
+      'Okno rozšíření pro Chrome má teď stejná písma a barvy jako aplikace, včetně nočního režimu.',
+      'Agenteeq má vlastní web s popisem a stahováním. Rozhraní na něm zůstává na adrese /app.',
+    ],
+  },
   {
     version: '0.11.1',
     date: '2026-09-14',
     title: 'Připraveno na dlouhý provoz',
     items: [
       'Když se soubor s daty poškodí, aplikace naběhne dál: data obnoví z poslední zálohy a řekne ti, co se stalo. Poškozený soubor nechá uložený vedle.',
-      'Když se změny nedaří uložit na disk (plný disk, práva ke složce), uvidíš to hned v horní části okna — nic se neztratí potichu.',
+      'Když se změny nedaří uložit na disk (plný disk, práva ke složce), uvidíš to hned v horní části okna – nic se neztratí potichu.',
       'Po náhodném pádu se lokální služba obnoví sama i po týdnech běhu, ne jen třikrát za celou dobu.',
       'Smazaná konverzace z přehledu zmizí hned, projekty připojené odkazem jsou vidět a agent se špatně nastavenými hodinami nesvítí „pracuje“ navždy.',
       'Na Macu bez Claude Code se nenabízí propojení, které nejde použít, a na telefonu jsou menší odkazy lépe trefitelné.',
@@ -32,7 +44,7 @@ export const RELEASES = [
     title: 'Zadání vždy ve schránce, do Gemini se vloží samo',
     items: [
       'Po spuštění aplikace nebo webu je zadání spolehlivě ve schránce. Dřív se kopírování v okně aplikace a na telefonu tiše nepovedlo.',
-      'Čeština ve schránce zůstává celá — žádné „n�zev“ místo „název“.',
+      'Čeština ve schránce zůstává celá – žádné „n�zev“ místo „název“.',
       'Gemini a Qwen neumí převzít zadání z adresy. S rozšířením se zadání vloží do jejich okna samo, odešleš ho Enterem.',
       'Přehled má pevné sloupce: bloky už neskáčou podle šířky okna a nevznikají prázdné mezery.',
     ],
@@ -77,7 +89,7 @@ export function compareVersions(a, b) {
 }
 
 // Vydání, která uživatel ještě neviděl. Kdo nikdy nic neviděl (první aktualizace s touto
-// funkcí), dostane jen aktuální vydání — ne celou historii najednou.
+// funkcí), dostane jen aktuální vydání – ne celou historii najednou.
 export function unseenReleases(lastSeen, current) {
   const upTo = RELEASES.filter((r) => compareVersions(r.version, current) <= 0);
   if (!lastSeen) return upTo.slice(0, 1);

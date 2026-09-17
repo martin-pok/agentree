@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 const src = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
 // Interní události, které do prohlížeče schválně nejdou (zpracuje je server sám).
-const INTERNI = new Set(['alerts:raised']);
+const INTERNI = new Set(['alerts:raised', 'remote:authorization']);
 
 test('každá událost vyslaná aplikací má předávání do živého proudu', async () => {
   const soubory = ['src/app.js', 'src/store.js', 'src/alerts.js', 'src/http.js', 'src/runs.js', 'src/local-chat.js'];

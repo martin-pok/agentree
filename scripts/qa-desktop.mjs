@@ -5,19 +5,20 @@ import { startTestServer, api } from '../test/helpers.mjs';
 import { addTokens } from '../src/model.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
-await fs.mkdir('dist/qa', { recursive: true });
+const out = process.env.QA_OUTPUT_DIR || 'dist/qa';
+await fs.mkdir(out, { recursive: true });
 const results = [];
 const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
   const sample = server.app.store.ensure({ connector: 'codex', localId: 'qa-layout', provider: 'openai', app: 'Codex' });
-  Object.assign(sample, { title: 'QA — kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
+  Object.assign(sample, { title: 'QA – kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
   addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
   server.app.store.commit(sample);
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
-  const browser = await (engine === 'chromium' ? chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' }) : webkit.launch());
+  const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
@@ -29,7 +30,9 @@ for (const engine of engines) {
     await page.goto(server.url);
     await page.locator('.welcome-dialog[open]').waitFor();
     await page.screenshot({ path: `dist/qa/${engine}-welcome.png` });
-    for (let i = 0; i < 3; i++) {
+    const welcomeSteps = await page.locator('.welcome-dots span').count();
+    assert.ok(welcomeSteps >= 2, 'průvodce má skutečný postup');
+    for (let i = 0; i < welcomeSteps - 1; i++) {
       await page.locator('[data-welcome-next]').click();
       await page.waitForFunction((n) => document.querySelectorAll('.welcome-dots span')[n]?.getAttribute('aria-current') === 'step', i + 1);
     }
@@ -146,7 +149,10 @@ for (const engine of engines) {
       if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
       if (route === 'nastaveni') {
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
-        assert.equal(await page.locator('[data-avatar-pick]').count(), 25, `${engine} nabízí iniciály a 24 abstraktních avatarů`);
+        const choices = await page.locator('[data-avatar-pick]').evaluateAll((nodes) => nodes.map((el) => ({ value: el.dataset.avatarPick, name: el.getAttribute('aria-label') || el.title || el.textContent.trim() })));
+        assert.ok(choices.length >= 25, `${engine} zachovává iniciály a kolekci avatarů`);
+        assert.equal(new Set(choices.map((choice) => choice.value)).size, choices.length, `${engine} každá volba má vlastní stabilní hodnotu`);
+        assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
         await page.locator('button[data-appearance="dark"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
         assert.equal(await page.locator('button[data-appearance="dark"]').getAttribute('aria-pressed'), 'true');

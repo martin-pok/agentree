@@ -243,7 +243,7 @@ export function createCodexConnector(ctx) {
           }
           case 'item_completed': {
             if (!st.useItems) {
-              // Nový formát přepisu je úplný — položky ze starého formátu (response_item) zahodit i s odvozenými poli.
+              // Nový formát přepisu je úplný – položky ze starého formátu (response_item) zahodit i s odvozenými poli.
               st.useItems = true;
               resetTranscript(s);
               s.firstPrompt = '';
@@ -320,7 +320,7 @@ export function createCodexConnector(ctx) {
   }
 
   // Zůstatek kreditů Codex zapisuje do každé session. Sledované okno je 30 dní, ale historie nákupů
-  // sahá dál — jednorázově proto projdeme i starší soubory a bereme z nich výhradně řádky s kredity
+  // sahá dál – jednorázově proto projdeme i starší soubory a bereme z nich výhradně řádky s kredity
   // (žádné konverzace, žádné tokeny). Běží na pozadí po prvním průchodu, ať to nezdržuje start.
   let historieKreditu = false;
   async function scanCreditHistory() {

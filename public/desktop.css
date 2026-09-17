@@ -71,13 +71,17 @@ input[type='checkbox']:not([role='switch']):checked::after { content: ''; width:
 .welcome-local-count { font: 300 72px/1.3 var(--f-display); color: var(--ivory); }
 .welcome-replay { margin-top: 24px; }
 html.is-desktop .shell { margin: 0; border-radius: 0; min-height: 100dvh; }
-/* Okno aplikace nemá systémový titulkový pruh — obsah sahá až k hornímu okraji, takže se za
+/* Okno aplikace nemá systémový titulkový pruh – obsah sahá až k hornímu okraji, takže se za
    tlačítky okna roztáhne tmavý pruh `.stage` i s jeho přechodem. Plocha zůstává od kraje ke
    kraji; ustoupí jen postranní panel, aby se jeho roh nepotkal s tlačítky: ta sahají do 28 px,
    panel začíná na 44 px a na stejné výšce se zastaví i při rolování. */
 html.is-desktop { --band-h: 88px; }
 html.is-desktop .sidebar { margin-top: 44px; top: 44px; bottom: 24px; height: calc(100dvh - 88px); }
 html.is-desktop .offline code { display: none; }
+/* Na Windows má okno běžný titulkový pruh, pod který obsah nezajíždí. Odsazení 44 px,
+   které na macOS uhýbá tlačítkům okna, by tam bylo jen prázdné místo navrchu. */
+html.is-windows { --band-h: 44px; }
+html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100dvh - 24px); }
 @keyframes welcome-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
 @keyframes welcome-copy { from { opacity: 0; transform: translateY(8px); } }
 @keyframes welcome-signal { 50% { box-shadow: 0 0 0 9px rgba(194,51,90,.06); } }
@@ -108,7 +112,7 @@ html.is-desktop .offline code { display: none; }
   .welcome-dots span { transition: none; }
 }
 
-/* Průvodce: krok s rozšířením pro Chrome — okno prohlížeče, ve kterém agent pracuje a zadání čeká. */
+/* Průvodce: krok s rozšířením pro Chrome – okno prohlížeče, ve kterém agent pracuje a zadání čeká. */
 .welcome-action { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; padding: 0; border: 0; background: none; color: var(--ink); font: 500 15px/1.4 var(--f-body); cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--brass); }
 .welcome-action .icon { width: 16px; height: 16px; }
 .welcome-browser { width: 280px; border: 1px solid #393140; border-radius: 16px; overflow: hidden; background: var(--stage-2); animation: welcome-copy .55s var(--ease) both; }

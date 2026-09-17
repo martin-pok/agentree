@@ -94,7 +94,7 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
     req.end();
   });
 
-  if (!lanIp) return; // Mac bez místní sítě — test nemá co ověřit
+  if (!lanIp) return; // Mac bez místní sítě – test nemá co ověřit
 
   // 1) Dokud je přístup vypnutý, na místní síti vůbec nikdo neposlouchá.
   await assert.rejects(() => zLan('/api/state'), /ECONNREFUSED/, 'vypnuto = žádný listener pro síť');
@@ -130,7 +130,7 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   assert.equal(JSON.parse(sTokenem.body).lan.enabled, true);
 
   // 5) Ani spárovaný telefon nesmí párovat další zařízení, zapínat přístup, nic odpárovat
-  //    — a nesmí se dozvědět kód ani seznam zařízení.
+  //    – a nesmí se dozvědět kód ani seznam zařízení.
   const sCookie = { headers: { Cookie: token, 'X-Agenteeq': '1' }, method: 'POST' };
   assert.equal((await zLan('/api/lan/pin', sCookie)).status, 403, 'kód smí vytvořit jen Mac');
   assert.equal((await zLan('/api/lan/enable', sCookie)).status, 403, 'zapínat smí jen Mac');
@@ -138,14 +138,14 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   const lanZTelefonu = JSON.parse((await zLan('/api/lan', { headers: { Cookie: token } })).body);
   assert.equal(lanZTelefonu.pin, null);
   assert.deepEqual(lanZTelefonu.devices, []);
-  // Totéž platí pro /api/state — i to je cesta, kudy by se seznam zařízení mohl vynést.
+  // Totéž platí pro /api/state – i to je cesta, kudy by se seznam zařízení mohl vynést.
   const stavZTelefonu = JSON.parse((await zLan('/api/state', { headers: { Cookie: token } })).body);
   assert.deepEqual(stavZTelefonu.lan.devices, [], 'telefon nesmí vidět ostatní spárovaná zařízení');
   assert.equal(stavZTelefonu.lan.pin, null);
   assert.equal(JSON.parse((await api(s.url).get('/api/state')).body.lan ? '1' : '0'), 1);
   assert.equal((await api(s.url).get('/api/state')).body.lan.devices.length >= 1, true, 'na Macu se seznam zařízení zobrazuje');
 
-  // 6) Vypnutí zavře listener a odpáruje všechna zařízení — token po vypnutí neplatí.
+  // 6) Vypnutí zavře listener a odpáruje všechna zařízení – token po vypnutí neplatí.
   await api(s.url).send('POST', '/api/lan/disable', {});
   assert.deepEqual(s.app.datastore.data.lanDevices, [], 'vypnutím zmizí i tokeny');
   assert.equal(s.app.lan.tokenOk(token.split('=')[1]), false, 'token po vypnutí neplatí');
@@ -153,7 +153,7 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   assert.equal((await api(s.url).get('/api/state')).status, 200, 'na Macu funguje Agenteeq dál bez omezení');
 });
 
-// Desktopová aplikace si port zabírá dřív, než načte data — server tedy už naslouchá ve chvíli,
+// Desktopová aplikace si port zabírá dřív, než načte data – server tedy už naslouchá ve chvíli,
 // kdy se staví HTTP vrstva. Dokud se listener pro telefon věšel jen na událost „listening“,
 // zapnutý přístup z telefonu se po restartu aplikace nikdy sám nespustil.
 test('přístup z telefonu: po restartu se listener spustí i na serveru, který už naslouchá', async () => {

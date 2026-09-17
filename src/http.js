@@ -44,27 +44,68 @@ class HttpError extends Error {
 
 export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
-  const clients = new Set();
+  const clients = new Map(); // response → original authorization context
   let server;
 
   const port = () => server.address()?.port ?? config.port;
   const allowedOrigins = () => {
     const list = [`http://127.0.0.1:${port()}`, `http://localhost:${port()}`];
-    // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti.
-    if (app.lan) for (const adresa of app.lan.status().addresses) list.push(`http://${adresa}:${port()}`);
+    // Se zapnutým přístupem z telefonu jsou legitimní i adresy tohoto Macu v místní síti
+    // a v jeho privátní síti Tailscale (včetně jména v MagicDNS).
+    //
+    // Varianta https bez portu je tu kvůli `tailscale serve`: ta stránku vydává na vlastním
+    // jméně po 443, takže prohlížeč pošle Origin `https://jmeno.tailnet.ts.net`. Pořád je to
+    // naše vlastní adresa – cizí web si Origin podvrhnout nemůže – a bez ní by se z telefonu
+    // po HTTPS nedalo ani spárovat.
+    if (app.lan) {
+      for (const adresa of app.lan.hosts()) {
+        list.push(`http://${adresa}:${port()}`);
+        list.push(`https://${adresa}`);
+      }
+    }
     return new Set(list);
   };
 
+  // Hlavičky, které před server staví reverzní proxy. Desktopová aplikace ani prohlížeč na Macu
+  // je neposílají, takže jejich přítomnost znamená, že požadavek někdo přeposlal.
+  const PROXY_HLAVICKY = ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'forwarded', 'tailscale-user-login', 'tailscale-user-name'];
+  const hostHlavicka = (req) => String(req.headers.host || '').replace(/:\d+$/, '').toLowerCase();
+
+  // Co je „požadavek z tohoto Macu“. Samotná adresa protistrany nestačí: `tailscale serve`
+  // (a každá jiná reverzní proxy běžící na tomhle Macu) se na server připojí z 127.0.0.1,
+  // ale požadavek za ní pochází z cizího zařízení v tailnetu. Kdyby si takový požadavek mohl
+  // vzít výjimku pro desktopovou aplikaci, zmizelo by spuštěním jediného příkazu párování,
+  // token i všechna omezení „tohle jde jen na Macu“ – a to je celá ochrana těchhle dat.
+  // Proto musí platit obojí: spojení po smyčce A hlášení se na adresu smyčky, bez stop po proxy.
+  function zTohotoMacu(req) {
+    if (!isLoopback(req.socket?.remoteAddress)) return false;
+    const host = hostHlavicka(req);
+    if (host !== '127.0.0.1' && host !== 'localhost') return false;
+    return !PROXY_HLAVICKY.some((h) => req.headers[h] !== undefined);
+  }
+
+  // Jelo to po HTTPS? Server sám TLS nezakončuje, takže se to pozná jedině podle proxy před ním
+  // (`tailscale serve`), která to hlásí v `X-Forwarded-Proto`. Hlavičce se věří jen u spojení po
+  // smyčce, tedy od proxy běžící na tomhle Macu. Podvržení téhle hlavičky nic neotevírá – jen
+  // přidá cookie příznak Secure, kterým si útočník zavře vlastní spojení po http.
+  function jeHttps(req) {
+    if (!isLoopback(req.socket?.remoteAddress)) return false;
+    return String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https';
+  }
+
   // Požadavek z tohoto Macu (desktopová aplikace, prohlížeč na Macu) projde jako dřív.
-  // Cokoli z místní sítě musí mít token spárovaného zařízení — jinak se k datům nedostane.
+  // Cokoli z místní sítě musí mít token spárovaného zařízení – jinak se k datům nedostane.
   function requireDevice(req, url) {
-    if (!app.lan || isLoopback(req.socket?.remoteAddress)) return;
-    if (!datastore.data.settings.lanAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
-    // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu — jinak by neměl
+    if (!app.lan || zTohotoMacu(req)) return;
+    // Loopback proxies are the Tailscale Serve route, never the direct LAN listener.
+    // Turning off Tailscale must also disable a proxy still running outside Agenteeq.
+    if (isLoopback(req.socket?.remoteAddress) && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup přes Tailscale je vypnutý.');
+    if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
+    // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu – jinak by neměl
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
     const verejne = !url.pathname.startsWith('/api/') && (req.method === 'GET' || req.method === 'HEAD');
     if (verejne || url.pathname === '/api/lan/pair' || url.pathname === '/api/health') return;
-    // Spárované telefony mají cookie ještě pod starým názvem — platí obě.
+    // Spárované telefony mají cookie ještě pod starým názvem – platí obě.
     if (!app.lan.tokenOk(cookieValue(req.headers.cookie) || cookieValue(req.headers.cookie, 'agentree_device'))) {
       throw new HttpError(401, 'Tohle zařízení není spárované. Zadej kód z Agenteeq na Macu.');
     }
@@ -72,10 +113,31 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- SSE ---------- */
 
+  function authorizedStream(res, req) {
+    try {
+      requireDevice(req, new URL('/api/stream', 'http://127.0.0.1'));
+      const host = hostHlavicka(req);
+      if (host !== '127.0.0.1' && host !== 'localhost' && !app.lan?.hosts().includes(host)) throw new Error('Access removed');
+      return true;
+    } catch {
+      clients.delete(res);
+      res.destroy();
+      return false;
+    }
+  }
+  const authorizationChanged = ({ disconnectRemote = false } = {}) => {
+    for (const [res, req] of clients) {
+      if (disconnectRemote && !zTohotoMacu(req)) { clients.delete(res); res.destroy(); }
+      else authorizedStream(res, req);
+    }
+  };
+  store.on('remote:authorization', authorizationChanged);
+
   function broadcast(event, data) {
     if (!clients.size) return;
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const res of clients) {
+    for (const [res, req] of clients) {
+      if (!authorizedStream(res, req)) continue;
       // A stalled browser must not grow an unbounded transcript buffer.
       if (res.writableLength > 1_000_000) { clients.delete(res); res.destroy(); }
       else res.write(msg);
@@ -107,7 +169,7 @@ export function createHttpServer(app, existingServer = null) {
   for (const [event, fn] of Object.entries(listeners)) store.on(event, fn);
 
   const heartbeat = setInterval(() => {
-    for (const res of clients) res.write(': ping\n\n');
+    for (const [res, req] of clients) if (authorizedStream(res, req)) res.write(': ping\n\n');
   }, 15000);
   heartbeat.unref?.();
 
@@ -120,7 +182,7 @@ export function createHttpServer(app, existingServer = null) {
       Connection: 'keep-alive',
     });
     res.write(`retry: 2000\nevent: hello\ndata: ${JSON.stringify({ version: VERSION, now: Date.now(), ready: store.ready })}\n\n`);
-    clients.add(res);
+    clients.set(res, req);
     req.on('close', () => clients.delete(res));
   }
 
@@ -149,7 +211,7 @@ export function createHttpServer(app, existingServer = null) {
   }
 
   function tokenOk(req) {
-    // Po přejmenování na Agenteeq bereme i starou hlavičku — hooky a rozšíření nainstalované
+    // Po přejmenování na Agenteeq bereme i starou hlavičku – hooky a rozšíření nainstalované
     // pod názvem Agentree tak fungují dál, dokud je uživatel nepřepojí.
     const given = Buffer.from(String(req.headers['x-agenteeq-token'] || req.headers['x-agentree-token'] || ''));
     const expected = Buffer.from(datastore.data.ingestToken);
@@ -213,7 +275,7 @@ export function createHttpServer(app, existingServer = null) {
 
   const routes = [
     ['GET', /^\/api\/skills$/, async () => ({ skills: await skills.list() })],
-    // Obsah se hledá podle id z čerstvého seznamu — cesta nikdy nepochází z požadavku.
+    // Obsah se hledá podle id z čerstvého seznamu – cesta nikdy nepochází z požadavku.
     ['GET', /^\/api\/skills\/([0-9a-f]{12})\/raw$/, async (_req, m, url) => {
       const skill = await skills.read(m[1]);
       if (!skill) throw new HttpError(404, 'Dovednost nenalezena.');
@@ -226,31 +288,35 @@ export function createHttpServer(app, existingServer = null) {
 
     /* ---------- Přístup z telefonu ---------- */
     ['POST', /^\/api\/remote\/detect$/, async (req) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
       return { tunnels: await app.refreshTunnels() };
     }],
     ['GET', /^\/api\/lan$/, (req) => {
       // Kód se ukazuje jen na tomto Macu; z telefonu by jinak stačil jeden dotaz k spárování dalších.
       const s = app.lan.status();
-      return isLoopback(req.socket?.remoteAddress) ? s : { ...s, pin: null, devices: [] };
+      return zTohotoMacu(req) ? s : { ...s, pin: null, devices: [] };
+    }],
+    ['POST', /^\/api\/tailscale\/(enable|disable)$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      return unwrap(await app.setTailscaleAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/(enable|disable)$/, async (req, m) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
       return unwrap(await app.setLanAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/pin$/, (req) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
-      if (!datastore.data.settings.lanAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
+      if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
       return { pin: app.lan.newPin() };
     }],
-    ['POST', /^\/api\/lan\/pair$/, async (req, _m, url) => {
+    ['POST', /^\/api\/lan\/pair$/, async (req) => {
       const body = await readBody(req);
       const r = unwrap(await app.lan.pair(body?.pin, body?.label));
       // Token jde do cookie: nedostane se do historie prohlížeče ani k JavaScriptu na stránce,
       // a EventSource ho posílá sám, takže realtime stream funguje bez dalšího zařizování.
-      const secure = url.protocol === 'https:' ? ' Secure;' : '';
+      const secure = jeHttps(req) ? ' Secure;' : '';
       // SameSite=Lax, ne Strict: telefon typicky otevře adresu z poznámek, QR kódu nebo dlaždice
-      // na domovské obrazovce — to je přechod z jiného webu a Strict by u něj cookie neposlal,
+      // na domovské obrazovce – to je přechod z jiného webu a Strict by u něj cookie neposlal,
       // takže by spárovaný telefon znovu žádal kód. Zápisy dál chrání hlavička X-Agenteeq
       // (cizí web ji bez preflightu nepřidá) a kontrola Origin.
       return {
@@ -264,7 +330,7 @@ export function createHttpServer(app, existingServer = null) {
       };
     }],
     ['DELETE', /^\/api\/lan\/devices\/([\w-]{1,40})$/, async (req, m) => {
-      if (!isLoopback(req.socket?.remoteAddress)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
       unwrap(await app.lan.revoke(m[1]));
       return { lan: app.lan.status() };
     }],
@@ -278,13 +344,13 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/usage\/claude$/, async (_req, _m, url) => {
       const days = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 30));
       const series = await app.planUsageHistory({ days });
-      // Chybějící historie (Mac bez aplikace Claude Desktop) není chyba — 404 plnila konzoli
+      // Chybějící historie (Mac bez aplikace Claude Desktop) není chyba – 404 plnila konzoli
       // hláškami „Failed to load resource“ u každého nového uživatele.
       if (!series) return { available: false, message: 'Historie vytížení plánu na tomto Macu není.' };
       return series;
     }],
     ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
-    ['GET', /^\/api\/state$/, (req) => app.state({ local: isLoopback(req.socket?.remoteAddress) })],
+    ['GET', /^\/api\/state$/, (req) => app.state({ local: zTohotoMacu(req) })],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
@@ -417,7 +483,7 @@ export function createHttpServer(app, existingServer = null) {
         cur.doneMinSeconds = Math.round(v);
       }
       // Uložení se čeká: dřív se hned vrátilo 200 a zápis, který potom selhal (plný disk, práva),
-      // skončil jen v logu — po restartu se změna potichu ztratila.
+      // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
       if (!(await datastore.flush())) throw new HttpError(500, 'Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.');
       return { settings: datastore.data.settings };
@@ -561,11 +627,11 @@ export function createHttpServer(app, existingServer = null) {
   }
 
   async function handle(req, res) {
-    const host = String(req.headers.host || '').replace(/:\d+$/, '');
+    const host = hostHlavicka(req);
     // Hlavička Host se kontroluje proti pevnému seznamu (ochrana proti DNS rebindingu): tento Mac
-    // a — jen se zapnutým přístupem z telefonu — jeho vlastní adresy v místní síti.
+    // a – jen se zapnutým přístupem z telefonu – jeho vlastní adresy v místní síti.
     const hostOk = host === '127.0.0.1' || host === 'localhost'
-      || (app.lan && datastore.data.settings.lanAccess && app.lan.status().addresses.includes(host));
+      || Boolean(app.lan && app.lan.hosts().includes(host));
     if (!hostOk) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
       return;
@@ -616,17 +682,18 @@ export function createHttpServer(app, existingServer = null) {
   // Zapne se jen tehdy, když si to uživatel v Nastavení sám zapnul.
   app.bindLan?.(onRequest, () => port());
   // Naslouchat pro síť můžeme teprve tehdy, když hlavní server zná svůj port. Desktopová
-  // aplikace si ale port zabírá dřív, než se vůbec načtou data — událost „listening“ tam tedy
+  // aplikace si ale port zabírá dřív, než se vůbec načtou data – událost „listening“ tam tedy
   // proběhla už předtím, než jsme se na ni stihli navěsit. Čekat na ni by znamenalo nespustit
   // listener pro telefon nikdy, i když ho uživatel v Nastavení má zapnutý.
-  const spustLan = () => { if (app.lan && datastore.data.settings.lanAccess) app.lan.start(onRequest, port()); };
+  const spustLan = () => { app.restoreRemoteAccess?.().catch(() => {}); };
   if (server.listening) spustLan();
   else server.on('listening', spustLan);
 
   server.on('close', () => {
     clearInterval(heartbeat);
     for (const [event, fn] of Object.entries(listeners)) store.off(event, fn);
-    for (const res of clients) res.end();
+    store.off('remote:authorization', authorizationChanged);
+    for (const res of clients.keys()) res.end();
     clients.clear();
     app.lan?.stop().catch(() => {}); // s hlavním serverem zmizí i listener pro telefon
   });
