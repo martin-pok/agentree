@@ -173,7 +173,10 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal(r.body.claudeHooks.installed, true);
     const json = JSON.parse(await fs.readFile(path.join(srcHome, '.claude', 'settings.json'), 'utf8'));
     const port = new URL(srv.url).port;
-    assert.ok(json.hooks.Notification[0].hooks[0].command.includes(`127.0.0.1:${port}/api/hooks/claude-code`));
+    const rawCommand = json.hooks.Notification[0].hooks[0].command;
+    const command = rawCommand.includes(' -EncodedCommand ')
+      ? Buffer.from(rawCommand.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : rawCommand;
+    assert.ok(command.includes(`127.0.0.1:${port}/api/hooks/claude-code`));
     const off = await a.send('POST', '/api/integrations/claude-hooks/uninstall');
     assert.equal(off.body.claudeHooks.installed, false);
   });

@@ -60,11 +60,11 @@ jobs:
   # takže jeden archiv obě nezvládne.
   #
   # Vlastní úloha, ne další větev matice: `vydani` níž na ni čeká, ale nevyžaduje její úspěch.
-  # Kdyby GitHub runner `macos-13` vyřadil, vydání vznikne bez aplikace pro Intel a popis ji
+  # Kdyby Intel build selhal, vydání vznikne bez aplikace pro Intel a popis ji
   # nebude zmiňovat — `scripts/release-notes.mjs` píše jen o souborech, které opravdu jsou.
   mac-intel:
     name: aplikace pro Mac (Intel)
-    runs-on: macos-13
+    runs-on: macos-15-intel
     timeout-minutes: 25
     continue-on-error: true
     steps:

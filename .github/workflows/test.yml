@@ -85,3 +85,28 @@ jobs:
           name: Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
           retention-days: 14
+
+  browser-qa:
+    name: rozhraní a přístupnost
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      # Výhradně nástroj QA; nevstupuje do runtime balíčku ani package.json.
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run qa:desktop
+      - run: npm run qa:site
+      - run: npm run qa:extension
+      - run: npm run qa:contrast
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-qa
+          path: |
+            dist/qa/
+            dist/qa-site/
+            dist/qa-extension/
+          retention-days: 14
