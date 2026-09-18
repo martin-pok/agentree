@@ -12,14 +12,18 @@
   --f-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
   --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --ease: cubic-bezier(.2, .8, .2, 1); --page: 1160px;
   color-scheme: light;
+  --canvas: #F4F6F3; --mesh-jade: rgba(70, 140, 120, .12); --mesh-gold: rgba(201, 154, 62, .10);
+  --motion-press: 90ms; --motion-response: 180ms; --motion-settle: 320ms;
 }
 @media (prefers-color-scheme: dark) {
-  :root { color-scheme: dark; --paper: #141220; --card: #1D1B27; --ink: #F5F2F8; --on-ink: #16141D; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #3B3747; --line-2: #2C2936; --velvet: #E87498; --velvet-ink: #FFB3C7; --velvet-tint: #43202E; --teal: #43D1B1; --teal-ink: #76E6CD; --teal-tint: #153C37; --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #3B2E17; }
+  :root { color-scheme: dark; --canvas: #101719; --paper: #101719; --card: #1B2324; --ink: #F5F2F8; --on-ink: #16141D; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #374344; --line-2: #253032; --velvet: #E87498; --velvet-ink: #FFB3C7; --velvet-tint: #43202E; --teal: #43D1B1; --teal-ink: #76E6CD; --teal-tint: #153C37; --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #3B2E17; --mesh-jade: rgba(62, 137, 115, .15); --mesh-gold: rgba(182, 142, 68, .10); }
   .logo--mono { filter: invert(1); }
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
+body { position: relative; margin: 0; background: var(--canvas); color: var(--ink); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; isolation: isolate; }
+/* Static light field: no blur, canvas loop, scroll listener or animated paint. */
+body::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 85% 900px at 92% 180px, var(--mesh-jade), transparent 75%), radial-gradient(ellipse 70% 800px at 8% 650px, var(--mesh-gold), transparent 75%), radial-gradient(ellipse 80% 1000px at 80% 65%, var(--mesh-jade), transparent 75%); }
 img, svg { display: block; max-width: 100%; }
 a { color: inherit; text-underline-offset: 4px; }
 button { color: inherit; font: inherit; cursor: pointer; }
@@ -43,10 +47,20 @@ p { margin: 0; text-wrap: pretty; }
 .status-dot { display: inline-block; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--teal-ink); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 24px; min-height: 52px; padding: 14px 24px; border-radius: 28px; background: var(--ink); color: var(--on-ink); font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .2s var(--ease); }
 .btn:hover { transform: translateY(-2px); }
+.btn, .tour-choice, summary, .nav-links a, .text-link, .brand { transition: transform var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
+.btn > span, .text-link > span, .choice-arrow, summary::after { transition: transform var(--motion-settle) var(--ease); }
+.btn:active, .tour-choice:active { transform: translateY(1px) scale(.98); transition-duration: var(--motion-press); }
+.text-link:active, .nav-links a:active, summary:active { transform: translateY(1px); transition-duration: var(--motion-press); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover > span, .text-link:hover > span { transform: translate(2px, -2px); }
+  .tour-choice:hover .choice-arrow { transform: translate(2px, -2px); }
+  .nav-links a:hover, summary:hover { color: var(--teal-ink); }
+  .brand:hover { transform: translateY(-1px); }
+}
 .btn--sm { min-height: 44px; padding: 10px 20px; font-size: 14px; gap: 16px; }
 .text-link { display: inline-flex; align-items: center; gap: 16px; min-height: 44px; font-size: 15px; font-weight: 500; text-decoration: underline; text-decoration-color: var(--line); }
 .text-link:hover { text-decoration-color: currentColor; }
-.nav { position: sticky; top: 0; z-index: 30; background: var(--paper); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 0; z-index: 30; background: var(--canvas); border-bottom: 1px solid var(--line); }
 .nav-in { min-height: 80px; display: flex; gap: 32px; align-items: center; }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 500 23px/1 var(--f-display); letter-spacing: -.04em; text-decoration: none; }
 .nav-links { display: flex; margin-left: auto; gap: 24px; }
@@ -70,7 +84,7 @@ section { padding: 80px 0; scroll-margin-top: 104px; }
 .tour-top > p { color: var(--mute); font-size: 14px; }
 .tour-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 40px; align-items: center; }
 .tour-controls { display: grid; gap: 12px; }
-.tour-choice { position: relative; padding: 20px 42px 20px 20px; text-align: left; border: 1px solid transparent; border-radius: var(--r-md); background: transparent; transition: background .2s var(--ease), border-color .2s var(--ease); }
+.tour-choice { position: relative; padding: 20px 42px 20px 20px; text-align: left; border: 1px solid transparent; border-radius: var(--r-md); background: transparent; }
 .tour-choice:hover { background: var(--line-2); }
 .tour-choice[aria-pressed="true"] { background: var(--card); border-color: var(--line); }
 .choice-label { display: block; font-family: var(--f-display); font-size: 22px; font-weight: 500; line-height: 1.2; letter-spacing: -.02em; }
@@ -139,6 +153,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0; }.foot-in { display
 }
 @media (prefers-reduced-motion: no-preference) {
   .hero-copy { animation: arrival .65s var(--ease) both; }.hero-mark { animation: arrival .8s .12s var(--ease) both; }
+  details[open] > .detail-body, .faq details[open] > p { animation: arrival .24s var(--ease) both; }
   @keyframes arrival { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }

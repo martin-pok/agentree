@@ -72,6 +72,15 @@ try {
       await staticPage.close();
       const motionPage = await browser.newPage({ reducedMotion: 'no-preference' });
       await motionPage.goto(url);
+      const button = motionPage.locator('.hero .btn');
+      await button.hover();
+      await motionPage.waitForTimeout(220);
+      assert.notEqual(await button.evaluate(el => getComputedStyle(el).transform), 'none', 'CTA reacts to hover');
+      await motionPage.mouse.down();
+      await motionPage.waitForTimeout(120);
+      assert.ok(await button.evaluate(el => getComputedStyle(el).transform.includes('0.98')), 'CTA reacts to press');
+      await motionPage.mouse.up();
+      assert.equal(await motionPage.evaluate(() => getComputedStyle(document.body, '::before').animationName), 'none', 'Mesh never animates paint');
       await motionPage.locator('[data-tour="projects"]').click();
       await motionPage.waitForTimeout(900);
       assert.equal(await motionPage.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'No perpetual decorative animation');

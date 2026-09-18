@@ -1,5 +1,10 @@
 # Changelog
 
+### Vizuální revize · 2026-09-18
+
+- Web: neutrální grafitový/světlý podklad s jemným statickým mesh světlem místo plošné fialové. Bez canvasu, blur filtru a animovaného překreslování pozadí.
+- Web, aplikace a popup: okamžitá odezva stisku (90 ms), krátké hover přechody (180 ms), pohyb šipek a otevření detailu. Reduced motion vypíná pohyb; akce nečekají na konec animace.
+
 ### Revize 0.12.0 · 2026-09-17
 
 - Odebrání zařízení ukončí i otevřený živý proud. Každá událost znovu kontroluje autorizaci; vypnutí Tailscale blokuje i zbývající lokální proxy.

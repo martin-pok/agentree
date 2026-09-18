@@ -129,6 +129,8 @@ Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## 9. Standard celé produktové rodiny
 
+Vizuální přijetí není totéž co zelené testy. Plošný fialový podklad LP byl uživatelem odmítnut; preferuj neutrální základ s jemným mesh světlem, které nepřekrývá obsah. Ovládací prvky mají okamžitou a jednotnou odezvu stisku/hover/fokusu; nečekat na animaci před provedením akce. Žádné nekonečné animování pozadí, těžké blur filtry nebo generické světelné efekty. Nový vzhled ukázat a vizuálně ověřit, neoznačovat automaticky za prémiový jen podle testů.
+
 Web, aplikace i rozšíření jsou jeden produkt a mají stejný standard řemesla: prémiový, srozumitelný UX/UI, jasná hierarchie a seskupení souvisejících informací, WCAG 2.2 AA a skutečně ověřená funkčnost. Nový vzhled musí navazovat na identitu Agenteeq, ne na obecnou šablonu. Pohyb vysvětluje změnu stavu; dekorativní nekonečné animace nepřidávat. Web má být stručný, responzivní a mít správná metadata, canonical a indexační soubory. Každá prodejní výzva musí vést na skutečně dostupný výsledek.
 
 Vzdálený přístup se testuje také po restartu, výpadku sítě, odebrání zařízení a vypnutí jedné z cest. Vysvětluj rozdíl mezi zavřeným oknem, ukončeným serverem a vypnutým či uspaným hostitelem. Přístup při vypnutém hostiteli vyžaduje samostatné rozhodnutí o trvale běžícím serveru; neslibovat ho pouze změnou rozhraní.
