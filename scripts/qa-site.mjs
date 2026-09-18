@@ -72,6 +72,20 @@ try {
       await staticPage.close();
       const motionPage = await browser.newPage({ reducedMotion: 'no-preference' });
       await motionPage.goto(url);
+      const button = motionPage.locator('.hero .btn');
+      await button.hover();
+      await motionPage.waitForFunction(() => {
+        const el = document.querySelector('.hero .btn');
+        return el.matches(':hover') && new DOMMatrixReadOnly(getComputedStyle(el).transform).f < -0.5;
+      });
+      await motionPage.mouse.down();
+      await motionPage.waitForFunction(() => {
+        const el = document.querySelector('.hero .btn');
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        return el.matches(':active') && Math.abs(matrix.a - 0.98) < 0.001 && Math.abs(matrix.f - 1) < 0.1;
+      });
+      await motionPage.mouse.up();
+      assert.equal(await motionPage.evaluate(() => getComputedStyle(document.body, '::before').animationName), 'none', 'Mesh never animates paint');
       await motionPage.locator('[data-tour="projects"]').click();
       await motionPage.waitForTimeout(900);
       assert.equal(await motionPage.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'No perpetual decorative animation');

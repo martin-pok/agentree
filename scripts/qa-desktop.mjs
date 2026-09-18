@@ -155,6 +155,8 @@ for (const engine of engines) {
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
         await page.locator('button[data-appearance="dark"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+        // Theme paints optimistically; the selected button updates after saveSettings resolves.
+        await page.waitForFunction(() => document.querySelector('button[data-appearance="dark"]')?.getAttribute('aria-pressed') === 'true');
         assert.equal(await page.locator('button[data-appearance="dark"]').getAttribute('aria-pressed'), 'true');
         const ratios = await page.evaluate(() => {
           const hex = (value) => {
