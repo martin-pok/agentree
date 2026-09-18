@@ -74,11 +74,16 @@ try {
       await motionPage.goto(url);
       const button = motionPage.locator('.hero .btn');
       await button.hover();
-      await motionPage.waitForTimeout(220);
-      assert.notEqual(await button.evaluate(el => getComputedStyle(el).transform), 'none', 'CTA reacts to hover');
+      await motionPage.waitForFunction(() => {
+        const el = document.querySelector('.hero .btn');
+        return el.matches(':hover') && new DOMMatrixReadOnly(getComputedStyle(el).transform).f < -0.5;
+      });
       await motionPage.mouse.down();
-      await motionPage.waitForTimeout(120);
-      assert.ok(await button.evaluate(el => getComputedStyle(el).transform.includes('0.98')), 'CTA reacts to press');
+      await motionPage.waitForFunction(() => {
+        const el = document.querySelector('.hero .btn');
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        return el.matches(':active') && Math.abs(matrix.a - 0.98) < 0.001 && Math.abs(matrix.f - 1) < 0.1;
+      });
       await motionPage.mouse.up();
       assert.equal(await motionPage.evaluate(() => getComputedStyle(document.body, '::before').animationName), 'none', 'Mesh never animates paint');
       await motionPage.locator('[data-tour="projects"]').click();
