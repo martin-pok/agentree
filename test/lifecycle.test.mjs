@@ -71,6 +71,10 @@ test('lifecycle: spoofed health from another server never authorizes termination
 });
 
 test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', async (t) => {
+  if (process.platform !== 'darwin') {
+    t.skip('Legacy takeover is macOS-only because lifecycle identification uses lsof/ps semantics.');
+    return;
+  }
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
   for (const sub of ['src','bin']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });

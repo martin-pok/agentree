@@ -5,6 +5,8 @@ import { createCloudBillingConnector } from '../src/connectors/cloud-billing.js'
 import { startTestServer, api } from './helpers.mjs';
 import { DataStore } from '../src/datastore.js';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 test('security: foreign origins cannot read state, transcripts or SSE; same-origin works', async () => {
   const s = await startTestServer();
@@ -67,8 +69,8 @@ test('security: billing credentials never follow redirects; failures remain cont
 });
 
 test('reliability: corrupt persistent data are never replaced with an empty database', async () => {
-  const dir = await fs.mkdtemp('/private/tmp/agentree-corrupt-qa-');
-  const file = dir + '/data.json';
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agentree-corrupt-qa-'));
+  const file = path.join(dir, 'data.json');
   for (const input of ['{"unfinished":', 'null', '[]']) {
     await fs.writeFile(file, input, { mode: 0o600 });
     await assert.rejects(new DataStore(dir).load(), /Původní soubor zůstal/);
