@@ -21,7 +21,7 @@ function fail(msg) {
 }
 function cleanup() {
   if (child && child.exitCode === null) child.kill('SIGTERM');
-  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
 const freePort = () => new Promise((resolve) => {
