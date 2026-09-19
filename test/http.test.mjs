@@ -135,6 +135,21 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
   });
 
   await t.test('webové rozšíření: ingest a jednorázové párování', async () => {
+    const code = await a.send('POST', '/api/extension/pair-code', {});
+    assert.equal(code.status, 200);
+    assert.match(code.body.code, /^[A-Za-z0-9_-]{16}$/);
+    assert.ok(code.body.expiresAt > Date.now());
+    assert.equal((await raw(`${srv.url}/api/extension/pair`)).status, 405);
+    const origin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
+    const installationId = 'abcdefghijklmnopqrstuvwx';
+    const foreign = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: 'https://evil.example', 'X-Agentree-Pair-Code': code.body.code } });
+    assert.equal(foreign.status, 403);
+    const bad = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': 'A'.repeat(16) } });
+    assert.equal(bad.status, 401);
+    const paired = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code, 'X-Agentree-Installation-Id': installationId } });
+    assert.equal(paired.status, 200);
+    const extensionToken = JSON.parse(paired.body).token;
+    assert.notEqual(extensionToken, token, 'rozšíření nikdy nedostane sdílený ingest token');
     const r = await a.send('POST', '/api/ingest/web', {
       site: 'perplexity',
       conversationId: 'trh-ai-2026',
@@ -142,27 +157,27 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
       title: 'Trh AI',
       generating: true,
       messages: [{ role: 'user', text: 'Jak velký je trh?' }],
-    }, { 'X-Agentree-Token': token });
+    }, { Origin: origin, 'X-Agentree-Token': extensionToken });
     assert.equal(r.status, 200);
+    assert.equal((await a.send('POST', '/api/ingest/web', { site: 'perplexity' }, { Origin: origin, 'X-Agentree-Token': token })).status, 401);
     const st = await a.get('/api/state');
     const s = st.body.sessions.find((x) => x.id === 'web:perplexity:trh-ai-2026');
     assert.equal(s.status, 'working');
     assert.equal(s.app, 'Perplexity');
     assert.equal(st.body.integrations.extension.token, undefined);
-    const code = await a.send('POST', '/api/extension/pair-code', {});
-    assert.equal(code.status, 200);
-    assert.match(code.body.code, /^[A-Za-z0-9_-]{16}$/);
-    assert.ok(code.body.expiresAt > Date.now());
-    assert.equal((await raw(`${srv.url}/api/extension/pair`)).status, 405);
-    const origin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
-    const foreign = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: 'https://evil.example', 'X-Agentree-Pair-Code': code.body.code } });
-    assert.equal(foreign.status, 403);
-    const bad = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': 'A'.repeat(16) } });
-    assert.equal(bad.status, 401);
-    const paired = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code } });
-    assert.equal(paired.status, 200);
-    assert.equal(JSON.parse(paired.body).token, token);
-    const replay = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code } });
+    const launch = await a.send('POST', '/api/launch', { agent: 'gemini', mode: 'web', prompt: 'Oprav Gemini předání' });
+    assert.equal(launch.status, 200);
+    assert.equal(launch.body.browserHandoff.site, 'gemini');
+    assert.ok(!JSON.stringify(launch.body).includes('Oprav Gemini předání'), 'zadání se do odpovědi API nevrací');
+    const handoffPath = `/api/extension/handoff?site=gemini&id=${launch.body.browserHandoff.id}`;
+    const foreignHandoff = await raw(`${srv.url}${handoffPath}`, { headers: { Origin: 'chrome-extension://ponmlkjihgfedcbaponmlkjihgfedcba', 'X-Agentree-Token': extensionToken } });
+    assert.equal(foreignHandoff.status, 401);
+    const handoff = await raw(`${srv.url}${handoffPath}`, { headers: { Origin: origin, 'X-Agentree-Token': extensionToken } });
+    assert.equal(handoff.status, 200);
+    assert.equal(JSON.parse(handoff.body).handoff.prompt, 'Oprav Gemini předání');
+    const consumed = await raw(`${srv.url}${handoffPath}`, { headers: { Origin: origin, 'X-Agentree-Token': extensionToken } });
+    assert.equal(JSON.parse(consumed.body).handoff, null, 'prompt lze vyzvednout jen jednou');
+    const replay = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agentree-Pair-Code': code.body.code, 'X-Agentree-Installation-Id': installationId } });
     assert.equal(replay.status, 401);
   });
 

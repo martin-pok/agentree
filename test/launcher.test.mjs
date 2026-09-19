@@ -82,6 +82,7 @@ test('web, Ollama a validace vstupů', async () => {
   assert.deepEqual(web.plan.args, ['https://chatgpt.com/?q=Ahoj%20sv%C4%9Bte%3F']);
   assert.equal(web.plan.copyPrompt, true);
   assert.deepEqual((await planLaunch({ agent: 'gemini', mode: 'web', prompt: 'x' }, ENV)).plan.args, ['https://gemini.google.com/app']);
+  assert.deepEqual((await planLaunch({ agent: 'gemini', mode: 'web', prompt: 'x', browserHandoffId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' }, ENV)).plan.args, ['https://gemini.google.com/app#agentree-handoff=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee']);
   assert.equal((await planLaunch({ agent: 'chatgpt', mode: 'web', prompt: 'x'.repeat(7000) }, ENV)).plan.args[0], 'https://chatgpt.com/');
 
   assert.equal((await planLaunch({ agent: 'ollama', mode: 'local', prompt: 'x' }, ENV)).plan.model, 'llama3.2:3b');

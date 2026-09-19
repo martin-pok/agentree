@@ -4,7 +4,7 @@
   "short_name": "Agentree",
   "version": "0.5.0",
   "description": "Posílá stav a přepis konverzací z webových AI aplikací do Agentree na tomto počítači (127.0.0.1).",
-  "permissions": ["storage"],
+  "permissions": ["storage", "clipboardRead"],
   "host_permissions": ["http://127.0.0.1:4620/*"],
   "background": { "service_worker": "background.js" },
   "action": { "default_title": "Agentree", "default_popup": "popup.html" },

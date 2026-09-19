@@ -90,6 +90,12 @@ První verze k reálnému testování.
 - Klikatelný prototyp: přehled, seznam agentů, spotřeba, konektory; lokální čtení Claude Code a Codexu; ukázková data.
 # Opravy desktopu — 2026-09-11
 
+## Bezpečné webové předání — připravováno pro příští release
+
+- Gemini web dostane po spárování Chrome rozšíření zadání přímo do otevřeného tabu. Zadání nejde do URL, API odpovědi ani trvalých dat; jednorázově žije pouze 60 sekund v paměti localhost serveru a uživatel ho před odesláním stále kontroluje.
+- Každá instalace rozšíření má nyní oddělený token vázaný na svůj Chrome origin místo sdíleného tokenu pro hooky a rozšíření. Párování zůstává jednorázové a platí 10 minut.
+- Párování nevyžaduje ruční opisování: Agentree kód zkopíruje a doplněk jej po vědomém kliknutí přečte ze schránky. Vývojová instalace přes Chrome developer mode zůstává do publikace ve Web Store výslovně označená jako neveřejná cesta.
+
 - Přehled při rychlých živých datech aktualizuje jen dotčené části; časová osa se nepřekresluje pro každý tokenový přírůstek a graf má omezenou obnovovací frekvenci.
 - Otevřený výběr projektu drží nad obsahem vlastní vrstvu bez kolidujícího tmavého obrysu zdrojového ovládacího prvku.
 - Bílé plochy grafu tokenů, klidového stavu a nezařazených konverzací podle tokenu `--card`.

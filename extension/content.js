@@ -54,4 +54,37 @@
   setInterval(schedule, 5000);
   window.addEventListener('popstate', schedule);
   schedule();
+
+  function geminiPromptBox() {
+    return document.querySelector('textarea[aria-label], rich-textarea [contenteditable="true"], div[contenteditable="true"][aria-label]');
+  }
+
+  function setPrompt(prompt) {
+    if (adapter.id !== 'gemini' || typeof prompt !== 'string' || !prompt.trim()) return false;
+    const box = geminiPromptBox();
+    if (!box) return false;
+    box.focus();
+    if (box instanceof HTMLTextAreaElement || box instanceof HTMLInputElement) {
+      const prototype = box instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+      setter?.call(box, prompt);
+    } else {
+      box.textContent = prompt;
+    }
+    box.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: prompt }));
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.type !== 'agentree:inject-prompt') return;
+    sendResponse({ ok: setPrompt(msg.prompt) });
+  });
+
+  // Žádný polling ani data z webu: ozveme se pouze při načtení Gemini, aby si
+  // background mohl vyzvednout jeden krátce platný prompt z localhostu.
+  if (adapter.id === 'gemini') {
+    const handoffId = new URL(location.href).hash.match(/^#agentree-handoff=([0-9a-f-]{36})$/i)?.[1];
+    if (handoffId) chrome.runtime.sendMessage({ type: 'agentree:ready', site: 'gemini', handoffId }).catch(() => {});
+  }
 })();

@@ -2,6 +2,14 @@
 const BASE = 'http://127.0.0.1:4620';
 let token = null;
 
+async function installationId() {
+  const stored = await chrome.storage.local.get(['installationId']);
+  if (typeof stored.installationId === 'string' && /^[A-Za-z0-9_-]{16,96}$/.test(stored.installationId)) return stored.installationId;
+  const id = crypto.randomUUID().replaceAll('-', '');
+  await chrome.storage.local.set({ installationId: id });
+  return id;
+}
+
 async function getToken() {
   if (token) return token;
   const stored = await chrome.storage.local.get(['token']);
@@ -10,7 +18,13 @@ async function getToken() {
 }
 
 async function pair(code) {
-  const res = await fetch(`${BASE}/api/extension/pair`, { method: 'POST', headers: { 'X-Agentree-Pair-Code': code } });
+  const res = await fetch(`${BASE}/api/extension/pair`, {
+    method: 'POST',
+    headers: {
+      'X-Agentree-Pair-Code': code,
+      'X-Agentree-Installation-Id': await installationId(),
+    },
+  });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
@@ -31,6 +45,15 @@ async function send(payload) {
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
 }
 
+async function takeHandoff(site, id) {
+  const res = await fetch(`${BASE}/api/extension/handoff?site=${encodeURIComponent(site)}&id=${encodeURIComponent(id)}`, {
+    headers: { 'X-Agentree-Token': await getToken() },
+  });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  return body.handoff && typeof body.handoff.prompt === 'string' ? body.handoff : null;
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'agentree:update') {
     send(msg.payload).catch((err) =>
@@ -38,5 +61,15 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   } else if (msg?.type === 'agentree:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
+  } else if (msg?.type === 'agentree:ready' && msg.site === 'gemini' && /^[0-9a-f-]{36}$/i.test(msg.handoffId || '') && sender.tab?.id) {
+    takeHandoff('gemini', msg.handoffId).then(async (handoff) => {
+      if (!handoff) return;
+      const result = await chrome.tabs.sendMessage(sender.tab.id, { type: 'agentree:inject-prompt', prompt: handoff.prompt }).catch(() => null);
+      await chrome.storage.local.set({
+        lastStatus: result?.ok
+          ? { ok: true, site: 'gemini', at: Date.now(), detail: 'Zadání připravené v Gemini.' }
+          : { ok: false, site: 'gemini', at: Date.now(), error: 'Gemini se načetl, ale pole pro zadání nebylo nalezeno. Vlož zadání ze schránky.' },
+      });
+    }).catch(() => {});
   }
 });

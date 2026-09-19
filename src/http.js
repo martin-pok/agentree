@@ -44,6 +44,9 @@ export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
   const clients = new Set();
   let server;
+  // Předání promptu žije jen v paměti a mizí za minutu. Nikdy se neukládá do
+  // přepisů, souborů nebo URL prohlížeče.
+  const webHandoffs = new Map();
 
   const port = () => server.address()?.port ?? config.port;
   const allowedOrigins = () => new Set([`http://127.0.0.1:${port()}`, `http://localhost:${port()}`]);
@@ -127,6 +130,30 @@ export function createHttpServer(app, existingServer = null) {
     const given = Buffer.from(String(req.headers['x-agentree-token'] || ''));
     const expected = Buffer.from(datastore.data.ingestToken);
     return given.length === expected.length && crypto.timingSafeEqual(given, expected);
+  }
+
+  function extensionTokenOk(req) {
+    const given = Buffer.from(String(req.headers['x-agentree-token'] || ''));
+    const origin = String(req.headers.origin || '');
+    return datastore.data.extensionInstallations.some((item) => {
+      const expected = Buffer.from(item.token);
+      return origin === item.origin && given.length === expected.length && crypto.timingSafeEqual(given, expected);
+    });
+  }
+
+  function putWebHandoff(id, prompt) {
+    webHandoffs.set(id, { prompt, expiresAt: Date.now() + 60_000 });
+    return id;
+  }
+
+  function takeWebHandoff(id) {
+    const handoff = webHandoffs.get(id);
+    if (!handoff || handoff.expiresAt <= Date.now()) {
+      webHandoffs.delete(id);
+      return null;
+    }
+    webHandoffs.delete(id);
+    return { id, prompt: handoff.prompt };
   }
 
   // Ochrana proti CSRF: vlastní hlavička vynutí CORS preflight, který server nepovolí; navíc kontrola Origin.
@@ -214,18 +241,31 @@ export function createHttpServer(app, existingServer = null) {
       return { raw: true, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: r.text };
     }, { token: true }],
     ['POST', /^\/api\/ingest\/web$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!extensionTokenOk(req)) throw new HttpError(401, 'Rozšíření už není připojené. Spáruj ho znovu v Agentree.');
       const r = app.connectors.web.ingest(await readBody(req));
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
     ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
-      const pair = await app.pairExtension(String(req.headers['x-agentree-pair-code'] || ''));
+      const origin = String(req.headers.origin || '');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agentree.');
+      const pair = await app.pairExtension({
+        code: String(req.headers['x-agentree-pair-code'] || ''),
+        origin,
+        installationId: String(req.headers['x-agentree-installation-id'] || ''),
+      });
       if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agentree.');
       return pair;
     }, { token: true }],
+    ['GET', /^\/api\/extension\/handoff$/, async (req, _m, url) => {
+      if (!extensionTokenOk(req)) throw new HttpError(401, 'Rozšíření už není připojené.');
+      const site = url.searchParams.get('site');
+      if (site !== 'gemini') throw new HttpError(400, 'Neznámá služba.');
+      const id = url.searchParams.get('id');
+      if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) throw new HttpError(400, 'Neplatné předání.');
+      return { handoff: takeWebHandoff(id) };
+    }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
       const r = validateEntry(await readBody(req));
       if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
@@ -377,7 +417,18 @@ export function createHttpServer(app, existingServer = null) {
     /* Spouštění agentů */
     ['GET', /^\/api\/launch$/, () => app.launchPayload()],
     ['POST', /^\/api\/launch\/refresh$/, () => app.refreshLaunch()],
-    ['POST', /^\/api\/launch$/, async (req) => unwrap(await app.launch(await readBody(req)))],
+    ['POST', /^\/api\/launch$/, async (req) => {
+      const body = await readBody(req);
+      const handoffId = body.agent === 'gemini' && body.mode === 'web' && datastore.data.extensionInstallations.length ? crypto.randomUUID() : null;
+      if (handoffId) body.browserHandoffId = handoffId;
+      const result = unwrap(await app.launch(body));
+      // Gemini nemá stabilní, výrobcem dokumentovaný URL prefill. Pokud je
+      // doplněk bezpečně spárovaný, předáme prompt jen do právě otevřeného tabu.
+      if (handoffId && result.kind === 'open' && result.mode === 'web' && result.label === 'Gemini') {
+        result.browserHandoff = { site: 'gemini', id: putWebHandoff(handoffId, result._browserPrompt) };
+      }
+      return result;
+    }],
     ['GET', /^\/api\/runs$/, () => ({ runs: app.runsPayload() })],
     ['POST', /^\/api\/runs\/clear$/, () => {
       app.runs.clearFinished();
@@ -443,7 +494,8 @@ export function createHttpServer(app, existingServer = null) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
-    if (url.pathname.startsWith('/api/') && req.method === 'GET') {
+    const extensionHandoff = url.pathname === '/api/extension/handoff' && req.method === 'GET' && /^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''));
+    if (url.pathname.startsWith('/api/') && req.method === 'GET' && !extensionHandoff) {
       if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
     }
     if (url.pathname === '/api/stream' && req.method === 'GET') return stream(req, res);

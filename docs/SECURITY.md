@@ -9,8 +9,9 @@ Agentree čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1` | `bin/agentree.mjs`, `src/config.js` |
 | Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` | `src/http.js#handle` |
 | Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agentree: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
-| Podvržené události hooků / rozšíření | Náhodný 48znakový token, porovnání v konstantním čase | `src/http.js#tokenOk`, `src/datastore.js` |
-| Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření ho musí ručně předat, server ho porovná v konstantním čase a po prvním použití zneplatní | `src/app.js#pairExtension`, `src/http.js` |
+| Podvržené události hooků / rozšíření | Hooky používají vlastní náhodný token; každá instalace rozšíření dostává jiný token vázaný na svůj Chrome origin, vše se porovnává v konstantním čase | `src/http.js#tokenOk`, `src/http.js#extensionTokenOk`, `src/datastore.js` |
+| Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření předá vlastní náhodné ID instalace, server ho po prvním použití zneplatní a vydá oddělený token jen pro tento origin | `src/app.js#pairExtension`, `src/http.js` |
+| Únik zadání při předání do Gemini | Zadání není v URL, JSON odpovědi ani v trvalých datech. Spárovaný doplněk ho vyzvedne jednou z localhostu; server ho drží pouze v paměti nejvýše 60 sekund. | `src/http.js#putWebHandoff`, `extension/background.js` |
 | XSS z obsahu přepisů | Veškerý dynamický text přes `esc()`; markdown až po escapování; odkazy jen `http(s)` s `rel="noopener noreferrer"`; CSP `script-src 'self'` | `public/js/format.js`, `views/session.js`, `src/http.js#SECURITY` |
 | Clickjacking | `X-Frame-Options: DENY`, `frame-ancestors 'none'` | `src/http.js` |
 | Path traversal na statických souborech | Normalizace cesty a kontrola prefixu `public/` | `src/http.js#serveStatic` |
@@ -47,7 +48,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Agent spuštěný z Agentree má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agentree/prompts` (0600) a výstup běhů v `~/.agentree/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
 - **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agentree — to je vlastnost macOS, ne Agentree.
-- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy.
+- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy. Současná vývojová instalace přes „Načíst rozbalené“ není vhodný veřejný onboarding; pro běžné uživatele je nutná publikace ve Chrome Web Store.
 
 ## Soukromí
 

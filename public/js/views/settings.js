@@ -111,7 +111,12 @@ function mount(el) {
         a.disabled = false;
       } else if (a.dataset.action === 'extension-pair-code') {
         v.pairCode = await api.extensionPairCode();
-        toast('Jednorázový kód je připravený na 10 minut');
+        try {
+          await navigator.clipboard.writeText(v.pairCode.code);
+          toast('Kód je ve schránce — v rozšíření klikni na Připojit ze schránky');
+        } catch {
+          toast('Jednorázový kód je připravený na 10 minut');
+        }
         update();
       } else if (a.dataset.action === 'extension-scroll') {
         document.getElementById('extension')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
@@ -292,15 +297,15 @@ function update() {
   fill(el, 'extension', `
     ${head(ICON.spark, 'Webové AI aplikace <span class="badge">Zkušební</span>',
       'Konverzace z ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot uvidíš díky rozšíření pro Chrome. Rozšíření posílá data jen do Agentree na tomto Macu.',
-      stateBadge(web?.state || 'missing', web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno'))}
+      stateBadge(web?.state || 'missing', i.extension?.paired ? 'Připojeno' : web?.state === 'connected' ? 'Aktivní' : web?.state === 'idle' ? 'Bez nových dat' : 'Nenainstalováno'))}
     <ol class="steps">
       <li>V Chromu otevři adresu <code>chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
       <li>Klikni na <b>Načíst rozbalené</b> a vyber tuto složku:
         <div class="code-line"><code>${esc(i.extension.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(i.extension.path)}" data-copy-message="Cesta zkopírována">${ICON.copy}Kopírovat</button></div></li>
-      <li>Klikni na ikonu rozšíření, vlož jednorázový kód a potvrď připojení.</li>
+      <li>Klikni na ikonu rozšíření a na <b>Připojit ze schránky</b>. Kód vloží Agentree automaticky.</li>
     </ol>
-    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Vytvořit jednorázový kód</button></div>
-    ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}
+    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">Připojit Chrome</button></div>
+    ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="Jednorázový kód zkopírován">${ICON.copy}Kopírovat kód</button></div><p class="set-note">Záložní kód platí do ${new Date(v.pairCode.expiresAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })} a po spárování se automaticky zneplatní.</p>` : ''}
     <div class="site-grid">${Object.entries(sites).map(([k, s]) => {
       const at = web?.sites?.[k];
       return `<div class="site">${glyph({ connector: 'web', app: s.name, provider: s.provider })}<span>${esc(s.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;

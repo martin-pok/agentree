@@ -547,7 +547,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     datastore.save();
     if (store.ready) store.emit('usage', datastore.data.usage);
     const { prompt, argv, command, ...publicPlan } = plan;
-    return {
+    const response = {
       ok: true,
       kind: plan.kind,
       mode: plan.mode,
@@ -558,6 +558,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
       handoff: plan.handoff || null,
       ...(dry ? { dry: true, plan: { ...publicPlan, argv, command } } : {}),
     };
+    // Používá pouze lokální HTTP vrstva pro krátké předání do spárovaného
+    // prohlížeče. Nezapisuje se do JSON odpovědi ani do diagnostiky.
+    Object.defineProperty(response, '_browserPrompt', { value: plan.prompt, enumerable: false });
+    return response;
   }
 
   // Kódex spuštěný na pozadí nemá předem známé ID session — spáruje se podle složky a času startu.
@@ -634,7 +638,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: EXTENSION_DIR, sites: WEB_SITES },
+      extension: { path: EXTENSION_DIR, sites: WEB_SITES, paired: datastore.data.extensionInstallations.length > 0 },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -658,14 +662,19 @@ export async function createApp(config = loadConfig(), { licensePublicKey } = {}
     return { code, expiresAt };
   }
 
-  async function pairExtension(code) {
+  async function pairExtension({ code, origin, installationId }) {
     const pair = datastore.data.extensionPairing;
     if (!pair || pair.expiresAt <= Date.now() || typeof code !== 'string' || code.length !== pair.code.length) return null;
+    if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin) || !/^[A-Za-z0-9_-]{16,96}$/.test(installationId)) return null;
     const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
     if (!equal) return null;
     datastore.data.extensionPairing = null;
+    const token = crypto.randomBytes(32).toString('base64url');
+    const installations = datastore.data.extensionInstallations.filter((item) => item.id !== installationId);
+    installations.push({ id: installationId, token, origin, pairedAt: Date.now() });
+    datastore.data.extensionInstallations = installations.slice(-5);
     await datastore.flush();
-    return { token: datastore.data.ingestToken, version: VERSION };
+    return { token, version: VERSION };
   }
 
   async function state() {

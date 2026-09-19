@@ -22,6 +22,23 @@ export const DEFAULT_SETTINGS = {
 };
 
 const ALERTS_MAX = 300;
+const EXTENSION_INSTALLATIONS_MAX = 5;
+
+function normalizeExtensionInstallations(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item === 'object'
+      && typeof item.id === 'string' && /^[A-Za-z0-9_-]{16,96}$/.test(item.id)
+      && typeof item.token === 'string' && item.token.length >= 32
+      && typeof item.origin === 'string' && /^chrome-extension:\/\/[a-p]{32}$/.test(item.origin))
+    .slice(-EXTENSION_INSTALLATIONS_MAX)
+    .map((item) => ({
+      id: item.id,
+      token: item.token,
+      origin: item.origin,
+      pairedAt: Number(item.pairedAt) || Date.now(),
+    }));
+}
 
 export function normalizeData(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
@@ -33,6 +50,9 @@ export function normalizeData(raw) {
     extensionPairing: d.extensionPairing && typeof d.extensionPairing.code === 'string' && d.extensionPairing.code.length >= 12 && Number(d.extensionPairing.expiresAt) > Date.now()
       ? { code: d.extensionPairing.code, expiresAt: Number(d.extensionPairing.expiresAt) }
       : null,
+    // Každý prohlížeč dostává vlastní token. Únik tokenu tak neotevře API
+    // ostatním doplňkům ani lokálním hookům.
+    extensionInstallations: normalizeExtensionInstallations(d.extensionInstallations),
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

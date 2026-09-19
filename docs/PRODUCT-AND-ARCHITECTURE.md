@@ -36,11 +36,11 @@ Upozornění vede na konkrétní session a následně do původní aplikace či 
 
 ### Spuštění práce z projektu
 
-Uživatel zvolí projekt, pracovní složku a agenta. Server sestaví bezpečný plán spuštění; zadání není součást shellového příkazu. Výsledek běhu se vrací do přehledu jako běžná session.
+Uživatel zvolí projekt, pracovní složku a agenta. Server sestaví bezpečný plán spuštění; zadání není součást shellového příkazu. U Gemini webu se po spárování Chrome prompt předvyplní přímo v otevřeném tabu a uživatel ho před odesláním zkontroluje; bez spárovaného doplňku zůstává bezpečná záloha ve schránce. Výsledek běhu se vrací do přehledu jako běžná session.
 
 ### Připojení další služby
 
-Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede krátký pairing flow rozšíření Chrome. Přihlašování do cizích služeb nedělá Agentree za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence.
+Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede krátký pairing flow rozšíření Chrome: Agentree zkopíruje jednorázový kód a doplněk ho převezme jedním kliknutím. Přihlašování do cizích služeb nedělá Agentree za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence. Instalaci Chrome doplňku ale nelze legitimně automatizovat — pro veřejný one-click onboarding musí být publikovaný v Chrome Web Store.
 
 ## 4. Designový systém a vzhled
 

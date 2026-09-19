@@ -78,10 +78,12 @@ function runHtml(r, now) {
 // Předání do aplikace nebo webu: přesně řekne, co udělat, zadání má po ruce a sama zmizí.
 let handoffTimer = null;
 
-function showHandoff({ target, label, mode, handoff, prompt }) {
+function showHandoff({ target, label, mode, handoff, prompt, browserHandoff = null }) {
   document.querySelector('.handoff')?.remove();
   clearTimeout(handoffTimer);
-  const steps = handoff === 'confirm'
+  const steps = browserHandoff?.site === 'gemini'
+    ? ['Otevírám Gemini a bezpečně předávám zadání z tohoto Macu.', 'Zadání se předvyplní — před odesláním ho můžeš zkontrolovat.']
+    : handoff === 'confirm'
     ? ['Zadání je v aplikaci předvyplněné.', 'Zkontroluj ho a potvrď klávesou Enter.']
     : handoff === 'confirm-or-paste'
       ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V — je ve schránce.']
@@ -264,7 +266,7 @@ export function createLauncher(root) {
       else if (r.kind === 'local') location.hash = agentHref(r.sessionId);
       else if (r.kind === 'background') toast(`${r.label} pracuje na pozadí`, detail);
       else if (r.kind === 'terminal') toast(`${r.label} běží v Terminálu`, detail);
-      else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief });
+      else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief, browserHandoff: r.browserHandoff });
     } catch (err) {
       if (err.status === 402) toast(err.message, { tone: 'velvet', timeout: 10000, action: { label: 'Licence', href: '#/nastaveni' } });
       else toast(err.message, { tone: 'velvet', timeout: 9000 });

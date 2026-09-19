@@ -32,7 +32,7 @@ async function render() {
   }
   if (lastStatus) {
     const when = new Date(lastStatus.at).toLocaleTimeString('cs-CZ');
-    $('last').textContent = lastStatus.ok ? `Naposledy odesláno v ${when} (${lastStatus.site}).` : `Odeslání selhalo v ${when}: ${lastStatus.error || lastStatus.code}.`;
+    $('last').textContent = lastStatus.ok ? `${lastStatus.detail || 'Naposledy odesláno'} v ${when} (${lastStatus.site}).` : `Odeslání selhalo v ${when}: ${lastStatus.error || lastStatus.code}.`;
   }
 }
 
@@ -48,8 +48,7 @@ async function checkServer() {
   }
 }
 
-$('pair').addEventListener('click', async () => {
-  const code = $('code').value.trim();
+async function connect(code) {
   if (!/^[A-Za-z0-9_-]{16}$/.test(code)) {
     $('last').textContent = 'Kód nemá správný tvar.';
     return;
@@ -58,6 +57,15 @@ $('pair').addEventListener('click', async () => {
   if (!result?.ok) { $('last').textContent = result?.error || 'Spárování selhalo.'; return; }
   $('code').value = '';
   $('last').textContent = 'Rozšíření je bezpečně připojené.';
+}
+
+$('pair').addEventListener('click', async () => connect($('code').value.trim()));
+$('pair-clipboard').addEventListener('click', async () => {
+  try {
+    await connect((await navigator.clipboard.readText()).trim());
+  } catch {
+    $('last').textContent = 'Schránku se nepodařilo přečíst. Vlož kód ručně.';
+  }
 });
 
 render();
