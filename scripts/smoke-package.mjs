@@ -21,7 +21,14 @@ function fail(msg) {
 }
 function cleanup() {
   if (child && child.exitCode === null) child.kill('SIGTERM');
-  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  try {
+    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch (error) {
+    // The child can still release a file briefly after SIGTERM. The smoke
+    // assertions already passed; CI's ephemeral workspace can clean this up.
+    if (error.code !== 'ENOTEMPTY' && error.code !== 'EBUSY') throw error;
+    console.warn(`Úklid dočasného smoke adresáře odložen: ${tmp}`);
+  }
 }
 
 const freePort = () => new Promise((resolve) => {
