@@ -6,7 +6,7 @@
 
 > Stav: **v0.6.0 — desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
-Pro Mac: rozbal `dist/Agentree-0.6.0-macOS-arm64.zip` a přesuň Agentree.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
+Nejnovější veřejný balíček stáhneš na [`/download`](./public/download.html); stránka čte publikovaný GitHub Release. Pro lokální build rozbal `dist/Agentree-<verze>-macOS-arm64.zip` a přesuň Agentree.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md) a [releasový kontrakt](docs/RELEASES.md).
 
 ## Rychlý start
 
@@ -36,10 +36,11 @@ Instalace pro zákazníka nebo kolegu: `npm run pack` a návod [docs/INSTALL.md]
 ## Vývoj
 
 ```bash
-npm test          # 63 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, HTTP API, realtime stream
+npm test          # všechny testy: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, HTTP API, realtime stream
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
+npm run release:metadata # vytvoří manifest assetů pro GitHub Release
 ```
 
 Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.md)**.
@@ -60,3 +61,4 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vize, zákazník, hodnota, hypotézy monetizace (neověřené) |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Cesta z lokální bety k SaaS, s akceptačními kritérii |
 | [CHANGELOG.md](CHANGELOG.md) | Historie verzí |
+| [docs/RELEASES.md](docs/RELEASES.md) | Zdroj pravdy pro GitHub Releases, download stránku a update-check desktopu |

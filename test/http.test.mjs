@@ -51,6 +51,14 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.ok(r.body.connectors.some((c) => c.id === 'claude-code' && c.state === 'connected'));
   });
 
+  await t.test('health zveřejňuje pouze release metadata a drží verzi serveru', async () => {
+    const r = await a.get('/api/health');
+    assert.equal(r.status, 200);
+    assert.equal(r.body.release.repository, 'martin-pok/agentree');
+    assert.equal(r.body.release.currentVersion, r.body.version);
+    assert.match(r.body.release.manifestUrl, /releases\/latest\/download\/agentree-release\.json$/);
+  });
+
   await t.test('otevření v aplikaci: nabídka akcí, plán, ochrana', async () => {
     const st = await a.get(`/api/sessions/${encodeURIComponent(id)}`);
     assert.deepEqual(st.body.session.open.map((x) => x.id), ['app', 'terminal', 'folder']);
@@ -184,6 +192,11 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     const index = await fetch(`${srv.url}/`);
     assert.equal(index.status, 200);
     assert.match(await index.text(), /Agentree/);
+    const download = await fetch(`${srv.url}/download`);
+    assert.equal(download.status, 200);
+    assert.match(await download.text(), /Stáhni Agentree/);
+    assert.equal((await fetch(`${srv.url}/download.css`)).headers.get('content-type'), 'text/css; charset=utf-8');
+    assert.equal((await fetch(`${srv.url}/js/download.js`)).headers.get('content-type'), 'text/javascript; charset=utf-8');
     const trav = await raw(`${srv.url}/..%2f..%2fpackage.json`);
     assert.ok([403, 404].includes(trav.status), `stav ${trav.status}`);
     assert.equal((await fetch(`${srv.url}/api/neexistuje`)).status, 404);

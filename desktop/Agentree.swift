@@ -113,7 +113,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     @objc func showWindow() { window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     @objc func settings() { showWindow(); web?.evaluateJavaScript("location.hash='#/nastaveni'") }
     @objc func welcome() { showWindow(); web?.evaluateJavaScript("window.dispatchEvent(new Event('agentree-welcome'))") }
-    @objc func about() { NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agentree", .applicationVersion: "0.6.0", .credits: NSAttributedString(string: "Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.")]) }
+    @objc func about() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "neznámá verze"
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agentree", .applicationVersion: version, .credits: NSAttributedString(string: "Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.")])
+    }
     @objc func retry() { guard child?.isRunning != true else { return }; retries = 0; startServer() }
 
     func startServer() {

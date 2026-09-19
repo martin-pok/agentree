@@ -1,0 +1,110 @@
+name: Vydání
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existující tag, který se má zabalit (např. v0.6.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  verify:
+    name: Ověřit verzi a testy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagu
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+      - name: Ověřit verzi, testy a syntaxi
+        run: |
+          npm test
+          npm run check
+          node scripts/check-release.mjs "$RELEASE_TAG"
+
+  build-macos:
+    name: Sestavit macOS ${{ matrix.arch }}
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            arch: arm64
+          - os: macos-13
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout tagu
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+      - name: Sestavit aplikaci
+        env:
+          AGENTREE_SIGN_IDENTITY: ${{ secrets.AGENTREE_SIGN_IDENTITY || '-' }}
+        run: npm run build:mac
+      - name: Ověřit lokální balíček
+        run: npm run smoke
+      - name: Nahrát desktopový asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-${{ matrix.arch }}
+          path: dist/Agentree-*.zip
+          if-no-files-found: error
+
+  draft-release:
+    name: Připravit draft GitHub Release
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagu
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+      - name: Stáhnout desktopové assety
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-macos-*
+          path: dist
+          merge-multiple: true
+      - name: Připravit CLI balíček a metadata
+        run: |
+          npm run pack
+          RELEASE_TAG="$RELEASE_TAG" npm run release:metadata
+      - name: Vytvořit nebo obnovit draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" != "true" ]; then
+              echo "Release $RELEASE_TAG už je publikovaný; workflow odmítá měnit publikované assety."
+              exit 1
+            fi
+            echo "Draft release $RELEASE_TAG už existuje; aktualizuji jeho assety."
+          else
+            gh release create "$RELEASE_TAG" --draft --title "Agentree $RELEASE_TAG" --notes-file dist/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" dist/Agentree-*.zip dist/agentree-*.tgz dist/agentree-release.json --clobber
+          echo "Draft release je připravený. Publikace zůstává ruční branou v GitHubu."

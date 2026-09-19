@@ -6,7 +6,7 @@ Agentree je dashboard všech AI agentů na tvém Macu. Běží lokálně — tvo
 
 ### Desktopový balíček pro Mac
 
-`Agentree-0.6.0-macOS-arm64.zip` je samostatná aplikace pro Apple Silicon a macOS 14+. Rozbal a přesuň Agentree.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agentree` zůstanou zachované.
+`Agentree-<verze>-macOS-arm64.zip` je samostatná aplikace pro Apple Silicon a macOS 14+. Aktuální soubor vždy vyber na [download stránce](../public/download.html), která čte publikovaný GitHub Release. Rozbal a přesuň Agentree.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agentree` zůstanou zachované.
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agentree → Ukončit Agentree** ukončí i lokální službu a agenty spuštěné z Agentree na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 
@@ -24,7 +24,7 @@ Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel 
 Od dodavatele dostaneš soubor `agentree-<verze>.tgz`. V Terminálu ve složce se souborem spusť:
 
 ```bash
-npm install -g ./agentree-0.5.0.tgz
+npm install -g ./agentree-<verze>.tgz
 ```
 
 Pak Agentree spusť a otevři:
@@ -55,7 +55,8 @@ Nastavení → Licence → vlož klíč začínající `AGT1.` a klikni na **Akt
 
 ## Aktualizace a odinstalace
 
-- Aktualizace: `npm install -g ./agentree-<nová verze>.tgz` — data zůstanou.
+- Aktualizace: stáhni nový asset z [download stránky](../public/download.html); pro CLI spusť `npm install -g ./agentree-<nová verze>.tgz` — data zůstanou.
+- Desktopový update-check používá veřejný manifest `https://github.com/martin-pok/agentree/releases/latest/download/agentree-release.json`; samotná instalace zůstává vědomou akcí uživatele.
 - Odinstalace: `agentree uninstall-agent`, pak `npm uninstall -g agentree`. Data smažeš složkou `~/.agentree`.
 
 ## Řešení potíží

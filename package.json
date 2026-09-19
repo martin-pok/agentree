@@ -24,7 +24,8 @@
     "start": "node bin/agentree.mjs",
     "dev": "node --watch-path=src --watch-path=bin bin/agentree.mjs",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.mjs\"",
-    "check": "node --check bin/agentree.mjs && node scripts/check-syntax.mjs",
+    "check": "node --check bin/agentree.mjs && node scripts/check-syntax.mjs && node scripts/check-release.mjs",
+    "release:metadata": "node scripts/create-release-metadata.mjs",
     "pack": "mkdir -p dist && npm pack --pack-destination dist",
     "smoke": "node scripts/smoke-package.mjs",
     "license": "node scripts/license.mjs"

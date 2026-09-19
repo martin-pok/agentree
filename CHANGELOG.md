@@ -20,6 +20,9 @@
 
 ## 0.6.0 — 2026-09-11
 
+- GitHub Release je připravený jako distribuční zdroj pravdy: draft workflow skládá macOS ARM64/Intel assety, CLI balíček a `agentree-release.json` s kontrolními součty.
+- Dashboard odkazuje na download stránku, která načítá pouze publikovaný latest release; při nedostupnosti GitHubu zůstává jasný fallback bez vymyšlené verze.
+- Verze desktopového bundlu a dialogu „O Agentree“ se odvozují z `package.json`; přidaný manifest URL je připravený pro update-check bez automatické instalace.
 - Samostatná macOS aplikace: Swift/AppKit, WKWebView, přibalený Node, Retina ikona s původním logem na bílé ploše, menu a klávesové zkratky, Dock/menubar, nativní export a oznámení s návratem do konverzace.
 - Čtyřkrokový první průvodce, trvalé dokončení, opakování v Nastavení/Nápovědě, animace respektující omezení pohybu.
 - Vlastní rozbalovací nabídky v designu Agentree, klávesnice, fokus, formulářové hodnoty a chybové stavy. Lokální fonty včetně českých sad a licencí; CSP povoluje písma jen z vlastního originu.

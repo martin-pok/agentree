@@ -160,6 +160,8 @@ code { font-family: var(--f-mono); font-size: .9em; }
 .conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; }
 .search-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--mute); font-size: 14px; transition: border-color .2s, color .2s, background-color .2s; }
 .search-btn:hover { border-color: var(--ink); color: var(--ink); background: var(--card); }
+.download-link { display: inline-flex; align-items: center; height: 40px; padding: 0 15px; border: 1px solid var(--brass); border-radius: 20px; color: var(--brass-ink); font-size: 13px; text-decoration: none; transition: background-color .2s, color .2s; }
+.download-link:hover { background: var(--brass); color: var(--paper); }
 kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; background: var(--line-2); color: var(--ink-2); }
 
 /* Jemné nativní lišty: viditelné při potřebě, bez dominantního chrome. */

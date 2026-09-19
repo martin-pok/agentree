@@ -14,7 +14,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 
 | Metoda | Cesta | Popis |
 |---|---|---|
-| GET | `/api/health` | `{ ok, version, ready, lifecycle?: { pid, ownerPid } }` — lifecycle pouze u desktopového serveru |
+| GET | `/api/health` | `{ ok, version, ready, release: { repository, apiUrl, pageUrl, manifestUrl, currentVersion }, lifecycle?: { pid, ownerPid } }` — metadata release jsou veřejné URL bez uživatelských dat; lifecycle pouze u desktopového serveru |
 | GET | `/api/state` | Úplný snapshot (viz níže) |
 | GET | `/api/sessions/:id` | `{ session: SessionSummary, transcript: TranscriptEntry[] }` (max 400) |
 | GET | `/api/sessions/:id/transcript?after=<seq>` | `{ entries }` |

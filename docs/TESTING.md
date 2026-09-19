@@ -6,6 +6,7 @@
 npm test         # node:test, sériově, bez sítě, nad dočasnými fixturami
 npm run check    # node --check pro všechny .js/.mjs
 npm run smoke    # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
+npm run release:metadata # vytvoří release manifest z balíčků v dist/
 ```
 
 Browserová regresní sada `scripts/qa-desktop.mjs` běží nad dočasným serverem ve **Chromiu i WebKitu**. Vedle tras, custom pickerů, živých aktualizací, mobilních šířek a nulových chyb konzole ověřuje i světlý/tmavý režim: výchozí light, perzistenci dark přes reload, reakci `system` na změnu media preference, 24 abstraktních avatarů a AA kontrast základních textových/semantických tokenů. Screenshoty ukládá do `dist/qa/`.
@@ -43,6 +44,8 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentre
 - [ ] `prefers-reduced-motion`: animace vypnuté.
 - [ ] V Nastavení přepni Světlý / Tmavý / Podle systému; změna je okamžitá, po restartu zůstane a `Podle systému` zareaguje na změnu macOS bez restartu.
 - [ ] Dark mode: běžný text, pomocný text, badge, ovládací prvky, grafy a fokus mají čitelný kontrast; žádná světlá karta nemá světlý text a žádný tmavý povrch tmavý text.
+- [ ] `/download` bez veřejného releasu zobrazí pravdivý fallback a odkaz na GitHub Releases; s publikovaným releasem zobrazí správnou verzi a assety pro dostupné architektury.
+- [ ] Po publikaci zkontroluj `agentree-release.json`, SHA-256, podpis/notarizaci a čistou instalaci ZIPu na Apple Silicon i Intel Macu.
 
 ### Rozšíření (pro každý web: ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
 

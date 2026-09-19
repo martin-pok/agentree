@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stáhnout Agentree</title>
+  <meta name="description" content="Stáhni nejnovější veřejné vydání Agentree pro macOS nebo CLI balíček. Release metadata jsou načítána z GitHub Releases.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="agentree-releases-api" content="https://api.github.com/repos/martin-pok/agentree/releases/latest">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <link rel="stylesheet" href="/download.css">
+  <link rel="icon" type="image/svg+xml" href="/brand/agentree-mark-dark.svg">
+</head>
+<body>
+  <main class="download-shell">
+    <header class="download-nav">
+      <a class="download-brand" href="/" aria-label="Agentree — dashboard">
+        <img src="/brand/agentree-mark-dark.svg" width="36" height="36" alt="">
+        <span>Agentree</span>
+      </a>
+      <a class="download-back" href="/">Otevřít dashboard</a>
+    </header>
+
+    <section class="download-hero" aria-labelledby="download-title">
+      <p class="download-kicker">Distribuce z jednoho místa</p>
+      <h1 id="download-title">Stáhni Agentree<br><em>pro svůj Mac.</em></h1>
+      <p class="download-lead">Každé tlačítko vede na asset z publikovaného GitHub Release. Verzi, poznámky i kontrolní součty řídí release — ne kopie ve webu.</p>
+      <div class="release-status" data-release-status role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-release-status-text>Načítám poslední veřejné vydání…</span>
+      </div>
+    </section>
+
+    <section class="release-panel" aria-labelledby="release-title">
+      <div class="panel-heading">
+        <div>
+          <p class="panel-kicker">Nejnovější vydání</p>
+          <h2 id="release-title" data-release-title>Veřejný release</h2>
+        </div>
+        <a class="text-link" data-release-notes href="https://github.com/martin-pok/agentree/releases/latest" target="_blank" rel="noreferrer">Poznámky k vydání <span aria-hidden="true">↗</span></a>
+      </div>
+
+      <div class="download-grid">
+        <article class="download-card download-card--primary">
+          <div class="card-topline"><span class="platform-mark">⌘</span><span>macOS</span></div>
+          <h3>Apple Silicon</h3>
+          <p>Pro Macy s čipem Apple Silicon. macOS 14 nebo novější.</p>
+          <a class="download-button is-disabled" data-asset="macos-arm64" href="https://github.com/martin-pok/agentree/releases/latest" aria-disabled="true">Čekám na release</a>
+          <small data-asset-meta="macos-arm64">Asset se objeví po publikaci vydání.</small>
+        </article>
+        <article class="download-card">
+          <div class="card-topline"><span class="platform-mark">⌘</span><span>macOS</span></div>
+          <h3>Intel</h3>
+          <p>Pro Macy s procesorem Intel. macOS 14 nebo novější.</p>
+          <a class="download-button is-disabled" data-asset="macos-x64" href="https://github.com/martin-pok/agentree/releases/latest" aria-disabled="true">Čekám na release</a>
+          <small data-asset-meta="macos-x64">Asset se objeví po publikaci vydání.</small>
+        </article>
+        <article class="download-card">
+          <div class="card-topline"><span class="platform-mark">›_</span><span>CLI</span></div>
+          <h3>Node.js balíček</h3>
+          <p>Lokální dashboard bez nativního obalu. Node.js 22.13 nebo novější.</p>
+          <a class="download-button is-disabled" data-asset="cli" href="https://github.com/martin-pok/agentree/releases/latest" aria-disabled="true">Čekám na release</a>
+          <small data-asset-meta="cli">Asset se objeví po publikaci vydání.</small>
+        </article>
+      </div>
+
+      <div class="release-footnote">
+        <span>Release je veřejný až po ručním publikování draftu.</span>
+        <a class="text-link" data-release-page href="https://github.com/martin-pok/agentree/releases/latest" target="_blank" rel="noreferrer">Otevřít GitHub Releases <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <footer class="download-footer">
+      <span>Agentree · lokální data, veřejné assety</span>
+      <a href="https://github.com/martin-pok/agentree" target="_blank" rel="noreferrer">Zdrojový kód na GitHubu ↗</a>
+    </footer>
+  </main>
+  <script type="module" src="/js/download.js"></script>
+</body>
+</html>

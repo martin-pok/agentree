@@ -6,6 +6,7 @@ import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets } from './spend.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
+import { RELEASE_METADATA } from './release.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -29,7 +30,7 @@ const SECURITY = {
   'X-Frame-Options': 'DENY',
   'Cross-Origin-Resource-Policy': 'same-origin',
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
 class HttpError extends Error {
@@ -182,7 +183,7 @@ export function createHttpServer(app, existingServer = null) {
   /* ---------- Trasy ---------- */
 
   const routes = [
-    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
+    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, release: { ...RELEASE_METADATA, currentVersion: VERSION }, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
     ['GET', /^\/api\/state$/, () => app.state()],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
@@ -421,6 +422,7 @@ export function createHttpServer(app, existingServer = null) {
       throw new HttpError(400, 'Neplatná adresa.');
     }
     if (rel === '/') rel = '/index.html';
+    else if (rel === '/download') rel = '/download.html';
     let file = path.normalize(path.join(PUBLIC_DIR, rel));
     if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, 'Zakázáno.');
     let body;
