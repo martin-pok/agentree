@@ -38,6 +38,7 @@ function renderRelease(release) {
   setLink('macos-arm64', byAssetName(release, (name) => /macOS-arm64\.zip$/i.test(name)), 'Apple Silicon není v releasu');
   setLink('macos-x64', byAssetName(release, (name) => /macOS-(?:x64|x86_64|amd64)\.zip$/i.test(name)), 'Intel není v releasu');
   setLink('cli', byAssetName(release, (name) => /^agentree-[^/]+\.tgz$/i.test(name)), 'CLI balíček není v releasu');
+  setLink('extension', byAssetName(release, (name) => /Chrome-extension\.zip$/i.test(name)), 'Chrome helper není v releasu');
 }
 
 function renderFallback() {
@@ -45,7 +46,7 @@ function renderFallback() {
   const title = document.querySelector('[data-release-title]');
   if (status) status.textContent = 'Veřejné release metadata se nepodařilo načíst.';
   if (title) title.textContent = 'Release zatím není dostupný';
-  for (const key of ['macos-arm64', 'macos-x64', 'cli']) setLink(key, null, 'Otevřít GitHub Releases');
+  for (const key of ['macos-arm64', 'macos-x64', 'cli', 'extension']) setLink(key, null, 'Otevřít GitHub Releases');
 }
 
 if (apiUrl) {

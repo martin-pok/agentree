@@ -14,7 +14,7 @@ Manifest má `schemaVersion: 1`, verzi, tag, URL releasu a pole `assets`. Každ�
 
 ## Jak vzniká release
 
-Workflow `.github/workflows/release.yml` se spouští tagem `vX.Y.Z` nebo ručně pro existující tag. Nejprve ověří verzi, testy a syntaxi, potom sestaví macOS ARM64 a Intel, zabalí CLI a vytvoří draft GitHub Release s poznámkami z odpovídající sekce changelogu. Draft gate zůstává záměrná: publikaci provede vlastník repozitáře ručně po kontrole podpisu, notarizace a assetů.
+Workflow `.github/workflows/release.yml` se spouští tagem `vX.Y.Z` nebo ručně pro existující tag. Nejprve ověří verzi, testy a syntaxi, potom sestaví macOS ARM64 a Intel, zabalí CLI i Chrome helper ZIP a vytvoří draft GitHub Release s poznámkami z odpovídající sekce changelogu. Draft gate zůstává záměrná: publikaci provede vlastník repozitáře ručně po kontrole podpisu, notarizace a assetů.
 
 Před publikací musí být ověřeno:
 

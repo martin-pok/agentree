@@ -92,6 +92,7 @@ jobs:
       - name: Připravit CLI balíček a metadata
         run: |
           npm run pack
+          zip -qr "dist/Agentree-${RELEASE_TAG#v}-Chrome-extension.zip" extension
           RELEASE_TAG="$RELEASE_TAG" npm run release:metadata
       - name: Vytvořit nebo obnovit draft release
         env:

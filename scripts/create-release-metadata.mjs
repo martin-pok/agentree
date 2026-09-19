@@ -27,7 +27,7 @@ const sha256 = async (file) => {
 const assets = [];
 for (const name of files) {
   const platform = name.match(/macOS-(arm64|x64)\.zip$/)?.[1];
-  const kind = platform ? 'desktop' : name.endsWith('.tgz') ? 'cli' : 'other';
+  const kind = platform ? 'desktop' : name.endsWith('.tgz') ? 'cli' : /Chrome-extension\.zip$/i.test(name) ? 'extension' : 'other';
   assets.push({
     name,
     kind,
