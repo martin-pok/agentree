@@ -136,7 +136,11 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
       const w = WEB[target.id];
       if (!w) return fail('Neznámý agent.', 'agent');
       const prefilled = Boolean(w.url && prompt.length <= URL_PROMPT_MAX);
-      return { ok: true, plan: { ...base, kind: 'open', args: [prefilled ? w.url(prompt) : w.base], copyPrompt: true, handoff: prefilled ? 'confirm-or-paste' : 'paste' } };
+      const handoffId = target.id === 'gemini' && typeof input.browserHandoffId === 'string' && /^[0-9a-f-]{36}$/i.test(input.browserHandoffId)
+        ? input.browserHandoffId
+        : null;
+      const url = handoffId ? `${w.base}#agentree-handoff=${handoffId}` : prefilled ? w.url(prompt) : w.base;
+      return { ok: true, plan: { ...base, kind: 'open', args: [url], copyPrompt: true, handoff: prefilled ? 'confirm-or-paste' : 'paste' } };
     }
   }
 }
