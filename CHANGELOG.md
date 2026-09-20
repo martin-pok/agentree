@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.17.0 – 2026-09-20 · vlastní pořadí karet
+
+- **Rozložení karet:** `settings.layout` (`agentSide`, `projectSide`; jen známé klíče a ID `[\w-]{1,40}`, nejvýš 20; `null` vrátí výchozí). `public/js/layout-prefs.js` (`applyOrder`, `saveOrder`, `resetLayout`, úchyt `GRIP`), `enableReorder` má volbu `handle`. Pravý panel detailu agenta a projektu, tah za úchyt, Alt + šipky; při tahu se panel nepřekresluje. Tlačítko „Obnovit výchozí“ v Nastavení. Testy v `project-order.test.mjs`.
+- Oprava: `.side-head .link { padding: 0 }` přebíjel odsazení tlačítka „Změnit“.
+
 ## 0.16.0 – 2026-09-20 · řazení projektů, paleta, kontrast odznaků
 
 - **Ruční pořadí projektů:** `public/js/reorder.js` (tah myší za kartu, dotykem za úchyt `[data-grip]`, Alt + šipky, Esc vrací; FLIP animace, doletění na místo, klik po tahu se zahodí, okrajové rolování). Cíl se hledá podle rozvržení (`offsetLeft/Top`), ne podle rozpracované animace – jinak tah kmital. `PUT /api/projects/order` (`reorderProjects`: mění jen vybrané, ostatní nechá na místě). Pořadí karet je teď pořadí uživatele, ne poslední aktivita.

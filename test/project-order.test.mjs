@@ -50,3 +50,30 @@ test('pořadí projektů se ukládá přes rozhraní a přežije čtení stavu',
     await t.close();
   }
 });
+
+import { normalizeLayout } from '../src/datastore.js';
+
+test('uložené rozložení karet přijímá jen známé seznamy a krátká ID', () => {
+  assert.deepEqual(normalizeLayout({ agentSide: ['project', 'details', 'project', 'x y', 5, 'a'.repeat(50)], evil: ['x'], projectSide: 'ne' }), { agentSide: ['project', 'details'] });
+  assert.deepEqual(normalizeLayout(null), {});
+  assert.equal(normalizeLayout({ agentSide: Array.from({ length: 40 }, (_, i) => `k${i}`) }).agentSide.length, 20);
+});
+
+test('rozložení karet se ukládá do nastavení, jde vrátit a špatný vstup se odmítne', async () => {
+  const t = await startTestServer();
+  const put = (body, headers = { 'X-Agenteeq': '1' }) => fetch(`${t.url}/api/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
+  try {
+    let r = await put({ layout: { agentSide: ['tokens', 'project'] } });
+    assert.equal(r.status, 200);
+    assert.deepEqual((await r.json()).settings.layout, { agentSide: ['tokens', 'project'] });
+    r = await put({ layout: { projectSide: ['brief', 'services'] } });
+    assert.deepEqual((await r.json()).settings.layout, { agentSide: ['tokens', 'project'], projectSide: ['brief', 'services'] }, 'druhý seznam nesmaže první');
+    assert.equal((await put({ layout: { hacker: ['x'] } })).status, 422);
+    assert.equal((await put({ layout: { agentSide: 'x' } })).status, 422);
+    assert.equal((await put({ layout: { agentSide: ['a'] } }, {})).status, 403, 'bez hlavičky ne');
+    r = await put({ layout: { agentSide: null } });
+    assert.deepEqual((await r.json()).settings.layout, { projectSide: ['brief', 'services'] }, 'null vrátí výchozí pořadí');
+  } finally {
+    await t.close();
+  }
+});

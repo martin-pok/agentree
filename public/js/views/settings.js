@@ -6,6 +6,7 @@ import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 import { takeJump } from '../jump.js';
+import { resetLayout } from '../layout-prefs.js';
 
 const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
@@ -307,7 +308,8 @@ function mount(el) {
     const a = e.target.closest('[data-action]');
     if (!a) return;
     try {
-      if (a.dataset.action === 'claude-connect') await connectClaude();
+      if (a.dataset.action === 'reset-layout') { await resetLayout(); toast('Karty mají zase výchozí pořadí'); update(); }
+      else if (a.dataset.action === 'claude-connect') await connectClaude();
       else if (a.dataset.action === 'claude-disconnect') {
         if (await confirmDialog({ title: 'Vypnout propojení s Claude Code', message: 'Agenteeq odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout propojení' })) {
           state.integrations.claudeHooks = (await api.hooks('uninstall')).claudeHooks;
@@ -555,7 +557,9 @@ function update() {
       ${appearanceOption('light', ICON.sun, 'Světlý', 'Výchozí, jasný pracovní prostor')}
       ${appearanceOption('dark', ICON.moon, 'Tmavý', 'Klidný večerní režim s AA kontrastem')}
       ${appearanceOption('system', ICON.system, 'Podle systému', 'Automaticky podle macOS')}
-    </div>`);
+    </div>
+    <div class="set-row-inline"><span><strong>Uspořádání karet</strong><small>Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.</small></span>
+      <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>Obnovit výchozí</button></div>`);
 
   /* Propojení s Claude Code */
   const h = i.claudeHooks;

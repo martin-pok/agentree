@@ -5,6 +5,8 @@ import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy } from '../ui.js';
 import { sessionTotal, needsYou } from '../data.js';
+import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
+import { enableReorder } from '../reorder.js';
 import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
 
 const v = { el: null, id: null, filter: 'all', saveTimer: null, saving: false, savedAt: 0 };
@@ -106,18 +108,27 @@ function mount(el, [id]) {
           <button class="btn btn--sm" type="button" data-action="add">${ICON.plus}Přidat konverzace</button></div>
         <ul class="prows" data-region="rows"></ul>
       </section>
-      <aside class="session-side">
-        <section class="card side-card" aria-labelledby="brief-h">
+      <aside class="session-side" data-region="pside">
+        <section class="card side-card" data-card="brief" aria-labelledby="brief-h">${GRIP}
           <div class="side-head"><h3 id="brief-h">Podklady a poznámky</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
           <label class="sr-only" for="brief-${esc(id)}">Podklady projektu</label>
           <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání."></textarea>
           <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}Kopírovat podklady</button></div>
         </section>
-        <section class="card side-card" data-region="folders" aria-label="Složky projektu"></section>
-        <section class="card side-card" data-region="services" aria-label="Služby v projektu"></section>
+        <section class="card side-card" data-card="folders" aria-label="Složky projektu">${GRIP}<div data-region="folders"></div></section>
+        <section class="card side-card" data-card="services" aria-label="Služby v projektu">${GRIP}<div data-region="services"></div></section>
       </aside>
     </div>
   </div>`;
+  const pside = el.querySelector('[data-region="pside"]');
+  applyOrder(pside, '.side-card[data-card]', 'projectSide');
+  pside.dataset.liftScale = '1.02';
+  enableReorder(pside, {
+    itemSelector: '.side-card[data-card]',
+    idOf: (n) => n.dataset.card,
+    handle: '[data-grip]',
+    onCommit: (ids) => { if (ids) saveOrder('projectSide', ids); else applyOrder(pside, '.side-card[data-card]', 'projectSide'); },
+  });
   const textarea = el.querySelector('[data-notes]');
   const status = el.querySelector('[data-notes-status]');
   textarea.value = projectById(id)?.notes || '';

@@ -21,10 +21,26 @@ export const DEFAULT_SETTINGS = {
   },
   disabledConnectors: [],
   lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
+  layout: {}, // uživatelské pořadí karet: { agentSide: ['project', 'details', …], … }
   tailscaleAccess: false, // přístup z vlastní privátní sítě Tailscale; výchozí stav je vypnuto
 };
 
 const ALERTS_MAX = 300;
+
+// Pořadí karet, které si uživatel nastavil tažením. Jen známé seznamy a krátké identifikátory:
+// z uloženého souboru se nikdy nepřebírá nic jiného.
+export const LAYOUT_KEYS = ['agentSide', 'projectSide'];
+export function normalizeLayout(input) {
+  const out = {};
+  if (!input || typeof input !== 'object') return out;
+  for (const k of LAYOUT_KEYS) {
+    const ids = input[k];
+    if (!Array.isArray(ids)) continue;
+    const clean = [...new Set(ids.filter((x) => typeof x === 'string' && /^[\w-]{1,40}$/.test(x)))].slice(0, 20);
+    if (clean.length) out[k] = clean;
+  }
+  return out;
+}
 
 export function normalizeData(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
@@ -55,6 +71,7 @@ export function normalizeData(raw) {
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
+      layout: normalizeLayout(s.layout),
     },
     projects: normalizeProjects(d.projects),
     license: d.license && typeof d.license.key === 'string' && d.license.key.length < 4000 ? { key: d.license.key, activatedAt: Number(d.license.activatedAt) || Date.now() } : null,

@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.17.0',
+    date: '2026-09-20',
+    title: 'Vlastní pořadí karet v detailech a opravené tlačítko Změnit',
+    items: [
+      'Karty v pravém panelu detailu agenta a detailu projektu si přesuneš tažením za úchyt nahoře uprostřed karty. Zvednutá karta se drží pod myší a ostatní se plynule uhýbají. Pořadí se ukládá do Agenteeq a zůstane i po zavření aplikace.',
+      'V Nastavení, v části Vzhled, jde uspořádání karet vrátit tlačítkem Obnovit výchozí.',
+      'Tlačítko „Změnit“ u projektu v detailu agenta mělo nulové vnitřní odsazení a text se dotýkal okraje. Opraveno.',
+    ],
+  },
+  {
     version: '0.16.0',
     date: '2026-09-20',
     title: 'Řazení projektů tažením, víc barev a čitelnější odznaky',

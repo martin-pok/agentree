@@ -1633,7 +1633,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .prows .empty { padding: 40px 16px; }
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .side-card .side-head h3 { margin: 0; }
-.side-head .link { padding: 0; font-size: 13px; }
+.side-head .link { font-size: 13px; }
 .side-note { margin: 8px 0 0; }
 .side-actions { display: flex; gap: 8px; margin-top: 10px; }
 .brief { width: 100%; min-height: 168px; background: var(--paper); border-color: transparent; font-size: 14px; }
@@ -1924,3 +1924,19 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .is-reordering .pcard:not(.is-lifted):hover { transform: none; box-shadow: var(--shadow-sm); }
 body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) { .pcard-grip { transition: none; } }
+
+/* Úchyt pro přesouvání karet v pravém panelu: nahoře uprostřed, kde nic jiného neleží. */
+.side-card { position: relative; }
+.grip { position: absolute; top: 6px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(6, 4px); gap: 3px; padding: 6px 8px; border-radius: 8px; translate: -50% 0; opacity: 0; cursor: grab; touch-action: none; transition: opacity .18s, background-color .18s; }
+.grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--mute); }
+.side-card:hover .grip, .side-card.is-lifted .grip, .grip:focus-visible { opacity: 1; }
+.grip:hover { background: var(--line-2); }
+@media (hover: none) { .grip { opacity: .7; } }
+.side-card.is-lifted { z-index: 30; cursor: grabbing; transition: none; box-shadow: var(--shadow-lg); will-change: transform; }
+.side-card.is-lifted .grip { cursor: grabbing; }
+.is-reordering .side-card { transition: none; }
+@media (prefers-reduced-motion: reduce) { .grip { transition: none; } }
+.set-row-inline { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+.set-row-inline span { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.set-row-inline strong { font-weight: 500; font-size: 14px; }
+.set-row-inline small { font-size: 13px; color: var(--ink-2); line-height: 1.5; }

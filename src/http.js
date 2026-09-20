@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets } from './spend.js';
+import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
@@ -489,6 +490,19 @@ export function createHttpServer(app, existingServer = null) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
         datastore.data.settings.avatar = body.avatar;
+      }
+      if (body.layout !== undefined) {
+        if (!body.layout || typeof body.layout !== 'object' || Array.isArray(body.layout)) throw new HttpError(422, 'Neplatné rozložení.');
+        const cur2 = datastore.data.settings.layout || {};
+        for (const [k, ids] of Object.entries(body.layout)) {
+          if (!LAYOUT_KEYS.includes(k)) throw new HttpError(422, 'Neznámé rozložení.');
+          if (ids !== null && (!Array.isArray(ids) || ids.length > 20)) throw new HttpError(422, 'Neplatné pořadí karet.');
+        }
+        const merged = { ...cur2 };
+        for (const [k, ids] of Object.entries(body.layout)) {
+          if (ids === null) delete merged[k]; else merged[k] = ids;
+        }
+        datastore.data.settings.layout = normalizeLayout(merged);
       }
       for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {

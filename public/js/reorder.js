@@ -7,7 +7,7 @@
 
 const DIST = 6; // px pohybu myši, než se klik změní v tah
 
-export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey }) {
+export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, handle = null }) {
   let st = null;
   let dragging = false;
   const items = () => [...box.querySelectorAll(itemSelector)];
@@ -29,7 +29,7 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey }) 
     const { el, gx, gy, px, py } = st;
     el.style.transform = 'none';
     const r = el.getBoundingClientRect();
-    el.style.transform = `translate(${Math.round(px - gx - r.left)}px, ${Math.round(py - gy - r.top)}px) scale(1.03)`;
+    el.style.transform = `translate(${Math.round(px - gx - r.left)}px, ${Math.round(py - gy - r.top)}px) scale(${box.dataset.liftScale || 1.03})`;
   };
 
   // Poloha karty podle rozvržení, ne podle toho, kde je zrovna uprostřed animace. Kdyby se hledal
@@ -111,7 +111,7 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey }) 
     if (e.button !== 0 || st) return;
     const el = e.target.closest(itemSelector);
     if (!el || !box.contains(el)) return;
-    if (e.pointerType !== 'mouse' && !e.target.closest('[data-grip]')) return;
+    if (handle ? !e.target.closest(handle) : e.pointerType !== 'mouse' && !e.target.closest('[data-grip]')) return;
     st = { el, x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY, id: e.pointerId };
   });
   box.addEventListener('pointermove', (e) => {
