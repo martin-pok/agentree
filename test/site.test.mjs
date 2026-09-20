@@ -149,7 +149,8 @@ test('web nese verzi z package.json, ne opsanou z minula', async () => {
   const fsp = await import('node:fs/promises');
   const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const { execFileSync } = await import('node:child_process');
-  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: new URL('..', import.meta.url).pathname, stdio: 'ignore' });
+  const { fileURLToPath } = await import('node:url');
+  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'ignore' });
   const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
   assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
 });

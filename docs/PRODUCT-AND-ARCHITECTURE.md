@@ -60,6 +60,8 @@ Kontrast textu a důležitých stavů musí být minimálně WCAG 2.2 AA (4.5:1 
 
 Každé klikatelné místo má jasný hover, `:focus-visible`, aktivní stav a chybný/disabled stav. Vlastní nabídky jsou součástí designu: nepoužívat nekontrolovaný systémový dropdown tam, kde je potřeba kontext, projekty nebo navigace. Pohyb je funkční, krátký a respektuje `prefers-reduced-motion`; žádné živé aktualizace nesmí zavřít otevřený formulář, menu nebo sebrat fokus.
 
+Na monitoru na výšku jsou velké navigační dlaždice v klidu průhledné a odsazené od hran panelu. Barva se objeví při hoveru nebo fokusu; aktivní stránka zůstává rozpoznatelná i bez kurzoru výraznějším textem a mosazným bodem.
+
 ### Profilové obrázky
 
 Profilové obrázky jsou lokální inline SVG, ne vzdálené assety. Výhodou je ostrý Retina výstup, okamžité vykreslení, nulová síťová stopa a jednotná abstraktní řeč. Rozšiřování kolekce znamená přidat celou sadu konzistentních variant v `public/js/avatars.js`, zachovat stabilní indexy existujících voleb a ověřit grid na desktopu i mobilu.

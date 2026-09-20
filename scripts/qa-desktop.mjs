@@ -97,6 +97,21 @@ for (const engine of engines) {
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.picker-menu').count(), 0);
     await page.screenshot({ path: `dist/qa/${engine}-overview.png`, fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 2560 });
+    const portraitNav = page.locator('.nav a[aria-current="page"]');
+    assert.equal(await portraitNav.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} aktivní dlaždice zůstává v klidu průhledná`);
+    const portraitInsets = await page.evaluate(() => {
+      const sidebar = document.querySelector('.sidebar').getBoundingClientRect();
+      const link = document.querySelector('.nav a').getBoundingClientRect();
+      return { left: link.left - sidebar.left, right: sidebar.right - link.right };
+    });
+    assert.ok(portraitInsets.left >= 24 && portraitInsets.right >= 24, `${engine} dlaždice má boční odstup: ${JSON.stringify(portraitInsets)}`);
+    await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
+    const portraitHover = page.locator('.nav a:not([aria-current])').first();
+    await portraitHover.hover();
+    assert.notEqual(await portraitHover.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} hover rozsvítí jen dlaždici pod kurzorem`);
+    await page.screenshot({ path: `dist/qa/${engine}-portrait-hover.png` });
+    await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');
@@ -184,6 +199,10 @@ for (const engine of engines) {
         await page.goto(`${server.url}/#/prehled`);
         await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
         await page.screenshot({ path: `dist/qa/${engine}-dark-overview.png`, fullPage: true });
+        await page.setViewportSize({ width: 1440, height: 2560 });
+        assert.equal(await page.locator('.nav a[aria-current="page"]').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} dark portrait bez trvalé výplně`);
+        await page.screenshot({ path: `dist/qa/${engine}-dark-portrait-rest.png` });
+        await page.setViewportSize({ width: 1440, height: 1000 });
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.locator('button[data-appearance="system"]').click();

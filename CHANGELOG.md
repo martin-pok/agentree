@@ -17,7 +17,8 @@
 
 ## 0.17.2 – 2026-09-20 · menu jako dlaždice na výšku
 
-- `@media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px)`: `.nav` je mřížka osmi dlaždic přes celou šířku panelu (`margin-inline: -22px`), výška `clamp(64px, 5.1dvh, 140px)`, mezera `.95dvh`, první dlaždice `5.3dvh` pod profilem, patička dole (`margin-top: auto`). Poměry odečtené z Figma návrhu (obrázek 1130 × 2000 z okna 1440 × 2560); naměřeno při 1440 × 2560: dlaždice 131 px, mezera 24 px, první dlaždice y = 561 (návrh ≈ 574), poslední končí y = 1773 (návrh ≈ 1782). Aktivní dlaždice `--action`.
+- `@media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px)`: `.nav` je mřížka osmi velkých dlaždic, výška `clamp(64px, 5.1dvh, 140px)`, mezera `.95dvh`, první dlaždice `5.3dvh` pod profilem, patička dole (`margin-top: auto`). Rozvržení vychází z Figma návrhu pro okno 1440 × 2560; následná vizuální revize vrátila boční odsazení a zrušila trvalou výplň dlaždic.
+- Oprava podle skutečného vertikálního monitoru: dlaždice mají klidový průhledný povrch, po najetí nebo fokusu se jemně rozsvítí, aktivní stránku značí text a mosazný bod. Nabídka má opět boční odsazení v panelu. Popup zastaralého rozšíření se vejde do limitu 600 px. Windows testy používají systémově správnou cestu a POSIX práva kontrolují jen tam, kde je systém poskytuje.
 
 ## 0.17.1 – 2026-09-20 · tmavý režim: tlačítka
 

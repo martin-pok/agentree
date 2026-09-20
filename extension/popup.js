@@ -103,7 +103,7 @@ async function render() {
   const expected = r.status?.expectedVersion;
   const outdated = expected && expected !== version;
   $('outdated').hidden = !outdated;
-  if (outdated) $('outdated').textContent = `Agenteeq má novější rozšíření (${expected}). Otevři chrome://extensions a u Agenteeq klikni na šipku obnovení.`;
+  if (outdated) $('outdated').textContent = `Nová verze rozšíření (${expected}). Otevři chrome://extensions a obnov Agenteeq.`;
   const sent = lastStatus?.ok ? `Naposledy odesláno ${ago(lastStatus.at)}.` : 'Otevři konverzaci v některé ze služeb níž.';
   const failed = lastStatus && !lastStatus.ok ? `Poslední odeslání selhalo: ${lastStatus.error || lastStatus.code}.` : '';
   setHero({ tone: outdated || failed ? 'warn' : 'ok', pill: `Připojeno · ${version}`, headline: 'Rozšíření pracuje', sub: failed || sent });
