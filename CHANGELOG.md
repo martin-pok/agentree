@@ -15,6 +15,12 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.15.1 – 2026-09-20 · Dovednosti, přepínače, horní pás
+
+- **Regrese z 0.15.0:** `.link` v horním pásu Přehledu (tmavá plocha) dostal bílé pozadí a světlý text i dvojitou šipku; `.pulse-bar .pb-all` má vlastní variantu a `.link:has(.icon)::after` se skrývá. Test `ui-polish`.
+- **Dovednosti:** hledání + řazení v jednom řádku, filtry Zdroj a Původ jako popsané řádky v jednom bloku, poznámka pod nimi. Vybraný přepínač `.seg--light` je tmavý a `font-weight: 500`; neaktivní text `--ink-2` místo `--mute`. Launcher si drží původní světlý vybraný stav.
+- Karty rozpočtu `auto-fit`: jediná karta vyplní šířku. Horní pás Přehledu: tři vrstvené radiální přechody (teal, mosaz, fialová), popisky 0,78 alfa (kontrast ≥ 5 : 1 v nejsvětlejším místě, spočteno, `qa:contrast` běží jen v CI).
+
 ## 0.15.0 – 2026-09-20 · čitelné ovládání, výřez obrázků, kalendář
 
 - **Klikatelný text:** `.link` je obrysové tlačítko (tmavé písmo, šipka u odkazů, vyplnění při najetí); souhrn „Všechny nástroje a služby“ je tlačítko s obrysem. Dřív šedý text, který se nedal poznat od popisku.

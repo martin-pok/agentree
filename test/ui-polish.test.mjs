@@ -114,3 +114,12 @@ test('poslední zadání jde rozbalit a bere celý text z přepisu', async () =>
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.quote\.is-clamped \{[^}]*-webkit-line-clamp: 5/);
 });
+
+test('výběry v přepínačích mají tučnější písmo a tlačítko na tmavém pásu je čitelné', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.seg button\[aria-pressed='true'\] \{[^}]*font-weight: 500/);
+  assert.match(css, /\.pulse-bar \.pb-all \{[^}]*color: #F4F3F7/, 'bílé tlačítko se světlým textem se nesmí vrátit');
+  assert.match(css, /\.budget-cards \{[^}]*auto-fit/, 'jediná karta rozpočtu vyplní celou šířku');
+  const sk = await zdroj('public/js/views/skills.js');
+  assert.match(sk, /class="sk-filtr" data-blok="zdroje"[\s\S]*class="sk-filtr" data-blok="puvod"/, 'filtry jsou popsané řádky pod sebou');
+});

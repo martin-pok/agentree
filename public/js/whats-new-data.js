@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.15.1',
+    date: '2026-09-20',
+    title: 'Přehlednější Dovednosti, výraznější přepínače a živější horní pás',
+    items: [
+      'Dovednosti mají jasné pořadí: hledání a řazení nahoře, pod nimi popsané filtry Zdroj a Původ. Vybraná položka je tmavá a tučnější, takže je vidět, co je zapnuté.',
+      'Jediná karta rozpočtu se roztáhne přes celou šířku, na telefonu také.',
+      'Opraveno tlačítko „Všichni agenti“ v horním pásu Přehledu, které mělo bílé pozadí a nečitelný světlý text.',
+      'Horní pás Přehledu má výraznější a světlejší barevný přechod.',
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-09-20',
     title: 'Čitelnější ovládání, výřez obrázků a vlastní kalendář',

@@ -146,17 +146,14 @@ function mount(el) {
   el.innerHTML = `
     <div data-enter style="--i:0" data-region="sum"></div>
     <div class="toolbar" data-enter style="--i:1" data-blok="hledani">
-      <div class="seg seg--light" role="group" aria-label="Filtrovat podle zdroje" data-region="sources" data-blok="zdroje"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">Hledat dovednost</span><input type="search" data-q placeholder="Název, popis nebo cesta…" autocomplete="off"></label>
+      <div class="sk-sort" data-blok="razeni"><span class="sk-filtr-popis" id="sk-r">Řadit</span><div class="seg seg--light seg--sm" role="group" aria-labelledby="sk-r" data-region="sort"></div></div>
     </div>
-    <div class="sk-bar" data-enter style="--i:2" data-blok="popis">
-      <p class="note">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
-      <div class="seg seg--light seg--sm" role="group" aria-label="Řazení" data-region="sort" data-blok="razeni"></div>
-    </div>
-    <div class="sk-filtry" data-enter style="--i:2" data-blok="puvod">
-      <span class="sk-filtr-popis">Původ</span>
-      <div class="seg seg--light seg--sm" role="group" aria-label="Filtrovat podle původu" data-region="origins"></div>
-    </div>
+    <section class="sk-filters" data-enter style="--i:2" aria-label="Filtry dovedností">
+      <div class="sk-filtr" data-blok="zdroje"><span class="sk-filtr-popis" id="sk-z">Zdroj</span><div class="seg seg--light" role="group" aria-labelledby="sk-z" data-region="sources"></div></div>
+      <div class="sk-filtr" data-blok="puvod"><span class="sk-filtr-popis" id="sk-p">Původ</span><div class="seg seg--light" role="group" aria-labelledby="sk-p" data-region="origins"></div></div>
+    </section>
+    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">Dovednosti jsou soubory <code>SKILL.md</code> na tomto Macu – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.</p>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {

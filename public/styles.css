@@ -396,8 +396,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* Pruh se stavem agentů leží ve stránce, nevznáší se nad ní – velké vyzdvižení (80px rozmazání)
    z něj kropilo měkký stín dolů na sloupce pod ním. Tmavá výplň na světlém podkladu ho oddělí
    sama. Vyzdvižení zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy, nabídky, paleta. */
-.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; }
-.pulse-bar::before { content: ''; position: absolute; right: 12%; top: -120%; width: 420px; height: 340%; background: radial-gradient(closest-side, rgba(34, 163, 140, .22), transparent 70%); pointer-events: none; }
+.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: radial-gradient(58% 150% at 88% -10%, rgba(34, 163, 140, .46), transparent 64%), radial-gradient(46% 130% at 8% 115%, rgba(201, 154, 62, .30), transparent 66%), radial-gradient(40% 110% at 52% -25%, rgba(124, 108, 240, .26), transparent 62%), linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; }
 .pulse-bar > * { position: relative; }
 .pb-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .pb-live { position: relative; width: 12px; height: 12px; border-radius: 50%; background: rgba(244, 243, 247, .28); flex: none; }
@@ -406,17 +405,18 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pb-num { font: 300 56px/1 var(--f-display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .pb-label { display: grid; gap: 2px; min-width: 0; }
 .pb-label b { font: 400 20px/1.2 var(--f-display); white-space: nowrap; }
-.pb-label small { font-size: 13px; color: rgba(244, 243, 247, .66); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-label small { font-size: 13px; color: rgba(244, 243, 247, .78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pb-stats { display: flex; justify-content: center; min-width: 0; }
 .pb-stat { display: grid; gap: 2px; padding: 4px 24px; text-decoration: none; color: inherit; border-left: 1px solid rgba(244, 243, 247, .12); border-radius: 0; }
 .pb-stat:first-child { border-left: 0; }
 .pb-stat b { font: 400 26px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.pb-stat span { font-size: 12px; color: rgba(244, 243, 247, .66); white-space: nowrap; }
+.pb-stat span { font-size: 12px; color: rgba(244, 243, 247, .78); white-space: nowrap; }
 .pb-stat:hover b { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .pb-stat.is-alert b { color: #F59BB4; }
 .pb-stat.is-wait b { color: #E6C27A; }
-.pulse-bar .pb-all { color: rgba(244, 243, 247, .8); white-space: nowrap; }
-.pulse-bar .pb-all:hover { color: #fff; }
+.pulse-bar .pb-all { background: rgba(244, 243, 247, .08); color: #F4F3F7; box-shadow: inset 0 0 0 1px rgba(244, 243, 247, .42); white-space: nowrap; }
+.pulse-bar .pb-all:hover { background: #F4F3F7; color: #16141D; box-shadow: none; }
+.link:has(.icon)::after { display: none; }
 /* Živý pás: každý agent, který pracuje, čeká na zadání nebo potřebuje tebe – stejná data jako sekce Agenti. */
 .pb-strip { grid-column: 1 / -1; min-width: 0; margin: 18px -24px 0 -28px; padding: 14px 24px 16px 28px; border-top: 1px solid rgba(244, 243, 247, .1); background: rgba(12, 11, 16, .18); }
 .pb-agents { list-style: none; margin: 0 -24px 0 -28px; padding: 0 24px 0 28px; scroll-padding-inline: 28px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
@@ -625,14 +625,15 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .toolbar-title { font: 400 22px/1.2 var(--f-display); }
 .toolbar-actions { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; }
 .seg { display: inline-flex; padding: 4px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow-sm); overflow-x: auto; max-width: 100%; scrollbar-width: none; }
-.seg button { border: 0; background: transparent; height: 36px; padding: 0 14px; border-radius: 12px; color: var(--mute); font-size: 14px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; transition: background-color .2s, color .2s; }
+.seg button { border: 0; background: transparent; height: 36px; padding: 0 14px; border-radius: 12px; color: var(--ink-2); font-size: 14px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; transition: background-color .2s, color .2s; }
 .seg button .count { font: 500 12px/1 var(--f-mono); opacity: .85; }
 .seg button .icon { width: 16px; height: 16px; }
 .seg button.has-alert .count { background: var(--velvet-ink); color: #fff; padding: 3px 6px; border-radius: 8px; opacity: 1; }
 .seg button:hover { color: var(--ink); }
-.seg button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); }
+.seg button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); font-weight: 500; }
 .seg--light { box-shadow: none; background: transparent; padding: 0; gap: 4px; }
-.seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+.seg--light button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); box-shadow: none; }
+.seg--light button:hover:not([aria-pressed='true']) { background: var(--line-2); }
 /* Rolovatelný přepínač: doznění na straně, kam se dá ještě posunout (značky nastavuje ui.js).
    Bez něj se poslední popisek usekne uprostřed slova a vypadá to jako chyba sazby. */
 .seg.je-vpravo { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
@@ -902,10 +903,13 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .sk-sum-item span { font-size: 12px; color: var(--mute); }
 /* Druhá řada filtrů: původ dovednosti. Vlastní řádek proto, že v horní liště už je zdroj
    i hledání a natlačit tam třetí skupinu by znamenalo lámání na užším okně. */
-.sk-filtry { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -8px 0 20px; }
-.sk-filtr-popis { font-size: 13px; color: var(--mute); }
-.sk-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
-.sk-bar .note { margin: 0; flex: 1 1 320px; }
+.sk-filters { display: grid; gap: 4px; margin-bottom: 12px; padding: 8px 12px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
+.sk-filtr { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; }
+.sk-filtr + .sk-filtr { padding-top: 4px; border-top: 1px solid var(--line-2); }
+.sk-filtr-popis { font: 500 12px/1 var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.sk-sort { display: inline-flex; align-items: center; gap: 10px; }
+.sk-note { margin: 0 0 20px; }
+@media (max-width: 560px) { .sk-filtr { grid-template-columns: minmax(0, 1fr); gap: 4px; } .sk-sort { width: 100%; } }
 .seg--sm button { height: 30px; padding: 0 12px; font-size: 13px; }
 
 /* Prvek mřížky má výchozí `min-width: auto`, takže dlouhá cesta k souboru (nezalomitelná)
@@ -927,9 +931,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .skill:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
 .skill:has(.skill-open:focus-visible) { box-shadow: var(--shadow); }
 .skill-main { min-width: 0; display: grid; gap: 6px; }
-.skill-name { margin: 0; font: 500 16px/1.3 var(--f-body); }
+.skill-name { margin: 0; font: 500 17px/1.3 var(--f-body); letter-spacing: -.005em; }
 /* Název je tlačítko, ale má vypadat jako nadpis – klikací je stejně celá karta. */
-.skill-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; overflow-wrap: anywhere; }
+.skill-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 500; text-align: left; overflow-wrap: anywhere; }
 .skill-open:hover { color: var(--brass-ink, var(--brass)); }
 .skill-main p { margin: 0; font-size: 14px; color: var(--ink-2); }
 .skill-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -953,9 +957,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .spend-stats .val { display: block; margin-top: 6px; font: 300 40px/1.05 var(--f-display); letter-spacing: -.03em; }
 .spend-stats .val--soft { font-size: 26px; color: var(--ink-2); font-weight: 400; }
 .spend-stats .is-over { color: var(--velvet-ink); }
-.budget-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
+.budget-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
 .budget-card { padding: 18px 20px; display: grid; gap: 10px; }
-.budget-top { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.budget-top { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
 .budget-top b { margin-left: auto; font: 500 14px/1 var(--f-mono); }
 .budget-track { height: 8px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
 .budget-track i { display: block; height: 100%; background: var(--teal); transition: width .8s var(--ease); }
@@ -1430,6 +1434,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .seg--sm button { height: 32px; padding: 0 12px; font-size: 13px; }
 .launch-controls .seg--light { background: var(--line-2); padding: 2px; border-radius: 18px; }
 .launch-controls .seg--light button { border-radius: 16px; }
+.launch-controls .seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .launch-foot { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-top: 1px solid var(--line); }
 .launch-note { flex: 1; margin: 0; font-size: 13px; color: var(--ink-2); min-width: 0; }
 .launch-kbd { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 3px 4px 3px 10px; border-radius: 15px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); font-size: 12px; white-space: nowrap; }
