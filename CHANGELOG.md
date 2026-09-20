@@ -15,6 +15,14 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.14.0 – 2026-09-20 · předplatné a kurz v Útratě, čitelné složení tokenů
+
+- **Předplatné v Útratě:** `src/subscriptions.js` zjišťuje plán Claude z `~/.claude.json` (jen typ účtu a úroveň limitů, nic osobního) a plán ChatGPT z `plan_type` v limitech Codexu. Ceníková částka bez DPH jde do měsíčního součtu, předpovědi i grafu; ručně zapsané předplatné téže služby ji nahradí (žádné dvojí počítání). Nejednoznačná cena (ChatGPT Pro 100/200 $) se nepočítá, dokud ji uživatel nevybere. Zdroje cen a jejich stav jsou v docs/CONNECTORS.md.
+- **Kurz z ČNB:** `src/rates.js` – denní lístek, odmítá nesmyslná data, nejvýš každých 6 h, poslední kurz se ukládá, ručně zadaný se nepřepisuje (`ratesSource`). Vypíná `AGENTEEQ_CLOUD=0`. Jediný odchozí dotaz bez údajů o uživateli.
+- **Složení tokenů:** `tokenBreakdown()` – spotřeba (vstup + výstup) a cache mají každá vlastní měřítko a podíly; sdílený pruh utopil vstup i výstup pod čtením z cache.
+- **Levý panel:** nabídka se centruje místo natažení přes celou výšku; odznaky ukazují nejvýš „10+“.
+- **Chyba:** obrys zaostření uvnitř vodorovně rolovatelných řádků (výběr agenta, přepínače) byl oříznut a vypadal jako tmavý stín pod tlačítkem; uvnitř takových řádků leží obrys uvnitř tlačítka.
+
 ## 0.13.0 – 2026-09-20 · přehled limitů všech nástrojů, obrázky projektů, klidnější toasty
 
 - **Toasty:** vždy nejvýš jeden (`toast()` nahrazuje předchozí, stejné hlášení jen zopakuje pohyb). Druh se odvozuje z `tone`: zelený s fajfkou (povedlo se), červený s vykřičníkem a `role="alert"` (chyba), tmavý s „i“ (poznámka), upozornění agenta se zvonkem.

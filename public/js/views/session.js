@@ -2,7 +2,7 @@ import { state, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
-import { miniBars, stackBar } from '../charts.js';
+import { miniBars, tokenBreakdown } from '../charts.js';
 import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
@@ -340,12 +340,7 @@ function update() {
         <div class="wide"><dt>ID</dt><dd class="mono-sm">${esc(s.id)}</dd></div>
       </dl>
     </section>
-    ${hasTokens ? `<section class="card side-card" aria-labelledby="tok-h"><h3 id="tok-h">Složení tokenů</h3>${stackBar([
-      { label: 'Vstup', value: tok.input || 0, color: '#16141D' },
-      { label: 'Výstup', value: tok.output || 0, color: color.color },
-      { label: 'Zápis do cache', value: tok.cacheWrite || 0, color: '#22A38C' },
-      { label: 'Čtení z cache', value: tok.cacheRead || 0, color: '#E3E1E9' },
-    ])}</section>` : ''}
+    ${hasTokens ? `<section class="card side-card" aria-labelledby="tok-h"><h3 id="tok-h">Složení tokenů</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
     ${hasTokens ? `<section class="card side-card" aria-labelledby="spark-h"><h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
     ${limits.length ? `<section class="card side-card" aria-labelledby="lim-h"><h3 id="lim-h">Limity</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
     ${s.lastPrompt ? `<section class="card side-card" aria-labelledby="lp-h"><h3 id="lp-h">Poslední zadání</h3><blockquote class="quote">${esc(s.lastPrompt)}</blockquote></section>` : ''}

@@ -214,7 +214,7 @@ function updateChrome() {
     const b = document.querySelector(`[data-badge="${key}"]`);
     if (!b) return;
     b.hidden = !count;
-    b.textContent = count > 99 ? '99+' : String(count);
+    b.textContent = count > 9 ? '10+' : String(count);
     b.dataset.tone = tone;
     b.setAttribute('aria-label', label);
   };
@@ -224,12 +224,12 @@ function updateChrome() {
   const sheetBadge = sheet.querySelector('[data-sheet-badge="upozorneni"]');
   if (sheetBadge) {
     sheetBadge.hidden = !state.alerts.unread;
-    sheetBadge.textContent = state.alerts.unread > 99 ? '99+' : String(state.alerts.unread);
+    sheetBadge.textContent = state.alerts.unread > 9 ? '10+' : String(state.alerts.unread);
     sheetBadge.dataset.tone = 'coral';
   }
 
   bellBadge.hidden = !state.alerts.unread;
-  bellBadge.textContent = state.alerts.unread > 99 ? '99+' : String(state.alerts.unread);
+  bellBadge.textContent = state.alerts.unread > 9 ? '10+' : String(state.alerts.unread);
   bell.setAttribute('aria-label', state.alerts.unread ? `Upozornění, ${state.alerts.unread} nepřečtených` : 'Upozornění');
 
   renderStage(all);

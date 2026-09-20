@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.14.0',
+    date: '2026-09-20',
+    title: 'Předplatné v Útratě, aktuální kurz a čitelnější tokeny',
+    items: [
+      'Útrata teď počítá i předplatné. Agenteeq pozná plán Claude z přihlášeného Claude Code a plán ChatGPT z limitů Codexu. U každého uvidíš, z čeho to zjistil, cenu z ceníku a částku v korunách.',
+      'Kurz koruny se stahuje z ČNB a u částek stojí, k jakému dni platí. Ručně zadaný kurz zůstane, jak jsi ho nastavil(a). Když se z dat nedá poznat cena (ChatGPT Pro má dvě), vybereš ji sám a do té doby se nepočítá.',
+      'Složení tokenů má vlastní měřítko pro spotřebu a pro cache, takže je vidět poměr vstupu a výstupu i rozdíl mezi zápisem a čtením cache.',
+      'Nabídka v levém panelu se drží u sebe i na vysokém monitoru a odznak upozornění ukazuje nejvýš 10+.',
+      'Opraven tmavý useknutý stín pod tlačítky ve výběru agenta při zaostření klávesnicí.',
+    ],
+  },
+  {
     version: '0.13.0',
     date: '2026-09-20',
     title: 'Přehled všech limitů, obrázky projektů a klidnější upozornění',

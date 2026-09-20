@@ -62,6 +62,12 @@ export function normalizeData(raw) {
     spend: {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
       rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },
+      // Odkud kurz je: ČNB (automaticky), ručně zadaný, nebo orientační výchozí. Dřívější ruční úpravu
+      // (kurz jiný než výchozí bez záznamu o původu) poznáme a nepřepíšeme.
+      ratesSource: ['cnb', 'manual', 'default'].includes(sp.ratesSource) ? sp.ratesSource
+        : (Number(sp.rates?.USD) && Number(sp.rates.USD) !== DEFAULT_SPEND.rates.USD) || (Number(sp.rates?.EUR) && Number(sp.rates.EUR) !== DEFAULT_SPEND.rates.EUR) ? 'manual' : 'default',
+      liveRates: sp.liveRates && /^\d{4}-\d{2}-\d{2}$/.test(sp.liveRates.date) && Number(sp.liveRates.USD) > 0 && Number(sp.liveRates.EUR) > 0
+        ? { date: sp.liveRates.date, USD: Number(sp.liveRates.USD), EUR: Number(sp.liveRates.EUR), fetchedAt: Number(sp.liveRates.fetchedAt) || 0 } : null,
       budgets: {
         total: Number(sp.budgets?.total) || 0,
         services: sp.budgets?.services && typeof sp.budgets.services === 'object' ? { ...sp.budgets.services } : {},

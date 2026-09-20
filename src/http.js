@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets } from './spend.js';
+import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
 import { createSkills } from './skills.js';
@@ -438,9 +439,17 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['PUT', /^\/api\/spend\/budgets$/, async (req) => {
       const sp = datastore.data.spend;
-      const r = validateBudgets(await readBody(req), { currency: sp.currency, rates: sp.rates, budgets: sp.budgets });
+      const body = await readBody(req);
+      const r = validateBudgets(body, { currency: sp.currency, rates: sp.rates, budgets: sp.budgets });
       if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
+      const changedRate = ['USD', 'EUR'].some((c) => Number(r.value.rates[c]) !== Number(sp.rates[c]));
       Object.assign(sp, { currency: r.value.currency, rates: r.value.rates, budgets: r.value.budgets });
+      if (changedRate) sp.ratesSource = 'manual';
+      // „Použít kurz ČNB“: vrátí automatický kurz, pokud ho už někdy stáhl.
+      if (body?.ratesAuto === true) {
+        sp.ratesSource = 'default';
+        if (!applyLiveRates(sp, sp.liveRates)) sp.rates = { ...sp.rates };
+      }
       datastore.save();
       app.spendChanged();
       return spendResponse();

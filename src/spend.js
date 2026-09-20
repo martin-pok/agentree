@@ -153,7 +153,7 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
   const day = d.getDate();
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   let recurring = 0;
-  for (const e of spend.ledger || []) {
+  for (const e of [...(spend.ledger || []), ...autoEntries]) {
     if (e.recurring !== 'monthly' || typeof e.date !== 'string') continue;
     if (e.date.slice(0, 7) <= current && (!e.endDate || e.endDate.slice(0, 7) >= current)) recurring += convert(e.amount, e.currency, spend);
   }

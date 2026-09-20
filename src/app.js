@@ -10,6 +10,8 @@ import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, SERVICES, KINDS, CURRENCIES } from './spend.js';
+import { createRateFeed, rateInfo } from './rates.js';
+import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionEntries } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
@@ -214,13 +216,28 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     });
   }
 
+  // Předplatné zjištěné z tohoto Macu (Claude z účtu Claude Code, ChatGPT z plánu, který hlásí Codex).
+  let claudeAccount = null;
+  const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
+  async function refreshSubscriptions() {
+    const acc = await readClaudeAccount(config.sourceHome);
+    const before = JSON.stringify(claudeAccount);
+    claudeAccount = acc ? claudePlanFromAccount(acc) : null;
+    if (JSON.stringify(claudeAccount) !== before) spendChanged();
+  }
+  function subscriptions(now = Date.now()) {
+    const found = [claudeAccount, chatgptPlanFromLimits(store.limitList())].filter(Boolean);
+    return found.map((f) => describePlan(f, datastore.data.spend.ledger, now));
+  }
+
   function spend() {
-    return spendSummary(datastore.data.spend, Date.now(), connectors['cloud-billing'].autoEntries());
+    const now = Date.now();
+    return spendSummary(datastore.data.spend, now, [...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(now), now)]);
   }
 
   function spendPayload() {
     const sp = datastore.data.spend;
-    return { ...spend(), ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    return { ...spend(), ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {
@@ -1057,6 +1074,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
+    refreshSubscriptions().catch(() => {});
+    every(() => refreshSubscriptions(), 10 * 60e3);
+    rateFeed.start();
     // Selhání zápisu na pozadí (upozornění, projekty, výdaje) dřív skončilo jen v logu.
     let storageJson = JSON.stringify(storageStatus());
     every(() => {
@@ -1069,6 +1089,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function stop() {
     stoppingRemote = true;
     for (const t of timers) clearInterval(t);
+    rateFeed.stop();
     await restoringRemote;
     await lan.stop();
     for (const c of list) {
@@ -1080,7 +1101,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
-    connectorList, spendPayload, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

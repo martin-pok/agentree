@@ -73,3 +73,23 @@ test('obrázek projektu jinak než PNG, JPG a WebP se odmítne dřív, než se c
   const css = await zdroj('public/styles.css');
   for (const p of ['aurora', 'dune', 'noir', 'lagoon', 'ember', 'orchid', 'graphite', 'sage']) assert.match(css, new RegExp(`\\.cover--${p} \\{`), `chybí přechod ${p}`);
 });
+
+test('odznaky upozornění ukazují nejvýš „10+“ a obrys zaostření se v rolovacích řádcích neořezává', async () => {
+  const app = await zdroj('public/js/app.js');
+  assert.doesNotMatch(app, /99\+/);
+  assert.equal((app.match(/'10\+'/g) || []).length, 3, 'postranní panel, zvonek i nabídka Více');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.launch-chips :focus-visible[^}]*outline-offset: -3px/);
+  assert.match(css, /\.nav \{[^}]*align-content: center/, 'nabídka se nesmí natahovat přes celou výšku');
+});
+
+test('složení tokenů má samostatné měřítko pro spotřebu a cache', async () => {
+  const { tokenBreakdown } = await import('../public/js/charts.js');
+  const html = tokenBreakdown({ input: 11_000, output: 2_150_000, cacheWrite: 17_600_000, cacheRead: 1_140_000_000 });
+  // Výstup je 99 % spotřeby a vstup 1 % – poměr se nesmí utopit pod čtením z cache.
+  assert.match(html, /Výstup[\s\S]*?99 %/);
+  assert.match(html, /Vstup[\s\S]*?1 %/);
+  assert.match(html, /technická režie/);
+  const bez = tokenBreakdown({ input: 5, output: 10 });
+  assert.doesNotMatch(bez, /Cache/, 'bez cache se sekce nekreslí');
+});

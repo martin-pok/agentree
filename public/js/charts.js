@@ -405,3 +405,23 @@ export function timeline({ rows, from, to, now }) {
     <div class="tl-now" aria-hidden="true"><span>teď</span></div>
   </div>`;
 }
+
+// Složení tokenů po řádcích. Jeden sdílený pruh nefungoval: čtení z cache bývá tisíckrát větší
+// než vstup s výstupem, takže z ostatních zbyly tenké čárky a rozdíl mezi nimi nebyl vidět.
+// Spotřeba (vstup + výstup) a cache proto mají každá vlastní měřítko a poměr uvnitř skupiny je čitelný.
+export function tokenBreakdown({ input = 0, output = 0, cacheWrite = 0, cacheRead = 0 }, { outputColor = 'var(--teal)' } = {}) {
+  const row = (label, value, max, color, share) => `<li class="tb-row">
+      <span class="tb-top"><span>${esc(label)}</span><b>${fmtTok(value)}</b>${share ? `<em>${share}</em>` : ''}</span>
+      <span class="tb-track"><i style="width:${value > 0 && max ? Math.max(2, (value / max) * 100).toFixed(1) : 0}%;background:${color}"></i></span>
+    </li>`;
+  const use = input + output;
+  const pct = (v) => (use ? `${Math.round((v / use) * 100)} %` : '');
+  const cacheMax = Math.max(cacheWrite, cacheRead);
+  const cshare = (v) => (cacheWrite + cacheRead ? `${Math.round((v / (cacheWrite + cacheRead)) * 100)} %` : '');
+  return `<div class="tb" role="group" aria-label="Složení tokenů">
+    <p class="tb-head"><span>Spotřeba</span><b>${fmtTok(use)}</b></p>
+    <ul class="tb-list">${row('Vstup', input, use, 'var(--ink)', pct(input))}${row('Výstup', output, use, outputColor, pct(output))}</ul>
+    ${cacheMax > 0 ? `<p class="tb-head tb-head--sub"><span>Cache <small>technická režie, do spotřeby se nepočítá</small></span></p>
+    <ul class="tb-list">${row('Zápis do cache', cacheWrite, cacheMax, 'var(--teal)', cshare(cacheWrite))}${row('Čtení z cache', cacheRead, cacheMax, 'var(--brass)', cshare(cacheRead))}</ul>` : ''}
+  </div>`;
+}

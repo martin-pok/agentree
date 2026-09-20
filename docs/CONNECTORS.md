@@ -181,3 +181,15 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
 ### Procesy – `src/connectors/processes.js` ✅
 
 - `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `http://127.0.0.1:11434/api/ps`.
+
+## Předplatné a kurz koruny (Útrata)
+
+Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.
+Co není ověřené na skutečných datech, je **Beta**.
+
+| Část | Zdroj | Stav |
+|---|---|---|
+| Plán Claude | `~/.claude.json` → `oauthAccount.organizationType`, `userRateLimitTier` / `organizationRateLimitTier`, `subscriptionCreatedAt` (e-mail, jméno ani token se nečtou dál) | ✅ `claude_pro` ověřeno na skutečném účtu; 🧪 `claude_max` (+ `default_claude_max_5x` / `_20x`), `claude_team`, `claude_enterprise` podle pojmenování v souboru, **neověřeno na účtu s tímto plánem**. Neznámý typ se netvrdí. |
+| Plán ChatGPT | `rate_limits.plan_type` v přepisech Codexu (`limit.plan`) | ✅ `plus` ověřeno; 🧪 `pro` má dvě cenové úrovně (100 a 200 $), které se z dat nerozliší → uživatel vybírá, do vybrání se nepočítá |
+| Ceny plánů | `src/subscriptions.js`, ceníková částka bez DPH. Claude: claude.com/pricing (Pro 20 $, Max 5× 100 $ ověřeno 2026-09-20). Ostatní ze třetích přehledů, oficiální stránka ChatGPT vracela 403 | 🧪 ceny se mění, tabulka se musí kontrolovat při každém vydání |
+| Kurz USD/EUR | ČNB `denni_kurz.txt`, GET bez údajů o uživateli, nejvýš jednou za 6 h, poslední kurz se ukládá; vypíná se `AGENTEEQ_CLOUD=0`. Ručně zadaný kurz se nikdy nepřepíše | ✅ formát ověřen na skutečném lístku 2026-09-18 |

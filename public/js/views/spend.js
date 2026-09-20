@@ -26,25 +26,25 @@ function applySpend(r) {
   }
 }
 
-function entryForm(sp) {
+function entryForm(sp, pre = {}) {
   const opt = (obj, sel) => Object.entries(obj).map(([k, x]) => `<option value="${esc(k)}"${k === sel ? ' selected' : ''}>${esc(typeof x === 'string' ? x : x.label)}</option>`).join('');
   return `<div class="form-grid">
-    <label class="field"><span>Služba</span><select name="service" required>${opt(sp.services, 'chatgpt')}</select></label>
-    <label class="field"><span>Typ platby</span><select name="kind">${opt(sp.kinds, 'extra')}</select></label>
-    <label class="field"><span>Částka</span><input name="amount" inputmode="decimal" autocomplete="off" required placeholder="0"></label>
-    <label class="field"><span>Měna</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
+    <label class="field"><span>Služba</span><select name="service" required>${opt(sp.services, pre.service || 'chatgpt')}</select></label>
+    <label class="field"><span>Typ platby</span><select name="kind">${opt(sp.kinds, pre.kind || 'extra')}</select></label>
+    <label class="field"><span>Částka</span><input name="amount" inputmode="decimal" autocomplete="off" required placeholder="0" value="${pre.amount ?? ''}"></label>
+    <label class="field"><span>Měna</span><select name="currency">${sp.currencies.map((c) => `<option${c === (pre.currency || sp.currency) ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="field"><span>Datum platby</span><input type="date" name="date" value="${localDate()}" required></label>
     <label class="field field--wide"><span>Poznámka</span><input name="note" maxlength="140" placeholder="Např. dokoupené extra usage na víkendový sprint"></label>
-    <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"> Opakuje se každý měsíc (předplatné)</label>
+    <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"${pre.recurring ? ' checked' : ''}> Opakuje se každý měsíc (předplatné)</label>
   </div>`;
 }
 
-export function openAddEntry() {
+export function openAddEntry(pre = {}) {
   const sp = state.spend;
   if (!sp) return;
   modal({
-    title: 'Přidat výdaj',
-    body: entryForm(sp),
+    title: pre.title || 'Přidat výdaj',
+    body: entryForm(sp, pre),
     submitLabel: 'Přidat výdaj',
     onSubmit: async (form) => {
       const d = new FormData(form);
@@ -97,6 +97,51 @@ function openBudgets(opener = null) {
   });
 }
 
+// Zjištěná předplatná. Cena je z ceníku (bez DPH) a říká se to; co se z dat na disku rozlišit nedá,
+// se do útraty nepočítá, dokud si uživatel nevybere.
+function plansHtml(sp) {
+  const toMain = (usd) => (usd * (sp.rates.USD || 0)) / (sp.rates[sp.currency] || 1);
+  const info = sp.rateInfo || {};
+  const kurz = sp.rates.USD ? String(sp.rates.USD).replace('.', ',') : '';
+  const rate = info.source === 'cnb' && info.date
+    ? `Kurz ČNB k ${dateLong(Date.parse(info.date))}: 1 $ = ${kurz} Kč`
+    : info.source === 'manual'
+      ? `Kurz zadaný ručně: 1 $ = ${kurz} Kč${info.live ? ` <button class="link-inline" type="button" data-action="rates-auto">Použít kurz ČNB</button>` : ''}`
+      : `Orientační kurz 1 $ = ${kurz} Kč. Aktuální kurz ČNB se stáhne po připojení k internetu.`;
+  const rows = (sp.subscriptions || []).map((p) => {
+    const svc = sp.services[p.service];
+    const price = p.usd !== null && p.usd > 0
+      ? `<span class="plan-price"><b>${p.usd} $</b><em>≈ ${money(toMain(p.usd))} / měsíc</em></span>`
+      : p.usd === 0 ? '<span class="plan-price"><b>0 $</b></span>' : '<span class="plan-price"><b>cena neurčena</b></span>';
+    let status = '';
+    let actions = '';
+    if (p.covered) status = 'Platí to, co jsi zapsal(a) ve Výdajích. Zjištěná cena se nepočítá znovu.';
+    else if (p.options) {
+      status = `${esc(p.note)} Vyber, kterou platíš:`;
+      actions = p.options.map((o) => `<button class="btn btn--sm" type="button" data-action="plan-pick" data-service="${esc(p.service)}" data-usd="${o}">${o} $ / měsíc <span class="muted">≈ ${esc(money(toMain(o)))}</span></button>`).join('');
+    } else if (p.usd === null) {
+      status = esc(p.note || 'Cenu tohoto plánu Agenteeq nezná.');
+      actions = `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">Zapsat částku</button>`;
+    } else if (p.usd > 0) {
+      status = 'Započítáno do útraty. Ceník je bez DPH, skutečná platba může být vyšší.';
+      actions = `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">Upravit částku</button>`;
+    } else status = 'Bez poplatku.';
+    return `<li class="plan-row">
+      <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
+      <span class="plan-main"><span class="plan-title"><b>${esc(p.label)}</b>${price}</span>
+        <span class="plan-sub">Zjištěno: ${esc(p.evidence)}${p.since ? `, od ${esc(dateLong(Date.parse(p.since)))}` : ''}</span>
+        <span class="plan-sub">${status}${!p.since && p.counted ? ' Začátek předplatného neznám, počítám od tohoto měsíce.' : ''}</span>
+        ${p.priceSource ? `<span class="plan-sub plan-src">Cena z: ${esc(p.priceSource)}${p.priceChecked ? `, zkontrolováno ${esc(dateLong(Date.parse(p.priceChecked)))}` : ''}</span>` : ''}
+        ${actions ? `<span class="plan-actions">${actions}</span>` : ''}
+      </span>
+    </li>`;
+  }).join('');
+  return `<section class="card pad plans" aria-labelledby="plans-h">
+    <div class="sec-head"><h2 id="plans-h">Tvoje předplatná</h2><span class="muted small plan-rate">${rate}</span></div>
+    ${rows ? `<ul class="plan-list">${rows}</ul>` : '<p class="muted">Agenteeq zatím žádné předplatné nezjistil. Předplatné Claude pozná z přihlášeného Claude Code a plán ChatGPT z limitů Codexu. Ostatní si zapiš ručně tlačítkem Přidat výdaj.</p>'}
+  </section>`;
+}
+
 function mount(el, _params, query) {
   v.el = el;
   // Historie extra usage Claude – čte se jednou za návštěvu, na vyžádání.
@@ -116,6 +161,7 @@ function mount(el, _params, query) {
     <!-- Kredity a extra usage jsou jediná část Útraty, kterou Agenteeq zná sám ze souborů na disku;
          výdaje, rozpočty a předplatné si uživatel zapisuje ručně. Patří proto nahoru, hned pod
          souhrn – dřív byly až pod třemi prázdnými bloky s nulami a stránka působila mrtvě. -->
+    <div data-enter style="--i:3" data-region="plans"></div>
     <div data-enter style="--i:3" data-region="credits"></div>
     <div data-enter style="--i:4" data-region="budgets"></div>
     <div class="grid-2 grid-2--wide" data-enter style="--i:5">
@@ -138,6 +184,19 @@ function mount(el, _params, query) {
     const id = a.dataset.id;
     try {
       if (a.dataset.action === 'add') openAddEntry();
+      else if (a.dataset.action === 'plan-edit') {
+        const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
+        if (p) openAddEntry({ title: `Skutečná částka: ${p.label}`, service: p.service, kind: 'subscription', amount: p.usd ?? '', currency: 'USD', recurring: true });
+      } else if (a.dataset.action === 'plan-pick') {
+        const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
+        if (!p) return;
+        const usd = Number(a.dataset.usd);
+        applySpend(await api.addLedger({ service: p.service, kind: 'subscription', amount: usd, currency: 'USD', date: `${localDate().slice(0, 7)}-01`, note: `${p.label}, vybráno ručně`, recurring: 'monthly' }));
+        toast(`${p.label}: ${usd} $ měsíčně zapsáno`);
+      } else if (a.dataset.action === 'rates-auto') {
+        applySpend(await api.saveBudgets({ ratesAuto: true }));
+        toast('Kurz se řídí ČNB');
+      }
       else if (a.dataset.action === 'budgets') openBudgets(a);
       else if (a.dataset.action === 'end') {
         const ok = await confirmDialog({ title: 'Ukončit předplatné', message: 'Od příštího měsíce se platba přestane započítávat. Historie zůstane.', confirmLabel: 'Ukončit předplatné' });
@@ -178,6 +237,8 @@ function update() {
       <div><span class="eyebrow">${total ? (sp.month.total > total ? 'Přečerpáno' : 'Zbývá z rozpočtu') : 'Rozpočet'}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}">${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">Nastavit</button>`}</span></div>
     </div>`);
+
+  fill(el, 'plans', plansHtml(sp));
 
   fill(el, 'budgets', sp.budgets.length
     ? `<div class="budget-cards">${sp.budgets.map((b) => {
