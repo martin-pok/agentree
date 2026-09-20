@@ -75,7 +75,7 @@ export async function openCropper(host, kind, file) {
       </div>
       <div class="crop-tools">
         <label class="crop-zoom"><span>Přiblížení</span><input type="range" min="100" max="${MAX_ZOOM * 100}" value="100" step="1" data-zoom></label>
-        ${kind === 'logo' ? '<div class="seg seg--sm" role="group" aria-label="Způsob vložení"><button type="button" data-fit="contain" aria-pressed="true">Celé logo</button><button type="button" data-fit="cover" aria-pressed="false">Vyplnit</button></div>' : ''}
+        ${kind === 'logo' ? '<div class="seg seg--sm" role="group" aria-label="Způsob vložení"><button type="button" data-fit="cover" aria-pressed="true">Vyplnit</button><button type="button" data-fit="contain" aria-pressed="false">Celé logo</button></div>' : ''}
         <button type="button" class="btn btn--sm" data-reset>Vycentrovat</button>
       </div>
       <p class="crop-meta" aria-live="polite" data-meta></p>
@@ -85,7 +85,7 @@ export async function openCropper(host, kind, file) {
     const img = stage.querySelector('img');
     const zoom = host.querySelector('[data-zoom]');
     const meta = host.querySelector('[data-meta]');
-    let mode = kind === 'logo' ? 'contain' : 'cover';
+    let mode = 'cover';
     let z = 1;
     let ox = 0;
     let oy = 0;

@@ -123,3 +123,19 @@ test('výběry v přepínačích mají tučnější písmo a tlačítko na tmav�
   const sk = await zdroj('public/js/views/skills.js');
   assert.match(sk, /class="sk-filtr" data-blok="zdroje"[\s\S]*class="sk-filtr" data-blok="puvod"/, 'filtry jsou popsané řádky pod sebou');
 });
+
+test('zelená plocha s textem používá bílé písmo na tmavší zelené', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.nav-badge \{[^}]*background: var\(--teal-solid\); color: #fff/, 'odznak nesmí mít černé písmo na světlé zelené');
+  assert.match(css, /\.appearance-icon \{ background: var\(--teal-solid\); color: #fff/);
+  assert.doesNotMatch(css, /\.nav-badge \{[^}]*background: var\(--teal\);/);
+});
+
+test('logo projektu vyplní celý rámeček a karty se dají přetahovat i ovládat klávesnicí', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.plogo img \{[^}]*object-fit: cover/);
+  assert.doesNotMatch(css, /\.plogo img \{[^}]*padding/);
+  const r = await zdroj('public/js/reorder.js');
+  assert.match(r, /e\.altKey/, 'Alt + šipky');
+  assert.match(r, /layoutRect/, 'cíl se hledá podle rozvržení, ne podle rozpracované animace');
+});

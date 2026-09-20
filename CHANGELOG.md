@@ -15,6 +15,13 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.16.0 – 2026-09-20 · řazení projektů, paleta, kontrast odznaků
+
+- **Ruční pořadí projektů:** `public/js/reorder.js` (tah myší za kartu, dotykem za úchyt `[data-grip]`, Alt + šipky, Esc vrací; FLIP animace, doletění na místo, klik po tahu se zahodí, okrajové rolování). Cíl se hledá podle rozvržení (`offsetLeft/Top`), ne podle rozpracované animace – jinak tah kmital. `PUT /api/projects/order` (`reorderProjects`: mění jen vybrané, ostatní nechá na místě). Pořadí karet je teď pořadí uživatele, ne poslední aktivita.
+- **Paleta projektů:** 16 barev, kalná #C99A3E → #F2B824 (migrace ve `normalizeProjects` i při úpravě).
+- **Logo:** `object-fit: cover` bez vycpávky, výřez loga se výchozím „Vyplnit“.
+- **Kontrast:** `--teal-solid` (#0D7A67, bílý text 5,3 : 1) pro `.nav-badge` a vybranou volbu vzhledu; dřív černé písmo na světle zelené.
+
 ## 0.15.2 – 2026-09-20 · vyvážené sloupce
 
 - `public/js/balance.js`: sekce `data-float` v kontejneru se dvěma `.bal-col` se rozdělí mezi sloupce tak, aby byl rozdíl výšek nejmenší (všechna rozdělení, práh 40 px proti poskakování, `ResizeObserver`). Jeden sloupec: původní pořadí. Použito na Přehledu (Útrata, Poslední aktivita) a ve Statistikách (čtyři žebříčky místo dvou natažených řad, které nechávaly prázdná místa uvnitř karet). Testy v `overview-layout.test.mjs`.

@@ -4,6 +4,7 @@ import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY, jeA
 import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
+import { enableReorder } from '../reorder.js';
 import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark } from '../projects-ui.js';
 
 const v = { el: null, tab: 'active', q: '' };
@@ -51,7 +52,8 @@ function cardHtml(p, now) {
   const st = projectStats(p, now);
   const spark = dailyActivity(st.live, now);
   const hasSpark = spark.some((x) => x > 0);
-  return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(p.color)}" data-project-drop="${esc(p.id)}">
+  return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(p.color)}" data-project-drop="${esc(p.id)}" data-pid="${esc(p.id)}">
+    <span class="pcard-grip" data-grip aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
     ${projectCover(p)}
     <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="Potřebuje tvé rozhodnutí">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="Právě pracuje"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
@@ -79,6 +81,23 @@ function mount(el) {
   const input = el.querySelector('[data-q]');
   input.value = v.q;
   input.addEventListener('input', () => { v.q = input.value; update(); });
+  const gridBox = el.querySelector('[data-region="grid"]');
+  v.reorder = enableReorder(gridBox, {
+    itemSelector: '.pcard[data-pid]',
+    idOf: (n) => n.dataset.pid,
+    onMoveKey: (pos, total) => toast(`Pozice ${pos} z ${total}`, { tone: 'info', timeout: 1600 }),
+    onCommit: async (ids) => {
+      if (!ids) { gridBox._html = null; update(); return; } // Esc: vrátit původní pořadí
+      try {
+        const r = await api.reorderProjects(ids);
+        setProjects(r.projects);
+      } catch (err) {
+        toast(err.message, { tone: 'err' });
+      }
+      gridBox._html = null;
+      update();
+    },
+  });
   el.addEventListener('click', async (e) => {
     const tab = e.target.closest('[data-tab]');
     if (tab) { v.tab = tab.dataset.tab; update(); return; }
@@ -115,11 +134,10 @@ function update() {
     .map(([k, label, n]) => `<button type="button" data-tab="${k}" aria-pressed="${v.tab === k}"${k === 'archived' && !n ? ' disabled' : ''}>${label}<span class="count">${n}</span></button>`).join(''));
 
   const q = norm(v.q.trim());
+  // Pořadí karet určuje uživatel (tažením); pořadí v seznamu projektů je jeho pořadí.
   const list = (v.tab === 'active' ? active : archived)
-    .filter((p) => !q || norm([p.name, p.description, ...p.folders].join(' ')).includes(q))
-    .map((p) => ({ p, last: projectStats(p, now).lastAt }))
-    .sort((a, b) => b.last - a.last || a.p.name.localeCompare(b.p.name, 'cs'))
-    .map((x) => x.p);
+    .filter((p) => !q || norm([p.name, p.description, ...p.folders].join(' ')).includes(q));
+
 
   const unassigned = agentsList().filter((s) => !s.projectId).length;
   const sugg = suggestions();
@@ -137,7 +155,7 @@ function update() {
     </div>`);
   } else if (!list.length) {
     fill(el, 'grid', `<div class="card">${emptyState({ title: q ? 'Žádný projekt neodpovídá hledání' : 'V archivu nic není', text: q ? 'Zkus jiný název nebo složku.' : '' })}</div>`);
-  } else {
+  } else if (!v.reorder?.isDragging()) {
     fill(el, 'grid', `<div class="pgrid">${list.map((p) => cardHtml(p, now)).join('')}
       ${v.tab === 'active' && unassigned ? `<a class="pcard pcard--ghost" href="#/agenti?projekt=bez"><span class="pcard-top"><span class="pghost-mark">${ICON.folder}</span><span class="pcard-name">Nezařazené</span></span>
         <span class="pcard-desc">${unassigned} ${plural(unassigned, 'konverzace čeká', 'konverzace čekají', 'konverzací čeká')} na zařazení do projektu.</span><span class="link-inline">Roztřídit ${ICON.arrow}</span></a>` : ''}
@@ -151,4 +169,4 @@ function update() {
     : '');
 }
 
-export default { id: 'projekty', title: 'Projekty', mount, update, unmount: () => { v.el = null; } };
+export default { id: 'projekty', title: 'Projekty', mount, update, unmount: () => { v.el = null; v.reorder = null; } };

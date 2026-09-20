@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.16.0',
+    date: '2026-09-20',
+    title: 'Řazení projektů tažením, víc barev a čitelnější odznaky',
+    items: [
+      'Karty projektů si seřadíš tažením: chytíš kartu, zvedne se a ostatní se plynule uhýbají. Na telefonu se táhne za úchyt v rohu karty, z klávesnice Alt a šipkami. Pořadí se ukládá; Esc tah zruší.',
+      'Barev projektů je šestnáct a kalná žlutá je nahrazená čistě slunečnicovou. Starší projekty se žlutou se převedou samy.',
+      'Logo klienta vyplní celý rámeček tak, jak sis ho vybral(a) ve výřezu, bez bílých pruhů. Logo nahrané dřív s okraji stačí nahrát znovu s volbou Vyplnit.',
+      'Zelené odznaky (počet agentů) a vybraná volba vzhledu mají bílé písmo na tmavší zelené, takže se čtou i v malé velikosti.',
+    ],
+  },
+  {
     version: '0.15.2',
     date: '2026-09-20',
     title: 'Vyvážené sloupce bez prázdných ploch',

@@ -5,7 +5,12 @@ import { isSafeRef } from './git.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
-export const PROJECT_COLORS = ['#C2335A', '#22A38C', '#C99A3E', '#4285F4', '#8250DF', '#D97757', '#1F8A96', '#16141D'];
+// Šestnáct barev ve dvou řadách po osmi: teplé, zelené a studené, nakonec neutrální. Původní šedožlutá
+// (#C99A3E) byla kalná, nahrazuje ji slunečnicová; starší projekty se s ní převedou samy.
+export const PROJECT_COLORS = ['#C2335A', '#E5533D', '#F08A24', '#F2B824', '#84B81F', '#22A38C', '#1F8A96', '#4285F4',
+  '#4A6CF7', '#8250DF', '#C25BD6', '#EE6AA7', '#D97757', '#6F8F5E', '#5B6B7F', '#16141D'];
+const LEGACY_COLORS = { '#C99A3E': '#F2B824' };
+const knownColor = (c) => (PROJECT_COLORS.includes(c) ? c : LEGACY_COLORS[c] || null);
 export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000, instructions: 4000 };
 export const SNAPSHOT_MAX = 3000;
 // Abstraktní pozadí karet (CSS v public/styles.css, třída .cover--<preset>).
@@ -110,7 +115,7 @@ export function normalizeProjects(raw) {
       work: normalizeWork(p.work),
       id: p.id,
       name: p.name.replace(/\s+/g, ' ').trim().slice(0, LIMITS.name),
-      color: PROJECT_COLORS.includes(p.color) ? p.color : PROJECT_COLORS[0],
+      color: knownColor(p.color) || PROJECT_COLORS[0],
       description: typeof p.description === 'string' ? p.description.slice(0, LIMITS.description) : '',
       notes: typeof p.notes === 'string' ? p.notes.slice(0, LIMITS.notes) : '',
       folders: Array.isArray(p.folders) ? p.folders.filter((f) => typeof f === 'string' && path.isAbsolute(f)).slice(0, LIMITS.folders) : [],
@@ -170,7 +175,7 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
     else next.name = name;
   }
   if (body.color !== undefined) {
-    if (PROJECT_COLORS.includes(body.color)) next.color = body.color;
+    if (knownColor(body.color)) next.color = knownColor(body.color);
     else errors.color = 'Vyber barvu z nabídky.';
   }
   if (body.description !== undefined) {
@@ -339,4 +344,17 @@ export function projectCsv(sessions, now = Date.now()) {
     rows.push([s.title, s.app, s.model || '', s.status ? STATUS_CS[s.status] || s.status : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }
   return `﻿${rows.map((r) => r.map(cell).join(';')).join('\r\n')}\r\n`;
+}
+
+// Ruční pořadí karet. `ids` je nové pořadí (viditelných) projektů; projekty, které v seznamu nejsou
+// (třeba archivované), zůstávají na svých místech. Nemění se nic než pořadí.
+export function reorderProjects(data, ids) {
+  if (!Array.isArray(ids) || ids.length > 500 || ids.some((x) => typeof x !== 'string')) return false;
+  const byId = new Map(data.items.map((p) => [p.id, p]));
+  const order = [...new Set(ids)].filter((id) => byId.has(id));
+  if (order.length < 2) return false;
+  const chosen = new Set(order);
+  let next = 0;
+  data.items = data.items.map((p) => (chosen.has(p.id) ? byId.get(order[next++]) : p));
+  return true;
 }

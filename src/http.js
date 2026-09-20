@@ -540,6 +540,10 @@ export function createHttpServer(app, existingServer = null) {
       unwrap(app.assignToProject(body.sessionIds, pid));
       return { projects: app.projectsPayload() };
     }],
+    ['PUT', /^\/api\/projects\/order$/, async (req) => {
+      unwrap(app.reorderProjectList((await readBody(req)).ids));
+      return { projects: app.projectsPayload() };
+    }],
     ['POST', /^\/api\/projects$/, async (req) => {
       const r = unwrap(app.createProject(await readBody(req)));
       return { status: 201, body: { project: r.project, projects: app.projectsPayload() } };

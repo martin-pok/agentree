@@ -26,6 +26,7 @@
   --brass-tint: #F7EEDA;
   --ivory: #EFEAF2;
   --ok: #0B6F5F;
+  --teal-solid: #0D7A67; /* plná zelená plocha s bílým textem (5,3 : 1); světlá --teal na ní bílý text neunese */
   --toast-ok: #0B6F5F;
   --toast-err: #A8254A;
 
@@ -77,6 +78,7 @@ html[data-theme='dark'] {
   --brass-tint: #3B2E17;
   --ivory: #EFEAF2;
   --ok: #76E6CD;
+  --teal-solid: #0D7A67;
   --toast-ok: #0E5A4D;
   --toast-err: #8E1F3F;
   /* V tmavém režimu linku nedělá tmavší barva, ale nepatrné zesvětlení hrany. */
@@ -196,7 +198,7 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .nav a[aria-current='page'] { color: var(--ink); font-weight: 500; background: var(--paper); }
 .nav a[aria-current='page']::before { content: ''; position: absolute; left: -24px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--brass); }
 .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
-.nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; background: var(--teal); color: var(--ink); font: 500 12px/24px var(--f-mono); text-align: center; }
+.nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; background: var(--teal-solid); color: #fff; font: 500 12px/24px var(--f-mono); text-align: center; }
 .nav-badge[data-tone='coral'] { background: var(--velvet-solid); color: #fff; }
 /* Na nižších oknech ustupuje nejdřív dekorace, ne navigace: profil se stáhne, aby se všechny
    položky vešly bez rolování. Hodnoty jsou spočítané – při okně 800 px chybělo 56 px. */
@@ -1035,7 +1037,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .appearance-option:hover { transform: translateY(-2px); border-color: var(--ink-2); background: var(--card); box-shadow: var(--shadow-sm); }
 .appearance-option[aria-pressed='true'] { border-color: var(--teal-ink); background: var(--teal-tint); box-shadow: inset 0 0 0 1px var(--teal-ink); }
 .appearance-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--line-2); color: var(--ink-2); }
-.appearance-option[aria-pressed='true'] .appearance-icon { background: var(--teal); color: var(--ink-surface); }
+.appearance-option[aria-pressed='true'] .appearance-icon { background: var(--teal-solid); color: #fff; }
 .appearance-option strong, .appearance-option small { display: block; }
 .appearance-option strong { font-weight: 500; line-height: 1.3; }
 .appearance-option small { margin-top: 4px; color: var(--mute); font-size: 12px; line-height: 1.4; }
@@ -1546,7 +1548,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .cover--graphite { --c0: #1d2026; --c1: #7a8494; --c2: #aab4c4; --c3: #414753; }
 .cover--sage { --c0: #1c2f25; --c1: #9fd49f; --c2: #d6e6a8; --c3: #48917a; }
 .plogo { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--card), 0 0 0 4px color-mix(in srgb, var(--pc) 55%, transparent), var(--shadow-sm); }
-.plogo img { width: 100%; height: 100%; object-fit: contain; padding: 4px; box-sizing: border-box; }
+.plogo img { width: 100%; height: 100%; object-fit: cover; }
 .pcard-top.has-logo { margin-top: -30px; }
 .pcard-top.has-logo .pcard-name { padding-top: 30px; }
 .project-kicker .plogo { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px color-mix(in srgb, var(--pc) 55%, transparent); }
@@ -1555,7 +1557,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .media-thumb { position: relative; display: block; width: 140px; height: 40px; border-radius: 10px; overflow: hidden; background: var(--line-2); }
 .media-thumb--logo { width: 56px; height: 56px; justify-self: center; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .media-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.media-thumb--logo img { object-fit: contain; padding: 4px; box-sizing: border-box; }
+.media-thumb--logo img { object-fit: cover; }
 .media-thumb .pcover { position: absolute; inset: 0; }
 .media-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); }
 .media-text { display: grid; gap: 2px; min-width: 0; }
@@ -1910,3 +1912,15 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .crop-meta { margin: 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
 .crop-meta.is-warn { color: var(--velvet-ink); }
 .crop-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Řazení karet projektů tažením */
+.pcard-grip { position: absolute; top: 10px; right: 10px; z-index: 3; display: grid; grid-template-columns: repeat(2, 4px); gap: 3px; padding: 8px 7px; border-radius: 10px; background: rgba(22, 20, 29, .55); backdrop-filter: blur(6px); opacity: 0; cursor: grab; touch-action: none; transition: opacity .18s; }
+.pcard-grip i { width: 4px; height: 4px; border-radius: 50%; background: #fff; }
+.pcard:hover .pcard-grip, .pcard:focus-visible .pcard-grip, .pcard.is-lifted .pcard-grip { opacity: 1; }
+@media (hover: none) { .pcard-grip { opacity: 1; } }
+.pcard.is-lifted { z-index: 30; cursor: grabbing; transition: none; box-shadow: var(--shadow-lg), 0 0 0 1px color-mix(in srgb, var(--pc) 45%, transparent); will-change: transform; }
+.pcard.is-lifted .pcard-grip { cursor: grabbing; }
+.is-reordering .pcard { transition: none; }
+.is-reordering .pcard:not(.is-lifted):hover { transform: none; box-shadow: var(--shadow-sm); }
+body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { .pcard-grip { transition: none; } }

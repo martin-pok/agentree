@@ -55,6 +55,7 @@ export const api = {
   createProject: (body) => request('POST', '/api/projects', body),
   updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
   deleteProject: (id) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`),
+  reorderProjects: (ids) => request('PUT', '/api/projects/order', { ids }),
   assign: (sessionIds, projectId) => request('POST', '/api/projects/assign', { sessionIds, projectId }),
   launch: (body) => request('POST', '/api/launch', body),
   refreshLaunch: () => request('POST', '/api/launch/refresh', {}),

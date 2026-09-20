@@ -38,7 +38,7 @@ import { appInstalled } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
-import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
+import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 
@@ -326,6 +326,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     items[items.findIndex((p) => p.id === id)] = r.value;
     projectsChanged();
     return { ok: true, project: r.value };
+  }
+
+  function reorderProjectList(ids) {
+    if (!reorderProjects(projects(), ids)) return { status: 422, error: 'Pořadí se nepodařilo změnit.' };
+    projectsChanged();
+    return { ok: true };
   }
 
   function removeProject(id) {
@@ -1103,7 +1109,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense,
-    createProject, updateProject, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
+    createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
