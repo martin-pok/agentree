@@ -15,6 +15,10 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.17.1 – 2026-09-20 · tmavý režim: tlačítka
+
+- Nové tokeny `--action` / `--on-action` / `--action-hover`: ve světlém režimu tmavá plocha s bílým textem, v tmavém světlá `#F5F2F8` s textem `#16141D` (naměřeno 16,4 : 1 proti textu, 17,9 : 1 proti stránce). Použito pro `.btn--primary`, vybrané `.seg` tlačítka, zapnutý `.switch`, zatržítko, `.link:hover`, ukazatel měřiče, aktivní záložku Nastavení, `.nav-launch`, vybraný den kalendáře. Dřív `--ink-surface`, tedy tmavá na tmavé.
+
 ## 0.17.0 – 2026-09-20 · vlastní pořadí karet
 
 - **Rozložení karet:** `settings.layout` (`agentSide`, `projectSide`; jen známé klíče a ID `[\w-]{1,40}`, nejvýš 20; `null` vrátí výchozí). `public/js/layout-prefs.js` (`applyOrder`, `saveOrder`, `resetLayout`, úchyt `GRIP`), `enableReorder` má volbu `handle`. Pravý panel detailu agenta a projektu, tah za úchyt, Alt + šipky; při tahu se panel nepřekresluje. Tlačítko „Obnovit výchozí“ v Nastavení. Testy v `project-order.test.mjs`.

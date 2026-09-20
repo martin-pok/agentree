@@ -139,3 +139,12 @@ test('logo projektu vyplní celý rámeček a karty se dají přetahovat i ovlá
   assert.match(r, /e\.altKey/, 'Alt + šipky');
   assert.match(r, /layoutRect/, 'cíl se hledá podle rozvržení, ne podle rozpracované animace');
 });
+
+test('ovládací prvky mají v tmavém režimu světlou plochu s tmavým písmem', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /html\[data-theme='dark'\] \{[^}]*--action: #F5F2F8;[^}]*--on-action: #16141D/s);
+  for (const sel of ['\\.btn--primary', "\\.seg button\\[aria-pressed='true'\\]", "\\.switch\\[aria-checked='true'\\]"]) {
+    assert.match(css, new RegExp(`${sel} \\{[^}]*background: var\\(--action\\)`), `${sel} musí používat --action`);
+  }
+  assert.doesNotMatch(css, /\.btn--primary \{[^}]*ink-surface/, 'tmavá plocha na tmavém pozadí se nesmí vrátit');
+});

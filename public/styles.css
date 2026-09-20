@@ -8,6 +8,9 @@
   --card: #FFFFFF;
   --ink: #16141D;
   --ink-surface: #16141D;
+  --action: #16141D; /* plná plocha ovládacích prvků (primární tlačítko, vybraný přepínač) */
+  --on-action: #FFFFFF;
+  --action-hover: #3A3646;
   --on-ink: #FFFFFF;
   --ink-2: #3A3743;
   --mute: #686472;
@@ -61,6 +64,9 @@ html[data-theme='dark'] {
   --card: #211F2A;
   --ink: #F5F2F8;
   --ink-surface: #0E0D14;
+  --action: #F5F2F8; /* v tmavém režimu světlá plocha s tmavým písmem: kontrast > 15 : 1 místo tmavé na tmavé */
+  --on-action: #16141D;
+  --action-hover: #FFFFFF;
   --on-ink: #FFFFFF;
   --ink-2: #D8D3DE;
   --mute: #B9B3C1;
@@ -313,7 +319,7 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
    u odkazů; při najetí se plocha vyplní a hned je jasné, že na to jde kliknout. */
 .link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: 500 13px/1 var(--f-body); text-decoration: none; cursor: pointer; white-space: nowrap; transition: background-color .18s, color .18s, box-shadow .18s, translate .18s; }
 .link[href]::after { content: ''; flex: none; width: 14px; height: 14px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat; transition: translate .18s var(--ease); }
-.link:hover { background: var(--ink-surface); color: var(--on-ink); box-shadow: inset 0 0 0 1px var(--ink-surface); }
+.link:hover { background: var(--action); color: var(--on-action); box-shadow: inset 0 0 0 1px var(--action); }
 .link[href]:hover::after { translate: 3px 0; }
 .link .icon { width: 14px; height: 14px; }
 
@@ -354,10 +360,10 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
 .btn .icon, .btn .logo, .btn .glyph { width: 16px; height: 16px; }
 .icon-btn--line { box-shadow: inset 0 0 0 1px var(--line); }
 .icon-btn--line:hover { box-shadow: inset 0 0 0 1px var(--ink); background: var(--card); }
-.btn--primary { background: var(--ink-surface); border-color: var(--ink-surface); color: var(--on-ink); }
+.btn--primary { background: var(--action); border-color: var(--action); color: var(--on-action); }
 /* --ink-2 je v tmavém režimu skoro bílá (slouží jako sekundární text na tmavé ploše), takže jako hover pozadí
    tlačítka měnila bílý text v bílé na bílém. Zesvětlení řeší přímý mix s bílou, funguje stejně v obou režimech. */
-.btn--primary:hover { background: color-mix(in srgb, var(--ink-surface) 84%, white 16%); }
+.btn--primary:hover { background: var(--action-hover); border-color: var(--action-hover); }
 .btn--danger { background: var(--velvet-solid); border-color: var(--velvet-solid); color: #fff; }
 .btn--sm { height: 32px; padding: 0 12px; font-size: 13px; }
 .btn--on-dark { background: rgba(255, 255, 255, .12); border-color: transparent; color: #fff; }
@@ -466,7 +472,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .meter-row .num { color: var(--ink); }
 .meter-row .of { color: var(--mute); }
 .meter-track { height: 8px; margin: 0 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-.meter-track i { display: block; height: 100%; border-radius: 4px; background: var(--ink-surface); transition: width .8s var(--ease); }
+.meter-track i { display: block; height: 100%; border-radius: 4px; background: var(--action); transition: width .8s var(--ease); }
 .metric-note { margin: 10px 8px 0; color: var(--mute); font-size: 12px; line-height: 1.45; }
 
 .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
@@ -632,9 +638,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .seg button .icon { width: 16px; height: 16px; }
 .seg button.has-alert .count { background: var(--velvet-ink); color: #fff; padding: 3px 6px; border-radius: 8px; opacity: 1; }
 .seg button:hover { color: var(--ink); }
-.seg button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); font-weight: 500; }
+.seg button[aria-pressed='true'] { background: var(--action); color: var(--on-action); font-weight: 500; }
 .seg--light { box-shadow: none; background: transparent; padding: 0; gap: 4px; }
-.seg--light button[aria-pressed='true'] { background: var(--ink-surface); color: var(--on-ink); box-shadow: none; }
+.seg--light button[aria-pressed='true'] { background: var(--action); color: var(--on-action); box-shadow: none; }
 .seg--light button:hover:not([aria-pressed='true']) { background: var(--line-2); }
 /* Rolovatelný přepínač: doznění na straně, kam se dá ještě posunout (značky nastavuje ui.js).
    Bez něj se poslední popisek usekne uprostřed slova a vypadá to jako chyba sazby. */
@@ -1049,7 +1055,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .set-divider { height: 8px; }
 .switch { position: relative; width: 48px; height: 28px; border-radius: 14px; border: 0; padding: 0; flex: none; background: var(--line); box-shadow: inset 0 1px 3px rgba(30, 27, 34, .12); transition: background-color .3s var(--ease); }
 .switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(30, 27, 34, .25); transition: transform .3s var(--ease); }
-.switch[aria-checked='true'] { background: var(--ink-surface); }
+.switch[aria-checked='true'] { background: var(--action); }
+.switch[aria-checked='true']::after { background: var(--on-action); }
 .switch[aria-checked='true']::after { transform: translateX(20px); }
 .switch:disabled { opacity: .45; }
 .steps { margin: 8px 0 16px; padding-left: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 14px; overflow-wrap: anywhere; }
@@ -1206,7 +1213,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .set-nav { top: 0; z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
   .set-nav::-webkit-scrollbar { display: none; }
   .set-nav button { flex: none; height: 36px; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--line); }
-  .set-nav button[aria-current] { background: var(--ink-surface); color: var(--on-ink); box-shadow: none; }
+  .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
   .set-group { scroll-margin-top: 72px; }
   .pulse-bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
   .pb-stats { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding-top: 14px; border-top: 1px solid rgba(244, 243, 247, .12); }
@@ -1240,7 +1247,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
   .nav-more .fill { fill: currentColor; opacity: .7; }
   .nav a[aria-current='page']::before, .nav-more[aria-current='page']::before { content: ''; position: absolute; left: 34%; right: 34%; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0 0 3px 3px; background: var(--brass); }
   .nav a span, .nav-more span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .nav-launch { display: grid; place-items: center; justify-self: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); box-shadow: 0 10px 24px -8px rgba(12, 11, 16, .55), inset 0 0 0 1px rgba(201, 154, 62, .45); transition: transform .15s var(--ease); }
+  .nav-launch { display: grid; place-items: center; justify-self: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--action); color: var(--on-action); box-shadow: 0 10px 24px -8px rgba(12, 11, 16, .55), inset 0 0 0 1px rgba(201, 154, 62, .45); transition: transform .15s var(--ease); }
   .nav-launch svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
   .nav-launch:active { transform: scale(.94); }
   .nav-badge { position: absolute; top: 4px; right: calc(50% - 22px); margin: 0; min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px; font-size: 10px; }
@@ -1812,7 +1819,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .wn-release + .wn-release { padding-top: 24px; border-top: 1px solid var(--line-2); }
 .wn-head { display: flex; align-items: center; gap: 12px; }
 .wn-version { height: 24px; padding: 0 10px; border-radius: 12px; background: var(--paper); font: 400 12px/24px var(--f-mono); color: var(--ink-2); }
-.wn-release--lead .wn-version { background: var(--ink-surface); color: var(--on-ink); }
+.wn-release--lead .wn-version { background: var(--action); color: var(--on-action); }
 .wn-date { font-size: 12px; color: var(--mute); }
 .wn-title { margin: 4px 0 0; font: 400 22px/1.25 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
 .wn-release:not(.wn-release--lead) .wn-title { font: 500 16px/1.35 var(--f-body); letter-spacing: 0; }
@@ -1893,7 +1900,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .cal-day.is-out { color: var(--mute); opacity: .55; }
 .cal-day.is-today { box-shadow: inset 0 0 0 1px var(--mute); }
 .cal-day.is-cursor:not(.is-sel) { background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink); }
-.cal-day.is-sel { background: var(--ink-surface); color: var(--on-ink); opacity: 1; }
+.cal-day.is-sel { background: var(--action); color: var(--on-action); opacity: 1; }
 .cal-foot { display: flex; justify-content: flex-end; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
 
 /* Editor výřezu obrázku */

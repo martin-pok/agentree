@@ -2,6 +2,14 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.17.1',
+    date: '2026-09-20',
+    title: 'Kontrastní tlačítka v tmavém režimu',
+    items: [
+      'V tmavém režimu jsou hlavní tlačítka (Spustit agenta, Uložit, Vytvořit projekt…), vybrané přepínače, zapnuté přepínače a zatržítka světlá s tmavým písmem. Kontrast je přes 16 : 1, dřív šlo o tmavou plochu na tmavém pozadí.',
+    ],
+  },
+  {
     version: '0.17.0',
     date: '2026-09-20',
     title: 'Vlastní pořadí karet v detailech a opravené tlačítko Změnit',
