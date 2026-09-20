@@ -17,6 +17,8 @@ for (const engine of engines) {
   addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
   server.app.store.commit(sample);
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
+  assert.equal((await api(server.url).send('POST', '/api/spend/ledger', { service: 'chatgpt', kind: 'subscription', amount: '460', currency: 'CZK', date: new Date().toISOString().slice(0, 10), recurring: 'monthly', note: 'QA předplatné' })).status, 201);
+  server.app.alerts.raise({ key: 'qa:alert-hover', level: 'info', kind: 'system', title: 'Kontrola jemného zvýraznění', body: 'Tato položka ověřuje stav po najetí kurzorem.' });
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
@@ -44,8 +46,13 @@ for (const engine of engines) {
     await page.locator('[data-welcome-next]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     await page.reload();
-    await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
+    await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
+    await page.locator('#conn-pill').click();
+    await page.locator('#conn-pop:not([hidden])').waitFor();
+    assert.match(await page.locator('#conn-pop').textContent(), /Místní služba[\s\S]*Průběžné aktualizace[\s\S]*Rozšíření/, `${engine} diagnostika popisuje tři skutečné zdroje stavu`);
+    await page.keyboard.press('Escape');
+    await page.locator('#conn-pop').waitFor({ state: 'hidden' });
     for (const selector of ['.token-card', '.calm']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
     }
@@ -127,6 +134,10 @@ for (const engine of engines) {
     await page.keyboard.press('Escape');
     await page.locator('.palette').waitFor({ state: 'hidden' });
     await page.goto(`${server.url}/#/utrata`);
+    await page.locator('.spend-breakdown').waitFor();
+    const breakdownText = await page.locator('.spend-breakdown').textContent();
+    assert.match(breakdownText, /ChatGPT/, `${engine} rozpis předplatného říká službu`);
+    assert.match(breakdownText, /460/, `${engine} rozpis předplatného říká částku`);
     const budgetsButton = page.locator('button[data-action="budgets"]').first();
     await budgetsButton.click();
     await page.locator('.modal-scrim').waitFor();
@@ -163,6 +174,7 @@ for (const engine of engines) {
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
       if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
       if (route === 'nastaveni') {
+        assert.equal(await page.locator('.welcome-replay-art svg').count(), 1, `${engine} průvodce má vlastní orientační grafiku`);
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
         const choices = await page.locator('[data-avatar-pick]').evaluateAll((nodes) => nodes.map((el) => ({ value: el.dataset.avatarPick, name: el.getAttribute('aria-label') || el.title || el.textContent.trim() })));
         assert.ok(choices.length >= 25, `${engine} zachovává iniciály a kolekci avatarů`);
@@ -197,7 +209,7 @@ for (const engine of engines) {
         await page.reload();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
         await page.goto(`${server.url}/#/prehled`);
-        await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
+        await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
         await page.screenshot({ path: `dist/qa/${engine}-dark-overview.png`, fullPage: true });
         await page.setViewportSize({ width: 1440, height: 2560 });
         assert.equal(await page.locator('.nav a[aria-current="page"]').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} dark portrait bez trvalé výplně`);
@@ -222,6 +234,13 @@ for (const engine of engines) {
       }
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
+    await page.goto(`${server.url}/#/upozorneni`);
+    const alertTile = page.locator('.alert-item').first();
+    const alertRest = await alertTile.evaluate((el) => getComputedStyle(el).backgroundColor);
+    await alertTile.hover();
+    assert.notEqual(await alertTile.evaluate((el) => getComputedStyle(el).backgroundColor), alertRest, `${engine} upozornění se jemně rozsvítí jen po najetí`);
+    await page.goto(`${server.url}/#/nastaveni`);
+    await page.locator('[data-welcome]').waitFor();
     await page.locator('[data-welcome]').click();
     await page.locator('[data-welcome-skip]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
@@ -241,7 +260,7 @@ for (const engine of engines) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'connection diagnostics', 'subscription breakdown', 'alert hover', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

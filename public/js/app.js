@@ -48,6 +48,7 @@ const titleEl = document.getElementById('page-title');
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
 const connEl = document.getElementById('conn-pill');
+const connPop = document.getElementById('conn-pop');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
@@ -130,6 +131,7 @@ narrowMq.addEventListener('change', () => { if (!narrowMq.matches) closeSheet();
 function navigate() {
   const r = parseRoute();
   closePopover();
+  closeConnectionPanel();
   closeSheet();
   if (r.key !== currentKey) {
     current?.unmount?.();
@@ -239,12 +241,15 @@ function updateChrome() {
   // Na úzké obrazovce se vedle dlouhého názvu stránky nevejde celý popisek, ale samotná tečka
   // nic neříká. Každý stav má proto i krátkou variantu; přepíná se v CSS, ne v JavaScriptu.
   const STAVY = {
-    live: ['dot--live', 'Živě', 'Živě'],
+    live: ['dot--live', 'Připojeno', 'Připojeno'],
     connecting: ['dot', 'Připojuji…', 'Připojuji…'],
     down: ['dot--down', 'Obnovuji spojení…', 'Bez spojení'],
   };
-  const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
-  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  const status = conn === 'live' && state.loaded ? 'live' : conn === 'live' || conn === 'connecting' ? 'connecting' : 'down';
+  const [tecka, dlouhy, kratky] = STAVY[status];
+  setHtml(connEl, `<i class="dot ${tecka}" aria-hidden="true"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  connEl.setAttribute('aria-label', `${dlouhy}. Otevřít diagnostiku připojení`);
+  if (!connPop.hidden) renderConnectionPanel();
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : '<span class="source-state"><i class="dot dot--down"></i>Bez spojení se serverem</span>'}
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>Co je nového</span></button>` : ''}`);
@@ -363,6 +368,32 @@ function closePopover() {
   bell.setAttribute('aria-expanded', 'false');
 }
 
+function renderConnectionPanel() {
+  const live = state.connection === 'live' && state.loaded;
+  const local = live ? 'Odpovídá' : state.loaded ? 'Poslední data jsou uložená v okně' : 'Čeká na odpověď';
+  const stream = live ? 'Aktualizace přicházejí' : state.connection === 'connecting' ? 'Připojuje se' : 'Obnovuje spojení';
+  const ext = state.integrations?.extension?.state;
+  const extension = ext === 'active' ? 'Aktivní' : ext === 'ready' ? 'Spárováno, bez nové aktivity' : ext === 'quiet' ? 'Dlouho se neozvalo' : ext === 'missing' ? 'Nespárováno' : 'Stav zatím neznámý';
+  setHtml(connPop, `<div class="conn-pop-head"><strong>Stav propojení</strong><span class="conn-pop-state ${live ? 'is-ok' : 'is-down'}">${live ? 'Funguje' : 'Vyžaduje kontrolu'}</span></div>
+    <dl class="conn-diagnostics"><div><dt>Místní služba</dt><dd>${local}</dd></div><div><dt>Průběžné aktualizace</dt><dd>${stream}</dd></div><div><dt>Rozšíření</dt><dd>${extension}</dd></div></dl>
+    <p>Připojeno znamená, že toto zařízení dostává aktuální data z Agenteeq. Telefon potřebuje zapnutý a dostupný Mac.</p>
+    <a href="#/nastaveni" class="conn-pop-link">Nastavení propojení ${ICON.arrow}</a>`);
+}
+
+function closeConnectionPanel({ restoreFocus = false } = {}) {
+  if (connPop.hidden) return;
+  connPop.hidden = true;
+  connEl.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) connEl.focus();
+}
+
+function openConnectionPanel() {
+  closePopover();
+  renderConnectionPanel();
+  connPop.hidden = false;
+  connEl.setAttribute('aria-expanded', 'true');
+}
+
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
@@ -452,11 +483,13 @@ document.addEventListener('click', (e) => {
     else location.hash = '#/prehled';
     return;
   }
-  if (e.target.closest('#bell')) { if (pop.hidden) openPopover(); else closePopover(); return; }
+  if (e.target.closest('#conn-pill')) { if (connPop.hidden) openConnectionPanel(); else closeConnectionPanel(); return; }
+  if (e.target.closest('#bell')) { closeConnectionPanel(); if (pop.hidden) openPopover(); else closePopover(); return; }
   const item = e.target.closest('[data-alert-id]');
   if (item) markRead([item.dataset.alertId]);
   if (e.target.closest('[data-read-all]')) markRead('all');
   if (!pop.hidden && !e.target.closest('.bell-wrap')) closePopover();
+  if (!connPop.hidden && !e.target.closest('.conn-wrap')) closeConnectionPanel();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -469,6 +502,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.key === 'Escape' && !pop.hidden) { closePopover(); bell.focus(); return; }
+  if (e.key === 'Escape' && !connPop.hidden) { closeConnectionPanel({ restoreFocus: true }); return; }
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
   if (e.key === '/' && !typing && !palette.isOpen) {
     e.preventDefault();

@@ -216,7 +216,11 @@ function mount(el) {
         ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agenteeq</button>
+        <button class="welcome-replay" type="button" data-welcome aria-label="Otevřít průvodce Agenteeq">
+          <span class="welcome-replay-art" aria-hidden="true"><svg viewBox="0 0 112 64"><path d="M15 33h28c10 0 10-17 21-17h25"/><path d="M15 33h28c10 0 10 17 21 17h25"/><circle cx="15" cy="33" r="6"/><circle cx="89" cy="16" r="6"/><circle cx="89" cy="50" r="6"/></svg></span>
+          <span class="welcome-replay-copy"><span class="eyebrow">Začínáš nebo něco hledáš?</span><strong>Projdeme Agenteeq spolu.</strong><span>Krátká cesta funkcemi a propojením.</span></span>
+          <span class="welcome-replay-action">Otevřít průvodce ${ICON.arrow}</span>
+        </button>
         ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}

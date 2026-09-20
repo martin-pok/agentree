@@ -137,8 +137,8 @@ function plansHtml(sp) {
     </li>`;
   }).join('');
   return `<section class="card pad plans" aria-labelledby="plans-h">
-    <div class="sec-head"><h2 id="plans-h">Tvoje předplatná</h2><span class="muted small plan-rate">${rate}</span></div>
-    ${rows ? `<ul class="plan-list">${rows}</ul>` : '<p class="muted">Agenteeq zatím žádné předplatné nezjistil. Předplatné Claude pozná z přihlášeného Claude Code a plán ChatGPT z limitů Codexu. Ostatní si zapiš ručně tlačítkem Přidat výdaj.</p>'}
+    <div class="sec-head"><h2 id="plans-h">Předplatná</h2><span class="muted small plan-rate">${rate}</span></div>
+    ${rows ? `<ul class="plan-list">${rows}</ul>` : '<p class="muted">Agenteeq zatím nemá žádný rozpoznaný plán. Claude rozpozná z přihlášeného účtu a ChatGPT z limitů Codexu. Další předplatné přidej jako výdaj.</p>'}
   </section>`;
 }
 
@@ -166,7 +166,7 @@ function mount(el, _params, query) {
     <div data-enter style="--i:4" data-region="budgets"></div>
     <div class="grid-2 grid-2--wide" data-enter style="--i:5">
       <section class="card pad" aria-labelledby="mo-h"><div class="sec-head"><h2 id="mo-h">Posledních 6 měsíců</h2></div><div data-region="months"></div><div class="legend legend--static" data-region="mlegend"></div></section>
-      <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">Za co platíš</h2><span class="muted small">tento měsíc</span></div><div data-region="kinds"></div></section>
+      <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">Rozpis měsíční útraty</h2><span class="muted small">tento měsíc</span></div><div data-region="kinds"></div></section>
     </div>
     <section class="card pad" data-enter style="--i:6" aria-labelledby="led-h">
       <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
@@ -275,8 +275,14 @@ function update() {
   fill(el, 'mlegend', jeCoUkazat ? used.map((k) => `<span class="legend-item"><i class="swatch" style="background:${serviceColor(sp, k)}"></i>${esc(sp.services[k]?.label || k)}</span>`).join('') : '');
 
   const kinds = Object.entries(sp.month.kinds).filter(([, x]) => x > 0);
+  const subscriptions = Object.entries(sp.month.subscriptions || {}).filter(([, amount]) => amount > 0).sort((a, b) => b[1] - a[1]);
+  const subscriptionRows = subscriptions.length ? `<div class="spend-breakdown"><h3>Předplatná v tomto součtu</h3><ul>${subscriptions.map(([service, amount]) => {
+    const plan = (sp.subscriptions || []).find((p) => p.service === service && p.counted);
+    const label = plan?.label || sp.services[service]?.label || service;
+    return `<li><span class="spend-breakdown-name">${glyph(sp.services[service]?.provider || 'other')}<span>${esc(label)}${plan ? '<small>odhad podle ceníku</small>' : ''}</span></span><strong>${money(amount)}</strong></li>`;
+  }).join('')}</ul><p class="muted small">Zapsané platby a jednoznačně zjištěné plány. Odhady jsou bez DPH; skutečnou částku upravíš výše v Předplatných.</p></div>` : '';
   fill(el, 'kinds', kinds.length
-    ? donut({ segments: kinds.map(([k, x]) => ({ label: sp.kinds[k] || k, value: x, color: KIND_COLORS[k] || '#8A8594' })), center: fmtMoney(sp.month.total, sp.currency, { compact: true }), sub: 'tento měsíc', format: money, label: 'Útrata podle typu platby' })
+    ? donut({ segments: kinds.map(([k, x]) => ({ label: sp.kinds[k] || k, value: x, color: KIND_COLORS[k] || '#8A8594' })), center: fmtMoney(sp.month.total, sp.currency, { compact: true }), sub: 'tento měsíc', format: money, label: 'Útrata podle typu platby' }) + subscriptionRows
     : '<p class="muted">Tento měsíc zatím žádné výdaje.</p>');
 
   const credits = state.credits.filter((c) => c.history?.length >= 2);

@@ -114,7 +114,7 @@ export function validateBudgets(input, current) {
 }
 
 export function monthlyTotals(spend, months, autoEntries = []) {
-  const rows = months.map((key) => ({ key, total: 0, services: {}, kinds: {} }));
+  const rows = months.map((key) => ({ key, total: 0, services: {}, kinds: {}, subscriptions: {} }));
   const index = new Map(months.map((k, i) => [k, i]));
   const add = (key, e) => {
     const i = index.get(key);
@@ -124,6 +124,7 @@ export function monthlyTotals(spend, months, autoEntries = []) {
     row.total += v;
     row.services[e.service] = (row.services[e.service] || 0) + v;
     row.kinds[e.kind] = (row.kinds[e.kind] || 0) + v;
+    if (e.kind === 'subscription') row.subscriptions[e.service] = (row.subscriptions[e.service] || 0) + v;
   };
   for (const e of [...(spend.ledger || []), ...autoEntries]) {
     if (typeof e?.date !== 'string') continue;
@@ -139,6 +140,7 @@ export function monthlyTotals(spend, months, autoEntries = []) {
     row.total = round2(row.total);
     for (const k of Object.keys(row.services)) row.services[k] = round2(row.services[k]);
     for (const k of Object.keys(row.kinds)) row.kinds[k] = round2(row.kinds[k]);
+    for (const k of Object.keys(row.subscriptions)) row.subscriptions[k] = round2(row.subscriptions[k]);
   }
   return rows;
 }

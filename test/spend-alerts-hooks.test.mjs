@@ -32,6 +32,7 @@ test('měsíční součty: opakované předplatné, ukončení a převod měn', 
   const rows = monthlyTotals(sp, ['2026-06', '2026-07', '2026-08', '2026-09']);
   assert.deepEqual(rows.map((r) => r.total), [0, 460, 960, 0]);
   assert.equal(rows[2].services.claude, 500);
+  assert.equal(rows[2].subscriptions.chatgpt, 460, 'rozpis předplatného se shoduje s měsíčním součtem');
   assert.equal(convert(10, 'EUR', sp), 250);
   assert.equal(addMonths('2026-11', 3), '2027-02');
   assert.equal(addMonths('2026-01', -1), '2025-12');
