@@ -15,6 +15,14 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.15.0 – 2026-09-20 · čitelné ovládání, výřez obrázků, kalendář
+
+- **Klikatelný text:** `.link` je obrysové tlačítko (tmavé písmo, šipka u odkazů, vyplnění při najetí); souhrn „Všechny nástroje a služby“ je tlačítko s obrysem. Dřív šedý text, který se nedal poznat od popisku.
+- **Výřez obrázku** (`public/js/cropper.js`): okno v poměru výsledku (karta 7 : 2 → 1400 × 400 px, logo 512 × 512), posun tahem, přiblížení posuvníkem/kolečkem, „Celé logo“ / „Vyplnit“, varování při zvětšení zdroje nad 1,4×. Půlené zmenšování a WebP 0,92 (JPEG jako záloha). Doporučené rozměry v popisu. Náhled přes `data:` (CSP nepovoluje `blob:`). Karta má `aspect-ratio: 7 / 2`, takže ji už neořezává `object-fit`.
+- **Kalendář** (`public/js/datepicker.js`): nahrazuje systémový `<input type="date">`, hodnota zůstává RRRR-MM-DD, ovládání klávesnicí (šipky, PageUp/Down, Home/End, Enter, Esc zavře jen kalendář). Vzhled spouštěče a nabídky sdílí s výběrem z nabídky (`selects.js`, `.picker-*`).
+- **Poslední zadání:** bere celý text z přepisu (souhrn drží 280 znaků) a sbalí ho na 5 řádků s tlačítkem Zobrazit celé/Sbalit.
+- „⌀ za den“ u tokenů uvádí období (předchozích 7 dní). Podíly ve složení tokenů: „<1 %“ a „>99 %“ místo zaokrouhlení na 0 a 100.
+
 ## 0.14.0 – 2026-09-20 · předplatné a kurz v Útratě, čitelné složení tokenů
 
 - **Předplatné v Útratě:** `src/subscriptions.js` zjišťuje plán Claude z `~/.claude.json` (jen typ účtu a úroveň limitů, nic osobního) a plán ChatGPT z `plan_type` v limitech Codexu. Ceníková částka bez DPH jde do měsíčního součtu, předpovědi i grafu; ručně zapsané předplatné téže služby ji nahradí (žádné dvojí počítání). Nejednoznačná cena (ChatGPT Pro 100/200 $) se nepočítá, dokud ji uživatel nevybere. Zdroje cen a jejich stav jsou v docs/CONNECTORS.md.

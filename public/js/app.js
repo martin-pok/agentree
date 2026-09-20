@@ -5,6 +5,7 @@ import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } f
 import { glyph, ICON } from './icons.js';
 import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
+import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
@@ -589,6 +590,7 @@ document.addEventListener('drop', async (e) => {
 
 bindCharts(document);
 bindHeatmap(document);
+startDatePickers();
 
 // Překreslení pohledu je nejdražší práce v aplikaci a při běžícím agentovi chodí pořád. Kdyby
 // padlo doprostřed rolování, je z toho škubnutí přesně ve chvíli, kdy je nejvíc vidět. Během

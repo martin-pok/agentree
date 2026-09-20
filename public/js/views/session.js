@@ -8,7 +8,7 @@ import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 
-const v = { id: null, el: null, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
+const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
 const MAX_RENDERED = 400;
 
 // Bezpečný "markdown-lite": nejdřív escapovat, pak přidat jen kód, zvýraznění a odkazy http(s).
@@ -146,6 +146,11 @@ function mount(el, [id]) {
     v.follow = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     if (v.follow) jump.hidden = true;
   }, { passive: true });
+  el.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-quote-toggle]')) return;
+    v.quoteOpen = !v.quoteOpen;
+    update();
+  });
   el.querySelector('[data-tools]').addEventListener('change', (e) => list.classList.toggle('hide-tools', !e.target.checked));
   jump.addEventListener('click', () => {
     list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
@@ -292,6 +297,10 @@ function update() {
   const helperAgents = helpers.filter((x) => x.subagent?.kind !== 'review');
   const parent = s.parentId ? state.sessions.get(s.parentId) : null;
   const limits = limitGauges(state.limits, now, { size: 'sm', provider: s.provider });
+  // Souhrn drží jen prvních 280 znaků; celé zadání je v přepisu, který už je načtený.
+  const fullPrompt = t ? [...t.entries.values()].filter((e) => e.role === 'user' && e.text).sort((a, b) => b.seq - a.seq)[0]?.text : '';
+  const lastPrompt = fullPrompt && fullPrompt.length >= (s.lastPrompt || '').length ? fullPrompt : s.lastPrompt || '';
+  const longPrompt = lastPrompt.length > 240 || lastPrompt.split('\n').length > 4;
 
   const slot = el.querySelector('[data-reply-slot]');
   if (s.connector === 'local-chat' && s.chat?.available) {
@@ -343,7 +352,7 @@ function update() {
     ${hasTokens ? `<section class="card side-card" aria-labelledby="tok-h"><h3 id="tok-h">Složení tokenů</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
     ${hasTokens ? `<section class="card side-card" aria-labelledby="spark-h"><h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
     ${limits.length ? `<section class="card side-card" aria-labelledby="lim-h"><h3 id="lim-h">Limity</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
-    ${s.lastPrompt ? `<section class="card side-card" aria-labelledby="lp-h"><h3 id="lp-h">Poslední zadání</h3><blockquote class="quote">${esc(s.lastPrompt)}</blockquote></section>` : ''}
+    ${lastPrompt ? `<section class="card side-card" aria-labelledby="lp-h"><h3 id="lp-h">Poslední zadání</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? 'Sbalit zadání' : 'Zobrazit celé zadání'}</button>` : ''}</section>` : ''}
   `);
 }
 

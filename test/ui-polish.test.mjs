@@ -67,9 +67,10 @@ test('heatDetails spočítá dny, podíl nástroje a možné dny okna', async ()
 });
 
 test('obrázek projektu jinak než PNG, JPG a WebP se odmítne dřív, než se cokoli nahraje', async () => {
-  const src = await zdroj('public/js/projects-ui.js');
-  assert.match(src, /MEDIA_TYPES = \['image\/png', 'image\/jpeg', 'image\/webp'\]/);
+  const src = await zdroj('public/js/cropper.js');
+  assert.match(src, /TYPES = \['image\/png', 'image\/jpeg', 'image\/webp'\]/);
   assert.match(src, /Nahraj obrázek ve formátu PNG, JPG nebo WebP/);
+  assert.match(src, /cover: \{ w: 1400, h: 400/, 'karta má poměr 7 : 2 a rozlišení pro Retinu');
   const css = await zdroj('public/styles.css');
   for (const p of ['aurora', 'dune', 'noir', 'lagoon', 'ember', 'orchid', 'graphite', 'sage']) assert.match(css, new RegExp(`\\.cover--${p} \\{`), `chybí přechod ${p}`);
 });
@@ -87,9 +88,29 @@ test('složení tokenů má samostatné měřítko pro spotřebu a cache', async
   const { tokenBreakdown } = await import('../public/js/charts.js');
   const html = tokenBreakdown({ input: 11_000, output: 2_150_000, cacheWrite: 17_600_000, cacheRead: 1_140_000_000 });
   // Výstup je 99 % spotřeby a vstup 1 % – poměr se nesmí utopit pod čtením z cache.
-  assert.match(html, /Výstup[\s\S]*?99 %/);
-  assert.match(html, /Vstup[\s\S]*?1 %/);
+  assert.match(html, /Výstup[\s\S]*?>99 %/);
+  assert.match(html, /Vstup[\s\S]*?<1 %/);
   assert.match(html, /technická režie/);
   const bez = tokenBreakdown({ input: 5, output: 10 });
   assert.doesNotMatch(bez, /Cache/, 'bez cache se sekce nekreslí');
+});
+
+test('klikatelný text vypadá jako ovládací prvek a kalendář nahrazuje systémový', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.link \{[^}]*box-shadow: inset 0 0 0 1px var\(--line\)[^}]*color: var\(--ink\)/, 'odkaz nesmí být šedý popisek');
+  assert.match(css, /\.link:hover \{ background: var\(--ink-surface\)/, 'při najetí se plocha vyplní');
+  assert.match(css, /\.lim-all > summary \{[^}]*box-shadow: inset 0 0 0 1px var\(--line\)/);
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /startDatePickers\(\)/);
+  const dp = await zdroj('public/js/datepicker.js');
+  assert.match(dp, /inp\.type = 'text'/, 'systémový kalendář se nekreslí');
+  assert.doesNotMatch(dp, /select:not/, 'výběr z nabídky patří selects.js');
+});
+
+test('poslední zadání jde rozbalit a bere celý text z přepisu', async () => {
+  const s = await zdroj('public/js/views/session.js');
+  assert.match(s, /data-quote-toggle/);
+  assert.match(s, /role === 'user' && e\.text/);
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.quote\.is-clamped \{[^}]*-webkit-line-clamp: 5/);
 });

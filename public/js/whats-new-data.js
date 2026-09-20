@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.15.0',
+    date: '2026-09-20',
+    title: 'Čitelnější ovládání, výřez obrázků a vlastní kalendář',
+    items: [
+      'Odkazy jako „Detail“, „Zdroje dat“ nebo „Zobrazit vše“ vypadají jako tlačítka: mají obrys, šipku a při najetí myší se vyplní. Rozbalovací přehled limitů je taky tlačítko.',
+      'Obrázek projektu se ukládá s výřezem, který si sám nastavíš: obrázek posouváš tahem a přibližuješ posuvníkem, hned vidíš, co se uloží, a aplikace řekne doporučené rozměry i to, kdy by byl obrázek rozmazaný. Ukládá se ve vysokém rozlišení, takže je na kartě ostrý.',
+      'Datum se vybírá v kalendáři ve stylu aplikace místo systémového okna.',
+      'Poslední zadání v detailu agenta jde rozbalit celé a ukazuje celý text, ne jen prvních pár slov.',
+      'U průměru tokenů je napsáno, z jakého období vychází (předchozích 7 dní).',
+    ],
+  },
+  {
     version: '0.14.0',
     date: '2026-09-20',
     title: 'Předplatné v Útratě, aktuální kurz a čitelnější tokeny',

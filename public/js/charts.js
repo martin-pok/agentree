@@ -415,9 +415,9 @@ export function tokenBreakdown({ input = 0, output = 0, cacheWrite = 0, cacheRea
       <span class="tb-track"><i style="width:${value > 0 && max ? Math.max(2, (value / max) * 100).toFixed(1) : 0}%;background:${color}"></i></span>
     </li>`;
   const use = input + output;
-  const pct = (v) => (use ? `${Math.round((v / use) * 100)} %` : '');
+  const pct = (v) => { if (!use || !v) return ''; const p = (v / use) * 100; return p < 1 ? '<1 %' : p > 99 ? '>99 %' : `${Math.round(p)} %`; };
   const cacheMax = Math.max(cacheWrite, cacheRead);
-  const cshare = (v) => (cacheWrite + cacheRead ? `${Math.round((v / (cacheWrite + cacheRead)) * 100)} %` : '');
+  const cshare = (v) => { const all = cacheWrite + cacheRead; if (!all || !v) return ''; const p = (v / all) * 100; return p < 1 ? '<1 %' : p > 99 ? '>99 %' : `${Math.round(p)} %`; };
   return `<div class="tb" role="group" aria-label="Složení tokenů">
     <p class="tb-head"><span>Spotřeba</span><b>${fmtTok(use)}</b></p>
     <ul class="tb-list">${row('Vstup', input, use, 'var(--ink)', pct(input))}${row('Výstup', output, use, outputColor, pct(output))}</ul>

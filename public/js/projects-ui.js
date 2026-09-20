@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { esc, shortPath, plural, jeAbsolutniCesta, castiCesty } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
 import { modal, toast } from './ui.js';
+import { openCropper, TARGETS } from './cropper.js';
 import { sessionTotal, needsYou } from './data.js';
 
 // Rada u ručně zadané cesty musí ukazovat tvar, který na daném systému opravdu platí.
@@ -170,31 +171,6 @@ export const projectMark = (p, cls = '') => {
     : pdot(p, cls);
 };
 
-const MEDIA_LIMIT = { cover: { max: 1280, bytes: 4_000_000 }, logo: { max: 512, bytes: 1_500_000 } };
-const MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-
-// Fotka z telefonu má klidně 8 MB. Než se nahraje, zmenší se na velikost, kterou karta vůbec
-// zobrazí, takže uživatel nedostane chybu „příliš velký“ u obrázku, který je prostě jen moc pixelů.
-export async function prepareImage(file, kind) {
-  if (!MEDIA_TYPES.includes(file.type)) throw new Error('Nahraj obrázek ve formátu PNG, JPG nebo WebP.');
-  const lim = MEDIA_LIMIT[kind];
-  let bmp;
-  try { bmp = await createImageBitmap(file); } catch { throw new Error('Tenhle obrázek se nepodařilo přečíst. Zkus jiný soubor.'); }
-  const scale = Math.min(1, lim.max / Math.max(bmp.width, bmp.height));
-  if (scale === 1 && file.size <= lim.bytes) { bmp.close?.(); return file; }
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(bmp.width * scale));
-  canvas.height = Math.max(1, Math.round(bmp.height * scale));
-  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  bmp.close?.();
-  const blob = await new Promise((res) => (kind === 'logo' ? canvas.toBlob(res, 'image/png') : canvas.toBlob(res, 'image/webp', 0.86)));
-  if (!blob) throw new Error('Obrázek se nepodařilo zmenšit.');
-  if (blob.size > lim.bytes) throw new Error('Obrázek je i po zmenšení příliš velký. Zkus jednodušší.');
-  return blob;
-}
-
-const dataUrl = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
-
 /* ---------- Formulář projektu ---------- */
 
 export function projectForm(existing = null) {
@@ -218,9 +194,10 @@ export function projectForm(existing = null) {
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
           <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
-          <span class="media-text"><b>${kind === 'cover' ? 'Obrázek karty' : 'Logo klienta'}</b><small>${kind === 'cover' ? 'Nahradí přechod nahoře na kartě. PNG, JPG nebo WebP; velký obrázek se zmenší.' : 'Objeví se na kartě místo barevné tečky. Nejlépe čtvercové.'}</small></span>
+          <span class="media-text"><b>${kind === 'cover' ? 'Obrázek karty' : 'Logo klienta'}</b><small>${esc(TARGETS[kind].hint)} ${kind === 'cover' ? 'Nahradí přechod nahoře na kartě.' : 'Objeví se místo barevné tečky.'}</small></span>
           <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>Nahrát</button><button class="btn btn--sm" type="button" data-media-remove hidden>Odebrat</button></span>
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
+          <div class="media-crop" data-media-crop hidden></div>
         </div>`).join('')}
       </div>
       <p class="form-sub">Složky projektu</p>
@@ -230,6 +207,7 @@ export function projectForm(existing = null) {
       <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}Přidat složku</button>
       <div class="folder-browser" id="${id}-fb" hidden></div>`,
     onSubmit: async (form) => {
+      if ([...document.querySelectorAll('[data-media-crop]')].some((h) => !h.hidden)) throw new Error('Dokonči výřez obrázku: Použít výřez, nebo Zrušit.');
       const body = {
         name: form.elements.name.value,
         description: form.elements.description.value,
@@ -278,9 +256,11 @@ export function projectForm(existing = null) {
       input.value = '';
       if (!file) return;
       try {
-        const blob = await prepareImage(file, kind);
-        pending[kind] = { blob, url: await dataUrl(blob) };
-        paintMedia(kind);
+        const result = await openCropper(row.querySelector('[data-media-crop]'), kind, file);
+        if (result) {
+          pending[kind] = result;
+          paintMedia(kind);
+        }
       } catch (err) {
         toast(err.message, { tone: 'err' });
       }
