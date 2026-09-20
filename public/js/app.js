@@ -1,7 +1,7 @@
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
-import { esc, rel, clock, norm, initials, startOfDay, plural, STATUS } from './format.js';
+import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
 import { bindCharts, restoreHover } from './charts.js';
@@ -271,8 +271,22 @@ function renderProfile(name, working, all) {
   </button>`);
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
   if (hadFocus && !document.activeElement?.closest?.('[data-avatar-cycle]')) slot.querySelector('button')?.focus({ preventScroll: true });
+  // Číslo bez zdroje vypadá jako útrata a nedá se ověřit. Pod ním proto stojí, který nástroj ho způsobil
+  // (jeden agent Codexu v noci klidně udělá milion tokenů), a v popisku je řečeno, co číslo znamená.
+  const dnes = startOfDay(Date.now());
+  const podleNastroje = new Map();
+  for (const s of all) {
+    const n = tokensSince([s], dnes);
+    if (n > 0) {
+      const nastroj = String(s.app || 'Ostatní').split(' · ')[0];
+      podleNastroje.set(nastroj, (podleNastroje.get(nastroj) || 0) + n);
+    }
+  }
+  const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, startOfDay(Date.now())), 'tok')}</div><div class="budget-label">tokenů dnes</div></div>`);
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">tokenů dnes</div>${zdroje.length
+    ? `<a class="budget-src" href="#/statistiky" title="Vstup + výstup z přepisů na tomto Macu, bez cache. Není to cena ani limit předplatného.">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
+    : ''}</div>`);
 }
 
 // Přepisování časových údajů je jediná práce, kterou aplikace dělá sama od sebe pořád dokola.

@@ -169,6 +169,11 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    chyba. Když na sebe vedle sebe nezbude místo, popisek se přesune celý pod číslo. */
 .budget-num { font: 400 34px/1.1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .budget-label { color: var(--mute); font-size: 14px; white-space: nowrap; }
+/* Odkud číslo je: které nástroje ho dnes způsobily. Odkaz vede do Statistik, kde je celý rozpis. */
+.budget-src { display: grid; gap: 2px; margin-top: 8px; color: var(--mute); font-size: 12px; line-height: 1.4; text-decoration: none; }
+.budget-src b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.budget-src:hover span { color: var(--ink); }
+@media (max-width: 880px) { .budget-src { flex: 1 0 100%; grid-auto-flow: column; justify-content: start; gap: 4px 12px; margin-top: 4px; } }
 /* Nabídka je pružná část karty: vezme si, co zbude, a když je toho málo, roluje se sama.
    Posuvník schováváme – na kartě by rušil a hranici tvoří linka nad stavem spojení. */
 .nav { margin-top: 32px; display: grid; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
