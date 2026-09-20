@@ -5,6 +5,7 @@ import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
+import { watchBalance } from '../balance.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
 import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
@@ -58,7 +59,7 @@ function mount(el) {
   <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
   <div class="ov">
-    <div class="ov-col">
+    <div class="ov-col bal-col">
       <section data-enter style="--i:2" aria-labelledby="dec-h">
         <div class="sec-head"><h2 id="dec-h">Potřebuje tvé rozhodnutí</h2><a class="link" href="#/agenti?stav=needs_input">Všechny</a></div>
         <div data-region="decisions"></div>
@@ -77,15 +78,19 @@ function mount(el) {
         <p class="note note--tight">Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity – ty najdeš v <a class="link-inline" href="#/utrata">Útratě</a>.</p>
       </section>
     </div>
-    <div class="ov-col">
+    <div class="ov-col bal-col">
       <section data-enter style="--i:4" aria-labelledby="td-h">
         <div class="sec-head"><h2 id="td-h">Kam dnes šly tokeny</h2><a class="link" href="#/statistiky">Statistiky</a></div>
         <div class="card pad" data-region="today-apps"></div>
       </section>
       <section data-enter style="--i:4" data-region="limits" aria-label="Limity předplatných"></section>
-      <section data-enter style="--i:4" aria-labelledby="sp-h">
+      <section data-enter style="--i:4" aria-labelledby="sp-h" data-float>
         <div class="sec-head"><h2 id="sp-h">Útrata tento měsíc</h2><a class="link" href="#/utrata">Detail</a></div>
         <div class="card spend-mini" data-region="spend"></div>
+      </section>
+      <section data-enter style="--i:5" aria-labelledby="act-h" data-float>
+        <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
+        <ul class="activity" data-region="activity"></ul>
       </section>
     </div>
   </div>
@@ -93,10 +98,8 @@ function mount(el) {
     <div class="sec-head"><h2 id="rt-h">Běží na tomto Macu</h2><a class="link" href="#/nastaveni">Zdroje dat</a></div>
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
-  <section class="ov-wide" data-enter style="--i:6" aria-labelledby="act-h">
-    <div class="sec-head"><h2 id="act-h">Poslední aktivita</h2><a class="link" href="#/agenti">Zobrazit vše</a></div>
-    <ul class="activity" data-region="activity"></ul>
-  </section>`;
+`;
+  v.unwatch = watchBalance(el.querySelector('.ov'));
   const sel = el.querySelector('[data-action="period"]');
   sel.value = v.period;
   sel.addEventListener('change', () => {
@@ -340,7 +343,8 @@ export default {
   update,
   unmount: () => {
     clearTimeout(v.chartTimer);
+    v.unwatch?.();
     v.launcher?.destroy();
-    Object.assign(v, { el: null, launcher: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
+    Object.assign(v, { el: null, launcher: null, unwatch: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
   },
 };

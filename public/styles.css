@@ -806,6 +806,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .kpi small { display: block; margin-top: 8px; color: var(--mute); font-size: 13px; }
 .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; margin: 32px 0; }
 .grid-2--wide { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.bal-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.st-cards { align-items: start; }
 .heat { position: relative; display: grid; gap: 4px; }
 .heat-row { display: grid; grid-template-columns: 24px repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center; }
 .heat-day { font-size: 11px; color: var(--mute); transition: color .18s; }
@@ -950,7 +952,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 [aria-labelledby="cr-h"], [aria-labelledby="led-h"] { margin-top: 32px; }
 
 /* ---------- Útrata ---------- */
-.spend-hero { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: center; padding: 32px 40px; }
+.spend-hero { margin-bottom: 24px; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: center; padding: 32px 40px; }
 .spend-ring .gauge-sub { display: none; }
 .spend-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
 .spend-stats .eyebrow { display: block; }

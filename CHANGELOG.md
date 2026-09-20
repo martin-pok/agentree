@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.15.2 – 2026-09-20 · vyvážené sloupce
+
+- `public/js/balance.js`: sekce `data-float` v kontejneru se dvěma `.bal-col` se rozdělí mezi sloupce tak, aby byl rozdíl výšek nejmenší (všechna rozdělení, práh 40 px proti poskakování, `ResizeObserver`). Jeden sloupec: původní pořadí. Použito na Přehledu (Útrata, Poslední aktivita) a ve Statistikách (čtyři žebříčky místo dvou natažených řad, které nechávaly prázdná místa uvnitř karet). Testy v `overview-layout.test.mjs`.
+- Útrata: mezera pod souhrnem.
+
 ## 0.15.1 – 2026-09-20 · Dovednosti, přepínače, horní pás
 
 - **Regrese z 0.15.0:** `.link` v horním pásu Přehledu (tmavá plocha) dostal bílé pozadí a světlý text i dvojitou šipku; `.pulse-bar .pb-all` má vlastní variantu a `.link:has(.icon)::after` se skrývá. Test `ui-polish`.

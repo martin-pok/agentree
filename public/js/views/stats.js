@@ -5,6 +5,7 @@ import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
+import { watchBalance } from '../balance.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
@@ -24,13 +25,15 @@ function mount(el) {
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
     </section>
-    <div class="grid-2" data-enter style="--i:4">
-      <section class="card pad" aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">Kdy agenti pracují</h2><span class="muted small">30 dní</span></div><div data-region="heat"></div></section>
-      <section class="card pad" aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
-    </div>
-    <div class="grid-2" data-enter style="--i:5">
-      <section class="card pad" aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Tokeny podle složky</h2></div><div data-region="projects"></div></section>
-      <section class="card pad" aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Tokeny podle modelu</h2></div><div data-region="models"></div></section>
+    <div class="grid-2 st-cards" data-enter style="--i:4">
+      <div class="bal-col">
+        <section class="card pad" data-float aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">Kdy agenti pracují</h2><span class="muted small">30 dní</span></div><div data-region="heat"></div></section>
+        <section class="card pad" data-float aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Tokeny podle složky</h2></div><div data-region="projects"></div></section>
+      </div>
+      <div class="bal-col">
+        <section class="card pad" data-float aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
+        <section class="card pad" data-float aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Tokeny podle modelu</h2></div><div data-region="models"></div></section>
+      </div>
     </div>
     <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
       <div class="sec-head"><h2 id="lim-h">Limity a kredity</h2></div>
@@ -38,6 +41,8 @@ function mount(el) {
       <div data-region="usage-history"></div>
     </section>
     <p class="note">Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří – najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.</p>`;
+  v.unwatch?.();
+  v.unwatch = watchBalance(el.querySelector('.st-cards'));
   el.addEventListener('click', (e) => {
     const p = e.target.closest('[data-period]');
     if (p) { v.period = p.dataset.period; v.drawn = false; update(); return; }
@@ -151,4 +156,4 @@ function update() {
   fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${gauges.length || creditCharts.length ? coverageNote() : ''}${limitsAll(state, now)}`);
 }
 
-export default { id: 'statistiky', title: 'Statistiky', mount, update, unmount: () => { v.el = null; } };
+export default { id: 'statistiky', title: 'Statistiky', mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };

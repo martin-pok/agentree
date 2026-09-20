@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.15.2',
+    date: '2026-09-20',
+    title: 'Vyvážené sloupce bez prázdných ploch',
+    items: [
+      'Přehled i Statistiky si srovnávají sloupce karet podle skutečné výšky obsahu. Útrata a Poslední aktivita (v Přehledu) a čtveřice žebříčků (ve Statistikách) se přesunou tam, kde je právě míň místa, takže pod kratším sloupcem nezůstává prázdná plocha.',
+      'Přesun se dělá jen při znatelném rozdílu, ať karty neskáčou. Na telefonu jde všechno pod sebe ve stejném pořadí jako dřív.',
+      'Karty na stránce Útrata mají mezi sebou stejné mezery.',
+    ],
+  },
+  {
     version: '0.15.1',
     date: '2026-09-20',
     title: 'Přehlednější Dovednosti, výraznější přepínače a živější horní pás',
