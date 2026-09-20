@@ -151,7 +151,7 @@ function update() {
         <ul class="checklist"><li>Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt</li><li>Podklady projektu po ruce, když spouštíš dalšího agenta</li><li>Export do CSV jako podklad k vyúčtování klientovi</li></ul>
         <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Vytvořit první projekt</button>
       </div>
-      <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#C99A3E"></span></div>
+      <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#F2B824"></span></div>
     </div>`);
   } else if (!list.length) {
     fill(el, 'grid', `<div class="card">${emptyState({ title: q ? 'Žádný projekt neodpovídá hledání' : 'V archivu nic není', text: q ? 'Zkus jiný název nebo složku.' : '' })}</div>`);
