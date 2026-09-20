@@ -238,7 +238,7 @@ export function createLauncher(root) {
     const mode = modeOf(t);
     const text = promptEl.value.trim();
     if (!text) {
-      toast('Napiš, co má agent udělat.');
+      toast('Napiš, co má agent udělat.', { tone: 'info' });
       promptEl.focus();
       return;
     }
@@ -268,7 +268,7 @@ export function createLauncher(root) {
       promptEl.value = '';
       persist();
       const detail = r.sessionId ? { action: { label: 'Přepis', href: agentHref(r.sessionId) } } : {};
-      if (r.dry) toast(`Zkušební režim: ${r.label} by se spustil (${state.launch.modes[mode] || mode}).`);
+      if (r.dry) toast(`Zkušební režim: ${r.label} by se spustil (${state.launch.modes[mode] || mode}).`, { tone: 'info' });
       else if (r.kind === 'local') location.hash = agentHref(r.sessionId);
       else if (r.kind === 'background') toast(`${r.label} pracuje na pozadí`, detail);
       else if (r.kind === 'terminal') toast(`${r.label} běží v Terminálu`, detail);

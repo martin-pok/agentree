@@ -362,12 +362,12 @@ function mount(el) {
         if (await confirmDialog({ title: 'Smazat historii upozornění', message: 'Všechna uložená upozornění zmizí z tohoto Macu. Práci agentů to nijak neovlivní.', confirmLabel: 'Smazat', danger: true })) {
           const r = await api.clearAlerts();
           state.alerts = { unread: r.unread, items: [] };
-          toast(r.cleared ? `Smazáno ${r.cleared} upozornění` : 'Nebylo co mazat');
+          toast(r.cleared ? `Smazáno ${r.cleared} upozornění` : 'Nebylo co mazat', r.cleared ? {} : { tone: 'info' });
           update();
         }
       } else if (a.dataset.action === 'remote-detect') {
         state.tunnels = (await api.detectRemote()).tunnels;
-        toast(state.tunnels.list.some((x) => x.installed) ? 'Zjištěno' : 'Žádný nástroj pro vzdálený přístup není nainstalovaný');
+        { const nalezen = state.tunnels.list.some((x) => x.installed); toast(nalezen ? 'Zjištěno' : 'Žádný nástroj pro vzdálený přístup není nainstalovaný', nalezen ? {} : { tone: 'info' }); }
         update();
       } else if (a.dataset.action === 'lan-pin') {
         v.pin = (await api.lanPin()).pin;

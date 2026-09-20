@@ -4,7 +4,7 @@ import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY, jeA
 import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
-import { projectHref, pdot, projectStats, logoStack, projectForm } from '../projects-ui.js';
+import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark } from '../projects-ui.js';
 
 const v = { el: null, tab: 'active', q: '' };
 
@@ -52,7 +52,8 @@ function cardHtml(p, now) {
   const spark = dailyActivity(st.live, now);
   const hasSpark = spark.some((x) => x > 0);
   return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(p.color)}" data-project-drop="${esc(p.id)}">
-    <span class="pcard-top">${pdot(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
+    ${projectCover(p)}
+    <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="Potřebuje tvé rozhodnutí">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="Právě pracuje"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : 'Ručně zařazené konverzace'))}</span>
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>

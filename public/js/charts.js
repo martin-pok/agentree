@@ -270,14 +270,80 @@ export function gauge({ pct, color, value, label, sub = '', size = 'md', reached
   </div>`;
 }
 
-export function heatmap(grid2, { format = fmtTok } = {}) {
+const DNY_PLNE = ['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'];
+const hodina = (h) => `${h}:00–${h + 1}:00`;
+
+export function heatmap(grid2, { format = fmtTok, details } = {}) {
   const max = Math.max(1, ...grid2.flat());
   const days = ['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'];
   const rows = grid2
-    .map((row, d) => `<div class="heat-row"><span class="heat-day">${days[d]}</span>${row.map((v, h) => `<i class="heat-cell" style="--v:${(v / max).toFixed(3)}" title="${days[d]} ${h}:00 · ${esc(format(v))}"></i>`).join('')}</div>`)
+    .map((row, d) => `<div class="heat-row" data-d="${d}"><span class="heat-day">${days[d]}</span>${row.map((v, h) => {
+      const x = details?.[d]?.[h];
+      const pieces = x ? [v, x.dny, x.mozne, x.top ? x.top.app : '', x.top ? Math.round(x.top.share * 100) : 0].join('|') : String(v);
+      return `<i class="heat-cell" data-h="${h}" data-x="${esc(pieces)}" style="--v:${(v / max).toFixed(3)}" aria-hidden="true"></i>`;
+    }).join('')}</div>`)
     .join('');
-  const hours = Array.from({ length: 24 }, (_, h) => `<span>${h % 6 === 0 ? h : ''}</span>`).join('');
-  return `<div class="heat" role="img" aria-label="Aktivita agentů podle dne v týdnu a hodiny">${rows}<div class="heat-row heat-hours"><span class="heat-day"></span>${hours}</div></div>`;
+  const hours = Array.from({ length: 24 }, (_, h) => `<span data-h="${h}">${h % 6 === 0 ? h : ''}</span>`).join('');
+  // Nejsilnější hodina se řekne slovy, protože buňky samotné čtečka obrazovky nepřečte.
+  let best = { v: 0, d: 0, h: 0 };
+  grid2.forEach((row, d) => row.forEach((v, h) => { if (v > best.v) best = { v, d, h }; }));
+  const summary = best.v > 0
+    ? `Aktivita agentů podle dne v týdnu a hodiny. Nejvíc práce: ${DNY_PLNE[best.d]} ${hodina(best.h)}, ${format(best.v)}.`
+    : 'Aktivita agentů podle dne v týdnu a hodiny. Za posledních 30 dní zatím žádná.';
+  return `<div class="heat" role="img" aria-label="${esc(summary)}" data-max="${max}">${rows}<div class="heat-row heat-hours"><span class="heat-day"></span>${hours}</div><div class="heat-tip" hidden></div></div>`;
+}
+
+// Ukazuje podrobnosti přejeté buňky. Jeden posluchač na dokumentu, buňky se překreslují často.
+export function bindHeatmap(root = document) {
+  let cur = null;
+  const tipOf = (heat) => heat.querySelector('.heat-tip');
+  const unmark = () => {
+    if (!cur) return;
+    const heat = cur.closest('.heat');
+    cur.closest('.heat-row')?.querySelector('.heat-day')?.classList.remove('is-hot');
+    heat?.querySelectorAll('.heat-hours span.is-hot').forEach((n) => n.classList.remove('is-hot'));
+  };
+  const hide = () => {
+    if (!cur) return;
+    const tip = tipOf(cur.closest('.heat'));
+    unmark();
+    if (tip) tip.hidden = true;
+    cur = null;
+  };
+  const show = (cell) => {
+    if (cell === cur) return;
+    unmark(); // tooltip zůstává, jen se přesune: mezi buňkami nemá blikat
+    cur = cell;
+    const heat = cell.closest('.heat');
+    const tip = tipOf(heat);
+    if (!tip) return;
+    const d = Number(cell.closest('.heat-row').dataset.d);
+    const h = Number(cell.dataset.h);
+    const [v, dny, mozne, app, podil] = cell.dataset.x.split('|');
+    const tokens = Number(v);
+    cell.closest('.heat-row').querySelector('.heat-day')?.classList.add('is-hot');
+    heat.querySelector(`.heat-hours span[data-h="${h}"]`)?.classList.add('is-hot');
+    tip.innerHTML = `<span class="tip-label">${esc(DNY_PLNE[d])} · ${esc(hodina(h))}</span>
+      <b class="heat-tip-num">${tokens > 0 ? `${esc(fmtTok(tokens))} <small>tokenů</small>` : 'Nic se nedělo'}</b>
+      ${tokens > 0 && mozne ? `<span class="tip-row">Pracovali ${esc(dny)} z ${esc(mozne)} ${Number(mozne) === 1 ? 'dne' : 'dní'}</span>` : ''}
+      ${tokens > 0 && app ? `<span class="tip-row">Nejvíc ${esc(app)} <b>${esc(podil)} %</b></span>` : ''}`;
+    tip.hidden = false;
+    const box = heat.getBoundingClientRect();
+    const c = cell.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const left = Math.min(Math.max(c.left - box.left + c.width / 2 - w / 2, 0), Math.max(0, box.width - w));
+    const nad = c.top - box.top - tip.offsetHeight - 12;
+    tip.style.left = `${Math.round(left)}px`;
+    // Nahoře není místo (první řádek): tooltip jde pod buňku.
+    tip.style.top = `${Math.round(nad >= -8 ? nad : c.bottom - box.top + 12)}px`;
+  };
+  root.addEventListener('pointerover', (e) => {
+    const cell = e.target.closest?.('.heat-cell');
+    if (cell) show(cell);
+    else if (cur && !e.target.closest?.('.heat-tip')) hide();
+  });
+  root.addEventListener('pointerout', (e) => { if (!e.relatedTarget) hide(); });
+  root.addEventListener('scroll', hide, true);
 }
 
 export function hbars(items, { format = fmtTok, max } = {}) {

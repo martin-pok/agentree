@@ -5,7 +5,7 @@ import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy } from '../ui.js';
 import { sessionTotal, needsYou } from '../data.js';
-import { pdot, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
+import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
 
 const v = { el: null, id: null, filter: 'all', saveTimer: null, saving: false, savedAt: 0 };
 
@@ -37,7 +37,7 @@ function rowHtml(s, now) {
 async function addSessionsDialog(p) {
   const candidates = agentsList().filter((s) => s.projectId !== p.id);
   if (!candidates.length) {
-    toast('Všechny sledované konverzace už v projektu jsou.');
+    toast('Všechny sledované konverzace už v projektu jsou.', { tone: 'info' });
     return;
   }
   const id = `add${Math.random().toString(36).slice(2, 8)}`;
@@ -152,7 +152,7 @@ function mount(el, [id]) {
           location.hash = '#/prehled';
           break;
         case 'copy-brief':
-          if (!textarea.value.trim()) { toast('Podklady jsou zatím prázdné.'); textarea.focus(); break; }
+          if (!textarea.value.trim()) { toast('Podklady jsou zatím prázdné.', { tone: 'info' }); textarea.focus(); break; }
           await copy(`Podklady projektu ${p.name}:\n${textarea.value.trim()}`, 'Podklady zkopírovány – vlož je do zadání agenta');
           break;
         case 'archive': {
@@ -204,7 +204,7 @@ function update() {
   const st = projectStats(p, now);
 
   fill(el, 'head', `
-    <div class="project-kicker">${pdot(p, 'pdot--lg')}<span>Projekt</span>${p.archived ? '<span class="badge">Archiv</span>' : ''}<span class="dot-sep"></span><span>založen ${dateLong(p.createdAt)}</span></div>
+    <div class="project-kicker">${projectMark(p, 'pdot--lg')}<span>Projekt</span>${p.archived ? '<span class="badge">Archiv</span>' : ''}<span class="dot-sep"></span><span>založen ${dateLong(p.createdAt)}</span></div>
     <h2 class="session-title">${esc(p.name)}</h2>
     ${p.description ? `<p class="project-desc">${esc(p.description)}</p>` : ''}
     <div class="session-actions">

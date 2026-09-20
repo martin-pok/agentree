@@ -82,21 +82,42 @@ export function tweenAll(root) {
 
 /* ---------- Toasty, schránka ---------- */
 
+// Jedna zpráva naráz: druhá vždy nahradí první, jinak by se pod sebou hromadily čtyři černé
+// pruhy po rychlých klicích. Druh zprávy (ikona a barva) se odvozuje z `tone`:
+//   ink (výchozí) = povedlo se, velvet/coral = chyba, info = poznámka bez úspěchu, action = upozornění agenta.
+const TOAST_KIND = { ink: 'ok', ok: 'ok', velvet: 'err', coral: 'err', err: 'err', info: 'info', action: 'action' };
+const TOAST_ICON = () => ({ ok: ICON.check, err: ICON.alert, info: ICON.info, action: ICON.bell });
+let toastTimer = 0;
+
 export function toast(message, { tone = 'ink', action, timeout = 4000 } = {}) {
   const box = document.getElementById('toasts');
+  if (!box) return;
+  const kind = TOAST_KIND[tone] || 'ok';
+  const prev = box.firstElementChild;
+  clearTimeout(toastTimer);
+  // Totéž hlášení znovu (třeba opakované „Nabídka obnovena“) jen zopakuje pohyb, nic se nemění.
+  if (prev && !prev.classList.contains('is-leaving') && prev.dataset.kind === kind && prev.querySelector('.toast-text')?.textContent === message && !action && !prev.querySelector('.toast-action')) {
+    prev.classList.remove('is-bump');
+    void prev.offsetWidth;
+    prev.classList.add('is-bump');
+    if (timeout) toastTimer = setTimeout(() => prev.isConnected && prev.querySelector('.toast-close')?.click(), timeout);
+    return;
+  }
+  box.replaceChildren();
   const el = document.createElement('div');
-  el.className = `toast toast--${tone}`;
-  el.innerHTML = `<span class="toast-text">${esc(message)}</span>${action ? `<a class="toast-action" href="${esc(action.href)}">${esc(action.label)}</a>` : ''}<button class="toast-close" type="button" aria-label="Zavřít">${ICON.close}</button>`;
+  el.className = `toast toast--${kind}`;
+  el.dataset.kind = kind;
+  el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  el.innerHTML = `<span class="toast-icon" aria-hidden="true">${TOAST_ICON()[kind]}</span><span class="toast-text">${esc(message)}</span>${action ? `<a class="toast-action" href="${esc(action.href)}">${esc(action.label)}</a>` : ''}<button class="toast-close" type="button" aria-label="Zavřít">${ICON.close}</button>`;
   const remove = () => {
-    if (!el.isConnected) return;
+    if (!el.isConnected || el.classList.contains('is-leaving')) return;
     el.classList.add('is-leaving');
     setTimeout(() => el.remove(), 240);
   };
   el.querySelector('.toast-close').addEventListener('click', remove);
   el.querySelector('.toast-action')?.addEventListener('click', remove);
   box.appendChild(el);
-  while (box.children.length > 4) box.firstElementChild.remove();
-  if (timeout) setTimeout(remove, timeout);
+  if (timeout) toastTimer = setTimeout(remove, timeout);
 }
 
 export async function copy(text, message = 'Zkopírováno do schránky') {

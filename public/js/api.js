@@ -68,6 +68,19 @@ export const api = {
   autostart: (action) => request('POST', `/api/integrations/autostart/${action}`, {}),
   revealInstallPackage: () => request('POST', '/api/install/reveal', {}),
   folders: (path = '') => request('GET', `/api/fs/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+  // Obrázek jde jako surové bajty (ne JSON), server ho pozná podle obsahu a ne podle přípony.
+  async setProjectMedia(id, kind, blob) {
+    let res;
+    try {
+      res = await fetch(`/api/projects/${encodeURIComponent(id)}/media/${kind}`, { method: 'PUT', headers: { 'X-Agenteeq': '1', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+    } catch {
+      throw new Error('Server Agenteeq neodpovídá. Obrázek se nenahrál.');
+    }
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json?.error || `Obrázek se nenahrál (chyba ${res.status}).`);
+    return json;
+  },
+  removeProjectMedia: (id, kind) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/media/${kind}`),
   projectGit: (id) => request('GET', `/api/projects/${encodeURIComponent(id)}/git`),
   team: (id, body) => request('POST', `/api/projects/${encodeURIComponent(id)}/team`, body),
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),

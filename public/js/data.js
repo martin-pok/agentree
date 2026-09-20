@@ -79,6 +79,33 @@ export function providerSeries(sessions, period, now, hidden = new Set()) {
 }
 
 // Mřížka den v týdnu (pondělí první) × hodina.
+// Podrobnosti ke každé buňce mapy: kolik tokenů, v kolika dnech z možných tam agent pracoval
+// a který nástroj na tom měl největší podíl. Počítá se ze stejných hodinových přihrádek jako mřížka.
+export function heatDetails(sessions, now, days = 30) {
+  const since = startOfDay(now - (days - 1) * DAY);
+  const cells = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => ({ tokens: 0, dny: new Set(), apps: new Map() })));
+  for (const s of sessions) {
+    const app = String(s.app || 'Ostatní').split(' · ')[0];
+    for (const k in s.hourly) {
+      const ts = hourTs(k);
+      const v = s.hourly[k];
+      if (ts < since || !(v > 0)) continue;
+      const d = new Date(ts);
+      const c = cells[(d.getDay() + 6) % 7][d.getHours()];
+      c.tokens += v;
+      c.dny.add(startOfDay(ts));
+      c.apps.set(app, (c.apps.get(app) || 0) + v);
+    }
+  }
+  // Kolikrát se který den v týdnu v okně vyskytl (30 dní nemá vždy stejný počet pondělí).
+  const mozne = new Array(7).fill(0);
+  for (let t = since; t <= now; t += DAY) mozne[(new Date(t).getDay() + 6) % 7]++;
+  return cells.map((row, d) => row.map((c) => {
+    const top = [...c.apps].sort((a, b) => b[1] - a[1])[0];
+    return { tokens: c.tokens, dny: c.dny.size, mozne: mozne[d], top: top ? { app: top[0], share: c.tokens ? top[1] / c.tokens : 0 } : null };
+  }));
+}
+
 export function heatGrid(sessions, now, days = 30) {
   const since = startOfDay(now - (days - 1) * DAY);
   const grid = Array.from({ length: 7 }, () => new Array(24).fill(0));

@@ -151,6 +151,50 @@ export function pickFolder({ title = 'Vybrat složku' } = {}) {
   return done.then(() => picked);
 }
 
+/* ---------- Obrázky projektu (náhled karty a logo) ---------- */
+
+export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeURIComponent(p.id)}/media/${kind}?f=${encodeURIComponent(p[kind].file)}` : '');
+
+// Náhled karty: nahraný obrázek, jinak přechod podle vybraného pozadí. Barva projektu zůstává
+// jen jako jemný pruh při spodní hraně, aby se karty dál rozlišily i bez obrázku.
+export const projectCover = (p, cls = '') => {
+  const url = mediaUrl(p, 'cover');
+  return `<span class="pcover cover--${esc(p?.cover?.preset || 'aurora')}${cls ? ` ${cls}` : ''}" style="--pc:${esc(p?.color || '#B3AEBA')}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}</span>`;
+};
+
+// Logo klienta nahrazuje barevnou tečku; barva projektu z něj zbyde jako tenký kroužek.
+export const projectMark = (p, cls = '') => {
+  const url = mediaUrl(p, 'logo');
+  return url
+    ? `<span class="plogo${cls ? ` ${cls}` : ''}" style="--pc:${esc(p.color || '#B3AEBA')}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false"></span>`
+    : pdot(p, cls);
+};
+
+const MEDIA_LIMIT = { cover: { max: 1280, bytes: 4_000_000 }, logo: { max: 512, bytes: 1_500_000 } };
+const MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+// Fotka z telefonu má klidně 8 MB. Než se nahraje, zmenší se na velikost, kterou karta vůbec
+// zobrazí, takže uživatel nedostane chybu „příliš velký“ u obrázku, který je prostě jen moc pixelů.
+export async function prepareImage(file, kind) {
+  if (!MEDIA_TYPES.includes(file.type)) throw new Error('Nahraj obrázek ve formátu PNG, JPG nebo WebP.');
+  const lim = MEDIA_LIMIT[kind];
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch { throw new Error('Tenhle obrázek se nepodařilo přečíst. Zkus jiný soubor.'); }
+  const scale = Math.min(1, lim.max / Math.max(bmp.width, bmp.height));
+  if (scale === 1 && file.size <= lim.bytes) { bmp.close?.(); return file; }
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close?.();
+  const blob = await new Promise((res) => (kind === 'logo' ? canvas.toBlob(res, 'image/png') : canvas.toBlob(res, 'image/webp', 0.86)));
+  if (!blob) throw new Error('Obrázek se nepodařilo zmenšit.');
+  if (blob.size > lim.bytes) throw new Error('Obrázek je i po zmenšení příliš velký. Zkus jednodušší.');
+  return blob;
+}
+
+const dataUrl = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+
 /* ---------- Formulář projektu ---------- */
 
 export function projectForm(existing = null) {
@@ -158,6 +202,7 @@ export function projectForm(existing = null) {
   const used = new Set(state.projects.items.filter((p) => !p.archived).map((p) => p.color));
   const color = existing?.color || colors.find((c) => !used.has(c)) || colors[0];
   let folders = [...(existing?.folders || [])];
+  const pending = { cover: null, logo: null }; // {blob, url} | 'remove' | null
   const id = `pf${Math.random().toString(36).slice(2, 8)}`;
   const done = modal({
     title: existing ? 'Upravit projekt' : 'Nový projekt',
@@ -169,6 +214,15 @@ export function projectForm(existing = null) {
       </div>
       <p class="form-sub" id="${id}-color">Barva</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
+      <p class="form-sub">Vzhled v přehledu</p>
+      <div class="media-picks">
+        ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
+          <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
+          <span class="media-text"><b>${kind === 'cover' ? 'Obrázek karty' : 'Logo klienta'}</b><small>${kind === 'cover' ? 'Nahradí přechod nahoře na kartě. PNG, JPG nebo WebP; velký obrázek se zmenší.' : 'Objeví se na kartě místo barevné tečky. Nejlépe čtvercové.'}</small></span>
+          <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>Nahrát</button><button class="btn btn--sm" type="button" data-media-remove hidden>Odebrat</button></span>
+          <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
+        </div>`).join('')}
+      </div>
       <p class="form-sub">Složky projektu</p>
       <p class="modal-text">Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.</p>
       <ul class="folder-list" id="${id}-list"></ul>
@@ -184,9 +238,55 @@ export function projectForm(existing = null) {
       };
       const r = existing ? await api.updateProject(existing.id, body) : await api.createProject(body);
       setProjects(r.projects);
-      return r.project;
+      // Projekt už je uložený. Obrázek, který selže, proto neshodí celý formulář – opakované
+      // odeslání by založilo druhý projekt. Uživatel se o chybě dozví a obrázek může nahrát znovu.
+      for (const kind of ['cover', 'logo']) {
+        const want = pending[kind];
+        if (!want) continue;
+        try {
+          const out = want === 'remove' ? await api.removeProjectMedia(r.project.id, kind) : await api.setProjectMedia(r.project.id, kind, want.blob);
+          setProjects(out.projects);
+        } catch (err) {
+          toast(`Projekt je uložený, ale ${kind === 'cover' ? 'obrázek karty' : 'logo'} se nenahrálo: ${err.message}`, { tone: 'err', timeout: 9000 });
+        }
+      }
+      return projectById(r.project.id) || r.project;
     },
   });
+  const paintMedia = (kind) => {
+    const row = document.querySelector(`.media-pick[data-media="${kind}"]`);
+    if (!row) return;
+    const want = pending[kind];
+    const stored = existing?.[kind]?.file && want !== 'remove';
+    const thumb = row.querySelector('[data-media-thumb]');
+    if (want && want !== 'remove') thumb.innerHTML = `<img src="${esc(want.url)}" alt="">`;
+    else if (stored) thumb.innerHTML = `<img src="${esc(mediaUrl(existing, kind))}" alt="">`;
+    else thumb.innerHTML = kind === 'cover' ? projectCover({ color: existing?.color, cover: existing?.cover || { preset: 'aurora' } }) : `<span class="media-empty">${ICON.plus}</span>`;
+    row.querySelector('[data-media-remove]').hidden = !(stored || (want && want !== 'remove'));
+    row.querySelector('[data-media-pick]').textContent = stored || (want && want !== 'remove') ? 'Změnit' : 'Nahrát';
+  };
+  for (const row of document.querySelectorAll('.media-pick')) {
+    const kind = row.dataset.media;
+    const input = row.querySelector('[data-media-file]');
+    row.querySelector('[data-media-pick]').addEventListener('click', () => input.click());
+    row.querySelector('[data-media-remove]').addEventListener('click', () => {
+      pending[kind] = existing?.[kind]?.file ? 'remove' : null;
+      paintMedia(kind);
+    });
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+      try {
+        const blob = await prepareImage(file, kind);
+        pending[kind] = { blob, url: await dataUrl(blob) };
+        paintMedia(kind);
+      } catch (err) {
+        toast(err.message, { tone: 'err' });
+      }
+    });
+    paintMedia(kind);
+  }
   const listEl = document.getElementById(`${id}-list`);
   const fb = document.getElementById(`${id}-fb`);
   const add = document.getElementById(`${id}-add`);

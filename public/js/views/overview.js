@@ -4,6 +4,7 @@ import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../forma
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
+import { limitsAll } from '../limits-ui.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
 import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
@@ -111,7 +112,7 @@ function mount(el) {
       prepnout.disabled = true;
       try {
         const r = await api.focusRuntime(prepnout.dataset.focusRuntime);
-        if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`);
+        if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`, { tone: 'info' });
       } catch (err) {
         toast(err.message, { tone: 'velvet' });
       } finally {
@@ -129,7 +130,7 @@ function mount(el) {
       try {
         state.settings = (await api.saveSettings({ onboardingDismissed: true })).settings;
         emit('settings');
-        toast('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.');
+        toast('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.', { tone: 'info' });
       } catch (err) {
         toast(err.message, { tone: 'velvet' });
       }
@@ -238,11 +239,10 @@ function update(topics = new Set(['all'])) {
     const limitHint = usesClaude && !claudeExact
       ? `<p class="lwin-hint">Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v <a class="link-inline" href="#/nastaveni">Nastavení</a> – Claude Code je pak posílá sám.</p>`
       : '';
-    fill(el, 'limits', windows || credits.length || limitHint
-    ? `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
+    fill(el, 'limits', `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
        ${windows}${limitHint}
-       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}`
-      : '');
+       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}
+       ${limitsAll(state, now)}`);
   }
 
   if (changed(topics, 'sessions')) fill(el, 'activity', all.length ? all.slice(0, 6).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');

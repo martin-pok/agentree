@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.13.0',
+    date: '2026-09-20',
+    title: 'Přehled všech limitů, obrázky projektů a klidnější upozornění',
+    items: [
+      'Upozornění se ukazují po jednom a poznáš je na první pohled: zelená s fajfkou znamená, že se akce povedla, červená s vykřičníkem, že ne. Čtyři stejné černé pruhy pod sebou jsou pryč.',
+      'Okna limitů mají rozbalovací přehled všech nástrojů. U každého vidíš změřené limity a stáří měření, a u těch, které limit z místních dat neprozradí, je to napsané přímo – nic se nedomýšlí.',
+      'Projekty mají obrázky. Nahraj obrázek karty nebo logo klienta (velké fotky se zmenší samy) a najdeš projekt rychleji. Bez obrázku dostane karta elegantní přechod; barva projektu zůstala jako jemný pruh.',
+      'Mapa „Kdy agenti pracují“ se při najetí plynule zvětší a ukáže den, hodinu, počet tokenů, v kolika dnech se tam pracovalo a který nástroj měl největší podíl.',
+      'Z levého panelu zmizelo „Živá data“, stav spojení už je nahoře vpravo.',
+    ],
+  },
+  {
     version: '0.12.1',
     date: '2026-09-20',
     title: 'Poctivější stavy, přehlednější Nastavení, bezpečnější spouštění',

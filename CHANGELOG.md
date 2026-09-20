@@ -15,6 +15,14 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.13.0 – 2026-09-20 · přehled limitů všech nástrojů, obrázky projektů, klidnější toasty
+
+- **Toasty:** vždy nejvýš jeden (`toast()` nahrazuje předchozí, stejné hlášení jen zopakuje pohyb). Druh se odvozuje z `tone`: zelený s fajfkou (povedlo se), červený s vykřičníkem a `role="alert"` (chyba), tmavý s „i“ (poznámka), upozornění agenta se zvonkem.
+- **Limity všech nástrojů:** `public/js/limits-ui.js` – rozbalovací „Všechny nástroje a služby“ na Přehledu a ve Statistikách. Změřená okna jako čipy se stářím měření; nástroje bez měření mají poznámku, proč (nenainstalováno / limit se z místních dat nedá zjistit / web nesdílí). Obnovené okno se píše „obnoveno“, ne „0 %“.
+- **Projekty:** nahrání obrázku karty a loga klienta ve formuláři (`prepareImage` zmenší přes canvas na 1280/512 px, server dál ověřuje obsah podle magic bytes). Výchozí přechod `.cover--<preset>` pro všech osm předvoleb; barva projektu zůstává jako jemný pruh a kroužek loga. Selhání obrázku po uložení projektu neshodí formulář (zabrání duplicitě).
+- **Mapa „Kdy agenti pracují“:** `heatDetails()` – tooltip s dnem, hodinou, tokeny, počtem aktivních dnů z možných a nejsilnějším nástrojem; plynulý zoom buňky, zvýraznění řádku a hodiny; popis mapy pro čtečky (nejsilnější hodina).
+- Z levého panelu odstraněno „Živá data“ (zůstává jen hlášení ztráty spojení). Test `ui-polish`.
+
 ## 0.12.1 – 2026-09-20 · poctivější stavy, přehlednější Nastavení, opravy z bezpečnostního auditu
 
 - **Konektory netvrdí instalaci bez opory.** Gemini CLI, Qwen Code, Copilot CLI, VS Code Copilot a Cursor usuzovaly „je nainstalovaný“ z existence složky s daty (~/.gemini drží i nastavení MCP). Stav se teď rozhoduje ze tří údajů: nástroj nalezen / hledáno a nenalezeno / nevím (`src/connectors/install-state.js`, test `install-honesty`).

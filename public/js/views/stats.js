@@ -3,7 +3,8 @@ import { state, sessionsList, agentsList } from '../state.js';
 import { esc, fmtNum, plural } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
-import { providerSeries, heatGrid, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
+import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
+import { limitsAll } from '../limits-ui.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
@@ -120,7 +121,7 @@ function update() {
   v.drawn = true;
   fill(el, 'legend', legendHtml(ser.series, { box: true }));
 
-  fill(el, 'heat', heatmap(heatGrid(all, now, 30)));
+  fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
 
   const apps = groupTotals(all, since, (s) => s.app).slice(0, 8);
   fill(el, 'apps', apps.length
@@ -147,9 +148,7 @@ function update() {
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });
   fill(el, 'usage-history', usageHistoryHtml());
-  fill(el, 'limits', gauges.length || creditCharts.length
-    ? `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${coverageNote()}`
-    : `<p class="muted">Zatím žádné údaje o limitech. Codex je hlásí sám; Claude Code je zapíše při dosažení limitu. Údaje starší než 7 dní se skryjí.</p>`);
+  fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${gauges.length || creditCharts.length ? coverageNote() : ''}${limitsAll(state, now)}`);
 }
 
 export default { id: 'statistiky', title: 'Statistiky', mount, update, unmount: () => { v.el = null; } };

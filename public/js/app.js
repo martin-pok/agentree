@@ -4,7 +4,7 @@ import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
-import { bindCharts, restoreHover } from './charts.js';
+import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { tokensSince, needsYou } from './data.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
@@ -244,7 +244,7 @@ function updateChrome() {
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
-  setHtml(footEl, `<span class="source-state"><i class="dot ${conn === 'live' ? 'dot--live' : 'dot--down'}"></i>${conn === 'live' ? 'Živá data' : 'Bez spojení se serverem'}</span>
+  setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : '<span class="source-state"><i class="dot dot--down"></i>Bez spojení se serverem</span>'}
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>Co je nového</span></button>` : ''}`);
 
@@ -365,7 +365,7 @@ function closePopover() {
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
-  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'coral' : urgent ? 'action' : 'ink', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
+  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'coral' : urgent ? 'action' : 'info', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
   const n = state.settings?.notifications;
   if (n?.browser && 'Notification' in window && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
     try {
@@ -588,6 +588,7 @@ document.addEventListener('drop', async (e) => {
 /* ---------- Start ---------- */
 
 bindCharts(document);
+bindHeatmap(document);
 
 // Překreslení pohledu je nejdražší práce v aplikaci a při běžícím agentovi chodí pořád. Kdyby
 // padlo doprostřed rolování, je z toho škubnutí přesně ve chvíli, kdy je nejvíc vidět. Během
