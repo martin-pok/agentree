@@ -2,6 +2,7 @@ import path from 'node:path';
 import { statSafe, readJson, toTs, textOf, isInjectedPrompt, clip, clipBlock, MIN, DAY } from '../util.js';
 import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { watchTree, createFileQueue, listFiles } from '../watch.js';
+import { noDataState } from './install-state.js';
 
 export function roleOf(m) {
   const t = String(m?.type || m?.role || '').toLowerCase();
@@ -66,7 +67,7 @@ export function applyGeminiChat(s, j, mtimeMs, now = Date.now()) {
   s.turnStartedAt = s.running ? toTs(last.timestamp) || mtimeMs : 0;
 }
 
-export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app, verified = false }) {
+export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app, bin, verified = false }) {
   const { store, config } = ctx;
   const root = path.join(config.sourceHome, dir, 'tmp');
   const windowMs = config.windowDays * DAY;
@@ -116,12 +117,9 @@ export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app,
     status() {
       const count = seen.size;
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count
-          ? `Sleduji ${count} chatů.`
-          : exists
-            ? `${app} je nainstalovaný, ale zatím neuložil žádný chat.`
-            : `${app} na tomto počítači není.`,
+        ...(count
+          ? { state: 'connected', detail: `Sleduji ${count} chatů.` }
+          : noDataState({ installed: ctx.installed?.bin(bin) ?? null, trace: exists, name: app, traceLabel: `složka ~/${dir}`, whatMissing: 'zatím neuložil žádný chat' })),
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

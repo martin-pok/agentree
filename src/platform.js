@@ -9,6 +9,7 @@
 //
 // Co tu není a nebude: domněnky. Když pro nějaký systém mechanismus neznáme, funkce vrátí
 // prázdno a volající se podle toho zachová. Nikdy nevrátí vymyšlenou cestu.
+import fs from 'node:fs';
 import path from 'node:path';
 import { run } from './util.js';
 
@@ -196,4 +197,11 @@ export async function fullUserName(runImpl = run) {
     return r?.ok ? r.stdout.trim() : '';
   }
   return '';
+}
+
+// Je aplikace opravdu nainstalovaná? Hledá se v /Applications a v ~/Applications; `null` = nevím
+// (jiný systém než macOS, nebo kontrola vypnutá), nikdy ne „ne“ jen proto, že se nehledalo.
+export function appInstalled(names, home, { fileExists = (p) => fs.existsSync(p), enabled = JE_MAC } = {}) {
+  if (!enabled) return null;
+  return [].concat(names).some((n) => [`/Applications/${n}.app`, `${home}/Applications/${n}.app`].some((p) => fileExists(p)));
 }

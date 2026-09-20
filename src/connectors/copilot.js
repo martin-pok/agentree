@@ -4,6 +4,7 @@ import { JsonlTail, statSafe, readJson, readdirSafe, toTs, textOf, isInjectedPro
 import { touch, pushEntry, resetTranscript, addTokens } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
+import { noDataState } from './install-state.js';
 
 // Totéž co u Cursoru: mění se jen základ složky, struktura pod ním ne.
 const VSCODE_ZDROJ = JE_WINDOWS
@@ -132,8 +133,9 @@ export function createVsCodeCopilotConnector(ctx) {
     status() {
       const count = [...store.sessions.values()].filter((x) => x.connector === 'vscode-copilot').length;
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? `Sleduji ${count} chatů Copilotu.` : exists ? 'VS Code je nainstalovaný, ale nemá uložené chaty Copilotu.' : 'VS Code na tomto počítači není.',
+        ...(count
+          ? { state: 'connected', detail: `Sleduji ${count} chatů Copilotu.` }
+          : noDataState({ installed: ctx.installed?.app(['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium']) ?? null, trace: exists, name: 'VS Code', traceLabel: 'složka s daty editoru', whatMissing: 'nemá uložené chaty Copilotu' })),
         count,
         watching: watchers.some((w) => w.active),
         lastEventAt,
@@ -263,8 +265,9 @@ export function createCopilotCliConnector(ctx) {
     status() {
       const count = tails.size;
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? `Sleduji ${count} konverzací.` : exists ? 'Copilot CLI je nainstalovaný, ale nemá uložené konverzace.' : 'Copilot CLI na tomto počítači není.',
+        ...(count
+          ? { state: 'connected', detail: `Sleduji ${count} konverzací.` }
+          : noDataState({ installed: ctx.installed?.bin('copilot') ?? null, trace: exists, name: 'Copilot CLI', traceLabel: 'složka ~/.copilot', whatMissing: 'nemá uložené konverzace' })),
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

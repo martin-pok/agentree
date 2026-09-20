@@ -4,6 +4,7 @@ import { statSafe, readJson, toTs, clip, clipBlock, isInjectedPrompt, MIN, DAY }
 import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { todosProgress } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
+import { noDataState } from './install-state.js';
 
 // Cesta k datům Cursoru se liší jen základem složky; zbytek struktury je všude stejný.
 // Windows varianta zatím není ověřená na skutečném stroji – proto je v docs/CONNECTORS.md
@@ -165,9 +166,10 @@ export function createCursorConnector(ctx) {
     idle: async () => {},
     status() {
       const count = [...store.sessions.values()].filter((s) => s.connector === 'cursor').length;
+      const bezDat = noDataState({ installed: ctx.installed?.app('Cursor') ?? null, trace: exists, name: 'Cursor', traceLabel: 'databáze Cursoru', whatMissing: `za posledních ${config.windowDays} dní nemá žádné agenty` });
       return {
-        state: error ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: error || (count ? `Sleduji ${count} agentů za ${config.windowDays} dní.` : exists ? 'Cursor je nainstalovaný, za posledních 30 dní bez agentů.' : 'Cursor na tomto počítači není.'),
+        state: error ? 'error' : count ? 'connected' : bezDat.state,
+        detail: error || (count ? `Sleduji ${count} agentů za ${config.windowDays} dní.` : bezDat.detail),
         count,
         watching: Boolean(timer),
         lastEventAt,

@@ -33,7 +33,7 @@ const WEB = {
 };
 
 export async function detectLaunchEnv({ ollama }) {
-  const r = await run('/bin/zsh', ['-lc', 'for c in claude codex gemini qwen; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done'], { timeout: 6000 });
+  const r = await run('/bin/zsh', ['-lc', 'for c in claude codex gemini qwen copilot; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done'], { timeout: 6000 });
   const bins = {};
   for (const line of r.stdout.split('\n')) {
     const [name, ...rest] = line.trim().split('=');

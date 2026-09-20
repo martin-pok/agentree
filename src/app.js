@@ -32,6 +32,7 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
+import { appInstalled } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
@@ -60,7 +61,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 }
 const HOME_HIDDEN = new Set(['Library']);
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -165,15 +166,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true, plan } : {}) };
   }
 
-  const ctx = { config, store, datastore, secrets, onSpendChanged: () => spendChanged(), extensionRecord: () => datastore.data.extension };
+  // Je nástroj opravdu nainstalovaný? `null` = zatím nevím (příkazy se hledají přes přihlašovací shell
+  // až po startu; v testech a v suchém běhu se nehledá vůbec). Konektory z toho odvozují, jestli smí
+  // říct „je nainstalovaný“ — samotná složka s daty to nedokazuje.
+  let launchDetected = false;
+  const installed = installedOverride || {
+    bin: (name) => (launchDetected ? Boolean(launchEnv.bins?.[name]) : null),
+    app: (names) => (config.openMode === 'exec' ? appInstalled(names, config.sourceHome) : null),
+  };
+  const ctx = { config, store, datastore, secrets, installed, onSpendChanged: () => spendChanged(), extensionRecord: () => datastore.data.extension };
   const list = [
     createClaudeCodeConnector(ctx),
     createCodexConnector(ctx),
     createCursorConnector(ctx),
     createCopilotCliConnector(ctx),
     createVsCodeCopilotConnector(ctx),
-    createGeminiFamilyConnector(ctx, { id: 'gemini-cli', name: 'Gemini CLI', dir: '.gemini', provider: 'google', app: 'Gemini CLI' }),
-    createGeminiFamilyConnector(ctx, { id: 'qwen-code', name: 'Qwen Code', dir: '.qwen', provider: 'alibaba', app: 'Qwen Code' }),
+    createGeminiFamilyConnector(ctx, { id: 'gemini-cli', name: 'Gemini CLI', dir: '.gemini', provider: 'google', app: 'Gemini CLI', bin: 'gemini' }),
+    createGeminiFamilyConnector(ctx, { id: 'qwen-code', name: 'Qwen Code', dir: '.qwen', provider: 'alibaba', app: 'Qwen Code', bin: 'qwen' }),
     createWebConnector(ctx),
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
@@ -546,8 +555,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function refreshLaunch() {
-    if (config.launchAgents && config.openMode === 'exec') launchEnv = await detectLaunchEnv({ ollama });
-    else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
+    if (config.launchAgents && config.openMode === 'exec') {
+      launchEnv = await detectLaunchEnv({ ollama });
+      launchDetected = true;
+    } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
     return payload;
