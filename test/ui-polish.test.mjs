@@ -154,6 +154,7 @@ test('menu na výšku se mění na dlaždice podle návrhu z Figmy', async () =>
   const blok = css.match(/@media \(orientation: portrait\) and \(min-width: 881px\) and \(min-height: 1100px\) \{[\s\S]*?\n\}/)?.[0] || '';
   assert.match(blok, /--tile: clamp\(64px, 5\.1dvh, 140px\)/, 'výška dlaždice je poměrná k oknu');
   assert.match(blok, /grid-auto-rows: var\(--tile\)/);
-  assert.match(blok, /margin: 5\.3dvh -22px 0/, 'dlaždice vyplní šířku panelu a začínají pod profilem');
+  assert.match(blok, /margin: 5\.3dvh 8px 0/, 'dlaždice začínají pod profilem a drží boční odsazení');
+  assert.match(blok, /\.nav a\[aria-current='page'\] \{ background: transparent;/, 'aktivní stránka není trvale podbarvená');
   assert.match(blok, /\.side-foot \{ margin-top: auto; \}/, 'patička zůstane dole');
 });

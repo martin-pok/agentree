@@ -65,8 +65,11 @@ test('záloha nastavení Claude Code má práva 0600 a zúží i ty dřívějš�
   await fs.writeFile(stara, '{}', { mode: 0o644 });
 
   const { backup } = await installHooks(file, { port: 4620, token: 'a'.repeat(40), now: 2 });
-  assert.equal((await fs.stat(backup)).mode & 0o777, 0o600, 'nová záloha je jen pro vlastníka');
-  assert.equal((await fs.stat(stara)).mode & 0o777, 0o600, 'dřívější záloha se zúžila, nesmazala');
+  if (process.platform !== 'win32') {
+    assert.equal((await fs.stat(backup)).mode & 0o777, 0o600, 'nová záloha je jen pro vlastníka');
+    assert.equal((await fs.stat(stara)).mode & 0o777, 0o600, 'dřívější záloha se zúžila, nesmazala');
+  }
+  assert.equal(await fs.readFile(backup, 'utf8'), JSON.stringify({ env: { TAJNE: 'x' } }), 'záloha zachová původní obsah');
   assert.equal(await fs.readFile(stara, 'utf8'), '{}', 'obsah dřívější zálohy zůstal beze změny');
 });
 
