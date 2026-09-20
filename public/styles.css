@@ -1947,3 +1947,20 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 .set-row-inline span { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
 .set-row-inline strong { font-weight: 500; font-size: 14px; }
 .set-row-inline small { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+
+/* Vysoké okno (monitor na výšku): položky menu se změní na velké dlaždice přes celou šířku panelu.
+   Rozměry jsou poměrné k výšce okna podle návrhu z Figmy (okno 2000 px: dlaždice 102 px, mezery 19 px,
+   první dlaždice 106 px pod profilem, osm dlaždic končí v 70 % výšky), takže drží tvar na 1920 i 2560 px.
+   Panel tak jde ovládat celou plochou dlaždice a nemusí se mířit na malé řádky. */
+@media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px) {
+  .nav { --tile: clamp(64px, 5.1dvh, 140px); flex: 0 0 auto; margin: 5.3dvh -22px 0; gap: clamp(8px, .95dvh, 24px); grid-auto-rows: var(--tile); align-content: start; overflow: visible; }
+  .nav a { height: var(--tile); padding: 0 clamp(16px, 1.5vw, 24px); gap: 16px; border-radius: 16px; background: var(--paper); color: var(--ink-2); font-size: 16px; }
+  .nav a svg { width: 26px; height: 26px; }
+  .nav a:hover { background: var(--line-2); color: var(--ink); }
+  .nav a[aria-current='page'] { background: var(--action); color: var(--on-action); font-weight: 500; }
+  .nav a[aria-current='page']::before { display: none; }
+  .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
+  .nav a[aria-current='page'] .stroke.inv { stroke: var(--action); }
+  .nav-badge { min-width: 28px; height: 28px; line-height: 28px; border-radius: 14px; font-size: 13px; }
+  .side-foot { margin-top: auto; }
+}

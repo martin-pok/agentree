@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.17.2',
+    date: '2026-09-20',
+    title: 'Menu jako velké dlaždice na monitoru na výšku',
+    items: [
+      'Když je okno vysoké a otočené na výšku, položky menu v levém panelu se změní na velké dlaždice přes celou šířku panelu. Jsou stejně vysoké, mají stejné mezery a začínají kousek pod profilem, podle návrhu z Figmy. Celá dlaždice je klikatelná a aktivní má tmavé (v tmavém režimu světlé) vyplnění.',
+      'Rozměry se řídí výškou okna, takže tvar drží na 1920 i 2560 px.',
+    ],
+  },
+  {
     version: '0.17.1',
     date: '2026-09-20',
     title: 'Kontrastní tlačítka v tmavém režimu',

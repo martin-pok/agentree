@@ -15,6 +15,10 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.17.2 – 2026-09-20 · menu jako dlaždice na výšku
+
+- `@media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px)`: `.nav` je mřížka osmi dlaždic přes celou šířku panelu (`margin-inline: -22px`), výška `clamp(64px, 5.1dvh, 140px)`, mezera `.95dvh`, první dlaždice `5.3dvh` pod profilem, patička dole (`margin-top: auto`). Poměry odečtené z Figma návrhu (obrázek 1130 × 2000 z okna 1440 × 2560); naměřeno při 1440 × 2560: dlaždice 131 px, mezera 24 px, první dlaždice y = 561 (návrh ≈ 574), poslední končí y = 1773 (návrh ≈ 1782). Aktivní dlaždice `--action`.
+
 ## 0.17.1 – 2026-09-20 · tmavý režim: tlačítka
 
 - Nové tokeny `--action` / `--on-action` / `--action-hover`: ve světlém režimu tmavá plocha s bílým textem, v tmavém světlá `#F5F2F8` s textem `#16141D` (naměřeno 16,4 : 1 proti textu, 17,9 : 1 proti stránce). Použito pro `.btn--primary`, vybrané `.seg` tlačítka, zapnutý `.switch`, zatržítko, `.link:hover`, ukazatel měřiče, aktivní záložku Nastavení, `.nav-launch`, vybraný den kalendáře. Dřív `--ink-surface`, tedy tmavá na tmavé.
