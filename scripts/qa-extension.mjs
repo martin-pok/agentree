@@ -44,10 +44,19 @@ try {
         await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
         await page.evaluate(() => document.fonts.ready);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        // Chrome zobrazí z okna rozšíření nejvýš 600 px. Vyšší okno se posouvá a stav i spárování
+        // zmizí pod okrajem – změřeno ve skutečném Chromu, proto to hlídá test.
+        const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
+        assert.ok(vyska <= 600, `${engine} ${theme} ${state}: okno má ${Math.round(vyska)} px, Chrome ukáže jen 600`);
         assert.equal(await page.locator('input[type=checkbox]').count(), 9);
-        await page.locator('input[type=checkbox]').first().focus();
-        await page.keyboard.press('Space');
-        assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
+        // Přepínače služeb se nabízejí, až rozšíření posílá data; jinde je karta schovaná.
+        const sluzbyVidet = await page.locator('#sites-card').isVisible();
+        assert.equal(sluzbyVidet, ['paired', 'outdated'].includes(state), `${state}: viditelnost seznamu služeb`);
+        if (sluzbyVidet) {
+          await page.locator('input[type=checkbox]').first().focus();
+          await page.keyboard.press('Space');
+          assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
+        }
         if (['unpaired', 'revoked'].includes(state)) {
           await page.locator('#code').fill('bad'); await page.locator('#pair').click();
           assert.equal(await page.locator('#code').getAttribute('aria-invalid'), 'true');

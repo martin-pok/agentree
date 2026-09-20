@@ -69,6 +69,8 @@ async function render() {
   await renderSites(lastStatus);
   $('feats').hidden = false;
   $('outdated').hidden = true;
+  // Přepínat sledované služby má smysl, až rozšíření něco posílá – dřív okno jen natahovaly.
+  $('sites-card').hidden = true;
 
   let health = null;
   try {
@@ -85,7 +87,10 @@ async function render() {
 
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
   if (!r?.paired) {
+    // Při párování je na řadě jediná věc: vložit kód. Výčet funkcí okno jen natahoval nad 600 px,
+    // které Chrome zobrazí – zůstává proto pro stav, kdy aplikace neběží a dělat nejde nic jiného.
     $('pairing').hidden = false;
+    $('feats').hidden = true;
     setHero({ tone: 'warn', pill: 'Nespárováno', headline: r?.revoked ? 'Spáruj rozšíření znovu' : 'Ještě jeden krok', sub: r?.revoked ? 'Předchozí spárování už neplatí.' : 'Spáruj rozšíření s Agenteeq a začne pracovat.' });
     return;
   }
@@ -93,6 +98,7 @@ async function render() {
   // Spárovaný uživatel ví, co rozšíření dělá – okno zůstane pod 600 px, které mu Chrome dovolí.
   $('pairing').hidden = true;
   $('feats').hidden = true;
+  $('sites-card').hidden = false;
   const version = chrome.runtime.getManifest().version;
   const expected = r.status?.expectedVersion;
   const outdated = expected && expected !== version;

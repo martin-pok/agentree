@@ -75,7 +75,9 @@
     .feat b { display: block; font-size: 13px; }
     .feat span { color: var(--mute); font-size: 12px; }
 
-    .sites { display: grid; gap: 2px; margin: 0 -8px -4px; }
+    /* Chrome ukáže z okna rozšíření nejvýš 600 px. Devět služeb po 44 px se tam nevejde a zmenšit
+       řádky nelze – 44 px je dotyková plocha. Seznam má proto vlastní posuv, zbytek okna zůstává vidět. */
+    .sites { display: grid; gap: 2px; margin: 0 -8px -4px; max-height: 268px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
     .site { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px; border-radius: 10px; cursor: pointer; }
     .site:hover { background: var(--paper); }
     .site .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
@@ -143,7 +145,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="sites-card" hidden>
       <p class="label">Sledované služby · beta</p>
       <div class="sites" id="sites"></div>
     </section>

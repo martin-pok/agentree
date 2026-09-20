@@ -1,0 +1,28 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><title>Marquee 1400×560</title><link rel="stylesheet" href="brand.css">
+<style>
+  .canvas { width: 1400px; height: 560px; }
+  svg { position: absolute; inset: 0; }
+</style></head><body>
+<!-- Velká dlaždice: stejný znak jako malá, rozvinutý do „orchestru“ šesti agentů. Bez textu. -->
+<div class="canvas">
+  <svg width="1400" height="560" viewBox="0 0 1400 560" fill="none">
+    <g stroke="#EFEAF2" stroke-opacity=".07" stroke-width="1.5">
+      <circle cx="700" cy="190" r="120"/><circle cx="700" cy="190" r="230"/><circle cx="700" cy="190" r="350"/><circle cx="700" cy="190" r="480"/>
+    </g>
+    <!-- Každá větev se odděluje hned u uzlu pod jiným úhlem — žádné souběžné tahy, které by se u rozvětvení
+         slévaly do jednoho tlustého svazku. -->
+    <path d="M700 236V410" stroke="#EFEAF2" stroke-width="12" stroke-linecap="round"/>
+    <path d="M700 290C640 300 470 320 460 410" stroke="#EFEAF2" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M700 290C760 300 930 320 940 410" stroke="#EFEAF2" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M700 260C600 262 320 300 300 410" stroke="#EFEAF2" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M700 260C800 262 1080 300 1100 410" stroke="#EFEAF2" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <circle cx="700" cy="180" r="44" fill="#C99A3E"/>
+    <circle cx="700" cy="180" r="66" stroke="#C99A3E" stroke-opacity=".3" stroke-width="3"/>
+    <circle cx="700" cy="180" r="92" stroke="#C99A3E" stroke-opacity=".12" stroke-width="3"/>
+    <circle cx="300" cy="428" r="26" fill="#51D8B9"/><circle cx="300" cy="428" r="42" stroke="#51D8B9" stroke-opacity=".25" stroke-width="3"/>
+    <circle cx="460" cy="428" r="26" fill="#EFEAF2"/>
+    <circle cx="700" cy="428" r="26" fill="#F08AA7"/><circle cx="700" cy="428" r="42" stroke="#F08AA7" stroke-opacity=".25" stroke-width="3"/>
+    <circle cx="940" cy="428" r="26" fill="#51D8B9"/>
+    <circle cx="1100" cy="428" r="26" fill="#EFEAF2"/>
+  </svg>
+</div></body></html>

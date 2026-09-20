@@ -1,0 +1,16 @@
+/* Sdílený základ podkladů pro Chrome Web Store — tokeny z aplikace Agenteeq (public/styles.css).
+   Dvě rodiny písma: Urbanist (titulky), Onest (text). Písma jsou OFL a přibalená v aplikaci. */
+@font-face { font-family: 'Urbanist'; src: url('../../../public/fonts/urbanist-300.ttf') format('truetype'); font-weight: 300; }
+@font-face { font-family: 'Urbanist'; src: url('../../../public/fonts/urbanist-400.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'Urbanist'; src: url('../../../public/fonts/urbanist-500.ttf') format('truetype'); font-weight: 500; }
+@font-face { font-family: 'Onest'; src: url('../../../public/fonts/onest-400.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'Onest'; src: url('../../../public/fonts/onest-500.ttf') format('truetype'); font-weight: 500; }
+:root {
+  --stage: #121019; --stage-2: #2A2233; --ivory: #EFEAF2; --on-stage-mute: #B9B3C5;
+  --brass: #C99A3E; --brass-soft: #E2BE72; --teal: #51D8B9; --velvet: #F08AA7; --line: rgba(239, 234, 242, .14);
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow: hidden; background: var(--stage); }
+body { font-family: 'Onest', system-ui, sans-serif; color: var(--ivory); -webkit-font-smoothing: antialiased; }
+.canvas { position: relative; overflow: hidden; background: radial-gradient(120% 90% at 18% 10%, #3A2E47 0%, rgba(58, 46, 71, 0) 55%), linear-gradient(125deg, var(--stage-2) 0%, var(--stage) 62%); }
+.canvas::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--brass), rgba(201, 154, 62, 0) 70%); }
