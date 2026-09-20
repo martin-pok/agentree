@@ -98,7 +98,7 @@ test('složení tokenů má samostatné měřítko pro spotřebu a cache', async
 test('klikatelný text vypadá jako ovládací prvek a kalendář nahrazuje systémový', async () => {
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.link \{[^}]*box-shadow: inset 0 0 0 1px var\(--line\)[^}]*color: var\(--ink\)/, 'odkaz nesmí být šedý popisek');
-  assert.match(css, /\.link:hover \{ background: var\(--ink-surface\)/, 'při najetí se plocha vyplní');
+  assert.match(css, /\.link:hover \{ background: var\(--action\)/, 'při najetí se plocha vyplní');
   assert.match(css, /\.lim-all > summary \{[^}]*box-shadow: inset 0 0 0 1px var\(--line\)/);
   const app = await zdroj('public/js/app.js');
   assert.match(app, /startDatePickers\(\)/);
