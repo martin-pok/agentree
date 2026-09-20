@@ -137,3 +137,19 @@ test('značka se do stránky nepřidá dvakrát', () => {
   assert.equal(znackaStatickeKopie(jednou), jednou, 'opakované sestavení nic nepřidá');
   assert.throws(() => znackaStatickeKopie('<html><body>bez hlavičky</body></html>'), /head/);
 });
+
+// Verze ve strukturovaných datech stránky se bere z package.json při sestavení, ne z ruky.
+test('web nese verzi z package.json, ne opsanou z minula', async () => {
+  const { verzeVDatechStranky } = await import('../scripts/build-site.mjs');
+  assert.equal(
+    verzeVDatechStranky('x "softwareVersion":"0.1.0" y', '9.8.7'),
+    'x "softwareVersion":"9.8.7" y',
+  );
+  assert.throws(() => verzeVDatechStranky('<html></html>', '1.0.0'), /softwareVersion/, 'bez pole se nesmí mlčky vrátit stará verze');
+  const fsp = await import('node:fs/promises');
+  const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const { execFileSync } = await import('node:child_process');
+  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: new URL('..', import.meta.url).pathname, stdio: 'ignore' });
+  const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
+  assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
+});

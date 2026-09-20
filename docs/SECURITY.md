@@ -51,6 +51,26 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq – to je vlastnost macOS, ne Agenteeq.
 - **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy.
 
+## Nezávislý audit 2026-09-20: co je opraveno a co ne
+
+Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nálezů. Tabulka říká, kde která věc stojí, ať se nedá tvrdit víc, než platí.
+
+| # | Závažnost | Nález | Stav |
+|---|---|---|---|
+| 2 | střední | ID konverzace začínající „-“ se čte jako přepínač (`claude --resume --dangerously-skip-permissions`) | **opraveno**, test předvádí útok |
+| 3 | střední | „Otevřít složku“ spustí `open <cesta>` i na balíček `.app` | **opraveno**, balíčky a odkazy na ně se odmítnou |
+| 6 | nízká–střední | záloha nastavení Claude Code s právy 0644 | **opraveno** (0600, dřívější zúženy) |
+| 7 | nízká–střední | `/api/extension/pair-code` vytvoří i telefon nebo proxy | **opraveno** (jen Mac); token se stále neotáčí při odpárování zařízení a ID rozšíření se nekontroluje přesně |
+| 1 | **vysoká** | spárovaný telefon smí i spouštět agenty s libovolnou složkou, instalovat hooky, měnit klíče a číst přepisy; LAN je prostý HTTP a cookie nemá `Secure` | **otevřené.** Plán: telefon jen pro čtení, spouštění a klíče na potvrzení na Macu, kratší platnost tokenu. Do té doby platí: přístup z telefonu nezapínej v cizí síti a používej Tailscale |
+| 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **otevřené.** Plán: tajemství pro každé spuštění (cookie z jednorázové adresy pro prohlížeč, hlavička pro okno aplikace) |
+| 8 | nízká | ingest token je v argumentech `curl` v hooku | otevřené (čitelný jen pro téhož uživatele) |
+| 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | otevřené |
+| 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | otevřené, řeší se spolu se získáním Developer ID |
+| 12–14, 16–18 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline`, kontrola odesílatele zpráv v rozšíření, hlavičky webu | otevřené |
+| 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |
+
+Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF, kontrola `Origin`/`Host`, tokenové cesty s `timingSafeEqual`, limity těla a SSE, procházení statických souborů, XSS (75 zkušebních řetězců v 8 vstupech: všude jen text), oprávnění datových souborů, WKWebView jen na 127.0.0.1, převzetí portu jen po ověření podpisu skriptu.
+
 ## Soukromí
 
 - Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.

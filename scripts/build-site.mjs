@@ -18,6 +18,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Kam vede rozhraní aplikace na webovém hostingu.
 export const APP_PATH = '/app';
 
+// Přepíše softwareVersion ve strukturovaných datech stránky. Když ji tam nenajde, spadne: tichá
+// změna tvaru stránky by jinak vrátila zastaralou verzi a nikdo by si nevšiml.
+export function verzeVDatechStranky(html, verze) {
+  const vzor = /"softwareVersion":"[^"]*"/;
+  if (!vzor.test(html)) throw new Error('site/index.html nemá „softwareVersion“ ve strukturovaných datech — uprav scripts/build-site.mjs.');
+  return html.replace(vzor, `"softwareVersion":"${verze}"`);
+}
+
 // Manifest PWA platí pro rozhraní aplikace, ne pro landing page: na hostingu se proto přepíše tak,
 // aby instalace na plochu otevřela /app. Na Macu zůstává public/manifest.webmanifest beze změny,
 // protože tam je rozhraní skutečně v kořeni.
@@ -80,6 +88,11 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
 
   // 4. Landing page do kořene. Jde poslední, takže její index.html je ten, který návštěvník uvidí.
   await copyDir(path.join(root, 'site'), out);
+  // Verze v datech pro vyhledávače se bere z package.json při každém sestavení. Napsaná ručně by po
+  // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
+  const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
+  const stranka = path.join(out, 'index.html');
+  await fs.writeFile(stranka, verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze));
 
   // 5. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
   await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);

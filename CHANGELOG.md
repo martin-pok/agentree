@@ -15,6 +15,14 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.12.1 – 2026-09-20 · poctivější stavy, přehlednější Nastavení, opravy z bezpečnostního auditu
+
+- **Konektory netvrdí instalaci bez opory.** Gemini CLI, Qwen Code, Copilot CLI, VS Code Copilot a Cursor usuzovaly „je nainstalovaný“ z existence složky s daty (~/.gemini drží i nastavení MCP). Stav se teď rozhoduje ze tří údajů: nástroj nalezen / hledáno a nenalezeno / nevím (`src/connectors/install-state.js`, test `install-honesty`).
+- **Sidebar:** pod „tokenů dnes“ jsou dva nástroje s největším podílem a popisek vysvětluje metriku (vstup + výstup bez cache). Číslo samo ověřeno třemi nezávislými metodami proti surovým přepisům.
+- **Nastavení:** zdroje agentů jeden seznam (2 066 → 480 px), webové služby čipy, sbalené „Nenalezeno“ a „Doplňková data“, Vlastní agenti sbalení, pamatování otevřeno/zavřeno, prázdná karta se nezobrazí, „Instalace pro další lidi“ jen tam, kde existuje balíček z buildu. Stránka 8 686 → 6 713 px.
+- **Bezpečnost (nezávislý audit, 18 nálezů):** ID konverzace nesmí začínat pomlčkou (argument injection do `claude --resume`), „Otevřít složku“ odmítne balíčky a odkazy na ně, zálohy nastavení Claude Code 0600, párovací kód rozšíření jen z Macu. Zbývající nálezy (oprávnění spárovaného telefonu, lokální tajemství pro loopback, CI) jsou v docs/SECURITY.md.
+- Diagnostický nástroj `scripts/tools/ax-probe.swift` pro zjištění, co aplikace vystavují přes Přístupnost macOS (podklad pro detekci desktopových aplikací bez záznamu na disku).
+
 ## 0.12.0 – 2026-09-15 · Tailscale jako plnohodnotná cesta z telefonu, web a rozšíření na úrovni aplikace
 
 - **Tailscale je napojený, ne jen detekovaný.** Nové nastavení `settings.tailscaleAccess` a endpoint

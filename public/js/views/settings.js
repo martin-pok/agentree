@@ -716,7 +716,9 @@ function update() {
   const packCmd = 'npm run pack';
   const installCmd = `npm install -g ./agenteeq-${state.version}.tgz`;
   const pkg = inst.package;
-  fill(el, 'share', `
+  // Nástroj pro vydavatele: ukáže instalační balíček vzniklý buildem na TOMTO Macu. Zákazník žádný
+  // balíček nemá a `npm pack` s cestami ve složce vývojáře by mu nic neříkaly – karta se tam nezobrazí.
+  fill(el, 'share', !pkg ? '' : `
     ${head(ICON.external, 'Instalace pro další lidi', 'Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.')}
     ${i.desktop ? (pkg ? `
       <p class="set-desc">Předej příjemci tento instalační ZIP Agenteeq pro Mac. Rozbalí ho a přesune Agenteeq do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.</p>

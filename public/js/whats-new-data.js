@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.12.1',
+    date: '2026-09-20',
+    title: 'Poctivější stavy, přehlednější Nastavení, bezpečnější spouštění',
+    items: [
+      'Aplikace už netvrdí „nainstalováno“ jen proto, že na disku zůstala složka. Gemini CLI, Qwen Code, Copilot a Cursor se hlásí jako nalezené, jen když je nástroj opravdu na Macu; jinak stojí, že po něm zbyla jen stopa.',
+      'Pod číslem „tokenů dnes“ v postranním panelu je vidět, které nástroje ho způsobily, a popisek říká, že jde o vstup a výstup bez cache, ne o cenu ani limit.',
+      'Nastavení je o čtvrtinu kratší. Zdroje agentů jsou jeden přehledný seznam, webové služby jedna řada čipů a nenalezené nástroje jsou sbalené. Propojení s Claude Code a instalace pro další lidi se ukážou jen tomu, komu dávají smysl.',
+      'Bezpečnost podle nezávislého auditu: konverzace s podvrženým označením už nespustí příkaz s cizím přepínačem, „Otevřít složku“ neotevře balíček jako program, zálohy nastavení Claude Code jsou jen pro tebe a kód pro spárování rozšíření vydá jen Mac.',
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-09-15',
     title: 'Agenti na telefonu odkudkoli, přes tvou vlastní síť',
