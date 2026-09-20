@@ -801,6 +801,9 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-box input.pair-adresa { font: 400 16px/1.4 var(--f-mono); letter-spacing: 0; }
 .pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
 .pair-box small { color: var(--mute); font-size: 12px; }
+/* Druhá cesta pro toho, kdo aplikaci ještě nemá: bez ní je pole na adresu slepá ulička. */
+.pair-jinak { margin-top: -4px; }
+.pair-box a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pair-error { color: var(--velvet-ink); font-size: 13px; }
 .pin-box { display: grid; gap: 4px; margin-top: 12px; padding: 16px; border-radius: var(--r-md); background: var(--ink-surface); color: var(--on-ink); text-align: center; }
 .pin-box b { font: 500 32px/1 var(--f-mono); letter-spacing: .12em; }
