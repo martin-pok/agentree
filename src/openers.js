@@ -5,7 +5,22 @@ import { openCommand, JE_MAC, jeAbsolutniCesta } from './platform.js';
 // Otevření session přímo v aplikaci, kde běží. Plán se skládá jen ze serverových dat – nikdy z textu od klienta.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SAFE_ID = /^[\w.-]{1,120}$/;
+// Identifikátor konverzace se vkládá do příkazu (`claude --resume <id>`). Nesmí začínat pomlčkou,
+// jinak by ho cílový program přečetl jako přepínač: session s ID „--dangerously-skip-permissions“
+// dala příkaz, který spustil Claude Code bez ptaní na povolení (ověřeno bezpečnostním auditem).
+const SAFE_ID = /^[A-Za-z0-9_][\w.-]{0,119}$/;
+
+// Složka se otevírá jen jako složka. `open x.app` by program spustil a složka s podvrženým balíčkem
+// (naklonovaný repozitář, rozbalený archiv) nemá karanténu, takže by Gatekeeper přeskočil.
+const BALICEK = /\.(app|command|tool|terminal|workflow|action|scpt|scptd|pkg|mpkg|saver|prefPane|bundle|framework|xpc|appex|plugin|kext)$/i;
+export function bezpecnaSlozka(cesta, { stat = fs.statSync, real = fs.realpathSync } = {}) {
+  try {
+    const skutecna = real(cesta);
+    return stat(skutecna).isDirectory() && !BALICEK.test(String(skutecna).replace(/[\\/]+$/, ''));
+  } catch {
+    return false;
+  }
+}
 
 export const APPS = {
   codex: { name: 'ChatGPT', path: '/Applications/ChatGPT.app', label: 'Otevřít v Codexu' },
@@ -101,7 +116,7 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   }
   if (target === 'folder') {
     if (!hasFolder(s) || s.source === 'web') return null;
-    return { kind: 'open', args: [s.cwd], label: aplikace ? 'Finder' : 'Správce souborů', title: 'Otevřít složku' };
+    return { kind: 'open', args: [s.cwd], folderOnly: true, label: aplikace ? 'Finder' : 'Správce souborů', title: 'Otevřít složku' };
   }
   return null;
 }
@@ -139,6 +154,9 @@ const TERMINAL_SCRIPT = ['on run argv', 'tell application "Terminal"', 'activate
 export async function executeOpen(plan, { dry = false } = {}) {
   if (dry) return { ok: true, dry: true };
   if (plan.kind === 'open') {
+    if (plan.folderOnly && !bezpecnaSlozka(plan.args[plan.args.length - 1])) {
+      return { ok: false, error: `${plan.label}: tohle není obyčejná složka, a tak ji Agenteeq neotevře (balíček by se mohl spustit jako program).` };
+    }
     // Přepínače `open` (-a, -R) zná jen macOS. Jinde je plán vždycky jediný cíl –
     // cesta nebo adresa – a ten se předá tomu, co systém pro otevírání má.
     if (!JE_MAC) {

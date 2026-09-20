@@ -377,7 +377,7 @@ export function createClaudeCodeConnector(ctx) {
 
   // Okamžité události z Claude Code hooků (viz src/hooks-installer.js).
   async function ingestHook(p, now = Date.now()) {
-    if (!p || typeof p.session_id !== 'string' || !/^[\w-]{8,80}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
+    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
     const event = String(p.hook_event_name || '');
     if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'].includes(event)) return { ok: false, error: 'Neznámá událost.' };
     if (typeof p.transcript_path === 'string') {
@@ -461,7 +461,7 @@ export function createClaudeCodeConnector(ctx) {
   }
 
   function ingestStatusline(p, now = Date.now()) {
-    if (!p || typeof p.session_id !== 'string' || !/^[\w-]{8,80}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
+    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
     const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
     const five = statusLimit('five_hour', rl.five_hour, now);
     const week = statusLimit('seven_day', rl.seven_day, now);

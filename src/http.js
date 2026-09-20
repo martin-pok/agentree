@@ -399,7 +399,12 @@ export function createHttpServer(app, existingServer = null) {
       if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
       return app.extensionSeen(await readBody(req));
     }, { token: true }],
-    ['POST', /^\/api\/extension\/pair-code$/, async () => app.createExtensionPairCode()],
+    ['POST', /^\/api\/extension\/pair-code$/, async (req) => {
+      // Kód spáruje rozšíření a vydá dlouhodobý token. Vytvořit ho smí jen člověk u Macu — spárovaný
+      // telefon by si jinak mohl token sám vyžádat a přežil by i své odpárování.
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Párovací kód rozšíření lze vytvořit jen na Macu.');
+      return app.createExtensionPairCode();
+    }],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
       const pair = await app.pairExtension(String(req.headers['x-agenteeq-pair-code'] || ''));

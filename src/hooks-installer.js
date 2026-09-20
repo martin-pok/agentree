@@ -126,7 +126,14 @@ async function writeSettings(file, json, raw, now) {
   let mode = 0o644;
   if (raw !== null) {
     backup = `${file}.agenteeq-backup-${now}`;
-    await fs.writeFile(backup, raw);
+    // 0600 jako originál: v nastavení Claude Code bývají proměnné prostředí s klíči.
+    await fs.writeFile(backup, raw, { mode: 0o600 });
+    // Zálohy z dřívějších verzí vznikaly s právy 0644. Nemažou se, jen se zúží oprávnění.
+    const slozka = path.dirname(file);
+    const predpona = `${path.basename(file)}.agenteeq-backup-`;
+    for (const jmeno of await fs.readdir(slozka).catch(() => [])) {
+      if (jmeno.startsWith(predpona)) await fs.chmod(path.join(slozka, jmeno), 0o600).catch(() => {});
+    }
     try { mode = (await fs.stat(file)).mode & 0o777; } catch { /* výchozí práva */ }
   }
   await writeFileAtomic(file, `${JSON.stringify(json, null, 2)}\n`, mode);
