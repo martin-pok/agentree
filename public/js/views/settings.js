@@ -7,7 +7,7 @@ import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 import { takeJump } from '../jump.js';
 
-const v = { el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
+const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -18,22 +18,30 @@ const CLOUD = [
 
 const WEB_FRESH_MS = 10 * 60 * 1000;
 
-function webSourceCard(id, site, web, now, paired = false) {
+// Webová služba v kartě rozšíření: čip s tečkou, když od ní přišla data. Podrobnost je v popisku,
+// aby se nerozpadlo na devět karet, které říkají pořád totéž.
+function webChip(id, site, web, now) {
   const at = web?.sites?.[id] || 0;
-  const fresh = at && now - at < WEB_FRESH_MS;
-  const recent = at && now - at < 24 * 60 * 60 * 1000;
-  const status = fresh ? ['connected', 'Připojeno'] : recent ? ['idle', 'Bez nových dat'] : ['missing', 'Připojit'];
-  const detail = fresh
-    ? 'Rozšíření právě čte otevřenou konverzaci.'
-    : recent
-      ? 'Rozšíření tuto službu vidělo během posledních 24 hodin.'
-      : paired ? 'Rozšíření je připojené. Otevři službu v Chromu a konverzace se objeví.' : 'Po propojení rozšíření otevři službu v Chromu.';
-  return `<article class="conn conn--web" data-web-source="${esc(id)}">
-    <div class="conn-head">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<h4>${esc(site.name)}</h4>${stateBadge(...status)}</div>
-    <p>${detail}</p>
-    <div class="conn-foot"><code>Chrome · rozšíření Agenteeq</code><span class="badge">Zkušební</span></div>
-    ${at ? `<span class="small muted">Poslední data <span data-ago="${at}">${rel(at, now)}</span></span>` : '<button class="btn btn--sm conn-cta" type="button" data-action="extension-scroll">Jak propojit</button>'}
-  </article>`;
+  const title = at && now - at < WEB_FRESH_MS ? 'Rozšíření právě čte otevřenou konverzaci.' : at ? `Naposledy data ${rel(at, now)}.` : 'Zatím bez dat – otevři službu v Chromu.';
+  return `<li class="site-chip${at ? ' is-seen' : ''}" data-web-source="${esc(id)}" title="${esc(title)}">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<span>${esc(site.name)}</span></li>`;
+}
+
+// Sbalitelná část. Otevřené/zavřené se pamatuje mimo vykreslení, jinak by se každé překreslení
+// (a přepisují se i „před 2 min“) zavřelo pod rukama.
+const fold = (key, summary, body, { open = false, count = null, cls = '' } = {}) =>
+  `<details class="src-fold${cls ? ` ${cls}` : ''}" data-fold="${key}"${(v.folds[key] ?? open) ? ' open' : ''}><summary>${summary}${count ? `<span class="src-count">${count}</span>` : ''}</summary>${body}</details>`;
+
+const SOURCE_IDS = ['claude-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code'];
+const EXTRA_IDS = ['claude-desktop-usage', 'processes', 'local-agents', 'cloud-billing'];
+
+function sourceRow(c) {
+  const posledni = c.lastEventAt ? ` · poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span>` : '';
+  return `<li class="src-row" data-state="${esc(c.state)}">
+    <span class="src-logo">${glyph(c)}</span>
+    <div class="src-main"><b>${esc(c.name)}</b>${c.verified ? '' : '<span class="src-beta" title="Zatím ověřeno jen podle dokumentace výrobce, ne na skutečných datech.">Beta</span>'}
+      <p>${esc(c.detail || c.description)}${posledni}</p></div>
+    ${stateBadge(c.state, STATE_LABEL[c.state] || c.state)}
+  </li>`;
 }
 
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
@@ -142,16 +150,16 @@ function customAgentsCard() {
     <button class="btn btn--sm" type="button" data-action="custom-remove" data-id="${esc(a.id)}">Odebrat</button>
   </article>`).join('');
 
-  return `
-    ${head(ICON.plug, 'Vlastní agenti', 'Lokální služby, které nemají vlastní konektor – ComfyUI, Ollama nebo server s rozhraním OpenAI (LM Studio, vLLM, llama.cpp). Agenteeq se jich jen ptá na stav.')}
-    ${rows ? `<div class="custom-agents">${rows}</div>` : '<p class="set-note">Zatím žádný vlastní agent.</p>'}
+  return fold('custom', 'Přidat vlastního agenta (ComfyUI, Ollama, server s rozhraním OpenAI)', `
+    <p class="set-desc">Lokální služby, které nemají vlastní konektor. Agenteeq se jich jen ptá na stav.</p>
+    ${rows ? `<div class="custom-agents">${rows}</div>` : ''}
     <form class="custom-agent-form" data-custom-form novalidate>
       <label class="field"><span>Název</span><input name="name" type="text" maxlength="40" autocomplete="off" placeholder="Třeba ComfyUI na Macu" value="${esc(draft.name || '')}"></label>
       <label class="field"><span>Typ</span><select name="type">${types.map((t) => `<option value="${esc(t.id)}"${draft.type === t.id ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>
       <label class="field"><span>Adresa</span><input name="url" type="text" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8188" value="${esc(draft.url || '')}"${v.customError ? ' aria-invalid="true"' : ''}>${v.customError ? `<span class="field-error" role="alert">${esc(v.customError)}</span>` : ''}</label>
       <button class="btn btn--sm btn--primary" type="submit">Přidat agenta</button>
     </form>
-    <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`;
+    <p class="set-note">Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.</p>`, { open: Boolean(list.length || v.customError), count: list.length || null });
 }
 
 // Soukromí: karta říká jen ověřitelná fakta – co je v paměti, co na disku a co odchází ven.
@@ -214,6 +222,12 @@ function mount(el) {
         </section>`).join('')}
       </div>
     </div>`;
+
+  // `toggle` nebublá, proto zachytávání. Stav sbalených částí přežije překreslení.
+  el.addEventListener('toggle', (e) => {
+    const key = e.target?.dataset?.fold;
+    if (key) v.folds[key] = e.target.open;
+  }, true);
 
   const nav = el.querySelector('.set-nav');
   const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -547,9 +561,11 @@ function update() {
   const h = i.claudeHooks;
   const outdated = !h.error && (h.installed || h.partial) && !h.current;
   const claudeState = h.error ? ['error', 'Chyba'] : h.installed && h.current ? ['connected', 'Zapnuto'] : outdated ? ['missing', 'Je potřeba obnovit'] : ['idle', 'Vypnuto'];
-  fill(el, 'claude', `
+  // Kdo Claude Code nemá, tuhle kartu vidět nepotřebuje – Agenteeq na něm nestojí.
+  const maClaude = state.connectors.some((c) => c.id === 'claude-code' && c.state !== 'missing') || h.installed || h.partial;
+  fill(el, 'claude', !maClaude ? '' : `
     ${head(glyph('anthropic'), 'Propojení s Claude Code',
-      'Agenteeq se hned dozví, když Claude Code začne pracovat, dokončí úkol nebo čeká na tvé povolení. Uvidíš i přesné limity předplatného (5 hodin a týden) a zaplnění paměti konverzace. Bez propojení vidí Agenteeq jen historii konverzací – se zpožděním a bez žádostí o povolení.',
+      'Claude Code hned oznámí, že pracuje, čeká na tvé povolení nebo narazil na limit. Bez propojení se to Agenteeq dozví jen ze zpožděné historie.',
       stateBadge(...claudeState))}
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
     ${outdated ? '<p class="set-note">Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.</p>' : ''}
@@ -582,36 +598,28 @@ function update() {
     </ol>`;
   fill(el, 'extension', `
     ${head(ICON.spark, 'Rozšíření pro Chrome',
-      'Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči. Rozšíření posílá data jen do Agenteeq na tomto Macu (127.0.0.1) – nic neodchází na internet.',
+      'Agenti z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem i přepisem a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu – nic neodchází na internet.',
       stateBadge(...badge))}
-    <div class="ext-feats">
-      <div class="ext-feat"><span class="ext-feat-ico">${ICON.open}</span><div><b>Agenti z webu v přehledu</b><span>ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot – stav, přepis i dosažený limit živě.</span></div></div>
-      <div class="ext-feat"><span class="ext-feat-ico">${ICON.spark}</span><div><b>Zadání se vloží samo</b><span>Spustíš webovou službu ze „Spustit agenta“ a zadání čeká v jejím poli zprávy. Odešleš ho Enterem.</span></div></div>
-    </div>
+    <ul class="site-chips" aria-label="Podporované webové služby">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
     ${ext.outdated ? `<p class="set-note set-note--warn">V Chromu běží rozšíření ${esc(ext.version)}, aplikace má ${esc(ext.expectedVersion)}. Otevři <code>chrome://extensions</code> a u Agenteeq klikni na šipku obnovení ↻.</p>` : ''}
     ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
-    ${paired ? `<details class="ext-reinstall"><summary>Instalace a spárování znovu</summary>${installSteps}</details>` : installSteps}
-    <p class="small muted">Rozšíření se instaluje v režimu pro vývojáře, dokud nebude v Chrome Web Store. Funguje i v prohlížečích Brave, Arc a Edge.</p>
-    <div class="site-grid">${Object.entries(sites).map(([k, site]) => {
-      const at = web?.sites?.[k];
-      return `<div class="site">${glyph({ connector: 'web', app: site.name, provider: site.provider })}<span>${esc(site.name)}</span><small>${at ? `data <span data-ago="${at}">${rel(at)}</span>` : 'zatím bez dat'}</small></div>`;
-    }).join('')}</div>`);
+    ${paired ? fold('ext', 'Instalace a spárování znovu', installSteps, { cls: 'ext-reinstall' }) : installSteps}
+    <p class="small muted">Rozšíření se instaluje v režimu pro vývojáře, dokud nebude v Chrome Web Store. Funguje i v Brave, Arcu a Edge.</p>`);
   // Přišel sem odkaz z průvodce, prvních kroků nebo „Co je nového“ – ukázat kartu rozšíření.
   onJump();
 
-  /* Zdroje dat */
+  /* Zdroje agentů: jeden seznam, ne mřížka karet. Nalezené nahoře, nenalezené a doplňkové sbalené. */
+  const dle = (ids) => ids.map((id) => state.connectors.find((c) => c.id === id)).filter(Boolean);
+  const zdroje = dle(SOURCE_IDS);
+  const nalezene = zdroje.filter((c) => c.state !== 'missing');
+  const nenalezene = zdroje.filter((c) => c.state === 'missing');
+  const doplnky = dle(EXTRA_IDS);
   fill(el, 'connectors', `
-    ${head(ICON.plug, 'Zdroje dat', 'Odkud Agenteeq čte práci agentů na tomto Macu. „Ověřeno“ znamená vyzkoušeno na skutečných datech, „Zkušební“ podle dokumentace výrobce.',
+    ${head(ICON.plug, 'Zdroje agentů', 'Odkud Agenteeq čte práci agentů na tomto Macu. Nový nástroj se přidá sám, jakmile ho poprvé použiješ.',
       `<button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}Načíst znovu</button>`)}
-    <div class="conn-grid">${state.connectors.map((c) => `
-      <article class="conn">
-        <div class="conn-head">${glyph(c)}<h4>${esc(c.name)}</h4>${stateBadge(c.state, STATE_LABEL[c.state] || c.state)}</div>
-        <p>${esc(c.detail || c.description)}</p>
-        <div class="conn-foot"><code>${esc(c.source)}</code><span class="badge${c.verified ? ' badge--ok' : ''}">${c.verified ? 'Ověřeno' : 'Zkušební'}</span></div>
-        ${c.lastEventAt ? `<span class="small muted">Poslední data <span data-ago="${c.lastEventAt}">${rel(c.lastEventAt)}</span></span>` : ''}
-      </article>`).join('')}</div>
-    <div class="conn-source-head"><span>Webové zdroje přes rozšíření</span><small>Každá služba má vlastní stav.</small></div>
-    <div class="conn-grid conn-grid--web">${Object.entries(sites).map(([id, site]) => webSourceCard(id, site, web, Date.now(), Boolean(i.extension?.pairedAt))).join('')}</div>`);
+    ${nalezene.length ? `<ul class="src-list">${nalezene.map(sourceRow).join('')}</ul>` : '<p class="set-note">Zatím nebyl nalezen žádný agent. Spusť třeba Claude Code, Codex nebo Cursor a objeví se tady.</p>'}
+    ${nenalezene.length ? fold('missing', 'Nenalezeno na tomto Macu', `<ul class="src-list">${nenalezene.map(sourceRow).join('')}</ul>`, { count: nenalezene.length }) : ''}
+    ${doplnky.length ? fold('extra', 'Doplňková data', `<ul class="src-list">${doplnky.map(sourceRow).join('')}</ul>`, { count: doplnky.length }) : ''}`);
 
   /* Soukromí */
   fill(el, 'privacy', privacyCard());
