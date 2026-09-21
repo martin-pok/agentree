@@ -29,6 +29,21 @@ export function tokensSince(sessions, since, pred) {
 }
 
 export function periodBuckets(period, now) {
+  // „Dnes“ = kalendářní den od půlnoci. Rolling 24 hodin (období „24 hodin“) je něco jiného: v osm
+  // ráno do něj patří i noční práce z předchozího dne, takže čísla nesedí s tím, co člověk počítá
+  // jako dnešek. Obě období proto existují vedle sebe a jsou pojmenovaná podle toho, co měří.
+  if (period === 'today') {
+    const od = startOfDay(now);
+    const hodin = Math.floor((now - od) / H) + 1;
+    const starts = Array.from({ length: hodin }, (_, i) => od + i * H);
+    return {
+      starts,
+      since: od,
+      indexOf: (ts) => Math.floor((ts - od) / H),
+      labels: starts.map((t) => timeHM(t)),
+      tips: starts.map((t) => `${timeHM(t)}–${timeHM(t + H)}`),
+    };
+  }
   if (period === 'day') {
     const h0 = Math.floor(now / H) * H - 23 * H;
     const starts = Array.from({ length: 24 }, (_, i) => h0 + i * H);
@@ -40,7 +55,7 @@ export function periodBuckets(period, now) {
       tips: starts.map((t) => `${timeHM(t)}–${timeHM(t + H)}`),
     };
   }
-  const days = period === 'month' ? 30 : 7;
+  const days = period === 'month' ? 30 : period === 'fortnight' ? 14 : 7;
   const today = startOfDay(now);
   const starts = Array.from({ length: days }, (_, i) => startOfDay(today - (days - 1 - i) * DAY + 2 * H));
   const index = new Map(starts.map((t, i) => [t, i]));
@@ -50,7 +65,7 @@ export function periodBuckets(period, now) {
     indexOf: (ts) => index.get(startOfDay(ts)) ?? -1,
     labels: starts.map((t) => {
       const d = new Date(t);
-      return days === 7 ? `${WEEKDAYS[d.getDay()]} ${d.getDate()}.` : `${d.getDate()}. ${d.getMonth() + 1}.`;
+      return days <= 7 ? `${WEEKDAYS[d.getDay()]} ${d.getDate()}.` : `${d.getDate()}. ${d.getMonth() + 1}.`;
     }),
     tips: starts.map((t) => {
       const d = new Date(t);

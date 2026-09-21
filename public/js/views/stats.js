@@ -9,7 +9,7 @@ import { watchBalance } from '../balance.js';
 import { fill, tween, legendHtml, limitGauges, emptyState } from '../ui.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
-const PERIODS = [['day', '24 hodin'], ['week', '7 dní'], ['month', '30 dní']];
+const PERIODS = [['today', 'Dnes'], ['day', '24 hodin'], ['week', '7 dní'], ['fortnight', '14 dní'], ['month', '30 dní']];
 
 function mount(el) {
   v.el = el;

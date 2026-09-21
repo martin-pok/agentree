@@ -44,7 +44,7 @@ for (const engine of engines) {
     await page.locator('[data-welcome-next]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     await page.reload();
-    await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
+    await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
     for (const selector of ['.token-card', '.calm']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
@@ -204,7 +204,7 @@ for (const engine of engines) {
         await page.reload();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
         await page.goto(`${server.url}/#/prehled`);
-        await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
+        await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
         await page.screenshot({ path: `dist/qa/${engine}-dark-overview.png`, fullPage: true });
         const tmavaSirka = await page.locator('.nav a[aria-current="page"]').evaluate((el) => getComputedStyle(el).backgroundColor);
         await page.setViewportSize({ width: 1440, height: 2560 });

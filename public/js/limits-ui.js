@@ -30,7 +30,7 @@ function chips(rows, now) {
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9))
     .map((l) => {
       const s = limitState(l, now);
-      return `<span class="lchip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b></span>`;
+      return `<span class="lim-chip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b></span>`;
     })
     .join('');
 }

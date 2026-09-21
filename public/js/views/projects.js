@@ -48,6 +48,32 @@ function suggestions() {
     .slice(0, 4);
 }
 
+// Překreslení mřížky bez bliknutí obrázků. `fill()` nahradí celý obsah, takže i karta, která se
+// nezměnila, dostane nový <img> – a ten prohlížeč vykresluje znovu, takže pod ním na okamžik
+// prosvitne podkladový přechod. Nejvíc je to vidět po přetažení karty, kdy se přepisuje celá
+// mřížka. Karty se proto porovnávají po jedné: shodná se ponechá, u změněné se převezme původní
+// obrázek (stejná adresa = stejný soubor), takže se znovu nenačítá.
+function sesadKarty(box, html) {
+  if (box._html === html) return;
+  const stare = new Map([...box.querySelectorAll('.pcard[data-pid]')].map((n) => [n.dataset.pid, n]));
+  if (!stare.size) { box.innerHTML = html; box._html = html; return; }
+  const nove = document.createElement('div');
+  nove.innerHTML = html;
+  for (const nova of [...nove.querySelectorAll('.pcard[data-pid]')]) {
+    const stara = stare.get(nova.dataset.pid);
+    if (!stara) continue;
+    if (stara.outerHTML === nova.outerHTML) { nova.replaceWith(stara); continue; }
+    const puvodni = stara.querySelector('.pcover img');
+    const novy = nova.querySelector('.pcover img');
+    if (puvodni && novy && puvodni.src === novy.src) novy.replaceWith(puvodni);
+    const puvodniLogo = stara.querySelector('.plogo img');
+    const noveLogo = nova.querySelector('.plogo img');
+    if (puvodniLogo && noveLogo && puvodniLogo.src === noveLogo.src) noveLogo.replaceWith(puvodniLogo);
+  }
+  box.replaceChildren(...nove.childNodes);
+  box._html = html;
+}
+
 function cardHtml(p, now) {
   const st = projectStats(p, now);
   const spark = dailyActivity(st.live, now);
@@ -156,7 +182,7 @@ function update() {
   } else if (!list.length) {
     fill(el, 'grid', `<div class="card">${emptyState({ title: q ? 'Žádný projekt neodpovídá hledání' : 'V archivu nic není', text: q ? 'Zkus jiný název nebo složku.' : '' })}</div>`);
   } else if (!v.reorder?.isDragging()) {
-    fill(el, 'grid', `<div class="pgrid">${list.map((p) => cardHtml(p, now)).join('')}
+    sesadKarty(el.querySelector('[data-region="grid"]'), `<div class="pgrid">${list.map((p) => cardHtml(p, now)).join('')}
       ${v.tab === 'active' && unassigned ? `<a class="pcard pcard--ghost" href="#/agenti?projekt=bez"><span class="pcard-top"><span class="pghost-mark">${ICON.folder}</span><span class="pcard-name">Nezařazené</span></span>
         <span class="pcard-desc">${unassigned} ${plural(unassigned, 'konverzace čeká', 'konverzace čekají', 'konverzací čeká')} na zařazení do projektu.</span><span class="link-inline">Roztřídit ${ICON.arrow}</span></a>` : ''}
     </div>`);

@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.20.0',
+    date: '2026-09-21',
+    title: 'Dnes je kalendářní den, karty už neproblikávají',
+    items: [
+      'Období „Dnes“ počítá od půlnoci. Dosud bylo nejkratší období „24 hodin“, do kterého ráno patřila i noční práce z předchozího dne – proto čísla nesedila s tím, co za dnešek počítáš ty. Obě období jsou teď vedle sebe a přibylo „14 dní“.',
+      'Obrázky na kartách projektů zůstanou na místě. Dřív každé překreslení (přetažení karty, příchod živých dat) vyrobilo nový obrázek a pod ním na okamžik prosvitl podkladový přechod.',
+      'Vybraná služba ve „Spustit agenta“ měla obrys dvakrát, což na tmavém pozadí vypadalo jako stín. Zůstal jeden.',
+      'Stav vpravo nahoře se jmenuje „Připojeno“.',
+    ],
+  },
+  {
     version: '0.19.1',
     date: '2026-09-21',
     title: 'Nabídka vypadá stejně na šířku i na výšku',

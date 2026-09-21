@@ -251,3 +251,38 @@ test('nabídka se vejde do panelu a název se umí zkrátit', async () => {
   assert.match(css, /\.nav \{[^}]*grid-template-columns: minmax\(0, 1fr\)/, 'šířka sloupce musí být určená');
   assert.match(css, /\.nav a > span \{[^}]*min-width: 0;[^}]*text-overflow: ellipsis/, 'dlouhý název se zkrátí');
 });
+
+// Obrázky na kartách projektů problikávaly: každé překreslení mřížky (přetažení karty, příchod
+// živých dat) vyrobilo nový <img>, který prohlížeč vykresloval znovu, a pod ním prosvitl přechod.
+test('překreslení mřížky projektů zachová karty i jejich obrázky', async () => {
+  const src = await zdroj('public/js/views/projects.js');
+  assert.match(src, /function sesadKarty\(box, html\)/, 'mřížka se sesazuje po kartách, ne přepisem celku');
+  assert.match(src, /if \(stara\.outerHTML === nova\.outerHTML\) \{ nova\.replaceWith\(stara\); continue; \}/, 'nezměněná karta zůstane');
+  assert.match(src, /puvodni\.src === novy\.src\) novy\.replaceWith\(puvodni\)/, 'u změněné karty se převezme původní obrázek');
+  assert.doesNotMatch(src, /fill\(el, 'grid', `<div class="pgrid">/, 'mřížka se nesmí přepisovat celá');
+});
+
+test('stav připojení se jmenuje „Připojeno“ a vybraná pilulka má jediný obrys', async () => {
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /live: \['dot--live', 'Připojeno', 'Připojeno'\]/);
+  assert.doesNotMatch(app, /'Živě'/);
+  const css = await zdroj('public/styles.css');
+  const vybrana = css.match(/\.lchip\[aria-checked='true'\] \{[^}]*\}/)?.[0] || '';
+  assert.ok(vybrana, 'pravidlo pro vybranou pilulku chybí');
+  assert.doesNotMatch(vybrana, /box-shadow/, 'obrys dvakrát (border + shadow) vypadá jako stín');
+  assert.equal((css.match(/^\.lchip \{/gm) || []).length, 1, 'jméno .lchip nesmí mít dvě různé komponenty');
+});
+
+test('období nabízejí kalendářní „Dnes“ i 14 dní a nepletou se s posledními 24 hodinami', async () => {
+  const { periodBuckets } = await import('../public/js/data.js');
+  const ted = new Date(2026, 8, 21, 8, 30).getTime(); // ráno: rolling okno sahá do včerejší noci
+  const dnes = periodBuckets('today', ted);
+  const den = periodBuckets('day', ted);
+  assert.equal(new Date(dnes.since).getHours(), 0, '„Dnes“ začíná o půlnoci');
+  assert.equal(new Date(dnes.since).getDate(), 21);
+  assert.ok(den.since < dnes.since, '„24 hodin“ sahá do předchozího dne – proto obě období vedle sebe');
+  assert.equal(dnes.starts.length, 9, 'v 8:30 má dnešek devět hodinových sloupců');
+  assert.equal(periodBuckets('fortnight', ted).starts.length, 14);
+  const stats = await zdroj('public/js/views/stats.js');
+  assert.match(stats, /\['today', 'Dnes'\], \['day', '24 hodin'\], \['week', '7 dní'\], \['fortnight', '14 dní'\], \['month', '30 dní'\]/);
+});

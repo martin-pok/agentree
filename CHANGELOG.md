@@ -15,6 +15,14 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.20.0 – 2026-09-21 · kalendářní den, stabilní karty, čisté pilulky
+
+- **Kalendářní „Dnes“:** `periodBuckets('today')` počítá od půlnoci po hodinách. Období „24 hodin“ zůstává (rolling), ale je pojmenované podle toho, co měří – ráno do něj patří i noční práce z předchozího dne. Naměřeno na skutečných datech: Dnes 203 tis. × 24 hodin 1,32 M. Přibylo „14 dní“ (`fortnight`). Postranní panel i Přehled už kalendářní den používaly.
+- **Problikávání obrázků na kartách projektů:** `fill()` přepisoval celou mřížku, takže každé překreslení vyrobilo nový `<img>`. Nová `sesadKarty()` porovnává karty po jedné – nezměněná se ponechá, u změněné se převezme původní obrázek. Ověřeno: po přetažení i po šesti živých aktualizacích **0 znovu vytvořených obrázků**.
+- **Dvojitý obrys u vybrané pilulky** (`border` + inset `box-shadow`) vypadal na tmavém podkladu jako stín. Zůstal jeden obrys, jiné pozadí a tučnější text.
+- **`.lchip` bylo v CSS dvakrát** pro dvě různé komponenty (chip limitu × výběr agenta). Chip limitu přejmenován na `.lim-chip`.
+- Stav připojení: „Živě“ → „Připojeno“.
+
 ## 0.19.1 – 2026-09-21 · jednotná nabídka
 
 - **Nabídka na výšku měla druhý vzhled** (vlastní dlaždice, jiný hover s posunem, tečka místo mosazného pruhu, jiné barvy). Pravidlo pro portrét zredukováno na dva řádky – rozestup a výška cíle; všechno ostatní se dědí. Naměřeno: aktivní položka, běžná položka, hover i odsazení jsou v obou režimech shodné.

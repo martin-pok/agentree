@@ -239,7 +239,7 @@ function updateChrome() {
   // Na úzké obrazovce se vedle dlouhého názvu stránky nevejde celý popisek, ale samotná tečka
   // nic neříká. Každý stav má proto i krátkou variantu; přepíná se v CSS, ne v JavaScriptu.
   const STAVY = {
-    live: ['dot--live', 'Živě', 'Živě'],
+    live: ['dot--live', 'Připojeno', 'Připojeno'],
     connecting: ['dot', 'Připojuji…', 'Připojuji…'],
     down: ['dot--down', 'Obnovuji spojení…', 'Bez spojení'],
   };

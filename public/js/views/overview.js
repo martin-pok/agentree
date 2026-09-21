@@ -72,7 +72,7 @@ function mount(el) {
       <section data-enter style="--i:3" data-region="meter" aria-label="Tokeny dnes"></section>
       <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
         <div class="sec-head"><h2 id="chart-h">Tokeny</h2>
-          <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="week">Týden</option><option value="day">24 hodin</option><option value="month">30 dní</option></select></label>
+          <label class="select"><span class="sr-only">Období</span><select data-action="period"><option value="today">Dnes</option><option value="day">24 hodin</option><option value="week">Týden</option><option value="fortnight">14 dní</option><option value="month">30 dní</option></select></label>
         </div>
         <div data-region="chart"></div>
         <div class="legend" data-region="legend"></div>
