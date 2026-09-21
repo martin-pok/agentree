@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.17.3',
+    date: '2026-09-21',
+    title: 'Kratší seznam Dovedností a oprava okna rozšíření',
+    items: [
+      'Dovednosti se načítají po 36 kartách a tlačítkem Zobrazit dalších. Stránka se 147 dovednostmi byla na telefonu vysoká přes 37 000 px, teď asi 9 700 px.',
+      'Okno rozšíření pro Chrome se zastaralou verzí přesáhlo 600 px, které Chrome ukáže. Seznam služeb je kratší a všechno se vejde.',
+    ],
+  },
+  {
     version: '0.17.2',
     date: '2026-09-20',
     title: 'Menu jako velké dlaždice na monitoru na výšku',

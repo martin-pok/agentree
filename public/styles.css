@@ -1968,3 +1968,4 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .nav-badge { min-width: 28px; height: 28px; line-height: 28px; border-radius: 14px; font-size: 13px; }
   .side-foot { margin-top: auto; }
 }
+.skills-more { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 24px 0 8px; }

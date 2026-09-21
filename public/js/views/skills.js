@@ -4,7 +4,8 @@ import { ICON } from '../icons.js';
 import { fill, emptyState, toast, copy, modal } from '../ui.js';
 import { renderMarkdown, splitFrontMatter } from '../markdown.js';
 
-const v = { el: null, items: null, q: '', source: 'all', origin: 'all', sort: 'name', error: '' };
+const v = { el: null, items: null, q: '', source: 'all', origin: 'all', sort: 'name', error: '', shown: 36, sig: '' };
+const STRANA = 36; // karet najednou: 147 dovedností dělalo na telefonu stránku vysokou přes 37 000 px
 
 const kb = (bytes) => `${fmtNum(Math.max(1, Math.round(bytes / 1024)))} kB`;
 
@@ -157,6 +158,7 @@ function mount(el) {
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-more]')) { v.shown += STRANA; update(); return; }
     const src = e.target.closest('[data-source-filter]');
     if (src) { v.source = src.dataset.sourceFilter; update(); return; }
     const sort = e.target.closest('[data-sort]');
@@ -221,8 +223,12 @@ function update() {
   const list = serad(v.items.filter((s) => (v.source === 'all' || s.source === v.source)
     && (v.origin === 'all' || s.origin === v.origin)
     && (!q || norm(`${s.name} ${s.description} ${s.dir}`).includes(q))));
+  const sig = [v.q, v.source, v.origin, v.sort].join('|');
+  if (sig !== v.sig) { v.sig = sig; v.shown = STRANA; }
+  const ukazane = list.slice(0, v.shown);
   fill(el, 'list', list.length
-    ? `<div class="skills">${list.map(cardHtml).join('')}</div>`
+    ? `<div class="skills">${ukazane.map(cardHtml).join('')}</div>${list.length > ukazane.length
+      ? `<div class="skills-more"><span class="muted small">Zobrazeno ${ukazane.length} z ${list.length}</span><button class="btn" type="button" data-more>Zobrazit dalších ${Math.min(STRANA, list.length - ukazane.length)}</button></div>` : ''}`
     : emptyState({
       title: v.items.length ? 'Tomuto filtru neodpovídá žádná dovednost' : 'Na tomto Macu zatím žádné dovednosti nejsou',
       text: v.items.length ? 'Zkus jiný zdroj nebo hledaný výraz.' : 'Agenteeq hledá soubory SKILL.md u Claude (včetně pluginů a plánovaných úloh) a u Codexu.',

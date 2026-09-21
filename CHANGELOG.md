@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.17.3 – 2026-09-21 · kontrola všemi QA skripty
+
+- Poprvé lokálně spuštěné `qa:contrast`, `qa-desktop`, `qa-site`, `qa-extension` (Playwright v dočasné složce mimo repozitář, Chromium i WebKit). Kontrast: všechny texty splňují AA včetně tmavého režimu. **Nalezeno a opraveno:** okno rozšíření se zastaralou verzí mělo 621 px (limit Chromu 600) → `.sites { max-height: 232px }`.
+- Dovednosti: 36 karet na stránku + „Zobrazit dalších“ (147 karet: 37 202 → 9 746 px na telefonu). Filtry stránkování vrací.
+
 ## 0.17.2 – 2026-09-20 · menu jako dlaždice na výšku
 
 - `@media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px)`: `.nav` je mřížka osmi velkých dlaždic, výška `clamp(64px, 5.1dvh, 140px)`, mezera `.95dvh`, první dlaždice `5.3dvh` pod profilem, patička dole (`margin-top: auto`). Rozvržení vychází z Figma návrhu pro okno 1440 × 2560; následná vizuální revize vrátila boční odsazení a zrušila trvalou výplň dlaždic.
