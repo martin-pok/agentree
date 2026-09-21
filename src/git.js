@@ -5,7 +5,11 @@ import { run, clip } from './util.js';
 // Git pro projekty: přehled repozitáře a bezpečné pracovní kopie (worktree) pro paralelní agenty.
 // Vše přes execFile s polem argumentů (bez shellu); názvy větví a cesty se ověřují před použitím.
 
-const git = (cwd, args, timeout = 10000) => run('git', ['-C', cwd, ...args], { timeout });
+// Repozitář může být cizí (naklonovaný, rozbalený archiv) a jeho `.git/config` smí nastavit příkazy, které
+// git sám spustí: `core.fsmonitor` při každém `git status`, hooky při vytvoření pracovní kopie. Proto se
+// tyhle volby přebíjejí na příkazové řádce (ta má přednost) a git se nikdy neptá na heslo.
+const BEZPECNE = ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '-c', 'core.pager=cat', '-c', 'protocol.ext.allow=never', '-c', 'diff.external='];
+const git = (cwd, args, timeout = 10000) => run('git', [...BEZPECNE, '-C', cwd, ...args], { timeout, env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' } });
 const REF = /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)[\w][\w./-]{0,119}$/;
 
 export const isSafeRef = (name) => typeof name === 'string' && REF.test(name) && !name.endsWith('.lock') && !name.endsWith('/') && !name.endsWith('.');

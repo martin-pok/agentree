@@ -15,6 +15,10 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.18.1 – 2026-09-21 · bezpečnostní nález č. 9
+
+- `src/git.js`: každý `git` běží s `-c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c protocol.ext.allow=never -c diff.external=` a `GIT_TERMINAL_PROMPT=0`. Volby z příkazové řádky přebíjejí `.git/config` cizího repozitáře. Test naopak vytvoří repozitář s `core.fsmonitor` a ověří, že skript neběží (ověřeno, že bez ochrany test padá).
+
 ## 0.18.0 – 2026-09-21 · bezpečnostní nálezy č. 1, 4, 5
 
 - **#1 (vysoká) – rozsah telefonu:** `src/remote-scope.js`. Zařízení mimo tento Mac smí číst (`GET`) a jen dvě změny: spárovat se a označit upozornění za přečtená; `/api/fs/*` (procházení disku) je zakázané. Spouštění agentů, nastavení, klíče, hooky, projekty, výdaje, vlastní agenti, média i licence vrací 403 „jen na Macu“. Testy: `remote-scope.test.mjs` a průchod přes skutečnou LAN v `lan.test.mjs`.

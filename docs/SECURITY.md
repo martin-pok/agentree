@@ -64,7 +64,7 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 1 | **vysoká** | spárovaný telefon smí i spouštět agenty s libovolnou složkou, instalovat hooky, měnit klíče a číst přepisy; LAN je prostý HTTP a cookie nemá `Secure` | **opraveno v 0.18.0** (rozsah jen pro čtení, `src/remote-scope.js`). Zůstává: LAN je prostý HTTP – přístup z telefonu nezapínej v cizí síti a používej Tailscale |
 | 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **opraveno v 0.18.0 pro okno aplikace** (klíč pro každé spuštění). Spuštění z terminálu (`agenteeq`) klíč zatím nepoužívá – tam platí původní ochrana (Host, Origin, X-Agenteeq) |
 | 8 | nízká | ingest token je v argumentech `curl` v hooku | otevřené (čitelný jen pro téhož uživatele) |
-| 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | otevřené |
+| 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | **opraveno v 0.18.1** (přebití voleb na příkazové řádce, test předvádí útok) |
 | 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | otevřené, řeší se spolu se získáním Developer ID |
 | 12–14, 16–18 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline`, kontrola odesílatele zpráv v rozšíření, hlavičky webu | otevřené |
 | 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |

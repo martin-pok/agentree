@@ -2,6 +2,14 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.18.1',
+    date: '2026-09-21',
+    title: 'Bezpečnější práce s cizími repozitáři',
+    items: [
+      'Git, který Agenteeq spouští v tvých projektech, už nespustí příkaz ze souboru nastavení cizího repozitáře (třeba staženého z internetu). Dřív mohla naklonovaná složka při zobrazení stavu spustit vlastní skript.',
+    ],
+  },
+  {
     version: '0.18.0',
     date: '2026-09-21',
     title: 'Bezpečnější přístup: telefon jen čte, okno aplikace má klíč',

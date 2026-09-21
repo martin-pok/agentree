@@ -125,3 +125,23 @@ test('health z tohoto Macu nese údaje pro převzetí osiřelého serveru i bez 
     await t.close();
   }
 });
+
+test('git v cizím repozitáři nespustí příkaz z jeho konfigurace (core.fsmonitor)', async () => {
+  const { tempDir } = await import('./helpers.mjs');
+  const { repoInfo } = await import('../src/git.js');
+  const { execFileSync } = await import('node:child_process');
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const dir = await tempDir('agenteeq-git-');
+  const znak = path.join(dir, 'SPUSTENO');
+  const skript = path.join(dir, 'fsm.sh');
+  await fs.writeFile(skript, `#!/bin/sh\ntouch "${znak}"\n`, { mode: 0o755 });
+  const g = (...a) => execFileSync('git', ['-C', dir, ...a], { env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+  g('init', '-q');
+  g('config', 'user.email', 't@t.cz'); g('config', 'user.name', 't');
+  await fs.writeFile(path.join(dir, 'a.txt'), 'x');
+  g('add', '.'); g('commit', '-qm', 'init');
+  g('config', 'core.fsmonitor', skript);
+  await repoInfo(dir);
+  await assert.rejects(fs.access(znak), 'skript z konfigurace repozitáře se nesmí spustit');
+});
