@@ -10,7 +10,7 @@ const steps = [
   { tag: 'V pravou chvíli', title: 'Víš, kdy je\nřada na tobě.', text: 'Sleduj práci, dokončení i selhání. Když agent potřebuje rozhodnutí, otevři jeho konverzaci přímo z přehledu.', visual: 'attention' },
   { tag: 'Limity a peníze', title: 'Víš, kolik\nti zbývá.', text: 'Okna limitů Claude i Codexu na jednom místě, rozbalením i ostatní nástroje. Útrata pozná tvá předplatná a přepočítá je do korun kurzem ČNB. „Dnes“ znamená kalendářní den, ne posledních 24 hodin.', visual: 'limits' },
   { tag: 'Pořádek v každé zakázce', title: 'Konverzace patří\nk projektům.', text: 'Spoj agenty podle klienta nebo složky. Přidej logo klienta, přetáhni karty do svého pořadí a měj brief po ruce, když zadáváš další práci.', visual: 'projects' },
-  { tag: 'Agenti i v prohlížeči', title: 'ChatGPT, Gemini\na Claude.ai taky.', text: 'Rozšíření pro Chrome přidá do přehledu konverzace z webu – stav, přepis i dosažený limit. A zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.', visual: 'browser', action: 'Nainstalovat rozšíření' },
+  { tag: 'Agenti i v prohlížeči', title: 'ChatGPT, Gemini\na Claude.ai taky.', text: 'Rozšíření pro Chrome je beta pro podporované webové chaty. Po spárování může přidat stav, přepis i dosažený limit; vložení zadání závisí na konkrétní službě. Stav vždy ověříš v Nastavení.', visual: 'browser', action: 'Nainstalovat rozšíření' },
   { tag: 'Připraveno na tvém Macu', title: 'Tvá práce.\nTvá data.', text: 'Přepisy zůstávají na tomto počítači – bez účtu a bez odesílání. K oknu aplikace má přístup jen klíč tohoto spuštění a telefon připojený přes tvou síť smí pouze číst.', visual: 'privacy' },
 ];
 

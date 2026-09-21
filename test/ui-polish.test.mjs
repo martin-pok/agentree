@@ -262,9 +262,17 @@ test('překreslení mřížky projektů zachová karty i jejich obrázky', async
   assert.doesNotMatch(src, /fill\(el, 'grid', `<div class="pgrid">/, 'mřížka se nesmí přepisovat celá');
 });
 
-test('stav připojení se jmenuje „Připojeno“ a vybraná pilulka má jediný obrys', async () => {
+test('stav připojení je dostupný diagnostický přehled a vybraná pilulka má jediný obrys', async () => {
   const app = await zdroj('public/js/app.js');
+  const html = await zdroj('public/index.html');
+  assert.match(html, /id="conn-pill" type="button" aria-haspopup="dialog"/);
+  assert.match(html, /id="conn-pop" role="dialog" aria-label="Stav propojení" hidden/);
   assert.match(app, /live: \['dot--live', 'Připojeno', 'Připojeno'\]/);
+  assert.match(app, /function renderConnectionPopover\(\)/);
+  assert.match(app, /Místní služba/);
+  assert.match(app, /Přehled dat/);
+  assert.match(app, /Rozšíření pro Chrome/);
+  assert.match(app, /closeConnectionPopover\(\); connEl\.focus\(\); return/);
   assert.doesNotMatch(app, /'Živě'/);
   const css = await zdroj('public/styles.css');
   const vybrana = css.match(/\.lchip\[aria-checked='true'\] \{[^}]*\}/)?.[0] || '';

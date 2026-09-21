@@ -63,9 +63,9 @@ function onboardingHtml() {
   // Propojení s Claude Code nabízet jen tomu, kdo Claude Code na Macu má.
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   const steps = [
-    { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Claude Code, Codex, Cursor, Copilot a další se načítají samy.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zdroje dat</a>' },
+    { done: state.sessions.size > 0, label: 'Agenti na tomto Macu nalezeni', sub: 'Agenteeq průběžně čte podporované lokální zdroje. Stav každého ověříš v Nastavení.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zdroje dat</a>' },
     ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: 'Propojení s Claude Code', sub: 'Žádost o povolení a přesné limity uvidíš hned.', cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' }] : []),
-    { done: Boolean(ext && ext.state !== 'missing'), label: 'Rozšíření pro Chrome', sub: 'Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.', cta: '<button class="btn btn--sm" type="button" data-go-extension>Nainstalovat</button>' },
+    { done: Boolean(ext && ext.state !== 'missing'), label: 'Rozšíření pro Chrome', sub: 'Beta pro podporované webové chaty. Po instalaci ověř stav rozšíření v Nastavení.', cta: '<button class="btn btn--sm" type="button" data-go-extension>Nainstalovat</button>' },
     { done: state.projects.items.length > 0, label: 'První projekt', sub: 'Konverzace ze všech služeb seřazené podle klientů.', cta: '<a class="btn btn--sm" href="#/projekty">Založit</a>' },
     { done: (state.usage?.launches || 0) > 0, label: 'Spusť agenta přímo z Agenteeq', sub: 'Zadání, složka a projekt na jednom místě.', cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
   ];

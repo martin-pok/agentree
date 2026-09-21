@@ -1,13 +1,13 @@
 // Vydání pro macOS jedním příkazem: `npm run release:mac`
 //
-// Projde celou cestu od testů po hotový archiv a volitelně vymění aplikaci v /Applications:
+// Projde celou cestu od testů po hotový archiv a volitelně vymění aplikaci v uživatelských Aplikacích:
 //
 //   1. npm test a npm run check        důkaz, že se vydává něco funkčního
 //   2. npm run smoke                   balíček se opravdu nainstaluje a nastartuje
 //   3. rozšíření pro Chrome            dist/agenteeq-extension-<verze>.zip
 //   4. web (landing page + rozhraní)   dist/web
 //   5. npm run build:mac               .app, podpis, volitelně notarizace, dist/…zip
-//   6. --install                       výměna aplikace v /Applications (jen na výslovné přání)
+//   6. --install                       výměna aplikace v ~/Applications (jen na výslovné přání)
 //
 // Krok 6 je jediný, který sahá na už nainstalovanou aplikaci, a proto se nikdy nespustí sám:
 // chce přepínač --install a starou aplikaci nemaže, jen ji odloží do zálohy. Kdyby nová verze
@@ -29,7 +29,20 @@ if (process.platform !== 'darwin') {
   process.exit(1);
 }
 
-const APLIKACE = '/Applications/Agenteeq.app';
+// Nikdy neakceptujeme libovolnou cestu z prostředí: instalační krok zálohuje a pak nahradí
+// celý .app svazek. Výslovná volba je proto možná jen pro dvě standardní umístění macOS.
+const UZIVATELSKE_APLIKACE = path.join(os.homedir(), 'Applications', 'Agenteeq.app');
+const SYSTEMOVE_APLIKACE = '/Applications/Agenteeq.app';
+const pozadovanyCil = process.env.AGENTEEQ_INSTALL_PATH ? path.resolve(process.env.AGENTEEQ_INSTALL_PATH) : '';
+const povoleneCile = new Set([UZIVATELSKE_APLIKACE, SYSTEMOVE_APLIKACE]);
+if (pozadovanyCil && !povoleneCile.has(pozadovanyCil)) {
+  throw new Error('AGENTEEQ_INSTALL_PATH smí být jen ~/Applications/Agenteeq.app nebo /Applications/Agenteeq.app.');
+}
+const existuje = async (soubor) => fs.stat(soubor).then(() => true, () => false);
+// Přednost má aplikace konkrétního uživatele: může běžet bez administrátorského oprávnění a
+// přesně tuhle kopii macOS obvykle otevírá. Systémová kopie zůstává bezpečnou zálohou pro Mac,
+// kde uživatelská instalace neexistuje.
+const APLIKACE = pozadovanyCil || (await existuje(UZIVATELSKE_APLIKACE) ? UZIVATELSKE_APLIKACE : SYSTEMOVE_APLIKACE);
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
 const archiv = path.join(root, 'dist', `Agenteeq-${version}-macOS-${process.arch}.zip`);
 
@@ -92,7 +105,7 @@ if (!process.env.AGENTEEQ_SIGN_IDENTITY) {
 run('npm', ['run', 'build:mac']);
 
 if (install) {
-  krok(6, 'Výměna aplikace v /Applications');
+  krok(6, `Výměna aplikace v ${APLIKACE}`);
   const bezi = tise('pgrep', ['-x', 'Agenteeq']);
   if (bezi) {
     console.log('Agenteeq běží – žádám ho, ať se ukončí.');
@@ -124,7 +137,7 @@ if (install) {
   console.log(`Nainstalováno: ${APLIKACE} (${version})`);
   run('open', ['-a', APLIKACE]);
 } else {
-  krok(6, 'Instalace do /Applications přeskočena');
+  krok(6, `Instalace do ${APLIKACE} přeskočena`);
   console.log('Spusť `npm run release:mac -- --install`, pokud chceš vyměnit i aplikaci na tomhle Macu.');
   console.log('Stará verze se přitom nemaže, jen odloží do ~/.agenteeq/zalohy.');
 }

@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.22.1',
+    date: '2026-09-21',
+    title: 'Stav propojení ukáže, co opravdu funguje',
+    items: [
+      'Pillulka „Připojeno“ se dá otevřít. Odděleně ukáže odpověď místní služby, načtení přehledu a skutečný stav rozšíření pro Chrome, včetně odkazu do Nastavení.',
+      'Průvodce už neslibuje automatizaci, kterou beta rozšíření neumí. Jasně říká, že podporuje vybrané webové chaty a stav se ověřuje v Nastavení.',
+    ],
+  },
+  {
     version: '0.22.0',
     date: '2026-09-21',
     title: 'Poslední aktivita doplní řádky podle místa',

@@ -15,6 +15,12 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.22.1 – 2026-09-21 · průhledný stav propojení
+
+- **Stav připojení:** „Připojeno“ je ovládací prvek s diagnostikou, ne dekorace. Popover odděleně ukazuje, zda odpovídá místní služba, zda se načetl přehled a zda je rozšíření pro Chrome spárované / aktivní / zastaralé. „Připojeno“ znamená jen zdravé spojení okna s lokální službou, ne neověřený stav každého zdroje.
+- **Průvodce a spuštění:** Texty nyní pravdivě vymezují beta rozšíření na podporované webové chaty a vedou ke kontrole v Nastavení. Lokální zdroje popisují průběžné čtení a ověření jednotlivých stavů, místo neurčitého slibu.
+- **Aktualizace tohoto Macu:** `npm run release:mac -- --install` přednostně vymění `~/Applications/Agenteeq.app`, tedy uživatelskou kopii, kterou macOS běžně spouští. Cestu lze výslovně zvolit jen mezi `~/Applications` a `/Applications`; stará kopie se před výměnou zálohuje do `~/.agenteeq/zalohy`.
+
 ## 0.22.0 – 2026-09-21 · využití plochy a ikona průvodce
 
 - **Prázdno pod kratším sloupcem Přehledu:** rozbalený seznam limitů protáhl pravý sloupec o 253 px a pod levým zůstala díra. `doplnAktivitu()` dopočítá počet řádků Poslední aktivity z naměřeného rozdílu výšek (mez 6–24, nikdy víc, než je konverzací) a `watchBalance()` ho spouští i při změně výšky, ne jen při nových datech. Naměřeno: mezera 253 → 11 px, řádků 6 → 10; po sbalení zpět na 7.

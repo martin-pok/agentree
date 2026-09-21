@@ -48,6 +48,7 @@ const titleEl = document.getElementById('page-title');
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
 const connEl = document.getElementById('conn-pill');
+const connPop = document.getElementById('conn-pop');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
@@ -243,14 +244,17 @@ function updateChrome() {
     connecting: ['dot', 'Připojuji…', 'Připojuji…'],
     down: ['dot--down', 'Obnovuji spojení…', 'Bez spojení'],
   };
-  const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
+  const stavSpojeni = conn === 'live' && state.loaded ? 'live' : conn === 'connecting' || !state.loaded ? 'connecting' : 'down';
+  const [tecka, dlouhy, kratky] = STAVY[stavSpojeni];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  connEl.setAttribute('aria-label', stavSpojeni === 'live' ? 'Připojeno. Otevřít stav propojení.' : `${dlouhy}. Otevřít stav propojení.`);
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : '<span class="source-state"><i class="dot dot--down"></i>Bez spojení se serverem</span>'}
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>Co je nového</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agenteeq`;
   if (!pop.hidden) renderPopover();
+  if (!connPop.hidden) renderConnectionPopover();
 }
 
 // Profil: avatar má vlastní oblast, aby se při každé změně čísel nepřekresloval (a neblikal pod kurzorem).
@@ -363,6 +367,48 @@ function closePopover() {
   bell.setAttribute('aria-expanded', 'false');
 }
 
+/* ---------- Stav propojení ---------- */
+
+// Štítek v hlavičce nesmí slibovat víc než otevřený stream a načtený snapshot. Detail proto
+// vypisuje tři konkrétní, nezávislé signály; stav rozšíření přebírá přímo ze serveru.
+function connectionExtension() {
+  const ext = state.integrations?.extension;
+  if (!ext || ext.state === 'missing') return ['is-muted', 'Není spárované', 'Webové chaty jsou volitelné. Připojíš je v Nastavení.'];
+  if (ext.outdated) return ['is-warn', 'Je potřeba aktualizovat', 'Verze rozšíření neodpovídá této aplikaci.'];
+  if (ext.state === 'active') return ['is-ok', 'Přicházejí data', 'Rozšíření právě předává aktivitu z webu.'];
+  if (ext.state === 'ready') return ['is-ok', 'Spárované', 'Rozšíření se nedávno ozvalo; žádný webový chat teď nemusí být otevřený.'];
+  return ['is-muted', 'Bez nové aktivity', 'Rozšíření se delší dobu neozvalo. Chrome může být zavřený nebo je rozšíření vypnuté.'];
+}
+
+function renderConnectionPopover() {
+  const online = state.connection === 'live' && state.loaded;
+  const loading = state.connection === 'connecting' || !state.loaded;
+  const [extTone, extValue, extDetail] = connectionExtension();
+  const rows = [
+    [online ? 'is-ok' : loading ? 'is-warn' : 'is-down', 'Místní služba', online ? 'Odpovídá' : loading ? 'Připojuji…' : 'Nedostupná', online ? 'Přehled je spojený s Agenteeq na tomto Macu.' : loading ? 'Navazuji spojení se službou na tomto Macu.' : 'Aplikace se bude připojovat znovu, jakmile bude místní služba dostupná.'],
+    [state.ready ? 'is-ok' : 'is-warn', 'Přehled dat', state.ready ? 'Načtený' : 'Dokončuje se', state.ready ? 'Zdrojová data jsou připravená pro tento přehled.' : 'Čekám, až místní služba dokončí první načtení.'],
+    [extTone, 'Rozšíření pro Chrome', extValue, extDetail],
+  ];
+  const focusInside = connPop.contains(document.activeElement);
+  setHtml(connPop, `<div class="conn-pop-head"><div><strong>Stav propojení</strong><p>Krátká kontrola služeb na tomto Macu.</p></div><i class="dot ${online ? 'dot--live' : 'dot--down'}" aria-hidden="true"></i></div>
+    <ul class="conn-checks">${rows.map(([tone, label, value, detail]) => `<li class="conn-check ${tone}"><i aria-hidden="true"></i><span><b>${label}</b><small>${detail}</small></span><em>${value}</em></li>`).join('')}</ul>
+    <a class="conn-pop-foot" href="#/nastaveni">Zkontrolovat propojení ${ICON.arrow}</a>`);
+  if (focusInside) connPop.querySelector('.conn-pop-foot')?.focus({ preventScroll: true });
+}
+
+function openConnectionPopover() {
+  closePopover();
+  renderConnectionPopover();
+  connPop.hidden = false;
+  connEl.setAttribute('aria-expanded', 'true');
+}
+
+function closeConnectionPopover() {
+  if (connPop.hidden) return;
+  connPop.hidden = true;
+  connEl.setAttribute('aria-expanded', 'false');
+}
+
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
@@ -452,11 +498,13 @@ document.addEventListener('click', (e) => {
     else location.hash = '#/prehled';
     return;
   }
-  if (e.target.closest('#bell')) { if (pop.hidden) openPopover(); else closePopover(); return; }
+  if (e.target.closest('#conn-pill')) { if (connPop.hidden) openConnectionPopover(); else closeConnectionPopover(); return; }
+  if (e.target.closest('#bell')) { closeConnectionPopover(); if (pop.hidden) openPopover(); else closePopover(); return; }
   const item = e.target.closest('[data-alert-id]');
   if (item) markRead([item.dataset.alertId]);
   if (e.target.closest('[data-read-all]')) markRead('all');
   if (!pop.hidden && !e.target.closest('.bell-wrap')) closePopover();
+  if (!connPop.hidden && !e.target.closest('.conn-wrap')) closeConnectionPopover();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -469,6 +517,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.key === 'Escape' && !pop.hidden) { closePopover(); bell.focus(); return; }
+  if (e.key === 'Escape' && !connPop.hidden) { closeConnectionPopover(); connEl.focus(); return; }
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
   if (e.key === '/' && !typing && !palette.isOpen) {
     e.preventDefault();

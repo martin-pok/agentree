@@ -46,6 +46,13 @@ for (const engine of engines) {
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
+    await page.locator('#conn-pill').click();
+    await page.locator('#conn-pop:not([hidden])').waitFor();
+    await page.screenshot({ path: `dist/qa/${engine}-connection-diagnostics.png` });
+    assert.equal(await page.locator('#conn-pill').getAttribute('aria-expanded'), 'true');
+    for (const label of ['Místní služba', 'Přehled dat', 'Rozšíření pro Chrome']) assert.ok(await page.locator('#conn-pop').getByText(label, { exact: true }).count(), `${engine} diagnostika: ${label}`);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#conn-pop[hidden]').count(), 1, `${engine} Escape zavře diagnostiku propojení`);
     for (const selector of ['.token-card', '.calm']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
     }
@@ -250,7 +257,7 @@ for (const engine of engines) {
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding flow', 'connection diagnostics and Escape', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
