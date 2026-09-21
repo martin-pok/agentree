@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.20.1',
+    date: '2026-09-21',
+    title: 'Rolování ve vyhledávání zůstane ve vyhledávání',
+    items: [
+      'Když jsi ve vyhledávání (⌘K) dojel seznamem na konec, začala se posouvat stránka vzadu. Kolečko teď patří tomu, co je navrchu: seznam si posouvání nechá u sebe a stránka pod překryvem stojí, dokud vyhledávání nezavřeš.',
+      'Totéž platí pro upozornění, dialogy, výběr složky i spodní nabídku na telefonu.',
+    ],
+  },
+  {
     version: '0.20.0',
     date: '2026-09-21',
     title: 'Dnes je kalendářní den, karty už neproblikávají',

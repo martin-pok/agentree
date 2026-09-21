@@ -286,3 +286,20 @@ test('období nabízejí kalendářní „Dnes“ i 14 dní a nepletou se s posl
   const stats = await zdroj('public/js/views/stats.js');
   assert.match(stats, /\['today', 'Dnes'\], \['day', '24 hodin'\], \['week', '7 dní'\], \['fortnight', '14 dní'\], \['month', '30 dní'\]/);
 });
+
+// Vyhledávání (⌘K) překrývá celou stránku. Po dojetí seznamu na konec se ale začala posouvat
+// stránka vzadu – kolečko patří tomu, co je navrchu, ne tomu, co je pod překryvem.
+test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  const paleta = ui.slice(ui.indexOf('export function createPalette'));
+  assert.match(paleta, /root\.hidden = false;[\s\S]{0,400}?document\.body\.classList\.add\('has-modal'\)/, 'otevření vyhledávání musí zamknout stránku');
+  assert.match(paleta, /root\.hidden = true;[\s\S]{0,300}?document\.body\.classList\.remove\('has-modal'\)/, 'zavření ji musí odemknout');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /body\.has-modal \{ overflow: hidden; \}/);
+  // Každá rolovatelná oblast uvnitř překryvu musí posouvání zadržet.
+  for (const trida of ['.palette-list', '.pop-list', '.modal', '.sheet', '.fb-list', '.pick-list']) {
+    const pravidlo = css.match(new RegExp(`\\${trida} \\{[^}]*overflow-y: auto[^}]*\\}`))?.[0] || '';
+    assert.ok(pravidlo, `${trida}: pravidlo s rolováním nenalezeno`);
+    assert.match(pravidlo, /overscroll-behavior: contain/, `${trida} pustí posouvání na stránku pod sebou`);
+  }
+});

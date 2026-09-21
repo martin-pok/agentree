@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.20.1 – 2026-09-21 · posouvání uvnitř překryvů
+
+- **Řetězení posouvání ve vyhledávání:** `.palette-list` neměl `overscroll-behavior`, takže po dojetí na konec pokračovalo kolečko na stránce vzadu. Doplněno u všech rolovatelných oblastí v překryvech (`.palette-list`, `.pop-list`, `.modal`, `.sheet`, `.fb-list`, `.pick-list`).
+- **Vyhledávání nezamykalo stránku:** na rozdíl od dialogů a spodní nabídky nepřidávalo `has-modal`. Kolečko mířené mimo seznam (na ztmavené pozadí) proto posunulo stránku – naměřeno 1200 → 3483 px. Obě opravy jsou potřeba: `overscroll-behavior` řeší konec seznamu, zámek stránky plochu okolo. Ověřeno v Chromiu i WebKitu.
+
 ## 0.20.0 – 2026-09-21 · kalendářní den, stabilní karty, čisté pilulky
 
 - **Kalendářní „Dnes“:** `periodBuckets('today')` počítá od půlnoci po hodinách. Období „24 hodin“ zůstává (rolling), ale je pojmenované podle toho, co měří – ráno do něj patří i noční práce z předchozího dne. Naměřeno na skutečných datech: Dnes 203 tis. × 24 hodin 1,32 M. Přibylo „14 dní“ (`fortnight`). Postranní panel i Přehled už kalendářní den používaly.

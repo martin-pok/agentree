@@ -455,6 +455,8 @@ export function createPalette(getItems, onPick) {
   const close = () => {
     if (root.hidden) return;
     root.hidden = true;
+    // Stránka pod překryvem se smí zase posouvat, až když překryv zmizí.
+    document.body.classList.remove('has-modal');
     if (opener?.isConnected) opener.focus();
   };
   const pick = (i) => {
@@ -498,6 +500,9 @@ export function createPalette(getItems, onPick) {
     open() {
       opener = document.activeElement;
       root.hidden = false;
+      // Vyhledávání překrývá celou stránku, takže pod ním nemá co rolovat. Bez tohohle zámku se
+      // po dojetí seznamu na konec začala posouvat stránka vzadu – kolečko patří tomu, co je navrchu.
+      document.body.classList.add('has-modal');
       input.value = '';
       index = 0;
       render();
