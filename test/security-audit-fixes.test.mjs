@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -144,4 +145,26 @@ test('git v cizím repozitáři nespustí příkaz z jeho konfigurace (core.fsmo
   g('config', 'core.fsmonitor', skript);
   await repoInfo(dir);
   await assert.rejects(fs.access(znak), 'skript z konfigurace repozitáře se nesmí spustit');
+});
+
+test('s klíčem okna dál fungují hooky, ingest z rozšíření i párování rozšíření (mají vlastní tajemství)', async () => {
+  const { startTestServer } = await import('./helpers.mjs');
+  const t = await startTestServer({ AGENTEEQ_LOCAL_KEY: 'h'.repeat(40) });
+  try {
+    const token = t.app.datastore.data.ingestToken;
+    const post = (cesta, hlavicky, telo) => fetch(`${t.url}${cesta}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...hlavicky }, body: JSON.stringify(telo) });
+    // Bez tokenu ani klíče projde jen to, co má vlastní kontrolu – a ta odmítne.
+    const bezTokenu = await post('/api/hooks/claude-code', { 'X-Agenteeq': '1' }, { hook_event_name: 'Stop', session_id: crypto.randomUUID() });
+    assert.equal(bezTokenu.status, 401, 'hook bez tokenu: odmítne ho kontrola tokenu, ne klíč okna');
+    const shTokenem = await post('/api/hooks/claude-code', { 'X-Agenteeq-Token': token }, { hook_event_name: 'Stop', session_id: crypto.randomUUID(), cwd: '/tmp' });
+    assert.ok([200, 202, 204].includes(shTokenem.status), `hook s tokenem: ${shTokenem.status}`);
+    const parovani = await post('/api/extension/pair', { 'X-Agenteeq-Pair-Code': 'neplatny-kod-1234567' }, {});
+    assert.doesNotMatch(await parovani.text(), /klíč okna/, 'párování rozšíření se dostane až ke kontrole kódu, ne ke klíči okna');
+    const kodBezKlice = await post('/api/extension/pair-code', { 'X-Agenteeq': '1' }, {});
+    assert.equal(kodBezKlice.status, 403, 'vytvořit párovací kód smí jen okno s klíčem');
+    const kodSKlicem = await post('/api/extension/pair-code', { 'X-Agenteeq': '1', 'X-Agenteeq-Key': 'h'.repeat(40) }, {});
+    assert.equal(kodSKlicem.status, 200);
+  } finally {
+    await t.close();
+  }
 });
