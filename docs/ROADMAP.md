@@ -48,8 +48,9 @@ Každá položka má akceptační kritéria. Pořadí je doporučené – nejdř
 
 ## Známé problémy (backlog)
 
+Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 21. 9. 2026).
+
 - Dlouho běžící nástroj bez hooků vypadá jako „pracuje“ až 10 minut, i když čeká na povolení.
 - Webové adaptéry posílají jen vykreslené zprávy (virtualizované seznamy).
 - Codex nezapisuje žádosti o schválení – nelze detekovat „potřebuje rozhodnutí“.
-- Kurzy měn jsou ruční (výchozí hodnoty orientační).
-- Časová osa ukazuje max. 7 agentů.
+- Časová osa ukazuje max. 7 agentů; od 0.18.2 pod ní stojí, kolik jich zbývá, s odkazem na Agenty.

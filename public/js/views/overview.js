@@ -11,6 +11,7 @@ import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 
+const TIMELINE_MAX = 7; // víc řádků se do osy nevejde; zbytek se vypíše pod ní jako odkaz
 const CHART_UPDATE_MS = 500;
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
 
@@ -256,12 +257,19 @@ function update(topics = new Set(['all'])) {
     const from = timelineNow - 12 * H;
     const rank = attentionRank;
     const lastSpan = (s) => (s.spans?.length ? s.spans[s.spans.length - 1][1] : s.lastAt);
-    const rows = all
-    .filter((s) => s.spans?.some(([, b]) => b >= from) || rank(s) < 3)
-    .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a))
-      .slice(0, 7)
+    // Do osy se vejde sedm řádků. Zbytek se nesmí jen zahodit – uživatel by nevěděl, že něco nevidí,
+    // a u nástroje, který má hlídat všechny agenty, je tiché zamlčení to nejhorší možné chování.
+    const vybrane = all
+      .filter((s) => s.spans?.some(([, b]) => b >= from) || rank(s) < 3)
+      .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a));
+    const rows = vybrane
+      .slice(0, TIMELINE_MAX)
       .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
-    fill(el, 'timeline', rows.length ? timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow }) : '<div class="empty-inline">Za posledních 12 hodin žádná aktivita agentů.</div>');
+    const skryto = vybrane.length - rows.length;
+    fill(el, 'timeline', rows.length
+      ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
+        ? `<a class="tl-more" href="#/agenti">Na ose je ${TIMELINE_MAX} nejdůležitějších agentů. ${skryto === 1 ? 'Další je' : `Dalších ${skryto} je`} v sekci Agenti${ICON.arrow}</a>` : ''}`
+      : '<div class="empty-inline">Za posledních 12 hodin žádná aktivita agentů.</div>');
   }
 
   const chartTickDue = topics.has('tick') && Math.floor(now / H) !== Math.floor(v.chartAt / H);

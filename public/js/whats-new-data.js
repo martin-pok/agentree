@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.18.2',
+    date: '2026-09-21',
+    title: 'Limity hlásí všude totéž a časová osa nic nezamlčí',
+    items: [
+      'Obnovené okno limitu hlásilo na Přehledu „0 %“, ve Statistikách „Obnoven“ a v rozbaleném seznamu „obnoveno“ – tři různá tvrzení o jednom čísle. Teď všude stojí „Obnoveno“ a vyčerpané okno „Vyčerpáno“.',
+      'Časová osa „Dnešní směna“ ukazuje sedm nejdůležitějších agentů. Když jich je víc, stojí pod ní, kolik jich zbývá, s odkazem na seznam Agenti. Dřív se tiše zahodili.',
+    ],
+  },
+  {
     version: '0.18.1',
     date: '2026-09-21',
     title: 'Bezpečnější práce s cizími repozitáři',

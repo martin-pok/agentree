@@ -241,6 +241,28 @@ export function currentLimits(limits, now = Date.now()) {
   return fresh.filter((l) => !(claudeStatus && l.provider === 'anthropic' && l.source !== 'statusline'));
 }
 
+// Stav jednoho okna limitu. Jedno místo pro všechna tři zobrazení (Přehled, Statistiky,
+// rozbalený seznam nástrojů) – dřív každé počítalo vlastní popis a u obnoveného okna Codexu
+// stálo na Přehledu „0 %“, ve Statistikách „Obnoven“ a v API pořád poslední naměřených 34 %.
+// „0 %“ je přitom tvrzení o měření, které po obnově neproběhlo: okno je prázdné, ale změřené není.
+export function limitState(l, now = Date.now()) {
+  const renewed = Boolean(l.resetsAt && l.resetsAt <= now);
+  const reached = Boolean(l.reached) && !renewed;
+  const pct = renewed ? 0 : reached ? 100 : Math.round(Number(l.usedPercent) || 0);
+  return {
+    renewed,
+    reached,
+    pct,
+    // Co se ukáže místo čísla. Obnovené okno se nehlásí jako „0 %“, vyčerpané jako „100 %“.
+    label: renewed ? 'Obnoveno' : reached ? 'Vyčerpáno' : `${pct} %`,
+    tone: renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free',
+    advice: renewed ? 'Plná kapacita, okno se právě obnovilo'
+      : reached || pct >= 100 ? 'Vyčerpáno, počkej na obnovu'
+        : pct >= 80 ? 'Šetři na důležité úlohy'
+          : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy',
+  };
+}
+
 // Okna limitů: kolik je vyčerpáno, kdy se obnoví a co z toho plyne pro práci.
 export function limitWindows(limits, now = Date.now()) {
   const rows = currentLimits(limits, now)
@@ -248,14 +270,11 @@ export function limitWindows(limits, now = Date.now()) {
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9) || a.app.localeCompare(b.app));
   if (!rows.length) return '';
   return `<ul class="lwin">${rows.map((l) => {
-    const renewed = Boolean(l.resetsAt && l.resetsAt <= now);
-    const pct = renewed ? 0 : l.reached ? 100 : Math.round(l.usedPercent);
-    const tone = renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free';
-    const advice = renewed ? 'Obnoveno – plná kapacita' : pct >= 100 ? 'Vyčerpáno, počkej na obnovu' : pct >= 80 ? 'Šetři na důležité úlohy' : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy';
+    const { renewed, pct, tone, advice, label } = limitState(l, now);
     return `<li class="lwin-row" data-tone="${tone}">
       <span class="lwin-logo">${glyph(l.id.startsWith('codex') ? { connector: 'codex' } : l.provider)}</span>
       <span class="lwin-main">
-        <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${renewed ? '0' : pct} %</span></span>
+        <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${esc(label)}</span></span>
         <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
         <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>obnova <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}</span>
       </span>
@@ -269,14 +288,12 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
   return currentLimits(limits, now)
     .filter((l) => !provider || l.provider === provider)
     .map((l) => {
-      const active = l.reached && (!l.resetsAt || l.resetsAt > now) && now - l.at < 7 * DAY;
-      const expired = Boolean(l.resetsAt && l.resetsAt < now);
-      if (!active && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
-      const pct = active ? 100 : expired ? 0 : l.usedPercent;
-      const color = active || pct >= 95 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)';
-      const value = active ? 'Vyčerpán' : expired ? 'Obnoven' : `${Math.round(pct)} %`;
-      const sub = l.resetsAt && !expired ? `obnova ${resetsLabel(l.resetsAt, now)}` : l.plan ? `plán ${l.plan}` : '';
-      return { at: l.at, html: gauge({ pct, color, value, label: `${l.app} · ${l.label}`, sub, size, reached: active }) };
+      const s = limitState(l, now);
+      const cerstve = s.reached && now - l.at < 7 * DAY;
+      if (!cerstve && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
+      const color = s.tone === 'out' ? 'var(--velvet-ink)' : s.tone === 'low' ? 'var(--brass)' : 'var(--teal)';
+      const sub = l.resetsAt && !s.renewed ? `obnova ${resetsLabel(l.resetsAt, now)}` : l.plan ? `plán ${l.plan}` : '';
+      return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, size, reached: s.reached }) };
     })
     .filter(Boolean)
     .sort((a, b) => b.at - a.at)

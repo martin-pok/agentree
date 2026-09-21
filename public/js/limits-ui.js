@@ -1,6 +1,6 @@
 import { esc, rel, fmtTok, startOfDay } from './format.js';
 import { ICON, glyph } from './icons.js';
-import { currentLimits } from './ui.js';
+import { currentLimits, limitState } from './ui.js';
 import { tokensSince } from './data.js';
 
 // Rozbalovací přehled „Všechny nástroje“. Nahoře zůstávají jen změřená okna limitů; tady je
@@ -25,15 +25,12 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
-const tone = (pct) => (pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free');
-
 function chips(rows, now) {
   return rows
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9))
     .map((l) => {
-      const obnoveno = Boolean(l.resetsAt && l.resetsAt <= now);
-      const pct = obnoveno ? 0 : l.reached ? 100 : Math.round(l.usedPercent);
-      return `<span class="lchip" data-tone="${obnoveno ? 'free' : tone(pct)}"><span>${esc(l.label)}</span><b>${obnoveno ? 'obnoveno' : `${pct} %`}</b></span>`;
+      const s = limitState(l, now);
+      return `<span class="lchip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b></span>`;
     })
     .join('');
 }

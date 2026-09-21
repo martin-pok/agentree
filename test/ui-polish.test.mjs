@@ -158,3 +158,39 @@ test('menu na výšku se mění na dlaždice podle návrhu z Figmy', async () =>
   assert.match(blok, /\.nav a\[aria-current='page'\] \{ background: transparent;/, 'aktivní stránka není trvale podbarvená');
   assert.match(blok, /\.side-foot \{ margin-top: auto; \}/, 'patička zůstane dole');
 });
+
+// Tentýž limit hlásil na Přehledu „0 %“, ve Statistikách „Obnoven“ a rozbalený seznam „obnoveno“.
+// Tři zobrazení, tři různá tvrzení o jednom čísle. Popis stavu proto vzniká na jednom místě.
+test('obnovené i vyčerpané okno limitu hlásí všechna tři zobrazení stejně', async () => {
+  const { limitState, limitWindows, limitGauges } = await import('../public/js/ui.js');
+  const { limitsAll } = await import('../public/js/limits-ui.js');
+  const now = Date.UTC(2026, 8, 21, 12);
+  const obnovene = { id: 'codex:codex:primary', app: 'Codex', label: 'Limit 5 h', provider: 'openai', usedPercent: 34, windowMinutes: 300, resetsAt: now - 60_000, at: now - 3_600_000 };
+  const s = limitState(obnovene, now);
+  assert.equal(s.label, 'Obnoveno');
+  assert.equal(s.pct, 0, 'pruh je prázdný');
+  assert.doesNotMatch(s.advice, /^Obnoveno –/, 'popisek se nesmí opakovat vedle stejného slova');
+
+  const stav = { limits: [obnovene], connectors: [{ id: 'codex', state: 'connected' }], sessions: new Map() };
+  for (const html of [limitWindows([obnovene], now), limitGauges([obnovene], now).join(''), limitsAll(stav, now)]) {
+    assert.match(html, /Obnoveno/, 'všude stejné slovo');
+    assert.doesNotMatch(html, />0 %|>34 %/, 'žádné zastaralé ani vymyšlené číslo');
+  }
+
+  const vycerpane = { ...obnovene, reached: true, resetsAt: now + 3_600_000, usedPercent: 100 };
+  assert.equal(limitState(vycerpane, now).label, 'Vyčerpáno');
+  for (const html of [limitWindows([vycerpane], now), limitGauges([vycerpane], now).join(''), limitsAll({ ...stav, limits: [vycerpane] }, now)]) {
+    assert.match(html, /Vyčerpáno/);
+  }
+});
+
+// Osa „Dnešní směna“ brala jen prvních sedm agentů a zbytek tiše zahodila. U nástroje, který má
+// hlídat všechny agenty, je zamlčení horší než delší seznam – pod osou proto stojí, kolik jich chybí.
+test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
+  const src = await zdroj('public/js/views/overview.js');
+  assert.match(src, /const TIMELINE_MAX = 7;/);
+  assert.match(src, /const skryto = vybrane\.length - rows\.length;/);
+  assert.match(src, /Dalších \$\{skryto\} je/, 'počet skrytých agentů je vidět');
+  assert.match(src, /class="tl-more" href="#\/agenti"/, 'a vede na seznam, kde jsou všichni');
+  assert.doesNotMatch(src, /\.slice\(0, 7\)/, 'napevno zapsaná sedmička bez vysvětlení');
+});

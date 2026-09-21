@@ -15,6 +15,13 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.18.2 – 2026-09-21 · konzistence zobrazení, úklid
+
+- **Nalezeno proklikáním aplikace:** obnovené okno limitu hlásilo tři různé věci (Přehled „0 %“, Statistiky „Obnoven“, rozbalený seznam „obnoveno“), zatímco API drželo poslední naměřených 34 %. Popis stavu teď vzniká na jednom místě (`limitState()` v `public/js/ui.js`) a všechna tři zobrazení ho jen vypisují. „0 %“ je tvrzení o měření, které po obnově neproběhlo, proto „Obnoveno“.
+- **Časová osa:** `slice(0, 7)` zahazoval zbylé agenty beze stopy. Pod osou je teď odkaz „Dalších N je v sekci Agenti“.
+- **Úklid:** 17 mrtvých pravidel CSS (`.conn-*` po staré připojovací obrazovce, `.ext-feat*`, `.site-grid`, `.table-scroll`). Backlog v `docs/ROADMAP.md` prověřen proti kódu – ruční kurzy měn odstraněny (vyřešeno v 0.14.0).
+- Ověřeno: 110 kliknutí robotem přes všech osm stránek bez jediné výjimky, validace odmítá nesmyslné vstupy (7 z 7), data přežijí restart serveru, souběžná úprava nezaloží duplikát.
+
 ## 0.18.1 – 2026-09-21 · bezpečnostní nález č. 9
 
 - `src/git.js`: každý `git` běží s `-c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c protocol.ext.allow=never -c diff.external=` a `GIT_TERMINAL_PROMPT=0`. Volby z příkazové řádky přebíjejí `.git/config` cizího repozitáře. Test naopak vytvoří repozitář s `core.fsmonitor` a ověří, že skript neběží (ověřeno, že bez ochrany test padá).
