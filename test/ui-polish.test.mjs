@@ -156,7 +156,7 @@ test('nabídka na výšku se od nabídky na šířku liší jen rozestupy, ne vz
   // Smí se měnit jen rozestup a výška cíle. Všechno ostatní se dědí, aby nabídka vypadala stejně.
   const povolene = /^\s*(?:\.nav \{ gap: [^}]+\}|\.nav a \{ min-height: [^}]+\}|@media[^{]*\{|\}|\/\*[\s\S]*?\*\/|)$/;
   for (const radek of blok.split('\n').slice(1, -1)) {
-    assert.match(radek, povolene, `pravidlo navíc pro monitor na výšku: ${radek.trim()}`);
+    assert.match(radek.trimEnd(), povolene, `pravidlo navíc pro monitor na výšku: ${radek.trim()}`);
   }
   for (const zakazane of ['background', 'color:', 'box-shadow', 'transform', 'border-radius', 'font-size', ':hover', 'aria-current', '::before', '--tile']) {
     assert.ok(!blok.includes(zakazane), `nabídka na výšku nesmí předefinovat „${zakazane}“ – vznikl by druhý vzhled`);
