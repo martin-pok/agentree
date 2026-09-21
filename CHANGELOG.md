@@ -15,6 +15,12 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.19.1 – 2026-09-21 · jednotná nabídka
+
+- **Nabídka na výšku měla druhý vzhled** (vlastní dlaždice, jiný hover s posunem, tečka místo mosazného pruhu, jiné barvy). Pravidlo pro portrét zredukováno na dva řádky – rozestup a výška cíle; všechno ostatní se dědí. Naměřeno: aktivní položka, běžná položka, hover i odsazení jsou v obou režimech shodné.
+- **Nabídka přetékala panel:** `.nav` je mřížka bez `grid-template-columns`, takže si brala šířku podle nejdelší položky („Upozornění“ + odznak „10+“). Odsazení bylo 16 px × 11 px. Doplněno `minmax(0, 1fr)` a zkracování názvu tečkami; odsazení je teď symetrické na každé šířce.
+- Testy: statická kontrola, že portrétní pravidlo nepředefinuje vzhled, a živé porovnání obou režimů v `qa-desktop` (Chromium i WebKit).
+
 ## 0.19.0 – 2026-09-21 · čerstvost dat a cache
 
 - **Zastaralá data v klientovi:** Dovednosti (`views/skills.js`), historie plánu (`views/stats.js`) a extra usage (`views/spend.js`) se načítaly jen při prvním otevření za běh aplikace. Nově se čtou při každém otevření stránky; dosavadní obsah zůstane do příchodu nového (žádné bliknutí).

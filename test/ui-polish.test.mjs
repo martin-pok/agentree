@@ -149,15 +149,20 @@ test('ovládací prvky mají v tmavém režimu světlou plochu s tmavým písmem
   assert.doesNotMatch(css, /\.btn--primary \{[^}]*ink-surface/, 'tmavá plocha na tmavém pozadí se nesmí vrátit');
 });
 
-test('menu na výšku se mění na dlaždice podle návrhu z Figmy', async () => {
+test('nabídka na výšku se od nabídky na šířku liší jen rozestupy, ne vzhledem', async () => {
   const css = await zdroj('public/styles.css');
   const blok = css.match(/@media \(orientation: portrait\) and \(min-width: 881px\) and \(min-height: 1100px\) \{[\s\S]*?\n\}/)?.[0] || '';
-  assert.match(blok, /--tile: clamp\(64px, 5\.1dvh, 140px\)/, 'výška dlaždice je poměrná k oknu');
-  assert.match(blok, /grid-auto-rows: var\(--tile\)/);
-  assert.match(blok, /margin: 5\.3dvh 8px 0/, 'dlaždice začínají pod profilem a drží boční odsazení');
-  assert.match(blok, /\.nav a\[aria-current='page'\] \{ background: transparent;/, 'aktivní stránka není trvale podbarvená');
-  assert.match(blok, /\.side-foot \{ margin-top: auto; \}/, 'patička zůstane dole');
+  assert.ok(blok, 'pravidlo pro monitor na výšku chybí');
+  // Smí se měnit jen rozestup a výška cíle. Všechno ostatní se dědí, aby nabídka vypadala stejně.
+  const povolene = /^\s*(?:\.nav \{ gap: [^}]+\}|\.nav a \{ min-height: [^}]+\}|@media[^{]*\{|\}|\/\*[\s\S]*?\*\/|)$/;
+  for (const radek of blok.split('\n').slice(1, -1)) {
+    assert.match(radek, povolene, `pravidlo navíc pro monitor na výšku: ${radek.trim()}`);
+  }
+  for (const zakazane of ['background', 'color:', 'box-shadow', 'transform', 'border-radius', 'font-size', ':hover', 'aria-current', '::before', '--tile']) {
+    assert.ok(!blok.includes(zakazane), `nabídka na výšku nesmí předefinovat „${zakazane}“ – vznikl by druhý vzhled`);
+  }
 });
+
 
 // Tentýž limit hlásil na Přehledu „0 %“, ve Statistikách „Obnoven“ a rozbalený seznam „obnoveno“.
 // Tři zobrazení, tři různá tvrzení o jednom čísle. Popis stavu proto vzniká na jednom místě.
@@ -237,4 +242,12 @@ test('statické soubory nesou značku verze, aby prohlížeč nestahoval totéž
   assert.match(http, /if \(req\.headers\['if-none-match'\] === etag\) \{/, 'opakovaný dotaz dostane 304');
   assert.match(http, /res\.writeHead\(304, \{ \.\.\.SECURITY, ETag: etag/);
   assert.match(http, /'Cache-Control': asset \? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag/, 'kód a styly se vždy ověří u serveru');
+});
+
+// Nabídka je mřížka. Bez určené šířky sloupce si ji vezme podle nejdelší položky („Upozornění“
+// s odznakem „10+“), přeteče panel a odsazení vlevo a vpravo přestane být stejné.
+test('nabídka se vejde do panelu a název se umí zkrátit', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.nav \{[^}]*grid-template-columns: minmax\(0, 1fr\)/, 'šířka sloupce musí být určená');
+  assert.match(css, /\.nav a > span \{[^}]*min-width: 0;[^}]*text-overflow: ellipsis/, 'dlouhý název se zkrátí');
 });

@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.19.1',
+    date: '2026-09-21',
+    title: 'Nabídka vypadá stejně na šířku i na výšku',
+    items: [
+      'Na monitoru na výšku měla nabídka vlastní vzhled: jiné podbarvení, jiný hover a místo mosazného pruhu tečka. Teď se chová úplně stejně jako na šířku, jen se položky rozestoupí a jsou vyšší, aby se lépe trefovaly.',
+      'Dlouhý název se v nabídce zkrátí tečkami místo toho, aby roztlačil panel. Odsazení vlevo a vpravo je díky tomu stejné na každé šířce okna.',
+    ],
+  },
+  {
     version: '0.19.0',
     date: '2026-09-21',
     title: 'Vždy čerstvá data a rychlejší načtení',

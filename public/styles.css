@@ -193,10 +193,15 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @media (max-width: 880px) { .budget-src { flex: 1 0 100%; grid-auto-flow: column; justify-content: start; gap: 4px 12px; margin-top: 4px; } }
 /* Nabídka je pružná část karty: vezme si, co zbude, a když je toho málo, roluje se sama.
    Posuvník schováváme – na kartě by rušil a hranici tvoří linka nad stavem spojení. */
-.nav { margin-top: 32px; display: grid; gap: clamp(4px, 1dvh, 12px); align-content: center; align-content: safe center; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+/* `grid-template-columns` musí být určené: bez něj si mřížka vezme šířku podle nejdelší položky,
+   nabídka přeteče panel a odsazení vlevo a vpravo přestane sedět (na užším okně 16 px × 11 px). */
+.nav { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(4px, 1dvh, 12px); align-content: center; align-content: safe center; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .nav::-webkit-scrollbar { display: none; }
 .nav a { position: relative; display: flex; align-items: center; gap: 16px; padding: 11px 16px; border-radius: var(--r-sm); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
 .nav a svg { width: 20px; height: 20px; flex: none; }
+/* Název se musí umět zkrátit. Bez toho roztlačí „Upozornění“ s odznakem „10+“ položku nad šířku
+   panelu, nabídka se začne posouvat do stran a odsazení vlevo a vpravo přestane sedět. */
+.nav a > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav .fill { fill: currentColor; opacity: .55; }
 .nav .stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
 .nav .stroke.inv { stroke: var(--card); opacity: 1; }
@@ -1932,25 +1937,13 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 .set-row-inline strong { font-weight: 500; font-size: 14px; }
 .set-row-inline small { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
 
-/* Vysoké okno (monitor na výšku): položky menu se změní na velké dlaždice s vnitřním odsazením.
-   Rozměry jsou poměrné k výšce okna podle návrhu z Figmy (okno 2000 px: dlaždice 102 px, mezery 19 px,
-   první dlaždice 106 px pod profilem, osm dlaždic končí v 70 % výšky), takže drží tvar na 1920 i 2560 px.
-   Panel tak jde ovládat celou plochou dlaždice a nemusí se mířit na malé řádky. */
+/* Monitor na výšku: v panelu je víc místa, tak se nabídka rozestoupí a cíle jsou vyšší.
+   Vzhled se nemění – barva, hover, zaostření i označení aktivní stránky zůstávají stejné jako
+   na šířku. Dřív tu byly vlastní dlaždice s jiným hoverem a tečkou místo pruhu; uživatel pak
+   přecházel mezi dvěma různě vypadajícími aplikacemi podle toho, jak měl otočený monitor. */
 @media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px) {
-  .nav { --tile: clamp(64px, 5.1dvh, 140px); flex: 0 0 auto; margin: 5.3dvh 8px 0; gap: clamp(8px, .95dvh, 24px); grid-auto-rows: var(--tile); align-content: start; overflow: visible; }
-  .nav a { height: var(--tile); padding: 0 clamp(16px, 1.5vw, 24px); gap: 16px; border-radius: 16px; background: transparent; color: var(--ink-2); font-size: 16px; transition: color 180ms var(--ease), background-color 180ms var(--ease), box-shadow 180ms var(--ease), transform 180ms var(--ease); }
-  .nav a svg { width: 26px; height: 26px; }
-  .nav a[aria-current='page'] { background: transparent; color: var(--ink); font-weight: 500; }
-  .nav a[aria-current='page']::before { left: 2px; top: calc(50% - 3px); bottom: auto; width: 6px; height: 6px; border-radius: 50%; }
-  .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
-  .nav a[aria-current='page'] .stroke.inv { stroke: var(--card); }
-  @media (hover: hover) and (pointer: fine) {
-    .nav a:hover { background: color-mix(in srgb, var(--action) 10%, var(--card)); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--action) 24%, transparent); transform: translateY(-2px); }
-  }
-  .nav a:focus-visible { background: color-mix(in srgb, var(--action) 10%, var(--card)); color: var(--ink); }
-  @media (prefers-reduced-motion: reduce) { .nav a { transition: none; } .nav a:hover { transform: none; } }
-  .nav-badge { min-width: 28px; height: 28px; line-height: 28px; border-radius: 14px; font-size: 13px; }
-  .side-foot { margin-top: auto; }
+  .nav { gap: clamp(6px, 1.1dvh, 16px); }
+  .nav a { min-height: clamp(48px, 4.4dvh, 68px); }
 }
 .skills-more { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 24px 0 8px; }
 .tl-more { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); text-decoration: none; }

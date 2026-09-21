@@ -97,20 +97,27 @@ for (const engine of engines) {
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.picker-menu').count(), 0);
     await page.screenshot({ path: `dist/qa/${engine}-overview.png`, fullPage: true });
-    await page.setViewportSize({ width: 1440, height: 2560 });
-    const portraitNav = page.locator('.nav a[aria-current="page"]');
-    assert.equal(await portraitNav.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} aktivní dlaždice zůstává v klidu průhledná`);
-    const portraitInsets = await page.evaluate(() => {
-      const sidebar = document.querySelector('.sidebar').getBoundingClientRect();
-      const link = document.querySelector('.nav a').getBoundingClientRect();
-      return { left: link.left - sidebar.left, right: sidebar.right - link.right };
+    // Nabídka na monitoru na výšku musí vypadat stejně jako na šířku – jinak uživatel přechází
+    // mezi dvěma různými aplikacemi podle toho, jak má otočený monitor.
+    const vzhledNabidky = () => page.evaluate(() => {
+      const aktivni = document.querySelector('.nav a[aria-current="page"]');
+      const bezny = [...document.querySelectorAll('.nav a')].find((a) => !a.hasAttribute('aria-current'));
+      const st = (el, pseudo) => { const c = getComputedStyle(el, pseudo); return [c.backgroundColor, c.color, c.fontWeight, c.fontSize, c.borderRadius, c.padding, c.width].join('|'); };
+      const sb = document.querySelector('.sidebar').getBoundingClientRect();
+      const r = bezny.getBoundingClientRect();
+      return { aktivni: st(aktivni), bezny: st(bezny), pruh: st(aktivni, '::before'), odstup: `${Math.round(r.left - sb.left)}/${Math.round(sb.right - r.right)}` };
     });
-    assert.ok(portraitInsets.left >= 24 && portraitInsets.right >= 24, `${engine} dlaždice má boční odstup: ${JSON.stringify(portraitInsets)}`);
+    const naSirku = await vzhledNabidky();
+    await page.setViewportSize({ width: 1440, height: 2560 });
+    await page.waitForTimeout(400);
+    const naVysku = await vzhledNabidky();
+    for (const klic of ['aktivni', 'bezny', 'odstup']) {
+      assert.equal(naVysku[klic], naSirku[klic], `${engine} nabídka na výšku (${klic}) vypadá jinak než na šířku`);
+    }
+    assert.equal(naVysku.pruh.split('|')[0], naSirku.pruh.split('|')[0], `${engine} označení aktivní stránky má jinou barvu`);
+    assert.equal(await page.evaluate(() => { const a = [...document.querySelectorAll('.nav a')].map((x) => x.getBoundingClientRect()); return a.some((x, i) => i && x.top < a[i - 1].bottom - 0.5); }), false, `${engine} položky nabídky se překrývají`);
+    assert.equal(await page.evaluate(() => { const n = document.querySelector('.nav'); return n.scrollHeight > n.clientHeight + 1; }), false, `${engine} nabídka se na výšku musí vejít bez rolování`);
     await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
-    const portraitHover = page.locator('.nav a:not([aria-current])').first();
-    await portraitHover.hover();
-    assert.notEqual(await portraitHover.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} hover rozsvítí jen dlaždici pod kurzorem`);
-    await page.screenshot({ path: `dist/qa/${engine}-portrait-hover.png` });
     await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
     await page.locator('[data-action="palette"]').click();
@@ -199,8 +206,10 @@ for (const engine of engines) {
         await page.goto(`${server.url}/#/prehled`);
         await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Živě'));
         await page.screenshot({ path: `dist/qa/${engine}-dark-overview.png`, fullPage: true });
+        const tmavaSirka = await page.locator('.nav a[aria-current="page"]').evaluate((el) => getComputedStyle(el).backgroundColor);
         await page.setViewportSize({ width: 1440, height: 2560 });
-        assert.equal(await page.locator('.nav a[aria-current="page"]').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', `${engine} dark portrait bez trvalé výplně`);
+        await page.waitForTimeout(300);
+        assert.equal(await page.locator('.nav a[aria-current="page"]').evaluate((el) => getComputedStyle(el).backgroundColor), tmavaSirka, `${engine} tmavý režim na výšku mění vzhled aktivní položky`);
         await page.screenshot({ path: `dist/qa/${engine}-dark-portrait-rest.png` });
         await page.setViewportSize({ width: 1440, height: 1000 });
         await page.goto(`${server.url}/#/nastaveni`);
