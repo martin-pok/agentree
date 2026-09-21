@@ -670,6 +670,10 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- Statické soubory ---------- */
 
+  // Značka verze souboru. Počítá se z obsahu, takže se nemůže rozejít se skutečností ani u souboru,
+  // kterému se změnil čas bez změny obsahu (kopie balíčku při aktualizaci aplikace).
+  const znacka = (file, body) => `"${crypto.createHash('sha1').update(body).digest('base64url').slice(0, 20)}"`;
+
   async function serveStatic(req, res, url) {
     let rel;
     try {
@@ -692,7 +696,17 @@ export function createHttpServer(app, existingServer = null) {
     // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
     // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.
     const asset = /^\/(logos|fonts|brand|icons)\//.test(rel);
-    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache' });
+    // `no-cache` znamená „před použitím se zeptej“. Bez značky verze se ale prohlížeč nemá čím zeptat
+    // a stahuje celý soubor pokaždé znovu – u aplikace, která běží celý den, zbytečné megabajty.
+    // Značka ze jména, velikosti a času změny dovolí odpovědět „nic nového“ v pár bajtech, a přitom
+    // se každá skutečná změna projeví okamžitě.
+    const etag = znacka(file, body);
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { ...SECURITY, ETag: etag, 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache' });
+      res.end();
+      return;
+    }
+    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
 

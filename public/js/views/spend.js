@@ -144,11 +144,10 @@ function plansHtml(sp) {
 
 function mount(el, _params, query) {
   v.el = el;
-  // Historie extra usage Claude – čte se jednou za návštěvu, na vyžádání.
-  if (v.usage === undefined) {
-    v.usage = null;
-    api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { v.usage = null; });
-  }
+  // Historie extra usage Claude se čte ze souboru, který během dne roste – proto při každém
+  // otevření stránky, ne jednou za běh aplikace. Předchozí graf zůstane, dokud nedorazí čerstvý.
+  if (v.usage === undefined) v.usage = null;
+  api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { /* historie na tomto Macu není */ });
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <span class="toolbar-title" data-region="month"></span>

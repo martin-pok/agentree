@@ -217,3 +217,24 @@ test('pro červený toast existuje jediný název tónu', async () => {
     assert.doesNotMatch(src, /toast\([^;]*tone: '(velvet|coral)'/s, `${f} používá starý název tónu`);
   }
 });
+
+// Dovednosti, historie plánu a extra usage se načítaly jednou za běh aplikace. Kdo mezitím přidal
+// SKILL.md nebo odpracoval další hodinu, viděl stará čísla a neměl jak poznat, že jsou stará.
+test('stránky s daty ze souborů je načítají při každém otevření', async () => {
+  const skills = await zdroj('public/js/views/skills.js');
+  assert.match(skills, /if \(v\.items\) update\(\);\s*\n\s*load\(\);/, 'seznam se obnoví při každém otevření');
+  assert.doesNotMatch(skills, /if \(!v\.items\) load\(\);/, 'načtení jen při prvním otevření');
+  for (const f of ['views/stats.js', 'views/spend.js']) {
+    const src = await zdroj(`public/js/${f}`);
+    assert.doesNotMatch(src, /if \(v\.usage === undefined\) \{\s*\n?\s*v\.usage = null;\s*\n?\s*(loadUsage\(\);|api\.planUsage)/, `${f}: historie se čte jen jednou za běh`);
+  }
+});
+
+test('statické soubory nesou značku verze, aby prohlížeč nestahoval totéž dokola', async () => {
+  const http = await zdroj('src/http.js');
+  assert.match(http, /const znacka = \(file, body\) =>/, 'značka se počítá z obsahu');
+  assert.match(http, /createHash\('sha1'\)\.update\(body\)/, 'z obsahu, ne z času změny');
+  assert.match(http, /if \(req\.headers\['if-none-match'\] === etag\) \{/, 'opakovaný dotaz dostane 304');
+  assert.match(http, /res\.writeHead\(304, \{ \.\.\.SECURITY, ETag: etag/);
+  assert.match(http, /'Cache-Control': asset \? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag/, 'kód a styly se vždy ověří u serveru');
+});

@@ -14,7 +14,10 @@ const PERIODS = [['day', '24 hodin'], ['week', '7 dní'], ['month', '30 dní']];
 function mount(el) {
   v.el = el;
   v.drawn = false;
-  if (v.usage === undefined) { v.usage = null; loadUsage(); }
+  // Historie vytížení se čte ze souboru aplikace Claude Desktop, který se během dne mění.
+  // Načítá se proto při každém otevření; dosavadní graf zůstane, dokud nedorazí nový.
+  if (v.usage === undefined) v.usage = null;
+  loadUsage();
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <div class="seg" role="group" aria-label="Období" data-region="period"></div>

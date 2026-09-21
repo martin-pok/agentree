@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.19.0',
+    date: '2026-09-21',
+    title: 'Vždy čerstvá data a rychlejší načtení',
+    items: [
+      'Dovednosti, historie vytížení plánu a extra usage se načítaly jednou za běh aplikace. Kdo přidal SKILL.md nebo odpracoval další hodinu, viděl stará čísla. Teď se čtou při každém otevření stránky – a dosavadní obsah zůstane, dokud nedorazí nový, takže nic nebliká.',
+      'Soubory aplikace nesou značku verze počítanou z obsahu. Prohlížeč se serveru zeptá, jestli se něco změnilo, a na nezměněný soubor dostane odpověď v pár bajtech místo celého stažení. Jakmile vydám novou verzi, značka se změní a stáhne se hned.',
+      'Živá data zůstávají bez cache: změna je v okně do 25 ms.',
+    ],
+  },
+  {
     version: '0.18.4',
     date: '2026-09-21',
     title: 'Přehled jde znovu otevřít v prohlížeči',

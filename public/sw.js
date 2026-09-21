@@ -1,6 +1,6 @@
 // Service worker Agenteeq: aplikace (HTML, CSS, JS, loga) se načte i při výpadku serveru a ukáže, co dělat.
 // Strategie „nejdřív síť“: když server běží, vždy čerstvá verze; mezipaměť jen jako záloha. API a stream se nikdy neukládají.
-const CACHE = 'agenteeq-shell-v5';
+const CACHE = 'agenteeq-shell-v6';
 const PRECACHE = ['/', '/styles.css', '/js/boot.js', '/js/connect.js', '/js/app.js', '/brand/agenteeq-mark-dark.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -25,10 +25,12 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
-  // Kód a styly se tahají s `no-store`, aby se nikdy neukázala stará verze z HTTP cache prohlížeče.
-  // Mezipaměť service workeru slouží výhradně jako záloha pro offline.
+  // Kód a styly se u serveru ověřují při každém načtení, aby se nikdy neukázala stará verze.
+  // `no-cache` (ne `no-store`): prohlížeč pošle značku verze a server na nezměněný soubor odpoví
+  // „nic nového“ v pár bajtech. `no-store` by zakázal i tohle ověření a stahoval celou aplikaci
+  // pokaždé znovu – při vydání nové verze stejně rychlé, při běžném otevření zbytečné megabajty.
   const zivy = /\.(js|mjs|css|webmanifest)$/.test(url.pathname) || req.mode === 'navigate'
-    ? new Request(req, { cache: 'no-store' })
+    ? new Request(req, { cache: 'no-cache' })
     : req;
   event.respondWith(
     (async () => {

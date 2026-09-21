@@ -15,6 +15,13 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.19.0 – 2026-09-21 · čerstvost dat a cache
+
+- **Zastaralá data v klientovi:** Dovednosti (`views/skills.js`), historie plánu (`views/stats.js`) a extra usage (`views/spend.js`) se načítaly jen při prvním otevření za běh aplikace. Nově se čtou při každém otevření stránky; dosavadní obsah zůstane do příchodu nového (žádné bliknutí).
+- **ETag pro statické soubory** (`znacka()` v `src/http.js`): SHA‑1 z obsahu, ne z času změny – kopie souboru při aktualizaci aplikace tak nezpůsobí falešnou změnu. Opakovaný dotaz dostane 304 s nulou bajtů (ověřeno: 33 819 B → 0 B); po změně obsahu se značka změní a soubor se stáhne hned.
+- **Service worker v6:** kód a styly se tahaly s `cache: 'no-store'`, což zakazuje i ověření u serveru – aplikace se stahovala celá při každém otevření. Nově `no-cache`: vždy ověřeno, ale nezměněné soubory jen potvrzené.
+- Ověřeno: API a stream nikdy z cache, živá změna je v okně do 25 ms, `/api/skills` se volá i při návratu na stránku.
+
 ## 0.18.4 – 2026-09-21 · odkaz do prohlížeče
 
 - **Regrese z 0.18.0:** klíč okna zavřel i přístup z prohlížeče na Macu, takže `127.0.0.1:4620` ukazovalo jen informační stránku. `POST /api/local/browser-link` (jen z tohoto Macu) vrátí cestu s klíčem, adresu složí okno podle své vlastní (funguje i za `tailscale serve` a na jiném portu). Tlačítko v Nastavení → Profil a vzhled.

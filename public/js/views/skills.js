@@ -184,8 +184,11 @@ function mount(el) {
       btn.disabled = false;
     }
   });
-  if (!v.items) load();
-  else update();
+  // Data se načítají při každém otevření stránky: soubory SKILL.md na disku mezitím přibyly nebo
+  // zmizely a seznam z minulé návštěvy by o tom mlčel. Co už je načtené, se ukáže hned, aby
+  // stránka neblikla; čerstvý seznam ho tiše nahradí.
+  if (v.items) update();
+  load();
 }
 
 function update() {
