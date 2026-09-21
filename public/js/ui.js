@@ -85,14 +85,17 @@ export function tweenAll(root) {
 // Jedna zpráva naráz: druhá vždy nahradí první, jinak by se pod sebou hromadily čtyři černé
 // pruhy po rychlých klicích. Druh zprávy (ikona a barva) se odvozuje z `tone`:
 //   ink (výchozí) = povedlo se, velvet/coral = chyba, info = poznámka bez úspěchu, action = upozornění agenta.
-const TOAST_KIND = { ink: 'ok', ok: 'ok', velvet: 'err', coral: 'err', err: 'err', info: 'info', action: 'action' };
+// Jeden název pro jeden druh zprávy. Dřív se pro červený toast používalo 'velvet', 'coral' i 'err'
+// (zbytky po starších názvech barev značky) a nešlo poznat, jestli je v tom rozdíl.
+const TOAST_KIND = { ink: 'ok', ok: 'ok', err: 'err', info: 'info', action: 'action' };
 const TOAST_ICON = () => ({ ok: ICON.check, err: ICON.alert, info: ICON.info, action: ICON.bell });
 let toastTimer = 0;
 
 export function toast(message, { tone = 'ink', action, timeout = 4000 } = {}) {
   const box = document.getElementById('toasts');
   if (!box) return;
-  const kind = TOAST_KIND[tone] || 'ok';
+  // Neznámý tón raději jako poznámka: tvářit se jako úspěch by u chybové hlášky bylo zavádějící.
+  const kind = TOAST_KIND[tone] || 'info';
   const prev = box.firstElementChild;
   clearTimeout(toastTimer);
   // Totéž hlášení znovu (třeba opakované „Nabídka obnovena“) jen zopakuje pohyb, nic se nemění.

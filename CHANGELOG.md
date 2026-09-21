@@ -15,6 +15,13 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.18.3 – 2026-09-21 · tiché chyby a nejednotné pojmy
+
+- **Podklady projektu:** „Neuloženo…“ (čeká na doťukání) a „Neuloženo“ (zápis selhal) se lišily třemi tečkami. Selhání má vlastní znění, červenou barvu, `role="alert"` a toast říká, čeho se týká (`stavUlozeni()` v `views/project.js`).
+- **Tóny toastů:** `velvet`, `coral` i `err` znamenaly totéž. Zůstal `err` (40 volání sjednoceno); neznámý tón spadne na `info`, ne na „úspěch“.
+- **Dokumentace:** README hlásilo 297 testů (bylo 398) a nabízelo ke stažení 0.12.0. Nový `test/dokumentace.test.mjs` hlídá verzi v README, existenci záznamu v CHANGELOGu i „Co je nového“, shodu verze rozšíření a počet testů s tolerancí 10 %.
+- Prověřeno: všechny `catch` v klientovi hlásí chybu uživateli (žádná tichá ztráta), server odmítá nesmyslné vstupy, duplicitní čtyřřádkové bloky jen dva (oba prověřené).
+
 ## 0.18.2 – 2026-09-21 · konzistence zobrazení, úklid
 
 - **Nalezeno proklikáním aplikace:** obnovené okno limitu hlásilo tři různé věci (Přehled „0 %“, Statistiky „Obnoven“, rozbalený seznam „obnoveno“), zatímco API drželo poslední naměřených 34 %. Popis stavu teď vzniká na jednom místě (`limitState()` v `public/js/ui.js`) a všechna tři zobrazení ho jen vypisují. „0 %“ je tvrzení o měření, které po obnově neproběhlo, proto „Obnoveno“.

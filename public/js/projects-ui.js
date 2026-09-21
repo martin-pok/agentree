@@ -116,7 +116,7 @@ export function folderBrowser(root, { onPick, start = '' }) {
     if (recent) { onPick(recent.dataset.fbRecent); return; }
     if (e.target.closest('[data-fb-manual]')) {
       const v = input.value.trim();
-      if (!jeAbsolutniCesta(v)) { toast(CESTA_RADA(), { tone: 'velvet' }); input.focus(); return; }
+      if (!jeAbsolutniCesta(v)) { toast(CESTA_RADA(), { tone: 'err' }); input.focus(); return; }
       onPick(v);
     }
   });

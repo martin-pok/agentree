@@ -109,7 +109,7 @@ async function openReader(id, opener) {
   try {
     text = await api.skillText(id);
   } catch (err) {
-    toast(err.message, { tone: 'velvet' });
+    toast(err.message, { tone: 'err' });
     return;
   }
   await modal({
@@ -179,7 +179,7 @@ function mount(el) {
       const text = await api.skillText(btn.dataset.copySkill);
       await copy(text, 'Dovednost je ve schránce');
     } catch (err) {
-      toast(err.message, { tone: 'velvet' });
+      toast(err.message, { tone: 'err' });
     } finally {
       btn.disabled = false;
     }

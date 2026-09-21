@@ -366,7 +366,7 @@ function closePopover() {
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
-  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'coral' : urgent ? 'action' : 'info', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
+  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
   const n = state.settings?.notifications;
   if (n?.browser && 'Notification' in window && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
     try {
@@ -388,7 +388,7 @@ async function openSession(btn) {
     const r = await api.openSession(btn.dataset.sessionId, btn.dataset.openTarget);
     toast(`Otevírám ${r.label}`);
   } catch (err) {
-    toast(err.message, { tone: 'coral', timeout: 9000 });
+    toast(err.message, { tone: 'err', timeout: 9000 });
   } finally {
     btn.disabled = false;
     btn.classList.remove('is-busy');
@@ -529,7 +529,7 @@ offlineEl.addEventListener('click', async (e) => {
   if (ok) location.reload();
   else {
     b.disabled = false;
-    toast('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.', { tone: 'velvet' });
+    toast('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.', { tone: 'err' });
   }
 });
 
@@ -582,7 +582,7 @@ document.addEventListener('drop', async (e) => {
     const what = `${ids.length} ${plural(ids.length, 'konverzace', 'konverzace', 'konverzací')}`;
     toast(p ? `${what} v projektu ${p.name}` : `${what} mimo projekty`, p ? { action: { label: 'Otevřít projekt', href: projectHref(p.id) } } : {});
   } catch (err) {
-    toast(err.message, { tone: 'velvet' });
+    toast(err.message, { tone: 'err' });
   }
 });
 
@@ -676,7 +676,7 @@ connectStream({
       .then(prijmiSnimek)
       .catch((err) => {
         if (err.status === 401) return parovaciObrazovka();
-        return toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'coral', timeout: 8000 });
+        return toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'err', timeout: 8000 });
       })
       .finally(() => { loadingSnapshot = null; });
   },

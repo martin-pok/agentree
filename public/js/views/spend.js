@@ -206,7 +206,7 @@ function mount(el, _params, query) {
         if (ok) { applySpend(await api.deleteLedger(id)); toast('Výdaj smazán'); }
       }
     } catch (err) {
-      toast(err.message, { tone: 'coral' });
+      toast(err.message, { tone: 'err' });
     }
   };
   el.addEventListener('click', v.onClick);

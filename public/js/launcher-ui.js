@@ -121,7 +121,7 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-handoff-close]')) close();
     else if (e.target.closest('[data-handoff-copy]')) {
-      try { await navigator.clipboard.writeText(prompt); toast('Zadání zkopírováno'); } catch { toast('Schránka není dostupná.', { tone: 'velvet' }); }
+      try { await navigator.clipboard.writeText(prompt); toast('Zadání zkopírováno'); } catch { toast('Schránka není dostupná.', { tone: 'err' }); }
     }
   });
   el.addEventListener('pointerenter', () => { clearTimeout(handoffTimer); el.classList.add('is-paused'); });
@@ -250,7 +250,7 @@ export function createLauncher(root) {
     const p = project();
     const withBrief = p?.notes?.trim() && prefs.brief ? `${text}\n\n---\nPodklady projektu ${p.name}:\n${p.notes.trim()}` : text;
     if (withBrief.length > PROMPT_MAX) {
-      toast(`Zadání i s podklady projektu může mít nejvýš ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, { tone: 'velvet' });
+      toast(`Zadání i s podklady projektu může mít nejvýš ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, { tone: 'err' });
       return;
     }
     if (mode === 'web') {
@@ -274,8 +274,8 @@ export function createLauncher(root) {
       else if (r.kind === 'terminal') toast(`${r.label} běží v Terminálu`, detail);
       else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief, autofill: Boolean(r.autofill) });
     } catch (err) {
-      if (err.status === 402) toast(err.message, { tone: 'velvet', timeout: 10000, action: { label: 'Licence', href: '#/nastaveni' } });
-      else toast(err.message, { tone: 'velvet', timeout: 9000 });
+      if (err.status === 402) toast(err.message, { tone: 'err', timeout: 10000, action: { label: 'Licence', href: '#/nastaveni' } });
+      else toast(err.message, { tone: 'err', timeout: 9000 });
       if (err.status === 422 && /složk/i.test(err.message)) root.querySelector('[data-l="folder"]')?.focus();
     } finally {
       busy = false;
@@ -292,7 +292,7 @@ export function createLauncher(root) {
     const stop = e.target.closest('[data-run-stop]');
     if (stop) {
       stop.disabled = true;
-      try { await api.stopRun(stop.dataset.runStop); } catch (err) { toast(err.message, { tone: 'velvet' }); stop.disabled = false; }
+      try { await api.stopRun(stop.dataset.runStop); } catch (err) { toast(err.message, { tone: 'err' }); stop.disabled = false; }
       return;
     }
     const logBtn = e.target.closest('[data-run-log]');
@@ -301,7 +301,7 @@ export function createLauncher(root) {
         const { log } = await api.runLog(logBtn.dataset.runLog);
         await modal({ title: 'Výstup agenta', wide: true, submitLabel: 'Zavřít', body: `<pre class="run-log">${esc(log || 'Agent zatím nic nevypsal.')}</pre>` });
       } catch (err) {
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       }
       return;
     }
@@ -309,7 +309,7 @@ export function createLauncher(root) {
     if (!a) return;
     if (a.dataset.l === 'go') go();
     else if (a.dataset.l === 'folder') chooseFolder();
-    else if (a.dataset.l === 'clear') api.clearRuns().catch((err) => toast(err.message, { tone: 'velvet' }));
+    else if (a.dataset.l === 'clear') api.clearRuns().catch((err) => toast(err.message, { tone: 'err' }));
     else if (a.dataset.l === 'refresh') {
       a.disabled = true;
       try {
@@ -317,7 +317,7 @@ export function createLauncher(root) {
         render();
         toast('Nabídka agentů obnovena');
       } catch (err) {
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       } finally {
         a.disabled = false;
       }

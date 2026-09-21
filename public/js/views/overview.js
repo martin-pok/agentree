@@ -118,7 +118,7 @@ function mount(el) {
         const r = await api.focusRuntime(prepnout.dataset.focusRuntime);
         if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`, { tone: 'info' });
       } catch (err) {
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       } finally {
         prepnout.disabled = false;
       }
@@ -136,7 +136,7 @@ function mount(el) {
         emit('settings');
         toast('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.', { tone: 'info' });
       } catch (err) {
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       }
       return;
     }

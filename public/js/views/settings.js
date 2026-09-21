@@ -397,7 +397,7 @@ function mount(el) {
       }
     } catch (err) {
       a.disabled = false;
-      toast(err.message, { tone: 'velvet' });
+      toast(err.message, { tone: 'err' });
     }
   });
 
@@ -407,7 +407,7 @@ function mount(el) {
       state.settings = (await api.saveSettings({ notifications: { doneMinSeconds: Number(e.target.value) } })).settings;
       toast('Uloženo');
     } catch (err) {
-      toast(err.message, { tone: 'velvet' });
+      toast(err.message, { tone: 'err' });
     }
   });
 
@@ -465,7 +465,7 @@ function mount(el) {
       toast('Klíč je uložený v Klíčence');
       update();
     } catch (err) {
-      toast(err.message, { tone: 'velvet' });
+      toast(err.message, { tone: 'err' });
     } finally {
       btn.disabled = false;
     }
@@ -476,9 +476,9 @@ async function toggleSetting(sw) {
   const key = sw.dataset.setting;
   const next = sw.getAttribute('aria-checked') !== 'true';
   if (key === 'browser' && next) {
-    if (!('Notification' in window)) { toast('Tento prohlížeč oznámení nepodporuje.', { tone: 'velvet' }); return; }
+    if (!('Notification' in window)) { toast('Tento prohlížeč oznámení nepodporuje.', { tone: 'err' }); return; }
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { toast('Prohlížeč oznámení nepovolil. Povol je v nastavení webu.', { tone: 'velvet' }); return; }
+    if (perm !== 'granted') { toast('Prohlížeč oznámení nepovolil. Povol je v nastavení webu.', { tone: 'err' }); return; }
   }
   sw.setAttribute('aria-checked', String(next));
   // Přístup z domácí sítě není jen nastavení – otevírá a zavírá spojení, takže má vlastní endpoint
@@ -496,7 +496,7 @@ async function toggleSetting(sw) {
       update();
     } catch (err) {
       sw.setAttribute('aria-checked', String(!next));
-      toast(err.message, { tone: 'velvet' });
+      toast(err.message, { tone: 'err' });
     }
     return;
   }
@@ -505,7 +505,7 @@ async function toggleSetting(sw) {
     toast('Uloženo');
   } catch (err) {
     sw.setAttribute('aria-checked', String(!next));
-    toast(err.message, { tone: 'velvet' });
+    toast(err.message, { tone: 'err' });
   }
 }
 
@@ -521,7 +521,7 @@ async function setAppearance(value) {
     update();
   } catch (err) {
     applyAppearance(previous);
-    toast(`Vzhled se neuložil: ${err.message}`, { tone: 'velvet' });
+    toast(`Vzhled se neuložil: ${err.message}`, { tone: 'err' });
   }
 }
 

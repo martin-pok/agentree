@@ -178,7 +178,7 @@ function mount(el, _params, query) {
         const r = await api.focusRuntime(focus.dataset.focusRuntime);
         if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`, { tone: 'info' });
       } catch (err) {
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       } finally {
         focus.disabled = false;
       }

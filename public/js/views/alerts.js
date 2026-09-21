@@ -22,7 +22,7 @@ export async function markRead(ids) {
     state.alerts.unread = r.unread;
     emit('alerts');
   } catch (err) {
-    toast(err.message, { tone: 'coral' });
+    toast(err.message, { tone: 'err' });
   }
 }
 

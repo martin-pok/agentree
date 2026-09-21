@@ -50,7 +50,7 @@ export function setAvatar(value) {
   emit('settings');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    api.saveSettings({ avatar: value }).catch((err) => toast(`Profilový obrázek se neuložil: ${err.message}`, { tone: 'velvet' }));
+    api.saveSettings({ avatar: value }).catch((err) => toast(`Profilový obrázek se neuložil: ${err.message}`, { tone: 'err' }));
   }, 350);
 }
 

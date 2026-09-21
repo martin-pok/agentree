@@ -75,20 +75,30 @@ async function addSessionsDialog(p) {
   if (n) toast(`${n} ${plural(n, 'konverzace přidána', 'konverzace přidány', 'konverzací přidáno')} do projektu`);
 }
 
+// Stav ukládání podkladů. „Neuloženo…“ (čekám na doťukání) a „Neuloženo“ (uložení selhalo) se dřív
+// lišily jen třemi tečkami – kdo přišel o text kvůli plnému disku, poznal to nejdřív po zavření okna.
+// Chyba proto má vlastní znění i barvu a zůstane na obrazovce, dokud se zápis nepovede.
+function stavUlozeni(el, stav, text) {
+  el.textContent = text;
+  el.classList.toggle('is-error', stav === 'chyba');
+  el.classList.toggle('muted', stav !== 'chyba');
+  el.setAttribute('role', stav === 'chyba' ? 'alert' : 'status');
+}
+
 function saveNotes(textarea, statusEl) {
   clearTimeout(v.saveTimer);
-  statusEl.textContent = 'Neuloženo…';
+  stavUlozeni(statusEl, 'ceka', 'Neuloženo…');
   v.saveTimer = setTimeout(async () => {
     const id = v.id;
     v.saving = true;
-    statusEl.textContent = 'Ukládám…';
+    stavUlozeni(statusEl, 'beh', 'Ukládám…');
     try {
       const r = await api.updateProject(id, { notes: textarea.value });
       setProjects(r.projects);
-      if (v.id === id) statusEl.textContent = 'Uloženo';
+      if (v.id === id) stavUlozeni(statusEl, 'hotovo', 'Uloženo');
     } catch (err) {
-      if (v.id === id) statusEl.textContent = 'Neuloženo';
-      toast(err.message, { tone: 'velvet' });
+      if (v.id === id) stavUlozeni(statusEl, 'chyba', 'Neuložilo se! Zkopíruj si text.');
+      toast(`Podklady se neuložily: ${err.message}`, { tone: 'err', timeout: 12000 });
     } finally {
       v.saving = false;
       v.saveTimer = null;
@@ -148,7 +158,7 @@ function mount(el, [id]) {
         toast('Konverzace odebrána z projektu', { action: { label: 'Vrátit', href: `#/projekt/${encodeURIComponent(p.id)}?vratit=${encodeURIComponent(un.dataset.unassign)}` } });
       } catch (err) {
         un.disabled = false;
-        toast(err.message, { tone: 'velvet' });
+        toast(err.message, { tone: 'err' });
       }
       return;
     }
@@ -182,7 +192,7 @@ function mount(el, [id]) {
         default:
       }
     } catch (err) {
-      toast(err.message, { tone: 'velvet', timeout: 8000 });
+      toast(err.message, { tone: 'err', timeout: 8000 });
     }
   });
 }
@@ -196,7 +206,7 @@ async function query(q) {
     setProjects(r.projects);
     toast('Konverzace vrácena do projektu');
   } catch (err) {
-    toast(err.message, { tone: 'velvet' });
+    toast(err.message, { tone: 'err' });
   }
 }
 

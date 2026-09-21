@@ -1956,3 +1956,4 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 .tl-more { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); text-decoration: none; }
 .tl-more:hover { color: var(--ink); }
 .tl-more .icon { width: 14px; height: 14px; }
+.side-head [data-notes-status].is-error { color: var(--velvet-ink); font-weight: 500; }

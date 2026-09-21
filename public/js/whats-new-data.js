@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.18.3',
+    date: '2026-09-21',
+    title: 'Jasná hláška, když se podklady neuloží',
+    items: [
+      'Podklady projektu hlásily „Neuloženo…“, když se čeká na doťukání, a „Neuloženo“, když se zápis nepovedl – rozdíl tří teček. Selhání je teď červené, říká „Neuložilo se! Zkopíruj si text.“ a hlášku dole doplní, proč.',
+      'Pro červený toast existoval trojí název tónu. Zůstal jeden, takže se hlášky nemohou rozejít.',
+    ],
+  },
+  {
     version: '0.18.2',
     date: '2026-09-21',
     title: 'Limity hlásí všude totéž a časová osa nic nezamlčí',

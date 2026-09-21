@@ -116,7 +116,7 @@ function mount(el) {
         update();
       } catch (err) {
         sug.disabled = false;
-        toast(err.message, { tone: 'velvet', timeout: 8000 });
+        toast(err.message, { tone: 'err', timeout: 8000 });
       }
     }
   });

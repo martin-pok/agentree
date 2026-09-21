@@ -179,7 +179,7 @@ function mount(el, [id]) {
     const stop = e.target.closest('[data-chat-stop]');
     if (stop) {
       stop.disabled = true;
-      try { await api.stopChat(v.id); } catch (err) { toast(err.message, { tone: 'velvet' }); } finally { stop.disabled = false; }
+      try { await api.stopChat(v.id); } catch (err) { toast(err.message, { tone: 'err' }); } finally { stop.disabled = false; }
     }
   });
   el.addEventListener('submit', async (e) => {
@@ -197,7 +197,7 @@ function mount(el, [id]) {
       v.follow = true;
     } catch (err) {
       btn.disabled = false;
-      toast(err.message, { tone: 'velvet', timeout: 8000 });
+      toast(err.message, { tone: 'err', timeout: 8000 });
     }
   });
   el.addEventListener('keydown', (e) => {

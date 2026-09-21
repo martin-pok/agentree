@@ -11,7 +11,7 @@ test('toast je vždy jen jeden a rozlišuje úspěch, chybu a poznámku', async 
   const ui = await zdroj('public/js/ui.js');
   assert.doesNotMatch(ui, /children\.length > 4/, 'zásobník toastů se nesmí vrátit');
   assert.match(ui, /box\.replaceChildren\(\)/, 'nový toast nahrazuje starý');
-  assert.match(ui, /velvet: 'err', coral: 'err'/, 'chybové tóny mají červený druh');
+  assert.match(ui, /err: 'err'/, 'chybový tón má červený druh');
   assert.match(ui, /role', kind === 'err' \? 'alert' : 'status'/, 'chyba se čtečkám ohlásí hned');
   const css = await zdroj('public/styles.css');
   for (const k of ['ok', 'err']) assert.match(css, new RegExp(`\\.toast--${k} \\{ background: var\\(--toast-${k}\\)`));
@@ -193,4 +193,27 @@ test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
   assert.match(src, /Dalších \$\{skryto\} je/, 'počet skrytých agentů je vidět');
   assert.match(src, /class="tl-more" href="#\/agenti"/, 'a vede na seznam, kde jsou všichni');
   assert.doesNotMatch(src, /\.slice\(0, 7\)/, 'napevno zapsaná sedmička bez vysvětlení');
+});
+
+// „Neuloženo…“ (čekám na doťukání) a „Neuloženo“ (zápis selhal) se lišily třemi tečkami. Kdo přišel
+// o podklady projektu, poznal to až po zavření okna.
+test('selhané uložení podkladů projektu je vidět na první pohled', async () => {
+  const src = await zdroj('public/js/views/project.js');
+  assert.match(src, /stavUlozeni\(statusEl, 'chyba', 'Neuložilo se! Zkopíruj si text\.'\)/);
+  assert.match(src, /classList\.toggle\('is-error', stav === 'chyba'\)/, 'chyba má vlastní barvu');
+  assert.match(src, /setAttribute\('role', stav === 'chyba' \? 'alert'/, 'čtečka ji ohlásí hned');
+  assert.match(src, /Podklady se neuložily: \$\{err\.message\}/, 'toast říká, čeho se chyba týká');
+  assert.doesNotMatch(src, /textContent = 'Neuloženo'/, 'text k nerozeznání od čekání');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\[data-notes-status\]\.is-error \{ color: var\(--velvet-ink\)/);
+});
+
+test('pro červený toast existuje jediný název tónu', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /const TOAST_KIND = \{ ink: 'ok', ok: 'ok', err: 'err', info: 'info', action: 'action' \};/);
+  assert.match(ui, /TOAST_KIND\[tone\] \|\| 'info'/, 'neznámý tón se nesmí tvářit jako úspěch');
+  for (const f of ['app.js', 'ui.js', 'launcher-ui.js', 'projects-ui.js', 'views/spend.js', 'views/settings.js', 'views/session.js', 'views/project.js', 'views/projects.js', 'views/agents.js', 'views/alerts.js', 'views/skills.js', 'views/overview.js', 'avatars.js']) {
+    const src = await zdroj(`public/js/${f}`);
+    assert.doesNotMatch(src, /toast\([^;]*tone: '(velvet|coral)'/s, `${f} používá starý název tónu`);
+  }
 });
