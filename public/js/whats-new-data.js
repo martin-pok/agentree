@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.21.0',
+    date: '2026-09-21',
+    title: 'Průvodce je vidět a mluví o dnešních funkcích',
+    items: [
+      'V Nastavení je místo nenápadného tlačítka banner s barevným pruhem a popisem, co průvodce ukáže.',
+      'Průvodce má novou obrazovku o limitech a penězích: okna limitů všech nástrojů, předplatná přepočítaná do korun kurzem ČNB a kalendářní „Dnes“.',
+      'Doplněné texty u projektů (logo klienta, vlastní pořadí karet tažením) a u soukromí (klíč okna aplikace, telefon jen pro čtení).',
+    ],
+  },
+  {
     version: '0.20.1',
     date: '2026-09-21',
     title: 'Rolování ve vyhledávání zůstane ve vyhledávání',

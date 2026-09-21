@@ -15,6 +15,12 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.21.0 – 2026-09-21 · průvodce
+
+- **Banner místo nenápadného tlačítka** (`.guide-banner`): barevný pruh, název, popis a plné tlačítko. Dřív obrysové tlačítko na prázdném řádku, které splývalo s pozadím.
+- **Průvodce doplněn o dnešní funkce:** nová obrazovka „Limity a peníze“ (okna limitů, předplatná v korunách kurzem ČNB, kalendářní „Dnes“) s vlastní ukázkou; projekty zmiňují logo klienta a vlastní pořadí karet; soukromí klíč okna a telefon jen pro čtení. Z pěti kroků šest.
+- Test hlídá, že počet kroků odpovídá slibu v banneru a že průvodce zmiňuje limity, kurz ČNB, loga projektů i zabezpečení okna.
+
 ## 0.20.1 – 2026-09-21 · posouvání uvnitř překryvů
 
 - **Řetězení posouvání ve vyhledávání:** `.palette-list` neměl `overscroll-behavior`, takže po dojetí na konec pokračovalo kolečko na stránce vzadu. Doplněno u všech rolovatelných oblastí v překryvech (`.palette-list`, `.pop-list`, `.modal`, `.sheet`, `.fb-list`, `.pick-list`).

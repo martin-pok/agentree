@@ -1,21 +1,26 @@
 import { api } from './api.js';
 import { state, subscribe } from './state.js';
 import { ICON, glyph } from './icons.js';
+import { esc } from './format.js';
 import { goToExtension } from './jump.js';
 
 let dialog;
 const steps = [
   { tag: 'Tvůj nový pracovní prostor', title: 'Všichni agenti.\nJeden přehled.', text: 'Méně hledání konverzací. Více soustředění na práci. Agenteeq propojí dění napříč tvými AI nástroji na jednom místě.', visual: 'orchestra' },
   { tag: 'V pravou chvíli', title: 'Víš, kdy je\nřada na tobě.', text: 'Sleduj práci, dokončení i selhání. Když agent potřebuje rozhodnutí, otevři jeho konverzaci přímo z přehledu.', visual: 'attention' },
-  { tag: 'Pořádek v každé zakázce', title: 'Konverzace patří\nk projektům.', text: 'Spoj agenty podle klienta nebo složky. Uchovej brief, sleduj aktivitu a zadávej další práci ze stejného místa.', visual: 'projects' },
+  { tag: 'Limity a peníze', title: 'Víš, kolik\nti zbývá.', text: 'Okna limitů Claude i Codexu na jednom místě, rozbalením i ostatní nástroje. Útrata pozná tvá předplatná a přepočítá je do korun kurzem ČNB. „Dnes“ znamená kalendářní den, ne posledních 24 hodin.', visual: 'limits' },
+  { tag: 'Pořádek v každé zakázce', title: 'Konverzace patří\nk projektům.', text: 'Spoj agenty podle klienta nebo složky. Přidej logo klienta, přetáhni karty do svého pořadí a měj brief po ruce, když zadáváš další práci.', visual: 'projects' },
   { tag: 'Agenti i v prohlížeči', title: 'ChatGPT, Gemini\na Claude.ai taky.', text: 'Rozšíření pro Chrome přidá do přehledu konverzace z webu – stav, přepis i dosažený limit. A zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.', visual: 'browser', action: 'Nainstalovat rozšíření' },
-  { tag: 'Připraveno na tvém Macu', title: 'Tvá práce.\nTvá data.', text: 'Lokální přepisy zůstávají na tomto počítači. Claude Code a Codex se načítají automaticky. Další zdroje připojíš v Nastavení.', visual: 'privacy' },
+  { tag: 'Připraveno na tvém Macu', title: 'Tvá práce.\nTvá data.', text: 'Přepisy zůstávají na tomto počítači – bez účtu a bez odesílání. K oknu aplikace má přístup jen klíč tohoto spuštění a telefon připojený přes tvou síť smí pouze číst.', visual: 'privacy' },
 ];
 
 function visual(kind) {
   if (kind === 'orchestra') return `<div class="welcome-network"><div class="welcome-line"></div><div class="welcome-logo"><img src="/brand/agenteeq-mark.svg" width="72" height="72" alt="Agenteeq"></div><div class="welcome-providers">${['claude', 'codex', 'cursor'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div></div><p class="welcome-caption">Prostor pro soustředěnou práci</p>`;
   if (kind === 'attention') return `<div class="welcome-demo"><span class="welcome-demo-label">Ukázka stavů</span><div><i class="welcome-dot working"></i><span>Agent pracuje</span><small>máš klid</small></div><div class="welcome-attention"><i class="welcome-dot attention"></i><span>Potřebuje rozhodnutí</span>${ICON.arrowRight || ICON.check}</div><div><i class="welcome-dot done"></i><span>Úloha dokončena</span>${ICON.check}</div></div><p class="welcome-caption">Přesná povolení Claude Code vyžadují hooky.<br>Codex je v přepisech nezveřejňuje.</p>`;
   if (kind === 'projects') return `<div class="welcome-project"><span class="welcome-demo-label">Ukázka projektu</span><div class="welcome-project-title">${ICON.folder}<span>Nový web</span></div><div class="welcome-project-row"><span>Brief a pravidla</span>${ICON.check}</div><div class="welcome-project-row"><span>Konverzace na jednom místě</span><div class="welcome-mini-logos">${glyph('claude')}${glyph('codex')}</div></div><div class="welcome-project-bar"></div></div><p class="welcome-caption">Od prvního zadání po poslední detail</p>`;
+  if (kind === 'limits') return `<div class="welcome-limits"><span class="welcome-demo-label">Ukázka limitů</span>
+    ${[['Claude · Limit 5 h', 41, 'teal'], ['Codex · Týdenní limit', 78, 'brass']].map(([l, p, t]) => `<div class="wl-row"><span>${esc(l)}</span><b>${p} %</b><i class="wl-bar wl-bar--${t}"><em style="width:${p}%"></em></i></div>`).join('')}
+    <div class="wl-spend"><span>Útrata tento měsíc</span><b>850 Kč</b></div></div><p class="welcome-caption">Ceny předplatných v korunách, kurzem ČNB</p>`;
   if (kind === 'browser') return `<div class="welcome-browser"><div class="wb-bar"><i></i><i></i><i></i><span>gemini.google.com</span></div><div class="wb-body"><div class="wb-agent">${glyph('gemini')}<span>Gemini</span><em><i class="welcome-dot working"></i>pracuje</em></div><div class="wb-input"><span>Navrhni název kavárny…</span><small>${ICON.spark}Vloženo z Agenteeq</small></div></div></div><div class="welcome-browser-sites">${['openai', 'claude', 'gemini', 'perplexity', 'copilot'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div><p class="welcome-caption">Rozšíření pro Chrome<br>Data jdou jen do Agenteeq na tvém Macu.</p>`;
   const n = state.sessions.size;
   return `<div class="welcome-local"><img src="/brand/agenteeq-mark-dark.svg" width="80" height="80" alt=""><span class="welcome-local-label">Lokálně na tvém Macu</span><span class="welcome-local-count">${n}</span><span>nalezených konverzací</span></div><p class="welcome-caption">Bez účtu. Bez telemetrie.<br>Webové chaty vyžadují rozšíření prohlížeče.</p>`;

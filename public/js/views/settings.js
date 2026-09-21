@@ -216,7 +216,14 @@ function mount(el) {
         ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <button class="btn welcome-replay" type="button" data-welcome>Prohlédnout průvodce Agenteeq</button>
+        <section class="guide-banner" data-enter style="--i:0">
+          <span class="guide-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div class="guide-text">
+            <strong>Průvodce Agenteeq</strong>
+            <p>Šest obrazovek o tom, co Agenteeq umí: přehled agentů, kdy je řada na tobě, limity a útrata, projekty, chaty z prohlížeče a kde zůstávají tvá data.</p>
+          </div>
+          <button class="btn btn--primary" type="button" data-welcome>Prohlédnout průvodce</button>
+        </section>
         ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
