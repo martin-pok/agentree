@@ -319,3 +319,15 @@ test('banner průvodce sedí s obsahem průvodce', async () => {
     assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);
   }
 });
+
+// Průvodce je vodorovná karta. Bez určené výšky se na vysokém okně natáhl přes celou obrazovku
+// do úzkého sloupce a vizuál plaval uprostřed prázdna.
+test('průvodce drží vodorovný tvar a na nízkém okně ustoupí', async () => {
+  const css = await zdroj('public/desktop.css');
+  const karta = css.match(/\.welcome-dialog \{[^}]*\}/)?.[0] || '';
+  assert.match(karta, /width: min\(920px, calc\(100vw - 40px\)\)/);
+  assert.match(karta, /height: min\(600px, calc\(100dvh - 40px\)\)/, 'výška se musí držet u šířky');
+  assert.doesNotMatch(css, /\.welcome-art \{[^}]*min-height: 500px/, 'vizuál nesmí diktovat výšku karty');
+  assert.match(css, /\.welcome-content \{[^}]*overflow-y: auto/, 'delší text si odroluje uvnitř karty');
+  assert.match(css, /@media \(min-width: 721px\) and \(max-height: 700px\) \{[^@]*\.welcome-dialog \{ height: calc\(100dvh - 32px\)/s, 'na nízkém okně se karta stáhne');
+});

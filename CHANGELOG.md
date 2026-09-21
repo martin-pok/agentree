@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.21.1 – 2026-09-21 · tvar průvodce
+
+- `.welcome-dialog` neměl výšku, takže ho `max-height: 100dvh` natáhl přes celou obrazovku (na okně 2560 × 1900 sloupec ~920 × 1860). Nově `height: min(600px, 100dvh - 40px)`, `.welcome-art` bez `min-height: 500px` a `.welcome-content` s vlastním rolováním. Nízké okno (≤ 700 px) kartu stáhne na výšku obrazovky.
+- Naměřeno: 2560 × 1900 → 920 × 600 (poměr 1,53), 1440 × 900 → 920 × 600, 1440 × 700 → 920 × 660, 1130 × 1900 → 920 × 600, 375 × 812 → jeden sloupec. Všude se vejde bez přetečení.
+
 ## 0.21.0 – 2026-09-21 · průvodce
 
 - **Banner místo nenápadného tlačítka** (`.guide-banner`): barevný pruh, název, popis a plné tlačítko. Dřív obrysové tlačítko na prázdném řádku, které splývalo s pozadím.

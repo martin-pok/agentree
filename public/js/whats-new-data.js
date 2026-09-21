@@ -2,6 +2,14 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.21.1',
+    date: '2026-09-21',
+    title: 'Průvodce se přizpůsobí tvaru obrazovky',
+    items: [
+      'Na vysokém okně se průvodce natahoval přes celou obrazovku do úzkého sloupce a vizuál plaval uprostřed prázdna. Teď je to vodorovná karta 920 × 600: obrázek vlevo, text vpravo. Na nízkém okně se stáhne na výšku obrazovky, na telefonu jde obrázek nahoru a text pod něj.',
+    ],
+  },
+  {
     version: '0.21.0',
     date: '2026-09-21',
     title: 'Průvodce je vidět a mluví o dnešních funkcích',

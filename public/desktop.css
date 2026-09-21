@@ -22,17 +22,20 @@
 .check input, .check-inline input, input[type='checkbox']:not([role='switch']) { appearance: none; flex: none; width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); display: inline-grid; place-content: center; vertical-align: middle; }
 input[type='checkbox']:not([role='switch']):checked { background: var(--action); border-color: var(--action); }
 input[type='checkbox']:not([role='switch']):checked::after { content: ''; width: 8px; height: 4px; border-left: 1.5px solid var(--on-action); border-bottom: 1.5px solid var(--on-action); transform: rotate(-45deg) translateY(-1px); }
-.welcome-dialog { padding: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 28px; width: min(920px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); background: var(--card); color: var(--ink); box-shadow: 0 40px 120px rgba(12,11,16,.4); overflow: auto; }
+/* Průvodce je vodorovná karta: vizuál vlevo, text vpravo. Bez určené výšky se na vysokém okně
+   natáhl přes celou obrazovku do úzkého sloupce, takže vizuál plaval uprostřed prázdna. Výška
+   se teď drží u šířky (poměr zhruba 3 : 2) a ustoupí jen tehdy, když na ni okno nemá místo. */
+.welcome-dialog { padding: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 28px; width: min(920px, calc(100vw - 40px)); height: min(600px, calc(100dvh - 40px)); max-height: calc(100dvh - 40px); background: var(--card); color: var(--ink); box-shadow: 0 40px 120px rgba(12,11,16,.4); overflow: auto; }
 .welcome-dialog[open] { display: grid; grid-template-columns: .88fr 1.12fr; animation: welcome-in .55s var(--ease) both; }
 .welcome-dialog::backdrop { background: rgba(12,11,16,.6); backdrop-filter: blur(12px); }
-.welcome-art { background: var(--stage); color: var(--ivory); min-height: 500px; padding: 40px 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+.welcome-art { background: var(--stage); color: var(--ivory); min-height: 0; padding: 40px 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; }
 .welcome-art::before { content: ''; position: absolute; inset: 24px; border: 1px solid rgba(239,234,242,.07); border-radius: 50% 50% 16px 16px; pointer-events: none; }
 .welcome-art > * { position: relative; }
 .welcome-caption { margin: 32px 0 0; text-align: center; color: #B9B3C5; font-size: 12px; line-height: 1.7; }
-.welcome-content { display: flex; flex-direction: column; padding: 28px 40px 32px; min-width: 0; }
+.welcome-content { display: flex; flex-direction: column; padding: 28px 40px 32px; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .welcome-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; }
 .welcome-mac { color: var(--mute); margin-left: 6px; font-size: 12px; }
-.welcome-copy { margin: auto 0; padding: 44px 0; animation: welcome-copy .45s var(--ease) both; }
+.welcome-copy { margin: auto 0; padding: 32px 0; animation: welcome-copy .45s var(--ease) both; }
 .welcome-kicker { color: var(--brass-ink) !important; font-size: 12px !important; letter-spacing: .03em; margin: 0 0 16px !important; }
 .welcome-copy h2 { font: 400 clamp(30px, 3.2vw, 44px)/1.1 var(--f-display); letter-spacing: -.025em; margin: 0 0 24px; }
 .welcome-copy p { color: var(--mute); font-size: 15px; line-height: 1.7; margin: 0; }
@@ -85,8 +88,8 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
 @keyframes welcome-copy { from { opacity: 0; transform: translateY(8px); } }
 @keyframes welcome-signal { 50% { box-shadow: 0 0 0 9px rgba(194,51,90,.06); } }
 @media (max-width: 680px) {
-  .welcome-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 24px; }
-  .welcome-dialog[open] { grid-template-columns: 1fr; }
+  .welcome-dialog { width: calc(100vw - 24px); height: auto; max-height: calc(100dvh - 24px); border-radius: 24px; }
+  .welcome-dialog[open] { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
   .welcome-art { min-height: 180px; max-height: 220px; padding: 20px; }
   .welcome-network { transform: scale(.55); height: 160px; margin-top: -45px; }
   .welcome-caption { display: none; }
@@ -138,3 +141,10 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
   .welcome-browser-sites { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .welcome-browser, .welcome-browser-sites span { animation: none !important; } }
+
+/* Nízké okno na šířku: karta se stáhne na výšku okna a text si uvnitř odroluje. */
+@media (min-width: 721px) and (max-height: 700px) {
+  .welcome-dialog { height: calc(100dvh - 32px); }
+  .welcome-copy { padding: 16px 0; }
+  .welcome-content { padding: 20px 32px 24px; }
+}
