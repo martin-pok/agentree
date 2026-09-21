@@ -135,6 +135,15 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   assert.equal((await zLan('/api/lan/pin', sCookie)).status, 403, 'kód smí vytvořit jen Mac');
   assert.equal((await zLan('/api/lan/enable', sCookie)).status, 403, 'zapínat smí jen Mac');
   assert.equal((await zLan(`/api/lan/devices/${dobreTelo.device.id}`, { ...sCookie, method: 'DELETE' })).status, 403, 'odpárovat smí jen Mac');
+  // Spárovaný telefon je okno pro čtení: nic nespustí, neuloží a neprojde disk (src/remote-scope.js).
+  const telo = { 'Content-Type': 'application/json' };
+  for (const [cesta, method] of [['/api/launch', 'POST'], ['/api/settings', 'PUT'], ['/api/integrations/claude-hooks/install', 'POST'], ['/api/secrets/openai-admin', 'PUT'], ['/api/custom-agents', 'POST']]) {
+    const r = await zLan(cesta, { method, headers: { Cookie: token, 'X-Agenteeq': '1', ...telo }, body: '{}' });
+    assert.equal(r.status, 403, `${method} ${cesta} z telefonu`);
+    assert.match(r.body, /jen na Macu/);
+  }
+  assert.equal((await zLan('/api/fs/folders', { headers: { Cookie: token } })).status, 403, 'telefon neprochází disk');
+  assert.equal((await zLan('/api/alerts/read', { method: 'POST', headers: { Cookie: token, 'X-Agenteeq': '1', ...telo }, body: '{"ids":[]}' })).status, 200, 'přečtená upozornění smí označit');
   const lanZTelefonu = JSON.parse((await zLan('/api/lan', { headers: { Cookie: token } })).body);
   assert.equal(lanZTelefonu.pin, null);
   assert.deepEqual(lanZTelefonu.devices, []);

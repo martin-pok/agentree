@@ -34,6 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var statusLabel: NSTextField!
     var retryButton: NSButton!
     var baseURL: URL?
+    // Tajemství tohoto spuštění (64 znaků). Server ho vyžaduje od každého požadavku z tohoto Macu.
+    let localKey = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "")
     var quitting = false
     var retries = 0
     var generation = 0
@@ -188,6 +190,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         env["AGENTEEQ_NATIVE_NOTIFY"] = "0" // Native notifications below have click-through routing.
         env["AGENTEEQ_QUIET"] = "1"
         env["AGENTEEQ_DESKTOP"] = "1"
+        // Klíč jen pro tohle spuštění: server bez něj nevydá nic ani jiným programům na tomto Macu.
+        env["AGENTEEQ_LOCAL_KEY"] = localKey
         env["AGENTEEQ_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
         process.environment = env
         let stdout = Pipe(); let stdin = Pipe()
@@ -207,7 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                     self.handleDesktopEvent(msg)
                     if let port = msg["port"] as? Int, msg["ready"] as? Bool == true {
                         self.baseURL = URL(string: "http://127.0.0.1:\(port)")!
-                        self.web.load(URLRequest(url: self.baseURL!))
+                        self.web.load(URLRequest(url: URL(string: "\(self.baseURL!.absoluteString)/?k=\(self.localKey)")!))
                         // Počítadlo restartů chrání jen před smyčkou pádů hned po startu. Když server
                         // vydrží minutu, vynuluje se – jinak by aplikace běžící týdny po třetím
                         // náhodném pádu zůstala viset a čekala na ruční „Zkusit znovu“.

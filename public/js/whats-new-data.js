@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.18.0',
+    date: '2026-09-21',
+    title: 'Bezpečnější přístup: telefon jen čte, okno aplikace má klíč',
+    items: [
+      'Spárovaný telefon teď slouží ke čtení stavu. Nesmí spouštět agenty, měnit nastavení a klíče, instalovat propojení ani procházet disk Macu. Zůstává mu sledování agentů, přepisů, limitů i útraty a označování upozornění za přečtená. Tyhle akce si uděláš na Macu.',
+      'Okno aplikace používá klíč, který se vytvoří při každém spuštění. Jiný program nebo jiný uživatel na tomtéž Macu se na místní adrese Agenteeq bez klíče k ničemu nedostane. Propojení s Claude Code a rozšíření pro Chrome fungují jako dřív.',
+    ],
+  },
+  {
     version: '0.17.3',
     date: '2026-09-21',
     title: 'Kratší seznam Dovedností a oprava okna rozšíření',

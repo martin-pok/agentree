@@ -30,7 +30,8 @@ export async function identifyRetiredServer(config) {
   const get = (suffix) => fetch(base + suffix, { signal: AbortSignal.timeout(1200) }).then((r) => r.ok ? r.json() : null).catch(() => null);
   const health = await get('/api/health');
   if (!health?.ok || !health.ready) return null;
-  const snapshot = await get('/api/state');
+  // Server s klíčem okna /api/state cizímu procesu nevydá; údaje pro převzetí proto nese i /api/health.
+  const snapshot = (await get('/api/state')) || (health.install?.root ? { integrations: { install: health.install }, runs: Array.from({ length: health.runsActive || 0 }, () => ({ status: 'running' })) } : null);
   if (!snapshot?.integrations?.install || !Array.isArray(snapshot.runs) || snapshot.runs.some((r) => ['running', 'stopping'].includes(r.status))) return null;
   const install = snapshot.integrations.install;
   if (path.resolve(install.dataDir || '') !== path.resolve(config.dataDir)) return null;

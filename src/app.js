@@ -1107,6 +1107,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
+    installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),

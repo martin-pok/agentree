@@ -85,3 +85,43 @@ test('párovací kód rozšíření vytvoří jen Mac, ne požadavek přes proxy
   assert.notEqual(pres.status, 200, 'požadavek přes proxy nesmí kód dostat');
   assert.equal(pres.body?.code, undefined);
 });
+
+test('klíč okna aplikace: bez něj server z tohoto Macu nic nevydá, s ním funguje jako dřív', async () => {
+  const { startTestServer } = await import('./helpers.mjs');
+  const klic = 'k'.repeat(40);
+  const t = await startTestServer({ AGENTEEQ_LOCAL_KEY: klic });
+  try {
+    const hlavicky = { 'X-Agenteeq': '1' };
+    assert.equal((await fetch(`${t.url}/api/state`)).status, 403, 'bez klíče žádná data');
+    assert.equal((await fetch(`${t.url}/`)).status, 403, 'bez klíče ani stránka');
+    assert.equal((await fetch(`${t.url}/api/state`, { headers: { 'X-Agenteeq-Key': 'x'.repeat(40) } })).status, 403, 'špatný klíč');
+    assert.equal((await fetch(`${t.url}/api/settings`, { method: 'PUT', headers: { ...hlavicky, 'Content-Type': 'application/json' }, body: '{}' })).status, 403, 'bez klíče žádná změna');
+    const health = await (await fetch(`${t.url}/api/health`)).json();
+    assert.equal(health.ok, true, 'health je bez klíče, ať jde poznat, že server žije');
+    assert.equal(health.keyed, true);
+    assert.equal((await fetch(`${t.url}/api/state`, { headers: { 'X-Agenteeq-Key': klic } })).status, 200, 'klíč v hlavičce');
+    const r = await fetch(`${t.url}/?k=${klic}`, { redirect: 'manual' });
+    assert.equal(r.status, 302);
+    assert.equal(r.headers.get('location'), '/', 'klíč se z adresy odstraní');
+    const cookie = r.headers.get('set-cookie');
+    assert.match(cookie, /HttpOnly/);
+    assert.match(cookie, /SameSite=Strict/);
+    assert.equal((await fetch(`${t.url}/api/state`, { headers: { Cookie: cookie.split(';')[0] } })).status, 200, 'cookie z adresy stačí');
+    assert.equal((await fetch(`${t.url}/api/state?k=${klic}`)).status, 403, 'klíč v adrese API se neuznává');
+  } finally {
+    await t.close();
+  }
+});
+
+test('health z tohoto Macu nese údaje pro převzetí osiřelého serveru i bez /api/state', async () => {
+  const { startTestServer } = await import('./helpers.mjs');
+  const t = await startTestServer({ AGENTEEQ_LOCAL_KEY: 'z'.repeat(40) });
+  try {
+    const h = await (await fetch(`${t.url}/api/health`)).json();
+    assert.equal(typeof h.install.root, 'string');
+    assert.equal(typeof h.install.bin, 'string');
+    assert.equal(h.runsActive, 0);
+  } finally {
+    await t.close();
+  }
+});

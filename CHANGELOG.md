@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.18.0 – 2026-09-21 · bezpečnostní nálezy č. 1, 4, 5
+
+- **#1 (vysoká) – rozsah telefonu:** `src/remote-scope.js`. Zařízení mimo tento Mac smí číst (`GET`) a jen dvě změny: spárovat se a označit upozornění za přečtená; `/api/fs/*` (procházení disku) je zakázané. Spouštění agentů, nastavení, klíče, hooky, projekty, výdaje, vlastní agenti, média i licence vrací 403 „jen na Macu“. Testy: `remote-scope.test.mjs` a průchod přes skutečnou LAN v `lan.test.mjs`.
+- **#4, #5 (střední) – klíč okna aplikace:** `AGENTEEQ_LOCAL_KEY` (Swift ho vygeneruje pro každé spuštění, 64 znaků). Se zapnutým klíčem vydá server požadavek z tohoto Macu jen s cookie `agenteeq_local` (nastaví ji jednorázová adresa `/?k=…` a přesměruje na čistou), nebo s hlavičkou `X-Agenteeq-Key`. Bez klíče projde jen `/api/health` a cesty s vlastním tajemstvím (hooky, rozšíření). Spuštění z terminálu klíč nepoužívá. Převzetí osiřelého serveru (`desktop/lifecycle.mjs`) bere údaje z `/api/health`, protože `/api/state` je chráněný.
+
 ## 0.17.3 – 2026-09-21 · kontrola všemi QA skripty
 
 - Poprvé lokálně spuštěné `qa:contrast`, `qa-desktop`, `qa-site`, `qa-extension` (Playwright v dočasné složce mimo repozitář, Chromium i WebKit). Kontrast: všechny texty splňují AA včetně tmavého režimu. **Nalezeno a opraveno:** okno rozšíření se zastaralou verzí mělo 621 px (limit Chromu 600) → `.sites { max-height: 232px }`.

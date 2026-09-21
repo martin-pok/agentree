@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets } from './spend.js';
 import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
+import { remoteScope } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
@@ -93,6 +94,30 @@ export function createHttpServer(app, existingServer = null) {
   function jeHttps(req) {
     if (!isLoopback(req.socket?.remoteAddress)) return false;
     return String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase() === 'https';
+  }
+
+  // Klíč okna aplikace (config.localKey). Z okna přijde jednorázově v adrese (?k=…), server ho změní
+  // na cookie a přesměruje na čistou adresu. Bez klíče projde jen /api/health (hlásí, že server žije)
+  // a cesty s vlastním tajemstvím (hooky a rozšíření). Vrací true, když už odpověděl.
+  let keyUsed = 0;
+  const instalace = () => app.installInfo();
+  const keyHash = (v) => crypto.createHash('sha256').update(String(v || '')).digest();
+  const keyMatches = (v) => Boolean(v) && crypto.timingSafeEqual(keyHash(v), keyHash(config.localKey));
+  function localKeyGate(req, res, url) {
+    if (url.pathname === '/api/health') return false;
+    const route = url.pathname.startsWith('/api/') ? routes.find(([m, re]) => m === req.method && re.test(url.pathname)) : null;
+    if (route?.[3]?.token) return false;
+    const fromQuery = req.method === 'GET' && !url.pathname.startsWith('/api/') ? url.searchParams.get('k') : null;
+    if (fromQuery && keyMatches(fromQuery)) {
+      url.searchParams.delete('k');
+      keyUsed++;
+      res.writeHead(302, { Location: `${url.pathname}${url.search}`, 'Set-Cookie': `agenteeq_local=${config.localKey}; HttpOnly; SameSite=Strict; Path=/`, 'Cache-Control': 'no-store' }).end();
+      return true;
+    }
+    if (keyMatches(cookieValue(req.headers.cookie, 'agenteeq_local')) || keyMatches(req.headers['x-agenteeq-key'])) { keyUsed++; return false; }
+    if (url.pathname.startsWith('/api/')) throw new HttpError(403, 'Chybí klíč okna aplikace.');
+    res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>Agenteeq běží</h1><p>Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.</p>');
+    return true;
   }
 
   // Požadavek z tohoto Macu (desktopová aplikace, prohlížeč na Macu) projde jako dřív.
@@ -351,7 +376,11 @@ export function createHttpServer(app, existingServer = null) {
       if (!series) return { available: false, message: 'Historie vytížení plánu na tomto Macu není.' };
       return series;
     }],
-    ['GET', /^\/api\/health$/, () => ({ ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}) })],
+    ['GET', /^\/api\/health$/, (req) => ({
+      ok: true, version: VERSION, ready: store.ready, ...(config.lifecycle ? { lifecycle: config.lifecycle } : {}),
+      // Jen z tohoto Macu: údaje pro převzetí osiřelého serveru (dřív se braly z /api/state, který teď chrání klíč).
+      ...(zTohotoMacu(req) ? { keyed: Boolean(config.localKey), keyUsed, runsActive: app.runsPayload().filter((r) => ['running', 'stopping'].includes(r.status)).length, install: instalace(), } : {}),
+    })],
     ['GET', /^\/api\/state$/, (req) => app.state({ local: zTohotoMacu(req) })],
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
@@ -669,7 +698,15 @@ export function createHttpServer(app, existingServer = null) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
+    if (config.localKey && zTohotoMacu(req) && localKeyGate(req, res, url)) return;
     requireDevice(req, url);
+    // Zařízení mimo tento Mac smí jen číst (viz src/remote-scope.js). Bez tokenu ingest routes
+    // (hooky, rozšíření) se neptáme: ty nesou vlastní tajemství a volá je nástroj na Macu.
+    if (!zTohotoMacu(req) && app.lan) {
+      const route = routes.find(([mt, re]) => mt === req.method && re.test(url.pathname));
+      const scope = remoteScope(req.method, url.pathname);
+      if (!scope.ok && !route?.[3]?.token) throw new HttpError(403, scope.error);
+    }
     if (url.pathname.startsWith('/api/') && req.method === 'GET') {
       if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
     }

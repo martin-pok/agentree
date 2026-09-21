@@ -46,6 +46,10 @@ export function loadConfig(env = process.env) {
     port: env.PORT !== undefined && env.PORT !== '' ? Number(env.PORT) : 4620,
     host: '127.0.0.1',
     desktop: env.AGENTEEQ_DESKTOP === '1',
+    // Tajemství pro každé spuštění od okna aplikace (Swift ho vygeneruje a předá přes prostředí). Když je
+    // nastavené, projde požadavek z tohoto Macu jen s ním – ostatní procesy (jiný uživatel Macu, cizí
+    // program) mají otevřený port na 127.0.0.1, ale bez klíče jim server nic nevydá.
+    localKey: /^[\w-]{32,128}$/.test(env.AGENTEEQ_LOCAL_KEY || '') ? env.AGENTEEQ_LOCAL_KEY : '',
     sourceHome,
     dataDir: env.AGENTEEQ_HOME || path.join(os.homedir(), '.agenteeq'),
     // Data ze starších názvů se jednou zkopírují: ~/.agentree (do 0.7.0) a ~/.dirigent (do 0.4.0).
