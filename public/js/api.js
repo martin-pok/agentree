@@ -35,6 +35,7 @@ export const api = {
   clearAlerts: () => request('POST', '/api/alerts/clear', {}),
   setLanAccess: (on) => request('POST', `/api/lan/${on ? 'enable' : 'disable'}`, {}),
   setTailscaleAccess: (on) => request('POST', `/api/tailscale/${on ? 'enable' : 'disable'}`, {}),
+  browserLink: async () => new URL((await request('POST', '/api/local/browser-link', {})).path, location.origin).href,
   lanPin: () => request('POST', '/api/lan/pin', {}),
   detectRemote: () => request('POST', '/api/remote/detect', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),

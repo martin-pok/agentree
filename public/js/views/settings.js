@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { esc, rel, initials, dateLong } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
-import { fill, switchRow, stateBadge, toast, modal, confirmDialog } from '../ui.js';
+import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
@@ -308,7 +308,8 @@ function mount(el) {
     const a = e.target.closest('[data-action]');
     if (!a) return;
     try {
-      if (a.dataset.action === 'reset-layout') { await resetLayout(); toast('Karty mají zase výchozí pořadí'); update(); }
+      if (a.dataset.action === 'browser-link') { await copy(await api.browserLink(), 'Odkaz je ve schránce – vlož ho do prohlížeče'); }
+      else if (a.dataset.action === 'reset-layout') { await resetLayout(); toast('Karty mají zase výchozí pořadí'); update(); }
       else if (a.dataset.action === 'claude-connect') await connectClaude();
       else if (a.dataset.action === 'claude-disconnect') {
         if (await confirmDialog({ title: 'Vypnout propojení s Claude Code', message: 'Agenteeq odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.', confirmLabel: 'Vypnout propojení' })) {
@@ -558,6 +559,8 @@ function update() {
       ${appearanceOption('dark', ICON.moon, 'Tmavý', 'Klidný večerní režim s AA kontrastem')}
       ${appearanceOption('system', ICON.system, 'Podle systému', 'Automaticky podle macOS')}
     </div>
+    <div class="set-row-inline"><span><strong>Otevřít v prohlížeči</strong><small>Přehled se dá otevřít i v Safari nebo Chromu – hodí se na zvětšení, tisk nebo vývojářské nástroje. Odkaz platí jen pro tenhle Mac a jen do restartu aplikace.</small></span>
+      <button class="btn btn--sm" type="button" data-action="browser-link">Zkopírovat odkaz</button></div>
     <div class="set-row-inline"><span><strong>Uspořádání karet</strong><small>Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>Obnovit výchozí</button></div>`);
 

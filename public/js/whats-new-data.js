@@ -2,6 +2,14 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.18.4',
+    date: '2026-09-21',
+    title: 'Přehled jde znovu otevřít v prohlížeči',
+    items: [
+      'Od zavedení klíče okna vracela adresa 127.0.0.1:4620 v prohlížeči jen „Agenteeq běží“. V Nastavení → Profil a vzhled je teď tlačítko Zkopírovat odkaz: vloží se do Safari nebo Chromu a přehled se otevře. Odkaz platí jen na tomhle Macu a jen do restartu aplikace.',
+    ],
+  },
+  {
     version: '0.18.3',
     date: '2026-09-21',
     title: 'Jasná hláška, když se podklady neuloží',

@@ -15,6 +15,10 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.18.4 – 2026-09-21 · odkaz do prohlížeče
+
+- **Regrese z 0.18.0:** klíč okna zavřel i přístup z prohlížeče na Macu, takže `127.0.0.1:4620` ukazovalo jen informační stránku. `POST /api/local/browser-link` (jen z tohoto Macu) vrátí cestu s klíčem, adresu složí okno podle své vlastní (funguje i za `tailscale serve` a na jiném portu). Tlačítko v Nastavení → Profil a vzhled.
+
 ## 0.18.3 – 2026-09-21 · tiché chyby a nejednotné pojmy
 
 - **Podklady projektu:** „Neuloženo…“ (čeká na doťukání) a „Neuloženo“ (zápis selhal) se lišily třemi tečkami. Selhání má vlastní znění, červenou barvu, `role="alert"` a toast říká, čeho se týká (`stavUlozeni()` v `views/project.js`).

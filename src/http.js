@@ -331,6 +331,15 @@ export function createHttpServer(app, existingServer = null) {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
       return unwrap(await app.setLanAccess(m[1] === 'enable'));
     }],
+    // Odkaz do prohlížeče. Okno aplikace drží klíč spuštění a bez něj server nic nevydá – uživatel
+    // by si tak nemohl přehled otevřít v Safari ani v Chromu, kde má vývojářské nástroje a zvětšení.
+    // Odkaz nese klíč v adrese, server ho při prvním otevření vymění za cookie a z adresy zmizí.
+    ['POST', /^\/api\/local\/browser-link$/, (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odkaz do prohlížeče lze vytvořit jen na tomto Macu.');
+      // Vrací se jen cesta. Adresu složí okno, které zná tu svou – server běží i na jiném portu
+      // a za `tailscale serve`, takže pevně zapsané 127.0.0.1:4620 by v takovém případě lhalo.
+      return { path: config.localKey ? `/?k=${config.localKey}` : '/' };
+    }],
     ['POST', /^\/api\/lan\/pin$/, (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
       if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');

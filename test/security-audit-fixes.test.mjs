@@ -168,3 +168,28 @@ test('s klíčem okna dál fungují hooky, ingest z rozšíření i párování 
     await t.close();
   }
 });
+
+test('odkaz do prohlížeče nese klíč, vytvoří ho jen tento Mac a po otevření z adresy zmizí', async () => {
+  const { startTestServer } = await import('./helpers.mjs');
+  const klic = 'b'.repeat(40);
+  const t = await startTestServer({ AGENTEEQ_LOCAL_KEY: klic });
+  try {
+    const r = await fetch(`${t.url}/api/local/browser-link`, { method: 'POST', headers: { 'X-Agenteeq': '1', 'X-Agenteeq-Key': klic } });
+    assert.equal(r.status, 200);
+    const { path: cesta } = await r.json();
+    assert.equal(cesta, `/?k=${klic}`, 'cesta musí nést klíč');
+    // Odkaz skutečně otevře přehled a klíč se vymění za cookie.
+    const otevreni = await fetch(new URL(cesta, t.url), { redirect: 'manual' });
+    assert.equal(otevreni.status, 302);
+    assert.equal(otevreni.headers.get('location'), '/', 'klíč v adrese nezůstane');
+    assert.match(otevreni.headers.get('set-cookie'), /HttpOnly/);
+    // Server bez klíče (spuštění z terminálu) vrací prostou cestu, ne prázdno.
+    const bezKlice = await startTestServer();
+    try {
+      const b = await fetch(`${bezKlice.url}/api/local/browser-link`, { method: 'POST', headers: { 'X-Agenteeq': '1' } });
+      assert.equal((await b.json()).path, '/');
+    } finally { await bezKlice.close(); }
+  } finally {
+    await t.close();
+  }
+});
