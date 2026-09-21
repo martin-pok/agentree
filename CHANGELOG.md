@@ -15,6 +15,11 @@
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
 
 
+## 0.22.0 – 2026-09-21 · využití plochy a ikona průvodce
+
+- **Prázdno pod kratším sloupcem Přehledu:** rozbalený seznam limitů protáhl pravý sloupec o 253 px a pod levým zůstala díra. `doplnAktivitu()` dopočítá počet řádků Poslední aktivity z naměřeného rozdílu výšek (mez 6–24, nikdy víc, než je konverzací) a `watchBalance()` ho spouští i při změně výšky, ne jen při nových datech. Naměřeno: mezera 253 → 11 px, řádků 6 → 10; po sbalení zpět na 7.
+- **Ikona průvodce:** vlastní kreslená žárovka (`BULB` v `public/js/icons.js`), vložená inline a obarvená `currentColor` – jeden soubor pro oba režimy, žádná externí licence. Nahrazuje barevný přechod s kolečky. Ověřeno: světlý #16141D, tmavý #F5F2F8.
+
 ## 0.21.1 – 2026-09-21 · tvar průvodce
 
 - `.welcome-dialog` neměl výšku, takže ho `max-height: 100dvh` natáhl přes celou obrazovku (na okně 2560 × 1900 sloupec ~920 × 1860). Nově `height: min(600px, 100dvh - 40px)`, `.welcome-art` bez `min-height: 500px` a `.welcome-content` s vlastním rolováním. Nízké okno (≤ 700 px) kartu stáhne na výšku obrazovky.

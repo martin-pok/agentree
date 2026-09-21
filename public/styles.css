@@ -1955,20 +1955,19 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 .tl-more .icon { width: 14px; height: 14px; }
 .side-head [data-notes-status].is-error { color: var(--velvet-ink); font-weight: 500; }
 
-/* Průvodce v Nastavení. Dřív to bylo obrysové tlačítko na prázdném řádku, které splývalo s pozadím
-   a nikdo ho nepřečetl. Banner s barevným pruhem ho udrží vidět, aniž by překřičel obsah stránky. */
-.guide-banner { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 8px; padding: 16px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
-.guide-art { position: relative; display: block; height: 72px; border-radius: 12px; overflow: hidden; background: linear-gradient(110deg, var(--velvet) 0%, var(--brass) 52%, var(--teal) 100%); }
-.guide-art i { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .55); }
-.guide-art i:nth-child(1) { left: 12px; top: 14px; width: 14px; height: 14px; }
-.guide-art i:nth-child(2) { left: 34px; top: 30px; width: 22px; height: 22px; background: rgba(255, 255, 255, .75); }
-.guide-art i:nth-child(3) { right: 12px; top: 18px; width: 10px; height: 10px; }
+/* Průvodce v Nastavení. Dřív to bylo obrysové tlačítko na prázdném řádku, které splývalo s pozadím.
+   Ikona je kreslená čárou v barvě textu (`currentColor`), takže drží ve světlém i tmavém režimu
+   a nepotřebuje dvě verze souboru ani externí licenci. */
+.guide-banner { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 8px; padding: 16px 20px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
+.guide-art { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 16px; background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+.guide-art svg { width: 40px; height: 40px; }
 .guide-text { display: grid; gap: 4px; min-width: 0; }
 .guide-text strong { font: 400 17px/1.3 var(--f-display); }
 .guide-text p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
 @media (max-width: 720px) {
   .guide-banner { grid-template-columns: 56px minmax(0, 1fr); }
-  .guide-art { height: 56px; }
+  .guide-art { width: 56px; height: 56px; }
+  .guide-art svg { width: 30px; height: 30px; }
   .guide-banner .btn { grid-column: 1 / -1; justify-self: start; }
 }
 

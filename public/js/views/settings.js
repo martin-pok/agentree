@@ -2,7 +2,7 @@ import { state } from '../state.js';
 import { api } from '../api.js';
 import { esc, rel, initials, dateLong } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
-import { glyph, ICON } from '../icons.js';
+import { glyph, ICON, BULB } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
 import { takeJump } from '../jump.js';
@@ -217,7 +217,7 @@ function mount(el) {
       </nav>
       <div class="set-main">
         <section class="guide-banner" data-enter style="--i:0">
-          <span class="guide-art" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="guide-art" aria-hidden="true">${BULB}</span>
           <div class="guide-text">
             <strong>Průvodce Agenteeq</strong>
             <p>Šest obrazovek o tom, co Agenteeq umí: přehled agentů, kdy je řada na tobě, limity a útrata, projekty, chaty z prohlížeče a kde zůstávají tvá data.</p>

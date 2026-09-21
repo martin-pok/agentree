@@ -68,6 +68,16 @@ export function glyph(x, { onDark = false } = {}) {
 
 const svg = (d) => `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true" focusable="false">${d}</svg>`;
 
+// Kreslená žárovka pro banner průvodce. Vlastní kresba (žádná externí licence), jedna čára
+// v barvě textu – ve světlém i tmavém režimu stejná, bez druhé verze souboru.
+export const BULB = `<svg viewBox="0 0 64 64" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M32 9.5c-8.7 0-15 6.2-15 14 0 4.6 2.2 7.6 4.5 10.2 1.9 2.2 3 3.8 3.3 6.3"/>
+  <path d="M32 9.5c8.9 0 15 6.4 15 14.1 0 4.5-2.3 7.5-4.6 10.1-1.9 2.2-2.9 3.9-3.2 6.3"/>
+  <path d="M24.6 44.2c4.9 1 9.9 1 14.8 0"/><path d="M25.4 49c4.4.9 8.8.9 13.2 0"/><path d="M28.2 53.6c2.5.5 5.1.5 7.6 0"/>
+  <path d="M28 27.5c1.4-2.6 2.6-2.6 4 0 1.4 2.6 2.6 2.6 4 0"/>
+  <path d="M32 2.8v3.4M52.6 11.3l-2.4 2.4M11.4 11.3l2.4 2.4M58.5 30.4h-3.4M9 30.4H5.6"/>
+</svg>`;
+
 export const ICON = {
   chev: svg('<path d="M9 5l7 7-7 7"/>'),
   back: svg('<path d="M15 5l-7 7 7 7"/>'),

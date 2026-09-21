@@ -11,14 +11,42 @@ import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 
+const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
+const AKTIVIT_MAX = 24;
 const TIMELINE_MAX = 7; // víc řádků se do osy nevejde; zbytek se vypíše pod ní jako odkaz
 const CHART_UPDATE_MS = 500;
-const v = { period: 'week', hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
+const v = { period: 'week', aktivit: AKTIVIT_MIN, doplnRaf: 0, aktivnichCelkem: 0, hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
 
 // Aplikace, které server umí přepnout do popředí (pevný seznam v src/openers.js).
 const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 const changed = (topics, ...names) => topics.has('all') || names.some((name) => topics.has(name));
+
+// Sloupce Přehledu nejsou stejně vysoké – rozbalený seznam limitů nebo delší graf jeden z nich
+// protáhne a pod tím druhým zůstane prázdno. Poslední aktivita je jediný blok, který umí růst,
+// tak se jím díra zaplní. Počítá se z naměřené výšky, ne odhadem: při jiných datech nebo jiné
+// velikosti okna vyjde jiné číslo.
+function doplnAktivitu(el, celkem) {
+  const sloupce = el.querySelectorAll('.ov > .bal-col');
+  const seznam = el.querySelector('[data-region="activity"]');
+  if (sloupce.length !== 2 || !seznam || !celkem) return;
+  const radek = seznam.firstElementChild;
+  if (!radek || getComputedStyle(el.querySelector('.ov')).gridTemplateColumns.trim().split(/\s+/).length < 2) {
+    if (v.aktivit !== AKTIVIT_MIN) { v.aktivit = AKTIVIT_MIN; update(new Set(['dopln'])); }
+    return;
+  }
+  const mujSloupec = seznam.closest('.bal-col');
+  const druhy = [...sloupce].find((c) => c !== mujSloupec);
+  const vyskaRadku = radek.getBoundingClientRect().height + parseFloat(getComputedStyle(seznam).rowGap || 0);
+  const mezera = druhy.getBoundingClientRect().height - mujSloupec.getBoundingClientRect().height;
+  if (!vyskaRadku) return;
+  const zmena = mezera > vyskaRadku ? Math.floor(mezera / vyskaRadku) : mezera < -vyskaRadku ? -Math.floor(-mezera / vyskaRadku) : 0;
+  if (!zmena) return;
+  const chci = Math.max(AKTIVIT_MIN, Math.min(AKTIVIT_MAX, celkem, v.aktivit + zmena));
+  if (chci === v.aktivit) return;
+  v.aktivit = chci;
+  update(new Set(['dopln']));
+}
 
 function queueChart(now) {
   if (v.chartTimer) return;
@@ -100,7 +128,7 @@ function mount(el) {
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
 `;
-  v.unwatch = watchBalance(el.querySelector('.ov'));
+  v.unwatch = watchBalance(el.querySelector('.ov'), () => doplnAktivitu(el, v.aktivnichCelkem));
   const sel = el.querySelector('[data-action="period"]');
   sel.value = v.period;
   sel.addEventListener('change', () => {
@@ -249,7 +277,7 @@ function update(topics = new Set(['all'])) {
        ${limitsAll(state, now)}`);
   }
 
-  if (changed(topics, 'sessions')) fill(el, 'activity', all.length ? all.slice(0, 6).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
+  if (changed(topics, 'sessions', 'dopln')) fill(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : '<li class="empty-inline">Zatím žádná aktivita. Spusť agenta a objeví se tady.</li>');
 
   if (changed(topics, 'sessions', 'tick')) {
     const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;
@@ -342,6 +370,12 @@ function update(topics = new Set(['all'])) {
       : '')
       : '<div class="empty-inline">Sledování procesů je vypnuté.</div>');
   }
+  v.aktivnichCelkem = all.length;
+  // Až po vykreslení a vyvážení sloupců: teprve tehdy je vidět, kolik místa dole zbylo.
+  if (!topics.has('dopln')) {
+    cancelAnimationFrame(v.doplnRaf);
+    v.doplnRaf = requestAnimationFrame(() => requestAnimationFrame(() => doplnAktivitu(el, all.length)));
+  }
 }
 
 export default {
@@ -351,6 +385,7 @@ export default {
   update,
   unmount: () => {
     clearTimeout(v.chartTimer);
+    cancelAnimationFrame(v.doplnRaf);
     v.unwatch?.();
     v.launcher?.destroy();
     Object.assign(v, { el: null, launcher: null, unwatch: null, chartTimer: null, chartAt: 0, timelineNow: 0 });

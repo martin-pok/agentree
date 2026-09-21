@@ -36,10 +36,12 @@ export function balanceColumns(box, { threshold = 40 } = {}) {
   return best === current ? false : place(best);
 }
 
-// Přepočítá při změně velikosti sloupců, nejvýš jednou za snímek.
-export function watchBalance(box) {
+// Přepočítá při změně velikosti sloupců, nejvýš jednou za snímek. `onZmena` se zavolá i tehdy,
+// když se nic nepřesouvalo: výška se mohla změnit z jiného důvodu (rozbalený seznam), a volající
+// podle ní dopočítává, kolik obsahu se ještě vejde.
+export function watchBalance(box, onZmena) {
   let frame = 0;
-  const run = () => { frame = 0; balanceColumns(box); };
+  const run = () => { frame = 0; balanceColumns(box); onZmena?.(); };
   const ro = new ResizeObserver(() => { if (!frame) frame = requestAnimationFrame(run); });
   for (const col of box.querySelectorAll(':scope > .bal-col')) ro.observe(col);
   return () => { ro.disconnect(); cancelAnimationFrame(frame); };

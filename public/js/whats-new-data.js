@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.22.0',
+    date: '2026-09-21',
+    title: 'Poslední aktivita doplní řádky podle místa',
+    items: [
+      'Když rozbalíš „Všechny nástroje a služby“, pravý sloupec se prodlouží. Poslední aktivita teď doplní tolik řádků, kolik se pod ni vejde, takže dole nezůstane prázdno. Po sbalení se zase zkrátí.',
+      'Banner průvodce má místo barevného přechodu kreslenou žárovku. Je nakreslená čárou v barvě textu, takže drží ve světlém i tmavém režimu.',
+    ],
+  },
+  {
     version: '0.21.1',
     date: '2026-09-21',
     title: 'Průvodce se přizpůsobí tvaru obrazovky',
