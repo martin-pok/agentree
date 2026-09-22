@@ -1,13 +1,13 @@
 // Vydání pro macOS jedním příkazem: `npm run release:mac`
 //
-// Projde celou cestu od testů po hotový archiv a volitelně vymění aplikaci v /Applications:
+// Projde celou cestu od testů po hotový archiv a volitelně vymění nainstalovanou aplikaci:
 //
 //   1. npm test a npm run check        důkaz, že se vydává něco funkčního
 //   2. npm run smoke                   balíček se opravdu nainstaluje a nastartuje
 //   3. rozšíření pro Chrome            dist/agenteeq-extension-<verze>.zip
 //   4. web (landing page + rozhraní)   dist/web
 //   5. npm run build:mac               .app, podpis, volitelně notarizace, dist/…zip
-//   6. --install                       výměna aplikace v /Applications (jen na výslovné přání)
+//   6. --install                       výměna aplikace tam, kde na tomhle Macu je (jen na výslovné přání)
 //
 // Krok 6 je jediný, který sahá na už nainstalovanou aplikaci, a proto se nikdy nespustí sám:
 // chce přepínač --install a starou aplikaci nemaže, jen ji odloží do zálohy. Kdyby nová verze
@@ -29,7 +29,22 @@ if (process.platform !== 'darwin') {
   process.exit(1);
 }
 
-const APLIKACE = '/Applications/Agenteeq.app';
+// Kam se instaluje: tam, kde Agenteeq na tomhle Macu doopravdy je. Natvrdo '/Applications' by
+// vedle existující kopie v ~/Applications založilo druhou a uživatel by dál spouštěl tu starou –
+// s pocitem, že se vydání neprojevilo.
+async function kamInstalovat() {
+  const domaci = path.join(os.homedir(), 'Applications', 'Agenteeq.app');
+  const systemova = '/Applications/Agenteeq.app';
+  const je = async (cesta) => fs.stat(cesta).then(() => true, () => false);
+  const [mameDomaci, mameSystemovou] = [await je(domaci), await je(systemova)];
+  if (mameDomaci && mameSystemovou) {
+    console.warn(`Pozor: Agenteeq je na dvou místech (${domaci} i ${systemova}). Měním ten v ${domaci}; ten druhý zůstává na staré verzi.`);
+    return domaci;
+  }
+  if (mameDomaci) return domaci;
+  return systemova;
+}
+const APLIKACE = await kamInstalovat();
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
 const archiv = path.join(root, 'dist', `Agenteeq-${version}-macOS-${process.arch}.zip`);
 
@@ -92,7 +107,7 @@ if (!process.env.AGENTEEQ_SIGN_IDENTITY) {
 run('npm', ['run', 'build:mac']);
 
 if (install) {
-  krok(6, 'Výměna aplikace v /Applications');
+  krok(6, `Výměna aplikace v ${path.dirname(APLIKACE)}`);
   const bezi = tise('pgrep', ['-x', 'Agenteeq']);
   if (bezi) {
     console.log('Agenteeq běží – žádám ho, ať se ukončí.');
@@ -124,7 +139,7 @@ if (install) {
   console.log(`Nainstalováno: ${APLIKACE} (${version})`);
   run('open', ['-a', APLIKACE]);
 } else {
-  krok(6, 'Instalace do /Applications přeskočena');
+  krok(6, `Instalace do ${path.dirname(APLIKACE)} přeskočena`);
   console.log('Spusť `npm run release:mac -- --install`, pokud chceš vyměnit i aplikaci na tomhle Macu.');
   console.log('Stará verze se přitom nemaže, jen odloží do ~/.agenteeq/zalohy.');
 }
