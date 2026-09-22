@@ -111,17 +111,18 @@
     <h2 id="start-heading">Stáhni, přesuň, spusť.</h2>
     <p class="lead">Žádný účet, žádný instalátor s deseti kroky. Stáhne se jedna složka s aplikací.</p>
     <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
-    <p class="small muted note-after">Apple Silicon · macOS 14 a novější · <span data-verze-stazeni>beta</span></p>
+    <p class="small muted note-after">Apple Silicon · macOS 14 a novější · <span data-verze-stazeni>beta</span> · 38 MB</p>
   </div>
 
   <ol class="steps">
     <li><span class="step-n" aria-hidden="true">1</span><div><b>Rozbal stažený soubor</b><p>Ve Stahování se objeví Agenteeq. Dvojklikem se rozbalí.</p></div></li>
     <li><span class="step-n" aria-hidden="true">2</span><div><b>Přetáhni ho do Aplikací</b><p>Tím je nainstalováno. Nic dalšího se nikam nezapisuje.</p></div></li>
-    <li><span class="step-n" aria-hidden="true">3</span><div><b>Poprvé otevři přes pravé tlačítko</b><p>Klikni na Agenteeq pravým tlačítkem a zvol <b>Otevřít</b>. Podruhé už stačí dvojklik.</p></div></li>
+    <li><span class="step-n" aria-hidden="true">3</span><div><b>Napoprvé ji povol v Nastavení</b><p>macOS betu zatím neověří sám. Otevři <b>Nastavení systému → Soukromí a zabezpečení</b>, sjeď dolů k hlášce o Agenteeq a klikni na <b>Přesto otevřít</b>.</p></div></li>
   </ol>
 
   <div class="gatekeeper">
-    <p><b>Proč to napoprvé přes pravé tlačítko?</b> Beta zatím není podepsaná u Applu, takže macOS u ní chce potvrdit, že ji opravdu chceš spustit. Dvojklik by v tu chvíli jenom ukázal hlášku, že aplikaci nejde ověřit. Přes pravé tlačítko je ve stejném okně tlačítko <b>Otevřít</b>. Je to jednou, pak si to macOS zapamatuje.</p>
+    <p><b>Proč to chce ten jeden krok navíc?</b> Vývojářský podpis u Applu stojí ročně peníze a beta ho zatím nemá. Bez něj macOS aplikaci nespustí sám a ukáže, že ji nedokáže ověřit — není to nález škodlivého kódu, jen chybějící razítko. Potvrzení v Nastavení je jednorázové; příště se Agenteeq otevře dvojklikem jako každá jiná aplikace. Až podpis doplníme, tenhle krok zmizí.</p>
+    <p class="small muted">Na macOS 14 funguje i starší zkratka: klik pravým tlačítkem a <b>Otevřít</b>. Na macOS 15 a novějším ji Apple zrušil, proto výše vede cesta přes Nastavení — ta platí všude.</p>
   </div>
 
   <div class="setup-list">

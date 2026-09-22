@@ -165,6 +165,7 @@ section[id] { scroll-margin-top: 80px; }
 .steps p { color: var(--ink-2); font-size: 15px; }
 
 .gatekeeper { padding: 22px 24px; border-radius: var(--r-lg); background: var(--brass-tint); border: 1px solid color-mix(in srgb, var(--brass) 35%, transparent); }
+.gatekeeper { display: grid; gap: 10px; }
 .gatekeeper p { color: var(--ink-2); max-width: 78ch; }
 .gatekeeper b { color: var(--ink); }
 
