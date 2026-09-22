@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.23.1',
+    date: '2026-09-22',
+    title: 'Grafy v čase říkají pravdu o tom, co je pod kurzorem',
+    items: [
+      'Kurzor v grafech kreditů a limitů už neuskakuje o dny. Body se ukládají jen v okamžicích změny, takže se dřív hledal „nejbližší bod“ — i když ležel týden jinam. Teď se čte poslední odečet před kurzorem a svislice sleduje kurzor přesně.',
+      'Bublina rozlišuje, jestli jsi na skutečném měření („Hodnota“), nebo jestli hodnota jen drží z dřívějška („Poslední známá“ a pod tím, kdy se naměřila).',
+      'U zůstatku kreditů je vidět, kdy byl zjištěný. Když je starší než dva dny, zvýrazní se — abys ho nečetl jako stav teď.',
+    ],
+  },
+  {
     version: '0.23.0',
     date: '2026-09-22',
     title: 'Telefon připojíš QR kódem',

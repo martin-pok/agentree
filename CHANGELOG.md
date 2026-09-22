@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.23.1 – 2026-09-22 · grafy v čase říkají pravdu o tom, co je pod kurzorem
+
+- **Kurzor v grafu už neuskakuje o dny.** Historie kreditů i limitů se ukládá komprimovaně,
+  jen okamžiky změny. Hledal se „nejbližší bod“, takže při týdenní mezeře bublina ukázala
+  datum týden jinam, než kam člověk mířil. Teď se čte poslední odečet před kurzorem – jediná
+  hodnota, o které v tom čase něco víme – a svislice i tečka sledují kurzor přesně.
+- **Bublina rozlišuje měření od držené hodnoty.** Když jsme na odečtu, stojí tam „Hodnota“.
+  Když hodnota jen drží z dřívějška, stojí tam „Poslední známá“ a pod ní „naměřeno“ s datem.
+  Tvrdit „v tomhle čase to bylo X“ by bylo tvrzení, které nemáme z čeho doložit.
+- **Zůstatek kreditů má datum.** Dřív svítilo jen číslo, i když pocházelo z odečtu starého
+  měsíc. Vedle něj je teď „zjištěno před …“, a co je starší než dva dny, se zvýrazní mosazí.
+
+
 ## 0.23.0 – 2026-09-22 · QR kód pro telefon a skutečné stažení
 
 - **Telefon se páruje QR kódem.** V Nastavení → Otevřít na telefonu je vedle jednorázového kódu

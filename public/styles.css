@@ -577,6 +577,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .tip-label { color: rgba(255, 255, 255, .7); font-size: 11px; margin-bottom: 2px; }
 .tip-row { display: flex; align-items: center; gap: 8px; font-size: 12px; white-space: nowrap; }
 .tip-row b { margin-left: auto; padding-left: 12px; font: 500 12px/1.6 var(--f-mono); }
+/* Údaj, který už není obraz současnosti. Ne poplach, jen zřetelné „tohle je starší“. */
+.je-stare { color: var(--brass-ink); }
+
+/* Kdy byla hodnota naměřená. Tlumené: je to doplněk k údaji, ne druhý údaj. */
+.tip-row.tip-note, .tip-row.tip-note b { color: var(--mute); font-size: 11px; }
 .tip-total { border-top: 1px solid rgba(255, 255, 255, .16); margin-top: 4px; padding-top: 4px; }
 .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
 .chart-plot.is-hover .vline, .chart-plot.is-hover .hover-dot, .chart-plot.is-hover .tip { opacity: 1; }

@@ -122,13 +122,13 @@ function placeTip(plot, xPct, topPct) {
   return tip;
 }
 
-function showHover(plot, idx) {
+function showHover(plot, idx, t) {
   const c = registry.get(plot.dataset.chart);
   if (!c) return;
   const n = c.kind === 'time' ? c.pts.length : c.n;
   if (!n) return;
   idx = Math.max(0, Math.min(n - 1, idx));
-  hoverState.set(plot.dataset.chart, { idx, pointer: hoverState.get(plot.dataset.chart)?.pointer || false });
+  hoverState.set(plot.dataset.chart, { idx, t, pointer: hoverState.get(plot.dataset.chart)?.pointer || false });
   plot.classList.add('is-hover');
 
   if (c.kind === 'cols') {
@@ -142,25 +142,44 @@ function showHover(plot, idx) {
   }
 
   const p = c.pts[idx];
-  const xPct = ((p.at - c.t0) / (c.t1 - c.t0)) * 100;
+  // Svislice i tečka sledují kurzor, ne vzdálený bod. Bez toho to pod rukou uskakovalo.
+  const cas = Number.isFinite(t) ? Math.max(c.pts[0].at, Math.min(c.pts.at(-1).at, t)) : p.at;
+  const xPct = ((cas - c.t0) / (c.t1 - c.t0)) * 100;
   const yPct = 100 - (p.value / c.max) * 100;
   plot.querySelector('.vline').style.left = `${xPct}%`;
   const dot = plot.querySelector('.hover-dot');
   dot.style.left = `${xPct}%`;
   dot.style.top = `${yPct}%`;
+  // Od jaké mezery má smysl říct, že hodnota je jen držená z dřívějška. Procento rozsahu,
+  // aby to sedělo na měsíční graf stejně jako na hodinový; minuta jako spodní hranice.
+  const prah = Math.max(60e3, (c.t1 - c.t0) * 0.01);
+  const drzena = cas - p.at > prah;
   const prev = c.pts[idx - 1];
-  const rise = prev && p.value > prev.value ? `<span class="tip-row">${esc(c.riseLabel)}<b>+${esc(c.format(p.value - prev.value))}</b></span>` : '';
-  placeTip(plot, xPct, yPct).innerHTML = `<span class="tip-label">${esc(dateTime(p.at))}</span><span class="tip-row">Hodnota<b>${esc(c.format(p.value))}</b></span>${rise}`;
+  // Skok v hodnotě patří k okamžiku změny, ne k času, kdy se na něj někdo dívá.
+  const rise = !drzena && prev && p.value > prev.value ? `<span class="tip-row">${esc(c.riseLabel)}<b>+${esc(c.format(p.value - prev.value))}</b></span>` : '';
+  // „V tomhle čase to bylo X“ nemáme z čeho tvrdit. Známe jen poslední odečet – a řekneme kdy.
+  const namereno = drzena ? `<span class="tip-row tip-note">naměřeno<b>${esc(dateTime(p.at))}</b></span>` : '';
+  placeTip(plot, xPct, yPct).innerHTML = `<span class="tip-label">${esc(dateTime(cas))}</span><span class="tip-row">${drzena ? 'Poslední známá' : 'Hodnota'}<b>${esc(c.format(p.value))}</b></span>${rise}${namereno}`;
 }
 
-function pointerIndex(plot, c, clientX) {
+function pointerRatio(plot, clientX) {
   const r = plot.getBoundingClientRect();
-  const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-  if (c.kind === 'cols') return Math.min(c.n - 1, Math.floor(ratio * c.n));
-  const t = c.t0 + ratio * (c.t1 - c.t0);
-  let best = 0;
-  for (let i = 1; i < c.pts.length; i++) if (Math.abs(c.pts[i].at - t) < Math.abs(c.pts[best].at - t)) best = i;
-  return best;
+  return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+}
+
+// Body v čárovém grafu nejsou vzorky v pravidelném rastru – ukládají se jen okamžiky změny
+// a mezi nimi hodnota drží. Hledat „nejbližší bod“ proto při týdenní mezeře uskočilo o dny
+// jinam, než kam člověk ukazuje. Správná odpověď je poslední odečet před kurzorem: jediná
+// hodnota, o které v tom čase něco víme.
+export function stepIndex(pts, t) {
+  if (t <= pts[0].at) return 0;
+  let lo = 0;
+  let hi = pts.length - 1;
+  while (lo < hi) {
+    const stred = Math.ceil((lo + hi) / 2);
+    if (pts[stred].at <= t) lo = stred; else hi = stred - 1;
+  }
+  return lo;
 }
 
 function hideHover(plot) {
@@ -172,7 +191,7 @@ function hideHover(plot) {
 export function restoreHover(root) {
   for (const plot of root.querySelectorAll('.chart-plot')) {
     const h = hoverState.get(plot.dataset.chart);
-    if (h && (h.pointer || document.activeElement === plot)) showHover(plot, h.idx);
+    if (h && (h.pointer || document.activeElement === plot)) showHover(plot, h.idx, h.t);
   }
 }
 
@@ -182,8 +201,11 @@ export function bindCharts(root = document) {
     if (!plot) return;
     const c = registry.get(plot.dataset.chart);
     if (!c) return;
-    hoverState.set(plot.dataset.chart, { idx: 0, pointer: true });
-    showHover(plot, pointerIndex(plot, c, e.clientX));
+    hoverState.set(plot.dataset.chart, { ...(hoverState.get(plot.dataset.chart) || { idx: 0 }), pointer: true });
+    const pomer = pointerRatio(plot, e.clientX);
+    if (c.kind === 'cols') { showHover(plot, Math.min(c.n - 1, Math.floor(pomer * c.n))); return; }
+    const cas = c.t0 + pomer * (c.t1 - c.t0);
+    showHover(plot, stepIndex(c.pts, cas), cas);
   });
   root.addEventListener('pointerout', (e) => {
     const plot = e.target.closest?.('.chart-plot');

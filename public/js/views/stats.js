@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { state, sessionsList, agentsList } from '../state.js';
-import { esc, fmtNum, plural } from '../format.js';
+import { esc, fmtNum, plural, rel } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
@@ -152,7 +152,15 @@ function update() {
     .map((c) => {
       const h = c.history.slice(-60);
       const markers = c.topUps || []; // rozpoznává server, viz src/credits.js
-      return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${markers.length ? ` · ${markers.length}× dokoupeno` : ''}</span></div>
+      // Zůstatek bez data je nepravda: ukazuje poslední odečet, ne stav teď. U Codexu může být
+      // i měsíc starý, protože novější se nikde nevzal. Proto se vedle čísla píše, kdy vzniklo.
+      // Nad dva dny už údaj není obraz současnosti. Zvýrazní se mosazí – tou samou barvou,
+      // kterou aplikace jinde říká „pozor“ – aby se to nedalo přečíst jako aktuální stav.
+      const stary = Number.isFinite(c.at) && now - c.at > 2 * 86400e3;
+      const zjisteno = Number.isFinite(c.at)
+        ? ` · <span class="${stary ? 'je-stare' : ''}">zjištěno ${esc(rel(c.at, now))}</span>`
+        : '';
+      return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${zjisteno}${markers.length ? ` · ${markers.length}× dokoupeno` : ''}</span></div>
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Dokoupeno' })}</div>`;
     });
   fill(el, 'usage-history', usageHistoryHtml());
