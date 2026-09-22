@@ -15,7 +15,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   const r = await buildSite({ out });
 
   const korenova = await fs.readFile(path.join(out, 'index.html'), 'utf8');
-  assert.match(korenova, /Velín pro práci s/, 'v kořeni musí být landing page');
+  assert.match(korenova, /Každý agent má svůj úkol/, 'v kořeni musí být landing page');
   assert.equal(korenova.includes('<aside class="sidebar">'), false, 'a rozhodně ne rozhraní aplikace');
 
   const aplikace = await fs.readFile(path.join(out, 'app/index.html'), 'utf8');

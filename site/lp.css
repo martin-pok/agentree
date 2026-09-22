@@ -219,7 +219,6 @@ footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px sol
   .hero-in > *:nth-child(2) { animation-delay: .06s; }
   .hero-in > *:nth-child(3) { animation-delay: .12s; }
   .hero-in > *:nth-child(4) { animation-delay: .18s; }
-  .hero-in > *:nth-child(5) { animation-delay: .24s; }
   details[open] > .detail-body, .faq details[open] > p { animation: prichod .24s var(--ease) both; }
   @keyframes prichod { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 }
