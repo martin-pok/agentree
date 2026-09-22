@@ -72,6 +72,13 @@ try {
       await staticPage.close();
       const motionPage = await browser.newPage({ reducedMotion: 'no-preference' });
       await motionPage.goto(url);
+      await motionPage.evaluate(() => document.fonts.ready);
+      // Nekonečnou smyčku poznáme z jejího zápisu, ne z měření času.
+      assert.deepEqual(await motionPage.evaluate(() => document.getAnimations().filter(a => a.effect?.getTiming?.().iterations === Infinity).map(a => a.animationName || a.transitionProperty)), [], 'Nekonečná animace');
+      // Nástupní animace musí dojet, než začneme klikat. Pod zátěží se Playwrightu
+      // prvek jeví ustálený i uprostřed animace (dva snímky se stejným rámečkem),
+      // takže bez tohoto čekání test chytal doběh nástupu místo skutečné smyčky.
+      await motionPage.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running'), null, { timeout: 5000 });
       const button = motionPage.locator('.hero .btn');
       await button.hover();
       await motionPage.waitForFunction(() => {

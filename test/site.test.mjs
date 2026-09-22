@@ -154,3 +154,13 @@ test('web nese verzi z package.json, ne opsanou z minula', async () => {
   const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
   assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
 });
+
+// Na webu nesmí nic běžet donekonečna: návštěvník stránku čte, nedívá se na smyčku.
+// Nástupní animace jsou konečné a při `prefers-reduced-motion: reduce` se vypínají.
+// Kontrola v prohlížeči to hlídá taky, ale ta potřebuje Playwright – tohle projde vždy.
+test('web nemá nekonečnou animaci a pohyb umí vypnout', async () => {
+  const css = await fs.readFile(path.join(ROOT, 'site', 'lp.css'), 'utf8');
+  const smycky = [...css.matchAll(/animation:[^;{}]*\binfinite\b[^;{}]*/g)].map(m => m[0].trim());
+  assert.deepEqual(smycky, [], 'landing page nesmí mít animaci ve smyčce');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^{]*\{[^]*animation: none !important/, 'omezený pohyb musí animace vypnout');
+});
