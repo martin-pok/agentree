@@ -55,11 +55,22 @@ try {
           for (const view of ['projekty', 'utrata', 'prehled']) {
             await page.locator(`[data-tour="${view}"]`).focus();
             await page.keyboard.press('Enter');
-            // Prohlídka přepíná skutečné snímky aplikace: musí se vyměnit obrázek i všechny
-            // jeho varianty (tmavá, telefon), jinak by si někdo v tmavém režimu prohlížel Přehled
-            // s popiskem Útraty.
-            const adresy = await page.evaluate(() => [...document.querySelectorAll('#tour-figure [data-vzor]')].map(e => e.srcset || e.getAttribute('src')));
-            assert.equal(adresy.every(a => a.includes(view)), true, `${engine} ${theme} ${width}: ${view} → ${adresy.join(', ')}`);
+            // Prohlídka má všechny obrazovky ve stránce nad sebou a přepíná průhlednost. Právě
+            // jedna smí být aktivní a všechny její varianty (tmavá, telefon) musí patřit k ní –
+            // jinak by si někdo v tmavém režimu prohlížel Přehled s popiskem Útraty.
+            const stav = await page.evaluate(() => {
+              const akt = [...document.querySelectorAll('#tour-figure .shot')].filter(s => s.classList.contains('is-active'));
+              return {
+                pocet: akt.length,
+                obrazovka: akt[0]?.dataset.obrazovka,
+                skryte: [...document.querySelectorAll('#tour-figure .shot:not(.is-active)')].every(s => s.hasAttribute('aria-hidden')),
+                zdroje: akt[0] ? [...akt[0].querySelectorAll('source, img')].map(e => e.srcset || e.getAttribute('src')) : [],
+              };
+            });
+            assert.equal(stav.pocet, 1, `${engine} ${theme} ${width}: aktivních obrazovek ${stav.pocet}`);
+            assert.equal(stav.obrazovka, view, `${engine} ${theme} ${width}: aktivní je ${stav.obrazovka}, čekali jsme ${view}`);
+            assert.equal(stav.skryte, true, `${engine} ${theme} ${width}: neaktivní snímky musí být skryté pro odečítačku`);
+            assert.equal(stav.zdroje.every(a => a.includes(view)), true, `${engine} ${theme} ${width}: ${view} → ${stav.zdroje.join(', ')}`);
             assert.equal(await page.locator('[data-tour][aria-pressed="true"]').count(), 1);
             assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${theme} ${width} ${view}: overflow`);
             assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'reduced motion');
@@ -87,7 +98,7 @@ try {
       await staticPage.goto(url);
       // Bez JavaScriptu musí stránka pořád prodávat: nadpis, snímek produktu i tlačítko ke stažení.
       assert.ok(await staticPage.locator('h1').isVisible(), 'nadpis bez JS');
-      assert.ok(await staticPage.locator('#tour-figure img').isVisible(), 'snímek produktu bez JS');
+      assert.ok(await staticPage.locator('#tour-figure .shot.is-active img').isVisible(), 'snímek produktu bez JS');
       assert.ok(await staticPage.locator('[data-stahnout="mac-arm64"]').first().isVisible(), 'stažení bez JS');
       await staticPage.locator('#rozsireni summary').click();
       assert.ok(await staticPage.locator('#rozsireni ol').isVisible());

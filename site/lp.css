@@ -119,6 +119,11 @@ section[id] { scroll-margin-top: 80px; }
 
 .shot-frame { margin: 0; border-radius: var(--r-lg); overflow: hidden; background: var(--stage); border: 1px solid var(--stage-line); }
 .shot-frame img { width: 100%; height: auto; }
+/* Všechny tři obrazovky leží ve stránce nad sebou a přepíná se jen průhlednost. Výměna `src`
+   znamená, že prohlížeč nemá co kreslit, dokud nový soubor nedotáhne – a to je to bliknutí. */
+.shot-stack { display: grid; }
+.shot-stack > .shot { grid-area: 1 / 1; opacity: 0; transition: opacity 260ms var(--ease); }
+.shot-stack > .shot.is-active { opacity: 1; }
 .shot-note { padding: 12px 20px; font-size: 13px; color: var(--on-stage-mute); border-top: 1px solid var(--stage-line); }
 
 .signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 28px; }

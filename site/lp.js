@@ -1,36 +1,27 @@
-// Prohlídka přepíná skutečné snímky aplikace. Žádná smyšlená čísla se na stránce nedopočítávají.
-const POHLEDY = {
-  prehled: { popis: 'Obrazovka Přehled v Agenteeq: dva pracující agenti, jeden čeká na rozhodnutí, pod tím nabídka na spuštění dalšího agenta.', nazev: 'Přehled' },
-  projekty: { popis: 'Obrazovka Projekty v Agenteeq: karty projektů s počtem konverzací a použitými nástroji.', nazev: 'Projekty' },
-  utrata: { popis: 'Obrazovka Útrata v Agenteeq: zadaná předplatná, dokoupené kredity a měřené tokeny oddělené od sebe.', nazev: 'Útrata' },
-};
+// Prohlídka přepíná skutečné snímky aplikace. Všechny leží ve stránce nad sebou a mění se jen
+// průhlednost – výměna `src` by znamenala prázdný rám, dokud prohlížeč nový soubor nedotáhne.
+const NAZVY = { prehled: 'Přehled', projekty: 'Projekty', utrata: 'Útrata' };
 
-const obrazek = document.getElementById('tour-obrazek');
-const varianty = document.querySelectorAll('#tour-figure [data-vzor]');
+const snimky = [...document.querySelectorAll('#tour-figure .shot')];
 const hlaseni = document.getElementById('tour-announcement');
-const pohyb = matchMedia('(prefers-reduced-motion: reduce)');
-let prechod;
 
 for (const tlacitko of document.querySelectorAll('[data-tour]')) {
   tlacitko.addEventListener('click', () => {
     const klic = tlacitko.dataset.tour;
-    const pohled = POHLEDY[klic];
-    if (!pohled || tlacitko.getAttribute('aria-pressed') === 'true') return;
+    if (!NAZVY[klic] || tlacitko.getAttribute('aria-pressed') === 'true') return;
     for (const jine of document.querySelectorAll('[data-tour]')) jine.setAttribute('aria-pressed', String(jine === tlacitko));
-    // Každá varianta (světlá, tmavá, telefon) má vlastní předlohu adresy; mění se jen název obrazovky.
-    for (const prvek of varianty) {
-      const adresa = prvek.dataset.vzor.replace('{}', klic);
-      if (prvek.tagName === 'SOURCE') prvek.srcset = adresa; else prvek.src = adresa;
+    for (const snimek of snimky) {
+      const aktivni = snimek.dataset.obrazovka === klic;
+      snimek.classList.toggle('is-active', aktivni);
+      // Neaktivní snímky zůstávají vykreslené kvůli prolnutí, ale odečítačka je číst nemá.
+      snimek.toggleAttribute('aria-hidden', !aktivni);
     }
-    obrazek.alt = pohled.popis;
-    if (hlaseni) hlaseni.textContent = `Obrazovka ${pohled.nazev}. ${pohled.popis}`;
-    prechod?.cancel();
-    if (!pohyb.matches) prechod = obrazek.animate([{ opacity: .45 }, { opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    const popis = snimky.find((s) => s.dataset.obrazovka === klic)?.querySelector('img')?.alt || '';
+    if (hlaseni) hlaseni.textContent = `Obrazovka ${NAZVY[klic]}. ${popis}`;
   });
 }
-pohyb.addEventListener('change', () => { if (pohyb.matches) prechod?.cancel(); });
 
-// Adresa rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá.
+// Adresu rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá.
 for (const pole of document.querySelectorAll('[data-kopirovat]')) {
   pole.setAttribute('role', 'button');
   pole.setAttribute('tabindex', '0');

@@ -40,11 +40,13 @@ try {
       // JPEG: snímky jsou ve dvojnásobné hustotě, po zmenšení na obrazovce není rozdíl vidět,
       // ale stránka váží zlomek toho, co by vážila v PNG.
       const cesta = path.join(CIL, `${zaber.soubor}-${rezim}.jpg`);
-      // Výřez okna aplikace, ale jen po spodní hranu viditelné plochy: snímek celého prvku
-      // by vytáhl i to, co je uvnitř odrolované, a na webu by z toho byl nepoužitelný pruh.
+      // Výřez je přesně plocha okna aplikace: `.shell` má min-height na celou obrazovku, takže
+      // okno je vždy stejně vysoké a obsah nad rámec se v něm roluje. Kdyby se bralo podle výšky
+      // obsahu, vyšla by každá obrazovka jinak vysoká (Projekty mají obsahu míň) a snímky by při
+      // přepínání na webu skákaly.
       const ramec = zaber.mobil ? null : await page.locator('.shell').boundingBox();
       const vyrez = ramec
-        ? { x: Math.round(ramec.x), y: Math.round(ramec.y), width: Math.round(ramec.width), height: Math.round(Math.min(ramec.height, zaber.vyska - ramec.y)) }
+        ? { x: Math.round(ramec.x), y: Math.round(ramec.y), width: Math.round(ramec.width), height: Math.round(zaber.vyska - 2 * ramec.y) }
         : undefined;
       await page.screenshot({ path: cesta, type: 'jpeg', quality: 88, clip: vyrez });
       const { size } = await fs.stat(cesta);

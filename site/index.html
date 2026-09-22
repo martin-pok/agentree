@@ -58,12 +58,26 @@
   </div>
 
   <figure class="stage shot-frame" id="tour-figure">
-    <picture>
-      <source data-vzor="/shots/{}-mobil-dark.jpg" srcset="/shots/prehled-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
-      <source data-vzor="/shots/{}-mobil-light.jpg" srcset="/shots/prehled-mobil-light.jpg" media="(max-width: 620px)">
-      <source data-vzor="/shots/{}-dark.jpg" srcset="/shots/prehled-dark.jpg" media="(prefers-color-scheme: dark)">
-      <img id="tour-obrazek" data-vzor="/shots/{}-light.jpg" src="/shots/prehled-light.jpg" width="2464" height="1552" alt="Obrazovka Přehled v Agenteeq: dva pracující agenti, jeden čeká na rozhodnutí, pod tím nabídka na spuštění dalšího agenta." fetchpriority="high" decoding="async">
-    </picture>
+    <div class="shot-stack">
+      <picture class="shot is-active" data-obrazovka="prehled">
+        <source srcset="/shots/prehled-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
+        <source srcset="/shots/prehled-mobil-light.jpg" media="(max-width: 620px)">
+        <source srcset="/shots/prehled-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="/shots/prehled-light.jpg" width="2464" height="1504" alt="Obrazovka Přehled v Agenteeq: dva pracující agenti, jeden čeká na rozhodnutí, pod tím nabídka na spuštění dalšího agenta." fetchpriority="high" decoding="async">
+      </picture>
+      <picture class="shot" data-obrazovka="projekty" aria-hidden="true">
+        <source srcset="/shots/projekty-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
+        <source srcset="/shots/projekty-mobil-light.jpg" media="(max-width: 620px)">
+        <source srcset="/shots/projekty-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="/shots/projekty-light.jpg" width="2464" height="1504" alt="Obrazovka Projekty v Agenteeq: karty projektů s počtem konverzací a použitými nástroji." fetchpriority="low" decoding="async">
+      </picture>
+      <picture class="shot" data-obrazovka="utrata" aria-hidden="true">
+        <source srcset="/shots/utrata-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
+        <source srcset="/shots/utrata-mobil-light.jpg" media="(max-width: 620px)">
+        <source srcset="/shots/utrata-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="/shots/utrata-light.jpg" width="2464" height="1504" alt="Obrazovka Útrata v Agenteeq: zadaná předplatná, dokoupené kredity a měřené tokeny oddělené od sebe." fetchpriority="low" decoding="async">
+      </picture>
+    </div>
     <figcaption class="shot-note">Ukázka rozhraní se smyšlenými daty. Nic se nepřipojuje k tvým účtům.</figcaption>
   </figure>
   <p class="sr-only" id="tour-announcement" role="status"></p>
