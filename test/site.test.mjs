@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, APP_PATH } from '../scripts/build-site.mjs';
+import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, odkazNaStazeni, REPO, APP_PATH } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -103,7 +103,10 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
   assert.match(html, /<meta name="viewport"[^>]*width=device-width/);
   assert.match(html, /<a class="skip" href="#obsah">/, 'přeskočení na obsah pro klávesnici');
   assert.ok(html.includes('href="#vyzkouset"'), 'výzva vede na dostupný instalační postup');
-  assert.equal(html.includes('releases/latest'), false, 'soukromý repozitář bez release nesmí slibovat veřejné stažení');
+  // Repozitář je veřejný a vydání se jmenují podle verze, takže „latest“ by ukazovalo na starý
+  // balíček. Odkaz se proto skládá při sestavení; ve zdroji smí být jen rozcestník na vydání.
+  assert.equal(html.includes('releases/latest'), false, 'odkaz na stažení se skládá z verze, ne z „latest“');
+  assert.match(html, /data-stahnout="mac-arm64"/, 'stránka musí mít tlačítko ke stažení');
   assert.match(html, /chrome:\/\/extensions/);
   assert.match(html, /Mac musí být zapnutý/);
   const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
@@ -163,4 +166,17 @@ test('web nemá nekonečnou animaci a pohyb umí vypnout', async () => {
   const smycky = [...css.matchAll(/animation:[^;{}]*\binfinite\b[^;{}]*/g)].map(m => m[0].trim());
   assert.deepEqual(smycky, [], 'landing page nesmí mít animaci ve smyčce');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^{]*\{[^]*animation: none !important/, 'omezený pohyb musí animace vypnout');
+});
+
+
+// Nejčastější tichá chyba webu: tlačítko Stáhnout ukazuje na balíček, který k téhle verzi nepatří.
+test('web: odkaz na stažení míří na vydání odpovídající package.json', async () => {
+  const out = await tempDir('web-stazeni-');
+  await buildSite({ out });
+  const html = await fs.readFile(path.join(out, 'index.html'), 'utf8');
+  const verze = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
+  const odkaz = html.match(/data-stahnout="mac-arm64" href="([^"]+)"/)?.[1];
+  assert.equal(odkaz, `${REPO}/releases/download/v${verze}/Agenteeq-${verze}-macOS-arm64.zip`);
+  assert.match(html, new RegExp(`<span data-verze-stazeni>verze ${verze.replace(/\./g, '\\.')}</span>`));
+  assert.throws(() => odkazNaStazeni('<a href="x">bez značky</a>', verze), /data-stahnout/);
 });

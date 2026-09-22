@@ -1,24 +1,52 @@
-// User-controlled illustrative tour: no accounts, live requests or automatic rotation.
-const views = {
-  overview: ['Přehled', '2', 'agenti pracují', '1', 'čeká na tebe', '3', 'aktivní projekty', 'Teď potřebuje tvoje rozhodnutí', 'Codex · nový web', 'Žádá o povolení zápisu do složky projektu.', 'Čeká na tebe', 'Claude Code · klientský portál', 'Připravuje komponentu navigace', 'Pracuje', 'Cursor · design systém', 'Doplňuje testy formuláře', 'Pracuje', 'Rozhodnutí otevřeš v původním nástroji.'],
-  projects: ['Projekt · nový web', '3', 'konverzace', '2', 'nástroje', '1', 'pracovní složka', 'Společný kontext napříč nástroji', 'Nový web · klientský projekt', 'Zadání, pracovní složka a konverzace pohromadě.', 'Projekt', 'Claude Code · návrh navigace', 'Konverzace přiřazená podle pracovní složky', 'Přiřazeno', 'Cursor · testy formuláře', 'Stejný projekt, jiný nástroj', 'Přiřazeno', 'Projekty mají vlastní zadání, pravidla a přehled práce.'],
-  limits: ['Limity a útrata', '62 %', 'limit Claude', '1,2 M', 'měřené tokeny', '890 Kč', 'zadané výdaje', 'Tři údaje. Tři různé významy.', 'Limit není cena', 'Procenta ukazují omezení služby, nikoli útratu.', 'Bez odhadů', 'Claude Code · pětihodinové okno', 'Ukázka limitu ze zdroje, který jej poskytuje', '62 %', 'Cursor · měsíční předplatné', 'Ukázka ručně zadané položky', 'Zadáno', 'Výdaje zadáš ručně nebo připojíš podporované Admin API.'],
+// Prohlídka přepíná skutečné snímky aplikace. Žádná smyšlená čísla se na stránce nedopočítávají.
+const POHLEDY = {
+  prehled: { popis: 'Obrazovka Přehled v Agenteeq: dva pracující agenti, jeden čeká na rozhodnutí, pod tím nabídka na spuštění dalšího agenta.', nazev: 'Přehled' },
+  projekty: { popis: 'Obrazovka Projekty v Agenteeq: karty projektů s počtem konverzací a použitými nástroji.', nazev: 'Projekty' },
+  utrata: { popis: 'Obrazovka Útrata v Agenteeq: zadaná předplatná, dokoupené kredity a měřené tokeny oddělené od sebe.', nazev: 'Útrata' },
 };
-const ids = ['preview-title', 'metric-a', 'metric-a-label', 'metric-b', 'metric-b-label', 'metric-c', 'metric-c-label', 'preview-caption', 'decision-title', 'decision-copy', 'decision-status', 'row-a-title', 'row-a-copy', 'row-a-status', 'row-b-title', 'row-b-copy', 'row-b-status', 'preview-foot'];
-const motion = matchMedia('(prefers-reduced-motion: reduce)');
-let transition;
-for (const button of document.querySelectorAll('[data-tour]')) {
-  button.addEventListener('click', () => {
-    if (button.getAttribute('aria-pressed') === 'true') return;
-    for (const choice of document.querySelectorAll('[data-tour]')) choice.setAttribute('aria-pressed', String(choice === button));
-    const values = views[button.dataset.tour];
-    ids.forEach((id, i) => { document.getElementById(id).textContent = values[i]; });
-    document.getElementById('tour-announcement').textContent = `Ukázka: ${values[0]}. ${values[17]}`;
-    transition?.cancel();
-    if (!motion.matches) transition = document.getElementById('preview-body').animate([{ opacity: .3, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+
+const obrazek = document.getElementById('tour-obrazek');
+const varianty = document.querySelectorAll('#tour-figure [data-vzor]');
+const hlaseni = document.getElementById('tour-announcement');
+const pohyb = matchMedia('(prefers-reduced-motion: reduce)');
+let prechod;
+
+for (const tlacitko of document.querySelectorAll('[data-tour]')) {
+  tlacitko.addEventListener('click', () => {
+    const klic = tlacitko.dataset.tour;
+    const pohled = POHLEDY[klic];
+    if (!pohled || tlacitko.getAttribute('aria-pressed') === 'true') return;
+    for (const jine of document.querySelectorAll('[data-tour]')) jine.setAttribute('aria-pressed', String(jine === tlacitko));
+    // Každá varianta (světlá, tmavá, telefon) má vlastní předlohu adresy; mění se jen název obrazovky.
+    for (const prvek of varianty) {
+      const adresa = prvek.dataset.vzor.replace('{}', klic);
+      if (prvek.tagName === 'SOURCE') prvek.srcset = adresa; else prvek.src = adresa;
+    }
+    obrazek.alt = pohled.popis;
+    if (hlaseni) hlaseni.textContent = `Obrazovka ${pohled.nazev}. ${pohled.popis}`;
+    prechod?.cancel();
+    if (!pohyb.matches) prechod = obrazek.animate([{ opacity: .45 }, { opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
   });
 }
-motion.addEventListener('change', () => { if (motion.matches) transition?.cancel(); });
-const exposeDetails = () => { if (location.hash === '#rozsireni') document.getElementById('rozsireni').open = true; };
-addEventListener('hashchange', exposeDetails);
-exposeDetails();
+pohyb.addEventListener('change', () => { if (pohyb.matches) prechod?.cancel(); });
+
+// Adresa rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá.
+for (const pole of document.querySelectorAll('[data-kopirovat]')) {
+  pole.setAttribute('role', 'button');
+  pole.setAttribute('tabindex', '0');
+  pole.setAttribute('title', 'Kliknutím zkopíruješ');
+  const kopiruj = async () => {
+    try {
+      await navigator.clipboard.writeText(pole.dataset.kopirovat);
+      const puvodni = pole.textContent;
+      pole.textContent = 'zkopírováno';
+      setTimeout(() => { pole.textContent = puvodni; }, 1200);
+    } catch { /* prohlížeč bez schránky – text zůstane k ručnímu označení */ }
+  };
+  pole.addEventListener('click', kopiruj);
+  pole.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); kopiruj(); } });
+}
+
+const odkryjRozsireni = () => { if (location.hash === '#rozsireni') document.getElementById('rozsireni').open = true; };
+addEventListener('hashchange', odkryjRozsireni);
+odkryjRozsireni();

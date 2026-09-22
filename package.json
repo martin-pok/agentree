@@ -40,7 +40,9 @@
     "qa:extension": "node scripts/qa-extension.mjs",
     "showcase": "node scripts/showcase.mjs",
     "qa:keychain": "node scripts/qa-keychain.mjs",
-    "fonts:vendor": "node scripts/vendor-fonts.mjs"
+    "fonts:vendor": "node scripts/vendor-fonts.mjs",
+    "shots:site": "node scripts/shots-site.mjs",
+    "serve:site": "node scripts/serve-site.mjs"
   },
   "license": "UNLICENSED"
 }

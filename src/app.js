@@ -63,7 +63,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 }
 const HOME_HIDDEN = new Set(['Library']);
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -83,7 +83,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     notifier,
     projectNotify: (s) => (s.projectId ? datastore.data.projects.items.find((p) => p.id === s.projectId)?.settings.notify : null) || 'all',
   });
-  const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome };
+  // Prohlídka a snímky na web nesmí prozradit jméno majitele počítače ani název Macu.
+  const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome, ...hostIdentity };
   const log = (...args) => { if (!config.quiet) console.log(...args); };
   const dry = config.openMode === 'dry';
 
@@ -1051,7 +1052,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const ext = await syncExtension({ zdroj: EXTENSION_DIR, dataDir: config.dataDir });
     extensionPath = ext.path;
     if (ext.reason && !config.quiet) console.error('Agenteeq:', ext.reason);
-    const whoami = fullUserName().then((jmeno) => { if (jmeno) host.fullName = jmeno; });
+    const whoami = hostIdentity ? Promise.resolve() : fullUserName().then((jmeno) => { if (jmeno) host.fullName = jmeno; });
     const launchReady = refreshLaunch().catch((err) => console.error('Agenteeq: zjištění spustitelných agentů selhalo:', err.message));
     apps = dry ? ALL_APPS : config.openApps && config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
