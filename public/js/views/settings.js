@@ -5,6 +5,7 @@ import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON, BULB } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, normalizeAppearance } from '../appearance.js';
+import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 
@@ -117,6 +118,20 @@ function tailscaleCard() {
     <p class="set-note">Provoz jde šifrovaným tunelem (WireGuard) přímo mezi tvými zařízeními. Agenteeq nic neinstaluje ani nespouští – jen se zapnutým přepínačem začne naslouchat na adrese, kterou ti Tailscale už přidělil. Vypnutím naslouchání skončí.</p>`;
 }
 
+// Spárování telefonu: QR kód je jen zkratka k témuž jednorázovému kódu, který je vidět pod ním.
+// Když čtečka selže nebo ji někdo nechce použít, číslo se dá pořád opsat – proto zůstává.
+function parovaciKod(url, pin, cas) {
+  const adresa = parovaciAdresa(url, pin.code);
+  const kod = adresa ? qrSvg(adresa, { popis: 'QR kód pro spárování telefonu' }) : null;
+  return `<div class="pair-invite">
+    ${kod ? `<div class="pair-qr">${kod}</div>` : ''}
+    <div class="pair-invite-text">
+      ${kod ? '<b>Namiř na kód foťák telefonu</b><p class="muted small">Otevře se přímo spárovaná aplikace. Telefon musí být ve stejné síti.</p>' : ''}
+      <div class="pin-box"><b>${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="muted small">Nebo na telefonu otevři adresu výše a zadej tenhle kód. Platí do ${cas(pin.expiresAt)} a jen na jedno spárování.</span></div>
+    </div>
+  </div>`;
+}
+
 // Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
 // Kód i seznam se ukazují jen tady na Macu – z telefonu je server nevydá.
 function phoneCard() {
@@ -131,7 +146,7 @@ function phoneCard() {
       <div class="set-actions">
         <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? 'Nový kód' : 'Vytvořit kód pro telefon'}</button>
       </div>
-      ${pin ? `<div class="pin-box"><b>${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="muted small">Platí do ${cas(pin.expiresAt)} a jen na jedno spárování. Na telefonu otevři adresu výše a kód zadej.</span></div>` : ''}
+      ${pin ? parovaciKod(l.url, pin, cas) : ''}
       ${l.devices?.length ? `<div class="conn-source-head"><span>Spárované telefony</span><small>Odpárováním přestane zařízení vidět cokoli.</small></div>
         <ul class="privacy-list">${l.devices.map((d) => `<li><b>${esc(d.label)}</b><span>spárováno ${dateLong(d.at)} · <button class="link-inline" type="button" data-action="lan-forget" data-id="${esc(d.id)}">Odpárovat</button></span></li>`).join('')}</ul>` : '<p class="set-note">Zatím žádný spárovaný telefon.</p>'}` : ''}
     <p class="set-note">Zapnuté jen doma: adresa je z privátního rozsahu, z internetu se na ni nikdo nedostane. Token má telefon v cookie, kterou nepřečte žádný skript, a v datech aplikace je z něj jen kontrolní součet. Vypnutím se spojení zavře a všechna zařízení se odpárují.</p>`;

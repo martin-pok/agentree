@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.23.0 – 2026-09-22 · QR kód pro telefon a skutečné stažení
+
+- **Telefon se páruje QR kódem.** V Nastavení → Otevřít na telefonu je vedle jednorázového kódu
+  i QR. Namíříš na něj foťák a telefon se otevře už spárovaný — žádné opisování adresy ani čísla.
+  Kód se z adresy hned maže, takže nezůstane v historii prohlížeče. Šestimístné číslo zůstává
+  pod QR jako záložní cesta.
+- **Generátor QR je vlastní** (`public/js/qr.js`, režim bajtů, korekce M, verze 1–10), protože
+  aplikace nemá běhové závislosti. Výstup byl ověřen dekodérem Applu (Vision) na verzích 1 až 10
+  včetně české diakritiky; test drží otisk ověřené podoby.
+- **Web má konečně tlačítko Stáhnout.** Míří na přílohu se stálým jménem v posledním vydání,
+  takže povýšení verze ho nerozbije. Součástí je i poctivý postup pro první spuštění:
+  beta není podepsaná u Applu, takže ji macOS napoprvé pustí až přes Nastavení systému.
+- **Snímky na webu jsou skutečná aplikace**, ne atrapa z divů. Generuje je `npm run shots:site`
+  z téže ukázkové scény jako prohlídka, zvlášť pro světlý a tmavý režim a zvlášť pro telefon.
+- Prohlídka i snímky běží pod neutrální identitou, ne pod jménem majitele Macu.
+
+
 ### Vizuální revize · 2026-09-18
 
 - Web: neutrální grafitový/světlý podklad s jemným statickým mesh světlem místo plošné fialové. Bez canvasu, blur filtru a animovaného překreslování pozadí.

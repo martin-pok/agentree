@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.23.0',
+    date: '2026-09-22',
+    title: 'Telefon připojíš QR kódem',
+    items: [
+      'V Nastavení → Otevřít na telefonu je vedle jednorázového kódu i QR. Namíříš na něj foťák a telefon se otevře rovnou spárovaný. Nic neopisuješ — ani adresu, ani číslo.',
+      'Kód se z adresy hned smaže, takže nezůstane v historii prohlížeče. Šestimístné číslo je pořád pod QR, když čtečku použít nechceš.',
+      'Web Agenteeq má tlačítko Stáhnout a poctivý postup pro první spuštění. Snímky na něm ukazují skutečnou aplikaci, ne nakreslenou atrapu.',
+    ],
+  },
+  {
     version: '0.22.0',
     date: '2026-09-21',
     title: 'Poslední aktivita doplní řádky podle místa',

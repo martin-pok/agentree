@@ -26,16 +26,15 @@ export function verzeVDatechStranky(html, verze) {
   return html.replace(vzor, `"softwareVersion":"${verze}"`);
 }
 
-// Odkaz na stažení. Soubory vydání nesou číslo verze, takže napsaný ručně by po každém vydání
-// ukazoval na starý balíček, nebo rovnou nikam. Spadne, když značka ze stránky zmizí.
+// Odkaz na stažení míří na přílohu se stálým jménem v posledním vydání. Adresa s číslem verze
+// by po každém vydání ukazovala do prázdna, dokud by někdo nepřestavěl web — a přesně tak vypadá
+// rozbité tlačítko Stáhnout. Stálou kopii přikládá k vydání workflow (.github/workflows/release.yml).
 export const REPO = 'https://github.com/martin-pok/agentree';
-export function odkazNaStazeni(html, verze) {
+export const BALICEK_MAC = 'Agenteeq-macOS-arm64.zip';
+export function odkazNaStazeni(html) {
   const vzor = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
   if (!vzor.test(html)) throw new Error('site/index.html nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
-  const adresa = `${REPO}/releases/download/v${verze}/Agenteeq-${verze}-macOS-arm64.zip`;
-  return html
-    .replace(vzor, `$1${adresa}$2`)
-    .replace(/(<span data-verze-stazeni>)[^<]*(<\/span>)/g, `$1verze ${verze}$2`);
+  return html.replace(vzor, `$1${REPO}/releases/latest/download/${BALICEK_MAC}$2`);
 }
 
 // Manifest PWA platí pro rozhraní aplikace, ne pro landing page: na hostingu se proto přepíše tak,
@@ -104,7 +103,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
   const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
   const stranka = path.join(out, 'index.html');
-  await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze), verze));
+  await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze)));
 
   // 5. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
   await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);

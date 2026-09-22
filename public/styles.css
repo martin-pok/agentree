@@ -864,6 +864,16 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-jinak { margin-top: -4px; }
 .pair-box a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pair-error { color: var(--velvet-ink); font-size: 13px; }
+/* Pozvánka pro telefon: QR vedle čísla, ne místo něj. Na úzkém okně jde QR nad text. */
+.pair-invite { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; }
+.pair-qr { flex: none; width: 168px; padding: 10px; border-radius: var(--r-md); background: #FFFFFF; border: 1px solid var(--line); }
+.pair-qr svg { width: 100%; height: auto; }
+.pair-invite-text { flex: 1 1 220px; min-width: 0; }
+.pair-invite-text > b { display: block; margin-bottom: 2px; }
+.pair-invite .pin-box { margin-top: 10px; }
+.pair-invite .pin-box b { font-size: 26px; }
+@media (max-width: 560px) { .pair-invite { flex-direction: column; align-items: stretch; } .pair-qr { width: 100%; max-width: 220px; margin-inline: auto; } }
+
 .pin-box { display: grid; gap: 4px; margin-top: 12px; padding: 16px; border-radius: var(--r-md); background: var(--ink-surface); color: var(--on-ink); text-align: center; }
 .pin-box b { font: 500 32px/1 var(--f-mono); letter-spacing: .12em; }
 .pin-box span { color: rgba(255, 255, 255, .72); }

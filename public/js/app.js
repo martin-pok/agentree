@@ -715,6 +715,14 @@ function parovaciObrazovka(zprava = '') {
       parovaciObrazovka(err.message);
     }
   });
+  // Kód z QR: spárujeme rovnou a hned ho smažeme z adresy, ať nezůstane v historii prohlížeče.
+  // Při neúspěchu se obrazovka překreslí s hláškou a už bez kódu, takže se to nezacyklí.
+  const zAdresy = new URLSearchParams(location.search).get('p');
+  if (zAdresy && !zprava) {
+    input.value = zAdresy.replace(/\D/g, '');
+    history.replaceState(null, '', location.pathname + location.hash);
+    form.requestSubmit();
+  }
 }
 
 // Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po

@@ -148,6 +148,10 @@ jobs:
           # latest-build.json zapisuje build a je v něm pravda o podpisu. Bereme ten
           # z Apple Silicon, protože to je hlavní build; když není, popis bude opatrnější.
           cp stazeno/mac-arm64/latest-build.json prilohy/ 2>/dev/null || true
+          # Kopie se stálým jménem. Web na ni odkazuje přes /releases/latest/download/, takže
+          # tlačítko Stáhnout přežije každé vydání bez zásahu do stránky. Bez tohohle souboru
+          # by odkaz po dalším vydání ukazoval do prázdna.
+          for f in prilohy/Agenteeq-*-macOS-arm64.zip; do [ -e "$f" ] && cp "$f" prilohy/Agenteeq-macOS-arm64.zip && break; done
           ls -l prilohy
 
       - name: Popis vydání
