@@ -190,14 +190,22 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
     if (LIMIT_RE.test(text)) {
       const kind = limitKind(text);
       const resetsAt = parseResets(text, ts);
-      s.limit = { reached: true, text, at: ts, resetsAt };
-      onLimit?.({ id: kind.id, provider: 'anthropic', app: 'Claude', label: kind.label, usedPercent: null, windowMinutes: null, resetsAt, reached: true, plan: null, text, at: ts });
+      // Limit relace i týdne umí platit jen pro jeden model: po přepnutí modelu se dá pracovat dál,
+      // i když ten první je zablokovaný do obnovy. Který model narazil, prozradí poslední úspěšná
+      // odpověď (chybová hláška sama nese model „<synthetic>“). Útrata je za celý účet, ne za model.
+      const model = kind.id === 'claude:spend' ? null : s.model || null;
+      s.limit = { reached: true, text, at: ts, resetsAt, model };
+      onLimit?.({
+        id: model ? `${kind.id}:${model}` : kind.id,
+        provider: 'anthropic', app: 'Claude', label: model ? `${kind.label} · ${model}` : kind.label,
+        usedPercent: null, windowMinutes: null, resetsAt, reached: true, plan: null, text, at: ts, model,
+      });
     }
     return;
   }
 
   if (s.limit && ts > s.limit.at) s.limit = null;
-  onSuccess?.(ts);
+  onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null);
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 
   const parts = Array.isArray(m.content) ? m.content : [];
@@ -234,6 +242,12 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
 
   const u = m.usage;
   const id = m.id || o.uuid;
+  // Odbočka relace si do nového souboru kopíruje celou historii rodiče – i s jeho identifikátorem
+  // relace. Počítat ty řádky znamenalo tytéž tokeny dvakrát: za 30 dní o 59 % víc, než kolik se
+  // jich skutečně spotřebovalo, některé dny dvojnásobek. Tokeny proto patří jen řádkům relace
+  // svého souboru (u pomocného agenta je to relace rodiče – jeho řádky nesou její identifikátor).
+  // Pořadí načítání souborů na tom nezáleží, takže výsledek je vždy stejný.
+  if (st.ownSessionId && o.sessionId && o.sessionId !== st.ownSessionId) return;
   if (u && id) {
     const cur = {
       input: u.input_tokens || 0,
@@ -286,11 +300,27 @@ export function createClaudeCodeConnector(ctx) {
   let lastHookAt = 0;
   const queue = createFileQueue(sync, 40);
 
+  // Poslední úspěšná odpověď každého modelu ('' = model neznámý). Soubory se načítají souběžně,
+  // takže úspěch téhož modelu se může načíst dřív než starší hláška o limitu – a ten by pak zůstal
+  // viset jako vyčerpaný, i když model mezitím zase odpovídal.
+  const posledniUspech = new Map();
   const hooks = {
-    onLimit: (limit) => store.setLimit(limit),
-    onSuccess: (ts) => {
+    onLimit: (limit) => {
+      const uspech = limit.model
+        ? Math.max(posledniUspech.get(limit.model) || 0, posledniUspech.get('') || 0)
+        : Math.max(0, ...posledniUspech.values());
+      store.setLimit(uspech > limit.at ? { ...limit, reached: false, text: '', at: uspech } : limit);
+    },
+    onSuccess: (ts, model) => {
+      const klic = model || '';
+      if ((posledniUspech.get(klic) || 0) < ts) posledniUspech.set(klic, ts);
       for (const l of store.limits.values()) {
-        if (l.provider === 'anthropic' && l.reached && l.at < ts) store.setLimit({ ...l, reached: false, text: '', at: ts });
+        if (l.provider !== 'anthropic' || !l.reached || l.at >= ts) continue;
+        // Úspěch jiného modelu nic neříká o limitu toho, který narazil. Dřív ho shodil kdokoli:
+        // Opus zablokovaný do 23:20 svítil jako volný 84 sekund po vyčerpání, jen proto, že
+        // v téže relaci odpověděl jiný model.
+        if (l.model && model && l.model !== model) continue;
+        store.setLimit({ ...l, reached: false, text: '', at: ts });
       }
     },
   };
@@ -334,6 +364,7 @@ export function createClaudeCodeConnector(ctx) {
     }
     if (!f) {
       f = { tail: new JsonlTail(file), st: newFileState(Boolean(parentLocalId)), localId: path.basename(file, '.jsonl'), parentLocalId };
+      f.st.ownSessionId = parentLocalId || f.localId;
       files.set(file, f);
     }
     const s = store.ensure({ connector: 'claude-code', localId: f.localId, provider: 'anthropic', app: 'Claude Code' });

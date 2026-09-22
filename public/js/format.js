@@ -47,10 +47,11 @@ export function rel(ts, now = Date.now()) {
   if (!ts) return '–';
   const d = now - ts;
   if (d < 45e3) return 'právě teď';
-  if (d < H) return `před ${Math.max(1, Math.round(d / MIN))} min`;
-  if (d < DAY) return `před ${Math.round(d / H)} h`;
+  // Číslo a jednotka se v české sazbě nerozdělují na dva řádky – proto nezlomitelná mezera.
+  if (d < H) return `před ${Math.max(1, Math.round(d / MIN))}\u00a0min`;
+  if (d < DAY) return `před ${Math.round(d / H)}\u00a0h`;
   if (d < 2 * DAY) return 'včera';
-  return `před ${Math.round(d / DAY)} dny`;
+  return `před ${Math.round(d / DAY)}\u00a0dny`;
 }
 
 export function dur(ms) {
@@ -119,9 +120,10 @@ export function localDate(ts = Date.now()) {
 export function resetsLabel(ts, now = Date.now()) {
   if (!ts) return '';
   const d = new Date(ts);
-  if (startOfDay(ts) === startOfDay(now)) return `dnes v ${timeHM(ts)}`;
-  if (startOfDay(ts) === startOfDay(now + DAY)) return `zítra v ${timeHM(ts)}`;
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}. v ${timeHM(ts)}`;
+  // Jednopísmenná předložka „v“ nezůstává na konci řádku a datum se nerozděluje – česká sazba.
+  if (startOfDay(ts) === startOfDay(now)) return `dnes v\u00a0${timeHM(ts)}`;
+  if (startOfDay(ts) === startOfDay(now + DAY)) return `zítra v\u00a0${timeHM(ts)}`;
+  return `${WEEKDAYS[d.getDay()]} ${d.getDate()}.\u00a0${d.getMonth() + 1}. v\u00a0${timeHM(ts)}`;
 }
 
 export const STATUS = {

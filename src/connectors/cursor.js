@@ -21,6 +21,10 @@ const parse = (v) => {
 };
 
 // Cursor ukládá agenty (Composer) do SQLite: composerHeaders + cursorDiskKV (composerData:*, bubbleId:*).
+// Záhlaví agentů za sledované období. Část agentů má jen čas vzniku a čas poslední změny chybí –
+// bez náhrady by je podmínka „změněno po …“ vyřadila, i když jsou čerstvé.
+export const CURSOR_HEADERS_SQL = 'SELECT composerId, workspaceId, createdAt, lastUpdatedAt, isArchived, isSubagent, value FROM composerHeaders WHERE isSubagent = 0 AND COALESCE(lastUpdatedAt, createdAt) >= ? ORDER BY COALESCE(lastUpdatedAt, createdAt) DESC LIMIT 150';
+
 export function applyCursorComposer(s, { header, head, data, bubbles, folder, now = Date.now(), dbChangedAt = now }) {
   resetTranscript(s);
   s.turns = 0;
@@ -118,7 +122,7 @@ export function createCursorConnector(ctx) {
       const since = now - windowMs;
       let headers;
       try {
-        headers = db.prepare('SELECT composerId, workspaceId, createdAt, lastUpdatedAt, isArchived, isSubagent, value FROM composerHeaders WHERE isSubagent = 0 AND lastUpdatedAt >= ? ORDER BY lastUpdatedAt DESC LIMIT 150').all(since);
+        headers = db.prepare(CURSOR_HEADERS_SQL).all(since);
       } catch {
         headers = [];
       }

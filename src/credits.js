@@ -13,8 +13,29 @@ const median = (cisla) => {
   return s[Math.floor(s.length / 2)];
 };
 
-// Vstup: odečty zůstatku { at, balance } v libovolném pořadí. Výstup: nalezené nákupy { at, amount }.
-export function detectTopUps(readings, { drziMs = DRZI_MS, sloucitMs = SLOUCIT_MS } = {}) {
+// Když odečty nesou konverzaci (`zdroj`), hledá se vzestup jen uvnitř každé z nich zvlášť. Napříč
+// konverzacemi se srovnávat nedá: 1. 8. jedna konverzace přehrála starší historii (195,83 → 87,36)
+// a o devět sekund později jiná nahlásila 195,83 – porovnáno napříč to vypadalo jako nákup +108.
+// Tentýž nákup, který vidí víc konverzací naráz (12. 7. tři během 15 s), je pořád jeden.
+export function detectTopUps(readings, opts = {}) {
+  const platne = (readings || []).filter((p) => p && Number.isFinite(Number(p.at)) && Number.isFinite(Number(p.balance)));
+  if (!platne.length || !platne.every((p) => p.zdroj)) return detectTopUpsRada(platne, opts);
+  const podle = new Map();
+  for (const p of platne) (podle.get(p.zdroj) || podle.set(p.zdroj, []).get(p.zdroj)).push(p);
+  const vse = [...podle.values()].flatMap((rada) => detectTopUpsRada(rada, opts).map((x) => ({ ...x, zdroj: rada[0].zdroj })));
+  vse.sort((a, b) => a.at - b.at);
+  const sloucitMs = opts.sloucitMs ?? SLOUCIT_MS;
+  const out = [];
+  for (const x of vse) {
+    const posledni = out[out.length - 1];
+    if (posledni && x.at - posledni.at <= sloucitMs) posledni.amount = Math.max(posledni.amount, x.amount);
+    else out.push({ at: x.at, amount: x.amount });
+  }
+  return out;
+}
+
+// Jedna řada odečtů (jedna konverzace, nebo starší historie bez rozlišení konverzace).
+function detectTopUpsRada(readings, { drziMs = DRZI_MS, sloucitMs = SLOUCIT_MS } = {}) {
   const body = (readings || [])
     .filter((p) => p && Number.isFinite(Number(p.at)) && Number.isFinite(Number(p.balance)))
     .map((p) => ({ at: Number(p.at), balance: Number(p.balance) }))

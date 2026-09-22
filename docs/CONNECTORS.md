@@ -106,6 +106,16 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 - **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s – nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agenteeq-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
 
+#### Pravidla pravdivosti (audit 2026-09-22, hlídá `test/pravdivost-dat.test.mjs`)
+
+- **Tokeny patří relaci, ne souboru.** Odbočka (fork) kopíruje historii rodiče i s jeho `sessionId`.
+  Počítají se jen řádky, jejichž `sessionId` je relace souboru; u pomocného agenta
+  (`<rodič>/subagents/agent-*.jsonl`) je to relace rodiče. Bez toho se tokeny počítaly dvakrát.
+- **Limit ví, který model narazil.** Hláška o limitu nese model `<synthetic>`; zablokovaný model je
+  poslední úspěšný před ní. Limit skončí obnovou nebo odpovědí *téhož* modelu, nezávisle na tom,
+  v jakém pořadí se soubory načtou.
+- Hodnoty ověříš kdykoli: `npm run audit:data`.
+
 ### Claude Desktop – historie limitů – `src/connectors/claude-desktop-usage.js` 🧪
 
 - **Proč existuje:** limity 5 h a týden se dnes berou jen ze stavového řádku Claude Code (`claude-code.js#ingestStatusline`), takže bez otevřené konverzace čísla zůstanou zastaralá. Tenhle konektor je záloha – čte historii, kterou si Claude Desktop ukládá sám pro sebe, a doplní čísla i mimo aktivní konverzaci.
@@ -125,6 +135,14 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 - **Pomocná vlákna:** `session_meta.parent_thread_id` s `thread_source: guardian_review` / `source.subagent.other: guardian` (automatická kontrola příkazů) nebo `source.subagent.thread_spawn` (pomocný agent). Session dostane `parentId` a `subagent`; v seznamech a počtech agentů se nezobrazuje, pokud je rodič sledovaný, tokeny se počítají. Ověřeno na 69 vláknech `guardian` a 1 `thread_spawn` (Codex 0.153.4).
 - **Plánované úlohy:** první zpráva `<scheduled-task name="…">` → `taskName`. Spuštění stejné úlohy jsou v seznamu agentů jedním řádkem (poslední spuštění + počet), tokeny všech spuštění se počítají. Ověřeno na 47 spuštěních úlohy `pd-intake`.
 - **Známá omezení:** žádosti o schválení nejsou v souborech.
+
+#### Kredity (`rate_limits.credits`)
+
+- `has_credits: false` s nulou nebo bez částky znamená **nulu** – kredity došly. Karta kreditů
+  vznikne jen tomu, kdo je kdy měl (kladný odečet kdekoli v historii).
+- Doplnění se hledá **uvnitř jedné konverzace**: starší konverzace umí nahlásit zastaralý zůstatek.
+  Totéž doplnění viděné víc konverzacemi naráz je jedno. Jmenuje se „doplněno“, ne „dokoupeno“ –
+  nákup a vrácení kreditů vypadají v datech stejně.
 
 ### Cursor – `src/connectors/cursor.js` 🧪
 

@@ -88,6 +88,18 @@ export function mapCodexItem(item) {
   }
 }
 
+// Co odečet kreditů říká o zůstatku. `has_credits: false` s nulou nebo bez částky znamená, že
+// kredity došly. Dřív se takový odečet zahodil a v aplikaci zůstal poslední kladný zůstatek:
+// po vyčerpání 15. 8. tam ještě v září svítilo 5,31, přestože Codex 5 008× hlásil nulu.
+export function zustatekKreditu(c) {
+  if (!c || typeof c !== 'object') return null;
+  const castka = c.balance === null || c.balance === undefined || c.balance === '' ? NaN : Number(c.balance);
+  if (Number.isFinite(castka)) return castka;
+  return c.has_credits === false ? 0 : null;
+}
+// Kladný odečet nebo `has_credits` znamená, že kredity tu jsou (nebo byly).
+const maKredity = (c, zustatek) => Boolean(c?.has_credits) || zustatek > 0;
+
 export function createCodexConnector(ctx) {
   const { store, config } = ctx;
   const root = path.join(config.sourceHome, '.codex', 'sessions');
@@ -160,9 +172,8 @@ export function createCodexConnector(ctx) {
       });
     }
     const c = rl.credits;
-    if (c && (c.has_credits || Number(c.balance) > 0)) {
-      store.setCredits({ id: 'codex', provider: 'openai', app: 'Codex', label: 'Kredity Codex', balance: Number(c.balance), unlimited: Boolean(c.unlimited), at: ts });
-    }
+    const zustatek = zustatekKreditu(c);
+    if (zustatek !== null) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
     if (rl.rate_limit_reached_type) {
       s.limit = { reached: true, text: `Limit plánu ${rl.plan_type || ''} je vyčerpaný`.replace('  ', ' '), at: ts, resetsAt: toTs(rl.primary?.resets_at) || null };
     } else if (s.limit && ts > s.limit.at) {
@@ -322,12 +333,33 @@ export function createCodexConnector(ctx) {
   // Zůstatek kreditů Codex zapisuje do každé session. Sledované okno je 30 dní, ale historie nákupů
   // sahá dál – jednorázově proto projdeme i starší soubory a bereme z nich výhradně řádky s kredity
   // (žádné konverzace, žádné tokeny). Běží na pozadí po prvním průchodu, ať to nezdržuje start.
+  // Nulové odečty, které přijdou dřív, než je jasné, jestli tu kredity kdy byly: historie nákupů
+  // se načítá až na pozadí po prvním průchodu. Bez podržení by se zářijové nuly zahodily a zůstatek 0
+  // by nesl datum z poloviny srpna. Drží se jen první a poslední – mezi nimi je to pořád nula.
+  const nuly = { prvni: null, posledni: null };
+  const kreditZaznam = (x) => ({ id: 'codex', provider: 'openai', app: 'Codex', label: 'Kredity Codex', balance: x.balance, unlimited: x.unlimited, at: x.at, zdroj: x.zdroj });
+  function doplnNuly() {
+    if (!store.hasCredits('codex')) return;
+    for (const x of [nuly.prvni, nuly.posledni]) if (x) store.setCredits(kreditZaznam(x));
+    nuly.prvni = nuly.posledni = null;
+  }
+  function ulozKredit(x, kladny) {
+    if (kladny || store.hasCredits('codex')) {
+      store.setCredits(kreditZaznam(x));
+      doplnNuly();
+      return;
+    }
+    if (!nuly.prvni || x.at < nuly.prvni.at) nuly.prvni = x;
+    if (!nuly.posledni || x.at > nuly.posledni.at) nuly.posledni = x;
+  }
+
   let historieKreditu = false;
   async function scanCreditHistory() {
     if (historieKreditu) return 0;
     historieKreditu = true;
     const hranice = Date.now() - windowMs;
     let bodu = 0;
+    const odecty = [];
     for (const f of await listFiles(root, 3, (x) => x.endsWith('.jsonl'))) {
       const stat = await statSafe(f);
       if (!stat?.isFile() || stat.mtimeMs >= hranice) continue; // novější soubory čte běžný průchod
@@ -340,13 +372,20 @@ export function createCodexConnector(ctx) {
         try { o = JSON.parse(line); } catch { continue; }
         const rl = o.payload?.info?.rate_limits ?? o.payload?.rate_limits ?? o.payload?.token_count?.rate_limits;
         const c = rl?.credits;
-        if (!c || !(c.has_credits || Number(c.balance) > 0)) continue;
+        const zustatek = zustatekKreditu(c);
         const at = toTs(o.timestamp);
-        if (!at) continue;
-        store.setCredits({ id: 'codex', provider: 'openai', app: 'Codex', label: 'Kredity Codex', balance: Number(c.balance), unlimited: Boolean(c.unlimited), at });
-        bodu++;
+        if (zustatek === null || !at) continue;
+        odecty.push({ at, balance: zustatek, unlimited: Boolean(c.unlimited), kladny: maKredity(c, zustatek), zdroj: f });
       }
     }
+    // Soubory se čtou v libovolném pořadí, proto se o nulách rozhoduje až nad všemi odečty naráz:
+    // když kredity kdykoli byly, patří do historie i nuly (i ty z doby před prvním nákupem).
+    if (!odecty.some((x) => x.kladny) && !store.hasCredits('codex')) return 0;
+    for (const x of odecty) {
+      store.setCredits(kreditZaznam(x));
+      bodu++;
+    }
+    doplnNuly();
     return bodu;
   }
 

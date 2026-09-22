@@ -248,8 +248,28 @@ export function currentLimits(limits, now = Date.now()) {
 // rozbalený seznam nástrojů) – dřív každé počítalo vlastní popis a u obnoveného okna Codexu
 // stálo na Přehledu „0 %“, ve Statistikách „Obnoven“ a v API pořád poslední naměřených 34 %.
 // „0 %“ je přitom tvrzení o měření, které po obnově neproběhlo: okno je prázdné, ale změřené není.
+// Kdy byl limit změřený, pokud už to není „teď“. Okno se od té doby mohlo změnit a číslo bez data
+// by se četlo jako současný stav – týdenní limit Codexu tak 20 hodin po odečtu svítil jako živý.
+export function limitAge(l, now = Date.now()) {
+  return l.at && now - l.at > 30 * 60e3 ? `změřeno ${rel(l.at, now)}` : '';
+}
+
+// Kdy byl zůstatek kreditů zjištěný. Jedno místo pro Přehled, Statistiky i Útratu – číslo bez data
+// se četlo jako současný stav, i když pocházelo z měsíc starého odečtu. Nad dva dny se zvýrazní.
+export function creditAge(c, now = Date.now()) {
+  if (!Number.isFinite(c?.at)) return null;
+  return { text: `zjištěno ${rel(c.at, now)}`, kratce: rel(c.at, now), stary: now - c.at > 2 * DAY };
+}
+export function creditAgeHtml(c, now = Date.now()) {
+  const v = creditAge(c, now);
+  return v ? `<span class="${v.stary ? 'je-stare' : ''}">${esc(v.text)}</span>` : '';
+}
+
 export function limitState(l, now = Date.now()) {
-  const renewed = Boolean(l.resetsAt && l.resetsAt <= now);
+  // Okno bez času obnovy (historie Claude Desktopu) po své délce vyprší: odečet starší než samo
+  // okno o současném vytížení nic neříká. Bez toho by pětihodinové okno svítilo i týden starým číslem.
+  const vyprselo = !l.resetsAt && Number(l.windowMinutes) > 0 && now - l.at > Number(l.windowMinutes) * 60e3;
+  const renewed = Boolean(l.resetsAt && l.resetsAt <= now) || vyprselo;
   const reached = Boolean(l.reached) && !renewed;
   const pct = renewed ? 0 : reached ? 100 : Math.round(Number(l.usedPercent) || 0);
   return {
@@ -259,7 +279,8 @@ export function limitState(l, now = Date.now()) {
     // Co se ukáže místo čísla. Obnovené okno se nehlásí jako „0 %“, vyčerpané jako „100 %“.
     label: renewed ? 'Obnoveno' : reached ? 'Vyčerpáno' : `${pct} %`,
     tone: renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free',
-    advice: renewed ? 'Plná kapacita, okno se právě obnovilo'
+    // Po obnově nikdo nové vytížení nezměřil – „plná kapacita“ ani „právě“ by nebyla pravda.
+    advice: renewed ? 'Okno se od měření obnovilo, nový stav zatím není'
       : reached || pct >= 100 ? 'Vyčerpáno, počkej na obnovu'
         : pct >= 80 ? 'Šetři na důležité úlohy'
           : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy',
@@ -279,7 +300,7 @@ export function limitWindows(limits, now = Date.now()) {
       <span class="lwin-main">
         <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${esc(label)}</span></span>
         <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
-        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>obnova <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}</span>
+        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>obnova <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
       </span>
     </li>`;
   }).join('')}</ul>`;
@@ -296,7 +317,9 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
       if (!cerstve && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
       const color = s.tone === 'out' ? 'var(--velvet-ink)' : s.tone === 'low' ? 'var(--brass)' : 'var(--teal)';
       const sub = l.resetsAt && !s.renewed ? `obnova ${resetsLabel(l.resetsAt, now)}` : l.plan ? `plán ${l.plan}` : '';
-      return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, size, reached: s.reached }) };
+      // Stáří na vlastním řádku; po šesti hodinách zvýrazněné, protože limity se mění rychle.
+      const age = limitAge(l, now);
+      return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, age, stare: now - l.at > 6 * 3600e3, size, reached: s.reached }) };
     })
     .filter(Boolean)
     .sort((a, b) => b.at - a.at)

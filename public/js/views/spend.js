@@ -4,7 +4,7 @@ import { esc, fmtMoney, fmtNum, localDate, dateLong, MONTHS, MONTHS_SHORT } from
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut, timeLine } from '../charts.js';
 import { chartColor } from '../data.js';
-import { fill, tween, modal, confirmDialog, toast, emptyState } from '../ui.js';
+import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, creditAgeHtml } from '../ui.js';
 
 const v = { el: null, onClick: null, usage: undefined };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
@@ -312,7 +312,8 @@ function update() {
 
   const spendRow = (l) => {
     const pct = typeof l.usedPercent === 'number' ? Math.max(0, Math.min(100, l.usedPercent)) : null;
-    const meta = pct === null ? `${num(l.value)} · jednotku zdroj neuvádí` : `vyčerpáno ${Math.round(pct)} %`;
+    const stari = limitAge(l);
+    const meta = (pct === null ? `${num(l.value)} · jednotku zdroj neuvádí` : `vyčerpáno ${Math.round(pct)} %`) + (stari ? ` · ${stari}` : '');
     const bar = pct === null ? '' : `<span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>`;
     return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} – ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · obnova ${dateLong(l.resetsAt)}` : ''}</span></div>${bar}</div>`;
   };
@@ -323,10 +324,10 @@ function update() {
       ${credits.map((c) => {
       const ups = c.topUps || [];
       const recent = ups.slice(-6).reverse();
-      return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá · ${ups.length}× dokoupeno</span></div>
-        ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Dokoupeno' })}
+      return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} zbývá${creditAgeHtml(c) ? ` · ${creditAgeHtml(c)}` : ''}${ups.length ? ` · ${ups.length}× doplněno` : ''}</span></div>
+        ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: 'Doplněno' })}
         ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">Dokoupení Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní – ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
+          <p class="small muted">Doplnění Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex – a jen uvnitř jedné konverzace, protože starší konverzace umí nahlásit zastaralý zůstatek. Nákup a vrácení kreditů vypadají v datech stejně, proto tu nestojí „koupeno“. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných ${state.windowDays} dní – ale jen tam, kam sahají soubory Codexu.</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

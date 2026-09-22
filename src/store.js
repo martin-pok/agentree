@@ -99,13 +99,20 @@ export class Store extends EventEmitter {
     return [...this.limits.values()].sort((a, b) => a.id.localeCompare(b.id));
   }
 
-  setCredits({ id, provider, app, label, balance, unlimited = false, at }) {
+  setCredits({ id, provider, app, label, balance, unlimited = false, at, zdroj }) {
     if (!Number.isFinite(balance) || !at) return;
     const syrove = this.creditRaw.get(id) || this.creditRaw.set(id, []).get(id);
-    if (!syrove.some((p) => p.at === at && p.balance === balance)) {
-      let i = syrove.length;
-      while (i > 0 && syrove[i - 1].at > at) i--;
-      syrove.splice(i, 0, { at, balance });
+    let kam = syrove.length;
+    while (kam > 0 && syrove[kam - 1].at > at) kam--;
+    // Tatáž hodnota ve stejné konverzaci hned za sebou nenese nic nového – Codex ji hlásí s každou
+    // odpovědí, i nulu tisíckrát. Bez vynechání by strop paměti vytlačil nejstarší odečty a s nimi
+    // i první nákupy (z 7 789 odečtů je jich po vynechání pár set).
+    let j = kam - 1;
+    while (j >= 0 && syrove[j].zdroj !== zdroj) j--;
+    const opakuje = j >= 0 && syrove[j].balance === balance;
+    if (!opakuje && !syrove.some((p) => p.at === at && p.balance === balance && p.zdroj === zdroj)) {
+      // Konverzace, ze které odečet je – doplnění kreditů se pozná jen uvnitř jedné (src/credits.js).
+      syrove.splice(kam, 0, zdroj ? { at, balance, zdroj } : { at, balance });
       if (syrove.length > CREDIT_RAW_MAX) syrove.splice(0, syrove.length - CREDIT_RAW_MAX);
     }
     const all = this.datastore.data.credits;
@@ -124,6 +131,12 @@ export class Store extends EventEmitter {
     rec.at = last.at;
     this.datastore.save();
     if (this.ready) this.emit('credits', this.creditList());
+  }
+
+  // Jestli tu kredity někdy byly. Nulový odečet má smysl ukázat jen tomu, komu došly – kdo je nikdy
+  // neměl, nemá dostat kartu „Kredity 0“.
+  hasCredits(id) {
+    return Boolean(this.datastore.data.credits?.[id]);
   }
 
   creditList() {

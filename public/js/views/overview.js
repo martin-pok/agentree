@@ -6,7 +6,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
 import { BEZ_PREPISU } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -273,7 +273,7 @@ function update(topics = new Set(['all'])) {
       : '';
     fill(el, 'limits', `<div class="sec-head"><h2>Okna limitů</h2><a class="link" href="#/statistiky#limity">Detail</a></div>
        ${windows}${limitHint}
-       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b></a>`).join('')}
+       ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}</b>${creditAge(c)?.stary ? `<small class="je-stare">${esc(creditAge(c).kratce)}</small>` : ''}</a>`).join('')}
        ${limitsAll(state, now)}`);
   }
 

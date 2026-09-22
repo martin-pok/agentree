@@ -2,6 +2,18 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.24.0',
+    date: '2026-09-22',
+    title: 'Čísla v Agenteeq odpovídají zdrojům',
+    items: [
+      'Tokeny Claude Code už nejsou nadsazené. Když relaci rozdělíš (fork), nový soubor si nese celou historii té původní a Agenteeq ji počítal podruhé – za měsíc to dělalo o 59 % víc, než kolik se spotřebovalo.',
+      'Kredity Codexu ukazují skutečný zůstatek. Když došly, Codex hlásil nulu, ale Agenteeq dál ukazoval poslední kladné číslo. Teď je vidět nula i kdy byla zjištěná.',
+      'Vyčerpaný limit jednoho modelu už nezmizí jen proto, že v téže relaci odpověděl jiný model. Limit ví, který model narazil.',
+      'U limitů i kreditů je vidět, jak starý je údaj. Co je staré, je zvýrazněné, aby se to nečetlo jako stav teď.',
+      'Místo „dokoupeno“ stojí „doplněno“: z dat Codexu nejde poznat, jestli se kredity koupily, nebo vrátily. A počítá se jen uvnitř jedné konverzace, takže zmizela doplnění, která ve skutečnosti nebyla.',
+    ],
+  },
+  {
     version: '0.23.1',
     date: '2026-09-22',
     title: 'Grafy v čase říkají pravdu o tom, co je pod kurzorem',

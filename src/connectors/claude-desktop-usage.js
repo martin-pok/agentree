@@ -14,10 +14,11 @@ const FILE_NAME = 'plan-usage-history.json';
 // Poslední vzorek pole `samples`: { t: <ms epoch>, org, u: { fh, sd, xu? } }.
 // fh = vytížení 5hodinového okna v %, sd = vytížení týdenního okna v %.
 // xu = „extra usage“ – jednotka není ověřená (nejspíš dolary), proto se nikde netvrdí.
+// Nejnovější podle času, ne poslední v poli: pořadí zápisu soubor nezaručuje.
 export function findLatestSample(json) {
-  const samples = Array.isArray(json?.samples) ? json.samples : null;
-  if (!samples || !samples.length) return null;
-  return samples[samples.length - 1];
+  const samples = (Array.isArray(json?.samples) ? json.samples : []).filter((x) => x && typeof x === 'object' && Number.isFinite(Number(x.t)));
+  if (!samples.length) return null;
+  return samples.reduce((a, b) => (Number(b.t) > Number(a.t) ? b : a));
 }
 
 // Historie vytížení plánu pro graf. Vrací jen čas a hodnotu – identifikátor organizace
@@ -25,8 +26,13 @@ export function findLatestSample(json) {
 export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints = 300 } = {}) {
   const raw = Array.isArray(json?.samples) ? json.samples : [];
   const since = now - days * 86400000;
+  // Kdo má v Claude Desktopu víc účtů, má v souboru vzorky všech. Platí účet nejnovějšího vzorku;
+  // smíchat je by znamenalo graf skákající mezi dvěma různými plány. Identifikátor účtu se jen
+  // porovná, ven se nedostane.
+  const ucet = findLatestSample(json)?.org;
   const samples = raw
     .filter((x) => x && typeof x === 'object' && Number.isFinite(Number(x.t)) && Number(x.t) >= since)
+    .filter((x) => !ucet || !x.org || x.org === ucet)
     .sort((a, b) => Number(a.t) - Number(b.t));
 
   const thin = (points) => {

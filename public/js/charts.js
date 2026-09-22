@@ -272,7 +272,7 @@ export function donut({ segments, center = '', sub = '', format = String, label 
   </div>`;
 }
 
-export function gauge({ pct, color, value, label, sub = '', size = 'md', reached = false }) {
+export function gauge({ pct, color, value, label, sub = '', age = '', stare = false, size = 'md', reached = false }) {
   const p = Math.max(0, Math.min(100, Number(pct) || 0));
   const cx = 60;
   const cy = 60;
@@ -284,11 +284,12 @@ export function gauge({ pct, color, value, label, sub = '', size = 'md', reached
     return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${b - a > 180 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
   };
   const end = 135 + (270 * p) / 100;
-  return `<div class="gauge gauge--${size}${reached ? ' is-reached' : ''}" role="img" aria-label="${esc(`${label}: ${value}${sub ? `, ${sub}` : ''}`)}">
+  return `<div class="gauge gauge--${size}${reached ? ' is-reached' : ''}" role="img" aria-label="${esc(`${label}: ${value}${sub ? `, ${sub}` : ''}${age ? `, ${age}` : ''}`)}">
     <div class="gauge-dial"><svg viewBox="0 0 120 120" aria-hidden="true"><path d="${arc(135, 405)}" class="gauge-track"/>${p > 0 ? `<path d="${arc(135, Math.max(135.5, end))}" class="gauge-fill" style="stroke:${color}"/>` : ''}</svg>
     <div class="gauge-center"><span class="gauge-value${/\d/.test(value) ? '' : ' gauge-value--text'}">${esc(value)}</span></div></div>
     <div class="gauge-label">${esc(label)}</div>
     ${sub ? `<div class="gauge-sub">${esc(sub)}</div>` : ''}
+    ${age ? `<div class="gauge-sub gauge-age${stare ? ' je-stare' : ''}">${esc(age)}</div>` : ''}
   </div>`;
 }
 

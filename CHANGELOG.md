@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.24.0 – 2026-09-22 · audit pravdivosti dat
+
+Audit porovnal, co aplikace ukazuje, se surovými soubory Claude Code, Codexu, Claude Desktopu
+a Cursoru na skutečném Macu – pravdu přitom počítal vlastním kódem, ne parserem aplikace.
+Našel čtyři údaje, které se se zdrojem neshodovaly, a tři skryté slabiny.
+
+- **Tokeny Claude Code byly nadsazené o 59 %.** Odbočka relace si do nového souboru kopíruje
+  celou historii rodiče a aplikace ji počítala znovu: za 30 dní 7,6 mil. místo skutečných 4,8 mil.,
+  některé dny dvojnásobek. Tokeny teď patří jen řádkům relace svého souboru (u pomocného agenta
+  relace rodiče), nezávisle na pořadí načítání.
+- **Kredity Codexu ukazovaly zůstatek, který už neexistoval.** Od 15. 8. Codex hlásil nulu
+  (`has_credits: false`) a aplikace těch 5 008 odečtů zahodila – svítilo 5,31. Teď nula, s datem
+  posledního odečtu, a živě i po startu.
+- **Vyčerpaný limit jednoho modelu shodila odpověď jiného.** Opus 5 zablokovaný do 23:20 svítil
+  84 s po vyčerpání jako volný, protože v téže relaci odpověděl Opus 5.5. Limit teď ví, který
+  model narazil, a skončí jen obnovou nebo odpovědí téhož modelu.
+- **Doplnění kreditů se počítalo napříč konverzacemi.** Starší konverzace umí nahlásit zastaralý
+  zůstatek; porovnáno s jinou to vypadalo jako nákup. Místo 7 je 6 doplnění a jmenují se
+  „doplněno“ – nákup a vrácení kreditů vypadají v datech stejně.
+- **Velké ukazatele limitů neříkaly, jak starý je odečet.** Týdenní limit Codexu z odečtu starého
+  20 h vypadal jako živý. Všude je teď „změřeno před …“, po šesti hodinách zvýrazněné; okno bez času
+  obnovy po své délce vyprší. Zůstatek kreditů nese datum na Přehledu, ve Statistikách i na Útratě.
+- Skryté slabiny: historie Claude Desktopu nemíchá účty, agent Cursoru bez času změny se nevyřadí,
+  do surových odečtů kreditů se neukládají opakované hodnoty (strop by jinak vytlačil první nákupy).
+- `npm run audit:data` – audit jako nástroj: porovná aplikaci se zdroji na tomto Macu kdykoli znovu.
+- Česká sazba: číslo s jednotkou a předložka „v“ s časem se nerozdělují na dva řádky.
+
+
 ## 0.23.1 – 2026-09-22 · grafy v čase říkají pravdu o tom, co je pod kurzorem
 
 - **Kurzor v grafu už neuskakuje o dny.** Historie kreditů i limitů se ukládá komprimovaně,

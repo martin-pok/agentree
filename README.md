@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.23.1 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.24.0 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
 Pro Mac: stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 
@@ -36,7 +36,8 @@ Instalace pro zákazníka nebo kolegu: `npm run pack` a návod [docs/INSTALL.md]
 ## Vývoj
 
 ```bash
-npm test          # 419 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
+npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
+npm test          # 439 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
