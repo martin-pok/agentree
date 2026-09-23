@@ -231,10 +231,10 @@ function update() {
     })}</div>
     <div class="spend-stats">
       <div><span class="eyebrow">Utraceno tento měsíc</span><span class="val">${tween('sp-month', sp.month.total, `money:${sp.currency}`)}</span></div>
-      <div><span class="eyebrow">Prognóza do konce měsíce</span><span class="val val--soft">${money(sp.forecast)}</span></div>
-      <div><span class="eyebrow">Pravidelné platby</span><span class="val val--soft">${money(sp.recurring)}</span></div>
+      <div><span class="eyebrow">Prognóza do konce měsíce</span><span class="val val--soft" data-odo>${money(sp.forecast)}</span></div>
+      <div><span class="eyebrow">Pravidelné platby</span><span class="val val--soft" data-odo>${money(sp.recurring)}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? 'Přečerpáno' : 'Zbývá z rozpočtu') : 'Rozpočet'}</span>
-        <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}">${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">Nastavit</button>`}</span></div>
+        <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">Nastavit</button>`}</span></div>
     </div>`);
 
   fill(el, 'plans', plansHtml(sp));

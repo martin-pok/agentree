@@ -32,6 +32,12 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   }
   assert.ok(r.files.includes('lp.css'), 'styly landing page');
   assert.match(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), new RegExp(`Disallow: ${APP_PATH}`));
+
+  // Živá prohlídka (/app?ukazka) čte data sestavená spolu s webem – bez nich by rám zůstal na snímcích.
+  assert.ok(r.files.includes('ukazka/data.json'), 'data živé prohlídky');
+  const ukazka = JSON.parse(await fs.readFile(path.join(out, 'ukazka', 'data.json'), 'utf8'));
+  assert.equal(typeof ukazka.vytvoreno, 'number');
+  assert.ok(ukazka.odpovedi['/api/state'].sessions.length > 0);
 });
 
 test('web: manifest a service worker se narovnají na /app, na Macu zůstávají beze změny', async () => {
@@ -111,6 +117,26 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
   assert.match(html, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/"/);
   // Alternativní text u obrázků: prázdný u dekorace, vyplněný u obsahových.
   for (const m of html.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
+});
+
+// Živá prohlídka je skutečná aplikace v rámu. Je jen na dívání (žádný fokus, žádné ovládání),
+// poslouchá jen vlastní původ a snímky pod ní zůstávají: bez JavaScriptu, během načítání a když
+// se aplikace nenačte, je prohlídka pořád celá.
+test('web: živá prohlídka je jen na dívání, snímky zůstávají jako záloha', async () => {
+  const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
+  assert.match(js, /iframe\.src = `\/app\?ukazka#\/\$\{aktivni\}`/);
+  assert.match(js, /iframe\.inert = true;/, 'do rámu se nedá klepnout ani přejít klávesnicí');
+  assert.match(js, /iframe\.tabIndex = -1;/);
+  assert.match(js, /obal\.setAttribute\('aria-hidden', 'true'\)/, 'odečítačka čte popis snímku, ne celou aplikaci');
+  assert.match(js, /e\.origin !== location\.origin \|\| e\.source !== ziva\.okno/, 'zprávy jen z vlastního rámu');
+  assert.match(js, /if \(bezPohybu\.matches\) return void ukaz\(\);/, 'omezený pohyb: rovnou konečný stav, bez nástupu');
+  assert.match(js, /if \(!ziva\.videt\) ukaz\(\);\s*\n\s*else if \(ziva\.ukazana\) pust\(\);/, 'snímek, na který se někdo dívá, nezmizí pod rukama');
+  const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
+  for (const obrazovka of ['prehled', 'projekty', 'utrata']) {
+    assert.match(html, new RegExp(`<picture class="shot[^"]*" data-obrazovka="${obrazovka}"`), `snímek ${obrazovka} zůstává jako záloha`);
+  }
+  const css = await fs.readFile(path.join(ROOT, 'site/lp.css'), 'utf8');
+  assert.match(css, /\.shot-live \{[^}]*pointer-events: none;/);
 });
 
 // Kopie rozhraní na webu o sobě musí vědět předem. Bez značky by se ptala neexistujícího

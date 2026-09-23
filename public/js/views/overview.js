@@ -209,9 +209,9 @@ function update(topics = new Set(['all'])) {
         <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
-      <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${decideCount}</b><span>potřebuje tebe</span></a>
-      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b>${failedCount}</b><span>selhalo</span></a>
-      <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b>${waiting.length}</b><span>čeká na zadání</span></a>
+      <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>potřebuje tebe</span></a>
+      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${failedCount}</b><span>selhalo</span></a>
+      <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b data-odo>${waiting.length}</b><span>čeká na zadání</span></a>
     </div>
     <a class="link pb-all" href="#/agenti">Všichni agenti ${ICON.arrow}</a>
     <div class="pb-strip">${live.length

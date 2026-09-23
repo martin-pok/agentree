@@ -86,8 +86,8 @@ function cardHtml(p, now) {
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : 'Ručně zařazené konverzace'))}</span>
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
-      <span class="pcard-stat"><b>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
-      <span class="pcard-stat"><b>${st.tokens ? fmtTok(st.tokens) : '–'}</b> tokenů / 30 dní</span>
+      <span class="pcard-stat"><b data-odo>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
+      <span class="pcard-stat"><b data-odo>${st.tokens ? fmtTok(st.tokens) : '–'}</b> tokenů / 30 dní</span>
       ${st.services.length ? logoStack(st.services, 4) : ''}
     </span>
     <span class="pcard-time">${st.lastAt ? `Aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'Zatím bez aktivity'}</span>
@@ -102,7 +102,7 @@ function mount(el) {
       <label class="search-field">${ICON.search}<span class="sr-only">Hledat projekt</span><input type="search" data-q placeholder="Hledat projekt nebo složku…" autocomplete="off"></label>
       <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Nový projekt</button>
     </div>
-    <div data-enter style="--i:2" data-region="grid"></div>
+    <div data-region="grid"></div>
     <section class="psuggest" data-enter style="--i:3" data-region="suggest" aria-label="Návrhy projektů"></section>`;
   const input = el.querySelector('[data-q]');
   input.value = v.q;

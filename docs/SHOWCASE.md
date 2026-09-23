@@ -8,6 +8,11 @@ V checkoutu spusť `npm run showcase` a otevři vypsanou lokální adresu. Insta
 
 Prohlídka: Přehled → čekající rozhodnutí → Agenti → detail konverzace → Projekty → Limity/Útrata → Nastavení. Tokeny nejsou náklady; ukázkové hodnoty jsou označené.
 
+Stejná scéna (tři projekty, zapsaná předplatná a kredity, rozpočet 6 000 Kč) je i v živé prohlídce
+na webu: rozhraní na `/app?ukazka` nad snímkem dat sestaveným s webem, viz `docs/REMOTE.md`.
+Statické snímky v `site/shots/` jsou záloha pro prohlížeče bez JavaScriptu a pro dobu načítání;
+po změně scény nebo vzhledu je obnov `npm run shots:site`.
+
 ## Rozšíření pro Chrome
 
 1. Spusť běžnou aplikaci Agenteeq na portu 4620.

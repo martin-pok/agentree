@@ -50,6 +50,9 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
   --motion-press: 90ms;
   --motion-response: 180ms;
+  /* Nástup obrazovky: měřidla se usadí jako ručička, bez odskoku (ease-out quart). */
+  --ease-settle: cubic-bezier(.25, 1, .5, 1);
+  --motion-settle: 1100ms;
   --band-h: clamp(112px, 9.4vw, 148px);
   color-scheme: light;
 }
@@ -303,6 +306,40 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: 8px; back
    vypadalo náhodně a během něj by bloky chvíli neseděly v řadě. Naskočí tedy naráz. */
 .view.is-entering .ov [data-enter] { animation-delay: 120ms; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Nástup obrazovky ----------
+   Jednou po otevření Přehledu, Projektů a Útraty se sál „rozsvítí“: karty vyjedou po sobě,
+   měřidla se naplní do své hodnoty a čísla vyjedou do okének jako na počítadle. Třídu
+   is-entering sundá app.js po doběhnutí, takže živé aktualizace už nic nerozpohybují.
+   Omezení pohybu v systému tu třídu vůbec nepřidá – vše je rovnou v konečném stavu. */
+/* Mezera delší než oblouk a posun o kousek víc než 1: jinak by kulaté zakončení čárky nulové délky
+   svítilo jako tečka na konci oblouku ještě před začátkem kreslení. */
+.view.is-entering .gauge-fill { stroke-dasharray: 1 2; animation: gauge-draw var(--motion-settle) var(--ease-settle) 150ms both; }
+@keyframes gauge-draw { from { stroke-dashoffset: 1.01; } to { stroke-dashoffset: 0; } }
+.view.is-entering :is(.meter-track i, .hb-track i, .onboard-track i) { animation: meter-fill var(--motion-settle) var(--ease-settle) 150ms both; }
+@keyframes meter-fill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+/* Karty projektů a agenti v pásu naskakují jednotlivě, zleva doprava. */
+.view.is-entering :is(.pgrid > .pcard, .pb-agents > *) { animation: rise .6s var(--ease-settle) both; animation-delay: calc(80ms + var(--k, 0) * 70ms); }
+.view.is-entering .pcard .minibars { animation: reveal var(--motion-settle) var(--ease-settle) both; animation-delay: calc(220ms + var(--k, 0) * 70ms); }
+.view.is-entering .pcard .minibars rect + rect { transform-box: fill-box; transform-origin: 50% 100%; animation: bar-grow .9s var(--ease-settle) both; animation-delay: calc(220ms + var(--k, 0) * 70ms); }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(2) { --k: 1; }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(3) { --k: 2; }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(4) { --k: 3; }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(5) { --k: 4; }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(6) { --k: 5; }
+:is(.pgrid > .pcard, .pb-agents > *):nth-child(n + 7) { --k: 6; }
+/* Počítadlo: okénko má šířku konečné číslice (písmo nemá tabulkové číslice), váleček s číslicemi
+   v něm vyjede nahoru. clip-path místo overflow, aby okénko drželo účaří okolního textu. Ořezává se
+   jen nahoře a dole: široká nula projíždějící úzkým okénkem jedničky by jinak zbyla jako „C“. */
+.odo { display: inline-block; position: relative; clip-path: inset(0 -.2em); }
+.odo-f { visibility: hidden; }
+.odo-s { position: absolute; inset: 0 0 auto; text-align: center; animation: odo-roll var(--motion-settle) var(--ease-settle) 150ms both; animation-duration: calc(900ms + var(--odo-r, 0) * 100ms); }
+.odo-s > span { display: block; }
+@keyframes odo-roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% + 100% / var(--n))); } }
+/* Ukázka v rámu na webu stojí na prvním snímku nástupu, dokud k ní návštěvník nedojede
+   (public/js/ukazka.js, site/lp.js). */
+[data-nastup-stoji] .view.is-entering, [data-nastup-stoji] .view.is-entering * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .odo-s { animation: none; transform: translateY(calc(-100% + 100% / var(--n))); } }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: translateY(-6px) scale(.98); opacity: 0; } }
 .loading { display: flex; align-items: center; gap: 12px; color: var(--mute); padding: 32px 0; }

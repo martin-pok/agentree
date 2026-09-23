@@ -15,6 +15,22 @@
 - Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
   `.gitattributes` jednotné na všech systémech.
 
+### Nástup obrazovek a živá prohlídka na webu
+
+- **Přehled, Projekty a Útrata se při otevření rozsvítí.** Karty projektů vyjedou postupně,
+  měřidlo rozpočtu se dokreslí jen do skutečné hodnoty, pruhy a sloupečky aktivity se naplní
+  a čísla vyjedou do svých okének jako na počítadle. Nejvyšší řád jde k cíli bez přetočení, takže
+  číslo nikdy neukáže víc, než je; řády se usazují zprava doleva a čtečka dostane celé číslo.
+  Jednou po otevření obrazovky, ne při živých aktualizacích; s omezeným pohybem v systému vůbec.
+- **Prohlídka na webu je živá aplikace.** Místo statických snímků je v rámu skutečné rozhraní
+  nad smyšlenými daty (`/app?ukazka`). Nástup se přehraje, až k rámu návštěvník dojede, a při
+  přepnutí obrazovky. Ukázka nic neukládá a na nic se neptá; data (`/ukazka/data.json`) vznikají
+  při sestavení webu ze stejné scény jako snímky a cesty stroje se v nich nahrazují – kdyby
+  nějaká unikla, sestavení spadne. Snímky zůstávají jako záloha bez JavaScriptu a při načítání.
+- Ukázková scéna má útratu (zapsaná předplatná, kredity a rozpočet 6 000 Kč, v prohlídce 70 %
+  místo dřívějších 0 Kč) a tři projekty s aktivitou za poslední dny. Snímky na webu jsou z ní
+  přegenerované a popisky obrázků odpovídají tomu, co na nich je.
+
 ## 0.24.0 – 2026-09-22 · audit pravdivosti dat
 
 Audit porovnal, co aplikace ukazuje, se surovými soubory Claude Code, Codexu, Claude Desktopu
