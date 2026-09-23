@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { startTestServer, api } from './helpers.mjs';
+import { startTestServer, api, pairExtension, EXTENSION_ORIGIN } from './helpers.mjs';
 
 // Gemini ani Qwen neumí převzít zadání z adresy. Po spuštění z Agenteeq si ho proto vyzvedne
 // rozšíření v prohlížeči a vloží do pole zprávy. Zadání je text uživatele – nesmí ho dostat nikdo
@@ -12,8 +12,9 @@ test('předání zadání do webové služby přes rozšíření', async (t) => 
   const srv = await startTestServer();
   t.after(() => srv.close());
   const a = api(srv.url);
-  const token = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8')).ingestToken;
-  const vyzvednout = (site, headers = { 'X-Agenteeq-Token': token }) => a.send('POST', '/api/extension/handoff', { site }, headers);
+  const hookToken = JSON.parse(await fs.readFile(path.join(srv.dataHome, 'data.json'), 'utf8')).ingestToken;
+  const { token } = await pairExtension(srv.url);
+  const vyzvednout = (site, headers = { 'X-Agenteeq-Token': token, Origin: EXTENSION_ORIGIN }) => a.send('POST', '/api/extension/handoff', { site }, headers);
 
   await t.test('bez spuštění není co vyzvednout', async () => {
     const r = await vyzvednout('gemini');
@@ -33,7 +34,10 @@ test('předání zadání do webové služby přes rozšíření', async (t) => 
 
   await t.test('bez tokenu rozšíření zadání nedostane nikdo', async () => {
     assert.equal((await vyzvednout('gemini', {})).status, 401);
-    assert.equal((await vyzvednout('gemini', { 'X-Agenteeq-Token': 'x'.repeat(token.length) })).status, 401);
+    assert.equal((await vyzvednout('gemini', { 'X-Agenteeq-Token': 'x'.repeat(token.length), Origin: EXTENSION_ORIGIN })).status, 401);
+    assert.equal((await vyzvednout('gemini', { 'X-Agenteeq-Token': hookToken, Origin: EXTENSION_ORIGIN })).status, 401, 'token hooků zadání nevyzvedne');
+    assert.equal((await vyzvednout('gemini', { 'X-Agenteeq-Token': token, Origin: 'chrome-extension://ponmlkjihgfedcbaponmlkjihgfedcba' })).status, 401, 'token platí jen z původu, kterému byl vydán');
+    assert.equal((await vyzvednout('gemini', { 'X-Agenteeq-Token': token })).status, 401, 'bez původu token neplatí');
   });
 
   await t.test('jiná služba zadání neukradne', async () => {

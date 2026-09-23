@@ -609,7 +609,7 @@ function update() {
   const sites = ext.sites || {};
   const paired = Boolean(ext.state && ext.state !== 'missing');
   const EXT_BADGE = { active: ['connected', 'Aktivní'], ready: ['connected', 'Připojeno'], quiet: ['idle', 'Neozývá se'], missing: ['missing', 'Nenainstalováno'] };
-  const badge = ext.outdated ? ['idle', 'Obnov rozšíření'] : EXT_BADGE[ext.state] || EXT_BADGE.missing;
+  const badge = ext.outdated ? ['idle', 'Obnov rozšíření'] : ext.repair ? ['missing', 'Spáruj znovu'] : EXT_BADGE[ext.state] || EXT_BADGE.missing;
   const seen = ext.seenAt ? `<span data-ago="${ext.seenAt}">${rel(ext.seenAt)}</span>` : '';
   const statusLine = {
     active: `Rozšíření ${esc(ext.version)} právě čte otevřenou konverzaci.`,
@@ -630,6 +630,7 @@ function update() {
       'Agenti z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem i přepisem a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu – nic neodchází na internet.',
       stateBadge(...badge))}
     <ul class="site-chips" aria-label="Podporované webové služby">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
+    ${ext.repair ? '<p class="set-note set-note--warn">Rozšíření je potřeba spárovat znovu. Každý prohlížeč teď dostává vlastní přístupový klíč a ten dřívější přestal platit. Vytvoř jednorázový kód a vlož ho do rozšíření.</p>' : ''}
     ${ext.outdated ? `<p class="set-note set-note--warn">V Chromu běží rozšíření ${esc(ext.version)}, aplikace má ${esc(ext.expectedVersion)}. Otevři <code>chrome://extensions</code> a u Agenteeq klikni na šipku obnovení ↻.</p>` : ''}
     ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
     ${paired ? fold('ext', 'Instalace a spárování znovu', installSteps, { cls: 'ext-reinstall' }) : installSteps}

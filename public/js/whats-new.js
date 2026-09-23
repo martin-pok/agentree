@@ -34,7 +34,7 @@ export async function showWhatsNew({ releases } = {}) {
     ${list.map((r, i) => releaseHtml(r, { lead: i === 0 })).join('')}
     ${older.length ? `<details class="wn-older"><summary>Starší změny</summary>${older.map((r) => releaseHtml(r)).join('')}</details>` : ''}
   </div>`;
-  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? 'Obnovit rozšíření' : 'Nainstalovat rozšíření'}</button>` : ''}<button type="submit" class="btn btn--primary">Rozumím</button>`;
+  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? 'Obnovit rozšíření' : ext?.repair ? 'Spárovat rozšíření' : 'Nainstalovat rozšíření'}</button>` : ''}<button type="submit" class="btn btn--primary">Rozumím</button>`;
   await modal({
     title: 'Co je nového',
     body,

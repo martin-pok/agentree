@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.25.0 – 2026-09-23 · vlastní klíč pro každé rozšíření
+
+- **Rozšíření pro Chrome dostávalo token hooků Claude Code.** Kdo ho získal z kteréhokoli
+  prohlížeče, mohl podvrhnout hooky („potřebuje rozhodnutí“, limity) i konverzace ostatních
+  prohlížečů a nové spárování na tom nic neměnilo (`docs/SECURITY.md`, nález #7). Teď dostane
+  každá instalace při spárování vlastní token platný jen z jejího původu `chrome-extension://…`.
+  Token hooků pro rozšíření neplatí a token rozšíření neplatí pro hooky.
+- Nové spárování téže instalace starý token zneplatní, jiné profily Chromu zůstanou připojené.
+  Na disku je jen sha256 tokenu a nejvýš 5 instalací.
+- **Rozšíření spárované postaru je potřeba spárovat znovu.** Aplikace ho nehlásí jako připojené,
+  protože server by jeho data odmítl, ale jako „Spáruj znovu“ – v Nastavení i v prvních krocích
+  na Přehledu. Rozšíření po odmítnutém tokenu hned nabídne nové spárování.
+- Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
+  `.gitattributes` jednotné na všech systémech.
+
 ## 0.24.0 – 2026-09-22 · audit pravdivosti dat
 
 Audit porovnal, co aplikace ukazuje, se surovými soubory Claude Code, Codexu, Claude Desktopu

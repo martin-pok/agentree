@@ -11,7 +11,8 @@ Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Přístup z jiného počítače v síti | Server poslouchá jen na `127.0.0.1`; další adresa vznikne výhradně po výslovném zapnutí uživatelem (domácí síť nebo Tailscale) a i pak jen se spárovaným zařízením | `bin/agenteeq.mjs`, `src/config.js`, `src/lan.js` |
 | Škodlivý web čte data přes DNS rebinding | Odmítnutí požadavků s jiným `Host` než `127.0.0.1`/`localhost` a než vlastní zapnuté adresy (`lan.hosts()`) | `src/http.js#handle` |
 | Škodlivý web mění data (CSRF) | Mutace vyžadují `X-Agenteeq: 1` (vynutí CORS preflight, který server nepovolí) + kontrola `Origin` | `src/http.js#guardMutation` |
-| Podvržené události hooků / rozšíření | Náhodný 48znakový token, porovnání v konstantním čase | `src/http.js#tokenOk`, `src/datastore.js` |
+| Podvržené události hooků | Náhodný 48znakový token hooků, porovnání v konstantním čase. Rozšíření ho nedostane a pro jeho cesty neplatí | `src/http.js#tokenOk`, `src/datastore.js` |
+| Podvržená data rozšíření | Každá instalace rozšíření má vlastní token (32 náhodných bajtů) platný jen z původu `chrome-extension://…`, pro který byl vydán. Na disku je jen jeho sha256, nejvýš 5 instalací. Nové spárování téže instalace starý token zneplatní. Token rozšíření neplatí pro hooky | `src/http.js#extensionOk`, `src/app.js#extensionInstallation` |
 | Web získá token přes párování | Dashboard vytvoří náhodný jednorázový kód platný 10 minut; rozšíření ho musí ručně předat, server ho porovná v konstantním čase a po prvním použití zneplatní | `src/app.js#pairExtension`, `src/http.js` |
 | XSS z obsahu přepisů | Veškerý dynamický text přes `esc()`; markdown až po escapování; odkazy jen `http(s)` s `rel="noopener noreferrer"`; CSP `script-src 'self'` | `public/js/format.js`, `views/session.js`, `src/http.js#SECURITY` |
 | Clickjacking | `X-Frame-Options: DENY`, `frame-ancestors 'none'` | `src/http.js` |
@@ -60,7 +61,7 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 2 | střední | ID konverzace začínající „-“ se čte jako přepínač (`claude --resume --dangerously-skip-permissions`) | **opraveno**, test předvádí útok |
 | 3 | střední | „Otevřít složku“ spustí `open <cesta>` i na balíček `.app` | **opraveno**, balíčky a odkazy na ně se odmítnou |
 | 6 | nízká–střední | záloha nastavení Claude Code s právy 0644 | **opraveno** (0600, dřívější zúženy) |
-| 7 | nízká–střední | `/api/extension/pair-code` vytvoří i telefon nebo proxy | **opraveno** (jen Mac); token se stále neotáčí při odpárování zařízení a ID rozšíření se nekontroluje přesně |
+| 7 | nízká–střední | `/api/extension/pair-code` vytvoří i telefon nebo proxy; rozšíření sdílí token s hooky a ten se neotáčí | **opraveno** (kód jen z Macu; od 0.25.0 vlastní token pro každou instalaci, vázaný na její `Origin`, otočí se novým spárováním). Zůstává: token hooků se neotáčí a samostatné „odpojit rozšíření“ zatím není – odpojí ho nové spárování nebo 5 novějších instalací |
 | 1 | **vysoká** | spárovaný telefon smí i spouštět agenty s libovolnou složkou, instalovat hooky, měnit klíče a číst přepisy; LAN je prostý HTTP a cookie nemá `Secure` | **opraveno v 0.18.0** (rozsah jen pro čtení, `src/remote-scope.js`). Zůstává: LAN je prostý HTTP – přístup z telefonu nezapínej v cizí síti a používej Tailscale |
 | 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **opraveno v 0.18.0 pro okno aplikace** (klíč pro každé spuštění). Spuštění z terminálu (`agenteeq`) klíč zatím nepoužívá – tam platí původní ochrana (Host, Origin, X-Agenteeq) |
 | 8 | nízká | ingest token je v argumentech `curl` v hooku | otevřené (čitelný jen pro téhož uživatele) |

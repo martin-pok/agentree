@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.25.0',
+    date: '2026-09-23',
+    title: 'Každý prohlížeč má vlastní klíč k Agenteeq',
+    extension: true,
+    items: [
+      'Rozšíření pro Chrome je potřeba jednou spárovat znovu: v Nastavení vytvoř jednorázový kód a vlož ho do rozšíření. Dosavadní spojení přestalo platit.',
+      'Při spárování dostane každý prohlížeč vlastní přístupový klíč, který platí jen pro něj. Dřív rozšíření sdílelo klíč s propojením Claude Code, takže kdo ho získal, mohl podvrhnout i upozornění z Claude Code.',
+      'Nové spárování starý klíč téhož prohlížeče zneplatní a ostatní prohlížeče nechá připojené. Na disku se ukládá jen otisk klíče, ne klíč samotný.',
+    ],
+  },
+  {
     version: '0.24.0',
     date: '2026-09-22',
     title: 'Čísla v Agenteeq odpovídají zdrojům',
