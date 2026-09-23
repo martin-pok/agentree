@@ -3,7 +3,7 @@ import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, tween, tweenAll, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
+import { toast, copy, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
@@ -144,8 +144,10 @@ function navigate() {
     viewEl.classList.remove('is-entering');
     void viewEl.offsetWidth;
     if (!reduceMotion.matches) viewEl.classList.add('is-entering');
+    nastupCeka = !reduceMotion.matches;
     current.mount(viewEl, r.params, r.query);
-    if (!firstNav) {
+    // Ukázka v rámu na webu je jen na dívání: fokus by se jí nepatřilo brát stránce kolem.
+    if (!firstNav && !UKAZKA) {
       window.scrollTo({ top: 0 });
       titleEl.focus({ preventScroll: true });
     }
@@ -166,6 +168,27 @@ function navigate() {
 
 /* ---------- Vykreslení ---------- */
 
+// Nástup obrazovky jednou po otevření: karty vyjedou, měřidla se naplní a čísla vyjedou do svých
+// okének (styles.css, „Nástup obrazovky“). Začíná až prvním vykreslením s daty – při studeném
+// startu tedy až po načtení, ne nad prázdnou kostrou. Po doběhnutí se `is-entering` sundá, jinak
+// by se pohyb opakoval s každou živou aktualizací, která oblast překreslí.
+const NASTUP_MS = 2200;
+let nastupCeka = false;
+let nastupStoji = null;
+function zacniNastup() {
+  nastupCeka = false;
+  const el = viewEl;
+  const cisla = nastupCisel(el);
+  const dobeh = () => setTimeout(() => {
+    if (el !== viewEl) return;
+    el.classList.remove('is-entering');
+    dokonciCisla(cisla);
+  }, NASTUP_MS);
+  // Ukázka v rámu na webu stojí na začátku nástupu, dokud ji stránka kolem nepustí (viz níž).
+  if (document.documentElement.hasAttribute('data-nastup-stoji')) nastupStoji = dobeh;
+  else dobeh();
+}
+
 function refresh(topics) {
   if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
@@ -179,6 +202,7 @@ function refresh(topics) {
   } catch (err) {
     console.error('Agenteeq: chyba vykreslení', err);
   }
+  if (nastupCeka) zacniNastup();
   tweenAll(document);
   restoreHover(viewEl);
   tick();
@@ -617,6 +641,16 @@ subscribe((topics) => {
 });
 window.addEventListener('scrollend', vykresliOdlozene);
 window.addEventListener('hashchange', navigate);
+// Ukázka v rámu na webu (site/lp.js): obrazovka stojí na začátku nástupu, dokud ji stránka kolem
+// nepustí – až je rám opravdu vidět. Další obrazovky už naskakují samy, jako v aplikaci.
+const UKAZKA = document.documentElement.hasAttribute('data-ukazka');
+if (UKAZKA) {
+  window.addEventListener('agenteeq:prehraj', () => {
+    document.documentElement.removeAttribute('data-nastup-stoji');
+    nastupStoji?.();
+    nastupStoji = null;
+  });
+}
 
 let loadingSnapshot = null;
 const queued = [];

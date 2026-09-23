@@ -10,6 +10,7 @@ export const RELEASES = [
       'Rozšíření pro Chrome je potřeba jednou spárovat znovu: v Nastavení vytvoř jednorázový kód a vlož ho do rozšíření. Dosavadní spojení přestalo platit.',
       'Při spárování dostane každý prohlížeč vlastní přístupový klíč, který platí jen pro něj. Dřív rozšíření sdílelo klíč s propojením Claude Code, takže kdo ho získal, mohl podvrhnout i upozornění z Claude Code.',
       'Nové spárování starý klíč téhož prohlížeče zneplatní a ostatní prohlížeče nechá připojené. Na disku se ukládá jen otisk klíče, ne klíč samotný.',
+      'Přehled, Projekty a Útrata se při otevření plynule rozsvítí: karty vyjedou, měřidlo rozpočtu se dokreslí a čísla vyjedou na své místo. Jen jednou po otevření, ne při každé změně. Když máš v systému omezený pohyb, ukáže se všechno rovnou.',
     ],
   },
   {

@@ -2,5 +2,20 @@
 // rozhraní (webhosting) žádný nemá a místo prázdné aplikace ukáže rozcestník na vlastní Mac.
 import { jeStatickaKopie, pripojovaciObrazovka } from './connect.js';
 
-if (await jeStatickaKopie()) pripojovaciObrazovka();
-else await import('./app.js');
+// Výjimka je ukázka pro prohlídku na webu (/app?ukazka): rozhraní poběží nad smyšlenými daty.
+// Když se data nenačtou, zbude obyčejný rozcestník – nikdy prázdná aplikace.
+const ukazka = new URLSearchParams(location.search).has('ukazka');
+
+if (await jeStatickaKopie()) {
+  let spustena = false;
+  if (ukazka) {
+    try {
+      await (await import('./ukazka.js')).spustUkazku();
+      spustena = true;
+    } catch (err) {
+      console.error('Agenteeq: ukázku se nepodařilo spustit', err);
+    }
+  }
+  if (spustena) await import('./app.js');
+  else pripojovaciObrazovka();
+} else await import('./app.js');

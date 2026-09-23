@@ -12,6 +12,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ukazkoveOdpovedi } from './ukazka-data.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -105,7 +106,11 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   const stranka = path.join(out, 'index.html');
   await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze)));
 
-  // 5. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
+  // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
+  await fs.mkdir(path.join(out, 'ukazka'), { recursive: true });
+  await fs.writeFile(path.join(out, 'ukazka', 'data.json'), JSON.stringify(await ukazkoveOdpovedi()));
+
+  // 6. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
   await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
 
   // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.

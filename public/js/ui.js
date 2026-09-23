@@ -80,6 +80,76 @@ export function tweenAll(root) {
   }
 }
 
+/* ---------- Nástup obrazovky: čísla vyjedou do okének ---------- */
+
+// Číslice písma Urbanist nemají stejnou šířku (tabulkové číslice písmo neumí), takže obyčejné
+// napočítávání by číslem cukalo do stran. Při nástupu proto každá číslice dostane okénko o šířce
+// své konečné podoby a vyjede v něm jako na válečku počítadla.
+// Každý řád se otočí tolikrát, kolikrát by se otočil při skutečném napočítávání od nuly (nejvýš
+// dvakrát, rychlejší točení už oko nerozliší), a všechny válečky jedou po stejné křivce jako
+// ukazatel. Číslo tak v každém okamžiku čte zhruba tutéž hodnotu jako měřidlo vedle něj a nikdy
+// nepřestřelí cíl. Políčko 0 je prázdné: řád, ke kterému napočítávání ještě nedošlo, nesvítí nulou,
+// takže číslo vyjede z prázdna.
+const ODO_OTACKY = 2;
+export function odoSloupce(text) {
+  const znaky = [...String(text)];
+  const cislice = znaky.filter((z) => z >= '0' && z <= '9');
+  let vlevo = 0;
+  return znaky.map((znak) => {
+    if (znak < '0' || znak > '9') return { znak };
+    // Kolik celých otáček řád udělá = číslo tvořené číslicemi vlevo od něj (nejvýš ODO_OTACKY).
+    const predpona = cislice.slice(0, vlevo).join('').replace(/^0+/, '');
+    vlevo += 1;
+    const otacky = predpona.length > 1 ? ODO_OTACKY : Math.min(ODO_OTACKY, Number(predpona || 0));
+    const sled = [null];
+    for (let j = 1; j <= otacky * 10 + Number(znak); j++) sled.push(j % 10);
+    if (sled.length === 1) sled.push(0);
+    return { znak, sled };
+  });
+}
+
+// Bez mezer mezi značkami: z mezery mezi dvěma okénky by se stala mezera v čísle.
+// Řády se usazují zprava doleva (--odo-r = řád od jednotek): kdyby desítky dojely k cíli dřív,
+// než jednotky přetočí z devítky na nulu, četlo by se chvíli „79 %“ místo „70 %“.
+export function odometrHtml(text) {
+  const sloupce = odoSloupce(text);
+  let rad = sloupce.filter((s) => s.sled).length;
+  const kusy = sloupce.map(({ znak, sled }) => {
+    if (!sled) return esc(znak);
+    rad -= 1;
+    return `<span class="odo" style="--odo-r:${Math.min(rad, 4)}"><span class="odo-f">${znak}</span><span class="odo-s" style="--n:${sled.length}">${sled.map((c) => `<span>${c ?? '&nbsp;'}</span>`).join('')}</span></span>`;
+  }).join('');
+  return `<span class="odo-cislo" aria-hidden="true">${kusy}</span><span class="sr-only">${esc(text)}</span>`;
+}
+
+// Čísla nově otevřené obrazovky: animovaná (tween), označená `data-odo` a hodnota uprostřed
+// ukazatele. Animovaná čísla se tím rovnou dostanou do cíle, aby je tweenAll nerozpočítal podruhé.
+export function nastupCisel(root) {
+  const cisla = [];
+  for (const el of root.querySelectorAll('[data-tween], [data-odo], .gauge-value:not(.gauge-value--text)')) {
+    if (el.firstElementChild) continue;
+    let text;
+    if (el.dataset.tween) {
+      const to = Number(el.dataset.value) || 0;
+      tweenMemory.set(el.dataset.tween, to);
+      el._tweenTo = to;
+      text = formatter(el.dataset.fmt)(to);
+    } else {
+      text = el.textContent.trim();
+    }
+    if (!/\d/.test(text) || text.length > 24) continue;
+    el.innerHTML = odometrHtml(text);
+    el._odo = text;
+    cisla.push(el);
+  }
+  return cisla;
+}
+
+// Po nástupu zpátky obyčejný text: dá se vybrat, zkopírovat a čtečka ho přečte jako celek.
+export function dokonciCisla(cisla) {
+  for (const el of cisla) if (el.isConnected && el._odo && el.querySelector(':scope > .odo-cislo')) el.textContent = el._odo;
+}
+
 /* ---------- Toasty, schránka ---------- */
 
 // Jedna zpráva naráz: druhá vždy nahradí první, jinak by se pod sebou hromadily čtyři černé

@@ -1,4 +1,16 @@
+// Ukázkový režim (public/js/ukazka.js): místo serveru odpovídá snímek smyšlených dat. Čte se jen
+// to, co snímek obsahuje; cokoli, co by něco měnilo, se odmítne – v ukázce se nic neukládá.
+let ukazka = null;
+export function zapniUkazku(odpovedi) { ukazka = odpovedi; }
+
+function ukazkaOdpoved(method, path) {
+  if (method !== 'GET') throw Object.assign(new Error('Tohle je ukázka – nic se v ní neukládá.'), { status: 403 });
+  if (!Object.hasOwn(ukazka, path)) throw Object.assign(new Error('V ukázce tahle data nejsou.'), { status: 404 });
+  return structuredClone(ukazka[path]);
+}
+
 export async function request(method, path, body) {
+  if (ukazka) return ukazkaOdpoved(method, path);
   const init = { method, headers: {} };
   if (method !== 'GET') {
     init.headers['X-Agenteeq'] = '1';
@@ -92,6 +104,11 @@ const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAge
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {
+  // Ukázka nemá server ani živé změny: jednou „připojeno“ a hotovo.
+  if (ukazka) {
+    queueMicrotask(() => { onStatus('live'); onHello({}); });
+    return { close() {} };
+  }
   const es = new EventSource('/api/stream');
   es.addEventListener('hello', (e) => {
     onStatus('live');

@@ -71,6 +71,27 @@ s doplněným portem 4620, tunel venku po `https` na svém vlastním jménu. Jin
 
 Statická kopie tedy nic neukládá ani nepřeposílá; je to jen dveře, za kterými je pořád tvůj Mac.
 
+### Ukázka pro prohlídku na webu (`/app?ukazka`)
+
+Jediná výjimka z rozcestníku: s parametrem `?ukazka` načte statická kopie místo serveru snímek
+smyšlených dat `/ukazka/data.json` (`public/js/ukazka.js`) a rozhraní běží nad ním. Tak vzniká
+živá prohlídka na landing page – `site/lp.js` ji vkládá do rámu místo statických snímků.
+
+- **Data** sestaví `scripts/ukazka-data.mjs` při každém `npm run build:site` ze stejné ukázkové
+  scény jako snímky (`scripts/demo-fixture.mjs`): odpovědi `/api/state` a
+  `/api/usage/claude?days=90`, vzhled `system`. Cesty stroje, na kterém se web sestavuje, se
+  nahradí cestami ukázkového profilu; kdyby nějaká nahrazení unikla, sestavení spadne. Časy se
+  u návštěvníka posunou na „teď“, kalendářní data (měsíc útraty) zůstávají z doby sestavení.
+- **Nic se neukládá a nikam se neposílá.** `request()` v `public/js/api.js` odpovídá jen čtením
+  ze snímku; zápis vrátí 403, neznámá cesta 404, stream jen jednou ohlásí „připojeno“. Na síť
+  se ukázka neptá.
+- **Jen na webu.** Na Macu (`jeStatickaKopie()` je nepravda) se `?ukazka` ignoruje. Když se data
+  nenačtou, ukáže se obyčejný rozcestník.
+- **Rám je jen na dívání:** `inert`, mimo pořadí Tabu, `aria-hidden` (odečítačka čte popis snímku)
+  a zprávy přijímá jen z vlastního původu. Nástup obrazovky v rámu stojí, dokud rám není vidět
+  aspoň z třetiny; snímek se za živé rozhraní vymění jen tam, kde se na něj nikdo nedívá, nebo
+  při přepnutí obrazovky. S omezeným pohybem se ukáže rovnou konečný stav.
+
 ## Proč Agenteeq nemá vlastní server v cloudu
 
 Agenteeq čte přepisy práce s AI agenty – kód, klientská data, prompty (`docs/SECURITY.md`).

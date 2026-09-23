@@ -38,7 +38,9 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/projects-launch-http.test.mjs` | Projekty přes API včetně SSE a automatického zařazení, export CSV, spuštění agenta (zkušební režim), 402 bez licence a odemčení licencí, limit projektů, lokální chat, běhy, automatické spouštění, procházení složek |
 | `test/tailscale.test.mjs` | Adresy v tailnetu (hranice rozsahu `100.64.0.0/10`), MagicDNS jméno a jeho přednost před adresou, povolené hodnoty hlavičky `Host`, poctivé selhání listeneru na adrese, kterou Mac nemá, a odmítnutí zapnutí bez běžícího Tailscale přes API |
 | `test/extension-assets.test.mjs` | Shoda písem a barevných tokenů rozšíření s aplikací, licence písem, maximální váha 500, platnost a determinismus vlastního ZIP balíčku |
-| `test/site.test.mjs` | Sestavení webu (landing page v kořeni, rozhraní na `/app`, přepis manifestu a `sw.js`), existence všech odkazovaných souborů, design systém a váhy písma, popisek „Ukázka rozhraní“ u každého panelu |
+| `test/site.test.mjs` | Sestavení webu (landing page v kořeni, rozhraní na `/app`, data živé prohlídky, přepis manifestu a `sw.js`), existence všech odkazovaných souborů, design systém a váhy písma, popisek „Ukázka rozhraní“ u každého panelu, živá prohlídka jen na dívání se snímky jako zálohou |
+| `test/ukazka.test.mjs` | Ukázkový režim `/app?ukazka`: posun časů na „teď“, jen čtení ze snímku (zápis 403, žádná síť), hlášení připravenosti jen vlastnímu původu, data označená „UKÁZKA“ a bez cest ze stroje, kde se web sestavuje |
+| `test/nastup.test.mjs` | Nástup obrazovky: počítadlo skončí přesně na hodnotě, začíná prázdné, nepřestřelí, řády se usazují zprava, čtečka dostane celé číslo; nástup jednou po otevření a vypnutý omezeným pohybem |
 
 Testy závislé na macOS (`lsof` při převzetí portu, chování `/private/tmp`) se na jiném systému **přeskočí s důvodem**, ne přeskočí tiše a ne spadnou: `npm test` je proto zelený na Macu i na Linuxu.
 
@@ -78,6 +80,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] `/app` otevře rozhraní aplikace (rozcestník „Kde máš Agenteeq?“, když za ním žádný server není).
 - [ ] Šířky 1440 a 375 px bez vodorovného rolování; světlý i tmavý režim; Tab projde všechny odkazy s viditelným fokusem.
 - [ ] Tlačítko „Stáhnout pro Mac“ vede na existující vydání na GitHubu.
+- [ ] Prohlídka: při dojetí k rámu se Přehled rozsvítí (čísla vyjedou), přepnutí na Projekty a Útratu přehraje jejich nástup; výřez živého rozhraní sedí na snímek; s omezeným pohybem rovnou konečný stav.
 
 ### Rozšíření (pro každý web: ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
 
