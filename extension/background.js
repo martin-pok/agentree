@@ -9,8 +9,21 @@ async function getToken() {
   throw new Error('Rozšíření není spárované. Klikni na jeho ikonu a vlož jednorázový kód z Agenteeq.');
 }
 
+// Trvalé ID této instalace. Díky němu nové spárování zneplatní starý token jen tohoto prohlížeče
+// a jiné profily Chromu se stejným rozšířením zůstanou připojené.
+async function installationId() {
+  const stored = await chrome.storage.local.get(['installationId']);
+  if (typeof stored.installationId === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(stored.installationId)) return stored.installationId;
+  const id = crypto.randomUUID();
+  await chrome.storage.local.set({ installationId: id });
+  return id;
+}
+
 async function pair(code) {
-  const res = await fetch(`${BASE}/api/extension/pair`, { method: 'POST', headers: { 'X-Agenteeq-Pair-Code': code } });
+  const res = await fetch(`${BASE}/api/extension/pair`, {
+    method: 'POST',
+    headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': await installationId() },
+  });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
@@ -24,10 +37,18 @@ const post = (t, payload) =>
     body: JSON.stringify(payload),
   });
 
+// Server token odmítl: rozšíření se odpárovalo nebo spárovalo jinde. Zapomenout ho, ať popup
+// hned nabídne nové spárování.
+async function forgetToken() {
+  token = null;
+  await chrome.storage.local.remove('token');
+}
+
 async function send(payload) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
   if (disabledSites.includes(payload.site)) return;
   const res = await post(await getToken(), payload);
+  if (res.status === 401) await forgetToken();
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
 }
 
@@ -39,6 +60,7 @@ async function takeHandoff(site) {
     headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': await getToken() },
     body: JSON.stringify({ site }),
   });
+  if (res.status === 401) await forgetToken();
   if (!res.ok) return { prompt: null };
   const body = await res.json().catch(() => ({}));
   return { prompt: typeof body.prompt === 'string' ? body.prompt.slice(0, 20000) : null, prefilled: Boolean(body.prefilled) };
@@ -60,8 +82,7 @@ async function hello() {
       body: JSON.stringify({ version: chrome.runtime.getManifest().version }),
     });
     if (res.status === 401) {
-      token = null;
-      await chrome.storage.local.remove('token');
+      await forgetToken();
       return { paired: false, revoked: true };
     }
     const body = await res.json().catch(() => ({}));

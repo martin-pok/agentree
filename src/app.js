@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { loadConfig, VERSION, EXTENSION_DIR, ROOT_DIR } from './config.js';
 import { syncExtension } from './extension-install.js';
-import { DataStore } from './datastore.js';
+import { DataStore, EXTENSION_ORIGIN, EXTENSION_INSTALLATION_ID, EXTENSION_INSTALLATIONS_MAX } from './datastore.js';
 import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
@@ -62,6 +62,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
   }
 }
 const HOME_HIDDEN = new Set(['Library']);
+const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
 export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
@@ -952,11 +953,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // tedy znamenají, že Chrome neběží nebo je rozšíření vypnuté – to se uživateli řekne na rovinu.
   const EXTENSION_QUIET_MS = 2 * 60 * 60 * 1000;
 
+  // Spárované je jen rozšíření s platným tokenem instalace. Záznam `pairedAt` bez něj zbyl po verzích,
+  // kdy rozšíření sdílelo token s hooky – takové rozšíření server odmítá, takže ho nelze hlásit
+  // jako připojené. `repair` říká rozhraní, že ho stačí spárovat znovu.
   function extensionStatus(now = Date.now()) {
     const e = datastore.data.extension;
+    const paired = datastore.data.extensionInstallations.length > 0;
     const active = connectors.web.status().state === 'connected';
-    const state = !e.pairedAt ? 'missing' : active ? 'active' : now - e.seenAt <= EXTENSION_QUIET_MS ? 'ready' : 'quiet';
-    return { state, pairedAt: e.pairedAt, seenAt: e.seenAt, version: e.version, expectedVersion: VERSION, outdated: Boolean(e.version) && e.version !== VERSION };
+    const state = !paired ? 'missing' : active ? 'active' : now - e.seenAt <= EXTENSION_QUIET_MS ? 'ready' : 'quiet';
+    return {
+      state,
+      pairedAt: paired ? e.pairedAt : 0,
+      seenAt: e.seenAt,
+      version: e.version,
+      expectedVersion: VERSION,
+      outdated: paired && Boolean(e.version) && e.version !== VERSION,
+      repair: !paired && e.pairedAt > 0,
+    };
   }
 
   // Volá se po každém požadavku, který prokázal token rozšíření. Na disk jen při změně nebo jednou
@@ -990,16 +1003,33 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { code, expiresAt };
   }
 
-  async function pairExtension(code) {
+  // Každé spárování vydá nový token jen pro tuto instalaci a jen pro její původ. Token hooků
+  // rozšíření nikdy nedostane, takže jeho únik neotevře hooky ani ostatní prohlížeče. Nové
+  // spárování téže instalace její starý token zneplatní.
+  async function pairExtension({ code, origin, installationId } = {}) {
     const pair = datastore.data.extensionPairing;
     if (!pair || pair.expiresAt <= Date.now() || typeof code !== 'string' || code.length !== pair.code.length) return null;
     const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
-    if (!equal) return null;
+    if (!equal || typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin)) return null;
+    const id = typeof installationId === 'string' && EXTENSION_INSTALLATION_ID.test(installationId) ? installationId : '';
+    const token = crypto.randomBytes(32).toString('base64url');
+    const now = Date.now();
     datastore.data.extensionPairing = null;
-    Object.assign(datastore.data.extension, { pairedAt: Date.now(), seenAt: Date.now() });
+    datastore.data.extensionInstallations = [
+      ...datastore.data.extensionInstallations.filter((x) => !(x.origin === origin && x.id === id)),
+      { id, origin, tokenHash: hashToken(token), pairedAt: now },
+    ].slice(-EXTENSION_INSTALLATIONS_MAX);
+    Object.assign(datastore.data.extension, { pairedAt: now, seenAt: now });
     await datastore.flush();
     integrations().then((v) => store.emit('integrations', v)).catch(() => {});
-    return { token: datastore.data.ingestToken, version: VERSION };
+    return { token, version: VERSION };
+  }
+
+  // Token platí jen z původu, pro který byl vydán. Porovnávají se hashe stejné délky v konstantním čase.
+  function extensionInstallation(token, origin) {
+    if (typeof token !== 'string' || !token || typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin)) return null;
+    const given = Buffer.from(hashToken(token), 'hex');
+    return datastore.data.extensionInstallations.find((x) => x.origin === origin && crypto.timingSafeEqual(given, Buffer.from(x.tokenHash, 'hex'))) || null;
   }
 
   // `local: false` znamená požadavek z telefonu – ten nesmí dostat párovací kód ani seznam
@@ -1109,7 +1139,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

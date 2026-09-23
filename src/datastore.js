@@ -42,6 +42,21 @@ export function normalizeLayout(input) {
   return out;
 }
 
+export const EXTENSION_ORIGIN = /^chrome-extension:\/\/[a-p]{32}$/;
+export const EXTENSION_INSTALLATION_ID = /^[A-Za-z0-9-]{8,64}$/;
+export const EXTENSION_INSTALLATIONS_MAX = 5;
+
+function normalizeExtensionInstallations(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((x) => x && typeof x === 'object'
+      && typeof x.origin === 'string' && EXTENSION_ORIGIN.test(x.origin)
+      && typeof x.id === 'string' && (x.id === '' || EXTENSION_INSTALLATION_ID.test(x.id))
+      && typeof x.tokenHash === 'string' && /^[0-9a-f]{64}$/.test(x.tokenHash))
+    .slice(-EXTENSION_INSTALLATIONS_MAX)
+    .map((x) => ({ id: x.id, origin: x.origin, tokenHash: x.tokenHash, pairedAt: Number(x.pairedAt) > 0 ? Number(x.pairedAt) : 0 }));
+}
+
 export function normalizeData(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
   const s = d.settings && typeof d.settings === 'object' ? d.settings : {};
@@ -59,6 +74,9 @@ export function normalizeData(raw) {
       seenAt: Number(d.extension?.seenAt) > 0 ? Number(d.extension.seenAt) : 0,
       version: typeof d.extension?.version === 'string' && /^\d+\.\d+\.\d+$/.test(d.extension.version) ? d.extension.version : '',
     },
+    // Každá instalace rozšíření má vlastní token vázaný na svůj původ (chrome-extension://…).
+    // Na disku je jen jeho sha256 – ze zálohy dat se za rozšíření vydávat nedá.
+    extensionInstallations: normalizeExtensionInstallations(d.extensionInstallations),
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

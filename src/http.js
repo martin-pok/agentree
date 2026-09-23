@@ -245,6 +245,14 @@ export function createHttpServer(app, existingServer = null) {
     return given.length === expected.length && crypto.timingSafeEqual(given, expected);
   }
 
+  // Rozšíření má vlastní token pro každou instalaci, platný jen z jejího původu. Token hooků
+  // tady neplatí a token rozšíření zase neplatí pro hooky.
+  function extensionOk(req) {
+    const given = String(req.headers['x-agenteeq-token'] || req.headers['x-agentree-token'] || '');
+    return Boolean(app.extensionInstallation(given, String(req.headers.origin || '')));
+  }
+  const EXTENSION_UNPAIRED = 'Rozšíření není spárované s touto aplikací. Spáruj ho znovu v Agenteeq → Nastavení.';
+
   // Ochrana proti CSRF: vlastní hlavička vynutí CORS preflight, který server nepovolí; navíc kontrola Origin.
   function guardMutation(req) {
     if (req.headers['x-agenteeq'] !== '1' && req.headers['x-agentree'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Agenteeq.');
@@ -421,7 +429,7 @@ export function createHttpServer(app, existingServer = null) {
       return { raw: true, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: r.text };
     }, { token: true }],
     ['POST', /^\/api\/ingest\/web$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
       const r = app.connectors.web.ingest(await readBody(req));
       if (!r.ok) throw new HttpError(400, r.error);
       app.extensionSeen();
@@ -429,14 +437,14 @@ export function createHttpServer(app, existingServer = null) {
     }, { token: true }],
     // Rozšíření si vyzvedne zadání spuštěné z Agenteeq. Jen se svým tokenem, jen jednou.
     ['POST', /^\/api\/extension\/handoff$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
       const body = await readBody(req);
       app.extensionSeen();
       return app.takeWebHandoff(body && typeof body === 'object' ? body.site : null);
     }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
       return app.extensionSeen(await readBody(req));
     }, { token: true }],
     ['POST', /^\/api\/extension\/pair-code$/, async (req) => {
@@ -446,8 +454,13 @@ export function createHttpServer(app, existingServer = null) {
       return app.createExtensionPairCode();
     }],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(String(req.headers.origin || ''))) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
-      const pair = await app.pairExtension(String(req.headers['x-agenteeq-pair-code'] || ''));
+      const origin = String(req.headers.origin || '');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      const pair = await app.pairExtension({
+        code: String(req.headers['x-agenteeq-pair-code'] || ''),
+        origin,
+        installationId: String(req.headers['x-agenteeq-installation-id'] || ''),
+      });
       if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agenteeq.');
       return pair;
     }, { token: true }],

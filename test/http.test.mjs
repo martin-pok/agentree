@@ -135,21 +135,7 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal(read.body.unread, 0);
   });
 
-  await t.test('webové rozšíření: ingest a jednorázové párování', async () => {
-    const r = await a.send('POST', '/api/ingest/web', {
-      site: 'perplexity',
-      conversationId: 'trh-ai-2026',
-      url: 'https://www.perplexity.ai/search/trh-ai-2026',
-      title: 'Trh AI',
-      generating: true,
-      messages: [{ role: 'user', text: 'Jak velký je trh?' }],
-    }, { 'X-Agenteeq-Token': token });
-    assert.equal(r.status, 200);
-    const st = await a.get('/api/state');
-    const s = st.body.sessions.find((x) => x.id === 'web:perplexity:trh-ai-2026');
-    assert.equal(s.status, 'working');
-    assert.equal(s.app, 'Perplexity');
-    assert.equal(st.body.integrations.extension.token, undefined);
+  await t.test('webové rozšíření: jednorázové párování a ingest s vlastním tokenem', async () => {
     const code = await a.send('POST', '/api/extension/pair-code', {});
     assert.equal(code.status, 200);
     assert.match(code.body.code, /^[A-Za-z0-9_-]{16}$/);
@@ -162,9 +148,28 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal(bad.status, 401);
     const paired = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agenteeq-Pair-Code': code.body.code } });
     assert.equal(paired.status, 200);
-    assert.equal(JSON.parse(paired.body).token, token);
+    const extToken = JSON.parse(paired.body).token;
+    assert.ok(extToken.length >= 32);
+    assert.notEqual(extToken, token, 'rozšíření nesmí dostat token hooků');
     const replay = await raw(`${srv.url}/api/extension/pair`, { method: 'POST', headers: { Origin: origin, 'X-Agenteeq-Pair-Code': code.body.code } });
     assert.equal(replay.status, 401);
+    const zprava = {
+      site: 'perplexity',
+      conversationId: 'trh-ai-2026',
+      url: 'https://www.perplexity.ai/search/trh-ai-2026',
+      title: 'Trh AI',
+      generating: true,
+      messages: [{ role: 'user', text: 'Jak velký je trh?' }],
+    };
+    const sHooky = await a.send('POST', '/api/ingest/web', zprava, { 'X-Agenteeq-Token': token, Origin: origin });
+    assert.equal(sHooky.status, 401, 'token hooků pro rozšíření neplatí');
+    const r = await a.send('POST', '/api/ingest/web', zprava, { 'X-Agenteeq-Token': extToken, Origin: origin });
+    assert.equal(r.status, 200);
+    const st = await a.get('/api/state');
+    const s = st.body.sessions.find((x) => x.id === 'web:perplexity:trh-ai-2026');
+    assert.equal(s.status, 'working');
+    assert.equal(s.app, 'Perplexity');
+    assert.equal(st.body.integrations.extension.token, undefined);
   });
 
   await t.test('zapnutí Claude hooků přes API zapíše správný port', async () => {

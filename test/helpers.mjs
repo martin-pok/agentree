@@ -113,3 +113,14 @@ export const api = (url) => ({
     fetch(url + p, { method, headers: { 'Content-Type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
       .then(async (r) => ({ status: r.status, body: await r.json() })),
 });
+
+export const EXTENSION_ORIGIN = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
+
+// Spáruje rozšíření tak, jak to dělá skutečná instalace: jednorázový kód z okna aplikace,
+// požadavek z původu chrome-extension://… a volitelně ID instalace. Vrací status a odpověď.
+export async function pairExtension(url, { origin = EXTENSION_ORIGIN, installationId } = {}) {
+  const code = (await api(url).send('POST', '/api/extension/pair-code', {})).body.code;
+  const headers = { Origin: origin, 'X-Agenteeq-Pair-Code': code, ...(installationId ? { 'X-Agenteeq-Installation-Id': installationId } : {}) };
+  const res = await fetch(`${url}/api/extension/pair`, { method: 'POST', headers });
+  return { status: res.status, ...(await res.json()) };
+}
