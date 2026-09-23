@@ -94,9 +94,10 @@ section[id] { scroll-margin-top: 80px; }
 /* ---------- hlavička ---------- */
 .nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .nav-in { display: flex; align-items: center; gap: 24px; min-height: 64px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-display); font-size: 19px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
+/* Odsazení nese logo, ne menu: na mobilu je menu skryté a tlačítko musí zůstat vpravo i tak. */
+.brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; font-family: var(--f-display); font-size: 19px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
 .brand img { width: 28px; height: 28px; }
-.nav-links { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
+.nav-links { display: flex; gap: 22px; font-size: 15px; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
 .nav-links a:hover { color: var(--ink); text-decoration: underline; }
 
