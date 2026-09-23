@@ -155,7 +155,8 @@ test('nabídka na výšku se od nabídky na šířku liší jen rozestupy, ne vz
   assert.ok(blok, 'pravidlo pro monitor na výšku chybí');
   // Smí se měnit jen rozestup a výška cíle. Všechno ostatní se dědí, aby nabídka vypadala stejně.
   const povolene = /^\s*(?:\.nav \{ gap: [^}]+\}|\.nav a \{ min-height: [^}]+\}|@media[^{]*\{|\}|\/\*[\s\S]*?\*\/|)$/;
-  for (const radek of blok.split('\n').slice(1, -1)) {
+  // \r?\n: pracovní kopie na Windows může mít CRLF a `\r` na konci řádku by regex odmítl.
+  for (const radek of blok.split(/\r?\n/).slice(1, -1)) {
     assert.match(radek, povolene, `pravidlo navíc pro monitor na výšku: ${radek.trim()}`);
   }
   for (const zakazane of ['background', 'color:', 'box-shadow', 'transform', 'border-radius', 'font-size', ':hover', 'aria-current', '::before', '--tile']) {

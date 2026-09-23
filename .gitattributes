@@ -1,0 +1,11 @@
+# Konce řádků jsou LF v repozitáři i v každé pracovní kopii, také na Windows.
+# Testy čtou zdrojové soubory a porovnávají je po řádcích. S CRLF z checkoutu na Windows
+# by týž soubor dal jiný výsledek než na Macu a Linuxu.
+* text=auto eol=lf
+
+# Binární soubory se nepřevádějí nikdy.
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.icns binary
+*.ttf  binary

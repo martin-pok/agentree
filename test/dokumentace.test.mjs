@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // README tvrdilo „297 testů“, když jich bylo 395, a nabízelo ke stažení verzi 0.12.0, když byla
 // aktuální 0.18.2. Dokumentace, která se rozejde s produktem, je horší než žádná: čtenář podle ní
@@ -25,7 +24,8 @@ test('počet testů v dokumentaci se neliší o víc než desetinu', async () =>
   for (const f of await fs.readdir(dir)) {
     if (!f.endsWith('.test.mjs')) continue;
     // Počítají se i vnořené testy (`t.test(...)`), protože i ty runner vypíše jako samostatný test.
-    skutecnost += (await fs.readFile(path.join(dir.pathname, f), 'utf8')).match(/^\s*(?:await )?(?:t\.)?test\(/gm)?.length || 0;
+    // Soubor se čte přes URL, ne přes `dir.pathname` – z „/D:/…“ by na Windows vzniklo „D:\D:\…“.
+    skutecnost += (await fs.readFile(new URL(f, dir), 'utf8')).match(/^\s*(?:await )?(?:t\.)?test\(/gm)?.length || 0;
   }
   for (const [soubor, re] of [['README.md', /npm test\s+# (\d+) testů/], ['docs/TESTING.md', /\| `npm test` \| (\d+) testů/]]) {
     const uvedeno = Number((await zdroj(soubor)).match(re)?.[1]);
