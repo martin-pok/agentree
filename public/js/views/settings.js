@@ -9,7 +9,7 @@ import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 
-const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null };
+const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '' };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -50,7 +50,7 @@ function sourceRow(c) {
 const GROUPS = [
   ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors', 'custom']],
   ['set-upozorneni', 'Upozornění', ['notifications']],
-  ['set-ucet', 'Profil a vzhled', ['appearance', 'profile', 'license']],
+  ['set-ucet', 'Účet a vzhled', ['account', 'appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
   ['set-aplikace', 'Aplikace na tomto Macu', ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
 ];
@@ -353,6 +353,29 @@ function mount(el) {
         update();
       } else if (a.dataset.action === 'extension-scroll') {
         calloutExtension();
+      } else if (a.dataset.action === 'ucet-prihlasit') {
+        a.disabled = true;
+        try {
+          const r = await api.ucetPrihlasit();
+          v.ucetUrl = r.url;
+          // Prohlížeč otevírá server. Když to nešlo (třeba bez grafického prostředí), nabídneme odkaz.
+          if (!r.otevreno) toast('Přihlášení se neotevřelo samo. Otevři ho odkazem v kartě Účet.', { tone: 'info' });
+        } finally { a.disabled = false; }
+        update();
+      } else if (a.dataset.action === 'ucet-zrusit') {
+        state.ucet = (await api.ucetZrusit()).ucet;
+        v.ucetUrl = '';
+        update();
+      } else if (a.dataset.action === 'ucet-odhlasit') {
+        state.ucet = (await api.ucetOdhlasit()).ucet;
+        toast('Odhlášeno. Agenteeq funguje dál bez účtu.');
+        update();
+      } else if (a.dataset.action === 'ucet-smazat') {
+        if (await confirmDialog({ title: 'Smazat účet Agenteeq', message: 'Účet a všechno, co je k němu uložené v cloudu, se nevratně smaže. Data na tomhle Macu zůstanou, jak jsou.', confirmLabel: 'Smazat účet', danger: true })) {
+          state.ucet = (await api.ucetSmazat()).ucet;
+          toast('Účet je smazaný.');
+          update();
+        }
       } else if (a.dataset.action === 'license-remove') {
         if (await confirmDialog({ title: 'Odebrat licenci', message: 'Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.', confirmLabel: 'Odebrat licenci', danger: true })) {
           state.license = (await api.removeLicense()).license;
@@ -562,6 +585,37 @@ async function connectClaude() {
   update();
 }
 
+// Účet Agenteeq (src/ucet.js). Co se do účtu dostane, stojí přímo u tlačítka – ne až v zásadách.
+const UCET_SOUKROMI = 'Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek tenhle Mac neopustí.';
+function accountCard() {
+  const u = state.ucet;
+  const chyba = u.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(u.chyba)}</p>` : '';
+  if (u.stav === 'prihlaseno' || u.stav === 'nedostupne') {
+    const nedostupne = u.stav === 'nedostupne';
+    return `${head(ICON.cloud, 'Účet Agenteeq', nedostupne ? 'Přihlášení teď nejde ověřit – server účtů neodpovídá. Zkusíme to znovu za pár minut, nic se neztratí.' : 'Přihlášení je aktivní. Agenteeq funguje stejně jako bez účtu, jen ví, že jsi to ty.',
+      stateBadge(nedostupne ? 'unavailable' : 'connected', nedostupne ? 'Nedostupné' : 'Přihlášeno'))}
+      <div class="account-who"><span class="account-avatar" aria-hidden="true">${esc(initials(u.jmeno || u.email || '?'))}</span>
+        <div><b>${esc(u.jmeno || u.email)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}</div></div>
+      ${u.trvale ? '' : '<p class="set-note">Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.</p>'}
+      <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
+      <div class="set-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">Odhlásit se</button>
+        <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">Smazat účet</button></div>`;
+  }
+  if (u.stav === 'overuji') {
+    return `${head(ICON.cloud, 'Účet Agenteeq', 'Ověřuji uložené přihlášení…', stateBadge('idle', 'Ověřuji'))}`;
+  }
+  if (u.ceka) {
+    return `${head(ICON.cloud, 'Účet Agenteeq', 'Dokonči přihlášení v prohlížeči. Jakmile se přihlásíš, Agenteeq tě přivítá.', stateBadge('idle', 'Čeká na přihlášení'))}
+      ${chyba}
+      <div class="set-actions">${v.ucetUrl ? `<a class="btn btn--sm" href="${esc(v.ucetUrl)}" target="_blank" rel="noopener">${ICON.external}Otevřít přihlášení znovu</a>` : ''}
+        <button class="btn btn--sm" type="button" data-action="ucet-zrusit">Zrušit</button></div>`;
+  }
+  return `${head(ICON.cloud, 'Účet Agenteeq', 'Přihlas se, ať tě Agenteeq pozná na každém zařízení. Bez účtu funguje všechno dál.', stateBadge('missing', 'Nepřihlášeno'))}
+    ${chyba}
+    <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
+    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="ucet-prihlasit">Přihlásit se přes Google</button></div>`;
+}
+
 const head = (icon, title, desc, aside = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3>${title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
 
 function update() {
@@ -673,6 +727,11 @@ function update() {
     ${switchRow({ key: 'done', label: 'Dokončený úkol', desc: 'Když agent dokončí zadaný úkol.', checked: n.done })}
     <label class="field field--row"><span>Hlásit dokončené úkoly</span>
       <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`);
+
+  /* Účet Agenteeq */
+  const ucetEl = el.querySelector('[data-region="account"]');
+  if (ucetEl) ucetEl.hidden = !state.ucet || state.ucet.stav === 'nenastaveno';
+  if (ucetEl && !ucetEl.hidden) fill(el, 'account', accountCard());
 
   /* Profil */
   const current = state.settings.avatar;

@@ -3,7 +3,7 @@ import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
+import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
@@ -656,8 +656,26 @@ let loadingSnapshot = null;
 const queued = [];
 
 function handle(name, data) {
-  const alert = applyEvent(name, data);
-  if (alert) onAlert(alert);
+  const vysledek = applyEvent(name, data);
+  if (vysledek?.ucet) udalostUctu(vysledek.ucet);
+  else if (vysledek) onAlert(vysledek);
+}
+
+// Přihlášení doběhlo v prohlížeči: okno Agenteeq ukáže, kdo se přihlásil. Stejná zpráva přijde
+// do všech otevřených oken, ale potvrzení stačí jedno – otevírá ho jen okno na tomhle Macu.
+function udalostUctu(u) {
+  if (u.udalost === 'prihlaseno' && !document.querySelector('.modal .account-welcome')) {
+    const kdo = u.jmeno || u.email;
+    modal({
+      title: 'Přihlášení proběhlo v pořádku',
+      body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
+        <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
+        <p>Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na tomhle Macu.</p></div>`,
+      footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
+    });
+  } else if (u.udalost === 'chyba' && u.chyba) {
+    toast(u.chyba, { tone: 'err', timeout: 8000 });
+  }
 }
 
 // Nespárovaný telefon nedostane ani stav, ani realtime stream – obsluha 401 uvnitř streamu by se

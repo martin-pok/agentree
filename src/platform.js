@@ -97,6 +97,15 @@ export function openCommand(cil) {
   return null;
 }
 
+/**
+ * Vrátí do popředí okno desktopové aplikace Agenteeq (po přihlášení v prohlížeči). Umí to macOS
+ * přes identifikátor balíčku; jinde `null` – okno se nehledá podle názvu ani jinak odhadem.
+ */
+export function oknoDoPopredi() {
+  if (JE_MAC) return { cmd: 'open', args: ['-b', 'cz.agenteeq.desktop'] };
+  return null;
+}
+
 // ── Kde který nástroj bydlí ──────────────────────────────────────────────────
 
 /**

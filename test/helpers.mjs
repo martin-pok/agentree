@@ -53,6 +53,8 @@ export async function startTestServer(env = {}, appOptions = {}) {
     AGENTEEQ_NATIVE_NOTIFY: '0',
     AGENTEEQ_KEYCHAIN: '0',
     AGENTEEQ_CLOUD: '0',
+    // Účty: testy nikdy nesahají na skutečný server účtů. Test účtu si podstrčí vlastní atrapu.
+    AGENTEEQ_UCET_URL: '0',
     AGENTEEQ_SCAN_MS: '60000',
     AGENTEEQ_QUIET: '1',
     AGENTEEQ_OPEN: 'dry',

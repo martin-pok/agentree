@@ -76,7 +76,8 @@ Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF,
 
 - Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
 - Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agenteeq/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
-- Před případnou cloudovou verzí: end-to-end šifrování, opt-in po zdrojích, zásady zpracování údajů (GDPR), smlouvy se zpracovateli.
+- **Účet Agenteeq (od 0.25.0, `docs/ACCOUNTS.md`):** jen na výslovné přihlášení přes Google. Do cloudu (Supabase, Frankfurt) smí jen účet a souhrny – nikdy text konverzací, jejich názvy, cesty ke složkám ani kód. Přihlášení je PKCE s jednorázovým pokusem, návrat přijme jen tento Mac, obnovovací token leží v Klíčence, přístupový jen v paměti. Databáze má RLS na každé tabulce, ověřené skriptem `supabase/tests/rls.sql`.
+- Před zapnutím synchronizace souhrnů: zásady zpracování údajů (GDPR) a smlouva se zpracovatelem (Supabase).
 
 ## Hlášení problému
 

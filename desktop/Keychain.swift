@@ -4,7 +4,7 @@ import Security
 // Values travel through a private pipe, never argv or a temporary file.
 guard CommandLine.arguments.count == 3,
       ["get", "set", "remove"].contains(CommandLine.arguments[1]),
-      ["openai-admin", "anthropic-admin"].contains(CommandLine.arguments[2]) else { exit(64) }
+      ["openai-admin", "anthropic-admin", "ucet"].contains(CommandLine.arguments[2]) else { exit(64) }
 let action = CommandLine.arguments[1]
 let id = CommandLine.arguments[2]
 var query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
@@ -32,7 +32,7 @@ case "set":
     }
     guard !data.isEmpty, data.count <= 4096,
           let value = String(data: data, encoding: .utf8),
-          value.range(of: id == "openai-admin" ? "^sk-[A-Za-z0-9_-]{20,}$" : "^sk-ant-[A-Za-z0-9_-]{20,}$", options: .regularExpression) != nil else { exit(64) }
+          value.range(of: id == "openai-admin" ? "^sk-[A-Za-z0-9_-]{20,}$" : id == "anthropic-admin" ? "^sk-ant-[A-Za-z0-9_-]{20,}$" : "^[A-Za-z0-9_-]{8,512}$", options: .regularExpression) != nil else { exit(64) }
     status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
     if status == errSecItemNotFound {
         var item = query

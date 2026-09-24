@@ -34,10 +34,11 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled } from './platform.js';
+import { appInstalled, oknoDoPopredi } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
+import { createUcet } from './ucet.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
@@ -88,6 +89,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome, ...hostIdentity };
   const log = (...args) => { if (!config.quiet) console.log(...args); };
   const dry = config.openMode === 'dry';
+
+  // Účet Agenteeq (přihlášení přes Google). Adresa se otevírá v prohlížeči stejně jako odkazy
+  // z konverzací – přes plán „open“, v testech jen nanečisto.
+  const ucet = createUcet({
+    config,
+    secrets,
+    emit: (stav) => store.emit('ucet', stav),
+    open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
+  });
+  // Po přihlášení v prohlížeči se vrátí do popředí okno Agenteeq – jen desktopová aplikace, jinde
+  // (Terminál, telefon) žádné okno k vrácení není.
+  async function vratOkno() {
+    const prikaz = config.desktop && config.openMode === 'exec' ? oknoDoPopredi() : null;
+    if (!prikaz) return { ok: false };
+    const r = await run(prikaz.cmd, prikaz.args, { timeout: 8000 });
+    return { ok: r.ok };
+  }
 
   const ollama = createOllamaClient({ baseUrl: config.ollamaUrl });
   const localChat = createLocalChat({ store, ollama });
@@ -1065,6 +1083,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       launch: launchPayload(),
       runs: runsPayload(),
       license: licenseStatus(),
+      // Telefon uvidí jen, jestli je účet přihlášený – e-mail a jméno zůstávají na Macu.
+      ucet: local ? ucet.status() : { stav: ucet.status().stav },
       usage: datastore.data.usage,
       customAgents: customAgentsPayload(),
       localAgents: store.localAgents,
@@ -1092,6 +1112,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     store.ready = true;
     syncSnapshots();
     alerts.start();
+    // Ověření uloženého přihlášení jde po síti – start aplikace na něj nečeká.
+    ucet.start().catch(() => {});
     alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
@@ -1127,6 +1149,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     stoppingRemote = true;
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
+    ucet.stop();
     await restoringRemote;
     await lan.stop();
     for (const c of list) {
@@ -1140,7 +1163,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
-    licenseStatus, activateLicense, removeLicense,
+    licenseStatus, activateLicense, removeLicense, ucet, vratOkno,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,

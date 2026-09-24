@@ -40,6 +40,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/extension-assets.test.mjs` | Shoda písem a barevných tokenů rozšíření s aplikací, licence písem, maximální váha 500, platnost a determinismus vlastního ZIP balíčku |
 | `test/site.test.mjs` | Sestavení webu (landing page v kořeni, rozhraní na `/app`, data živé prohlídky, přepis manifestu a `sw.js`), existence všech odkazovaných souborů, design systém a váhy písma, popisek „Ukázka rozhraní“ u každého panelu, živá prohlídka jen na dívání se snímky jako zálohou |
 | `test/ukazka.test.mjs` | Ukázkový režim `/app?ukazka`: posun časů na „teď“, jen čtení ze snímku (zápis 403, žádná síť), hlášení připravenosti jen vlastnímu původu, data označená „UKÁZKA“ a bez cest ze stroje, kde se web sestavuje |
+| `test/ucet.test.mjs` | Účet Agenteeq proti atrapě Supabase Auth: odkaz s PKCE, návrat jen na tento Mac a jen jednou, cizí kód ani chyba z Googlu nikoho nepřihlásí, výpadek sítě není odhlášení, jednorázové obnovovací tokeny, odhlášení a smazání účtu, token nejde zapsat přes API klíčů |
 | `test/nastup.test.mjs` | Nástup obrazovky: počítadlo skončí přesně na hodnotě, začíná prázdné, nepřestřelí, řády se usazují zprava, čtečka dostane celé číslo; nástup jednou po otevření a vypnutý omezeným pohybem |
 
 Testy závislé na macOS (`lsof` při převzetí portu, chování `/private/tmp`) se na jiném systému **přeskočí s důvodem**, ne přeskočí tiše a ne spadnou: `npm test` je proto zelený na Macu i na Linuxu.
