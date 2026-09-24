@@ -117,8 +117,13 @@ export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' 
       + ' předinstalovanou. Verze pro Windows zatím **nebyla vyzkoušena na skutečném počítači** –'
       + ' překlad ověřuje CI, vzhled okna ne.');
   }
+  // Co odchází ze stroje, musí sedět se src/: kurzy ČNB (src/rates.js) běží samy, útrata přes
+  // API (src/connectors/cloud-billing.js) a účet (src/ucet.js, src/cloud-sync.js) jen po zapnutí.
   casti.push(
-    '- Aplikace nemá žádné běhové závislosti a nic neposílá na internet.',
+    '- Aplikace nemá žádné běhové závislosti. Sama si z internetu stahuje jen denní kurzy ČNB'
+      + ' pro převod měn. Další spojení vzniknou, jen když je zapneš: útrata přes API Anthropicu'
+      + ' nebo OpenAI s tvým klíčem správce a účet Agenteeq, kam při zapnuté synchronizaci'
+      + ' odcházejí jen souhrnná čísla. Text konverzací, jejich názvy ani kód počítač neopouštějí.',
     '- Konverzace Claude Code a Codexu čte z tohoto počítače. Chaty z prohlížeče vidí až s rozšířením.',
     '',
   );
