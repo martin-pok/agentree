@@ -39,6 +39,7 @@ import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFile
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
+import { createNapojeni } from './napojeni.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
@@ -65,7 +66,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -596,6 +597,25 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!config.launchAgents) targets = targets.filter((t) => t.group === 'local' || t.group === 'web');
     return { targets, modes: MODES, openMode: config.openMode };
   }
+
+  // Napojení modelů tlačítkem (src/napojeni.js). Přihlašuje se vždy u dodavatele; tady se jen
+  // spustí jeho přihlášení a hlídá, kdy je hotovo. V testech dotazy na stav odpovídá atrapa.
+  const napojeni = createNapojeni({
+    bins: () => launchEnv.bins,
+    run: napojeniRun || run,
+    terminal: (command) => executeOpen({ kind: 'terminal', command }, { dry }),
+    open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
+    emit: (u) => store.emit('napojeni', u),
+    extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
+    plan: async (id) => {
+      if (id === 'claude-code') {
+        const found = claudePlanFromAccount(await readClaudeAccount(config.sourceHome));
+        return found ? describePlan(found).label : '';
+      }
+      const found = chatgptPlanFromLimits(store.limitList());
+      return found ? describePlan(found).label : '';
+    },
+  });
 
   async function refreshLaunch() {
     if (config.launchAgents && config.openMode === 'exec') {
@@ -1150,6 +1170,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
     ucet.stop();
+    napojeni.stop();
     await restoringRemote;
     await lan.stop();
     for (const c of list) {
@@ -1163,7 +1184,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
-    licenseStatus, activateLicense, removeLicense, ucet, vratOkno,
+    licenseStatus, activateLicense, removeLicense, ucet, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,

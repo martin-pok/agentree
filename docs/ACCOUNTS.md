@@ -90,7 +90,31 @@ přihlášení ještě nastavuje (`GET /auth/v1/settings` → `external.google: 
    - *Site URL:* `https://agentree-fawn.vercel.app`
    - *Redirect URLs:* `http://127.0.0.1:*/ucet/navrat/*` (aplikace na Macu, libovolný port).
 
+## Napojení modelů tlačítkem (`src/napojeni.js`, `public/js/napojeni-ui.js`)
+
+Nastavení → Propojení → **Napojené modely**. Klik na „Napojit“ spustí přihlášení u dodavatele,
+okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … proběhlo v pořádku“.
+
+| Model | Co se spustí | Jak Agenteeq pozná, že je hotovo | Ověřeno |
+|---|---|---|---|
+| Claude Code | `claude auth login` v Terminálu (Claude Code otevře přihlášení Anthropicu v prohlížeči) | `claude auth status --json` → `loggedIn: true`; plán z `~/.claude.json` | nápověda CLI Claude Code, 24. 9. 2026 |
+| Codex | `codex login` v Terminálu (Codex otevře přihlášení ChatGPT v prohlížeči) | `codex login status` → „Logged in using …“ | zdroj `codex-rs/cli/src/login.rs`, 24. 9. 2026 |
+| ChatGPT, Claude.ai, Gemini, Perplexity na webu | otevře službu v prohlížeči (potřebuje spárované rozšíření) | první stav z té služby od rozšíření | – |
+
+- **Přihlašuje se vždycky u dodavatele.** Anthropic ani OpenAI nenabízejí cizím aplikacím
+  přihlášení k předplatnému (Pro, Max, Plus) – `docs/CLOUD-ACCOUNTS.md`. Převzít přihlášení Claude
+  Code nebo Codexu by znamenalo vydávat se za jejich aplikaci; to Agenteeq nedělá. Spouští jejich
+  vlastní přihlášení a ptá se jejich vlastním příkazem.
+- **Hesla ani tokeny dodavatelů Agenteeq nevidí.** Ze stavu bere jen „přihlášen ano / ne“ a plán.
+- **Neznámý výstup je „nepodařilo se zjistit“,** ne „nenapojeno“. Hlídání běží nejvýš 10 minut
+  po 2 s a skončí zprávou „vypršelo“. Zavřené okno hlídání zruší.
+- **Bez Terminálu** (jiný systém než macOS, zakázaná Automatizace) vrátí server příkaz k ručnímu
+  spuštění. Cesta k nástroji je v jednoduchých uvozovkách, složka „Design & Web“ se nerozpadne.
+- Firemní API účty (OpenAI, Anthropic) se dál napojují správcovským klíčem v kartě
+  „Skutečné náklady za API“.
+
 ## Testy
 
 `test/ucet.test.mjs` běží proti atrapě Supabase Auth (PKCE, jednorázové obnovovací tokeny, apikey).
+`test/napojeni.test.mjs` běží proti atrapě `claude` a `codex` (výstupy podle ověřených zdrojů výše).
 Skutečný server účtů testy nikdy nevolají: `test/helpers.mjs` nastavuje `AGENTEEQ_UCET_URL=0`.

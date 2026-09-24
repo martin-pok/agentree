@@ -38,6 +38,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }`. Přihlášení k účtu (`ucet`) tudy nejde – 404 |
 | POST | `/api/ucet/prihlaseni` | Jen z tohoto Macu → `{ url, otevreno }` a otevře přihlášení přes Google v prohlížeči; 503 když přihlášení na serveru účtů ještě neběží nebo server neodpovídá, 404 bez nastavených účtů. Viz `docs/ACCOUNTS.md` |
 | POST | `/api/ucet/zruseni` \| `odhlaseni` \| `smazani` | Jen z tohoto Macu → `{ ucet: UcetStatus }`. `smazani` smaže účet i data v cloudu, na Macu nic; 401 bez přihlášení |
+| GET | `/api/napojeni` | Jen z tohoto Macu → `{ napojeni: Napojeni[] }` (`{ id, druh: 'agent' \| 'web', label, provider, logo, nainstalovano, napojeno: true \| false \| null, plan?, ceka }`). Spouští `claude auth status` a `codex login status` |
+| POST | `/api/napojeni/:id` \| `/api/napojeni/:id/zrusit` | Jen z tohoto Macu. `claude-code`, `codex`, `web:chatgpt` \| `web:claude` \| `web:gemini` \| `web:perplexity` → `{ ok, ceka?, uz?, plan?, prikaz? }`; 422 nenainstalováno nebo bez Terminálu (s `prikaz`), 409 bez rozšíření (`rozsireni: true`), 404 neznámé |
 | GET | `/ucet/navrat/:pokus` | Návrat z přihlášení (HTML, mimo `/api`). Jen z tohoto Macu, pokus platí 10 minut a jednou. `?code=` vymění kód za přihlášení, `?chyba=` ohlásí zrušení |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
 | GET | `/api/lan` | `LanStatus`; jinam než na tento Mac bez `pin` a `devices` |
@@ -90,6 +92,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `runs` | `Run[]` |
 | `launch` | `LaunchPayload` |
 | `license` | `LicenseStatus` |
+| `napojeni` | `{ id, label, udalost: 'napojeno' \| 'vyprselo', plan?, uz? }` – jednorázová zpráva, žádný trvalý stav |
 | `ucet` | `UcetStatus` + `udalost?: 'prihlaseno' \| 'chyba' \| 'odhlaseno' \| 'smazano'` |
 | `usage` | `{ launches }` |
 
@@ -209,14 +212,18 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
   "site": "chatgpt | claude | gemini | mscopilot | perplexity | grok | qwen | github-copilot",
   "conversationId": "[A-Za-z0-9_.:-]{1,200}",
   "url": "https://…",
-  "title": "max 120 znaků",
   "generating": true,
-  "messages": [{ "role": "user | assistant", "text": "max 8000 znaků" }],
+  "counts": { "user": 3, "assistant": 3 },
   "model": "volitelné",
   "needsInput": "volitelný text",
   "limit": "volitelný text hlášky o limitu"
 }
 ```
+
+Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
+Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text
+i název zahodí, nic z toho neuloží. Konverzace z webu se v Agenteeq jmenuje podle služby a konce
+svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
 
 ## Trvalá data `~/.agenteeq/data.json`
 

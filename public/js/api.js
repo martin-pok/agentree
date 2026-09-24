@@ -30,6 +30,9 @@ export async function request(method, path, body) {
 }
 
 export const api = {
+  napojeni: () => request('GET', '/api/napojeni'),
+  napojit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}`),
+  napojeniZrusit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/zrusit`),
   ucetPrihlasit: () => request('POST', '/api/ucet/prihlaseni'),
   ucetZrusit: () => request('POST', '/api/ucet/zruseni'),
   ucetOdhlasit: () => request('POST', '/api/ucet/odhlaseni'),
@@ -104,7 +107,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

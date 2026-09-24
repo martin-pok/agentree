@@ -15,6 +15,17 @@
 - Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
   `.gitattributes` jednotné na všech systémech.
 
+### Napojení modelů tlačítkem a webové chaty bez textu
+
+- **Nastavení → Propojení → Napojené modely.** U Claude Code a Codexu klik na „Napojit“ spustí jejich
+  vlastní přihlášení v Terminálu (otevře se prohlížeč u Anthropicu nebo OpenAI). Agenteeq se
+  každé 2 s ptá `claude auth status` / `codex login status` a po přihlášení ukáže „Napojení …
+  proběhlo v pořádku“ i s plánem. Webové chaty (ChatGPT, Claude.ai, Gemini, Perplexity) se napojí
+  otevřením služby; potvrdí je první stav z rozšíření.
+- **Rozšíření pro Chrome už neposílá text zpráv ani název konverzace**, jen stav (pracuje, čeká,
+  limit) a počty zpráv. Server text zahodí i od starší verze rozšíření. Webová konverzace se
+  jmenuje podle služby a konce svého ID a nemá přepis.
+
 ### Účet Agenteeq: přihlášení přes Google
 
 - **Nastavení → Účet a vzhled → Přihlásit se přes Google.** Otevře se prohlížeč, po přihlášení se
