@@ -9,7 +9,8 @@
 #
 # Co tenhle workflow zásadně nedělá: nepublikuje. Vydání vzniká jako **koncept** (`--draft`),
 # protože zveřejnění je krok ven ke stažení a ten patří člověku. Zveřejníš ho jedním
-# kliknutím na stránce vydání, nebo příkazem `gh release edit v<verze> --draft=false`.
+# kliknutím na stránce vydání, příkazem `gh release edit v<verze> --draft=false`, nebo ručně
+# spuštěným workflow Zveřejnit vydání (publish.yml), který před tím přegeneruje popis.
 #
 # Podpis: build použije Developer ID, jen když je v proměnných prostředí. Bez něj podepíše
 # ad-hoc a `scripts/release-notes.mjs` to napíše do popisu i s příkazem na sundání karantény.

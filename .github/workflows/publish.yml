@@ -1,0 +1,99 @@
+# Zveřejnění konceptu vydání: Actions → Zveřejnit vydání → Run workflow nad `main`, tag např. v0.25.0.
+#
+# Workflow Vydání (release.yml) zakládá jen koncept, protože zveřejnění je krok ven ke stažení
+# a patří člověku. Tohle je ten krok: běží jen na ruční spuštění, nikdy sám od sebe.
+#
+# Před zveřejněním se popis přegeneruje aktuálním scripts/release-notes.mjs z `main`. Oprava
+# textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
+# nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má přílohu
+# se stálým jménem, na kterou vede tlačítko Stáhnout na webu.
+name: Zveřejnit vydání
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag konceptu, který se zveřejní (např. v0.25.0)'
+        required: true
+
+permissions:
+  contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
+
+jobs:
+  zverejnit:
+    name: zveřejnit koncept
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Zkontrolovat koncept
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Zveřejňuje se jen z main (spuštěno z $GITHUB_REF)."
+            exit 1
+          fi
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag $TAG nemá tvar vX.Y.Z."
+            exit 1
+          fi
+          gh release view "$TAG" --json isDraft,assets,body > vydani.json
+          node -e '
+            const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
+            if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
+            if (!v.assets.some((a) => a.name === "Agenteeq-macOS-arm64.zip")) {
+              console.log("::error::Chybí příloha Agenteeq-macOS-arm64.zip – tlačítko Stáhnout na webu by vedlo do prázdna.");
+              process.exit(1);
+            }
+            console.log(v.assets.map((a) => `${a.name} ${a.size}`).join("\n"));
+          '
+
+      # Skript popisu čte jména a velikosti příloh ze složky. Soubory se nestahují: stačí prázdné
+      # soubory se skutečnou velikostí. Podpis se přebírá z popisu, který napsal build – build
+      # je jediný, kdo ví, jestli se podepsal Developer ID.
+      - name: Přegenerovat popis
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p prilohy
+          node -e '
+            const fs = require("fs");
+            const v = JSON.parse(fs.readFileSync("vydani.json", "utf8"));
+            for (const a of v.assets.filter((x) => x.name.endsWith(".zip"))) {
+              fs.writeFileSync(`prilohy/${a.name}`, "");
+              fs.truncateSync(`prilohy/${a.name}`, a.size);
+            }
+            if (v.body.includes("Developer ID a notarizovaná")) fs.writeFileSync("prilohy/latest-build.json", JSON.stringify({ signature: "Developer ID" }));
+          '
+          node scripts/release-notes.mjs "${TAG#v}" prilohy > poznamky.md
+          cat poznamky.md
+
+      - name: Zveřejnit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release edit "$TAG" --notes-file poznamky.md --draft=false --latest
+          gh release view "$TAG" --json isDraft,url,publishedAt
+
+      # Tlačítko Stáhnout na webu vede na /releases/latest/download/…; ověří se, že opravdu vede
+      # na přílohu tohoto vydání.
+      - name: Ověřit odkaz ke stažení
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          for pokus in 1 2 3 4 5 6; do
+            CIL=$(curl -sI "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/Agenteeq-macOS-arm64.zip" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}')
+            echo "Stáhnout vede na: $CIL"
+            case "$CIL" in
+              *"/releases/download/$TAG/Agenteeq-macOS-arm64.zip") exit 0 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::Odkaz ke stažení nevede na přílohu $TAG."
+          exit 1
