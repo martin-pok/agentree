@@ -15,6 +15,16 @@
 - Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
   `.gitattributes` jednotné na všech systémech.
 
+### Synchronizace souhrnů do účtu
+
+- **Nastavení → Účet a vzhled → Synchronizovat souhrny do účtu** (vypnuto, dokud ho nezapneš).
+  Odchází jen čísla: tokeny po dnech, útrata po měsících, limity, počty agentů a které zdroje
+  jsou napojené. Každý řádek projde seznamem povolených polí; název konverzace, cesta, zadání ani
+  poznámka k výdaji neodejdou (hlídá test).
+- „Co přesně posíláme“ ukáže přesně odcházející balík. Vypnutí souhrny z účtu smaže.
+- Databáze: `usage_daily.tokens` (vstup + výstup, jako v aplikaci), rozpad po dnech je `null`,
+  ne nula; útrata zná i druh Extra usage.
+
 ### Napojení modelů tlačítkem a webové chaty bez textu
 
 - **Nastavení → Propojení → Napojené modely.** U Claude Code a Codexu klik na „Napojit“ spustí jejich

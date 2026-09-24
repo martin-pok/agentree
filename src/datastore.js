@@ -57,6 +57,17 @@ function normalizeExtensionInstallations(value) {
     .map((x) => ({ id: x.id, origin: x.origin, tokenHash: x.tokenHash, pairedAt: Number(x.pairedAt) > 0 ? Number(x.pairedAt) : 0 }));
 }
 
+// Účet Agenteeq (src/cloud-sync.js): jestli je zapnutá synchronizace souhrnů, kdy naposledy
+// proběhla a id tohoto zařízení v účtu – zvlášť pro každého uživatele. Žádné tokeny, ty jsou v Klíčence.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function normalizeCloud(c) {
+  const devices = {};
+  for (const [u, dev] of Object.entries(c?.devices && typeof c.devices === 'object' ? c.devices : {}).slice(0, 10)) {
+    if (UUID.test(u) && UUID.test(String(dev))) devices[u] = String(dev);
+  }
+  return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, devices };
+}
+
 export function normalizeData(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
   const s = d.settings && typeof d.settings === 'object' ? d.settings : {};
@@ -94,6 +105,7 @@ export function normalizeData(raw) {
     projects: normalizeProjects(d.projects),
     license: d.license && typeof d.license.key === 'string' && d.license.key.length < 4000 ? { key: d.license.key, activatedAt: Number(d.license.activatedAt) || Date.now() } : null,
     usage: { launches: Number(d.usage?.launches) || 0 },
+    cloud: normalizeCloud(d.cloud),
     spend: {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
       rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },

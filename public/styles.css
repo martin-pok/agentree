@@ -858,6 +858,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .model-done b { font-weight: 500; font-size: 18px; }
 .model-done span { color: var(--ink-2); font-size: 14px; }
 .model-done p { margin: 8px 0 0; color: var(--ink-2); font-size: 14px; max-width: 38ch; }
+.account-preview { margin: 8px 0 0; max-height: 320px; overflow: auto; padding: 12px 16px; border-radius: 12px; background: var(--paper); font: 400 12px/1.5 var(--f-mono); color: var(--ink-2); white-space: pre; }
 .account-welcome { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 8px 0 4px; }
 .account-welcome .account-avatar { width: 64px; height: 64px; font-size: 22px; margin-bottom: 8px; }
 .account-welcome b { font-weight: 500; font-size: 18px; }

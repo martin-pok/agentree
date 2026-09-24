@@ -97,6 +97,9 @@ export function openCommand(cil) {
   return null;
 }
 
+/** Jak se tenhle systém jmenuje v účtu Agenteeq (tabulka `devices`, src/cloud-sync.js). */
+export const SYSTEM_UCTU = JE_MAC ? 'macos' : JE_WINDOWS ? 'windows' : 'linux';
+
 /**
  * Vrátí do popředí okno desktopové aplikace Agenteeq (po přihlášení v prohlížeči). Umí to macOS
  * přes identifikátor balíčku; jinde `null` – okno se nehledá podle názvu ani jinak odhadem.

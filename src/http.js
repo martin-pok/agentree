@@ -745,15 +745,35 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['POST', /^\/api\/ucet\/zruseni$/, (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlášení lze zrušit jen na Macu.');
-      return { ucet: app.ucet.zrusit() };
+      app.ucet.zrusit();
+      return { ucet: app.ucetStav() };
+    }],
+    // Synchronizace souhrnů: zapnout/vypnout (volba v účtu), poslat hned a ukázat přesně, co odchází.
+    ['POST', /^\/api\/ucet\/synchronizace$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Synchronizaci lze zapnout jen na Macu.');
+      const body = await readBody(req);
+      if (typeof body?.zapnuto !== 'boolean') throw new HttpError(422, 'Chybí volba zapnuto: true/false.');
+      await ucetVolani(() => app.cloudSync.nastav(body.zapnuto));
+      return { ucet: app.ucetStav() };
+    }],
+    ['POST', /^\/api\/ucet\/synchronizovat$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Synchronizovat lze jen na Macu.');
+      await app.cloudSync.synchronizuj();
+      return { ucet: app.ucetStav() };
+    }],
+    ['GET', /^\/api\/ucet\/nahled$/, (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Náhled je jen na Macu.');
+      return { nahled: app.cloudSync.nahled() };
     }],
     ['POST', /^\/api\/ucet\/odhlaseni$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Odhlásit se lze jen na Macu.');
-      return { ucet: await app.ucet.odhlasit() };
+      await app.ucet.odhlasit();
+      return { ucet: app.ucetStav() };
     }],
     ['POST', /^\/api\/ucet\/smazani$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Smazat účet lze jen na Macu.');
-      return { ucet: await ucetVolani(() => app.ucet.smazat()) };
+      await ucetVolani(() => app.ucet.smazat());
+      return { ucet: app.ucetStav() };
     }],
     ['POST', /^\/api\/integrations\/autostart\/(install|uninstall)$/, async (_req, m) => unwrap(await app.autostart(m[1]))],
     ['POST', /^\/api\/install\/reveal$/, async () => unwrap(await app.revealInstallPackage())],

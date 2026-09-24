@@ -1,8 +1,7 @@
 # Účty Agenteeq
 
-Stav k 24. 9. 2026: přihlášení přes Google v aplikaci na Macu, databáze v cloudu s RLS. Synchronizace
-souhrnů, napojování modelů tlačítkem a přehled na webu přijdou v dalších krocích a tenhle dokument
-se s nimi rozšíří.
+Stav k 24. 9. 2026: přihlášení přes Google v aplikaci na Macu, databáze v cloudu s RLS, napojování
+modelů tlačítkem a synchronizace souhrnů (opt-in). Přehled na webu přijde v dalším kroku.
 
 ## Rozhodnutí vlastníka produktu (23. 9. 2026)
 
@@ -58,7 +57,7 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
 | `profiles` | jméno z Googlu, tarif (mění jen server), `sync_enabled` (opt-in) | `id` = uživatel |
 | `devices` | název zařízení, systém, verze aplikace | `id` |
 | `connections` | které služby jsou napojené a v jakém stavu – bez klíčů | zařízení + poskytovatel |
-| `usage_daily` | tokeny (vstup, výstup, cache) a počet konverzací po dnech | zařízení + den + poskytovatel |
+| `usage_daily` | tokeny (vstup + výstup; rozpad jen když ho zdroj dává, jinak `null`) a počet konverzací po dnech | zařízení + den + poskytovatel |
 | `spend_monthly` | součty útraty po službě, druhu a měně | zařízení + měsíc + služba + druh + měna |
 | `limits` | procento a obnova oken limitů | zařízení + poskytovatel + okno |
 | `agent_status` | počty agentů: pracuje, potřebuje tě, čeká, selhal | zařízení |
@@ -90,6 +89,32 @@ přihlášení ještě nastavuje (`GET /auth/v1/settings` → `external.google: 
    - *Site URL:* `https://agentree-fawn.vercel.app`
    - *Redirect URLs:* `http://127.0.0.1:*/ucet/navrat/*` (aplikace na Macu, libovolný port).
 
+## Synchronizace souhrnů (`src/cloud-sync.js`)
+
+Nastavení → Účet a vzhled → **Synchronizovat souhrny do účtu**. Vypnuto, dokud ho člověk sám
+nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech jeho zařízeních.
+
+| Tabulka | Co odchází | Odkud |
+|---|---|---|
+| `devices` | jméno Macu (hostname), systém, verze aplikace, čas posledního spojení | `os.hostname()` |
+| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po dnech (UTC) a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
+| `spend_monthly` | součty útraty po měsících, službách a druzích v měně aplikace | zapsané výdaje a zjištěná předplatná – bez poznámek |
+| `limits` | procento, dosažení, obnova a čas měření oken limitů | limity – bez hlášek a popisků |
+| `agent_status` | počty agentů: pracuje, potřebuje tě, čeká, selhal | stav konverzací |
+| `connections` | které zdroje jsou napojené a kdy naposledy daly data | stav konektorů – bez detailů a cest |
+
+- **Seznam povolených polí (`POVOLENA`)** – každý řádek jím projde těsně před odesláním. Test
+  pošle konverzaci s názvem, cestou, zadáním a poznámkou k výdaji a ověří, že nic z toho neodešlo.
+- **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
+  (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
+- **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`).
+- **Vypnutí souhrny z účtu smaže** (všechny tabulky souhrnů, jen vlastní řádky – RLS). Zařízení
+  zůstanou. Smazání účtu smaže i je.
+- Posílá se hned po zapnutí, po přihlášení a pak každých 5 minut upsertem
+  (`Prefer: resolution=merge-duplicates`). Výpadek sítě ukáže chybu, volbu nezmění a zkusí se znovu.
+- Ověřeno proti databázi 24. 9. 2026 (transakce vrácená zpět): upsert přepíše řádek, rozpad je
+  `null`, druh `extra` projde, vypnutí smaže vlastní souhrny.
+
 ## Napojení modelů tlačítkem (`src/napojeni.js`, `public/js/napojeni-ui.js`)
 
 Nastavení → Propojení → **Napojené modely**. Klik na „Napojit“ spustí přihlášení u dodavatele,
@@ -117,4 +142,5 @@ okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … 
 
 `test/ucet.test.mjs` běží proti atrapě Supabase Auth (PKCE, jednorázové obnovovací tokeny, apikey).
 `test/napojeni.test.mjs` běží proti atrapě `claude` a `codex` (výstupy podle ověřených zdrojů výše).
+`test/cloud-sync.test.mjs` běží proti atrapě PostgREST a hlídá seznam povolených polí.
 Skutečný server účtů testy nikdy nevolají: `test/helpers.mjs` nastavuje `AGENTEEQ_UCET_URL=0`.
