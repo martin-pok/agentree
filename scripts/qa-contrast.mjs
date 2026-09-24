@@ -174,23 +174,35 @@ await new Promise((r) => web.server.close(r));
 console.log('Rozšíření pro Chrome');
 const popup = await fs.readFile(path.join(root, 'extension/popup.html'), 'utf8');
 const ext = await staticServer(path.join(root, 'extension'));
-for (const [stav, paired] of [['nespárováno', false], ['spárováno', true]]) {
+// „ověření“ = spárováno na stránce podporované služby s rozbalenou kartou ověření (všechny tóny řádků).
+for (const [stav, paired] of [['nespárováno', false], ['spárováno', true], ['ověření', true]]) {
   for (const rezim of ['light', 'dark']) {
     const page = await browser.newPage({ viewport: { width: 344, height: 900 }, colorScheme: rezim, reducedMotion: 'reduce' });
-    await page.addInitScript(({ paired: p }) => {
+    await page.addInitScript(({ paired: p, overeni }) => {
       const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'chatgpt', at: Date.now() - 240000 } };
       window.chrome = {
         storage: { local: { get: async (k) => Object.fromEntries((Array.isArray(k) ? k : [k]).map((x) => [x, data[x]])), set: async (o) => Object.assign(data, o) } },
         runtime: { getManifest: () => ({ version: '0.0.0' }), sendMessage: async () => ({ paired: p, status: { expectedVersion: '0.0.0' } }) },
       };
+      if (overeni) {
+        window.chrome.tabs = {
+          query: async () => [{ id: 1 }],
+          sendMessage: async () => ({ site: 'gemini', konverzace: 'adresa', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: false, limit: true, videl: { generovani: true, konec: true } }),
+        };
+      }
       const puvodni = window.fetch;
       window.fetch = async (u, i) => (String(u).includes('/api/health')
         ? new Response(JSON.stringify({ ok: true, ready: true }), { headers: { 'Content-Type': 'application/json' } })
         : puvodni(u, i));
-    }, { paired });
+    }, { paired, overeni: stav === 'ověření' });
     await page.goto(`${ext.url}/popup.html`, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(400);
+    if (stav === 'ověření') {
+      await page.click('#check-open');
+      await page.click('#check-no');
+      await page.waitForTimeout(300);
+    }
     vypis(`${rezim} 344px okno (${stav})`, await page.evaluate(zmer, PRECHODY));
     await page.close();
   }

@@ -11,14 +11,20 @@
 
   // Délka poslední zprávy slouží jen tady k poznání, že se odpověď ještě píše. Neodesílá se.
   let posledniDelka = 0;
+  // Pro ověření v okně rozšíření: viděli jsme na téhle stránce, že agent pracoval a pak skončil?
+  // Jednorázový pohled do stránky to nepozná, přechod ano.
+  const videl = { generovani: false, konec: false };
   function collect() {
     const zpravy = adapter.messages(document);
     posledniDelka = zpravy.length ? zpravy[zpravy.length - 1].text.length : 0;
+    const generating = adapter.generating(document);
+    if (generating) videl.generovani = true;
+    else if (videl.generovani) videl.konec = true;
     return {
       site: adapter.id,
       conversationId: String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-'),
       url: location.href,
-      generating: adapter.generating(document),
+      generating,
       counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
       model: adapter.model(document) || '',
       limit: adapter.limit(document),
@@ -77,6 +83,25 @@
       };
       setTimeout(attempt, r.prefilled ? 2000 : 400);
     }).catch(() => {});
+  }
+
+  // Okno rozšíření se ptá, co adaptér na stránce našel (diagnostika), nebo si bere anonymizovaný
+  // vzorek stránky. Obojí je bez textu ze stránky – viz AgenteeqSites.diagnose a .vzorek.
+  try {
+    chrome.runtime.onMessage.addListener((msg, _sender, odpovez) => {
+      try {
+        if (msg?.type === 'agenteeq:diagnostika') {
+          collect();
+          odpovez({ ...window.AgenteeqSites.diagnose(adapter, document, location), videl: { ...videl } });
+        } else if (msg?.type === 'agenteeq:vzorek') {
+          odpovez(window.AgenteeqSites.vzorek(document, location));
+        }
+      } catch {
+        odpovez(null);
+      }
+    });
+  } catch {
+    // rozšíření bylo znovu načteno – okno se na tuhle stránku nedoptá, jinak nic nechybí
   }
 
   new MutationObserver(schedule).observe(document.documentElement, { subtree: true, childList: true, characterData: true });

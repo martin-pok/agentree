@@ -2,6 +2,16 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.26.0',
+    date: '2026-09-24',
+    title: 'Rozšíření ukáže, jestli službu čte správně',
+    extension: true,
+    items: [
+      'V okně rozšíření na stránce ChatGPT, Gemini, Claude.ai a dalších klikni na „Ověřit tuto stránku“. Uvidíš, co rozšíření na stránce našlo: konverzaci, pole pro zadání, počty zpráv a jestli zachytilo, že agent pracoval a skončil.',
+      'Když něco nesedí, klikni na „Nesedí“ a ulož vzorek stránky. Je to jen stavba stránky bez textu zpráv, názvů a odkazů – podle něj se rozšíření opraví.',
+    ],
+  },
+  {
     version: '0.25.0',
     date: '2026-09-24',
     title: 'Účet Agenteeq a modely napojené jedním klikem',

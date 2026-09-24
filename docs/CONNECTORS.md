@@ -167,6 +167,10 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 ### Webové aplikace – `extension/` + `src/connectors/web.js` 🧪
 
+- **Ověření webové služby (od 0.26.0):** okno rozšíření → *Ověřit tuto stránku* ukáže, co adaptér
+  na stránce našel a čím (přesným selektorem služby, nebo obecnou zálohou), a uloží anonymizovaný
+  vzorek stránky. Vzorek v `test/fixtures/web/` je regresní test adaptéru. Služba smí dostat ✅
+  až s potvrzeným vzorkem – do té doby 🧪, ať je to zadrátované sebelíp.
 - Rozšíření Chrome MV3 sleduje stránky (MutationObserver) a posílá **jen stav a počty**: `site`, `conversationId`, `url`, `generating`, `counts: { user, assistant }`, `model`, `limit` na `http://127.0.0.1:4620/api/ingest/web` s tokenem. Text zpráv ani název konverzace neodesílá (od 0.25.0, rozhodnutí vlastníka produktu – `docs/ACCOUNTS.md`). Server zahodí text i od starší verze rozšíření a webová konverzace nemá přepis.
 - **Napojení tlačítkem:** Nastavení → Napojené modely → Napojit u webového chatu otevře službu v prohlížeči; první stav z ní napojení potvrdí.
 - **Párování:** Dashboard vytvoří jednorázový 16znakový kód platný 10 minut. Uživatel jej vloží do okna rozšíření; `POST /api/extension/pair` ho jednou vymění za lokální ingest token. Token není v `/api/state`, URL ani argumentech procesu.

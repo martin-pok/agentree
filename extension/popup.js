@@ -64,6 +64,112 @@ async function renderSites(lastStatus) {
   }
 }
 
+// ── Ověření aktuální stránky ────────────────────────────────────────────────
+// Rozšíření se na stránce zeptá svého adaptéru, co našel (bez textu, jen ano/ne a počty), a
+// uživatel potvrdí, jestli počty sedí. Vzorek stránky je stavba bez obsahu – slouží k opravě
+// adaptéru a jako test (test/fixtures/web/). Nic z toho se neposílá, soubor si uloží uživatel.
+const overeni = { tab: null, diagnostika: null, potvrzeni: null, casovac: null };
+
+async function aktivniKarta() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function zeptejSe(tab, type) {
+  if (tab === null) return null;
+  try {
+    return (await chrome.tabs.sendMessage(tab, { type })) || null;
+  } catch {
+    return null; // na stránce neběží náš skript – není to podporovaná služba
+  }
+}
+
+const nazevSluzby = (id) => SITES.find(([s]) => s === id)?.[1] || id;
+
+function vykresliOvereni(d) {
+  const seznam = $('checks');
+  const radky = window.AgenteeqSites.radkyOvereni(d);
+  // Obnovuje se každé 2 s; beze změny se nepřekresluje, aby čtečka neopakovala totéž dokola.
+  const podpis = JSON.stringify(radky);
+  if (seznam.dataset.podpis === podpis) return;
+  seznam.dataset.podpis = podpis;
+  seznam.textContent = '';
+  for (const [ton, text] of radky) {
+    const li = document.createElement('li');
+    li.dataset.tone = ton;
+    const span = document.createElement('span');
+    span.textContent = text;
+    li.append(document.createElement('i'), span);
+    seznam.append(li);
+  }
+}
+
+async function obnovOvereni() {
+  const d = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
+  if (!d) return;
+  overeni.diagnostika = d;
+  vykresliOvereni(d);
+}
+
+function rozbalOvereni(otevrit) {
+  $('check-open').setAttribute('aria-expanded', String(otevrit));
+  $('check-body').hidden = !otevrit;
+  // Rozbalené ověření by se se seznamem služeb nevešlo do 600 px okna.
+  $('sites-card').hidden = otevrit;
+  clearInterval(overeni.casovac);
+  if (otevrit) {
+    obnovOvereni();
+    overeni.casovac = setInterval(obnovOvereni, 2000);
+  }
+}
+
+async function nabidniOvereni() {
+  overeni.tab = await aktivniKarta();
+  const d = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
+  $('check-card').hidden = !d;
+  if (!d) return;
+  overeni.diagnostika = d;
+  $('check-site').textContent = nazevSluzby(d.site);
+  vykresliOvereni(d);
+}
+
+function potvrd(hodnota) {
+  overeni.potvrzeni = hodnota;
+  $('check-yes').setAttribute('aria-pressed', String(hodnota === 'sedi'));
+  $('check-no').setAttribute('aria-pressed', String(hodnota === 'nesedi'));
+  const msg = $('check-msg');
+  msg.dataset.tone = '';
+  msg.textContent = hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek a pošli ho, podle něj se adaptér opraví.';
+}
+
+$('check-open').addEventListener('click', () => rozbalOvereni($('check-open').getAttribute('aria-expanded') !== 'true'));
+$('check-yes').addEventListener('click', () => potvrd('sedi'));
+$('check-no').addEventListener('click', () => potvrd('nesedi'));
+$('check-save').addEventListener('click', async () => {
+  const msg = $('check-msg');
+  await obnovOvereni();
+  const v = await zeptejSe(overeni.tab, 'agenteeq:vzorek');
+  if (!v || !overeni.diagnostika) {
+    msg.dataset.tone = 'err';
+    msg.textContent = 'Vzorek se nepodařilo získat. Obnov stránku a zkus to znovu.';
+    return;
+  }
+  const soubor = { ...v, porizeno: new Date().toISOString(), verzeRozsireni: chrome.runtime.getManifest().version, diagnostika: overeni.diagnostika, potvrzeni: overeni.potvrzeni };
+  const odkaz = document.createElement('a');
+  odkaz.href = URL.createObjectURL(new Blob([JSON.stringify(soubor)], { type: 'application/json' }));
+  setTimeout(() => URL.revokeObjectURL(odkaz.href), 10000);
+  odkaz.download = `agenteeq-vzorek-${v.site || 'stranka'}-${soubor.porizeno.slice(0, 10)}.json`;
+  document.body.append(odkaz);
+  odkaz.click();
+  odkaz.remove();
+  msg.dataset.tone = 'ok';
+  msg.textContent = `Uloženo do Stažených souborů (${v.prvku} prvků${v.zkraceno ? ', zkráceno' : ''}).`;
+});
+
 async function render() {
   const { lastStatus } = await chrome.storage.local.get(['lastStatus']);
   await renderSites(lastStatus);
@@ -99,6 +205,7 @@ async function render() {
   $('pairing').hidden = true;
   $('feats').hidden = true;
   $('sites-card').hidden = false;
+  nabidniOvereni();
   const version = chrome.runtime.getManifest().version;
   const expected = r.status?.expectedVersion;
   const outdated = expected && expected !== version;
