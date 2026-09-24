@@ -37,7 +37,7 @@ Instalace pro zákazníka nebo kolegu: `npm run pack` a návod [docs/INSTALL.md]
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 449 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
+npm test          # 499 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
