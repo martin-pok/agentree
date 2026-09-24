@@ -28,6 +28,8 @@ export const state = {
   launch: { targets: [], modes: {}, openMode: 'off' },
   runs: [],
   license: null,
+  // Účet Agenteeq (src/ucet.js). Starší server ho neposílá – pak se karta účtu neukáže.
+  ucet: { stav: 'nenastaveno' },
   usage: { launches: 0 },
   transcripts: new Map(),
 };
@@ -86,6 +88,7 @@ export function applySnapshot(s) {
     runs: s.runs,
     storage: s.storage || { ok: true, error: null, recovery: null },
     license: s.license,
+    ucet: s.ucet || { stav: 'nenastaveno' },
     usage: s.usage,
   });
   state.loaded = true;
@@ -185,6 +188,10 @@ export function applyEvent(name, data) {
       state.license = data;
       emit('license');
       return null;
+    case 'ucet':
+      state.ucet = data;
+      emit('ucet');
+      return data.udalost ? { ucet: data } : null;
     case 'usage':
       state.usage = data;
       emit('usage');

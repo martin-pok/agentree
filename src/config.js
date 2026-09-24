@@ -32,6 +32,11 @@ function otevirani(env) {
 }
 
 // Veškerá konfigurace přes proměnné prostředí – testy tak běží nad fixturami, ne nad skutečným HOME.
+// Účty Agenteeq (docs/ACCOUNTS.md). Adresa projektu a publikovatelný klíč jsou veřejné z principu:
+// patří do každé aplikace, která se k Supabase přihlašuje. K datům pustí jen přihlášeného
+// uživatele a jen k jeho řádkům – hlídá to RLS v databázi (supabase/migrations), ne utajení klíče.
+export const UCET_VYCHOZI = { url: 'https://quxfenxxdcafcuptucnn.supabase.co', klic: 'sb_publishable_V88rxI9Bl44zydHOX5IS9Q_-PalcKxi' };
+
 export function loadConfig(env = process.env) {
   // Přejmenování z Agentree na Agenteeq (0.8.0): staré proměnné prostředí i stará datová složka
   // dál fungují, aby se nikomu uprostřed práce nerozbil běžící systém.
@@ -58,6 +63,8 @@ export function loadConfig(env = process.env) {
     nativeNotify: env.AGENTEEQ_NATIVE_NOTIFY !== '0' && process.platform === 'darwin',
     cloudFetch: env.AGENTEEQ_CLOUD !== '0',
     keychain: env.AGENTEEQ_KEYCHAIN !== '0' && process.platform === 'darwin',
+    // AGENTEEQ_UCET_URL=0 účty vypne (testy); jiná adresa míří na jiný projekt nebo atrapu serveru.
+    ucet: env.AGENTEEQ_UCET_URL === '0' ? null : { url: (env.AGENTEEQ_UCET_URL || UCET_VYCHOZI.url).replace(/\/+$/, ''), klic: env.AGENTEEQ_UCET_KEY || UCET_VYCHOZI.klic },
     processes: env.AGENTEEQ_PROCESSES !== '0',
     ...otevirani(env),
     ollamaUrl: env.AGENTEEQ_OLLAMA_URL || 'http://127.0.0.1:11434',

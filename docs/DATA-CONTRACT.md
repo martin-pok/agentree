@@ -35,7 +35,10 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/alerts/test` | Testovací upozornění |
 | PUT | `/api/settings` | `{ notifications?: Partial<Notifications>, welcomeCompleted?: boolean, onboardingDismissed?: boolean, appearance?: 'light' \| 'dark' \| 'system', avatar?: number \| null }` → `{ settings }` |
 | POST | `/api/integrations/claude-hooks/install` \| `uninstall` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json |
-| PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }` |
+| PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }`. Přihlášení k účtu (`ucet`) tudy nejde – 404 |
+| POST | `/api/ucet/prihlaseni` | Jen z tohoto Macu → `{ url, otevreno }` a otevře přihlášení přes Google v prohlížeči; 503 když přihlášení na serveru účtů ještě neběží nebo server neodpovídá, 404 bez nastavených účtů. Viz `docs/ACCOUNTS.md` |
+| POST | `/api/ucet/zruseni` \| `odhlaseni` \| `smazani` | Jen z tohoto Macu → `{ ucet: UcetStatus }`. `smazani` smaže účet i data v cloudu, na Macu nic; 401 bez přihlášení |
+| GET | `/ucet/navrat/:pokus` | Návrat z přihlášení (HTML, mimo `/api`). Jen z tohoto Macu, pokus platí 10 minut a jednou. `?code=` vymění kód za přihlášení, `?chyba=` ohlásí zrušení |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
 | GET | `/api/lan` | `LanStatus`; jinam než na tento Mac bez `pin` a `devices` |
 
@@ -87,11 +90,16 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `runs` | `Run[]` |
 | `launch` | `LaunchPayload` |
 | `license` | `LicenseStatus` |
+| `ucet` | `UcetStatus` + `udalost?: 'prihlaseno' \| 'chyba' \| 'odhlaseno' \| 'smazano'` |
 | `usage` | `{ launches }` |
 
 Každých 15 s komentář `: ping`.
 
 ## Typy
+
+### UcetStatus (`state.ucet`, událost `ucet`)
+
+`{ stav: 'nenastaveno' | 'odhlaseno' | 'overuji' | 'prihlaseno' | 'nedostupne', ceka: boolean, jmeno, email, chyba, trvale: boolean }`. Tokeny nikdy. Mimo tento Mac jen `{ stav }`. `nedostupne` = uložené přihlášení se nepodařilo ověřit (síť), ne odhlášení. `trvale` = obnovovací token je v Klíčence.
 
 ```ts
 type Status = 'needs_input' | 'limited' | 'working' | 'waiting' | 'idle' | 'archived';

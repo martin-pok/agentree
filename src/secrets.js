@@ -3,8 +3,10 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 export const SECRET_IDS = {
-  'openai-admin': { env: 'OPENAI_ADMIN_KEY', label: 'OpenAI Admin API klíč', pattern: /^sk-[\w-]{20,}$/ },
-  'anthropic-admin': { env: 'ANTHROPIC_ADMIN_KEY', label: 'Anthropic Admin API klíč', pattern: /^sk-ant-[\w-]{20,}$/ },
+  'openai-admin': { env: 'OPENAI_ADMIN_KEY', label: 'OpenAI Admin API klíč', pattern: /^sk-[\w-]{20,}$/, rucne: true },
+  'anthropic-admin': { env: 'ANTHROPIC_ADMIN_KEY', label: 'Anthropic Admin API klíč', pattern: /^sk-ant-[\w-]{20,}$/, rucne: true },
+  // Obnovovací token účtu Agenteeq (src/ucet.js). Nastavuje ho jen přihlášení, nikdy uživatel ručně.
+  ucet: { env: 'AGENTEEQ_UCET_TOKEN', label: 'Přihlášení k účtu Agenteeq', pattern: /^[\w-]{8,512}$/ },
 };
 
 // API klíče ukládáme do macOS Klíčenky (služba cz.agenteeq.<id>). Proměnné prostředí mají přednost.

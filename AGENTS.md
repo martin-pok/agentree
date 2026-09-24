@@ -8,7 +8,7 @@ Agenteeq ukazuje **v reálném čase a na jednom místě** všechny AI agenty, k
 
 1. **Pravdivost nad efektem.** Nikdy nezobrazuj vymyšlená nebo odhadnutá data jako skutečná. Heuristiku pojmenuj (např. „stav z přepisu“) a zdokumentuj v `docs/CONNECTORS.md`. Neověřený konektor = štítek **Beta**.
 2. **Realtime je jádro.** Změna u zdroje se má v UI projevit do 2 s (souborové zdroje) nebo okamžitě (hooky, rozšíření). Každá změna datové cesty musí mít test latence nebo jej zachovat (`test/http.test.mjs`).
-3. **Local-first a soukromí.** Server poslouchá jen na `127.0.0.1`. Další adresa (domácí síť, Tailscale) vzniká výhradně po výslovném zapnutí uživatelem v Nastavení a i pak z ní bez spárovaného zařízení nejde přečíst nic – viz `docs/SECURITY.md`. Přepisy obsahují citlivý obsah – nikdy je neposílej mimo počítač, nelogguj jejich obsah, nepřidávej telemetrii bez výslovného rozhodnutí vlastníka produktu.
+3. **Local-first a soukromí.** Server poslouchá jen na `127.0.0.1`. Další adresa (domácí síť, Tailscale) vzniká výhradně po výslovném zapnutí uživatelem v Nastavení a i pak z ní bez spárovaného zařízení nejde přečíst nic – viz `docs/SECURITY.md`. Přepisy obsahují citlivý obsah – nikdy je neposílej mimo počítač, nelogguj jejich obsah, nepřidávej telemetrii bez výslovného rozhodnutí vlastníka produktu. Účet Agenteeq (`docs/ACCOUNTS.md`) je výslovné rozhodnutí vlastníka: do cloudu jen účet a číselné souhrny, nikdy text, názvy konverzací, cesty ani kód.
 4. **Do konfigurace jiných nástrojů zasahuj jen na výslovnou akci uživatele**, vždy se zálohou a idempotentně (vzor: `src/hooks-installer.js`).
 5. **Spolehlivost.** Chyba jednoho konektoru nesmí shodit server ani ostatní konektory. Watchery se obnovují, plný průchod běží každých 10 s.
 
@@ -51,6 +51,8 @@ src/launcher.js             rychlé spouštění agentů: detekce, plán (argv, 
 src/runs.js                 běhy agentů na pozadí: proces, log, stav, zastavení
 src/ollama.js, local-chat.js  lokální modely v Ollamě jako běžná session s živým přepisem
 src/license.js, plans.js    offline licence (Ed25519) a placené funkce; klíč vydavatele NIKDY v repozitáři
+src/ucet.js, ucet-stranka.js  účet Agenteeq: přihlášení přes Google (PKCE), tokeny v Klíčence – viz docs/ACCOUNTS.md
+supabase/                   cloudová databáze: migrace s RLS a kontrola oprávnění (tests/rls.sql)
 scripts/license.mjs         vydávání licencí (viz docs/LICENSING.md)
 scripts/smoke-package.mjs   ověření instalačního balíčku
 src/watch.js                rekurzivní watcher s obnovou, fronta souborů, výpis souborů

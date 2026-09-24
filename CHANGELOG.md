@@ -15,6 +15,19 @@
 - Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
   `.gitattributes` jednotné na všech systémech.
 
+### Účet Agenteeq: přihlášení přes Google
+
+- **Nastavení → Účet a vzhled → Přihlásit se přes Google.** Otevře se prohlížeč, po přihlášení se
+  okno Agenteeq vrátí do popředí a potvrdí, kdo se přihlásil. Bez účtu funguje všechno dál.
+- Přihlášení je PKCE s jednorázovým pokusem (10 minut). Návrat přijme jen tento Mac. Obnovovací
+  token je v Klíčence macOS, přístupový jen v paměti. Výpadek sítě není odhlášení: stav je
+  „nedostupné“ a obnova se zkouší znovu.
+- Cloudová databáze (Supabase, Frankfurt) je připravená na souhrny: tokeny po dnech, útrata po
+  měsících, limity a počty agentů. Text konverzací, jejich názvy, cesty ani kód do ní nejdou.
+  Každá tabulka má RLS, ověřenou skriptem `supabase/tests/rls.sql` (15 případů).
+- Účet jde odhlásit i smazat i s daty v cloudu; na Macu se nic nemaže. Postup a nastavení
+  projektu: `docs/ACCOUNTS.md`.
+
 ### Nástup obrazovek a živá prohlídka na webu
 
 - **Přehled, Projekty a Útrata se při otevření rozsvítí.** Karty projektů vyjedou postupně,

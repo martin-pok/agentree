@@ -9,6 +9,7 @@ import { remoteScope } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
+import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
 
@@ -138,6 +139,43 @@ export function createHttpServer(app, existingServer = null) {
     }
   }
 
+  // Chyby účtu nesou vlastní stav (503 = server účtů neodpovídá nebo přihlášení ještě neběží).
+  async function ucetVolani(fn) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err instanceof HttpError) throw err;
+      throw new HttpError(err.sit ? 503 : err.status >= 400 && err.status < 600 ? err.status : 502, err.message);
+    }
+  }
+
+  // Návrat z přihlášení přes Google. Přichází z běžného prohlížeče (bez klíče okna aplikace), proto
+  // se obsluhuje před kontrolou klíče – ale jen z tohoto Macu a jen s platným jednorázovým pokusem,
+  // jehož ověřovač PKCE zná jedině server. Cizí stránka tak nemůže nic přihlásit ani vyměnit.
+  async function navratUctu(req, res, url) {
+    const pokus = url.pathname.match(/^\/ucet\/navrat\/([A-Za-z0-9_-]{43})$/)?.[1];
+    const hlavicky = { ...SECURITY, 'Cache-Control': 'no-store' };
+    if (!zTohotoMacu(req) || req.method !== 'GET') {
+      res.writeHead(403, { ...hlavicky, 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
+      return;
+    }
+    if (url.pathname === '/ucet/navrat.js') {
+      res.writeHead(200, { ...hlavicky, 'Content-Type': 'text/javascript; charset=utf-8' }).end(SKRIPT_NAVRATU);
+      return;
+    }
+    const code = url.searchParams.get('code') || '';
+    const chyba = url.searchParams.get('chyba') || url.searchParams.get('error_description') || url.searchParams.get('error') || '';
+    let html;
+    if (!pokus) html = strankaNavratu({ zprava: 'Neplatná adresa přihlášení.' });
+    else if (!code && !chyba) html = strankaNavratu({ ceka: true });
+    else {
+      const r = await app.ucet.navrat(pokus, { code, chyba });
+      html = strankaNavratu(r);
+      if (r.ok) app.vratOkno?.().catch(() => {});
+    }
+    res.writeHead(200, { ...hlavicky, 'Content-Type': 'text/html; charset=utf-8' }).end(html);
+  }
+
   /* ---------- SSE ---------- */
 
   function authorizedStream(res, req) {
@@ -190,6 +228,7 @@ export function createHttpServer(app, existingServer = null) {
     runs: (l) => broadcast('runs', l),
     launch: (l) => broadcast('launch', l),
     license: (l) => broadcast('license', l),
+    ucet: (u) => broadcast('ucet', u),
     usage: (u) => broadcast('usage', u),
     storage: (st) => broadcast('storage', st),
   };
@@ -579,14 +618,16 @@ export function createHttpServer(app, existingServer = null) {
       return { claudeHooks: await hooksStatus(file, datastore.data.ingestToken) };
     }],
     ['PUT', /^\/api\/secrets\/([\w-]+)$/, async (req, m) => {
-      if (!SECRET_IDS[m[1]]) throw new HttpError(404, 'Neznámý klíč.');
+      // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
+      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, 'Neznámý klíč.');
       const body = await readBody(req);
       await app.secrets.set(m[1], body.value);
       await app.connectors['cloud-billing'].scan();
       return { integrations: await refreshIntegrations() };
     }],
     ['DELETE', /^\/api\/secrets\/([\w-]+)$/, async (_req, m) => {
-      if (!SECRET_IDS[m[1]]) throw new HttpError(404, 'Neznámý klíč.');
+      // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
+      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, 'Neznámý klíč.');
       await app.secrets.remove(m[1]);
       await app.connectors['cloud-billing'].scan();
       return { integrations: await refreshIntegrations() };
@@ -676,6 +717,24 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/license$/, () => ({ license: app.licenseStatus() })],
     ['PUT', /^\/api\/license$/, async (req) => unwrap(app.activateLicense((await readBody(req)).key))],
     ['DELETE', /^\/api\/license$/, () => app.removeLicense()],
+    // Účet: přihlášení, odhlášení a smazání jen od člověka u Macu. Spárovaný telefon by jinak mohl
+    // Mac přihlásit k cizímu účtu nebo účet smazat.
+    ['POST', /^\/api\/ucet\/prihlaseni$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlásit se lze jen na Macu.');
+      return ucetVolani(() => app.ucet.zacniPrihlaseni({ port: port() }));
+    }],
+    ['POST', /^\/api\/ucet\/zruseni$/, (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlášení lze zrušit jen na Macu.');
+      return { ucet: app.ucet.zrusit() };
+    }],
+    ['POST', /^\/api\/ucet\/odhlaseni$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odhlásit se lze jen na Macu.');
+      return { ucet: await app.ucet.odhlasit() };
+    }],
+    ['POST', /^\/api\/ucet\/smazani$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Smazat účet lze jen na Macu.');
+      return { ucet: await ucetVolani(() => app.ucet.smazat()) };
+    }],
     ['POST', /^\/api\/integrations\/autostart\/(install|uninstall)$/, async (_req, m) => unwrap(await app.autostart(m[1]))],
     ['POST', /^\/api\/install\/reveal$/, async () => unwrap(await app.revealInstallPackage())],
     ['GET', /^\/api\/fs\/folders$/, async (_req, _m, url) => unwrap(await app.listFolders(url.searchParams.get('path') || ''))],
@@ -734,6 +793,7 @@ export function createHttpServer(app, existingServer = null) {
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
+    if (url.pathname.startsWith('/ucet/navrat') && app.ucet) return navratUctu(req, res, url);
     if (config.localKey && zTohotoMacu(req) && localKeyGate(req, res, url)) return;
     requireDevice(req, url);
     // Zařízení mimo tento Mac smí jen číst (viz src/remote-scope.js). Bez tokenu ingest routes
