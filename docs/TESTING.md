@@ -43,6 +43,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/ucet-web.test.mjs` | Přehled účtu na webu: PKCE v prohlížeči, návratová adresa, souhrny agentů/tokenů/útraty, názvy oken limitů, shoda služeb s aplikací, web do souhrnů jen čte |
 | `test/cloud-sync.test.mjs` | Synchronizace souhrnů: tokeny po dnech, útrata po měsících bez poznámek, limity bez hlášek, seznam povolených polí, opt-in, založení a obnova zařízení, vypnutí smaže souhrny, výpadek sítě, HTTP jen z tohoto Macu |
 | `test/napojeni.test.mjs` | Napojení modelů tlačítkem proti atrapě `claude`/`codex`: čtení stavu jen z ověřeného výstupu (neznámý = „nevím“), příkaz v uvozovkách, potvrzení po přihlášení, už napojený, vypršení a zrušení, webový chat přes rozšíření, HTTP jen z tohoto Macu |
+| `test/extension-overeni.test.mjs` | Ověření webových služeb: diagnostika adaptéru na stránce, anonymizovaný vzorek stránky (bez textu, jmen, odkazů a čísel), přehrání vzorků z `test/fixtures/web/` v minimálním DOM (`test/mini-dom.mjs`) |
 | `test/ucet.test.mjs` | Účet Agenteeq proti atrapě Supabase Auth: odkaz s PKCE, návrat jen na tento Mac a jen jednou, cizí kód ani chyba z Googlu nikoho nepřihlásí, výpadek sítě není odhlášení, jednorázové obnovovací tokeny, odhlášení a smazání účtu, token nejde zapsat přes API klíčů |
 | `test/nastup.test.mjs` | Nástup obrazovky: počítadlo skončí přesně na hodnotě, začíná prázdné, nepřestřelí, řády se usazují zprava, čtečka dostane celé číslo; nástup jednou po otevření a vypnutý omezeným pohybem |
 
@@ -88,11 +89,30 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 ### Rozšíření (pro každý web: ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
 
-- [ ] Načti `extension/` jako rozbalené, otevři web, pošli zprávu.
+- [ ] Načti `extension/` jako rozbalené, otevři web, pošli zprávu a počkej na odpověď.
 - [ ] Během generování je session „Pracuje“, po dokončení „Čeká na zadání“ do 2 s.
-- [ ] Přepis obsahuje obě strany bez duplicit; titulek odpovídá konverzaci.
-- [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá přepisy.
-- [ ] Při nefunkčním adaptéru ulož HTML úryvek zprávy a tlačítka Stop jako fixturu a oprav selektory v `extension/sites.js`.
+- [ ] Session nese jen stav a počty zpráv: žádný přepis, název „<Služba> · konverzace <konec ID>“.
+- [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá počty.
+- [ ] Okno rozšíření → **Ověřit tuto stránku**: konverzace podle adresy, pole pro zadání nalezeno,
+      počty zpráv odpovídají stránce, „Pracuje → hotovo zachyceno“. Klikni **Sedí**, nebo **Nesedí**.
+- [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
+      Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
+
+## Protokol ověření – 0.26.0 (24. 9. 2026, Linux kontejner, Node 22.22)
+
+Webové služby jsou z tohoto prostředí nedostupné (síťová pravidla), takže živé stránky ověří
+až uživatel oknem rozšíření. Tady se ověřilo všechno kolem:
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 510 testů, 506 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm run check` | 194 souborů bez syntaktické chyby |
+| `test/extension-overeni.test.mjs` | Diagnostika (přesně / obecná záloha / nenalezeno), řádky ověření nesou stav větou, vzorek bez textu, jmen, odkazů, skriptů, hodnot polí a čísel, cesta s dotazem → `x-id`, skryté pole a hláška o limitu, zkrácení obří stránky, přehrání vzorku = živá diagnostika |
+| Mutace | 6 záměrných chyb ve vzorku a diagnostice – každou zachytí aspoň jeden test |
+| Chromium × mini-DOM | 6 syntetických stránek (ChatGPT, Claude, Gemini, Grok, Perplexity, Qwen): diagnostika ve skutečném Chromiu = diagnostika přehraného vzorku, vzorek bez textu stránky |
+| `qa:extension` (Chromium) | 14 scénářů okna, nově ověření ve světlém i tmavém režimu: karta jen na podporované stránce, rozbalení klávesnicí, okno ≤ 600 px i rozbalené, potvrzení, stažený vzorek má správný tvar a jméno. WebKit v prostředí chybí |
+| `qa:contrast` | WCAG 2.2 AA i pro rozbalené ověření se všemi tóny, světlý i tmavý režim |
+| **Neověřeno** | Skutečné stránky osmi služeb – čeká na vzorky z Macu |
 
 ## Protokol ověření – 0.25.0 (24. 9. 2026, Linux kontejner, Node 22.22)
 

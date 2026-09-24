@@ -91,6 +91,27 @@
     .switch input:checked + i::after { transform: translateX(14px); }
     .switch input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 3px; }
 
+    /* Ověření stránky: sbalené, aby se okno vešlo do 600 px, které Chrome dovolí. Rozbalené
+       schová seznam služeb – v tu chvíli řeší uživatel jen tuhle stránku. Stav nese text,
+       tečka ho jen podtrhuje (barva nikdy není jediný nositel informace). */
+    .check-open { width: calc(100% + 16px); display: flex; align-items: center; gap: 12px; min-height: 44px; margin: -8px; padding: 0 8px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .check-open > span { flex: 1; display: grid; }
+    .check-open b { font-size: 13px; }
+    .check-site { color: var(--mute); font-size: 12px; }
+    .check-open svg { flex: none; color: var(--mute); transition: transform .2s var(--ease); }
+    .check-open[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .check-body { margin-top: 16px; }
+    .checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+    .checks li { display: grid; grid-template-columns: 8px 1fr; gap: 10px; align-items: start; color: var(--ink-2); }
+    .checks li i { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--mute); }
+    .checks li[data-tone="ok"] i { background: var(--teal); }
+    .checks li[data-tone="warn"] i { background: var(--brass); }
+    .checks li[data-tone="err"] i { background: var(--velvet); }
+    .check-q { margin: 16px 0 8px; color: var(--ink); }
+    .check-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .check-actions .btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); box-shadow: none; }
+    .btn--wide { width: 100%; margin-top: 8px; }
+
     /* Upozornění na zastaralou verzi: mosaz = pozor. Text jde přes variantu --brass-ink,
        aby kontrast vyšel v obou režimech (stejné pravidlo jako v aplikaci). */
     .note { display: flex; gap: 8px; padding: 9px 12px; border-radius: 12px; background: var(--brass-tint); color: var(--brass-ink); font-size: 12px; }
@@ -140,8 +161,25 @@
     <section class="card" id="feats">
       <p class="label">Co rozšíření dělá</p>
       <div class="feats">
-        <div class="feat"><span class="feat-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>Agenti z webu v přehledu</b><span>Stav, přepis i dosažený limit konverzací v ChatGPT, Gemini, Claude.ai a dalších.</span></div></div>
+        <div class="feat"><span class="feat-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>Agenti z webu v přehledu</b><span>Stav, počty zpráv i dosažený limit konverzací v ChatGPT, Gemini, Claude.ai a dalších. Text zpráv neposílá.</span></div></div>
         <div class="feat"><span class="feat-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><div><b>Zadání se vloží samo</b><span>Spustíš službu z Agenteeq a zadání čeká v poli zprávy. Odešleš ho Enterem.</span></div></div>
+      </div>
+    </section>
+
+    <section class="card" id="check-card" hidden>
+      <button class="check-open" id="check-open" type="button" aria-expanded="false" aria-controls="check-body">
+        <span><b>Ověřit tuto stránku</b><span class="check-site" id="check-site"></span></span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="check-body" id="check-body" hidden>
+        <ul class="checks" id="checks" aria-live="polite"></ul>
+        <p class="check-q" id="check-q">Sedí počty zpráv s tím, co na stránce vidíš?</p>
+        <div class="check-actions" role="group" aria-labelledby="check-q">
+          <button class="btn btn--ghost" id="check-yes" type="button" aria-pressed="false">Sedí</button>
+          <button class="btn btn--ghost" id="check-no" type="button" aria-pressed="false">Nesedí</button>
+        </div>
+        <button class="btn btn--wide" id="check-save" type="button">Uložit vzorek stránky</button>
+        <p class="msg" id="check-msg" role="status">Vzorek je stavba stránky bez textu zpráv. Pošli ho, když něco nesedí.</p>
       </div>
     </section>
 
@@ -155,6 +193,7 @@
     <span>Data jdou jen do Agenteeq na tomto Macu.</span>
     <a class="btn btn--ghost" href="http://127.0.0.1:4620/" target="_blank" rel="noopener">Otevřít Agenteeq</a>
   </footer>
+  <script src="sites.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

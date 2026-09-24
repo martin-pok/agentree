@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.26.0 – 2026-09-24 · ověření webových služeb v okně rozšíření
+
+- **Okno rozšíření → Ověřit tuto stránku.** Na stránce podporované služby adaptér řekne, co
+  našel a čím: konverzaci podle adresy, pole pro zadání (přesně, jen obecnou zálohou, nebo
+  vůbec), počty zpráv (přesně, nebo obecnou zálohou), zachycený přechod pracuje → hotovo
+  a hlášku o limitu. Uživatel potvrdí, jestli počty sedí. Stav nese vždy věta, ne jen barva.
+- **Uložit vzorek stránky:** anonymizovaná stavba stránky bez textu zpráv, názvů, jmen,
+  odkazů, obrázků, skriptů a hodnot polí; z popisku tlačítka zůstane jen slovo jako „Stop“,
+  z hlášky o limitu jen klíčové slovo, z adresy jen stavba s ID nahrazenými `x-id`. Soubor si
+  uloží uživatel; nic se nikam neposílá.
+- Vzorky z živých stránek patří do `test/fixtures/web/` a test je přehraje v minimálním DOM bez
+  závislostí (`test/mini-dom.mjs`): potvrzený vzorek je regresní test, nepotvrzený „todo“.
+  Stejné stránky ve skutečném Chromiu dávají stejnou diagnostiku jako jejich přehraný vzorek.
+- Popis rozšíření v manifestu i v okně už neříká „přepis“ – od 0.25.0 posílá jen stav a počty.
+- `docs/ROADMAP.md` prověřená proti kódu: co je hotové, co se rozhodlo jinak a co brzdí ostrý
+  provoz (sekce „Teď – po 0.25.0“).
+
 ## 0.25.0 – 2026-09-24 · účet Agenteeq, napojení modelů a vlastní klíč pro každé rozšíření
 
 - **Rozšíření pro Chrome dostávalo token hooků Claude Code.** Kdo ho získal z kteréhokoli
