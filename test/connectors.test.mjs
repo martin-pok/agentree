@@ -200,20 +200,33 @@ test('Cursor: bubliny, generování a čekání na schválení', () => {
   assert.equal(deriveStatus(s, now).status, 'needs_input');
 });
 
-test('Web: validace a streamovaná odpověď se aktualizuje na místě', () => {
+test('Web: z webových chatů se bere jen stav a počty – text ani název konverzace ne', () => {
   assert.equal(validateWebPayload({ site: 'neznamy' }).ok, false);
   assert.equal(validateWebPayload({ site: 'chatgpt', conversationId: 'a b', url: 'https://chatgpt.com' }).ok, false);
   const s = createSession({ connector: 'web', localId: 'chatgpt:1', provider: 'openai', app: 'ChatGPT', source: 'web' });
-  const base = { site: 'chatgpt', conversationId: 'abc-1', url: 'https://chatgpt.com/c/abc-1', title: 'Plán', generating: true };
+  const base = { site: 'chatgpt', conversationId: 'abc-1f2e', url: 'https://chatgpt.com/c/abc-1f2e', generating: true };
   const now = Date.now();
-  applyWebPayload(s, validateWebPayload({ ...base, messages: [{ role: 'user', text: 'Ahoj' }, { role: 'assistant', text: 'Ahoj, jak' }] }).value, now);
-  const seq = s.transcript[1].seq;
+  applyWebPayload(s, validateWebPayload({ ...base, counts: { user: 1, assistant: 1 } }).value, now);
   assert.equal(deriveStatus(s, now).status, 'working');
-  applyWebPayload(s, validateWebPayload({ ...base, generating: false, messages: [{ role: 'user', text: 'Ahoj' }, { role: 'assistant', text: 'Ahoj, jak ti mohu pomoci?' }] }).value, now + 3000);
-  assert.equal(s.transcript.length, 2);
-  assert.equal(s.transcript[1].seq, seq);
-  assert.equal(s.transcript[1].text, 'Ahoj, jak ti mohu pomoci?');
+  assert.equal(s.title, 'ChatGPT · konverzace 1f2e');
+  applyWebPayload(s, validateWebPayload({ ...base, generating: false, counts: { user: 1, assistant: 1 } }).value, now + 3000);
   assert.equal(deriveStatus(s, now + 4000).status, 'waiting');
+  assert.equal(deriveStatus(s, now + 4000).reason, 'Hotovo, čeká na další zadání');
+  assert.equal(s.turns, 1);
+  assert.equal(s.transcript.length, 0, 'přepis webové konverzace zůstává prázdný');
+
+  // Starší rozšíření posílá text i název: spočítají se role, text se zahodí.
+  const stare = validateWebPayload({ ...base, title: 'Tajný plán fúze', messages: [{ role: 'user', text: 'Heslo je 1234' }, { role: 'assistant', text: 'Rozumím' }, { role: 'user', text: 'Díky' }] });
+  assert.deepEqual(stare.value.counts, { user: 2, assistant: 1 });
+  assert.equal(JSON.stringify(stare.value).includes('Heslo'), false);
+  assert.equal(JSON.stringify(stare.value).includes('Tajný'), false);
+  const s2 = createSession({ connector: 'web', localId: 'chatgpt:2', provider: 'openai', app: 'ChatGPT', source: 'web' });
+  applyWebPayload(s2, stare.value, now);
+  assert.equal(JSON.stringify(s2).includes('Heslo'), false, 'text se neuloží ani do konverzace');
+  assert.equal(JSON.stringify(s2).includes('Tajný'), false);
+  assert.equal(s2.lastPrompt ?? '', '');
+  // Nesmyslné počty se ořežou.
+  assert.deepEqual(validateWebPayload({ ...base, counts: { user: -3, assistant: 1.5 } }).value.counts, { user: 0, assistant: 0 });
 });
 
 test('Procesy: rozpoznání AI aplikací z výpisu ps', () => {

@@ -1,5 +1,5 @@
-import { clip, clipBlock, MIN, DAY } from '../util.js';
-import { touch, pushEntry, updateEntry, resetTranscript } from '../model.js';
+import { clip, MIN, DAY } from '../util.js';
+import { touch } from '../model.js';
 
 // Webové AI aplikace posílá rozšíření prohlížeče (extension/). Server data validuje a normalizuje.
 export const WEB_SITES = {
@@ -14,19 +14,20 @@ export const WEB_SITES = {
   'github-copilot': { name: 'GitHub Copilot', provider: 'github' },
 };
 
-const MAX_MESSAGES = 80;
+const MAX_POCET = 100000;
+const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
 
 export function validateWebPayload(p) {
   if (!p || typeof p !== 'object') return { ok: false, error: 'Chybí data.' };
   if (!WEB_SITES[p.site]) return { ok: false, error: 'Neznámá služba.' };
   if (typeof p.conversationId !== 'string' || !/^[\w.:-]{1,200}$/.test(p.conversationId)) return { ok: false, error: 'Neplatné ID konverzace.' };
   if (typeof p.url !== 'string' || !/^https:\/\//.test(p.url) || p.url.length > 2000) return { ok: false, error: 'Neplatná adresa.' };
-  const messages = Array.isArray(p.messages) ? p.messages.slice(-MAX_MESSAGES) : [];
-  const clean = [];
-  for (const m of messages) {
-    if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.text !== 'string') continue;
-    const text = clipBlock(m.text, 8000);
-    if (text) clean.push({ role: m.role, text });
+  // Z webových chatů bere Agenteeq jen stav a počty zpráv. Starší rozšíření (do 0.24) posílá ještě
+  // text a název konverzace – z toho se tu spočítají role a text se zahodí, nikam se neuloží.
+  let counts = { user: 0, assistant: 0 };
+  if (p.counts && typeof p.counts === 'object') counts = { user: pocet(p.counts.user), assistant: pocet(p.counts.assistant) };
+  else if (Array.isArray(p.messages)) {
+    for (const m of p.messages) if (m && (m.role === 'user' || m.role === 'assistant')) counts[m.role] += 1;
   }
   return {
     ok: true,
@@ -34,9 +35,8 @@ export function validateWebPayload(p) {
       site: p.site,
       conversationId: p.conversationId,
       url: p.url,
-      title: clip(typeof p.title === 'string' ? p.title : '', 120),
       generating: p.generating === true,
-      messages: clean,
+      counts,
       model: clip(typeof p.model === 'string' ? p.model : '', 60),
       needsInput: typeof p.needsInput === 'string' ? clip(p.needsInput, 200) : null,
       limit: typeof p.limit === 'string' ? clip(p.limit, 200) : null,
@@ -45,44 +45,20 @@ export function validateWebPayload(p) {
 }
 
 export function applyWebPayload(s, v, now = Date.now()) {
-  const st = s.web || (s.web = { hashes: [] });
+  const st = s.web || (s.web = { counts: { user: 0, assistant: 0 } });
   s.source = 'web';
   s.url = v.url;
-  if (v.title) s.title = v.title;
+  // Název konverzace vzniká z jejího obsahu, a tak se nebere. Rozliší ji konec jejího ID.
+  s.title = `${WEB_SITES[v.site]?.name || 'Webový chat'} · konverzace ${v.conversationId.replace(/[^A-Za-z0-9]/g, '').slice(-4) || v.conversationId.slice(-4)}`;
   if (v.model) s.model = v.model;
   // Chrome v kartě na pozadí (skryté déle než 5 minut) pouští časovače nejvýš jednou za minutu.
   // Při 45 s by dlouho běžící úloha – Codex na webu, hloubkový výzkum – uprostřed práce spadla
   // na „bez aktivity“. 150 s pokryje minutový takt s rezervou na zpožděné doručení.
   s.staleMs = 150e3;
 
-  // Synchronizace přepisu: shodný prefix se ponechá, rozepsaná poslední zpráva se aktualizuje na místě.
-  const firstChanged = st.hashes.length && v.messages.length && st.hashes[0].text !== v.messages[0].text;
-  if (firstChanged || v.messages.length < st.hashes.length - 1) {
-    resetTranscript(s);
-    st.hashes = [];
-  }
-  let changed = false;
-  v.messages.forEach((m, i) => {
-    const known = st.hashes[i];
-    if (!known) {
-      const entry = pushEntry(s, { at: now, role: m.role, text: m.text });
-      st.hashes[i] = { role: m.role, text: m.text, entry };
-      changed = true;
-    } else if (known.text !== m.text || known.role !== m.role) {
-      if (known.entry && s.transcript.includes(known.entry)) updateEntry(s, known.entry, { role: m.role, text: m.text });
-      else known.entry = pushEntry(s, { at: now, role: m.role, text: m.text });
-      known.text = m.text;
-      known.role = m.role;
-      changed = true;
-    }
-  });
-
-  const users = v.messages.filter((m) => m.role === 'user');
-  s.turns = users.length;
-  if (users.length) {
-    s.lastPrompt = users[users.length - 1].text;
-    if (!s.firstPrompt) s.firstPrompt = users[0].text;
-  }
+  const changed = st.counts.user !== v.counts.user || st.counts.assistant !== v.counts.assistant;
+  st.counts = { ...v.counts };
+  s.turns = v.counts.user;
 
   if (v.generating && !s.running) {
     s.turnStartedAt = now;

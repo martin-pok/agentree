@@ -7,6 +7,7 @@ import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createP
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
+import { udalostNapojeni } from './napojeni-ui.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
 import overview from './views/overview.js';
@@ -658,6 +659,7 @@ const queued = [];
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
   if (vysledek?.ucet) udalostUctu(vysledek.ucet);
+  else if (vysledek?.napojeni) udalostNapojeni(vysledek.napojeni);
   else if (vysledek) onAlert(vysledek);
 }
 

@@ -188,6 +188,10 @@ export function applyEvent(name, data) {
       state.license = data;
       emit('license');
       return null;
+    // Napojení modelu je jednorázová zpráva (hotovo / vypršelo), žádný trvalý stav.
+    case 'napojeni':
+      emit('napojeni');
+      return { napojeni: data };
     case 'ucet':
       state.ucet = data;
       emit('ucet');

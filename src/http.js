@@ -229,6 +229,7 @@ export function createHttpServer(app, existingServer = null) {
     launch: (l) => broadcast('launch', l),
     license: (l) => broadcast('license', l),
     ucet: (u) => broadcast('ucet', u),
+    napojeni: (n) => broadcast('napojeni', n),
     usage: (u) => broadcast('usage', u),
     storage: (st) => broadcast('storage', st),
   };
@@ -469,9 +470,12 @@ export function createHttpServer(app, existingServer = null) {
     }, { token: true }],
     ['POST', /^\/api\/ingest\/web$/, async (req) => {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
-      const r = app.connectors.web.ingest(await readBody(req));
+      const body = await readBody(req);
+      const r = app.connectors.web.ingest(body);
       if (!r.ok) throw new HttpError(400, r.error);
       app.extensionSeen();
+      // Člověk právě napojuje tuhle službu tlačítkem – první stav z ní znamená hotovo.
+      if (typeof body?.site === 'string') app.napojeni.webOzvalo(body.site);
       return r;
     }, { token: true }],
     // Rozšíření si vyzvedne zadání spuštěné z Agenteeq. Jen se svým tokenem, jen jednou.
@@ -722,6 +726,22 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/ucet\/prihlaseni$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlásit se lze jen na Macu.');
       return ucetVolani(() => app.ucet.zacniPrihlaseni({ port: port() }));
+    }],
+    // Napojení modelů: jen člověk u Macu. Zjišťování stavu spouští nástroje dodavatelů (claude, codex),
+    // takže ani čtení nesmí jít z telefonu.
+    ['GET', /^\/api\/napojeni$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojení modelů je vidět jen na Macu.');
+      return { napojeni: await app.napojeni.prehled() };
+    }],
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      const r = await app.napojeni.napojit(m[1]);
+      if (r.status) throw new HttpError(r.status, r.error, { ...(r.prikaz ? { prikaz: r.prikaz } : {}), ...(r.rozsireni ? { rozsireni: true } : {}) });
+      return r;
+    }],
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/zrusit$/, (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojení lze zrušit jen na Macu.');
+      return app.napojeni.zrusit(m[1]);
     }],
     ['POST', /^\/api\/ucet\/zruseni$/, (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlášení lze zrušit jen na Macu.');

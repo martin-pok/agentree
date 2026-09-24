@@ -1,4 +1,5 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
+// Posílá jen stav a počty – text zpráv ani název konverzace stránku neopustí (docs/ACCOUNTS.md).
 (() => {
   const adapter = window.AgenteeqSites?.detect(location);
   if (!adapter) return;
@@ -8,15 +9,17 @@
   let timer = null;
   let dead = false;
 
+  // Délka poslední zprávy slouží jen tady k poznání, že se odpověď ještě píše. Neodesílá se.
+  let posledniDelka = 0;
   function collect() {
-    const messages = adapter.messages(document).slice(-60).map((m) => ({ role: m.role, text: m.text.slice(0, 8000) }));
+    const zpravy = adapter.messages(document);
+    posledniDelka = zpravy.length ? zpravy[zpravy.length - 1].text.length : 0;
     return {
       site: adapter.id,
       conversationId: String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-'),
       url: location.href,
-      title: adapter.title(document).slice(0, 120),
       generating: adapter.generating(document),
-      messages,
+      counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
       model: adapter.model(document) || '',
       limit: adapter.limit(document),
     };
@@ -31,9 +34,8 @@
     } catch {
       return;
     }
-    if (!payload.messages.length && !payload.generating) return;
-    const last = payload.messages[payload.messages.length - 1];
-    const sig = JSON.stringify([payload.conversationId, payload.generating, payload.messages.length, last?.text.length, payload.limit, payload.title]);
+    if (!payload.counts.user && !payload.counts.assistant && !payload.generating) return;
+    const sig = JSON.stringify([payload.conversationId, payload.generating, payload.counts, posledniDelka, payload.limit]);
     const now = Date.now();
     // Během generování posílat i heartbeat, aby server věděl, že agent stále pracuje.
     if (sig === lastSig && !(payload.generating && now - lastSentAt > 10000)) return;

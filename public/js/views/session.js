@@ -245,7 +245,7 @@ function renderTranscript(el, t) {
     }
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? '<div class="loading"><span class="loader"></span>Načítám přepis…</div>' : entries.length ? '' : '<p class="muted">Přepis je zatím prázdný.</p>');
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? '<div class="loading"><span class="loader"></span>Načítám přepis…</div>' : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? '<p class="muted">Z webových chatů si Agenteeq nebere text – jen jestli agent pracuje, nebo čeká. Konverzaci otevřeš tlačítkem nahoře.</p>' : '<p class="muted">Přepis je zatím prázdný.</p>');
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;

@@ -8,8 +8,9 @@ import { applyAppearance, normalizeAppearance } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
+import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 
-const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '' };
+const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '' };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -48,7 +49,7 @@ function sourceRow(c) {
 
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
 const GROUPS = [
-  ['set-propojeni', 'Propojení', ['claude', 'extension', 'connectors', 'custom']],
+  ['set-propojeni', 'Propojení', ['models', 'claude', 'extension', 'connectors', 'custom']],
   ['set-upozorneni', 'Upozornění', ['notifications']],
   ['set-ucet', 'Účet a vzhled', ['account', 'appearance', 'profile', 'license']],
   ['set-naklady', 'Náklady za API', ['cloud']],
@@ -224,6 +225,7 @@ function onJump() {
 function mount(el) {
   v.el = el;
   window.addEventListener('agenteeq-jump', onJump);
+  nactiNapojeni();
   if (!v.customTypes) api.customAgents().then((r) => { v.customTypes = r.types; state.customAgents = r.agents; update(); }).catch(() => { v.customTypes = []; });
   el.innerHTML = `
     <div class="settings2">
@@ -327,6 +329,20 @@ function mount(el) {
     if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
+    const nap = e.target.closest('[data-napojit]');
+    if (nap) {
+      const polozka = v.napojeni?.find((n) => n.id === nap.dataset.napojit);
+      if (!polozka) return;
+      nap.disabled = true;
+      try {
+        await spustNapojeni(polozka, { poZmene: nactiNapojeni });
+      } catch (err) {
+        toast(err.message, { tone: 'err', timeout: 8000 });
+      } finally {
+        nap.disabled = false;
+      }
+      return;
+    }
     const a = e.target.closest('[data-action]');
     if (!a) return;
     try {
@@ -616,9 +632,28 @@ function accountCard() {
     <div class="set-actions"><button class="btn btn--primary" type="button" data-action="ucet-prihlasit">Přihlásit se přes Google</button></div>`;
 }
 
+// Napojené modely (public/js/napojeni-ui.js). Seznam se ptá nástrojů dodavatelů, proto se načítá
+// jen při otevření Nastavení a po změně, ne s každým překreslením.
+function nactiNapojeni() {
+  if (v.napojeniNacita) return;
+  v.napojeniNacita = true;
+  api.napojeni()
+    .then((r) => { v.napojeni = r.napojeni; v.napojeniChyba = ''; })
+    .catch((err) => { v.napojeniChyba = err.status === 403 ? 'Modely se napojují v Agenteeq na Macu.' : `Nepodařilo se zjistit, co je napojené: ${err.message}`; })
+    .finally(() => { v.napojeniNacita = false; update(); });
+}
+
+function modelsCard() {
+  const list = v.napojeni;
+  return `${head(ICON.plug, 'Napojené modely', 'Klikni na Napojit a přihlas se u dodavatele. Agenteeq sám pozná, až bude hotovo, a začne ukazovat práci, limity a spotřebu.')}
+    ${list ? `<ul class="model-list">${list.map(radekNapojeni).join('')}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : '<p class="set-desc">Zjišťuji, co je napojené…</p>'}
+    <p class="account-privacy">${ICON.shield}<span>Přihlašuješ se vždy přímo u dodavatele. Agenteeq nevidí hesla ani klíče a z webových chatů si nebere text – jen jestli agent pracuje, nebo čeká.</span></p>`;
+}
+
 const head = (icon, title, desc, aside = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3>${title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
 
-function update() {
+function update(topics) {
+  if (v.el && v.napojeni && (topics?.has?.('napojeni') || topics?.has?.('integrations'))) nactiNapojeni();
   const el = v.el;
   const i = state.integrations;
   const n = state.settings?.notifications;
@@ -727,6 +762,9 @@ function update() {
     ${switchRow({ key: 'done', label: 'Dokončený úkol', desc: 'Když agent dokončí zadaný úkol.', checked: n.done })}
     <label class="field field--row"><span>Hlásit dokončené úkoly</span>
       <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`);
+
+  /* Napojené modely */
+  fill(el, 'models', modelsCard());
 
   /* Účet Agenteeq */
   const ucetEl = el.querySelector('[data-region="account"]');
@@ -845,6 +883,6 @@ export default {
     window.removeEventListener('agenteeq-jump', onJump);
     v.observer?.disconnect();
     v.stopProgrammatic?.();
-    Object.assign(v, { el: null, observer: null, stopProgrammatic: null });
+    Object.assign(v, { el: null, observer: null, stopProgrammatic: null, napojeni: null });
   },
 };

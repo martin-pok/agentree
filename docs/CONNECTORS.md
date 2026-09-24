@@ -167,11 +167,12 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 ### Webové aplikace – `extension/` + `src/connectors/web.js` 🧪
 
-- Rozšíření Chrome MV3 sleduje stránky (MutationObserver), posílá `site`, `conversationId`, `url`, `title`, `generating`, posledních 60 zpráv (max 8 000 znaků), `model`, `limit` na `http://127.0.0.1:4620/api/ingest/web` s tokenem.
+- Rozšíření Chrome MV3 sleduje stránky (MutationObserver) a posílá **jen stav a počty**: `site`, `conversationId`, `url`, `generating`, `counts: { user, assistant }`, `model`, `limit` na `http://127.0.0.1:4620/api/ingest/web` s tokenem. Text zpráv ani název konverzace neodesílá (od 0.25.0, rozhodnutí vlastníka produktu – `docs/ACCOUNTS.md`). Server zahodí text i od starší verze rozšíření a webová konverzace nemá přepis.
+- **Napojení tlačítkem:** Nastavení → Napojené modely → Napojit u webového chatu otevře službu v prohlížeči; první stav z ní napojení potvrdí.
 - **Párování:** Dashboard vytvoří jednorázový 16znakový kód platný 10 minut. Uživatel jej vloží do okna rozšíření; `POST /api/extension/pair` ho jednou vymění za lokální ingest token. Token není v `/api/state`, URL ani argumentech procesu.
 - **Adaptéry:** ChatGPT (`[data-message-author-role]`, `stop-button`), Claude.ai (`[data-testid="user-message"]`, `[data-is-streaming]`), Gemini (`user-query`, `model-response`); ostatní generický adaptér podle atributů/tříd a tlačítka Stop.
 - **Neověřeno proti živým webům.** Služby DOM často mění. Postup ověření je v `docs/TESTING.md`.
-- **Omezení:** port 4620 je v manifestu napevno; stránky s virtualizovaným seznamem zpráv pošlou jen vykreslené zprávy.
+- **Omezení:** port 4620 je v manifestu napevno; u stránek s virtualizovaným seznamem zpráv jsou počty jen z vykreslených zpráv.
 
 ### Náklady z Admin API – `src/connectors/cloud-billing.js` 🧪
 

@@ -10,6 +10,8 @@ export const RELEASES = [
       'Rozšíření pro Chrome je potřeba jednou spárovat znovu: v Nastavení vytvoř jednorázový kód a vlož ho do rozšíření. Dosavadní spojení přestalo platit.',
       'Při spárování dostane každý prohlížeč vlastní přístupový klíč, který platí jen pro něj. Dřív rozšíření sdílelo klíč s propojením Claude Code, takže kdo ho získal, mohl podvrhnout i upozornění z Claude Code.',
       'Nové spárování starý klíč téhož prohlížeče zneplatní a ostatní prohlížeče nechá připojené. Na disku se ukládá jen otisk klíče, ne klíč samotný.',
+      'Modely napojíš jedním klikem v Nastavení → Propojení → Napojené modely. Přihlásíš se přímo u Anthropicu nebo OpenAI a Agenteeq sám pozná, až je hotovo.',
+      'Rozšíření pro Chrome už z webových chatů nebere text ani názvy konverzací – jen jestli agent pracuje, nebo čeká.',
       'Nově se můžeš přihlásit přes Google v Nastavení → Účet a vzhled. Z Googlu si Agenteeq vezme jen jméno a e-mail; konverzace a kód zůstávají na tvém Macu. Bez účtu funguje všechno jako dřív.',
       'Přehled, Projekty a Útrata se při otevření plynule rozsvítí: karty vyjedou, měřidlo rozpočtu se dokreslí a čísla vyjedou na své místo. Jen jednou po otevření, ne při každé změně. Když máš v systému omezený pohyb, ukáže se všechno rovnou.',
     ],
