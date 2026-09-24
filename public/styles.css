@@ -946,6 +946,57 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-jinak { margin-top: -4px; }
 .pair-box a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pair-error { color: var(--velvet-ink); font-size: 13px; }
+/* Přehled účtu na webu (/app?ucet, public/js/ucet-web.js): souhrny z Maců, jen čtení. */
+html.is-cloud body { background: var(--paper); }
+.cloud-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: saturate(1.2) blur(12px); border-bottom: 1px solid var(--line-2); }
+.cloud-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 500 19px/1 var(--f-display); letter-spacing: -.02em; }
+.cloud-brand img { width: 28px; height: 28px; }
+.cloud-who { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; }
+.cloud-who > span:not(.account-avatar) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28ch; }
+.cloud-who .account-avatar { width: 32px; height: 32px; font-size: 13px; }
+.cloud { max-width: 1120px; margin: 0 auto; padding: 32px 16px 48px; }
+.cloud-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.cloud-head h1 { margin: 0; font: 400 clamp(28px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: -.02em; }
+.cloud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cloud-stage { grid-column: 1 / -1; padding: 24px; border-radius: var(--r-lg); background: var(--stage); color: #fff; }
+.cloud-stage-head { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.cloud-stage-head h2 { margin: 0; font: 400 20px/1.2 var(--f-display); }
+.cloud-age { margin-left: auto; font-size: 13px; color: rgb(255 255 255 / .7); }
+.cloud-dot { width: 10px; height: 10px; border-radius: 50%; background: rgb(255 255 255 / .35); }
+.cloud-dot.is-live { background: var(--teal); box-shadow: 0 0 0 4px rgb(34 163 140 / .25); }
+.cloud-stage-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.cloud-stat { display: grid; gap: 4px; }
+.cloud-stat b { font: 400 40px/1 var(--f-display); letter-spacing: -.02em; }
+.cloud-stat span { font-size: 13px; color: rgb(255 255 255 / .72); }
+.cloud-stat.is-work b { color: #6FE0C8; }
+.cloud-stat.is-alert b { color: #FF9DB8; }
+.cloud-stat.is-wait b { color: #F2D08A; }
+.cloud-card { padding: 20px 24px; display: grid; align-content: start; gap: 8px; min-width: 0; }
+.cloud-card h2.eyebrow { margin: 0; font-weight: 400; }
+.cloud-big { margin: 0; font: 400 34px/1.1 var(--f-display); letter-spacing: -.02em; }
+.cloud-bars svg { width: 100%; height: 48px; display: block; }
+.cloud-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.cloud-list li { display: flex; justify-content: space-between; gap: 12px; }
+.cloud-list span { color: var(--ink-2); overflow-wrap: anywhere; }
+.cloud-list b { font-weight: 500; white-space: nowrap; }
+.cloud-limits { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 14px; font-size: 14px; }
+.cloud-limits div { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.cloud-limits span { color: var(--ink-2); }
+.cloud-limits b { font-weight: 500; }
+.cloud-limits .meter-track { display: block; margin: 0; }
+.cloud-limits small { display: block; margin-top: 4px; color: var(--mute); font-size: 12px; }
+.cloud-empty { grid-column: 1 / -1; max-width: 640px; }
+.cloud-empty h2 { margin: 0; font: 400 22px/1.2 var(--f-display); }
+.cloud-empty p { margin: 0; color: var(--ink-2); }
+.cloud-foot { margin-top: 24px; }
+@media (prefers-reduced-motion: no-preference) { .cloud [data-enter] { animation: rise .6s var(--ease-settle) both; animation-delay: calc(var(--i, 0) * 70ms); } }
+@media (max-width: 900px) { .cloud-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .cloud-grid { grid-template-columns: minmax(0, 1fr); }
+  .cloud-stage-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cloud-who > span:not(.account-avatar) { display: none; }
+}
+
 /* Pozvánka pro telefon: QR vedle čísla, ne místo něj. Na úzkém okně jde QR nad text. */
 .pair-invite { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; }
 .pair-qr { flex: none; width: 168px; padding: 10px; border-radius: var(--r-md); background: #FFFFFF; border: 1px solid var(--line); }

@@ -68,6 +68,7 @@ export function pripojovaciObrazovka(zprava = '') {
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="submit">Otevřít</button>
       <small>Adresu najdeš v Agenteeq na Macu v <b>Nastavení → Otevřít na telefonu</b>. Mimo domov ji zpřístupní <b>Přístup přes Tailscale</b> o kartu níž.</small>
+      <small class="pair-jinak">Máš účet Agenteeq? <a href="/app?ucet">Přihlas se a uvidíš souhrny odkudkoli.</a></small>
       <small class="pair-jinak">Agenteeq na Macu ještě nemáš? <a href="/">Podívej se, co umí a jak ho získat.</a></small>
     </form>
   </main>`;

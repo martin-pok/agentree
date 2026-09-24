@@ -1,7 +1,7 @@
 # Účty Agenteeq
 
-Stav k 24. 9. 2026: přihlášení přes Google v aplikaci na Macu, databáze v cloudu s RLS, napojování
-modelů tlačítkem a synchronizace souhrnů (opt-in). Přehled na webu přijde v dalším kroku.
+Stav k 24. 9. 2026: přihlášení přes Google v aplikaci na Macu i na webu, databáze v cloudu s RLS,
+napojování modelů tlačítkem, synchronizace souhrnů (opt-in) a přehled souhrnů na webu (`/app?ucet`).
 
 ## Rozhodnutí vlastníka produktu (23. 9. 2026)
 
@@ -87,7 +87,9 @@ přihlášení ještě nastavuje (`GET /auth/v1/settings` → `external.google: 
    Client Secret z kroku 1.
 3. **Supabase → Authentication → URL Configuration**
    - *Site URL:* `https://agentree-fawn.vercel.app`
-   - *Redirect URLs:* `http://127.0.0.1:*/ucet/navrat/*` (aplikace na Macu, libovolný port).
+   - *Redirect URLs:* `http://127.0.0.1:*/ucet/navrat/*` (aplikace na Macu, libovolný port) a
+     `https://agentree-fawn.vercel.app/app**` (přehled na webu; náhledy Vercelu případně
+     `https://agentree-*-martins-projects-3cd277b9.vercel.app/app**`).
 
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
 
@@ -114,6 +116,25 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
   (`Prefer: resolution=merge-duplicates`). Výpadek sítě ukáže chybu, volbu nezmění a zkusí se znovu.
 - Ověřeno proti databázi 24. 9. 2026 (transakce vrácená zpět): upsert přepíše řádek, rozpad je
   `null`, druh `extra` projde, vypnutí smaže vlastní souhrny.
+
+## Přehled na webu (`public/js/ucet-web.js`)
+
+`https://agentree-fawn.vercel.app/app?ucet` – totéž rozhraní jako na Macu, jen místo serveru na Macu
+čte souhrny z účtu. Rozcestník „Kde máš Agenteeq?“ na něj odkazuje; uložené přihlášení ho otevře
+rovnou i z `/app`.
+
+- **Přihlášení:** PKCE v prohlížeči bez knihoven (Web Crypto). Ověřovač je v `sessionStorage` jen
+  do návratu, relace (přístupový a obnovovací token, jméno, e-mail) v `localStorage` tohoto
+  prohlížeče. Odhlášení ji smaže a zneplatní i na serveru. Chyba z Googlu přijde za `#` a ukáže se.
+- **Jen čtení:** GET na `profiles`, `devices`, `agent_status`, `usage_daily` (30 dní),
+  `spend_monthly` (tento měsíc), `limits` s tokenem přihlášeného; RLS vydá jen jeho řádky.
+  Do souhrnů web nezapisuje (hlídá `test/ucet-web.test.mjs`).
+- **Obsah:** agenti teď ze všech Maců dohromady, tokeny za 30 dní po dnech a poskytovatelích,
+  útrata tohoto měsíce po službách, limity s obnovou a zařízení s posledním spojením. Obnovuje se
+  každou minutu, když je stránka vidět. Vypnutá synchronizace = vysvětlení, kde ji zapnout.
+- **Vzhled** podle systému; styly aplikace (`public/styles.css`, „Přehled účtu na webu“).
+- Adresa projektu a publikovatelný klíč mají jediný zdroj `public/js/ucet-config.js`, který čte
+  i server na Macu (`src/config.js`).
 
 ## Napojení modelů tlačítkem (`src/napojeni.js`, `public/js/napojeni-ui.js`)
 
@@ -143,4 +164,5 @@ okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … 
 `test/ucet.test.mjs` běží proti atrapě Supabase Auth (PKCE, jednorázové obnovovací tokeny, apikey).
 `test/napojeni.test.mjs` běží proti atrapě `claude` a `codex` (výstupy podle ověřených zdrojů výše).
 `test/cloud-sync.test.mjs` běží proti atrapě PostgREST a hlídá seznam povolených polí.
+`test/ucet-web.test.mjs` hlídá PKCE v prohlížeči, souhrny na webu a to, že web jen čte.
 Skutečný server účtů testy nikdy nevolají: `test/helpers.mjs` nastavuje `AGENTEEQ_UCET_URL=0`.
