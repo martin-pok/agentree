@@ -3,8 +3,8 @@
 export const RELEASES = [
   {
     version: '0.25.0',
-    date: '2026-09-23',
-    title: 'Každý prohlížeč má vlastní klíč k Agenteeq',
+    date: '2026-09-24',
+    title: 'Účet Agenteeq a modely napojené jedním klikem',
     extension: true,
     items: [
       'Rozšíření pro Chrome je potřeba jednou spárovat znovu: v Nastavení vytvoř jednorázový kód a vlož ho do rozšíření. Dosavadní spojení přestalo platit.',
