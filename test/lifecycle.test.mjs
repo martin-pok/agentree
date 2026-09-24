@@ -11,7 +11,7 @@ import { identifyRetiredServer } from '../desktop/lifecycle.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 async function fixture() {
   const dir = await tempDir('agenteeq-lifecycle-');
-  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
+  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_UCET_URL: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
   return { dir, env };
 }
 // Windows signály nedoručuje: kill('SIGTERM') proces rovnou zabije, takže by se netestovalo
@@ -82,7 +82,8 @@ test('lifecycle: spoofed health from another server never authorizes termination
 test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeover', { skip: process.platform !== 'darwin' && 'jen macOS: převzetí portu se opírá o lsof' }, async (t) => {
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
-  for (const sub of ['src','bin']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
+  // Kopie má tvar skutečné instalace: src/ načítá i sdílené soubory z public/js (adresa účtů).
+  for (const sub of ['src', 'bin', 'public']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
   await fs.writeFile(path.join(legacyRoot, 'package.json'), '{"name":"agenteeq","version":"0.5.0","type":"module"}');
   const old = start(env, path.join(legacyRoot, 'bin/agenteeq.mjs'));
   t.after(() => { if (old.child.exitCode === null) old.child.kill(); });

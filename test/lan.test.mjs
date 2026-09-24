@@ -173,7 +173,7 @@ test('přístup z telefonu: po restartu se listener spustí i na serveru, který
     AGENTEEQ_SOURCE_HOME: await tempDir('agenteeq-src-'),
     AGENTEEQ_HOME: await tempDir('agenteeq-data-'),
     AGENTEEQ_PROCESSES: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0',
-    AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
+    AGENTEEQ_UCET_URL: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
   });
   const app = await createApp(config);
@@ -203,7 +203,7 @@ test('přístup z telefonu: vypnutý zůstane vypnutý i na serveru, který už 
     AGENTEEQ_SOURCE_HOME: await tempDir('agenteeq-src-'),
     AGENTEEQ_HOME: await tempDir('agenteeq-data-'),
     AGENTEEQ_PROCESSES: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0',
-    AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
+    AGENTEEQ_UCET_URL: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_SCAN_MS: '60000', AGENTEEQ_QUIET: '1', AGENTEEQ_OPEN: 'dry',
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
   });
   const app = await createApp(config);

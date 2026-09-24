@@ -34,7 +34,7 @@ test('welcome a vzhled: bezpečné výchozí hodnoty, API persistence; desktop b
 
 test('desktop: owns its server, closes on parent EOF, rejects occupied ports', async () => {
   const dir = await tempDir('agenteeq-desktop-');
-  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
+  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_UCET_URL: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_QUIET: '1', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
   const child = spawn(process.execPath, ['desktop/server.mjs'], { env, stdio: ['pipe','pipe','pipe'] });
   let output = '';
   child.stdout.on('data', (s) => { output += s; });
