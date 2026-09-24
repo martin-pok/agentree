@@ -73,6 +73,17 @@ test('popis slibuje jen soubory, které opravdu jsou', () => {
   assert.match(obojí, /nebyla vyzkoušena na skutečném počítači/, 'o neověřeném Windows se mlčet nesmí');
 });
 
+// Popis vydání je slib ke stažení. Od účtu a synchronizace (0.25.0) už „nic neposílá na
+// internet“ neplatí – a kurzy ČNB se stahovaly i předtím.
+test('popis vydání říká pravdu o tom, co odchází na internet', async () => {
+  const verze = JSON.parse(await zdroj('package.json')).version;
+  const text = poznamky({ changelog: await zdroj('CHANGELOG.md'), verze });
+  assert.doesNotMatch(text, /nic neposílá na internet/);
+  assert.match(text, /kurzy ČNB/);
+  assert.match(text, /účet Agenteeq, kam při zapnuté synchronizaci\s+odcházejí jen souhrnná čísla/);
+  assert.match(text, /Text konverzací, jejich názvy ani kód počítač neopouštějí/);
+});
+
 test('popis pro aktuální verzi se dá sestavit', async () => {
   const verze = JSON.parse(await zdroj('package.json')).version;
   const text = poznamky({ changelog: await zdroj('CHANGELOG.md'), verze });
