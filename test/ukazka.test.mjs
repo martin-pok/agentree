@@ -123,7 +123,9 @@ test('čištění cest: nejdelší napřed a i v zápisu JSON (zpětná lomítka
 test('ukázka se zapíná jen na statické kopii na webu a nástup v rámu pouští stránka kolem', async () => {
   const boot = await zdroj('public/js/boot.js');
   assert.match(boot, /if \(await jeStatickaKopie\(\)\) \{[^]*if \(ukazka\) \{[^]*spustUkazku\(\)/, 'u sebe na Macu se ukázka nikdy nezapne');
-  assert.match(boot, /else pripojovaciObrazovka\(\);/, 'když se data nenačtou, zbude rozcestník – nikdy prázdná aplikace');
+  // Ukázka účet nespouští (let ucet = false zůstane), takže když se její data nenačtou, zbude rozcestník.
+  assert.match(boot, /let ucet = false;[^]*if \(ukazka\) \{[^}]*spustUkazku\(\);\s*spustena = true;/);
+  assert.match(boot, /else if \(!ucet\) pripojovaciObrazovka\(\);/, 'když se data nenačtou, zbude rozcestník – nikdy prázdná aplikace');
   const app = await zdroj('public/js/app.js');
   assert.match(app, /if \(UKAZKA\) \{\s*\n\s*window\.addEventListener\('agenteeq:prehraj'/);
   assert.match(app, /if \(!firstNav && !UKAZKA\)/, 'ukázka v rámu nebere stránce fokus ani ji neroluje');

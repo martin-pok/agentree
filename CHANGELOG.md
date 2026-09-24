@@ -15,6 +15,13 @@
 - Testy procházejí i na Windows: cesta k souborům se skládá z URL a konce řádků drží
   `.gitattributes` jednotné na všech systémech.
 
+### Přehled účtu na webu
+
+- **`/app?ucet`:** přihlášení přes Google i na webu a přehled souhrnů ze všech Maců – agenti teď,
+  tokeny za 30 dní, útrata tohoto měsíce, limity s obnovou a zařízení. Funguje, i když je Mac
+  vypnutý; web jen čte a vidí jen řádky přihlášeného (RLS).
+- Rozcestník „Kde máš Agenteeq?“ nabízí přihlášení účtem; uložené přihlášení otevře přehled rovnou.
+
 ### Synchronizace souhrnů do účtu
 
 - **Nastavení → Účet a vzhled → Synchronizovat souhrny do účtu** (vypnuto, dokud ho nezapneš).

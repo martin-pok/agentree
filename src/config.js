@@ -32,10 +32,10 @@ function otevirani(env) {
 }
 
 // Veškerá konfigurace přes proměnné prostředí – testy tak běží nad fixturami, ne nad skutečným HOME.
-// Účty Agenteeq (docs/ACCOUNTS.md). Adresa projektu a publikovatelný klíč jsou veřejné z principu:
-// patří do každé aplikace, která se k Supabase přihlašuje. K datům pustí jen přihlášeného
-// uživatele a jen k jeho řádkům – hlídá to RLS v databázi (supabase/migrations), ne utajení klíče.
-export const UCET_VYCHOZI = { url: 'https://quxfenxxdcafcuptucnn.supabase.co', klic: 'sb_publishable_V88rxI9Bl44zydHOX5IS9Q_-PalcKxi' };
+// Účty Agenteeq (docs/ACCOUNTS.md). Adresa projektu a publikovatelný klíč jsou veřejné z principu
+// a sdílí je s přehledem na webu – jediný zdroj je public/js/ucet-config.js.
+import { UCET_VYCHOZI } from '../public/js/ucet-config.js';
+export { UCET_VYCHOZI };
 
 export function loadConfig(env = process.env) {
   // Přejmenování z Agentree na Agenteeq (0.8.0): staré proměnné prostředí i stará datová složka

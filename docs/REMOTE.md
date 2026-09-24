@@ -71,6 +71,10 @@ s doplněným portem 4620, tunel venku po `https` na svém vlastním jménu. Jin
 
 Statická kopie tedy nic neukládá ani nepřeposílá; je to jen dveře, za kterými je pořád tvůj Mac.
 
+Druhé dveře jsou **účet Agenteeq** (`/app?ucet`, `docs/ACCOUNTS.md`): po přihlášení přes Google
+ukáže souhrny, které do účtu poslal Mac se zapnutou synchronizací – i když je Mac vypnutý.
+Jen čísla, žádné konverzace.
+
 ### Ukázka pro prohlídku na webu (`/app?ukazka`)
 
 Jediná výjimka z rozcestníku: s parametrem `?ukazka` načte statická kopie místo serveru snímek

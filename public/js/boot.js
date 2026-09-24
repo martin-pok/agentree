@@ -8,6 +8,7 @@ const ukazka = new URLSearchParams(location.search).has('ukazka');
 
 if (await jeStatickaKopie()) {
   let spustena = false;
+  let ucet = false;
   if (ukazka) {
     try {
       await (await import('./ukazka.js')).spustUkazku();
@@ -15,7 +16,14 @@ if (await jeStatickaKopie()) {
     } catch (err) {
       console.error('Agenteeq: ukázku se nepodařilo spustit', err);
     }
+  } else {
+    // Účet Agenteeq na webu (/app?ucet, nebo uložené přihlášení): souhrny z Maců odkudkoli.
+    try {
+      ucet = await (await import('./ucet-web.js')).spustUcetWeb();
+    } catch (err) {
+      console.error('Agenteeq: přehled účtu se nepodařilo spustit', err);
+    }
   }
   if (spustena) await import('./app.js');
-  else pripojovaciObrazovka();
+  else if (!ucet) pripojovaciObrazovka();
 } else await import('./app.js');

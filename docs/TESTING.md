@@ -40,6 +40,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/extension-assets.test.mjs` | Shoda písem a barevných tokenů rozšíření s aplikací, licence písem, maximální váha 500, platnost a determinismus vlastního ZIP balíčku |
 | `test/site.test.mjs` | Sestavení webu (landing page v kořeni, rozhraní na `/app`, data živé prohlídky, přepis manifestu a `sw.js`), existence všech odkazovaných souborů, design systém a váhy písma, popisek „Ukázka rozhraní“ u každého panelu, živá prohlídka jen na dívání se snímky jako zálohou |
 | `test/ukazka.test.mjs` | Ukázkový režim `/app?ukazka`: posun časů na „teď“, jen čtení ze snímku (zápis 403, žádná síť), hlášení připravenosti jen vlastnímu původu, data označená „UKÁZKA“ a bez cest ze stroje, kde se web sestavuje |
+| `test/ucet-web.test.mjs` | Přehled účtu na webu: PKCE v prohlížeči, návratová adresa, souhrny agentů/tokenů/útraty, názvy oken limitů, shoda služeb s aplikací, web do souhrnů jen čte |
 | `test/cloud-sync.test.mjs` | Synchronizace souhrnů: tokeny po dnech, útrata po měsících bez poznámek, limity bez hlášek, seznam povolených polí, opt-in, založení a obnova zařízení, vypnutí smaže souhrny, výpadek sítě, HTTP jen z tohoto Macu |
 | `test/napojeni.test.mjs` | Napojení modelů tlačítkem proti atrapě `claude`/`codex`: čtení stavu jen z ověřeného výstupu (neznámý = „nevím“), příkaz v uvozovkách, potvrzení po přihlášení, už napojený, vypršení a zrušení, webový chat přes rozšíření, HTTP jen z tohoto Macu |
 | `test/ucet.test.mjs` | Účet Agenteeq proti atrapě Supabase Auth: odkaz s PKCE, návrat jen na tento Mac a jen jednou, cizí kód ani chyba z Googlu nikoho nepřihlásí, výpadek sítě není odhlášení, jednorázové obnovovací tokeny, odhlášení a smazání účtu, token nejde zapsat přes API klíčů |
@@ -100,13 +101,14 @@ Klíčenka se tu ověřit nedají – testy běží proti atrapám a na Macu je 
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 491 testů, 487 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm test` | 497 testů, 493 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
 | `npm run check` | 189 souborů bez syntaktické chyby |
 | `qa:contrast`, `qa:desktop` | WCAG 2.2 AA v aplikaci, na webu i v okně rozšíření; desktopové trasy bez chyb |
 | Cloudová databáze | `supabase/tests/rls.sql` 15/15; upsert souhrnů přes RLS ověřen v transakci vrácené zpět |
 
 - [ ] Na Macu: Nastavení → Účet a vzhled → Přihlásit se přes Google → okno Agenteeq se vrátí a potvrdí přihlášení; po restartu aplikace zůstane přihlášení (Klíčenka).
 - [ ] Na Macu: Napojené modely → Napojit u Claude Code i Codexu → Terminál, prohlížeč dodavatele, potvrzení s plánem.
+- [ ] Web: `/app?ucet` → Přihlásit se přes Google → přehled s daty z Maců; Odhlásit se → zpět na přihlášení; bez synchronizace vysvětlení, kde ji zapnout.
 - [ ] Synchronizace souhrnů: zapnout, „Co přesně posíláme“ odpovídá tomu, co je v tabulkách Supabase; vypnout → souhrny z účtu zmizí.
 
 ## Protokol ověření – 0.12.0 (15. 9. 2026, Linux kontejner, Node 22.22)
