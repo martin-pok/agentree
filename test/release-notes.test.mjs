@@ -102,6 +102,20 @@ test('workflow zakládá vydání jako koncept, nepublikuje ho', async () => {
   assert.doesNotMatch(yml, /needs\.mac-intel\.result == 'success'/);
 });
 
+// Zveřejnění je krok ven ke stažení: jen na ruční spuštění z main, jen koncept (zveřejněné
+// vydání se nepřepisuje) a jen s přílohou, na kterou vede tlačítko Stáhnout na webu.
+test('zveřejnění: jen ručně z main, jen koncept a s přílohou pro tlačítko Stáhnout', async () => {
+  const yml = await zdroj('.github/workflows/publish.yml');
+  assert.match(yml, /^on:\s*\n\s*workflow_dispatch:/m, 'zveřejnění se spouští jen ručně');
+  assert.doesNotMatch(yml, /^\s*(push|schedule|release|workflow_run):/m, 'nikdy samo od sebe');
+  assert.match(yml, /\$GITHUB_REF" != "refs\/heads\/main"/);
+  assert.match(yml, /\^v\[0-9\]\+/, 'tag se ověří dřív, než se s ním cokoli dělá');
+  assert.match(yml, /if \(!v\.isDraft\)[^\n]*process\.exit\(1\)/, 'zveřejněné vydání se nepřepisuje');
+  assert.match(yml, /a\.name === "Agenteeq-macOS-arm64\.zip"/, 'bez stálé přílohy by tlačítko Stáhnout vedlo do prázdna');
+  assert.match(yml, /node scripts\/release-notes\.mjs/, 'popis skládá skript, ne ruka');
+  assert.match(yml, /\/releases\/download\/\$TAG\/Agenteeq-macOS-arm64\.zip/, 'po zveřejnění se ověří odkaz ke stažení');
+});
+
 // Vydání jde spustit i bez terminálu (Actions → Run workflow). Chybějící tag pak založí CI –
 // ale jen z main a jen pro verzi, která je v package.json, a všechny buildy čekají, až tag je.
 test('ruční spuštění založí tag jen z main a jen pro verzi z package.json', async () => {
