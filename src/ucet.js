@@ -249,7 +249,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     return status();
   }
 
-  return { status, start, stop, pristup, zacniPrihlaseni, navrat, zrusit, odhlasit, smazat, UcetChyba };
+  return { status, start, stop, pristup, uzivatelId: () => (stav === 'prihlaseno' ? uzivatel?.id || null : null), zacniPrihlaseni, navrat, zrusit, odhlasit, smazat, UcetChyba };
 }
 
 export { UcetChyba };

@@ -10,7 +10,7 @@ import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 
-const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '' };
+const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: 'Připojeno', idle: 'Bez nových dat', missing: 'Nenalezeno', error: 'Chyba', unavailable: 'Nedostupné' };
 const FEATURE_LABEL = { launchBackground: 'Spouštění agentů na pozadí', localChat: 'Chat s lokálními modely v Ollamě', projectsUnlimited: 'Neomezený počet projektů', projectExport: 'Export projektů do CSV' };
 const DONE_OPTIONS = [[0, 'každou'], [60, 'delší než 1 minuta'], [120, 'delší než 2 minuty'], [300, 'delší než 5 minut'], [900, 'delší než 15 minut']];
@@ -252,6 +252,8 @@ function mount(el) {
   el.addEventListener('toggle', (e) => {
     const key = e.target?.dataset?.fold;
     if (key) v.folds[key] = e.target.open;
+    // Náhled toho, co odchází do účtu, se načte až při otevření – je to přesně tentýž balík.
+    if (key === 'nahled' && e.target.open) api.ucetNahled().then((r) => { v.nahled = JSON.stringify(r.nahled, null, 2); update(); }).catch((err) => { v.nahled = err.message; update(); });
   }, true);
 
   const nav = el.querySelector('.set-nav');
@@ -545,6 +547,18 @@ async function toggleSetting(sw) {
   sw.setAttribute('aria-checked', String(next));
   // Přístup z domácí sítě není jen nastavení – otevírá a zavírá spojení, takže má vlastní endpoint
   // a čeká se na skutečný výsledek (listener mohl selhat, třeba když je port obsazený).
+  if (key === 'cloudSync') {
+    try {
+      state.ucet = (await api.ucetSynchronizace(next)).ucet;
+      v.nahled = '';
+      toast(next ? 'Souhrny se synchronizují do účtu.' : 'Synchronizace je vypnutá a souhrny jsou z účtu smazané.');
+    } catch (err) {
+      sw.setAttribute('aria-checked', String(!next));
+      toast(err.message, { tone: 'err' });
+    }
+    update();
+    return;
+  }
   if (key === 'lanAccess' || key === 'tailscaleAccess') {
     const tailscale = key === 'tailscaleAccess';
     try {
@@ -603,6 +617,19 @@ async function connectClaude() {
 
 // Účet Agenteeq (src/ucet.js). Co se do účtu dostane, stojí přímo u tlačítka – ne až v zásadách.
 const UCET_SOUKROMI = 'Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek tenhle Mac neopustí.';
+// Synchronizace souhrnů (src/cloud-sync.js): přepínač, kdy naposledy odešla a přesně co odchází.
+function syncBlock(u) {
+  const s = u.sync || { zapnuto: false };
+  const stav = s.zapnuto
+    ? `<p class="set-desc">${s.posledni ? `Naposledy odesláno <span data-ago="${s.posledni}">${rel(s.posledni)}</span>.` : 'Zatím nic neodešlo.'}</p>
+      ${s.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(s.chyba)}</p>` : ''}`
+    : '';
+  return `<div class="set-divider"></div>
+    ${switchRow({ key: 'cloudSync', label: 'Synchronizovat souhrny do účtu', desc: 'Tokeny po dnech, útrata po měsících, limity a počty agentů – uvidíš je i na webu. Nikdy text, názvy konverzací ani složky. Vypnutím se z účtu smažou.', checked: s.zapnuto, disabled: u.stav !== 'prihlaseno' })}
+    ${stav}
+    ${fold('nahled', 'Co přesně posíláme', `<pre class="account-preview">${esc(v.nahled || 'Načítám…')}</pre>`)}`;
+}
+
 function accountCard() {
   const u = state.ucet;
   const chyba = u.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(u.chyba)}</p>` : '';
@@ -614,6 +641,7 @@ function accountCard() {
         <div><b>${esc(u.jmeno || u.email)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}</div></div>
       ${u.trvale ? '' : '<p class="set-note">Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.</p>'}
       <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
+      ${syncBlock(u)}
       <div class="set-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">Odhlásit se</button>
         <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">Smazat účet</button></div>`;
   }

@@ -9,7 +9,7 @@ import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
-import { spendSummary, SERVICES, KINDS, CURRENCIES } from './spend.js';
+import { spendSummary, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionEntries } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
@@ -40,6 +40,7 @@ import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
+import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
@@ -93,12 +94,38 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Účet Agenteeq (přihlášení přes Google). Adresa se otevírá v prohlížeči stejně jako odkazy
   // z konverzací – přes plán „open“, v testech jen nanečisto.
+  // Stav účtu nese i stav synchronizace souhrnů – rozhraní je ukazuje v jedné kartě.
+  const ucetStav = () => ({ ...ucet.status(), sync: cloudSync.status() });
   const ucet = createUcet({
     config,
     secrets,
-    emit: (stav) => store.emit('ucet', stav),
+    emit: (stav) => {
+      store.emit('ucet', { ...stav, sync: cloudSync.status() });
+      // Po přihlášení se načte volba synchronizace z účtu (mohla být zapnutá na jiném Macu).
+      if (stav.udalost === 'prihlaseno') cloudSync.nactiVolbu().then(() => cloudSync.synchronizuj()).catch(() => {});
+    },
     open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
   });
+  // Synchronizace souhrnů do účtu (src/cloud-sync.js): jen čísla, jen na výslovné zapnutí.
+  const cloudSync = createCloudSync({
+    config,
+    ucet,
+    datastore,
+    verze: VERSION,
+    emit: () => store.emit('ucet', ucetStav()),
+    zdroje: {
+      sessions: () => store.list(),
+      limity: () => store.limitList(),
+      konektory: () => connectorList(),
+      utrata: () => {
+        const sp = datastore.data.spend;
+        const mesice = spend().months.map((m) => m.key);
+        const zaznamy = [...(sp.ledger || []), ...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(Date.now()), Date.now())];
+        return utrataPoMesicich(zaznamy, { mesice, prevod: (e) => convert(e.amount, e.currency, sp), mena: sp.currency || 'CZK' });
+      },
+    },
+  });
+
   // Po přihlášení v prohlížeči se vrátí do popředí okno Agenteeq – jen desktopová aplikace, jinde
   // (Terminál, telefon) žádné okno k vrácení není.
   async function vratOkno() {
@@ -1104,7 +1131,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       runs: runsPayload(),
       license: licenseStatus(),
       // Telefon uvidí jen, jestli je účet přihlášený – e-mail a jméno zůstávají na Macu.
-      ucet: local ? ucet.status() : { stav: ucet.status().stav },
+      ucet: local ? ucetStav() : { stav: ucet.status().stav },
       usage: datastore.data.usage,
       customAgents: customAgentsPayload(),
       localAgents: store.localAgents,
@@ -1133,7 +1160,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     syncSnapshots();
     alerts.start();
     // Ověření uloženého přihlášení jde po síti – start aplikace na něj nečeká.
-    ucet.start().catch(() => {});
+    ucet.start().then(() => cloudSync.nactiVolbu()).then(() => cloudSync.synchronizuj()).catch(() => {});
+    cloudSync.start();
     alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
@@ -1170,6 +1198,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
     ucet.stop();
+    cloudSync.stop();
     napojeni.stop();
     await restoringRemote;
     await lan.stop();
@@ -1184,7 +1213,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
-    licenseStatus, activateLicense, removeLicense, ucet, vratOkno, napojeni,
+    licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
