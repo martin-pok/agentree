@@ -1,4 +1,7 @@
-# Vydání sestavené v CI: `git tag v0.12.0 && git push --tags`.
+# Vydání sestavené v CI: `git tag v0.12.0 && git push --tags`, nebo bez terminálu ručním
+# spuštěním (Actions → Vydání → Run workflow nad `main`, tag např. v0.25.0). Když tag ještě
+# neexistuje, první úloha ho založí na spuštěném commitu – jen z `main` a jen když sedí
+# s verzí v package.json, takže se nedá omylem označit rozpracovaná větev ani jiná verze.
 #
 # Proč to existuje vedle `npm run release:mac`: ten skript umí celou cestu, ale běží jen na
 # macOS s nástroji Xcode. Když u Macu zrovna nejsi, nejde vydat vůbec nic. Tady se .app
@@ -27,8 +30,43 @@ permissions:
   contents: write # bez práva zápisu nejde vydání založit
 
 jobs:
+  # Při pushnutém tagu tu není co dělat. Při ručním spuštění založí chybějící tag, aby se
+  # všechny další úlohy sestavovaly z téhož commitu. Tag založený tokenem workflow nespouští
+  # workflow podruhé (GitHub takové události záměrně nedoručuje), takže vydání vznikne jednou.
+  znacka:
+    name: značka vydání
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'workflow_dispatch'
+      - name: Založit tag, když ještě není
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG už existuje, vydání se sestaví z něj."
+            exit 0
+          fi
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Nový tag se zakládá jen z main (spuštěno z $GITHUB_REF)."
+            exit 1
+          fi
+          VERZE=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
+          if [ "v$VERZE" != "$TAG" ]; then
+            echo "::error::Tag $TAG nesedí s verzí v package.json ($VERZE)."
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" -m "Agenteeq $VERZE"
+          git push origin "refs/tags/$TAG"
+          echo "Založen tag $TAG na $(git rev-parse --short HEAD)."
+
   mac:
     name: aplikace pro Mac (Apple Silicon)
+    needs: znacka
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -64,6 +102,7 @@ jobs:
   # nebude zmiňovat — `scripts/release-notes.mjs` píše jen o souborech, které opravdu jsou.
   mac-intel:
     name: aplikace pro Mac (Intel)
+    needs: znacka
     runs-on: macos-15-intel
     timeout-minutes: 25
     continue-on-error: true
@@ -85,6 +124,7 @@ jobs:
 
   windows:
     name: aplikace pro Windows
+    needs: znacka
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
@@ -104,6 +144,7 @@ jobs:
 
   rozsireni:
     name: rozšíření pro Chrome
+    needs: znacka
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

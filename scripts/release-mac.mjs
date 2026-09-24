@@ -178,4 +178,5 @@ console.log('  3. Ověř, že https://github.com/martin-pok/agentree/releases/la
 console.log('  4. Web: dist/web nahraj na hosting (Vercel použije vercel.json a sestaví si ho sám).');
 console.log('\nKdyž u Macu nejsi: `git tag v' + version + ' && git push --tags` nechá vydání sestavit');
 console.log('v CI (.github/workflows/release.yml) — aplikaci pro Mac i pro Windows a rozšíření.');
+console.log('Bez terminálu: GitHub → Actions → Vydání → Run workflow nad main s tagem v' + version + '.');
 console.log('Vznikne jako koncept; zveřejnit ho musíš sám.');

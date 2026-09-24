@@ -90,3 +90,18 @@ test('workflow zakládá vydání jako koncept, nepublikuje ho', async () => {
   assert.match(yml, /needs\.mac\.result == 'success'/);
   assert.doesNotMatch(yml, /needs\.mac-intel\.result == 'success'/);
 });
+
+// Vydání jde spustit i bez terminálu (Actions → Run workflow). Chybějící tag pak založí CI –
+// ale jen z main a jen pro verzi, která je v package.json, a všechny buildy čekají, až tag je.
+test('ruční spuštění založí tag jen z main a jen pro verzi z package.json', async () => {
+  const yml = await zdroj('.github/workflows/release.yml');
+  const znacka = yml.match(/\n  znacka:\n([\s\S]*?)\n  mac:\n/)?.[1];
+  assert.ok(znacka, 'úloha „znacka“ musí být první');
+  assert.match(znacka, /if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(znacka, /\$GITHUB_REF" != "refs\/heads\/main"/, 'nový tag jen z main');
+  assert.match(znacka, /"v\$VERZE" != "\$TAG"/, 'tag musí sedět s verzí v package.json');
+  assert.match(znacka, /git ls-remote --exit-code --tags origin/, 'existující tag se jen použije, nepřepíše');
+  for (const uloha of ['mac', 'mac-intel', 'windows', 'rozsireni']) {
+    assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: znacka\\n`), `${uloha} čeká na tag`);
+  }
+});
