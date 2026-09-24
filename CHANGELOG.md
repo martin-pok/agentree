@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.25.0 – 2026-09-23 · vlastní klíč pro každé rozšíření
+## 0.25.0 – 2026-09-24 · účet Agenteeq, napojení modelů a vlastní klíč pro každé rozšíření
 
 - **Rozšíření pro Chrome dostávalo token hooků Claude Code.** Kdo ho získal z kteréhokoli
   prohlížeče, mohl podvrhnout hooky („potřebuje rozhodnutí“, limity) i konverzace ostatních
