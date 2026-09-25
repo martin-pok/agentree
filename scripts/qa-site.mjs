@@ -190,6 +190,56 @@ try {
         await p.close();
       }
 
+      // Plynulé posouvání kolečkem (site/lp.js). Na počítači stránka po kroku kolečka dojíždí
+      // plynule a skončí přesně tam, kam kolečko mířilo; klávesnice a odkazy na sekce fungují
+      // dál. Na dotykovém zařízení a s „omezit pohyb“ se nesmí zapnout vůbec – dotyk už jednou
+      // kvůli převzatému posouvání na iPhonu nefungoval.
+      {
+        const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+        const chyby = [];
+        p.on('pageerror', (e) => chyby.push(e.message));
+        await jenMistni(p, []);
+        await p.goto(url);
+        await p.evaluate(() => document.fonts.ready);
+        assert.equal(await p.evaluate(() => 'plynule' in document.documentElement.dataset), true, `${engine}: plynulé posouvání se na počítači nezapnulo`);
+        await p.mouse.move(720, 450);
+        const vzorky = p.evaluate(() => new Promise((hotovo) => {
+          const v = [];
+          const t0 = performance.now();
+          (function f() { v.push(scrollY); if (performance.now() - t0 < 1800) requestAnimationFrame(f); else hotovo(v); })();
+        }));
+        await p.mouse.wheel(0, 400);
+        const v = await vzorky;
+        const konec = v.at(-1);
+        const mezi = new Set(v.filter((y) => y > 2 && y < konec - 2).map(Math.round)).size;
+        assert.ok(Math.abs(konec - 400) <= 2, `${engine}: kolečko 400 px dojelo na ${konec}`);
+        assert.ok(mezi >= 5, `${engine}: posun kolečkem neběžel plynule (mezipoloh ${mezi})`);
+        assert.ok(v.every((y, i) => i === 0 || y >= v[i - 1] - 0.5), `${engine}: dojezd se vracel`);
+        const ustal = () => p.evaluate(() => new Promise((hotovo) => {
+          let posledni = scrollY, klid = 0;
+          const t = setInterval(() => { klid = scrollY === posledni ? klid + 1 : 0; posledni = scrollY; if (klid >= 4) { clearInterval(t); hotovo(scrollY); } }, 50);
+          setTimeout(() => { clearInterval(t); hotovo(scrollY); }, 4000);
+        }));
+        const predKlavesou = await ustal();
+        await p.keyboard.press('PageDown');
+        const poKlavese = await ustal();
+        assert.ok(poKlavese - predKlavesou > 300, `${engine}: Page Down posunul jen o ${poKlavese - predKlavesou} px`);
+        await p.click('.nav-links a[href="#soukromi"]');
+        await ustal();
+        const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
+        assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
+        assert.deepEqual(chyby, [], `${engine}: chyby při plynulém posouvání`);
+        await p.close();
+        for (const [popis, volby] of [['dotyk', { hasTouch: true, isMobile: engine === 'chromium' }], ['omezit pohyb', { reducedMotion: 'reduce' }]]) {
+          const k = await browser.newContext({ viewport: { width: 390, height: 844 }, ...volby });
+          const q = await k.newPage();
+          await jenMistni(q, []);
+          await q.goto(url);
+          assert.equal(await q.evaluate(() => 'plynule' in document.documentElement.dataset), false, `${engine}: plynulé posouvání se zapnulo i při: ${popis}`);
+          await k.close();
+        }
+      }
+
       const staticPage = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 375, height: 900 } });
       await jenMistni(staticPage, []);
       await staticPage.goto(url);
