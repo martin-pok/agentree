@@ -59,9 +59,9 @@ try {
           assert.deepEqual(nenactene, [], `${engine} ${theme} ${width}: výřezy se nenačetly`);
           // Telefon dostane výřezy z telefonního rozvržení, širší obrazovka ty z Macu.
           const zdroje = await page.evaluate(() => [...document.querySelectorAll('.detail img')].filter((i) => i.getBoundingClientRect().width).map((i) => i.currentSrc));
-          // Karty scény berou telefonní výřez i na tabletu (v přirozené velikosti čitelnější), oznámení
-          // je telefonní všude – je to plovoucí karta.
-          const telefonni = (z) => width <= 620 || /upozorneni/.test(z) || (width <= 900 && /rozhodnuti|limit/.test(z));
+          // Útrata je z telefonního rozvržení všude (měřidlo nad částkou se vejde do dlaždice),
+          // seznam agentů i na tabletu (tabulka z Macu by se zmenšila pod čitelnost).
+          const telefonni = (z) => width <= 620 || /utrata/.test(z) || (width <= 900 && /agenti/.test(z));
           assert.equal(zdroje.every((z) => z.includes('-mobil') === telefonni(z)), true, `${engine} ${theme} ${width}: ${zdroje.join(', ')}`);
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${theme} ${width}: overflow`);
           assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'reduced motion');
@@ -92,14 +92,14 @@ try {
         await jenMistni(p, []);
         await p.goto(url);
         await p.evaluate(() => document.fonts.ready);
-        const cile = await p.evaluate(() => [...document.querySelectorAll('.scene-in, .chapter-figure')].map((_, i) => i));
+        const cile = await p.evaluate(() => [...document.querySelectorAll('.hero-shot, .tile')].map((_, i) => i));
         assert.ok(cile.length >= 4, `${engine} ${sirka}: výřezů k posouvání je ${cile.length}`);
         const naStred = (i) => p.evaluate((i) => {
-          const el = document.querySelectorAll('.scene-in, .chapter-figure')[i];
+          const el = document.querySelectorAll('.hero-shot, .tile')[i];
           const r = el.getBoundingClientRect();
           scrollTo({ top: scrollY + r.top + Math.min(r.height, innerHeight) / 2 - innerHeight / 2, behavior: 'instant' });
           const b = el.getBoundingClientRect();
-          return { x: Math.round(Math.min(b.left + b.width / 2, innerWidth / 2 + 120)), y: Math.round(Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140))), nahore: document.elementFromPoint(Math.min(b.left + b.width / 2, innerWidth / 2 + 120), Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140)))?.closest('.scene-in, .chapter-figure') === el };
+          return { x: Math.round(Math.min(b.left + b.width / 2, innerWidth / 2 + 120)), y: Math.round(Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140))), nahore: document.elementFromPoint(Math.min(b.left + b.width / 2, innerWidth / 2 + 120), Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140)))?.closest('.hero-shot, .tile') === el };
         }, i);
         const cdp = dotyk ? await kontext.newCDPSession(p) : null;
         const tah = async (x, y) => {
@@ -147,19 +147,21 @@ try {
         await jenMistni(p, []);
         await p.goto(url);
         const pruhlednost = [];
-        for (const sel of ['.chapter--dolu .chapter-shot', '.chapter--dolu .chapter-float', '.chapter--flip .stack-front', '.chapter--flip .stack-back', '.chapter:not(.chapter--dolu):not(.chapter--flip) .chapter-shot']) {
+        const dlazdic = await p.locator('.tile').count();
+        assert.ok(dlazdic >= 5, `${engine}: dlaždic je ${dlazdic}`);
+        for (let i = 0; i < dlazdic; i++) {
+          const sel = `.tile:nth-child(${i + 1})`;
           await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); scrollTo({ top: scrollY + r.top + r.height / 2 - innerHeight / 2, behavior: 'instant' }); }, sel);
           await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
           await p.waitForTimeout(150);
           pruhlednost.push([sel, await p.evaluate((sel) => getComputedStyle(document.querySelector(sel)).opacity, sel)]);
         }
-        const ocekavano = { '.chapter--flip .stack-back': '0.5' };
-        for (const [sel, o] of pruhlednost) assert.equal(o, ocekavano[sel] || '1', `${engine}: ${sel} po dojetí do okna má průhlednost ${o}`);
+        for (const [sel, o] of pruhlednost) assert.equal(o, '1', `${engine}: ${sel} po dojetí do okna má průhlednost ${o}`);
         // A nástup je opravdu napojený na okno: výřez, který právě vyjel zespodu, je ještě
         // průhledný. Kdyby animace měřila vůči sekci (posuvný kontejner), byl by rovnou celý.
         if (await p.evaluate(() => CSS.supports('animation-timeline: view()'))) {
           const vjizdi = await p.evaluate(async () => {
-            const el = document.querySelector('.chapter:not(.chapter--dolu):not(.chapter--flip) .chapter-shot');
+            const el = document.querySelector('.tile:last-child');
             scrollTo({ top: 0, behavior: 'instant' });
             const r = el.getBoundingClientRect();
             scrollTo({ top: r.top - innerHeight + 24, behavior: 'instant' });
@@ -176,7 +178,7 @@ try {
       await staticPage.goto(url);
       // Bez JavaScriptu musí stránka pořád prodávat: nadpis, snímek produktu i tlačítko ke stažení.
       assert.ok(await staticPage.locator('h1').isVisible(), 'nadpis bez JS');
-      assert.ok(await staticPage.locator('.scene-main img').isVisible(), 'výřez produktu bez JS');
+      assert.ok(await staticPage.locator('.hero-shot img').isVisible(), 'výřez produktu bez JS');
       assert.ok(await staticPage.locator('[data-stahnout="mac-arm64"]').first().isVisible(), 'stažení bez JS');
       await staticPage.locator('#rozsireni summary').click();
       assert.ok(await staticPage.locator('#rozsireni ol').isVisible());

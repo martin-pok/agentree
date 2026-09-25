@@ -14,22 +14,25 @@ Stejná scéna (tři projekty, zapsaná předplatná a kredity, rozpočet 6 000 
 ## Výřezy na webu
 
 Landing page neukazuje celé obrazovky ani vložené rozhraní, ale **výřezy jednotlivých částí**
-skutečné aplikace: pruh stavu, karta rozhodnutí, okno limitu, seznam agentů, oznámení, karty
-projektů a Útrata. Leží v `site/detail/` jako WebP s průhlednými rohy, zvlášť z rozvržení pro Mac
-(1280 px) a pro telefon (390 px), obojí v trojnásobné hustotě a v tmavém vzhledu – kompozice na
-webu stojí na tmavé scéně v obou režimech stránky. Rozměry v CSS pixelech jsou
+skutečné aplikace, každý v samostatné dlaždici: pruh stavu (hero), seznam agentů, karta
+rozhodnutí, okno limitu, karta projektu a Útrata. Nic se přes sebe nepřekrývá a nic není
+uříznuté – pruh stavu se fotí v okně 1520 px, kde se vejdou všichni agenti; na telefonu jen jeho
+horní část s počty. Výřezy leží v `site/detail/` jako WebP s průhlednými rohy, z rozvržení pro Mac
+a pro telefon, v trojnásobné hustotě a v tmavém vzhledu. Rozměry v CSS pixelech jsou
 v `site/detail/rozmery.json` a stejné musí být ve `width`/`height` v `site/index.html`
 (hlídá `test/site.test.mjs`).
 
 - **Obnova:** `npm run shots:site` (Playwright s Chromiem). Scéna se pro výřezy staví bez předpony
   „UKÁZKA ·“ a s věrohodným popisem činnosti (`pripravUkazku({}, { oznacit: false })`), protože
-  každý výřez má přímo pod sebou popisek „skutečné rozhraní, smyšlená data“. Živá ukázka
-  i `npm run showcase` označení mají dál.
-- **Bez obalu aplikace:** postranní panel a spodní lišta telefonu jsou při focení neviditelné
-  (drží ale místo, rozvržení je stejné jako v aplikaci), pozadí okna je průhledné.
-- **Nic ve stránce nepřebírá dotyk ani kolečko:** žádný iframe; nástup výřezů řídí CSS podle
-  posouvání (`animation-timeline: view()`), kde to prohlížeč neumí, jsou výřezy prostě vidět.
-  `npm run qa:site` měří, že tah prstem i kolečko přes každý výřez posune stránku.
+  pod výřezy stojí popisek „skutečné rozhraní, smyšlená data“. Hodiny prohlížeče při focení
+  stojí na čase vzniku scény (jinak by se „obnova za 2 h“ měnila a výřezy by vycházely jinak
+  vysoké), časové pásmo je pražské. Živá ukázka i `npm run showcase` označení mají dál.
+- **Bez obalu aplikace:** postranní panel, spodní lišta telefonu a úchyt pro přesouvání karet jsou
+  při focení neviditelné (drží ale místo, rozvržení je stejné jako v aplikaci), pozadí okna je
+  průhledné.
+- **Nic ve stránce nepřebírá dotyk ani kolečko:** žádný iframe; nástup dlaždic řídí CSS podle
+  posouvání (`animation-timeline: view()`), kde to prohlížeč neumí, jsou prostě vidět.
+  `npm run qa:site` měří, že tah prstem i kolečko přes hero i každou dlaždici posune stránku.
 
 Staré celé snímky obrazovek v `site/shots/` web už nepoužívá.
 
