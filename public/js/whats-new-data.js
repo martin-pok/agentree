@@ -3,7 +3,7 @@
 export const RELEASES = [
   {
     version: '0.26.0',
-    date: '2026-09-24',
+    date: '2026-09-25',
     title: 'Rozšíření ukáže, jestli službu čte správně',
     extension: true,
     items: [

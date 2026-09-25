@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.26.0 – 2026-09-24 · ověření webových služeb v okně rozšíření
+## 0.26.0 – 2026-09-25 · ověření webových služeb v okně rozšíření
 
 - **Okno rozšíření → Ověřit tuto stránku.** Na stránce podporované služby adaptér řekne, co
   našel a čím: konverzaci podle adresy, pole pro zadání (přesně, jen obecnou zálohou, nebo
