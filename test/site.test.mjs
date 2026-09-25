@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, odkazNaStazeni, REPO, BALICEK_MAC, APP_PATH } from '../scripts/build-site.mjs';
+import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, odkazNaStazeni, REPO, BALICEK_MAC, APP_PATH, JAZYKY } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -59,15 +59,19 @@ test('web: manifest a service worker se narovnají na /app, na Macu zůstávají
 test('web: každý odkaz na vlastní soubor v landing page opravdu existuje', async () => {
   const out = await tempDir('web-odkazy-');
   const r = await buildSite({ out });
-  const html = await fs.readFile(path.join(out, 'index.html'), 'utf8');
   const css = await fs.readFile(path.join(out, 'lp.css'), 'utf8');
   const cesty = new Set();
-  for (const m of html.matchAll(/(?:href|src|srcset)="(\/[^"#?\s]+)"/g)) cesty.add(m[1]);
+  for (const jazyk of JAZYKY) {
+    const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
+    for (const m of html.matchAll(/(?:href|src|srcset)="(\/[^"#?\s]*)"/g)) cesty.add(m[1]);
+  }
   for (const m of css.matchAll(/url\('?(\/[^')]+)'?\)/g)) cesty.add(m[1]);
   assert.ok(cesty.size >= 10, `čekali jsme víc odkazů, našli jsme ${cesty.size}`);
   for (const cesta of cesty) {
-    if (cesta === APP_PATH) continue; // čistá adresa bez přípony, soubor je app/index.html
-    assert.ok(r.files.includes(cesta.slice(1)), `odkaz ${cesta} nikam nevede`);
+    // Čistá adresa bez přípony (/, /app, /en) vede na index.html ve složce – hosting má cleanUrls.
+    const soubor = cesta.slice(1);
+    const index = soubor ? `${soubor}/index.html` : 'index.html';
+    assert.ok(r.files.includes(soubor) || r.files.includes(index), `odkaz ${cesta} nikam nevede`);
   }
 });
 
@@ -93,14 +97,54 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
 // sekce, která je ukazuje, musí říct, že jde o smyšlená data. Bez toho by stránka vydávala
 // vymyšlený obsah za skutečná data uživatele.
 test('web: každá ukázka rozhraní je jako ukázka popsaná', async () => {
-  const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
-  const sekce = html.split('<section').slice(1).filter((s) => /class="(?:[^"]*\s)?detail(?:\s[^"]*)?"/.test(s));
-  assert.ok(sekce.length >= 2, 'výřezy rozhraní na stránce jsou (hero a kapitoly)');
-  for (const s of sekce) {
-    const popisek = s.match(/class="detail-note"[^>]*>([^<]+)/);
-    assert.ok(popisek, `sekce s výřezy bez popisku: ${s.slice(0, 80)}`);
-    assert.match(popisek[1], /smyšlen/);
+  for (const [soubor, ukazka] of [['site/index.html', /smyšlen/], ['site/en/index.html', /sample data/]]) {
+    const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
+    const sekce = html.split('<section').slice(1).filter((s) => /class="(?:[^"]*\s)?detail(?:\s[^"]*)?"/.test(s));
+    assert.ok(sekce.length >= 2, `${soubor}: výřezy rozhraní na stránce jsou (hero a kapitoly)`);
+    for (const s of sekce) {
+      const popisek = s.match(/class="detail-note"[^>]*>([^<]+)/);
+      assert.ok(popisek, `${soubor}: sekce s výřezy bez popisku: ${s.slice(0, 80)}`);
+      assert.match(popisek[1], ukazka, soubor);
+    }
   }
+});
+
+// Anglická stránka je překlad, ne jiný web. Stavba (prvky, id, třídy, obrázky a jejich rozměry)
+// musí sedět na českou – jinak by se jazykové verze po první úpravě začaly rozcházet a jedna
+// z nich by nesla zastaralé texty nebo chybějící sekci.
+function stavba(html) {
+  const bezDat = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, '');
+  return [...bezDat.matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>/g)].map(([, konec, znacka, atributy]) => {
+    const a = (jmeno) => atributy.match(new RegExp(`\\s${jmeno}="([^"]*)"`))?.[1] ?? '';
+    return konec ? `/${znacka}` : [znacka, a('id'), a('class'), a('src'), a('srcset'), a('width'), a('height'), a('data-stahnout')].join('|');
+  });
+}
+
+test('web: anglická verze má stejnou stavbu jako česká a obě nabízejí přepínač jazyka', async () => {
+  const cs = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
+  const en = await fs.readFile(path.join(ROOT, 'site/en/index.html'), 'utf8');
+  assert.deepEqual(stavba(en), stavba(cs), 'site/en/index.html se stavbou rozešel se site/index.html');
+  assert.match(en, /<html lang="en">/);
+  assert.match(en, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/en"/);
+  assert.match(en, /<meta property="og:locale" content="en_US">/);
+  assert.match(en, /<meta name="description" content="[^"]{80,}"/);
+  // Obě verze se navzájem ohlásí vyhledávačům; výchozí je čeština.
+  for (const html of [cs, en]) {
+    assert.match(html, /<link rel="alternate" hreflang="cs" href="https:\/\/agentree-fawn.vercel.app\/">/);
+    assert.match(html, /<link rel="alternate" hreflang="en" href="https:\/\/agentree-fawn.vercel.app\/en">/);
+    assert.match(html, /<link rel="alternate" hreflang="x-default" href="https:\/\/agentree-fawn.vercel.app\/">/);
+  }
+  // Přepínač: stejné místo, aktuální jazyk označený pro čtečky i pro styl.
+  const prepinac = (html) => html.match(/<div class="lang"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? '';
+  assert.match(prepinac(cs), /<a href="\/" lang="cs" hreflang="cs" aria-current="page"[^>]*>CZ<\/a>/);
+  assert.match(prepinac(cs), /<a href="\/en" lang="en" hreflang="en" aria-label="English">EN<\/a>/);
+  assert.match(prepinac(en), /<a href="\/" lang="cs" hreflang="cs" aria-label="Čeština">CZ<\/a>/);
+  assert.match(prepinac(en), /<a href="\/en" lang="en" hreflang="en" aria-current="page"[^>]*>EN<\/a>/);
+  // Žádný zapomenutý český text: diakritika smí zůstat jen v názvu jazyka v přepínači.
+  const text = en.replace(/<script[\s\S]*?<\/script>/g, '').replace(/aria-label="Čeština"/, '');
+  const zbytky = text.match(/[^<>"]*[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][^<>"]*/g) || [];
+  assert.deepEqual(zbytky, [], 'v anglické stránce zůstala čeština');
+  for (const m of en.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
 });
 
 test('web: stránka je česky a nabízí skutečnou prohlídku a instalační postup', async () => {
@@ -202,10 +246,12 @@ test('web nemá nekonečnou animaci a pohyb umí vypnout', async () => {
 test('web: odkaz na stažení míří na stálou přílohu posledního vydání', async () => {
   const out = await tempDir('web-stazeni-');
   await buildSite({ out });
-  const html = await fs.readFile(path.join(out, 'index.html'), 'utf8');
-  const odkazy = [...html.matchAll(/data-stahnout="mac-arm64" href="([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(odkazy.length >= 2, 'tlačítko patří do hlavičky i do sekce Stažení');
-  for (const odkaz of odkazy) assert.equal(odkaz, `${REPO}/releases/latest/download/${BALICEK_MAC}`);
+  for (const jazyk of JAZYKY) {
+    const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
+    const odkazy = [...html.matchAll(/data-stahnout="mac-arm64" href="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(odkazy.length >= 2, `${jazyk.kod}: tlačítko patří do úvodu i do sekce Stažení`);
+    for (const odkaz of odkazy) assert.equal(odkaz, `${REPO}/releases/latest/download/${BALICEK_MAC}`, jazyk.kod);
+  }
   assert.throws(() => odkazNaStazeni('<a href="x">bez značky</a>'), /data-stahnout/);
   // Stálou kopii k vydání přikládá workflow. Bez ní by odkaz po dalším vydání přestal fungovat.
   const workflow = await fs.readFile(path.join(ROOT, '.github/workflows/release.yml'), 'utf8');

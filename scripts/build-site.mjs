@@ -3,6 +3,7 @@
 // Na jedné adrese žijí dvě různé věci a tenhle skript je poskládá tak, aby si nepřekážely:
 //
 //   /       landing page (site/) – jediné, co má vidět někdo, kdo o Agenteeq slyší poprvé
+//   /en     táž stránka anglicky (site/en/)
 //   /app    statická kopie rozhraní aplikace (public/) – rozcestník „Kde máš Agenteeq?“
 //           pro telefon mimo domácí síť, viz docs/REMOTE.md
 //
@@ -19,11 +20,19 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Kam vede rozhraní aplikace na webovém hostingu.
 export const APP_PATH = '/app';
 
+// Jazykové verze landing page. Výchozí je čeština v kořeni, angličtina na /en (čistá adresa
+// jako /app – hosting má cleanUrls). Obě mají stejnou stavbu, liší se jen texty; hlídá to
+// test/site.test.mjs.
+export const JAZYKY = [
+  { kod: 'cs', adresa: '/', soubor: 'index.html' },
+  { kod: 'en', adresa: '/en', soubor: path.join('en', 'index.html') },
+];
+
 // Přepíše softwareVersion ve strukturovaných datech stránky. Když ji tam nenajde, spadne: tichá
 // změna tvaru stránky by jinak vrátila zastaralou verzi a nikdo by si nevšiml.
 export function verzeVDatechStranky(html, verze) {
   const vzor = /"softwareVersion":"[^"]*"/;
-  if (!vzor.test(html)) throw new Error('site/index.html nemá „softwareVersion“ ve strukturovaných datech — uprav scripts/build-site.mjs.');
+  if (!vzor.test(html)) throw new Error('Stránka webu nemá „softwareVersion“ ve strukturovaných datech — uprav scripts/build-site.mjs.');
   return html.replace(vzor, `"softwareVersion":"${verze}"`);
 }
 
@@ -34,7 +43,7 @@ export const REPO = 'https://github.com/martin-pok/agentree';
 export const BALICEK_MAC = 'Agenteeq-macOS-arm64.zip';
 export function odkazNaStazeni(html) {
   const vzor = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
-  if (!vzor.test(html)) throw new Error('site/index.html nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
+  if (!vzor.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
   return html.replace(vzor, `$1${REPO}/releases/latest/download/${BALICEK_MAC}$2`);
 }
 
@@ -102,9 +111,12 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await copyDir(path.join(root, 'site'), out);
   // Verze v datech pro vyhledávače se bere z package.json při každém sestavení. Napsaná ručně by po
   // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
+  // Stejně se upraví každá jazyková verze stránky – odkaz ke stažení i verze musí sedět v obou.
   const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
-  const stranka = path.join(out, 'index.html');
-  await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze)));
+  for (const jazyk of JAZYKY) {
+    const stranka = path.join(out, jazyk.soubor);
+    await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze)));
+  }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
   await fs.mkdir(path.join(out, 'ukazka'), { recursive: true });

@@ -98,6 +98,10 @@ section[id] { scroll-margin-top: 56px; }
 .btn:hover { background: var(--action-hover); transform: translateY(-1px); }
 .btn:active { transform: translateY(0) scale(.98); }
 .btn--sm { padding: 8px 16px; font-size: 14px; }
+/* Tlačítko v liště je jen text. Doplněk „ pro Mac“ je vlastní položka flexu, takže by mezi slovy
+   byla mezera z `gap` místo obyčejné mezery; ta zůstává v textu kvůli čtečkám. */
+.nav .btn { gap: 0; }
+.nav-cta-extra { white-space: pre; }
 .btn--lg { padding: 16px 30px; font-size: 17px; }
 .nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
 .nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
@@ -122,6 +126,15 @@ section[id] { scroll-margin-top: 56px; }
 .nav-links { display: flex; gap: 28px; font-size: 14px; }
 .nav-links a { color: var(--on-stage-mute); text-decoration: none; transition: color 180ms var(--ease); }
 .nav-links a:hover { color: var(--on-stage); }
+/* Přepínač jazyka: dvě písmena v kapsli. Aktivní jazyk jen jemně podložený – plná světlá
+   kapsle patří výzvě ke stažení hned vedle a v liště má být jediná. Odkaz, ne tlačítko: každá
+   jazyková verze má vlastní adresu (/ a /en), kterou jde sdílet i najít ve vyhledávači. */
+/* Kapsli nese linka, ne výplň: neaktivní jazyk leží přímo na liště jako ostatní odkazy v ní,
+   takže drží kontrast i tam, kde je pod průsvitnou lištou světlá stránka. */
+.lang { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(244, 243, 247, .14); border-radius: 999px; }
+.lang a { min-width: 36px; padding: 5px 10px; border-radius: 999px; font-size: 13px; line-height: 1.4; letter-spacing: .02em; text-align: center; color: var(--on-stage-mute); text-decoration: none; transition: background 180ms var(--ease), color 180ms var(--ease); }
+.lang a:hover { color: var(--on-stage); }
+.lang a[aria-current] { background: rgba(244, 243, 247, .16); color: var(--on-stage); }
 
 /* ---------- hero ---------- */
 .hero { position: relative; isolation: isolate; overflow: hidden; padding-top: clamp(64px, 7vw, 104px); }
@@ -224,7 +237,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 @media (max-width: 620px) {
   .wrap, .narrow { width: calc(100% - 32px); }
   .nav-links { display: none; }
-  .nav-in { gap: 12px; }
+  .nav-in { gap: 10px; }
   .brand { font-size: 17px; }
   .btn--lg { padding: 15px 26px; font-size: 16px; }
   /* Telefon: dlaždice pod sebou, výřezy z telefonního rozvržení v přirozené velikosti. */
@@ -239,6 +252,10 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .source-group, .facts article, .steps li, .gatekeeper { padding: 28px 22px 32px; border-radius: var(--r-lg); }
   summary { font-size: 17px; padding: 20px 2px; }
+}
+@media (max-width: 420px) {
+  /* Logo, přepínač jazyka a výzva se musí vejít vedle sebe i na 360 px. */
+  .nav-cta-extra { display: none; }
 }
 
 /* ---------- pohyb ---------- */

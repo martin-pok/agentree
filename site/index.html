@@ -9,6 +9,9 @@
 <meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="https://agentree-fawn.vercel.app/">
+<link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/">
+<link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en">
+<link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/">
 <link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta property="og:type" content="website">
@@ -32,7 +35,8 @@
 <header class="nav"><div class="wrap nav-in">
   <a class="brand" href="/" aria-label="Agenteeq – domů"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
   <nav class="nav-links" aria-label="Sekce stránky"><a href="#prohlidka">Prohlídka</a><a href="#propojeni">Propojení</a><a href="#soukromi">Soukromí</a></nav>
-  <a class="btn btn--sm" href="#vyzkouset">Stáhnout pro Mac</a>
+  <div class="lang" role="group" aria-label="Jazyk stránky"><a href="/" lang="cs" hreflang="cs" aria-current="page" aria-label="Čeština">CZ</a><a href="/en" lang="en" hreflang="en" aria-label="English">EN</a></div>
+  <a class="btn btn--sm" href="#vyzkouset">Stáhnout<span class="nav-cta-extra"> pro Mac</span></a>
 </div></header>
 
 <main id="obsah">
@@ -185,7 +189,7 @@
           <li>Klikni na <b>Načíst rozbalené</b>, v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>, vlož zkopírovanou cestu a potvrď.</li>
           <li>Připni si ikonu Agenteeq a vlož do ní jednorázový kód z aplikace.</li>
         </ol>
-        <p class="small muted">Rozšíření zatím není v Chrome Web Store, proto ta ruční cesta. Přepis putuje jenom do aplikace na stejném počítači a jednotlivé služby můžeš kdykoli vypnout.</p>
+        <p class="small muted">Rozšíření zatím není v Chrome Web Store, proto ta ruční cesta. Posílá jen stav konverzace a počty zpráv, žádný text, a to jenom aplikaci na stejném počítači. Jednotlivé služby můžeš kdykoli vypnout.</p>
       </div></details>
 
       <details><summary>Dívat se na agenty z telefonu <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
@@ -208,7 +212,7 @@
     <details><summary>Kolik to stojí?</summary><p>Beta je zdarma a má odemčené všechny funkce. Až z bety vyjdeme, část funkcí zůstane zdarma; co bude placené, řekneme dopředu a nikoho nepřekvapíme účtem.</p></details>
     <details><summary>Ukáže přesnou útratu za všechna předplatná?</summary><p>Tokeny, limity a peníze jsou tři různé údaje. Předplatné a dokoupené kredity zadáváš ručně, podporované Admin API umí doplnit ověřené náklady. Agenteeq nepřevádí tokeny na domnělou cenu.</p></details>
     <details><summary>Musím připojit všechny služby?</summary><p>Ne. Začni nástrojem, který používáš nejvíc. Rozšíření, hooky i další zdroje jsou volitelné a dostupnost každého konektoru vidíš v Nastavení.</p></details>
-    <details><summary>A co Windows?</summary><p>Jádro testujeme na Windows i Linuxu a aplikace pro Windows se už sestavuje v CI. Její nativní ovládání ale ještě potřebuje ověření na skutečném Windows, takže plnohodnotnou alternativu k Macu zatím neslibujeme.</p></details>
+    <details><summary>A co Windows?</summary><p>Aplikace pro Windows se při každé změně sestaví a automaticky spustí: rozhraní se v okně načte a po zavření skončí i server. Balíček je u každého vydání na GitHubu jako beta. Oznámení, ikonu v oznamovací oblasti a další nativní ovládání ale ještě musí vyzkoušet člověk u skutečného počítače, proto tlačítko na stránce zatím vede jen na verzi pro Mac.</p></details>
   </div>
 </section>
 

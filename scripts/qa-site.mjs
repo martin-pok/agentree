@@ -42,16 +42,33 @@ try {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
       for (const theme of ['light', 'dark']) {
-        for (const width of [360, 375, 768, 900, 1440]) {
+        for (const width of [360, 375, 768, 900, 1440]) for (const stranka of ['/', '/en']) {
           const page = await browser.newPage({ viewport: { width, height: 1000 }, colorScheme: theme, reducedMotion: 'reduce' });
           const errors = [];
           const cizi = [];
           await jenMistni(page, cizi);
           page.on('pageerror', e => errors.push(e.message));
           page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
-          await page.goto(url);
+          await page.goto(url + (stranka === '/' ? '' : stranka));
           await page.evaluate(() => document.fonts.ready);
           assert.equal(await page.locator('h1').count(), 1);
+          // Přepínač jazyka je v liště na každé šířce celý vidět, nic nepřekrývá a označuje
+          // jazyk, který je právě otevřený.
+          const lista = await page.evaluate(() => {
+            const box = (s) => document.querySelector(s)?.getBoundingClientRect();
+            const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
+            const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+            return {
+              videt: Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
+              prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)),
+              jazyk: document.documentElement.lang,
+              aktualni: document.querySelector('.lang [aria-current="page"]')?.getAttribute('lang'),
+            };
+          });
+          const cekanyJazyk = stranka === '/en' ? 'en' : 'cs';
+          assert.equal(lista.videt, true, `${engine} ${theme} ${width} ${stranka}: přepínač jazyka není celý vidět`);
+          assert.equal(lista.prekryv, false, `${engine} ${theme} ${width} ${stranka}: přepínač jazyka překrývá logo nebo tlačítko`);
+          assert.deepEqual([lista.jazyk, lista.aktualni], [cekanyJazyk, cekanyJazyk], `${engine} ${theme} ${width} ${stranka}: jazyk stránky`);
           // Produkt ukazují výřezy (obrázky). Vložený rám tu byl a na iPhonu blokoval posouvání.
           assert.equal(await page.locator('iframe').count(), 0, `${engine} ${theme} ${width}: ve stránce je rám`);
           await page.evaluate(async () => { for (const img of document.querySelectorAll('.detail img')) { img.loading = 'eager'; await img.decode().catch(() => {}); } });
@@ -76,10 +93,10 @@ try {
           const smallText = await page.evaluate(() => [...document.querySelectorAll('p, span, a, button, summary')].filter(e => e.getBoundingClientRect().height && parseFloat(getComputedStyle(e).fontSize) < 12).map(e => e.textContent.slice(0, 30)));
           assert.deepEqual(smallText, []);
           await page.evaluate(() => scrollTo(0, 0));
-          if ([375, 1440].includes(width)) await page.screenshot({ path: `${output}/${engine}-${theme}-${width}.png`, fullPage: true });
+          if ([375, 1440].includes(width)) await page.screenshot({ path: `${output}/${engine}-${theme}-${width}${stranka === '/en' ? '-en' : ''}.png`, fullPage: true });
           assert.deepEqual(errors, []);
           assert.deepEqual(cizi, [], `${engine} ${theme} ${width}: stránka sáhla mimo vlastní server`);
-          results.push({ engine, theme, width, passed: true, height: await page.evaluate(() => document.documentElement.scrollHeight) });
+          results.push({ engine, theme, width, stranka, passed: true, height: await page.evaluate(() => document.documentElement.scrollHeight) });
           await page.close();
         }
       }

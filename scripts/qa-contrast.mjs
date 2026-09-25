@@ -165,13 +165,15 @@ await app.close();
 console.log('Landing page');
 const { out } = await buildSite();
 const web = await staticServer(out);
-for (const rezim of ['light', 'dark']) {
-  for (const sirka of SIRKY) {
-    const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, colorScheme: rezim, reducedMotion: 'reduce' });
-    await page.goto(web.url, { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready);
-    vypis(`${rezim} ${sirka}px /`, await page.evaluate(zmer, PRECHODY));
-    await page.close();
+for (const stranka of ['/', '/en']) {
+  for (const rezim of ['light', 'dark']) {
+    for (const sirka of SIRKY) {
+      const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, colorScheme: rezim, reducedMotion: 'reduce' });
+      await page.goto(web.url + stranka, { waitUntil: 'load' });
+      await page.evaluate(() => document.fonts.ready);
+      vypis(`${rezim} ${sirka}px ${stranka}`, await page.evaluate(zmer, PRECHODY));
+      await page.close();
+    }
   }
 }
 await new Promise((r) => web.server.close(r));
