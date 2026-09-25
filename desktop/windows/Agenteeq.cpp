@@ -327,6 +327,18 @@ static const wchar_t* SKRIPT_MOSTU =
     L"  postMessage: function (m) { try { window.chrome.webview.postMessage(m); } catch (e) {} }"
     L"};";
 
+// Sonda pro kontrolu sestavené aplikace (scripts/qa-native.mjs). Pustí se jen v režimu QA
+// s AGENTEEQ_DESKTOP_QA_REPORT, až rozhraní ohlásí „ready“: po chvíli, kdy je obrazovka
+// vykreslená, pošle plášti, co na ní je. Stejná sonda je v plášti pro macOS.
+static const wchar_t* QA_SONDA =
+    L"setTimeout(function(){var v=document.querySelector('#view');"
+    L"window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{"
+    L"titulek:document.title,pohled:v?v.children.length:0,"
+    L"navigace:document.querySelectorAll('.sidebar .nav a').length,"
+    L"desktop:document.documentElement.classList.contains('is-desktop'),"
+    L"windows:document.documentElement.classList.contains('is-windows'),"
+    L"trasa:location.hash,text:(v?v.innerText:'').slice(0,160)}});},1500);";
+
 // ── Aplikace ─────────────────────────────────────────────────────────────────
 
 class Aplikace {
@@ -357,6 +369,7 @@ class Aplikace {
   int generace_ = 0;
   bool koncime_ = false;
   bool qa_ = false;
+  std::wstring qaZprava_;          // soubor pro hlášení kontroly (jen v režimu QA)
   int odznak_ = 0;
   HICON ikonaOdznaku_ = nullptr;
   std::wstring cestaOznameni_;     // kam skočit po kliknutí na oznámení
@@ -380,6 +393,7 @@ class Aplikace {
   void PosliOznameni(const std::wstring& titulek, const std::wstring& telo, const std::wstring& cesta);
   void UkazOkno();
   void Naviguj(const std::wstring& hash);
+  void ZapisQa(const std::wstring& radek);
 };
 
 static Aplikace* g_app = nullptr;
@@ -843,6 +857,7 @@ void Aplikace::ZpracujRadek(const std::wstring& radek) {
     if (port_ > 0 && web_) {
       adresa_ = L"http://127.0.0.1:" + std::to_wstring(port_);
       web_->Navigate(adresa_.c_str());
+      ZapisQa(L"{\"udalost\":\"server\",\"port\":" + std::to_wstring(port_) + L"}");
       KillTimer(okno_, 2);
       // Když server vydrží minutu, počítadlo restartů se vynuluje – jinak by
       // aplikace běžící týdny po třetím náhodném pádu zůstala viset.
@@ -968,6 +983,10 @@ void Aplikace::PoVytvoreniWebView() {
             if (!ctecka.cti(zprava) || zprava.druh != json::Hodnota::Objekt) return S_OK;
             const std::wstring druh = zprava.textPod(L"type");
             if (druh == L"retry" && !dite_.hProcess) { pokusy_ = 0; SpustServer(); }
+            if (!qaZprava_.empty() && druh == L"ready") web_->ExecuteScript(QA_SONDA, nullptr);
+            if (!qaZprava_.empty() && druh == L"qa-sonda") {
+              ZapisQa(L"{\"udalost\":\"nacteno\",\"zprava\":" + std::wstring(telo.get()) + L"}");
+            }
             return S_OK;
           })
           .Get(),
@@ -993,6 +1012,14 @@ void Aplikace::PoVytvoreniWebView() {
 int Aplikace::Spust(HINSTANCE instance) {
   instance_ = instance;
   qa_ = GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA", nullptr, 0) > 0;
+  if (qa_) {
+    const DWORD delka = GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA_REPORT", nullptr, 0);
+    if (delka > 1) {
+      qaZprava_.resize(delka);
+      GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA_REPORT", &qaZprava_[0], delka);
+      qaZprava_.resize(delka - 1);
+    }
+  }
 
   // Jediná instance. Poražený jen vyzdvihne okno vítěze a skončí – stejně jako na macOS.
   mutex_ = CreateMutexW(nullptr, TRUE, qa_ ? MUTEX_JEDINACEK_QA : MUTEX_JEDINACEK);
@@ -1032,6 +1059,23 @@ int Aplikace::Spust(HINSTANCE instance) {
   if (job_) CloseHandle(job_);  // s ním zmizí i všechno, co server spustil
   CoUninitialize();
   return static_cast<int>(zprava.wParam);
+}
+
+// Jeden řádek JSON na konec souboru hlášení. Soubor se pokaždé otevře a zavře, aby ho
+// kontrolní skript mohl číst, zatímco aplikace běží.
+void Aplikace::ZapisQa(const std::wstring& radek) {
+  if (qaZprava_.empty()) return;
+  const std::wstring sKoncem = radek + L"\n";
+  const int bajtu = WideCharToMultiByte(CP_UTF8, 0, sKoncem.c_str(), static_cast<int>(sKoncem.size()), nullptr, 0, nullptr, nullptr);
+  if (bajtu <= 0) return;
+  std::string utf8(static_cast<size_t>(bajtu), '\0');
+  WideCharToMultiByte(CP_UTF8, 0, sKoncem.c_str(), static_cast<int>(sKoncem.size()), &utf8[0], bajtu, nullptr, nullptr);
+  HANDLE soubor = CreateFileW(qaZprava_.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                              OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (soubor == INVALID_HANDLE_VALUE) return;
+  DWORD zapsano = 0;
+  WriteFile(soubor, utf8.data(), static_cast<DWORD>(utf8.size()), &zapsano, nullptr);
+  CloseHandle(soubor);
 }
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {

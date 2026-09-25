@@ -38,6 +38,7 @@
     "qa:contrast": "node scripts/qa-contrast.mjs",
     "qa:site": "node scripts/qa-site.mjs",
     "qa:extension": "node scripts/qa-extension.mjs",
+    "qa:native": "node scripts/qa-native.mjs",
     "showcase": "node scripts/showcase.mjs",
     "qa:keychain": "node scripts/qa-keychain.mjs",
     "fonts:vendor": "node scripts/vendor-fonts.mjs",

@@ -49,9 +49,9 @@ jobs:
       - name: Aplikace opravdu nastartuje
         run: npm run smoke:server
 
-  # Plášť pro Windows (desktop/windows/Agenteeq.cpp) se tu překládá, aby se chyba
-  # nenašla až při vydání. Překlad není důkaz, že okno vypadá správně — to umí
-  # jen člověk u skutečného Windows. Je to důkaz, že je co spustit.
+  # Plášť pro Windows (desktop/windows/Agenteeq.cpp) se tu překládá a sestavená aplikace
+  # se spustí z archivu (qa:native). Snímek okna je v artefaktu qa-native-windows. Vzhled
+  # a ovládání okna do detailu posoudí jen člověk u skutečného Windows.
   windows-plast:
     name: plášť pro Windows
     runs-on: windows-latest
@@ -78,12 +78,51 @@ jobs:
           $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
           '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
 
+      # Rozbalit archiv jako člověk, spustit Agenteeq.exe, počkat na server a na vykreslené
+      # rozhraní v okně, nafotit obrazovku, ukončit a ověřit, že server skončil s ním.
+      - name: Aplikace ze zipu nastartuje
+        run: npm run qa:native
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-native-windows
+          path: dist/qa-native/
+          retention-days: 14
+
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
       - uses: actions/upload-artifact@v4
         with:
           name: Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
+          retention-days: 14
+
+  # Aplikace pro Mac se dřív sestavovala jen při vydání a nikdo ji v CI nespustil. Tady se
+  # sestaví stejně jako pro vydání (ad-hoc podpis), rozbalí z archivu a spustí.
+  mac-aplikace:
+    name: aplikace pro Mac
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sestavit
+        run: npm run build:mac
+
+      - name: Aplikace ze zipu nastartuje
+        run: npm run qa:native
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-native-macos
+          path: dist/qa-native/
           retention-days: 14
 
   browser-qa:
