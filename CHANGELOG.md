@@ -18,6 +18,17 @@
 - Nový test hlídá, že aplikace funguje samostatně: bez npm závislostí, bez cizích serverů,
   bez Claude Code, účtu i sítě.
 
+### Web: plynulé posouvání
+
+- Kolečko a trackpad na počítači posouvají stránku plynulým dojezdem místo skoků po krocích.
+  Stránka se dál posouvá skutečným posunem okna, takže nástupy dlaždic, lepivá lišta, hledání na
+  stránce, klávesnice, posuvník i odkazy na sekce fungují jako dřív.
+- Na telefonu, tabletu a dotykovém notebooku zůstává posouvání celé nativní a s „omezit pohyb“ se
+  efekt nezapne. `qa:site` měří plynulý dojezd, Page Down, odkaz na sekci a to, že se na dotyku ani
+  s omezeným pohybem nezapne.
+- Oprava: anglická stránka ukazovala u kopírovatelné adresy české „Kliknutím zkopíruješ“ a
+  „zkopírováno“.
+
 ### Web: anglická verze a přepínač jazyka
 
 - Stránka je i anglicky na `/en`, se stejnou stavbou jako česká (hlídá to test). Výchozí zůstává
