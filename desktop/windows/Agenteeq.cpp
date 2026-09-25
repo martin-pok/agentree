@@ -330,14 +330,30 @@ static const wchar_t* SKRIPT_MOSTU =
 // Sonda pro kontrolu sestavené aplikace (scripts/qa-native.mjs). Pustí se jen v režimu QA
 // s AGENTEEQ_DESKTOP_QA_REPORT, až rozhraní ohlásí „ready“: po chvíli, kdy je obrazovka
 // vykreslená, pošle plášti, co na ní je. Stejná sonda je v plášti pro macOS.
-static const wchar_t* QA_SONDA =
-    L"setTimeout(function(){var v=document.querySelector('#view');"
-    L"window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{"
-    L"titulek:document.title,pohled:v?v.children.length:0,"
-    L"navigace:document.querySelectorAll('.sidebar .nav a').length,"
-    L"desktop:document.documentElement.classList.contains('is-desktop'),"
-    L"windows:document.documentElement.classList.contains('is-windows'),"
-    L"trasa:location.hash,text:(v?v.innerText:'').slice(0,160)}});},1500);";
+#define AGENTEEQ_QA_SONDA(PUVOD, PRODLEVA)                                                   \
+  L"setTimeout(function(){var v=document.querySelector('#view');"                           \
+  L"window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{"            \
+  L"puvod:'" PUVOD L"',titulek:document.title,pohled:v?v.children.length:0,"               \
+  L"navigace:document.querySelectorAll('.sidebar .nav a').length,"                         \
+  L"desktop:document.documentElement.classList.contains('is-desktop'),"                    \
+  L"windows:document.documentElement.classList.contains('is-windows'),"                    \
+  L"trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)}});}," \
+  PRODLEVA L");"
+static const wchar_t* QA_SONDA = AGENTEEQ_QA_SONDA(L"ready", L"1500");
+// Záloha: pár sekund po dokončené navigaci, i když rozhraní „ready“ neohlásí. Díky ní hlášení
+// řekne, co v okně je (chybová stránka, rozcestník, prázdno), místo pouhého „nenačetlo se“.
+static const wchar_t* QA_SONDA_ZALOHA = AGENTEEQ_QA_SONDA(L"navigace", L"5000");
+
+// Text do JSON řetězce pro hlášení kontroly.
+static std::wstring jsonText(const std::wstring& s) {
+  std::wstring out;
+  for (wchar_t c : s) {
+    if (c == L'"' || c == L'\\') { out.push_back(L'\\'); out.push_back(c); }
+    else if (c < 0x20) { wchar_t buf[8]; swprintf(buf, 8, L"\\u%04x", static_cast<unsigned>(c)); out += buf; }
+    else out.push_back(c);
+  }
+  return out;
+}
 
 // ── Aplikace ─────────────────────────────────────────────────────────────────
 
@@ -974,7 +990,10 @@ void Aplikace::PoVytvoreniWebView() {
               const std::wstring odkud(zdroj.get());
               const bool zAplikace = !adresa_.empty() && odkud.rfind(adresa_, 0) == 0;
               const bool zPlaste = odkud.rfind(L"about:", 0) == 0 || odkud.rfind(L"data:", 0) == 0;
-              if (!zAplikace && !zPlaste) return S_OK;
+              if (!zAplikace && !zPlaste) {
+                if (!qaZprava_.empty()) ZapisQa(L"{\"udalost\":\"zprava-odmitnuta\",\"zdroj\":\"" + jsonText(odkud) + L"\"}");
+                return S_OK;
+              }
             }
             CoRetezec telo;
             if (FAILED(args->get_WebMessageAsJson(&telo)) || !telo) return S_OK;
@@ -982,6 +1001,7 @@ void Aplikace::PoVytvoreniWebView() {
             json::Ctecka ctecka(std::wstring(telo.get()));
             if (!ctecka.cti(zprava) || zprava.druh != json::Hodnota::Objekt) return S_OK;
             const std::wstring druh = zprava.textPod(L"type");
+            if (!qaZprava_.empty() && druh != L"qa-sonda") ZapisQa(L"{\"udalost\":\"zprava\",\"typ\":\"" + jsonText(druh) + L"\"}");
             if (druh == L"retry" && !dite_.hProcess) { pokusy_ = 0; SpustServer(); }
             if (!qaZprava_.empty() && druh == L"ready") web_->ExecuteScript(QA_SONDA, nullptr);
             if (!qaZprava_.empty() && druh == L"qa-sonda") {
@@ -991,6 +1011,27 @@ void Aplikace::PoVytvoreniWebView() {
           })
           .Get(),
       &token);
+
+  // Kontrola sestavené aplikace: výsledek každé navigace a záložní sonda po ní.
+  if (!qaZprava_.empty()) {
+    web_->add_NavigationCompleted(
+        Callback<ICoreWebView2NavigationCompletedEventHandler>(
+            [this](ICoreWebView2* odesilatel, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
+              BOOL uspech = FALSE;
+              COREWEBVIEW2_WEB_ERROR_STATUS stav = COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN;
+              args->get_IsSuccess(&uspech);
+              args->get_WebErrorStatus(&stav);
+              CoRetezec zdroj;
+              std::wstring adresa;
+              if (SUCCEEDED(odesilatel->get_Source(&zdroj)) && zdroj) adresa = zdroj.get();
+              ZapisQa(L"{\"udalost\":\"navigace\",\"ok\":" + std::wstring(uspech ? L"true" : L"false") +
+                      L",\"stav\":" + std::to_wstring(static_cast<int>(stav)) + L",\"adresa\":\"" + jsonText(adresa.substr(0, 80)) + L"\"}");
+              if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) web_->ExecuteScript(QA_SONDA_ZALOHA, nullptr);
+              return S_OK;
+            })
+            .Get(),
+        &token);
+  }
 
   // Když spadne vykreslovací proces stránky, nesmí zůstat prázdné okno.
   web_->add_ProcessFailed(

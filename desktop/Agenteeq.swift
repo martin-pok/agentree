@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard self.qa, let path = ProcessInfo.processInfo.environment["AGENTEEQ_DESKTOP_QA_REPORT"], !path.isEmpty else { return nil }
         return path
     }()
-    let qaProbe = "setTimeout(function(){var v=document.querySelector('#view');window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{titulek:document.title,pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length,desktop:document.documentElement.classList.contains('is-desktop'),windows:document.documentElement.classList.contains('is-windows'),trasa:location.hash,text:(v?v.innerText:'').slice(0,160)}});},1500);"
+    let qaProbe = "setTimeout(function(){var v=document.querySelector('#view');window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{puvod:'ready',titulek:document.title,pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length,desktop:document.documentElement.classList.contains('is-desktop'),windows:document.documentElement.classList.contains('is-windows'),trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)}});},1500);"
     func qaWrite(_ object: [String: Any]) {
         guard let path = qaReport, let data = try? JSONSerialization.data(withJSONObject: object), let line = String(data: data, encoding: .utf8) else { return }
         if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }

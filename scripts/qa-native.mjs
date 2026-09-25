@@ -75,10 +75,10 @@ async function udalosti() {
     return (await fs.readFile(hlaseni, 'utf8')).split('\n').filter(Boolean).map((r) => JSON.parse(r));
   } catch { return []; }
 }
-async function pockejNa(udalost, timeout) {
+async function pockejNa(udalost, timeout, podminka = () => true) {
   const konec = Date.now() + timeout;
   while (Date.now() < konec) {
-    const nalez = (await udalosti()).find((u) => u.udalost === udalost);
+    const nalez = (await udalosti()).find((u) => u.udalost === udalost && podminka(u));
     if (nalez) return nalez;
     if (plast.exitCode !== null) return null;
     await cekej(250);
@@ -110,7 +110,9 @@ try {
   port = server?.port || 0;
   zapis(port > 0, port > 0 ? `plášť spustil přibalený Node a server se ohlásil (port ${port})` : 'server se do 90 s neohlásil');
 
-  const nacteno = port ? await pockejNa('nacteno', 90000) : null;
+  // Sonda „ready“ znamená, že rozhraní načetlo stav a vykreslilo se. Záložní sonda po navigaci
+  // (jen Windows) přijde i bez toho a řekne, co v okně místo toho je.
+  const nacteno = port ? await pockejNa('nacteno', 90000, (u) => u.zprava?.sonda?.puvod !== 'navigace') : null;
   const sonda = nacteno?.zprava?.sonda;
   zapis(Boolean(sonda), sonda ? 'okno načetlo rozhraní a to ohlásilo připravenost' : 'rozhraní se v okně do 90 s nenačetlo');
   if (sonda) {
@@ -138,5 +140,11 @@ try {
 }
 
 const chyb = kroky.filter((k) => !k.ok).length;
+if (chyb) {
+  // Bez snímku z artefaktu musí stačit log: co plášť zaznamenal, v pořadí, jak se to stalo.
+  const vysledek = JSON.parse(await fs.readFile(path.join(vystup, 'vysledek.json'), 'utf8'));
+  console.log('\nUdálosti z pláště:');
+  for (const u of vysledek.udalosti) console.log(`  ${JSON.stringify(u).slice(0, 400)}`);
+}
 console.log(chyb ? `\nNEPROŠLO: ${chyb} z ${kroky.length}.` : `\nV pořádku: ${kroky.length} z ${kroky.length}.`);
 process.exit(chyb ? 1 : 0);
