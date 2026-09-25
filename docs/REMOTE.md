@@ -78,8 +78,10 @@ Jen čísla, žádné konverzace.
 ### Ukázka pro prohlídku na webu (`/app?ukazka`)
 
 Jediná výjimka z rozcestníku: s parametrem `?ukazka` načte statická kopie místo serveru snímek
-smyšlených dat `/ukazka/data.json` (`public/js/ukazka.js`) a rozhraní běží nad ním. Tak vzniká
-živá prohlídka na landing page – `site/lp.js` ji vkládá do rámu místo statických snímků.
+smyšlených dat `/ukazka/data.json` (`public/js/ukazka.js`) a rozhraní běží nad ním. Landing page
+ji už nevkládá: vložená stránka si na iOS nechávala dotyk a blokovala posouvání webu, a celé
+rozhraní i se spodní lištou nepatří do marketingové prohlídky. Web místo toho ukazuje výřezy
+(`site/detail/`, viz `docs/SHOWCASE.md`); `/app?ukazka` zůstává k samostatnému otevření.
 
 - **Data** sestaví `scripts/ukazka-data.mjs` při každém `npm run build:site` ze stejné ukázkové
   scény jako snímky (`scripts/demo-fixture.mjs`): odpovědi `/api/state` a
@@ -91,10 +93,9 @@ smyšlených dat `/ukazka/data.json` (`public/js/ukazka.js`) a rozhraní běží
   se ukázka neptá.
 - **Jen na webu.** Na Macu (`jeStatickaKopie()` je nepravda) se `?ukazka` ignoruje. Když se data
   nenačtou, ukáže se obyčejný rozcestník.
-- **Rám je jen na dívání:** `inert`, mimo pořadí Tabu, `aria-hidden` (odečítačka čte popis snímku)
-  a zprávy přijímá jen z vlastního původu. Nástup obrazovky v rámu stojí, dokud rám není vidět
-  aspoň z třetiny; snímek se za živé rozhraní vymění jen tam, kde se na něj nikdo nedívá, nebo
-  při přepnutí obrazovky. S omezeným pohybem se ukáže rovnou konečný stav.
+- **Ve vloženém rámu** (`window.parent !== window`) nástup obrazovky stojí, dokud ho rodič
+  nepustí zprávou `agenteeq:prehraj`, a hotové vykreslení ohlásí `agenteeq:ukazka-pripravena`
+  jen vlastnímu původu. Landing page to dnes nepoužívá.
 
 ## Proč Agenteeq nemá vlastní server v cloudu
 

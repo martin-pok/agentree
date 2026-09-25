@@ -31,6 +31,14 @@ const PRECHODY = { stage: '#1A1722', 'pulse-bar': '#191722', hero: '#1A1722', 'e
 // Měření běží uvnitř stránky: potřebuje vidět skutečné vypočtené styly každého uzlu.
 function zmer(prechody) {
   const parse = (c) => {
+    // `color-mix()` prohlížeč vrací jako `color(srgb r g b / a)` v rozsahu 0–1. Bez tohoto převodu
+    // by se taková vrstva tiše přeskočila a měřilo by se proti pozadí pod ní.
+    const srgb = String(c).match(/color\(srgb\s+([^)]+)\)/);
+    if (srgb) {
+      const [rgb, alfa] = srgb[1].split('/');
+      const [r, g, b] = rgb.trim().split(/\s+/).map((v) => Number(v) * 255);
+      return { r, g, b, a: alfa === undefined ? 1 : Number(alfa) };
+    }
     const m = String(c).match(/rgba?\(([^)]+)\)/);
     if (!m) return null;
     const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);

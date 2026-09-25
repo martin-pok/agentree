@@ -7,7 +7,7 @@ import { buildSite } from './build-site.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { out } = await buildSite();
-const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.xml': 'application/xml', '.txt': 'text/plain' };
+const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webp': 'image/webp', '.xml': 'application/xml', '.txt': 'text/plain' };
 const server = http.createServer(async (req, res) => {
   const rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/+/, '') || 'index.html';
   for (const candidate of [rel, `${rel}/index.html`]) {
@@ -52,29 +52,19 @@ try {
           await page.goto(url);
           await page.evaluate(() => document.fonts.ready);
           assert.equal(await page.locator('h1').count(), 1);
-          for (const view of ['projekty', 'utrata', 'prehled']) {
-            await page.locator(`[data-tour="${view}"]`).focus();
-            await page.keyboard.press('Enter');
-            // Prohlídka má všechny obrazovky ve stránce nad sebou a přepíná průhlednost. Právě
-            // jedna smí být aktivní a všechny její varianty (tmavá, telefon) musí patřit k ní –
-            // jinak by si někdo v tmavém režimu prohlížel Přehled s popiskem Útraty.
-            const stav = await page.evaluate(() => {
-              const akt = [...document.querySelectorAll('#tour-figure .shot')].filter(s => s.classList.contains('is-active'));
-              return {
-                pocet: akt.length,
-                obrazovka: akt[0]?.dataset.obrazovka,
-                skryte: [...document.querySelectorAll('#tour-figure .shot:not(.is-active)')].every(s => s.hasAttribute('aria-hidden')),
-                zdroje: akt[0] ? [...akt[0].querySelectorAll('source, img')].map(e => e.srcset || e.getAttribute('src')) : [],
-              };
-            });
-            assert.equal(stav.pocet, 1, `${engine} ${theme} ${width}: aktivních obrazovek ${stav.pocet}`);
-            assert.equal(stav.obrazovka, view, `${engine} ${theme} ${width}: aktivní je ${stav.obrazovka}, čekali jsme ${view}`);
-            assert.equal(stav.skryte, true, `${engine} ${theme} ${width}: neaktivní snímky musí být skryté pro odečítačku`);
-            assert.equal(stav.zdroje.every(a => a.includes(view)), true, `${engine} ${theme} ${width}: ${view} → ${stav.zdroje.join(', ')}`);
-            assert.equal(await page.locator('[data-tour][aria-pressed="true"]').count(), 1);
-            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${theme} ${width} ${view}: overflow`);
-            assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'reduced motion');
-          }
+          // Produkt ukazují výřezy (obrázky). Vložený rám tu byl a na iPhonu blokoval posouvání.
+          assert.equal(await page.locator('iframe').count(), 0, `${engine} ${theme} ${width}: ve stránce je rám`);
+          await page.evaluate(async () => { for (const img of document.querySelectorAll('.detail img')) { img.loading = 'eager'; await img.decode().catch(() => {}); } });
+          const nenactene = await page.evaluate(() => [...document.querySelectorAll('.detail img')].filter((i) => i.getBoundingClientRect().width && !(i.complete && i.naturalWidth)).map((i) => i.currentSrc || i.src));
+          assert.deepEqual(nenactene, [], `${engine} ${theme} ${width}: výřezy se nenačetly`);
+          // Telefon dostane výřezy z telefonního rozvržení, širší obrazovka ty z Macu.
+          const zdroje = await page.evaluate(() => [...document.querySelectorAll('.detail img')].filter((i) => i.getBoundingClientRect().width).map((i) => i.currentSrc));
+          // Karty scény berou telefonní výřez i na tabletu (v přirozené velikosti čitelnější), oznámení
+          // je telefonní všude – je to plovoucí karta.
+          const telefonni = (z) => width <= 620 || /upozorneni/.test(z) || (width <= 900 && /rozhodnuti|limit/.test(z));
+          assert.equal(zdroje.every((z) => z.includes('-mobil') === telefonni(z)), true, `${engine} ${theme} ${width}: ${zdroje.join(', ')}`);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${theme} ${width}: overflow`);
+          assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'reduced motion');
           await page.locator('a[href="#rozsireni"]').click();
           await page.waitForFunction(() => document.getElementById('rozsireni').open);
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), '');
@@ -93,12 +83,100 @@ try {
           await page.close();
         }
       }
+      // Posouvání přes výřezy. Kolečko v obou jádrech, tah prstem v Chromiu (WebKit v Playwrightu
+      // dotykové posouvání neumí). Kontrolní tah na volné ploše musí stránku posunout, jinak by
+      // měření nic nedokazovalo – přesně tak prošla prohlídka, která na iPhonu posouvání blokovala.
+      for (const [sirka, vyska, dotyk] of [[1440, 900, false], [390, 844, engine === 'chromium']]) {
+        const kontext = await browser.newContext({ viewport: { width: sirka, height: vyska }, hasTouch: dotyk, isMobile: dotyk, reducedMotion: 'reduce' });
+        const p = await kontext.newPage();
+        await jenMistni(p, []);
+        await p.goto(url);
+        await p.evaluate(() => document.fonts.ready);
+        const cile = await p.evaluate(() => [...document.querySelectorAll('.scene-in, .chapter-figure')].map((_, i) => i));
+        assert.ok(cile.length >= 4, `${engine} ${sirka}: výřezů k posouvání je ${cile.length}`);
+        const naStred = (i) => p.evaluate((i) => {
+          const el = document.querySelectorAll('.scene-in, .chapter-figure')[i];
+          const r = el.getBoundingClientRect();
+          scrollTo({ top: scrollY + r.top + Math.min(r.height, innerHeight) / 2 - innerHeight / 2, behavior: 'instant' });
+          const b = el.getBoundingClientRect();
+          return { x: Math.round(Math.min(b.left + b.width / 2, innerWidth / 2 + 120)), y: Math.round(Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140))), nahore: document.elementFromPoint(Math.min(b.left + b.width / 2, innerWidth / 2 + 120), Math.max(120, Math.min(b.top + b.height / 2, innerHeight - 140)))?.closest('.scene-in, .chapter-figure') === el };
+        }, i);
+        const cdp = dotyk ? await kontext.newCDPSession(p) : null;
+        const tah = async (x, y) => {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+          for (let k = 1; k <= 12; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y - k * 25 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        };
+        // Posun se měří, až stránka doběhne (plynulé posouvání kolečkem, setrvačnost po tahu).
+        const ustaleno = () => p.evaluate(() => new Promise((hotovo) => {
+          let posledni = scrollY, klid = 0;
+          const t = setInterval(() => { klid = scrollY === posledni ? klid + 1 : 0; posledni = scrollY; if (klid >= 4) { clearInterval(t); hotovo(scrollY); } }, 50);
+          setTimeout(() => { clearInterval(t); hotovo(scrollY); }, 4000);
+        }));
+        const posun = async (akce) => {
+          const pred = await ustaleno();
+          await akce();
+          await p.waitForTimeout(80);
+          return (await ustaleno()) - pred;
+        };
+        if (dotyk) {
+          await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+          const kontrola = await posun(() => tah(Math.round(sirka / 2), 260));
+          assert.ok(kontrola > 100, `${engine} ${sirka}: kontrolní tah na volné ploše posunul jen o ${kontrola} px – měření neplatí`);
+        }
+        for (const i of cile) {
+          const bod = await naStred(i);
+          await p.waitForTimeout(100);
+          assert.ok(bod.nahore, `${engine} ${sirka}: výřez ${i} překrývá něco jiného`);
+          if (dotyk) {
+            const prstem = await posun(() => tah(bod.x, bod.y));
+            assert.ok(prstem > 100, `${engine} ${sirka}: tah prstem přes výřez ${i} posunul stránku o ${prstem} px`);
+          } else {
+            await p.mouse.move(bod.x, bod.y);
+            const koleckem = await posun(() => p.mouse.wheel(0, 400));
+            assert.ok(koleckem > 100, `${engine} ${sirka}: kolečko nad výřezem ${i} posunulo stránku o ${koleckem} px`);
+          }
+        }
+        await kontext.close();
+      }
+
+      // Nástup výřezů řídí posouvání. Po dojetí do okna musí být výřez celý vidět – `overflow:
+      // hidden` na sekci jednou udělal ze sekce posuvný kontejner a výřez zůstal napůl průhledný.
+      {
+        const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+        await jenMistni(p, []);
+        await p.goto(url);
+        const pruhlednost = [];
+        for (const sel of ['.chapter--dolu .chapter-shot', '.chapter--dolu .chapter-float', '.chapter--flip .stack-front', '.chapter--flip .stack-back', '.chapter:not(.chapter--dolu):not(.chapter--flip) .chapter-shot']) {
+          await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); scrollTo({ top: scrollY + r.top + r.height / 2 - innerHeight / 2, behavior: 'instant' }); }, sel);
+          await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          await p.waitForTimeout(150);
+          pruhlednost.push([sel, await p.evaluate((sel) => getComputedStyle(document.querySelector(sel)).opacity, sel)]);
+        }
+        const ocekavano = { '.chapter--flip .stack-back': '0.5' };
+        for (const [sel, o] of pruhlednost) assert.equal(o, ocekavano[sel] || '1', `${engine}: ${sel} po dojetí do okna má průhlednost ${o}`);
+        // A nástup je opravdu napojený na okno: výřez, který právě vyjel zespodu, je ještě
+        // průhledný. Kdyby animace měřila vůči sekci (posuvný kontejner), byl by rovnou celý.
+        if (await p.evaluate(() => CSS.supports('animation-timeline: view()'))) {
+          const vjizdi = await p.evaluate(async () => {
+            const el = document.querySelector('.chapter:not(.chapter--dolu):not(.chapter--flip) .chapter-shot');
+            scrollTo({ top: 0, behavior: 'instant' });
+            const r = el.getBoundingClientRect();
+            scrollTo({ top: r.top - innerHeight + 24, behavior: 'instant' });
+            await new Promise((h) => requestAnimationFrame(() => requestAnimationFrame(h)));
+            return Number(getComputedStyle(el).opacity);
+          });
+          assert.ok(vjizdi < 0.5, `${engine}: výřez na spodním okraji okna má průhlednost ${vjizdi} – nástup podle posouvání neběží`);
+        }
+        await p.close();
+      }
+
       const staticPage = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 375, height: 900 } });
       await jenMistni(staticPage, []);
       await staticPage.goto(url);
       // Bez JavaScriptu musí stránka pořád prodávat: nadpis, snímek produktu i tlačítko ke stažení.
       assert.ok(await staticPage.locator('h1').isVisible(), 'nadpis bez JS');
-      assert.ok(await staticPage.locator('#tour-figure .shot.is-active img').isVisible(), 'snímek produktu bez JS');
+      assert.ok(await staticPage.locator('.scene-main img').isVisible(), 'výřez produktu bez JS');
       assert.ok(await staticPage.locator('[data-stahnout="mac-arm64"]').first().isVisible(), 'stažení bez JS');
       await staticPage.locator('#rozsireni summary').click();
       assert.ok(await staticPage.locator('#rozsireni ol').isVisible());
@@ -114,10 +192,13 @@ try {
       await motionPage.evaluate(() => document.fonts.ready);
       // Nekonečnou smyčku poznáme z jejího zápisu, ne z měření času.
       assert.deepEqual(await motionPage.evaluate(() => document.getAnimations().filter(a => a.effect?.getTiming?.().iterations === Infinity).map(a => a.animationName || a.transitionProperty)), [], 'Nekonečná animace');
+      // Animace řízené posouváním (ViewTimeline) neběží samy – stojí, dokud se stránka nehne –, takže
+      // se do „nic nesmí běžet“ nepočítají. Hlídá se jen to, co běží podle hodin.
+      const podleHodin = () => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline));
       // Nástupní animace musí dojet, než začneme klikat. Pod zátěží se Playwrightu
       // prvek jeví ustálený i uprostřed animace (dva snímky se stejným rámečkem),
       // takže bez tohoto čekání test chytal doběh nástupu místo skutečné smyčky.
-      await motionPage.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running'), null, { timeout: 5000 });
+      await motionPage.waitForFunction(`(${podleHodin})().length === 0`, null, { timeout: 5000 });
       const button = motionPage.locator('.hero .btn');
       await button.hover();
       // Najetí zvedá, stisk stlačuje. Dvě rozlišitelné odezvy, ne jedna pro obojí.
@@ -132,9 +213,9 @@ try {
         return el.matches(':active') && matrix.a < 0.99 && matrix.f > -0.5;
       });
       await motionPage.mouse.up();
-      await motionPage.locator('[data-tour="projekty"]').click();
+      await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
       await motionPage.waitForTimeout(900);
-      assert.equal(await motionPage.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'No perpetual decorative animation');
+      assert.equal(await motionPage.evaluate(`(${podleHodin})().length`), 0, 'No perpetual decorative animation');
       await motionPage.close();
     } finally { await browser.close(); }
   }

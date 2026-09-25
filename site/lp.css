@@ -92,57 +92,95 @@ section[id] { scroll-margin-top: 80px; }
 .band--stage .text-link:hover { color: var(--on-stage); }
 
 /* ---------- hlavička ---------- */
-.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+/* Hlavička patří ke scéně: stránka začíná tmavým pásem s produktem v obou režimech, takže světlý
+   pruh nad ním by stránku rozřízl. Při posouvání nad světlými pásy zůstává tmavá jako lišta. */
+.nav { position: sticky; top: 0; z-index: 50; background: rgba(12, 11, 16, .84); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid rgba(244, 243, 247, .07); color: var(--on-stage); }
 .nav-in { display: flex; align-items: center; gap: 24px; min-height: 64px; }
 /* Odsazení nese logo, ne menu: na mobilu je menu skryté a tlačítko musí zůstat vpravo i tak. */
 .brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; font-family: var(--f-display); font-size: 19px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
 .brand img { width: 28px; height: 28px; }
 .nav-links { display: flex; gap: 22px; font-size: 15px; }
-.nav-links a { color: var(--ink-2); text-decoration: none; }
-.nav-links a:hover { color: var(--ink); text-decoration: underline; }
+.nav-links a { color: var(--on-stage-mute); text-decoration: none; transition: color 180ms var(--ease); }
+.nav-links a:hover { color: var(--on-stage); }
+.nav .btn, .hero .btn, .band--stage .btn { background: var(--on-stage); color: var(--backdrop); }
+.nav .btn:hover, .hero .btn:hover, .band--stage .btn:hover { background: #D9D5E0; }
 
 /* ---------- hero ---------- */
-.hero { padding-block: clamp(56px, 7vw, 104px) clamp(48px, 6vw, 80px); }
-.hero-in { display: grid; gap: 22px; justify-items: start; max-width: 940px; }
-.hero h1 span { color: var(--mute); }
-.hero .lead { font-size: clamp(18px, 1.5vw, 21px); max-width: 60ch; }
-.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; margin-top: 6px; }
-.hero-specs { display: flex; flex-wrap: wrap; gap: 8px 10px; font-family: var(--f-mono); font-size: 12.5px; color: var(--mute); }
+/* Tmavá scéna v obou režimech: výřezy rozhraní jsou z tmavého vzhledu aplikace a na světlé
+   ploše by se jejich okraje neměly do čeho prolnout. */
+.hero { position: relative; isolation: isolate; overflow: hidden; background: var(--backdrop); color: var(--on-stage); padding-block: clamp(64px, 8vw, 112px) clamp(72px, 9vw, 128px); }
+.hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background:
+  radial-gradient(52% 38% at 50% 64%, rgba(201, 154, 62, .15), transparent 70%),
+  radial-gradient(40% 36% at 88% 78%, rgba(34, 163, 140, .15), transparent 72%),
+  radial-gradient(36% 34% at 10% 80%, rgba(124, 108, 240, .12), transparent 72%);
+  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.hero-in { display: grid; gap: 22px; justify-items: center; max-width: 920px; text-align: center; }
+.hero h1 { color: var(--on-stage); }
+.hero h1 span { color: var(--on-stage-mute); }
+.hero .lead { font-size: clamp(18px, 1.5vw, 21px); max-width: 58ch; color: var(--on-stage-mute); }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 26px; margin-top: 6px; }
+.hero .text-link { color: var(--on-stage-mute); }
+.hero .text-link:hover { color: var(--on-stage); }
+.hero-specs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; font-size: 13px; color: var(--on-stage-mute); }
 .hero-specs span { display: inline-flex; align-items: center; gap: 10px; }
 .hero-specs span + span::before { content: '·'; }
 
-/* ---------- prohlídka ---------- */
-.tour-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
-.tour-controls { display: flex; gap: 6px; padding: 5px; border-radius: 999px; background: var(--stage); border: 1px solid var(--stage-line); }
-.tour-choice { padding: 9px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--on-stage-mute); font-size: 15px; transition: background 180ms var(--ease), color 180ms var(--ease); }
-.tour-choice:hover { color: var(--on-stage); }
-.tour-choice[aria-pressed='true'] { background: var(--on-stage); color: var(--backdrop); }
+/* Scéna: pruh stavu z Přehledu a přes jeho spodní hranu dvě karty, které z něj vyplývají –
+   rozhodnutí, na které se čeká, a limit, který běží. Výřezy mají průhledné rohy, stín kreslí
+   drop-shadow podle tvaru karty. Záporné okraje v % se počítají ze šířky scény, takže překryv
+   drží poměr na každé šířce. */
+.scene { width: min(100% - 48px, 1120px); margin: clamp(56px, 7vw, 88px) auto 0; }
+.scene-in { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+.scene-in img { width: 100%; height: auto; }
+.scene-main { grid-column: 1 / -1; grid-row: 1; filter: drop-shadow(0 40px 72px rgba(0, 0, 0, .55)); }
+.scene-card { grid-row: 2; filter: drop-shadow(0 28px 44px rgba(0, 0, 0, .62)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
+.scene-card--limit { grid-column: 2 / span 5; margin-top: -2%; margin-right: 6%; }
+.scene-card--rozhodnuti { grid-column: 7 / span 5; margin-top: -6.5%; }
+.detail-note { font-size: 13px; line-height: 1.5; color: var(--on-stage-mute); text-align: center; }
+.scene .detail-note { margin-top: clamp(28px, 4vw, 44px); }
 
-.shot-frame { margin: 0; border-radius: var(--r-lg); overflow: hidden; background: var(--stage); border: 1px solid var(--stage-line); }
-.shot-frame img { width: 100%; height: auto; }
-/* Všechny tři obrazovky leží ve stránce nad sebou a přepíná se jen průhlednost. Výměna `src`
-   znamená, že prohlížeč nemá co kreslit, dokud nový soubor nedotáhne – a to je to bliknutí. */
-.shot-stack { display: grid; position: relative; }
-/* Živé rozhraní leží nad snímky ve stejném výřezu; lp.js ho zmenší na šířku rámu. Je jen na
-   dívání (inert, mimo čtečku): popis obrazovky dál nese snímek pod ním a hlášení prohlídky. */
-.shot-live { position: absolute; inset: 0; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity 260ms var(--ease); }
-.shot-live iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; color-scheme: normal; }
-.shot-frame.je-ziva .shot-live { opacity: 1; }
-.shot-stack > .shot { grid-area: 1 / 1; opacity: 0; transition: opacity 260ms var(--ease); }
-.shot-stack > .shot.is-active { opacity: 1; }
-.shot-note { padding: 12px 20px; font-size: 13px; color: var(--on-stage-mute); border-top: 1px solid var(--stage-line); }
+/* ---------- kapitoly ---------- */
+/* Každá kapitola má text a výřez, který přetéká k okraji okna a do něj se prolne – detail, ne
+   celá obrazovka. --presah je vzdálenost od okraje obsahu k okraji okna. */
+/* Přesah k okraji okna se ořízne přes `clip`, ne `hidden`: `hidden` dělá ze sekce posuvný
+   kontejner a animace řízené posouváním by pak měřily polohu vůči sekci místo okna – výřez by
+   zůstal napůl průhledný. `hidden` je jen pojistka pro prohlížeče bez `clip` (ty nemají ani
+   animace podle posouvání). */
+.chapters { --presah: max(24px, (100vw - var(--page)) / 2); overflow-x: hidden; overflow-x: clip; padding-top: clamp(40px, 5vw, 64px); background: var(--backdrop); }
+.chapters-head { margin-bottom: clamp(56px, 8vw, 112px); }
+.chapters-head h2 { font-size: clamp(34px, 4.4vw, 60px); }
+.chapter + .chapter { margin-top: clamp(104px, 12vw, 176px); }
+.chapter-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+.chapter-text { display: grid; gap: 16px; max-width: 440px; }
+.chapter-text h3 { font-size: clamp(28px, 2.8vw, 40px); letter-spacing: -.03em; }
+.chapter-text > p { font-size: 18px; line-height: 1.6; }
+/* Výřez končí přesně na okraji okna a do něj se prolne. Obrázek uvnitř je širší než výřez
+   (--zoom), takže je rozhraní o kus větší než v aplikaci a okraj okna ho ořízne až v prolnutí. */
+.chapter-figure { position: relative; margin: 0; width: calc(100% + var(--presah)); }
+.chapter-shot { display: flex; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent); }
+.chapter-shot img { flex: none; width: var(--zoom, 960px); max-width: none; height: auto; }
+/* Seznam agentů pokračuje i dolů: prolnutí zprava i zespodu. */
+.chapter--dolu .chapter-shot { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent), linear-gradient(#000 58%, transparent 96%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent), linear-gradient(#000 58%, transparent 96%); mask-composite: intersect; }
+/* Oznámení leží pod třetím řádkem, přes ten vyblednutý – nic čitelného nezakrývá. */
+.chapter-float { position: absolute; left: -32px; top: min(300px, 84%); width: min(320px, 44%); height: auto; filter: drop-shadow(0 28px 44px rgba(0, 0, 0, .62)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
+.chapter--dolu { padding-bottom: 96px; }
+.chapter--flip .chapter-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.chapter--flip .chapter-text { order: 2; }
 
-.signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 28px; }
-.signal { padding: 16px 18px; border-radius: var(--r-md); background: var(--stage); border: 1px solid var(--stage-line); border-left-width: 3px; font-size: 15px; }
-.signal b { display: block; color: var(--on-stage); margin-bottom: 2px; }
-.signal--work { border-left-color: var(--teal); }
-.signal--wait { border-left-color: var(--velvet); }
-.signal--limit { border-left-color: var(--brass); }
+/* Projekty: dvě karty přes sebe, zadní ztlumená. Vejdou se do sloupce, nepřetékají. */
+.chapter-figure--stack { width: calc(100% + var(--presah)); justify-self: end; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
+.chapter-figure--stack img { width: 100%; height: auto; }
+.stack-back { grid-column: 1 / span 8; grid-row: 1; opacity: .5; filter: saturate(.7); -webkit-mask-image: linear-gradient(to right, transparent, #000 45%); mask-image: linear-gradient(to right, transparent, #000 45%); }
+.stack-front { grid-column: 5 / -1; grid-row: 1; margin-top: 14%; filter: drop-shadow(0 32px 56px rgba(0, 0, 0, .65)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
 
-/* ---------- přínosy ---------- */
-.benefits { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 40px 48px; }
-.benefits h3 { margin-bottom: 8px; }
-.benefits p { color: var(--ink-2); }
+/* Stavové barvy na scéně: vždy ve svém světlém tónu, protože scéna je tmavá v obou režimech. */
+.legend { display: grid; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 15px; }
+.legend li { position: relative; padding-left: 22px; }
+.legend li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: #43D1B1; }
+.legend .legend--wait::before { background: #E87498; }
+.legend .legend--limit::before { background: #E4B95F; }
+.legend b { color: var(--on-stage); }
+.chapters > .wrap:last-child .detail-note { margin-top: clamp(96px, 11vw, 152px); }
 
 /* ---------- propojení ---------- */
 .connections { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
@@ -208,7 +246,22 @@ footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px sol
 /* ---------- užší obrazovky ---------- */
 @media (max-width: 900px) {
   .connections, .privacy-layout, .faq-layout { grid-template-columns: minmax(0, 1fr); gap: 32px; }
-  .tour-top { align-items: flex-start; }
+  /* Kapitola pod sebou: text, pak výřez přetékající k pravému okraji (u otočené k levému). */
+  .chapter-in { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .chapter-text { max-width: 620px; }
+  .chapter--flip .chapter-in { grid-template-columns: minmax(0, 1fr); }
+  .chapter--flip .chapter-text { order: 0; }
+  .chapter-figure--stack { width: min(100%, 680px); justify-self: start; }
+  .chapter-float { left: auto; right: calc(var(--presah) + 8px); width: min(320px, 46%); }
+
+  /* Tablet: pruh stavu v plné velikosti, oříznutý pravým okrajem okna s prolnutím; karty
+     z telefonního rozvržení (užší, v přirozené velikosti čitelné). */
+  .scene { width: auto; margin-left: 24px; margin-right: 0; }
+  .scene-main { overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent); }
+  .scene-main img { width: 900px; max-width: none; }
+  .scene-card--limit { grid-column: 1 / span 6; margin-top: -1%; margin-right: 4%; }
+  .scene-card--rozhodnuti { grid-column: 7 / span 6; margin-top: -3%; margin-right: 24px; }
+  .scene .detail-note { margin-right: 24px; }
 }
 @media (max-width: 620px) {
   .wrap { width: calc(100% - 32px); }
@@ -216,13 +269,27 @@ footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px sol
   .nav-in { gap: 12px; }
   .brand { font-size: 17px; }
   .btn--lg { padding: 15px 26px; font-size: 16px; }
-  .tour-controls { width: 100%; }
-  .shot-frame img { aspect-ratio: 390 / 760; }
-  .tour-choice { flex: 1; padding: 9px 10px; font-size: 14px; }
   .steps li, .source-group, .privacy-details article, .gatekeeper { padding: 18px; }
   summary { padding: 16px 18px; font-size: 16px; }
   .detail-body { padding: 0 18px 18px; }
   .faq p { padding: 0 18px 18px; }
+
+  /* Telefon má vlastní výřezy z telefonního rozvržení aplikace, v plné šířce a čitelné bez
+     zvětšování. Karty scény se řadí pod pruh stavu a překrývají se jen hranou. */
+  .scene { width: calc(100% - 32px); margin-inline: auto; }
+  .scene-main { -webkit-mask-image: none; mask-image: none; }
+  .scene-main img { width: 100%; }
+  .scene .detail-note { margin-right: 0; }
+  /* Karta rozhodnutí zajede jen pod spodní okraj pruhu, pod řádek s agenty – neřeže text. */
+  .scene-card--rozhodnuti { grid-column: 2 / -1; grid-row: 2; margin-top: -4%; }
+  .scene-card--limit { grid-column: 1 / span 11; grid-row: 3; margin-top: -3%; }
+  .chapter-figure { width: 100%; }
+  .chapter-shot, .chapter--dolu .chapter-shot { -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
+  .chapter-shot img { width: 100%; }
+  .chapter-float { left: auto; right: -4px; top: auto; bottom: -56px; width: 80%; }
+  .chapter--dolu { padding-bottom: 40px; }
+  .stack-back { display: none; }
+  .stack-front { grid-column: 1 / -1; margin-top: 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -230,8 +297,27 @@ footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px sol
   .hero-in > *:nth-child(2) { animation-delay: .06s; }
   .hero-in > *:nth-child(3) { animation-delay: .12s; }
   .hero-in > *:nth-child(4) { animation-delay: .18s; }
+  /* Scéna nastoupí po textu: nejdřív pruh stavu, pak z něj vyjedou karty. */
+  .scene-main { animation: nastup 1s var(--ease) .2s both; }
+  .scene-card--limit { animation: nastup .9s var(--ease) .5s both; }
+  .scene-card--rozhodnuti { animation: nastup .9s var(--ease) .64s both; }
+  .scene .detail-note { animation: prichod .6s var(--ease) .9s both; }
   details[open] > .detail-body, .faq details[open] > p { animation: prichod .24s var(--ease) both; }
   @keyframes prichod { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes nastup { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+  /* Kapitoly vyjedou podle posouvání (časová osa je poloha na stránce, ne hodiny), takže nic
+     neběží samo a nic nečeká na JavaScript. Kde to prohlížeč neumí, jsou výřezy prostě vidět. */
+  @supports (animation-timeline: view()) {
+    /* Plná neprůhlednost přijde v první třetině cesty: karta, která se zastaví ve spodní části
+       okna, nesmí nechat prosvítat text pod sebou. */
+    .chapter-shot, .stack-front { animation: vynor linear both; animation-timeline: view(); animation-range: entry 0% entry 90%; }
+    .chapter-float { animation: vynor-vic linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    /* Zadní karta končí ztlumená – vlastní průběh, jinak by konec animace přepsal její opacity. */
+    .stack-back { animation: vynor-zadni linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    @keyframes vynor-zadni { from { opacity: 0; transform: translateY(96px); } 35% { opacity: .5; } to { opacity: .5; transform: none; } }
+    @keyframes vynor { from { opacity: 0; transform: translateY(56px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+    @keyframes vynor-vic { from { opacity: 0; transform: translateY(96px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
