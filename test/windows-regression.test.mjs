@@ -47,3 +47,57 @@ test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', 
   assert.equal(offline.code, 0); assert.match(offline.output, /Agenteeq nebezi/);
   assert.equal((await run(hookCommand(port, token, { windows: true }))).code, 0);
 });
+
+// Most pláště pro Windows (desktop/windows/Agenteeq.cpp) běží přes AddScriptToExecuteOnDocumentCreated,
+// tedy dřív, než parser vytvoří <html>. Kdyby na document.documentElement sáhl hned, spadne na prvním
+// řádku: rozhraní pak neví, že běží v aplikaci, a plášť od něj nedostane jedinou zprávu (ready,
+// vzhled). Test ho pustí přesně v téhle situaci.
+function skriptMostu(zdroj) {
+  const blok = zdroj.slice(zdroj.indexOf('SKRIPT_MOSTU ='));
+  const konec = blok.search(/";\s*\n/);
+  return [...blok.slice(0, konec + 2).matchAll(/L"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join('');
+}
+
+function prostredi({ sKorenem }) {
+  const tridy = new Set();
+  const koren = { classList: { add: (...t) => t.forEach((x) => tridy.add(x)), contains: (t) => tridy.has(t) } };
+  const pozorovatele = [];
+  class MutationObserver {
+    constructor(fn) { this.fn = fn; this.odpojeny = false; pozorovatele.push(this); }
+    observe(cil, volby) { this.cil = cil; this.volby = volby; }
+    disconnect() { this.odpojeny = true; }
+  }
+  const zpravy = [];
+  const document = { documentElement: sKorenem ? koren : null };
+  const g = { document, MutationObserver, chrome: { webview: { postMessage: (m) => zpravy.push(m) } } };
+  g.window = g;
+  return { g, document, koren, tridy, pozorovatele, zpravy };
+}
+
+test('Windows: most pláště přežije start dokumentu bez <html> a třídy doplní, jakmile vznikne', async () => {
+  const vm = await import('node:vm');
+  const fs = await import('node:fs/promises');
+  const skript = skriptMostu(await fs.readFile(new URL('../desktop/windows/Agenteeq.cpp', import.meta.url), 'utf8'));
+  assert.match(skript, /agenteeqDesktop/, 'skript mostu se z Agenteeq.cpp nepodařilo vyčíst');
+
+  const p = prostredi({ sKorenem: false });
+  assert.doesNotThrow(() => vm.runInNewContext(skript, p.g), 'most nesmí spadnout, když document.documentElement ještě neexistuje');
+  assert.equal(p.g.agenteeqDesktop, true, 'rozhraní musí hned při startu vědět, že běží v aplikaci');
+  p.g.webkit.messageHandlers.agenteeq.postMessage({ type: 'ready' });
+  assert.deepEqual(p.zpravy, [{ type: 'ready' }], 'zpráva z rozhraní musí dojít do chrome.webview');
+  assert.equal(p.tridy.size, 0);
+  assert.equal(p.pozorovatele.length, 1, 'na <html> se čeká přes MutationObserver');
+  assert.equal(p.pozorovatele[0].cil, p.document);
+  assert.equal(p.pozorovatele[0].volby.childList, true);
+
+  p.document.documentElement = p.koren;
+  p.pozorovatele[0].fn([], p.pozorovatele[0]);
+  assert.ok(p.tridy.has('is-desktop') && p.tridy.has('is-windows'), 'po vzniku <html> dostane třídy pláště');
+  assert.equal(p.pozorovatele[0].odpojeny, true, 'pozorovatel se po označení odpojí');
+
+  // Dokument, který <html> už má (stránka pláště z NavigateToString, pozdější navigace).
+  const hned = prostredi({ sKorenem: true });
+  vm.runInNewContext(skript, hned.g);
+  assert.ok(hned.tridy.has('is-desktop') && hned.tridy.has('is-windows'));
+  assert.equal(hned.pozorovatele.length, 0);
+});

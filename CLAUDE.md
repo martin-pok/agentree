@@ -16,6 +16,8 @@ Nejdůležitější:
 - Cíl se nikdy nepředává přes shell, který by ho rozebral podruhé – složka „Design & Web“
   není chyták, je to běžné jméno.
 - Každý dynamický text v HTML přes `esc()`; žádné runtime závislosti; max. váha písma 500.
+- Aplikace funguje samostatně: Claude a ostatní AI nástroje, účet ani cloud nejsou podmínkou
+  startu ani žádné funkce – jsou to volitelné zdroje dat (`test/samostatnost.test.mjs`).
 - V testech vždy `AGENTEEQ_SOURCE_HOME` do dočasné složky – nikdy nečti ani nezapisuj skutečné `~/.claude` nebo `~/.codex`.
 - „Požadavek z tohoto Macu“ se nikdy neposuzuje jen podle adresy protistrany – reverzní proxy na témž Macu se hlásí z `127.0.0.1`. Používej `zTohotoMacu()` v `src/http.js`.
 - Nevymýšlej data. Neověřené = „Beta“ a zápis do `docs/CONNECTORS.md`.

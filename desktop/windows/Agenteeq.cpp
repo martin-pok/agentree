@@ -317,15 +317,64 @@ static std::wstring strankaPlaste(const std::wstring& zprava, bool sTlacitkem) {
 // Náhrada za WebKit kanál. Aplikace volá window.webkit.messageHandlers.agenteeq.postMessage –
 // plášť pro Windows jí ho podstrčí nad chrome.webview, aby se public/js nemuselo měnit.
 // `is-windows` navíc říká stylům, že tu není průhledné záhlaví, pod které by obsah zajížděl.
+//
+// Pořadí je podstatné. WebView2 pouští tenhle skript hned při vzniku dokumentu, ještě než
+// parser vytvoří <html> – document.documentElement je v tu chvíli null (na macOS se stejné
+// třídy přidávají až v .atDocumentEnd). Kanál a příznak aplikace proto vznikají první a třídy
+// se přidají, jakmile kořenový prvek existuje. Dřív skript na prvním řádku spadl a rozhraní
+// na Windows pak nevědělo, že běží v aplikaci, a plášť od něj nedostal jedinou zprávu.
 static const wchar_t* SKRIPT_MOSTU =
-    L"document.documentElement.classList.add('is-desktop');"
-    L"document.documentElement.classList.add('is-windows');"
     L"window.agenteeqDesktop = true;"
     L"window.webkit = window.webkit || {};"
     L"window.webkit.messageHandlers = window.webkit.messageHandlers || {};"
     L"window.webkit.messageHandlers.agenteeq = {"
     L"  postMessage: function (m) { try { window.chrome.webview.postMessage(m); } catch (e) {} }"
-    L"};";
+    L"};"
+    L"(function () {"
+    L"  function oznac() {"
+    L"    var h = document.documentElement;"
+    L"    if (!h) return false;"
+    L"    h.classList.add('is-desktop', 'is-windows');"
+    L"    return true;"
+    L"  }"
+    L"  if (oznac()) return;"
+    L"  new MutationObserver(function (zmeny, pozorovatel) { if (oznac()) pozorovatel.disconnect(); })"
+    L"    .observe(document, { childList: true });"
+    L"})();";
+
+// Sonda pro kontrolu sestavené aplikace (scripts/qa-native.mjs). Pustí se jen v režimu QA
+// s AGENTEEQ_DESKTOP_QA_REPORT. Popíše, co je v okně: rozhraní, navigaci, třídy pláště
+// a jestli existuje kanál do pláště. Stejná sonda je v plášti pro macOS.
+#define AGENTEEQ_QA_STAV                                                                         \
+  L"(function(puvod){var v=document.querySelector('#view'),h=document.documentElement;"         \
+  L"return {puvod:puvod,titulek:document.title,dokument:document.readyState,"                   \
+  L"pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length," \
+  L"desktop:!!h&&h.classList.contains('is-desktop'),windows:!!h&&h.classList.contains('is-windows')," \
+  L"aplikace:window.agenteeqDesktop===true,"                                                     \
+  L"most:!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.agenteeq)," \
+  L"kanal:!!(window.chrome&&window.chrome.webview),"                                             \
+  L"trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)};})"
+// Po „ready“ z rozhraní: po chvíli, kdy je obrazovka vykreslená, pošle stav zpátky kanálem.
+// Tím se ověří i samotný kanál – stejnou cestou chodí přepnutí vzhledu a další zprávy.
+static const wchar_t* QA_SONDA =
+    L"setTimeout(function(){window.webkit.messageHandlers.agenteeq.postMessage("
+    L"{type:'qa-sonda',sonda:" AGENTEEQ_QA_STAV L"('ready')});},1500);";
+// Záloha pár sekund po dokončené navigaci: výsledek se vrátí přímo z ExecuteScript, takže
+// hlášení řekne, co v okně je (chybová stránka, prázdno, rozhraní bez kanálu), i když
+// kanál zpráv nefunguje – místo pouhého „nenačetlo se“.
+static const wchar_t* QA_STAV_OKNA = AGENTEEQ_QA_STAV L"('navigace')";
+static const UINT_PTR CASOVAC_QA_STAV = 4;
+
+// Text do JSON řetězce pro hlášení kontroly.
+static std::wstring jsonText(const std::wstring& s) {
+  std::wstring out;
+  for (wchar_t c : s) {
+    if (c == L'"' || c == L'\\') { out.push_back(L'\\'); out.push_back(c); }
+    else if (c < 0x20) { wchar_t buf[8]; swprintf(buf, 8, L"\\u%04x", static_cast<unsigned>(c)); out += buf; }
+    else out.push_back(c);
+  }
+  return out;
+}
 
 // ── Aplikace ─────────────────────────────────────────────────────────────────
 
@@ -357,6 +406,7 @@ class Aplikace {
   int generace_ = 0;
   bool koncime_ = false;
   bool qa_ = false;
+  std::wstring qaZprava_;          // soubor pro hlášení kontroly (jen v režimu QA)
   int odznak_ = 0;
   HICON ikonaOdznaku_ = nullptr;
   std::wstring cestaOznameni_;     // kam skočit po kliknutí na oznámení
@@ -380,6 +430,8 @@ class Aplikace {
   void PosliOznameni(const std::wstring& titulek, const std::wstring& telo, const std::wstring& cesta);
   void UkazOkno();
   void Naviguj(const std::wstring& hash);
+  void ZapisQa(const std::wstring& radek);
+  void ZjistiStavOknaQa();
 };
 
 static Aplikace* g_app = nullptr;
@@ -459,6 +511,7 @@ LRESULT Aplikace::Zprava(HWND okno, UINT zprava, WPARAM w, LPARAM l) {
         return 0;
       }
       if (w == 3) { KillTimer(okno_, 3); if (dite_.hProcess) pokusy_ = 0; return 0; }
+      if (w == CASOVAC_QA_STAV) { KillTimer(okno_, CASOVAC_QA_STAV); ZjistiStavOknaQa(); return 0; }
       break;
 
     case ZPRAVA_OZNAMENI:
@@ -843,6 +896,7 @@ void Aplikace::ZpracujRadek(const std::wstring& radek) {
     if (port_ > 0 && web_) {
       adresa_ = L"http://127.0.0.1:" + std::to_wstring(port_);
       web_->Navigate(adresa_.c_str());
+      ZapisQa(L"{\"udalost\":\"server\",\"port\":" + std::to_wstring(port_) + L"}");
       KillTimer(okno_, 2);
       // Když server vydrží minutu, počítadlo restartů se vynuluje – jinak by
       // aplikace běžící týdny po třetím náhodném pádu zůstala viset.
@@ -959,7 +1013,10 @@ void Aplikace::PoVytvoreniWebView() {
               const std::wstring odkud(zdroj.get());
               const bool zAplikace = !adresa_.empty() && odkud.rfind(adresa_, 0) == 0;
               const bool zPlaste = odkud.rfind(L"about:", 0) == 0 || odkud.rfind(L"data:", 0) == 0;
-              if (!zAplikace && !zPlaste) return S_OK;
+              if (!zAplikace && !zPlaste) {
+                if (!qaZprava_.empty()) ZapisQa(L"{\"udalost\":\"zprava-odmitnuta\",\"zdroj\":\"" + jsonText(odkud) + L"\"}");
+                return S_OK;
+              }
             }
             CoRetezec telo;
             if (FAILED(args->get_WebMessageAsJson(&telo)) || !telo) return S_OK;
@@ -967,11 +1024,37 @@ void Aplikace::PoVytvoreniWebView() {
             json::Ctecka ctecka(std::wstring(telo.get()));
             if (!ctecka.cti(zprava) || zprava.druh != json::Hodnota::Objekt) return S_OK;
             const std::wstring druh = zprava.textPod(L"type");
+            if (!qaZprava_.empty() && druh != L"qa-sonda") ZapisQa(L"{\"udalost\":\"zprava\",\"typ\":\"" + jsonText(druh) + L"\"}");
             if (druh == L"retry" && !dite_.hProcess) { pokusy_ = 0; SpustServer(); }
+            if (!qaZprava_.empty() && druh == L"ready") web_->ExecuteScript(QA_SONDA, nullptr);
+            if (!qaZprava_.empty() && druh == L"qa-sonda") {
+              ZapisQa(L"{\"udalost\":\"nacteno\",\"zprava\":" + std::wstring(telo.get()) + L"}");
+            }
             return S_OK;
           })
           .Get(),
       &token);
+
+  // Kontrola sestavené aplikace: výsledek každé navigace a záložní sonda po ní.
+  if (!qaZprava_.empty()) {
+    web_->add_NavigationCompleted(
+        Callback<ICoreWebView2NavigationCompletedEventHandler>(
+            [this](ICoreWebView2* odesilatel, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
+              BOOL uspech = FALSE;
+              COREWEBVIEW2_WEB_ERROR_STATUS stav = COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN;
+              args->get_IsSuccess(&uspech);
+              args->get_WebErrorStatus(&stav);
+              CoRetezec zdroj;
+              std::wstring adresa;
+              if (SUCCEEDED(odesilatel->get_Source(&zdroj)) && zdroj) adresa = zdroj.get();
+              ZapisQa(L"{\"udalost\":\"navigace\",\"ok\":" + std::wstring(uspech ? L"true" : L"false") +
+                      L",\"stav\":" + std::to_wstring(static_cast<int>(stav)) + L",\"adresa\":\"" + jsonText(adresa.substr(0, 80)) + L"\"}");
+              if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) SetTimer(okno_, CASOVAC_QA_STAV, 5000, nullptr);
+              return S_OK;
+            })
+            .Get(),
+        &token);
+  }
 
   // Když spadne vykreslovací proces stránky, nesmí zůstat prázdné okno.
   web_->add_ProcessFailed(
@@ -993,6 +1076,14 @@ void Aplikace::PoVytvoreniWebView() {
 int Aplikace::Spust(HINSTANCE instance) {
   instance_ = instance;
   qa_ = GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA", nullptr, 0) > 0;
+  if (qa_) {
+    const DWORD delka = GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA_REPORT", nullptr, 0);
+    if (delka > 1) {
+      qaZprava_.resize(delka);
+      GetEnvironmentVariableW(L"AGENTEEQ_DESKTOP_QA_REPORT", &qaZprava_[0], delka);
+      qaZprava_.resize(delka - 1);
+    }
+  }
 
   // Jediná instance. Poražený jen vyzdvihne okno vítěze a skončí – stejně jako na macOS.
   mutex_ = CreateMutexW(nullptr, TRUE, qa_ ? MUTEX_JEDINACEK_QA : MUTEX_JEDINACEK);
@@ -1032,6 +1123,38 @@ int Aplikace::Spust(HINSTANCE instance) {
   if (job_) CloseHandle(job_);  // s ním zmizí i všechno, co server spustil
   CoUninitialize();
   return static_cast<int>(zprava.wParam);
+}
+
+// Jeden řádek JSON na konec souboru hlášení. Soubor se pokaždé otevře a zavře, aby ho
+// kontrolní skript mohl číst, zatímco aplikace běží.
+void Aplikace::ZapisQa(const std::wstring& radek) {
+  if (qaZprava_.empty()) return;
+  const std::wstring sKoncem = radek + L"\n";
+  const int bajtu = WideCharToMultiByte(CP_UTF8, 0, sKoncem.c_str(), static_cast<int>(sKoncem.size()), nullptr, 0, nullptr, nullptr);
+  if (bajtu <= 0) return;
+  std::string utf8(static_cast<size_t>(bajtu), '\0');
+  WideCharToMultiByte(CP_UTF8, 0, sKoncem.c_str(), static_cast<int>(sKoncem.size()), &utf8[0], bajtu, nullptr, nullptr);
+  HANDLE soubor = CreateFileW(qaZprava_.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                              OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (soubor == INVALID_HANDLE_VALUE) return;
+  DWORD zapsano = 0;
+  WriteFile(soubor, utf8.data(), static_cast<DWORD>(utf8.size()), &zapsano, nullptr);
+  CloseHandle(soubor);
+}
+
+// Záložní sonda kontroly: stav okna přímo z výsledku skriptu, bez kanálu zpráv.
+void Aplikace::ZjistiStavOknaQa() {
+  if (!web_ || qaZprava_.empty()) return;
+  web_->ExecuteScript(
+      QA_STAV_OKNA,
+      Callback<ICoreWebView2ExecuteScriptCompletedHandler>(
+          [this](HRESULT chyba, LPCWSTR vysledek) -> HRESULT {
+            const std::wstring stav = SUCCEEDED(chyba) && vysledek && *vysledek ? std::wstring(vysledek) : L"null";
+            ZapisQa(L"{\"udalost\":\"stav-okna\",\"chyba\":" + std::to_wstring(static_cast<long>(chyba)) +
+                    L",\"sonda\":" + stav + L"}");
+            return S_OK;
+          })
+          .Get());
 }
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {

@@ -47,6 +47,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // --backdrop ze stylů aplikace: „stůl“, na kterém karty leží.
     let backdrop = NSColor(srgbRed: 12/255, green: 11/255, blue: 16/255, alpha: 1)
     let qa = ProcessInfo.processInfo.environment["AGENTEEQ_DESKTOP_QA"] == "1"
+    // Kontrola sestavené aplikace (scripts/qa-native.mjs): v režimu QA zapisuje plášť do souboru
+    // port serveru a sondu z načteného rozhraní. Stejná sonda je v plášti pro Windows.
+    lazy var qaReport: String? = {
+        guard self.qa, let path = ProcessInfo.processInfo.environment["AGENTEEQ_DESKTOP_QA_REPORT"], !path.isEmpty else { return nil }
+        return path
+    }()
+    let qaProbe = "setTimeout(function(){var v=document.querySelector('#view');window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{puvod:'ready',titulek:document.title,pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length,desktop:document.documentElement.classList.contains('is-desktop'),aplikace:window.agenteeqDesktop===true,windows:document.documentElement.classList.contains('is-windows'),trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)}});},1500);"
+    func qaWrite(_ object: [String: Any]) {
+        guard let path = qaReport, let data = try? JSONSerialization.data(withJSONObject: object), let line = String(data: data, encoding: .utf8) else { return }
+        if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
+        guard let handle = FileHandle(forWritingAtPath: path) else { return }
+        handle.seekToEndOfFile(); handle.write(Data((line + "\n").utf8)); try? handle.close()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -65,7 +78,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         buildMenu()
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "agenteeq")
-        config.userContentController.addUserScript(WKUserScript(source: "document.documentElement.classList.add('is-desktop'); window.agenteeqDesktop = true;", injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        // Hned na začátku dokumentu (WebKit tu už má <html>), ne až na jeho konci: rozhraní se
+        // vykreslí rovnou s rozvržením aplikace a ví, že v ní běží, dřív než spustí svůj kód.
+        config.userContentController.addUserScript(WKUserScript(source: "window.agenteeqDesktop = true; document.documentElement.classList.add('is-desktop');", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         if qa { config.websiteDataStore = .nonPersistent() }
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self; web.uiDelegate = self
@@ -212,6 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                     if let port = msg["port"] as? Int, msg["ready"] as? Bool == true {
                         self.baseURL = URL(string: "http://127.0.0.1:\(port)")!
                         self.web.load(URLRequest(url: URL(string: "\(self.baseURL!.absoluteString)/?k=\(self.localKey)")!))
+                        self.qaWrite(["udalost": "server", "port": port])
                         // Počítadlo restartů chrání jen před smyčkou pádů hned po startu. Když server
                         // vydrží minutu, vynuluje se – jinak by aplikace běžící týdny po třetím
                         // náhodném pádu zůstala viset a čekala na ruční „Zkusit znovu“.
@@ -285,7 +301,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
-        if type == "ready" { loading.isHidden = true }
+        if type == "ready" { loading.isHidden = true; if qaReport != nil { web.evaluateJavaScript(qaProbe) } }
+        if type == "qa-sonda", qaReport != nil { qaWrite(["udalost": "nacteno", "zprava": data]) }
         if type == "appearance", let theme = data["theme"] as? String {
             let dark = theme == "dark"
             window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)

@@ -79,6 +79,7 @@ docs/                       architektura, konektory, datový kontrakt, bezpečno
 ## 4. Závazná technická pravidla
 
 - **Bez runtime závislostí.** Jen Node.js standardní knihovna a vanilla JS v prohlížeči. Důvod: instalace jedním příkazem, žádný supply-chain risk u nástroje, který čte citlivé přepisy. Výjimku schvaluje vlastník produktu a zapíše se do `docs/ARCHITECTURE.md`.
+- **Aplikace funguje samostatně.** Claude Code, Codex, Cursor, webové chaty, účet, cloud i Admin API jsou volitelné zdroje dat: aplikace je najde, když na počítači jsou, ale nikdy je nepotřebuje ke startu ani k práci. Žádná funkce nesmí vyžadovat konkrétního poskytovatele AI, žádný soubor rozhraní se nestahuje z cizího serveru (písma a ikony jsou přibalené) a balíček pro Mac i Windows nese vlastní Node. Hlídá `test/samostatnost.test.mjs`; sestavený archiv ověřuje `npm run qa:native`.
 - **ES moduly všude** (`"type": "module"`). Rozšíření používá klasické skripty (požadavek MV3 content scripts).
 - **Stav session se odvozuje jen v `src/model.js#deriveStatus`.** Konektor nastavuje fakta (`running`, `pending`, `limit`, `lastAt`, …), nikdy přímo `status`.
 - **Každý dynamický text v HTML jde přes `esc()`** (`public/js/format.js`). Přepisy a titulky jsou nedůvěryhodný vstup. Markdown v přepisu renderuje jen `md()` v `views/session.js` (nejdřív escapuje).
