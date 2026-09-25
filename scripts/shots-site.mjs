@@ -21,17 +21,18 @@ const CIL = path.join(KOREN, 'site', 'detail');
 // Telefon má v aplikaci vlastní rozvržení, proto se každý detail fotí zvlášť i v něm – zmenšený
 // detail z Macu by na telefonu byl nečitelný.
 export const DETAILY = [
-  { soubor: 'stav', trasa: 'prehled', prvek: '.pulse-bar' },
+  // Pruh stavu z Přehledu. Na Macu ve 1520 px širokém okně – tam se do řádku vejdou všichni
+  // agenti a na webu nic není uříznuté. Telefon řádek agentů posouvá do strany, takže na úzkém
+  // výřezu by poslední agent byl vždycky useknutý: tam jen horní část s počty.
+  { soubor: 'stav', trasa: 'prehled', prvek: '.pulse-bar', sirka: 1520, cssMobil: '.pb-strip { display: none !important; } .pulse-bar { padding-bottom: 22px !important; }' },
   { soubor: 'rozhodnuti', trasa: 'prehled', prvek: '.decision' },
   { soubor: 'limit', trasa: 'prehled', prvek: '.lwin' },
-  { soubor: 'upozorneni', trasa: 'upozorneni', prvek: '.card:has(.alert-list)' },
   { soubor: 'agenti', trasa: 'agenti', prvek: '.card.table', do: '.card.table a.row:nth-of-type(4)' },
-  // Projekty jsou na webu dvě karty přes sebe, každá zvlášť; na telefonu jen druhá – ta má
-  // aktivitu rozloženou do více dní, ať je na grafu co vidět.
-  { soubor: 'projekt-atlas', trasa: 'projekty', prvek: '.pgrid > .pcard:nth-child(1)', jenSiroke: true },
+  // Karta s aktivitou rozloženou do více dní, ať je na grafu co vidět.
   { soubor: 'projekt-lumen', trasa: 'projekty', prvek: '.pgrid > .pcard:nth-child(2)' },
-  // Na telefonu je měřidlo nad čísly; stačí měřidlo a první částka, zbytek by byl jen dlouhý sloupec.
-  { soubor: 'utrata', trasa: 'utrata', prvek: '.spend-hero', vyskaMobil: 400 },
+  // Útrata jen z telefonního rozvržení: měřidlo nad částkou se vejde do dlaždice, široký pruh
+  // z Macu ne. Končí pod první částkou.
+  { soubor: 'utrata', trasa: 'utrata', prvek: '.spend-hero', vyskaMobil: 366, jenUzke: true },
 ];
 const ROZVRZENI = [
   { pripona: '', sirka: 1280, vyska: 800, hustota: 3 },
@@ -41,12 +42,14 @@ const ROZVRZENI = [
 // Pozadí okna a jeho záře patří aplikaci, ne detailu. Bez nich zůstane průhledný roh karty a web
 // může detail položit na vlastní scénu. Postranní panel (na telefonu spodní lišta, která je
 // přišpendlená k okraji a vlezla by do každého vyššího detailu) je neviditelný, ale zabírá své
-// místo, takže rozvržení obrazovky zůstane stejné jako v aplikaci. Nástupy a pulzování vypíná
+// místo, takže rozvržení obrazovky zůstane stejné jako v aplikaci. Stejně tak úchyt pro
+// přesouvání karet projektů – ovládání aplikace, ne obsah. Nástupy a pulzování vypíná
 // `reducedMotion`.
 const PRUHLEDNE = `
   html, body, .shell, .main { background: transparent !important; }
   body::before, .stage { display: none !important; }
   .sidebar, .sidebar * { visibility: hidden !important; }
+  .pcard-grip { visibility: hidden !important; }
 `;
 
 async function naWebp(page, png) {
@@ -78,6 +81,10 @@ async function vyfot(page, detail, mobil) {
   return { png, sirka: clip.width, vyska: clip.height };
 }
 
+// Hodiny prohlížeče stojí na čase vzniku scény: „obnova za 2 h“ by se jinak během focení změnilo
+// na delší „za 1 h 55 min“, text by se zalomil a výřez by vyšel pokaždé jinak vysoký (rozměry
+// v index.html by pak neseděly). Časové pásmo je pražské, ať časy odpovídají českému webu.
+const ted = Date.now();
 const demo = await pripravUkazku({}, { oznacit: false });
 await fs.mkdir(CIL, { recursive: true });
 const browser = await chromium.launch();
@@ -87,13 +94,16 @@ try {
   await api(demo.url).send('PUT', '/api/settings', { appearance: 'dark' });
   for (const r of ROZVRZENI) {
     for (const detail of DETAILY) {
-      if (detail.jenSiroke && r.pripona) continue;
+      if (detail.jenUzke && !r.pripona) continue;
+      const sirkaOkna = (!r.pripona && detail.sirka) || r.sirka;
       const page = await browser.newPage({
-        viewport: { width: r.sirka, height: r.vyska }, deviceScaleFactor: r.hustota,
+        viewport: { width: sirkaOkna, height: r.vyska }, deviceScaleFactor: r.hustota,
         colorScheme: 'dark', reducedMotion: 'reduce', isMobile: r.sirka < 600, hasTouch: r.sirka < 600,
+        timezoneId: 'Europe/Prague', locale: 'cs-CZ',
       });
+      await page.clock.setFixedTime(ted + 60000);
       await page.goto(`${demo.url}/#/${detail.trasa}`, { waitUntil: 'load' });
-      await page.addStyleTag({ content: PRUHLEDNE });
+      await page.addStyleTag({ content: PRUHLEDNE + (r.pripona && detail.cssMobil ? detail.cssMobil : '') });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForFunction(() => !document.querySelector('.loader, .skel, .skeleton'), null, { timeout: 10000 }).catch(() => {});
       await page.waitForTimeout(700);

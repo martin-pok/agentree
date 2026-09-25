@@ -1,7 +1,12 @@
 /* Agenteeq – landing page.
    Staví na stejném systému jako aplikace („koncertní sál“): eben je scéna, mlžná slonovina
    je plocha ke čtení, samet znamená rozhodnutí, smaragd práci, mosaz limit. Stavové barvy
-   se na stránce používají jen tam, kde nesou stejný význam jako v produktu. */
+   se na stránce používají jen tam, kde nesou stejný význam jako v produktu.
+
+   Stavba: stránka je řada jednotek (.unit). Každá nese jednu zprávu – vycentrovaný nadpis,
+   jednu větu, případně výzvu – a pod tím jeden obraz produktu. Obrazy jsou výřezy skutečného
+   rozhraní (site/detail) a nic se přes sebe nepřekrývá. Skupiny drží plocha (dlaždice, pás),
+   ne rámečky. */
 
 :root {
   --backdrop: #0C0B10; --stage: #121019; --stage-2: #1D1A26;
@@ -12,6 +17,8 @@
   --teal: #22A38C; --teal-ink: #0D7A67; --teal-tint: #E0F3EF;
   --brass: #C99A3E; --brass-ink: #86620F; --brass-tint: #F7EEDA;
   --on-stage: #F4F3F7; --on-stage-mute: #A9A3B4; --stage-line: #2A2633;
+  /* Dlaždice na scéně: o stupeň světlejší než scéna, bez okraje. */
+  --tile: #16141D;
 
   --action: var(--ink); --on-action: #FFFFFF; --action-hover: #3A3646;
 
@@ -19,10 +26,10 @@
   --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
 
-  --r-lg: 24px; --r-md: 16px; --r-sm: 12px;
+  --r-tile: 28px; --r-lg: 24px; --r-md: 16px; --r-sm: 12px;
   --ease: cubic-bezier(.2, .8, .2, 1);
-  --page: 1160px;
-  --band-y: clamp(56px, 6.5vw, 92px);
+  --page: 1120px;
+  --unit-y: clamp(96px, 11vw, 160px);
   color-scheme: light;
 }
 
@@ -37,207 +44,169 @@
     --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #33290F;
     --action: #F3F1F7; --on-action: #16141D; --action-hover: #CFCAD9;
   }
-  .logo--mono { filter: invert(1); }
+  .unit:not(.unit--dark) .logo--mono { filter: invert(1); }
 }
 
 /* ---------- základ ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 var(--f-body); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
 img, svg { display: block; max-width: 100%; }
 a { color: inherit; text-underline-offset: 4px; }
 button { color: inherit; font: inherit; cursor: pointer; }
 button, a, summary { -webkit-tap-highlight-color: transparent; }
 b, strong { font-weight: 500; }
 :focus-visible { outline: 2px solid var(--teal-ink); outline-offset: 4px; border-radius: 4px; }
+.unit--dark :focus-visible, .nav :focus-visible { outline-color: #76E6CD; }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--action); color: var(--on-action); padding: 12px 20px; border-radius: var(--r-sm); }
 .skip:focus { top: 12px; }
 .wrap { width: min(100% - 48px, var(--page)); margin-inline: auto; }
+.narrow { width: min(100% - 48px, 760px); }
 
-h1, h2, h3 { font-family: var(--f-display); font-weight: 500; letter-spacing: -.035em; line-height: 1.08; margin: 0; text-wrap: balance; }
-h1 { font-size: clamp(40px, 5.6vw, 76px); }
-h2 { font-size: clamp(30px, 3.6vw, 46px); }
-h3 { font-size: 20px; letter-spacing: -.02em; }
+/* Jedna stupnice: nadpis jednotky, nadpis dlaždice, úvodní věta, text. Hierarchie stojí na
+   velikosti a prázdném místě, ne na dalších barvách a řezech. */
+h1, h2, h3 { font-family: var(--f-display); font-weight: 500; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(44px, 6.2vw, 84px); line-height: 1.02; letter-spacing: -.045em; }
+h2 { font-size: clamp(36px, 4.6vw, 64px); line-height: 1.04; letter-spacing: -.04em; }
+h3 { font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
 p { margin: 0; text-wrap: pretty; }
-.lead { font-size: 18px; line-height: 1.6; color: var(--ink-2); max-width: 54ch; }
+.lead { font-size: clamp(18px, 1.55vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 40ch; }
 .small { font-size: 14px; line-height: 1.6; }
 .muted { color: var(--mute); }
 code, kbd { font-family: var(--f-mono); font-size: .92em; }
-
-.eyebrow { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.kicker { font-size: 15px; letter-spacing: .01em; color: var(--brass-ink); }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal-ink); flex: none; }
 
-/* ---------- pásy ---------- */
-section[id] { scroll-margin-top: 80px; }
-.band { padding-block: var(--band-y); }
-.band--tint { background: var(--paper-2); }
-.band--stage { background: var(--backdrop); color: var(--on-stage); }
-.band--stage h1, .band--stage h2, .band--stage h3 { color: var(--on-stage); }
-.band--stage .lead, .band--stage p { color: var(--on-stage-mute); }
-.eyebrow--stage { color: var(--on-stage-mute); }
-.band--stage .status-dot { background: var(--teal); }
+/* ---------- jednotky ---------- */
+section[id] { scroll-margin-top: 56px; }
+.unit { padding-block: var(--unit-y); }
+.unit--tint { background: var(--paper-2); }
+.unit--dark { background: var(--backdrop); color: var(--on-stage); }
+.unit--dark :is(h1, h2, h3) { color: var(--on-stage); }
+.unit--dark :is(p, .lead) { color: var(--on-stage-mute); }
+.unit--dark .kicker { color: #E4B95F; }
+.unit--dark .status-dot { background: #43D1B1; }
+/* Dvě tmavé jednotky za sebou tvoří jednu scénu – druhá nezačíná novým odsazením shora. */
+.unit--dark + .unit--dark { padding-top: 0; }
+.unit-head { display: grid; gap: 20px; justify-items: center; text-align: center; }
+.unit-head .lead { margin-inline: auto; }
 
-/* ---------- tlačítka ---------- */
+/* ---------- tlačítka a odkazy ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 24px; border: 0; border-radius: 999px; background: var(--action); color: var(--on-action); font-weight: 500; text-decoration: none; transition: background 180ms var(--ease), transform 90ms var(--ease); }
 .btn:hover { background: var(--action-hover); transform: translateY(-1px); }
 .btn:active { transform: translateY(0) scale(.98); }
-.btn--sm { padding: 9px 18px; font-size: 14px; }
-.btn--lg { padding: 17px 32px; font-size: 17px; }
-.band--stage .btn { background: var(--on-stage); color: var(--backdrop); }
+.btn--sm { padding: 8px 16px; font-size: 14px; }
+.btn--lg { padding: 16px 30px; font-size: 17px; }
+.nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
+.nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
 .text-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); text-decoration: underline; text-decoration-thickness: 1px; }
 .text-link:hover { color: var(--ink); }
-.band--stage .text-link { color: var(--on-stage-mute); }
-.band--stage .text-link:hover { color: var(--on-stage); }
+.unit--dark .text-link { color: var(--on-stage-mute); }
+.unit--dark .text-link:hover { color: var(--on-stage); }
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 28px; margin-top: 8px; }
+.specs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; font-size: 14px; color: var(--mute); }
+.unit--dark .specs { color: var(--on-stage-mute); }
+.specs span { display: inline-flex; align-items: center; gap: 10px; }
+.specs span + span::before { content: '·'; }
 
 /* ---------- hlavička ---------- */
-/* Hlavička patří ke scéně: stránka začíná tmavým pásem s produktem v obou režimech, takže světlý
-   pruh nad ním by stránku rozřízl. Při posouvání nad světlými pásy zůstává tmavá jako lišta. */
+/* Hlavička patří ke scéně: stránka začíná tmavou jednotkou v obou režimech. Nad světlými
+   jednotkami zůstává tmavá jako lišta. */
 .nav { position: sticky; top: 0; z-index: 50; background: rgba(12, 11, 16, .84); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid rgba(244, 243, 247, .07); color: var(--on-stage); }
-.nav-in { display: flex; align-items: center; gap: 24px; min-height: 64px; }
+.nav-in { display: flex; align-items: center; gap: 28px; min-height: 56px; }
 /* Odsazení nese logo, ne menu: na mobilu je menu skryté a tlačítko musí zůstat vpravo i tak. */
-.brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; font-family: var(--f-display); font-size: 19px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
-.brand img { width: 28px; height: 28px; }
-.nav-links { display: flex; gap: 22px; font-size: 15px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; font-family: var(--f-display); font-size: 18px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
+.brand img { width: 26px; height: 26px; }
+.nav-links { display: flex; gap: 28px; font-size: 14px; }
 .nav-links a { color: var(--on-stage-mute); text-decoration: none; transition: color 180ms var(--ease); }
 .nav-links a:hover { color: var(--on-stage); }
-.nav .btn, .hero .btn, .band--stage .btn { background: var(--on-stage); color: var(--backdrop); }
-.nav .btn:hover, .hero .btn:hover, .band--stage .btn:hover { background: #D9D5E0; }
 
 /* ---------- hero ---------- */
-/* Tmavá scéna v obou režimech: výřezy rozhraní jsou z tmavého vzhledu aplikace a na světlé
-   ploše by se jejich okraje neměly do čeho prolnout. */
-.hero { position: relative; isolation: isolate; overflow: hidden; background: var(--backdrop); color: var(--on-stage); padding-block: clamp(64px, 8vw, 112px) clamp(72px, 9vw, 128px); }
+.hero { position: relative; isolation: isolate; overflow: hidden; padding-top: clamp(64px, 7vw, 104px); }
+/* Záře za obrazem produktu – z barev pruhu stavu, aby obraz ze scény vyrůstal. */
 .hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background:
-  radial-gradient(52% 38% at 50% 64%, rgba(201, 154, 62, .15), transparent 70%),
-  radial-gradient(40% 36% at 88% 78%, rgba(34, 163, 140, .15), transparent 72%),
-  radial-gradient(36% 34% at 10% 80%, rgba(124, 108, 240, .12), transparent 72%);
-  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
-.hero-in { display: grid; gap: 22px; justify-items: center; max-width: 920px; text-align: center; }
-.hero h1 { color: var(--on-stage); }
+  radial-gradient(46% 30% at 50% 78%, rgba(201, 154, 62, .13), transparent 70%),
+  radial-gradient(34% 26% at 78% 82%, rgba(34, 163, 140, .13), transparent 72%),
+  radial-gradient(30% 24% at 22% 86%, rgba(124, 108, 240, .10), transparent 72%); }
 .hero h1 span { color: var(--on-stage-mute); }
-.hero .lead { font-size: clamp(18px, 1.5vw, 21px); max-width: 58ch; color: var(--on-stage-mute); }
-.cta-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 26px; margin-top: 6px; }
-.hero .text-link { color: var(--on-stage-mute); }
-.hero .text-link:hover { color: var(--on-stage); }
-.hero-specs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; font-size: 13px; color: var(--on-stage-mute); }
-.hero-specs span { display: inline-flex; align-items: center; gap: 10px; }
-.hero-specs span + span::before { content: '·'; }
+.hero .lead { max-width: 46ch; }
+.hero-figure { margin-top: clamp(48px, 5.5vw, 76px); display: grid; justify-items: center; gap: 28px; }
+.hero-shot { width: min(100%, 1072px); filter: drop-shadow(0 40px 80px rgba(0, 0, 0, .55)); }
+.hero-shot img { width: 100%; height: auto; }
+.detail-note { font-size: 13px; line-height: 1.5; color: var(--mute); text-align: center; }
+.unit--dark .detail-note { color: var(--on-stage-mute); }
 
-/* Scéna: pruh stavu z Přehledu a přes jeho spodní hranu dvě karty, které z něj vyplývají –
-   rozhodnutí, na které se čeká, a limit, který běží. Výřezy mají průhledné rohy, stín kreslí
-   drop-shadow podle tvaru karty. Záporné okraje v % se počítají ze šířky scény, takže překryv
-   drží poměr na každé šířce. */
-.scene { width: min(100% - 48px, 1120px); margin: clamp(56px, 7vw, 88px) auto 0; }
-.scene-in { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
-.scene-in img { width: 100%; height: auto; }
-.scene-main { grid-column: 1 / -1; grid-row: 1; filter: drop-shadow(0 40px 72px rgba(0, 0, 0, .55)); }
-.scene-card { grid-row: 2; filter: drop-shadow(0 28px 44px rgba(0, 0, 0, .62)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
-.scene-card--limit { grid-column: 2 / span 5; margin-top: -2%; margin-right: 6%; }
-.scene-card--rozhodnuti { grid-column: 7 / span 5; margin-top: -6.5%; }
-.detail-note { font-size: 13px; line-height: 1.5; color: var(--on-stage-mute); text-align: center; }
-.scene .detail-note { margin-top: clamp(28px, 4vw, 44px); }
-
-/* ---------- kapitoly ---------- */
-/* Každá kapitola má text a výřez, který přetéká k okraji okna a do něj se prolne – detail, ne
-   celá obrazovka. --presah je vzdálenost od okraje obsahu k okraji okna. */
-/* Přesah k okraji okna se ořízne přes `clip`, ne `hidden`: `hidden` dělá ze sekce posuvný
-   kontejner a animace řízené posouváním by pak měřily polohu vůči sekci místo okna – výřez by
-   zůstal napůl průhledný. `hidden` je jen pojistka pro prohlížeče bez `clip` (ty nemají ani
-   animace podle posouvání). */
-.chapters { --presah: max(24px, (100vw - var(--page)) / 2); overflow-x: hidden; overflow-x: clip; padding-top: clamp(40px, 5vw, 64px); background: var(--backdrop); }
-.chapters-head { margin-bottom: clamp(56px, 8vw, 112px); }
-.chapters-head h2 { font-size: clamp(34px, 4.4vw, 60px); }
-.chapter + .chapter { margin-top: clamp(104px, 12vw, 176px); }
-.chapter-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
-.chapter-text { display: grid; gap: 16px; max-width: 440px; }
-.chapter-text h3 { font-size: clamp(28px, 2.8vw, 40px); letter-spacing: -.03em; }
-.chapter-text > p { font-size: 18px; line-height: 1.6; }
-/* Výřez končí přesně na okraji okna a do něj se prolne. Obrázek uvnitř je širší než výřez
-   (--zoom), takže je rozhraní o kus větší než v aplikaci a okraj okna ho ořízne až v prolnutí. */
-.chapter-figure { position: relative; margin: 0; width: calc(100% + var(--presah)); }
-.chapter-shot { display: flex; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent); }
-.chapter-shot img { flex: none; width: var(--zoom, 960px); max-width: none; height: auto; }
-/* Seznam agentů pokračuje i dolů: prolnutí zprava i zespodu. */
-.chapter--dolu .chapter-shot { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent), linear-gradient(#000 58%, transparent 96%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, #000 calc(100% - 200px), transparent), linear-gradient(#000 58%, transparent 96%); mask-composite: intersect; }
-/* Oznámení leží pod třetím řádkem, přes ten vyblednutý – nic čitelného nezakrývá. */
-.chapter-float { position: absolute; left: -32px; top: min(300px, 84%); width: min(320px, 44%); height: auto; filter: drop-shadow(0 28px 44px rgba(0, 0, 0, .62)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
-.chapter--dolu { padding-bottom: 96px; }
-.chapter--flip .chapter-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
-.chapter--flip .chapter-text { order: 2; }
-
-/* Projekty: dvě karty přes sebe, zadní ztlumená. Vejdou se do sloupce, nepřetékají. */
-.chapter-figure--stack { width: calc(100% + var(--presah)); justify-self: end; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; }
-.chapter-figure--stack img { width: 100%; height: auto; }
-.stack-back { grid-column: 1 / span 8; grid-row: 1; opacity: .5; filter: saturate(.7); -webkit-mask-image: linear-gradient(to right, transparent, #000 45%); mask-image: linear-gradient(to right, transparent, #000 45%); }
-.stack-front { grid-column: 5 / -1; grid-row: 1; margin-top: 14%; filter: drop-shadow(0 32px 56px rgba(0, 0, 0, .65)) drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
-
-/* Stavové barvy na scéně: vždy ve svém světlém tónu, protože scéna je tmavá v obou režimech. */
-.legend { display: grid; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 15px; }
-.legend li { position: relative; padding-left: 22px; }
-.legend li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: #43D1B1; }
-.legend .legend--wait::before { background: #E87498; }
-.legend .legend--limit::before { background: #E4B95F; }
-.legend b { color: var(--on-stage); }
-.chapters > .wrap:last-child .detail-note { margin-top: clamp(96px, 11vw, 152px); }
+/* ---------- dlaždice ---------- */
+/* Každá dlaždice má stejnou stavbu: nadpis, věta, výřez. Výřez sedí dole; vysoké výřezy
+   (.tile--crop) spodní hrana dlaždice ořízne a prolnou se do ní, malé karty (.tile--fit)
+   stojí celé. */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: clamp(56px, 7vw, 88px); }
+.tile { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; overflow: hidden; padding: clamp(44px, 4.6vw, 64px) clamp(24px, 3.4vw, 48px) 0; border-radius: var(--r-tile); background: var(--tile); }
+.tile--wide { grid-column: 1 / -1; }
+.tile h3 { font-size: clamp(28px, 2.6vw, 38px); line-height: 1.1; letter-spacing: -.03em; }
+.tile > p { max-width: 38ch; margin-top: 14px; font-size: 17px; line-height: 1.55; }
+.tile-shot { display: flex; justify-content: center; width: 100%; margin: auto 0 0; padding-top: clamp(40px, 4.6vw, 56px); }
+.tile-shot img { width: 100%; height: auto; }
+/* Malá karta stojí uprostřed volné plochy – dlaždice v řadě jsou stejně vysoké a karta dole by
+   nad sebou nechala díru. */
+.tile--fit .tile-shot { flex: 1; align-items: center; margin: 0; padding-block: clamp(40px, 4.6vw, 56px); }
+.tile--fit .tile-shot picture { width: min(100%, 448px); filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .5)); }
+.tile--crop .tile-shot { height: clamp(300px, 30vw, 380px); align-items: flex-start; overflow: hidden; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.tile--crop .tile-shot > :is(picture, img) { width: min(100%, 440px); }
+.tile--wide .tile-shot > picture { width: min(100%, 960px); }
+.tiles-unit > .wrap:last-child .detail-note { margin-top: 32px; }
 
 /* ---------- propojení ---------- */
-.connections { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
-.section-intro { display: grid; gap: 16px; justify-items: start; }
-.source-groups { display: grid; gap: 16px; }
-.source-group { padding: 24px; border-radius: var(--r-lg); background: var(--card); border: 1px solid var(--line); }
-.source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-.source-head span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
-.logos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 20px; }
-.logos > span { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; }
-.source-group .small { margin-top: 16px; }
+.sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: clamp(56px, 7vw, 80px); }
+.source-group { padding: 40px 32px 44px; border-radius: var(--r-tile); background: var(--card); text-align: center; }
+.source-group h3 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 12px; font-size: 22px; }
+.tag { font-family: var(--f-body); font-size: 13px; letter-spacing: 0; color: var(--mute); }
+.logos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 12px; margin: 32px 0 0; padding: 0; list-style: none; }
+.logos li { display: grid; justify-items: center; gap: 12px; font-size: 15px; }
+.logos img { width: 40px; height: 40px; }
+.note { margin-top: 28px; text-align: center; font-size: 14px; color: var(--mute); max-width: 64ch; }
 
 /* ---------- soukromí ---------- */
-.privacy-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
-.privacy-statement { display: grid; gap: 16px; }
-.lead--stage { color: var(--on-stage-mute); }
-.privacy-details { display: grid; gap: 16px; }
-.privacy-details article { padding: 24px; border-radius: var(--r-lg); background: var(--stage); border: 1px solid var(--stage-line); }
-.privacy-details h3 { margin-bottom: 8px; }
-.availability { display: flex; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--stage-line); font-size: 14px; }
-.availability .status-dot { margin-top: 7px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: clamp(56px, 7vw, 80px); }
+.facts article { padding: 40px; border-radius: var(--r-tile); background: var(--tile); }
+.facts h3 { font-size: 22px; margin-bottom: 12px; }
 
 /* ---------- stažení ---------- */
-.start-layout { display: grid; gap: 40px; }
-.start-head { display: grid; gap: 16px; justify-items: start; max-width: 620px; }
-.note-after { margin-top: -4px; }
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.steps li { display: flex; gap: 14px; padding: 22px; border-radius: var(--r-lg); background: var(--card); border: 1px solid var(--line); }
-.step-n { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--action); color: var(--on-action); font-family: var(--f-mono); font-size: 14px; }
-.steps > li > div > b { display: block; margin-bottom: 4px; }
-.steps p { color: var(--ink-2); font-size: 15px; }
-
-.gatekeeper { padding: 22px 24px; border-radius: var(--r-lg); background: var(--brass-tint); border: 1px solid color-mix(in srgb, var(--brass) 35%, transparent); }
-.gatekeeper { display: grid; gap: 10px; }
-.gatekeeper p { color: var(--ink-2); max-width: 78ch; }
+.unit-head .btn { margin-top: 8px; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: clamp(56px, 7vw, 80px); padding: 0; list-style: none; }
+.steps li { display: grid; align-content: start; gap: 8px; padding: 36px 32px 40px; border-radius: var(--r-tile); background: var(--card); }
+.step-n { font-family: var(--f-display); font-size: 44px; line-height: 1; letter-spacing: -.04em; color: var(--brass-ink); margin-bottom: 12px; }
+.steps b { font-size: 18px; }
+.steps p { color: var(--ink-2); font-size: 16px; }
+.steps p b { font-size: inherit; }
+.narrow { margin-top: 16px; }
+.gatekeeper { display: grid; gap: 10px; padding: 32px; border-radius: var(--r-tile); background: var(--card); }
+.gatekeeper p { color: var(--ink-2); }
 .gatekeeper b { color: var(--ink); }
 
-/* ---------- rozbalovací části ---------- */
-.setup-list, .faq { display: grid; gap: 10px; }
-details { border-radius: var(--r-md); background: var(--card); border: 1px solid var(--line); overflow: hidden; }
-summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 22px; font-size: 17px; list-style: none; }
+/* ---------- rozbalovací řádky ---------- */
+/* Řádky oddělené linkou, ne krabice: jako seznam, ne jako formulář. */
+.rows { display: grid; margin-top: 40px; border-top: 1px solid var(--line); }
+details { border-bottom: 1px solid var(--line); }
+summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 4px; font-size: 18px; list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
-summary::after { content: '+'; font-family: var(--f-mono); font-size: 20px; color: var(--mute); }
-details[open] > summary::after { content: '–'; }
-.detail-tag { margin-left: auto; margin-right: 4px; padding: 4px 10px; border-radius: 999px; background: var(--paper-2); font-size: 12px; color: var(--mute); }
-.detail-body { padding: 0 22px 22px; display: grid; gap: 14px; }
+summary::after { content: '+'; flex: none; font-size: 24px; line-height: 1; color: var(--mute); transition: transform 200ms var(--ease); }
+details[open] > summary::after { transform: rotate(45deg); }
+.detail-tag { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: var(--paper-2); font-size: 13px; color: var(--mute); white-space: nowrap; }
+.unit--tint .detail-tag { background: var(--paper); }
+.detail-body { display: grid; gap: 14px; padding: 0 4px 26px; }
 .detail-body ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); }
 .detail-body li { padding-left: 4px; }
+.rows details > p { padding: 0 4px 26px; color: var(--ink-2); max-width: 64ch; }
+#otazky .rows { margin-top: clamp(40px, 5vw, 64px); }
 kbd { display: inline-block; padding: 1px 6px; border-radius: 5px; background: var(--paper-2); border: 1px solid var(--line); }
 .kopirovat { padding: 2px 8px; border-radius: 6px; background: var(--paper-2); border: 1px solid var(--line); cursor: pointer; }
 .kopirovat:hover { border-color: var(--mute); }
 
-.faq-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 56px; align-items: start; }
-.faq p { padding: 0 22px 22px; color: var(--ink-2); }
-
 /* ---------- patička ---------- */
-footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px solid var(--line); }
+footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px solid var(--line); font-size: 14px; }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
 .foot-in > p { color: var(--mute); }
 .foot-in .text-link { margin-left: auto; }
@@ -245,78 +214,51 @@ footer { padding-block: 40px 56px; background: var(--paper); border-top: 1px sol
 
 /* ---------- užší obrazovky ---------- */
 @media (max-width: 900px) {
-  .connections, .privacy-layout, .faq-layout { grid-template-columns: minmax(0, 1fr); gap: 32px; }
-  /* Kapitola pod sebou: text, pak výřez přetékající k pravému okraji (u otočené k levému). */
-  .chapter-in { grid-template-columns: minmax(0, 1fr); gap: 36px; }
-  .chapter-text { max-width: 620px; }
-  .chapter--flip .chapter-in { grid-template-columns: minmax(0, 1fr); }
-  .chapter--flip .chapter-text { order: 0; }
-  .chapter-figure--stack { width: min(100%, 680px); justify-self: start; }
-  .chapter-float { left: auto; right: calc(var(--presah) + 8px); width: min(320px, 46%); }
-
-  /* Tablet: pruh stavu v plné velikosti, oříznutý pravým okrajem okna s prolnutím; karty
-     z telefonního rozvržení (užší, v přirozené velikosti čitelné). */
-  .scene { width: auto; margin-left: 24px; margin-right: 0; }
-  .scene-main { overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent); }
-  .scene-main img { width: 900px; max-width: none; }
-  .scene-card--limit { grid-column: 1 / span 6; margin-top: -1%; margin-right: 4%; }
-  .scene-card--rozhodnuti { grid-column: 7 / span 6; margin-top: -3%; margin-right: 24px; }
-  .scene .detail-note { margin-right: 24px; }
+  /* Dvě dlaždice vedle sebe by na tabletu zmenšily karty pod čitelnost. */
+  .tiles { grid-template-columns: minmax(0, 1fr); }
+  /* Seznam agentů z telefonního rozvržení – tabulka z Macu by se zmenšila pod čitelnost. */
+  .tile--wide .tile-shot > picture { width: min(100%, 440px); }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .facts, .sources { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 620px) {
-  .wrap { width: calc(100% - 32px); }
+  .wrap, .narrow { width: calc(100% - 32px); }
   .nav-links { display: none; }
   .nav-in { gap: 12px; }
   .brand { font-size: 17px; }
   .btn--lg { padding: 15px 26px; font-size: 16px; }
-  .steps li, .source-group, .privacy-details article, .gatekeeper { padding: 18px; }
-  summary { padding: 16px 18px; font-size: 16px; }
-  .detail-body { padding: 0 18px 18px; }
-  .faq p { padding: 0 18px 18px; }
-
-  /* Telefon má vlastní výřezy z telefonního rozvržení aplikace, v plné šířce a čitelné bez
-     zvětšování. Karty scény se řadí pod pruh stavu a překrývají se jen hranou. */
-  .scene { width: calc(100% - 32px); margin-inline: auto; }
-  .scene-main { -webkit-mask-image: none; mask-image: none; }
-  .scene-main img { width: 100%; }
-  .scene .detail-note { margin-right: 0; }
-  /* Karta rozhodnutí zajede jen pod spodní okraj pruhu, pod řádek s agenty – neřeže text. */
-  .scene-card--rozhodnuti { grid-column: 2 / -1; grid-row: 2; margin-top: -4%; }
-  .scene-card--limit { grid-column: 1 / span 11; grid-row: 3; margin-top: -3%; }
-  .chapter-figure { width: 100%; }
-  .chapter-shot, .chapter--dolu .chapter-shot { -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
-  .chapter-shot img { width: 100%; }
-  .chapter-float { left: auto; right: -4px; top: auto; bottom: -56px; width: 80%; }
-  .chapter--dolu { padding-bottom: 40px; }
-  .stack-back { display: none; }
-  .stack-front { grid-column: 1 / -1; margin-top: 0; }
+  /* Telefon: dlaždice pod sebou, výřezy z telefonního rozvržení v přirozené velikosti. */
+  .tiles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .tile { padding: 40px 20px 0; border-radius: var(--r-lg); }
+  .tile > p { font-size: 16px; }
+  .tile--fit .tile-shot { padding-bottom: 40px; }
+  .tile--crop .tile-shot { height: 320px; }
+  .hero-shot { width: min(100%, 420px); }
+  .specs { font-size: 13px; gap: 6px 8px; }
+  .specs span { gap: 8px; }
+  .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .source-group, .facts article, .steps li, .gatekeeper { padding: 28px 22px 32px; border-radius: var(--r-lg); }
+  summary { font-size: 17px; padding: 20px 2px; }
 }
 
+/* ---------- pohyb ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-in > * { animation: prichod .6s var(--ease) both; }
-  .hero-in > *:nth-child(2) { animation-delay: .06s; }
-  .hero-in > *:nth-child(3) { animation-delay: .12s; }
-  .hero-in > *:nth-child(4) { animation-delay: .18s; }
-  /* Scéna nastoupí po textu: nejdřív pruh stavu, pak z něj vyjedou karty. */
-  .scene-main { animation: nastup 1s var(--ease) .2s both; }
-  .scene-card--limit { animation: nastup .9s var(--ease) .5s both; }
-  .scene-card--rozhodnuti { animation: nastup .9s var(--ease) .64s both; }
-  .scene .detail-note { animation: prichod .6s var(--ease) .9s both; }
-  details[open] > .detail-body, .faq details[open] > p { animation: prichod .24s var(--ease) both; }
+  .unit-head > * { animation: prichod .6s var(--ease) both; }
+  .hero .unit-head > *:nth-child(2) { animation-delay: .05s; }
+  .hero .unit-head > *:nth-child(3) { animation-delay: .1s; }
+  .hero .unit-head > *:nth-child(4) { animation-delay: .15s; }
+  .hero .unit-head > *:nth-child(5) { animation-delay: .2s; }
+  .hero-shot { animation: nastup 1s var(--ease) .3s both; }
+  details[open] > .detail-body, .rows details[open] > p { animation: prichod .24s var(--ease) both; }
   @keyframes prichod { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   @keyframes nastup { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
-  /* Kapitoly vyjedou podle posouvání (časová osa je poloha na stránce, ne hodiny), takže nic
-     neběží samo a nic nečeká na JavaScript. Kde to prohlížeč neumí, jsou výřezy prostě vidět. */
+  /* Dlaždice vyjedou podle posouvání (časová osa je poloha na stránce, ne hodiny), nic neběží
+     samo. Plně viditelné jsou v první třetině cesty. Pozor: žádný předek dlaždic nesmí mít
+     `overflow: hidden` – udělal by z něj posuvný kontejner a nástup by měřil vůči němu
+     (hlídá qa-site). */
   @supports (animation-timeline: view()) {
-    /* Plná neprůhlednost přijde v první třetině cesty: karta, která se zastaví ve spodní části
-       okna, nesmí nechat prosvítat text pod sebou. */
-    .chapter-shot, .stack-front { animation: vynor linear both; animation-timeline: view(); animation-range: entry 0% entry 90%; }
-    .chapter-float { animation: vynor-vic linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
-    /* Zadní karta končí ztlumená – vlastní průběh, jinak by konec animace přepsal její opacity. */
-    .stack-back { animation: vynor-zadni linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
-    @keyframes vynor-zadni { from { opacity: 0; transform: translateY(96px); } 35% { opacity: .5; } to { opacity: .5; transform: none; } }
-    @keyframes vynor { from { opacity: 0; transform: translateY(56px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
-    @keyframes vynor-vic { from { opacity: 0; transform: translateY(96px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+    .tile, .source-group, .facts article, .steps li { animation: vynor linear both; animation-timeline: view(); animation-range: entry 0% entry 80%; }
+    @keyframes vynor { from { opacity: 0; transform: translateY(48px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -2,17 +2,19 @@
 
 ## Nevydáno
 
-### Web: detaily rozhraní místo celé aplikace v rámu
+### Web: nová stavba stránky a oprava posouvání na iPhonu
 
 - **Oprava: prohlídka na webu blokovala posouvání na iPhonu.** Vložená aplikace (`/app?ukazka`
   v rámu) si v iOS Safari nechávala tah prstem, takže přes rám, který zabíral skoro celou
   obrazovku, nešlo stránku posunout. Ve stránce teď žádný rám není.
-- **Produkt ukazují výřezy skutečného rozhraní**: pruh stavu s kartami rozhodnutí a limitu v hero,
-  pak tři kapitoly – seznam agentů s oznámením, karty projektů a Útrata. Bez postranního panelu
-  a spodní lišty, výřezy se prolnou do okraje okna. Telefon má vlastní výřezy z telefonního
-  rozvržení aplikace. Nástup řídí CSS podle posouvání, nic neběží samo.
-- `npm run qa:site` měří, že tah prstem (Chromium) a kolečko (Chromium i WebKit) přes každý výřez
-  posune stránku a že výřez po dojetí do okna není průhledný.
+- **Stránka je řada jednotek s jednou zprávou**: vycentrovaný nadpis, jedna věta, výzva a pod tím
+  jeden obraz produktu. Produkt ukazují výřezy skutečného rozhraní v dlaždicích (pruh stavu,
+  seznam agentů, rozhodnutí, limit, projekt, Útrata) – bez postranního panelu a spodní lišty,
+  nic přes sebe, nic uříznuté. Propojení, soukromí, stažení a otázky bez rámečků, na plochách.
+- Telefon má vlastní výřezy z telefonního rozvržení aplikace. Nástup dlaždic řídí CSS podle
+  posouvání, nic neběží samo.
+- `npm run qa:site` měří, že tah prstem (Chromium) a kolečko (Chromium i WebKit) přes hero i každou
+  dlaždici posune stránku a že dlaždice po dojetí do okna není průhledná.
 
 ## 0.27.0 – 2026-09-25 · export útraty do CSV
 

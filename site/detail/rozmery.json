@@ -1,6 +1,6 @@
 {
   "stav.webp": [
-    864,
+    1072,
     174
   ],
   "rozhodnuti.webp": [
@@ -11,29 +11,17 @@
     408,
     81
   ],
-  "upozorneni.webp": [
-    864,
-    172
-  ],
   "agenti.webp": [
     864,
     316
-  ],
-  "projekt-atlas.webp": [
-    420,
-    366
   ],
   "projekt-lumen.webp": [
     420,
     366
   ],
-  "utrata.webp": [
-    864,
-    302
-  ],
   "stav-mobil.webp": [
     342,
-    237
+    170
   ],
   "rozhodnuti-mobil.webp": [
     342,
@@ -42,10 +30,6 @@
   "limit-mobil.webp": [
     342,
     103
-  ],
-  "upozorneni-mobil.webp": [
-    342,
-    216
   ],
   "agenti-mobil.webp": [
     342,
@@ -57,6 +41,6 @@
   ],
   "utrata-mobil.webp": [
     342,
-    400
+    366
   ]
 }
