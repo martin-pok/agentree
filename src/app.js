@@ -9,7 +9,7 @@ import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
-import { spendSummary, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
+import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionEntries } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
@@ -278,9 +278,17 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return found.map((f) => describePlan(f, datastore.data.spend.ledger, now));
   }
 
+  // Automatické záznamy útraty: denní útrata z Admin API a předplatné podle ceníku.
+  const automatickeVydaje = (now) => [...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(now), now)];
+
   function spend() {
     const now = Date.now();
-    return spendSummary(datastore.data.spend, now, [...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(now), now)]);
+    return spendSummary(datastore.data.spend, now, automatickeVydaje(now));
+  }
+
+  // Útrata → Export CSV: tytéž záznamy jako souhrn na obrazovce, včetně automatických.
+  function exportSpend(mesicu, now = Date.now()) {
+    return spendCsv(datastore.data.spend, now, automatickeVydaje(now), mesicu);
   }
 
   function spendPayload() {
@@ -1212,7 +1220,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

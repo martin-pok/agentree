@@ -168,7 +168,7 @@ function mount(el, _params, query) {
       <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">Za co platíš</h2><span class="muted small">tento měsíc</span></div><div data-region="kinds"></div></section>
     </div>
     <section class="card pad" data-enter style="--i:6" aria-labelledby="led-h">
-      <div class="sec-head"><h2 id="led-h">Výdaje</h2></div>
+      <div class="sec-head"><h2 id="led-h">Výdaje</h2>${exportTlacitko()}</div>
       <div data-region="ledger"></div>
     </section>
     <p class="note">Útratu za API doplní Agenteeq sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně – tyto služby útratu přes API nesdílejí.</p>`;
@@ -348,6 +348,13 @@ function update() {
           </tr>`;
         }).join('')}</tbody></table></div>`
     : emptyState({ title: 'Zatím žádné výdaje', text: 'Zapiš předplatné nebo dokoupené extra usage a uvidíš, kolik tě AI stojí.', action: `<button class="btn btn--primary" type="button" data-action="add">${ICON.plus}Přidat výdaj</button>` }));
+}
+
+// Export do CSV: posledních 12 měsíců, měsíční předplatné v každém měsíci, převod podle kurzů
+// v aplikaci (src/spend.js#spendCsv). Živá prohlídka na webu nemá server, stahovat nemá co.
+function exportTlacitko() {
+  if (document.documentElement.hasAttribute('data-ukazka')) return '';
+  return `<a class="btn btn--sm" href="/api/spend/export" download>${ICON.down}Export CSV</a>`;
 }
 
 export default {

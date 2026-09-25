@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.27.0 – 2026-09-25 · export útraty do CSV
+
+- **Útrata → Výdaje → Export CSV:** posledních 12 měsíců pro účetnictví nebo vlastní tabulku.
+  Řádek za každou platbu v každém měsíci – měsíční předplatné má řádek v každém měsíci, kdy
+  běželo (31. se v kratším měsíci posune na poslední den), takže součet za měsíc sedí s obrazovkou.
+- Každý řádek nese částku v původní měně, kurz a částku v měně aplikace, aby šel převod
+  zkontrolovat, a zdroj: zapsáno ručně, Admin API, nebo předplatné podle ceníku.
+- Soubor otevře česká tabulka napřímo: středník, desetinná čárka, UTF-8 s BOM. Poznámka
+  začínající `=`, `+`, `-` nebo `@` se nespustí jako vzorec. API `GET /api/spend/export?mesicu=1–36`.
+- Zápis CSV sdílí export projektu i útraty (`src/csv.js`). V živé prohlídce na webu tlačítko
+  není – nemá server, ze kterého by stahovalo.
+
 ## 0.26.0 – 2026-09-25 · ověření webových služeb v okně rozšíření
 
 - **Okno rozšíření → Ověřit tuto stránku.** Na stránce podporované služby adaptér řekne, co
