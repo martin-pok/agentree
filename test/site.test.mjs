@@ -33,7 +33,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   assert.ok(r.files.includes('lp.css'), 'styly landing page');
   assert.match(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), new RegExp(`Disallow: ${APP_PATH}`));
 
-  // Živá prohlídka (/app?ukazka) čte data sestavená spolu s webem – bez nich by rám zůstal na snímcích.
+  // Ukázka rozhraní (/app?ukazka) čte data sestavená spolu s webem – bez nich by skončila na rozcestníku.
   assert.ok(r.files.includes('ukazka/data.json'), 'data živé prohlídky');
   const ukazka = JSON.parse(await fs.readFile(path.join(out, 'ukazka', 'data.json'), 'utf8'));
   assert.equal(typeof ukazka.vytvoreno, 'number');
@@ -62,7 +62,7 @@ test('web: každý odkaz na vlastní soubor v landing page opravdu existuje', as
   const html = await fs.readFile(path.join(out, 'index.html'), 'utf8');
   const css = await fs.readFile(path.join(out, 'lp.css'), 'utf8');
   const cesty = new Set();
-  for (const m of html.matchAll(/(?:href|src)="(\/[^"#?]+)"/g)) cesty.add(m[1]);
+  for (const m of html.matchAll(/(?:href|src|srcset)="(\/[^"#?\s]+)"/g)) cesty.add(m[1]);
   for (const m of css.matchAll(/url\('?(\/[^')]+)'?\)/g)) cesty.add(m[1]);
   assert.ok(cesty.size >= 10, `čekali jsme víc odkazů, našli jsme ${cesty.size}`);
   for (const cesta of cesty) {
@@ -89,16 +89,18 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
   assert.match(css, /:focus-visible/, 'viditelný fokus');
 });
 
-// Poctivost nad efektem platí i na webu: panely v hero sekci vypadají jako snímky aplikace,
-// takže u každého musí stát, že jde o ukázku. Bez toho by stránka vydávala vymyšlený obsah
-// za skutečná data uživatele.
+// Poctivost nad efektem platí i na webu: výřezy vypadají jako snímky aplikace, takže každá
+// sekce, která je ukazuje, musí říct, že jde o smyšlená data. Bez toho by stránka vydávala
+// vymyšlený obsah za skutečná data uživatele.
 test('web: každá ukázka rozhraní je jako ukázka popsaná', async () => {
   const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
-  const panelu = (html.match(/class="stage shot-frame"/g) || []).length;
-  const popisku = (html.match(/class="shot-note"/g) || []).length;
-  assert.ok(panelu > 0, 'ukázky rozhraní na stránce jsou');
-  assert.equal(popisku, panelu, `${panelu} ukázek, ale ${popisku} popisků „Ukázka rozhraní"`);
-  for (const m of html.matchAll(/class="shot-note"[^>]*>([^<]+)/g)) assert.match(m[1], /Ukázka rozhraní/);
+  const sekce = html.split('<section').slice(1).filter((s) => /class="(?:[^"]*\s)?detail(?:\s[^"]*)?"/.test(s));
+  assert.ok(sekce.length >= 2, 'výřezy rozhraní na stránce jsou (hero a kapitoly)');
+  for (const s of sekce) {
+    const popisek = s.match(/class="detail-note"[^>]*>([^<]+)/);
+    assert.ok(popisek, `sekce s výřezy bez popisku: ${s.slice(0, 80)}`);
+    assert.match(popisek[1], /smyšlen/);
+  }
 });
 
 test('web: stránka je česky a nabízí skutečnou prohlídku a instalační postup', async () => {
@@ -119,24 +121,27 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
   for (const m of html.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
 });
 
-// Živá prohlídka je skutečná aplikace v rámu. Je jen na dívání (žádný fokus, žádné ovládání),
-// poslouchá jen vlastní původ a snímky pod ní zůstávají: bez JavaScriptu, během načítání a když
-// se aplikace nenačte, je prohlídka pořád celá.
-test('web: živá prohlídka je jen na dívání, snímky zůstávají jako záloha', async () => {
-  const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
-  assert.match(js, /iframe\.src = `\/app\?ukazka#\/\$\{aktivni\}`/);
-  assert.match(js, /iframe\.inert = true;/, 'do rámu se nedá klepnout ani přejít klávesnicí');
-  assert.match(js, /iframe\.tabIndex = -1;/);
-  assert.match(js, /obal\.setAttribute\('aria-hidden', 'true'\)/, 'odečítačka čte popis snímku, ne celou aplikaci');
-  assert.match(js, /e\.origin !== location\.origin \|\| e\.source !== ziva\.okno/, 'zprávy jen z vlastního rámu');
-  assert.match(js, /if \(bezPohybu\.matches\) return void ukaz\(\);/, 'omezený pohyb: rovnou konečný stav, bez nástupu');
-  assert.match(js, /if \(!ziva\.videt\) ukaz\(\);\s*\n\s*else if \(ziva\.ukazana\) pust\(\);/, 'snímek, na který se někdo dívá, nezmizí pod rukama');
+// Prohlídka byla dřív celá aplikace ve vloženém rámu a na iPhonu si rám nechával tah prstem –
+// stránka přes něj nešla posunout. Web proto ukazuje jen výřezy (obrázky) a žádný rám nevkládá.
+// Rozměry u <img>/<source> musí sedět na soubory, jinak stránka při načítání poskakuje.
+test('web: produkt ukazují výřezy, ve stránce není žádný vložený rám', async () => {
   const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
-  for (const obrazovka of ['prehled', 'projekty', 'utrata']) {
-    assert.match(html, new RegExp(`<picture class="shot[^"]*" data-obrazovka="${obrazovka}"`), `snímek ${obrazovka} zůstává jako záloha`);
+  const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
+  assert.doesNotMatch(html, /<iframe/i);
+  assert.doesNotMatch(js, /iframe/i, 'lp.js nesmí rám vytvořit ani dodatečně');
+  const rozmery = JSON.parse(await fs.readFile(path.join(ROOT, 'site/detail/rozmery.json'), 'utf8'));
+  const pouzite = [...html.matchAll(/(?:src|srcset)="\/detail\/([^"]+)" width="(\d+)" height="(\d+)"/g)];
+  assert.ok(pouzite.length >= 10, `výřezů na stránce je jen ${pouzite.length}`);
+  for (const [, soubor, w, h] of pouzite) {
+    assert.ok(rozmery[soubor], `${soubor} nevznikl skriptem shots-site`);
+    assert.deepEqual([Number(w), Number(h)], rozmery[soubor], `${soubor}: rozměry v HTML nesedí na soubor`);
   }
-  const css = await fs.readFile(path.join(ROOT, 'site/lp.css'), 'utf8');
-  assert.match(css, /\.shot-live \{[^}]*pointer-events: none;/);
+  // Každý obrázek z výřezu má popis; na telefonu (<source>) platí popis jeho <img>.
+  for (const m of html.matchAll(/<img [^>]*src="\/detail\/[^"]+"[^>]*>/g)) assert.match(m[0], /alt="[^"]{30,}"/, m[0]);
+  // Na výřezu z aplikace nesmí být spodní lišta ani postranní panel: focení je skrývá.
+  const skript = await fs.readFile(path.join(ROOT, 'scripts/shots-site.mjs'), 'utf8');
+  assert.match(skript, /\.sidebar, \.sidebar \* \{ visibility: hidden !important; \}/);
+  assert.match(skript, /pripravUkazku\(\{\}, \{ oznacit: false \}\)/);
 });
 
 // Kopie rozhraní na webu o sobě musí vědět předem. Bez značky by se ptala neexistujícího

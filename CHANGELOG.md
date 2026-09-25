@@ -1,5 +1,19 @@
 # Changelog
 
+## Nevydáno
+
+### Web: detaily rozhraní místo celé aplikace v rámu
+
+- **Oprava: prohlídka na webu blokovala posouvání na iPhonu.** Vložená aplikace (`/app?ukazka`
+  v rámu) si v iOS Safari nechávala tah prstem, takže přes rám, který zabíral skoro celou
+  obrazovku, nešlo stránku posunout. Ve stránce teď žádný rám není.
+- **Produkt ukazují výřezy skutečného rozhraní**: pruh stavu s kartami rozhodnutí a limitu v hero,
+  pak tři kapitoly – seznam agentů s oznámením, karty projektů a Útrata. Bez postranního panelu
+  a spodní lišty, výřezy se prolnou do okraje okna. Telefon má vlastní výřezy z telefonního
+  rozvržení aplikace. Nástup řídí CSS podle posouvání, nic neběží samo.
+- `npm run qa:site` měří, že tah prstem (Chromium) a kolečko (Chromium i WebKit) přes každý výřez
+  posune stránku a že výřez po dojetí do okna není průhledný.
+
 ## 0.27.0 – 2026-09-25 · export útraty do CSV
 
 - **Útrata → Výdaje → Export CSV:** posledních 12 měsíců pro účetnictví nebo vlastní tabulku.

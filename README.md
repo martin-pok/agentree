@@ -51,7 +51,7 @@ npm run release:mac       # celé vydání pro macOS (viz docs/LICENSING.md)
 
 `site/` je veřejná landing page, `public/` je rozhraní aplikace. `npm run build:site` z obou složí
 `dist/web`: stránka v kořeni, rozhraní na `/app`. Hosting (`vercel.json`) si build spustí sám.
-Prohlídka na stránce je živé rozhraní nad smyšlenými daty (`/app?ukazka`, `docs/REMOTE.md`).
+Produkt na stránce ukazují výřezy skutečného rozhraní se smyšlenými daty (`site/detail/`, `docs/SHOWCASE.md`).
 
 Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.md)**.
 

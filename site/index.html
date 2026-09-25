@@ -6,7 +6,7 @@
 <title>Agenteeq – přehled AI agentů na tvém Macu</title>
 <meta name="description" content="Claude Code, Codex, Cursor i webové AI chaty na jednom místě. Agenteeq ukáže, kdo pracuje, kdo čeká na tebe a kolik zbývá z limitů. Lokální aplikace pro Mac, bez účtu.">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#F4F3F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="https://agentree-fawn.vercel.app/">
 <link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
@@ -37,66 +37,95 @@
 
 <main id="obsah">
 
-<section class="hero" aria-labelledby="hero-title"><div class="wrap hero-in">
-  <h1 id="hero-title">Každý agent má svůj úkol.<br><span>Ty máš přehled.</span></h1>
-  <p class="lead">Kdo pracuje. Kdo čeká na tebe. A kam se poděla ta konverzace. Claude Code, Codex, Cursor i webové chaty v jednom klidném pracovním prostoru na tvém počítači.</p>
-  <div class="cta-row">
-    <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
-    <a class="text-link" href="#prohlidka">Podívat se dovnitř <span aria-hidden="true">↓</span></a>
-  </div>
-  <p class="hero-specs"><span>Apple Silicon</span><span>macOS 14 a novější</span></p>
-</div></section>
-
-<section class="band band--stage tour-section" id="prohlidka" aria-labelledby="tour-heading"><div class="wrap">
-  <div class="tour-top">
-    <div><p class="eyebrow eyebrow--stage">Prohlídka</p><h2 id="tour-heading">Všechna práce.<br>V souvislostech.</h2></div>
-    <div class="tour-controls" role="group" aria-label="Obrazovky aplikace">
-      <button class="tour-choice" type="button" data-tour="prehled" aria-pressed="true" aria-controls="tour-figure">Přehled</button>
-      <button class="tour-choice" type="button" data-tour="projekty" aria-pressed="false" aria-controls="tour-figure">Projekty</button>
-      <button class="tour-choice" type="button" data-tour="utrata" aria-pressed="false" aria-controls="tour-figure">Útrata</button>
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-in">
+    <h1 id="hero-title">Každý agent má svůj úkol.<br><span>Ty máš přehled.</span></h1>
+    <p class="lead">Kdo pracuje. Kdo čeká na tebe. A kam se poděla ta konverzace. Claude Code, Codex, Cursor i webové chaty v jednom klidném pracovním prostoru na tvém počítači.</p>
+    <div class="cta-row">
+      <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
+      <a class="text-link" href="#prohlidka">Podívat se dovnitř <span aria-hidden="true">↓</span></a>
     </div>
+    <p class="hero-specs"><span>Apple Silicon</span><span>macOS 14 a novější</span><span>zdarma v betě</span></p>
   </div>
 
-  <figure class="stage shot-frame" id="tour-figure">
-    <div class="shot-stack">
-      <picture class="shot is-active" data-obrazovka="prehled">
-        <source srcset="/shots/prehled-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
-        <source srcset="/shots/prehled-mobil-light.jpg" media="(max-width: 620px)">
-        <source srcset="/shots/prehled-dark.jpg" media="(prefers-color-scheme: dark)">
-        <img src="/shots/prehled-light.jpg" width="2464" height="1504" alt="Obrazovka Přehled v Agenteeq: dva pracující agenti, jeden čeká na rozhodnutí, pod tím nabídka na spuštění dalšího agenta." fetchpriority="high" decoding="async">
+  <figure class="scene detail">
+    <div class="scene-in">
+      <picture class="scene-main">
+        <source media="(max-width: 620px)" srcset="/detail/stav-mobil.webp" width="342" height="237">
+        <img src="/detail/stav.webp" width="864" height="174" alt="Pruh stavu v Agenteeq: dva agenti pracují, jeden potřebuje tvoje rozhodnutí, žádný neselhal a jeden čeká na zadání. Pod tím karty jednotlivých agentů." fetchpriority="high">
       </picture>
-      <picture class="shot" data-obrazovka="projekty" aria-hidden="true">
-        <source srcset="/shots/projekty-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
-        <source srcset="/shots/projekty-mobil-light.jpg" media="(max-width: 620px)">
-        <source srcset="/shots/projekty-dark.jpg" media="(prefers-color-scheme: dark)">
-        <img src="/shots/projekty-light.jpg" width="2464" height="1504" alt="Obrazovka Projekty v Agenteeq: karty projektů s aktivitou za posledních 30 dní, počtem konverzací, tokeny a použitými nástroji." fetchpriority="low" decoding="async">
+      <picture class="scene-card scene-card--rozhodnuti">
+        <source media="(max-width: 900px)" srcset="/detail/rozhodnuti-mobil.webp" width="342" height="142">
+        <img src="/detail/rozhodnuti.webp" width="408" height="142" alt="Karta Potřebuje tvé rozhodnutí: Codex u migrace API žádá o povolení zápisu nové konfigurace.">
       </picture>
-      <picture class="shot" data-obrazovka="utrata" aria-hidden="true">
-        <source srcset="/shots/utrata-mobil-dark.jpg" media="(max-width: 620px) and (prefers-color-scheme: dark)">
-        <source srcset="/shots/utrata-mobil-light.jpg" media="(max-width: 620px)">
-        <source srcset="/shots/utrata-dark.jpg" media="(prefers-color-scheme: dark)">
-        <img src="/shots/utrata-light.jpg" width="2464" height="1504" alt="Obrazovka Útrata v Agenteeq: měsíční útrata proti rozpočtu na měřidle, prognóza do konce měsíce, pravidelné platby a kolik z rozpočtu zbývá." fetchpriority="low" decoding="async">
+      <picture class="scene-card scene-card--limit">
+        <source media="(max-width: 900px)" srcset="/detail/limit-mobil.webp" width="342" height="103">
+        <img src="/detail/limit.webp" width="408" height="81" alt="Okno limitu Claude Code na pět hodin: vyčerpáno 62 %, v pohodě pro běžnou práci, obnova za dvě hodiny.">
       </picture>
     </div>
-    <figcaption class="shot-note">Ukázka rozhraní se smyšlenými daty. Nic se nepřipojuje k tvým účtům.</figcaption>
+    <figcaption class="detail-note">Skutečné rozhraní Agenteeq, smyšlená data.</figcaption>
   </figure>
-  <p class="sr-only" id="tour-announcement" role="status"></p>
+</section>
 
-  <div class="signals">
-    <p class="signal signal--work"><b>Pracuje.</b> Agent běží, nemusíš ho hlídat.</p>
-    <p class="signal signal--wait"><b>Čeká na tebe.</b> Někdo potřebuje tvoje rozhodnutí, jinak stojí.</p>
-    <p class="signal signal--limit"><b>Limit.</b> Kolik zbývá v okně, než se práce zastaví sama.</p>
+<section class="band band--stage chapters" id="prohlidka" aria-labelledby="tour-heading">
+  <div class="wrap chapters-head">
+    <h2 id="tour-heading">Všechna práce.<br>V souvislostech.</h2>
   </div>
-</div></section>
 
-<section class="band" aria-labelledby="prinosy-heading"><div class="wrap">
-  <h2 id="prinosy-heading" class="sr-only">Co ti Agenteeq dá</h2>
-  <div class="benefits">
-    <article><h3>Všimni si včas</h3><p>Upozornění na rozhodnutí, dokončenou práci i na limit, který se blíží ke konci. Nemusíš klikat mezi okny a zjišťovat, jestli se něco nezaseklo.</p></article>
-    <article><h3>Vrať se do kontextu</h3><p>Projekty spojí konverzace napříč nástroji podle pracovní složky. Ráno otevřeš jedno místo a víš, kde jsi včera skončil.</p></article>
-    <article><h3>Čti skutečná data</h3><p>Tokeny nejsou cena a procento limitu není útrata. Agenteeq to nemíchá dohromady a chybějící údaj přizná, místo aby si ho domyslel.</p></article>
-  </div>
-</div></section>
+  <article class="chapter chapter--dolu" aria-labelledby="ch-vcas">
+    <div class="wrap chapter-in">
+      <div class="chapter-text">
+        <h3 id="ch-vcas">Všimni si včas</h3>
+        <p>Upozornění na rozhodnutí, dokončenou práci i na limit, který se blíží ke konci. Nemusíš klikat mezi okny a zjišťovat, jestli se něco nezaseklo.</p>
+        <ul class="legend">
+          <li class="legend--work"><b>Pracuje.</b> Agent běží, nemusíš ho hlídat.</li>
+          <li class="legend--wait"><b>Čeká na tebe.</b> Někdo potřebuje tvoje rozhodnutí, jinak stojí.</li>
+          <li class="legend--limit"><b>Limit.</b> Kolik zbývá v okně, než se práce zastaví sama.</li>
+        </ul>
+      </div>
+      <figure class="chapter-figure detail">
+        <picture class="chapter-shot">
+          <source media="(max-width: 620px)" srcset="/detail/agenti-mobil.webp" width="342" height="418">
+          <img src="/detail/agenti.webp" width="864" height="316" alt="Seznam agentů v Agenteeq se stavem u každého: migrace API potřebuje tebe, navigace klientského portálu a testy formuláře pracují, košík e-shopu čeká na zadání." loading="lazy">
+        </picture>
+        <img class="chapter-float" src="/detail/upozorneni-mobil.webp" width="342" height="216" alt="Upozornění: Codex potřebuje tvé rozhodnutí – povolit zápis nové konfigurace? S odkazem Otevřít agenta." loading="lazy">
+      </figure>
+    </div>
+  </article>
+
+  <article class="chapter chapter--flip" aria-labelledby="ch-kontext">
+    <div class="wrap chapter-in">
+      <div class="chapter-text">
+        <h3 id="ch-kontext">Vrať se do kontextu</h3>
+        <p>Projekty spojí konverzace napříč nástroji podle pracovní složky. Ráno otevřeš jedno místo a víš, kde jsi včera skončil.</p>
+      </div>
+      <figure class="chapter-figure chapter-figure--stack detail">
+        <img class="stack-back" src="/detail/projekt-atlas.webp" width="420" height="366" alt="Karta projektu Studio Atlas: jeden agent čeká na tvé rozhodnutí, tři konverzace a 861 tisíc tokenů za posledních 30 dní." loading="lazy">
+        <picture class="stack-front">
+          <source media="(max-width: 620px)" srcset="/detail/projekt-lumen-mobil.webp" width="342" height="378">
+          <img src="/detail/projekt-lumen.webp" width="420" height="366" alt="Karta projektu E-shop Lumen: aktivita rozložená do posledních dní, dvě konverzace, 335 tisíc tokenů za 30 dní a nástroje Claude Code a Codex." loading="lazy">
+        </picture>
+      </figure>
+    </div>
+  </article>
+
+  <article class="chapter" aria-labelledby="ch-data">
+    <div class="wrap chapter-in">
+      <div class="chapter-text">
+        <h3 id="ch-data">Čti skutečná data</h3>
+        <p>Tokeny nejsou cena a procento limitu není útrata. Agenteeq to nemíchá dohromady a chybějící údaj přizná, místo aby si ho domyslel.</p>
+      </div>
+      <figure class="chapter-figure detail">
+        <picture class="chapter-shot">
+          <source media="(max-width: 620px)" srcset="/detail/utrata-mobil.webp" width="342" height="400">
+          <img src="/detail/utrata.webp" width="864" height="302" alt="Útrata v Agenteeq: 70 % měsíčního rozpočtu, utraceno 4 209 Kč, prognóza do konce měsíce, pravidelné platby a kolik z rozpočtu zbývá." loading="lazy">
+        </picture>
+      </figure>
+    </div>
+  </article>
+
+  <div class="wrap"><p class="detail-note">Všechny výřezy jsou skutečné rozhraní Agenteeq se smyšlenými daty. Nic se nepřipojuje k tvým účtům.</p></div>
+</section>
 
 <section class="band band--tint" id="propojeni" aria-labelledby="connections-heading"><div class="wrap connections">
   <div class="section-intro"><p class="eyebrow">Aplikace + rozšíření</p><h2 id="connections-heading">Z disku i prohlížeče.<br>Do jednoho přehledu.</h2><p class="lead">Lokální přepisy najde Agenteeq na Macu sám. Webové konverzace přidá spárované rozšíření pro Chrome.</p><a class="text-link" href="#rozsireni">Jak vyzkoušet rozšíření <span aria-hidden="true">↓</span></a></div>
