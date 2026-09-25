@@ -34,7 +34,11 @@ function place(pop, trigger, { width } = {}) {
 
 function openPopover(trigger, pop, { onKey, width }) {
   closePicker();
-  document.body.appendChild(pop);
+  // Stejně jako nabídky v selects.js: v modálním okně uvnitř něj, jinak by kalendář čtečka
+  // obrazovky nepřečetla, a ve vrchní vrstvě (popover), aby ho okno neořízlo ani neposunulo.
+  (trigger.closest('[aria-modal="true"]') || document.body).appendChild(pop);
+  pop.setAttribute('popover', 'manual');
+  pop.showPopover?.();
   place(pop, trigger, { width });
   trigger.setAttribute('aria-expanded', 'true');
   const onDown = (e) => { if (!pop.contains(e.target) && !trigger.contains(e.target)) close(); };

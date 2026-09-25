@@ -49,7 +49,10 @@ function open(select, button) {
     item.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); choose(i); });
     panel.append(item);
   });
-  document.body.append(panel);
+  // Uvnitř modálního okna (aria-modal) musí být i nabídka – co je mimo, prohlížeč ze stromu
+  // přístupnosti vyřadí a čtečka obrazovky položky nepřečte. Nabídka běží ve vrchní vrstvě
+  // (popover), takže ji posouvání ani animace okna neoříznou.
+  (button.closest('[aria-modal="true"]') || document.body).append(panel);
   panel.showPopover?.();
   const rect = button.getBoundingClientRect();
   const width = Math.min(Math.max(rect.width, 200), innerWidth - 24);

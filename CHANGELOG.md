@@ -12,6 +12,16 @@
 - Zápis CSV sdílí export projektu i útraty (`src/csv.js`). V živé prohlídce na webu tlačítko
   není – nemá server, ze kterého by stahovalo.
 
+### Z uživatelského testování
+
+- Vybraná položka v nabídkách (Služba, Typ platby, Měna, …) měla pro čtečku obrazovky název
+  „ChatGPT ✓“ – fajfka z CSS se propisovala do názvu, ač výběr hlásí `aria-selected`. Teď má
+  fajfka prázdný alternativní text; starší prohlížeč ji ukáže jako dřív.
+- Nabídky a kalendář otevřené v modálním okně se vkládají dovnitř okna (dřív na konec stránky)
+  a běží ve vrchní vrstvě, takže je okno neořízne. V Chromiu byly položky pro čtečku dostupné už
+  předtím; změna míří na WebKit a VoiceOver (aplikace pro Mac), kde to tady ověřit nešlo.
+  `qa:desktop` teď v okně „Přidat výdaj“ vybírá službu, datum a hlídá, že Esc zavře jen kalendář.
+
 ## 0.26.0 – 2026-09-25 · ověření webových služeb v okně rozšíření
 
 - **Okno rozšíření → Ověřit tuto stránku.** Na stránce podporované služby adaptér řekne, co
