@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agenteeq – an overview of your AI agents on your Mac</title>
+<meta name="description" content="Claude Code, Codex, Cursor and web AI chats in one place. Agenteeq shows who is working, who is waiting for you and how much of your limits is left. A local Mac app, no account needed.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://agentree-fawn.vercel.app/en">
+<link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/">
+<link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en">
+<link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/">
+<link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Agenteeq">
+<meta property="og:title" content="Agenteeq – an overview of your AI agents on your Mac">
+<meta property="og:description" content="Less window switching. More room for work. A local control room for your AI agents.">
+<meta property="og:url" content="https://agentree-fawn.vercel.app/en">
+<meta property="og:image" content="https://agentree-fawn.vercel.app/icons/icon-512.png">
+<meta property="og:image:alt" content="The Agenteeq mark">
+<meta name="twitter:card" content="summary">
+<link rel="preload" href="/fonts/urbanist-500.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/lp.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://agentree-fawn.vercel.app/en#website","url":"https://agentree-fawn.vercel.app/en","name":"Agenteeq","inLanguage":"en","about":{"@id":"https://agentree-fawn.vercel.app/#software"}},{"@type":"SoftwareApplication","@id":"https://agentree-fawn.vercel.app/#software","name":"Agenteeq","applicationCategory":"ProductivityApplication","operatingSystem":"macOS 14 or later","url":"https://agentree-fawn.vercel.app/","description":"A local overview of AI agent activity, projects and decisions, with an optional Chrome extension.","softwareVersion":"0.12.0","isAccessibleForFree":true}]}</script>
+<script src="/lp.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#obsah">Skip to content</a>
+
+<header class="nav"><div class="wrap nav-in">
+  <a class="brand" href="/en" aria-label="Agenteeq – home"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <nav class="nav-links" aria-label="Page sections"><a href="#prohlidka">Tour</a><a href="#propojeni">Connections</a><a href="#soukromi">Privacy</a></nav>
+  <div class="lang" role="group" aria-label="Page language"><a href="/" lang="cs" hreflang="cs" aria-label="Čeština">CZ</a><a href="/en" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
+  <a class="btn btn--sm" href="#vyzkouset">Download<span class="nav-cta-extra"> for Mac</span></a>
+</div></header>
+
+<main id="obsah">
+
+<section class="unit unit--dark hero" aria-labelledby="hero-title">
+  <div class="wrap unit-head">
+    <p class="kicker">Agenteeq for Mac</p>
+    <h1 id="hero-title">Every agent has a task.<br><span>You have the overview.</span></h1>
+    <p class="lead">Who is working, who is waiting for you and where that conversation went. Claude Code, Codex, Cursor and web chats in one calm overview on your Mac.</p>
+    <div class="cta-row">
+      <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Download for Mac</a>
+      <a class="text-link" href="#prohlidka">Take a look inside <span aria-hidden="true">↓</span></a>
+    </div>
+    <p class="specs"><span>Apple Silicon</span><span>macOS 14 or later</span><span>free in beta</span></p>
+  </div>
+  <figure class="wrap hero-figure detail">
+    <picture class="hero-shot">
+      <source media="(max-width: 620px)" srcset="/detail/stav-mobil.webp" width="342" height="170">
+      <img src="/detail/stav.webp" width="1072" height="174" alt="The Agenteeq status bar: two agents are working, one needs your decision, none failed and one is waiting for a task. Below, four active agents and what each is doing right now." fetchpriority="high">
+    </picture>
+    <figcaption class="detail-note">The real Agenteeq interface, with sample data.</figcaption>
+  </figure>
+</section>
+
+<section class="unit unit--dark tiles-unit" id="prohlidka" aria-labelledby="tour-heading">
+  <div class="wrap unit-head">
+    <h2 id="tour-heading">All your work.<br>In context.</h2>
+    <p class="lead">Agenteeq keeps an eye on your agents and speaks up when your decision is needed.</p>
+  </div>
+  <div class="wrap tiles">
+    <article class="tile tile--wide tile--crop" aria-labelledby="t-vcas">
+      <h3 id="t-vcas">Notice in time.</h3>
+      <p>Alerts for decisions, finished work and limits that are running low. No more clicking between windows to check whether something got stuck.</p>
+      <figure class="tile-shot detail">
+        <picture>
+          <source media="(max-width: 900px)" srcset="/detail/agenti-mobil.webp" width="342" height="418">
+          <img src="/detail/agenti.webp" width="864" height="316" alt="The list of agents in Agenteeq with a status for each: the API migration needs you, the client portal navigation and the form tests are working, the shop cart is waiting for a task." loading="lazy">
+        </picture>
+      </figure>
+    </article>
+    <article class="tile tile--fit" aria-labelledby="t-ceka">
+      <h3 id="t-ceka">Waiting for you.</h3>
+      <p>You see right away which agent needs your decision. Without it, the work would stop.</p>
+      <figure class="tile-shot detail">
+        <picture>
+          <source media="(max-width: 620px)" srcset="/detail/rozhodnuti-mobil.webp" width="342" height="142">
+          <img src="/detail/rozhodnuti.webp" width="408" height="142" alt="A decision card: Codex, working on the API migration, asks for permission to write a new configuration, with a button to continue in Terminal." loading="lazy">
+        </picture>
+      </figure>
+    </article>
+    <article class="tile tile--fit" aria-labelledby="t-limit">
+      <h3 id="t-limit">Limits under control.</h3>
+      <p>How much is left in the window before work stops on its own, and when the limit resets.</p>
+      <figure class="tile-shot detail">
+        <picture>
+          <source media="(max-width: 620px)" srcset="/detail/limit-mobil.webp" width="342" height="103">
+          <img src="/detail/limit.webp" width="408" height="81" alt="The five-hour Claude Code limit window: 62 % used, fine for regular work, resets in two hours." loading="lazy">
+        </picture>
+      </figure>
+    </article>
+    <article class="tile tile--crop" aria-labelledby="t-kontext">
+      <h3 id="t-kontext">Pick up where you left off.</h3>
+      <p>Projects group conversations across tools by working folder. In the morning you know where you stopped yesterday.</p>
+      <figure class="tile-shot detail">
+        <picture>
+          <source media="(max-width: 620px)" srcset="/detail/projekt-lumen-mobil.webp" width="342" height="378">
+          <img src="/detail/projekt-lumen.webp" width="420" height="366" alt="The E-shop Lumen project card: activity spread over recent days, two conversations, 335 thousand tokens in 30 days and the tools Claude Code and Codex." loading="lazy">
+        </picture>
+      </figure>
+    </article>
+    <article class="tile tile--crop" aria-labelledby="t-data">
+      <h3 id="t-data">Read real data.</h3>
+      <p>Tokens are not a price and a limit percentage is not spend. Agenteeq keeps them apart and admits when data is missing.</p>
+      <figure class="tile-shot detail">
+        <img src="/detail/utrata-mobil.webp" width="342" height="366" alt="Spend in Agenteeq: 70 % of the monthly budget, 4,209 CZK spent." loading="lazy">
+      </figure>
+    </article>
+  </div>
+  <div class="wrap"><p class="detail-note">The real Agenteeq interface with sample data. Nothing connects to your accounts.</p></div>
+</section>
+
+<section class="unit" id="propojeni" aria-labelledby="connections-heading">
+  <div class="wrap unit-head">
+    <h2 id="connections-heading">From disk and browser.<br>Into one overview.</h2>
+    <p class="lead">Agenteeq finds local transcripts on your Mac by itself. A paired Chrome extension adds your web conversations.</p>
+    <a class="text-link" href="#rozsireni">How to try the extension <span aria-hidden="true">↓</span></a>
+  </div>
+  <div class="wrap sources">
+    <div class="source-group">
+      <h3>On your Mac</h3>
+      <ul class="logos">
+        <li><img src="/logos/claude.svg" alt="" width="40" height="40">Claude Code</li>
+        <li><img class="logo--mono" src="/logos/openai.svg" alt="" width="40" height="40">Codex</li>
+        <li><img class="logo--mono" src="/logos/cursor.svg" alt="" width="40" height="40">Cursor</li>
+        <li><img class="logo--mono" src="/logos/githubcopilot.svg" alt="" width="40" height="40">Copilot</li>
+      </ul>
+    </div>
+    <div class="source-group">
+      <h3>In the browser <span class="tag">extension · beta</span></h3>
+      <ul class="logos">
+        <li><img class="logo--mono" src="/logos/openai.svg" alt="" width="40" height="40">ChatGPT</li>
+        <li><img src="/logos/claude.svg" alt="" width="40" height="40">Claude.ai</li>
+        <li><img src="/logos/gemini.svg" alt="" width="40" height="40">Gemini</li>
+        <li><img src="/logos/perplexity.svg" alt="" width="40" height="40">Perplexity</li>
+      </ul>
+    </div>
+  </div>
+  <p class="wrap note">Also Microsoft Copilot, Grok and Qwen. Support depends on each service’s format; you can see the verification status in the app.</p>
+</section>
+
+<section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
+  <div class="wrap unit-head">
+    <p class="kicker">Privacy by design</p>
+    <h2 id="privacy-heading">Your work<br>should stay yours.</h2>
+    <p class="lead">Agenteeq has no cloud account for your transcripts, because it doesn’t need one. Everything is processed on your Mac, and the extension sends data only to the local app.</p>
+  </div>
+  <div class="wrap facts">
+    <article><h3>No account, no tracking</h3><p>No sign-up, no analytics. Fonts and the interface ship with the app, so nothing is fetched from third-party servers. Optional APIs and AI services are yours to connect.</p></article>
+    <article><h3>On your phone when you’re away</h3><p>Turn on access on the same Wi-Fi or through your own Tailscale network and point your phone’s camera at the QR code in the app. No typing addresses or numbers.</p></article>
+    <article><h3>Data only from a running Mac</h3><p>Your Mac must be on, awake and running Agenteeq. A closed window is fine; a quit app or a Mac that is off can’t provide data.</p></article>
+  </div>
+</section>
+
+<section class="unit" id="vyzkouset" aria-labelledby="start-heading">
+  <div class="wrap unit-head">
+    <p class="kicker">Download</p>
+    <h2 id="start-heading">Download, move, run.</h2>
+    <p class="lead">No account and no ten-step installer. You download a single folder with the app.</p>
+    <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Download for Mac</a>
+    <p class="specs">Apple Silicon · macOS 14 or later · latest release · 38 MB</p>
+  </div>
+
+  <ol class="wrap steps">
+    <li><span class="step-n" aria-hidden="true">1</span><b>Unzip the download</b><p>Agenteeq appears in your Downloads. Double-click to unzip it.</p></li>
+    <li><span class="step-n" aria-hidden="true">2</span><b>Drag it to Applications</b><p>That’s the whole installation. Nothing else is written anywhere.</p></li>
+    <li><span class="step-n" aria-hidden="true">3</span><b>Allow it once in Settings</b><p>macOS can’t verify the beta on its own yet. Open <b>System Settings → Privacy &amp; Security</b>, scroll down to the message about Agenteeq and click <b>Open Anyway</b>.</p></li>
+  </ol>
+
+  <div class="wrap narrow">
+    <div class="gatekeeper">
+      <p><b>Why the extra step?</b> An Apple developer signature costs money every year and the beta doesn’t have one yet. Without it, macOS won’t open the app on its own and says it can’t verify it — that’s not a malware finding, just a missing stamp. You confirm it once in Settings; after that, Agenteeq opens with a double-click like any other app. Once we add the signature, this step goes away.</p>
+      <p class="small muted">On macOS 14 the older shortcut also works: right-click and choose <b>Open</b>. Apple removed it in macOS 15 and later, which is why the steps above go through Settings — that works everywhere.</p>
+    </div>
+
+    <div class="rows">
+      <details id="rozsireni"><summary>Add web chats with the Chrome extension <span class="detail-tag">10 minutes</span></summary><div class="detail-body">
+        <ol>
+          <li>In the app, open <b>Settings → Connections → Chrome extension</b> and click <b>Copy path</b>.</li>
+          <li>In Chrome, open <code class="kopirovat" data-kopirovat="chrome://extensions">chrome://extensions</code> and turn on <b>Developer mode</b> in the top right.</li>
+          <li>Click <b>Load unpacked</b>, press <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> in the dialog, paste the copied path and confirm.</li>
+          <li>Pin the Agenteeq icon and enter the one-time code from the app.</li>
+        </ol>
+        <p class="small muted">The extension isn’t in the Chrome Web Store yet, hence the manual steps. It sends only the conversation status and message counts, never any text, and only to the app on the same computer. You can turn off individual services at any time.</p>
+      </div></details>
+
+      <details><summary>Watch your agents from your phone <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
+        <ol>
+          <li>Keep your Mac awake and Agenteeq running. You can close the window.</li>
+          <li>In <b>Settings → Open on phone</b>, turn on access for your home network or for Tailscale.</li>
+          <li>Click <b>Create code for phone</b> and point your camera at the QR code. Your phone opens already paired.</li>
+        </ol>
+        <p class="small muted">If you’d rather not scan, there’s also a six-digit number under the code. The phone sees the overview but can’t change anything, and this website can’t replace the connection to a Mac that is off.</p>
+      </div></details>
+    </div>
+  </div>
+</section>
+
+<section class="unit unit--tint" id="otazky" aria-labelledby="faq-heading">
+  <div class="wrap unit-head">
+    <h2 id="faq-heading">Before you start.</h2>
+  </div>
+  <div class="wrap narrow rows">
+    <details><summary>How much does it cost?</summary><p>The beta is free with every feature unlocked. When we leave the beta, some features will stay free; we’ll say in advance what will be paid, so nobody gets a surprise bill.</p></details>
+    <details><summary>Does it show exact spend across all subscriptions?</summary><p>Tokens, limits and money are three different things. You enter subscriptions and purchased credits by hand; supported Admin APIs can add verified costs. Agenteeq doesn’t turn tokens into an imagined price.</p></details>
+    <details><summary>Do I have to connect every service?</summary><p>No. Start with the tool you use most. The extension, hooks and other sources are optional, and you can see each connector’s availability in Settings.</p></details>
+    <details><summary>What about Windows?</summary><p>The Windows app is built and launched automatically with every change: the interface loads in its window and the server stops when the app closes. The package is attached to every release on GitHub as a beta. Notifications, the tray icon and other native controls still need a person to try them on a real PC, so the button on this page only offers the Mac version for now.</p></details>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap foot-in">
+  <a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <p>More focus. Less switching.</p>
+  <a class="text-link" href="#obsah">Back to top ↑</a>
+  <p class="foot-note">A development beta for macOS. Screenshots show the real app with sample data. Service logos belong to their owners; Agenteeq is not affiliated with or endorsed by them.</p>
+</div></footer>
+</body>
+</html>

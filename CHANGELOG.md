@@ -2,6 +2,32 @@
 
 ## Nevydáno
 
+### Aplikace pro Windows: rozhraní konečně ví, že běží v aplikaci
+
+- **Oprava:** most mezi oknem a rozhraním na Windows spadl dřív, než stránka vůbec vznikla
+  (WebView2 ho pouští před vytvořením `<html>`). Rozhraní se proto chovalo jako v prohlížeči:
+  nemělo rozvržení okna aplikace (`is-desktop`, `is-windows`), radilo spouštět server
+  z Terminálu a plášť od něj nedostal žádnou zprávu (připravenost, přepnutí vzhledu). Týká se
+  vydání 0.27.0 pro Windows.
+- Na macOS se příznak aplikace nastavuje už na začátku dokumentu, takže se rozhraní vykreslí
+  rovnou s rozvržením okna.
+- **CI spouští to, co si člověk stáhne:** `npm run qa:native` rozbalí archiv pro Mac i Windows,
+  spustí aplikaci, počká na vykreslené rozhraní, nafotí okno a ověří, že po ukončení aplikace
+  skončí i server. Dřív se aplikace pro Mac v CI vůbec nespouštěla a plášť pro Windows se jen
+  překládal.
+- Nový test hlídá, že aplikace funguje samostatně: bez npm závislostí, bez cizích serverů,
+  bez Claude Code, účtu i sítě.
+
+### Web: anglická verze a přepínač jazyka
+
+- Stránka je i anglicky na `/en`, se stejnou stavbou jako česká (hlídá to test). Výchozí zůstává
+  čeština; přepínač CZ | EN je v liště na každé šířce, vyhledávače dostanou `hreflang` a sitemap
+  s oběma verzemi.
+- Oprava: tlačítko v liště ukazovalo „Stáhnout   pro Mac“ s dvojitou mezerou (mezera z `gap`
+  flexu místo obyčejné mezery).
+- Rozšíření: stránka už netvrdí nic, co neumí – posílá jen stav konverzace a počty zpráv, žádný
+  text, a jen aplikaci na stejném počítači.
+
 ### Web: nová stavba stránky a oprava posouvání na iPhonu
 
 - **Oprava: prohlídka na webu blokovala posouvání na iPhonu.** Vložená aplikace (`/app?ukazka`

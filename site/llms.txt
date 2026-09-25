@@ -4,9 +4,10 @@
 
 ## Produkt
 - [Oficiální web a prohlídka](https://agentree-fawn.vercel.app/): přehled, projekty, limity a výdaje.
+- [English version](https://agentree-fawn.vercel.app/en): stejná stránka anglicky.
 - [Instalace a rozšíření](https://agentree-fawn.vercel.app/#vyzkouset): aktuální postup pro Mac a Chrome.
 - [Připojení k vlastní aplikaci](https://agentree-fawn.vercel.app/app): rozcestník, nikoli cloudový server.
 
 Agenteeq zpracovává místní přepisy. Volitelné párované rozšíření posílá webové konverzace do aplikace na stejném počítači. Tokeny se nezaměňují za cenu; předplatné se zadává ručně, ověřené API náklady vyžadují podporované Admin API. Konektory uvádějí stav ověření. Ukázky na webu obsahují smyšlená data.
 
-Pro přístup z telefonu musí být hostitelský Mac zapnutý a vzhůru, server spuštěný a vzdálený přístup povolený. Současná verze není cloudová synchronizační služba. Veřejný podepsaný instalátor zatím není vydaný. Windows plášť se sestavuje v CI, ale jeho nativní použití vyžaduje další ověření.
+Pro přístup z telefonu musí být hostitelský Mac zapnutý a vzhůru, server spuštěný a vzdálený přístup povolený. Současná verze není cloudová synchronizační služba. Veřejný podepsaný instalátor zatím není vydaný. Aplikace pro Windows se v CI sestavuje a spouští (rozhraní se načte, server po zavření skončí); nativní ovládání jako oznámení a ikona v oznamovací oblasti ještě vyžaduje ověření člověkem.
