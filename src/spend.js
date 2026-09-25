@@ -1,4 +1,5 @@
 import { uid, round2 } from './util.js';
+import { csv } from './csv.js';
 
 export const SERVICES = {
   chatgpt: { label: 'ChatGPT', provider: 'openai' },
@@ -178,6 +179,54 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
     forecast: round2(forecast),
     budgets,
   };
+}
+
+// Export útraty pro účetnictví nebo vlastní tabulku: jeden řádek za platbu v každém měsíci.
+// Měsíční předplatné má řádek v každém měsíci, kdy běželo, takže součet sloupce „Částka v …“
+// za měsíc odpovídá měsíčnímu součtu na obrazovce Útrata (stejná pravidla jako monthlyTotals).
+// Převod jde přes kurzy nastavené v aplikaci – kurz je v řádku, aby šel převod zkontrolovat.
+export const EXPORT_MESICU = { vychozi: 12, max: 36 };
+
+const zdrojZaznamu = (e) => (String(e.id || '').startsWith('auto:sub:') ? 'Podle ceníku' : String(e.id || '').startsWith('auto:') ? 'Admin API' : 'Ručně');
+
+function datumVMesici(datum, mesic) {
+  if (datum.slice(0, 7) === mesic) return datum.slice(0, 10);
+  const [y, m] = mesic.split('-').map(Number);
+  const den = Math.min(Number(datum.slice(8, 10)) || 1, new Date(y, m, 0).getDate());
+  return `${mesic}-${String(den).padStart(2, '0')}`;
+}
+
+export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXPORT_MESICU.vychozi) {
+  const mena = spend.currency || 'CZK';
+  const current = monthKey(now);
+  const months = Array.from({ length: mesicu }, (_, i) => addMonths(current, i - (mesicu - 1)));
+  const polozky = [];
+  for (const e of [...(spend.ledger || []), ...autoEntries]) {
+    if (typeof e?.date !== 'string') continue;
+    const start = e.date.slice(0, 7);
+    const konec = e.endDate ? e.endDate.slice(0, 7) : null;
+    const kdy = e.recurring === 'monthly' ? months.filter((k) => k >= start && (!konec || k <= konec)) : months.includes(start) ? [start] : [];
+    for (const k of kdy) polozky.push({ mesic: k, datum: datumVMesici(e.date, k), e });
+  }
+  polozky.sort((a, b) => a.datum.localeCompare(b.datum) || String(a.e.service).localeCompare(String(b.e.service)));
+  const radky = [['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Opakování', 'Poznámka', 'Částka', 'Měna', `Kurz na ${mena}`, `Částka v ${mena}`, 'Zdroj']];
+  for (const { mesic, datum, e } of polozky) {
+    const opakovani = e.recurring === 'monthly' ? (e.endDate ? `měsíčně do ${e.endDate.slice(0, 10)}` : 'měsíčně') : 'jednorázově';
+    radky.push([
+      mesic,
+      datum,
+      SERVICES[e.service]?.label || String(e.service || ''),
+      KINDS[e.kind] || String(e.kind || ''),
+      opakovani,
+      e.note || '',
+      round2(Number(e.amount) || 0),
+      e.currency,
+      Math.round(convert(1, e.currency, spend) * 1e4) / 1e4,
+      round2(convert(e.amount, e.currency, spend)),
+      zdrojZaznamu(e),
+    ]);
+  }
+  return csv(radky);
 }
 
 // Peníze v upozornění musí vypadat stejně jako na obrazovce Útrata. Dřív tu stál kód měny

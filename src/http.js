@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { PUBLIC_DIR, VERSION } from './config.js';
-import { validateEntry, validateBudgets } from './spend.js';
+import { validateEntry, validateBudgets, EXPORT_MESICU } from './spend.js';
 import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { remoteScope } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
@@ -507,6 +507,19 @@ export function createHttpServer(app, existingServer = null) {
       if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agenteeq.');
       return pair;
     }, { token: true }],
+    // Útrata do CSV pro účetnictví: `mesicu` = kolik posledních měsíců včetně tohoto (1–36).
+    ['GET', /^\/api\/spend\/export$/, (_req, _m, url) => {
+      const zadano = url.searchParams.get('mesicu');
+      const mesicu = zadano === null ? EXPORT_MESICU.vychozi : Number(zadano);
+      if (!Number.isInteger(mesicu) || mesicu < 1 || mesicu > EXPORT_MESICU.max) throw new HttpError(422, `Počet měsíců musí být 1 až ${EXPORT_MESICU.max}.`);
+      const d = new Date();
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        raw: true,
+        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agenteeq-utrata-${date}.csv"`, 'Cache-Control': 'no-store' },
+        body: app.exportSpend(mesicu),
+      };
+    }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
       const r = validateEntry(await readBody(req));
       if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });

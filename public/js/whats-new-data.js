@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.27.0',
+    date: '2026-09-25',
+    title: 'Útratu si stáhneš do tabulky',
+    items: [
+      'V Útratě u Výdajů je nové tlačítko „Export CSV“. Stáhne posledních 12 měsíců – každé předplatné v každém měsíci, kdy běželo, takže součty sedí s tím, co vidíš v aplikaci.',
+      'U každé platby je původní částka, kurz i přepočet do měny, kterou máš v aplikaci, aby šel převod zkontrolovat. Soubor otevřeš rovnou v Excelu nebo Numbers.',
+    ],
+  },
+  {
     version: '0.26.0',
     date: '2026-09-25',
     title: 'Rozšíření ukáže, jestli službu čte správně',

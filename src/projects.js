@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { csv } from './csv.js';
 import { uid, hourKey, DAY } from './util.js';
 import { isSafeRef } from './git.js';
 
@@ -320,13 +321,6 @@ export function deleteProject(data, id) {
   return true;
 }
 
-// CSV pro Excel/Numbers: středník, UTF-8 BOM, ochrana proti vzorcům (=, +, -, @).
-function cell(v) {
-  if (typeof v === 'number') return String(v);
-  let s = String(v ?? '');
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 const localStamp = (ts) => {
   if (!ts) return '';
@@ -343,7 +337,7 @@ export function projectCsv(sessions, now = Date.now()) {
     const hours = Object.entries(s.hourly || {}).filter(([k, v]) => k >= since && v > 0).length;
     rows.push([s.title, s.app, s.model || '', s.status ? STATUS_CS[s.status] || s.status : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }
-  return `﻿${rows.map((r) => r.map(cell).join(';')).join('\r\n')}\r\n`;
+  return csv(rows); // src/csv.js: středník, BOM, ochrana proti vzorcům
 }
 
 // Ruční pořadí karet. `ids` je nové pořadí (viditelných) projektů; projekty, které v seznamu nejsou

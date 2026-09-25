@@ -29,6 +29,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/spend/ledger` | Nový výdaj → 201 `{ entry, spend }`; 422 s `errors` |
 | PATCH | `/api/spend/ledger/:id` | `{ endDate: "RRRR-MM-DD" \| null }` – ukončení předplatného |
 | DELETE | `/api/spend/ledger/:id` | `{ spend }` |
+| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API / Podle ceníku). Součty po měsících = `monthlyTotals` |
 | PUT | `/api/spend/budgets` | `{ total?, currency?, rates?: {USD, EUR}, services?: {služba: částka \| ""} }` → `{ spend }` |
 | GET | `/api/alerts` | `{ unread, items }` (max 300, nejnovější první) |
 | POST | `/api/alerts/read` | `{ ids: string[] \| "all" }` → `{ unread }` |

@@ -48,7 +48,7 @@ které kód za nikoho neudělá.
 |---|---|---|
 | 1 | Nativní aplikace s ikonou stavu | **Zčásti hotovo:** aplikace pro Mac (Swift, `desktop/`) spouští server, má ikonu v řádku nabídek a počet čekajících agentů v Docku. Zbývá počet i u ikony v řádku nabídek a podpis s notarizací („Teď“ #3) |
 | 2 | Historie > 30 dní | Statistiky za 12 měsíců do 1 s; migrace bez ztráty dat; bez runtime závislostí |
-| 3 | Export útraty (CSV) | Export odpovídá tabulce výdajů včetně převodu měn (export projektu do CSV už existuje) |
+| 3 | ~~Export útraty (CSV)~~ **hotovo v 0.27.0** | Útrata → Výdaje → *Export CSV*: řádek za platbu v každém měsíci včetně automatických záznamů, kurz a částka v měně aplikace; součty po měsících sedí s obrazovkou (`test/spend-export.test.mjs`) |
 | 4 | Pravidla upozornění | **Zčásti hotovo:** ztlumení projektu a „jen rozhodnutí“ podle projektu. Zbývá noční ticho a souhrn místo jednotlivých upozornění |
 
 ## v1.0 – SaaS (Pro a Team)

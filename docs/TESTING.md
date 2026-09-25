@@ -44,6 +44,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 | `test/cloud-sync.test.mjs` | Synchronizace souhrnů: tokeny po dnech, útrata po měsících bez poznámek, limity bez hlášek, seznam povolených polí, opt-in, založení a obnova zařízení, vypnutí smaže souhrny, výpadek sítě, HTTP jen z tohoto Macu |
 | `test/napojeni.test.mjs` | Napojení modelů tlačítkem proti atrapě `claude`/`codex`: čtení stavu jen z ověřeného výstupu (neznámý = „nevím“), příkaz v uvozovkách, potvrzení po přihlášení, už napojený, vypršení a zrušení, webový chat přes rozšíření, HTTP jen z tohoto Macu |
 | `test/extension-overeni.test.mjs` | Ověření webových služeb: diagnostika adaptéru na stránce, anonymizovaný vzorek stránky (bez textu, jmen, odkazů a čísel), přehrání vzorků z `test/fixtures/web/` v minimálním DOM (`test/mini-dom.mjs`) |
+| `test/spend-export.test.mjs` | Export útraty do CSV: řádek za platbu v každém měsíci, posun 31. na konec kratšího měsíce, kurz a měna aplikace, zdroj záznamu, součty = obrazovka Útrata, ochrana proti vzorcům, desetinná čárka, HTTP a hlídání počtu měsíců, žádné tlačítko v živé prohlídce |
 | `test/ucet.test.mjs` | Účet Agenteeq proti atrapě Supabase Auth: odkaz s PKCE, návrat jen na tento Mac a jen jednou, cizí kód ani chyba z Googlu nikoho nepřihlásí, výpadek sítě není odhlášení, jednorázové obnovovací tokeny, odhlášení a smazání účtu, token nejde zapsat přes API klíčů |
 | `test/nastup.test.mjs` | Nástup obrazovky: počítadlo skončí přesně na hodnotě, začíná prázdné, nepřestřelí, řády se usazují zprava, čtečka dostane celé číslo; nástup jednou po otevření a vypnutý omezeným pohybem |
 
@@ -97,6 +98,17 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
       počty zpráv odpovídají stránce, „Pracuje → hotovo zachyceno“. Klikni **Sedí**, nebo **Nesedí**.
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
+
+## Protokol ověření – 0.27.0 (25. 9. 2026, Linux kontejner, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 516 testů, 512 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm run check` | 196 souborů bez syntaktické chyby |
+| `test/spend-export.test.mjs` | 6 testů exportu útraty; 4 záměrné chyby (předplatné jen jednou, bez ochrany proti vzorcům, desetinná tečka, bez kontroly měsíců) každou zachytí aspoň jeden test |
+| Prohlížeč (Chromium) | Útrata → Výdaje → *Export CSV* při 1440 i 375 px, světlý i tmavý režim: tlačítko v záhlaví sekce, nic nepřetéká, klik stáhne `agenteeq-utrata-RRRR-MM-DD.csv` se správnými řádky, konzole čistá |
+| Živá prohlídka (`dist/web`, `/app?ukazka#/utrata`) | Tlačítko exportu chybí, tabulka výdajů ukázky se vykreslí, konzole čistá |
+| **Neověřeno** | Otevření souboru v Excelu a Numbers na Macu (formát ověřený testem: středník, desetinná čárka, BOM) |
 
 ## Protokol ověření – 0.26.0 (24. 9. 2026, Linux kontejner, Node 22.22)
 
