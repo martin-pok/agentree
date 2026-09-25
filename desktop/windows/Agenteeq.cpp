@@ -317,32 +317,53 @@ static std::wstring strankaPlaste(const std::wstring& zprava, bool sTlacitkem) {
 // Náhrada za WebKit kanál. Aplikace volá window.webkit.messageHandlers.agenteeq.postMessage –
 // plášť pro Windows jí ho podstrčí nad chrome.webview, aby se public/js nemuselo měnit.
 // `is-windows` navíc říká stylům, že tu není průhledné záhlaví, pod které by obsah zajížděl.
+//
+// Pořadí je podstatné. WebView2 pouští tenhle skript hned při vzniku dokumentu, ještě než
+// parser vytvoří <html> – document.documentElement je v tu chvíli null (na macOS se stejné
+// třídy přidávají až v .atDocumentEnd). Kanál a příznak aplikace proto vznikají první a třídy
+// se přidají, jakmile kořenový prvek existuje. Dřív skript na prvním řádku spadl a rozhraní
+// na Windows pak nevědělo, že běží v aplikaci, a plášť od něj nedostal jedinou zprávu.
 static const wchar_t* SKRIPT_MOSTU =
-    L"document.documentElement.classList.add('is-desktop');"
-    L"document.documentElement.classList.add('is-windows');"
     L"window.agenteeqDesktop = true;"
     L"window.webkit = window.webkit || {};"
     L"window.webkit.messageHandlers = window.webkit.messageHandlers || {};"
     L"window.webkit.messageHandlers.agenteeq = {"
     L"  postMessage: function (m) { try { window.chrome.webview.postMessage(m); } catch (e) {} }"
-    L"};";
+    L"};"
+    L"(function () {"
+    L"  function oznac() {"
+    L"    var h = document.documentElement;"
+    L"    if (!h) return false;"
+    L"    h.classList.add('is-desktop', 'is-windows');"
+    L"    return true;"
+    L"  }"
+    L"  if (oznac()) return;"
+    L"  new MutationObserver(function (zmeny, pozorovatel) { if (oznac()) pozorovatel.disconnect(); })"
+    L"    .observe(document, { childList: true });"
+    L"})();";
 
 // Sonda pro kontrolu sestavené aplikace (scripts/qa-native.mjs). Pustí se jen v režimu QA
-// s AGENTEEQ_DESKTOP_QA_REPORT, až rozhraní ohlásí „ready“: po chvíli, kdy je obrazovka
-// vykreslená, pošle plášti, co na ní je. Stejná sonda je v plášti pro macOS.
-#define AGENTEEQ_QA_SONDA(PUVOD, PRODLEVA)                                                   \
-  L"setTimeout(function(){var v=document.querySelector('#view');"                           \
-  L"window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{"            \
-  L"puvod:'" PUVOD L"',titulek:document.title,pohled:v?v.children.length:0,"               \
-  L"navigace:document.querySelectorAll('.sidebar .nav a').length,"                         \
-  L"desktop:document.documentElement.classList.contains('is-desktop'),"                    \
-  L"windows:document.documentElement.classList.contains('is-windows'),"                    \
-  L"trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)}});}," \
-  PRODLEVA L");"
-static const wchar_t* QA_SONDA = AGENTEEQ_QA_SONDA(L"ready", L"1500");
-// Záloha: pár sekund po dokončené navigaci, i když rozhraní „ready“ neohlásí. Díky ní hlášení
-// řekne, co v okně je (chybová stránka, rozcestník, prázdno), místo pouhého „nenačetlo se“.
-static const wchar_t* QA_SONDA_ZALOHA = AGENTEEQ_QA_SONDA(L"navigace", L"5000");
+// s AGENTEEQ_DESKTOP_QA_REPORT. Popíše, co je v okně: rozhraní, navigaci, třídy pláště
+// a jestli existuje kanál do pláště. Stejná sonda je v plášti pro macOS.
+#define AGENTEEQ_QA_STAV                                                                         \
+  L"(function(puvod){var v=document.querySelector('#view'),h=document.documentElement;"         \
+  L"return {puvod:puvod,titulek:document.title,dokument:document.readyState,"                   \
+  L"pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length," \
+  L"desktop:!!h&&h.classList.contains('is-desktop'),windows:!!h&&h.classList.contains('is-windows')," \
+  L"aplikace:window.agenteeqDesktop===true,"                                                     \
+  L"most:!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.agenteeq)," \
+  L"kanal:!!(window.chrome&&window.chrome.webview),"                                             \
+  L"trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)};})"
+// Po „ready“ z rozhraní: po chvíli, kdy je obrazovka vykreslená, pošle stav zpátky kanálem.
+// Tím se ověří i samotný kanál – stejnou cestou chodí přepnutí vzhledu a další zprávy.
+static const wchar_t* QA_SONDA =
+    L"setTimeout(function(){window.webkit.messageHandlers.agenteeq.postMessage("
+    L"{type:'qa-sonda',sonda:" AGENTEEQ_QA_STAV L"('ready')});},1500);";
+// Záloha pár sekund po dokončené navigaci: výsledek se vrátí přímo z ExecuteScript, takže
+// hlášení řekne, co v okně je (chybová stránka, prázdno, rozhraní bez kanálu), i když
+// kanál zpráv nefunguje – místo pouhého „nenačetlo se“.
+static const wchar_t* QA_STAV_OKNA = AGENTEEQ_QA_STAV L"('navigace')";
+static const UINT_PTR CASOVAC_QA_STAV = 4;
 
 // Text do JSON řetězce pro hlášení kontroly.
 static std::wstring jsonText(const std::wstring& s) {
@@ -410,6 +431,7 @@ class Aplikace {
   void UkazOkno();
   void Naviguj(const std::wstring& hash);
   void ZapisQa(const std::wstring& radek);
+  void ZjistiStavOknaQa();
 };
 
 static Aplikace* g_app = nullptr;
@@ -489,6 +511,7 @@ LRESULT Aplikace::Zprava(HWND okno, UINT zprava, WPARAM w, LPARAM l) {
         return 0;
       }
       if (w == 3) { KillTimer(okno_, 3); if (dite_.hProcess) pokusy_ = 0; return 0; }
+      if (w == CASOVAC_QA_STAV) { KillTimer(okno_, CASOVAC_QA_STAV); ZjistiStavOknaQa(); return 0; }
       break;
 
     case ZPRAVA_OZNAMENI:
@@ -1026,7 +1049,7 @@ void Aplikace::PoVytvoreniWebView() {
               if (SUCCEEDED(odesilatel->get_Source(&zdroj)) && zdroj) adresa = zdroj.get();
               ZapisQa(L"{\"udalost\":\"navigace\",\"ok\":" + std::wstring(uspech ? L"true" : L"false") +
                       L",\"stav\":" + std::to_wstring(static_cast<int>(stav)) + L",\"adresa\":\"" + jsonText(adresa.substr(0, 80)) + L"\"}");
-              if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) web_->ExecuteScript(QA_SONDA_ZALOHA, nullptr);
+              if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) SetTimer(okno_, CASOVAC_QA_STAV, 5000, nullptr);
               return S_OK;
             })
             .Get(),
@@ -1117,6 +1140,21 @@ void Aplikace::ZapisQa(const std::wstring& radek) {
   DWORD zapsano = 0;
   WriteFile(soubor, utf8.data(), static_cast<DWORD>(utf8.size()), &zapsano, nullptr);
   CloseHandle(soubor);
+}
+
+// Záložní sonda kontroly: stav okna přímo z výsledku skriptu, bez kanálu zpráv.
+void Aplikace::ZjistiStavOknaQa() {
+  if (!web_ || qaZprava_.empty()) return;
+  web_->ExecuteScript(
+      QA_STAV_OKNA,
+      Callback<ICoreWebView2ExecuteScriptCompletedHandler>(
+          [this](HRESULT chyba, LPCWSTR vysledek) -> HRESULT {
+            const std::wstring stav = SUCCEEDED(chyba) && vysledek && *vysledek ? std::wstring(vysledek) : L"null";
+            ZapisQa(L"{\"udalost\":\"stav-okna\",\"chyba\":" + std::to_wstring(static_cast<long>(chyba)) +
+                    L",\"sonda\":" + stav + L"}");
+            return S_OK;
+          })
+          .Get());
 }
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {

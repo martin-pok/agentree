@@ -110,15 +110,17 @@ try {
   port = server?.port || 0;
   zapis(port > 0, port > 0 ? `plášť spustil přibalený Node a server se ohlásil (port ${port})` : 'server se do 90 s neohlásil');
 
-  // Sonda „ready“ znamená, že rozhraní načetlo stav a vykreslilo se. Záložní sonda po navigaci
-  // (jen Windows) přijde i bez toho a řekne, co v okně místo toho je.
-  const nacteno = port ? await pockejNa('nacteno', 90000, (u) => u.zprava?.sonda?.puvod !== 'navigace') : null;
+  // Sonda „ready“ znamená, že rozhraní načetlo stav, vykreslilo se a jeho zprávy docházejí do
+  // pláště – stejnou cestou jde přepnutí vzhledu. Na Windows plášť navíc pár sekund po navigaci
+  // zapíše „stav-okna“ přímo z výsledku skriptu, takže při selhání log řekne, co v okně je.
+  const nacteno = port ? await pockejNa('nacteno', 90000) : null;
   const sonda = nacteno?.zprava?.sonda;
   zapis(Boolean(sonda), sonda ? 'okno načetlo rozhraní a to ohlásilo připravenost' : 'rozhraní se v okně do 90 s nenačetlo');
   if (sonda) {
     zapis(sonda.navigace >= 5, `navigace aplikace je vykreslená (${sonda.navigace} položek)`);
     zapis(sonda.pohled > 0, `obrazovka má obsah (${sonda.pohled} bloků, „${String(sonda.text || '').replace(/\s+/g, ' ').slice(0, 60)}…“)`);
-    zapis(sonda.desktop === true, 'rozhraní ví, že běží v aplikaci (is-desktop)');
+    zapis(sonda.aplikace === true, 'rozhraní ví, že běží v aplikaci (agenteeqDesktop)');
+    zapis(sonda.desktop === true, 'styly aplikace jsou zapnuté (is-desktop)');
     if (win) zapis(sonda.windows === true, 'rozhraní ví, že běží na Windows (is-windows)');
   }
   await cekej(1500);
