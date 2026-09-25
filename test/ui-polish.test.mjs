@@ -107,6 +107,20 @@ test('klikatelný text vypadá jako ovládací prvek a kalendář nahrazuje syst
   assert.doesNotMatch(dp, /select:not/, 'výběr z nabídky patří selects.js');
 });
 
+// Nabídka nebo kalendář mimo modální okno (aria-modal) zmizí ze stromu přístupnosti – čtečka
+// obrazovky by v „Přidat výdaj“ nepřečetla ani jednu službu. Ve skutečném prohlížeči to hlídá qa:desktop.
+test('nabídky a kalendář v modálním okně jsou uvnitř něj a ve vrchní vrstvě', async () => {
+  const sel = await zdroj('public/js/selects.js');
+  assert.match(sel, /\(button\.closest\('\[aria-modal="true"\]'\) \|\| document\.body\)\.append\(panel\)/);
+  assert.match(sel, /panel\.setAttribute\('popover', 'manual'\)[\s\S]*panel\.showPopover\?\.\(\)/);
+  const dp = await zdroj('public/js/datepicker.js');
+  assert.match(dp, /\(trigger\.closest\('\[aria-modal="true"\]'\) \|\| document\.body\)\.appendChild\(pop\)/);
+  assert.match(dp, /pop\.setAttribute\('popover', 'manual'\);\s*pop\.showPopover\?\.\(\);\s*place\(/, 'kalendář se měří až ve vrchní vrstvě');
+  assert.doesNotMatch(sel + dp, /document\.body\.append(Child)?\((panel|pop)\)/, 'nic se nevkládá natvrdo do body');
+  const css = await zdroj('public/desktop.css');
+  assert.match(css, /\.picker-option\[aria-selected='true'\]::after \{ content: '✓'; content: '✓' \/ '';/, 'fajfka nemá být v názvu položky pro čtečku');
+});
+
 test('poslední zadání jde rozbalit a bere celý text z přepisu', async () => {
   const s = await zdroj('public/js/views/session.js');
   assert.match(s, /data-quote-toggle/);

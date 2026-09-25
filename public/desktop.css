@@ -17,7 +17,9 @@
 .picker-option { position: relative; padding: 10px 34px 10px 12px; border-radius: 10px; cursor: pointer; overflow-wrap: anywhere; }
 .picker-option:hover, .picker-option.is-highlighted { background: var(--paper); }
 .picker-option[aria-selected='true'] { color: var(--teal-ink); }
-.picker-option[aria-selected='true']::after { content: '✓'; position: absolute; right: 12px; top: 10px; }
+/* Fajfka je jen pro oko: výběr hlásí aria-selected. Bez prázdného alternativního textu by čtečka
+   obrazovky přečetla „ChatGPT ✓“. Starší prohlížeč druhý zápis zahodí a fajfku ukáže dál. */
+.picker-option[aria-selected='true']::after { content: '✓'; content: '✓' / ''; position: absolute; right: 12px; top: 10px; }
 .picker-option[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
 .check input, .check-inline input, input[type='checkbox']:not([role='switch']) { appearance: none; flex: none; width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); display: inline-grid; place-content: center; vertical-align: middle; }
 input[type='checkbox']:not([role='switch']):checked { background: var(--action); border-color: var(--action); }

@@ -103,12 +103,14 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 516 testů, 512 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm test` | 517 testů, 513 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
 | `npm run check` | 196 souborů bez syntaktické chyby |
 | `test/spend-export.test.mjs` | 6 testů exportu útraty; 4 záměrné chyby (předplatné jen jednou, bez ochrany proti vzorcům, desetinná tečka, bez kontroly měsíců) každou zachytí aspoň jeden test |
 | Prohlížeč (Chromium) | Útrata → Výdaje → *Export CSV* při 1440 i 375 px, světlý i tmavý režim: tlačítko v záhlaví sekce, nic nepřetéká, klik stáhne `agenteeq-utrata-RRRR-MM-DD.csv` se správnými řádky, konzole čistá |
 | Živá prohlídka (`dist/web`, `/app?ukazka#/utrata`) | Tlačítko exportu chybí, tabulka výdajů ukázky se vykreslí, konzole čistá |
-| **Neověřeno** | Otevření souboru v Excelu a Numbers na Macu (formát ověřený testem: středník, desetinná čárka, BOM) |
+| Uživatelské testování (Chromium, 54 kroků) | Nový uživatel: průvodce klávesnicí, prázdná Útrata, první výdaj přes vlastní nabídky, odmítnutí prázdné částky s hláškou, Esc, rozpočet, export CSV, Nastavení. Aktivní uživatel (ukázková scéna): 8 obrazovek × 1440/375 px × světlý/tmavý – nic nepřetéká, každý ovládací prvek má název, konzole čistá; detail agenta s rozhodnutím, export projektu, paleta ⌘K → Přidat výdaj. Web: landing page a živá prohlídka 1440/375 světle i tmavě, `/app?ucet`, rozcestník |
+| Nálezy a opravy | Vybraná položka nabídky měla pro čtečku název s fajfkou (opraveno, hlídá `qa:desktop` – bez opravy selže). Nabídky a kalendář v modálním okně nově uvnitř okna (preventivně pro WebKit/VoiceOver; v Chromiu se chyba neprojevila). Odmítnutí prázdné částky zapíše do konzole zamítnutý požadavek 422 – je to očekávaná validace serveru, ne chyba skriptu |
+| **Neověřeno** | Otevření souboru v Excelu a Numbers na Macu (formát ověřený testem: středník, desetinná čárka, BOM); nabídky a kalendář ve WebKitu a s VoiceOverem (WebKit prověří CI v `qa:desktop`) |
 
 ## Protokol ověření – 0.26.0 (24. 9. 2026, Linux kontejner, Node 22.22)
 

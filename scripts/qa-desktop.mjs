@@ -134,6 +134,25 @@ for (const engine of engines) {
     await page.keyboard.press('Escape');
     await page.locator('.palette').waitFor({ state: 'hidden' });
     await page.goto(`${server.url}/#/utrata`);
+    // Nabídka a kalendář v modálním okně (aria-modal) musí být uvnitř něj – co je mimo, prohlížeč
+    // vyřadí ze stromu přístupnosti a čtečka obrazovky položky nepřečte. getByRole to vidí stejně.
+    await page.locator('.toolbar button[data-action="add"]').click();
+    await page.locator('.modal-scrim').waitFor();
+    await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').click();
+    assert.ok(await page.getByRole('option').count() >= 10, `${engine} položky nabídky v okně jsou dostupné čtečce`);
+    await page.getByRole('option', { name: 'Claude', exact: true }).click();
+    assert.equal(await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').getAttribute('aria-label'), 'Služba: Claude');
+    // Vybraná položka se jmenuje jen „Claude“ – fajfka z CSS do názvu pro čtečku nepatří.
+    await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').click();
+    assert.equal(await page.getByRole('option', { name: 'Claude', exact: true, selected: true }).count(), 1, `${engine} vybraná položka nemá v názvu fajfku`);
+    await page.keyboard.press('Escape');
+    await page.locator('.modal button.dd-date').click();
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('.dd-cal')?.closest('.modal'))), true, `${engine} kalendář je uvnitř okna`);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.dd-cal').count(), 0, `${engine} Esc zavře kalendář`);
+    assert.equal(await page.locator('.modal-scrim').count(), 1, `${engine} Esc v kalendáři nezavře celé okno`);
+    await page.keyboard.press('Escape');
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
     const budgetsButton = page.locator('button[data-action="budgets"]').first();
     await budgetsButton.click();
     await page.locator('.modal-scrim').waitFor();
