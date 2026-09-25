@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Agenteeq – HTML pro prémiovou načítací animaci značky a skeleton karet.
 // Bez runtime závislostí; jen čisté SVG/DOM řetězce. Styly v public/loader.css.
 
@@ -16,7 +17,7 @@ function escapeHtml(str) {
  * jemné nadechnutí, doznívající halo) a textem stavu.
  * @param {string} text - oznamovaný stav (výchozí: „Načítám data z tvého Macu…“)
  */
-export function loaderHtml(text = 'Načítám data z tvého Macu…') {
+export function loaderHtml(text = tr('Načítám data z tvého Macu…')) {
   const safe = escapeHtml(text);
   return (
     '<div class="loader-wrap" role="status" aria-live="polite">' +

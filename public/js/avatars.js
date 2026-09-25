@@ -1,6 +1,7 @@
 import { state, emit } from './state.js';
 import { api } from './api.js';
 import { toast } from './ui.js';
+import { tr } from './i18n.js';
 
 // Abstraktní profilové obrázky: jednoduché tvary v teplé paletě Agenteeq. Index se ukládá do nastavení (settings.avatar).
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
@@ -50,7 +51,7 @@ export function setAvatar(value) {
   emit('settings');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    api.saveSettings({ avatar: value }).catch((err) => toast(`Profilový obrázek se neuložil: ${err.message}`, { tone: 'err' }));
+    api.saveSettings({ avatar: value }).catch((err) => toast(`${tr('Profilový obrázek se neuložil:')} ${err.message}`, { tone: 'err' }));
   }, 350);
 }
 

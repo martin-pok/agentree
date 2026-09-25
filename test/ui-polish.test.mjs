@@ -210,7 +210,7 @@ test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
   const src = await zdroj('public/js/views/overview.js');
   assert.match(src, /const TIMELINE_MAX = 7;/);
   assert.match(src, /const skryto = vybrane\.length - rows\.length;/);
-  assert.match(src, /Dalších \$\{skryto\} je/, 'počet skrytých agentů je vidět');
+  assert.match(src, /tr\('Dalších \{0\} je', skryto\)/, 'počet skrytých agentů je vidět');
   assert.match(src, /class="tl-more" href="#\/agenti"/, 'a vede na seznam, kde jsou všichni');
   assert.doesNotMatch(src, /\.slice\(0, 7\)/, 'napevno zapsaná sedmička bez vysvětlení');
 });
@@ -219,10 +219,10 @@ test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
 // o podklady projektu, poznal to až po zavření okna.
 test('selhané uložení podkladů projektu je vidět na první pohled', async () => {
   const src = await zdroj('public/js/views/project.js');
-  assert.match(src, /stavUlozeni\(statusEl, 'chyba', 'Neuložilo se! Zkopíruj si text\.'\)/);
+  assert.match(src, /stavUlozeni\(statusEl, 'chyba', tr\('Neuložilo se! Zkopíruj si text\.'\)\)/);
   assert.match(src, /classList\.toggle\('is-error', stav === 'chyba'\)/, 'chyba má vlastní barvu');
   assert.match(src, /setAttribute\('role', stav === 'chyba' \? 'alert'/, 'čtečka ji ohlásí hned');
-  assert.match(src, /Podklady se neuložily: \$\{err\.message\}/, 'toast říká, čeho se chyba týká');
+  assert.match(src, /\$\{tr\('Podklady se neuložily:'\)\} \$\{err\.message\}/, 'toast říká, čeho se chyba týká');
   assert.doesNotMatch(src, /textContent = 'Neuloženo'/, 'text k nerozeznání od čekání');
   const css = await zdroj('public/styles.css');
   assert.match(css, /\[data-notes-status\]\.is-error \{ color: var\(--velvet-ink\)/);
@@ -279,7 +279,7 @@ test('překreslení mřížky projektů zachová karty i jejich obrázky', async
 
 test('stav připojení se jmenuje „Připojeno“ a vybraná pilulka má jediný obrys', async () => {
   const app = await zdroj('public/js/app.js');
-  assert.match(app, /live: \['dot--live', 'Připojeno', 'Připojeno'\]/);
+  assert.match(app, /live: \['dot--live', tr\('Připojeno'\), tr\('Připojeno'\)\]/);
   assert.doesNotMatch(app, /'Živě'/);
   const css = await zdroj('public/styles.css');
   const vybrana = css.match(/\.lchip\[aria-checked='true'\] \{[^}]*\}/)?.[0] || '';
@@ -299,7 +299,7 @@ test('období nabízejí kalendářní „Dnes“ i 14 dní a nepletou se s posl
   assert.equal(dnes.starts.length, 9, 'v 8:30 má dnešek devět hodinových sloupců');
   assert.equal(periodBuckets('fortnight', ted).starts.length, 14);
   const stats = await zdroj('public/js/views/stats.js');
-  assert.match(stats, /\['today', 'Dnes'\], \['day', '24 hodin'\], \['week', '7 dní'\], \['fortnight', '14 dní'\], \['month', '30 dní'\]/);
+  assert.match(stats, /\['today', tr\('Dnes'\)\], \['day', tr\('24 hodin'\)\], \['week', tr\('7 dní'\)\], \['fortnight', tr\('14 dní'\)\], \['month', tr\('30 dní'\)\]/);
 });
 
 // Vyhledávání (⌘K) překrývá celou stránku. Po dojetí seznamu na konec se ale začala posouvat
@@ -326,9 +326,9 @@ test('banner průvodce sedí s obsahem průvodce', async () => {
   const welcome = await zdroj('public/js/welcome.js');
   assert.match(settings, /class="guide-banner"/);
   assert.match(settings, /<button class="btn btn--primary" type="button" data-welcome>/, 'výzva má být plné tlačítko, ne obrys');
-  const kroku = (welcome.match(/^\s*\{ tag: '/gm) || []).length;
+  const kroku = (welcome.match(/^\s*\{ tag: tr\('/gm) || []).length;
   const cislovky = { 4: 'Čtyři', 5: 'Pět', 6: 'Šest', 7: 'Sedm' };
-  assert.match(settings, new RegExp(`<p>${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
+  assert.match(settings, new RegExp(`<p>\\$\\{tr\\('${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
   // Průvodce musí mluvit o tom, co aplikace umí teď.
   for (const [co, kde] of [['limits', 'ukázka limitů'], ['kurzem ČNB', 'přepočet do korun'], ['logo klienta', 'obrázky projektů'], ['klíč tohoto spuštění', 'zabezpečení okna']]) {
     assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);

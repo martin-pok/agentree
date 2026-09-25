@@ -1,11 +1,12 @@
+import { tr } from './i18n.js';
 // Ukázkový režim (public/js/ukazka.js): místo serveru odpovídá snímek smyšlených dat. Čte se jen
 // to, co snímek obsahuje; cokoli, co by něco měnilo, se odmítne – v ukázce se nic neukládá.
 let ukazka = null;
 export function zapniUkazku(odpovedi) { ukazka = odpovedi; }
 
 function ukazkaOdpoved(method, path) {
-  if (method !== 'GET') throw Object.assign(new Error('Tohle je ukázka – nic se v ní neukládá.'), { status: 403 });
-  if (!Object.hasOwn(ukazka, path)) throw Object.assign(new Error('V ukázce tahle data nejsou.'), { status: 404 });
+  if (method !== 'GET') throw Object.assign(new Error(tr('Tohle je ukázka – nic se v ní neukládá.')), { status: 403 });
+  if (!Object.hasOwn(ukazka, path)) throw Object.assign(new Error(tr('V ukázce tahle data nejsou.')), { status: 404 });
   return structuredClone(ukazka[path]);
 }
 
@@ -21,11 +22,11 @@ export async function request(method, path, body) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw Object.assign(new Error('Server Agenteeq neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.'), { status: 0 });
+    throw Object.assign(new Error(tr('Server Agenteeq neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.')), { status: 0 });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
-  if (!res.ok) throw Object.assign(new Error(json?.error || `Chyba ${res.status}`), { status: res.status, errors: json?.errors });
+  if (!res.ok) throw Object.assign(new Error(json?.error || `${tr('Chyba')} ${res.status}`), { status: res.status, errors: json?.errors });
   return json;
 }
 
@@ -71,7 +72,7 @@ export const api = {
   // Obsah dovednosti je čistý markdown, ne JSON – proto mimo `request()`.
   async skillText(id) {
     const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`);
-    if (!res.ok) throw new Error(res.status === 404 ? 'Soubor dovednosti už na disku není.' : `Dovednost se nepodařilo načíst (chyba ${res.status}).`);
+    if (!res.ok) throw new Error(res.status === 404 ? tr('Soubor dovednosti už na disku není.') : tr('Dovednost se nepodařilo načíst (chyba {0}).', res.status));
     return res.text();
   },
   extensionPairCode: () => request('POST', '/api/extension/pair-code', {}),
@@ -98,10 +99,10 @@ export const api = {
     try {
       res = await fetch(`/api/projects/${encodeURIComponent(id)}/media/${kind}`, { method: 'PUT', headers: { 'X-Agenteeq': '1', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
     } catch {
-      throw new Error('Server Agenteeq neodpovídá. Obrázek se nenahrál.');
+      throw new Error(tr('Server Agenteeq neodpovídá. Obrázek se nenahrál.'));
     }
     const json = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(json?.error || `Obrázek se nenahrál (chyba ${res.status}).`);
+    if (!res.ok) throw new Error(json?.error || tr('Obrázek se nenahrál (chyba {0}).', res.status));
     return json;
   },
   removeProjectMedia: (id, kind) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/media/${kind}`),

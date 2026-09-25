@@ -8,22 +8,23 @@ import { sessionTotal, needsYou } from '../data.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
+import { tr } from '../i18n.js';
 
 const v = { el: null, id: null, filter: 'all', saveTimer: null, saving: false, savedAt: 0 };
 
-const SEGMENTS = [['all', 'Vše'], ['needs', 'Potřebuje tebe'], ['working', 'Pracuje'], ['older', 'Starší']];
+const SEGMENTS = [['all', tr('Vše')], ['needs', tr('Potřebuje tebe')], ['working', tr('Pracuje')], ['older', tr('Starší')]];
 
 function rowHtml(s, now) {
   const sub = s.snapshot
-    ? `<span>${esc(s.app)}</span><span class="dot-sep"></span><span>starší než 30 dní</span>`
-    : `<span>${esc(s.app)}</span><span class="dot-sep"></span><span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span>${s.projectSource === 'folder' ? '<span class="dot-sep"></span><span title="Zařazeno automaticky podle složky">podle složky</span>' : ''}`;
-  const actions = `<button class="icon-btn" type="button" data-unassign="${esc(s.id)}" aria-label="Odebrat z projektu: ${esc(s.title)}" data-tip="Odebrat z projektu">${ICON.close}</button>`;
+    ? `<span>${esc(s.app)}</span><span class="dot-sep"></span><span>${tr('starší než 30 dní')}</span>`
+    : `<span>${esc(s.app)}</span><span class="dot-sep"></span><span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span>${s.projectSource === 'folder' ? `<span class="dot-sep"></span><span title="${tr('Zařazeno automaticky podle složky')}">${tr('podle složky')}</span>` : ''}`;
+  const actions = `<button class="icon-btn" type="button" data-unassign="${esc(s.id)}" aria-label="${tr('Odebrat z projektu:')} ${esc(s.title)}" data-tip="${tr('Odebrat z projektu')}">${ICON.close}</button>`;
   if (s.snapshot) {
     return `<li class="prow is-snapshot">
       <span class="icon-tile">${glyph(s)}</span>
       <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${sub}</span></span>
       <span class="prow-meta">${s.lastAt ? dateLong(s.lastAt) : ''}</span>
-      <span class="prow-actions">${s.url ? `<a class="icon-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít konverzaci" data-tip="Otevřít konverzaci">${ICON.external}</a>` : ''}${s.resume ? `<button class="icon-btn" type="button" data-copy="${esc(s.resume)}" data-copy-message="Příkaz pro pokračování zkopírován" aria-label="Kopírovat příkaz pro pokračování" data-tip="Kopírovat příkaz">${ICON.copy}</button>` : ''}${actions}</span>
+      <span class="prow-actions">${s.url ? `<a class="icon-btn" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="${tr('Otevřít konverzaci')}" data-tip="${tr('Otevřít konverzaci')}">${ICON.external}</a>` : ''}${s.resume ? `<button class="icon-btn" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" data-tip="${tr('Kopírovat příkaz')}">${ICON.copy}</button>` : ''}${actions}</span>
     </li>`;
   }
   return `<li class="prow">
@@ -39,16 +40,16 @@ function rowHtml(s, now) {
 async function addSessionsDialog(p) {
   const candidates = agentsList().filter((s) => s.projectId !== p.id);
   if (!candidates.length) {
-    toast('Všechny sledované konverzace už v projektu jsou.', { tone: 'info' });
+    toast(tr('Všechny sledované konverzace už v projektu jsou.'), { tone: 'info' });
     return;
   }
   const id = `add${Math.random().toString(36).slice(2, 8)}`;
   const done = modal({
-    title: `Přidat konverzace do projektu ${p.name}`,
-    submitLabel: 'Přidat vybrané',
+    title: `${tr('Přidat konverzace do projektu')} ${p.name}`,
+    submitLabel: tr('Přidat vybrané'),
     wide: true,
-    body: `<label class="search-field search-field--block">${ICON.search}<span class="sr-only">Hledat konverzaci</span><input type="search" id="${id}-q" placeholder="Název, aplikace, složka…" autocomplete="off"></label>
-      <p class="small muted" id="${id}-count" aria-live="polite">Vybráno 0</p>
+    body: `<label class="search-field search-field--block">${ICON.search}<span class="sr-only">${tr('Hledat konverzaci')}</span><input type="search" id="${id}-q" placeholder="${tr('Název, aplikace, složka…')}" autocomplete="off"></label>
+      <p class="small muted" id="${id}-count" aria-live="polite">${tr('Vybráno 0')}</p>
       <ul class="pick-list" id="${id}-list">${candidates.map((s) => `<li data-hay="${esc(norm([s.title, s.app, s.cwd, s.url].join(' ')))}"><label class="pick">
         <input type="checkbox" name="sid" value="${esc(s.id)}">
         <span class="icon-tile">${glyph(s)}</span>
@@ -57,7 +58,7 @@ async function addSessionsDialog(p) {
       </label></li>`).join('')}</ul>`,
     onSubmit: async (form) => {
       const ids = [...form.querySelectorAll('input[name="sid"]:checked')].map((x) => x.value);
-      if (!ids.length) throw new Error('Vyber aspoň jednu konverzaci.');
+      if (!ids.length) throw new Error(tr('Vyber aspoň jednu konverzaci.'));
       const r = await api.assign(ids, p.id);
       setProjects(r.projects);
       return ids.length;
@@ -70,9 +71,9 @@ async function addSessionsDialog(p) {
     const nq = norm(q.value.trim());
     for (const li of list.children) li.hidden = Boolean(nq) && !li.dataset.hay.includes(nq);
   });
-  list.addEventListener('change', () => { count.textContent = `Vybráno ${list.querySelectorAll('input:checked').length}`; });
+  list.addEventListener('change', () => { count.textContent = `${tr('Vybráno')} ${list.querySelectorAll('input:checked').length}`; });
   const n = await done;
-  if (n) toast(`${n} ${plural(n, 'konverzace přidána', 'konverzace přidány', 'konverzací přidáno')} do projektu`);
+  if (n) toast(`${n} ${plural(n, 'konverzace přidána', 'konverzace přidány', 'konverzací přidáno')} ${tr('do projektu')}`);
 }
 
 // Stav ukládání podkladů. „Neuloženo…“ (čekám na doťukání) a „Neuloženo“ (uložení selhalo) se dřív
@@ -87,18 +88,18 @@ function stavUlozeni(el, stav, text) {
 
 function saveNotes(textarea, statusEl) {
   clearTimeout(v.saveTimer);
-  stavUlozeni(statusEl, 'ceka', 'Neuloženo…');
+  stavUlozeni(statusEl, 'ceka', tr('Neuloženo…'));
   v.saveTimer = setTimeout(async () => {
     const id = v.id;
     v.saving = true;
-    stavUlozeni(statusEl, 'beh', 'Ukládám…');
+    stavUlozeni(statusEl, 'beh', tr('Ukládám…'));
     try {
       const r = await api.updateProject(id, { notes: textarea.value });
       setProjects(r.projects);
-      if (v.id === id) stavUlozeni(statusEl, 'hotovo', 'Uloženo');
+      if (v.id === id) stavUlozeni(statusEl, 'hotovo', tr('Uloženo'));
     } catch (err) {
-      if (v.id === id) stavUlozeni(statusEl, 'chyba', 'Neuložilo se! Zkopíruj si text.');
-      toast(`Podklady se neuložily: ${err.message}`, { tone: 'err', timeout: 12000 });
+      if (v.id === id) stavUlozeni(statusEl, 'chyba', tr('Neuložilo se! Zkopíruj si text.'));
+      toast(`${tr('Podklady se neuložily:')} ${err.message}`, { tone: 'err', timeout: 12000 });
     } finally {
       v.saving = false;
       v.saveTimer = null;
@@ -109,24 +110,24 @@ function saveNotes(textarea, statusEl) {
 function mount(el, [id]) {
   Object.assign(v, { el, id, filter: 'all' });
   el.innerHTML = `<div class="project">
-    <a class="back" href="#/projekty">${ICON.back}Všechny projekty</a>
+    <a class="back" href="#/projekty">${ICON.back}${tr('Všechny projekty')}</a>
     <header class="project-head" data-region="head"></header>
     <div class="kpis kpis--project" data-region="kpis"></div>
     <div class="project-grid">
       <section class="card project-list" aria-labelledby="pl-h">
-        <div class="project-list-bar"><h2 id="pl-h">Konverzace</h2><div class="seg seg--light" role="group" aria-label="Filtrovat konverzace" data-region="seg"></div>
-          <button class="btn btn--sm" type="button" data-action="add">${ICON.plus}Přidat konverzace</button></div>
+        <div class="project-list-bar"><h2 id="pl-h">${tr('Konverzace')}</h2><div class="seg seg--light" role="group" aria-label="${tr('Filtrovat konverzace')}" data-region="seg"></div>
+          <button class="btn btn--sm" type="button" data-action="add">${ICON.plus}${tr('Přidat konverzace')}</button></div>
         <ul class="prows" data-region="rows"></ul>
       </section>
       <aside class="session-side" data-region="pside">
         <section class="card side-card" data-card="brief" aria-labelledby="brief-h">${GRIP}
-          <div class="side-head"><h3 id="brief-h">Podklady a poznámky</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
-          <label class="sr-only" for="brief-${esc(id)}">Podklady projektu</label>
-          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání."></textarea>
-          <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}Kopírovat podklady</button></div>
+          <div class="side-head"><h3 id="brief-h">${tr('Podklady a poznámky')}</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
+          <label class="sr-only" for="brief-${esc(id)}">${tr('Podklady projektu')}</label>
+          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="${tr('Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání.')}"></textarea>
+          <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}${tr('Kopírovat podklady')}</button></div>
         </section>
-        <section class="card side-card" data-card="folders" aria-label="Složky projektu">${GRIP}<div data-region="folders"></div></section>
-        <section class="card side-card" data-card="services" aria-label="Služby v projektu">${GRIP}<div data-region="services"></div></section>
+        <section class="card side-card" data-card="folders" aria-label="${tr('Složky projektu')}">${GRIP}<div data-region="folders"></div></section>
+        <section class="card side-card" data-card="services" aria-label="${tr('Služby v projektu')}">${GRIP}<div data-region="services"></div></section>
       </aside>
     </div>
   </div>`;
@@ -155,7 +156,7 @@ function mount(el, [id]) {
       try {
         const r = await api.assign([un.dataset.unassign], '');
         setProjects(r.projects);
-        toast('Konverzace odebrána z projektu', { action: { label: 'Vrátit', href: `#/projekt/${encodeURIComponent(p.id)}?vratit=${encodeURIComponent(un.dataset.unassign)}` } });
+        toast(tr('Konverzace odebrána z projektu'), { action: { label: tr('Vrátit'), href: `#/projekt/${encodeURIComponent(p.id)}?vratit=${encodeURIComponent(un.dataset.unassign)}` } });
       } catch (err) {
         un.disabled = false;
         toast(err.message, { tone: 'err' });
@@ -167,26 +168,26 @@ function mount(el, [id]) {
     try {
       switch (a.dataset.action) {
         case 'add': await addSessionsDialog(p); break;
-        case 'edit': { const r = await projectForm(p); if (r) toast('Projekt uložen'); break; }
+        case 'edit': { const r = await projectForm(p); if (r) toast(tr('Projekt uložen')); break; }
         case 'launch':
           Object.assign(launchIntent, { projectId: p.id, focus: true });
           location.hash = '#/prehled';
           break;
         case 'copy-brief':
-          if (!textarea.value.trim()) { toast('Podklady jsou zatím prázdné.', { tone: 'info' }); textarea.focus(); break; }
-          await copy(`Podklady projektu ${p.name}:\n${textarea.value.trim()}`, 'Podklady zkopírovány – vlož je do zadání agenta');
+          if (!textarea.value.trim()) { toast(tr('Podklady jsou zatím prázdné.'), { tone: 'info' }); textarea.focus(); break; }
+          await copy(`${tr('Podklady projektu {0}:', p.name)}\n${textarea.value.trim()}`, tr('Podklady zkopírovány – vlož je do zadání agenta'));
           break;
         case 'archive': {
           const r = await api.updateProject(p.id, { archived: !p.archived });
           setProjects(r.projects);
-          toast(p.archived ? 'Projekt obnoven z archivu' : 'Projekt archivován');
+          toast(p.archived ? tr('Projekt obnoven z archivu') : tr('Projekt archivován'));
           break;
         }
         case 'delete':
-          if (await confirmDialog({ title: `Smazat projekt ${p.name}?`, message: 'Konverzace zůstanou v Agenteeq, jen přestanou být zařazené v tomto projektu. Podklady a poznámky projektu se smažou.', confirmLabel: 'Smazat projekt', danger: true })) {
+          if (await confirmDialog({ title: tr('Smazat projekt {0}?', p.name), message: tr('Konverzace zůstanou v Agenteeq, jen přestanou být zařazené v tomto projektu. Podklady a poznámky projektu se smažou.'), confirmLabel: tr('Smazat projekt'), danger: true })) {
             await api.deleteProject(p.id);
             location.hash = '#/projekty';
-            toast(`Projekt ${p.name} smazán`);
+            toast(tr('Projekt {0} smazán', p.name));
           }
           break;
         default:
@@ -204,7 +205,7 @@ async function query(q) {
   try {
     const r = await api.assign([back], v.id);
     setProjects(r.projects);
-    toast('Konverzace vrácena do projektu');
+    toast(tr('Konverzace vrácena do projektu'));
   } catch (err) {
     toast(err.message, { tone: 'err' });
   }
@@ -215,7 +216,7 @@ function update() {
   if (!el) return;
   const p = projectById(v.id);
   if (!p) {
-    fill(el, 'head', emptyState({ title: 'Projekt nenalezen', text: 'Mohl být smazán v jiném okně.', action: '<a class="btn" href="#/projekty">Zpět na projekty</a>' }));
+    fill(el, 'head', emptyState({ title: tr('Projekt nenalezen'), text: tr('Mohl být smazán v jiném okně.'), action: `<a class="btn" href="#/projekty">${tr('Zpět na projekty')}</a>` }));
     for (const r of ['kpis', 'seg', 'rows', 'folders', 'services']) fill(el, r, '');
     el.querySelector('.project-grid').hidden = true;
     return;
@@ -225,22 +226,22 @@ function update() {
   const st = projectStats(p, now);
 
   fill(el, 'head', `
-    <div class="project-kicker">${projectMark(p, 'pdot--lg')}<span>Projekt</span>${p.archived ? '<span class="badge">Archiv</span>' : ''}<span class="dot-sep"></span><span>založen ${dateLong(p.createdAt)}</span></div>
+    <div class="project-kicker">${projectMark(p, 'pdot--lg')}<span>${tr('Projekt')}</span>${p.archived ? `<span class="badge">${tr('Archiv')}</span>` : ''}<span class="dot-sep"></span><span>${tr('založen')} ${dateLong(p.createdAt)}</span></div>
     <h2 class="session-title">${esc(p.name)}</h2>
     ${p.description ? `<p class="project-desc">${esc(p.description)}</p>` : ''}
     <div class="session-actions">
-      <button class="btn btn--primary" type="button" data-action="launch">${ICON.spark}Spustit agenta v projektu</button>
-      <button class="btn" type="button" data-action="edit">${ICON.sliders}Upravit</button>
-      <a class="btn" href="/api/projects/${encodeURIComponent(p.id)}/export" download>${ICON.down}Export CSV</a>
-      <button class="btn" type="button" data-action="archive">${p.archived ? 'Obnovit z archivu' : 'Archivovat'}</button>
-      <button class="icon-btn icon-btn--line" type="button" data-action="delete" aria-label="Smazat projekt" data-tip="Smazat projekt">${ICON.trash}</button>
+      <button class="btn btn--primary" type="button" data-action="launch">${ICON.spark}${tr('Spustit agenta v projektu')}</button>
+      <button class="btn" type="button" data-action="edit">${ICON.sliders}${tr('Upravit')}</button>
+      <a class="btn" href="/api/projects/${encodeURIComponent(p.id)}/export" download>${ICON.down}${tr('Export CSV')}</a>
+      <button class="btn" type="button" data-action="archive">${p.archived ? tr('Obnovit z archivu') : tr('Archivovat')}</button>
+      <button class="icon-btn icon-btn--line" type="button" data-action="delete" aria-label="${tr('Smazat projekt')}" data-tip="${tr('Smazat projekt')}">${ICON.trash}</button>
     </div>`);
 
   fill(el, 'kpis', `
-    <div class="card kpi"><span class="eyebrow">Konverzace</span><span class="val">${st.total}</span><small>${st.older.length ? `z toho ${st.older.length} starších` : 'žádná starší než 30 dní'}</small></div>
-    <div class="card kpi"><span class="eyebrow">Právě pracuje</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} na tebe</span>` : 'nikdo nečeká'}</small></div>
-    <div class="card kpi"><span class="eyebrow">Tokeny · 30 dní</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>vstup a výstup</small></div>
-    <div class="card kpi"><span class="eyebrow">Služby</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">–</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'zatím bez aktivity'}</small></div>`);
+    <div class="card kpi"><span class="eyebrow">${tr('Konverzace')}</span><span class="val">${st.total}</span><small>${st.older.length ? tr('z toho {0} starších', st.older.length) : tr('žádná starší než 30 dní')}</small></div>
+    <div class="card kpi"><span class="eyebrow">${tr('Právě pracuje')}</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} ${tr('na tebe')}</span>` : tr('nikdo nečeká')}</small></div>
+    <div class="card kpi"><span class="eyebrow">${tr('Tokeny · 30 dní')}</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>${tr('vstup a výstup')}</small></div>
+    <div class="card kpi"><span class="eyebrow">${tr('Služby')}</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">–</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('zatím bez aktivity')}</small></div>`);
 
   const counts = {
     all: st.total,
@@ -257,19 +258,19 @@ function update() {
         : [...st.live, ...st.older];
   fill(el, 'rows', rows.length
     ? rows.map((s) => rowHtml(s, now)).join('')
-    : `<li>${emptyState({ title: 'Projekt je zatím prázdný', text: p.folders.length ? 'Jakmile agent začne pracovat ve složce projektu, objeví se tady. Nebo přidej existující konverzace.' : 'Přidej konverzace z libovolné služby, nebo projektu nastav složku pro automatické zařazení.', action: '<button class="btn btn--primary" type="button" data-action="add">Přidat konverzace</button>' })}</li>`);
+    : `<li>${emptyState({ title: tr('Projekt je zatím prázdný'), text: p.folders.length ? tr('Jakmile agent začne pracovat ve složce projektu, objeví se tady. Nebo přidej existující konverzace.') : tr('Přidej konverzace z libovolné služby, nebo projektu nastav složku pro automatické zařazení.'), action: `<button class="btn btn--primary" type="button" data-action="add">${tr('Přidat konverzace')}</button>` })}</li>`);
 
-  fill(el, 'folders', `<div class="side-head"><h3>Složky projektu</h3><button class="link" type="button" data-action="edit">Upravit</button></div>
+  fill(el, 'folders', `<div class="side-head"><h3>${tr('Složky projektu')}</h3><button class="link" type="button" data-action="edit">${tr('Upravit')}</button></div>
     ${p.folders.length
-      ? `<ul class="folder-list folder-list--plain">${p.folders.map((f) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button class="icon-btn" type="button" data-copy="${esc(f)}" data-copy-message="Cesta zkopírována" aria-label="Kopírovat cestu">${ICON.copy}</button></li>`).join('')}</ul>
-         <p class="small muted">Agenti spuštění v těchto složkách se zařadí automaticky.</p>`
-      : '<p class="small muted">Bez složky – do projektu patří jen ručně zařazené konverzace.</p>'}`);
+      ? `<ul class="folder-list folder-list--plain">${p.folders.map((f) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button class="icon-btn" type="button" data-copy="${esc(f)}" data-copy-message="${tr('Cesta zkopírována')}" aria-label="${tr('Kopírovat cestu')}">${ICON.copy}</button></li>`).join('')}</ul>
+         <p class="small muted">${tr('Agenti spuštění v těchto složkách se zařadí automaticky.')}</p>`
+      : `<p class="small muted">${tr('Bez složky – do projektu patří jen ručně zařazené konverzace.')}</p>`}`);
 
   const byApp = new Map();
   for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
   const bars = [...byApp.entries()].filter(([, val]) => val > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  fill(el, 'services', `<div class="side-head"><h3>Tokeny podle služby</h3></div>
-    ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : '<p class="small muted">Za posledních 30 dní zatím žádné tokeny.</p>'}`);
+  fill(el, 'services', `<div class="side-head"><h3>${tr('Tokeny podle služby')}</h3></div>
+    ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : `<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`}`);
 
   const textarea = el.querySelector('[data-notes]');
   if (document.activeElement !== textarea && !v.saveTimer && !v.saving && textarea.value !== p.notes) textarea.value = p.notes;
@@ -277,7 +278,7 @@ function update() {
 
 export default {
   id: 'projekt',
-  title: 'Projekt',
+  title: tr('Projekt'),
   mount,
   update,
   query,

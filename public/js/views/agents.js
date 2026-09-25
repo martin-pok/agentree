@@ -6,17 +6,18 @@ import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU } from '../no-transcript.js';
+import { tr } from '../i18n.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
 const v = { el: null, visible: [] };
 
 const SEGMENTS = [
-  ['all', 'Vše'],
-  ['needs_input', 'Potřebuje tebe'],
-  ['working', 'Pracuje'],
-  ['waiting', 'Čeká na zadání'],
-  ['idle', 'Nečinné'],
-  ['archived', 'Archiv'],
+  ['all', tr('Vše')],
+  ['needs_input', tr('Potřebuje tebe')],
+  ['working', tr('Pracuje')],
+  ['waiting', tr('Čeká na zadání')],
+  ['idle', tr('Nečinné')],
+  ['archived', tr('Archiv')],
 ];
 
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
@@ -38,10 +39,10 @@ function webBezRozsireniHtml() {
   return `<li class="runtime-web">
     <span class="icon-tile">${ICON.cloud}</span>
     <div class="runtime-main">
-      <b>Konverzace v prohlížeči se nesledují</b>
-      <span class="muted small">rozšíření zatím neposlalo žádná data</span>
-      <p class="small">Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví – stránku v prohlížeči odjinud přečíst nelze.</p>
-      <a class="link-inline" href="#/nastaveni">Nastavit rozšíření ${ICON.arrow}</a>
+      <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
+      <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
+      <p class="small">${tr('Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví – stránku v prohlížeči odjinud přečíst nelze.')}</p>
+      <a class="link-inline" href="#/nastaveni">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
   </li>`;
 }
@@ -54,7 +55,7 @@ function bezPrepisuHtml(sessions) {
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
   const pocet = bezi.length + lokalni.length + (web ? 1 : 0);
   return `<section class="card pad runtime-note" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">Běží na Macu, ale bez přepisu</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
+    <div class="sec-head"><h2 id="rt-h">${tr('Běží na Macu, ale bez přepisu')}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
     <ul class="runtime-list">${web}${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
@@ -62,12 +63,12 @@ function bezPrepisuHtml(sessions) {
         <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
         <div class="runtime-main">
           <b>${esc(r.name)}</b>
-          <span class="muted small">běží ${doba(r.uptimeSec || 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` · ${konverzaci} ${plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací')} od téhož poskytovatele` : ''}</span>
+          <span class="muted small">${tr('běží')} ${doba(r.uptimeSec || 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
           <p class="small">${esc(i.duvod)}</p>
           <p class="small muted">${esc(i.rada)}</p>
         </div>
         <div class="runtime-actions">
-          ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}Přepnout do aplikace</button>` : ''}
+          ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}${tr('Přepnout do aplikace')}</button>` : ''}
           <a class="btn btn--sm" href="${esc(i.odkaz.href)}">${esc(i.odkaz.text)}</a>
         </div>
       </li>`;
@@ -88,11 +89,11 @@ function lokalniHtml(a) {
   return `<li>
     <span class="icon-tile">${glyph({ provider: 'local' })}<i class="status-dot status-working"></i></span>
     <div class="runtime-main">
-      <div class="custom-agent-head"><b>${esc(a.name)}</b><span class="badge${jistota ? '' : ' badge--beta'}">${jistota ? 'Lokální model' : 'Vlastní / neznámý'}</span></div>
+      <div class="custom-agent-head"><b>${esc(a.name)}</b><span class="badge${jistota ? '' : ' badge--beta'}">${jistota ? tr('Lokální model') : tr('Vlastní / neznámý')}</span></div>
       ${detaily ? `<span class="muted small">${esc(detaily)}</span>` : ''}
       ${a.note ? `<p class="small muted">${esc(a.note)}</p>` : ''}
     </div>
-    ${a.port ? `<a class="btn btn--sm" href="#/nastaveni">Přidat jako agenta</a>` : '<span></span>'}
+    ${a.port ? `<a class="btn btn--sm" href="#/nastaveni">${tr('Přidat jako agenta')}</a>` : '<span></span>'}
   </li>`;
 }
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
@@ -113,15 +114,15 @@ function applyQuery(q) {
 
 function rowHtml(s) {
   let sub;
-  if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || 'Pracuje')}`;
+  if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || tr('Pracuje'))}`;
   else if (needsYou(s)) sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
   else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
-  const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} z ${s.progress.total} úkolů"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
+  const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);
   const tag = f.project === 'all' ? projectTag(s) : '';
   const runs = taskRunCount(s);
   const cells = `
-    <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} spuštění</span>` : ''}${sub}</span>${progress}</span>
+    <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
     <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '–'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>
     <span class="cell-num">${total ? fmtTok(total) : '–'}</span>
@@ -129,7 +130,7 @@ function rowHtml(s) {
   if (f.selecting) {
     const checked = f.selected.has(s.id);
     return `<label class="row row--select${checked ? ' is-selected' : ''}" draggable="true" data-session-drag="${esc(s.id)}">
-      <span class="icon-tile icon-tile--check"><input type="checkbox" data-select-session value="${esc(s.id)}"${checked ? ' checked' : ''} aria-label="Vybrat ${esc(s.title)}"></span>${cells}<span></span>
+      <span class="icon-tile icon-tile--check"><input type="checkbox" data-select-session value="${esc(s.id)}"${checked ? ' checked' : ''} aria-label="${tr('Vybrat')} ${esc(s.title)}"></span>${cells}<span></span>
     </label>`;
   }
   const env = envOf(s);
@@ -143,20 +144,20 @@ function mount(el, _params, query) {
   applyQuery(query);
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
-      <div class="seg" role="group" aria-label="Filtrovat podle stavu" data-region="seg"></div>
-      <label class="search-field">${ICON.search}<span class="sr-only">Hledat agenta</span><input type="search" data-q placeholder="Název, projekt, model, aplikace…" autocomplete="off"></label>
+      <div class="seg" role="group" aria-label="${tr('Filtrovat podle stavu')}" data-region="seg"></div>
+      <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Název, projekt, model, aplikace…')}" autocomplete="off"></label>
     </div>
     <div class="toolbar toolbar--sub" data-enter style="--i:2">
-      <div class="seg seg--light" role="group" aria-label="Filtrovat podle zdroje" data-region="source"></div>
-      <div class="chips" role="group" aria-label="Filtrovat podle poskytovatele" data-region="chips"></div>
+      <div class="seg seg--light" role="group" aria-label="${tr('Filtrovat podle zdroje')}" data-region="source"></div>
+      <div class="chips" role="group" aria-label="${tr('Filtrovat podle poskytovatele')}" data-region="chips"></div>
     </div>
     <div class="toolbar toolbar--sub toolbar--projects" data-enter style="--i:3">
-      <div class="chips chips--projects" role="group" aria-label="Filtrovat podle projektu" data-region="projects"></div>
-      <button class="btn btn--sm" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">Vybrat</span></button>
+      <div class="chips chips--projects" role="group" aria-label="${tr('Filtrovat podle projektu')}" data-region="projects"></div>
+      <button class="btn btn--sm" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">${tr('Vybrat')}</span></button>
     </div>
     <div class="card table" data-enter style="--i:4" data-region="table"></div>
     <div data-enter style="--i:5" data-region="runtimes"></div>
-    <div class="selbar" data-region="selbar" role="region" aria-label="Hromadné akce"></div>`;
+    <div class="selbar" data-region="selbar" role="region" aria-label="${tr('Hromadné akce')}"></div>`;
   const input = el.querySelector('[data-q]');
   input.value = f.q;
   input.addEventListener('input', () => {
@@ -176,7 +177,7 @@ function mount(el, _params, query) {
       focus.disabled = true;
       try {
         const r = await api.focusRuntime(focus.dataset.focusRuntime);
-        if (r.dry) toast(`Zkušební režim: ${r.label} se nepřepnul`, { tone: 'info' });
+        if (r.dry) toast(tr('Zkušební režim: {0} se nepřepnul', r.label), { tone: 'info' });
       } catch (err) {
         toast(err.message, { tone: 'err' });
       } finally {
@@ -241,7 +242,7 @@ function update() {
     const count = base.filter((s) => matchStatus(s, k)).length;
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
-  fill(el, 'source', [['all', 'Všechny zdroje', ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
+  fill(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
     .map(([k, label, icon]) => `<button type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
   const present = Object.keys(PROVIDERS).filter((p) => all.some((s) => pkey(s.provider) === p));
   fill(el, 'chips', present
@@ -251,31 +252,31 @@ function update() {
   const countIn = (pid) => scoped.filter((s) => s.projectId === pid).length;
   const noneCount = scoped.filter((s) => !s.projectId).length;
   fill(el, 'projects', projects.length
-    ? `<span class="chips-label">Projekt</span>
-      <button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">Všechny</button>
+    ? `<span class="chips-label">${tr('Projekt')}</span>
+      <button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
       ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
-      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" aria-pressed="${f.project === 'none'}">Bez projektu<span class="count">${noneCount}</span></button>
-      <span class="chips-hint muted small">Konverzaci přetáhni na projekt</span>`
-    : `<span class="chips-label">Projekt</span><a class="chip" href="#/projekty">${ICON.plus}Založ první projekt a třiď konverzace podle klientů</a>`);
-  fill(el, 'select-label', f.selecting ? 'Hotovo' : 'Vybrat');
+      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>
+      <span class="chips-hint muted small">${tr('Konverzaci přetáhni na projekt')}</span>`
+    : `<span class="chips-label">${tr('Projekt')}</span><a class="chip" href="#/projekty">${ICON.plus}${tr('Založ první projekt a třiď konverzace podle klientů')}</a>`);
+  fill(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
   v.visible = list;
   for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
   if (!all.length) {
     fill(el, 'table', emptyState({
-      title: 'Zatím tu nejsou žádní agenti',
-      text: 'Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.',
-      action: '<a class="btn" href="#/nastaveni">Zkontrolovat zdroje dat</a>',
+      title: tr('Zatím tu nejsou žádní agenti'),
+      text: tr('Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.'),
+      action: `<a class="btn" href="#/nastaveni">${tr('Zkontrolovat zdroje dat')}</a>`,
     }));
   } else if (!list.length) {
     fill(el, 'table', emptyState({
-      title: 'Tomuto filtru neodpovídá žádný agent',
-      text: 'Zkus jiný stav, zdroj, poskytovatele nebo projekt.',
-      action: '<button class="btn" type="button" data-clear>Zrušit filtry</button>',
+      title: tr('Tomuto filtru neodpovídá žádný agent'),
+      text: tr('Zkus jiný stav, zdroj, poskytovatele nebo projekt.'),
+      action: `<button class="btn" type="button" data-clear>${tr('Zrušit filtry')}</button>`,
     }));
   } else {
-    fill(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>Agent</span><span>Aplikace a model</span><span>Stav</span><span class="cell-num">Tokeny</span><span class="cell-time">Aktivita</span><span></span></div>
+    fill(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>${tr('Agent')}</span><span>${tr('Aplikace a model')}</span><span>${tr('Stav')}</span><span class="cell-num">${tr('Tokeny')}</span><span class="cell-time">${tr('Aktivita')}</span><span></span></div>
       ${list.map(rowHtml).join('')}`);
   }
 
@@ -284,15 +285,15 @@ function update() {
   const n = f.selected.size;
   fill(el, 'selbar', f.selecting
     ? `<div class="selbar-inner"><span><b>${n}</b> ${plural(n, 'vybraná', 'vybrané', 'vybraných')}</span>
-        <button class="btn btn--sm btn--on-dark" type="button" data-bulk="all">Vybrat vše (${list.length})</button>
-        ${n ? '<button class="btn btn--sm btn--on-dark" type="button" data-bulk="none">Zrušit výběr</button>' : ''}
-        <button class="btn btn--sm btn--light" type="button" data-bulk="assign"${n ? '' : ' disabled'}>${ICON.folder}Zařadit do projektu</button></div>`
+        <button class="btn btn--sm btn--on-dark" type="button" data-bulk="all">${tr('Vybrat vše ({0})', list.length)}</button>
+        ${n ? `<button class="btn btn--sm btn--on-dark" type="button" data-bulk="none">${tr('Zrušit výběr')}</button>` : ''}
+        <button class="btn btn--sm btn--light" type="button" data-bulk="assign"${n ? '' : ' disabled'}>${ICON.folder}${tr('Zařadit do projektu')}</button></div>`
     : '');
 }
 
 export default {
   id: 'agenti',
-  title: 'Agenti',
+  title: tr('Agenti'),
   mount,
   update,
   query(q) {

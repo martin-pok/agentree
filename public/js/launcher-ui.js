@@ -4,6 +4,7 @@ import { esc, rel, shortPath, durShort, clock, castiCesty } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
+import { tr, LOCALE } from './i18n.js';
 
 const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
@@ -11,11 +12,11 @@ const PROMPT_MAX = 20000;
 // proto říká něco jiného: režim to, kde se agent otevře, poznámka to, co je na daném cíli
 // zvláštní. Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy.
 const MODE_HINT = {
-  terminal: 'Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.',
-  background: 'Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.',
-  app: 'Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.',
-  web: 'Otevře službu v prohlížeči.',
-  local: 'Agent odpovídá přímo tady v Agenteeq.',
+  terminal: tr('Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.'),
+  background: tr('Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.'),
+  app: tr('Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.'),
+  web: tr('Otevře službu v prohlížeči.'),
+  local: tr('Agent odpovídá přímo tady v Agenteeq.'),
 };
 
 function load() {
@@ -29,21 +30,21 @@ function save(prefs) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(prefs)); } catch { /* soukromé okno */ }
 }
 
-const folderLabel = (cwd) => (shortPath(cwd) === '~' ? 'Domovská složka' : castiCesty(shortPath(cwd)).slice(-2).join('/'));
+const folderLabel = (cwd) => (shortPath(cwd) === '~' ? tr('Domovská složka') : castiCesty(shortPath(cwd)).slice(-2).join('/'));
 
-const RUN_LABEL = { running: 'Pracuje', stopping: 'Zastavuji', done: 'Hotovo', failed: 'Selhalo', stopped: 'Zastaveno' };
+const RUN_LABEL = { running: tr('Pracuje'), stopping: tr('Zastavuji'), done: tr('Hotovo'), failed: tr('Selhalo'), stopped: tr('Zastaveno') };
 
 // Srozumitelný důvod selhání a jak ho opravit (původní chyba zůstává k dispozici).
 export function runProblem(r) {
-  const raw = String(r.error || (r.exitCode ? `Skončilo s kódem ${r.exitCode}` : 'Agent skončil chybou')).trim();
+  const raw = String(r.error || (r.exitCode ? `${tr('Skončilo s kódem')} ${r.exitCode}` : tr('Agent skončil chybou'))).trim();
   if (/authenticat|oauth|log ?in|unauthori|\b401\b|credential/i.test(raw)) {
     return r.agent === 'codex'
-      ? { title: 'Přihlášení Codexu vypršelo', hint: 'V Terminálu spusť příkaz níže a přihlas se. Potom úkol spusť znovu.', fix: 'codex login', raw }
-      : { title: 'Přihlášení Claude Code vypršelo', hint: 'V Terminálu spusť příkaz níže a zadej /login. Potom úkol spusť znovu.', fix: 'claude', raw };
+      ? { title: tr('Přihlášení Codexu vypršelo'), hint: tr('V Terminálu spusť příkaz níže a přihlas se. Potom úkol spusť znovu.'), fix: 'codex login', raw }
+      : { title: tr('Přihlášení Claude Code vypršelo'), hint: tr('V Terminálu spusť příkaz níže a zadej /login. Potom úkol spusť znovu.'), fix: 'claude', raw };
   }
-  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: 'Vyčerpaný limit předplatného', hint: 'Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.', raw };
-  if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} se nepodařilo spustit`, hint: 'Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.', raw };
-  return { title: `${r.label} skončil chybou`, hint: 'Celé znění chyby najdeš níže v části Původní chyba.', raw };
+  if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: tr('Vyčerpaný limit předplatného'), hint: tr('Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.'), raw };
+  if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} ${tr('se nepodařilo spustit')}`, hint: tr('Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.'), raw };
+  return { title: `${r.label} ${tr('skončil chybou')}`, hint: tr('Celé znění chyby najdeš níže v části Původní chyba.'), raw };
 }
 
 // Řádek běhu: stav má v každém řádku stejné místo; barvu nese jen ikona a název stavu.
@@ -63,16 +64,16 @@ function runHtml(r, now) {
     <span class="run-text"><b>${esc(r.prompt)}</b><small>${esc(r.label)} · ${esc(shortPath(r.cwd || ''))} · <span data-ago="${r.startedAt}">${rel(r.startedAt, now)}</span></small></span>
     <span class="run-status" role="status">${mark}<span>${RUN_LABEL[r.status] || esc(r.status)}</span>${timing}</span>
     <span class="run-actions">
-      ${session ? `<a class="btn btn--sm" href="${agentHref(r.sessionId)}">Přepis</a>` : ''}
-      <button class="btn btn--sm" type="button" data-run-log="${esc(r.id)}">Výstup</button>
-      ${r.status === 'running' ? `<button class="btn btn--sm" type="button" data-run-stop="${esc(r.id)}">Zastavit</button>` : ''}
+      ${session ? `<a class="btn btn--sm" href="${agentHref(r.sessionId)}">${tr('Přepis')}</a>` : ''}
+      <button class="btn btn--sm" type="button" data-run-log="${esc(r.id)}">${tr('Výstup')}</button>
+      ${r.status === 'running' ? `<button class="btn btn--sm" type="button" data-run-stop="${esc(r.id)}">${tr('Zastavit')}</button>` : ''}
     </span>
     ${problem ? `<div class="run-problem">
       <strong>${esc(problem.title)}</strong>
       <p>${esc(problem.hint)}</p>
       <div class="run-problem-actions">
-        ${problem.fix ? `<span class="run-cmd"><code>${esc(problem.fix)}</code><button type="button" data-copy="${esc(problem.fix)}" data-copy-message="Příkaz zkopírován – vlož ho do Terminálu" aria-label="Kopírovat příkaz ${esc(problem.fix)}" title="Kopírovat příkaz">${ICON.copy}</button></span>` : ''}
-        <details class="run-raw"><summary>Původní chyba</summary><pre>${esc(problem.raw)}</pre></details>
+        ${problem.fix ? `<span class="run-cmd"><code>${esc(problem.fix)}</code><button type="button" data-copy="${esc(problem.fix)}" data-copy-message="${tr('Příkaz zkopírován – vlož ho do Terminálu')}" aria-label="${tr('Kopírovat příkaz')} ${esc(problem.fix)}" title="${tr('Kopírovat příkaz')}">${ICON.copy}</button></span>` : ''}
+        <details class="run-raw"><summary>${tr('Původní chyba')}</summary><pre>${esc(problem.raw)}</pre></details>
       </div>
     </div>` : ''}
   </li>`;
@@ -86,29 +87,29 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   clearTimeout(handoffTimer);
   // S rozšířením se zadání do webové služby vloží samo; bez něj zůstává schránka.
   const steps = autofill
-    ? ['Zadání se do okna vloží samo.', 'Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce (⌘V).']
+    ? [tr('Zadání se do okna vloží samo.'), tr('Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce (⌘V).')]
     : handoff === 'confirm'
-      ? ['Zadání je v aplikaci předvyplněné.', 'Zkontroluj ho a potvrď klávesou Enter.']
+      ? [tr('Zadání je v aplikaci předvyplněné.'), tr('Zkontroluj ho a potvrď klávesou Enter.')]
       : handoff === 'confirm-or-paste'
-        ? ['Zadání by mělo být předvyplněné.', 'Pokud není, vlož ho ⌘V – je ve schránce.']
-        : ['Zadání máš ve schránce.', `V ${label} ho vlož ⌘V a odešli Enterem.`];
+        ? [tr('Zadání by mělo být předvyplněné.'), tr('Pokud není, vlož ho ⌘V – je ve schránce.')]
+        : [tr('Zadání máš ve schránce.'), tr('V {0} ho vlož ⌘V a odešli Enterem.', label)];
   const foot = mode !== 'web'
-    ? 'Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.'
+    ? tr('Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.')
     : autofill
-      ? 'Konverzaci uvidíš i tady v Agenteeq.'
-      : 'S rozšířením pro Chrome (Nastavení) se zadání vloží samo a konverzaci uvidíš i tady.';
+      ? tr('Konverzaci uvidíš i tady v Agenteeq.')
+      : tr('S rozšířením pro Chrome (Nastavení) se zadání vloží samo a konverzaci uvidíš i tady.');
   const el = document.createElement('div');
   el.className = 'handoff';
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');
   el.innerHTML = `<div class="handoff-card">
     <span class="handoff-logo">${glyph(target)}</span>
-    <div class="handoff-text"><strong>Otevírám ${esc(label)}</strong>
+    <div class="handoff-text"><strong>${tr('Otevírám')} ${esc(label)}</strong>
       <ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
       <p>${esc(foot)}</p></div>
     <div class="handoff-actions">
-      <button class="btn btn--sm" type="button" data-handoff-copy>${ICON.copy}Kopírovat zadání</button>
-      <button class="icon-btn" type="button" data-handoff-close aria-label="Zavřít">${ICON.close}</button>
+      <button class="btn btn--sm" type="button" data-handoff-copy>${ICON.copy}${tr('Kopírovat zadání')}</button>
+      <button class="icon-btn" type="button" data-handoff-close aria-label="${tr('Zavřít')}">${ICON.close}</button>
     </div>
     <i class="handoff-progress" aria-hidden="true"></i>
   </div>`;
@@ -121,7 +122,7 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-handoff-close]')) close();
     else if (e.target.closest('[data-handoff-copy]')) {
-      try { await navigator.clipboard.writeText(prompt); toast('Zadání zkopírováno'); } catch { toast('Schránka není dostupná.', { tone: 'err' }); }
+      try { await navigator.clipboard.writeText(prompt); toast(tr('Zadání zkopírováno')); } catch { toast(tr('Schránka není dostupná.'), { tone: 'err' }); }
     }
   });
   el.addEventListener('pointerenter', () => { clearTimeout(handoffTimer); el.classList.add('is-paused'); });
@@ -136,18 +137,18 @@ export function createLauncher(root) {
 
   root.innerHTML = `
     <div class="launch-head">
-      <div><h2 id="launch-h">Spustit agenta</h2><p class="muted small">Běží na tvých předplatných a limitech. Zdarma: lokální modely v Ollamě.</p></div>
-      <button class="link" type="button" data-l="refresh" aria-label="Obnovit nabídku agentů">${ICON.refresh}<span>Obnovit nabídku</span></button>
+      <div><h2 id="launch-h">${tr('Spustit agenta')}</h2><p class="muted small">${tr('Běží na tvých předplatných a limitech. Zdarma: lokální modely v Ollamě.')}</p></div>
+      <button class="link" type="button" data-l="refresh" aria-label="${tr('Obnovit nabídku agentů')}">${ICON.refresh}<span>${tr('Obnovit nabídku')}</span></button>
     </div>
-    <div class="launch-agents" role="radiogroup" aria-label="Agent" data-region="agents"></div>
+    <div class="launch-agents" role="radiogroup" aria-label="${tr('Agent')}" data-region="agents"></div>
     <div class="launch-compose">
-      <label class="sr-only" for="launch-prompt">Zadání pro agenta</label>
-      <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt placeholder="Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“"></textarea>
+      <label class="sr-only" for="launch-prompt">${tr('Zadání pro agenta')}</label>
+      <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt placeholder="${tr('Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“')}"></textarea>
       <div class="launch-controls" data-region="controls"></div>
       <div class="launch-foot">
         <p class="launch-note" data-region="note"></p>
-        <span class="launch-kbd" aria-label="Spustit agenta klávesami Command a Enter"><span>Spustit</span><kbd>⌘</kbd><kbd>↵</kbd></span>
-        <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}Spustit</button>
+        <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami Command a Enter')}"><span>${tr('Spustit')}</span><kbd>⌘</kbd><kbd>↵</kbd></span>
+        <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}${tr('Spustit')}</button>
       </div>
     </div>
     <div class="runs" data-region="runs"></div>`;
@@ -176,14 +177,14 @@ export function createLauncher(root) {
     if (t && prefs.agent !== t.id) prefs.agent = t.id;
     if (prefs.projectId && !project()) prefs.projectId = '';
 
-    const groups = [['agent', 'Na tomto Macu'], ['local', 'Zdarma lokálně'], ['web', 'Na webu']];
+    const groups = [['agent', tr('Na tomto Macu')], ['local', tr('Zdarma lokálně')], ['web', tr('Na webu')]];
     fill(root, 'agents', list.length
       ? groups.map(([g, label]) => {
         const items = list.filter((x) => x.group === g);
         if (!items.length) return '';
-        return `<div class="launch-group"><span class="launch-group-label">${label}</span><div class="launch-chips">${items.map((x) => `<button type="button" class="lchip" role="radio" aria-checked="${x.id === t?.id}" data-agent="${esc(x.id)}">${glyph(x)}<span>${esc(x.label)}</span>${x.beta ? '<span class="badge">Zkušební</span>' : ''}</button>`).join('')}</div></div>`;
+        return `<div class="launch-group"><span class="launch-group-label">${label}</span><div class="launch-chips">${items.map((x) => `<button type="button" class="lchip" role="radio" aria-checked="${x.id === t?.id}" data-agent="${esc(x.id)}">${glyph(x)}<span>${esc(x.label)}</span>${x.beta ? `<span class="badge">${tr('Zkušební')}</span>` : ''}</button>`).join('')}</div></div>`;
       }).join('')
-      : '<p class="muted small">Načítám, co jde na tomto Macu spustit…</p>');
+      : `<p class="muted small">${tr('Načítám, co jde na tomto Macu spustit…')}</p>`);
 
     if (!t) {
       fill(root, 'controls', '');
@@ -199,15 +200,15 @@ export function createLauncher(root) {
     const modes = state.launch.modes || {};
 
     fill(root, 'controls', `
-      ${t.modes.length > 1 ? `<div class="seg seg--light seg--sm" role="group" aria-label="Kde spustit">${t.modes.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mode}">${esc(modes[m] || m)}</button>`).join('')}</div>` : `<span class="lpill">${esc(modes[mode] || mode)}</span>`}
-      <label class="lselect">${p ? pdot(p) : ICON.folder}<span class="sr-only">Projekt</span><select data-l-project>
-        <option value="">Bez projektu</option>${active.map((x) => `<option value="${esc(x.id)}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
+      ${t.modes.length > 1 ? `<div class="seg seg--light seg--sm" role="group" aria-label="${tr('Kde spustit')}">${t.modes.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mode}">${esc(modes[m] || m)}</button>`).join('')}</div>` : `<span class="lpill">${esc(modes[mode] || mode)}</span>`}
+      <label class="lselect">${p ? pdot(p) : ICON.folder}<span class="sr-only">${tr('Projekt')}</span><select data-l-project>
+        <option value="">${tr('Bez projektu')}</option>${active.map((x) => `<option value="${esc(x.id)}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
       </select></label>
-      ${allowsFolder(t, mode) ? `<button type="button" class="lselect lselect--btn${cwd || !needsFolder(t, mode) ? '' : ' is-empty'}" data-l="folder" title="${esc(cwd || 'Vybrat složku')}">${ICON.folder}<span>${esc(cwd ? folderLabel(cwd) : needsFolder(t, mode) ? 'Vybrat složku…' : 'Složka (nepovinné)')}</span></button>` : ''}
-      ${t.id === 'claude-code' && mode === 'background' ? `<label class="lselect"><span class="sr-only">Oprávnění</span><select data-l-pref="permission">${Object.entries(t.permissions).map(([k, l]) => `<option value="${k}"${k === prefs.permission ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
-      ${t.id === 'codex' && mode === 'background' ? `<label class="lselect"><span class="sr-only">Sandbox</span><select data-l-pref="sandbox">${Object.entries(t.sandboxes).map(([k, l]) => `<option value="${k}"${k === prefs.sandbox ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
-      ${t.id === 'ollama' && t.models.length ? `<label class="lselect"><span class="sr-only">Model</span><select data-l-pref="model">${t.models.map((m) => `<option value="${esc(m)}"${m === prefs.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>` : ''}
-      ${p?.notes?.trim() ? `<label class="check-inline"><input type="checkbox" data-l-brief${prefs.brief ? ' checked' : ''}> Připojit podklady projektu</label>` : ''}`);
+      ${allowsFolder(t, mode) ? `<button type="button" class="lselect lselect--btn${cwd || !needsFolder(t, mode) ? '' : ' is-empty'}" data-l="folder" title="${esc(cwd || tr('Vybrat složku'))}">${ICON.folder}<span>${esc(cwd ? folderLabel(cwd) : needsFolder(t, mode) ? tr('Vybrat složku…') : tr('Složka (nepovinné)'))}</span></button>` : ''}
+      ${t.id === 'claude-code' && mode === 'background' ? `<label class="lselect"><span class="sr-only">${tr('Oprávnění')}</span><select data-l-pref="permission">${Object.entries(t.permissions).map(([k, l]) => `<option value="${k}"${k === prefs.permission ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
+      ${t.id === 'codex' && mode === 'background' ? `<label class="lselect"><span class="sr-only">${tr('Sandbox')}</span><select data-l-pref="sandbox">${Object.entries(t.sandboxes).map(([k, l]) => `<option value="${k}"${k === prefs.sandbox ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}
+      ${t.id === 'ollama' && t.models.length ? `<label class="lselect"><span class="sr-only">${tr('Model')}</span><select data-l-pref="model">${t.models.map((m) => `<option value="${esc(m)}"${m === prefs.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>` : ''}
+      ${p?.notes?.trim() ? `<label class="check-inline"><input type="checkbox" data-l-brief${prefs.brief ? ' checked' : ''}> ${tr('Připojit podklady projektu')}</label>` : ''}`);
 
     fill(root, 'note', `${esc(MODE_HINT[mode] || '')} ${esc(t.note || '')}`);
     renderRuns();
@@ -218,14 +219,14 @@ export function createLauncher(root) {
     const runs = (state.runs || []).filter((r) => r.status === 'running' || r.status === 'stopping' || now - (r.endedAt || r.startedAt) < 12 * 3600e3).slice(0, 4);
     const finished = (state.runs || []).some((r) => r.status !== 'running' && r.status !== 'stopping');
     fill(root, 'runs', runs.length
-      ? `<div class="runs-head"><span class="launch-group-label">Spuštěno na pozadí</span>${finished ? '<button class="link" type="button" data-l="clear">Skrýt dokončené</button>' : ''}</div>
+      ? `<div class="runs-head"><span class="launch-group-label">${tr('Spuštěno na pozadí')}</span>${finished ? `<button class="link" type="button" data-l="clear">${tr('Skrýt dokončené')}</button>` : ''}</div>
         <ul class="run-list">${runs.map((r) => runHtml(r, now)).join('')}</ul>`
       : '');
   }
 
   async function chooseFolder() {
     const t = target();
-    const picked = await pickFolder({ title: 'Složka, ve které má agent pracovat' });
+    const picked = await pickFolder({ title: tr('Složka, ve které má agent pracovat') });
     if (!picked || !t) return;
     prefs.cwd[t.id] = picked;
     persist();
@@ -238,7 +239,7 @@ export function createLauncher(root) {
     const mode = modeOf(t);
     const text = promptEl.value.trim();
     if (!text) {
-      toast('Napiš, co má agent udělat.', { tone: 'info' });
+      toast(tr('Napiš, co má agent udělat.'), { tone: 'info' });
       promptEl.focus();
       return;
     }
@@ -248,9 +249,9 @@ export function createLauncher(root) {
       if (!cwdFor(t)) return;
     }
     const p = project();
-    const withBrief = p?.notes?.trim() && prefs.brief ? `${text}\n\n---\nPodklady projektu ${p.name}:\n${p.notes.trim()}` : text;
+    const withBrief = p?.notes?.trim() && prefs.brief ? `${text}\n\n---\n${tr('Podklady projektu {0}:', p.name)}\n${p.notes.trim()}` : text;
     if (withBrief.length > PROMPT_MAX) {
-      toast(`Zadání i s podklady projektu může mít nejvýš ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, { tone: 'err' });
+      toast(tr('Zadání i s podklady projektu může mít nejvýš {0} znaků.', PROMPT_MAX.toLocaleString(LOCALE)), { tone: 'err' });
       return;
     }
     if (mode === 'web') {
@@ -267,14 +268,14 @@ export function createLauncher(root) {
       const r = await api.launch(body);
       promptEl.value = '';
       persist();
-      const detail = r.sessionId ? { action: { label: 'Přepis', href: agentHref(r.sessionId) } } : {};
-      if (r.dry) toast(`Zkušební režim: ${r.label} by se spustil (${state.launch.modes[mode] || mode}).`, { tone: 'info' });
+      const detail = r.sessionId ? { action: { label: tr('Přepis'), href: agentHref(r.sessionId) } } : {};
+      if (r.dry) toast(tr('Zkušební režim: {0} by se spustil ({1}).', r.label, state.launch.modes[mode] || mode), { tone: 'info' });
       else if (r.kind === 'local') location.hash = agentHref(r.sessionId);
-      else if (r.kind === 'background') toast(`${r.label} pracuje na pozadí`, detail);
-      else if (r.kind === 'terminal') toast(`${r.label} běží v Terminálu`, detail);
+      else if (r.kind === 'background') toast(`${r.label} ${tr('pracuje na pozadí')}`, detail);
+      else if (r.kind === 'terminal') toast(`${r.label} ${tr('běží v Terminálu')}`, detail);
       else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief, autofill: Boolean(r.autofill) });
     } catch (err) {
-      if (err.status === 402) toast(err.message, { tone: 'err', timeout: 10000, action: { label: 'Licence', href: '#/nastaveni' } });
+      if (err.status === 402) toast(err.message, { tone: 'err', timeout: 10000, action: { label: tr('Licence'), href: '#/nastaveni' } });
       else toast(err.message, { tone: 'err', timeout: 9000 });
       if (err.status === 422 && /složk/i.test(err.message)) root.querySelector('[data-l="folder"]')?.focus();
     } finally {
@@ -299,7 +300,7 @@ export function createLauncher(root) {
     if (logBtn) {
       try {
         const { log } = await api.runLog(logBtn.dataset.runLog);
-        await modal({ title: 'Výstup agenta', wide: true, submitLabel: 'Zavřít', body: `<pre class="run-log">${esc(log || 'Agent zatím nic nevypsal.')}</pre>` });
+        await modal({ title: tr('Výstup agenta'), wide: true, submitLabel: tr('Zavřít'), body: `<pre class="run-log">${esc(log || tr('Agent zatím nic nevypsal.'))}</pre>` });
       } catch (err) {
         toast(err.message, { tone: 'err' });
       }
@@ -315,7 +316,7 @@ export function createLauncher(root) {
       try {
         state.launch = await api.refreshLaunch();
         render();
-        toast('Nabídka agentů obnovena');
+        toast(tr('Nabídka agentů obnovena'));
       } catch (err) {
         toast(err.message, { tone: 'err' });
       } finally {

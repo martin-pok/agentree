@@ -3,6 +3,7 @@
 // ho nikdo nepotká. Data vznikají při sestavení webu (scripts/ukazka-data.mjs), takže vždy sedí na
 // aktuální kód; časy se tu posunou na „teď“, aby „před 2 min“ neznamenalo před týdnem.
 import { zapniUkazku } from './api.js';
+import { tr } from './i18n.js';
 
 export const UKAZKA_DATA = '/ukazka/data.json';
 const ROK = 365 * 86400000;
@@ -37,7 +38,7 @@ function ohlasPripraveno() {
 
 export async function spustUkazku(fetchFn = fetch) {
   const res = await fetchFn(UKAZKA_DATA, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Ukázková data nejsou k dispozici (${res.status}).`);
+  if (!res.ok) throw new Error(tr('Ukázková data nejsou k dispozici ({0}).', res.status));
   const { vytvoreno, odpovedi } = await res.json();
   zapniUkazku(posunCasy(odpovedi, Date.now() - vytvoreno, vytvoreno));
   document.documentElement.dataset.ukazka = '';

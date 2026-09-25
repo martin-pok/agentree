@@ -8,6 +8,7 @@ import { UCET_VYCHOZI as U } from './ucet-config.js';
 import { esc, fmtTok, fmtMoney, rel, initials, plural, resetsLabel, MONTHS } from './format.js';
 import { miniBars } from './charts.js';
 import { applyAppearance } from './appearance.js';
+import { tr } from './i18n.js';
 
 const KLIC_RELACE = 'agenteeq-ucet-web';
 const KLIC_OVEROVAC = 'agenteeq-ucet-pkce';
@@ -17,9 +18,9 @@ const DNI = 30;
 
 export const SLUZBY = {
   chatgpt: 'ChatGPT', claude: 'Claude', copilot: 'GitHub Copilot', mscopilot: 'Microsoft Copilot', gemini: 'Gemini',
-  perplexity: 'Perplexity', grok: 'Grok', qwen: 'Qwen', cursor: 'Cursor', 'openai-api': 'OpenAI API', 'anthropic-api': 'Anthropic API', other: 'Ostatní',
+  perplexity: 'Perplexity', grok: 'Grok', qwen: 'Qwen', cursor: 'Cursor', 'openai-api': 'OpenAI API', 'anthropic-api': 'Anthropic API', other: tr('Ostatní'),
 };
-const POSKYTOVATELE = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', github: 'GitHub', microsoft: 'Microsoft', cursor: 'Cursor', perplexity: 'Perplexity', xai: 'xAI', alibaba: 'Alibaba', local: 'Lokální modely', other: 'Ostatní' };
+const POSKYTOVATELE = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', github: 'GitHub', microsoft: 'Microsoft', cursor: 'Cursor', perplexity: 'Perplexity', xai: 'xAI', alibaba: 'Alibaba', local: tr('Lokální modely'), other: tr('Ostatní') };
 
 const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -49,11 +50,11 @@ async function volej(cesta, { method = 'GET', body, token } = {}) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw Object.assign(new Error('Server účtů teď neodpovídá. Zkontroluj připojení a zkus to znovu.'), { sit: true });
+    throw Object.assign(new Error(tr('Server účtů teď neodpovídá. Zkontroluj připojení a zkus to znovu.')), { sit: true });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
-  if (!res.ok) throw Object.assign(new Error(String(json?.error_description || json?.msg || json?.message || `Chyba ${res.status}`)), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(String(json?.error_description || json?.msg || json?.message || `${tr('Chyba')} ${res.status}`)), { status: res.status });
   return json;
 }
 
@@ -90,7 +91,7 @@ export function navratovaAdresa(loc = location) {
 
 async function zacniPrihlaseni() {
   const nastaveni = await volej('/auth/v1/settings');
-  if (!nastaveni?.external?.google) throw new Error('Přihlášení přes Google se ještě nastavuje. Zkus to prosím později.');
+  if (!nastaveni?.external?.google) throw new Error(tr('Přihlášení přes Google se ještě nastavuje. Zkus to prosím později.'));
   const { verifier, challenge } = await pkcePar();
   try { uloziste('sessionStorage')?.setItem(KLIC_OVEROVAC, verifier); } catch { /* bez úložiště přihlášení nedokončíme */ }
   const q = new URLSearchParams({ provider: 'google', redirect_to: navratovaAdresa(), code_challenge: challenge, code_challenge_method: 's256' });
@@ -100,7 +101,7 @@ async function zacniPrihlaseni() {
 async function dokonciPrihlaseni(code) {
   const verifier = uloziste('sessionStorage')?.getItem(KLIC_OVEROVAC);
   uloziste('sessionStorage')?.removeItem(KLIC_OVEROVAC);
-  if (!verifier) throw new Error('Přihlášení začalo v jiném okně nebo vypršelo. Zkus to prosím znovu.');
+  if (!verifier) throw new Error(tr('Přihlášení začalo v jiném okně nebo vypršelo. Zkus to prosím znovu.'));
   const r = relaceZOdpovedi(await volej('/auth/v1/token?grant_type=pkce', { method: 'POST', body: { auth_code: code, code_verifier: verifier } }));
   ulozRelaci(r);
   return r;
@@ -121,7 +122,7 @@ export function popisOkna(provider, klic) {
   const k = String(klic || '');
   const produkt = k.startsWith('claude-code') ? 'Claude Code' : k.startsWith('claude-desktop') ? 'Claude' : k.startsWith('codex') ? 'Codex' : (POSKYTOVATELE[provider] || provider);
   const zbytek = k.replace(/^(claude-code|claude-desktop|codex)-?/, '');
-  const okno = /five-hour/.test(zbytek) ? '5 h' : /seven-day-opus/.test(zbytek) ? 'týden · Opus' : /seven-day-sonnet/.test(zbytek) ? 'týden · Sonnet' : /seven-day/.test(zbytek) ? 'týden' : zbytek.replace(/-/g, ' ');
+  const okno = /five-hour/.test(zbytek) ? '5 h' : /seven-day-opus/.test(zbytek) ? tr('týden · Opus') : /seven-day-sonnet/.test(zbytek) ? tr('týden · Sonnet') : /seven-day/.test(zbytek) ? tr('týden') : zbytek.replace(/-/g, ' ');
   return okno ? `${produkt} · ${okno}` : produkt;
 }
 
@@ -170,7 +171,7 @@ function hlavicka(r) {
   return `<header class="cloud-top">
     <a class="cloud-brand" href="/"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28">Agenteeq</a>
     ${r ? `<div class="cloud-who"><span class="account-avatar" aria-hidden="true">${esc(initials(r.jmeno || r.email))}</span><span>${esc(r.jmeno || r.email)}</span>
-      <button class="btn btn--sm" type="button" data-odhlasit>Odhlásit se</button></div>` : ''}
+      <button class="btn btn--sm" type="button" data-odhlasit>${tr('Odhlásit se')}</button></div>` : ''}
   </header>`;
 }
 
@@ -178,12 +179,12 @@ function prihlasovaciObrazovka(zprava = '') {
   document.body.innerHTML = `${hlavicka(null)}<main class="pair">
     <div class="pair-box">
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>Tvoje Agenteeq odkudkoli</h1>
-      <p>Přihlas se stejným účtem jako v Agenteeq na Macu. Uvidíš, jestli agenti pracují, kolik spotřebovali a kolik stojí – i když jsi zrovna mimo domov.</p>
+      <h1>${tr('Tvoje Agenteeq odkudkoli')}</h1>
+      <p>${tr('Přihlas se stejným účtem jako v Agenteeq na Macu. Uvidíš, jestli agenti pracují, kolik spotřebovali a kolik stojí – i když jsi zrovna mimo domov.')}</p>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn btn--primary" type="button" data-prihlasit>Přihlásit se přes Google</button>
-      <small>V účtu jsou jen čísla, která tam poslal tvůj Mac. Konverzace, kód ani názvy složek ne.</small>
-      <small class="pair-jinak">Chceš se připojit rovnou k Macu? <a href="/app">Zadej jeho adresu.</a></small>
+      <button class="btn btn--primary" type="button" data-prihlasit>${tr('Přihlásit se přes Google')}</button>
+      <small>${tr('V účtu jsou jen čísla, která tam poslal tvůj Mac. Konverzace, kód ani názvy složek ne.')}</small>
+      <small class="pair-jinak">${tr('Chceš se připojit rovnou k Macu?')} <a href="/app">${tr('Zadej jeho adresu.')}</a></small>
     </div>
   </main>`;
   const tl = document.querySelector('[data-prihlasit]');
@@ -195,10 +196,10 @@ function prihlasovaciObrazovka(zprava = '') {
 }
 
 function kartaAgentu(a) {
-  const pole = [['working', 'pracuje', 'is-work'], ['needs_you', 'potřebuje tebe', 'is-alert'], ['waiting', 'čeká na zadání', 'is-wait'], ['failed', 'selhalo', 'is-alert']];
-  return `<section class="cloud-stage" data-enter style="--i:0" aria-label="Agenti teď">
-    <div class="cloud-stage-head"><span class="cloud-dot${a.working ? ' is-live' : ''}" aria-hidden="true"></span><h2>Agenti teď</h2>
-      <span class="cloud-age">${a.aktualizovano ? `aktualizováno ${esc(rel(a.aktualizovano))}` : 'zatím bez dat'}</span></div>
+  const pole = [['working', 'pracuje', 'is-work'], ['needs_you', tr('potřebuje tebe'), 'is-alert'], ['waiting', tr('čeká na zadání'), 'is-wait'], ['failed', 'selhalo', 'is-alert']];
+  return `<section class="cloud-stage" data-enter style="--i:0" aria-label="${tr('Agenti teď')}">
+    <div class="cloud-stage-head"><span class="cloud-dot${a.working ? ' is-live' : ''}" aria-hidden="true"></span><h2>${tr('Agenti teď')}</h2>
+      <span class="cloud-age">${a.aktualizovano ? `${tr('aktualizováno')} ${esc(rel(a.aktualizovano))}` : tr('zatím bez dat')}</span></div>
     <div class="cloud-stage-stats">${pole.map(([k, label, cls]) => `<div class="cloud-stat${a[k] ? ` ${cls}` : ''}"><b>${a[k]}</b><span>${label}</span></div>`).join('')}</div>
   </section>`;
 }
@@ -206,40 +207,40 @@ function kartaAgentu(a) {
 function kartaTokenu(t) {
   const hlavni = Object.entries(t.podle).sort((x, y) => y[1] - x[1]).slice(0, 4);
   return `<section class="card cloud-card" data-enter style="--i:1">
-    <h2 class="eyebrow">Tokeny za ${DNI} dní</h2>
+    <h2 class="eyebrow">${tr('Tokeny za {0} dní', DNI)}</h2>
     <p class="cloud-big">${esc(fmtTok(t.celkem))}</p>
     <div class="cloud-bars" aria-hidden="true">${miniBars(t.hodnoty, 'var(--teal)', { height: 48 })}</div>
-    ${hlavni.length ? `<ul class="cloud-list">${hlavni.map(([p, v]) => `<li><span>${esc(POSKYTOVATELE[p] || p)}</span><b>${esc(fmtTok(v))}</b></li>`).join('')}</ul>` : '<p class="set-desc">Zatím žádné tokeny.</p>'}
+    ${hlavni.length ? `<ul class="cloud-list">${hlavni.map(([p, v]) => `<li><span>${esc(POSKYTOVATELE[p] || p)}</span><b>${esc(fmtTok(v))}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Zatím žádné tokeny.')}</p>`}
   </section>`;
 }
 
 function kartaUtraty(u, now) {
   const mesic = MONTHS[new Date(now).getMonth()];
   return `<section class="card cloud-card" data-enter style="--i:2">
-    <h2 class="eyebrow">Útrata · ${esc(mesic)}</h2>
+    <h2 class="eyebrow">${tr('Útrata ·')} ${esc(mesic)}</h2>
     <p class="cloud-big">${esc(fmtMoney(u.celkem, u.mena))}</p>
-    ${u.podle.length ? `<ul class="cloud-list">${u.podle.map(([s, v]) => `<li><span>${esc(SLUZBY[s] || s)}</span><b>${esc(fmtMoney(v, u.mena))}</b></li>`).join('')}</ul>` : '<p class="set-desc">Tento měsíc zatím bez výdajů.</p>'}
+    ${u.podle.length ? `<ul class="cloud-list">${u.podle.map(([s, v]) => `<li><span>${esc(SLUZBY[s] || s)}</span><b>${esc(fmtMoney(v, u.mena))}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Tento měsíc zatím bez výdajů.')}</p>`}
   </section>`;
 }
 
 function kartaLimitu(limity, now) {
   const serazene = [...limity].sort((a, b) => (Number(b.used_pct) || 0) - (Number(a.used_pct) || 0)).slice(0, 6);
   return `<section class="card cloud-card" data-enter style="--i:3">
-    <h2 class="eyebrow">Limity</h2>
+    <h2 class="eyebrow">${tr('Limity')}</h2>
     ${serazene.length ? `<ul class="cloud-limits">${serazene.map((l) => {
       const pct = Number.isFinite(Number(l.used_pct)) && l.used_pct !== null ? Math.round(Number(l.used_pct)) : null;
       const obnova = l.resets_at ? Date.parse(l.resets_at) : 0;
-      return `<li><div><span>${esc(popisOkna(l.provider, l.window_key))}</span><b>${pct === null ? (l.reached ? 'vyčerpáno' : '–') : `${pct} %`}</b></div>
+      return `<li><div><span>${esc(popisOkna(l.provider, l.window_key))}</span><b>${pct === null ? (l.reached ? tr('vyčerpáno') : '–') : `${pct} %`}</b></div>
         <span class="meter-track"><i style="width:${Math.min(100, pct ?? (l.reached ? 100 : 0))}%"></i></span>
-        <small>${obnova && obnova > now ? `obnova ${esc(resetsLabel(obnova, now))}` : `změřeno ${esc(rel(Date.parse(l.measured_at), now))}`}</small></li>`;
-    }).join('')}</ul>` : '<p class="set-desc">Žádné limity zatím nepřišly.</p>'}
+        <small>${obnova && obnova > now ? tr('obnova {0}', esc(resetsLabel(obnova, now))) : `${tr('změřeno')} ${esc(rel(Date.parse(l.measured_at), now))}`}</small></li>`;
+    }).join('')}</ul>` : `<p class="set-desc">${tr('Žádné limity zatím nepřišly.')}</p>`}
   </section>`;
 }
 
 function kartaZarizeni(zarizeni, now) {
   return `<section class="card cloud-card" data-enter style="--i:4">
-    <h2 class="eyebrow">Zařízení</h2>
-    ${zarizeni.length ? `<ul class="cloud-list">${zarizeni.map((d) => `<li><span>${esc(d.name)}</span><b>${esc(rel(Date.parse(d.last_seen_at), now))}</b></li>`).join('')}</ul>` : '<p class="set-desc">Zatím žádné.</p>'}
+    <h2 class="eyebrow">${tr('Zařízení')}</h2>
+    ${zarizeni.length ? `<ul class="cloud-list">${zarizeni.map((d) => `<li><span>${esc(d.name)}</span><b>${esc(rel(Date.parse(d.last_seen_at), now))}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Zatím žádné.')}</p>`}
   </section>`;
 }
 
@@ -264,8 +265,8 @@ function vykresliPrehled(r, data) {
   const jmeno = data.profil?.display_name || r.jmeno || '';
   const zapnuto = data.profil?.sync_enabled === true;
   document.body.innerHTML = `${hlavicka(r)}<main class="cloud">
-    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? `Ahoj, ${esc(jmeno.split(' ')[0])}` : 'Tvoje Agenteeq'}</h1>
-      <button class="btn btn--sm" type="button" data-obnovit>Obnovit</button></div>
+    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? `Ahoj, ${esc(jmeno.split(' ')[0])}` : tr('Tvoje Agenteeq')}</h1>
+      <button class="btn btn--sm" type="button" data-obnovit>${tr('Obnovit')}</button></div>
     ${zapnuto ? `<div class="cloud-grid">
         ${kartaAgentu(souhrnAgentu(data.agenti))}
         ${kartaTokenu(tokenyZaDny(data.tokeny, now))}
@@ -273,9 +274,9 @@ function vykresliPrehled(r, data) {
         ${kartaLimitu(data.limity, now)}
         ${kartaZarizeni(data.zarizeni, now)}
       </div>`
-      : `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>Synchronizace je vypnutá</h2>
-        <p>Souhrny sem posílá Agenteeq na Macu, až mu to dovolíš: <b>Nastavení → Účet a vzhled → Synchronizovat souhrny do účtu</b>. Dokud je vypnutá, v účtu nic není.</p></section>`}
-    <p class="account-privacy cloud-foot"><span>V účtu jsou jen čísla, která poslal tvůj Mac${zapnuto ? ` – ${data.zarizeni.length} ${plural(data.zarizeni.length, 'zařízení', 'zařízení', 'zařízení')}` : ''}. Konverzace, kód ani názvy složek ne.</span></p>
+      : `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>${tr('Synchronizace je vypnutá')}</h2>
+        <p>${tr('Souhrny sem posílá Agenteeq na Macu, až mu to dovolíš:')} <b>${tr('Nastavení → Účet a vzhled → Synchronizovat souhrny do účtu')}</b>${tr('. Dokud je vypnutá, v účtu nic není.')}</p></section>`}
+    <p class="account-privacy cloud-foot"><span>${tr('V účtu jsou jen čísla, která poslal tvůj Mac{0}. Konverzace, kód ani názvy složek ne.', zapnuto ? ` – ${data.zarizeni.length} ${plural(data.zarizeni.length, 'zařízení', 'zařízení', 'zařízení')}` : '')}</span></p>
   </main>`;
   document.querySelector('[data-odhlasit]').addEventListener('click', odhlasit);
   document.querySelector('[data-obnovit]').addEventListener('click', () => nacti(r, { tichy: false }));
@@ -285,15 +286,15 @@ function vykresliPrehled(r, data) {
 async function nacti(r, { tichy = true } = {}) {
   try {
     const platna = await platnaRelace();
-    if (!platna) return prihlasovaciObrazovka('Přihlášení vypršelo. Přihlas se prosím znovu.');
+    if (!platna) return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
     vykresliPrehled(platna, await nactiData(platna));
   } catch (err) {
     if (err.status === 401) {
       ulozRelaci(null);
-      return prihlasovaciObrazovka('Přihlášení vypršelo. Přihlas se prosím znovu.');
+      return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
     }
     if (!tichy || !document.querySelector('.cloud')) {
-      document.body.innerHTML = `${hlavicka(r)}<main class="pair"><div class="pair-box"><h1>Souhrny se nenačetly</h1><p class="pair-error" role="alert">${esc(err.message)}</p><button class="btn btn--primary" type="button" data-znovu>Zkusit znovu</button></div></main>`;
+      document.body.innerHTML = `${hlavicka(r)}<main class="pair"><div class="pair-box"><h1>${tr('Souhrny se nenačetly')}</h1><p class="pair-error" role="alert">${esc(err.message)}</p><button class="btn btn--primary" type="button" data-znovu>${tr('Zkusit znovu')}</button></div></main>`;
       document.querySelector('[data-znovu]').addEventListener('click', () => nacti(r, { tichy: false }));
       document.querySelector('[data-odhlasit]')?.addEventListener('click', odhlasit);
     }
@@ -312,7 +313,7 @@ export async function spustUcetWeb() {
   const chyba = h.get('error_description') || q.get('error_description');
   if (chyba) {
     history.replaceState(null, '', '/app?ucet');
-    prihlasovaciObrazovka(`Přihlášení se nepovedlo: ${chyba.slice(0, 200)}`);
+    prihlasovaciObrazovka(`${tr('Přihlášení se nepovedlo:')} ${chyba.slice(0, 200)}`);
     return true;
   }
   if (q.get('code')) {

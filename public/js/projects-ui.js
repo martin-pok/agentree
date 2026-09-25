@@ -5,14 +5,15 @@ import { ICON, glyph, logoKey } from './icons.js';
 import { modal, toast } from './ui.js';
 import { openCropper, TARGETS } from './cropper.js';
 import { sessionTotal, needsYou } from './data.js';
+import { tr } from './i18n.js';
 
 // Rada u ručně zadané cesty musí ukazovat tvar, který na daném systému opravdu platí.
 // Server posílá domovskou složku, takže se pozná z ní – ne z prohlížeče, ten běží
 // klidně na telefonu s Androidem, zatímco Agenteeq je na Macu.
 const jeWindowsHost = () => String(state.host?.home || '').includes('\\');
 const CESTA_RADA = () => (jeWindowsHost()
-  ? 'Zadej celou cestu, např. C:\\Users\\jana\\klient.'
-  : 'Zadej celou cestu, např. /Users/jana/klient.');
+  ? tr('Zadej celou cestu, např. C:\\Users\\jana\\klient.')
+  : tr('Zadej celou cestu, např. /Users/jana/klient.'));
 
 export const projectHref = (id) => `#/projekt/${encodeURIComponent(id)}`;
 
@@ -21,7 +22,7 @@ export const pdot = (p, cls = '') => `<i class="pdot${cls ? ` ${cls}` : ''}" sty
 export function projectTag(s) {
   const p = s.projectId ? projectById(s.projectId) : null;
   if (!p) return '';
-  return `<span class="ptag" title="${esc(s.projectSource === 'folder' ? `Projekt ${p.name} (podle složky)` : `Projekt ${p.name}`)}">${pdot(p)}${esc(p.name)}</span>`;
+  return `<span class="ptag" title="${esc(s.projectSource === 'folder' ? tr('Projekt {0} (podle složky)', p.name) : `${tr('Projekt')} ${p.name}`)}">${pdot(p)}${esc(p.name)}</span>`;
 }
 
 export function projectStats(p, now = Date.now()) {
@@ -69,10 +70,10 @@ export function folderBrowser(root, { onPick, start = '' }) {
     <div class="fb-crumbs" data-fb-crumbs></div>
     <ul class="fb-list" data-fb-list><li class="fb-empty"><span class="loader"></span></li></ul>
     <div class="fb-foot">
-      <button class="btn btn--sm btn--primary" type="button" data-fb-pick disabled>${ICON.check}Vybrat tuto složku</button>
-      <div class="fb-manual"><label class="sr-only" for="fb-in-${root.id}">Vlastní cesta</label>
-        <input id="fb-in-${root.id}" type="text" data-fb-input placeholder="Nebo vlož cestu, např. /Volumes/Práce/klient" spellcheck="false" autocomplete="off">
-        <button class="btn btn--sm" type="button" data-fb-manual>Použít</button></div>
+      <button class="btn btn--sm btn--primary" type="button" data-fb-pick disabled>${ICON.check}${tr('Vybrat tuto složku')}</button>
+      <div class="fb-manual"><label class="sr-only" for="fb-in-${root.id}">${tr('Vlastní cesta')}</label>
+        <input id="fb-in-${root.id}" type="text" data-fb-input placeholder="${tr('Nebo vlož cestu, např. /Volumes/Práce/klient')}" spellcheck="false" autocomplete="off">
+        <button class="btn btn--sm" type="button" data-fb-manual>${tr('Použít')}</button></div>
     </div>
   </div>`;
   const list = root.querySelector('[data-fb-list]');
@@ -95,13 +96,13 @@ export function folderBrowser(root, { onPick, start = '' }) {
       // na Windows vyrobilo „C:\\Users\\jana/web“ – kříženec, kterým se nikam nedostaneme.
       const sep = r.home.includes('\\') ? '\\' : '/';
       let acc = r.home;
-      crumbs.innerHTML = `<button type="button" class="fb-crumb" data-fb-go="${esc(r.home)}">${ICON.folder}Domů</button>${rel.map((seg) => {
+      crumbs.innerHTML = `<button type="button" class="fb-crumb" data-fb-go="${esc(r.home)}">${ICON.folder}${tr('Domů')}</button>${rel.map((seg) => {
         acc = `${acc}${sep}${seg}`;
         return `<span class="fb-sep" aria-hidden="true">/</span><button type="button" class="fb-crumb" data-fb-go="${esc(acc)}">${esc(seg)}</button>`;
       }).join('')}`;
       list.innerHTML = r.dirs.length
         ? r.dirs.map((d) => `<li><button type="button" class="fb-item" data-fb-go="${esc(d.path)}">${ICON.folder}<span>${esc(d.name)}</span>${d.git ? '<span class="badge">Git</span>' : ''}${ICON.chev}</button></li>`).join('')
-        : '<li class="fb-empty">Žádné podsložky. Můžeš vybrat tuto složku.</li>';
+        : `<li class="fb-empty">${tr('Žádné podsložky. Můžeš vybrat tuto složku.')}</li>`;
     } catch (err) {
       if (my !== seq) return;
       list.innerHTML = `<li class="fb-empty">${esc(err.message)}</li>`;
@@ -128,15 +129,15 @@ export function folderBrowser(root, { onPick, start = '' }) {
   go(start);
 }
 
-export function pickFolder({ title = 'Vybrat složku' } = {}) {
+export function pickFolder({ title = tr('Vybrat složku') } = {}) {
   let picked = null;
   const id = `fb${Math.random().toString(36).slice(2, 8)}`;
   const recents = recentFolders();
   const done = modal({
     title,
     wide: true,
-    submitLabel: 'Zavřít',
-    body: `${recents.length ? `<p class="form-sub">Nedávné složky agentů</p><div class="chips chips--wrap">${recents.map((f) => `<button type="button" class="chip" data-fb-recent="${esc(f)}">${ICON.folder}${esc(shortPath(f))}</button>`).join('')}</div><p class="form-sub">Procházet</p>` : ''}<div id="${id}"></div>`,
+    submitLabel: tr('Zavřít'),
+    body: `${recents.length ? `<p class="form-sub">${tr('Nedávné složky agentů')}</p><div class="chips chips--wrap">${recents.map((f) => `<button type="button" class="chip" data-fb-recent="${esc(f)}">${ICON.folder}${esc(shortPath(f))}</button>`).join('')}</div><p class="form-sub">${tr('Procházet')}</p>` : ''}<div id="${id}"></div>`,
   });
   const root = document.getElementById(id);
   const scrim = root.closest('.modal-scrim');
@@ -181,33 +182,33 @@ export function projectForm(existing = null) {
   const pending = { cover: null, logo: null }; // {blob, url} | 'remove' | null
   const id = `pf${Math.random().toString(36).slice(2, 8)}`;
   const done = modal({
-    title: existing ? 'Upravit projekt' : 'Nový projekt',
-    submitLabel: existing ? 'Uložit změny' : 'Vytvořit projekt',
+    title: existing ? tr('Upravit projekt') : tr('Nový projekt'),
+    submitLabel: existing ? tr('Uložit změny') : tr('Vytvořit projekt'),
     wide: true,
     body: `<div class="form-grid">
-        <label class="field field--wide"><span>Název</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="Např. Kavárna U Mostu – web"></label>
-        <label class="field field--wide"><span>Popis <small class="muted">nepovinné</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="Pro koho a co v projektu děláš"></label>
+        <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
+        <label class="field field--wide"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
       </div>
-      <p class="form-sub" id="${id}-color">Barva</p>
+      <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
-      <p class="form-sub">Vzhled v přehledu</p>
+      <p class="form-sub">${tr('Vzhled v přehledu')}</p>
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
           <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
-          <span class="media-text"><b>${kind === 'cover' ? 'Obrázek karty' : 'Logo klienta'}</b><small>${esc(TARGETS[kind].hint)} ${kind === 'cover' ? 'Nahradí přechod nahoře na kartě.' : 'Objeví se místo barevné tečky.'}</small></span>
-          <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>Nahrát</button><button class="btn btn--sm" type="button" data-media-remove hidden>Odebrat</button></span>
+          <span class="media-text"><b>${kind === 'cover' ? tr('Obrázek karty') : tr('Logo klienta')}</b><small>${esc(TARGETS[kind].hint)} ${kind === 'cover' ? tr('Nahradí přechod nahoře na kartě.') : tr('Objeví se místo barevné tečky.')}</small></span>
+          <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>${tr('Nahrát')}</button><button class="btn btn--sm" type="button" data-media-remove hidden>${tr('Odebrat')}</button></span>
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
           <div class="media-crop" data-media-crop hidden></div>
         </div>`).join('')}
       </div>
-      <p class="form-sub">Složky projektu</p>
-      <p class="modal-text">Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.</p>
+      <p class="form-sub">${tr('Složky projektu')}</p>
+      <p class="modal-text">${tr('Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.')}</p>
       <ul class="folder-list" id="${id}-list"></ul>
       <input type="hidden" name="folders">
-      <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}Přidat složku</button>
+      <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}${tr('Přidat složku')}</button>
       <div class="folder-browser" id="${id}-fb" hidden></div>`,
     onSubmit: async (form) => {
-      if ([...document.querySelectorAll('[data-media-crop]')].some((h) => !h.hidden)) throw new Error('Dokonči výřez obrázku: Použít výřez, nebo Zrušit.');
+      if ([...document.querySelectorAll('[data-media-crop]')].some((h) => !h.hidden)) throw new Error(tr('Dokonči výřez obrázku: Použít výřez, nebo Zrušit.'));
       const body = {
         name: form.elements.name.value,
         description: form.elements.description.value,
@@ -225,7 +226,7 @@ export function projectForm(existing = null) {
           const out = want === 'remove' ? await api.removeProjectMedia(r.project.id, kind) : await api.setProjectMedia(r.project.id, kind, want.blob);
           setProjects(out.projects);
         } catch (err) {
-          toast(`Projekt je uložený, ale ${kind === 'cover' ? 'obrázek karty' : 'logo'} se nenahrálo: ${err.message}`, { tone: 'err', timeout: 9000 });
+          toast(`${tr('Projekt je uložený, ale {0} se nenahrálo:', kind === 'cover' ? tr('obrázek karty') : 'logo')} ${err.message}`, { tone: 'err', timeout: 9000 });
         }
       }
       return projectById(r.project.id) || r.project;
@@ -241,7 +242,7 @@ export function projectForm(existing = null) {
     else if (stored) thumb.innerHTML = `<img src="${esc(mediaUrl(existing, kind))}" alt="">`;
     else thumb.innerHTML = kind === 'cover' ? projectCover({ color: existing?.color, cover: existing?.cover || { preset: 'aurora' } }) : `<span class="media-empty">${ICON.plus}</span>`;
     row.querySelector('[data-media-remove]').hidden = !(stored || (want && want !== 'remove'));
-    row.querySelector('[data-media-pick]').textContent = stored || (want && want !== 'remove') ? 'Změnit' : 'Nahrát';
+    row.querySelector('[data-media-pick]').textContent = stored || (want && want !== 'remove') ? tr('Změnit') : tr('Nahrát');
   };
   for (const row of document.querySelectorAll('.media-pick')) {
     const kind = row.dataset.media;
@@ -272,8 +273,8 @@ export function projectForm(existing = null) {
   const add = document.getElementById(`${id}-add`);
   const render = () => {
     listEl.innerHTML = folders.length
-      ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="Odebrat složku ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
-      : '<li class="folder-empty">Zatím žádná složka – projekt bude jen pro ručně zařazené konverzace.</li>';
+      ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="${tr('Odebrat složku')} ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
+      : `<li class="folder-empty">${tr('Zatím žádná složka – projekt bude jen pro ručně zařazené konverzace.')}</li>`;
   };
   listEl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove]');
@@ -304,19 +305,19 @@ export async function assignDialog(sessionIds, { current = undefined } = {}) {
   const name = sessionIds.length === 1 ? 'konverzaci' : `${sessionIds.length} ${plural(sessionIds.length, 'konverzaci', 'konverzace', 'konverzací')}`;
   const opt = (value, label, sub, checked, dot = '') => `<label class="choice"><input type="radio" name="target" value="${esc(value)}"${checked ? ' checked' : ''}>${dot}<span class="choice-text"><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
   const result = await modal({
-    title: `Zařadit ${name} do projektu`,
-    submitLabel: 'Zařadit',
+    title: tr('Zařadit {0} do projektu', name),
+    submitLabel: tr('Zařadit'),
     body: `<div class="choices">
         ${items.map((p) => opt(p.id, p.name, p.description, current === p.id, pdot(p))).join('')}
-        ${opt('__new', 'Nový projekt…', '', !items.length, `<span class="choice-plus">${ICON.plus}</span>`)}
-        <label class="field choice-new"><span class="sr-only">Název nového projektu</span><input name="newName" type="text" maxlength="60" placeholder="Název nového projektu"></label>
+        ${opt('__new', tr('Nový projekt…'), '', !items.length, `<span class="choice-plus">${ICON.plus}</span>`)}
+        <label class="field choice-new"><span class="sr-only">${tr('Název nového projektu')}</span><input name="newName" type="text" maxlength="60" placeholder="${tr('Název nového projektu')}"></label>
         <div class="choices-sep"></div>
-        ${opt('__auto', 'Automaticky podle složky', 'Zruší ruční zařazení', false)}
-        ${opt('__none', 'Mimo projekty', 'Nezařadí se ani podle složky', false)}
+        ${opt('__auto', tr('Automaticky podle složky'), tr('Zruší ruční zařazení'), false)}
+        ${opt('__none', tr('Mimo projekty'), tr('Nezařadí se ani podle složky'), false)}
       </div>`,
     onSubmit: async (form) => {
       const target = form.elements.target.value;
-      if (!target) throw Object.assign(new Error('Vyber projekt.'), {});
+      if (!target) throw Object.assign(new Error(tr('Vyber projekt.')), {});
       let pid = target === '__auto' ? null : target === '__none' ? '' : target;
       let createdName = '';
       if (target === '__new') {
@@ -334,8 +335,8 @@ export async function assignDialog(sessionIds, { current = undefined } = {}) {
     },
   });
   if (!result) return null;
-  const msg = result.projectId === null ? 'Zařazení podle složky obnoveno' : result.projectId === '' ? 'Konverzace je mimo projekty' : `Zařazeno do projektu ${result.name}`;
-  toast(msg, result.projectId ? { action: { label: 'Otevřít projekt', href: projectHref(result.projectId) } } : {});
+  const msg = result.projectId === null ? tr('Zařazení podle složky obnoveno') : result.projectId === '' ? tr('Konverzace je mimo projekty') : `${tr('Zařazeno do projektu')} ${result.name}`;
+  toast(msg, result.projectId ? { action: { label: tr('Otevřít projekt'), href: projectHref(result.projectId) } } : {});
   return result;
 }
 

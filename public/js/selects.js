@@ -1,8 +1,9 @@
+import { tr } from './i18n.js';
 // Native form values stay the source of truth; every visible picker uses our design.
 let serial = 0;
 let active = null;
 const controls = new WeakMap();
-const labelOf = (select) => select.getAttribute('aria-label') || select.labels?.[0]?.querySelector('.sr-only, span')?.textContent?.trim() || select.name || 'Vybrat';
+const labelOf = (select) => select.getAttribute('aria-label') || select.labels?.[0]?.querySelector('.sr-only, span')?.textContent?.trim() || select.name || tr('Vybrat');
 
 function close(restore = false) {
   if (!active) return;
@@ -97,7 +98,7 @@ function open(select, button) {
 function sync(select) {
   const button = controls.get(select);
   if (!button) return;
-  const text = select.selectedOptions[0]?.textContent || 'Vybrat';
+  const text = select.selectedOptions[0]?.textContent || tr('Vybrat');
   if (button.firstElementChild.textContent !== text) button.firstElementChild.textContent = text;
   button.disabled = select.disabled;
   const label = `${labelOf(select)}: ${text}`;

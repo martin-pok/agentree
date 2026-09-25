@@ -4,8 +4,9 @@ import { esc } from './format.js';
 import { modal } from './ui.js';
 import { RELEASES, unseenReleases } from './whats-new-data.js';
 import { goToExtension } from './jump.js';
+import { tr, LOCALE } from './i18n.js';
 
-const dateCs = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
+const dateCs = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 
 function releaseHtml(r, { lead = false } = {}) {
   return `<article class="wn-release${lead ? ' wn-release--lead' : ''}">
@@ -32,11 +33,11 @@ export async function showWhatsNew({ releases } = {}) {
   const offerExtension = list.some((r) => r.extension) && (!ext || ext.state === 'missing' || ext.outdated);
   const body = `<div class="wn">
     ${list.map((r, i) => releaseHtml(r, { lead: i === 0 })).join('')}
-    ${older.length ? `<details class="wn-older"><summary>Starší změny</summary>${older.map((r) => releaseHtml(r)).join('')}</details>` : ''}
+    ${older.length ? `<details class="wn-older"><summary>${tr('Starší změny')}</summary>${older.map((r) => releaseHtml(r)).join('')}</details>` : ''}
   </div>`;
-  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? 'Obnovit rozšíření' : ext?.repair ? 'Spárovat rozšíření' : 'Nainstalovat rozšíření'}</button>` : ''}<button type="submit" class="btn btn--primary">Rozumím</button>`;
+  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? tr('Obnovit rozšíření') : ext?.repair ? tr('Spárovat rozšíření') : tr('Nainstalovat rozšíření')}</button>` : ''}<button type="submit" class="btn btn--primary">${tr('Rozumím')}</button>`;
   await modal({
-    title: 'Co je nového',
+    title: tr('Co je nového'),
     body,
     footer,
     size: 'reader',

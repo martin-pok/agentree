@@ -33,7 +33,7 @@ test('spuštění agenta: nápověda režimu a poznámka cíle si neříkají to
   const kod = await zdroj('public/js/launcher-ui.js');
   const blok = kod.match(/const MODE_HINT = \{([\s\S]*?)\n\};/)?.[1];
   assert.ok(blok, 'MODE_HINT se v launcher-ui.js nenašel – uprav test spolu s ním');
-  const hint = Object.fromEntries([...blok.matchAll(/(\w+):\s*'([^']*)'/g)].map((m) => [m[1], m[2]]));
+  const hint = Object.fromEntries([...blok.matchAll(/(\w+):\s*tr\('([^']*)'\)/g)].map((m) => [m[1], m[2]]));
   assert.ok(Object.keys(hint).length >= 5, `čekali jsme nápovědu ke všem režimům, máme ${Object.keys(hint).length}`);
 
   const env = {
@@ -66,5 +66,5 @@ test('Útrata: graf za posledních 6 měsíců bez dat nekreslí vymyšlenou osu
     'rozhodnutí „je co ukázat" musí zůstat vázané na skutečná data');
   const usek = kod.slice(kod.indexOf('const jeCoUkazat'), kod.indexOf("fill(el, 'mlegend'"));
   assert.match(usek, /jeCoUkazat \? columnChart\(\{/, 'graf se kreslí jen když jsou data');
-  assert.match(usek, /: emptyState\(\{ title: 'Zatím žádná útrata'/, 'jinak prázdný stav');
+  assert.match(usek, /: emptyState\(\{ title: tr\('Zatím žádná útrata'\)/, 'jinak prázdný stav');
 });

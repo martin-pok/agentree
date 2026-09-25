@@ -2,6 +2,7 @@ import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel } from './format.j
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
+import { tr, LOCALE } from './i18n.js';
 
 export function fill(root, name, html) {
   const el = root.querySelector(`[data-region="${name}"]`);
@@ -181,7 +182,7 @@ export function toast(message, { tone = 'ink', action, timeout = 4000 } = {}) {
   el.className = `toast toast--${kind}`;
   el.dataset.kind = kind;
   el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-  el.innerHTML = `<span class="toast-icon" aria-hidden="true">${TOAST_ICON()[kind]}</span><span class="toast-text">${esc(message)}</span>${action ? `<a class="toast-action" href="${esc(action.href)}">${esc(action.label)}</a>` : ''}<button class="toast-close" type="button" aria-label="Zavřít">${ICON.close}</button>`;
+  el.innerHTML = `<span class="toast-icon" aria-hidden="true">${TOAST_ICON()[kind]}</span><span class="toast-text">${esc(message)}</span>${action ? `<a class="toast-action" href="${esc(action.href)}">${esc(action.label)}</a>` : ''}<button class="toast-close" type="button" aria-label="${tr('Zavřít')}">${ICON.close}</button>`;
   const remove = () => {
     if (!el.isConnected || el.classList.contains('is-leaving')) return;
     el.classList.add('is-leaving');
@@ -193,7 +194,7 @@ export function toast(message, { tone = 'ink', action, timeout = 4000 } = {}) {
   if (timeout) toastTimer = setTimeout(remove, timeout);
 }
 
-export async function copy(text, message = 'Zkopírováno do schránky') {
+export async function copy(text, message = tr('Zkopírováno do schránky')) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
@@ -214,19 +215,19 @@ export async function copy(text, message = 'Zkopírováno do schránky') {
 export const statusPill = (status) => `<span class="pill" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
 
 export function kindLabel(kind) {
-  if (kind === 'permission') return 'Žádá o povolení';
-  if (kind === 'question') return 'Ptá se tě';
-  if (kind === 'plan') return 'Čeká na schválení plánu';
-  return 'Potřebuje tvé rozhodnutí';
+  if (kind === 'permission') return tr('Žádá o povolení');
+  if (kind === 'question') return tr('Ptá se tě');
+  if (kind === 'plan') return tr('Čeká na schválení plánu');
+  return tr('Potřebuje tvé rozhodnutí');
 }
 
 export function howToAnswer(s) {
-  if (s.source === 'web') return 'Odpověz přímo v konverzaci v prohlížeči.';
-  if (s.connector === 'claude-code') return 'Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde konverzace běží.';
-  if (s.connector === 'codex') return 'Otevři vlákno v Codexu tlačítkem výše a odpověz tam.';
-  if (s.connector === 'cursor') return 'Potvrď akci v Cursoru.';
-  if (s.connector === 'vscode-copilot') return 'Potvrď akci v panelu Copilotu ve VS Code.';
-  return 'Odpověz v aplikaci, kde agent běží.';
+  if (s.source === 'web') return tr('Odpověz přímo v konverzaci v prohlížeči.');
+  if (s.connector === 'claude-code') return tr('Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde konverzace běží.');
+  if (s.connector === 'codex') return tr('Otevři vlákno v Codexu tlačítkem výše a odpověz tam.');
+  if (s.connector === 'cursor') return tr('Potvrď akci v Cursoru.');
+  if (s.connector === 'vscode-copilot') return tr('Potvrď akci v panelu Copilotu ve VS Code.');
+  return tr('Odpověz v aplikaci, kde agent běží.');
 }
 
 export const agentHref = (id) => `#/agent/${encodeURIComponent(id)}`;
@@ -249,12 +250,12 @@ export function decisionCard(s) {
   return `<li class="decision${limited ? ' is-limit' : ''}">
     <span class="icon-tile">${glyph(s)}</span>
     <div class="decision-body">
-      <span class="decision-kicker">${failed ? 'Spuštění selhalo' : limited ? 'Vyčerpaný limit' : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
+      <span class="decision-kicker">${failed ? tr('Spuštění selhalo') : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
       <p class="decision-reason">${esc(s.reason)}</p>
     </div>
     <div class="decision-actions">
-      ${s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">Detail</a>`}
+      ${s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
     </div>
   </li>`;
 }
@@ -298,10 +299,10 @@ export function untilLabel(ts, now = Date.now()) {
   const ms = ts - now;
   if (ms <= 0) return 'obnoveno';
   const m = Math.ceil(ms / 60e3);
-  if (m < 60) return `za ${m} min`;
+  if (m < 60) return tr('za {0} min', m);
   const h = Math.floor(m / 60);
-  if (h < 48) return `za ${h} h${m % 60 ? ` ${m % 60} min` : ''}`;
-  return `za ${Math.round(h / 24)} dní`;
+  if (h < 48) return `${tr('za {0} h', h)}${m % 60 ? ` ${m % 60} min` : ''}`;
+  return tr('za {0} dní', Math.round(h / 24));
 }
 
 // Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
@@ -321,14 +322,14 @@ export function currentLimits(limits, now = Date.now()) {
 // Kdy byl limit změřený, pokud už to není „teď“. Okno se od té doby mohlo změnit a číslo bez data
 // by se četlo jako současný stav – týdenní limit Codexu tak 20 hodin po odečtu svítil jako živý.
 export function limitAge(l, now = Date.now()) {
-  return l.at && now - l.at > 30 * 60e3 ? `změřeno ${rel(l.at, now)}` : '';
+  return l.at && now - l.at > 30 * 60e3 ? `${tr('změřeno')} ${rel(l.at, now)}` : '';
 }
 
 // Kdy byl zůstatek kreditů zjištěný. Jedno místo pro Přehled, Statistiky i Útratu – číslo bez data
 // se četlo jako současný stav, i když pocházelo z měsíc starého odečtu. Nad dva dny se zvýrazní.
 export function creditAge(c, now = Date.now()) {
   if (!Number.isFinite(c?.at)) return null;
-  return { text: `zjištěno ${rel(c.at, now)}`, kratce: rel(c.at, now), stary: now - c.at > 2 * DAY };
+  return { text: `${tr('zjištěno')} ${rel(c.at, now)}`, kratce: rel(c.at, now), stary: now - c.at > 2 * DAY };
 }
 export function creditAgeHtml(c, now = Date.now()) {
   const v = creditAge(c, now);
@@ -347,13 +348,13 @@ export function limitState(l, now = Date.now()) {
     reached,
     pct,
     // Co se ukáže místo čísla. Obnovené okno se nehlásí jako „0 %“, vyčerpané jako „100 %“.
-    label: renewed ? 'Obnoveno' : reached ? 'Vyčerpáno' : `${pct} %`,
+    label: renewed ? tr('Obnoveno') : reached ? tr('Vyčerpáno') : `${pct} %`,
     tone: renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free',
     // Po obnově nikdo nové vytížení nezměřil – „plná kapacita“ ani „právě“ by nebyla pravda.
-    advice: renewed ? 'Okno se od měření obnovilo, nový stav zatím není'
-      : reached || pct >= 100 ? 'Vyčerpáno, počkej na obnovu'
-        : pct >= 80 ? 'Šetři na důležité úlohy'
-          : pct >= 50 ? 'V pohodě pro běžnou práci' : 'Dobrý čas na velké úlohy',
+    advice: renewed ? tr('Okno se od měření obnovilo, nový stav zatím není')
+      : reached || pct >= 100 ? tr('Vyčerpáno, počkej na obnovu')
+        : pct >= 80 ? tr('Šetři na důležité úlohy')
+          : pct >= 50 ? tr('V pohodě pro běžnou práci') : tr('Dobrý čas na velké úlohy'),
   };
 }
 
@@ -370,7 +371,7 @@ export function limitWindows(limits, now = Date.now()) {
       <span class="lwin-main">
         <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${esc(label)}</span></span>
         <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
-        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>obnova <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
+        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>${tr('obnova')} <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })}</span>` : ''}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
       </span>
     </li>`;
   }).join('')}</ul>`;
@@ -386,7 +387,7 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
       const cerstve = s.reached && now - l.at < 7 * DAY;
       if (!cerstve && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
       const color = s.tone === 'out' ? 'var(--velvet-ink)' : s.tone === 'low' ? 'var(--brass)' : 'var(--teal)';
-      const sub = l.resetsAt && !s.renewed ? `obnova ${resetsLabel(l.resetsAt, now)}` : l.plan ? `plán ${l.plan}` : '';
+      const sub = l.resetsAt && !s.renewed ? tr('obnova {0}', resetsLabel(l.resetsAt, now)) : l.plan ? `${tr('plán')} ${l.plan}` : '';
       // Stáří na vlastním řádku; po šesti hodinách zvýrazněné, protože limity se mění rychle.
       const age = limitAge(l, now);
       return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, age, stare: now - l.at > 6 * 3600e3, size, reached: s.reached }) };
@@ -427,7 +428,7 @@ function markErrors(form, errors) {
 // tlačítek vlastním obsahem a `onOpen` dostane kořen okna hned po vložení do stránky –
 // díky tomu má i vlastní patička kde navěsit obsluhu, aniž by se duplikovala práce s Esc,
 // zámkem tabulátoru a vrácením zaostření.
-export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zrušit', danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {
+export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = tr('Zrušit'), danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {
   return new Promise((resolve) => {
     const opener = openerOverride || document.activeElement;
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
@@ -435,7 +436,7 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
     scrim.className = 'modal-scrim';
     scrim.innerHTML = `<div class="modal${wide ? ' modal--wide' : ''}${size ? ` modal--${size}` : ''}" role="dialog" aria-modal="true" aria-labelledby="${id}">
       <form novalidate>
-        <header class="modal-head"><h2 id="${id}">${esc(title)}</h2><button type="button" class="icon-btn" data-close aria-label="Zavřít">${ICON.close}</button></header>
+        <header class="modal-head"><h2 id="${id}">${esc(title)}</h2><button type="button" class="icon-btn" data-close aria-label="${tr('Zavřít')}">${ICON.close}</button></header>
         <div class="modal-body">${body}</div>
         <p class="form-error" role="alert" hidden></p>
         <footer class="modal-foot">${footer ?? `<button type="button" class="btn" data-close>${esc(cancelLabel)}</button><button type="submit" class="btn ${danger ? 'btn--danger' : 'btn--primary'}">${esc(submitLabel)}</button>`}</footer>
@@ -502,7 +503,7 @@ export function modal({ title, body, submitLabel = 'Uložit', cancelLabel = 'Zru
   });
 }
 
-export const confirmDialog = ({ title, message, confirmLabel = 'Potvrdit', danger = false }) =>
+export const confirmDialog = ({ title, message, confirmLabel = tr('Potvrdit'), danger = false }) =>
   modal({ title, body: `<p class="modal-text">${esc(message)}</p>`, submitLabel: confirmLabel, danger });
 
 /* ---------- Paleta příkazů ---------- */
@@ -513,7 +514,7 @@ export function createPalette(getItems, onPick) {
   root.hidden = true;
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
-  root.setAttribute('aria-label', 'Rychlé hledání');
+  root.setAttribute('aria-label', tr('Rychlé hledání'));
   root.innerHTML = `<div class="palette-box">
     <div class="palette-input">${ICON.search}<input type="text" placeholder="Hledat agenta, projekt nebo sekci…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list"><kbd>Esc</kbd></div>
     <ul class="palette-list" id="palette-list" role="listbox"></ul>
@@ -542,7 +543,7 @@ export function createPalette(getItems, onPick) {
         const head = it.group !== group ? `<li class="pl-group" role="presentation">${esc((group = it.group))}</li>` : '';
         return `${head}<li role="option" id="pl-${i}" data-i="${i}" aria-selected="${i === index}">${it.icon || ''}<span class="pl-text"><span>${esc(it.label)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></li>`;
       }).join('')
-      : '<li class="pl-group" role="presentation">Nic nenalezeno</li>';
+      : `<li class="pl-group" role="presentation">${tr('Nic nenalezeno')}</li>`;
     setActive();
   };
   const close = () => {

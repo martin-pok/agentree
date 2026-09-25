@@ -7,9 +7,10 @@ import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActi
 import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, legendHtml, limitGauges, emptyState, creditAgeHtml } from '../ui.js';
+import { tr, LOCALE } from '../i18n.js';
 
 const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
-const PERIODS = [['today', 'Dnes'], ['day', '24 hodin'], ['week', '7 dní'], ['fortnight', '14 dní'], ['month', '30 dní']];
+const PERIODS = [['today', tr('Dnes')], ['day', tr('24 hodin')], ['week', tr('7 dní')], ['fortnight', tr('14 dní')], ['month', tr('30 dní')]];
 
 function mount(el) {
   v.el = el;
@@ -20,30 +21,30 @@ function mount(el) {
   loadUsage();
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
-      <div class="seg" role="group" aria-label="Období" data-region="period"></div>
+      <div class="seg" role="group" aria-label="${tr('Období')}" data-region="period"></div>
     </div>
     <div class="kpis" data-enter style="--i:2" data-region="kpis"></div>
     <section class="card pad" data-enter style="--i:3" aria-labelledby="st-chart-h">
-      <div class="sec-head"><h2 id="st-chart-h">Tokeny podle poskytovatele</h2></div>
+      <div class="sec-head"><h2 id="st-chart-h">${tr('Tokeny podle poskytovatele')}</h2></div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
     </section>
     <div class="grid-2 st-cards" data-enter style="--i:4">
       <div class="bal-col">
-        <section class="card pad" data-float aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">Kdy agenti pracují</h2><span class="muted small">30 dní</span></div><div data-region="heat"></div></section>
-        <section class="card pad" data-float aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">Tokeny podle složky</h2></div><div data-region="projects"></div></section>
+        <section class="card pad" data-float aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">${tr('Kdy agenti pracují')}</h2><span class="muted small">${tr('30 dní')}</span></div><div data-region="heat"></div></section>
+        <section class="card pad" data-float aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">${tr('Tokeny podle složky')}</h2></div><div data-region="projects"></div></section>
       </div>
       <div class="bal-col">
-        <section class="card pad" data-float aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">Tokeny podle aplikace</h2></div><div data-region="apps"></div></section>
-        <section class="card pad" data-float aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">Tokeny podle modelu</h2></div><div data-region="models"></div></section>
+        <section class="card pad" data-float aria-labelledby="apps-h"><div class="sec-head"><h2 id="apps-h">${tr('Tokeny podle aplikace')}</h2></div><div data-region="apps"></div></section>
+        <section class="card pad" data-float aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">${tr('Tokeny podle modelu')}</h2></div><div data-region="models"></div></section>
       </div>
     </div>
     <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
-      <div class="sec-head"><h2 id="lim-h">Limity a kredity</h2></div>
+      <div class="sec-head"><h2 id="lim-h">${tr('Limity a kredity')}</h2></div>
       <div data-region="limits"></div>
       <div data-region="usage-history"></div>
     </section>
-    <p class="note">Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří – najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.</p>`;
+    <p class="note">${tr('Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří – najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.')}</p>`;
   v.unwatch?.();
   v.unwatch = watchBalance(el.querySelector('.st-cards'));
   el.addEventListener('click', (e) => {
@@ -65,9 +66,9 @@ function coverageNote() {
   if (!apps.length) return '';
   const covered = (name) => apps.some((a) => name === a || name.startsWith(`${a} `) || a.startsWith(`${name} `));
   const missing = [...new Set((state.runtimes || []).filter((r) => r.running && !covered(r.name)).map((r) => r.name))].sort();
-  const head = `Každá aplikace má vlastní limit – limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí ${apps.join(', ')}.`;
+  const head = tr('Každá aplikace má vlastní limit – limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí {0}.', apps.join(', '));
   const tail = missing.length
-    ? ` ${missing.join(', ')} ${missing.length > 1 ? 'běží, ale své limity na disk nezapisují' : 'běží, ale svůj limit na disk nezapisuje'}, takže ${missing.length > 1 ? 'je' : 'ho'} Agenteeq nemá odkud přečíst.`
+    ? ` ${missing.join(', ')} ${missing.length > 1 ? tr('běží, ale své limity na disk nezapisují') : tr('běží, ale svůj limit na disk nezapisuje')}${missing.length > 1 ? tr(', takže je Agenteeq nemá odkud přečíst.') : tr(', takže ho Agenteeq nemá odkud přečíst.')}`
     : '';
   return `<p class="note">${esc(head + tail)}</p>`;
 }
@@ -87,17 +88,17 @@ function usageHistoryHtml() {
   const u = v.usage;
   if (!u) return '';
   const charts = [
-    ['fiveHour', 'Limit 5 h', '%'],
-    ['sevenDay', 'Týdenní limit', '%'],
-    ['extraUsage', 'Extra usage', ''],
+    ['fiveHour', tr('Limit 5 h'), '%'],
+    ['sevenDay', tr('Týdenní limit'), '%'],
+    ['extraUsage', tr('Extra usage'), ''],
   ].filter(([key]) => (u[key] || []).length >= 2)
-    .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? 'vytížení okna v %' : 'hodnota bez jednotky')}</span></div>
-      ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
+    .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? tr('vytížení okna v %') : tr('hodnota bez jednotky'))}</span></div>
+      ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString(LOCALE, { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
   if (!charts.length) return '';
   const note = u.extraUsage?.length
-    ? 'Extra usage je hodnota, u které zdroj neuvádí jednotku – Agenteeq z ní nedělá procenta ani koruny.'
+    ? tr('Extra usage je hodnota, u které zdroj neuvádí jednotku – Agenteeq z ní nedělá procenta ani koruny.')
     : '';
-  return `<div class="usage-history"><div class="sec-head"><h3>Vytížení plánu Claude v čase</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} za 30 dní ze souboru aplikace Claude Desktop</span></div>
+  return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} ${tr('za 30 dní ze souboru aplikace Claude Desktop')}</span></div>
     ${charts.join('')}${note ? `<p class="note">${esc(note)}</p>` : ''}</div>`;
 }
 
@@ -116,15 +117,15 @@ function update() {
   const hours = activeHours(all, since);
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);
   fill(el, 'kpis', [
-    ['Tokeny', tween(`st-tok-${v.period}`, tokens, 'tok'), 'vstup + výstup; ne cena ani limit'],
-    ['Aktivní konverzace', tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} aplikací`],
-    ['Hodiny s aktivitou', tween(`st-h-${v.period}`, hours), 'hodiny, kdy aspoň jeden agent pracoval'],
-    ['Zadání', tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
+    [tr('Tokeny'), tween(`st-tok-${v.period}`, tokens, 'tok'), tr('vstup + výstup; ne cena ani limit')],
+    [tr('Aktivní konverzace'), tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} ${plural(new Set(active.map((s) => s.app)).size, 'aplikace', 'aplikace', 'aplikací')}`],
+    [tr('Hodiny s aktivitou'), tween(`st-h-${v.period}`, hours), tr('hodiny, kdy aspoň jeden agent pracoval')],
+    [tr('Zadání'), tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
   ].map(([l, val, sub]) => `<div class="card kpi"><span class="eyebrow">${l}</span><span class="val">${val}</span><small>${esc(sub)}</small></div>`).join(''));
 
   const changed = fill(el, 'chart', ser.series.length
-    ? stackedColumns({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: 'Tokeny podle poskytovatele', partialLast: true })
-    : emptyState({ title: 'V tomto období žádné tokeny' }));
+    ? stackedColumns({ id: 'st-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, height: 280, label: tr('Tokeny podle poskytovatele'), partialLast: true })
+    : emptyState({ title: tr('V tomto období žádné tokeny') }));
   if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
   v.drawn = true;
   fill(el, 'legend', legendHtml(ser.series, { box: true }));
@@ -134,17 +135,17 @@ function update() {
   const apps = groupTotals(all, since, (s) => s.app).slice(0, 8);
   fill(el, 'apps', apps.length
     ? hbars(apps.map((a) => ({ label: a.key, sub: `${tokens ? Math.round((a.value / tokens) * 100) : 0} %`, value: a.value, color: chartColor(a.provider), icon: glyph(a.provider) })))
-    : '<p class="muted">Bez dat.</p>');
+    : `<p class="muted">${tr('Bez dat.')}</p>`);
 
   const projects = groupTotals(all, since, (s) => s.project).slice(0, 8);
   fill(el, 'projects', projects.length
     ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: chartColor(p.provider), icon: glyph(p.provider) })))
-    : '<p class="muted">Bez dat.</p>');
+    : `<p class="muted">${tr('Bez dat.')}</p>`);
 
   const models = groupTotals(all, since, (s) => s.model).slice(0, 8);
   fill(el, 'models', models.length
     ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) })))
-    : '<p class="muted">Bez dat.</p>');
+    : `<p class="muted">${tr('Bez dat.')}</p>`);
 
   const gauges = limitGauges(state.limits, now);
   const creditCharts = state.credits
@@ -155,11 +156,11 @@ function update() {
       // Zůstatek bez data je nepravda: ukazuje poslední odečet, ne stav teď. U Codexu může být
       // i měsíc starý, protože novější se nikde nevzal. Proto se vedle čísla píše, kdy vzniklo.
       const zjisteno = creditAgeHtml(c, now) ? ` · ${creditAgeHtml(c, now)}` : '';
-      return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">zůstatek ${c.balance.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })}${zjisteno}${markers.length ? ` · ${markers.length}× doplněno` : ''}</span></div>
-        ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString('cs-CZ', { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: 'Doplněno' })}</div>`;
+      return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">${tr('zůstatek')} ${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}${zjisteno}${markers.length ? ` ${tr('· {0}× doplněno', markers.length)}` : ''}</span></div>
+        ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: tr('Doplněno') })}</div>`;
     });
   fill(el, 'usage-history', usageHistoryHtml());
   fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${gauges.length || creditCharts.length ? coverageNote() : ''}${limitsAll(state, now)}`);
 }
 
-export default { id: 'statistiky', title: 'Statistiky', mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };
+export default { id: 'statistiky', title: tr('Statistiky'), mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };

@@ -1,4 +1,5 @@
 import { esc, fmtTok, fmtAxis, timeHM, dateTime } from './format.js';
+import { tr, podleJazyka } from './i18n.js';
 
 // Pravidla grafů Agenteeq: kreslí se jen naměřené hodnoty. Žádné vyhlazování mezi body (vymýšlelo by hodnoty),
 // intervaly jako sloupce, stav v čase jako schodovitá čára na skutečné časové ose, popisky se nesmí překrývat.
@@ -32,7 +33,7 @@ function pickLabels(n, maxLabels = 7) {
 
 /* ---------- Sloupce po intervalech (tokeny za den / hodinu) ---------- */
 
-export function stackedColumns({ id, labels, tips, series, height = 208, format = fmtTok, axisFormat = fmtAxis, label = 'Graf', partialLast = false }) {
+export function stackedColumns({ id, labels, tips, series, height = 208, format = fmtTok, axisFormat = fmtAxis, label = tr('Graf'), partialLast = false }) {
   const n = labels.length;
   const visible = series.filter((s) => !s.hidden);
   const totals = Array.from({ length: n }, (_, i) => visible.reduce((a, s) => a + (s.values[i] || 0), 0));
@@ -47,7 +48,7 @@ export function stackedColumns({ id, labels, tips, series, height = 208, format 
   const summary = visible.map((s) => `${s.label} ${format(s.values.reduce((a, b) => a + (b || 0), 0))}`).join(', ');
   return `<div class="chart" style="--chart-h:${height}px">
     ${yAxis(max, axisFormat)}
-    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}: ${summary || 'bez dat'}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.`)}">
+    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.', summary || 'bez dat')}`)}">
       ${grid()}
       <div class="bars" style="--n:${n}" aria-hidden="true">${bars}</div>
       <div class="tip" aria-hidden="true"></div>
@@ -67,7 +68,7 @@ function timeLabel(t, span, prev) {
   return sameDay ? timeHM(t) : `${day} ${timeHM(t)}`;
 }
 
-export function timeLine({ id, points, height = 160, format = String, axisFormat = format, label = 'Graf', color = '#2a78d6', riseLabel = 'Nárůst' }) {
+export function timeLine({ id, points, height = 160, format = String, axisFormat = format, label = tr('Graf'), color = '#2a78d6', riseLabel = tr('Nárůst') }) {
   const pts = points.filter((p) => Number.isFinite(p.at) && Number.isFinite(p.value)).sort((a, b) => a.at - b.at);
   if (!pts.length) return '';
   let t0 = pts[0].at;
@@ -101,7 +102,7 @@ export function timeLine({ id, points, height = 160, format = String, axisFormat
   }).join('');
   return `<div class="chart" style="--chart-h:${height}px">
     ${yAxis(max, axisFormat)}
-    <div class="chart-plot" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}: ${pts.length} záznamů, poslední hodnota ${format(pts.at(-1).value)}. Šipkami procházej záznamy.`)}">
+    <div class="chart-plot" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0} záznamů, poslední hodnota {1}. Šipkami procházej záznamy.', pts.length, format(pts.at(-1).value))}`)}">
       ${grid()}
       <svg viewBox="0 0 ${W} ${HH}" preserveAspectRatio="none" aria-hidden="true"><path class="area" d="${area}" fill="${color}"/><path class="line" d="${line}" stroke="${color}"/></svg>
       ${markers}
@@ -135,9 +136,9 @@ function showHover(plot, idx, t) {
     for (const slot of plot.querySelectorAll('.bar-slot')) slot.classList.toggle('is-active', Number(slot.dataset.i) === idx);
     const rows = c.series.slice().reverse()
       .map((s) => `<span class="tip-row"><i class="sw" style="background:${s.color}"></i>${esc(s.label)}<b>${esc(c.format(s.values[idx] || 0))}</b></span>`).join('');
-    const total = c.series.length > 1 ? `<span class="tip-row tip-total">Celkem<b>${esc(c.format(c.totals[idx]))}</b></span>` : '';
-    const partial = c.partialLast && idx === c.n - 1 ? ' · zatím' : '';
-    placeTip(plot, ((idx + 0.5) / c.n) * 100, 100 - (c.totals[idx] / c.max) * 100).innerHTML = `<span class="tip-label">${esc(c.tips[idx])}${partial}</span>${rows || '<span class="tip-row">Bez dat</span>'}${total}`;
+    const total = c.series.length > 1 ? `<span class="tip-row tip-total">${tr('Celkem')}<b>${esc(c.format(c.totals[idx]))}</b></span>` : '';
+    const partial = c.partialLast && idx === c.n - 1 ? tr(' · zatím') : '';
+    placeTip(plot, ((idx + 0.5) / c.n) * 100, 100 - (c.totals[idx] / c.max) * 100).innerHTML = `<span class="tip-label">${esc(c.tips[idx])}${partial}</span>${rows || `<span class="tip-row">${tr('Bez dat')}</span>`}${total}`;
     return;
   }
 
@@ -158,8 +159,8 @@ function showHover(plot, idx, t) {
   // Skok v hodnotě patří k okamžiku změny, ne k času, kdy se na něj někdo dívá.
   const rise = !drzena && prev && p.value > prev.value ? `<span class="tip-row">${esc(c.riseLabel)}<b>+${esc(c.format(p.value - prev.value))}</b></span>` : '';
   // „V tomhle čase to bylo X“ nemáme z čeho tvrdit. Známe jen poslední odečet – a řekneme kdy.
-  const namereno = drzena ? `<span class="tip-row tip-note">naměřeno<b>${esc(dateTime(p.at))}</b></span>` : '';
-  placeTip(plot, xPct, yPct).innerHTML = `<span class="tip-label">${esc(dateTime(cas))}</span><span class="tip-row">${drzena ? 'Poslední známá' : 'Hodnota'}<b>${esc(c.format(p.value))}</b></span>${rise}${namereno}`;
+  const namereno = drzena ? `<span class="tip-row tip-note">${tr('naměřeno')}<b>${esc(dateTime(p.at))}</b></span>` : '';
+  placeTip(plot, xPct, yPct).innerHTML = `<span class="tip-label">${esc(dateTime(cas))}</span><span class="tip-row">${drzena ? tr('Poslední známá') : tr('Hodnota')}<b>${esc(c.format(p.value))}</b></span>${rise}${namereno}`;
 }
 
 function pointerRatio(plot, clientX) {
@@ -241,7 +242,7 @@ export function miniBars(values, color, { height = 40 } = {}) {
   return `<svg class="minibars" viewBox="0 0 ${W} ${height}" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="${height - 1}" width="${W}" height="1" style="fill:var(--line)"/>${bars}</svg>`;
 }
 
-export function donut({ segments, center = '', sub = '', format = String, label = 'Podíl' }) {
+export function donut({ segments, center = '', sub = '', format = String, label = tr('Podíl') }) {
   const size = 176;
   const thick = 20;
   const r = (size - thick) / 2;
@@ -268,7 +269,7 @@ export function donut({ segments, center = '', sub = '', format = String, label 
       <svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--line-2)" stroke-width="${thick}"/>${arcs}</svg>
       <div class="donut-center"><span class="donut-value">${center}</span><span class="donut-sub">${esc(sub)}</span></div>
     </div>
-    <ul class="donut-legend">${legend || '<li class="muted">Bez dat</li>'}</ul>
+    <ul class="donut-legend">${legend || `<li class="muted">${tr('Bez dat')}</li>`}</ul>
   </div>`;
 }
 
@@ -293,12 +294,12 @@ export function gauge({ pct, color, value, label, sub = '', age = '', stare = fa
   </div>`;
 }
 
-const DNY_PLNE = ['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'];
+const DNY_PLNE = podleJazyka(['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'], ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
 const hodina = (h) => `${h}:00–${h + 1}:00`;
 
 export function heatmap(grid2, { format = fmtTok, details } = {}) {
   const max = Math.max(1, ...grid2.flat());
-  const days = ['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'];
+  const days = podleJazyka(['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
   const rows = grid2
     .map((row, d) => `<div class="heat-row" data-d="${d}"><span class="heat-day">${days[d]}</span>${row.map((v, h) => {
       const x = details?.[d]?.[h];
@@ -311,8 +312,8 @@ export function heatmap(grid2, { format = fmtTok, details } = {}) {
   let best = { v: 0, d: 0, h: 0 };
   grid2.forEach((row, d) => row.forEach((v, h) => { if (v > best.v) best = { v, d, h }; }));
   const summary = best.v > 0
-    ? `Aktivita agentů podle dne v týdnu a hodiny. Nejvíc práce: ${DNY_PLNE[best.d]} ${hodina(best.h)}, ${format(best.v)}.`
-    : 'Aktivita agentů podle dne v týdnu a hodiny. Za posledních 30 dní zatím žádná.';
+    ? tr('Aktivita agentů podle dne v týdnu a hodiny. Nejvíc práce: {0} {1}, {2}.', DNY_PLNE[best.d], hodina(best.h), format(best.v))
+    : tr('Aktivita agentů podle dne v týdnu a hodiny. Za posledních 30 dní zatím žádná.');
   return `<div class="heat" role="img" aria-label="${esc(summary)}" data-max="${max}">${rows}<div class="heat-row heat-hours"><span class="heat-day"></span>${hours}</div><div class="heat-tip" hidden></div></div>`;
 }
 
@@ -347,9 +348,9 @@ export function bindHeatmap(root = document) {
     cell.closest('.heat-row').querySelector('.heat-day')?.classList.add('is-hot');
     heat.querySelector(`.heat-hours span[data-h="${h}"]`)?.classList.add('is-hot');
     tip.innerHTML = `<span class="tip-label">${esc(DNY_PLNE[d])} · ${esc(hodina(h))}</span>
-      <b class="heat-tip-num">${tokens > 0 ? `${esc(fmtTok(tokens))} <small>tokenů</small>` : 'Nic se nedělo'}</b>
-      ${tokens > 0 && mozne ? `<span class="tip-row">Pracovali ${esc(dny)} z ${esc(mozne)} ${Number(mozne) === 1 ? 'dne' : 'dní'}</span>` : ''}
-      ${tokens > 0 && app ? `<span class="tip-row">Nejvíc ${esc(app)} <b>${esc(podil)} %</b></span>` : ''}`;
+      <b class="heat-tip-num">${tokens > 0 ? `${esc(fmtTok(tokens))} <small>${tr('tokenů')}</small>` : tr('Nic se nedělo')}</b>
+      ${tokens > 0 && mozne ? `<span class="tip-row">${Number(mozne) === 1 ? tr('Pracovali {0} z {1} dne', esc(dny), esc(mozne)) : tr('Pracovali {0} z {1} dní', esc(dny), esc(mozne))}</span>` : ''}
+      ${tokens > 0 && app ? `<span class="tip-row">${tr('Nejvíc')} ${esc(app)} <b>${esc(podil)} %</b></span>` : ''}`;
     tip.hidden = false;
     const box = heat.getBoundingClientRect();
     const c = cell.getBoundingClientRect();
@@ -380,14 +381,14 @@ export function hbars(items, { format = fmtTok, max } = {}) {
     .join('')}</ul>`;
 }
 
-export function columnChart({ columns, budget = 0, format, axisFormat = format, height = 220, label = 'Sloupcový graf' }) {
+export function columnChart({ columns, budget = 0, format, axisFormat = format, height = 220, label = tr('Sloupcový graf') }) {
   const totals = columns.map((c) => c.segments.reduce((a, s) => a + s.value, 0));
   const max = niceMax(Math.max(budget, ...totals, 0));
   return `<div class="cols" style="--chart-h:${height}px" role="img" aria-label="${esc(label)}">
     ${yAxis(max, axisFormat)}
     <div class="cols-plot">
       ${grid()}
-      ${budget > 0 ? `<div class="cols-budget" style="bottom:${(budget / max) * 100}%"><span>Rozpočet</span></div>` : ''}
+      ${budget > 0 ? `<div class="cols-budget" style="bottom:${(budget / max) * 100}%"><span>${tr('Rozpočet')}</span></div>` : ''}
       <div class="cols-bars">${columns
         .map((c, i) => `<div class="col${c.current ? ' is-current' : ''}" tabindex="0" data-tip="${esc(c.tip)}">
           <div class="col-stack" style="height:${((totals[i] / max) * 100).toFixed(2)}%">${c.segments.filter((s) => s.value > 0).map((s) => `<i style="flex-grow:${s.value};background:${s.color}"></i>`).join('')}</div>
@@ -425,7 +426,7 @@ export function timeline({ rows, from, to, now }) {
           .join('')}${r.status === 'working' ? `<i class="tl-live" style="left:${pct(now)}%;background:${r.color}"></i>` : ''}${r.status === 'needs_input' || r.status === 'limited' || r.status === 'failed' ? `<i class="tl-flag" style="left:${pct(r.lastAt)}%"></i>` : ''}</span>
       </a>`)
       .join('')}
-    <div class="tl-now" aria-hidden="true"><span>teď</span></div>
+    <div class="tl-now" aria-hidden="true"><span>${tr('teď')}</span></div>
   </div>`;
 }
 
@@ -441,10 +442,10 @@ export function tokenBreakdown({ input = 0, output = 0, cacheWrite = 0, cacheRea
   const pct = (v) => { if (!use || !v) return ''; const p = (v / use) * 100; return p < 1 ? '<1 %' : p > 99 ? '>99 %' : `${Math.round(p)} %`; };
   const cacheMax = Math.max(cacheWrite, cacheRead);
   const cshare = (v) => { const all = cacheWrite + cacheRead; if (!all || !v) return ''; const p = (v / all) * 100; return p < 1 ? '<1 %' : p > 99 ? '>99 %' : `${Math.round(p)} %`; };
-  return `<div class="tb" role="group" aria-label="Složení tokenů">
-    <p class="tb-head"><span>Spotřeba</span><b>${fmtTok(use)}</b></p>
-    <ul class="tb-list">${row('Vstup', input, use, 'var(--ink)', pct(input))}${row('Výstup', output, use, outputColor, pct(output))}</ul>
-    ${cacheMax > 0 ? `<p class="tb-head tb-head--sub"><span>Cache <small>technická režie, do spotřeby se nepočítá</small></span></p>
-    <ul class="tb-list">${row('Zápis do cache', cacheWrite, cacheMax, 'var(--teal)', cshare(cacheWrite))}${row('Čtení z cache', cacheRead, cacheMax, 'var(--brass)', cshare(cacheRead))}</ul>` : ''}
+  return `<div class="tb" role="group" aria-label="${tr('Složení tokenů')}">
+    <p class="tb-head"><span>${tr('Spotřeba')}</span><b>${fmtTok(use)}</b></p>
+    <ul class="tb-list">${row(tr('Vstup'), input, use, 'var(--ink)', pct(input))}${row(tr('Výstup'), output, use, outputColor, pct(output))}</ul>
+    ${cacheMax > 0 ? `<p class="tb-head tb-head--sub"><span>${tr('Cache')} <small>${tr('technická režie, do spotřeby se nepočítá')}</small></span></p>
+    <ul class="tb-list">${row(tr('Zápis do cache'), cacheWrite, cacheMax, 'var(--teal)', cshare(cacheWrite))}${row(tr('Čtení z cache'), cacheRead, cacheMax, 'var(--brass)', cshare(cacheRead))}</ul>` : ''}
   </div>`;
 }

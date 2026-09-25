@@ -1,11 +1,12 @@
 import { state, emit } from './state.js';
 import { api } from './api.js';
 import { toast } from './ui.js';
+import { tr } from './i18n.js';
 
 // Uživatelské pořadí karet (tažením). Ukládá se na server do nastavení, takže přežije zavření
 // aplikace i přeinstalování; pořadí se drží jen pro karty, které uživatel viděl.
 
-export const GRIP = '<span class="grip" data-grip aria-hidden="true" title="Přetáhni pro změnu pořadí"><i></i><i></i><i></i><i></i><i></i><i></i></span>';
+export const GRIP = `<span class="grip" data-grip aria-hidden="true" title="${tr('Přetáhni pro změnu pořadí')}"><i></i><i></i><i></i><i></i><i></i><i></i></span>`;
 
 export const savedOrder = (name) => state.settings?.layout?.[name] || [];
 
@@ -26,7 +27,7 @@ export async function saveOrder(name, ids) {
   try {
     await api.saveSettings({ layout: { [name]: ids } });
   } catch (err) {
-    toast(`Pořadí karet se neuložilo: ${err.message}`, { tone: 'err' });
+    toast(`${tr('Pořadí karet se neuložilo:')} ${err.message}`, { tone: 'err' });
   }
 }
 

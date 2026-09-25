@@ -24,6 +24,7 @@ import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
+import { tr } from './i18n.js';
 
 initSelects();
 initWelcome();
@@ -97,8 +98,8 @@ sheet.id = 'more-sheet';
 sheet.hidden = true;
 sheet.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
   <div class="sheet-grip" aria-hidden="true"></div>
-  <h2 class="sheet-title" id="sheet-h">Další sekce</h2>
-  <nav class="sheet-nav" aria-label="Další sekce">${[...document.querySelectorAll('.nav .nav-secondary')].map((a) => `<a href="${a.getAttribute('href')}" data-sheet-nav="${a.dataset.nav}">${a.querySelector('svg').outerHTML}<span>${esc(a.querySelector('span').textContent)}</span><b class="nav-badge" data-sheet-badge="${a.dataset.nav}" hidden></b>${ICON.chev}</a>`).join('')}</nav>
+  <h2 class="sheet-title" id="sheet-h">${tr('Další sekce')}</h2>
+  <nav class="sheet-nav" aria-label="${tr('Další sekce')}">${[...document.querySelectorAll('.nav .nav-secondary')].map((a) => `<a href="${a.getAttribute('href')}" data-sheet-nav="${a.dataset.nav}">${a.querySelector('svg').outerHTML}<span>${esc(a.querySelector('span').textContent)}</span><b class="nav-badge" data-sheet-badge="${a.dataset.nav}" hidden></b>${ICON.chev}</a>`).join('')}</nav>
   <div class="sheet-foot" data-sheet-foot></div>
 </div>`;
 document.body.appendChild(sheet);
@@ -194,7 +195,7 @@ function refresh(topics) {
   if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
   if (!state.loaded) {
-    if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml('Načítám agenty z tohoto Macu…'));
+    if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml(tr('Načítám agenty z tohoto Macu…')));
     return;
   }
   viewEl.querySelector(':scope > .loader-wrap')?.remove();
@@ -220,8 +221,8 @@ function renderStorage() {
     return;
   }
   setHtml(storageEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
-    <div class="offline-text"><strong>Změny se nedaří uložit na disk</strong>
-      <p>Agenteeq dál běží, ale nové nastavení, projekty a výdaje se neuloží. Zkontroluj volné místo na disku a oprávnění ke složce <code>~/.agenteeq</code>.</p>
+    <div class="offline-text"><strong>${tr('Změny se nedaří uložit na disk')}</strong>
+      <p>${tr('Agenteeq dál běží, ale nové nastavení, projekty a výdaje se neuloží. Zkontroluj volné místo na disku a oprávnění ke složce')} <code>~/.agenteeq</code>.</p>
       <p class="small">${esc(st.error || '')}</p></div>`);
   storageEl.hidden = false;
 }
@@ -244,9 +245,9 @@ function updateChrome() {
     b.dataset.tone = tone;
     b.setAttribute('aria-label', label);
   };
-  setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} potřebuje tebe` : `${working} pracuje`);
-  setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} nepřečtených`);
-  setBadge('more', state.alerts.unread, 'coral', `${state.alerts.unread} nepřečtených upozornění`);
+  setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} ${tr('potřebuje tebe')}` : `${working} pracuje`);
+  setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} ${tr('nepřečtených')}`);
+  setBadge('more', state.alerts.unread, 'coral', `${state.alerts.unread} ${tr('nepřečtených upozornění')}`);
   const sheetBadge = sheet.querySelector('[data-sheet-badge="upozorneni"]');
   if (sheetBadge) {
     sheetBadge.hidden = !state.alerts.unread;
@@ -256,7 +257,7 @@ function updateChrome() {
 
   bellBadge.hidden = !state.alerts.unread;
   bellBadge.textContent = state.alerts.unread > 9 ? '10+' : String(state.alerts.unread);
-  bell.setAttribute('aria-label', state.alerts.unread ? `Upozornění, ${state.alerts.unread} nepřečtených` : 'Upozornění');
+  bell.setAttribute('aria-label', state.alerts.unread ? tr('Upozornění, {0} nepřečtených', state.alerts.unread) : tr('Upozornění'));
 
   renderStage(all);
 
@@ -264,17 +265,17 @@ function updateChrome() {
   // Na úzké obrazovce se vedle dlouhého názvu stránky nevejde celý popisek, ale samotná tečka
   // nic neříká. Každý stav má proto i krátkou variantu; přepíná se v CSS, ne v JavaScriptu.
   const STAVY = {
-    live: ['dot--live', 'Připojeno', 'Připojeno'],
-    connecting: ['dot', 'Připojuji…', 'Připojuji…'],
-    down: ['dot--down', 'Obnovuji spojení…', 'Bez spojení'],
+    live: ['dot--live', tr('Připojeno'), tr('Připojeno')],
+    connecting: ['dot', tr('Připojuji…'), tr('Připojuji…')],
+    down: ['dot--down', tr('Obnovuji spojení…'), tr('Bez spojení')],
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
-  setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : '<span class="source-state"><i class="dot dot--down"></i>Bez spojení se serverem</span>'}
+  setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
     ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
-    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>Co je nového</span></button>` : ''}`);
+    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
 
-  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || 'Přehled'} · Agenteeq`;
+  document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
   if (!pop.hidden) renderPopover();
 }
 
@@ -291,7 +292,7 @@ function renderProfile(name, working, all) {
   const slot = profileEl.querySelector('[data-p-avatar]');
   const art = hasAvatar(state.settings?.avatar);
   const hadFocus = Boolean(document.activeElement?.closest?.('[data-avatar-cycle]'));
-  setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="Změnit profilový obrázek" title="Změnit profilový obrázek">
+  setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="${tr('Změnit profilový obrázek')}" title="${tr('Změnit profilový obrázek')}">
     <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agenteeq'))}</span></span>
     <span class="avatar-change" aria-hidden="true">${ICON.refresh}</span>
   </button>`);
@@ -304,14 +305,14 @@ function renderProfile(name, working, all) {
   for (const s of all) {
     const n = tokensSince([s], dnes);
     if (n > 0) {
-      const nastroj = String(s.app || 'Ostatní').split(' · ')[0];
+      const nastroj = String(s.app || tr('Ostatní')).split(' · ')[0];
       podleNastroje.set(nastroj, (podleNastroje.get(nastroj) || 0) + n);
     }
   }
   const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
-  setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">Vítej zpět,<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">tokenů dnes</div>${zdroje.length
-    ? `<a class="budget-src" href="#/statistiky" title="Vstup + výstup z přepisů na tomto Macu, bez cache. Není to cena ani limit předplatného.">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
+  setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">${tr('Vítej zpět,')}<b>${esc(name)}</b></p>
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">${tr('tokenů dnes')}</div>${zdroje.length
+    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstup + výstup z přepisů na tomto Macu, bez cache. Není to cena ani limit předplatného.')}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
     : ''}</div>`);
 }
 
@@ -366,14 +367,14 @@ function tick(hned = false) {
 
 function renderPopover() {
   const items = state.alerts.items.slice(0, 8);
-  pop.innerHTML = `<div class="pop-head"><strong>Upozornění</strong>${state.alerts.unread ? '<button class="link" type="button" data-read-all>Označit vše jako přečtené</button>' : ''}</div>
+  pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all>${tr('Označit vše jako přečtené')}</button>` : ''}</div>
     <ul class="pop-list">${items.length
       ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${a.sessionId ? agentHref(a.sessionId) : '#/upozorneni'}" data-alert-id="${esc(a.id)}">
           <span class="pop-icon">${alertIcon(a)}</span>
           <span class="pop-text"><span class="pop-title">${esc(a.title)}</span>${a.body ? `<span class="pop-body">${esc(a.body)}</span>` : ''}<span class="pop-time" data-ago="${a.at}">${rel(a.at)}</span></span>
         </a></li>`).join('')
-      : '<li class="pop-empty">Zatím žádná upozornění.</li>'}</ul>
-    <a class="pop-foot" href="#/upozorneni">Zobrazit všechna upozornění</a>`;
+      : `<li class="pop-empty">${tr('Zatím žádná upozornění.')}</li>`}</ul>
+    <a class="pop-foot" href="#/upozorneni">${tr('Zobrazit všechna upozornění')}</a>`;
 }
 
 function openPopover() {
@@ -391,7 +392,7 @@ function closePopover() {
 function onAlert(a) {
   const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
   const urgent = a.level === 'action' || a.level === 'critical';
-  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: 'Otevřít', href }, timeout: urgent ? 12000 : 5000 });
+  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: tr('Otevřít'), href }, timeout: urgent ? 12000 : 5000 });
   const n = state.settings?.notifications;
   if (n?.browser && 'Notification' in window && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
     try {
@@ -411,7 +412,7 @@ async function openSession(btn) {
   btn.classList.add('is-busy');
   try {
     const r = await api.openSession(btn.dataset.sessionId, btn.dataset.openTarget);
-    toast(`Otevírám ${r.label}`);
+    toast(`${tr('Otevírám')} ${r.label}`);
   } catch (err) {
     toast(err.message, { tone: 'err', timeout: 9000 });
   } finally {
@@ -428,20 +429,20 @@ const palette = createPalette(
     const agentItems = agentsList()
       .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
       .slice(0, 8)
-      .map((s) => ({ group: 'Agenti', label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
-    const sections = [['prehled', 'Přehled'], ['upozorneni', 'Upozornění'], ['agenti', 'Agenti'], ['projekty', 'Projekty'], ['statistiky', 'Statistiky'], ['utrata', 'Útrata'], ['dovednosti', 'Dovednosti'], ['nastaveni', 'Nastavení']]
+      .map((s) => ({ group: tr('Agenti'), label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
+    const sections = [['prehled', tr('Přehled')], ['upozorneni', tr('Upozornění')], ['agenti', tr('Agenti')], ['projekty', tr('Projekty')], ['statistiky', tr('Statistiky')], ['utrata', tr('Útrata')], ['dovednosti', tr('Dovednosti')], ['nastaveni', tr('Nastavení')]]
       .filter(([, l]) => !nq || norm(l).includes(nq))
-      .map(([k, l]) => ({ group: 'Sekce', label: l, href: `#/${k}`, icon: ICON.arrow }));
+      .map(([k, l]) => ({ group: tr('Sekce'), label: l, href: `#/${k}`, icon: ICON.arrow }));
     const projectItems = state.projects.items
       .filter((p) => !p.archived && (!nq || norm([p.name, p.description, ...p.folders].join(' ')).includes(nq)))
       .slice(0, 6)
-      .map((p) => ({ group: 'Projekty', label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) }));
+      .map((p) => ({ group: tr('Projekty'), label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) }));
     const actions = [
-      { group: 'Akce', label: 'Spustit agenta', run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
-      { group: 'Akce', label: 'Nový projekt', run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
-      { group: 'Akce', label: 'Přidat výdaj', href: '#/utrata?pridat=1', icon: ICON.plus },
-      { group: 'Akce', label: 'Označit upozornění jako přečtená', run: () => markRead('all'), icon: ICON.check },
-      { group: 'Akce', label: 'Zapnout propojení s Claude Code', href: '#/nastaveni', icon: ICON.bell },
+      { group: tr('Akce'), label: tr('Spustit agenta'), run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
+      { group: tr('Akce'), label: tr('Nový projekt'), run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
+      { group: tr('Akce'), label: tr('Přidat výdaj'), href: '#/utrata?pridat=1', icon: ICON.plus },
+      { group: tr('Akce'), label: tr('Označit upozornění jako přečtená'), run: () => markRead('all'), icon: ICON.check },
+      { group: tr('Akce'), label: tr('Zapnout propojení s Claude Code'), href: '#/nastaveni', icon: ICON.bell },
     ].filter((a) => !nq || norm(a.label).includes(nq));
     return nq ? [...agentItems, ...projectItems, ...sections, ...actions] : [...actions.slice(0, 2), ...sections, ...projectItems, ...agentItems, ...actions.slice(2)];
   },
@@ -525,15 +526,15 @@ function renderOffline(show) {
   // Adresu bereme z okna, ne natvrdo: na telefonu je 127.0.0.1 sám telefon, ne Mac.
   const naMacu = window.agenteeqDesktop || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
   const rada = window.agenteeqDesktop
-    ? 'Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.'
+    ? tr('Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.')
     : naMacu
-      ? 'Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).'
-      : 'Agenteeq se připojí samo, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a že na něm Agenteeq běží.';
+      ? tr('Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).')
+      : tr('Agenteeq se připojí samo, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a že na něm Agenteeq běží.');
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
-    <div class="offline-text"><strong>Agenteeq server neběží</strong>
+    <div class="offline-text"><strong>${tr('Agenteeq server neběží')}</strong>
       <p>${rada}</p>
-      <p class="small">${naMacu ? 'Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. ' : ''}Adresa: ${esc(location.host)}</p></div>
-    <button class="btn btn--sm" type="button" data-offline-retry>Zkusit znovu</button>`);
+      <p class="small">${naMacu ? tr('Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. ') : ''}${tr('Adresa:')} ${esc(location.host)}</p></div>
+    <button class="btn btn--sm" type="button" data-offline-retry>${tr('Zkusit znovu')}</button>`);
   offlineEl.hidden = false;
 }
 
@@ -554,7 +555,7 @@ offlineEl.addEventListener('click', async (e) => {
   if (ok) location.reload();
   else {
     b.disabled = false;
-    toast('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.', { tone: 'err' });
+    toast(tr('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.'), { tone: 'err' });
   }
 });
 
@@ -605,7 +606,7 @@ document.addEventListener('drop', async (e) => {
     setProjects(r.projects);
     const p = projectById(pid);
     const what = `${ids.length} ${plural(ids.length, 'konverzace', 'konverzace', 'konverzací')}`;
-    toast(p ? `${what} v projektu ${p.name}` : `${what} mimo projekty`, p ? { action: { label: 'Otevřít projekt', href: projectHref(p.id) } } : {});
+    toast(p ? tr('{0} v projektu {1}', what, p.name) : `${what} ${tr('mimo projekty')}`, p ? { action: { label: tr('Otevřít projekt'), href: projectHref(p.id) } } : {});
   } catch (err) {
     toast(err.message, { tone: 'err' });
   }
@@ -669,10 +670,10 @@ function udalostUctu(u) {
   if (u.udalost === 'prihlaseno' && !document.querySelector('.modal .account-welcome')) {
     const kdo = u.jmeno || u.email;
     modal({
-      title: 'Přihlášení proběhlo v pořádku',
+      title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na tomhle Macu.</p></div>`,
+        <p>${tr('Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na tomhle Macu.')}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {
@@ -730,7 +731,7 @@ connectStream({
       .then(prijmiSnimek)
       .catch((err) => {
         if (err.status === 401) return parovaciObrazovka();
-        return toast(`Nepodařilo se načíst data: ${err.message}`, { tone: 'err', timeout: 8000 });
+        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
       })
       .finally(() => { loadingSnapshot = null; });
   },
@@ -746,13 +747,13 @@ function parovaciObrazovka(zprava = '') {
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>Připojit telefon</h1>
-      <p>V Agenteeq na Macu otevři <b>Nastavení → Otevřít na telefonu</b> a vytvoř kód. Platí pět minut a jen na jedno spárování.</p>
-      <label class="sr-only" for="pin">Kód z Macu</label>
+      <h1>${tr('Připojit telefon')}</h1>
+      <p>${tr('V Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a vytvoř kód. Platí pět minut a jen na jedno spárování.')}</p>
+      <label class="sr-only" for="pin">${tr('Kód z Macu')}</label>
       <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn btn--primary" type="submit">Spárovat</button>
-      <small>Data zůstávají na tvém Macu. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.</small>
+      <button class="btn btn--primary" type="submit">${tr('Spárovat')}</button>
+      <small>${tr('Data zůstávají na tvém Macu. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.')}</small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');
@@ -763,7 +764,7 @@ function parovaciObrazovka(zprava = '') {
     const btn = form.querySelector('button');
     btn.disabled = true;
     try {
-      await api.pairDevice(input.value.replace(/\D/g, ''), `${navigator.platform || 'Telefon'}`);
+      await api.pairDevice(input.value.replace(/\D/g, ''), `${navigator.platform || tr('Telefon')}`);
       location.reload();
     } catch (err) {
       parovaciObrazovka(err.message);
@@ -793,9 +794,9 @@ async function obnovStav(duvod) {
     void duvod;
   }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav('návrat do aplikace'); });
-window.addEventListener('online', () => obnovStav('obnovená síť'));
-window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav('stránka z paměti'); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav(tr('návrat do aplikace')); });
+window.addEventListener('online', () => obnovStav(tr('obnovená síť')));
+window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav(tr('stránka z paměti')); });
 
 navigate();
 setInterval(tickClock, 1000);
