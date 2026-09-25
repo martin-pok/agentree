@@ -1,4 +1,5 @@
 import { esc, MONTHS } from './format.js';
+import { tr, podleJazyka, LOCALE } from './i18n.js';
 
 // Vlastní kalendář. Nativní <input type="date"> otevírá okno operačního systému, které nejde
 // ostylovat, takže by v aplikaci vždycky vypadalo jako cizí prvek. Původní prvek zůstává v DOM
@@ -82,7 +83,7 @@ const labelText = (el) => {
 
 /* ---------- Kalendář ---------- */
 
-const DAYS = ['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'];
+const DAYS = podleJazyka(['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'], ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parse = (s) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
@@ -115,9 +116,9 @@ function enhanceDate(inp) {
   inp.setAttribute('aria-hidden', 'true');
   const sync = () => {
     const d = parse(inp.value);
-    btn.querySelector('.dd-value').textContent = d ? show(d) : 'Vyber datum';
+    btn.querySelector('.dd-value').textContent = d ? show(d) : tr('Vyber datum');
     btn.classList.toggle('is-placeholder', !d);
-    btn.setAttribute('aria-label', `${name ? `${name}: ` : ''}${d ? show(d) : 'nevybráno'}`);
+    btn.setAttribute('aria-label', `${name ? `${name}: ` : ''}${d ? show(d) : tr('nevybráno')}`);
     btn.disabled = inp.disabled;
   };
   inp.addEventListener('change', sync);
@@ -131,7 +132,7 @@ function enhanceDate(inp) {
     const pop = document.createElement('div');
     pop.className = 'picker-menu dd-cal';
     pop.setAttribute('role', 'dialog');
-    pop.setAttribute('aria-label', 'Kalendář');
+    pop.setAttribute('aria-label', tr('Kalendář'));
     const draw = () => {
       const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
       const offset = (first.getDay() + 6) % 7;
@@ -139,12 +140,12 @@ function enhanceDate(inp) {
       for (let i = 0; i < 42; i++) {
         const d = addDays(first, i - offset);
         const cls = ['cal-day', d.getMonth() !== cursor.getMonth() ? 'is-out' : '', iso(d) === iso(today) ? 'is-today' : '', selected && iso(d) === iso(selected) ? 'is-sel' : '', iso(d) === iso(cursor) ? 'is-cursor' : ''].filter(Boolean).join(' ');
-        cells.push(`<button type="button" tabindex="-1" class="${cls}" data-d="${iso(d)}" aria-label="${d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}"${selected && iso(d) === iso(selected) ? ' aria-pressed="true"' : ''}>${d.getDate()}</button>`);
+        cells.push(`<button type="button" tabindex="-1" class="${cls}" data-d="${iso(d)}" aria-label="${d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })}"${selected && iso(d) === iso(selected) ? ' aria-pressed="true"' : ''}>${d.getDate()}</button>`);
       }
-      pop.innerHTML = `<div class="cal-head"><button type="button" tabindex="-1" class="cal-nav" data-nav="-1" aria-label="Předchozí měsíc">${PREV}</button><span class="cal-title" aria-live="polite">${esc(MONTHS[cursor.getMonth()])} ${cursor.getFullYear()}</span><button type="button" tabindex="-1" class="cal-nav" data-nav="1" aria-label="Další měsíc">${NEXT}</button></div>
+      pop.innerHTML = `<div class="cal-head"><button type="button" tabindex="-1" class="cal-nav" data-nav="-1" aria-label="${tr('Předchozí měsíc')}">${PREV}</button><span class="cal-title" aria-live="polite">${esc(MONTHS[cursor.getMonth()])} ${cursor.getFullYear()}</span><button type="button" tabindex="-1" class="cal-nav" data-nav="1" aria-label="${tr('Další měsíc')}">${NEXT}</button></div>
         <div class="cal-grid cal-dow" aria-hidden="true">${DAYS.map((d) => `<span>${d}</span>`).join('')}</div>
         <div class="cal-grid">${cells.join('')}</div>
-        <div class="cal-foot"><button type="button" tabindex="-1" class="link" data-today>Dnes</button></div>`;
+        <div class="cal-foot"><button type="button" tabindex="-1" class="link" data-today>${tr('Dnes')}</button></div>`;
     };
     draw();
     const commit = (d, close) => {

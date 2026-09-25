@@ -1,5 +1,6 @@
 import { startOfDay, hourTs, DAY, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
 import { PROVIDERS, pkey } from './icons.js';
+import { tr } from './i18n.js';
 
 // Vstup + výstup: spotřeba, kterou uživatel pozná i u dodavatele. Zápis a čtení cache jsou
 // technická režie a mají vlastní místo ve složení tokenů, ne v hlavních číslech.
@@ -15,7 +16,7 @@ export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.work
 // Barva patří poskytovateli natrvalo – nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
 export const CATEGORICAL = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 export const CHART_ORDER = ['google', 'anthropic', 'openai', 'microsoft', 'cursor', 'perplexity', 'github', 'xai'];
-export const CHART_OTHER = { key: 'other', label: 'Ostatní', color: '#8a8594' };
+export const CHART_OTHER = { key: 'other', label: tr('Ostatní'), color: '#8a8594' };
 export const chartKey = (provider) => (CHART_ORDER.includes(provider) ? provider : 'other');
 export const chartColor = (provider) => (CHART_ORDER.includes(provider) ? CATEGORICAL[CHART_ORDER.indexOf(provider)] : CHART_OTHER.color);
 
@@ -100,7 +101,7 @@ export function heatDetails(sessions, now, days = 30) {
   const since = startOfDay(now - (days - 1) * DAY);
   const cells = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => ({ tokens: 0, dny: new Set(), apps: new Map() })));
   for (const s of sessions) {
-    const app = String(s.app || 'Ostatní').split(' · ')[0];
+    const app = String(s.app || tr('Ostatní')).split(' · ')[0];
     for (const k in s.hourly) {
       const ts = hourTs(k);
       const v = s.hourly[k];

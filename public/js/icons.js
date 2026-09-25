@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
@@ -10,8 +11,8 @@ export const PROVIDERS = {
   perplexity: { label: 'Perplexity', color: '#1F8A96', ink: '#176873', on: '#FFFFFF' },
   xai: { label: 'xAI', color: '#8C8896', ink: '#5E5A66', on: '#FFFFFF' },
   alibaba: { label: 'Alibaba', color: '#615CED', ink: '#4B45D1', on: '#FFFFFF' },
-  local: { label: 'Lokální', color: '#6F8F5E', ink: '#4F6E40', on: '#FFFFFF' },
-  other: { label: 'Ostatní', color: '#B3AEBA', ink: '#686472', on: '#16141D' },
+  local: { label: tr('Lokální'), color: '#6F8F5E', ink: '#4F6E40', on: '#FFFFFF' },
+  other: { label: tr('Ostatní'), color: '#B3AEBA', ink: '#686472', on: '#16141D' },
 };
 
 export const pkey = (p) => (PROVIDERS[p] ? p : 'other');
@@ -115,8 +116,8 @@ export const ICON = {
 
 // Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.
 export const ENV = {
-  cloud: { icon: ICON.cloud, label: 'Běží v cloudu', short: 'Cloud' },
-  local: { icon: ICON.mac, label: 'Běží na tomto Macu', short: 'Na tomto Macu' },
+  cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
+  local: { icon: ICON.mac, label: tr('Běží na tomto Macu'), short: tr('Na tomto Macu') },
 };
 
 export const envOf = (s) => (s.source === 'web' ? ENV.cloud : ENV.local);

@@ -6,6 +6,7 @@ import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
 import { enableReorder } from '../reorder.js';
 import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark } from '../projects-ui.js';
+import { tr } from '../i18n.js';
 
 const v = { el: null, tab: 'active', q: '' };
 
@@ -82,15 +83,15 @@ function cardHtml(p, now) {
     <span class="pcard-grip" data-grip aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
     ${projectCover(p)}
     <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
-      ${st.needs ? `<span class="pcount pcount--alert" title="Potřebuje tvé rozhodnutí">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="Právě pracuje"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
-    <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : 'Ručně zařazené konverzace'))}</span>
+      ${st.needs ? `<span class="pcount pcount--alert" title="${tr('Potřebuje tvé rozhodnutí')}">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="${tr('Právě pracuje')}"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
+    <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : tr('Ručně zařazené konverzace')))}</span>
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b data-odo>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
-      <span class="pcard-stat"><b data-odo>${st.tokens ? fmtTok(st.tokens) : '–'}</b> tokenů / 30 dní</span>
+      <span class="pcard-stat"><b data-odo>${st.tokens ? fmtTok(st.tokens) : '–'}</b> ${tr('tokenů / 30 dní')}</span>
       ${st.services.length ? logoStack(st.services, 4) : ''}
     </span>
-    <span class="pcard-time">${st.lastAt ? `Aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : 'Zatím bez aktivity'}</span>
+    <span class="pcard-time">${st.lastAt ? `${tr('Aktivita')} <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('Zatím bez aktivity')}</span>
   </a>`;
 }
 
@@ -98,12 +99,12 @@ function mount(el) {
   v.el = el;
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
-      <div class="seg" role="group" aria-label="Zobrazit projekty" data-region="tabs"></div>
-      <label class="search-field">${ICON.search}<span class="sr-only">Hledat projekt</span><input type="search" data-q placeholder="Hledat projekt nebo složku…" autocomplete="off"></label>
-      <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Nový projekt</button>
+      <div class="seg" role="group" aria-label="${tr('Zobrazit projekty')}" data-region="tabs"></div>
+      <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat projekt')}</span><input type="search" data-q placeholder="${tr('Hledat projekt nebo složku…')}" autocomplete="off"></label>
+      <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Nový projekt')}</button>
     </div>
     <div data-region="grid"></div>
-    <section class="psuggest" data-enter style="--i:3" data-region="suggest" aria-label="Návrhy projektů"></section>`;
+    <section class="psuggest" data-enter style="--i:3" data-region="suggest" aria-label="${tr('Návrhy projektů')}"></section>`;
   const input = el.querySelector('[data-q]');
   input.value = v.q;
   input.addEventListener('input', () => { v.q = input.value; update(); });
@@ -111,7 +112,7 @@ function mount(el) {
   v.reorder = enableReorder(gridBox, {
     itemSelector: '.pcard[data-pid]',
     idOf: (n) => n.dataset.pid,
-    onMoveKey: (pos, total) => toast(`Pozice ${pos} z ${total}`, { tone: 'info', timeout: 1600 }),
+    onMoveKey: (pos, total) => toast(tr('Pozice {0} z {1}', pos, total), { tone: 'info', timeout: 1600 }),
     onCommit: async (ids) => {
       if (!ids) { gridBox._html = null; update(); return; } // Esc: vrátit původní pořadí
       try {
@@ -129,7 +130,7 @@ function mount(el) {
     if (tab) { v.tab = tab.dataset.tab; update(); return; }
     if (e.target.closest('[data-action="new"]')) {
       const p = await projectForm();
-      if (p) { toast(`Projekt ${p.name} vytvořen`); location.hash = projectHref(p.id); }
+      if (p) { toast(tr('Projekt {0} vytvořen', p.name)); location.hash = projectHref(p.id); }
       return;
     }
     const sug = e.target.closest('[data-suggest]');
@@ -138,7 +139,7 @@ function mount(el) {
       try {
         const r = await api.createProject({ name: sug.dataset.name, folders: [sug.dataset.suggest] });
         setProjects(r.projects);
-        toast(`Projekt ${r.project.name} vytvořen – konverzace ze složky se zařadily samy`, { action: { label: 'Otevřít', href: projectHref(r.project.id) } });
+        toast(tr('Projekt {0} vytvořen – konverzace ze složky se zařadily samy', r.project.name), { action: { label: tr('Otevřít'), href: projectHref(r.project.id) } });
         update();
       } catch (err) {
         sug.disabled = false;
@@ -156,7 +157,7 @@ function update() {
   const active = items.filter((p) => !p.archived);
   const archived = items.filter((p) => p.archived);
   if (v.tab === 'archived' && !archived.length) v.tab = 'active';
-  fill(el, 'tabs', [['active', 'Aktivní', active.length], ['archived', 'Archiv', archived.length]]
+  fill(el, 'tabs', [['active', tr('Aktivní'), active.length], ['archived', tr('Archiv'), archived.length]]
     .map(([k, label, n]) => `<button type="button" data-tab="${k}" aria-pressed="${v.tab === k}"${k === 'archived' && !n ? ' disabled' : ''}>${label}<span class="count">${n}</span></button>`).join(''));
 
   const q = norm(v.q.trim());
@@ -171,28 +172,28 @@ function update() {
   if (!items.length) {
     fill(el, 'grid', `<div class="card pintro">
       <div class="pintro-text">
-        <span class="eyebrow">Projekty</span>
-        <h2>Práce agentů seřazená podle klientů a zakázek</h2>
-        <p>Založ projekt a Agenteeq do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.</p>
-        <ul class="checklist"><li>Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt</li><li>Podklady projektu po ruce, když spouštíš dalšího agenta</li><li>Export do CSV jako podklad k vyúčtování klientovi</li></ul>
-        <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}Vytvořit první projekt</button>
+        <span class="eyebrow">${tr('Projekty')}</span>
+        <h2>${tr('Práce agentů seřazená podle klientů a zakázek')}</h2>
+        <p>${tr('Založ projekt a Agenteeq do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.')}</p>
+        <ul class="checklist"><li>${tr('Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt')}</li><li>${tr('Podklady projektu po ruce, když spouštíš dalšího agenta')}</li><li>${tr('Export do CSV jako podklad k vyúčtování klientovi')}</li></ul>
+        <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Vytvořit první projekt')}</button>
       </div>
       <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#F2B824"></span></div>
     </div>`);
   } else if (!list.length) {
-    fill(el, 'grid', `<div class="card">${emptyState({ title: q ? 'Žádný projekt neodpovídá hledání' : 'V archivu nic není', text: q ? 'Zkus jiný název nebo složku.' : '' })}</div>`);
+    fill(el, 'grid', `<div class="card">${emptyState({ title: q ? tr('Žádný projekt neodpovídá hledání') : tr('V archivu nic není'), text: q ? tr('Zkus jiný název nebo složku.') : '' })}</div>`);
   } else if (!v.reorder?.isDragging()) {
     sesadKarty(el.querySelector('[data-region="grid"]'), `<div class="pgrid">${list.map((p) => cardHtml(p, now)).join('')}
-      ${v.tab === 'active' && unassigned ? `<a class="pcard pcard--ghost" href="#/agenti?projekt=bez"><span class="pcard-top"><span class="pghost-mark">${ICON.folder}</span><span class="pcard-name">Nezařazené</span></span>
-        <span class="pcard-desc">${unassigned} ${plural(unassigned, 'konverzace čeká', 'konverzace čekají', 'konverzací čeká')} na zařazení do projektu.</span><span class="link-inline">Roztřídit ${ICON.arrow}</span></a>` : ''}
+      ${v.tab === 'active' && unassigned ? `<a class="pcard pcard--ghost" href="#/agenti?projekt=bez"><span class="pcard-top"><span class="pghost-mark">${ICON.folder}</span><span class="pcard-name">${tr('Nezařazené')}</span></span>
+        <span class="pcard-desc">${unassigned} ${plural(unassigned, 'konverzace čeká', 'konverzace čekají', 'konverzací čeká')} ${tr('na zařazení do projektu.')}</span><span class="link-inline">${tr('Roztřídit')} ${ICON.arrow}</span></a>` : ''}
     </div>`);
   }
 
   fill(el, 'suggest', sugg.length && v.tab === 'active'
-    ? `<div class="sec-head"><h2>Návrhy ze složek, kde pracují agenti</h2><span class="muted small">Jedním kliknutím vznikne projekt se zařazenými konverzacemi</span></div>
+    ? `<div class="sec-head"><h2>${tr('Návrhy ze složek, kde pracují agenti')}</h2><span class="muted small">${tr('Jedním kliknutím vznikne projekt se zařazenými konverzacemi')}</span></div>
        <div class="psuggest-grid">${sugg.map((x) => `<button class="psuggest-item" type="button" data-suggest="${esc(x.cwd)}" data-name="${esc(x.name)}">
          <span class="icon-tile">${ICON.folder}</span><span class="psuggest-text"><b>${esc(x.name)}</b><small>${esc(shortPath(x.cwd))} · ${x.count} ${plural(x.count, 'konverzace', 'konverzace', 'konverzací')}</small></span>${ICON.plus}</button>`).join('')}</div>`
     : '');
 }
 
-export default { id: 'projekty', title: 'Projekty', mount, update, unmount: () => { v.el = null; v.reorder = null; } };
+export default { id: 'projekty', title: tr('Projekty'), mount, update, unmount: () => { v.el = null; v.reorder = null; } };

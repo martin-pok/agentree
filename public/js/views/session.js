@@ -9,6 +9,7 @@ import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
+import { tr, LOCALE } from '../i18n.js';
 
 const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
 const MAX_RENDERED = 400;
@@ -38,7 +39,7 @@ const isLong = (t) => String(t || '').includes('\n') || String(t || '').length >
 
 // mcp__Claude_Browser__preview_logs → „Claude Browser · preview logs“
 function toolLabel(name) {
-  const n = String(name || 'Nástroj');
+  const n = String(name || tr('Nástroj'));
   if (!n.startsWith('mcp__')) return n;
   const parts = n.split('__').slice(1).map((p) => p.replace(/^plugin_/, '').replace(/_/g, ' ').trim()).filter(Boolean);
   return parts.length > 1 ? `${parts[0]} · ${parts.slice(1).join(' ')}` : parts[0] || 'MCP';
@@ -52,13 +53,13 @@ function entryHtml(e) {
   const time = `<time class="msg-time" datetime="${new Date(e.at).toISOString()}">${timeHM(e.at)}</time>`;
   switch (e.role) {
     case 'user':
-      return `<div class="msg-head"><span class="msg-who">Ty</span>${time}</div><div class="msg-body md">${md(e.text)}</div>`;
+      return `<div class="msg-head"><span class="msg-who">${tr('Ty')}</span>${time}</div><div class="msg-body md">${md(e.text)}</div>`;
     case 'assistant':
-      return `<div class="msg-head"><span class="msg-who">Agent</span>${time}</div><div class="msg-body md">${md(e.text)}</div>`;
+      return `<div class="msg-head"><span class="msg-who">${tr('Agent')}</span>${time}</div><div class="msg-body md">${md(e.text)}</div>`;
     case 'tool':
-      return `<div class="tool-line"><span class="tool-name" title="${esc(e.tool || '')}">${esc(toolLabel(e.tool))}</span><span class="tool-text">${esc(firstLine(e.text))}</span>${time}</div>${isLong(e.text) ? `<details><summary>Celý vstup</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
+      return `<div class="tool-line"><span class="tool-name" title="${esc(e.tool || '')}">${esc(toolLabel(e.tool))}</span><span class="tool-text">${esc(firstLine(e.text))}</span>${time}</div>${isLong(e.text) ? `<details><summary>${tr('Celý vstup')}</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
     case 'result':
-      return `<div class="tool-line result">${e.status === 'error' ? ICON.close : ICON.check}<span class="tool-text">${esc(firstLine(e.text) || 'Hotovo')}</span></div>${isLong(e.text) ? `<details><summary>Výstup</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
+      return `<div class="tool-line result">${e.status === 'error' ? ICON.close : ICON.check}<span class="tool-text">${esc(firstLine(e.text) || tr('Hotovo'))}</span></div>${isLong(e.text) ? `<details><summary>${tr('Výstup')}</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
     case 'error':
       return `<div class="msg-sys">${ICON.alert}<span>${esc(e.text)}</span>${time}</div>`;
     default:
@@ -68,7 +69,7 @@ function entryHtml(e) {
 
 function progressHtml(p) {
   const pct = p.total ? (p.done / p.total) * 100 : 0;
-  return `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}" aria-label="Plán úkolů">
+  return `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}" aria-label="${tr('Plán úkolů')}">
     <div class="progress-top"><span>${p.done} z ${p.total} ${plural(p.total, 'úkolu', 'úkolů', 'úkolů')}</span>${p.current ? `<span class="muted">${esc(p.current)}</span>` : ''}</div>
     <div class="progress-track"><i style="width:${pct.toFixed(1)}%"></i></div>
   </div>`;
@@ -88,7 +89,7 @@ async function load() {
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
   } catch (err) {
     t.loaded = true;
-    t.error = err.status === 404 ? 'Konverzace je starší než 30 dní nebo byla smazána.' : err.message;
+    t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);
@@ -98,20 +99,20 @@ async function load() {
 function mount(el, [id]) {
   Object.assign(v, { id, el, rendered: new Map(), follow: true });
   el.innerHTML = `<div class="session">
-    <a class="back" href="#/agenti">${ICON.back}Všichni agenti</a>
+    <a class="back" href="#/agenti">${ICON.back}${tr('Všichni agenti')}</a>
     <header class="session-head" data-region="head"><div class="skeleton" style="width:40%"></div><div class="skeleton skeleton--lg"></div></header>
     <div data-region="banner"></div>
     <div data-region="live"></div>
     <div class="session-grid">
       <section class="card transcript" aria-labelledby="tr-h">
         <div class="transcript-bar">
-          <h2 id="tr-h">Přepis</h2><span class="muted small" data-region="tr-count"></span>
-          <label class="check-inline"><input type="checkbox" data-tools checked> Zobrazit nástroje</label>
+          <h2 id="tr-h">${tr('Přepis')}</h2><span class="muted small" data-region="tr-count"></span>
+          <label class="check-inline"><input type="checkbox" data-tools checked> ${tr('Zobrazit nástroje')}</label>
         </div>
-        <ol class="transcript-list" data-list tabindex="0" role="region" aria-label="Přepis konverzace"></ol>
+        <ol class="transcript-list" data-list tabindex="0" role="region" aria-label="${tr('Přepis konverzace')}"></ol>
         <div class="transcript-empty" data-region="tr-empty"></div>
-        <span class="transcript-hint" data-hint aria-hidden="true" hidden>${ICON.down}Klikni a procházej přepis</span>
-        <button class="jump" type="button" data-jump hidden>${ICON.down}Nové zprávy</button>
+        <span class="transcript-hint" data-hint aria-hidden="true" hidden>${ICON.down}${tr('Klikni a procházej přepis')}</span>
+        <button class="jump" type="button" data-jump hidden>${ICON.down}${tr('Nové zprávy')}</button>
         <div data-reply-slot></div>
       </section>
       <aside class="session-side" data-region="side"></aside>
@@ -245,7 +246,7 @@ function renderTranscript(el, t) {
     }
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? '<div class="loading"><span class="loader"></span>Načítám přepis…</div>' : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? '<p class="muted">Z webových chatů si Agenteeq nebere text – jen jestli agent pracuje, nebo čeká. Konverzaci otevřeš tlačítkem nahoře.</p>' : '<p class="muted">Přepis je zatím prázdný.</p>');
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů si Agenteeq nebere text – jen jestli agent pracuje, nebo čeká. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
@@ -265,32 +266,32 @@ function update() {
   }
   if (t) renderTranscript(el, t);
   if (!s) {
-    if (t?.error) fill(el, 'head', `<h2 class="session-title">Agent nenalezen</h2><p class="muted">${esc(t.error)}</p>`);
+    if (t?.error) fill(el, 'head', `<h2 class="session-title">${tr('Agent nenalezen')}</h2><p class="muted">${esc(t.error)}</p>`);
     return;
   }
 
   fill(el, 'head', `
-    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? 'webová aplikace' : 'na tomto Macu'}</span>${s.hooked ? '<span class="badge badge--ok">Propojeno</span>' : ''}</div>
+    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : tr('na tomto Macu')}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}<span class="muted">Poslední aktivita <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}<span class="muted">${tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     <div class="session-actions">
       ${openButtons(s)}
-      ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="Příkaz pro pokračování zkopírován" aria-label="Kopírovat příkaz pro pokračování" title="Kopírovat příkaz pro pokračování">${ICON.copy}</button>` : ''}
+      ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" title="${tr('Kopírovat příkaz pro pokračování')}">${ICON.copy}</button>` : ''}
     </div>`);
 
   fill(el, 'banner', s.status === 'needs_input'
     ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p><p class="small muted">${esc(howToAnswer(s))}</p></div></div>`
     : s.status === 'limited'
-      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>Vyčerpaný limit</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">Obnoví se ${dateTime(s.limit.resetsAt)}.</p>` : ''}</div></div>`
+      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
-        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>Spuštění selhalo</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.</p></div></div>`
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">${tr('Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.')}</p></div></div>`
         : '');
 
   fill(el, 'live', s.status === 'working'
     ? `<div class="live-strip" role="status">
         <span class="pulse" aria-hidden="true"></span>
-        <div class="live-text"><span class="live-activity">${esc(s.activity || 'Pracuje')}</span>
-          <span class="live-meta">${s.turnStartedAt ? `Pracuje už <span data-clock-from="${s.turnStartedAt}"></span>` : 'Pracuje'}${s.turnSteps ? ` · ${s.turnSteps} ${plural(s.turnSteps, 'krok', 'kroky', 'kroků')}` : ''}</span></div>
+        <div class="live-text"><span class="live-activity">${esc(s.activity || tr('Pracuje'))}</span>
+          <span class="live-meta">${s.turnStartedAt ? `${tr('Pracuje už')} <span data-clock-from="${s.turnStartedAt}"></span>` : tr('Pracuje')}${s.turnSteps ? ` · ${s.turnSteps} ${plural(s.turnSteps, 'krok', 'kroky', 'kroků')}` : ''}</span></div>
         ${s.progress?.total ? progressHtml(s.progress) : '<div class="indeterminate" aria-hidden="true"><i></i></div>'}
       </div>`
     : s.progress?.total ? `<div class="live-strip is-static">${progressHtml(s.progress)}</div>` : '');
@@ -319,16 +320,16 @@ function update() {
   if (s.connector === 'local-chat' && s.chat?.available) {
     if (!slot.querySelector('[data-reply]')) {
       slot.innerHTML = `<form class="reply" data-reply>
-        <label class="sr-only" for="reply-in">Zpráva pro model</label>
-        <textarea id="reply-in" rows="2" maxlength="20000" placeholder="Napiš další zprávu…"></textarea>
-        <div class="reply-actions"><span class="muted small"><kbd>⌘</kbd><kbd>↵</kbd> odešle</span><button type="button" class="btn btn--sm" data-chat-stop hidden>Zastavit</button><button type="submit" class="btn btn--sm btn--primary">Odeslat</button></div>
+        <label class="sr-only" for="reply-in">${tr('Zpráva pro model')}</label>
+        <textarea id="reply-in" rows="2" maxlength="20000" placeholder="${tr('Napiš další zprávu…')}"></textarea>
+        <div class="reply-actions"><span class="muted small"><kbd>⌘</kbd><kbd>↵</kbd> ${tr('odešle')}</span><button type="button" class="btn btn--sm" data-chat-stop hidden>${tr('Zastavit')}</button><button type="submit" class="btn btn--sm btn--primary">${tr('Odeslat')}</button></div>
       </form>`;
     }
     const working = s.status === 'working';
     slot.querySelector('[data-chat-stop]').hidden = !working;
     slot.querySelector('[type="submit"]').disabled = working;
   } else if (s.connector === 'local-chat') {
-    const note = '<p class="reply-note">Tahle lokální konverzace skončila restartem Agenteeq. Novou začneš v Přehledu přes Spustit agenta → Ollama.</p>';
+    const note = `<p class="reply-note">${tr('Tahle lokální konverzace skončila restartem Agenteeq. Novou začneš v Přehledu přes Spustit agenta → Ollama.')}</p>`;
     if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }
   } else if (slot.innerHTML) {
     slot.innerHTML = '';
@@ -338,36 +339,36 @@ function update() {
   const sideBox = el.querySelector('[data-region="side"]');
   if (!v.sideDrag?.isDragging()) {
   fill(el, 'side', `
-      <section class="card side-card" data-card="project" aria-labelledby="proj-h">${GRIP}<div class="side-head"><h3 id="proj-h">Projekt</h3><button class="link" type="button" data-action="assign">${proj ? 'Změnit' : 'Zařadit do projektu'}</button></div>
+      <section class="card side-card" data-card="project" aria-labelledby="proj-h">${GRIP}<div class="side-head"><h3 id="proj-h">${tr('Projekt')}</h3><button class="link" type="button" data-action="assign">${proj ? tr('Změnit') : tr('Zařadit do projektu')}</button></div>
         ${proj
-          ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a><p class="small muted side-note">${s.projectSource === 'folder' ? 'Zařazeno automaticky podle složky.' : 'Zařazeno ručně.'}</p>`
-          : `<p class="small muted side-note">${s.projectSource === 'none' ? 'Záměrně mimo projekty.' : 'Zatím v žádném projektu.'}</p>`}
+          ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a><p class="small muted side-note">${s.projectSource === 'folder' ? tr('Zařazeno automaticky podle složky.') : tr('Zařazeno ručně.')}</p>`
+          : `<p class="small muted side-note">${s.projectSource === 'none' ? tr('Záměrně mimo projekty.') : tr('Zatím v žádném projektu.')}</p>`}
       </section>
-      <section class="card side-card" data-card="details" aria-labelledby="facts-h">${GRIP}<h3 id="facts-h">Detaily</h3>
+      <section class="card side-card" data-card="details" aria-labelledby="facts-h">${GRIP}<h3 id="facts-h">${tr('Detaily')}</h3>
         <dl class="facts">
-          <div><dt>Model</dt><dd>${esc(s.model || '–')}</dd></div>
-          <div><dt>Větev</dt><dd>${esc(s.branch || '–')}${s.worktree ? `<br><span class="muted">pracovní kopie ${esc(s.worktree)}</span>` : ''}</dd></div>
-          ${s.context ? `<div><dt>Kontext</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
-          ${s.effort ? `<div><dt>Úroveň přemýšlení</dt><dd>${esc(s.effort)}</dd></div>` : ''}
-          ${s.repo ? `<div><dt>Repozitář</dt><dd>${esc(s.repo)}</dd></div>` : ''}
-          ${s.pr ? `<div><dt>Pull request</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
-          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>Cena relace (API ekv.)</dt><dd>${s.costUsd.toLocaleString('cs-CZ', { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
-          <div><dt>Zahájeno</dt><dd>${dateTime(s.startedAt)}</dd></div>
-          <div><dt>Doba trvání</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
-          <div><dt>Zadání</dt><dd>${s.turns ?? '–'}</dd></div>
-          <div><dt>Tokeny</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '–'}</dd></div>
-          ${reviews.length ? `<div><dt>Automatické kontroly</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
-          ${helperAgents.length ? `<div><dt>Pomocní agenti</dt><dd>${helperAgents.length} · ${fmtTok(helperAgents.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
-          ${helperAgents.length ? `<div class="wide"><dt>Co dělali</dt><dd><ul class="helper-list">${helperAgents.map((x) => `<li><a class="link-inline" href="#/agent/${encodeURIComponent(x.id)}">${esc(x.title)}</a><span class="muted small">${fmtTok(sessionTotal(x))}</span></li>`).join('')}</ul></dd></div>` : ''}
-          ${s.taskName ? `<div><dt>Spuštění úlohy</dt><dd>${[...state.sessions.values()].filter((x) => x.connector === s.connector && x.taskName === s.taskName).length}</dd></div>` : ''}
-          ${parent ? `<div class="wide"><dt>Patří ke konverzaci</dt><dd><a class="link-inline" href="#/agent/${encodeURIComponent(parent.id)}">${esc(parent.title)}</a></dd></div>` : ''}
+          <div><dt>${tr('Model')}</dt><dd>${esc(s.model || '–')}</dd></div>
+          <div><dt>${tr('Větev')}</dt><dd>${esc(s.branch || '–')}${s.worktree ? `<br><span class="muted">${tr('pracovní kopie')} ${esc(s.worktree)}</span>` : ''}</dd></div>
+          ${s.context ? `<div><dt>${tr('Kontext')}</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
+          ${s.effort ? `<div><dt>${tr('Úroveň přemýšlení')}</dt><dd>${esc(s.effort)}</dd></div>` : ''}
+          ${s.repo ? `<div><dt>${tr('Repozitář')}</dt><dd>${esc(s.repo)}</dd></div>` : ''}
+          ${s.pr ? `<div><dt>${tr('Pull request')}</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
+          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena relace (API ekv.)')}</dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
+          <div><dt>${tr('Zahájeno')}</dt><dd>${dateTime(s.startedAt)}</dd></div>
+          <div><dt>${tr('Doba trvání')}</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
+          <div><dt>${tr('Zadání')}</dt><dd>${s.turns ?? '–'}</dd></div>
+          <div><dt>${tr('Tokeny')}</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '–'}</dd></div>
+          ${reviews.length ? `<div><dt>${tr('Automatické kontroly')}</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
+          ${helperAgents.length ? `<div><dt>${tr('Pomocní agenti')}</dt><dd>${helperAgents.length} · ${fmtTok(helperAgents.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}
+          ${helperAgents.length ? `<div class="wide"><dt>${tr('Co dělali')}</dt><dd><ul class="helper-list">${helperAgents.map((x) => `<li><a class="link-inline" href="#/agent/${encodeURIComponent(x.id)}">${esc(x.title)}</a><span class="muted small">${fmtTok(sessionTotal(x))}</span></li>`).join('')}</ul></dd></div>` : ''}
+          ${s.taskName ? `<div><dt>${tr('Spuštění úlohy')}</dt><dd>${[...state.sessions.values()].filter((x) => x.connector === s.connector && x.taskName === s.taskName).length}</dd></div>` : ''}
+          ${parent ? `<div class="wide"><dt>${tr('Patří ke konverzaci')}</dt><dd><a class="link-inline" href="#/agent/${encodeURIComponent(parent.id)}">${esc(parent.title)}</a></dd></div>` : ''}
           <div class="wide"><dt>ID</dt><dd class="mono-sm">${esc(s.id)}</dd></div>
         </dl>
       </section>
-      ${hasTokens ? `<section class="card side-card" data-card="tokens" aria-labelledby="tok-h">${GRIP}<h3 id="tok-h">Složení tokenů</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
-      ${hasTokens ? `<section class="card side-card" data-card="spark" aria-labelledby="spark-h">${GRIP}<h3 id="spark-h">Aktivita za 24 hodin · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
-      ${limits.length ? `<section class="card side-card" data-card="limits" aria-labelledby="lim-h">${GRIP}<h3 id="lim-h">Limity</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
-      ${lastPrompt ? `<section class="card side-card" data-card="prompt" aria-labelledby="lp-h">${GRIP}<h3 id="lp-h">Poslední zadání</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? 'Sbalit zadání' : 'Zobrazit celé zadání'}</button>` : ''}</section>` : ''}
+      ${hasTokens ? `<section class="card side-card" data-card="tokens" aria-labelledby="tok-h">${GRIP}<h3 id="tok-h">${tr('Složení tokenů')}</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
+      ${hasTokens ? `<section class="card side-card" data-card="spark" aria-labelledby="spark-h">${GRIP}<h3 id="spark-h">${tr('Aktivita za 24 hodin')} · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
+      ${limits.length ? `<section class="card side-card" data-card="limits" aria-labelledby="lim-h">${GRIP}<h3 id="lim-h">${tr('Limity')}</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
+      ${lastPrompt ? `<section class="card side-card" data-card="prompt" aria-labelledby="lp-h">${GRIP}<h3 id="lp-h">${tr('Poslední zadání')}</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? tr('Sbalit zadání') : tr('Zobrazit celé zadání')}</button>` : ''}</section>` : ''}
     `);
   applyOrder(sideBox, '.side-card[data-card]', 'agentSide');
   }
@@ -375,7 +376,7 @@ function update() {
 
 export default {
   id: 'agent',
-  title: 'Detail agenta',
+  title: tr('Detail agenta'),
   mount,
   update,
   unmount() {

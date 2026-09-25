@@ -1,4 +1,5 @@
 import { esc } from './format.js';
+import { tr } from './i18n.js';
 
 // Výřez obrázku pro kartu projektu. Uživatel vidí přesně to, co se uloží: okno má poměr stran
 // výsledku, obrázek se v něm posouvá tahem a přibližuje posuvníkem nebo kolečkem. Výsledek
@@ -6,8 +7,8 @@ import { esc } from './format.js';
 // Retině nebyl rozmazaný. Dřív se obrázek jen zmenšil a karta ho ořízla sama (`object-fit`).
 
 export const TARGETS = {
-  cover: { w: 1400, h: 400, bytes: 4_000_000, label: 'Obrázek karty', hint: 'Doporučeno 1400 × 400 px (poměr 7 : 2), PNG, JPG nebo WebP do 4 MB. Důležité drž uprostřed.' },
-  logo: { w: 512, h: 512, bytes: 1_500_000, label: 'Logo klienta', hint: 'Doporučeno 512 × 512 px, nejlépe PNG s průhledným pozadím, do 1,5 MB.' },
+  cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), hint: tr('Doporučeno 1400 × 400 px (poměr 7 : 2), PNG, JPG nebo WebP do 4 MB. Důležité drž uprostřed.') },
+  logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), hint: tr('Doporučeno 512 × 512 px, nejlépe PNG s průhledným pozadím, do 1,5 MB.') },
 };
 const TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_ZOOM = 4;
@@ -51,7 +52,7 @@ async function encode(canvas, kind) {
   }
   const png = await toBlob(canvas, 'image/png');
   if (png && png.size <= bytes) return png;
-  throw new Error('Obrázek je i po úpravě příliš velký. Zkus jednodušší.');
+  throw new Error(tr('Obrázek je i po úpravě příliš velký. Zkus jednodušší.'));
 }
 
 export const dataUrl = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
@@ -59,9 +60,9 @@ export const dataUrl = (blob) => new Promise((res, rej) => { const r = new FileR
 // Vrátí Promise s { blob, url } nebo null (zrušeno). `host` je prvek, do kterého se editor vykreslí.
 export async function openCropper(host, kind, file) {
   const t = TARGETS[kind];
-  if (!TYPES.includes(file.type)) throw new Error('Nahraj obrázek ve formátu PNG, JPG nebo WebP.');
+  if (!TYPES.includes(file.type)) throw new Error(tr('Nahraj obrázek ve formátu PNG, JPG nebo WebP.'));
   let bmp;
-  try { bmp = await createImageBitmap(file); } catch { throw new Error('Tenhle obrázek se nepodařilo přečíst. Zkus jiný soubor.'); }
+  try { bmp = await createImageBitmap(file); } catch { throw new Error(tr('Tenhle obrázek se nepodařilo přečíst. Zkus jiný soubor.')); }
   // CSP povoluje jen data: a 'self', takže náhled nejde přes blob: adresu.
   const src = await dataUrl(file);
   const iw = bmp.width;
@@ -69,17 +70,17 @@ export async function openCropper(host, kind, file) {
   return new Promise((resolve) => {
     host.hidden = false;
     host.innerHTML = `<div class="crop">
-      <div class="crop-stage crop-stage--${kind}" style="aspect-ratio:${t.w} / ${t.h}" tabindex="0" role="application" aria-label="Výřez obrázku. Šipkami posouváš, plus a mínus přibližuješ.">
+      <div class="crop-stage crop-stage--${kind}" style="aspect-ratio:${t.w} / ${t.h}" tabindex="0" role="application" aria-label="${tr('Výřez obrázku. Šipkami posouváš, plus a mínus přibližuješ.')}">
         <img src="${esc(src)}" alt="" draggable="false">
         <span class="crop-grid" aria-hidden="true"></span>
       </div>
       <div class="crop-tools">
-        <label class="crop-zoom"><span>Přiblížení</span><input type="range" min="100" max="${MAX_ZOOM * 100}" value="100" step="1" data-zoom></label>
-        ${kind === 'logo' ? '<div class="seg seg--sm" role="group" aria-label="Způsob vložení"><button type="button" data-fit="cover" aria-pressed="true">Vyplnit</button><button type="button" data-fit="contain" aria-pressed="false">Celé logo</button></div>' : ''}
-        <button type="button" class="btn btn--sm" data-reset>Vycentrovat</button>
+        <label class="crop-zoom"><span>${tr('Přiblížení')}</span><input type="range" min="100" max="${MAX_ZOOM * 100}" value="100" step="1" data-zoom></label>
+        ${kind === 'logo' ? `<div class="seg seg--sm" role="group" aria-label="${tr('Způsob vložení')}"><button type="button" data-fit="cover" aria-pressed="true">${tr('Vyplnit')}</button><button type="button" data-fit="contain" aria-pressed="false">${tr('Celé logo')}</button></div>` : ''}
+        <button type="button" class="btn btn--sm" data-reset>${tr('Vycentrovat')}</button>
       </div>
       <p class="crop-meta" aria-live="polite" data-meta></p>
-      <div class="crop-actions"><button type="button" class="btn btn--sm" data-cancel>Zrušit</button><button type="button" class="btn btn--primary btn--sm" data-ok>Použít výřez</button></div>
+      <div class="crop-actions"><button type="button" class="btn btn--sm" data-cancel>${tr('Zrušit')}</button><button type="button" class="btn btn--primary btn--sm" data-ok>${tr('Použít výřez')}</button></div>
     </div>`;
     const stage = host.querySelector('.crop-stage');
     const img = stage.querySelector('img');
@@ -111,7 +112,7 @@ export async function openCropper(host, kind, file) {
       // Kolikrát se zdrojový pixel zvětší ve výsledku; nad 1,4× je obraz viditelně měkký.
       const low = s * (t.w / sw) > 1.4;
       meta.classList.toggle('is-warn', low);
-      meta.textContent = `Zdroj ${iw} × ${ih} px, výřez ${regionW} × ${regionH} px, uloží se ${t.w} × ${t.h} px.${low ? ' Pozor: takhle malý výřez bude na kartě rozmazaný. Vyber větší obrázek nebo méně přiblížení.' : ''}`;
+      meta.textContent = `${tr('Zdroj {0} × {1} px, výřez {2} × {3} px, uloží se {4} × {5} px.', iw, ih, regionW, regionH, t.w, t.h)}${low ? tr(' Pozor: takhle malý výřez bude na kartě rozmazaný. Vyber větší obrázek nebo méně přiblížení.') : ''}`;
     };
     center();
     paint();

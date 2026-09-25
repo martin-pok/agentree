@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Generátor QR kódu: režim bajtů, úroveň korekce M, verze 1–10.
 // Vlastní implementace, protože aplikace nemá běhové závislosti a kód se kreslí i na telefonu.
 // Vrací matici modulů; vykreslení do SVG je zvlášť, ať se dá obojí testovat samostatně.
@@ -238,7 +239,7 @@ export function qrMatice(text) {
 }
 
 /** QR jako SVG. Tichá zóna čtyř modulů je součástí normy, bez ní čtečky kód nenajdou. */
-export function qrSvg(text, { popis = 'QR kód', okraj = 4 } = {}) {
+export function qrSvg(text, { popis = tr('QR kód'), okraj = 4 } = {}) {
   const kod = qrMatice(text);
   if (!kod) return null;
   const strana = kod.velikost + okraj * 2;

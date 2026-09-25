@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Rozhraní Agenteeq se dá otevřít odkudkoli – i ze statické kopie na webhostingu. Data ale vždycky
 // leží na Macu. Když za stránkou žádný server Agenteeq není, nemá smysl hlásit „server neběží“ a
 // ukazovat 127.0.0.1: na telefonu je to sám telefon. Místo toho se zeptáme, kde ten Mac je,
@@ -61,15 +62,15 @@ export function pripojovaciObrazovka(zprava = '') {
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>Kde máš Agenteeq?</h1>
-      <p>Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.</p>
-      <label class="sr-only" for="adresa">Adresa Macu</label>
+      <h1>${tr('Kde máš Agenteeq?')}</h1>
+      <p>${tr('Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.')}</p>
+      <label class="sr-only" for="adresa">${tr('Adresa Macu')}</label>
       <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn btn--primary" type="submit">Otevřít</button>
-      <small>Adresu najdeš v Agenteeq na Macu v <b>Nastavení → Otevřít na telefonu</b>. Mimo domov ji zpřístupní <b>Přístup přes Tailscale</b> o kartu níž.</small>
-      <small class="pair-jinak">Máš účet Agenteeq? <a href="/app?ucet">Přihlas se a uvidíš souhrny odkudkoli.</a></small>
-      <small class="pair-jinak">Agenteeq na Macu ještě nemáš? <a href="/">Podívej se, co umí a jak ho získat.</a></small>
+      <button class="btn btn--primary" type="submit">${tr('Otevřít')}</button>
+      <small>${tr('Adresu najdeš v Agenteeq na Macu v')} <b>${tr('Nastavení → Otevřít na telefonu')}</b>${tr('. Mimo domov ji zpřístupní')} <b>${tr('Přístup přes Tailscale')}</b> ${tr('o kartu níž.')}</small>
+      <small class="pair-jinak">${tr('Máš účet Agenteeq?')} <a href="/app?ucet">${tr('Přihlas se a uvidíš souhrny odkudkoli.')}</a></small>
+      <small class="pair-jinak">${tr('Agenteeq na Macu ještě nemáš?')} <a href="/">${tr('Podívej se, co umí a jak ho získat.')}</a></small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');
@@ -78,7 +79,7 @@ export function pripojovaciObrazovka(zprava = '') {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const cil = normalizovatAdresu(input.value);
-    if (!cil) return pripojovaciObrazovka('Tohle nevypadá jako adresa. Zkus třeba 192.168.1.10:4620.');
+    if (!cil) return pripojovaciObrazovka(tr('Tohle nevypadá jako adresa. Zkus třeba 192.168.1.10:4620.'));
     try { localStorage.setItem(KLIC, cil); } catch { /* soukromé okno adresu neuloží, nevadí */ }
     location.href = cil;
     return undefined;

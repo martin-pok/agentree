@@ -124,5 +124,5 @@ test('tlačítko exportu vede na export a v živé prohlídce na webu chybí', a
   const view = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
   assert.match(view, /function exportTlacitko\(\) \{\s*if \(document\.documentElement\.hasAttribute\('data-ukazka'\)\) return '';/, 'ukázka nemá server, stažení by skončilo chybou');
   assert.match(view, /href="\/api\/spend\/export" download/);
-  assert.match(view, /<h2 id="led-h">Výdaje<\/h2>\$\{exportTlacitko\(\)\}/);
+  assert.match(view, /<h2 id="led-h">\$\{tr\('Výdaje'\)\}<\/h2>\$\{exportTlacitko\(\)\}/);
 });
