@@ -267,7 +267,7 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {
     const windows = limitWindows(state.limits, now);
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-    const claudeExact = state.limits.some((l) => l.source === 'statusline');
+    const claudeExact = state.limits.some((l) => l.source === 'statusline' || l.source === 'desktop-usage');
     const usesClaude = all.some((s) => s.connector === 'claude-code');
     const limitHint = usesClaude && !claudeExact
       ? `<p class="lwin-hint">${tr('Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v')} <a class="link-inline" href="#/nastaveni">${tr('Nastavení')}</a> ${tr('– Claude Code je pak posílá sám.')}</p>`

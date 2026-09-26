@@ -142,9 +142,21 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
   `running/working/busy` je čerstvý jen při pozorování konkrétního dotazu během 2 minut;
   později platí stávající model stale. `failed` přebíráme ze serverové kategorie, přesný důvod
   (např. limit) bez uložené chyby netvrdíme. Konverzace se otevírá na `https://claude.ai/code/session_…`.
+- **Vytížení plánu z uložené stránky Usage 🧪 (neověřeno na skutečných datech):** stránka Usage
+  na claude.ai načítá `five_hour` a `seven_day` s `utilization` (procenta) a `resets_at` (ISO čas
+  obnovy od serveru) – stejná dvojice, jakou hlásí stavový řádek Claude Code. Pokud ji Desktop uloží
+  do `react-query-cache`, zapíše konektor limity `claude:five_hour:desktop` / `claude:seven_day:desktop`
+  se `source: 'desktop-usage'` a přesným `resetsAt`, platné k `state.dataUpdatedAt` dotazu. Dotaz se
+  hledá **podle tvaru odpovědi**, ne podle jména klíče (nezdokumentované); čas z budoucnosti se
+  zahodí; nic dalšího z odpovědi (ani z jiných dotazů) se nečte. Že Desktop tuto odpověď do trvalé
+  cache opravdu ukládá, jsme na Macu zatím neověřili – když ji tam nenajde, nic se nezmění.
+- **Jedno okno, jeden řádek (`public/js/ui.js#currentLimits`):** okna Claude chodí až ze tří zdrojů.
+  Ukáže se nejnovější měření; když samo čas obnovy nenese, převezme ho od přesného zdroje, ale jen
+  pokud to měření proběhlo před tou obnovou (leží v témž okně). Hlášky „hit your limit“ přesná okna
+  nahrazují.
 - **Bezpečnost a zotavení:** pouze čtení běžných souborů; žádný LOCK, žádné změny databáze,
   žádná autentizace ani odchozí dotazy. Zpracují se jen dva uvedené druhy klíčů; profily účtu
-  v query cache nevstupují do modelu. Živé SST soubory určuje manifest, WAL přebírá novější
+  v query cache nevstupují do modelu; z uložené stránky Usage jen dvě procenta a dva časy obnovy. Živé SST soubory určuje manifest, WAL přebírá novější
   sekvence a smazání. CRC32C, velikostní hranice a kontrola indexů brání čtení poškozených bloků.
   Neúplný konec WAL se odloží do další změny. Při neznámém formátu se zachová poslední stav
   a konektor hlásí chybu. Watcher běží nad IndexedDB; záložní průchod běží každých 10 s.
@@ -162,6 +174,7 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 - **Zdroj:** `~/Library/Application Support/Claude/plan-usage-history.json`. Formát **není nikde oficiálně zdokumentovaný** – jde o interní soubor aplikace Claude Desktop, který se může s libovolnou verzí aplikace změnit nebo zmizet.
 - **Struktura (ověřeno osobně, 476 vzorků od 13. 8. 2026):** `{ version: 2, samples: [ { t: <ms epoch>, org: "<id organizace>", u: { fh: <0–100>, sd: <0–100>, xu?: <číslo> } } ] }`. `fh` = vytížení 5hodinového okna v %, `sd` = vytížení týdenního okna v %. Nové vzorky přibývají zhruba po 15 minutách i bez otevřené konverzace.
 - **`xu` (extra usage):** přítomné jen u části vzorků (84 ze 476 v ověřených datech), poslední pozorovaná hodnota 64.35. **Jednotka není ověřená** – nejspíš dolary, ale netvrdíme to. Konektor ji zapíše jako limit s `kind: 'spend'` a `label: 'Extra usage'` jen pokud v daném vzorku existuje; `public/js/views/spend.js` ji zobrazí jako „vyčerpáno X %“, což může být zavádějící, dokud jednotka nebude ověřená.
+- **Horní mez obnovy (`resetsBy`):** přesný čas obnovy soubor nenese. Vytížení v jednom okně jen roste, takže pokles mezi dvěma vzorky znamená obnovu. Okno, které běží při posledním vzorku, začalo nejpozději prvním nenulovým vzorkem po poslední obnově a skončí nejpozději o délku okna později (`horniMezObnovy`). Rozhraní píše „obnova nejpozději …“ – mez, ne odhad, a bez odpočtu. Bez nenulového vytížení mez není.
 - **Použití:** čte se jen **poslední** vzorek pole `samples`. Zapisuje limity s vlastními id `claude:five_hour:history` / `claude:seven_day:history` (a `claude:extra_usage:history`, pokud `xu` existuje), `source: 'plan-history'`, `resetsAt: null` (zdroj obnovu neobsahuje). Stavový řádek (`source: 'statusline'`) má vždy přednost – `public/js/ui.js#currentLimits` schová všechny ostatní anthropic limity, jakmile existuje alespoň jeden záznam se `source: 'statusline'`. Tahle historie se v UI tedy objeví, jen když zrovna neběží žádná konverzace se stavovým řádkem.
 - **Sledování:** změna souboru (mtime) přes `watchTree` na nadřazené složce `~/Library/Application Support/Claude` (reaguje jen na `plan-usage-history.json`) + pravidelný plný průchod v intervalu `config.scanIntervalMs`, stejně jako u ostatních souborových konektorů.
 - **Ověření:** cesta k souboru a tvar `{ t, org, u: { fh, sd, xu } }` ověřeny osobně na reálných datech (poslední 5 h = 99 %, týden = 41 %). **Beta**, protože jde o neveřejný interní formát bez záruky stability mezi verzemi.

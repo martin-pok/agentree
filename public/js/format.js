@@ -124,6 +124,7 @@ export function resetsLabel(ts, now = Date.now()) {
   // Jednopísmenná předložka „v“ nezůstává na konci řádku a datum se nerozděluje – česká sazba.
   if (startOfDay(ts) === startOfDay(now)) return tr('dnes v\u00a0{0}', timeHM(ts));
   if (startOfDay(ts) === startOfDay(now + DAY)) return tr('zítra v\u00a0{0}', timeHM(ts));
+  if (startOfDay(ts) === startOfDay(now - DAY)) return tr('včera v\u00a0{0}', timeHM(ts));
   return tr('{0} {1}.\u00a0{2}. v\u00a0{3}', WEEKDAYS[d.getDay()], d.getDate(), d.getMonth() + 1, timeHM(ts));
 }
 

@@ -1,6 +1,6 @@
 import { esc, rel, fmtTok, startOfDay } from './format.js';
 import { ICON, glyph } from './icons.js';
-import { currentLimits, limitState } from './ui.js';
+import { currentLimits, limitState, limitObnova } from './ui.js';
 import { tokensSince } from './data.js';
 import { tr } from './i18n.js';
 
@@ -31,7 +31,7 @@ function chips(rows, now) {
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9))
     .map((l) => {
       const s = limitState(l, now);
-      return `<span class="lim-chip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b></span>`;
+      return `<span class="lim-chip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b><small>${esc(limitObnova(l, now).text)}</small></span>`;
     })
     .join('');
 }
