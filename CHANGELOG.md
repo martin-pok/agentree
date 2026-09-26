@@ -2,6 +2,14 @@
 
 ## Nevydáno
 
+### Rozcestník „Kde máš Agenteeq?“: ukázka jedním klepnutím
+
+- **Oprava:** kdo otevřel `/app` bez `?ukazka` (a bez páru na skutečný Mac), viděl jen políčko
+  na adresu Macu – nic, do čeho by šlo napsat, když žádný Mac po ruce není. Obrazovka teď má
+  hned nahoře tlačítko „Prohlédnout ukázku bez instalace“, které jedním klepnutím otevře
+  skutečné rozhraní se smyšlenými daty. Připojení ke skutečnému Macu zůstává pod ním jako
+  druhá cesta.
+
 ### Aplikace pro Windows: rozhraní konečně ví, že běží v aplikaci
 
 - **Oprava:** most mezi oknem a rozhraním na Windows spadl dřív, než stránka vůbec vznikla
