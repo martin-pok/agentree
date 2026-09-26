@@ -22,7 +22,8 @@ for (const engine of engines) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => { errors.push(e.message); console.error(`${engine}: ${page.url()}\n${e.stack || e.message}`); });
+  page.on('requestfailed', (r) => { if (r.resourceType() === 'script') console.error(`${engine}: modul ${r.url()} ${r.failure()?.errorText}`); });
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('500') && !m.text().includes('net::')) errors.push(m.text()); });
   // Prove fonts and UI require no internet.
   await context.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
@@ -194,6 +195,7 @@ for (const engine of engines) {
         assert.ok(choices.length >= 25, `${engine} zachovává iniciály a kolekci avatarů`);
         assert.equal(new Set(choices.map((choice) => choice.value)).size, choices.length, `${engine} každá volba má vlastní stabilní hodnotu`);
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
+        await page.click('.set-nav [data-jump="set-ucet"]'); // vzhled je ve skupině Účet a vzhled
         await page.locator('button[data-appearance="dark"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
         // Theme paints optimistically; the selected button updates after saveSettings resolves.
@@ -233,6 +235,7 @@ for (const engine of engines) {
         await page.setViewportSize({ width: 1440, height: 1000 });
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
+        await page.click('.set-nav [data-jump="set-ucet"]');
         await page.locator('button[data-appearance="system"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.appearance === 'system');
         await page.emulateMedia({ colorScheme: 'light' });
@@ -268,10 +271,55 @@ for (const engine of engines) {
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
+    // Menu Nastavení přepíná skupiny a nic se přitom nehne: nadpis, menu ani stránka. Dřív klik
+    // posunul stránku ke kotvě a nadpis „Nastavení“ odjel z obrazovky.
+    for (const [sirka, vyska] of [[1440, 900], [375, 812]]) {
+      await page.setViewportSize({ width: sirka, height: vyska });
+      await page.goto(`${server.url}/#/nastaveni`);
+      // WebKit dokončuje asynchronní boot.js až po load. Reload před připojením zrušil
+      // jeho health probe a vyvolal chybu importu ve starém dokumentu. Nejprve dokončit start.
+      await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
+      await page.reload();
+      await page.locator('.settings2').waitFor();
+      await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
+      await page.waitForTimeout(300);
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      const poloha = () => page.evaluate(() => ({
+        y: scrollY,
+        nadpis: Math.round(document.getElementById('page-title').getBoundingClientRect().top),
+        menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+      }));
+      const pred = await poloha();
+      const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));
+      for (const skupina of [...skupiny.slice(1), skupiny[0]]) {
+        await page.click(`.set-nav [data-jump="${skupina}"]`);
+        await page.waitForTimeout(100);
+        assert.deepEqual(await poloha(), pred, `${engine} ${sirka}: klik na ${skupina} v menu Nastavení pohnul stránkou`);
+        assert.deepEqual(await page.$$eval('.set-group', (g) => g.filter((x) => !x.hidden).map((x) => x.id)), [skupina], `${engine} ${sirka}: ${skupina} neukázala svou skupinu`);
+        assert.equal(await page.getAttribute(`.set-nav [data-jump="${skupina}"]`, 'aria-current'), 'true');
+      }
+      // Posunutý dolů v dlouhé skupině: menu zůstane, kde je, a nová skupina začne u něj.
+      await page.evaluate(() => scrollTo({ top: 700, behavior: 'instant' }));
+      await page.waitForTimeout(100);
+      const menuPred = (await poloha()).menu;
+      await page.click(`.set-nav [data-jump="${skupiny[1]}"]`);
+      await page.waitForTimeout(100);
+      const po = await page.evaluate(() => ({
+        menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        skupina: Math.round(document.querySelector('.set-group:not([hidden])').getBoundingClientRect().top),
+      }));
+      assert.equal(po.menu, menuPred, `${engine} ${sirka}: posunuté menu Nastavení se po kliknutí pohnulo`);
+      assert.ok(po.skupina >= 0 && po.skupina < vyska / 2, `${engine} ${sirka}: nová skupina nezačíná u menu (${po.skupina} px)`);
+      await page.click(`.set-nav [data-jump="${skupiny.at(-1)}"]`);
+      // Skok na kartu rozšíření odjinud (průvodce, „Co je nového“) ukáže její skupinu.
+      await page.evaluate(() => { sessionStorage.setItem('agenteeq.jump', 'extension'); window.dispatchEvent(new Event('agenteeq-jump')); });
+      await page.waitForFunction(() => !document.querySelector('[data-region="extension"]').closest('.set-group').hidden, null, { timeout: 3000 });
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     // Plynulé posouvání (public/js/plynule-posouvani.js). Hlavní kontext běží s „omezit pohyb“,
-    // kde se zapnout nesmí; na počítači bez omezení krok kolečka dojede plynule a přesně, obsah
-    // během posouvání nereaguje na ukazatel, zamčená stránka se nehne a cizí posun (přepnutí
-    // obrazovky volá scrollTo) má před dojezdem přednost.
+    // kde se zapnout nesmí; na počítači bez omezení krok kolečka dojede plynule a přesně, hover
+    // efekty se během posouvání vypnou a klik hned po posunu projde, zamčená stránka se nehne
+    // a cizí posun (přepnutí obrazovky volá scrollTo) má před dojezdem přednost.
     assert.equal(await page.evaluate(() => 'plynule' in document.documentElement.dataset), false, `${engine}: plynulé posouvání se zapnulo i s „omezit pohyb“`);
     {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
@@ -282,7 +330,7 @@ for (const engine of engines) {
       await p.locator('.settings2').waitFor();
       assert.equal(await p.evaluate(() => 'plynule' in document.documentElement.dataset), true, `${engine}: plynulé posouvání se v aplikaci nezapnulo`);
       // Karty Nastavení se plní až po prvním vykreslení; do té doby je stránka krátká.
-      await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1600, null, { timeout: 5000 })
+      await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1000, null, { timeout: 5000 })
         .catch(() => { throw new Error(`${engine}: Nastavení jsou na zkoušku posouvání krátká`); });
       await p.mouse.move(900, 500);
       const vzorky = p.evaluate(() => new Promise((hotovo) => {

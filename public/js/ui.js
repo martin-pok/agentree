@@ -262,12 +262,23 @@ export function decisionCard(s) {
 
 // Tlačítka „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ – nabídku sestavuje server (session.open).
 export function openButtons(s, { small = false, max = 3 } = {}) {
+  const labels = {
+    'Otevřít v Codexu': tr('Otevřít v Codexu'),
+    'Otevřít Claude': tr('Otevřít Claude'),
+    'Otevřít v Cursoru': tr('Otevřít v Cursoru'),
+    'Otevřít ve VS Code': tr('Otevřít ve VS Code'),
+    'Otevřít konverzaci': tr('Otevřít konverzaci'),
+    'Pokračovat v Terminálu': tr('Pokračovat v Terminálu'),
+    'Otevřít složku': tr('Otevřít složku'),
+  };
   const icons = { terminal: ICON.terminal, folder: ICON.folder };
   return (s.open || [])
     .slice(0, max)
     .map((t, i) => {
+      const sourceLabel = String(t.label ?? '');
+      const label = Object.hasOwn(labels, sourceLabel) ? labels[sourceLabel] : (sourceLabel.startsWith('Přepnout do ') ? tr('Přepnout do {0}', sourceLabel.slice(12)) : sourceLabel);
       const icon = t.id === 'app' ? glyph(s, { onDark: i === 0 }) : icons[t.id] || ICON.open;
-      return `<button class="btn${small ? ' btn--sm' : ''}${i === 0 ? ' btn--primary' : ''}" type="button" data-open-target="${esc(t.id)}" data-session-id="${esc(s.id)}">${icon}${esc(t.label)}</button>`;
+      return `<button class="btn${small ? ' btn--sm' : ''}${i === 0 ? ' btn--primary' : ''}" type="button" data-open-target="${esc(t.id)}" data-session-id="${esc(s.id)}">${icon}${esc(label)}</button>`;
     })
     .join('');
 }

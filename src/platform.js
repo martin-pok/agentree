@@ -143,6 +143,33 @@ export const jeAbsolutniCesta = (p) => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(String(p
 /** Příkaz, kterým se v systému hledá program v PATH. */
 export const whichCommand = JE_WINDOWS ? 'where.exe' : 'which';
 
+/**
+ * Kam instalátory dávají programy agentů (claude, codex…) na macOS a Linuxu.
+ *
+ * Aplikace spuštěná z Finderu hledá programy přihlašovacím shellem, jenže ten nečte ~/.zshrc –
+ * a právě tam instalátor Claude Code přidává ~/.local/bin do PATH. Program pak „nebyl“, i když
+ * v Terminálu běží. Tohle jsou místa, kam ho dávají známé způsoby instalace: vlastní instalátor
+ * (~/.local/bin), starší místní instalace (~/.claude/local), Homebrew a globální npm, bun,
+ * Volta, pnpm a nvm. Vrací jen cesty ke kandidátům; jestli tam program je, ověří volající.
+ */
+export function kandidatiProgramu(name, home, { readdir = (d) => fs.readdirSync(d) } = {}) {
+  if (JE_WINDOWS || !home) return [];
+  const nvm = path.join(home, '.nvm', 'versions', 'node');
+  let verze = [];
+  try { verze = readdir(nvm).sort().reverse(); } catch { /* nvm tu není */ }
+  return [
+    path.join(home, '.local', 'bin', name),
+    path.join(home, '.claude', 'local', name),
+    `/opt/homebrew/bin/${name}`,
+    `/usr/local/bin/${name}`,
+    path.join(home, '.npm-global', 'bin', name),
+    path.join(home, '.bun', 'bin', name),
+    path.join(home, '.volta', 'bin', name),
+    path.join(home, 'Library', 'pnpm', name),
+    ...verze.map((v) => path.join(nvm, v, 'bin', name)),
+  ];
+}
+
 // ── Naslouchající porty ──────────────────────────────────────────────────────
 
 const LSOF_ARGS = ['-nP', '-iTCP', '-sTCP:LISTEN'];

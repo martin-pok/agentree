@@ -69,6 +69,16 @@ try {
           assert.equal(lista.videt, true, `${engine} ${theme} ${width} ${stranka}: přepínač jazyka není celý vidět`);
           assert.equal(lista.prekryv, false, `${engine} ${theme} ${width} ${stranka}: přepínač jazyka překrývá logo nebo tlačítko`);
           assert.deepEqual([lista.jazyk, lista.aktualni], [cekanyJazyk, cekanyJazyk], `${engine} ${theme} ${width} ${stranka}: jazyk stránky`);
+          // Hlavní obsah lícuje s navigací. FAQ ani instalační postup nemají vlastní užší sloupec.
+          const okraje = await page.evaluate(() => {
+            const vzor = document.querySelector('.nav > .wrap').getBoundingClientRect();
+            return [...document.querySelectorAll('.unit > .wrap:not(.note), footer > .wrap')].map(el => {
+              const r = el.getBoundingClientRect();
+              return { sekce: el.closest('section')?.id || 'footer', rozdil: Math.max(Math.abs(r.left - vzor.left), Math.abs(r.right - vzor.right)) };
+            });
+          });
+          assert.ok(okraje.length >= 10);
+          assert.deepEqual(okraje.filter(x => x.rozdil > 1), [], `${engine} ${theme} ${width} ${stranka}: různé boční okraje obsahu`);
           // Produkt ukazují výřezy (obrázky). Vložený rám tu byl a na iPhonu blokoval posouvání.
           assert.equal(await page.locator('iframe').count(), 0, `${engine} ${theme} ${width}: ve stránce je rám`);
           await page.evaluate(async () => { for (const img of document.querySelectorAll('.detail img')) { img.loading = 'eager'; await img.decode().catch(() => {}); } });
@@ -76,6 +86,7 @@ try {
           assert.deepEqual(nenactene, [], `${engine} ${theme} ${width}: výřezy se nenačetly`);
           // Telefon dostane výřezy z telefonního rozvržení, širší obrazovka ty z Macu.
           const zdroje = await page.evaluate(() => [...document.querySelectorAll('.detail img')].filter((i) => i.getBoundingClientRect().width).map((i) => i.currentSrc));
+          assert.equal(zdroje.every(z => z.endsWith('-en.webp') === (cekanyJazyk === 'en')), true, `${engine} ${theme} ${width}: výřezy jsou v jiném jazyce než stránka`);
           // Útrata je z telefonního rozvržení všude (měřidlo nad částkou se vejde do dlaždice),
           // seznam agentů i na tabletu (tabulka z Macu by se zmenšila pod čitelnost).
           const telefonni = (z) => width <= 620 || /utrata/.test(z) || (width <= 900 && /agenti/.test(z));

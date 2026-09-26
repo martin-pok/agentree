@@ -2,6 +2,43 @@
 
 ## Nevydáno
 
+### Web: stejné okraje obsahu a anglické ukázky
+
+- FAQ a instalační postup lícují s ostatními sekcemi. Používají společnou šířku `.wrap`
+  místo užšího sloupce; boční okraje hlídá `qa:site` v obou jazycích na 360–1440 px.
+- Anglický web používá vlastní anglické výřezy skutečné aplikace, včetně názvů ukázkových
+  projektů, činností a žádosti o rozhodnutí. `shots:site` fotí obě jazykové verze a ukládá
+  jejich rozměry společně; HTML rezervuje správnou výšku i tam, kde se překlad zalomí jinak.
+- Tlačítka otevření konverzace ze serveru se překládají při vykreslení v aplikaci, například
+  „Pokračovat v Terminálu“ → „Continue in Terminal“. Cizí popisky zůstávají escapované.
+- WebKit QA počká na dokončení asynchronního startu před reloadem. Dřívější předčasný
+  reload rušil úvodní dotaz a způsoboval chybu importu modulu ve starém dokumentu.
+- Nativní QA používá vlastní volný port i data. Může běžet vedle otevřené aplikace;
+  dřívější pokus o port 4620 vedl ke správnému odmítnutí kolize, ale falešnému selhání QA.
+  Otevírání agentů, Klíčenka, účet a nativní oznámení jsou v QA výslovně vypnuté.
+
+### Claude Code se najde, i když ho aplikace z Finderu nevidí v PATH
+
+- **Oprava:** na Macu hlásilo Nastavení u Claude Code „Není nainstalovaný“, přestože byl.
+  Aplikace spuštěná z Finderu hledá programy přihlašovacím shellem, který nečte `~/.zshrc` –
+  a právě tam instalátor Claude Code přidává `~/.local/bin`. Agenteeq teď po shellu projde
+  i místa, kam program dávají známé instalace (`~/.local/bin`, `~/.claude/local`, Homebrew,
+  globální npm, bun, Volta, pnpm, nvm).
+- **Oprava:** „nehledalo se“ se už nevydává za „není“. Když se programy vůbec nehledaly, řádek
+  ukáže „Nepodařilo se zjistit“; když se hledaly a nenašly, „Nenalezen“ (ne „Není nainstalovaný“).
+- U každého agenta je vidět, kdy na tomhle Macu naposledy pracoval, nebo že za posledních
+  30 dní nepracoval. Tokeny i stav se berou z přepisů na tomhle Macu – práce, která běžela
+  jinde (třeba Claude Code v cloudu), tu vidět není a tohle to řekne přímo u agenta.
+
+### Nastavení: menu přepíná skupiny, stránka se nehýbe
+
+- Klik na položku v levém menu Nastavení ukáže vybranou skupinu jako v Nastavení macOS. Dřív to
+  byly kotvy na jedné dlouhé stránce: klik ji posunul k sekci a nadpis „Nastavení“ odjel
+  z obrazovky. Teď se nehne nadpis, menu ani stránka; hluboko v dlouhé skupině se stránka jen
+  srovná tak, aby nová skupina začínala u menu, které stojí dál na svém místě.
+- `qa:desktop` kliká na všechny položky menu na 1440 i 375 px a hlídá, že se nic nepohnulo;
+  `qa:contrast` měří každou skupinu zvlášť.
+
 ### Aplikace: plynulé posouvání kolečkem
 
 - Krok kolečka myši se v aplikaci rozloží do plynulého dojezdu, stejně jako na webu – dřív

@@ -85,37 +85,41 @@ async function vyfot(page, detail, mobil) {
 // na delší „za 1 h 55 min“, text by se zalomil a výřez by vyšel pokaždé jinak vysoký (rozměry
 // v index.html by pak neseděly). Časové pásmo je pražské, ať časy odpovídají českému webu.
 const ted = Date.now();
-const demo = await pripravUkazku({}, { oznacit: false });
 await fs.mkdir(CIL, { recursive: true });
 const browser = await chromium.launch();
 const prehled = [];
 try {
   // Kompozice na webu stojí na tmavé scéně v obou režimech stránky, proto jen tmavý vzhled.
-  await api(demo.url).send('PUT', '/api/settings', { appearance: 'dark' });
-  for (const r of ROZVRZENI) {
-    for (const detail of DETAILY) {
-      if (detail.jenUzke && !r.pripona) continue;
-      const sirkaOkna = (!r.pripona && detail.sirka) || r.sirka;
-      const page = await browser.newPage({
-        viewport: { width: sirkaOkna, height: r.vyska }, deviceScaleFactor: r.hustota,
-        colorScheme: 'dark', reducedMotion: 'reduce', isMobile: r.sirka < 600, hasTouch: r.sirka < 600,
-        timezoneId: 'Europe/Prague', locale: 'cs-CZ',
-      });
-      await page.clock.setFixedTime(ted + 60000);
-      await page.goto(`${demo.url}/#/${detail.trasa}`, { waitUntil: 'load' });
-      await page.addStyleTag({ content: PRUHLEDNE + (r.pripona && detail.cssMobil ? detail.cssMobil : '') });
-      await page.evaluate(() => document.fonts.ready);
-      await page.waitForFunction(() => !document.querySelector('.loader, .skel, .skeleton'), null, { timeout: 10000 }).catch(() => {});
-      await page.waitForTimeout(700);
-      const { png, sirka, vyska } = await vyfot(page, detail, Boolean(r.pripona));
-      const webp = await naWebp(page, png);
-      const soubor = `${detail.soubor}${r.pripona}.webp`;
-      await fs.writeFile(path.join(CIL, soubor), webp);
-      prehled.push({ soubor, sirka, vyska, kB: Math.round(webp.length / 1024) });
-      console.log(`${soubor.padEnd(24)} ${sirka}×${vyska} CSS px  ${(webp.length / 1024).toFixed(0)} kB`);
-      await page.close();
-    }
+  for (const jazyk of ['cs', 'en']) {
+    const demo = await pripravUkazku({}, { oznacit: false, jazyk });
+    try {
+      await api(demo.url).send('PUT', '/api/settings', { appearance: 'dark' });
+      for (const r of ROZVRZENI) {
+        for (const detail of DETAILY) {
+          if (detail.jenUzke && !r.pripona) continue;
+          const sirkaOkna = (!r.pripona && detail.sirka) || r.sirka;
+          const page = await browser.newPage({
+            viewport: { width: sirkaOkna, height: r.vyska }, deviceScaleFactor: r.hustota,
+            colorScheme: 'dark', reducedMotion: 'reduce', isMobile: r.sirka < 600, hasTouch: r.sirka < 600,
+            timezoneId: 'Europe/Prague', locale: jazyk === 'en' ? 'en-GB' : 'cs-CZ',
+          });
+          await page.clock.setFixedTime(ted + 60000);
+          await page.goto(`${demo.url}/#/${detail.trasa}`, { waitUntil: 'load' });
+          await page.addStyleTag({ content: PRUHLEDNE + (r.pripona && detail.cssMobil ? detail.cssMobil : '') });
+          await page.evaluate(() => document.fonts.ready);
+          await page.waitForFunction(() => !document.querySelector('.loader, .skel, .skeleton'), null, { timeout: 10000 }).catch(() => {});
+          await page.waitForTimeout(700);
+          const { png, sirka, vyska } = await vyfot(page, detail, Boolean(r.pripona));
+          const webp = await naWebp(page, png);
+          const soubor = `${detail.soubor}${r.pripona}${jazyk === 'en' ? '-en' : ''}.webp`;
+          await fs.writeFile(path.join(CIL, soubor), webp);
+          prehled.push({ soubor, sirka, vyska, kB: Math.round(webp.length / 1024) });
+          console.log(`${soubor.padEnd(24)} ${sirka}×${vyska} CSS px  ${(webp.length / 1024).toFixed(0)} kB`);
+          await page.close();
+        }
+      }
+    } finally { await demo.close(); }
   }
   // Rozměry v CSS pixelech si bere HTML (width/height u <img>), aby stránka při načítání neposkakovala.
   await fs.writeFile(path.join(CIL, 'rozmery.json'), `${JSON.stringify(Object.fromEntries(prehled.map(({ soubor, sirka, vyska }) => [soubor, [sirka, vyska]])), null, 2)}\n`);
-} finally { await browser.close(); await demo.close(); }
+} finally { await browser.close(); }

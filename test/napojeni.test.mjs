@@ -160,3 +160,55 @@ test('HTTP: napojení jen z tohoto Macu, potvrzení přijde živým proudem i z 
     await srv.close();
   }
 });
+
+// Na Macu zakladatele hlásilo Nastavení u Claude Code „Není nainstalovaný“, přestože Claude Code
+// používal: aplikace z Finderu hledá programy přihlašovacím shellem, který nečte ~/.zshrc, a právě
+// tam instalátor přidává ~/.local/bin. Nehledat ≠ nenajít ≠ není nainstalovaný.
+test('přehled: „nehledalo se“ je nevím, „nenašlo se“ je nenalezen a u agenta je vidět poslední práce', async () => {
+  const zaklad = { run: async () => ({}), terminal: async () => ({ ok: true }), open: async () => ({ ok: true }) };
+  const nehledalo = Object.fromEntries((await createNapojeni({ ...zaklad, bins: () => null }).prehled()).map((x) => [x.id, x]));
+  assert.equal(nehledalo['claude-code'].nainstalovano, null);
+  const napojit = await createNapojeni({ ...zaklad, bins: () => null }).napojit('claude-code');
+  assert.equal(napojit.status, 422);
+  assert.match(napojit.error, /Nepodařilo se zjistit/);
+  const pred = Date.now() - 3600000;
+  const s = createNapojeni({ ...zaklad, bins: () => ({}), posledni: (id) => (id === 'codex' ? pred : 0), oknoDni: 30 });
+  const p = Object.fromEntries((await s.prehled()).map((x) => [x.id, x]));
+  assert.equal(p['claude-code'].nainstalovano, false);
+  assert.deepEqual([p['claude-code'].posledni, p['claude-code'].oknoDni], [0, 30]);
+  assert.equal(p.codex.posledni, pred);
+  assert.match((await s.napojit('claude-code')).error, /nepodařilo najít/);
+});
+
+test('program agenta se najde i mimo PATH přihlašovacího shellu (~/.local/bin, ~/.claude/local, nvm)', async () => {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const { tempDir } = await import('./helpers.mjs');
+  const { detectLaunchEnv } = await import('../src/launcher.js');
+  const { kandidatiProgramu } = await import('../src/platform.js');
+  const home = await tempDir('agenteeq-bin-');
+  const claude = path.join(home, '.local', 'bin', 'claude');
+  await fs.mkdir(path.dirname(claude), { recursive: true });
+  await fs.writeFile(claude, '#!/bin/sh\n', { mode: 0o755 });
+  const gemini = path.join(home, '.nvm', 'versions', 'node', 'v22.1.0', 'bin', 'gemini');
+  await fs.mkdir(path.dirname(gemini), { recursive: true });
+  await fs.writeFile(gemini, '#!/bin/sh\n', { mode: 0o755 });
+  const neSpustitelny = path.join(home, '.claude', 'local', 'qwen');
+  await fs.mkdir(path.dirname(neSpustitelny), { recursive: true });
+  await fs.writeFile(neSpustitelny, 'text', { mode: 0o644 });
+
+  // Přihlašovací shell nenašel nic (přesně to se stalo na Macu z Finderu).
+  const prazdnyShell = async () => ({ ok: true, stdout: '' });
+  const ollama = { models: async () => ({ ok: false, models: [] }) };
+  // Mimo domovskou složku (Homebrew, /usr/local) test nehledá – na počítači, kde běží, tam něco být může.
+  const jenDomov = (name, h) => kandidatiProgramu(name, h).filter((p) => p.startsWith(h));
+  const env = await detectLaunchEnv({ ollama, home, runImpl: prazdnyShell, kandidati: jenDomov });
+  if (process.platform === 'win32') return;
+  assert.equal(env.bins.claude, claude, 'Claude Code z vlastního instalátoru v ~/.local/bin');
+  assert.equal(env.bins.gemini, gemini, 'program z nvm');
+  assert.equal(env.bins.qwen, undefined, 'nespustitelný soubor není program');
+  // Co našel shell, má přednost před odhadem.
+  const zeShellu = await detectLaunchEnv({ ollama, home, runImpl: async () => ({ ok: true, stdout: 'claude=/opt/jinde/claude\n' }), kandidati: jenDomov });
+  assert.equal(zeShellu.bins.claude, '/opt/jinde/claude');
+  assert.ok(kandidatiProgramu('claude', home).includes(path.join(home, '.claude', 'local', 'claude')));
+});

@@ -9,7 +9,7 @@ npm run smoke     # balíček: pack → instalace do dočasného prefixu → sta
 npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno rozšíření)
 npm run qa:site      # prohlídka webu: Chromium/WebKit, light/dark, 360–1440 px, klávesnice a omezení pohybu
 npm run qa:extension # párování, výpadek, odebrání oprávnění a služby v popupu
-npm run qa:native    # macOS/Windows: rozbalí archiv z dist/, spustí aplikaci, počká na server a vykreslené rozhraní v okně, nafotí ho a ověří, že po ukončení server skončil (CI: aplikace pro Mac, plášť pro Windows)
+npm run qa:native    # macOS/Windows: rozbalí archiv z dist/, spustí aplikaci na vlastním volném portu, počká na server a vykreslené rozhraní v okně, nafotí ho a ověří, že po ukončení server skončil (CI: aplikace pro Mac, plášť pro Windows)
 npm run showcase    # prohlídka skutečného UI se smyšlenými daty a izolovaným serverem
 ```
 
@@ -83,6 +83,12 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 ### Web (landing page)
 
+- [ ] Česká i anglická stránka: hlavní sekce, FAQ a instalace mají stejné boční okraje.
+      `qa:site` měří obě hrany proti navigaci na 360, 375, 768, 900 a 1440 px.
+- [ ] `/en` používá výřezy `*-en.webp`, česká stránka původní české výřezy. `npm run shots:site`
+      vytvoří oba jazyky ze stejné smyšlené scény a uloží `site/detail/rozmery.json`;
+      při změně výšek aktualizuj odpovídající `width`/`height` v obou HTML. Testy kontrolují
+      rozměry obou verzí, překlad scén a překlad serverových tlačítek včetně bezpečného escapování.
 - [ ] `npm run build:site` → `dist/web`, otevři kořen: stránka se načte, konzole bez chyb.
 - [ ] `/app` otevře rozhraní aplikace (rozcestník „Kde máš Agenteeq?“, když za ním žádný server není).
 - [ ] Šířky 1440 a 375 px bez vodorovného rolování; světlý i tmavý režim; Tab projde všechny odkazy s viditelným fokusem.

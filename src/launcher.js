@@ -3,6 +3,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { run, shellQuote } from './util.js';
+import { kandidatiProgramu } from './platform.js';
 
 // Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů – klient nikdy neposílá příkaz.
 
@@ -32,13 +33,29 @@ const WEB = {
   qwen: { label: 'Qwen Chat', logo: 'qwen', provider: 'alibaba', url: null, base: 'https://chat.qwen.ai/' },
 };
 
-export async function detectLaunchEnv({ ollama }) {
-  const r = await run('/bin/zsh', ['-lc', 'for c in claude codex gemini qwen copilot; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done'], { timeout: 6000 });
+const PROGRAMY = ['claude', 'codex', 'gemini', 'qwen', 'copilot'];
+
+const spustitelny = (p) => {
+  try {
+    fs.accessSync(p, fs.constants.X_OK);
+    return fs.statSync(p).isFile();
+  } catch {
+    return false;
+  }
+};
+
+export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgramu, jeProgram = spustitelny, runImpl = run }) {
+  const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done`], { timeout: 6000 });
   const bins = {};
-  for (const line of r.stdout.split('\n')) {
+  for (const line of String(r?.stdout || '').split('\n')) {
     const [name, ...rest] = line.trim().split('=');
     const p = rest.join('=');
     if (name && path.isAbsolute(p)) bins[name] = p;
+  }
+  // Přihlašovací shell nevidí, co instalátor zapsal do ~/.zshrc (src/platform.js, kandidatiProgramu).
+  for (const name of PROGRAMY) {
+    if (!bins[name]) bins[name] = kandidati(name, home).find(jeProgram);
+    if (!bins[name]) delete bins[name];
   }
   if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
   return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };

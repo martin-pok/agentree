@@ -110,13 +110,13 @@ test('web: každá ukázka rozhraní je jako ukázka popsaná', async () => {
 });
 
 // Anglická stránka je překlad, ne jiný web. Stavba (prvky, id, třídy, obrázky a jejich rozměry)
-// musí sedět na českou – jinak by se jazykové verze po první úpravě začaly rozcházet a jedna
+// musí sedět na českou; výška jazykových výřezů se smí lišit a kontroluje se proti rozmery.json. Jinak by se jazykové verze po první úpravě začaly rozcházet a jedna
 // z nich by nesla zastaralé texty nebo chybějící sekci.
 function stavba(html) {
   const bezDat = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, '');
   return [...bezDat.matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>/g)].map(([, konec, znacka, atributy]) => {
     const a = (jmeno) => atributy.match(new RegExp(`\\s${jmeno}="([^"]*)"`))?.[1] ?? '';
-    return konec ? `/${znacka}` : [znacka, a('id'), a('class'), a('src'), a('srcset'), a('width'), a('height'), a('data-stahnout')].join('|');
+    return konec ? `/${znacka}` : [znacka, a('id'), a('class'), a('src').replace(/-en\.webp$/, '.webp'), a('srcset').replace(/-en\.webp$/, '.webp'), a('data-stahnout')].join('|');
   });
 }
 
@@ -169,7 +169,7 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
 // stránka přes něj nešla posunout. Web proto ukazuje jen výřezy (obrázky) a žádný rám nevkládá.
 // Rozměry u <img>/<source> musí sedět na soubory, jinak stránka při načítání poskakuje.
 test('web: produkt ukazují výřezy, ve stránce není žádný vložený rám', async () => {
-  const html = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
+  const html = (await Promise.all(['site/index.html', 'site/en/index.html'].map(f => fs.readFile(path.join(ROOT, f), 'utf8')))).join('\n');
   const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
   assert.doesNotMatch(html, /<iframe/i);
   assert.doesNotMatch(js, /iframe/i, 'lp.js nesmí rám vytvořit ani dodatečně');
@@ -185,7 +185,7 @@ test('web: produkt ukazují výřezy, ve stránce není žádný vložený rám'
   // Na výřezu z aplikace nesmí být spodní lišta ani postranní panel: focení je skrývá.
   const skript = await fs.readFile(path.join(ROOT, 'scripts/shots-site.mjs'), 'utf8');
   assert.match(skript, /\.sidebar, \.sidebar \* \{ visibility: hidden !important; \}/);
-  assert.match(skript, /pripravUkazku\(\{\}, \{ oznacit: false \}\)/);
+  assert.match(skript, /pripravUkazku\(\{\}, \{ oznacit: false, jazyk \}\)/);
 });
 
 // Kopie rozhraní na webu o sobě musí vědět předem. Bez značky by se ptala neexistujícího
