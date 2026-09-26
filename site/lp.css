@@ -193,7 +193,7 @@ section[id] { scroll-margin-top: 56px; }
 .steps b { font-size: 18px; }
 .steps p { color: var(--ink-2); font-size: 16px; }
 .steps p b { font-size: inherit; }
-.narrow { margin-top: 16px; }
+.steps + .wrap { margin-top: 16px; }
 .gatekeeper { display: grid; gap: 10px; padding: 32px; border-radius: var(--r-tile); background: var(--card); }
 .gatekeeper p { color: var(--ink-2); }
 .gatekeeper b { color: var(--ink); }
