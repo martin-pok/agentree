@@ -123,6 +123,18 @@ test('parseResets počítá nejbližší budoucí čas', () => {
   assert.equal(parseResets('bez času', morning), null);
 });
 
+// Týdenní limit s obnovou za šest dní se dřív četl jen podle hodiny – ukazoval obnovu dnes nebo zítra.
+test('parseResets: hláška s datem a starší tvar s epochou', () => {
+  const now = new Date(2026, 8, 26, 10, 0).getTime();
+  assert.equal(parseResets("You've hit your weekly limit · resets Oct 2, 5pm (Europe/Prague)", now), new Date(2026, 9, 2, 17, 0).getTime());
+  assert.equal(parseResets('Weekly limit reached ∙ resets Oct 2 at 9:30am', now), new Date(2026, 9, 2, 9, 30).getTime());
+  assert.equal(parseResets('resets Sep 30, 11pm', now), new Date(2026, 8, 30, 23, 0).getTime());
+  const prosinec = new Date(2026, 11, 30, 10, 0).getTime();
+  assert.equal(parseResets('resets Jan 3, 9am', prosinec), new Date(2027, 0, 3, 9, 0).getTime(), 'přes Nový rok');
+  assert.equal(parseResets('Claude AI usage limit reached|1759327200', now), 1759327200000);
+  assert.equal(parseResets('resets tomorrow 9am', now), null, 'neznámý tvar se nedomýšlí');
+});
+
 test('popis nástrojů a průběh úkolů', () => {
   assert.equal(describeTool('Edit', { file_path: '/x/y/app.js' }), 'Upravuje soubor: app.js');
   assert.equal(describeTool('mcp__asana__get_task', {}), 'Používá nástroj: asana · get task');

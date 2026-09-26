@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy policy – Agenteeq</title>
+<meta name="description" content="What data the Agenteeq app, the Chrome extension and the optional account process, where it stays, and what never leaves your computer.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0C0B10">
+<link rel="canonical" href="https://agentree-fawn.vercel.app/en/privacy">
+<link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/soukromi">
+<link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/privacy">
+<link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/soukromi">
+<link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/lp.css">
+</head>
+<body class="doc-page">
+<a class="skip" href="#obsah">Skip to content</a>
+
+<header class="nav"><div class="wrap nav-in">
+  <a class="brand" href="/en" aria-label="Agenteeq – home"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <div class="lang" role="group" aria-label="Page language"><a href="/soukromi" lang="cs" hreflang="cs" aria-label="Čeština">CZ</a><a href="/en/privacy" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
+</div></header>
+
+<main id="obsah" class="doc"><div class="wrap">
+  <article class="doc-body">
+    <p class="kicker">Effective 26 September 2026</p>
+    <h1>Privacy policy</h1>
+    <p class="doc-lead">Agenteeq is an app on your computer. The text of your AI conversations, their titles, folder paths and code never leave your computer. The account is optional and everything works without it.</p>
+
+    <h2>Who processes the data</h2>
+    <p>The Agenteeq app, the Chrome extension and this website are run by their author. Send privacy questions and GDPR requests through the <a href="https://github.com/martin-pok/agentree/issues">project page on GitHub</a>.</p>
+
+    <h2>The desktop app</h2>
+    <ul>
+      <li><b>What it reads:</b> files that AI tools store on your computer themselves (for example Claude Code, Codex or Cursor transcripts). It reads them only on this computer and keeps its overview in the app’s own folder.</li>
+      <li><b>What it sends to the internet:</b> on its own, only a request for the Czech National Bank’s daily exchange rates for currency conversion. It contains none of your data.</li>
+      <li><b>Only if you turn it on:</b> API spend through the official Anthropic or OpenAI interfaces with your admin key (the key stays in the macOS Keychain and goes only to that provider), and the Agenteeq account described below.</li>
+      <li><b>Connecting models:</b> signing in to Claude Code or Codex happens directly with their provider. Agenteeq never sees your passwords or access keys. From the tool it learns only whether it is signed in and the plan name.</li>
+      <li>The app has no telemetry or analytics and shares nothing with third parties.</li>
+    </ul>
+
+    <h2>Chrome extension</h2>
+    <p>The extension adds conversations from web AI services to the app. It runs only on these addresses: chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai and github.com/copilot.</p>
+    <ul>
+      <li><b>What it reads from the page:</b> which service it is, the ID and address of the open conversation, whether the service is currently responding, how many messages are from you and from the AI, the model name, and the text of a limit notice if the service shows one.</li>
+      <li><b>What it never sends:</b> the text of your messages or replies, the conversation title, attachments, cookies or your browsing history.</li>
+      <li><b>Where it goes:</b> only to the Agenteeq app on the same computer (address 127.0.0.1). The extension sends nothing to any server on the internet.</li>
+      <li><b>What it stores in the browser:</b> the access key from pairing with the app, the list of services you turned off, and the last connection status.</li>
+      <li><b>Inserting a prompt:</b> when you start an agent in a web service from the app, the extension pastes your prompt into that service’s window. The prompt comes from the app on your computer.</li>
+      <li><b>Page check:</b> at your request, the extension can save a description of the page structure to a file on your computer, used to fix site adapters. It contains no text from the page and is never sent anywhere automatically.</li>
+    </ul>
+    <p>Data from the extension is used only for the function described above. It is not sold, not transferred to third parties, and not used for advertising or to determine creditworthiness. The extension complies with the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+
+    <h2>Optional Agenteeq account</h2>
+    <ul>
+      <li><b>Sign-in:</b> with Google. Google gives us your email and the basic profile details it shares at sign-in.</li>
+      <li><b>Summary sync</b> (only if you turn it on): device name and system, app version and when it was last seen, token and conversation counts per day and provider, spend per month and service, limit usage and reset times, agent counts by status, and which models you have connected (plan and status). Conversation text, titles, folder paths, expense notes and code are never sent.</li>
+      <li><b>Where:</b> a Supabase database in the Frankfurt region (EU). Everyone sees only their own rows.</li>
+      <li><b>Deletion:</b> in the app under Settings → Account → Delete account. It deletes the account and everything stored with it in the cloud. Data on your computer stays.</li>
+    </ul>
+
+    <h2>This website</h2>
+    <p>The website is hosted on Vercel, which, like any server, processes technical request data such as the IP address in standard operational logs. The website uses no analytics and no advertising or tracking cookies.</p>
+
+    <h2>Your rights</h2>
+    <p>You have the right to access, correct and erase your data, to restrict processing, to data portability and to object. You can file a complaint with the Czech Office for Personal Data Protection (uoou.gov.cz) or your local authority. Most of the data lives on your own computer, and you can delete it yourself at any time.</p>
+
+    <h2>Changes</h2>
+    <p>When this policy changes, you’ll see it here with a new effective date. Significant changes are also described in the app’s release notes.</p>
+  </article>
+</div></main>
+
+<footer><div class="wrap foot-in">
+  <a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <p>More focus. Less switching.</p>
+  <a class="text-link" href="/en">Back to the home page</a>
+</div></footer>
+</body>
+</html>

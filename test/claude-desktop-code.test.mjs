@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import v8 from 'node:v8';
 import { maskedCrc, unsnappy, logRecords, tableEntries, readLevelSnapshot, readClaudeDesktopCache, decodeClone } from '../src/claude-desktop-cache.js';
-import { remoteSessions, applyRemoteSession } from '../src/connectors/claude-desktop-code.js';
+import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage } from '../src/connectors/claude-desktop-code.js';
 import { createSession, deriveStatus } from '../src/model.js';
 import { appSupportDir } from '../src/platform.js';
 import { tempDir, startTestServer, api, waitFor, openStream } from './helpers.mjs';
@@ -125,4 +125,33 @@ test('Claude cache: compaction table + WAL latest sequence/deletion win; obsolet
   const bad = Buffer.from(full); bad[8] ^= 1; assert.throws(() => logRecords(bad));
   await fs.writeFile(path.join(f.dir, '000002.log'), full);
   assert.equal((await readLevelSnapshot(f.dir))[0].value.toString(), 'new');
+});
+
+// Uložená stránka Usage v Claude Desktopu nese přesný čas obnovy od serveru. Hledá se podle tvaru
+// odpovědi, platí k dataUpdatedAt dotazu a nic jiného se z ní nečte. Data jsou umělá.
+test('Claude Desktop: vytížení plánu z uložené stránky Usage – přesný čas obnovy, jiné dotazy se ignorují', () => {
+  const now = Date.UTC(2026, 8, 26, 12);
+  const usage = (at, fh, sd) => ({ queryKey: ['neznamy_klic', 'org'], state: { dataUpdatedAt: at, data: {
+    five_hour: { utilization: fh, resets_at: '2026-09-26T14:59:59.662201+00:00' },
+    seven_day: { utilization: sd, resets_at: '2026-10-01T06:59:59.662219+00:00' },
+    seven_day_opus: { utilization: 0, resets_at: null },
+  } } });
+  const records = [{ key: 'react-query-cache', value: { clientState: { queries: [
+    { queryKey: ['account'], state: { dataUpdatedAt: now, data: { email_address: 'x@example.com', five_hour: 'ne' } } },
+    usage(now - 60e3, 40, 70),
+    usage(now - 3600e3, 10, 60),
+    usage(now + 3600e3, 99, 99), // z budoucnosti = nedůvěryhodný čas, přeskočí se
+  ] } } }];
+  const u = desktopUsage(records, now);
+  assert.deepEqual(u, { at: now - 60e3, five_hour: { usedPercent: 40, resetsAt: Date.parse('2026-09-26T14:59:59.662201+00:00') }, seven_day: { usedPercent: 70, resetsAt: Date.parse('2026-10-01T06:59:59.662219+00:00') } });
+  assert.equal(desktopUsage([{ key: 'react-query-cache', value: { clientState: { queries: [{ state: { dataUpdatedAt: now, data: { five_hour: { utilization: 'x' } } } }] } } }], now), null);
+  assert.equal(desktopUsage([], now), null);
+
+  const zapsane = [];
+  assert.equal(applyDesktopUsage({ setLimit: (l) => zapsane.push(l) }, u), true);
+  assert.deepEqual(zapsane.map((l) => [l.id, l.source, l.usedPercent, l.at]), [
+    ['claude:five_hour:desktop', 'desktop-usage', 40, now - 60e3],
+    ['claude:seven_day:desktop', 'desktop-usage', 70, now - 60e3],
+  ]);
+  assert.ok(!JSON.stringify(zapsane).includes('example.com'), 'z účtu se nic nečte');
 });

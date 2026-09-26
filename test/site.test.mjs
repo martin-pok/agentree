@@ -241,6 +241,29 @@ test('web nemá nekonečnou animaci a pohyb umí vypnout', async () => {
 });
 
 
+// Pohyb webu mluví stejným jazykem jako aplikace: řádky nadpisů vyjíždějí zpoza masky, obrazy
+// se odkrývají, čísla vyjíždějí v okénku. Pod posouváním stránky ale nesmí nic běžet podle hodin
+// (qa-site) a bez časové osy posouvání musí být všechno rovnou vidět.
+test('web: pohyb jako v aplikaci – nadpisy po řádcích, nástup jen podle posouvání', async () => {
+  const css = await fs.readFile(path.join(ROOT, 'site', 'lp.css'), 'utf8');
+  for (const soubor of ['site/index.html', 'site/en/index.html']) {
+    const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
+    for (const [, nadpis] of html.matchAll(/<h[12] id="[^"]+">(.*?)<\/h[12]>/g)) {
+      assert.match(nadpis, /^<span class="radek[^"]*"><span>/, `${soubor}: nadpis bez řádků pro masku: ${nadpis}`);
+      assert.doesNotMatch(nadpis, /<br>/, `${soubor}: zalomení patří do řádků, ne do <br>`);
+      // Mezera mezi řádky: čtečka jinak přečte „Tvoje prácemá zůstat tvoje“.
+      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span> <span class="radek/, soubor);
+    }
+  }
+  // Všechny nástupy mimo hero stojí na časové ose posouvání a jsou za @supports.
+  const bezPodpory = css.replace(/@supports \(animation-timeline: view\(\)\) \{[^]*?\n  \}\n/, '');
+  assert.doesNotMatch(bezPodpory, /animation-timeline/, 'časová osa posouvání mimo @supports');
+  // Odkrytí výřezu v heru po doběhu ořez sundá, jinak by uřízlo stín pod výřezem.
+  assert.match(css, /\.hero-shot \{ animation: odkryj [^;]*backwards; \}/);
+  // Hover v dlaždicích by po posunu spustil přechod podle hodin pod stojícím kurzorem.
+  assert.doesNotMatch(css, /\.tile:hover/);
+});
+
 // Nejčastější tichá chyba webu: tlačítko Stáhnout ukazuje do prázdna. Odkaz proto vede na
 // přílohu se stálým jménem v posledním vydání – ta přežije povýšení verze bez zásahu do stránky.
 test('web: odkaz na stažení míří na stálou přílohu posledního vydání', async () => {

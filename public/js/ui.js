@@ -308,22 +308,65 @@ export function alertIcon(a) {
 
 export function untilLabel(ts, now = Date.now()) {
   const ms = ts - now;
-  if (ms <= 0) return 'obnoveno';
+  if (ms <= 0) return tr('teď');
   const m = Math.ceil(ms / 60e3);
   if (m < 60) return tr('za {0} min', m);
   const h = Math.floor(m / 60);
   if (h < 48) return `${tr('za {0} h', h)}${m % 60 ? ` ${m % 60} min` : ''}`;
-  return tr('za {0} dní', Math.round(h / 24));
+  const dny = Math.round(h / 24);
+  return dny < 5 ? tr('za {0} dny', dny) : tr('za {0} dní', dny);
 }
 
 // Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
 // Vyčerpání dokoupeného extra usage není okno předplatného – patří na Útratu, ne mezi limity plánu.
 export const isSpendLimit = (l) => l.kind === 'spend';
 
+// Okna Claude (5 h a týden) chodí až ze tří zdrojů: stavový řádek Claude Code a cache Usage
+// v Claude Desktopu nesou přesný čas obnovy, historie Claude Desktopu jen procento. Na každé okno
+// je jeden řádek: nejnovější měření. Když samo čas obnovy nenese, převezme ho od přesného zdroje –
+// ale jen tehdy, když to měření leží v témž okně (proběhlo před tou obnovou). Jinak by se ke
+// stavu nového okna přilepil konec starého.
+const OKNO_CLAUDE = /^claude:(five_hour|seven_day)(?::|$)/;
+const PRESNE = new Set(['statusline', 'desktop-usage']);
+
 export function currentLimits(limits, now = Date.now()) {
   const fresh = limits.filter((l) => !isSpendLimit(l) && now - l.at < 7 * DAY);
-  const claudeStatus = fresh.some((l) => l.source === 'statusline');
-  return fresh.filter((l) => !(claudeStatus && l.provider === 'anthropic' && l.source !== 'statusline'));
+  const claudePresne = fresh.some((l) => PRESNE.has(l.source));
+  const okna = new Map();
+  const ostatni = [];
+  for (const l of fresh) {
+    const klic = l.provider === 'anthropic' ? OKNO_CLAUDE.exec(l.id || '')?.[1] : null;
+    if (!klic) ostatni.push(l);
+    else okna.set(klic, [...(okna.get(klic) || []), l]);
+  }
+  const slozena = [...okna.values()].map((zaznamy) => {
+    // Při shodném čase měření má přednost přesný zdroj.
+    const nejnovejsi = zaznamy.reduce((a, b) => (b.at > a.at || (b.at === a.at && PRESNE.has(b.source) && !PRESNE.has(a.source)) ? b : a));
+    if (nejnovejsi.resetsAt) return nejnovejsi;
+    const presny = zaznamy
+      .filter((l) => l.resetsAt && l.resetsAt > nejnovejsi.at)
+      .reduce((a, b) => (!a || b.at > a.at ? b : a), null);
+    return presny ? { ...nejnovejsi, resetsAt: presny.resetsAt, resetsBy: null } : nejnovejsi;
+  });
+  // Hlášky „hit your limit“ jsou odhad z textu; přesná okna je nahrazují.
+  return [...slozena, ...ostatni.filter((l) => !(claudePresne && l.provider === 'anthropic' && !PRESNE.has(l.source)))];
+}
+
+// Kdy se okno obnoví – u každého okna vždycky, a vždycky pravdivě:
+//   přesný čas od zdroje (stavový řádek, Usage v Claude Desktopu, Codex, hláška o limitu),
+//   horní mez z historie měření („nejpozději“ – okno, které při měření běželo, déle trvat nemůže),
+//   a když čas neuvádí žádný zdroj, řekne se to. Nikdy se nedomýšlí.
+export function limitObnova(l, now = Date.now()) {
+  const presne = Number(l.resetsAt) > 0 ? Number(l.resetsAt) : 0;
+  const mez = presne ? 0 : Number(l.resetsBy) > 0 ? Number(l.resetsBy)
+    : Number(l.windowMinutes) > 0 && Number(l.at) > 0 ? Number(l.at) + Number(l.windowMinutes) * 60e3 : 0;
+  const kdy = presne || mez;
+  if (kdy && kdy > now) {
+    return { kdy, presne: Boolean(presne), probehla: false, text: presne ? tr('obnova {0}', resetsLabel(kdy, now)) : tr('obnova nejpozději {0}', resetsLabel(kdy, now)) };
+  }
+  if (kdy) return { kdy, presne: Boolean(presne), probehla: true, text: presne ? tr('obnoveno {0}', resetsLabel(kdy, now)) : tr('obnoveno nejpozději {0}', resetsLabel(kdy, now)) };
+  if (!l.reached && Number(l.usedPercent) === 0) return { kdy: 0, presne: false, probehla: false, text: tr('okno se zatím nečerpá') };
+  return { kdy: 0, presne: false, probehla: false, text: tr('čas obnovy zdroj neuvádí') };
 }
 
 // Stav jednoho okna limitu. Jedno místo pro všechna tři zobrazení (Přehled, Statistiky,
@@ -348,10 +391,10 @@ export function creditAgeHtml(c, now = Date.now()) {
 }
 
 export function limitState(l, now = Date.now()) {
-  // Okno bez času obnovy (historie Claude Desktopu) po své délce vyprší: odečet starší než samo
-  // okno o současném vytížení nic neříká. Bez toho by pětihodinové okno svítilo i týden starým číslem.
-  const vyprselo = !l.resetsAt && Number(l.windowMinutes) > 0 && now - l.at > Number(l.windowMinutes) * 60e3;
-  const renewed = Boolean(l.resetsAt && l.resetsAt <= now) || vyprselo;
+  // Okno bez přesného času obnovy (historie Claude Desktopu) nejpozději po své délce vyprší: odečet
+  // starší než samo okno o současném vytížení nic neříká. Bez toho by pětihodinové okno svítilo
+  // i týden starým číslem. Horní mez z historie (`resetsBy`) je přesnější, platí stejně.
+  const renewed = limitObnova(l, now).probehla;
   const reached = Boolean(l.reached) && !renewed;
   const pct = renewed ? 0 : reached ? 100 : Math.round(Number(l.usedPercent) || 0);
   return {
@@ -369,6 +412,14 @@ export function limitState(l, now = Date.now()) {
   };
 }
 
+// Řádek s obnovou. Přesný budoucí čas má i odpočet („za 2 h 13 min“), který se překresluje každou
+// minutu (app.js, [data-until]); horní mez odpočet nemá – tvrdila by přesnost, kterou nemá.
+export function obnovaHtml(l, now = Date.now()) {
+  const o = limitObnova(l, now);
+  if (o.presne && !o.probehla) return `<span class="lwin-reset">${tr('obnova')} <span data-until="${o.kdy}">${untilLabel(o.kdy, now)}</span> · ${esc(resetsLabel(o.kdy, now))}</span>`;
+  return `<span class="lwin-reset${o.kdy ? '' : ' is-unknown'}">${esc(o.text)}</span>`;
+}
+
 // Okna limitů: kolik je vyčerpáno, kdy se obnoví a co z toho plyne pro práci.
 export function limitWindows(limits, now = Date.now()) {
   const rows = currentLimits(limits, now)
@@ -376,13 +427,13 @@ export function limitWindows(limits, now = Date.now()) {
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9) || a.app.localeCompare(b.app));
   if (!rows.length) return '';
   return `<ul class="lwin">${rows.map((l) => {
-    const { renewed, pct, tone, advice, label } = limitState(l, now);
+    const { pct, tone, advice, label } = limitState(l, now);
     return `<li class="lwin-row" data-tone="${tone}">
       <span class="lwin-logo">${glyph(l.id.startsWith('codex') ? { connector: 'codex' } : l.provider)}</span>
       <span class="lwin-main">
-        <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct">${esc(label)}</span></span>
+        <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct${/\d/.test(label) ? '' : ' lwin-pct--text'}">${esc(label)}</span></span>
         <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
-        <span class="lwin-sub"><span>${esc(advice)}</span>${l.resetsAt && !renewed ? `<span>${tr('obnova')} <span data-until="${l.resetsAt}">${untilLabel(l.resetsAt, now)}</span> · ${new Date(l.resetsAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })}</span>` : ''}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
+        <span class="lwin-sub"><span>${esc(advice)}</span>${obnovaHtml(l, now)}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
       </span>
     </li>`;
   }).join('')}</ul>`;
@@ -398,7 +449,7 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
       const cerstve = s.reached && now - l.at < 7 * DAY;
       if (!cerstve && (now - l.at > 7 * DAY || typeof l.usedPercent !== 'number')) return null;
       const color = s.tone === 'out' ? 'var(--velvet-ink)' : s.tone === 'low' ? 'var(--brass)' : 'var(--teal)';
-      const sub = l.resetsAt && !s.renewed ? tr('obnova {0}', resetsLabel(l.resetsAt, now)) : l.plan ? `${tr('plán')} ${l.plan}` : '';
+      const sub = limitObnova(l, now).text;
       // Stáří na vlastním řádku; po šesti hodinách zvýrazněné, protože limity se mění rychle.
       const age = limitAge(l, now);
       return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, age, stare: now - l.at > 6 * 3600e3, size, reached: s.reached }) };

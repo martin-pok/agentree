@@ -1,0 +1,14 @@
+/* Snímky 1280 × 800 pro Chrome Web Store. Stejná scéna jako dlaždice (brand.css), vlevo jedna zpráva,
+   vpravo jeden obraz produktu – skutečné okno rozšíření nebo výřez aplikace. Nic přes sebe. */
+.canvas { width: 1280px; height: 800px; display: grid; grid-template-columns: 488px 1fr; align-items: center; gap: 64px; padding: 0 96px; }
+.text { display: grid; gap: 24px; }
+.kicker { font-size: 18px; color: var(--brass-soft); letter-spacing: .01em; }
+h1 { font: 500 58px/1.04 'Urbanist', system-ui, sans-serif; letter-spacing: -.035em; text-wrap: balance; }
+p { font-size: 21px; line-height: 1.5; color: var(--on-stage-mute); max-width: 30ch; }
+.fakta { display: grid; gap: 12px; padding: 0; list-style: none; font-size: 17px; color: var(--ivory); }
+.fakta li { display: flex; gap: 12px; align-items: baseline; }
+.fakta li::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); translate: 0 -2px; }
+.obraz { justify-self: center; display: grid; justify-items: center; gap: 16px; }
+.okno { display: block; width: 344px; border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 32px 80px rgba(0, 0, 0, .45); }
+.aplikace { display: block; width: 560px; border-radius: 20px; box-shadow: 0 0 0 1px var(--line), 0 32px 80px rgba(0, 0, 0, .45); }
+.popisek { font-size: 15px; color: var(--on-stage-mute); }

@@ -60,6 +60,10 @@ Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede 
 
 Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči, a zadání se do webových služeb nevkládá samo (jen se zkopíruje do schránky). Rozšíření posílá data jen do Agenteeq na tomto Macu (`127.0.0.1`), nic neodchází na internet. Funguje v Chromu, Brave, Arcu i Edge.
 
+Až bude rozšíření v Chrome Web Store (`docs/CHROME-WEB-STORE.md`), karta nabídne tlačítko
+**Otevřít Chrome Web Store** – tam stačí kliknout na **Přidat do Chromu** a vložit jednorázový kód
+(krok 4). Do té doby platí ruční instalace:
+
 1. V Agenteeq otevři **Nastavení → Propojení → Rozšíření pro Chrome**.
 2. V Chromu otevři `chrome://extensions` a vpravo nahoře zapni **Režim pro vývojáře**.
 3. Klikni na **Načíst rozbalené** a vyber složku `~/.agenteeq/extension` (cestu zkopíruješ tlačítkem na kartě). Složka leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije.

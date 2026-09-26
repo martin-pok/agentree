@@ -35,12 +35,14 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
+import { spustPrihlaseni } from './prihlaseni.js';
+import { adresaObchodu } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
@@ -51,6 +53,8 @@ export const DIST_DIR = path.join(ROOT_DIR, 'dist');
 // Bez licence Pro je možné mít tolik aktivních projektů – platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
+// Přihlášení „nanečisto“ (AGENTEEQ_OPEN=dry): běží, dokud ho nic nezastaví, a nic nevypíše.
+const PRIHLASENI_NASUCHO = Object.freeze({ ok: true, dry: true, odkaz: () => null, chceKod: () => false, posliKod: () => false, zastav() {}, bezi: () => true, vystup: () => '' });
 
 // `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agenteeq-<verze>-macOS-<arch>.zip`.
 // Server odvozuje přesný název sám (verze z package.json, architektura procesu) – nikdy z požadavku klienta.
@@ -171,7 +175,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const raw = /[.!?]$/.test(rawError) ? rawError : `${rawError}.`;
     let hint = '';
     if (/authenticat|oauth|log ?in|unauthori|401|credential/i.test(raw)) {
-      hint = run.agent === 'codex' ? ' Přihlas se v Terminálu příkazem codex login.' : ' Přihlas se znovu: v Terminálu spusť claude a zadej /login.';
+      hint = ' Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení (otevře se v prohlížeči).';
     } else if (/limit|quota|rate/i.test(raw)) {
       hint = ' Nejspíš vyčerpaný limit předplatného.';
     }
@@ -644,7 +648,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     posledni: (id) => store.list().reduce((m, s) => (s.connector === id && s.lastAt > m ? s.lastAt : m), 0),
     oknoDni: config.windowDays,
     run: napojeniRun || run,
-    terminal: (command) => executeOpen({ kind: 'terminal', command }, { dry }),
+    // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
+    prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
     emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
@@ -805,10 +810,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, ...(dry ? { dry: true } : {}), integrations: value };
   }
 
+  // „Přidat do Chromu“: stránka rozšíření v Chrome Web Store, rovnou v prohlížeči, který ho umí.
+  async function otevriObchod() {
+    const url = adresaObchodu();
+    if (!url) return { status: 409, error: 'Rozšíření zatím v Chrome Web Store není. Použij ruční instalaci.' };
+    const vChromu = otevritVProhlizeciSRozsirenim(url, config.sourceHome);
+    if (vChromu && !dry) {
+      const r = await run(vChromu.cmd, vChromu.args, { timeout: 8000 });
+      if (r.ok) return { ok: true, prohlizec: vChromu.prohlizec };
+    }
+    const r = await executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry });
+    return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+  }
+
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: extensionPath, sites: WEB_SITES, ...extensionStatus() },
+      extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -1226,7 +1244,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

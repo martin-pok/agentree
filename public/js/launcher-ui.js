@@ -5,6 +5,7 @@ import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
 import { tr, LOCALE } from './i18n.js';
+import { spustNapojeni } from './napojeni-ui.js';
 
 const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
@@ -38,9 +39,11 @@ const RUN_LABEL = { running: tr('Pracuje'), stopping: tr('Zastavuji'), done: tr(
 export function runProblem(r) {
   const raw = String(r.error || (r.exitCode ? `${tr('Skončilo s kódem')} ${r.exitCode}` : tr('Agent skončil chybou'))).trim();
   if (/authenticat|oauth|log ?in|unauthori|\b401\b|credential/i.test(raw)) {
+    // Přihlášení se obnoví tlačítkem v prohlížeči (src/prihlaseni.js), Terminál člověk nepotřebuje.
+    const hint = tr('Klikni na Přihlásit znovu – přihlášení se otevře v prohlížeči. Potom úkol spusť znovu.');
     return r.agent === 'codex'
-      ? { title: tr('Přihlášení Codexu vypršelo'), hint: tr('V Terminálu spusť příkaz níže a přihlas se. Potom úkol spusť znovu.'), fix: 'codex login', raw }
-      : { title: tr('Přihlášení Claude Code vypršelo'), hint: tr('V Terminálu spusť příkaz níže a zadej /login. Potom úkol spusť znovu.'), fix: 'claude', raw };
+      ? { title: tr('Přihlášení Codexu vypršelo'), hint, napojit: { id: 'codex', druh: 'agent', label: 'Codex', provider: 'openai', logo: 'codex' }, raw }
+      : { title: tr('Přihlášení Claude Code vypršelo'), hint, napojit: { id: 'claude-code', druh: 'agent', label: 'Claude Code', provider: 'anthropic', logo: 'claude' }, raw };
   }
   if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: tr('Vyčerpaný limit předplatného'), hint: tr('Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.'), raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} ${tr('se nepodařilo spustit')}`, hint: tr('Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.'), raw };
@@ -72,7 +75,7 @@ function runHtml(r, now) {
       <strong>${esc(problem.title)}</strong>
       <p>${esc(problem.hint)}</p>
       <div class="run-problem-actions">
-        ${problem.fix ? `<span class="run-cmd"><code>${esc(problem.fix)}</code><button type="button" data-copy="${esc(problem.fix)}" data-copy-message="${tr('Příkaz zkopírován – vlož ho do Terminálu')}" aria-label="${tr('Kopírovat příkaz')} ${esc(problem.fix)}" title="${tr('Kopírovat příkaz')}">${ICON.copy}</button></span>` : ''}
+        ${problem.napojit ? `<button class="btn btn--sm btn--primary" type="button" data-run-napojit="${esc(problem.napojit.id)}">${tr('Přihlásit znovu')}</button>` : ''}
         <details class="run-raw"><summary>${tr('Původní chyba')}</summary><pre>${esc(problem.raw)}</pre></details>
       </div>
     </div>` : ''}
@@ -294,6 +297,13 @@ export function createLauncher(root) {
     if (stop) {
       stop.disabled = true;
       try { await api.stopRun(stop.dataset.runStop); } catch (err) { toast(err.message, { tone: 'err' }); stop.disabled = false; }
+      return;
+    }
+    const znovu = e.target.closest('[data-run-napojit]');
+    if (znovu) {
+      const cil = runProblem({ agent: znovu.dataset.runNapojit, error: 'login' }).napojit;
+      znovu.disabled = true;
+      try { await spustNapojeni(cil); } catch (err) { toast(err.message, { tone: 'err', timeout: 8000 }); } finally { znovu.disabled = false; }
       return;
     }
     const logBtn = e.target.closest('[data-run-log]');

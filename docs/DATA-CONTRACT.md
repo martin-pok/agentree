@@ -149,7 +149,10 @@ interface SessionSummary {
 
 interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error' }
 
-interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; reached: boolean; plan: string | null; text: string; at: number }
+interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; resetsBy?: number; reached: boolean; plan: string | null; text: string; at: number; source?: 'statusline' | 'desktop-usage' | 'plan-history' | string }
+// resetsAt = přesný čas obnovy od zdroje; resetsBy = jen horní mez z historie Claude Desktopu
+// (okno skončí nejpozději v tu chvíli). Rozhraní (`public/js/ui.js#limitObnova`) ukazuje u každého
+// okna jedno z: přesný čas, „nejpozději“, „obnoveno …“, nebo výslovně „čas obnovy zdroj neuvádí“.
 
 interface CreditRecord { id: string; provider: Provider; app: string; label: string; balance: number; unlimited: boolean; at: number; history: { at: number; balance: number }[] }
 

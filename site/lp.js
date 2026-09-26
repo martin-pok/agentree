@@ -1,7 +1,7 @@
 // Landing page. Produkt ukazují výřezy skutečného rozhraní (site/detail, scripts/shots-site.mjs)
 // a jejich nástup obstará CSS – ve stránce není žádný vložený rám, který by si mohl nechat dotyk
-// nebo kolečko myši a zastavit posouvání stránky. Tady zbývá plynulé posouvání a drobnosti
-// kolem návodu.
+// nebo kolečko myši a zastavit posouvání stránky. Tady zbývá plynulé posouvání, okénka počítadla
+// u kroků a drobnosti kolem návodu.
 //
 // Plynulé posouvání sdílí web s aplikací: hosting nese celé rozhraní (public/ leží v kořeni webu),
 // takže se modul z public/js jen načte – žádná druhá kopie.
@@ -29,5 +29,16 @@ for (const pole of document.querySelectorAll('[data-kopirovat]')) {
 const odkryjRozsireni = () => { if (location.hash === '#rozsireni') document.getElementById('rozsireni').open = true; };
 addEventListener('hashchange', odkryjRozsireni);
 odkryjRozsireni();
+
+// Čísla kroků vyjedou v okénku jako počítadlo v aplikaci (site/lp.css, „pohyb“). Okénko se staví
+// jen tam, kde se opravdu rozjede – jinak zůstane obyčejná číslice. Čísla jsou aria-hidden.
+if (matchMedia('(prefers-reduced-motion: no-preference)').matches && CSS.supports('animation-timeline: view()')) {
+  for (const el of document.querySelectorAll('.step-n')) {
+    const n = Number(el.textContent.trim());
+    if (!Number.isInteger(n) || n < 1 || n > 9) continue;
+    const valec = Array.from({ length: n + 1 }, (_, i) => `<span>${i}</span>`).join('');
+    el.innerHTML = `<span class="odo"><span class="odo-f">${n}</span><span class="odo-s" style="--n:${n + 1}">${valec}</span></span>`;
+  }
+}
 
 plynulePosouvani();

@@ -72,13 +72,31 @@ export function todosProgress(todos) {
 }
 
 // "resets 1am (Europe/Prague)" → nejbližší budoucí výskyt daného času v místní zóně.
+// Čas obnovy z hlášky o limitu. Claude Code píše u blízké obnovy jen hodinu („resets 3pm“),
+// u vzdálenější i den („resets Oct 9, 5pm“ / „resets Oct 9 at 5pm“) a starší verze epoch za svislítkem
+// („Claude AI usage limit reached|1759327200“). Dřív se četla jen hodina, takže týdenní limit
+// s datem za šest dní ukazoval obnovu dnes nebo zítra – nepravda. Nerozpoznaný tvar = null.
+const MESICE = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
 export function parseResets(text, ts) {
-  const m = /resets\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i.exec(text || '');
+  const t = String(text || '');
+  const epoch = /limit reached\|(\d{10})\b/i.exec(t);
+  if (epoch) return Number(epoch[1]) * 1000;
+  const m = /resets\s+(?:([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:,|\s+at)?\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i.exec(t);
   if (!m) return null;
-  let h = Number(m[1]) % 12;
-  if (m[3].toLowerCase() === 'pm') h += 12;
+  let h = Number(m[3]) % 12;
+  if (m[5].toLowerCase() === 'pm') h += 12;
   const d = new Date(ts);
-  d.setHours(h, Number(m[2] || 0), 0, 0);
+  if (m[1]) {
+    const mesic = MESICE.indexOf(m[1].toLowerCase());
+    if (mesic < 0) return null;
+    d.setMonth(mesic, Number(m[2]));
+    d.setHours(h, Number(m[4] || 0), 0, 0);
+    // Hláška z prosince o obnově v lednu míří do dalšího roku.
+    if (d.getTime() < ts - DAY) d.setFullYear(d.getFullYear() + 1);
+    return d.getTime();
+  }
+  d.setHours(h, Number(m[4] || 0), 0, 0);
   if (d.getTime() <= ts) d.setDate(d.getDate() + 1);
   return d.getTime();
 }

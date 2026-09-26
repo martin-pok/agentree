@@ -357,6 +357,17 @@ function mount(el) {
         v.pairCode = await api.extensionPairCode();
         toast(tr('Jednorázový kód je připravený na 10 minut'));
         update();
+      } else if (a.dataset.action === 'extension-store') {
+        // Na Macu otevře obchod server rovnou v Chromu (výchozí Safari by rozšíření nepřidalo).
+        // Jinde, nebo když to nejde, zůstane obyčejný odkaz.
+        if (!state.integrations?.desktop && !['127.0.0.1', 'localhost'].includes(location.hostname)) return;
+        e.preventDefault();
+        try {
+          const r = await api.extensionObchod();
+          toast(r.prohlizec ? tr('Chrome Web Store se otevřel v aplikaci {0}', r.prohlizec) : tr('Chrome Web Store se otevřel v prohlížeči'));
+        } catch {
+          window.open(a.href, '_blank', 'noopener');
+        }
       } else if (a.dataset.action === 'extension-scroll') {
         calloutExtension();
       } else if (a.dataset.action === 'ucet-prihlasit') {
@@ -743,25 +754,37 @@ function update(topics) {
     ready: tr('Rozšíření {0} je připojené, naposledy se ozvalo {1}. Jakmile otevřeš konverzaci v Chromu, objeví se v přehledu.', esc(ext.version || ''), seen),
     quiet: `${tr('Rozšíření je spárované, ale naposledy se ozvalo {0}. Chrome je zavřený, nebo je rozšíření vypnuté v', seen)} <code>chrome://extensions</code>.`,
   }[ext.state];
-  const installSteps = `<ol class="steps">
+  // Jednorázový kód je společný oběma cestám instalace.
+  const pairStep = `<li>${tr('Připni si ikonu Agenteeq v liště Chromu (dílek skládačky), otevři ji a vlož jednorázový kód:')}
+        <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">${tr('Vytvořit jednorázový kód')}</button></div>
+        ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="${tr('Jednorázový kód zkopírován')}">${ICON.copy}${tr('Kopírovat kód')}</button></div><p class="set-note">${tr('Platí do {0} a po spárování se automaticky zneplatní.', new Date(v.pairCode.expiresAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</p>` : ''}</li>`;
+  const manualSteps = `<ol class="steps">
       <li>${tr('V Chromu otevři adresu')} <code>chrome://extensions</code> ${tr('a vpravo nahoře zapni')} <b>${tr('Režim pro vývojáře')}</b>.
         <div class="code-line"><code>chrome://extensions</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="chrome://extensions" data-copy-message="${tr('Adresa zkopírována – vlož ji do Chromu')}">${ICON.copy}${tr('Kopírovat')}</button></div></li>
       <li>${tr('Klikni na')} <b>${tr('Načíst rozbalené')}</b> ${tr('a vyber tuto složku. Leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije:')}
         <div class="code-line"><code>${esc(ext.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(ext.path)}" data-copy-message="${tr('Cesta zkopírována')}">${ICON.copy}${tr('Kopírovat')}</button></div></li>
-      <li>${tr('Připni si ikonu Agenteeq v liště Chromu (dílek skládačky), otevři ji a vlož jednorázový kód:')}
-        <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">${tr('Vytvořit jednorázový kód')}</button></div>
-        ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="${tr('Jednorázový kód zkopírován')}">${ICON.copy}${tr('Kopírovat kód')}</button></div><p class="set-note">${tr('Platí do {0} a po spárování se automaticky zneplatní.', new Date(v.pairCode.expiresAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</p>` : ''}</li>
+      ${ext.obchod ? '' : pairStep}
     </ol>`;
+  // S rozšířením v Chrome Web Store: jedno kliknutí na „Přidat do Chromu“ a kód. Ruční cesta zůstává
+  // sbalená pro prohlížeče bez obchodu a pro vývoj.
+  const installSteps = ext.obchod
+    ? `<ol class="steps">
+      <li>${tr('Přidej Agenteeq do Chromu z Chrome Web Store – stačí kliknout na')} <b>${tr('Přidat do Chromu')}</b>.
+        <div class="set-actions"><a class="btn btn--primary" href="${esc(ext.obchod)}" target="_blank" rel="noopener" data-action="extension-store">${ICON.external}${tr('Otevřít Chrome Web Store')}</a></div></li>
+      ${pairStep}
+    </ol>
+    ${fold('ext-manual', tr('Ruční instalace bez obchodu'), manualSteps)}`
+    : manualSteps;
   fill(el, 'extension', `
     ${head(ICON.spark, tr('Rozšíření pro Chrome'),
       tr('Agenti z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem i přepisem a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu – nic neodchází na internet.'),
       stateBadge(...badge))}
     <ul class="site-chips" aria-label="${tr('Podporované webové služby')}">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
     ${ext.repair ? `<p class="set-note set-note--warn">${tr('Rozšíření je potřeba spárovat znovu. Každý prohlížeč teď dostává vlastní přístupový klíč a ten dřívější přestal platit. Vytvoř jednorázový kód a vlož ho do rozšíření.')}</p>` : ''}
-    ${ext.outdated ? `<p class="set-note set-note--warn">${tr('V Chromu běží rozšíření {0}, aplikace má {1}. Otevři', esc(ext.version), esc(ext.expectedVersion))} <code>chrome://extensions</code> ${tr('a u Agenteeq klikni na šipku obnovení ↻.')}</p>` : ''}
+    ${ext.outdated ? `<p class="set-note set-note--warn">${tr('V Chromu běží rozšíření {0}, aplikace má {1}. Otevři', esc(ext.version), esc(ext.expectedVersion))} <code>chrome://extensions</code> ${ext.obchod ? tr('a klikni na Aktualizovat (rozšíření z obchodu se jinak aktualizuje samo do pár hodin; u ruční instalace na šipku ↻ u Agenteeq).') : tr('a u Agenteeq klikni na šipku obnovení ↻.')}</p>` : ''}
     ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
     ${paired ? fold('ext', tr('Instalace a spárování znovu'), installSteps, { cls: 'ext-reinstall' }) : installSteps}
-    <p class="small muted">${tr('Rozšíření se instaluje v režimu pro vývojáře, dokud nebude v Chrome Web Store. Funguje i v Brave, Arcu a Edge.')}</p>`);
+    <p class="small muted">${ext.obchod ? tr('Funguje i v Brave, Arcu a Edge – všechny instalují z Chrome Web Store.') : tr('Rozšíření se instaluje v režimu pro vývojáře, dokud nebude v Chrome Web Store. Funguje i v Brave, Arcu a Edge.')}</p>`);
   // Přišel sem odkaz z průvodce, prvních kroků nebo „Co je nového“ – ukázat kartu rozšíření.
   onJump();
 

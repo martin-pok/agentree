@@ -1,5 +1,37 @@
 # Changelog
 
+## Připravuje se (zatím nevydáno)
+
+### Napojení Claude Code a Codexu rovnou v prohlížeči, bez Terminálu
+
+- „Napojit“ dřív otevřelo Terminál s výpisem a otázkami a teprve pak prohlížeč. Přihlášení teď běží
+  na pozadí (`src/prihlaseni.js`): `claude auth login --claudeai` a `codex login` hned otevřou
+  autorizační stránku, Agenteeq jen čeká a napojení potvrdí.
+- „Prohlížeč se neotevřel?“ otevře záložní odkaz z přihlášení a kód ze stránky se vloží do okna
+  Agenteeq. Přihlášení, které skončí bez napojení, okno ohlásí hned. Selhaný úkol s vypršeným
+  přihlášením má tlačítko „Přihlásit znovu“ místo příkazu do Terminálu.
+
+### Okna limitů vždy ukazují, kdy se obnoví
+
+- U každého okna je řádek s obnovou: přesný čas s odpočtem, po obnově kdy proběhla, horní mez
+  z historie Claude Desktopu („obnova nejpozději …“), nebo výslovně „čas obnovy zdroj neuvádí“.
+- Přesné časy obnovy Claude i bez běžící konverzace z uložené stránky Usage v Claude Desktopu
+  (Beta). Každé okno Claude má jeden řádek složený z nejnovějšího měření.
+- Oprava: hláška „resets Oct 2, 5pm“ ukazovala obnovu týdenního limitu dnes nebo zítra.
+
+### Rozšíření připravené pro Chrome Web Store
+
+- Balíček, snímky, texty karty a zásady ochrany soukromí (`/soukromi`, `/en/privacy`) jsou hotové
+  (`docs/CHROME-WEB-STORE.md`). Po schválení stačí adresa v `public/js/obchod.js` a aplikace
+  i web přepnou na „Přidat do Chromu“ – obchod se na Macu otevře rovnou v Chromu.
+
+### Web: pohyb jako v aplikaci
+
+- Řádky nadpisů vyjíždějí zpoza masky, výřez aplikace v úvodu se odkryje jako měřidlo, dlaždice
+  v řadě vyjedou s odstupem a obraz v nich se rozsvítí, loga naskočí jedno po druhém a čísla kroků
+  vyjedou v okénku jako počítadlo. Mimo úvod řídí pohyb posouvání, nic neběží podle hodin;
+  „omezit pohyb“ ukáže všechno rovnou.
+
 ## 0.28.1 – 2026-09-26 · vzdálený Claude se neztratí z přehledu
 
 - Opravená chybějící detekce Claude Code spuštěného vzdáleně z Claude Desktopu.

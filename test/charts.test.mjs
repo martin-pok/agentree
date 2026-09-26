@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stackedColumns, timeLine, miniBars } from '../public/js/charts.js';
 import { providerSeries, chartColor, CATEGORICAL, sessionTotal } from '../public/js/data.js';
-import { limitGauges } from '../public/js/ui.js';
+import { limitGauges, currentLimits, limitObnova, limitWindows } from '../public/js/ui.js';
 
 const hourKey = (d) => d.toISOString().slice(0, 13);
 
@@ -64,24 +64,55 @@ test('grafy: miniaturní sloupce kreslí jen nenulové intervaly', () => {
   assert.equal(miniBars([], '#000'), '');
 });
 
-test('limity: jakmile dorazí přesná data ze stavového řádku, záložní historie se skryje', () => {
+test('limity: každé okno Claude má jeden řádek – nejnovější měření, čas obnovy od přesného zdroje', () => {
   const now = Date.now();
+  const H = 3600e3;
   const limity = [
-    { id: 'claude:five_hour', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 42, resetsAt: null, reached: false, at: now, source: 'statusline', kind: 'window' },
-    { id: 'claude:five_hour:history', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 13, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
-    { id: 'claude:seven_day:history', provider: 'anthropic', app: 'Claude', label: 'Týdenní limit', usedPercent: 62, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
+    { id: 'claude:five_hour', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 42, windowMinutes: 300, resetsAt: now + 2 * H, reached: false, at: now, source: 'statusline', kind: 'window' },
+    { id: 'claude:five_hour:history', provider: 'anthropic', app: 'Claude', label: 'Limit 5 h', usedPercent: 13, windowMinutes: 300, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
+    { id: 'claude:seven_day:history', provider: 'anthropic', app: 'Claude', label: 'Týdenní limit', usedPercent: 62, windowMinutes: 10080, resetsAt: null, reached: false, at: now, source: 'plan-history', kind: 'window' },
+    { id: 'claude:weekly', provider: 'anthropic', app: 'Claude', label: 'Týdenní limit', usedPercent: null, resetsAt: now + H, reached: true, at: now - H, source: '', kind: 'window' },
     { id: 'codex:codex:primary', provider: 'openai', app: 'Codex', label: 'Limit 5 h', usedPercent: 80, resetsAt: null, reached: false, at: now, source: '', kind: 'window' },
   ];
 
   const merice = limitGauges(limity, now);
-  assert.equal(merice.length, 2, 'jeden měřák za Claude a jeden za Codex – ne dvě čísla pro stejný limit');
-  assert.equal(merice.filter((h) => h.includes('42')).length, 1, 'platí přesná hodnota ze stavového řádku');
-  assert.equal(merice.some((h) => h.includes('13')), false, 'záložní historie se nezobrazuje vedle ní');
-  assert.equal(merice.some((h) => h.includes('62')), false, 'týdenní limit z historie se skryje také – zdroj má přednost jako celek');
+  assert.equal(merice.length, 3, '5 h a týden za Claude, 5 h za Codex – ne dvě čísla pro stejné okno');
+  assert.equal(merice.filter((h) => h.includes('42')).length, 1, 'při shodném čase platí přesná hodnota ze stavového řádku');
+  assert.equal(merice.some((h) => h.includes('13')), false, 'záložní historie téhož okna se vedle ní nezobrazuje');
+  assert.equal(merice.some((h) => h.includes('62')), true, 'týden změřila jen historie – je to skutečné měření, ukáže se');
   assert.equal(merice.some((h) => h.includes('80')), true, 'Codex zůstává, jeho limit je samostatný');
+  assert.equal(currentLimits(limity, now).some((l) => l.id === 'claude:weekly'), false, 'odhad z hlášky přesná okna nahrazují');
 
-  const bezStatusline = limitGauges(limity.filter((l) => l.source !== 'statusline'), now);
-  assert.equal(bezStatusline.length, 3, 'bez stavového řádku se historie použije jako záloha');
+  // Historie změřená později než stavový řádek: číslo z ní, čas obnovy ze stavového řádku –
+  // měření leží v témž okně (před jeho obnovou).
+  const pozdeji = currentLimits([limity[0], { ...limity[1], at: now + 10 * 60e3, usedPercent: 55 }], now + 11 * 60e3);
+  assert.equal(pozdeji.length, 1);
+  assert.equal(pozdeji[0].usedPercent, 55);
+  assert.equal(pozdeji[0].resetsAt, now + 2 * H);
+  // Historie až po obnově okna ze stavového řádku: starý čas obnovy se k novému oknu nepřilepí.
+  const noveOkno = currentLimits([limity[0], { ...limity[1], at: now + 3 * H, usedPercent: 5 }], now + 3 * H);
+  assert.equal(noveOkno[0].usedPercent, 5);
+  assert.equal(noveOkno[0].resetsAt, null);
+});
+
+test('limity: u každého okna je vidět obnova – přesně, jako horní mez, nebo výslovně „neuvádí“', () => {
+  const now = new Date(2026, 8, 26, 12, 0).getTime();
+  const H = 3600e3;
+  assert.equal(limitObnova({ resetsAt: now + 2 * H + 13 * 60e3, at: now }, now).text, 'obnova dnes v\u00a014:13');
+  assert.equal(limitObnova({ resetsAt: now - H, at: now - 3 * H }, now).text, 'obnoveno dnes v\u00a011:00');
+  assert.equal(limitObnova({ resetsBy: now + 3 * H, windowMinutes: 300, at: now - H, usedPercent: 30 }, now).text, 'obnova nejpozději dnes v\u00a015:00');
+  assert.equal(limitObnova({ windowMinutes: 300, at: now - 2 * H, usedPercent: 30 }, now).text, 'obnova nejpozději dnes v\u00a015:00', 'bez historie mez = měření + délka okna');
+  assert.equal(limitObnova({ windowMinutes: 10080, at: now - 8 * 24 * H, usedPercent: 30 }, now).probehla, true);
+  assert.equal(limitObnova({ usedPercent: 0, at: now }, now).text, 'okno se zatím nečerpá');
+  assert.equal(limitObnova({ reached: true, at: now, text: 'limit' }, now).text, 'čas obnovy zdroj neuvádí');
+  // Přehled: řádek obnovy nechybí u žádného okna, přesný čas má odpočet, mez ne.
+  const html = limitWindows([
+    { id: 'codex:codex:primary', app: 'Codex', label: 'Limit 5 h', provider: 'openai', usedPercent: 34, windowMinutes: 300, resetsAt: now + H, at: now },
+    { id: 'claude:five_hour:history', app: 'Claude', label: 'Limit 5 h', provider: 'anthropic', usedPercent: 20, windowMinutes: 300, resetsBy: now + 4 * H, at: now, source: 'plan-history' },
+  ], now);
+  assert.equal((html.match(/class="lwin-reset/g) || []).length, 2);
+  assert.equal((html.match(/data-until=/g) || []).length, 1, 'odpočet jen u přesného času');
+  assert.match(html, /obnova nejpozději dnes v\u00a016:00/);
 });
 
 test('hlavní metrika je vstup + výstup – režie cache ji nesmí nadsadit', () => {

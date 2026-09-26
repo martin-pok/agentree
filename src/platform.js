@@ -240,6 +240,19 @@ export async function fullUserName(runImpl = run) {
 
 // Je aplikace opravdu nainstalovaná? Hledá se v /Applications a v ~/Applications; `null` = nevím
 // (jiný systém než macOS, nebo kontrola vypnutá), nikdy ne „ne“ jen proto, že se nehledalo.
+/**
+ * Otevře adresu v prohlížeči, který umí rozšíření z Chrome Web Store (Chrome, Brave, Edge, Arc,
+ * Chromium). Výchozí prohlížeč to být nemusí – Safari by stránku obchodu jen odmítlo.
+ * Vrací `null`, když takový prohlížeč na tomhle systému najít neumíme; volající pak otevře adresu
+ * výchozím prohlížečem.
+ */
+export const PROHLIZECE_S_ROZSIRENIM = ['Google Chrome', 'Brave Browser', 'Microsoft Edge', 'Arc', 'Chromium'];
+export function otevritVProhlizeciSRozsirenim(url, home, { fileExists = (p) => fs.existsSync(p) } = {}) {
+  if (!JE_MAC) return null;
+  const nazev = PROHLIZECE_S_ROZSIRENIM.find((n) => appInstalled(n, home, { fileExists }));
+  return nazev ? { cmd: 'open', args: ['-a', nazev, url], prohlizec: nazev } : null;
+}
+
 export function appInstalled(names, home, { fileExists = (p) => fs.existsSync(p), enabled = JE_MAC } = {}) {
   if (!enabled) return null;
   return [].concat(names).some((n) => [`/Applications/${n}.app`, `${home}/Applications/${n}.app`].some((p) => fileExists(p)));
