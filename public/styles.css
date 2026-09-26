@@ -942,6 +942,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-box input.pair-adresa { font: 400 16px/1.4 var(--f-mono); letter-spacing: 0; }
 .pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
 .pair-box small { color: var(--mute); font-size: 12px; }
+/* Oddělovač mezi ukázkou a připojením ke skutečnému Macu – ne další odstavec, jen nadpisek. */
+.pair-or { margin: -4px 0; font-size: 12px; color: var(--mute); }
 /* Druhá cesta pro toho, kdo aplikaci ještě nemá: bez ní je pole na adresu slepá ulička. */
 .pair-jinak { margin-top: -4px; }
 .pair-box a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

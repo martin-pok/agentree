@@ -107,6 +107,8 @@ export default {
     "Čtení z cache": "Cache read",
     "Kde máš Agenteeq?": "Where’s your Agenteeq?",
     "Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.": "This is just the interface. Agents, limits and spend stay on your Mac – enter the address where Agenteeq runs there. Your Mac must be on and awake; a closed window is fine, a quit app isn’t.",
+    "Prohlédnout ukázku bez instalace": "View a demo, no install needed",
+    "nebo se připoj ke svému běžícímu Macu": "or connect to your own running Mac",
     "Adresa Macu": "Mac address",
     "Adresu najdeš v Agenteeq na Macu v": "You’ll find the address in Agenteeq on your Mac under",
     ". Mimo domov ji zpřístupní": ". Away from home, it’s reachable through",

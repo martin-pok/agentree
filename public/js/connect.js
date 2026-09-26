@@ -3,6 +3,10 @@ import { tr } from './i18n.js';
 // leží na Macu. Když za stránkou žádný server Agenteeq není, nemá smysl hlásit „server neběží“ a
 // ukazovat 127.0.0.1: na telefonu je to sám telefon. Místo toho se zeptáme, kde ten Mac je,
 // a prohlížeč pošleme rovnou tam – dál už běží všechno na jeho vlastní adrese.
+//
+// Na tuhle adresu ale často zabloudí i někdo, kdo žádný Mac po ruce nemá a jen chce vidět, jak
+// Agenteeq vypadá – proto má obrazovka hned nahoře tlačítko na ukázku (/app?ukazka), ne jen
+// políčko na adresu, do kterého by nebylo co napsat.
 
 const KLIC = 'agenteeq.adresa';
 const PORT = 4620;
@@ -64,10 +68,12 @@ export function pripojovaciObrazovka(zprava = '') {
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
       <h1>${tr('Kde máš Agenteeq?')}</h1>
       <p>${tr('Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.')}</p>
+      <a class="btn btn--primary" href="?ukazka">${tr('Prohlédnout ukázku bez instalace')}</a>
+      <p class="pair-or">${tr('nebo se připoj ke svému běžícímu Macu')}</p>
       <label class="sr-only" for="adresa">${tr('Adresa Macu')}</label>
       <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn btn--primary" type="submit">${tr('Otevřít')}</button>
+      <button class="btn" type="submit">${tr('Otevřít')}</button>
       <small>${tr('Adresu najdeš v Agenteeq na Macu v')} <b>${tr('Nastavení → Otevřít na telefonu')}</b>${tr('. Mimo domov ji zpřístupní')} <b>${tr('Přístup přes Tailscale')}</b> ${tr('o kartu níž.')}</small>
       <small class="pair-jinak">${tr('Máš účet Agenteeq?')} <a href="/app?ucet">${tr('Přihlas se a uvidíš souhrny odkudkoli.')}</a></small>
       <small class="pair-jinak">${tr('Agenteeq na Macu ještě nemáš?')} <a href="/">${tr('Podívej se, co umí a jak ho získat.')}</a></small>
