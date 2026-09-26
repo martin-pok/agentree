@@ -155,6 +155,15 @@ for (const rezim of ['light', 'dark']) {
       await page.keyboard.press('Escape'); // „Co je nového“ po aktualizaci
       await page.waitForTimeout(500);
       vypis(`${rezim} ${sirka}px /${trasa}`, await page.evaluate(zmer, PRECHODY));
+      // Nastavení ukazují vždy jen jednu skupinu – měří se každá zvlášť, ať nic nezůstane neměřené.
+      if (trasa === 'nastaveni') {
+        const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));
+        for (const skupina of skupiny.slice(1)) {
+          await page.click(`.set-nav [data-jump="${skupina}"]`);
+          await page.waitForTimeout(150);
+          vypis(`${rezim} ${sirka}px /${trasa} › ${skupina}`, await page.evaluate(zmer, PRECHODY));
+        }
+      }
     }
     await page.close();
   }

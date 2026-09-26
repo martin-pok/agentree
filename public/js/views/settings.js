@@ -11,7 +11,7 @@ import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk } from '../i18n.js';
 
-const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
+const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
 const FEATURE_LABEL = { launchBackground: tr('Spouštění agentů na pozadí'), localChat: tr('Chat s lokálními modely v Ollamě'), projectsUnlimited: tr('Neomezený počet projektů'), projectExport: tr('Export projektů do CSV') };
 const DONE_OPTIONS = [[0, tr('každou')], [60, tr('delší než 1 minuta')], [120, tr('delší než 2 minuty')], [300, tr('delší než 5 minut')], [900, tr('delší než 15 minut')]];
@@ -205,6 +205,8 @@ function privacyCard() {
 function calloutExtension() {
   const card = v.el?.querySelector('[data-region="extension"]');
   if (!card) return;
+  const skupina = card.closest('.set-group');
+  if (skupina?.hidden) v.ukazSkupinu?.(skupina.id);
   // Stránka má v CSS `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule –
   // a v okně, které zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá
   // přesně a u skrytého okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou.
@@ -228,10 +230,11 @@ function mount(el) {
   window.addEventListener('agenteeq-jump', onJump);
   nactiNapojeni();
   if (!v.customTypes) api.customAgents().then((r) => { v.customTypes = r.types; state.customAgents = r.agents; update(); }).catch(() => { v.customTypes = []; });
+  if (!GROUPS.some(([id]) => id === v.tab)) v.tab = GROUPS[0][0];
   el.innerHTML = `
     <div class="settings2">
       <nav class="set-nav" aria-label="${tr('Sekce nastavení')}">
-        ${GROUPS.map(([id, label], i) => `<button type="button" data-jump="${id}"${i === 0 ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
+        ${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
         <section class="guide-banner" data-enter style="--i:0">
@@ -242,7 +245,7 @@ function mount(el) {
           </div>
           <button class="btn btn--primary" type="button" data-welcome>${tr('Prohlédnout průvodce')}</button>
         </section>
-        ${GROUPS.map(([id, label, regions], gi) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h" data-enter style="--i:${gi + 1}">
+        ${GROUPS.map(([id, label, regions]) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h"${id === v.tab ? '' : ' hidden'} data-enter style="--i:1">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
         </section>`).join('')}
@@ -261,8 +264,7 @@ function mount(el) {
   const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Vodorovná lišta záložek (mobil) se posouvá přímo přes scrollLeft na `nav` samotné –
-  // nikdy přes scrollIntoView na tlačítku, protože to by mohlo rozhýbat i scroll stránky,
-  // který právě běží vedle (dvě plynulá rolování si pak konkurují a trhají).
+  // nikdy přes scrollIntoView na tlačítku, to by rozhýbalo i stránku.
   const scrollNavTo = (btn) => {
     if (nav.scrollWidth <= nav.clientWidth) return; // desktop: svislá lišta se neposouvá
     const left = btn.offsetLeft;
@@ -274,50 +276,33 @@ function mount(el) {
     nav.scrollTo({ left: target, behavior: reduceMotion() ? 'auto' : 'smooth' });
   };
 
-  const setCurrent = (id) => {
-    // aria-current musí mít hodnotu „true"; prázdná hodnota znamená podle specifikace opak.
+  // Menu přepíná skupiny jako Nastavení v macOS: klik ukáže vybranou skupinu a stránka ani
+  // menu se nehnou. Dřív to byly kotvy na jedné dlouhé stránce – klik ji posunul k sekci
+  // a nadpis „Nastavení“ odjel z obrazovky.
+  v.ukazSkupinu = (id) => {
+    if (!GROUPS.some(([g]) => g === id)) return;
+    v.tab = id;
     for (const btn of nav.querySelectorAll('[data-jump]')) {
       if (btn.dataset.jump === id) btn.setAttribute('aria-current', 'true');
       else btn.removeAttribute('aria-current');
     }
+    for (const g of el.querySelectorAll('.set-group')) g.hidden = g.id !== id;
     const btn = nav.querySelector(`[data-jump="${id}"]`);
     if (btn) scrollNavTo(btn);
   };
 
-  // Dokud doběhává rolování stránky vyvolané kliknutím na záložku, IntersectionObserver
-  // (sleduje, která sekce je právě vidět) nesmí mezitím přebít aktivní záložku – jinak
-  // bliká mezi cílem a sekcemi, kterými scroll jen prochází.
-  let programmatic = false;
-  let programmaticTimer = null;
-  const endProgrammatic = () => { programmatic = false; };
-  const startProgrammatic = () => {
-    programmatic = true;
-    clearTimeout(programmaticTimer);
-    window.removeEventListener('scrollend', endProgrammatic);
-    if ('onscrollend' in window) window.addEventListener('scrollend', endProgrammatic, { once: true });
-    programmaticTimer = setTimeout(endProgrammatic, reduceMotion() ? 50 : 700);
-  };
-  v.stopProgrammatic = () => {
-    clearTimeout(programmaticTimer);
-    window.removeEventListener('scrollend', endProgrammatic);
-  };
-
-  if ('IntersectionObserver' in window) {
-    v.observer = new IntersectionObserver((entries) => {
-      if (programmatic) return;
-      const visible = entries.filter((e) => e.isIntersecting).sort((x, y) => x.boundingClientRect.top - y.boundingClientRect.top)[0];
-      if (visible) setCurrent(visible.target.id);
-    }, { rootMargin: '-15% 0px -70% 0px' });
-    for (const g of el.querySelectorAll('.set-group')) v.observer.observe(g);
-  }
-
   el.addEventListener('click', async (e) => {
     const jump = e.target.closest('[data-jump]');
     if (jump) {
-      const target = document.getElementById(jump.dataset.jump);
-      startProgrammatic();
-      target?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-      setCurrent(jump.dataset.jump);
+      v.ukazSkupinu(jump.dataset.jump);
+      // Hluboko v dlouhé skupině by nová začala někde uprostřed. Stránka se proto srovná tak, aby
+      // skupina začínala tam, kde má vedle lepivého menu (na mobilu pod ním) – menu stojí dál
+      // na svém místě. Nahoře, kde je vidět nadpis, se nehýbe nic.
+      const menu = nav.getBoundingClientRect();
+      const skupina = el.querySelector('.set-group:not([hidden])').getBoundingClientRect();
+      const vedle = menu.right <= skupina.left; // počítač: menu vlevo; mobil: lišta nad obsahem
+      const posun = skupina.top - (vedle ? menu.top : menu.bottom + 16);
+      if (posun < -1) window.scrollTo({ top: window.scrollY + posun, behavior: 'instant' });
       return;
     }
     const pick = e.target.closest('[data-avatar-pick]');
@@ -934,8 +919,6 @@ export default {
   update,
   unmount: () => {
     window.removeEventListener('agenteeq-jump', onJump);
-    v.observer?.disconnect();
-    v.stopProgrammatic?.();
-    Object.assign(v, { el: null, observer: null, stopProgrammatic: null, napojeni: null });
+    Object.assign(v, { el: null, ukazSkupinu: null, napojeni: null });
   },
 };
