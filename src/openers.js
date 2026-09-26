@@ -84,6 +84,10 @@ function appPlan(s, apps) {
       return apps.cursor && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.cursor.name, s.cwd], label: 'Cursor', title: 'Otevřít v Cursoru' } : null;
     case 'vscode-copilot':
       return apps.vscode && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.vscode.name, s.cwd], label: 'VS Code', title: 'Otevřít ve VS Code' } : null;
+    case 'claude-desktop-code': {
+      if (!/^session_[A-Za-z0-9]{8,80}$/.test(id)) return null;
+      return { kind: 'open', args: [`https://claude.ai/code/${id}`], label: 'Claude', title: 'Otevřít konverzaci' };
+    }
     case 'web': {
       let url;
       try { url = new URL(s.url); } catch { return null; }
@@ -107,7 +111,7 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
     // Odkaz na webovou konverzaci otevře prohlížeč, a ten je všude – na rozdíl od `open -a`.
     const plan = appPlan(s, apps);
     if (!plan) return null;
-    return aplikace || (s.source === 'web' && plan.args.length === 1) ? plan : null;
+    return aplikace || (['web', 'desktop-cache'].includes(s.source) && plan.args.length === 1) ? plan : null;
   }
   if (target === 'terminal') {
     if (!aplikace) return null;

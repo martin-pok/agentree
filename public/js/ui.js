@@ -250,7 +250,7 @@ export function decisionCard(s) {
   return `<li class="decision${limited ? ' is-limit' : ''}">
     <span class="icon-tile">${glyph(s)}</span>
     <div class="decision-body">
-      <span class="decision-kicker">${failed ? tr('Spuštění selhalo') : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
+      <span class="decision-kicker">${failed ? (s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')) : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
       <p class="decision-reason">${esc(s.reason)}</p>
     </div>

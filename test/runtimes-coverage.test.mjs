@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RUNTIMES } from '../src/connectors/processes.js';
-import { MA_PREPIS, BEZ_PREPISU } from '../public/js/no-transcript.js';
+import { MA_PREPIS, BEZ_PREPISU, bezPrepisu } from '../public/js/no-transcript.js';
 
 // Nejčastější stížnost na aplikaci zní „běží mi agent a Agenteeq ho nezaregistroval". Někdy je to
 // chyba, jindy fakt o té aplikaci (ChatGPT konverzace na disk neukládá). Nepřijatelné je jen jedno:
@@ -35,4 +35,13 @@ test('každé vysvětlení je k něčemu: má důvod, radu i odkaz', () => {
     assert.ok(i.odkaz?.href && i.odkaz?.text, `${id}: chybí odkaz, kam se má uživatel vydat`);
     assert.doesNotMatch(i.duvod, /asi |patrně|možná|nejspíš/i, `${id}: důvod má být ověřený fakt, ne odhad`);
   }
+});
+
+
+test('Claude Desktop s načteným Code agentem není chybně označený jako bez přepisu', () => {
+  assert.equal(bezPrepisu('claude-desktop', []), true);
+  assert.equal(bezPrepisu('claude-desktop', [{ connector: 'claude-desktop-code' }]), false);
+  assert.equal(bezPrepisu('claude-desktop', [{ connector: 'claude-code', app: 'Claude Desktop · Code' }]), false);
+  assert.equal(bezPrepisu('claude-desktop', [{ connector: 'claude-code', app: 'Claude Code' }]), true);
+  assert.equal(bezPrepisu('chatgpt', [{ connector: 'claude-desktop-code' }]), true);
 });

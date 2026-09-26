@@ -5,7 +5,7 @@ import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
-import { BEZ_PREPISU } from '../no-transcript.js';
+import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr } from '../i18n.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
@@ -48,7 +48,7 @@ function webBezRozsireniHtml() {
 }
 
 function bezPrepisuHtml(sessions) {
-  const bezi = (state.runtimes || []).filter((r) => r.running && BEZ_PREPISU[r.id]);
+  const bezi = (state.runtimes || []).filter((r) => r.running && bezPrepisu(r.id, sessions));
   const lokalni = state.localAgents || [];
   const web = webBezRozsireniHtml();
   if (!bezi.length && !lokalni.length && !web) return '';

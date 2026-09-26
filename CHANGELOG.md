@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.28.1 – 2026-09-26 · vzdálený Claude se neztratí z přehledu
+
+- Opravená chybějící detekce Claude Code spuštěného vzdáleně z Claude Desktopu.
+  Původní konektor četl jen `~/.claude/projects`, kam vzdálená relace nezapisuje.
+  Nový místní konektor čte uložený seznam relací a dostupnou část přepisu v IndexedDB.
+- Existující relace se načtou zpětně po startu; změny cache sleduje watcher a záložní průchod.
+  Nový agent i změna stavu mají regresní HTTP/SSE test do 2 sekund.
+- Nepředstírá úplnou historii ani spotřebu: v detailu je rozsah dostupného přepisu a upozornění
+  na neúplné tokeny. Osa z metadata ukazuje jednotlivou hlášenou změnu, ne nepřetržitou práci.
+  Zastaralý běžící stav se nevydává za aktuální, obnova jiných dat cache jej neoživí.
+- Claude databáze se čte bez zámku a bez zápisu, žádné přihlašovací údaje se nepoužívají.
+  Neúplný zápis, neznámý formát nebo poškozená cache zachová poslední načtené relace
+  a zobrazí chybu zdroje; další změna načtení obnoví. Interní formát zůstává označený Beta.
+
 ## 0.28.0 – 2026-09-26 · spolehlivé napojení, klidné Nastavení a angličtina
 
 ### Web: stejné okraje obsahu a anglické ukázky

@@ -119,7 +119,7 @@ interface SessionSummary {
   connector: string;          // claude-code | codex | cursor | copilot-cli | vscode-copilot | gemini-cli | qwen-code | web
   provider: Provider;
   app: string;                // lidský název aplikace, např. "Codex · ChatGPT app"
-  source: 'local' | 'web';
+  source: 'local' | 'web' | 'desktop-cache';
   parentId: string | null;    // pomocné vlákno (automatická kontrola, pomocný agent) → ID rodičovské konverzace; mimo seznamy a počty agentů, tokeny se počítají
   subagent: { kind: 'review' | 'agent' | 'other'; label: string } | null;
   taskName: string;           // plánovaná úloha ze značky <scheduled-task>; spuštění téže úlohy jsou v seznamu agentů jedním řádkem
@@ -143,6 +143,7 @@ interface SessionSummary {
   resume: string | null;      // příkaz pro Terminál
   url: string | null;         // webová konverzace
   hooked: boolean;
+  observation?: { at: number; transcriptThrough: number; partial: true }; // remote Claude: query observation time, available cached transcript boundary; never complete usage
   transcriptSeq: number;
 }
 
