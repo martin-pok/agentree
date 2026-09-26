@@ -4,6 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { appSupportDir } from '../src/platform.js';
+import { normalizeData } from '../src/datastore.js';
 import { startTestServer, writeJsonl, openStream, waitFor, api, tempDir } from './helpers.mjs';
 
 const localDate = () => {
@@ -197,6 +198,26 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.ok([403, 404].includes(trav.status), `stav ${trav.status}`);
     assert.equal((await fetch(`${srv.url}/api/neexistuje`)).status, 404);
     assert.equal((await fetch(`${srv.url}/js/app.js`)).headers.get('content-type'), 'text/javascript; charset=utf-8');
+  });
+
+  await t.test('jazyk rozhraní: výchozí čeština, validace a <html lang> podle nastavení', async () => {
+    assert.equal(normalizeData({ settings: { language: 'de' } }).settings.language, 'cs');
+    assert.equal(normalizeData({ settings: { language: 'en' } }).settings.language, 'en');
+    assert.equal((await a.get('/api/state')).body.settings.language, 'cs');
+    const cesky = await fetch(`${srv.url}/`);
+    assert.equal(cesky.headers.get('content-type'), 'text/html; charset=utf-8');
+    assert.match(await cesky.text(), /<html lang="cs">/);
+
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'de' })).status, 422);
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'en' })).body.settings.language, 'en');
+    const anglicky = await fetch(`${srv.url}/`);
+    const anglickyText = await anglicky.text();
+    assert.match(anglickyText, /<html lang="en">/);
+    assert.doesNotMatch(anglickyText, /<html lang="cs">/);
+    assert.notEqual(cesky.headers.get('etag'), anglicky.headers.get('etag'), 'jiný jazyk musí dostat jiný ETag, jinak prohlížeč ukáže starou cache');
+
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'cs' })).body.settings.language, 'cs');
+    assert.match(await (await fetch(`${srv.url}/`)).text(), /<html lang="cs">/);
   });
 });
 

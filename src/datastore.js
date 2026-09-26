@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   welcomeCompleted: false,
   lastSeenVersion: '',
   appearance: 'light',
+  language: 'cs',
   notifications: {
     needsInput: true,
     limits: true,
@@ -99,6 +100,7 @@ export function normalizeData(raw) {
       welcomeCompleted: s.welcomeCompleted === true,
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
+      language: s.language === 'en' ? 'en' : 'cs',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
       layout: normalizeLayout(s.layout),
     },

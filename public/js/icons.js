@@ -112,6 +112,7 @@ export const ICON = {
   mac: svg('<rect x="4.5" y="6" width="15" height="10" rx="2"/><path d="M3.5 19h17"/>'),
   // Štít se zámkem: privátní síť, kam se nedostane nikdo zvenčí (karta Tailscale).
   shield: svg('<path d="M12 3l7 3v5.5c0 4.3-2.9 7.6-7 8.5-4.1-.9-7-4.2-7-8.5V6z"/><path d="M10.5 12.5h3M12 12.5v3"/>'),
+  globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
 };
 
 // Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.

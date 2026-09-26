@@ -56,6 +56,22 @@ const pop = document.getElementById('notif-pop');
 const stageEl = document.querySelector('.stage');
 const narrowMq = window.matchMedia('(max-width: 880px)');
 
+// index.html je česky napevno, ať se první vykreslení nezasekne na čekání na tenhle modul.
+// V angličtině se levá lišta a záhlaví přeloží hned tady – dřív, než níže sheet-nav opíše
+// texty z `.nav` do mobilního panelu „Více“, jinak by zůstaly česky i tam.
+document.querySelector('.skip-link').textContent = tr('Přeskočit na obsah');
+document.querySelector('.brand').setAttribute('aria-label', tr('Agenteeq – přehled'));
+document.querySelector('.nav').setAttribute('aria-label', tr('Hlavní navigace'));
+for (const [nav, text] of Object.entries({ prehled: tr('Přehled'), upozorneni: tr('Upozornění'), agenti: tr('Agenti'), projekty: tr('Projekty'), statistiky: tr('Statistiky'), utrata: tr('Útrata'), dovednosti: tr('Dovednosti'), nastaveni: tr('Nastavení') })) {
+  document.querySelector(`.nav [data-nav="${nav}"] span`).textContent = text;
+}
+document.querySelector('[data-nav-action="launch"]').setAttribute('aria-label', tr('Spustit agenta'));
+document.querySelector('[data-nav-action="more"] span').textContent = tr('Více');
+document.querySelector('.search-btn span').textContent = tr('Hledat');
+titleEl.textContent = tr('Přehled');
+bell.setAttribute('aria-label', tr('Upozornění'));
+pop.setAttribute('aria-label', tr('Poslední upozornění'));
+
 // Scéna nahoře jen jemně ožije, když nějaký agent pracuje. Stav agentů ukazuje pruh v Přehledu, ne dekorace.
 function renderStage(all) {
   stageEl.classList.toggle('is-live', all.some((s) => s.status === 'working'));

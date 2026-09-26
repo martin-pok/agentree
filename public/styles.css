@@ -1197,6 +1197,9 @@ html.is-cloud body { background: var(--paper); }
 .appearance-option strong, .appearance-option small { display: block; }
 .appearance-option strong { font-weight: 500; line-height: 1.3; }
 .appearance-option small { margin-top: 4px; color: var(--mute); font-size: 12px; line-height: 1.4; }
+/* Jazyk má jen dvě volby bez popisku – bez ikonového sloupce a na střed, ne tři čtvrtiny prázdné. */
+.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.appearance-options--lang .appearance-option { grid-template-columns: 1fr; text-align: center; }
 .set-actions { display: flex; gap: 12px; margin-top: 16px; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--line-2); }
 .set-row-text { min-width: 0; }

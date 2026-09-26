@@ -207,11 +207,11 @@ function update(topics = new Set(['all'])) {
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
       <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
-        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} dnes${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
+        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
       <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${tr('potřebuje tebe')}</span></a>
-      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${failedCount}</b><span>selhalo</span></a>
+      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${failedCount}</b><span>${tr('selhalo')}</span></a>
       <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b data-odo>${waiting.length}</b><span>${tr('čeká na zadání')}</span></a>
     </div>
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>

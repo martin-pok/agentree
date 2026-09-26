@@ -9,7 +9,7 @@ import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
-import { tr, LOCALE } from '../i18n.js';
+import { tr, LOCALE, jazyk } from '../i18n.js';
 
 const v = { folds: {}, el: null, observer: null, pairCode: null, stopProgrammatic: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
@@ -52,7 +52,7 @@ function sourceRow(c) {
 const GROUPS = [
   ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'custom']],
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
-  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'profile', 'license']],
+  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
   ['set-aplikace', tr('Aplikace na tomto Macu'), ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
 ];
@@ -330,6 +330,8 @@ function mount(el) {
     // nefungovalo a v tmavém režimu se navíc appka potichu přepnula do světlé.
     const appearance = e.target.closest('button[data-appearance]');
     if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
+    const lang = e.target.closest('button[data-lang]');
+    if (lang) { await setLanguage(lang.dataset.lang); return; }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
     const nap = e.target.closest('[data-napojit]');
@@ -602,6 +604,19 @@ async function setAppearance(value) {
   }
 }
 
+// Texty vznikají už při načtení modulu (public/js/i18n.js), takže změna jazyka stránku znovu
+// načte – server pak vydá <html lang> podle nově uloženého nastavení (src/http.js).
+async function setLanguage(value) {
+  const next = value === 'en' ? 'en' : 'cs';
+  if (next === jazyk()) return;
+  try {
+    await api.saveSettings({ language: next });
+    location.reload();
+  } catch (err) {
+    toast(`${tr('Jazyk se neuložil:')} ${err.message}`, { tone: 'err' });
+  }
+}
+
 async function connectClaude() {
   const h = state.integrations?.claudeHooks;
   const ok = await modal({
@@ -703,6 +718,15 @@ function update(topics) {
       <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
+
+  const lang = jazyk();
+  const langOption = (value, label) => `<button class="appearance-option" type="button" data-lang="${value}" aria-pressed="${lang === value}"><strong>${label}</strong></button>`;
+  fill(el, 'language', `
+    ${head(ICON.globe, tr('Jazyk aplikace'), tr('Změna jazyka stránku znovu načte.'))}
+    <div class="appearance-options appearance-options--lang" role="group" aria-label="${tr('Vyber jazyk aplikace')}">
+      ${langOption('cs', 'Čeština')}
+      ${langOption('en', 'English')}
+    </div>`);
 
   /* Propojení s Claude Code */
   const h = i.claudeHooks;
