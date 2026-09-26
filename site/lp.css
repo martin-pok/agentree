@@ -142,7 +142,9 @@ section[id] { scroll-margin-top: 56px; }
   radial-gradient(46% 30% at 50% 78%, rgba(201, 154, 62, .13), transparent 70%),
   radial-gradient(34% 26% at 78% 82%, rgba(34, 163, 140, .13), transparent 72%),
   radial-gradient(30% 24% at 22% 86%, rgba(124, 108, 240, .10), transparent 72%); }
-.hero h1 span { color: var(--on-stage-mute); }
+/* Nadpis je po řádcích (každý řádek vyjede zpoza masky, viz „pohyb“). Druhý řádek hera je tišší. */
+.radek { display: block; }
+.hero h1 .radek--tichy { color: var(--on-stage-mute); }
 .hero .lead { max-width: 46ch; }
 .hero-figure { margin-top: clamp(48px, 5.5vw, 76px); display: grid; justify-items: center; gap: 28px; }
 .hero-shot { width: min(100%, 1072px); filter: drop-shadow(0 40px 80px rgba(0, 0, 0, .55)); }
@@ -269,27 +271,84 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .nav-cta-extra { display: none; }
 }
 
-/* ---------- pohyb ---------- */
+/* ---------- pohyb ----------
+   Stejný jazyk jako aplikace (public/styles.css, „Nástup obrazovky“): věci vyjíždějí po sobě
+   s krátkým odstupem, obraz se odkryje jako měřidlo a čísla vyjedou do okének jako na počítadle.
+   Nic neběží dokola. Hero se rozsvítí po načtení, zbytek stránky podle posouvání – časová osa
+   je poloha na stránce, ne hodiny, takže nástup nikdy nezdrží čtení ani posouvání. Prohlížeč bez
+   časové osy posouvání (Firefox) ukáže všechno rovnou v konečném stavu. */
 @media (prefers-reduced-motion: no-preference) {
-  .unit-head > * { animation: prichod .6s var(--ease) both; }
-  .hero .unit-head > *:nth-child(2) { animation-delay: .05s; }
-  .hero .unit-head > *:nth-child(3) { animation-delay: .1s; }
-  .hero .unit-head > *:nth-child(4) { animation-delay: .15s; }
-  .hero .unit-head > *:nth-child(5) { animation-delay: .2s; }
-  .hero-shot { animation: nastup 1s var(--ease) .3s both; }
+  /* Maska řádku ořezává jen nahoře a dole (clip-path, ne overflow – overflow by z řádku udělal
+     posuvný kontejner). Dole rezerva pro ocásky písmen, nahoře pro háčky a čárky. */
+  .radek { clip-path: inset(-.12em -1em -.2em -1em); }
+  .radek > span { display: inline-block; }
+  .radek:nth-of-type(2) { --r: 1; }
+  .radek:nth-of-type(3) { --r: 2; }
+
+  /* Hero: řádky nadpisu po sobě (rytmus 90 ms), pak věta, výzva a údaje. */
+  .hero .unit-head > :not(h1) { animation: prichod .7s var(--ease) both; }
+  .hero h1 .radek > span { animation: vyjed .95s var(--ease) both; animation-delay: calc(.08s + var(--r, 0) * .09s); }
+  .hero .unit-head > .lead { animation-delay: .3s; }
+  .hero .unit-head > .cta-row { animation-delay: .38s; }
+  .hero .unit-head > .specs { animation-delay: .46s; }
+  /* Výřez aplikace se odkryje zleva doprava jako měřidlo v aplikaci a dosedne. Po doběhu se
+     ořez sundá (fill backwards), aby stín pod výřezem zůstal celý. */
+  .hero-shot { animation: odkryj 1.25s var(--ease) .5s backwards; }
+  .hero-figure .detail-note { animation: prichod .7s var(--ease) 1.1s both; }
   details[open] > .detail-body, .rows details[open] > p { animation: prichod .24s var(--ease) both; }
   @keyframes prichod { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  @keyframes nastup { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
-  /* Dlaždice vyjedou podle posouvání (časová osa je poloha na stránce, ne hodiny), nic neběží
-     samo. Plně viditelné jsou v první třetině cesty. Pozor: žádný předek dlaždic nesmí mít
-     `overflow: hidden` – udělal by z něj posuvný kontejner a nástup by měřil vůči němu
-     (hlídá qa-site). */
+  @keyframes vyjed { from { transform: translateY(108%); } to { transform: none; } }
+  @keyframes odkryj { from { clip-path: inset(0 100% 0 0 round 24px); transform: translateY(24px); } to { clip-path: inset(-120px -160px -200px -160px round 0); transform: none; } }
+
+  /* Pozor: žádný předek dlaždic nesmí mít `overflow: hidden` – udělal by z něj posuvný kontejner
+     a nástup by měřil vůči němu (hlídá qa-site). */
   @supports (animation-timeline: view()) {
+    /* Nadpis sekce: nadtitulek, řádky nadpisu, věta a odkaz po sobě, jak hlavička vjíždí do okna. */
+    .unit:not(.hero) .unit-head { view-timeline: --hlava block; }
+    .unit:not(.hero) .unit-head > * { animation: vynor-lehce var(--ease) both; animation-timeline: --hlava; animation-range: entry 10% entry 70%; }
+    .unit:not(.hero) .unit-head > h2 { animation: none; }
+    .unit:not(.hero) h2 .radek > span { animation: vyjed var(--ease) both; animation-timeline: --hlava; animation-range: entry 12% entry 72%; }
+    .unit:not(.hero) h2 .radek:nth-of-type(2) > span { animation-range: entry 22% entry 82%; }
+    .unit:not(.hero) .unit-head > :is(.lead, .btn) { animation-range: entry 28% entry 88%; }
+    .unit:not(.hero) .unit-head > :is(.text-link, .specs) { animation-range: entry 34% entry 94%; }
+
+    /* Dlaždice, skupiny zdrojů, fakta a kroky vyjedou podle posouvání. Plně viditelné jsou dřív,
+       než dojedou doprostřed okna. Soused v řadě se zpozdí o kousek (jako karty v aplikaci). */
     .tile, .source-group, .facts article, .steps li { animation: vynor linear both; animation-timeline: view(); animation-range: entry 0% entry 80%; }
+    :is(.tiles > .tile:nth-child(3), .tiles > .tile:nth-child(5), .sources > :nth-child(2), .facts article:nth-child(2), .steps li:nth-child(2)) { animation-range: entry 6% entry 86%; }
+    :is(.facts article:nth-child(3), .steps li:nth-child(3)) { animation-range: entry 12% entry 92%; }
+
+    /* Výřez v dlaždici se „rozsvítí“: vyjede zdola a dosedne, o chvilku po dlaždici. */
+    .tile { view-timeline-name: --dlazdice; }
+    .tile-shot > :is(picture, img) { animation: rozsvit var(--ease) both; animation-timeline: --dlazdice; animation-range: entry 20% cover 42%; }
+
+    /* Loga služeb naskočí jedno po druhém jako avatary v aplikaci. */
+    .source-group { view-timeline-name: --zdroje; }
+    .logos li { animation: naskoc var(--ease) both; animation-timeline: --zdroje; animation-range: entry 30% entry 70%; }
+    .logos li:nth-child(2) { animation-range: entry 36% entry 76%; }
+    .logos li:nth-child(3) { animation-range: entry 42% entry 82%; }
+    .logos li:nth-child(4) { animation-range: entry 48% entry 88%; }
+
+    /* Číslo kroku vyjede v okénku jako počítadlo v aplikaci (0 → 1, 2, 3). Okénko staví site/lp.js. */
+    .steps li { view-timeline-name: --krok; }
+    .step-n .odo-s { animation: odo-roll var(--ease) both; animation-timeline: --krok; animation-range: entry 25% entry 85%; }
+
     @keyframes vynor { from { opacity: 0; transform: translateY(48px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+    /* `translate` místo `transform`: tlačítko ve stažení si tak nechá svůj zdvih při najetí. */
+    @keyframes vynor-lehce { from { opacity: 0; translate: 0 20px; } to { opacity: 1; translate: 0 0; } }
+    @keyframes rozsvit { from { opacity: 0; translate: 0 40px; } to { opacity: 1; translate: 0 0; } }
+    @keyframes naskoc { from { opacity: 0; translate: 0 12px; scale: .82; } to { opacity: 1; translate: 0 0; scale: 1; } }
   }
 }
+/* Okénko počítadla (stejné jako v aplikaci): šířku drží konečná číslice, váleček s číslicemi
+   v něm vyjede nahoru. Ořez jen nahoře a dole, aby široká nula neprosvítala úzkým okénkem. */
+.odo { display: inline-block; position: relative; clip-path: inset(0 -.2em); }
+.odo-f { visibility: hidden; }
+.odo-s { position: absolute; inset: 0 0 auto; text-align: center; }
+.odo-s > span { display: block; }
+@keyframes odo-roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% + 100% / var(--n))); } }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  .odo-s { transform: translateY(calc(-100% + 100% / var(--n))); }
 }
