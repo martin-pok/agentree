@@ -23,6 +23,7 @@ import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
 import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
+import { createClaudeDesktopCodeConnector } from './connectors/claude-desktop-code.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
 import { createProcessesConnector } from './connectors/processes.js';
 import { createLocalAgentsConnector } from './connectors/local-agents.js';
@@ -236,6 +237,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createWebConnector(ctx),
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
+    createClaudeDesktopCodeConnector(ctx),
   ];
   if (config.processes) {
     list.push(createProcessesConnector(ctx));
@@ -245,7 +247,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
   // Počet u konektorů se sessions = sessions viditelné v okně sledování (ne počet souborů na disku).
-  const SESSION_CONNECTORS = new Set(['claude-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
+  const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
 
   function connectorList() {
     const visible = store.list();

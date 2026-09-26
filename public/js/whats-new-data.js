@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.28.1',
+    date: '2026-09-26',
+    title: 'Vzdálený Claude se objeví v přehledu',
+    items: [
+      'Claude Code spuštěný vzdáleně z Claude Desktopu se nově načte automaticky z místní cache, včetně už existujících relací. Dříve ho přehled úplně vynechal.',
+      'Vidíš poslední hlášený stav a dostupnou část přepisu. Pokud Claude neuložil celou historii a tokeny, aplikace to výslovně řekne. Interní formát tohoto zdroje zůstává v betě.',
+    ],
+  },
+  {
     version: '0.28.0',
     date: '2026-09-26',
     title: 'Napojení agentů a Nastavení drží krok',

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Agenteeq – AI agenti v reálném čase",
   "short_name": "Agenteeq",
-  "version": "0.28.0",
+  "version": "0.28.1",
   "description": "Posílá stav a počty zpráv z webových AI aplikací do Agenteeq na tomto počítači (127.0.0.1). Text zpráv neposílá.",
   "icons": {
     "16": "icons/icon-16.png",

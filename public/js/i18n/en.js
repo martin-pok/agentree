@@ -3,6 +3,14 @@
 // test/i18n.test.mjs. Tvary podle počtu (plural) jsou v „mnozne“ pod trojicí českých tvarů.
 export default {
   texty: {
+    "vzdálený agent · místní cache": "remote agent \u00b7 local cache",
+    "Poslední hlášená změna": "Last reported change",
+    "Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.": "Claude Desktop stores only part of the remote transcript. Tokens and history may be incomplete; the change time is not a continuous work duration.",
+    "Přepis je dostupný do {0}.": "Transcript available through {0}.",
+    "Vzdálený agent selhal": "Remote agent failed",
+    "Stav hlásí Claude Desktop. Přesný důvod najdeš v původní konverzaci.": "Claude Desktop reports this status. Open the original conversation for the exact cause.",
+    "Vzdálený Claude ukládá jen část přepisu; jeho spotřeba nemusí být v součtu úplná.": "Remote Claude stores only part of the transcript; its usage may be incomplete in this total.",
+
     "Tohle je ukázka – nic se v ní neukládá.": "This is a demo – nothing gets saved here.",
     "V ukázce tahle data nejsou.": "This data isn’t part of the demo.",
     "Server Agenteeq neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.": "The Agenteeq server isn’t responding. Start it in Terminal with agenteeq --open.",
@@ -287,7 +295,7 @@ export default {
     "Aplikace ChatGPT konverzace na tento Mac neukládá – ani ty, kde agent pracuje s postupem a zdroji. Ověřeno 13. 9. 2026 za běhu takové úlohy: složka aplikace nezapsala za 40 minut jediný soubor, v datech Codexu se změnily jen cookies a mezipaměť sítě a text konverzace není nikde na disku.": "The ChatGPT app doesn’t store conversations on this Mac – not even ones where an agent works through steps and sources. Verified on 13 Sep 2026 while such a task was running: the app folder didn’t write a single file in 40 minutes, only cookies and the network cache changed in Codex data, and the conversation text isn’t anywhere on disk.",
     "Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agenteeq. Kódovací vlákna spuštěná jako samostatný Codex se sledují normálně.": "Want to see them? Open ChatGPT in your browser and turn on the Agenteeq extension. Coding threads started as standalone Codex are tracked as usual.",
     "Nastavit rozšíření": "Set up extension",
-    "Aplikace Claude si chaty drží na serveru, ne na disku. Sezení Claude Code spuštěná z ní se ale čtou úplně normálně – ověřeno: 82 z 83 sezení desktopové aplikace má přepis na tomto Macu.": "The Claude app keeps chats on the server, not on disk. Claude Code sessions started from it are read as usual, though – verified: 82 of 83 desktop app sessions have a transcript on this Mac.",
+    "Agenteeq sleduje místní Claude Code z přepisů a vzdálený Code z místní cache Claude Desktopu. Běžné chaty v této desktopové aplikaci zatím nesleduje.": "Agenteeq tracks local Claude Code transcripts and remote Code through the local Claude Desktop cache. Regular chats in this desktop app are not tracked yet.",
     "Chaty z aplikace Claude uvidíš přes rozšíření Agenteeq v prohlížeči na claude.ai.": "You’ll see chats from the Claude app through the Agenteeq extension in your browser on claude.ai.",
     "Desktopová aplikace Microsoft Copilot nemá konverzace v čitelném formátu na disku.": "The Microsoft Copilot desktop app doesn’t keep conversations in a readable format on disk.",
     "V prohlížeči s rozšířením Agenteeq se sleduje.": "It’s tracked in a browser with the Agenteeq extension.",

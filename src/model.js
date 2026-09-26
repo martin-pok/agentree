@@ -185,6 +185,7 @@ export function summarize(s, now, windowMs) {
     worktree: s.worktree || '',
     pr: s.pr || null,
     costUsd: s.costUsd ?? null,
+    ...(s.observation ? { observation: { ...s.observation } } : {}),
     transcriptSeq: s.seq,
   };
 }

@@ -25,7 +25,7 @@ export const BEZ_PREPISU = {
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
   'claude-desktop': {
-    duvod: tr('Aplikace Claude si chaty drží na serveru, ne na disku. Sezení Claude Code spuštěná z ní se ale čtou úplně normálně – ověřeno: 82 z 83 sezení desktopové aplikace má přepis na tomto Macu.'),
+    duvod: tr('Agenteeq sleduje místní Claude Code z přepisů a vzdálený Code z místní cache Claude Desktopu. Běžné chaty v této desktopové aplikaci zatím nesleduje.'),
     rada: tr('Chaty z aplikace Claude uvidíš přes rozšíření Agenteeq v prohlížeči na claude.ai.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
@@ -46,4 +46,4 @@ export const BEZ_PREPISU = {
   },
 };
 
-export const bezPrepisu = (id) => Boolean(BEZ_PREPISU[id]);
+export const bezPrepisu = (id, sessions = []) => Boolean(BEZ_PREPISU[id]) && !(id === 'claude-desktop' && sessions.some((s) => s.connector === 'claude-desktop-code' || (s.connector === 'claude-code' && s.app?.includes('Claude Desktop'))));

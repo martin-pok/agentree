@@ -7,7 +7,7 @@ import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } fr
 import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
-import { BEZ_PREPISU } from '../no-transcript.js';
+import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 import { tr, LOCALE } from '../i18n.js';
@@ -239,7 +239,7 @@ function update(topics = new Set(['all'])) {
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     fill(el, 'meter', `
     <div class="meter-row"><span>${tr('Tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>
-    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">${tr('Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.')}</p>`);
+    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">${tr('Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.')}${everything.some((s) => s.observation?.partial) ? ` ${tr('Vzdálený Claude ukládá jen část přepisu; jeho spotřeba nemusí být v součtu úplná.')}` : ''}</p>`);
   }
 
   // Souhrn „kolik dnes" je nahoře; tohle odpovídá na druhou půlku otázky – který nástroj to byl.
@@ -350,7 +350,7 @@ function update(topics = new Set(['all'])) {
       // Aplikace, která běží, ale své konverzace na tento Mac neukládá, musí to říct rovnou tady.
       // Jinak uživatel vidí, že aplikace běží, v seznamu agentů po ní není stopa – a vypadá to,
       // že ji Agenteeq nezaregistroval.
-      const bez = r.running ? BEZ_PREPISU[r.id] : null;
+      const bez = r.running && bezPrepisu(r.id, all) ? BEZ_PREPISU[r.id] : null;
       const vnitrek = `<span class="rt-disc">${glyph({ runtime: r.id, provider: r.provider })}${r.running ? '<i class="rt-status"></i>' : ''}</span>
         <span class="rt-name">${esc(r.name)}</span>
         <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || tr('odpovídá')) : `CPU ${String(r.cpu).replace('.', ',')} %`) : tr('neběží')}</span>

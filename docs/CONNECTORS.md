@@ -11,7 +11,8 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 
 | Služba | Zdroj | Registrace spuštění | Živý přepis | Průběh úlohy | Potřebuje rozhodnutí | Limity | Útrata |
 |---|---|---|---|---|---|---|---|
-| **Claude Code** (CLI i Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | ruční zápis |
+| **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | ruční zápis |
+| **Claude Desktop → vzdálený Code** | místní IndexedDB cache 🧪 | do 2 s od změny cache, ne od události v cloudu | dostupná část | uložené nástroje | poslední hlášený stav | jen uložená hláška, jinak důvod neznámý | neúplné tokeny, žádný odhad |
 | **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | ruční zápis |
 | **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | ruční zápis |
 | **Claude.ai** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 | ruční zápis |
@@ -39,6 +40,7 @@ to někdo nepotvrdí na skutečném stroji, patří sem 🧪, ne ✅.
 | Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/tmp` | `%USERPROFILE%\.gemini\tmp`, `…\.qwen\tmp` | 🧪 neověřeno |
 | Cursor | `~/Library/Application Support/Cursor/User` | `%APPDATA%\Cursor\User` | 🧪 neověřeno |
 | Copilot ve VS Code | `~/Library/Application Support/Code/User` | `%APPDATA%\Code\User` | 🧪 neověřeno |
+| Claude Desktop (vzdálený Code) | `~/Library/Application Support/Claude/IndexedDB` | `%APPDATA%\Claude\IndexedDB` | 🧪 interní cache, macOS ověřený; Windows neověřený |
 | Claude Desktop (historie limitů) | `~/Library/Application Support/Claude` | `%APPDATA%\Claude` | 🧪 neověřeno |
 | Běžící aplikace | `ps` | PowerShell `Win32_Process` | 🧪 mechanismus hotový, katalog aplikací zná zatím jen `.app` |
 | Lokální agenti | `ps` + `lsof` | `Win32_Process` + `Get-NetTCPConnection` | 🧪 totéž |
@@ -115,6 +117,44 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
   poslední úspěšný před ní. Limit skončí obnovou nebo odpovědí *téhož* modelu, nezávisle na tom,
   v jakém pořadí se soubory načtou.
 - Hodnoty ověříš kdykoli: `npm run audit:data`.
+
+### Claude Desktop – vzdálený Code – `src/connectors/claude-desktop-code.js` 🧪
+
+- **Ověřená příčina a zdroj (2026-09-26):** vzdálený Code agent pro tento repozitář byl
+  uložený v Claude Desktopu, ale nevytvořil místní JSONL v `~/.claude/projects`. Na macOS čteme
+  `~/Library/Application Support/Claude/IndexedDB/https_claude.ai_0.indexeddb.leveldb`
+  a výhradně odkazované externí hodnoty v odpovídající `.indexeddb.blob`. Windows cesta se
+  skládá pod `%APPDATA%\Claude\IndexedDB`, na skutečném Windows stroji neověřená.
+- **Formát ověřený na disku:** `react-query-cache` → `clientState.queries[]` s
+  `queryKey[0] === "sessions_api_list_sessions"` → `state.data.pages[].data[]`.
+  Relace nese `id: "session_…"`, `title`, `created_at`, `updated_at`, `session_status`,
+  `status_bucket`, `post_turn_summary.status_category` a `session_context.{model,sources}`.
+  Datum platnosti stavu je **`state.dataUpdatedAt` tohoto dotazu**, nikoli globální datum cache.
+- **Dostupný přepis:** záznam `code:cse_…` s `product: "code"`,
+  `tree.kind: "code_session"`, `tree.messages[]`. Zprávy mají `created_at`, `uuid`,
+  `type`, případně `message.{content,model,usage}`. `cse_` a `session_` sdílejí stejnou příponu.
+  Duplicitní UUID se počítá jednou; pomocné výstupy s `parent_tool_use_id` se nezapočítávají rodiči.
+  Převod zpráv používá stejný parser jako lokální Code, tokeny výhradně z uloženého `message.usage`.
+- **Pravdivost:** tento interní zdroj zůstává Beta. Cache může chybět, může obsahovat jen
+  starší část přepisu a dodavatel ji může změnit. `observation.partial` vždy označuje neúplnost;
+  `transcriptThrough` popisuje poslední dostupné razítko. Neznámé tokeny se neodhadují.
+  Metadata přidají jen bod hlášené změny do osy, nikdy souvislou práci od vytvoření relace.
+  `running/working/busy` je čerstvý jen při pozorování konkrétního dotazu během 2 minut;
+  později platí stávající model stale. `failed` přebíráme ze serverové kategorie, přesný důvod
+  (např. limit) bez uložené chyby netvrdíme. Konverzace se otevírá na `https://claude.ai/code/session_…`.
+- **Bezpečnost a zotavení:** pouze čtení běžných souborů; žádný LOCK, žádné změny databáze,
+  žádná autentizace ani odchozí dotazy. Zpracují se jen dva uvedené druhy klíčů; profily účtu
+  v query cache nevstupují do modelu. Živé SST soubory určuje manifest, WAL přebírá novější
+  sekvence a smazání. CRC32C, velikostní hranice a kontrola indexů brání čtení poškozených bloků.
+  Neúplný konec WAL se odloží do další změny. Při neznámém formátu se zachová poslední stav
+  a konektor hlásí chybu. Watcher běží nad IndexedDB; záložní průchod běží každých 10 s.
+- **Testy:** obnovení ranní relace bez CLI přepisu, změny přes skutečný HTTP/SSE do 2 s,
+  poškozený zápis a zotavení, kompakce SST/WAL, tombstone, neúplný konec, komprimovaný blob,
+  osiřelé bloby, neznámá verze, deduplikace tokenů a stará data. Data v testech jsou umělá.
+- **Specifikace:** [LevelDB tabulky](https://github.com/google/leveldb/blob/main/doc/table_format.md),
+  [LevelDB log](https://github.com/google/leveldb/blob/main/doc/log_format.md),
+  [Chromium IndexedDB](https://github.com/chromium/chromium/blob/main/content/browser/indexed_db/indexed_db_leveldb_coding.cc),
+  [Snappy](https://github.com/google/snappy/blob/main/format_description.txt).
 
 ### Claude Desktop – historie limitů – `src/connectors/claude-desktop-usage.js` 🧪
 
