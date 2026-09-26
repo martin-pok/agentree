@@ -10,6 +10,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { adresaObchodu } from '../public/js/obchod.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -82,7 +83,10 @@ const POPIS_PRILOHY = [
   [/macOS-arm64\.zip$/, 'aplikace pro Mac s čipem Apple (M1 a novější)'],
   [/macOS-x64\.zip$/, 'aplikace pro Mac s procesorem Intel'],
   [/Windows-x64\.zip$/, 'aplikace pro Windows 10 a 11 (64bit)'],
-  [/extension-.*\.zip$/, 'rozšíření pro Chrome; rozbalíš a nahraješ přes „Načíst rozbalené“'],
+  // Z obchodu se rozšíření instaluje jedním klikem a aktualizuje samo; ZIP pak zůstává jen pro ruční instalaci.
+  [/extension-.*\.zip$/, adresaObchodu()
+    ? `rozšíření pro Chrome k ruční instalaci; jednodušší je [Chrome Web Store](${adresaObchodu()})`
+    : 'rozšíření pro Chrome; rozbalíš a nahraješ přes „Načíst rozbalené“'],
 ];
 
 const poradi = (jmeno) => {

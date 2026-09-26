@@ -490,6 +490,13 @@ export function createHttpServer(app, existingServer = null) {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
       return app.extensionSeen(await readBody(req));
     }, { token: true }],
+    // „Přidat do Chromu“ otevře stránku rozšíření v obchodě – jen člověk u Macu.
+    ['POST', /^\/api\/extension\/obchod$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Chrome Web Store se otevírá jen na Macu.');
+      const r = await app.otevriObchod();
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
     ['POST', /^\/api\/extension\/pair-code$/, async (req) => {
       // Kód spáruje rozšíření a vydá dlouhodobý token. Vytvořit ho smí jen člověk u Macu — spárovaný
       // telefon by si jinak mohl token sám vyžádat a přežil by i své odpárování.

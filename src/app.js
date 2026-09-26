@@ -35,13 +35,14 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { spustPrihlaseni } from './prihlaseni.js';
+import { adresaObchodu } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
@@ -809,10 +810,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, ...(dry ? { dry: true } : {}), integrations: value };
   }
 
+  // „Přidat do Chromu“: stránka rozšíření v Chrome Web Store, rovnou v prohlížeči, který ho umí.
+  async function otevriObchod() {
+    const url = adresaObchodu();
+    if (!url) return { status: 409, error: 'Rozšíření zatím v Chrome Web Store není. Použij ruční instalaci.' };
+    const vChromu = otevritVProhlizeciSRozsirenim(url, config.sourceHome);
+    if (vChromu && !dry) {
+      const r = await run(vChromu.cmd, vChromu.args, { timeout: 8000 });
+      if (r.ok) return { ok: true, prohlizec: vChromu.prohlizec };
+    }
+    const r = await executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry });
+    return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+  }
+
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: extensionPath, sites: WEB_SITES, ...extensionStatus() },
+      extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -1230,7 +1244,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

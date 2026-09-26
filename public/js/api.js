@@ -78,6 +78,7 @@ export const api = {
     return res.text();
   },
   extensionPairCode: () => request('POST', '/api/extension/pair-code', {}),
+  extensionObchod: () => request('POST', '/api/extension/obchod', {}),
   createProject: (body) => request('POST', '/api/projects', body),
   updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
   deleteProject: (id) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`),

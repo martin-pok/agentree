@@ -218,6 +218,18 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 5px; background: v
 .kopirovat:hover { border-color: var(--mute); }
 
 /* ---------- patička ---------- */
+/* ---------- textové stránky (zásady ochrany soukromí) ----------
+   Levý okraj textu lícuje s logem v liště (stejná .wrap), délka řádku zůstává čitelná. */
+.doc { padding-block: clamp(56px, 8vw, 104px); }
+.doc-body { max-width: 72ch; }
+.doc-body h1 { font-size: clamp(40px, 5vw, 64px); margin: 12px 0 24px; }
+.doc-lead { margin: 0; font-size: clamp(18px, 1.55vw, 21px); line-height: 1.55; color: var(--ink-2); }
+.doc-body h2 { margin: 48px 0 12px; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.2; letter-spacing: -.02em; }
+.doc-body p { margin: 0 0 12px; color: var(--ink-2); }
+.doc-body ul { display: grid; gap: 10px; margin: 0 0 12px; padding-left: 20px; color: var(--ink-2); }
+.doc-body a { color: var(--ink); }
+.doc-page .lang { margin-left: auto; }
+
 footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px solid var(--line); font-size: 14px; }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
 .foot-in > p { color: var(--mute); }

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zásady ochrany soukromí – Agenteeq</title>
+<meta name="description" content="Jaká data aplikace Agenteeq, rozšíření pro Chrome a volitelný účet zpracovávají, kde zůstávají a co nikdy neopustí tvůj počítač.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0C0B10">
+<link rel="canonical" href="https://agentree-fawn.vercel.app/soukromi">
+<link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/soukromi">
+<link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/privacy">
+<link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/soukromi">
+<link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/lp.css">
+</head>
+<body class="doc-page">
+<a class="skip" href="#obsah">Přeskočit na obsah</a>
+
+<header class="nav"><div class="wrap nav-in">
+  <a class="brand" href="/" aria-label="Agenteeq – domů"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <div class="lang" role="group" aria-label="Jazyk stránky"><a href="/soukromi" lang="cs" hreflang="cs" aria-current="page" aria-label="Čeština">CZ</a><a href="/en/privacy" lang="en" hreflang="en" aria-label="English">EN</a></div>
+</div></header>
+
+<main id="obsah" class="doc"><div class="wrap">
+  <article class="doc-body">
+    <p class="kicker">Platí od 26. 9. 2026</p>
+    <h1>Zásady ochrany soukromí</h1>
+    <p class="doc-lead">Agenteeq je aplikace na tvém počítači. Text konverzací s AI, jejich názvy, cesty ke složkám ani kód tvůj počítač neopouštějí. Účet je volitelný a bez něj funguje všechno.</p>
+
+    <h2>Kdo data zpracovává</h2>
+    <p>Aplikaci Agenteeq, rozšíření pro Chrome a tento web provozuje jejich autor. Dotazy k soukromí a žádosti podle GDPR posílej přes <a href="https://github.com/martin-pok/agentree/issues">stránku projektu na GitHubu</a>.</p>
+
+    <h2>Aplikace na počítači</h2>
+    <ul>
+      <li><b>Co čte:</b> soubory, které si AI nástroje samy ukládají na tvém počítači (třeba přepisy Claude Code, Codexu nebo Cursoru). Čte je jen na tomto počítači a ukládá z nich přehled do vlastní složky aplikace.</li>
+      <li><b>Co posílá na internet:</b> sama od sebe jen dotaz na denní kurzy České národní banky pro převod měn. Neobsahuje žádné tvoje údaje.</li>
+      <li><b>Jen když to zapneš:</b> útrata za API přes oficiální rozhraní Anthropicu nebo OpenAI s tvým správcovským klíčem (klíč zůstává v Klíčence macOS a jde jen danému dodavateli) a účet Agenteeq popsaný níže.</li>
+      <li><b>Napojení modelů:</b> přihlášení ke Claude Code nebo Codexu probíhá přímo u jejich dodavatele. Agenteeq tvoje hesla ani přístupové klíče nevidí. Od nástroje se dozví jen to, jestli je přihlášený, a název plánu.</li>
+      <li>Aplikace nemá telemetrii ani analytiku a nic nesdílí s třetími stranami.</li>
+    </ul>
+
+    <h2>Rozšíření pro Chrome</h2>
+    <p>Rozšíření doplňuje do aplikace konverzace z webových AI služeb. Běží jen na těchto adresách: chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai a github.com/copilot.</p>
+    <ul>
+      <li><b>Co ze stránky zjistí:</b> o kterou službu jde, identifikátor a adresu otevřené konverzace, jestli služba právě odpovídá, kolik je v konverzaci zpráv od tebe a od AI, název modelu a text upozornění na limit, pokud ho služba ukazuje.</li>
+      <li><b>Co nikdy neposílá:</b> text tvých zpráv ani odpovědí, název konverzace, přílohy, soubory cookie ani historii prohlížení.</li>
+      <li><b>Kam to jde:</b> jen do aplikace Agenteeq na stejném počítači (adresa 127.0.0.1). Rozšíření neposílá nic na žádný server na internetu.</li>
+      <li><b>Co si ukládá v prohlížeči:</b> přístupový klíč ze spárování s aplikací, seznam služeb, které jsi vypnul, a poslední stav spojení.</li>
+      <li><b>Vložení zadání:</b> když v aplikaci spustíš agenta ve webové službě, rozšíření vloží tvoje zadání do okna té služby. Zadání přichází z aplikace na tvém počítači.</li>
+      <li><b>Ověření stránky:</b> na tvůj pokyn umí rozšíření uložit do souboru na tvém počítači popis stavby stránky, podle kterého se opravují adaptéry. Neobsahuje text ze stránky a nikam se samo neposílá.</li>
+    </ul>
+    <p>Data z rozšíření se používají jen k popsané funkci. Neprodávají se, nepředávají se třetím stranám, nepoužívají se k reklamě ani k posuzování úvěruschopnosti. Rozšíření tím splňuje zásady Chrome Web Store pro uživatelská data včetně požadavků na omezené použití (Limited Use).</p>
+
+    <h2>Volitelný účet Agenteeq</h2>
+    <ul>
+      <li><b>Přihlášení:</b> přes Google. Od Googlu dostaneme e-mail a základní údaje profilu, které Google při přihlášení předává.</li>
+      <li><b>Synchronizace souhrnů</b> (jen když ji zapneš): název a systém zařízení, verze aplikace a kdy bylo naposledy vidět, počty tokenů a konverzací po dnech a dodavatelích, útrata po měsících a službách, vytížení limitů a čas jejich obnovy, počty agentů podle stavu a které modely máš napojené (plán a stav). Text konverzací, jejich názvy, cesty ke složkám, poznámky k výdajům ani kód se neposílají.</li>
+      <li><b>Kde:</b> databáze Supabase v regionu Frankfurt (EU). Každý vidí jen svoje řádky.</li>
+      <li><b>Smazání:</b> v aplikaci v Nastavení → Účet → Smazat účet. Smaže účet i všechno, co je k němu v cloudu uložené. Data na tvém počítači zůstanou.</li>
+    </ul>
+
+    <h2>Tento web</h2>
+    <p>Web běží na hostingu Vercel, který jako každý server zpracovává technické údaje o požadavku, například IP adresu, v běžných provozních záznamech. Web nepoužívá analytiku, reklamní ani sledovací soubory cookie.</p>
+
+    <h2>Tvoje práva</h2>
+    <p>Máš právo na přístup ke svým údajům, jejich opravu, výmaz, omezení zpracování, přenositelnost a právo vznést námitku. Stížnost můžeš podat u Úřadu pro ochranu osobních údajů (uoou.gov.cz). Většinu dat máš přímo ve svém počítači a můžeš je kdykoli smazat sám.</p>
+
+    <h2>Změny</h2>
+    <p>Když se zásady změní, uvidíš to tady s novým datem platnosti. Podstatné změny popíšeme i v poznámkách k vydání aplikace.</p>
+  </article>
+</div></main>
+
+<footer><div class="wrap foot-in">
+  <a class="brand" href="/"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <p>Více soustředění. Méně přepínání.</p>
+  <a class="text-link" href="/">Zpátky na úvod</a>
+</div></footer>
+</body>
+</html>
