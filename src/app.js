@@ -636,7 +636,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // Napojení modelů tlačítkem (src/napojeni.js). Přihlašuje se vždy u dodavatele; tady se jen
   // spustí jeho přihlášení a hlídá, kdy je hotovo. V testech dotazy na stav odpovídá atrapa.
   const napojeni = createNapojeni({
-    bins: () => launchEnv.bins,
+    // Dokud se programy nehledaly (jiný systém než macOS, nebo spouštění vypnuté), nevíme – ne „není“.
+    bins: () => (launchDetected || dry ? launchEnv.bins : null),
+    // Kdy agent na tomhle Macu naposledy pracoval (z konverzací v úložišti, ne z času načtení).
+    posledni: (id) => store.list().reduce((m, s) => (s.connector === id && s.lastAt > m ? s.lastAt : m), 0),
+    oknoDni: config.windowDays,
     run: napojeniRun || run,
     terminal: (command) => executeOpen({ kind: 'terminal', command }, { dry }),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
@@ -654,7 +658,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function refreshLaunch() {
     if (config.launchAgents && config.openMode === 'exec') {
-      launchEnv = await detectLaunchEnv({ ollama });
+      launchEnv = await detectLaunchEnv({ ollama, home: config.sourceHome });
       launchDetected = true;
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();

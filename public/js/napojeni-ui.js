@@ -1,7 +1,7 @@
 // Napojení modelů tlačítkem (src/napojeni.js). Klik spustí přihlášení u dodavatele, okno Agenteeq
 // čeká a samo pozná, až je hotovo – pak ukáže potvrzení. Nic se tu nezadává a nic se neukládá.
 import { api } from './api.js';
-import { esc } from './format.js';
+import { esc, rel } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { modal, toast, stateBadge } from './ui.js';
 import { tr } from './i18n.js';
@@ -18,8 +18,11 @@ export function radekNapojeni(n) {
   const logo = glyph({ logo: n.logo, provider: n.provider });
   let stav;
   let akce = '';
-  if (n.druh === 'agent' && !n.nainstalovano) {
-    stav = stateBadge('missing', tr('Není nainstalovaný'));
+  // „Nevím“ (null) a „hledal jsem a nenašel“ (false) jsou dvě různé věci a musí tak i vypadat.
+  if (n.druh === 'agent' && n.nainstalovano === null) {
+    stav = stateBadge('unavailable', tr('Nepodařilo se zjistit'));
+  } else if (n.druh === 'agent' && !n.nainstalovano) {
+    stav = stateBadge('missing', tr('Nenalezen'));
   } else if (n.druh === 'web' && !n.nainstalovano) {
     stav = stateBadge('missing', tr('Potřebuje rozšíření'));
     akce = `<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button>`;
@@ -34,8 +37,15 @@ export function radekNapojeni(n) {
     akce = `<button class="btn btn--sm${n.napojeno === false ? ' btn--primary' : ''}" type="button" data-napojit="${esc(n.id)}">${tr('Napojit')}</button>`;
   }
   return `<li class="model-row"><span class="model-logo">${logo}</span>
-    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? tr('Webový chat') : tr('Agent na tomhle Macu')}</span></div>
+    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? tr('Webový chat') : `${tr('Agent na tomhle Macu')} · ${posledniPrace(n)}`}</span></div>
     ${stav}${akce}</li>`;
+}
+
+// Tokeny i stav se berou z přepisů na tomhle Macu. Když tu agent nepracoval (třeba běžel
+// v cloudu), je to vidět přímo u něj – jinak nulové tokeny vypadají jako chyba.
+function posledniPrace(n) {
+  if (n.posledni) return `${tr('naposledy pracoval')} <span data-ago="${Number(n.posledni)}">${esc(rel(n.posledni))}</span>`;
+  return n.oknoDni ? tr('posledních {0} dní tu nepracoval', Number(n.oknoDni)) : tr('zatím tu nepracoval');
 }
 
 function textCekani(n) {

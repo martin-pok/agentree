@@ -57,12 +57,17 @@ export function prikazPrihlaseni(bin, args) {
   return [shellQuote(bin), ...args].join(' ');
 }
 
-export function createNapojeni({ bins, run, terminal, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS }) {
+// `bins()` vrací mapu nalezených programů, nebo null, když se zatím nehledalo – pak „nevím“
+// (nainstalovano: null), nikdy „není“. `posledni(id)` = kdy agent na tomhle Macu naposledy
+// pracoval (0 = za sledované období nic); podle toho člověk pozná, proč jsou tokeny nulové.
+export function createNapojeni({ bins, run, terminal, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS }) {
   const ceka = new Map(); // id → { od, casovac? }
 
   async function zjisti(id) {
     const a = AGENTI[id];
-    const bin = bins()?.[a.bin];
+    const nalezene = bins();
+    if (!nalezene) return { nainstalovano: null, napojeno: null };
+    const bin = nalezene[a.bin];
     if (!bin) return { nainstalovano: false, napojeno: null };
     const r = await run(bin, a.stav, { timeout: 10000 });
     return { nainstalovano: true, napojeno: a.precti(r) };
@@ -71,7 +76,7 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
   async function prehled() {
     const agenti = await Promise.all(Object.entries(AGENTI).map(async ([id, a]) => {
       const z = await zjisti(id).catch(() => ({ nainstalovano: true, napojeno: null }));
-      return { id, druh: 'agent', label: a.label, provider: a.provider, logo: a.logo, ...z, plan: z.napojeno ? await plan(id).catch(() => '') : '', ceka: ceka.has(id) };
+      return { id, druh: 'agent', label: a.label, provider: a.provider, logo: a.logo, ...z, plan: z.napojeno ? await plan(id).catch(() => '') : '', ceka: ceka.has(id), posledni: posledni(id) || 0, oknoDni };
     }));
     const rozsireni = extension();
     const weby = Object.entries(WEBY).map(([id, w]) => ({
@@ -117,8 +122,10 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
   async function napojit(id) {
     if (AGENTI[id]) {
       const a = AGENTI[id];
-      const bin = bins()?.[a.bin];
-      if (!bin) return { status: 422, error: `${a.label} na tomhle Macu není nainstalovaný.` };
+      const nalezene = bins();
+      if (!nalezene) return { status: 422, error: `Nepodařilo se zjistit, jestli je ${a.label} na tomhle Macu nainstalovaný.` };
+      const bin = nalezene[a.bin];
+      if (!bin) return { status: 422, error: `${a.label} se na tomhle Macu nepodařilo najít.` };
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
       if (z.napojeno === true) {
         const p = await plan(id).catch(() => '');
