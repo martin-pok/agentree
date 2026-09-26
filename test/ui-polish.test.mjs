@@ -374,7 +374,7 @@ test('poslední aktivita doplní řádky podle volného místa pod sloupcem', as
 
 // Plynulé posouvání kolečkem má web i aplikace stejné. Dřív ho web nesl ve vlastní kopii –
 // dvě kopie se rozejdou (oprava v jedné, chyba v druhé). Chování měří qa:site a qa:desktop.
-test('plynulé posouvání je jeden modul pro web i aplikaci a během posouvání nechá kurzor být', async () => {
+test('plynulé posouvání je jeden modul pro web i aplikaci a během posouvání nenaskakují karty', async () => {
   const lp = await zdroj('site/lp.js');
   assert.match(lp, /import \{ plynulePosouvani \} from '\/js\/plynule-posouvani\.js';/);
   assert.doesNotMatch(lp, /addEventListener\('wheel'/, 'web nesmí mít vlastní obsluhu kolečka');
@@ -386,6 +386,9 @@ test('plynulé posouvání je jeden modul pro web i aplikaci a během posouván�
   assert.match(app, /^plynulePosouvani\(\);$/m);
   assert.match(app, /document\.documentElement\.classList\.add\('is-scrolling'\)/);
   const css = await zdroj('public/styles.css');
-  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*html\.is-scrolling body:not\(\.is-dragging\):not\(\.is-dragging-card\) \.view \{ pointer-events: none; \}/,
-    'jen s myší a nikdy při přetahování – cíle se hledají pod ukazatelem');
+  // Hover efekty, které kartu zvednou nebo obarví, se během posouvání vypnou; ukazatel a klik ne.
+  for (const pravidlo of ['.pcard:hover {', '.skill:hover {', '.appearance-option:hover {', '.row:hover {', '.prow:hover {', '[data-tip]:hover::before']) {
+    assert.ok(css.includes(`:where(html:not(.is-scrolling)) ${pravidlo}`), `${pravidlo} během posouvání naskakuje`);
+  }
+  assert.doesNotMatch(css, /is-scrolling[^{]*\{[^}]*pointer-events: none/, 'vypnutý ukazatel spolkne klik (WebKit při kliknutí posouvá)');
 });

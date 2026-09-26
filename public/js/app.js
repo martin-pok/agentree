@@ -349,8 +349,8 @@ let roluje = 0;
 const behemRolovani = () => Date.now() - roluje < 180;
 
 // Karty pod stojícím kurzorem by během posouvání jedna po druhé naskakovaly do stavu :hover
-// (zvednutí, stín, bublina) a zase padaly – to je nejvíc vidět a stojí překreslení. Na dobu
-// posouvání proto obsah přestane reagovat na ukazatel (styles.css, html.is-scrolling).
+// (zvednutí, stín, bublina) a zase padaly – to je nejvíc vidět a stojí překreslení. Třída
+// html.is-scrolling ty efekty na dobu posouvání vypne (styles.css); klik zůstává funkční.
 let posouvaSe = false;
 let konecPosouvani = 0;
 window.addEventListener('scroll', () => {

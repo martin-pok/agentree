@@ -287,23 +287,33 @@ for (const engine of engines) {
       await p.mouse.move(900, 500);
       const vzorky = p.evaluate(() => new Promise((hotovo) => {
         const v = [];
-        let bezUkazatele = false;
+        let posouva = false;
         const t0 = performance.now();
         (function f() {
           v.push(scrollY);
-          if (getComputedStyle(document.querySelector('.view')).pointerEvents === 'none') bezUkazatele = true;
-          if (performance.now() - t0 < 1500) requestAnimationFrame(f); else hotovo({ v, bezUkazatele });
+          if (document.documentElement.classList.contains('is-scrolling')) posouva = true;
+          if (performance.now() - t0 < 1500) requestAnimationFrame(f); else hotovo({ v, posouva });
         })();
       }));
       await p.mouse.wheel(0, 400);
-      const { v, bezUkazatele } = await vzorky;
+      const { v, posouva } = await vzorky;
       const konec = v.at(-1);
       const mezi = new Set(v.filter((y) => y > 2 && y < konec - 2).map(Math.round)).size;
       assert.ok(Math.abs(konec - 400) <= 2, `${engine}: kolečko 400 px v aplikaci dojelo na ${konec}`);
       assert.ok(mezi >= 5, `${engine}: posun kolečkem v aplikaci neběžel plynule (mezipoloh ${mezi})`);
       assert.ok(v.every((y, i) => i === 0 || y >= v[i - 1] - 0.5), `${engine}: dojezd v aplikaci se vracel`);
-      assert.ok(bezUkazatele, `${engine}: během posouvání obsah dál reagoval na ukazatel`);
-      await p.waitForFunction(() => getComputedStyle(document.querySelector('.view')).pointerEvents !== 'none');
+      assert.ok(posouva, `${engine}: během posouvání chybí html.is-scrolling (hover efekty se nevypnou)`);
+      await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
+      // Klik hned po posunu musí projít. Dřív obsah během posouvání vypínal ukazatel a WebKit, který
+      // při kliknutí posune prvek do okna, klik pustil do prázdna (<main> zachytil ukazatel).
+      const skladaci = p.locator('.view details.src-fold > summary').first();
+      const bylOtevreny = await skladaci.evaluate((el) => el.parentElement.open);
+      await skladaci.scrollIntoViewIfNeeded();
+      await p.mouse.wheel(0, 60);
+      await p.waitForTimeout(40);
+      await skladaci.click({ force: true, timeout: 3000 }); // bez čekání na „klikatelnost“ – přesně jako člověk
+      assert.equal(await skladaci.evaluate((el) => el.parentElement.open), !bylOtevreny, `${engine}: klik hned po posunu kolečkem nezabral`);
+      await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
 
       await p.locator('[data-action="palette"]').click();
       await p.waitForFunction(() => document.body.classList.contains('has-modal'));
