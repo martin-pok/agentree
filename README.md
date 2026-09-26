@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.27.0 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.28.0 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
 Pro Mac: stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 

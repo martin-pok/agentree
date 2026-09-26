@@ -1,6 +1,6 @@
 # Changelog
 
-## Nevydáno
+## 0.28.0 – 2026-09-26 · spolehlivé napojení, klidné Nastavení a angličtina
 
 ### Web: stejné okraje obsahu a anglické ukázky
 
