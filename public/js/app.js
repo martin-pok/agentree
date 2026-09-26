@@ -24,12 +24,14 @@ import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
+import { plynulePosouvani } from './plynule-posouvani.js';
 import { tr } from './i18n.js';
 
 initSelects();
 initWelcome();
 initWhatsNew();
 initAppearance();
+plynulePosouvani();
 
 const ROUTES = [
   [/^\/(?:prehled)?$/, overview],
@@ -344,8 +346,19 @@ function renderProfile(name, working, all) {
 // Zápisy schválně nejdou přes requestAnimationFrame: ten se v nezobrazeném okně nevolá a údaje
 // by pak zamrzly. Proti škubání stačí odklad během rolování.
 let roluje = 0;
-window.addEventListener('scroll', () => { roluje = Date.now(); }, { passive: true });
 const behemRolovani = () => Date.now() - roluje < 180;
+
+// Karty pod stojícím kurzorem by během posouvání jedna po druhé naskakovaly do stavu :hover
+// (zvednutí, stín, bublina) a zase padaly – to je nejvíc vidět a stojí překreslení. Třída
+// html.is-scrolling ty efekty na dobu posouvání vypne (styles.css); klik zůstává funkční.
+let posouvaSe = false;
+let konecPosouvani = 0;
+window.addEventListener('scroll', () => {
+  roluje = Date.now();
+  if (!posouvaSe) { posouvaSe = true; document.documentElement.classList.add('is-scrolling'); }
+  clearTimeout(konecPosouvani);
+  konecPosouvani = setTimeout(() => { posouvaSe = false; document.documentElement.classList.remove('is-scrolling'); }, 160);
+}, { passive: true });
 
 function prepis(uzly, text) {
   for (const el of uzly) {

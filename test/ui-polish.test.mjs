@@ -371,3 +371,24 @@ test('poslední aktivita doplní řádky podle volného místa pod sloupcem', as
   const balance = await zdroj('public/js/balance.js');
   assert.match(balance, /export function watchBalance\(box, onZmena\)/);
 });
+
+// Plynulé posouvání kolečkem má web i aplikace stejné. Dřív ho web nesl ve vlastní kopii –
+// dvě kopie se rozejdou (oprava v jedné, chyba v druhé). Chování měří qa:site a qa:desktop.
+test('plynulé posouvání je jeden modul pro web i aplikaci a během posouvání nenaskakují karty', async () => {
+  const lp = await zdroj('site/lp.js');
+  assert.match(lp, /import \{ plynulePosouvani \} from '\/js\/plynule-posouvani\.js';/);
+  assert.doesNotMatch(lp, /addEventListener\('wheel'/, 'web nesmí mít vlastní obsluhu kolečka');
+  for (const html of ['site/index.html', 'site/en/index.html']) {
+    assert.match(await zdroj(html), /<script type="module" src="\/lp\.js"><\/script>/, `${html}: lp.js musí být modul, jinak import neprojde`);
+  }
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /import \{ plynulePosouvani \} from '\.\/plynule-posouvani\.js';/);
+  assert.match(app, /^plynulePosouvani\(\);$/m);
+  assert.match(app, /document\.documentElement\.classList\.add\('is-scrolling'\)/);
+  const css = await zdroj('public/styles.css');
+  // Hover efekty, které kartu zvednou nebo obarví, se během posouvání vypnou; ukazatel a klik ne.
+  for (const pravidlo of ['.pcard:hover {', '.skill:hover {', '.appearance-option:hover {', '.row:hover {', '.prow:hover {', '[data-tip]:hover::before']) {
+    assert.ok(css.includes(`:where(html:not(.is-scrolling)) ${pravidlo}`), `${pravidlo} během posouvání naskakuje`);
+  }
+  assert.doesNotMatch(css, /is-scrolling[^{]*\{[^}]*pointer-events: none/, 'vypnutý ukazatel spolkne klik (WebKit při kliknutí posouvá)');
+});

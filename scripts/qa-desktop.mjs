@@ -268,8 +268,72 @@ for (const engine of engines) {
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     const snapshot = await api(server.url).get('/api/state');
     assert.equal(snapshot.body.settings.welcomeCompleted, true);
+    // Plynulé posouvání (public/js/plynule-posouvani.js). Hlavní kontext běží s „omezit pohyb“,
+    // kde se zapnout nesmí; na počítači bez omezení krok kolečka dojede plynule a přesně, obsah
+    // během posouvání nereaguje na ukazatel, zamčená stránka se nehne a cizí posun (přepnutí
+    // obrazovky volá scrollTo) má před dojezdem přednost.
+    assert.equal(await page.evaluate(() => 'plynule' in document.documentElement.dataset), false, `${engine}: plynulé posouvání se zapnulo i s „omezit pohyb“`);
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+      await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => errors.push(`plynulé posouvání: ${e.message}`));
+      await p.goto(`${server.url}/#/nastaveni`);
+      await p.locator('.settings2').waitFor();
+      assert.equal(await p.evaluate(() => 'plynule' in document.documentElement.dataset), true, `${engine}: plynulé posouvání se v aplikaci nezapnulo`);
+      // Karty Nastavení se plní až po prvním vykreslení; do té doby je stránka krátká.
+      await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1600, null, { timeout: 5000 })
+        .catch(() => { throw new Error(`${engine}: Nastavení jsou na zkoušku posouvání krátká`); });
+      await p.mouse.move(900, 500);
+      const vzorky = p.evaluate(() => new Promise((hotovo) => {
+        const v = [];
+        let posouva = false;
+        const t0 = performance.now();
+        (function f() {
+          v.push(scrollY);
+          if (document.documentElement.classList.contains('is-scrolling')) posouva = true;
+          if (performance.now() - t0 < 1500) requestAnimationFrame(f); else hotovo({ v, posouva });
+        })();
+      }));
+      await p.mouse.wheel(0, 400);
+      const { v, posouva } = await vzorky;
+      const konec = v.at(-1);
+      const mezi = new Set(v.filter((y) => y > 2 && y < konec - 2).map(Math.round)).size;
+      assert.ok(Math.abs(konec - 400) <= 2, `${engine}: kolečko 400 px v aplikaci dojelo na ${konec}`);
+      assert.ok(mezi >= 5, `${engine}: posun kolečkem v aplikaci neběžel plynule (mezipoloh ${mezi})`);
+      assert.ok(v.every((y, i) => i === 0 || y >= v[i - 1] - 0.5), `${engine}: dojezd v aplikaci se vracel`);
+      assert.ok(posouva, `${engine}: během posouvání chybí html.is-scrolling (hover efekty se nevypnou)`);
+      await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
+      // Klik hned po posunu musí projít. Dřív obsah během posouvání vypínal ukazatel a WebKit, který
+      // při kliknutí posune prvek do okna, klik pustil do prázdna (<main> zachytil ukazatel).
+      const skladaci = p.locator('.view details.src-fold > summary').first();
+      const bylOtevreny = await skladaci.evaluate((el) => el.parentElement.open);
+      await skladaci.scrollIntoViewIfNeeded();
+      await p.mouse.wheel(0, 60);
+      await p.waitForTimeout(40);
+      await skladaci.click({ force: true, timeout: 3000 }); // bez čekání na „klikatelnost“ – přesně jako člověk
+      assert.equal(await skladaci.evaluate((el) => el.parentElement.open), !bylOtevreny, `${engine}: klik hned po posunu kolečkem nezabral`);
+      await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
+
+      await p.locator('[data-action="palette"]').click();
+      await p.waitForFunction(() => document.body.classList.contains('has-modal'));
+      const predZamkem = await p.evaluate(() => scrollY);
+      await p.mouse.move(60, 860); // pozadí vyhledávání, ne jeho seznam – ten si kolečko vezme sám
+      await p.mouse.wheel(0, 400);
+      await p.waitForTimeout(400);
+      assert.equal(await p.evaluate(() => scrollY), predZamkem, `${engine}: stránka pod otevřeným vyhledáváním dojížděla`);
+      await p.keyboard.press('Escape');
+      await p.waitForFunction(() => !document.body.classList.contains('has-modal'));
+
+      await p.mouse.wheel(0, 1200);
+      await p.waitForTimeout(60);
+      await p.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, 0); document.documentElement.style.scrollBehavior = ''; });
+      await p.waitForTimeout(600);
+      assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
+      await ctx.close();
+    }
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
