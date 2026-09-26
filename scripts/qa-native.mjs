@@ -60,11 +60,19 @@ if (mac) {
 const plast = spawn(spustitelny, [], {
   env: {
     ...process.env,
+    // Běžná aplikace může dál používat 4620. QA má vlastní data i port a nikdy
+    // se nesmí pokusit převzít uživatelův server nebo čekat na jeho ukončení.
+    PORT: '0',
     AGENTEEQ_DESKTOP_QA: '1',
     AGENTEEQ_DESKTOP_QA_REPORT: hlaseni,
     AGENTEEQ_SOURCE_HOME: domov,
     AGENTEEQ_HOME: path.join(domov, 'data'),
     AGENTEEQ_CLOUD: '0',
+    AGENTEEQ_UCET_URL: '0',
+    AGENTEEQ_OPEN: 'dry',
+    AGENTEEQ_PROCESSES: '0',
+    AGENTEEQ_KEYCHAIN: '0',
+    AGENTEEQ_NATIVE_NOTIFY: '0',
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
   },
   stdio: 'ignore',

@@ -13,6 +13,9 @@
   „Pokračovat v Terminálu“ → „Continue in Terminal“. Cizí popisky zůstávají escapované.
 - WebKit QA počká na dokončení asynchronního startu před reloadem. Dřívější předčasný
   reload rušil úvodní dotaz a způsoboval chybu importu modulu ve starém dokumentu.
+- Nativní QA používá vlastní volný port i data. Může běžet vedle otevřené aplikace;
+  dřívější pokus o port 4620 vedl ke správnému odmítnutí kolize, ale falešnému selhání QA.
+  Otevírání agentů, Klíčenka, účet a nativní oznámení jsou v QA výslovně vypnuté.
 
 ### Claude Code se najde, i když ho aplikace z Finderu nevidí v PATH
 
