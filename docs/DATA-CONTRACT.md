@@ -42,7 +42,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/ucet/synchronizace` | Jen z tohoto Macu, `{ zapnuto: boolean }` → `{ ucet }`. Zapnutí hned pošle souhrny, vypnutí je z účtu smaže; 401 bez přihlášení, 422 bez volby |
 | POST | `/api/ucet/synchronizovat` | Jen z tohoto Macu → `{ ucet }`; pošle souhrny hned (když je synchronizace zapnutá) |
 | GET | `/api/ucet/nahled` | Jen z tohoto Macu → `{ nahled: { usage_daily, spend_monthly, limits, agent_status, connections } }` – přesně to, co by odešlo |
-| GET | `/api/napojeni` | Jen z tohoto Macu → `{ napojeni: Napojeni[] }` (`{ id, druh: 'agent' \| 'web', label, provider, logo, nainstalovano, napojeno: true \| false \| null, plan?, ceka }`). Spouští `claude auth status` a `codex login status` |
+| GET | `/api/napojeni` | Jen z tohoto Macu → `{ napojeni: Napojeni[] }` (`{ id, druh: 'agent' \| 'web', label, provider, logo, nainstalovano: true \| false \| null, napojeno: true \| false \| null, plan?, ceka, posledni?, oknoDni? }`). Spouští `claude auth status` a `codex login status` |
 | POST | `/api/napojeni/:id` \| `/api/napojeni/:id/zrusit` | Jen z tohoto Macu. `claude-code`, `codex`, `web:chatgpt` \| `web:claude` \| `web:gemini` \| `web:perplexity` → `{ ok, ceka?, uz?, plan?, prikaz? }`; 422 nenainstalováno nebo bez Terminálu (s `prikaz`), 409 bez rozšíření (`rozsireni: true`), 404 neznámé |
 | GET | `/ucet/navrat/:pokus` | Návrat z přihlášení (HTML, mimo `/api`). Jen z tohoto Macu, pokus platí 10 minut a jednou. `?code=` vymění kód za přihlášení, `?chyba=` ohlásí zrušení |
 | POST | `/api/connectors/rescan` | `{ connectors }` |
@@ -74,6 +74,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | GET / PUT / DELETE | `/api/license` | PUT `{ key }` → `{ ok, license: LicenseStatus }`; 422 s důvodem. Celý klíč se nikdy nevrací |
 | POST | `/api/integrations/autostart/install` \| `uninstall` | `{ ok, dry?, integrations }` |
 | GET | `/api/fs/folders?path=` | `{ path, home, parent, dirs: [{ name, path, git }] }` – jen složky v domovském adresáři, bez skrytých; 400 relativní, 403 mimo domov, 404 |
+
+`Napojeni.nainstalovano: null` znamená, že se programy zatím nepodařilo zjistit, ne že chybí. U `druh: agent` je `posledni` čas poslední místní aktivity v milisekundách od epochy (0 = žádná ve sledovaném okně); `oknoDni` je počet dní sledovaného okna, případně null, není-li známý.
 
 ## SSE události (`/api/stream`)
 

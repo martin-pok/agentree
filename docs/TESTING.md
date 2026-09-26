@@ -83,6 +83,12 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 ### Web (landing page)
 
+- [ ] Česká i anglická stránka: hlavní sekce, FAQ a instalace mají stejné boční okraje.
+      `qa:site` měří obě hrany proti navigaci na 360, 375, 768, 900 a 1440 px.
+- [ ] `/en` používá výřezy `*-en.webp`, česká stránka původní české výřezy. `npm run shots:site`
+      vytvoří oba jazyky ze stejné smyšlené scény a uloží `site/detail/rozmery.json`;
+      při změně výšek aktualizuj odpovídající `width`/`height` v obou HTML. Testy kontrolují
+      rozměry obou verzí, překlad scén a překlad serverových tlačítek včetně bezpečného escapování.
 - [ ] `npm run build:site` → `dist/web`, otevři kořen: stránka se načte, konzole bez chyb.
 - [ ] `/app` otevře rozhraní aplikace (rozcestník „Kde máš Agenteeq?“, když za ním žádný server není).
 - [ ] Šířky 1440 a 375 px bez vodorovného rolování; světlý i tmavý režim; Tab projde všechny odkazy s viditelným fokusem.

@@ -13,17 +13,48 @@ const UKAZKOVY_HOST = { name: 'MacBook Pro', user: 'ukazka', fullName: 'Ukázkov
 // Tak ji vidí živá prohlídka na webu i aplikace spuštěná přes `npm run showcase`, kde ji někdo
 // může omylem vzít za svá data. Detaily pro web (scripts/shots-site.mjs) jsou výřezy s popiskem
 // „smyšlená data“ přímo pod sebou, a tam by opakované UKÁZKA v každém řádku přehlušilo rozhraní.
-export async function pripravUkazku(env = {}, { oznacit = true } = {}) {
-  const u = (jmeno) => (oznacit ? `UKÁZKA · ${jmeno}` : jmeno);
-  const cinnost = (text) => (oznacit ? 'Smyšlená ukázka pro prohlídku produktu' : text);
-  const popis = (ukazka, cisty) => (oznacit ? ukazka : cisty);
-  const demo = await startTestServer(env, { hostIdentity: UKAZKOVY_HOST });
+const EN_TEXTY = {
+  "Ukázkový profil": "Sample profile",
+  "Smyšlená ukázka pro prohlídku produktu": "Sample data for the product tour",
+  "navigace klientského portálu": "client portal navigation",
+  "Upravuje hlavičku a mobilní menu": "Updating the header and mobile menu",
+  "migrace API": "API migration",
+  "Připravuje novou konfiguraci": "Preparing a new configuration",
+  "Povolit zápis nové konfigurace?": "Allow writing the new configuration?",
+  "testy formuláře": "form tests",
+  "Spouští testy validace": "Running validation tests",
+  "Toto jsou smyšlená data pro prohlídku. Připrav návrh a vysvětli další postup.": "This is sample data for the product tour. Prepare a proposal and explain the next steps.",
+  "Ukázková odpověď: rozdělím práci na strukturu, přístupnost a testování. Žádný skutečný agent se z této prohlídky nespouští.": "Sample response: I will divide the work into structure, accessibility and testing. This tour does not start any real agent.",
+  "Smyšlený projekt pro prohlídku Agenteeq.": "Sample project for the Agenteeq tour.",
+  "Klientský portál a nový web studia.": "Client portal and a new studio website.",
+  "E-shop Lumen": "Lumen shop",
+  "Smyšlený projekt: nový košík a platby.": "Sample project: a new cart and payments.",
+  "Nový košík a platby.": "A new cart and payments.",
+  "košík e-shopu": "shop cart",
+  "platby a faktury": "payments and invoices",
+  "Interní nástroje": "Internal tools",
+  "Smyšlený projekt: přehledy pro tým.": "Sample project: dashboards for the team.",
+  "Přehledy pro tým.": "Dashboards for the team.",
+  "interní dashboard": "internal dashboard",
+  "Toto jsou smyšlená data pro prohlídku. Pokračuj tam, kde jsme skončili.": "This is sample data for the product tour. Continue where we left off.",
+  "Ukázková odpověď: hotovo, změny jsou připravené ke kontrole.": "Sample response: done, the changes are ready for review.",
+  "Hotovo, změny čekají na kontrolu": "Done, changes are ready for review",
+  "limit 5 h": "5-hour limit",
+  "kredity API": "API credits"
+};
+
+export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } = {}) {
+  const text = (s) => jazyk === 'en' ? (EN_TEXTY[s] || s) : s;
+  const u = (jmeno) => (oznacit ? `${jazyk === 'en' ? 'SAMPLE' : 'UKÁZKA'} · ${text(jmeno)}` : text(jmeno));
+  const cinnost = (coDela) => (oznacit ? text('Smyšlená ukázka pro prohlídku produktu') : text(coDela));
+  const popis = (ukazka, cisty) => (text(oznacit ? ukazka : cisty));
+  const demo = await startTestServer(env, { hostIdentity: { ...UKAZKOVY_HOST, fullName: text(UKAZKOVY_HOST.fullName) } });
   const client = api(demo.url);
-  await client.send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: VERZE });
+  await client.send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: VERZE, language: jazyk });
   const now = Date.now();
   const sessions = [
     { connector: 'claude-code', localId: 'showcase-navigation', provider: 'anthropic', app: 'Claude Code', title: u('navigace klientského portálu'), running: true, cinnost: 'Upravuje hlavičku a mobilní menu' },
-    { connector: 'codex', localId: 'showcase-api', provider: 'openai', app: 'Codex', title: u('migrace API'), cinnost: 'Připravuje novou konfiguraci', pending: { at: now, kind: 'permission', text: 'Povolit zápis nové konfigurace?' } },
+    { connector: 'codex', localId: 'showcase-api', provider: 'openai', app: 'Codex', title: u('migrace API'), cinnost: 'Připravuje novou konfiguraci', pending: { at: now, kind: 'permission', text: text('Povolit zápis nové konfigurace?') } },
     { connector: 'cursor', localId: 'showcase-form', provider: 'cursor', app: 'Cursor', title: u('testy formuláře'), running: true, cinnost: 'Spouští testy validace' },
   ];
   const ids = [];
@@ -31,8 +62,8 @@ export async function pripravUkazku(env = {}, { oznacit = true } = {}) {
     const s = demo.app.store.ensure(fixture);
     Object.assign(s, fixture, { startedAt: now - (i + 1) * 900000, lastAt: now, runningAt: now, activity: cinnost(coDela), hookAt: now, turns: 3 + i });
     for (let hour = 0; hour < 5; hour++) { const at = now - hour * 3600000; touch(s, at); addTokens(s, at, { input: 17000 * (5 - hour), output: 3200 * (i + 1) }); }
-    pushEntry(s, { at: now - 90000, role: 'user', text: 'Toto jsou smyšlená data pro prohlídku. Připrav návrh a vysvětli další postup.' });
-    pushEntry(s, { at: now - 60000, role: 'assistant', text: 'Ukázková odpověď: rozdělím práci na strukturu, přístupnost a testování. Žádný skutečný agent se z této prohlídky nespouští.' });
+    pushEntry(s, { at: now - 90000, role: 'user', text: text('Toto jsou smyšlená data pro prohlídku. Připrav návrh a vysvětli další postup.') });
+    pushEntry(s, { at: now - 60000, role: 'assistant', text: text('Ukázková odpověď: rozdělím práci na strukturu, přístupnost a testování. Žádný skutečný agent se z této prohlídky nespouští.') });
     demo.app.store.commit(s);
     ids.push(s.id);
   }
@@ -58,8 +89,8 @@ export async function pripravUkazku(env = {}, { oznacit = true } = {}) {
     for (const [i, k] of konverzace.entries()) {
       const s = demo.app.store.ensure(k);
       for (const [j, den] of k.dny.entries()) addTokens(s, now - k.pred - den * DEN, { input: 9000 + ((j * 7919) % 23) * 1500, output: 1800 + i * 600 });
-      pushEntry(s, { at: now - k.pred - 60000, role: 'user', text: 'Toto jsou smyšlená data pro prohlídku. Pokračuj tam, kde jsme skončili.' });
-      pushEntry(s, { at: now - k.pred, role: 'assistant', text: 'Ukázková odpověď: hotovo, změny jsou připravené ke kontrole.' });
+      pushEntry(s, { at: now - k.pred - 60000, role: 'user', text: text('Toto jsou smyšlená data pro prohlídku. Pokračuj tam, kde jsme skončili.') });
+      pushEntry(s, { at: now - k.pred, role: 'assistant', text: text('Ukázková odpověď: hotovo, změny jsou připravené ke kontrole.') });
       Object.assign(s, { connector: k.connector, provider: k.provider, app: k.app, title: k.title, startedAt: now - k.pred - (k.dny.at(-1) + 1) * DEN, activity: cinnost('Hotovo, změny čekají na kontrolu'), turns: 4 + i });
       touch(s, now - k.pred);
       demo.app.store.commit(s);

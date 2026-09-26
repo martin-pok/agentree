@@ -2,6 +2,18 @@
 
 ## Nevydáno
 
+### Web: stejné okraje obsahu a anglické ukázky
+
+- FAQ a instalační postup lícují s ostatními sekcemi. Používají společnou šířku `.wrap`
+  místo užšího sloupce; boční okraje hlídá `qa:site` v obou jazycích na 360–1440 px.
+- Anglický web používá vlastní anglické výřezy skutečné aplikace, včetně názvů ukázkových
+  projektů, činností a žádosti o rozhodnutí. `shots:site` fotí obě jazykové verze a ukládá
+  jejich rozměry společně; HTML rezervuje správnou výšku i tam, kde se překlad zalomí jinak.
+- Tlačítka otevření konverzace ze serveru se překládají při vykreslení v aplikaci, například
+  „Pokračovat v Terminálu“ → „Continue in Terminal“. Cizí popisky zůstávají escapované.
+- WebKit QA počká na dokončení asynchronního startu před reloadem. Dřívější předčasný
+  reload rušil úvodní dotaz a způsoboval chybu importu modulu ve starém dokumentu.
+
 ### Claude Code se najde, i když ho aplikace z Finderu nevidí v PATH
 
 - **Oprava:** na Macu hlásilo Nastavení u Claude Code „Není nainstalovaný“, přestože byl.

@@ -22,7 +22,8 @@ for (const engine of engines) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => { errors.push(e.message); console.error(`${engine}: ${page.url()}\n${e.stack || e.message}`); });
+  page.on('requestfailed', (r) => { if (r.resourceType() === 'script') console.error(`${engine}: modul ${r.url()} ${r.failure()?.errorText}`); });
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('500') && !m.text().includes('net::')) errors.push(m.text()); });
   // Prove fonts and UI require no internet.
   await context.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
@@ -275,6 +276,9 @@ for (const engine of engines) {
     for (const [sirka, vyska] of [[1440, 900], [375, 812]]) {
       await page.setViewportSize({ width: sirka, height: vyska });
       await page.goto(`${server.url}/#/nastaveni`);
+      // WebKit dokončuje asynchronní boot.js až po load. Reload před připojením zrušil
+      // jeho health probe a vyvolal chybu importu ve starém dokumentu. Nejprve dokončit start.
+      await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
       await page.reload();
       await page.locator('.settings2').waitFor();
       await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));

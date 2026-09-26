@@ -4,12 +4,28 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import EN from '../public/js/i18n/en.js';
+import { execFileSync } from 'node:child_process';
 
 // Angličtina rozhraní (public/js/i18n.js). Zdrojem textů je čeština v kódu v tr('…'); slovník
 // public/js/i18n/en.js k ní drží překlad. Chybějící překlad by se v angličtině ukázal česky,
 // proto tenhle test hlídá úplnost, proměnné, značky a to, že slovník nenese staré texty.
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+test('i18n: serverové akce se přeloží při vykreslení a cizí popisky zůstanou escapované', () => {
+  const script = `
+    globalThis.document = { documentElement: { lang: 'en' } };
+    const { openButtons } = await import('./public/js/ui.js');
+    const labels = ['Otevřít v Codexu', 'Otevřít Claude', 'Otevřít v Cursoru', 'Otevřít ve VS Code', 'Otevřít konverzaci', 'Pokračovat v Terminálu', 'Otevřít složku', 'Přepnout do LM Studio', 'constructor', undefined, '<img src=x onerror=alert(1)>'];
+    console.log(openButtons({ id: 'fixture', open: labels.map(label => ({ id: 'terminal', label })) }, { max: labels.length }));
+  `;
+  const html = execFileSync(process.execPath, ['--input-type=module', '-e', script], { cwd: ROOT, encoding: 'utf8' });
+  for (const label of ['Open in Codex', 'Open Claude', 'Open in Cursor', 'Open in VS Code', 'Open conversation', 'Continue in Terminal', 'Open folder', 'Switch to LM Studio']) assert.ok(html.includes(label), label);
+  assert.doesNotMatch(html, /Pokračovat|Otevřít|Přepnout|<img src=x/);
+  assert.match(html, />constructor<\/button>/);
+  assert.doesNotMatch(html, /function Object|undefined/);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+});
 const CZ = /[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/;
 
 async function soubory(dir) {

@@ -63,7 +63,6 @@ b, strong { font-weight: 500; }
 .skip { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--action); color: var(--on-action); padding: 12px 20px; border-radius: var(--r-sm); }
 .skip:focus { top: 12px; }
 .wrap { width: min(100% - 48px, var(--page)); margin-inline: auto; }
-.narrow { width: min(100% - 48px, 760px); }
 
 /* Jedna stupnice: nadpis jednotky, nadpis dlaždice, úvodní věta, text. Hierarchie stojí na
    velikosti a prázdném místě, ne na dalších barvách a řezech. */
@@ -235,7 +234,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .facts, .sources { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 620px) {
-  .wrap, .narrow { width: calc(100% - 32px); }
+  .wrap { width: calc(100% - 32px); }
   .nav-links { display: none; }
   .nav-in { gap: 10px; }
   .brand { font-size: 17px; }
