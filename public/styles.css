@@ -107,6 +107,12 @@ html {
   scroll-behavior: smooth;
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Během posouvání obsah nereaguje na ukazatel (app.js): karty pod stojícím kurzorem jinak
+   naskakují do :hover a padají zpátky. Jen s myší – na dotyku by mohl propadnout další tah.
+   Při přetahování (konverzace do projektu, karty) se cíle hledají právě pod ukazatelem. */
+@media (hover: hover) and (pointer: fine) {
+  html.is-scrolling body:not(.is-dragging):not(.is-dragging-card) .view { pointer-events: none; }
+}
 /* Vodorovné pásy (dlaždice agentů, záložky nastavení) mají na iOS setrvačné rolování a nepřetahují stránku. */
 .launch-chips, .pb-agents, .set-nav, .seg { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 /* Pozadí je „stůl“ pod aplikací. Dřív bylo na těle s `background-attachment: fixed`, což nutí
