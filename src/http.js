@@ -593,6 +593,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, 'Vzhled musí být světlý, tmavý nebo podle systému.');
         datastore.data.settings.appearance = body.appearance;
       }
+      if (body.language !== undefined) {
+        if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, 'Jazyk musí být čeština nebo angličtina.');
+        datastore.data.settings.language = body.language;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
@@ -817,6 +821,15 @@ export function createHttpServer(app, existingServer = null) {
       if (path.extname(rel)) throw new HttpError(404, 'Nenalezeno.');
       file = path.join(PUBLIC_DIR, 'index.html');
       body = await fs.readFile(file);
+    }
+    // Jazyk rozhraní: server ho vepíše přímo do <html lang>, aby stránka naběhla ve zvoleném
+    // jazyce bez probliknutí češtiny – volbu a slovník řeší jen public/js/i18n.js. Výchozí
+    // stránka na disku je česká; do angličtiny se přepisuje jen tenhle jeden atribut.
+    const indexHtml = path.join(PUBLIC_DIR, 'index.html');
+    if (file === indexHtml && datastore.data.settings.language === 'en') {
+      const text = body.toString('utf8');
+      if (!text.includes('<html lang="cs">')) throw new Error('index.html nemá <html lang="cs"> — uprav server.');
+      body = Buffer.from(text.replace('<html lang="cs">', '<html lang="en">'));
     }
     // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
     // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.

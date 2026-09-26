@@ -2,6 +2,16 @@
 
 ## Nevydáno
 
+### Angličtina v aplikaci: přepínač v Nastavení
+
+- Nastavení mají novou kartu „Jazyk aplikace“ (Čeština / English) hned pod Vzhledem. Volba se
+  ukládá na server, který podle ní vepíše `<html lang>` do stránky ještě před odesláním – takže
+  se po přepnutí (stránka se znovu načte) rozhraní naběhne rovnou ve zvoleném jazyce, bez
+  probliknutí druhého jazyka.
+- Anglický slovník (`public/js/i18n/en.js`) je teď kompletní pro celé rozhraní aplikace, včetně
+  levé lišty a záhlaví, které byly napevno v index.html a předtím zůstávaly česky i po přepnutí
+  jazyka.
+
 ### Rozcestník „Kde máš Agenteeq?“: ukázka jedním klepnutím
 
 - **Oprava:** kdo otevřel `/app` bez `?ukazka` (a bez páru na skutečný Mac), viděl jen políčko
