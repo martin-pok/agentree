@@ -9,12 +9,12 @@
   Zapne se jen na počítači bez dotyku a bez „omezit pohyb“. Na kraji stránky zůstává nativní
   odraz, vnořené seznamy dostanou kolečko samy, pod otevřeným vyhledáváním nebo dialogem se
   stránka nehne a přepnutí obrazovky, klávesnice i posuvník mají před dojezdem přednost.
-- Během posouvání obsah nereaguje na ukazatel: karty pod stojícím kurzorem už jedna po druhé
-  nenaskakují do zvednutého stavu se stínem. Při přetahování konverzací a karet to neplatí.
+- Během posouvání karty pod stojícím kurzorem už jedna po druhé nenaskakují do zvednutého
+  stavu se stínem. Kliknout jde kdykoli, i hned po posunu.
 - Web a aplikace mají teď jeden modul (`public/js/plynule-posouvani.js`) místo dvou kopií.
 - Měřeno se 4× zpomaleným procesorem na ukázkových datech: všechny obrazovky drží při
-  posouvání 60 snímků za vteřinu. `qa:desktop` nově měří plynulý a přesný dojezd, vypnutí
-  ukazatele během posouvání, zamčenou stránku a přednost cizího posunu.
+  posouvání 60 snímků za vteřinu. `qa:desktop` nově měří plynulý a přesný dojezd, klik hned
+  po posunu, zamčenou stránku a přednost cizího posunu.
 
 ### Angličtina v aplikaci: přepínač v Nastavení
 
