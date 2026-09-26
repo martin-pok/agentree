@@ -2,6 +2,17 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.28.0',
+    date: '2026-09-26',
+    title: 'Napojení agentů a Nastavení drží krok',
+    items: [
+      'Claude Code se najde i tam, kam ho instalátor přidal mimo cestu Finderu. U agenta je vidět poslední místní aktivita; neznámá instalace se už nevydává za chybějící.',
+      'Menu Nastavení přepíná skupiny bez posouvání nadpisu a levého panelu. Kolečko myši má plynulý dojezd a karty při posouvání neposkakují pod kurzorem.',
+      'V Nastavení → Účet a vzhled si vybereš češtinu nebo English. Jazyk se uloží a rozhraní se načte rovnou v něm.',
+      'Web má české i anglické ukázky aplikace a všechny hlavní sekce mají stejné boční okraje. Prohlídka funguje i bez připojení k Macu.',
+    ],
+  },
+  {
     version: '0.27.0',
     date: '2026-09-25',
     title: 'Útratu si stáhneš do tabulky',
