@@ -753,7 +753,21 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})$/, async (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
       const r = await app.napojeni.napojit(m[1]);
-      if (r.status) throw new HttpError(r.status, r.error, { ...(r.prikaz ? { prikaz: r.prikaz } : {}), ...(r.rozsireni ? { rozsireni: true } : {}) });
+      if (r.status) throw new HttpError(r.status, r.error, r.rozsireni ? { rozsireni: true } : {});
+      return r;
+    }],
+    // Záložní cesta, když se prohlížeč sám neotevřel: otevřít odkaz z přihlášení a vložit kód.
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/odkaz$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      const r = await app.napojeni.odkaz(m[1]);
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/kod$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      const body = await readBody(req);
+      const r = app.napojeni.kod(m[1], body?.kod);
+      if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/zrusit$/, (req, m) => {

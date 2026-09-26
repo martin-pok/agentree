@@ -143,8 +143,8 @@ okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … 
 
 | Model | Co se spustí | Jak Agenteeq pozná, že je hotovo | Ověřeno |
 |---|---|---|---|
-| Claude Code | `claude auth login` v Terminálu (Claude Code otevře přihlášení Anthropicu v prohlížeči) | `claude auth status --json` → `loggedIn: true`; plán z `~/.claude.json` | nápověda CLI Claude Code, 24. 9. 2026 |
-| Codex | `codex login` v Terminálu (Codex otevře přihlášení ChatGPT v prohlížeči) | `codex login status` → „Logged in using …“ | zdroj `codex-rs/cli/src/login.rs`, 24. 9. 2026 |
+| Claude Code | `claude auth login --claudeai` na pozadí (sám hned otevře přihlášení Anthropicu v prohlížeči, na nic se neptá) | `claude auth status --json` → `loggedIn: true`; plán z `~/.claude.json` | nápověda CLI a běh bez okna, Claude Code 2.1.283, 26. 9. 2026 |
+| Codex | `codex login` na pozadí (Codex otevře přihlášení ChatGPT v prohlížeči) | `codex login status` → „Logged in using …“ | zdroj `codex-rs/cli/src/login.rs`, 24. 9. 2026 |
 | ChatGPT, Claude.ai, Gemini, Perplexity na webu | otevře službu v prohlížeči (potřebuje spárované rozšíření) | první stav z té služby od rozšíření | – |
 
 - **Přihlašuje se vždycky u dodavatele.** Anthropic ani OpenAI nenabízejí cizím aplikacím
@@ -154,8 +154,16 @@ okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … 
 - **Hesla ani tokeny dodavatelů Agenteeq nevidí.** Ze stavu bere jen „přihlášen ano / ne“ a plán.
 - **Neznámý výstup je „nepodařilo se zjistit“,** ne „nenapojeno“. Hlídání běží nejvýš 10 minut
   po 2 s a skončí zprávou „vypršelo“. Zavřené okno hlídání zruší.
-- **Bez Terminálu** (jiný systém než macOS, zakázaná Automatizace) vrátí server příkaz k ručnímu
-  spuštění. Cesta k nástroji je v jednoduchých uvozovkách, složka „Design & Web“ se nerozpadne.
+- **Terminál se nikdy neotvírá** (`src/prihlaseni.js`). Přihlášení běží jako podproces aplikace:
+  argumenty jdou přímo programu bez shellu (složka „Design & Web“ se nerozpadne), do PATH se
+  přidá složka programu (Claude Code z npm potřebuje `node`, který leží vedle něj). Starší Claude
+  Code bez přepínače `--claudeai` skončí s „unknown option“ a spustí se jednou bez něj.
+- **Když se prohlížeč sám neotevře**, tlačítko „Prohlížeč se neotevřel?“ otevře záložní odkaz,
+  který přihlášení vypsalo (projde jen https adresa dodavatele). Claude Code pak na stránce ukáže
+  kód; ten se vloží do okna Agenteeq a jde procesu na vstup (jeden řádek tisknutelných znaků,
+  nic se neukládá). Codex se vrací na svůj localhost sám.
+- **Přihlášení, které skončí bez napojení** (zavřená stránka, chyba), okno ohlásí hned
+  („skončilo bez napojení“), ne až po deseti minutách. Zrušení okna proces ukončí.
 - Firemní API účty (OpenAI, Anthropic) se dál napojují správcovským klíčem v kartě
   „Skutečné náklady za API“.
 

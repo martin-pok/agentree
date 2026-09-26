@@ -1,5 +1,6 @@
-// Napojení modelů tlačítkem (src/napojeni.js). Klik spustí přihlášení u dodavatele, okno Agenteeq
-// čeká a samo pozná, až je hotovo – pak ukáže potvrzení. Nic se tu nezadává a nic se neukládá.
+// Napojení modelů tlačítkem (src/napojeni.js). Klik spustí přihlášení u dodavatele rovnou
+// v prohlížeči (bez Terminálu), okno Agenteeq čeká a samo pozná, až je hotovo – pak ukáže
+// potvrzení. Zadává se jen v nouzi: kód ze stránky, když se prohlížeč sám neotevřel.
 import { api } from './api.js';
 import { esc, rel } from './format.js';
 import { glyph, ICON } from './icons.js';
@@ -52,7 +53,58 @@ function textCekani(n) {
   const kdo = DODAVATEL[n.provider] || n.label;
   return n.druh === 'web'
     ? tr('V prohlížeči se otevřel {0}. Přihlas se, pokud ještě nejsi, a otevři jakoukoli konverzaci – rozšíření dá Agenteeq vědět a napojení se potvrdí samo.', esc(n.label))
-    : tr('V Terminálu se spustilo přihlášení {0} a otevře se prohlížeč. Přihlas se svým účtem u {1}. Až bude hotovo, Agenteeq to pozná sám.', esc(n.label), esc(kdo));
+    : tr('V prohlížeči se otevírá přihlášení {0}. Přihlas se svým účtem u {1} a potvrď přístup. Až bude hotovo, Agenteeq to pozná sám.', esc(n.label), esc(kdo));
+}
+
+// „Prohlížeč se neotevřel?“ – server otevře záložní odkaz z přihlášení. Claude Code pak na stránce
+// ukáže kód; pole pro něj vznikne až teď, aby okno při otevření nedávalo fokus skrytému poli.
+function zaloha(n, scrim) {
+  const box = scrim.querySelector('.model-wait-fallback');
+  const tlacitko = box?.querySelector('[data-otevrit-znovu]');
+  if (!tlacitko) return;
+  const chyba = (text) => {
+    const fe = scrim.querySelector('.form-error');
+    fe.textContent = text;
+    fe.hidden = !text;
+  };
+  tlacitko.addEventListener('click', async () => {
+    chyba('');
+    tlacitko.disabled = true;
+    tlacitko.classList.add('is-busy');
+    try {
+      const r = await api.napojeniOdkaz(n.id);
+      if (r.kod && !box.querySelector('input')) {
+        const id = `kod-${n.id.replace(/[^\w-]/g, '')}`;
+        box.insertAdjacentHTML('beforeend', `<div class="model-wait-code">
+          <label for="${id}">${tr('Kód z přihlašovací stránky')}</label>
+          <div class="model-wait-code-row"><input id="${id}" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button type="button" class="btn btn--sm btn--primary" data-poslat-kod>${tr('Potvrdit')}</button></div>
+          <p class="model-wait-hint">${tr('Po přihlášení ti stránka ukáže kód. Zkopíruj ho celý a vlož sem.')}</p></div>`);
+        const pole = box.querySelector('input');
+        const poslat = box.querySelector('[data-poslat-kod]');
+        const odeslat = async () => {
+          chyba('');
+          poslat.disabled = true;
+          try {
+            await api.napojeniKod(n.id, pole.value);
+            poslat.textContent = tr('Ověřuji…');
+          } catch (err) {
+            chyba(err.message);
+            poslat.disabled = false;
+          }
+        };
+        poslat.addEventListener('click', odeslat);
+        // Enter v jediném poli by odeslal celý formulář a okno zavřel.
+        pole.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); odeslat(); } });
+        pole.focus();
+      }
+    } catch (err) {
+      chyba(err.message);
+    } finally {
+      tlacitko.disabled = false;
+      tlacitko.classList.remove('is-busy');
+    }
+  });
 }
 
 function obsahHotovo(u) {
@@ -99,11 +151,14 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
     body: `<div class="model-wait" aria-live="polite">
         <p>${textCekani(n)}</p>
         <p class="model-wait-state"><span class="model-wait-dot" aria-hidden="true"></span>${tr('Čekám na přihlášení…')}</p>
-        ${r.prikaz ? `<p class="model-wait-cmd">${tr('Příkaz v Terminálu:')} <code>${esc(r.prikaz)}</code></p>` : ''}
+        ${n.druh === 'agent' ? `<div class="model-wait-fallback"><button type="button" class="btn btn--sm" data-otevrit-znovu>${tr('Prohlížeč se neotevřel?')}</button></div>` : ''}
         <p class="account-privacy">${ICON.shield}<span>${esc(SOUKROMI)}</span></p>
       </div>`,
     footer: `<button type="button" class="btn" data-close>${tr('Zrušit')}</button>`,
-    onOpen: (scrim, close) => { cekajici = { id: n.id, label: n.label, scrim, close }; },
+    onOpen: (scrim, close) => {
+      cekajici = { id: n.id, label: n.label, scrim, close };
+      zaloha(n, scrim);
+    },
   });
   const byloCekani = cekajici?.id === n.id && !cekajici.hotovo;
   cekajici = null;
@@ -122,9 +177,10 @@ export function udalostNapojeni(u) {
       form.querySelector('.modal-body').innerHTML = obsahHotovo(u);
       form.querySelector('.modal-foot').innerHTML = '<button type="submit" class="btn btn--primary">Hotovo</button>';
       form.querySelector('.modal-foot .btn').focus();
-    } else if (u.udalost === 'vyprselo') {
+    } else if (u.udalost === 'vyprselo' || u.udalost === 'selhalo') {
       cekajici.hotovo = true;
-      form.querySelector('.model-wait-state').innerHTML = `${ICON.alert}${tr('Přihlášení za 10 minut nedoběhlo. Zkus to prosím znovu.')}`;
+      form.querySelector('.model-wait-state').innerHTML = `${ICON.alert}${u.udalost === 'selhalo' ? tr('Přihlášení {0} skončilo bez napojení. Zkus to prosím znovu.', esc(u.label)) : tr('Přihlášení za 10 minut nedoběhlo. Zkus to prosím znovu.')}`;
+      form.querySelector('.model-wait-fallback')?.remove();
       form.querySelector('.modal-foot').innerHTML = `<button type="button" class="btn" data-close-now>${tr('Zavřít')}</button>`;
       form.querySelector('[data-close-now]').addEventListener('click', () => cekajici?.close(false));
     }
