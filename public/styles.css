@@ -953,10 +953,20 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
 .pair-box small { color: var(--mute); font-size: 12px; }
 /* Oddělovač mezi ukázkou a připojením ke skutečnému Macu – ne další odstavec, jen nadpisek. */
+.pair-navod { width: 100%; padding: 12px 16px; border-radius: var(--r-sm); background: var(--paper); text-align: left; }
+.pair-rucne { width: 100%; display: grid; gap: 12px; }
+.pair-rucne summary { min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: var(--r-sm); color: var(--ink-2); font-size: 14px; cursor: pointer; }
+.pair-rucne summary::-webkit-details-marker { display: none; }
+.pair-rucne summary { list-style: none; gap: 8px; }
+.pair-rucne summary::after { content: ''; width: 7px; height: 7px; margin-top: -4px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .18s var(--ease); }
+.pair-rucne[open] summary::after { margin-top: 3px; transform: rotate(-135deg); }
+.pair-rucne[open] summary { color: var(--mute); }
+.pair-rucne > :not(summary) { margin: 0; }
 .pair-or { margin: -4px 0; font-size: 12px; color: var(--mute); }
 /* Druhá cesta pro toho, kdo aplikaci ještě nemá: bez ní je pole na adresu slepá ulička. */
 .pair-jinak { margin-top: -4px; }
-.pair-box a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+/* Jen textové odkazy – tlačítko (a.btn) si barvu nese samo, jinak by tu mělo černé písmo na černé. */
+.pair-box a:not(.btn) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pair-error { color: var(--velvet-ink); font-size: 13px; }
 /* Přehled účtu na webu (/app?ucet, public/js/ucet-web.js): souhrny z Maců, jen čtení. */
 html.is-cloud body { background: var(--paper); }

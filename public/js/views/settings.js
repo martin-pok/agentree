@@ -1,4 +1,5 @@
 import { state } from '../state.js';
+import { WEB_AGENTEEQ } from '../obchod.js';
 import { api } from '../api.js';
 import { esc, rel, initials, dateLong } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
@@ -911,8 +912,11 @@ function update(topics) {
   // balíček nemá a `npm pack` s cestami ve složce vývojáře by mu nic neříkaly – karta se tam nezobrazí.
   fill(el, 'share', !pkg ? '' : `
     ${head(ICON.external, tr('Instalace pro další lidi'), tr('Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.'))}
+    <p class="set-desc">${tr('Nejjednodušší je poslat odkaz na web, kde si Agenteeq stáhnou:')}</p>
+    <div class="code-line"><code>${esc(WEB_AGENTEEQ)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(WEB_AGENTEEQ)}" data-copy-message="${tr('Odkaz zkopírován')}">${ICON.copy}${tr('Kopírovat odkaz')}</button></div>
+    ${fold('share-primo', i.desktop ? tr('Poslat aplikaci přímo') : tr('Poslat instalační balíček'), `
     ${i.desktop ? (pkg ? `
-      <p class="set-desc">${tr('Předej příjemci tento instalační ZIP Agenteeq pro Mac. Rozbalí ho a přesune Agenteeq do Aplikací; Node.js je součástí balíčku. Pro veřejnou distribuci použij podepsané a notarizované vydání.')}</p>
+      <p class="set-desc">${tr('Předej příjemci tento instalační ZIP Agenteeq pro Mac. Rozbalí ho a přesune Agenteeq do Aplikací, nic dalšího instalovat nemusí.')}</p>
       <dl class="facts">
         <div><dt>${tr('Soubor')}</dt><dd>${esc(pkg.name)}</dd></div>
         <div><dt>${tr('Velikost')}</dt><dd>${(pkg.size / 1e6).toFixed(1)} MB</dd></div>
@@ -922,7 +926,7 @@ function update(topics) {
         <button class="btn btn--primary" type="button" data-action="reveal-install-package">${tr('Ukázat ve Finderu')}</button>
         <button class="btn btn--sm" type="button" data-copy="${esc(pkg.path)}" data-copy-message="${tr('Cesta k balíčku zkopírována')}">${ICON.copy}${tr('Kopírovat cestu')}</button>
       </div>` : `
-      <p class="set-desc">${tr('Pošli příjemci samotnou aplikaci: ve Finderu na ni klikni pravým tlačítkem, zvol')} <b>${tr('Komprimovat')}</b> ${tr('a vzniklý ZIP předej. Node.js je uvnitř, příjemce nic doinstalovávat nemusí. Pro veřejnou distribuci použij podepsané a notarizované vydání.')}</p>
+      <p class="set-desc">${tr('Pošli příjemci samotnou aplikaci: ve Finderu na ni klikni pravým tlačítkem, zvol')} <b>${tr('Komprimovat')}</b> ${tr('a vzniklý ZIP předej. Příjemce nic dalšího instalovat nemusí.')}</p>
       <dl class="facts">
         <div class="wide"><dt>${tr('Aplikace')}</dt><dd class="mono-sm">${esc((i.install?.root || '').replace(/\/Contents\/Resources\/app$/, ''))}</dd></div>
         <div><dt>${tr('Verze')}</dt><dd>${esc(state.version)}</dd></div>
@@ -935,7 +939,7 @@ function update(topics) {
       <li>${tr('Pošli soubor')} <code>dist/agenteeq-${esc(state.version)}.tgz</code>${tr('. Příjemce potřebuje Node.js 22.13 nebo novější a v Terminálu spustí:')}<div class="code-line"><code>${esc(installCmd)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(installCmd)}">${ICON.copy}${tr('Kopírovat')}</button></div></li>
       <li>${tr('Aplikaci otevře příkazem')} <code>agenteeq --open</code>${tr('. Průvodce ho provede propojením.')}</li>
     </ol>
-    <p class="small muted">${tr('Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.')}</p>`}`);
+    <p class="small muted">${tr('Podrobný návod pro zákazníky je v souboru docs/INSTALL.md.')}</p>`}`)}`);
 }
 
 export default {

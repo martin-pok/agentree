@@ -6,6 +6,10 @@
 //   https://chromewebstore.google.com/detail/agenteeq/<32 písmen a–p>
 export const CHROME_WEB_STORE_URL = '';
 
+// Web Agenteeq se stažením aplikace pro Mac – co aplikace posílá dál, když ji chceš doporučit.
+// Stejná adresa je v <link rel="canonical"> na webu (site/index.html).
+export const WEB_AGENTEEQ = 'https://agentree-fawn.vercel.app/';
+
 // Jen skutečná adresa položky v Chrome Web Store – nic jiného se jako „obchod“ neotevře.
 export function adresaObchodu(url = CHROME_WEB_STORE_URL) {
   return /^https:\/\/chromewebstore\.google\.com\/detail\/(?:[\w-]+\/)?[a-p]{32}$/.test(String(url || '')) ? url : '';
