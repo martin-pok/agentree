@@ -62,18 +62,44 @@ export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints =
   };
 }
 
-// Čistá funkce bez souborového systému, ať jde snadno testovat.
-export function applyPlanUsageSample(store, sample, now = Date.now()) {
+// Horní mez obnovy okna z historie. Soubor čas obnovy nenese, ale nese vzorky: vytížení v jednom
+// okně jen roste, takže pokles mezi dvěma vzorky znamená obnovu. Okno, které běží při posledním
+// vzorku, začalo nejpozději prvním vzorkem s nenulovým vytížením po poslední obnově – a skončí
+// nejpozději o délku okna později. Je to mez, ne odhad: dřív skončit může, později ne.
+// Bez nenulového vytížení žádné okno neběží a mez není (null).
+export function horniMezObnovy(json, pole, minuty, posledni) {
+  const delka = Number(minuty) * 60e3;
+  if (!(delka > 0) || !posledni) return null;
+  const vzorky = (Array.isArray(json?.samples) ? json.samples : [])
+    .filter((x) => x && Number.isFinite(Number(x.t)) && Number(x.t) <= Number(posledni.t) && typeof x.u?.[pole] === 'number' && Number.isFinite(x.u[pole]))
+    .filter((x) => !posledni.org || !x.org || x.org === posledni.org)
+    .sort((a, b) => Number(a.t) - Number(b.t));
+  const konec = vzorky[vzorky.length - 1];
+  if (!konec || !(konec.u[pole] > 0)) return null;
+  let zacatek = konec;
+  for (let i = vzorky.length - 2; i >= 0; i--) {
+    const v = vzorky[i];
+    if (Number(konec.t) - Number(v.t) >= delka) break; // do běžícího okna už patřit nemůže
+    if (!(v.u[pole] > 0) || v.u[pole] > zacatek.u[pole] + 0.5) break; // před oknem prázdno, nebo obnova
+    zacatek = v;
+  }
+  return Number(zacatek.t) + delka;
+}
+
+// Čistá funkce bez souborového systému, ať jde snadno testovat. `json` (celý soubor) je volitelný:
+// s ním se k oknu dopočítá horní mez obnovy (`resetsBy`).
+export function applyPlanUsageSample(store, sample, now = Date.now(), json = null) {
   if (!sample || typeof sample !== 'object') return false;
   const at = Number(sample.t);
   if (!Number.isFinite(at) || at <= 0) return false;
   const u = sample.u && typeof sample.u === 'object' ? sample.u : {};
   let wrote = false;
 
-  const window = (key, raw) => {
+  const window = (key, raw, pole) => {
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return;
     const def = STATUS_WINDOWS[key];
     const used = Math.max(0, Math.min(100, raw));
+    const resetsBy = json ? horniMezObnovy(json, pole, def.minutes, sample) : null;
     store.setLimit({
       id: `claude:${key}:history`,
       provider: 'anthropic',
@@ -81,7 +107,8 @@ export function applyPlanUsageSample(store, sample, now = Date.now()) {
       label: def.label,
       usedPercent: used,
       windowMinutes: def.minutes,
-      resetsAt: null, // historie zdroj obnovy nemá
+      resetsAt: null, // přesný čas obnovy historie nemá
+      ...(resetsBy ? { resetsBy } : {}),
       reached: used >= 100,
       plan: null,
       text: '',
@@ -91,8 +118,8 @@ export function applyPlanUsageSample(store, sample, now = Date.now()) {
     });
     wrote = true;
   };
-  window('five_hour', u.fh);
-  window('seven_day', u.sd);
+  window('five_hour', u.fh, 'fh');
+  window('seven_day', u.sd, 'sd');
 
   if (typeof u.xu === 'number' && Number.isFinite(u.xu)) {
     // `xu` je vyčerpaný limit extra usage v procentech. Jednotku soubor neuvádí, ale tři indicie
@@ -151,7 +178,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
     seenMtime = stat.mtimeMs;
     error = '';
     if (!sample) return;
-    if (applyPlanUsageSample(store, sample)) {
+    if (applyPlanUsageSample(store, sample, Date.now(), json)) {
       lastEventAt = Date.now();
       lastSampleAt = Number(sample.t) || lastSampleAt;
     }

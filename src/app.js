@@ -25,7 +25,7 @@ import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createClaudeDesktopCodeConnector } from './connectors/claude-desktop-code.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
-import { createProcessesConnector } from './connectors/processes.js';
+import { createProcessesConnector, sdilenyVypis } from './connectors/processes.js';
 import { createLocalAgentsConnector } from './connectors/local-agents.js';
 import { detectApps, openTargets, planOpen, executeOpen, planRuntimeFocus, RUNTIME_APPS, ALL_APPS, copyToClipboard } from './openers.js';
 import { migrateLegacyData } from './migrate.js';
@@ -35,12 +35,15 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
+import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA } from './bezici-agenti.js';
+import { spustPrihlaseni } from './prihlaseni.js';
+import { adresaObchodu } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
@@ -51,6 +54,8 @@ export const DIST_DIR = path.join(ROOT_DIR, 'dist');
 // Bez licence Pro je možné mít tolik aktivních projektů – platí jen, když je `projectsUnlimited` v PAID_FEATURES.
 export const FREE_PROJECT_LIMIT = 3;
 const DRY_BINS = { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' };
+// Přihlášení „nanečisto“ (AGENTEEQ_OPEN=dry): běží, dokud ho nic nezastaví, a nic nevypíše.
+const PRIHLASENI_NASUCHO = Object.freeze({ ok: true, dry: true, odkaz: () => null, chceKod: () => false, posliKod: () => false, zastav() {}, bezi: () => true, vystup: () => '' });
 
 // `scripts/build-macos.mjs` ukládá hotový instalační ZIP do `dist/Agenteeq-<verze>-macOS-<arch>.zip`.
 // Server odvozuje přesný název sám (verze z package.json, architektura procesu) – nikdy z požadavku klienta.
@@ -171,7 +176,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const raw = /[.!?]$/.test(rawError) ? rawError : `${rawError}.`;
     let hint = '';
     if (/authenticat|oauth|log ?in|unauthori|401|credential/i.test(raw)) {
-      hint = run.agent === 'codex' ? ' Přihlas se v Terminálu příkazem codex login.' : ' Přihlas se znovu: v Terminálu spusť claude a zadej /login.';
+      hint = ' Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení (otevře se v prohlížeči).';
     } else if (/limit|quota|rate/i.test(raw)) {
       hint = ' Nejspíš vyčerpaný limit předplatného.';
     }
@@ -239,10 +244,24 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createClaudeDesktopUsageConnector(ctx),
     createClaudeDesktopCodeConnector(ctx),
   ];
+  // Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js): běžící proces bez konverzace se
+  // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
+  // který aplikace spuštěná z Finderu jinak nevidí – přepis se pak najde a proces se spáruje.
+  const bezici = createBeziciAgenti({ store });
+  async function beziciAgenti(procesy) {
+    for (const p of procesy || []) {
+      const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
+      if (!domov || !path.isAbsolute(domov)) continue;
+      if (p.runtime === 'claude-code') await connectors['claude-code']?.pridejKoren(path.join(domov, 'projects'));
+      if (p.runtime === 'codex') await connectors.codex?.pridejDomov(domov);
+    }
+    bezici.upravit(procesy);
+  }
   if (config.processes) {
-    list.push(createProcessesConnector(ctx));
+    const vypis = sdilenyVypis();
+    list.push(createProcessesConnector({ ...ctx, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
-    list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
+    list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
@@ -345,7 +364,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const pd = projects();
     const live = new Map(store.list().map((s) => [s.id, s]));
     for (const s of live.values()) {
-      if (s.projectId && !s.parentId) pd.snapshots[s.id] = snapshotOf(s);
+      // Agent známý jen z běžícího procesu po skončení zmizí – do projektu se jako snímek neukládá.
+      if (s.projectId && !s.parentId && !s.proces) pd.snapshots[s.id] = snapshotOf(s);
       else delete pd.snapshots[s.id];
     }
     for (const [sid, snap] of Object.entries(pd.snapshots)) {
@@ -641,10 +661,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dokud se programy nehledaly (jiný systém než macOS, nebo spouštění vypnuté), nevíme – ne „není“.
     bins: () => (launchDetected || dry ? launchEnv.bins : null),
     // Kdy agent na tomhle Macu naposledy pracoval (z konverzací v úložišti, ne z času načtení).
-    posledni: (id) => store.list().reduce((m, s) => (s.connector === id && s.lastAt > m ? s.lastAt : m), 0),
+    posledni: (id) => store.list().reduce((m, s) => (s.connector === id && !s.proces && s.lastAt > m ? s.lastAt : m), 0),
     oknoDni: config.windowDays,
     run: napojeniRun || run,
-    terminal: (command) => executeOpen({ kind: 'terminal', command }, { dry }),
+    // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
+    prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
     emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
@@ -662,6 +683,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (config.launchAgents && config.openMode === 'exec') {
       launchEnv = await detectLaunchEnv({ ollama, home: config.sourceHome });
       launchDetected = true;
+      if (launchEnv.env?.CLAUDE_CONFIG_DIR) await connectors['claude-code']?.pridejKoren(path.join(launchEnv.env.CLAUDE_CONFIG_DIR, 'projects'));
+      if (launchEnv.env?.CODEX_HOME) await connectors.codex?.pridejDomov(launchEnv.env.CODEX_HOME);
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
@@ -751,7 +774,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   store.on('session', (value) => {
     const pd = projects();
-    if (value.projectId) {
+    if (value.projectId && !value.proces) {
       pd.snapshots[value.id] = snapshotOf(value);
       persistSnapshots();
     } else if (pd.snapshots[value.id]) {
@@ -805,10 +828,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, ...(dry ? { dry: true } : {}), integrations: value };
   }
 
+  // „Přidat do Chromu“: stránka rozšíření v Chrome Web Store, rovnou v prohlížeči, který ho umí.
+  async function otevriObchod() {
+    const url = adresaObchodu();
+    if (!url) return { status: 409, error: 'Rozšíření zatím v Chrome Web Store není. Použij ruční instalaci.' };
+    const vChromu = otevritVProhlizeciSRozsirenim(url, config.sourceHome);
+    if (vChromu && !dry) {
+      const r = await run(vChromu.cmd, vChromu.args, { timeout: 8000 });
+      if (r.ok) return { ok: true, prohlizec: vChromu.prohlizec };
+    }
+    const r = await executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry });
+    return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+  }
+
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
-      extension: { path: extensionPath, sites: WEB_SITES, ...extensionStatus() },
+      extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
@@ -1090,10 +1126,35 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!pair || pair.expiresAt <= Date.now() || typeof code !== 'string' || code.length !== pair.code.length) return null;
     const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
     if (!equal || typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin)) return null;
+    datastore.data.extensionPairing = null;
+    return vydejTokenRozsireni(origin, installationId);
+  }
+
+  // ── Párování bez kódu ──────────────────────────────────────────────────────
+  // Rozšíření o spárování požádá samo (po instalaci, po startu Chromu, při otevření svého okna).
+  // Původ požadavku (chrome-extension://<ID>) nastavuje prohlížeč a web ani jiné rozšíření ho
+  // nepodvrhnou. Naše rozšíření – z Chrome Web Store, nebo ze složky, kterou připravila aplikace –
+  // se proto spáruje hned a bez kódu. Jakékoli jiné dostane odpověď „kód“: spárovat ho jde jen
+  // jednorázovým kódem, který člověk vytvoří na Macu. Schvalovací tlačítko pro cizí rozšíření tu
+  // záměrně není – jiné rozšíření by mohlo svou žádost podstrčit těsně před kliknutím.
+  function duveryhodnaRozsireni() {
+    const puvody = new Set();
+    const obchod = adresaObchodu().match(/([a-p]{32})$/)?.[1];
+    if (obchod) puvody.add(`chrome-extension://${obchod}`);
+    const rozbalene = idRozbalenehoRozsireni(extensionPath);
+    if (rozbalene) puvody.add(`chrome-extension://${rozbalene}`);
+    return puvody;
+  }
+
+  async function pozadatOSparovani({ origin, installationId } = {}) {
+    if (typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin) || !duveryhodnaRozsireni().has(origin)) return null;
+    return vydejTokenRozsireni(origin, installationId);
+  }
+
+  async function vydejTokenRozsireni(origin, installationId) {
     const id = typeof installationId === 'string' && EXTENSION_INSTALLATION_ID.test(installationId) ? installationId : '';
     const token = crypto.randomBytes(32).toString('base64url');
     const now = Date.now();
-    datastore.data.extensionPairing = null;
     datastore.data.extensionInstallations = [
       ...datastore.data.extensionInstallations.filter((x) => !(x.origin === origin && x.id === id)),
       { id, origin, tokenHash: hashToken(token), pairedAt: now },
@@ -1179,7 +1240,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
-    const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
+    // Chyba pravidelné úlohy se zapíše jednou (stejná hláška se neopakuje) – tiše spolknutá by
+    // v provozu zůstala neviditelná, i kdyby úloha padala při každém průchodu.
+    const nahlasene = new Set();
+    const every = (fn, ms) => {
+      const t = setInterval(() => {
+        Promise.resolve().then(fn).catch((err) => {
+          const zprava = err?.stack || String(err);
+          if (nahlasene.has(zprava)) return;
+          nahlasene.add(zprava);
+          console.error('Agenteeq: pravidelná úloha selhala:', zprava);
+        });
+      }, ms);
+      t.unref?.();
+      timers.push(t);
+    };
     every(() => store.reevaluate(), 5000);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
     every(() => restoreRemoteAccess(), 30000);
@@ -1226,7 +1301,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

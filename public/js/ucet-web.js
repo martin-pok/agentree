@@ -179,7 +179,7 @@ function prihlasovaciObrazovka(zprava = '') {
   document.body.innerHTML = `${hlavicka(null)}<main class="pair">
     <div class="pair-box">
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>${tr('Tvoje Agenteeq odkudkoli')}</h1>
+      <h1>${tr('Tvůj Agenteeq odkudkoli')}</h1>
       <p>${tr('Přihlas se stejným účtem jako v Agenteeq na Macu. Uvidíš, jestli agenti pracují, kolik spotřebovali a kolik stojí – i když jsi zrovna mimo domov.')}</p>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="button" data-prihlasit>${tr('Přihlásit se přes Google')}</button>
@@ -265,7 +265,7 @@ function vykresliPrehled(r, data) {
   const jmeno = data.profil?.display_name || r.jmeno || '';
   const zapnuto = data.profil?.sync_enabled === true;
   document.body.innerHTML = `${hlavicka(r)}<main class="cloud">
-    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? `Ahoj, ${esc(jmeno.split(' ')[0])}` : tr('Tvoje Agenteeq')}</h1>
+    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? `Ahoj, ${esc(jmeno.split(' ')[0])}` : tr('Tvůj Agenteeq')}</h1>
       <button class="btn btn--sm" type="button" data-obnovit>${tr('Obnovit')}</button></div>
     ${zapnuto ? `<div class="cloud-grid">
         ${kartaAgentu(souhrnAgentu(data.agenti))}

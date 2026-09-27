@@ -1,0 +1,22 @@
+{
+  "jazyk": {
+    "message": "en",
+    "description": "Language of the extension window (i18n.js)."
+  },
+  "nazev": {
+    "message": "Agenteeq – AI agents in real time",
+    "description": "Extension name in Chrome and in the store."
+  },
+  "kratkyNazev": {
+    "message": "Agenteeq",
+    "description": "Short name."
+  },
+  "popis": {
+    "message": "Your web AI chats in the Agenteeq app on your computer: whether the agent is working and how many messages. Sends no message text.",
+    "description": "Description in Chrome and in the store, at most 132 characters."
+  },
+  "titulek": {
+    "message": "Agenteeq",
+    "description": "Tooltip of the toolbar icon."
+  }
+}

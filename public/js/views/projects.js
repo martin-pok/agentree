@@ -174,7 +174,7 @@ function update() {
       <div class="pintro-text">
         <span class="eyebrow">${tr('Projekty')}</span>
         <h2>${tr('Práce agentů seřazená podle klientů a zakázek')}</h2>
-        <p>${tr('Založ projekt a Agenteeq do něj samo zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.')}</p>
+        <p>${tr('Založ projekt a Agenteeq do něj sám zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.')}</p>
         <ul class="checklist"><li>${tr('Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt')}</li><li>${tr('Podklady projektu po ruce, když spouštíš dalšího agenta')}</li><li>${tr('Export do CSV jako podklad k vyúčtování klientovi')}</li></ul>
         <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Vytvořit první projekt')}</button>
       </div>

@@ -60,10 +60,16 @@ Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede 
 
 Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči, a zadání se do webových služeb nevkládá samo (jen se zkopíruje do schránky). Rozšíření posílá data jen do Agenteeq na tomto Macu (`127.0.0.1`), nic neodchází na internet. Funguje v Chromu, Brave, Arcu i Edge.
 
+Až bude rozšíření v Chrome Web Store (`docs/CHROME-WEB-STORE.md`), karta nabídne tlačítko
+**Otevřít Chrome Web Store** – tam stačí kliknout na **Přidat do Chromu**. Do té doby platí ruční
+instalace:
+
 1. V Agenteeq otevři **Nastavení → Propojení → Rozšíření pro Chrome**.
 2. V Chromu otevři `chrome://extensions` a vpravo nahoře zapni **Režim pro vývojáře**.
 3. Klikni na **Načíst rozbalené** a vyber složku `~/.agenteeq/extension` (cestu zkopíruješ tlačítkem na kartě). Složka leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije.
-4. Připni si ikonu Agenteeq v liště Chromu, otevři ji a vlož jednorázový kód z karty (platí 10 minut).
+4. Hotovo – rozšíření se s Agenteeq spáruje samo, stačí mít aplikaci spuštěnou. Aplikace ho pozná
+   podle ID, které mu Chrome přidělí (u ruční instalace se ID odvodí ze složky, u obchodu je pevné).
+   Kdyby se nespárovalo (rozšíření načtené z jiné složky), karta nabídne jednorázový kód.
 
 Karta pak ukáže **Připojeno** a čas posledního ozvání. Když Agenteeq aktualizuje rozšíření na novou verzi, karta i okno rozšíření vyzvou k obnovení v `chrome://extensions` (šipka ↻).
 | Lokální modely zdarma | Nainstaluj [Ollama](https://ollama.com) a stáhni model (`ollama pull llama3.2`). V Přehledu → Spustit agenta → Ollama. |

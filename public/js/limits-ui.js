@@ -1,6 +1,6 @@
 import { esc, rel, fmtTok, startOfDay } from './format.js';
 import { ICON, glyph } from './icons.js';
-import { currentLimits, limitState } from './ui.js';
+import { currentLimits, limitState, limitObnova } from './ui.js';
 import { tokensSince } from './data.js';
 import { tr } from './i18n.js';
 
@@ -31,7 +31,7 @@ function chips(rows, now) {
     .sort((a, b) => (a.windowMinutes || 1e9) - (b.windowMinutes || 1e9))
     .map((l) => {
       const s = limitState(l, now);
-      return `<span class="lim-chip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b></span>`;
+      return `<span class="lim-chip" data-tone="${s.tone}"><span>${esc(l.label)}</span><b>${esc(s.label)}</b><small>${esc(limitObnova(l, now).text)}</small></span>`;
     })
     .join('');
 }
@@ -41,8 +41,8 @@ function poznamka(t, spojene) {
   if (!stav) return tr('Tenhle zdroj Agenteeq na tomto Macu nesleduje.');
   if (t.web) return `${tr('Webové chaty limity ani tokeny nesdílejí.')}${stav.state === 'missing' ? tr(' Rozšíření pro Chrome zatím nic neposlalo.') : ''}`;
   if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na tomto Macu není.')}`;
-  if (t.id === 'claude') return tr('Přesná okna (5 h a týden) přijdou po zapnutí propojení s Claude Code v Nastavení.');
-  if (t.id === 'codex') return tr('Codex limity zapisuje po první odpovědi. Žádné zatím nemám.');
+  if (t.id === 'claude') return tr('Přesné limity Claude (5hodinový a týdenní) se ukážou po zapnutí propojení s Claude Code v Nastavení.');
+  if (t.id === 'codex') return tr('Codex zapisuje limity až po první odpovědi. Zatím žádné nezapsal.');
   return tr('Limit se z místních dat zjistit nedá, Agenteeq měří jen tokeny.');
 }
 

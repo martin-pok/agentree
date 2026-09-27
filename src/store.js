@@ -41,6 +41,7 @@ export class Store extends EventEmitter {
   }
 
   commit(s, now = Date.now()) {
+    s.recheckAt = 0;
     const { entries, reset } = takeDirty(s);
     if (!this.sessions.has(s.id) || !s.lastAt) return;
     const prev = this.summaries.get(s.id);
@@ -62,17 +63,24 @@ export class Store extends EventEmitter {
     if (existed && this.ready) this.emit('session:remove', id);
   }
 
+  // Stav závisí i na čase (práce „vyprší“, okno limitu se obnoví, konverzace zestárne). Aktivní
+  // konverzace se proto přepočítávají při každém volání; klidné (starší než den, bez čekající
+  // otázky, limitu, chyby a procesu) se mění nejvýš s hodinovými sloupci grafu – stačí jednou za minutu.
   reevaluate(now = Date.now()) {
     for (const s of this.sessions.values()) {
+      if (now < (s.recheckAt || 0)) continue;
       pruneMinutes(s, now);
       this.commit(s, now);
+      const status = this.summaries.get(s.id)?.value.status;
+      s.recheckAt = status === 'archived' && !s.proces && !s.pending && !s.limit?.reached && !s.failure ? now + 60e3 : 0;
     }
   }
 
   list(now = Date.now()) {
     const out = [];
     for (const { value } of this.summaries.values()) {
-      if (now - value.lastAt <= this.windowMs || value.status === 'working' || value.status === 'needs_input') out.push(value);
+      // Běžící proces agenta je vidět vždy, i když byl spuštěný před víc než sledovaným obdobím.
+      if (now - value.lastAt <= this.windowMs || value.status === 'working' || value.status === 'needs_input' || value.proces) out.push(value);
     }
     return out.sort((a, b) => b.lastAt - a.lastAt);
   }

@@ -116,7 +116,7 @@ function plansHtml(sp) {
       : p.usd === 0 ? '<span class="plan-price"><b>0 $</b></span>' : `<span class="plan-price"><b>${tr('cena neurčena')}</b></span>`;
     let status = '';
     let actions = '';
-    if (p.covered) status = tr('Platí to, co jsi zapsal(a) ve Výdajích. Zjištěná cena se nepočítá znovu.');
+    if (p.covered) status = tr('Platí částka zapsaná ve Výdajích, zjištěná cena se nepočítá podruhé.');
     else if (p.options) {
       status = `${esc(p.note)} ${tr('Vyber, kterou platíš:')}`;
       actions = p.options.map((o) => `<button class="btn btn--sm" type="button" data-action="plan-pick" data-service="${esc(p.service)}" data-usd="${o}">${o} ${tr('$ / měsíc')} <span class="muted">≈ ${esc(money(toMain(o)))}</span></button>`).join('');
@@ -131,7 +131,7 @@ function plansHtml(sp) {
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
       <span class="plan-main"><span class="plan-title"><b>${esc(p.label)}</b>${price}</span>
         <span class="plan-sub">${tr('Zjištěno:')} ${esc(p.evidence)}${p.since ? `, od ${esc(dateLong(Date.parse(p.since)))}` : ''}</span>
-        <span class="plan-sub">${status}${!p.since && p.counted ? tr(' Začátek předplatného neznám, počítám od tohoto měsíce.') : ''}</span>
+        <span class="plan-sub">${status}${!p.since && p.counted ? tr(' Začátek předplatného Agenteeq nezná, počítá ho od tohoto měsíce.') : ''}</span>
         ${p.priceSource ? `<span class="plan-sub plan-src">${tr('Cena z:')} ${esc(p.priceSource)}${p.priceChecked ? `${tr(', zkontrolováno')} ${esc(dateLong(Date.parse(p.priceChecked)))}` : ''}</span>` : ''}
         ${actions ? `<span class="plan-actions">${actions}</span>` : ''}
       </span>
@@ -308,7 +308,7 @@ function update() {
         <span class="muted small">${tr('vyčerpáno {0} % · {1} –', num(body[body.length - 1].value), od)} ${doKdy}</span></div>
       ${timeLine({ id: 'sp-claude-xu', points: body, height: 150, color: chartColor('anthropic'), format: (x) => `${num(x)} %`, axisFormat: (x) => `${Math.round(x)}`, label: tr('Extra usage Claude'), riseLabel: tr('Přibylo čerpání') })}
       ${skoky.length ? `<ul class="topups">${skoky.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)} %</b></li>`).join('')}</ul>` : ''}
-      <p class="small muted">${tr('Claude ukládá vytížení plánu do vlastního souboru; Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí – že jde o procenta, plyne z toho, že vedle leží 5hodinové a týdenní okno také v procentech a stavový řádek Claude Code hlásí stejnou trojici. 🧪 Neověřeno oficiální dokumentací.')}</p></div>`;
+      <p class="small muted">${tr('Claude si vytížení plánu ukládá do vlastního souboru a Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí; podle souvislostí jde o procenta, stejně jako u 5hodinového a týdenního limitu. Oficiálně to zdokumentované není, proto Beta.')}</p></div>`;
   };
 
   const spendRow = (l) => {
@@ -328,7 +328,7 @@ function update() {
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} ${tr('zbývá')}${creditAgeHtml(c) ? ` · ${creditAgeHtml(c)}` : ''}${ups.length ? ` ${tr('· {0}× doplněno', ups.length)}` : ''}</span></div>
         ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: tr('Doplněno') })}
         ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">${tr('Doplnění Agenteeq pozná z nárůstu zůstatku, který hlásí sám Codex – a jen uvnitř jedné konverzace, protože starší konverzace umí nahlásit zastaralý zůstatek. Nákup a vrácení kreditů vypadají v datech stejně, proto tu nestojí „koupeno“. Prochází kvůli tomu i starší konverzace na tomto Macu, takže sahá dál než sledovaných {0} dní – ale jen tam, kam sahají soubory Codexu.', state.windowDays)}</p>` : ''}</div>`;
+          <p class="small muted">${tr('Doplnění kreditů Agenteeq pozná z toho, že zůstatek hlášený Codexem v jedné konverzaci vzroste. Nákup i vrácení kreditů ale v datech vypadají stejně, proto tu nestojí „koupeno“. Kvůli tomu se procházejí i konverzace starší než {0} dní, pokud je Codex ještě má na disku.', state.windowDays)}</p>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

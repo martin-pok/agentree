@@ -34,6 +34,7 @@ const WEB = {
 };
 
 const PROGRAMY = ['claude', 'codex', 'gemini', 'qwen', 'copilot'];
+const PROMENNE_PREPISU = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME'];
 
 const spustitelny = (p) => {
   try {
@@ -45,12 +46,16 @@ const spustitelny = (p) => {
 };
 
 export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgramu, jeProgram = spustitelny, runImpl = run }) {
-  const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done`], { timeout: 6000 });
+  // Tentýž průchod shellem vypíše i proměnné, podle kterých agenti zapisují přepisy jinam
+  // (CLAUDE_CONFIG_DIR, CODEX_HOME) – aplikace z Finderu je sama nevidí.
+  const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done; for v in ${PROMENNE_PREPISU.join(' ')}; do eval "h=\\$$v"; [ -n "$h" ] && echo "env:$v=$h"; done`], { timeout: 6000 });
   const bins = {};
+  const env = {};
   for (const line of String(r?.stdout || '').split('\n')) {
     const [name, ...rest] = line.trim().split('=');
     const p = rest.join('=');
-    if (name && path.isAbsolute(p)) bins[name] = p;
+    if (name.startsWith('env:') && PROMENNE_PREPISU.includes(name.slice(4)) && path.isAbsolute(p)) env[name.slice(4)] = p;
+    else if (name && path.isAbsolute(p)) bins[name] = p;
   }
   // Přihlašovací shell nevidí, co instalátor zapsal do ~/.zshrc (src/platform.js, kandidatiProgramu).
   for (const name of PROGRAMY) {
@@ -58,7 +63,7 @@ export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgr
     if (!bins[name]) delete bins[name];
   }
   if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
-  return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
+  return { bins, env, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
 }
 
 export function launchTargets(env) {
@@ -76,7 +81,7 @@ export function launchTargets(env) {
   if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'S osobním Google účtem má bezplatný denní limit.' });
   if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'Podle nastavení Qwen Code.' });
   if (ollama.ok) {
-    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale nemá stažený žádný model (ollama pull llama3.2).' });
+    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale zatím nemá stažený žádný model. Stáhneš ho v aplikaci Ollama.' });
   }
   for (const [id, w] of Object.entries(WEB)) {
     out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Zadání se předvyplní do nové konverzace; zůstane i ve schránce (⌘V).' : 'Zadání čeká ve schránce (⌘V) – vložíš ho do pole zprávy.' });
@@ -144,7 +149,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     case 'qwen-code':
       return { ok: true, plan: { ...base, kind: 'terminal', command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.qwen)} -i ${promptArg()}` } };
     case 'ollama': {
-      if (!target.models.length) return fail('Ollama nemá stažený žádný model. Spusť v Terminálu: ollama pull llama3.2', 'model');
+      if (!target.models.length) return fail('Ollama zatím nemá stažený žádný model. Stáhni si ho v aplikaci Ollama a zkus to znovu.', 'model');
       const model = input.model ?? target.models[0];
       if (!target.models.includes(model)) return fail('Tento model v Ollamě není.', 'model');
       return { ok: true, plan: { ...base, kind: 'local', model } };

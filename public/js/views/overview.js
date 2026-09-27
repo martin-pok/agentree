@@ -267,7 +267,7 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {
     const windows = limitWindows(state.limits, now);
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-    const claudeExact = state.limits.some((l) => l.source === 'statusline');
+    const claudeExact = state.limits.some((l) => l.source === 'statusline' || l.source === 'desktop-usage');
     const usesClaude = all.some((s) => s.connector === 'claude-code');
     const limitHint = usesClaude && !claudeExact
       ? `<p class="lwin-hint">${tr('Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v')} <a class="link-inline" href="#/nastaveni">${tr('Nastavení')}</a> ${tr('– Claude Code je pak posílá sám.')}</p>`
@@ -355,14 +355,14 @@ function update(topics = new Set(['all'])) {
         <span class="rt-name">${esc(r.name)}</span>
         <span class="rt-meta">${r.running ? (r.id.startsWith('custom:') ? esc(r.detail || tr('odpovídá')) : `CPU ${String(r.cpu).replace('.', ',')} %`) : tr('neběží')}</span>
         ${bez ? `<span class="rt-flag">${tr('bez přepisu')}</span>` : ''}`;
-      const popis = esc(r.running ? `${r.processes} ${tr('procesů · {0} MB', r.memMB)}${r.detail ? ` · ${r.detail}` : ''}` : tr('Neběží'));
+      const popis = esc(r.running ? `${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')} · ${r.memMB} MB${r.detail ? ` · ${r.detail}` : ''}` : tr('Neběží'));
       // Dlaždice bez přepisu vede na Agenty, kde je celé vysvětlení – ne do slepé uličky.
       if (bez) return `<a class="rt-item rt-item--note" href="#/agenti" title="${esc(bez.duvod)}">${vnitrek}</a>`;
       return prepnout
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="${tr('Přepnout do {0} –', esc(r.name))} ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
     }).join('') + (webChybi
-      ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="${tr('Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome.')}">
+      ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome.')}">
           <span class="rt-disc">${ICON.cloud}</span>
           <span class="rt-name">${tr('Web')}</span>
           <span class="rt-meta">${tr('nesleduje se')}</span>

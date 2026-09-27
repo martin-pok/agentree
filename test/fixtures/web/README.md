@@ -9,7 +9,7 @@ v `extension/sites.js` opravují a testují (`test/extension-overeni.test.mjs`).
 
 1. Na Macu se spárovaným rozšířením otevři službu a pošli zprávu. Počkej na odpověď.
 2. Klikni na ikonu Agenteeq v liště Chromu → **Ověřit tuto stránku**.
-3. Porovnej řádky s tím, co vidíš (počty zpráv, „Pracuje → hotovo zachyceno“), a klikni **Sedí**,
+3. Porovnej řádky s tím, co vidíš (počty zpráv, „Začátek i konec odpovědi zachycen“), a klikni **Sedí**,
    nebo **Nesedí**.
 4. **Uložit vzorek stránky** – soubor `agenteeq-vzorek-<služba>-<datum>.json` se uloží do
    Stažených souborů. Přejmenuj ho na `<služba>-<datum>.json` a přidej sem.

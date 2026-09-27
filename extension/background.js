@@ -6,7 +6,8 @@ async function getToken() {
   if (token) return token;
   const stored = await chrome.storage.local.get(['token']);
   if (stored.token) return (token = stored.token);
-  throw new Error('Rozšíření není spárované. Klikni na jeho ikonu a vlož jednorázový kód z Agenteeq.');
+  if (await pripojit()) return token;
+  throw new Error('Rozšíření není spárované s Agenteeq.');
 }
 
 // Trvalé ID této instalace. Díky němu nové spárování zneplatní starý token jen tohoto prohlížeče
@@ -19,6 +20,29 @@ async function installationId() {
   return id;
 }
 
+// Spárování bez kódu: aplikace pozná naše rozšíření podle původu, který nastavuje prohlížeč.
+// Zkouší se po instalaci, po startu Chromu, při otevření okna a před odesláním – nejvýš jednou
+// za 20 s, ať se neptá pořád dokola, když aplikace neběží. Vrací, jestli je spárováno.
+let posledniPokus = 0;
+async function pripojit({ hned = false } = {}) {
+  if (!hned && Date.now() - posledniPokus < 20000) return false;
+  posledniPokus = Date.now();
+  try {
+    const res = await fetch(`${BASE}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || typeof body.token !== 'string') {
+      await chrome.storage.local.set({ parovani: res.status === 409 ? 'kod' : 'nedostupne' });
+      return false;
+    }
+    token = body.token;
+    await chrome.storage.local.set({ token, parovani: 'hotovo' });
+    return true;
+  } catch {
+    await chrome.storage.local.set({ parovani: 'nedostupne' });
+    return false;
+  }
+}
+
 async function pair(code) {
   const res = await fetch(`${BASE}/api/extension/pair`, {
     method: 'POST',
@@ -27,7 +51,7 @@ async function pair(code) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
-  await chrome.storage.local.set({ token, lastStatus: { ok: true, site: 'párování', at: Date.now() } });
+  await chrome.storage.local.set({ token, parovani: 'hotovo' });
 }
 
 const post = (t, payload) =>
@@ -44,12 +68,54 @@ async function forgetToken() {
   await chrome.storage.local.remove('token');
 }
 
-async function send(payload) {
+// Otevřené konverzace pro okno rozšíření: služba, karta (aby se do ní dalo přepnout), jestli agent
+// odpovídá nebo narazil na limit a kdy odpověď začala a skončila. Jen čísla a stav, nic ze stránky.
+// Drží se v paměti prohlížeče (storage.session) a mizí se zavřením Chromu. Karta se hlásí
+// nejpozději po minutě, takže co mlčí přes 150 s, už zavřená je.
+const OTEVRENA_MS = 150e3;
+async function zapamatujKonverzaci(payload, karta) {
+  if (!chrome.storage.session) return;
+  const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
+  const ted = Date.now();
+  const klic = `${payload.site}:${payload.conversationId}`;
+  const tab = typeof karta?.id === 'number' ? karta.id : null;
+  for (const [k, x] of Object.entries(otevrene)) {
+    // V jedné kartě je vždy jen jedna konverzace: přejde-li karta na jinou, stará zmizí hned.
+    if (ted - x.at > OTEVRENA_MS || (tab !== null && x.tab === tab && k !== klic)) delete otevrene[k];
+  }
+  const pred = otevrene[klic];
+  const generating = Boolean(payload.generating);
+  otevrene[klic] = {
+    site: payload.site,
+    generating,
+    limit: Boolean(payload.limit),
+    at: ted,
+    tab: tab ?? pred?.tab ?? null,
+    okno: typeof karta?.windowId === 'number' ? karta.windowId : pred?.okno ?? null,
+    od: generating ? (pred?.generating && pred.od ? pred.od : ted) : null,
+    konec: !generating && pred?.generating ? ted : pred?.konec ?? null,
+  };
+  await chrome.storage.session.set({ otevrene });
+}
+
+// Zavřená karta z okna zmizí hned, ne až po 150 s ticha.
+async function zapomenKartu(tabId) {
+  if (!chrome.storage.session) return;
+  const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
+  let zmena = false;
+  for (const [k, x] of Object.entries(otevrene)) if (x.tab === tabId) { delete otevrene[k]; zmena = true; }
+  if (zmena) await chrome.storage.session.set({ otevrene });
+}
+
+// Vrací, jestli aplikace hlášení přijala. Vypnutá služba se počítá jako vyřízená – opakovat nemá smysl.
+async function send(payload, karta) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
-  if (disabledSites.includes(payload.site)) return;
+  if (disabledSites.includes(payload.site)) return true;
+  await zapamatujKonverzaci(payload, karta).catch(() => {});
   const res = await post(await getToken(), payload);
   if (res.status === 401) await forgetToken();
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
+  return res.ok;
 }
 
 async function takeHandoff(site) {
@@ -68,13 +134,10 @@ async function takeHandoff(site) {
 
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
-async function hello() {
-  let t;
-  try {
-    t = await getToken();
-  } catch {
-    return { paired: false };
-  }
+async function hello({ hned = false, znovu = false } = {}) {
+  let t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t && (await pripojit({ hned }))) t = token;
+  if (!t) return { paired: false, parovani: (await chrome.storage.local.get(['parovani'])).parovani || 'nedostupne' };
   try {
     const res = await fetch(`${BASE}/api/extension/hello`, {
       method: 'POST',
@@ -83,7 +146,9 @@ async function hello() {
     });
     if (res.status === 401) {
       await forgetToken();
-      return { paired: false, revoked: true };
+      // Odpárováno v aplikaci: naše rozšíření se hned spáruje znovu, jiné potřebuje nový kód.
+      if (!znovu && (await pripojit({ hned: true }))) return hello({ znovu: true });
+      return { paired: false, revoked: true, parovani: (await chrome.storage.local.get(['parovani'])).parovani };
     }
     const body = await res.json().catch(() => ({}));
     return { paired: true, online: res.ok, status: body };
@@ -92,16 +157,35 @@ async function hello() {
   }
 }
 
+// Po instalaci a po každé aktualizaci (z obchodu přichází sama) by karty, které už jsou otevřené,
+// do obnovení stránky nic nehlásily: nové do nich Chrome skript nevloží a starý po aktualizaci ztratí
+// spojení. Agent rozepsaný v takové kartě by v Agenteeq chyběl – proto se skript vloží hned.
+async function vlozDoOtevrenychKaret() {
+  const [skript] = chrome.runtime.getManifest().content_scripts || [];
+  if (!skript || !chrome.scripting) return;
+  for (const karta of await chrome.tabs.query({ url: skript.matches })) {
+    chrome.scripting.executeScript({ target: { tabId: karta.id }, files: skript.js }).catch(() => {});
+  }
+}
+
 const HELLO_ALARM = 'agenteeq-hello';
 const armHello = () => chrome.alarms.create(HELLO_ALARM, { periodInMinutes: 30 });
-chrome.runtime.onInstalled.addListener(() => { armHello(); hello(); });
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  armHello();
+  hello({ hned: true });
+  if (reason === 'install' || reason === 'update') vlozDoOtevrenychKaret().catch(() => {});
+});
 chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
+chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() => {}); });
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'agenteeq:update') {
-    send(msg.payload).catch((err) =>
-      chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } }));
+    send(msg.payload, sender?.tab).then((ok) => sendResponse({ ok }), (err) => {
+      chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } });
+      sendResponse({ ok: false });
+    });
+    return true;
   } else if (msg?.type === 'agenteeq:handoff' && typeof msg.site === 'string') {
     takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
     return true;
@@ -109,7 +193,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
-    hello().then(sendResponse, () => sendResponse({ paired: false }));
+    hello({ hned: true }).then(sendResponse, () => sendResponse({ paired: false }));
     return true;
   }
 });

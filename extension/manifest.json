@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Agenteeq – AI agenti v reálném čase",
-  "short_name": "Agenteeq",
+  "name": "__MSG_nazev__",
+  "short_name": "__MSG_kratkyNazev__",
   "version": "0.28.1",
-  "description": "Posílá stav a počty zpráv z webových AI aplikací do Agenteeq na tomto počítači (127.0.0.1). Text zpráv neposílá.",
+  "default_locale": "en",
+  "description": "__MSG_popis__",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -12,16 +13,27 @@
   },
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
-    "http://127.0.0.1:4620/*"
+    "http://127.0.0.1:4620/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://copilot.microsoft.com/*",
+    "https://www.perplexity.ai/*",
+    "https://perplexity.ai/*",
+    "https://grok.com/*",
+    "https://chat.qwen.ai/*",
+    "https://github.com/copilot*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Agenteeq",
+    "default_title": "__MSG_titulek__",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

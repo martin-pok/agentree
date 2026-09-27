@@ -1,6 +1,6 @@
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, shortPath, plural } from '../format.js';
+import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
@@ -41,7 +41,7 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví – stránku v prohlížeči odjinud přečíst nelze.')}</p>
+      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome. Bez něj se ke stránce otevřené v prohlížeči nedostane.')}</p>
       <a class="link-inline" href="#/nastaveni">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
   </li>`;
@@ -63,7 +63,7 @@ function bezPrepisuHtml(sessions) {
         <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
         <div class="runtime-main">
           <b>${esc(r.name)}</b>
-          <span class="muted small">${tr('běží')} ${doba(r.uptimeSec || 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
+          <span class="muted small">${tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
           <p class="small">${esc(i.duvod)}</p>
           <p class="small muted">${esc(i.rada)}</p>
         </div>
@@ -116,6 +116,8 @@ function rowHtml(s) {
   let sub;
   if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || tr('Pracuje'))}`;
   else if (needsYou(s)) sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
+  // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, přepis zatím není.
+  else if (s.proces) sub = `${esc(tr('Běží od {0} · zatím bez přepisu', timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
   else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);

@@ -1,23 +1,27 @@
 // Napojení modelů tlačítkem (docs/ACCOUNTS.md, „Napojení modelů“).
 //
-// Přihlašování zůstává vždycky u dodavatele. Agenteeq spustí jeho vlastní přihlášení (Claude Code
-// i Codex otevřou svou stránku v prohlížeči) nebo otevře jeho web, a pak se jen ptá, jestli je
-// hotovo: „claude auth status“, „codex login status“, první data z rozšíření. Hesla ani tokeny
-// dodavatelů Agenteeq nevidí, nečte a neukládá.
-import { shellQuote } from './util.js';
+// Přihlašování zůstává vždycky u dodavatele. Agenteeq spustí na pozadí jeho vlastní přihlášení
+// (Claude Code i Codex samy otevřou svou stránku v prohlížeči, src/prihlaseni.js) nebo otevře jeho
+// web, a pak se jen ptá, jestli je hotovo: „claude auth status“, „codex login status“, první data
+// z rozšíření. Terminál se nikdy neotvírá. Hesla ani tokeny dodavatelů Agenteeq nevidí, nečte
+// a neukládá.
+import { prostrediPro } from './prihlaseni.js';
 
 const INTERVAL_MS = 2000;
 const LIMIT_MS = 10 * 60 * 1000;
 
 // Ověřeno proti skutečným nástrojům (24. 9. 2026): `claude auth --help` v Claude Code a zdroj
 // `codex-rs/cli/src/login.rs` v Codexu. Neznámý výstup = null („nepodařilo se zjistit“), ne „ne“.
+// `claude auth login --claudeai` (Claude Code 2.1.283, 26. 9. 2026) rovnou otevře přihlášení
+// předplatného v prohlížeči a na nic se neptá; starší verze bez přepínače dostanou `zaloha`.
 export const AGENTI = {
   'claude-code': {
     label: 'Claude Code',
     provider: 'anthropic',
     logo: 'claude',
     bin: 'claude',
-    prihlaseni: ['auth', 'login'],
+    prihlaseni: ['auth', 'login', '--claudeai'],
+    zaloha: ['auth', 'login'],
     stav: ['auth', 'status', '--json'],
     precti: (r) => {
       try {
@@ -53,15 +57,16 @@ export const WEBY = {
   perplexity: { label: 'Perplexity', provider: 'perplexity', logo: 'perplexity', url: 'https://www.perplexity.ai/' },
 };
 
-export function prikazPrihlaseni(bin, args) {
-  return [shellQuote(bin), ...args].join(' ');
-}
+// Kód z prohlížeče (ruční cesta Claude Code) je jeden řádek tisknutelných znaků. Nic jiného se
+// procesu na vstup nepošle.
+const KOD = /^[\x21-\x7e]{8,512}$/;
 
 // `bins()` vrací mapu nalezených programů, nebo null, když se zatím nehledalo – pak „nevím“
 // (nainstalovano: null), nikdy „není“. `posledni(id)` = kdy agent na tomhle Macu naposledy
 // pracoval (0 = za sledované období nic); podle toho člověk pozná, proč jsou tokeny nulové.
-export function createNapojeni({ bins, run, terminal, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS }) {
-  const ceka = new Map(); // id → { od, casovac? }
+// `prihlas(bin, args, { naKonec })` spustí přihlášení na pozadí (src/prihlaseni.js).
+export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
+  const ceka = new Map(); // id → { od, casovac?, proces? }
 
   async function zjisti(id) {
     const a = AGENTI[id];
@@ -69,7 +74,7 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
     if (!nalezene) return { nainstalovano: null, napojeno: null };
     const bin = nalezene[a.bin];
     if (!bin) return { nainstalovano: false, napojeno: null };
-    const r = await run(bin, a.stav, { timeout: 10000 });
+    const r = await run(bin, a.stav, { timeout: 10000, env: prostrediPro(bin) });
     return { nainstalovano: true, napojeno: a.precti(r) };
   }
 
@@ -90,6 +95,7 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
   function ukonci(id) {
     const c = ceka.get(id);
     if (c?.casovac) clearTimeout(c.casovac);
+    c?.proces?.zastav();
     ceka.delete(id);
   }
 
@@ -99,24 +105,75 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
   }
 
   // Hlídá, dokud se nástroj nepřihlásí. Selhání dotazu není „nepřihlášeno“ – jen se zkusí znovu.
-  function hlidej(id) {
+  function hlidej(id, za = intervalMs) {
     const a = AGENTI[id];
+    const c0 = ceka.get(id);
+    if (!c0) return;
+    if (c0.casovac) clearTimeout(c0.casovac);
     const krok = async () => {
       const c = ceka.get(id);
       if (!c) return;
+      c.casovac = null;
       if (now() - c.od > limitMs) {
         ukonci(id);
         emit({ id, label: a.label, udalost: 'vyprselo' });
         return;
       }
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
-      if (!ceka.has(id)) return;
+      if (ceka.get(id) !== c) return;
       if (z.napojeno === true) return hotovo(id, a.label, { plan: await plan(id).catch(() => '') });
-      c.casovac = setTimeout(krok, intervalMs);
-      c.casovac.unref?.();
+      // Přihlášení skončilo, a přihlášen není: proces to vzdal (zavřená stránka, chyba). Čekat
+      // dál by znamenalo tvrdit „čekám“, i když už není na co.
+      if (c.skoncil) {
+        ukonci(id);
+        emit({ id, label: a.label, udalost: 'selhalo', chyba: c.chyba || `Přihlášení ${a.label} skončilo bez napojení. Zkus to prosím znovu.` });
+        return;
+      }
+      if (!c.casovac) {
+        c.casovac = setTimeout(krok, intervalMs);
+        c.casovac.unref?.();
+      }
     };
-    ceka.get(id).casovac = setTimeout(krok, intervalMs);
-    ceka.get(id).casovac.unref?.();
+    c0.casovac = setTimeout(krok, za);
+    c0.casovac.unref?.();
+  }
+
+  // Spustí přihlášení na pozadí. Když starší Claude Code nezná přepínač `--claudeai`, skončí hned
+  // s „unknown option“ – pak se to jednou zkusí bez něj, se stejným záznamem čekání.
+  async function spust(id, bin, args, zaznam = { od: now() }) {
+    const a = AGENTI[id];
+    const naKonec = (kod, vystup) => {
+      if (ceka.get(id) !== zaznam) return;
+      zaznam.proces = null;
+      if (kod !== 0 && a.zaloha && args !== a.zaloha && /unknown option/i.test(vystup)) {
+        spust(id, bin, a.zaloha, zaznam).then((r) => {
+          if (!r.ok && ceka.get(id) === zaznam) {
+            ukonci(id);
+            emit({ id, label: a.label, udalost: 'selhalo', chyba: r.error });
+          }
+        });
+        return;
+      }
+      zaznam.skoncil = true;
+      if (kod !== 0) zaznam.chyba = `Přihlášení ${a.label} skončilo s chybou. Zkus to prosím znovu.`;
+      // Konec procesu je nejlepší chvíle se zeptat – obvykle právě dokončil přihlášení.
+      hlidej(id, 0);
+    };
+    const r = await prihlas(bin, args, { naKonec });
+    if (!r.ok) return r;
+    // Mezitím mohlo přijít nové „Napojit“ nebo „Zrušit“ – platí poslední slovo člověka.
+    if (ceka.get(id) !== zaznam) {
+      if (zaznam.proces === undefined) {
+        ukonci(id);
+        ceka.set(id, zaznam);
+        hlidej(id);
+      } else {
+        r.zastav();
+        return { ok: false, error: `Přihlášení ${a.label} bylo zrušeno.` };
+      }
+    }
+    zaznam.proces = r;
+    return r;
   }
 
   async function napojit(id) {
@@ -132,13 +189,10 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
         emit({ id, label: a.label, udalost: 'napojeno', plan: p, uz: true });
         return { ok: true, uz: true, plan: p };
       }
-      const prikaz = prikazPrihlaseni(bin, a.prihlaseni);
-      const r = await terminal(prikaz);
-      if (!r.ok) return { status: 422, error: `${r.error || 'Terminál se nepodařilo otevřít.'} Spusť přihlášení ručně: ${prikaz}`, prikaz };
       ukonci(id);
-      ceka.set(id, { od: now() });
-      hlidej(id);
-      return { ok: true, ceka: true, prikaz, dry: Boolean(r.dry) };
+      const r = await spust(id, bin, a.prihlaseni);
+      if (!r.ok) return { status: 422, error: r.error || `Přihlášení ${a.label} se nepodařilo spustit.` };
+      return { ok: true, ceka: true, dry: Boolean(r.dry) };
     }
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;
     if (!web) return { status: 404, error: 'Tohle napojit neumíme.' };
@@ -163,6 +217,36 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
     if (ceka.has(id)) hotovo(id, WEBY[site]?.label || site);
   }
 
+  // „Prohlížeč se neotevřel?“ – otevře záložní odkaz, který přihlášení vypsalo. Odkaz se objeví
+  // až chvíli po startu, proto se na něj krátce počká.
+  async function odkaz(id) {
+    const a = AGENTI[id];
+    if (!a) return { status: 404, error: 'Tohle napojit neumíme.' };
+    const konec = now() + odkazMs;
+    let url = null;
+    while (ceka.get(id)?.proces && !(url = ceka.get(id).proces.odkaz?.()) && now() < konec) {
+      await new Promise((res) => setTimeout(res, 100));
+    }
+    const proces = ceka.get(id)?.proces;
+    if (!proces) return { status: 409, error: `Přihlášení ${a.label} už neběží. Zkus Napojit znovu.` };
+    if (!url) return { status: 409, error: 'Přihlašovací stránka ještě není připravená. Zkus to za pár vteřin.' };
+    const r = await open(url);
+    if (!r.ok) return { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+    // Claude Code se pak ptá na kód ze stránky; Codex ne (vrací se na localhost sám).
+    return { ok: true, kod: Boolean(a.zaloha) || Boolean(proces.chceKod?.()) };
+  }
+
+  function kod(id, hodnota) {
+    const a = AGENTI[id];
+    if (!a) return { status: 404, error: 'Tohle napojit neumíme.' };
+    const text = typeof hodnota === 'string' ? hodnota.trim() : '';
+    if (!KOD.test(text)) return { status: 422, error: 'Tohle nevypadá jako kód z přihlašovací stránky. Zkopíruj ho celý.' };
+    const proces = ceka.get(id)?.proces;
+    if (!proces?.posliKod(text)) return { status: 409, error: `Přihlášení ${a.label} už neběží. Zkus Napojit znovu.` };
+    hlidej(id, 500);
+    return { ok: true };
+  }
+
   function zrusit(id) {
     ukonci(id);
     return { ok: true };
@@ -172,5 +256,5 @@ export function createNapojeni({ bins, run, terminal, open, emit = () => {}, pla
     for (const id of [...ceka.keys()]) ukonci(id);
   }
 
-  return { prehled, napojit, webOzvalo, zrusit, stop, ceka: (id) => ceka.has(id) };
+  return { prehled, napojit, odkaz, kod, webOzvalo, zrusit, stop, ceka: (id) => ceka.has(id) };
 }

@@ -63,25 +63,31 @@ export function ulozenaAdresa(store = localStorage) {
 
 export function pripojovaciObrazovka(zprava = '') {
   const posledni = ulozenaAdresa();
+  // Ruční adresa je až záloha: telefon se nejsnáz připojí QR kódem z Macu, návštěvník bez Macu
+  // chce ukázku. Rozbalená je jen tehdy, když ji člověk už jednou použil nebo v ní udělal chybu.
+  const rucne = Boolean(posledni || zprava);
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
       <img src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>${tr('Kde máš Agenteeq?')}</h1>
-      <p>${tr('Tohle je jen rozhraní. Agenti, limity i útrata zůstávají na tvém Macu – napiš adresu, na které tam Agenteeq běží. Mac musí být zapnutý a vzhůru; zavřené okno nevadí, ukončená aplikace ano.')}</p>
+      <h1>${tr('Připoj se ke svému Macu')}</h1>
+      <p>${tr('Agenti, limity i útrata zůstávají na tvém Macu, tohle je jen okno k nim.')}</p>
+      <p class="pair-navod">${tr('Na telefonu nejsnáz: v Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a namiř na QR kód foťák. Telefon se otevře už spárovaný.')}</p>
       <a class="btn btn--primary" href="?ukazka">${tr('Prohlédnout ukázku bez instalace')}</a>
-      <p class="pair-or">${tr('nebo se připoj ke svému běžícímu Macu')}</p>
-      <label class="sr-only" for="adresa">${tr('Adresa Macu')}</label>
-      <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
-      ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn" type="submit">${tr('Otevřít')}</button>
-      <small>${tr('Adresu najdeš v Agenteeq na Macu v')} <b>${tr('Nastavení → Otevřít na telefonu')}</b>${tr('. Mimo domov ji zpřístupní')} <b>${tr('Přístup přes Tailscale')}</b> ${tr('o kartu níž.')}</small>
+      <details class="pair-rucne"${rucne ? ' open' : ''}>
+        <summary>${tr('Zadat adresu Macu ručně')}</summary>
+        <label class="sr-only" for="adresa">${tr('Adresa Macu')}</label>
+        <input id="adresa" name="adresa" class="pair-adresa" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.10:4620" value="${esc(posledni)}" required>
+        ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
+        <button class="btn" type="submit">${tr('Otevřít')}</button>
+        <small>${tr('Adresu najdeš na Macu v Nastavení → Otevřít na telefonu. Mac musí být zapnutý a vzhůru.')}</small>
+      </details>
       <small class="pair-jinak">${tr('Máš účet Agenteeq?')} <a href="/app?ucet">${tr('Přihlas se a uvidíš souhrny odkudkoli.')}</a></small>
       <small class="pair-jinak">${tr('Agenteeq na Macu ještě nemáš?')} <a href="/">${tr('Podívej se, co umí a jak ho získat.')}</a></small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');
   const input = form.elements.adresa;
-  input.focus();
+  if (rucne) input.focus();
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const cil = normalizovatAdresu(input.value);

@@ -4,7 +4,8 @@ import v8 from 'node:v8';
 
 // Read-only LevelDB/IndexedDB snapshot. Never opens LOCK, writes to Claude's database,
 // or decodes unrelated IndexedDB stores. Within the persisted query snapshot the
-// connector selects only remote-session metadata; account/profile queries never enter the Store.
+// connector selects only remote-session metadata and the plan usage windows (two percentages,
+// two reset times); account/profile queries never enter the Store.
 // Formats: google/leveldb doc/{log,table}_format.md, google/snappy format_description.txt,
 // Chromium indexed_db_leveldb_coding.cc and IDBValueUnwrapper.
 const MAX = 64 * 1024 * 1024;

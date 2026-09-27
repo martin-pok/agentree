@@ -4,7 +4,7 @@ import { statSafe, toTs, clip, DAY, MIN } from '../util.js';
 import { createSession, touch } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { readClaudeDesktopCache } from '../claude-desktop-cache.js';
-import { applyClaudeLine, newFileState } from './claude-code.js';
+import { applyClaudeLine, newFileState, STATUS_WINDOWS } from './claude-code.js';
 
 const SESSION = /^session_[A-Za-z0-9]{8,80}$/;
 export const remoteId = (value) => typeof value === 'string' && SESSION.test(value) ? value : '';
@@ -30,6 +30,48 @@ export function remoteSessions(records) {
   }
   return { sessions: [...sessions.values()], observedAt: Math.max(0, ...matching.map((q) => Number(q.state?.dataUpdatedAt) || 0)) };
 }
+// Stránka Usage na claude.ai (i v Claude Desktopu) načítá vytížení plánu: `five_hour` a `seven_day`
+// s `utilization` (procenta) a `resets_at` (ISO čas obnovy od serveru) – stejná dvojice, jakou hlásí
+// stavový řádek Claude Code. Když ji Desktop uloží do trvalé cache dotazů, máme přesný čas obnovy
+// i bez běžící konverzace. Dotaz se hledá podle tvaru odpovědi, ne podle jména klíče (to není
+// zdokumentované) a platí k `state.dataUpdatedAt`. Nic jiného z odpovědi se nečte. 🧪 Beta:
+// tvar pochází z odpovědi claude.ai, v cache na skutečném Macu ověřený není (docs/CONNECTORS.md).
+const OKNO_USAGE = (w) => w && typeof w === 'object' && typeof w.utilization === 'number' && Number.isFinite(w.utilization)
+  && (w.resets_at === null || w.resets_at === undefined || Number.isFinite(Date.parse(w.resets_at)));
+
+export function desktopUsage(records, now = Date.now()) {
+  const queries = records.find((x) => x.key === 'react-query-cache')?.value?.clientState?.queries;
+  if (!Array.isArray(queries)) return null;
+  let nejlepsi = null;
+  for (const q of queries) {
+    const d = q?.state?.data;
+    const at = Number(q?.state?.dataUpdatedAt);
+    if (!d || typeof d !== 'object' || !(at > 0) || at > now + 60e3) continue;
+    if (!OKNO_USAGE(d.five_hour) && !OKNO_USAGE(d.seven_day)) continue;
+    if (!nejlepsi || at > nejlepsi.at) nejlepsi = { at, five_hour: OKNO_USAGE(d.five_hour) ? d.five_hour : null, seven_day: OKNO_USAGE(d.seven_day) ? d.seven_day : null };
+  }
+  if (!nejlepsi) return null;
+  const okno = (w) => w && { usedPercent: Math.max(0, Math.min(100, w.utilization)), resetsAt: w.resets_at ? Date.parse(w.resets_at) : null };
+  return { at: nejlepsi.at, five_hour: okno(nejlepsi.five_hour), seven_day: okno(nejlepsi.seven_day) };
+}
+
+export function applyDesktopUsage(store, usage) {
+  if (!usage) return false;
+  let wrote = false;
+  for (const key of ['five_hour', 'seven_day']) {
+    const w = usage[key];
+    if (!w) continue;
+    const def = STATUS_WINDOWS[key];
+    store.setLimit({
+      id: `${def.id}:desktop`, provider: 'anthropic', app: 'Claude', label: def.label,
+      usedPercent: w.usedPercent, windowMinutes: def.minutes, resetsAt: w.resetsAt, reached: w.usedPercent >= 100,
+      plan: null, text: '', at: usage.at, source: 'desktop-usage', kind: 'window',
+    });
+    wrote = true;
+  }
+  return wrote;
+}
+
 export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.now()) {
   const st = newFileState(), seen = new Set();
   const messages = cached?.tree?.kind === 'code_session' && Array.isArray(cached.tree.messages) ? cached.tree.messages : [];
@@ -99,6 +141,8 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
     if (!exists) return;
     try {
       const records = await readClaudeDesktopCache(dir), data = remoteSessions(records);
+      // Vytížení plánu z uložené stránky Usage – nezávisle na tom, jestli cache nese vzdálené relace.
+      if (applyDesktopUsage(store, desktopUsage(records))) lastEventAt = Date.now();
       if (!data) { error = 'Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'; return; }
       const cache = new Map();
       for (const { value } of records) {

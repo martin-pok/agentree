@@ -34,14 +34,12 @@ v `site/detail/rozmery.json` a stejné musí být ve `width`/`height` v `site/in
   posouvání (`animation-timeline: view()`), kde to prohlížeč neumí, jsou prostě vidět.
   `npm run qa:site` měří, že tah prstem i kolečko přes hero i každou dlaždici posune stránku.
 
-Staré celé snímky obrazovek v `site/shots/` web už nepoužívá.
-
 ## Rozšíření pro Chrome
 
 1. Spusť běžnou aplikaci Agenteeq na portu 4620.
-2. Nastavení → Propojení → Rozšíření pro Chrome: zkopíruj cestu ke složce a vytvoř jednorázový kód.
+2. Nastavení → Propojení → Rozšíření pro Chrome: zkopíruj cestu ke složce.
 3. V Chromu otevři `chrome://extensions`, zapni Režim pro vývojáře, zvol Načíst rozbalené a vyber zkopírovanou složku (na Macu lze vložit cestu přes ⇧⌘G).
-4. Připni rozšíření, vlož 16znakový kód a otevři podporovaný webový chat. Jednotlivé služby lze vypnout.
+4. Rozšíření se s aplikací spáruje samo. Otevři podporovaný webový chat; jednotlivé služby lze v okně rozšíření vypnout.
 
 Alternativně `npm run build:extension` vytvoří ZIP v `dist/`; před načtením ho rozbal. Rozšíření zatím není v Chrome Web Store a selektory služeb mají stav beta. Browserové QA s atrapou Chrome API nepotvrzuje funkčnost všech živých webů.
 

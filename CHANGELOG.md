@@ -1,5 +1,79 @@
 # Changelog
 
+## Připravuje se (zatím nevydáno)
+
+### Rozšíření se spáruje samo a má nové okno
+
+- Žádné opisování kódu: rozšíření z Chrome Web Store i ze složky, kterou připraví aplikace, se
+  s Agenteeq spáruje samo hned po instalaci. Aplikace ho pozná podle ID, které mu přidělí Chrome
+  (`src/app.js#pozadatOSparovani`). Jednorázový kód zůstává jen jako záloha pro jiná rozšíření.
+- Nové okno rozšíření: nahoře kolik agentů právě pracuje, pod tím všechny otevřené konverzace
+  s AI. Každý řádek řekne, co agent dělá („odpovídá · 0:42“, „narazil na limit“, „dokončil před
+  3 min“), a kliknutím se přepneš do té karty. Aktuální karta ukazuje počty zpráv. Sledované
+  služby a ověření stránky jsou vlastní pohledy se zpátečním tlačítkem. Nové snímky do Chrome
+  Web Store.
+- Rozšíření mluví anglicky: okno, název i popis v Chromu se řídí jazykem prohlížeče (český Chrome
+  dostane češtinu, ostatní angličtinu). Anglická karta Chrome Web Store s vlastními snímky.
+  Úplnost překladu hlídá `test/extension-i18n.test.mjs`, `qa:extension` projde okno i anglicky.
+- Oprava: složka rozšíření, kterou připravuje aplikace (`~/.agenteeq/extension`), se kopírovala
+  podle pevného seznamu a chyběla v ní písma a loga služeb, takže okno bylo bez nich. Teď se
+  kopíruje celá složka, stejně jako do balíčku pro obchod, a staré soubory z kopie zmizí.
+
+### Jednotný tvar a velikost všech tlačítek
+
+- Všechno, na co se klepe a má jeden řádek, je v aplikaci, na webu, v rozšíření i v podkladech
+  obchodu kapsle. Dřív se míchalo šest různých zaoblení (6 až 20 px), pole měla jiné rohy než
+  tlačítko vedle nich a obrys zaostření z klávesnice měnil tvar prvku.
+- Výšky ovládacích prvků mají jen tři stupně (32, 40 a 48 px, na webu k tomu 56 px pro hlavní
+  výzvu). Pole, výběry a segmentové volby mají stejnou výšku jako tlačítko vedle nich.
+- Popisek tlačítka má vždy stejný řez písma. Vybraná volba už neztuční, takže text při výběru
+  neposkočí.
+- Pravidla jsou v `docs/DESIGN.md` a nová kontrola `npm run qa:tvary` změří v CI tvar každého
+  ovládacího prvku na vykreslené ploše.
+
+### Texty, které dávají smysl
+
+- Přepsáno přes 40 nelogických nebo nepravdivých textů v aplikaci, na webu a v rozšíření. Pryč jsou
+  výzvy k Terminálu, vývojářské poznámky v rozhraní, špatný rod („Agenteeq se připojí samo“)
+  a dvě nepravdivá tvrzení, že rozšíření přenáší „přepis“ webových chatů (přenáší jen stav a počty).
+- Oprava: „3 procesů“ v přehledu aplikací; jednopísmenné předložky už v okně rozšíření nekončí řádek.
+
+### Méně práce na pozadí
+
+- V klidu Agenteeq nesouhrnuje nezměněné přepisy, staré soubory kontroluje jednou za minutu, `ps`
+  spouští jednou pro oba konektory procesů a neposílá do okna tikající dobu běhu. Změřeno na 2 400
+  přepisech: CPU 4,6 % → 2,7 %, data do okna 45 kB → 12 kB za 30 s.
+
+### Napojení Claude Code a Codexu rovnou v prohlížeči, bez Terminálu
+
+- „Napojit“ dřív otevřelo Terminál s výpisem a otázkami a teprve pak prohlížeč. Přihlášení teď běží
+  na pozadí (`src/prihlaseni.js`): `claude auth login --claudeai` a `codex login` hned otevřou
+  autorizační stránku, Agenteeq jen čeká a napojení potvrdí.
+- „Prohlížeč se neotevřel?“ otevře záložní odkaz z přihlášení a kód ze stránky se vloží do okna
+  Agenteeq. Přihlášení, které skončí bez napojení, okno ohlásí hned. Selhaný úkol s vypršeným
+  přihlášením má tlačítko „Přihlásit znovu“ místo příkazu do Terminálu.
+
+### Okna limitů vždy ukazují, kdy se obnoví
+
+- U každého okna je řádek s obnovou: přesný čas s odpočtem, po obnově kdy proběhla, horní mez
+  z historie Claude Desktopu („obnova nejpozději …“), nebo výslovně „čas obnovy zdroj neuvádí“.
+- Přesné časy obnovy Claude i bez běžící konverzace z uložené stránky Usage v Claude Desktopu
+  (Beta). Každé okno Claude má jeden řádek složený z nejnovějšího měření.
+- Oprava: hláška „resets Oct 2, 5pm“ ukazovala obnovu týdenního limitu dnes nebo zítra.
+
+### Rozšíření připravené pro Chrome Web Store
+
+- Balíček, snímky, texty karty a zásady ochrany soukromí (`/soukromi`, `/en/privacy`) jsou hotové
+  (`docs/CHROME-WEB-STORE.md`). Po schválení stačí adresa v `public/js/obchod.js` a aplikace
+  i web přepnou na „Přidat do Chromu“ – obchod se na Macu otevře rovnou v Chromu.
+
+### Web: pohyb jako v aplikaci
+
+- Řádky nadpisů vyjíždějí zpoza masky, výřez aplikace v úvodu se odkryje jako měřidlo, dlaždice
+  v řadě vyjedou s odstupem a obraz v nich se rozsvítí, loga naskočí jedno po druhém a čísla kroků
+  vyjedou v okénku jako počítadlo. Mimo úvod řídí pohyb posouvání, nic neběží podle hodin;
+  „omezit pohyb“ ukáže všechno rovnou.
+
 ## 0.28.1 – 2026-09-26 · vzdálený Claude se neztratí z přehledu
 
 - Opravená chybějící detekce Claude Code spuštěného vzdáleně z Claude Desktopu.

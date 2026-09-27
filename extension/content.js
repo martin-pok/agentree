@@ -43,12 +43,16 @@
     if (!payload.counts.user && !payload.counts.assistant && !payload.generating) return;
     const sig = JSON.stringify([payload.conversationId, payload.generating, payload.counts, posledniDelka, payload.limit]);
     const now = Date.now();
-    // Během generování posílat i heartbeat, aby server věděl, že agent stále pracuje.
-    if (sig === lastSig && !(payload.generating && now - lastSentAt > 10000)) return;
+    // Beze změny se posílá jen udržovací signál: během generování po 10 s (agent stále pracuje),
+    // jinak po minutě – aplikace, která se mezitím restartovala, tak otevřenou konverzaci nepřehlédne.
+    if (sig === lastSig && now - lastSentAt < (payload.generating ? 10000 : 60000)) return;
     lastSig = sig;
     lastSentAt = now;
     try {
-      chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }).catch(() => {});
+      // Nepovedené odeslání (aplikace zrovna neběží) se zopakuje při dalším průchodu, ne až při změně.
+      chrome.runtime.sendMessage({ type: 'agenteeq:update', payload })
+        .then((r) => { if (!r?.ok) lastSig = ''; })
+        .catch(() => { lastSig = ''; });
     } catch {
       dead = true; // rozšíření bylo znovu načteno – tento skript už nemá spojení
     }

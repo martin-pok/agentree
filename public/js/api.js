@@ -22,7 +22,7 @@ export async function request(method, path, body) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw Object.assign(new Error(tr('Server Agenteeq neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.')), { status: 0 });
+    throw Object.assign(new Error(tr('Agenteeq neodpovídá. Otevři aplikaci Agenteeq a zkus to znovu.')), { status: 0 });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
@@ -34,6 +34,8 @@ export const api = {
   napojeni: () => request('GET', '/api/napojeni'),
   napojit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}`),
   napojeniZrusit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/zrusit`),
+  napojeniOdkaz: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/odkaz`),
+  napojeniKod: (id, kod) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/kod`, { kod }),
   ucetPrihlasit: () => request('POST', '/api/ucet/prihlaseni'),
   ucetZrusit: () => request('POST', '/api/ucet/zruseni'),
   ucetOdhlasit: () => request('POST', '/api/ucet/odhlaseni'),
@@ -76,6 +78,7 @@ export const api = {
     return res.text();
   },
   extensionPairCode: () => request('POST', '/api/extension/pair-code', {}),
+  extensionObchod: () => request('POST', '/api/extension/obchod', {}),
   createProject: (body) => request('POST', '/api/projects', body),
   updateProject: (id, body) => request('PATCH', `/api/projects/${encodeURIComponent(id)}`, body),
   deleteProject: (id) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`),
@@ -99,7 +102,7 @@ export const api = {
     try {
       res = await fetch(`/api/projects/${encodeURIComponent(id)}/media/${kind}`, { method: 'PUT', headers: { 'X-Agenteeq': '1', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
     } catch {
-      throw new Error(tr('Server Agenteeq neodpovídá. Obrázek se nenahrál.'));
+      throw new Error(tr('Agenteeq neodpovídá, obrázek se proto nenahrál.'));
     }
     const json = await res.json().catch(() => null);
     if (!res.ok) throw new Error(json?.error || tr('Obrázek se nenahrál (chyba {0}).', res.status));

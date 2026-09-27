@@ -9,6 +9,7 @@
 //
 // Co tu není a nebude: domněnky. Když pro nějaký systém mechanismus neznáme, funkce vrátí
 // prázdno a volající se podle toho zachová. Nikdy nevrátí vymyšlenou cestu.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { run } from './util.js';
@@ -77,6 +78,70 @@ export async function processList(runImpl = run) {
     return runImpl('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', PS_WINDOWS], { timeout: 8000 });
   }
   return runImpl('ps', PS_ARGS);
+}
+
+// ── Podrobnosti běžícího procesu ─────────────────────────────────────────────
+//
+// Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js) potřebuje u procesu agenta vědět,
+// v jaké složce běží a kam zapisuje přepisy (CLAUDE_CONFIG_DIR, CODEX_HOME). Z prostředí se čtou
+// jen vyžádané proměnné – nic dalšího se neukládá ani neposílá.
+
+// `ps -E` na macOS připojí prostředí za příkaz: „/bin/claude --x HOME=/Users/eva PATH=…“. Hodnota
+// sahá do další mezery, za kterou začíná další NÁZEV=, nebo do konce řádku (hodnota s mezerou projde).
+export function promennaZPrikazu(radek, jmeno) {
+  const m = new RegExp(`(?:^|\\s)${jmeno}=(.*?)(?=\\s[A-Za-z_][A-Za-z0-9_]*=|$)`).exec(radek || '');
+  return m ? m[1].trim() : '';
+}
+
+// `lsof -Fpn` vypisuje „p<pid>“ a pod ním „n<cesta>“ pracovní složky.
+export function slozkyZLsof(vystup) {
+  const out = new Map();
+  let pid = 0;
+  for (const radek of String(vystup || '').split('\n')) {
+    if (radek.startsWith('p')) pid = Number(radek.slice(1));
+    else if (radek.startsWith('n') && pid) out.set(pid, radek.slice(1));
+  }
+  return out;
+}
+
+/**
+ * Pracovní složka a vyžádané proměnné prostředí procesů: Map pid → { cwd, env }.
+ * macOS: lsof a ps -E (jen procesy téhož uživatele). Linux: /proc. Windows: prázdné – bez nativního
+ * kódu cizí proces nepřečteme a hádat nebudeme; volající se pak obejde bez složky.
+ */
+export async function detailyProcesu(pids, jmena = [], { runImpl = run, cti = fs.promises, jeMac = JE_MAC, jeWindows = JE_WINDOWS } = {}) {
+  const out = new Map(pids.map((pid) => [pid, { cwd: '', env: {} }]));
+  if (!pids.length || jeWindows) return out;
+  if (jeMac) {
+    const seznam = pids.join(',');
+    const lsof = await runImpl('lsof', ['-a', '-d', 'cwd', '-Fpn', '-p', seznam], { timeout: 4000 });
+    for (const [pid, cwd] of slozkyZLsof(lsof.stdout)) if (out.has(pid)) out.get(pid).cwd = cwd;
+    if (jmena.length) {
+      const ps = await runImpl('ps', ['-wwE', '-o', 'pid=,command=', '-p', seznam], { timeout: 4000 });
+      for (const radek of String(ps.stdout || '').split('\n')) {
+        const m = /^\s*(\d+)\s+(.*)$/.exec(radek);
+        const d = m && out.get(Number(m[1]));
+        if (!d) continue;
+        for (const jmeno of jmena) {
+          const hodnota = promennaZPrikazu(m[2], jmeno);
+          if (hodnota) d.env[jmeno] = hodnota;
+        }
+      }
+    }
+    return out;
+  }
+  for (const pid of pids) {
+    const d = out.get(pid);
+    try { d.cwd = await cti.readlink(`/proc/${pid}/cwd`); } catch { /* proces skončil nebo patří jinému uživateli */ }
+    if (!jmena.length) continue;
+    try {
+      for (const par of (await cti.readFile(`/proc/${pid}/environ`, 'utf8')).split('\0')) {
+        const i = par.indexOf('=');
+        if (i > 0 && jmena.includes(par.slice(0, i)) && par.slice(i + 1)) d.env[par.slice(0, i)] = par.slice(i + 1);
+      }
+    } catch { /* dtto */ }
+  }
+  return out;
 }
 
 /**
@@ -238,8 +303,38 @@ export async function fullUserName(runImpl = run) {
   return '';
 }
 
+// ── ID rozbaleného rozšíření ─────────────────────────────────────────────────
+//
+// Chrome dá rozšíření načtenému ze složky („Načíst rozbalené“) ID odvozené z cesty ke složce:
+// SHA-256 bajtů cesty, prvních 32 šestnáctkových číslic převedených na písmena a–p. Na macOS
+// a Linuxu jsou bajty cesty UTF-8 (ověřeno 27. 9. 2026 v Chromiu 140 – shoda s ID, které Chrome
+// přidělil). Ve Windows jde o UTF-16LE s velkým písmenem disku – podle zdrojů Chromia, na
+// skutečném Windows neověřeno; neshoda znamená jen jedno potvrzení párování v aplikaci navíc.
+export function idRozbalenehoRozsireni(cesta, { jeWindows = JE_WINDOWS } = {}) {
+  if (typeof cesta !== 'string' || !cesta) return '';
+  let skutecna = cesta;
+  try { skutecna = fs.realpathSync(cesta); } catch { /* složka ještě není – počítá se ze zadané cesty */ }
+  const bajty = jeWindows
+    ? Buffer.from(skutecna.replace(/^[a-z]:/, (d) => d.toUpperCase()), 'utf16le')
+    : Buffer.from(skutecna, 'utf8');
+  return crypto.createHash('sha256').update(bajty).digest('hex').slice(0, 32).replace(/[0-9a-f]/g, (c) => 'abcdefghijklmnop'[parseInt(c, 16)]);
+}
+
 // Je aplikace opravdu nainstalovaná? Hledá se v /Applications a v ~/Applications; `null` = nevím
 // (jiný systém než macOS, nebo kontrola vypnutá), nikdy ne „ne“ jen proto, že se nehledalo.
+/**
+ * Otevře adresu v prohlížeči, který umí rozšíření z Chrome Web Store (Chrome, Brave, Edge, Arc,
+ * Chromium). Výchozí prohlížeč to být nemusí – Safari by stránku obchodu jen odmítlo.
+ * Vrací `null`, když takový prohlížeč na tomhle systému najít neumíme; volající pak otevře adresu
+ * výchozím prohlížečem.
+ */
+export const PROHLIZECE_S_ROZSIRENIM = ['Google Chrome', 'Brave Browser', 'Microsoft Edge', 'Arc', 'Chromium'];
+export function otevritVProhlizeciSRozsirenim(url, home, { fileExists = (p) => fs.existsSync(p) } = {}) {
+  if (!JE_MAC) return null;
+  const nazev = PROHLIZECE_S_ROZSIRENIM.find((n) => appInstalled(n, home, { fileExists }));
+  return nazev ? { cmd: 'open', args: ['-a', nazev, url], prohlizec: nazev } : null;
+}
+
 export function appInstalled(names, home, { fileExists = (p) => fs.existsSync(p), enabled = JE_MAC } = {}) {
   if (!enabled) return null;
   return [].concat(names).some((n) => [`/Applications/${n}.app`, `${home}/Applications/${n}.app`].some((p) => fileExists(p)));

@@ -84,15 +84,15 @@ test('diagnostika přizná obecnou zálohu i to, že pole chybí', () => {
 test('řádky ověření: stav vždy nese věta, ne jen barva tečky', () => {
   const zaklad = { konverzace: 'adresa', pole: 'presne', zpravy: { user: 2, assistant: 2, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } };
   assert.deepEqual(obsah(radkyOvereni(zaklad)), [
-    ['ok', 'Konverzace podle adresy stránky'],
+    ['ok', 'Konverzace má vlastní adresu'],
     ['ok', 'Pole pro zadání nalezeno'],
     ['ok', 'Tvoje zprávy 2 · odpovědi 2'],
-    ['ok', 'Pracuje → hotovo zachyceno'],
+    ['ok', 'Začátek i konec odpovědi zachycen'],
   ]);
   const spatne = radkyOvereni({ ...zaklad, konverzace: 'karta', pole: 'zadne', zpravy: { user: 1, assistant: 0, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } });
   assert.deepEqual(obsah(spatne.map(([ton]) => ton)), ['none', 'err', 'warn', 'none', 'warn']);
-  assert.match(spatne[2][1], /obecná záloha/);
-  assert.match(spatne[3][1], /Právě pracuje/);
+  assert.match(spatne[2][1], /přibližně/);
+  assert.match(spatne[3][1], /Agent odpovídá/);
   assert.match(spatne[4][1], /limit/);
   for (const [, text] of [...radkyOvereni(zaklad), ...spatne]) assert.ok(text.length > 10);
   assert.match(radkyOvereni({ ...zaklad, zpravy: { user: 0, assistant: 0, zdroj: 'presne' }, videl: {} })[2][1], /Zatím žádné zprávy/);

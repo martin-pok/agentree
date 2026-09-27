@@ -10,12 +10,12 @@
 // a okno rozšíření pro Chrome. Playwright se bere stejně jako v qa-desktop.mjs – z PLAYWRIGHT_PATH
 // nebo z globální instalace, aby projekt zůstal bez závislostí.
 import { createRequire } from 'node:module';
-import fs from 'node:fs/promises';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startTestServer, api } from '../test/helpers.mjs';
 import { buildSite } from './build-site.mjs';
+import { staticServer } from './qa-server.mjs';
+import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -111,28 +111,6 @@ function vypis(kde, nalezy) {
   }
 }
 
-// Malý statický server pro sestavený web – hosting se tu simulovat nedá a `file://` by rozbilo
-// absolutní cesty, na kterých stránka stojí.
-function staticServer(dir) {
-  const TYPY = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8' };
-  const server = http.createServer(async (req, res) => {
-    const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html';
-    const koren = path.resolve(dir) + path.sep;
-    for (const kandidat of [rel, `${rel}/index.html`, 'index.html']) {
-      // Porovnání s oddělovačem na konci: bez něj by `dist/web-jine` prošlo jako `dist/web`.
-      const soubor = path.resolve(dir, kandidat);
-      if (!soubor.startsWith(koren)) break;
-      try {
-        const body = await fs.readFile(soubor);
-        res.writeHead(200, { 'Content-Type': TYPY[path.extname(soubor)] || 'application/octet-stream' }).end(body);
-        return;
-      } catch { /* zkusíme další kandidát */ }
-    }
-    res.writeHead(404).end();
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve({ server, url: `http://127.0.0.1:${server.address().port}` })));
-}
-
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 
 /* ---------- Aplikace ---------- */
@@ -174,12 +152,14 @@ await app.close();
 console.log('Landing page');
 const { out } = await buildSite();
 const web = await staticServer(out);
-for (const stranka of ['/', '/en']) {
+// /app = rozcestník statické kopie rozhraní (bez serveru). Tam se jednou ztratil text hlavního tlačítka.
+for (const stranka of ['/', '/en', '/app/']) {
   for (const rezim of ['light', 'dark']) {
     for (const sirka of SIRKY) {
       const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, colorScheme: rezim, reducedMotion: 'reduce' });
       await page.goto(web.url + stranka, { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
+      if (stranka === '/app/') await page.waitForSelector('.pair-box');
       vypis(`${rezim} ${sirka}px ${stranka}`, await page.evaluate(zmer, PRECHODY));
       await page.close();
     }
@@ -188,46 +168,17 @@ for (const stranka of ['/', '/en']) {
 await new Promise((r) => web.server.close(r));
 
 /* ---------- Okno rozšíření ---------- */
-// Okno používá API Chromu, které mimo rozšíření neexistuje. Nahradíme ho minimální atrapou:
-// měří se vzhled, ne chování, takže stačí, aby se okno vykreslilo v obou stavech.
+// Okno používá API Chromu, které mimo rozšíření neexistuje; atrapa je v qa-rozsireni.mjs.
 console.log('Rozšíření pro Chrome');
-const popup = await fs.readFile(path.join(root, 'extension/popup.html'), 'utf8');
 const ext = await staticServer(path.join(root, 'extension'));
-// „ověření“ = spárováno na stránce podporované služby s rozbalenou kartou ověření (všechny tóny řádků).
-for (const [stav, paired] of [['nespárováno', false], ['spárováno', true], ['ověření', true]]) {
+for (const stav of STAVY_OKNA) {
   for (const rezim of ['light', 'dark']) {
-    const page = await browser.newPage({ viewport: { width: 344, height: 900 }, colorScheme: rezim, reducedMotion: 'reduce' });
-    await page.addInitScript(({ paired: p, overeni }) => {
-      const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'chatgpt', at: Date.now() - 240000 } };
-      window.chrome = {
-        storage: { local: { get: async (k) => Object.fromEntries((Array.isArray(k) ? k : [k]).map((x) => [x, data[x]])), set: async (o) => Object.assign(data, o) } },
-        runtime: { getManifest: () => ({ version: '0.0.0' }), sendMessage: async () => ({ paired: p, status: { expectedVersion: '0.0.0' } }) },
-      };
-      if (overeni) {
-        window.chrome.tabs = {
-          query: async () => [{ id: 1 }],
-          sendMessage: async () => ({ site: 'gemini', konverzace: 'adresa', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: false, limit: true, videl: { generovani: true, konec: true } }),
-        };
-      }
-      const puvodni = window.fetch;
-      window.fetch = async (u, i) => (String(u).includes('/api/health')
-        ? new Response(JSON.stringify({ ok: true, ready: true }), { headers: { 'Content-Type': 'application/json' } })
-        : puvodni(u, i));
-    }, { paired, overeni: stav === 'ověření' });
-    await page.goto(`${ext.url}/popup.html`, { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(400);
-    if (stav === 'ověření') {
-      await page.click('#check-open');
-      await page.click('#check-no');
-      await page.waitForTimeout(300);
-    }
+    const page = await otevriOkno(browser, ext.url, stav, { colorScheme: rezim });
     vypis(`${rezim} 344px okno (${stav})`, await page.evaluate(zmer, PRECHODY));
     await page.close();
   }
 }
 await new Promise((r) => ext.server.close(r));
-void popup;
 
 await browser.close();
 

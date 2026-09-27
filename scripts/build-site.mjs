@@ -14,6 +14,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ukazkoveOdpovedi } from './ukazka-data.mjs';
+import { adresaObchodu } from '../public/js/obchod.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -45,6 +46,26 @@ export function odkazNaStazeni(html) {
   const vzor = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
   if (!vzor.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
   return html.replace(vzor, `$1${REPO}/releases/latest/download/${BALICEK_MAC}$2`);
+}
+
+// Instalace rozšíření na webu: stránka nese obě cesty mezi značkami <!-- rozsireni:obchod --> a
+// <!-- rozsireni:rucne -->. Sestavení nechá jen tu platnou – dokud rozšíření v Chrome Web Store
+// není (public/js/obchod.js je prázdné), ruční; potom odkaz do obchodu a „2 minuty“ místo „10“.
+// Chybějící značky shodí sestavení: jinak by na webu tiše zůstaly obě cesty najednou.
+export function rozsireniNaWebu(html, url = adresaObchodu()) {
+  const blok = (nazev) => new RegExp(`\\n[ \\t]*<!-- rozsireni:${nazev} -->([\\s\\S]*?)[ \\t]*<!-- /rozsireni:${nazev} -->`);
+  if (!blok('obchod').test(html) || !blok('rucne').test(html)) throw new Error('Stránka webu nemá značky rozsireni:obchod a rozsireni:rucne — uprav scripts/build-site.mjs.');
+  const obchod = adresaObchodu(url);
+  if (obchod) {
+    return html
+      .replace(blok('rucne'), '')
+      .replace(blok('obchod'), (_, obsah) => obsah.replace(/data-obchod-chrome href="#"/g, `data-obchod-chrome href="${obchod}" target="_blank" rel="noopener"`).replace(/\n$/, ''))
+      .replace(/(<span class="detail-tag") data-rozsireni-doba="([^"]*)">[^<]*</, '$1>$2<');
+  }
+  return html
+    .replace(blok('obchod'), '')
+    .replace(blok('rucne'), (_, obsah) => obsah.replace(/\n$/, ''))
+    .replace(/ data-rozsireni-doba="[^"]*"/, '');
 }
 
 // Manifest PWA platí pro rozhraní aplikace, ne pro landing page: na hostingu se proto přepíše tak,
@@ -115,7 +136,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
-    await fs.writeFile(stranka, odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze)));
+    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))));
   }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.

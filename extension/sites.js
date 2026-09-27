@@ -112,18 +112,20 @@
     };
   }
 
-  // Diagnostika pro člověka: tón (ok / warn / err / none) a věta. Stav nese vždy text.
+  // Diagnostika pro člověka: tón (ok / warn / err / none) a věta. Stav nese vždy text. Věty jsou
+  // česky a v okně rozšíření je přeloží i18n.js (obsahový skript ji nepotřebuje, tam zůstanou).
   function radkyOvereni(d) {
+    const tr = globalThis.AgenteeqI18n?.tr || ((t, ...a) => t.replace(/\{(\d+)\}/g, (m, i) => String(a[i] ?? m)));
     const r = [];
-    r.push(d.konverzace === 'adresa' ? ['ok', 'Konverzace podle adresy stránky'] : ['none', 'Nová konverzace, zatím bez adresy']);
-    r.push(d.pole === 'presne' ? ['ok', 'Pole pro zadání nalezeno'] : d.pole === 'obecne' ? ['warn', 'Pole pro zadání jen přes obecnou zálohu'] : ['err', 'Pole pro zadání nenalezeno']);
+    r.push(d.konverzace === 'adresa' ? ['ok', tr('Konverzace má vlastní adresu')] : ['none', tr('Nová konverzace, zatím bez vlastní adresy')]);
+    r.push(d.pole === 'presne' ? ['ok', tr('Pole pro zadání nalezeno')] : d.pole === 'obecne' ? ['warn', tr('Pole pro zadání nalezeno jen přibližně')] : ['err', tr('Pole pro zadání nenalezeno')]);
     const { user, assistant, zdroj } = d.zpravy;
-    if (!user && !assistant) r.push(['none', 'Zatím žádné zprávy – pošli jednu']);
-    else r.push([zdroj === 'presne' ? 'ok' : 'warn', `Tvoje zprávy ${user} · odpovědi ${assistant}${zdroj === 'presne' ? '' : ' (obecná záloha)'}`]);
-    if (d.videl?.konec) r.push(['ok', 'Pracuje → hotovo zachyceno']);
-    else if (d.generuje || d.videl?.generovani) r.push(['none', 'Právě pracuje – počkej na konec odpovědi']);
-    else r.push(['none', 'Pracuje → hotovo: pošli zprávu a počkej']);
-    if (d.limit) r.push(['warn', 'Na stránce je hláška o limitu']);
+    if (!user && !assistant) r.push(['none', tr('Zatím žádné zprávy – pošli jednu')]);
+    else r.push([zdroj === 'presne' ? 'ok' : 'warn', tr('Tvoje zprávy {0} · odpovědi {1}', user, assistant) + (zdroj === 'presne' ? '' : tr(' (přibližně)'))]);
+    if (d.videl?.konec) r.push(['ok', tr('Začátek i konec odpovědi zachycen')]);
+    else if (d.generuje || d.videl?.generovani) r.push(['none', tr('Agent odpovídá – počkej na konec')]);
+    else r.push(['none', tr('Pošli zprávu a počkej na celou odpověď')]);
+    if (d.limit) r.push(['warn', tr('Stránka hlásí vyčerpaný limit')]);
     return r;
   }
 

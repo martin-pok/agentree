@@ -2,7 +2,8 @@ import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, hourKey, MIN, DAY } from '../util.js';
 import { touch, pushEntry, resetTranscript } from '../model.js';
-import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
+import { createFileQueue, listFiles } from '../watch.js';
+import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
 
 const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -100,26 +101,39 @@ export function zustatekKreditu(c) {
 // Kladný odečet nebo `has_credits` znamená, že kredity tu jsou (nebo byly).
 const maKredity = (c, zustatek) => Boolean(c?.has_credits) || zustatek > 0;
 
+// Domov Codexu: CODEX_HOME, jinak ~/.codex (dokumentace Codexu, docs/config.md). Relace leží
+// v <domov>/sessions/RRRR/MM/DD/*.jsonl, názvy vláken v <domov>/session_index.jsonl. Domov, který
+// prozradí až běžící proces (aplikace z Finderu CODEX_HOME nevidí), se přidá za běhu.
+export function domovyCodexu({ home, codexHome = '' }) {
+  return [...new Set([rozbalCestu(codexHome, home), path.join(home, '.codex')].filter(Boolean))];
+}
+
 export function createCodexConnector(ctx) {
   const { store, config } = ctx;
-  const root = path.join(config.sourceHome, '.codex', 'sessions');
   const windowMs = config.windowDays * DAY;
   const files = new Map();
-  let watcher = null;
   let exists = false;
   let lastEventAt = 0;
   const queue = createFileQueue(sync);
-  const indexFile = path.join(config.sourceHome, '.codex', 'session_index.jsonl');
+  const domovy = new Set(domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }));
+  const koreny = createKorenyPrepisu([...domovy].map((d) => path.join(d, 'sessions')), {
+    zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
+  });
   const titles = new Map();
-  let indexTail = null;
+  const indexTails = new Map(); // soubor indexu → JsonlTail
 
   // Názvy vláken z aplikace ChatGPT/Codex: append-only index, platí nejnovější updated_at.
   async function syncIndex() {
+    for (const domov of domovy) await syncIndexFile(path.join(domov, 'session_index.jsonl'));
+  }
+
+  async function syncIndexFile(indexFile) {
     const stat = await statSafe(indexFile);
     if (!stat?.isFile()) return;
+    let indexTail = indexTails.get(indexFile);
     if (!indexTail || stat.size < indexTail.offset) {
       indexTail = new JsonlTail(indexFile);
-      titles.clear();
+      indexTails.set(indexFile, indexTail);
     }
     const changed = new Set();
     for (const r of await indexTail.read(stat.size)) {
@@ -297,10 +311,11 @@ export function createCodexConnector(ctx) {
   }
 
   async function sync(file) {
-    if (!file.endsWith('.jsonl') || depthOf(root, file) !== 3) return;
+    if (!file.endsWith('.jsonl') || koreny.najdi(file)?.hloubka !== 3) return;
     const stat = await statSafe(file);
     if (!stat?.isFile()) {
       // Přepis zmizel: odebrat z přehledu hned, ne až po restartu.
+      mimoObdobi.delete(file);
       const gone = files.get(file);
       if (gone) {
         store.remove(`codex:${gone.localId}`);
@@ -309,12 +324,18 @@ export function createCodexConnector(ctx) {
       return;
     }
     let st = files.get(file);
-    if (!st && Date.now() - stat.mtimeMs > windowMs) return;
+    if (!st && Date.now() - stat.mtimeMs > windowMs) {
+      mimoObdobi.set(file, stat.mtimeMs);
+      return;
+    }
+    mimoObdobi.delete(file);
     if (st && stat.size < st.tail.offset) {
       store.remove(`codex:${st.localId}`);
       files.delete(file);
       st = null;
     }
+    // Nezměněný soubor nemá co přinést (název z indexu se dopisuje v syncIndexFile).
+    if (st && st.size === stat.size && st.mtimeMs === stat.mtimeMs) return;
     if (!st) {
       const base = path.basename(file, '.jsonl');
       st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, prevProcessed: 0, lastTokens: null, tokenBase: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 } };
@@ -327,6 +348,8 @@ export function createCodexConnector(ctx) {
     const lines = await st.tail.read(stat.size);
     for (const o of lines) apply(st, s, o);
     if (lines.length) lastEventAt = Date.now();
+    st.size = stat.size;
+    st.mtimeMs = stat.mtimeMs;
     store.commit(s);
   }
 
@@ -360,7 +383,9 @@ export function createCodexConnector(ctx) {
     const hranice = Date.now() - windowMs;
     let bodu = 0;
     const odecty = [];
-    for (const f of await listFiles(root, 3, (x) => x.endsWith('.jsonl'))) {
+    const soubory = [];
+    for (const koren of koreny.seznam()) soubory.push(...await listFiles(koren, 3, (x) => x.endsWith('.jsonl')));
+    for (const f of soubory) {
       const stat = await statSafe(f);
       if (!stat?.isFile() || stat.mtimeMs >= hranice) continue; // novější soubory čte běžný průchod
       let text;
@@ -389,12 +414,39 @@ export function createCodexConnector(ctx) {
     return bodu;
   }
 
-  async function scan() {
-    exists = Boolean(await statSafe(root));
-    for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
+  // Pravidelný průchod je pojistka za sledování souborů: soubor, do kterého se hodinu nezapsalo,
+  // se kontroluje při každém šestém průchodu, nové a nedávno psané pokaždé (viz claude-code.js).
+  let pruchod = 0;
+  const mimoObdobi = new Map();
+  const klidny = (f) => {
+    const m = files.get(f)?.mtimeMs ?? mimoObdobi.get(f);
+    return m !== undefined && Date.now() - m > 60 * MIN;
+  };
+
+  async function scanKoren(koren, plny = true) {
     await syncIndex();
-    const list = await listFiles(root, 3, (f) => f.endsWith('.jsonl'));
-    for (const f of list) await queue.run(f);
+    const soubory = await listFiles(koren, 3, (x) => x.endsWith('.jsonl'));
+    for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
+    return soubory;
+  }
+
+  async function scan() {
+    exists = (await koreny.existujici()).length > 0;
+    const plny = pruchod++ % 6 === 0;
+    const videne = new Set();
+    for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
+    // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou – ta je z přehledu odebere.
+    for (const known of [...files.keys()]) if (!videne.has(known)) await queue.run(known);
+  }
+
+  // Domov, který prozradil běžící proces (CODEX_HOME). Nový se hned projde a začne sledovat.
+  async function pridejDomov(domov) {
+    const cesta = path.resolve(domov);
+    if (domovy.has(cesta)) return false;
+    domovy.add(cesta);
+    koreny.pridej(path.join(cesta, 'sessions'));
+    await scanKoren(path.join(cesta, 'sessions'));
+    return true;
   }
 
   return {
@@ -403,18 +455,20 @@ export function createCodexConnector(ctx) {
     provider: 'openai',
     kind: 'local',
     verified: true,
-    source: '~/.codex/sessions',
+    source: '~/.codex/sessions (a CODEX_HOME)',
     description: 'Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.',
     async start() {
       await scan();
-      watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));
+      koreny.start();
       // Historie nákupů kreditů doběhne na pozadí; případná chyba nesmí shodit konektor.
       setTimeout(() => { scanCreditHistory().catch(() => {}); }, 2000).unref?.();
     },
     scan,
     scanCreditHistory,
+    pridejDomov,
+    domovy: () => [...domovy],
     stop() {
-      watcher?.close();
+      koreny.stop();
       queue.clear();
     },
     idle: () => queue.idle(),
@@ -424,7 +478,7 @@ export function createCodexConnector(ctx) {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
         detail: count ? `Sleduji ${count} konverzací za posledních ${config.windowDays} dní.` : exists ? 'Složka existuje, zatím bez konverzací.' : 'Codex na tomto počítači není.',
         count,
-        watching: Boolean(watcher?.active),
+        watching: koreny.sleduje(),
         lastEventAt,
       };
     },

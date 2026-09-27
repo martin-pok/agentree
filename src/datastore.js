@@ -179,7 +179,7 @@ export class DataStore {
         raw = await this.recover();
       } else if (err.code !== 'ENOENT') {
         // Oprávnění nebo složka místo souboru: nový soubor by nepomohl a přepsal by skutečná data.
-        throw new Error('Data Agenteeq nelze načíst – nemám oprávnění ke složce ~/.agenteeq. Původní soubor zůstal zachovaný.');
+        throw new Error('Agenteeq nemá oprávnění ke složce ~/.agenteeq, data proto nejdou načíst. Původní soubor zůstal zachovaný.');
       }
     }
     this.data = normalizeData(raw);

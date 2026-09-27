@@ -1,4 +1,4 @@
-import { processList, JE_WINDOWS } from '../platform.js';
+import { processList, detailyProcesu, JE_WINDOWS } from '../platform.js';
 
 // ── Jak se pozná program v příkazové řádce ───────────────────────────────────
 //
@@ -61,19 +61,27 @@ export function etimeToSec(t) {
   return Number(d) * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2];
 }
 
+// Řádek výpisu procesů v jednotném tvaru (src/platform.js#processList).
+function radkyPs(out) {
+  const radky = [];
+  for (const line of String(out || '').split('\n')) {
+    const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
+    if (m) radky.push({ pid: Number(m[1]), uptimeSec: etimeToSec(m[2]), cpu: Number(m[3]), rssKB: Number(m[4]), args: m[5] });
+  }
+  return radky;
+}
+
 export function parsePs(out) {
   const runtimes = RUNTIMES.map((r) => ({ id: r.id, name: r.name, provider: r.provider, running: false, processes: 0, cpu: 0, memMB: 0, uptimeSec: 0, detail: '' }));
-  for (const line of out.split('\n')) {
-    const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
-    if (!m) continue;
-    const idx = RUNTIMES.findIndex((r) => r.test(m[5]));
+  for (const p of radkyPs(out)) {
+    const idx = RUNTIMES.findIndex((r) => r.test(p.args));
     if (idx === -1) continue;
     const r = runtimes[idx];
     r.running = true;
     r.processes++;
-    r.cpu += Number(m[3]);
-    r.memMB += Number(m[4]) / 1024;
-    r.uptimeSec = Math.max(r.uptimeSec, etimeToSec(m[2]));
+    r.cpu += p.cpu;
+    r.memMB += p.rssKB / 1024;
+    r.uptimeSec = Math.max(r.uptimeSec, p.uptimeSec);
   }
   for (const r of runtimes) {
     r.cpu = Math.round(r.cpu * 10) / 10;
@@ -82,15 +90,117 @@ export function parsePs(out) {
   return runtimes;
 }
 
+// ── Jednotliví agenti v příkazové řádce ──────────────────────────────────────
+//
+// Pro pojistku proti přehlédnutému agentovi (src/bezici-agenti.js) nestačí vědět, že „Claude Code
+// běží“ – potřebujeme každý proces zvlášť. Nepočítají se pomocné procesy nástroje a příkazy, které
+// žádnou konverzaci nevedou (přihlášení, MCP server, aktualizace…): z nich by vznikli falešní agenti.
+// Seznamy podpříkazů a přepínačů Claude Code jsou ze zdroje verze 2.1.283 (26. 9. 2026).
+const BEZ_KONVERZACE = {
+  'claude-code': {
+    podprikazy: ['auth', 'mcp', 'doctor', 'update', 'upgrade', 'install', 'setup-token', 'plugin', 'plugins', 'agents', 'attach', 'logs', 'rm', 'stop', 'kill', 'respawn', 'import', 'project', 'auto-mode', 'gateway', 'ultrareview', 'daemon', 'config'],
+    prepinace: ['--bg-pty-host', '--bg-spare', '--preload', '--version', '-v', '--help', '-h'],
+  },
+  codex: {
+    podprikazy: ['login', 'logout', 'mcp', 'mcp-server', 'app-server', 'completion', 'help', 'debug', 'apply'],
+    prepinace: ['--version', '-V', '--help', '-h'],
+  },
+  'gemini-cli': { podprikazy: ['mcp', 'extensions'], prepinace: ['--version', '-v', '--help', '-h'] },
+  'qwen-code': { podprikazy: ['mcp', 'extensions'], prepinace: ['--version', '-v', '--help', '-h'] },
+  'copilot-cli': { podprikazy: ['help', 'login', 'logout'], prepinace: ['--version', '-v', '--help', '-h'] },
+};
+
+// Argumenty za jménem programu. Program z npm běží jako „node /…/bin/claude …“ – to „node“ se přeskočí.
+function argumentyProgramu(args, runtime) {
+  const jmeno = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot' }[runtime];
+  const slova = args.split(/\s+/);
+  const i = slova.findIndex((w) => program(jmeno).test(w));
+  return i === -1 ? [] : slova.slice(i + 1);
+}
+
+export function vedeKonverzaci(args, runtime) {
+  const pravidla = BEZ_KONVERZACE[runtime];
+  if (!pravidla) return false;
+  const argv = argumentyProgramu(args, runtime);
+  if (argv.some((a) => pravidla.prepinace.includes(a))) return false;
+  // Podpříkaz je první slovo bez pomlčky. Za „-p“/„--print“ jde zadání, ne podpříkaz.
+  const i = argv.findIndex((a) => !a.startsWith('-'));
+  if (i === -1 || argv.slice(0, i).some((a) => a === '-p' || a === '--print')) return true;
+  return !pravidla.podprikazy.includes(argv[i]);
+}
+
+/** Procesy agentů v příkazové řádce, každý zvlášť: { pid, runtime, uptimeSec }. */
+export function agentniProcesy(out) {
+  const cli = Object.keys(BEZ_KONVERZACE);
+  const procesy = [];
+  for (const p of radkyPs(out)) {
+    const r = RUNTIMES.find((x) => x.test(p.args));
+    if (!r || !cli.includes(r.id) || !vedeKonverzaci(p.args, r.id)) continue;
+    procesy.push({ pid: p.pid, runtime: r.id, uptimeSec: p.uptimeSec });
+  }
+  return procesy;
+}
+
+// Výpis procesů sdílený konektory (tento a src/connectors/local-agents.js). Kdo se zeptá do pár
+// vteřin po jiném, dostane tentýž výsledek – `ps` se nespouští dvakrát pro totéž.
+export function sdilenyVypis(vypis = processList, platnostMs = 4000) {
+  let posledni = null;
+  return () => {
+    const ted = Date.now();
+    if (!posledni || ted - posledni.at > platnostMs) posledni = { at: ted, vysledek: vypis() };
+    return posledni.vysledek;
+  };
+}
+
+// Start procesu dopočtený z doby běhu kolísá o vteřinu mezi průchody. Drží se první hodnota, ať
+// se přehled neposílá znovu jen kvůli tomu (doba běhu se dopočítá v rozhraní z času startu).
+export function createStabilniStart(tolerance = 3000) {
+  const starty = new Map();
+  return {
+    od(klic, uptimeSec, now = Date.now()) {
+      const od = now - uptimeSec * 1000;
+      const drive = starty.get(klic);
+      if (drive && Math.abs(drive - od) < tolerance) return drive;
+      starty.set(klic, od);
+      return od;
+    },
+    ponech(klice) {
+      for (const k of starty.keys()) if (!klice.has(k)) starty.delete(k);
+    },
+  };
+}
+
 export function createProcessesConnector(ctx) {
-  const { store, config } = ctx;
+  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu } = ctx;
   let timer = null;
   let ollama = { ok: false, models: [] };
   let lastOk = 0;
+  // Složka a prostředí se u procesu nemění – zjišťují se jednou za jeho život (klíč pid + start).
+  const znamy = new Map();
+
+  // Jednotliví agenti v příkazové řádce se složkou, startem a proměnnými domova (CLAUDE_CONFIG_DIR…).
+  async function agenti(stdout, now = Date.now()) {
+    const seznam = agentniProcesy(stdout).map((p) => ({ ...p, od: Math.round((now - p.uptimeSec * 1000) / 1000) * 1000 }));
+    const klic = (p) => `${p.pid}:${Math.round(p.od / 5000)}`;
+    const nove = seznam.filter((p) => !znamy.has(klic(p)));
+    if (nove.length) {
+      const d = await detaily(nove.map((p) => p.pid), promenne);
+      // Start se drží z prvního průchodu: doba běhu má vteřinovou přesnost a dopočet by jinak kolísal.
+      for (const p of nove) znamy.set(klic(p), { cwd: '', env: {}, ...d.get(p.pid), od: p.od });
+    }
+    const zive = new Set(seznam.map(klic));
+    for (const k of znamy.keys()) if (!zive.has(k)) znamy.delete(k);
+    return seznam.map((p) => ({ ...p, ...znamy.get(klic(p)) }));
+  }
+
+  const starty = createStabilniStart();
 
   async function poll() {
-    const res = await processList();
-    const runtimes = res.ok ? parsePs(res.stdout) : store.runtimes;
+    const res = await procesy();
+    const runtimes = res.ok ? parsePs(res.stdout).map(({ uptimeSec, ...r }) => ({ ...r, od: r.running ? starty.od(r.id, uptimeSec) : 0 })) : store.runtimes;
+    if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
+    // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
+    onAgenti(res.ok ? await agenti(res.stdout).catch(() => null) : null);
     try {
       const r = await fetch('http://127.0.0.1:11434/api/ps', { signal: AbortSignal.timeout(600) });
       const json = r.ok ? await r.json() : null;
@@ -136,7 +246,8 @@ export function createProcessesConnector(ctx) {
           : `Seznam běžících aplikací se na tomto systému nepodařilo získat${ollama.ok ? `, Ollama ale odpovídá: ${ollama.models.length} modelů` : ''}.`,
         count: running,
         watching: Boolean(timer),
-        lastEventAt: lastOk,
+        // Výpis běží každých pár vteřin; na minuty zaokrouhlený čas nerozhýbe seznam zdrojů při každém průchodu.
+        lastEventAt: lastOk ? Math.floor(lastOk / 60e3) * 60e3 : 0,
       };
     },
   };

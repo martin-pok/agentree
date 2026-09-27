@@ -97,11 +97,36 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 **Zdarma:** Agenteeq nemá vlastní AI – spuštění běží na předplatných a limitech uživatele. Skutečně zdarma jsou lokální modely v Ollamě a bezplatné úrovně služeb (např. Gemini CLI s osobním účtem Google, bezplatné webové verze).
 
+## Pojistka: běžící agent je vždy vidět (`src/bezici-agenti.js`)
+
+Hlavní úděl Agenteeq je vidět každého agenta, který na počítači běží. Přepis ale může chybět
+(agent čeká na první zadání – Claude Code i Codex zakládají soubor až s první zprávou), nebo leží
+ve složce, o které Agenteeq neví. Proto:
+
+- **Kořeny přepisů nejsou napevno** (`src/koreny-prepisu.js`). Claude Code: `CLAUDE_CONFIG_DIR/projects`,
+  jinak `~/.claude/projects` (ověřeno ve zdroji Claude Code 2.1.283), plus `~/.config/claude/projects`
+  z verzí 1.0.x (podle ccusage; čte se, jen když existuje). Codex: `CODEX_HOME`, jinak `~/.codex`.
+  Proměnné, které aplikace z Finderu nevidí, doplní za běhu: přihlašovací shell (sonda programů),
+  **prostředí běžícího procesu** (macOS `ps -E`, Linux `/proc/<pid>/environ`) a **hook** Claude Code
+  (`transcript_path` mimo známé kořeny přidá svůj kořen). Tatáž konverzace ze dvou kořenů
+  (symlink) se čte jen jednou.
+- **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
+  gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
+  2.1.283) se páruje s konverzací téhož nástroje, která od jeho startu žila a běží ve stejné složce
+  (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se jen podle času). Starší
+  proces bere starší konverzaci, spárování mezi průchody nepřeskakuje. Nespárovaný proces je agent
+  „běží od 14:02, zatím bez přepisu“ se stavem `waiting` – co přesně dělá, z procesu nevyčteme,
+  a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis
+  procesů nic nepřidá ani neubere.
+- **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
+  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se do 8 s, po prvním zápisu do přepisu
+  se spáruje a po skončení zmizí.
+
 ## Konektory v detailu
 
 ### Claude Code – `src/connectors/claude-code.js` ✅
 
-- **Zdroj:** `~/.claude/projects/<projekt>/<session-id>.jsonl` (hloubka 1). Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
+- **Zdroj:** `<kořen>/<projekt>/<session-id>.jsonl` (hloubka 1), kořeny viz „Pojistka“ výše – výchozí `~/.claude/projects`. Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
 - **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).
@@ -142,9 +167,21 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
   `running/working/busy` je čerstvý jen při pozorování konkrétního dotazu během 2 minut;
   později platí stávající model stale. `failed` přebíráme ze serverové kategorie, přesný důvod
   (např. limit) bez uložené chyby netvrdíme. Konverzace se otevírá na `https://claude.ai/code/session_…`.
+- **Vytížení plánu z uložené stránky Usage 🧪 (neověřeno na skutečných datech):** stránka Usage
+  na claude.ai načítá `five_hour` a `seven_day` s `utilization` (procenta) a `resets_at` (ISO čas
+  obnovy od serveru) – stejná dvojice, jakou hlásí stavový řádek Claude Code. Pokud ji Desktop uloží
+  do `react-query-cache`, zapíše konektor limity `claude:five_hour:desktop` / `claude:seven_day:desktop`
+  se `source: 'desktop-usage'` a přesným `resetsAt`, platné k `state.dataUpdatedAt` dotazu. Dotaz se
+  hledá **podle tvaru odpovědi**, ne podle jména klíče (nezdokumentované); čas z budoucnosti se
+  zahodí; nic dalšího z odpovědi (ani z jiných dotazů) se nečte. Že Desktop tuto odpověď do trvalé
+  cache opravdu ukládá, jsme na Macu zatím neověřili – když ji tam nenajde, nic se nezmění.
+- **Jedno okno, jeden řádek (`public/js/ui.js#currentLimits`):** okna Claude chodí až ze tří zdrojů.
+  Ukáže se nejnovější měření; když samo čas obnovy nenese, převezme ho od přesného zdroje, ale jen
+  pokud to měření proběhlo před tou obnovou (leží v témž okně). Hlášky „hit your limit“ přesná okna
+  nahrazují.
 - **Bezpečnost a zotavení:** pouze čtení běžných souborů; žádný LOCK, žádné změny databáze,
   žádná autentizace ani odchozí dotazy. Zpracují se jen dva uvedené druhy klíčů; profily účtu
-  v query cache nevstupují do modelu. Živé SST soubory určuje manifest, WAL přebírá novější
+  v query cache nevstupují do modelu; z uložené stránky Usage jen dvě procenta a dva časy obnovy. Živé SST soubory určuje manifest, WAL přebírá novější
   sekvence a smazání. CRC32C, velikostní hranice a kontrola indexů brání čtení poškozených bloků.
   Neúplný konec WAL se odloží do další změny. Při neznámém formátu se zachová poslední stav
   a konektor hlásí chybu. Watcher běží nad IndexedDB; záložní průchod běží každých 10 s.
@@ -162,6 +199,7 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 - **Zdroj:** `~/Library/Application Support/Claude/plan-usage-history.json`. Formát **není nikde oficiálně zdokumentovaný** – jde o interní soubor aplikace Claude Desktop, který se může s libovolnou verzí aplikace změnit nebo zmizet.
 - **Struktura (ověřeno osobně, 476 vzorků od 13. 8. 2026):** `{ version: 2, samples: [ { t: <ms epoch>, org: "<id organizace>", u: { fh: <0–100>, sd: <0–100>, xu?: <číslo> } } ] }`. `fh` = vytížení 5hodinového okna v %, `sd` = vytížení týdenního okna v %. Nové vzorky přibývají zhruba po 15 minutách i bez otevřené konverzace.
 - **`xu` (extra usage):** přítomné jen u části vzorků (84 ze 476 v ověřených datech), poslední pozorovaná hodnota 64.35. **Jednotka není ověřená** – nejspíš dolary, ale netvrdíme to. Konektor ji zapíše jako limit s `kind: 'spend'` a `label: 'Extra usage'` jen pokud v daném vzorku existuje; `public/js/views/spend.js` ji zobrazí jako „vyčerpáno X %“, což může být zavádějící, dokud jednotka nebude ověřená.
+- **Horní mez obnovy (`resetsBy`):** přesný čas obnovy soubor nenese. Vytížení v jednom okně jen roste, takže pokles mezi dvěma vzorky znamená obnovu. Okno, které běží při posledním vzorku, začalo nejpozději prvním nenulovým vzorkem po poslední obnově a skončí nejpozději o délku okna později (`horniMezObnovy`). Rozhraní píše „obnova nejpozději …“ – mez, ne odhad, a bez odpočtu. Bez nenulového vytížení mez není.
 - **Použití:** čte se jen **poslední** vzorek pole `samples`. Zapisuje limity s vlastními id `claude:five_hour:history` / `claude:seven_day:history` (a `claude:extra_usage:history`, pokud `xu` existuje), `source: 'plan-history'`, `resetsAt: null` (zdroj obnovu neobsahuje). Stavový řádek (`source: 'statusline'`) má vždy přednost – `public/js/ui.js#currentLimits` schová všechny ostatní anthropic limity, jakmile existuje alespoň jeden záznam se `source: 'statusline'`. Tahle historie se v UI tedy objeví, jen když zrovna neběží žádná konverzace se stavovým řádkem.
 - **Sledování:** změna souboru (mtime) přes `watchTree` na nadřazené složce `~/Library/Application Support/Claude` (reaguje jen na `plan-usage-history.json`) + pravidelný plný průchod v intervalu `config.scanIntervalMs`, stejně jako u ostatních souborových konektorů.
 - **Ověření:** cesta k souboru a tvar `{ t, org, u: { fh, sd, xu } }` ověřeny osobně na reálných datech (poslední 5 h = 99 %, týden = 41 %). **Beta**, protože jde o neveřejný interní formát bez záruky stability mezi verzemi.
@@ -171,7 +209,7 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 - **Zdroj:** `~/.codex/sessions/YYYY/MM/DD/rollout-…-<uuid>.jsonl` (hloubka 3).
 - **Použitá pole:** `session_meta` (`id`, `cwd`, `originator` → aplikace, `git.branch`, `parent_thread_id` + `thread_source` / `source.subagent` → pomocné vlákno), `turn_context.model`, `event_msg.task_started` / `task_complete` (běh tahu), `event_msg.token_count.info.total_token_usage` (tokeny, přírůstky do hodin), `event_msg.token_count.rate_limits` (`primary`/`secondary.used_percent`, `window_minutes`, `resets_at`, `credits.balance`, `plan_type`, `rate_limit_reached_type`), `event_msg.item_completed.item` (`UserMessage`, `AgentMessage`, `CommandExecution`, `McpToolCall`, `FileChange`, `WebSearch`, `ContextCompaction`). Starší sessions bez `item_completed` se čtou z `response_item`.
-- **Titulek:** název vlákna z `~/.codex/session_index.jsonl` (`id`, `thread_name`, platí nejnovější `updated_at`; ověřeno), jinak první skutečné zadání (systémový kontext začínající `<`, `#`, `The following is` se přeskakuje), u plánovaného spuštění název ze značky `<scheduled-task name="…">` („Plánovaná úloha · …“), u pomocného vlákna jeho popis („Automatická kontrola Codexu“, „Pomocný agent <přezdívka>“), jinak název složky. Index se čte při plném průchodu (10 s).
+- **Titulek:** název vlákna z `~/.codex/session_index.jsonl` (`id`, `thread_name`, platí nejnovější `updated_at`; ověřeno), jinak první skutečné zadání (systémový kontext začínající `<`, `#`, `The following is` se přeskakuje), u plánovaného spuštění název ze značky `<scheduled-task name="…">` („Plánovaná úloha · …“), u pomocného vlákna jeho popis („Automatická kontrola Codexu“, „Pomocný agent <přezdívka>“), jinak název složky. Index se čte při každém průchodu souborů (10 s).
 - **Pomocná vlákna:** `session_meta.parent_thread_id` s `thread_source: guardian_review` / `source.subagent.other: guardian` (automatická kontrola příkazů) nebo `source.subagent.thread_spawn` (pomocný agent). Session dostane `parentId` a `subagent`; v seznamech a počtech agentů se nezobrazuje, pokud je rodič sledovaný, tokeny se počítají. Ověřeno na 69 vláknech `guardian` a 1 `thread_spawn` (Codex 0.153.4).
 - **Plánované úlohy:** první zpráva `<scheduled-task name="…">` → `taskName`. Spuštění stejné úlohy jsou v seznamu agentů jedním řádkem (poslední spuštění + počet), tokeny všech spuštění se počítají. Ověřeno na 47 spuštěních úlohy `pd-intake`.
 - **Známá omezení:** žádosti o schválení nejsou v souborech.

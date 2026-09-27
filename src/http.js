@@ -490,12 +490,32 @@ export function createHttpServer(app, existingServer = null) {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
       return app.extensionSeen(await readBody(req));
     }, { token: true }],
+    // „Přidat do Chromu“ otevře stránku rozšíření v obchodě – jen člověk u Macu.
+    ['POST', /^\/api\/extension\/obchod$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Chrome Web Store se otevírá jen na Macu.');
+      const r = await app.otevriObchod();
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
     ['POST', /^\/api\/extension\/pair-code$/, async (req) => {
       // Kód spáruje rozšíření a vydá dlouhodobý token. Vytvořit ho smí jen člověk u Macu — spárovaný
       // telefon by si jinak mohl token sám vyžádat a přežil by i své odpárování.
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Párovací kód rozšíření lze vytvořit jen na Macu.');
       return app.createExtensionPairCode();
     }],
+    // Naše rozšíření se spáruje samo, bez kódu (viz app.js#pozadatOSparovani). Jiné dostane 409 –
+    // pak zbývá jednorázový kód z Nastavení.
+    ['POST', /^\/api\/extension\/pripojit$/, async (req) => {
+      // Původ nastavuje prohlížeč, jenže mimo prohlížeč ho podvrhne kdokoli. Na tomhle Macu to
+      // nevadí (program pod stejným uživatelem se k datům dostane i jinak), ze sítě ale ano –
+      // spárovaný telefon by si jinak vyžádal token rozšíření a četl zadání. Proto jen z Macu.
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Rozšíření se páruje jen na Macu, kde běží Agenteeq.');
+      const origin = String(req.headers.origin || '');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      const pair = await app.pozadatOSparovani({ origin, installationId: String(req.headers['x-agenteeq-installation-id'] || '') });
+      if (!pair) throw new HttpError(409, 'Tohle rozšíření se musí spárovat jednorázovým kódem z Agenteeq → Nastavení → Propojení.');
+      return pair;
+    }, { token: true }],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
       const origin = String(req.headers.origin || '');
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
@@ -753,7 +773,21 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})$/, async (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
       const r = await app.napojeni.napojit(m[1]);
-      if (r.status) throw new HttpError(r.status, r.error, { ...(r.prikaz ? { prikaz: r.prikaz } : {}), ...(r.rozsireni ? { rozsireni: true } : {}) });
+      if (r.status) throw new HttpError(r.status, r.error, r.rozsireni ? { rozsireni: true } : {});
+      return r;
+    }],
+    // Záložní cesta, když se prohlížeč sám neotevřel: otevřít odkaz z přihlášení a vložit kód.
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/odkaz$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      const r = await app.napojeni.odkaz(m[1]);
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
+    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/kod$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      const body = await readBody(req);
+      const r = app.napojeni.kod(m[1], body?.kod);
+      if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/zrusit$/, (req, m) => {

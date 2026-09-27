@@ -76,7 +76,7 @@ export async function readClaudeAccount(sourceHome, { read = fsp.readFile } = {}
 // Jedno předplatné pro UI. `usd` je ceníková částka, `options` znamená „nelze rozlišit, vyber“.
 export function describePlan(found, ledger = [], now = Date.now()) {
   const table = found.service === 'claude' ? CLAUDE_PLANS : CHATGPT_PLANS;
-  const def = table[found.plan] || { label: `${found.service === 'claude' ? 'Claude' : 'ChatGPT'} (${found.plan})`, usd: null, note: 'Cenu tohoto plánu neznám.' };
+  const def = table[found.plan] || { label: `${found.service === 'claude' ? 'Claude' : 'ChatGPT'} (${found.plan})`, usd: null, note: 'Cenu tohoto plánu Agenteeq nezná.' };
   const month = ymd(now).slice(0, 7);
   const covered = ledger.some((e) => e.service === found.service && e.kind === 'subscription' && e.recurring === 'monthly'
     && String(e.date).slice(0, 7) <= month && (!e.endDate || String(e.endDate).slice(0, 7) >= month));

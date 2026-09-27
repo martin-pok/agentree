@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Vyrenderuje podklady pro Chrome Web Store ze zdrojů v source/ do export/ ve skutečném Chromu (headless,
 // protokol DevTools přes pipe). Přesné rozměry v CSS pixelech, poměr 1:1. Spuštění: node render.mjs
+// Ikony rozšíření jdou rovnou do extension/icons; do export/ jen ikona 128 px, kterou chce obchod.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -10,12 +11,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const src = (f) => pathToFileURL(path.join(here, 'source', f)).href;
 const exp = path.join(here, 'export');
-fs.mkdirSync(exp, { recursive: true });
+const ikony = path.join(here, '..', '..', 'extension', 'icons');
+for (const d of [exp, ikony]) fs.mkdirSync(d, { recursive: true });
 const JOBS = [
-  { url: src('icon.svg'), w: 128, h: 128, out: 'icon-128.png', transparent: true },
-  { url: src('icon.svg'), w: 48, h: 48, zoom: 48 / 128, out: 'icon-48.png', transparent: true },
-  { url: src('icon.svg'), w: 32, h: 32, zoom: 32 / 128, out: 'icon-32.png', transparent: true },
-  { url: src('icon-16.svg'), w: 16, h: 16, out: 'icon-16.png', transparent: true },
+  { url: src('icon.svg'), w: 128, h: 128, out: 'icon-128.png', transparent: true, dirs: [exp, ikony] },
+  { url: src('icon.svg'), w: 48, h: 48, zoom: 48 / 128, out: 'icon-48.png', transparent: true, dirs: [ikony] },
+  { url: src('icon.svg'), w: 32, h: 32, zoom: 32 / 128, out: 'icon-32.png', transparent: true, dirs: [ikony] },
+  { url: src('icon-16.svg'), w: 16, h: 16, out: 'icon-16.png', transparent: true, dirs: [ikony] },
   { url: src('promo-small.html'), w: 440, h: 280, out: 'promo-small-440x280.png' },
   { url: src('marquee.html'), w: 1400, h: 560, out: 'marquee-1400x560.png' },
   ...(process.env.SCREENSHOTS ? JSON.parse(process.env.SCREENSHOTS) : []),
@@ -43,7 +45,7 @@ try {
     await cdp('Runtime.evaluate', { expression: 'document.fonts ? document.fonts.ready.then(() => true) : true', awaitPromise: true }, sessionId);
     await sleep(300);
     const shot = await cdp('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: job.w, height: job.h, scale: 1 }, captureBeyondViewport: false }, sessionId);
-    fs.writeFileSync(path.join(exp, job.out), Buffer.from(shot.data, 'base64'));
+    for (const d of job.dirs || [exp]) fs.writeFileSync(path.join(d, job.out), Buffer.from(shot.data, 'base64'));
     console.log(`✓ ${job.out}`);
     await cdp('Target.closeTarget', { targetId });
   }

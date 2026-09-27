@@ -148,7 +148,7 @@ test('běh, který skončí chybou, se v Agenteeq ukáže jako selhaná session 
   const s = await waitFor(() => srv.app.store.summary(`launch:${run.id}`));
   assert.equal(s.status, 'failed');
   assert.equal(s.title, 'Oprav testy');
-  assert.match(s.reason, /Failed to authenticate: token expired\. Přihlas se v Terminálu příkazem codex login\./);
+  assert.match(s.reason, /Failed to authenticate: token expired\. Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení \(otevře se v prohlížeči\)\./);
   const alerts = (await api(srv.url).get('/api/alerts')).body.items;
   assert.ok(alerts.some((a) => a.kind === 'failed' && a.sessionId === s.id), 'přijde upozornění');
   const tr = (await api(srv.url).get(`/api/sessions/${encodeURIComponent(s.id)}`)).body.transcript;
