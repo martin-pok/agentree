@@ -1,6 +1,6 @@
 # Changelog
 
-## Připravuje se (zatím nevydáno)
+## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
 ### Rozšíření se spáruje samo a má nové okno
 

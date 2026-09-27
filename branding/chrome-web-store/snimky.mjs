@@ -50,7 +50,7 @@ async function okno(stav, soubor, jazyk) {
     window.chrome = {
       i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
-      runtime: { getManifest: () => ({ version: '0.28.1' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.28.1' } }) },
+      runtime: { getManifest: () => ({ version: '0.29.0' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.29.0' } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: true }));
