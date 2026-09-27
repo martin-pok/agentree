@@ -36,9 +36,10 @@ const zdroj = path.join(here, 'source');
 // 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
 //    „spárováno“: na stránce ChatGPT agent právě odpovídá, v dalších kartách Claude.ai dopsal
 //    a Gemini narazil na limit. „služby“: nastavení sledovaných služeb, Grok vypnutý.
-async function okno(stav, soubor) {
+//    Obojí česky i anglicky: jazyk okna se řídí _locales (chrome.i18n), tady ho volí atrapa.
+async function okno(stav, soubor, jazyk) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript(() => {
+  await page.addInitScript((jazyk) => {
     const ted = Date.now();
     const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
     const otevrene = {
@@ -47,14 +48,15 @@ async function okno(stav, soubor) {
       'gemini:c': { site: 'gemini', tab: 3, okno: 1, generating: false, limit: true, at: ted - 30000 },
     };
     window.chrome = {
+      i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
       runtime: { getManifest: () => ({ version: '0.28.1' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.28.1' } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: true }));
-  });
+  }, jazyk);
   await page.goto(`${base}/extension/popup.html`);
-  await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
+  await page.waitForFunction(() => !['Chvilku…', 'One moment…'].includes(document.getElementById('headline').textContent));
   await page.waitForFunction(() => document.querySelector('.radek--tato'));
   if (stav === 'sluzby') await page.locator('#sites-open').click();
   await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
@@ -66,14 +68,18 @@ async function okno(stav, soubor) {
 }
 
 try {
-  const vysky = { paired: await okno('sparovano', 'okno-sparovano.png'), sluzby: await okno('sluzby', 'okno-sluzby.png') };
+  for (const jazyk of ['cs', 'en']) {
+  const pripona = jazyk === 'cs' ? '' : `-${jazyk}`;
+  const vysky = { paired: await okno('sparovano', `okno-sparovano${pripona}.png`, jazyk), sluzby: await okno('sluzby', `okno-sluzby${pripona}.png`, jazyk) };
+  const cil = jazyk === 'cs' ? vystup : path.join(vystup, jazyk);
+  await fs.mkdir(cil, { recursive: true });
   // 2) Kompozice přesně 1280 × 800, poměr 1:1 (obchod jiné rozměry odmítne).
   for (const n of [1, 2, 3]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const chyby = [];
     page.on('pageerror', (e) => chyby.push(e.message));
     page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
-    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?paired=${vysky.paired}&sluzby=${vysky.sluzby}`);
+    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}`);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(200);
     const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {
@@ -81,9 +87,10 @@ try {
       return r.width && (r.right > 1280.5 || r.bottom > 800.5 || r.left < -0.5 || r.top < -0.5);
     }));
     if (chyby.length || preteka) throw new Error(`snímek ${n}: ${preteka ? 'obsah přetéká plátno' : chyby.join('; ')}`);
-    await page.screenshot({ path: path.join(vystup, `snimek-${n}-1280x800.png`), clip: { x: 0, y: 0, width: 1280, height: 800 } });
-    console.log(`✓ snimek-${n}-1280x800.png`);
+    await page.screenshot({ path: path.join(cil, `snimek-${n}-1280x800.png`), clip: { x: 0, y: 0, width: 1280, height: 800 } });
+    console.log(`✓ ${path.relative(vystup, path.join(cil, `snimek-${n}-1280x800.png`))}`);
     await page.close();
+  }
   }
 } finally {
   await browser.close();

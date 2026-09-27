@@ -12,6 +12,12 @@
   3 min“), a kliknutím se přepneš do té karty. Aktuální karta ukazuje počty zpráv. Sledované
   služby a ověření stránky jsou vlastní pohledy se zpátečním tlačítkem. Nové snímky do Chrome
   Web Store.
+- Rozšíření mluví anglicky: okno, název i popis v Chromu se řídí jazykem prohlížeče (český Chrome
+  dostane češtinu, ostatní angličtinu). Anglická karta Chrome Web Store s vlastními snímky.
+  Úplnost překladu hlídá `test/extension-i18n.test.mjs`, `qa:extension` projde okno i anglicky.
+- Oprava: složka rozšíření, kterou připravuje aplikace (`~/.agenteeq/extension`), se kopírovala
+  podle pevného seznamu a chyběla v ní písma a loga služeb, takže okno bylo bez nich. Teď se
+  kopíruje celá složka, stejně jako do balíčku pro obchod, a staré soubory z kopie zmizí.
 
 ### Jednotný tvar a velikost všech tlačítek
 

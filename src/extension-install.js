@@ -9,8 +9,13 @@ import fs from 'node:fs/promises';
 // Proto si aplikace při startu udělá kopii do datové složky uživatele, kterou žádná aktualizace
 // nesmaže, a Chromu ukazuje právě tu. Kopie se obnoví, jen když se liší verze – jinak se nesahá
 // na nic, aby Chrome neviděl zbytečné změny.
+//
+// Kopíruje se celá složka rozšíření, stejně jako do balíčku pro obchod (scripts/build-extension.mjs).
+// Pevný seznam souborů tu dřív vynechal písma, loga, překlady i _locales – okno se pak kreslilo
+// bez nich a s lokalizovaným manifestem by ho Chrome vůbec nenačetl. Kopie je složka aplikace:
+// co v rozšíření už není, z ní zmizí, aby v ní nezůstávaly staré soubory.
 
-const KOPIROVAT = ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons'];
+const VYNECHAT = (jmeno) => jmeno.startsWith('.');
 
 async function verzeManifestu(dir) {
   try {
@@ -22,15 +27,14 @@ async function verzeManifestu(dir) {
 
 async function zkopiruj(zdroj, cil) {
   await fs.mkdir(cil, { recursive: true });
-  for (const jmeno of KOPIROVAT) {
-    const z = path.join(zdroj, jmeno);
+  const soubory = (await fs.readdir(zdroj)).filter((jmeno) => !VYNECHAT(jmeno));
+  for (const jmeno of await fs.readdir(cil)) {
+    if (!soubory.includes(jmeno)) await fs.rm(path.join(cil, jmeno), { recursive: true, force: true });
+  }
+  for (const jmeno of soubory) {
     const c = path.join(cil, jmeno);
-    try {
-      await fs.rm(c, { recursive: true, force: true });
-      await fs.cp(z, c, { recursive: true });
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-    }
+    await fs.rm(c, { recursive: true, force: true });
+    await fs.cp(path.join(zdroj, jmeno), c, { recursive: true, filter: (z) => !VYNECHAT(path.basename(z)) });
   }
 }
 

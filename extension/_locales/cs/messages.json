@@ -1,0 +1,22 @@
+{
+  "jazyk": {
+    "message": "cs",
+    "description": "Jazyk okna rozšíření (i18n.js)."
+  },
+  "nazev": {
+    "message": "Agenteeq – AI agenti v reálném čase",
+    "description": "Název rozšíření v Chromu a v obchodě."
+  },
+  "kratkyNazev": {
+    "message": "Agenteeq",
+    "description": "Krátký název."
+  },
+  "popis": {
+    "message": "Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.",
+    "description": "Popis v Chromu a v obchodě, nejvýš 132 znaků."
+  },
+  "titulek": {
+    "message": "Agenteeq",
+    "description": "Popisek ikony rozšíření v liště."
+  }
+}

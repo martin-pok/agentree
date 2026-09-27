@@ -31,12 +31,12 @@ OAuth klienta v Google Cloud, který si musí vytvořit vlastník.
 
 | Pole | Hodnota |
 |---|---|
-| Název | z manifestu: `Agenteeq – AI agenti v reálném čase` |
-| Shrnutí | z manifestu (nejvýš 132 znaků): „Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.“ |
+| Název | z `extension/_locales`: `Agenteeq – AI agenti v reálném čase` / `Agenteeq – AI agents in real time` |
+| Shrnutí | z `extension/_locales` (nejvýš 132 znaků): „Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.“ / „Your web AI chats in the Agenteeq app on your computer: whether the agent is working and how many messages. Sends no message text.“ |
 | Kategorie | Productivity → Workflow & Planning |
-| Jazyk | čeština (okno rozšíření je zatím jen česky) |
+| Jazyk | angličtina (výchozí, `default_locale`) a čeština. Okno i název v Chromu se řídí jazykem prohlížeče: český Chrome dostane češtinu, ostatní angličtinu. Obchod vyplní obě karty z `_locales` sám; popis a snímky se zadávají pro každý jazyk zvlášť. |
 | Ikona obchodu | `branding/chrome-web-store/export/icon-128.png` (obraz 96 × 96, průhledný okraj 16 px) |
-| Snímky obrazovky | `branding/chrome-web-store/export/snimek-1-1280x800.png`, `snimek-2-…`, `snimek-3-…` |
+| Snímky obrazovky | česky `branding/chrome-web-store/export/snimek-1-1280x800.png`, `snimek-2-…`, `snimek-3-…`; anglicky totéž v `export/en/` |
 | Malá propagační dlaždice | `branding/chrome-web-store/export/promo-small-440x280.png` |
 | Velká dlaždice (nepovinná) | `branding/chrome-web-store/export/marquee-1400x560.png` |
 | Domovská stránka | https://agentree-fawn.vercel.app/ |
@@ -52,8 +52,9 @@ Snímky se vyrábějí ze skutečného okna rozšíření a skutečného rozhran
 Agenteeq ukazuje všechny tvoje AI agenty na jednom místě: Claude Code, Codex nebo Cursor z tvého počítače a díky tomuto rozšíření i webové chaty – ChatGPT, Claude.ai, Gemini, Perplexity, Microsoft Copilot, Grok, Qwen a GitHub Copilot.
 
 Co rozšíření dělá
-• Pozná, jestli služba právě odpovídá, nebo už dopsala.
+• Pozná, jestli služba právě odpovídá, nebo už dopsala, a jak dlouho odpovídá.
 • Spočítá zprávy v konverzaci a zachytí upozornění na vyčerpaný limit.
+• V okně rozšíření ukáže všechny otevřené konverzace s AI; kliknutím se přepneš do karty.
 • Pošle to do aplikace Agenteeq, kde vidíš, kdo pracuje a kdo čeká na tebe.
 • Zadání z aplikace („Spustit agenta“) vloží rovnou do okna služby.
 
@@ -67,14 +68,17 @@ Rozšíření potřebuje aplikaci Agenteeq pro Mac (zdarma ke stažení na https
 Zásady ochrany soukromí: https://agentree-fawn.vercel.app/soukromi
 ```
 
-Anglická verze popisu pro pozdější anglickou kartu (až okno rozšíření umí anglicky):
+### Anglická karta (English listing)
+
+Okno rozšíření mluví anglicky v každém Chromu, který není český (`extension/i18n.js`, `extension/_locales/en`).
 
 ```
 Agenteeq shows all your AI agents in one place: Claude Code, Codex or Cursor on your computer and, with this extension, web chats too – ChatGPT, Claude.ai, Gemini, Perplexity, Microsoft Copilot, Grok, Qwen and GitHub Copilot.
 
 What the extension does
-• Detects whether a service is responding or has finished.
+• Detects whether a service is replying or has finished, and for how long it has been replying.
 • Counts the messages in a conversation and picks up limit notices.
+• Shows all your open AI conversations in the extension window; click one to switch to its tab.
 • Sends this to the Agenteeq app, where you see who is working and who is waiting for you.
 • Pastes a prompt from the app (“Start an agent”) straight into the service’s window.
 
@@ -125,8 +129,8 @@ https://agentree-fawn.vercel.app/en/privacy). Zdroj: `site/soukromi/index.html`,
 ## Poznámky pro kontrolu (Test instructions)
 
 ```
-The extension works together with the free Agenteeq desktop app for macOS (https://github.com/martin-pok/agentree/releases). Without the app, the extension window shows "Agenteeq na Macu neběží" (Agenteeq is not running on the Mac) – this is expected.
-To test: install and open the app. Once the extension is published, it pairs with the app automatically. During review the app doesn't know the store ID yet, so pair it with a one-time code: in the app open Settings → Connections → Chrome extension → "Nespárovalo se samo? Použij jednorázový kód" (didn't pair on its own? use a one-time code), click "Vytvořit jednorázový kód" (create one-time code), paste the code into the extension window and click "Spárovat" (pair). Then open any conversation on chatgpt.com or claude.ai – it appears in the app's Overview within a few seconds.
+The extension works together with the free Agenteeq desktop app for macOS (https://github.com/martin-pok/agentree/releases). Without the app, the extension window shows "Agenteeq isn’t running on this computer" – this is expected. The extension window follows the browser language (English, or Czech in a Czech browser).
+To test: install and open the app. Once the extension is published, it pairs with the app automatically. During review the app doesn't know the store ID yet, so pair it with a one-time code: in the app open Settings → Connections → Chrome extension → "Nespárovalo se samo? Použij jednorázový kód" (didn't pair on its own? use a one-time code), click "Vytvořit jednorázový kód" (create one-time code), paste the code into the extension window and click "Pair". (The app can be switched to English in Settings → Account and appearance.) Then open any conversation on chatgpt.com or claude.ai – it appears in the app's Overview within a few seconds.
 The extension only sends conversation status and message counts to http://127.0.0.1:4620 (the local app). It never sends message text.
 ```
 

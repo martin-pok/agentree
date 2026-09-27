@@ -24,9 +24,14 @@ test('Chrome Web Store: manifest v limitech obchodu a s nejmenšími oprávněn�
   const pkg = JSON.parse(await cti('package.json'));
   assert.equal(m.manifest_version, 3);
   assert.equal(m.version, pkg.version, 'verze rozšíření jde s aplikací');
-  assert.ok(m.name.length <= 75, `název má ${m.name.length} znaků, obchod bere nejvýš 75`);
-  assert.ok(m.short_name.length <= 12, 'krátký název nejvýš 12 znaků');
-  assert.ok(m.description.length <= 132, `popis má ${m.description.length} znaků, obchod bere nejvýš 132`);
+  // Název a popis jsou v _locales (čeština a angličtina); limity platí pro každý jazyk.
+  for (const jazyk of await fs.readdir(path.join(ROOT, 'extension/_locales'))) {
+    const zpravy = JSON.parse(await cti(`extension/_locales/${jazyk}/messages.json`));
+    const text = (hodnota) => hodnota.replace(/__MSG_(\w+)__/g, (_, k) => zpravy[k]?.message ?? '');
+    assert.ok(text(m.name).length <= 75, `${jazyk}: název má ${text(m.name).length} znaků, obchod bere nejvýš 75`);
+    assert.ok(text(m.short_name).length > 0 && text(m.short_name).length <= 12, `${jazyk}: krátký název nejvýš 12 znaků`);
+    assert.ok(text(m.description).length > 0 && text(m.description).length <= 132, `${jazyk}: popis má ${text(m.description).length} znaků, obchod bere nejvýš 132`);
+  }
   assert.equal(m.key, undefined, 'klíč do balíčku pro obchod nepatří – ID přidělí obchod');
   assert.deepEqual(m.permissions, ['storage', 'alarms', 'scripting'], 'každé oprávnění musí mít zdůvodnění v docs/CHROME-WEB-STORE.md');
   assert.deepEqual(m.host_permissions, ['http://127.0.0.1:4620/*', ...m.content_scripts[0].matches], 'data jdou jen do aplikace na tomtéž počítači, přístup jen k webům content skriptů');
@@ -41,7 +46,7 @@ test('Chrome Web Store: manifest v limitech obchodu a s nejmenšími oprávněn�
 });
 
 test('Chrome Web Store: podklady mají přesně rozměry, které obchod přijme', async () => {
-  for (const n of [1, 2, 3]) assert.deepEqual(await rozmeryPng(`branding/chrome-web-store/export/snimek-${n}-1280x800.png`), [1280, 800]);
+  for (const slozka of ['', 'en/']) for (const n of [1, 2, 3]) assert.deepEqual(await rozmeryPng(`branding/chrome-web-store/export/${slozka}snimek-${n}-1280x800.png`), [1280, 800]);
   assert.deepEqual(await rozmeryPng('branding/chrome-web-store/export/promo-small-440x280.png'), [440, 280]);
   assert.deepEqual(await rozmeryPng('branding/chrome-web-store/export/marquee-1400x560.png'), [1400, 560]);
   assert.deepEqual(await rozmeryPng('branding/chrome-web-store/export/icon-128.png'), [128, 128]);

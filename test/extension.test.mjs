@@ -26,6 +26,34 @@ test('rozšíření se zkopíruje mimo balíček aplikace', async () => {
   assert.ok(await fs.stat(path.join(r.path, 'icons', 'icon-16.png')), 'ikony se kopírují taky');
 });
 
+// Pevný seznam souborů dřív vynechal písma, loga a překlady. Kopie musí odpovídat celé složce
+// rozšíření (jako balíček pro obchod) a nesmí v ní zůstat soubory, které z rozšíření zmizely.
+test('kopie rozšíření obsahuje celou složku: písma, loga, překlady i _locales', async () => {
+  const zdroj = await tempDir('ext-src-');
+  const data = await tempDir('ext-data-');
+  await fakeExtension(zdroj, '1.0.0');
+  await fs.mkdir(path.join(zdroj, '_locales', 'en'), { recursive: true });
+  await fs.mkdir(path.join(zdroj, 'fonts'), { recursive: true });
+  await fs.writeFile(path.join(zdroj, '_locales', 'en', 'messages.json'), '{}');
+  await fs.writeFile(path.join(zdroj, 'fonts', 'onest-400.ttf'), 'ttf');
+  await fs.writeFile(path.join(zdroj, 'i18n.js'), '// en');
+  await fs.writeFile(path.join(zdroj, '.DS_Store'), 'x');
+  const cil = (await syncExtension({ zdroj, dataDir: data })).path;
+  for (const f of ['_locales/en/messages.json', 'fonts/onest-400.ttf', 'i18n.js']) assert.ok(await fs.stat(path.join(cil, f)), `${f} chybí v kopii`);
+  await assert.rejects(fs.stat(path.join(cil, '.DS_Store')), 'skryté soubory se nekopírují');
+  // Nová verze bez i18n.js: starý soubor z kopie zmizí.
+  await fs.rm(path.join(zdroj, 'i18n.js'));
+  await fakeExtension(zdroj, '1.0.1');
+  await syncExtension({ zdroj, dataDir: data });
+  await assert.rejects(fs.stat(path.join(cil, 'i18n.js')), 'soubor, který z rozšíření zmizel, v kopii nezůstane');
+  // Skutečná složka rozšíření: kopie má totéž, co jde do balíčku pro obchod.
+  const data2 = await tempDir('ext-data-');
+  const skutecna = (await syncExtension({ zdroj: path.join(ROOT, 'extension'), dataDir: data2 })).path;
+  const vypis = async (d, p = '') => (await fs.readdir(path.join(d, p), { withFileTypes: true })).flatMap((e) => (e.name.startsWith('.') ? [] : [e.isDirectory() ? `${p}${e.name}/` : `${p}${e.name}`]));
+  assert.deepEqual((await vypis(skutecna)).sort(), (await vypis(path.join(ROOT, 'extension'))).sort());
+  for (const f of ['_locales/cs/messages.json', 'fonts/fonts.css', 'logos/openai.svg', 'i18n.js']) assert.ok(await fs.stat(path.join(skutecna, f)), `${f} chybí v kopii skutečného rozšíření`);
+});
+
 // Tohle je jádro věci: Chrome si pamatuje cestu ke složce. Když aktualizace aplikace smaže celý
 // balíček, kopie v datové složce musí zůstat, jinak si Chrome rozšíření sám vypne.
 test('kopie přežije, když se balíček aplikace celý vymění', async () => {

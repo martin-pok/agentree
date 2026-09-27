@@ -22,11 +22,12 @@ const OTEVRENA_MS = 150e3;
 const MAX_VYSKA = 600;
 
 const $ = (id) => document.getElementById(id);
+// Texty jsou česky a tr() je v angličtině přeloží (i18n.js); mnozne() volí tvar podle počtu.
+const { tr, mnozne, jazyk, LOCALE, prelozStranku } = window.AgenteeqI18n;
 // Česká sazba: jednopísmenná předložka nebo spojka (v, k, s, z, o, u, a, i) nezůstane na konci řádku.
-const sazba = (text) => String(text).replace(/(?<=^|\s)([vkszouaiVKSZOUAI]) (?=\S)/g, '$1\u00a0');
+const sazba = (text) => (jazyk() === 'cs' ? String(text).replace(/(?<=^|\s)([vkszouaiVKSZOUAI]) (?=\S)/g, '$1\u00a0') : String(text));
 const sluzba = (id) => SITES.find(([s]) => s === id);
-// Český tvar podle počtu: 1 zpráva, 2–4 zprávy, 0 a 5+ zpráv.
-const tvar = (n, jedna, dve, pet) => (n === 1 ? jedna : n >= 2 && n <= 4 ? dve : pet);
+const nazevSluzby = (id) => tr((sluzba(id) || [id, id])[1]);
 const el = (tag, trida, text) => {
   const e = document.createElement(tag);
   if (trida) e.className = trida;
@@ -37,9 +38,9 @@ const SIPKA = '<svg class="sipka" viewBox="0 0 24 24" fill="none" stroke="curren
 
 function ago(at) {
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (s < 3600) return `před ${Math.max(1, Math.round(s / 60))} min`;
-  if (s < 86400) return `před ${Math.round(s / 3600)} h`;
-  return new Date(at).toLocaleDateString('cs-CZ');
+  if (s < 3600) return tr('před {0} min', Math.max(1, Math.round(s / 60)));
+  if (s < 86400) return tr('před {0} h', Math.round(s / 3600));
+  return new Date(at).toLocaleDateString(LOCALE);
 }
 // Jak dlouho agent odpovídá: 0:42, 3:05, 1:02:10.
 function trvani(od) {
@@ -81,7 +82,9 @@ function ukaz(pohled) {
   $('view-overeni').hidden = pohled !== 'overeni';
   $('brand').hidden = pohled !== 'hlavni';
   $('back').hidden = pohled === 'hlavni';
-  $('back-title').textContent = pohled === 'sluzby' ? 'Sledované služby' : 'Ověření stránky';
+  $('back-title').textContent = tr(pohled === 'sluzby' ? 'Sledované služby' : 'Ověření stránky');
+  // Tlačítko nese název pohledu, čtečce ale musí říct, co udělá.
+  $('back').setAttribute('aria-label', tr('Zpět'));
   $('sites-open').setAttribute('aria-expanded', String(pohled === 'sluzby'));
   clearInterval(overeni.casovac);
   if (pohled === 'overeni') {
@@ -107,7 +110,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 // Horní část: stav spojení, a buď velké číslo s popisem, nebo jedna věta.
 function setHero({ tone, pill, headline, sub, pocet = null }) {
   $('pill').dataset.tone = tone;
-  $('pill-text').textContent = pill;
+  $('pill-text').textContent = tr(pill);
   $('hero').classList.toggle('hero--cislo', pocet !== null);
   $('hero-num').hidden = pocet === null;
   $('hero-num').textContent = pocet === null ? '' : String(pocet);
@@ -122,7 +125,7 @@ async function renderSites(lastStatus) {
   box.textContent = '';
   const loga = $('sites-logos');
   loga.textContent = '';
-  $('sites-count').textContent = `${SITES.length - off.length}\u00a0z\u00a0${SITES.length}`;
+  $('sites-count').textContent = tr('{0} z {1}', SITES.length - off.length, SITES.length).replace(/ /g, '\u00a0');
   for (const [id, name, klic] of SITES) {
     const img = el('img');
     img.width = 14;
@@ -133,14 +136,14 @@ async function renderSites(lastStatus) {
 
     const row = el('label', 'site');
     if (off.includes(id)) row.dataset.off = '';
-    const nazev = el('span', 'name', name);
-    if (lastStatus?.ok && lastStatus.site === id) nazev.append(el('small', '', `naposledy ${ago(lastStatus.at)}`));
+    const nazev = el('span', 'name', tr(name));
+    if (lastStatus?.ok && lastStatus.site === id) nazev.append(el('small', '', tr('naposledy {0}', ago(lastStatus.at))));
     const sw = el('span', 'switch');
     const input = el('input');
     input.type = 'checkbox';
     input.setAttribute('role', 'switch');
     input.checked = !off.includes(id);
-    input.setAttribute('aria-label', `Sledovat ${name}`);
+    input.setAttribute('aria-label', tr('Sledovat {0}', tr(name)));
     input.addEventListener('change', async () => {
       const cur = await vypnute();
       const next = input.checked ? cur.filter((x) => x !== id) : [...new Set([...cur, id])];
@@ -148,7 +151,7 @@ async function renderSites(lastStatus) {
       if (input.checked) delete row.dataset.off;
       else row.dataset.off = '';
       img.classList.toggle('vyp', !input.checked);
-      $('sites-count').textContent = `${SITES.length - next.length}\u00a0z\u00a0${SITES.length}`;
+      $('sites-count').textContent = tr('{0} z {1}', SITES.length - next.length, SITES.length).replace(/ /g, '\u00a0');
       // Vypnutá služba hned zmizí ze seznamu i z počtu nahoře.
       seznam.off = next;
       vykresliSeznam();
@@ -186,8 +189,8 @@ async function zeptejSe(tab, type) {
 }
 
 function vykresliOvereni(d) {
-  const [, name, klic] = sluzba(d.site) || [d.site, d.site, ''];
-  $('check-site').textContent = name;
+  const [, , klic] = sluzba(d.site) || [d.site, d.site, ''];
+  $('check-site').textContent = nazevSluzby(d.site);
   if (klic) logo($('check-logo'), klic);
   const seznam = $('checks');
   const radky = window.AgenteeqSites.radkyOvereni(d);
@@ -218,7 +221,7 @@ function potvrd(hodnota) {
   $('check-no').setAttribute('aria-pressed', String(hodnota === 'nesedi'));
   const msg = $('check-msg');
   msg.dataset.tone = '';
-  msg.textContent = sazba(hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek, podle něj se rozpoznávání opraví.');
+  msg.textContent = sazba(tr(hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek, podle něj se rozpoznávání opraví.'));
 }
 
 $('check-yes').addEventListener('click', () => potvrd('sedi'));
@@ -229,7 +232,7 @@ $('check-save').addEventListener('click', async () => {
   const v = await zeptejSe(overeni.tab, 'agenteeq:vzorek');
   if (!v || !overeni.diagnostika) {
     msg.dataset.tone = 'err';
-    msg.textContent = sazba('Vzorek se nepodařilo získat. Obnov stránku a zkus to znovu.');
+    msg.textContent = sazba(tr('Vzorek se nepodařilo získat. Obnov stránku a zkus to znovu.'));
     return;
   }
   const soubor = { ...v, porizeno: new Date().toISOString(), verzeRozsireni: chrome.runtime.getManifest().version, diagnostika: overeni.diagnostika, potvrzeni: overeni.potvrzeni };
@@ -241,7 +244,7 @@ $('check-save').addEventListener('click', async () => {
   odkaz.click();
   odkaz.remove();
   msg.dataset.tone = 'ok';
-  msg.textContent = sazba(`Uloženo do Stažených souborů (${v.prvku} prvků${v.zkraceno ? ', zkráceno' : ''}).`);
+  msg.textContent = sazba(tr('Uloženo do Stažených souborů ({0} prvků{1}).', v.prvku, v.zkraceno ? tr(', zkráceno') : ''));
 });
 
 // ── Otevřené konverzace ─────────────────────────────────────────────────────
@@ -261,14 +264,14 @@ async function nactiKonverzace() {
 
 // Stav řádku jednou větou. Aktuální karta bere čerstvou diagnostiku ze stránky.
 function stavRadku(k, d, off) {
-  if (d && off.includes(d.site)) return ['', 'sledování této služby je vypnuté'];
+  if (d && off.includes(d.site)) return ['', tr('sledování této služby je vypnuté')];
   const generuje = d ? d.generuje : k?.generating;
   const limit = d ? d.limit : k?.limit;
-  if (generuje) return ['work', k?.od ? `odpovídá · ${trvani(k.od)}` : 'odpovídá', k?.od];
-  if (limit) return ['warn', 'narazil na limit'];
-  if (d && !d.zpravy?.user && !d.zpravy?.assistant) return ['', 'zatím bez zpráv'];
-  if (k?.konec) return ['', Date.now() - k.konec < 60e3 ? 'právě dokončil' : `dokončil ${ago(k.konec)}`];
-  return ['', 'čeká na zadání'];
+  if (generuje) return ['work', k?.od ? tr('odpovídá · {0}', trvani(k.od)) : tr('odpovídá'), k?.od];
+  if (limit) return ['warn', tr('narazil na limit')];
+  if (d && !d.zpravy?.user && !d.zpravy?.assistant) return ['', tr('zatím bez zpráv')];
+  if (k?.konec) return ['', Date.now() - k.konec < 60e3 ? tr('právě dokončil') : tr('dokončil {0}', ago(k.konec))];
+  return ['', tr('čeká na zadání')];
 }
 
 function radekStav(ton, text, od) {
@@ -281,7 +284,7 @@ function radekStav(ton, text, od) {
 }
 // Každou sekundu se přepíše jen čas odpovědi – seznam zůstane, jak je, a zaostření neuteče.
 function tikni() {
-  for (const x of document.querySelectorAll('#konverzace [data-od]')) x.textContent = `odpovídá · ${trvani(Number(x.dataset.od))}`;
+  for (const x of document.querySelectorAll('#konverzace [data-od]')) x.textContent = tr('odpovídá · {0}', trvani(Number(x.dataset.od)));
 }
 
 async function prepni(k) {
@@ -315,7 +318,8 @@ function vykresliSeznam() {
   let bezi = false;
 
   if (d) {
-    const [, name, klic] = sluzba(d.site) || [d.site, d.site, ''];
+    const [, , klic] = sluzba(d.site) || [d.site, d.site, ''];
+    const name = nazevSluzby(d.site);
     const li = el('li');
     const radek = el('div', 'radek radek--tato');
     const t = el('div', 't');
@@ -327,30 +331,31 @@ function vykresliSeznam() {
       const pocty = el('div', 'pocty');
       for (const [n, a, b, c] of [[user, 'tvoje zpráva', 'tvoje zprávy', 'tvých zpráv'], [assistant, 'odpověď', 'odpovědi', 'odpovědí']]) {
         const bunka = el('div', '', String(n));
-        bunka.append(el('small', '', tvar(n, a, b, c)));
+        bunka.append(el('small', '', mnozne(n, a, b, c)));
         pocty.append(bunka);
       }
       t.append(pocty);
     }
-    const overit = el('button', 'overit', 'Počty nesedí? Ověřit stránku');
+    const overit = el('button', 'overit', tr('Počty nesedí? Ověřit stránku'));
     overit.type = 'button';
     overit.id = 'check-open';
     overit.setAttribute('aria-controls', 'view-overeni');
     overit.addEventListener('click', () => ukaz('overeni'));
     t.append(overit);
-    radek.append(dlazdice(klic), t, el('span', 'tag', 'tato karta'));
+    radek.append(dlazdice(klic), t, el('span', 'tag', tr('tato karta')));
     li.append(radek);
     box.append(li);
   }
 
   for (const k of ostatni) {
-    const [, name, klic] = sluzba(k.site) || [k.site, k.site, ''];
+    const [, , klic] = sluzba(k.site) || [k.site, k.site, ''];
+    const name = nazevSluzby(k.site);
     const [ton, text, od] = stavRadku(k, null, off);
     bezi ||= Boolean(od);
     const li = el('li');
     const radek = el('button', 'radek');
     radek.type = 'button';
-    radek.setAttribute('aria-label', `Přepnout na kartu ${name}, ${text}`);
+    radek.setAttribute('aria-label', tr('Přepnout na kartu {0}, {1}', name, text));
     const t = el('div', 't');
     t.append(el('b', '', name), radekStav(ton, text, od));
     radek.append(dlazdice(klic), t);
@@ -387,7 +392,7 @@ function zakladniStav() {
   $('pairing').hidden = true;
   $('feats').hidden = true;
   $('app-link').href = APLIKACE;
-  $('app-link-text').textContent = 'Otevřít Agenteeq';
+  $('app-link-text').textContent = tr('Otevřít Agenteeq');
 }
 
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
@@ -407,8 +412,8 @@ async function render() {
     zakladniStav();
     $('feats').hidden = false;
     $('app-link').href = WEB;
-    $('app-link-text').textContent = 'Stáhnout Agenteeq';
-    setHero({ tone: 'err', pill: 'Neběží', headline: 'Agenteeq na tomto počítači neběží', sub: 'Spusť aplikaci. Rozšíření se k ní připojí samo, nic nenastavuješ.' });
+    $('app-link-text').textContent = tr('Stáhnout Agenteeq');
+    setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci. Rozšíření se k ní připojí samo, nic nenastavuješ.') });
     return;
   }
 
@@ -420,8 +425,8 @@ async function render() {
     setHero({
       tone: 'warn',
       pill: 'Nespárováno',
-      headline: r?.revoked ? 'Spáruj rozšíření znovu' : 'Spáruj rozšíření kódem',
-      sub: r?.revoked ? 'Předchozí spárování už neplatí. Stačí nový jednorázový kód.' : 'Tohle rozšíření se s Agenteeq nespárovalo samo. Stačí jednorázový kód.',
+      headline: tr(r?.revoked ? 'Spáruj rozšíření znovu' : 'Spáruj rozšíření kódem'),
+      sub: tr(r?.revoked ? 'Předchozí spárování už neplatí. Stačí nový jednorázový kód.' : 'Tohle rozšíření se s Agenteeq nespárovalo samo. Stačí jednorázový kód.'),
     });
     return;
   }
@@ -437,7 +442,7 @@ async function render() {
   zakladniStav();
   $('sites-open').hidden = false;
   $('outdated').hidden = !outdated;
-  if (outdated) $('outdated').textContent = sazba(`Je k dispozici verze ${expected}. Chrome ji nainstaluje sám; hned ji získáš na stránce chrome://extensions tlačítkem Aktualizovat.`);
+  if (outdated) $('outdated').textContent = sazba(tr('Je k dispozici verze {0}. Chrome ji nainstaluje sám; hned ji získáš na stránce chrome://extensions tlačítkem Aktualizovat.', expected));
   seznam.lastStatus = lastStatus;
   seznam.zastarala = outdated;
   seznam.pripojeno = true;
@@ -457,12 +462,13 @@ function hlavicka() {
   const pracuje = zive.filter((k) => (k.tab === overeni.tab && d ? d.generuje : k.generating)).length + (d && !tataVSeznamu && d.generuje ? 1 : 0);
   const failed = Boolean(lastStatus && !lastStatus.ok);
   const tone = outdated || failed ? 'warn' : 'ok';
+  const selhalo = tr('Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.');
   if (!pocet) {
-    setHero({ tone, pill: 'Připojeno', headline: 'Žádná otevřená konverzace', sub: failed ? 'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.' : 'Otevři chat s AI a objeví se tady i v Agenteeq.' });
+    setHero({ tone, pill: 'Připojeno', headline: tr('Žádná otevřená konverzace'), sub: failed ? selhalo : tr('Otevři chat s AI a objeví se tady i v Agenteeq.') });
     return;
   }
-  const popis = pracuje === 0 ? 'agentů teď pracuje' : tvar(pracuje, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
-  const sub = failed ? 'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.' : `${pocet} ${tvar(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  const popis = pracuje === 0 ? tr('agentů teď pracuje') : mnozne(pracuje, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
+  const sub = failed ? selhalo : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: pracuje });
 }
 
@@ -482,7 +488,7 @@ $('pair-form').addEventListener('submit', async (e) => {
   if (!/^[A-Za-z0-9_-]{16}$/.test(code)) {
     $('code').setAttribute('aria-invalid', 'true');
     msg.dataset.tone = 'err';
-    msg.textContent = sazba('Kód má 16 znaků – zkopíruj ho z Agenteeq celý.');
+    msg.textContent = sazba(tr('Kód má 16 znaků – zkopíruj ho z Agenteeq celý.'));
     return;
   }
   $('code').removeAttribute('aria-invalid');
@@ -491,13 +497,15 @@ $('pair-form').addEventListener('submit', async (e) => {
   $('pair').disabled = false;
   if (!result?.ok) {
     msg.dataset.tone = 'err';
-    msg.textContent = sazba(result?.error || 'Spárování se nepovedlo. Vytvoř v Agenteeq nový kód.');
+    // Chybu hlásí aplikace česky; v angličtině okno řekne totéž obecně.
+    msg.textContent = sazba(jazyk() === 'cs' && result?.error ? result.error : tr('Spárování se nepovedlo. Vytvoř v Agenteeq nový kód.'));
     return;
   }
   $('code').value = '';
   msg.dataset.tone = 'ok';
-  msg.textContent = sazba('Spárováno.');
+  msg.textContent = sazba(tr('Spárováno.'));
   render();
 });
 
+prelozStranku();
 render();

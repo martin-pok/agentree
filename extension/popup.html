@@ -169,7 +169,7 @@
 
     /* ---------- Patička ---------- */
     footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 14px; color: var(--mute); font-size: 12px; }
-    footer a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); font-weight: 500; text-decoration: none; border-radius: var(--r-xs); }
+    footer a { display: inline-flex; flex: none; align-items: center; gap: 4px; color: var(--ink); font-weight: 500; white-space: nowrap; text-decoration: none; border-radius: var(--r-xs); }
     footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
     .btn, .radek, .sluzby, .zpet, .overit { transition: transform 180ms var(--ease), background-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease); }
@@ -187,7 +187,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
       <span id="back-title"></span>
     </button>
-    <span class="stav" id="pill" role="status"><i></i><span id="pill-text">Zjišťuji…</span></span>
+    <span class="stav" id="pill" role="status"><i></i><span id="pill-text" data-i18n>Zjišťuji…</span></span>
   </header>
 
   <!-- Hlavní pohled -->
@@ -195,66 +195,67 @@
     <section class="hero" id="hero">
       <span class="num" id="hero-num" hidden></span>
       <div class="hero-text">
-        <h1 class="headline" id="headline">Chvilku…</h1>
-        <p class="sub" id="sub">Hledám Agenteeq na tomto počítači.</p>
+        <h1 class="headline" id="headline" data-i18n>Chvilku…</h1>
+        <p class="sub" id="sub" data-i18n>Hledám Agenteeq na tomto počítači.</p>
       </div>
     </section>
 
     <p class="note" id="outdated" hidden></p>
 
-    <ol class="konverzace" id="konverzace" aria-label="Otevřené konverzace" hidden></ol>
+    <ol class="konverzace" id="konverzace" aria-label="Otevřené konverzace" data-i18n-attr="aria-label" hidden></ol>
     <button class="sluzby" id="sites-open" type="button" aria-expanded="false" aria-controls="view-sluzby" hidden>
-      <span class="sr-only">Sledované služby</span>
+      <span class="sr-only" data-i18n>Sledované služby</span>
       <span class="loga" id="sites-logos" aria-hidden="true"></span>
       <span class="sluzby-pocet"><span id="sites-count"></span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
     </button>
 
-    <section class="pairing" id="pairing" hidden aria-label="Spárování jednorázovým kódem">
+    <section class="pairing" id="pairing" hidden aria-label="Spárování jednorázovým kódem" data-i18n-attr="aria-label">
       <ol class="steps">
-        <li><span>V&nbsp;Agenteeq otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b>.</span></li>
-        <li><span>Klikni na <b>Vytvořit jednorázový kód</b> a&nbsp;vlož ho sem.</span></li>
+        <li><span data-i18n-html>V&nbsp;Agenteeq otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b>.</span></li>
+        <li><span data-i18n-html>Klikni na <b>Vytvořit jednorázový kód</b> a&nbsp;vlož ho sem.</span></li>
       </ol>
       <form class="pair" id="pair-form">
-        <input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false" aria-label="Jednorázový kód z Agenteeq" aria-describedby="pair-msg" maxlength="16">
-        <button class="btn" id="pair" type="submit">Spárovat</button>
+        <input id="code" type="text" placeholder="Jednorázový kód" autocomplete="off" spellcheck="false" aria-label="Jednorázový kód z Agenteeq" data-i18n-attr="placeholder,aria-label" aria-describedby="pair-msg" maxlength="16">
+        <button class="btn" id="pair" type="submit" data-i18n>Spárovat</button>
       </form>
-      <p class="msg" id="pair-msg" role="status">Kód platí 10 minut a&nbsp;použít ho jde jen jednou.</p>
+      <p class="msg" id="pair-msg" role="status" data-i18n>Kód platí 10 minut a&nbsp;použít ho jde jen jednou.</p>
     </section>
 
-    <section id="feats" hidden aria-label="Co rozšíření dělá">
-      <div class="offline"><button class="btn btn--wide" id="retry" type="button">Zkusit znovu</button></div>
+    <section id="feats" hidden aria-label="Co rozšíření dělá" data-i18n-attr="aria-label">
+      <div class="offline"><button class="btn btn--wide" id="retry" type="button" data-i18n>Zkusit znovu</button></div>
       <ul class="fakta">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Uvidíš, jestli agent v&nbsp;ChatGPT, Claude.ai nebo Gemini pracuje a&nbsp;kolik má konverzace zpráv. Text zpráv rozšíření nikam neposílá.</span></li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><span>Spustíš službu z&nbsp;Agenteeq a&nbsp;zadání už čeká v&nbsp;poli zprávy. Odešleš ho sám.</span></li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n>Uvidíš, jestli agent v&nbsp;ChatGPT, Claude.ai nebo Gemini pracuje a&nbsp;kolik má konverzace zpráv. Text zpráv rozšíření nikam neposílá.</span></li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><span data-i18n>Spustíš službu z&nbsp;Agenteeq a&nbsp;zadání už čeká v&nbsp;poli zprávy. Odešleš ho sám.</span></li>
       </ul>
     </section>
   </div>
 
   <!-- Sledované služby -->
-  <section id="view-sluzby" hidden aria-label="Sledované služby">
+  <section id="view-sluzby" hidden aria-label="Sledované služby" data-i18n-attr="aria-label">
     <div class="sites" id="sites"></div>
-    <p class="drobne">Vypnutou službu rozšíření vůbec nečte.</p>
+    <p class="drobne" data-i18n>Vypnutou službu rozšíření vůbec nečte.</p>
   </section>
 
   <!-- Ověření stránky: nástroj pro opravu rozpoznávání -->
-  <section id="view-overeni" hidden aria-label="Ověření stránky">
+  <section id="view-overeni" hidden aria-label="Ověření stránky" data-i18n-attr="aria-label">
     <div class="overeni-hlava"><span class="tile"><img id="check-logo" alt="" width="16" height="16"></span><b id="check-site"></b></div>
     <ul class="checks" id="checks" aria-live="polite"></ul>
-    <p class="check-q" id="check-q">Sedí počty zpráv s&nbsp;tím, co na stránce vidíš?</p>
+    <p class="check-q" id="check-q" data-i18n>Sedí počty zpráv s&nbsp;tím, co na stránce vidíš?</p>
     <div class="check-actions" role="group" aria-labelledby="check-q">
-      <button class="btn btn--line" id="check-yes" type="button" aria-pressed="false">Sedí</button>
-      <button class="btn btn--line" id="check-no" type="button" aria-pressed="false">Nesedí</button>
+      <button class="btn btn--line" id="check-yes" type="button" aria-pressed="false" data-i18n>Sedí</button>
+      <button class="btn btn--line" id="check-no" type="button" aria-pressed="false" data-i18n>Nesedí</button>
     </div>
-    <button class="btn check-save" id="check-save" type="button">Uložit vzorek stránky</button>
-    <p class="msg" id="check-msg" role="status">Vzorek obsahuje jen stavbu stránky, žádný text.</p>
+    <button class="btn check-save" id="check-save" type="button" data-i18n>Uložit vzorek stránky</button>
+    <p class="msg" id="check-msg" role="status" data-i18n>Vzorek obsahuje jen stavbu stránky, žádný text.</p>
   </section>
 
   <footer>
-    <span>Nic neodchází na internet.</span>
+    <span data-i18n>Nic neodchází na internet.</span>
     <a id="app-link" href="http://127.0.0.1:4620/" target="_blank" rel="noopener"><span id="app-link-text">Otevřít Agenteeq</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
   </footer>
+  <script src="i18n.js"></script>
   <script src="sites.js"></script>
   <script src="popup.js"></script>
 </body>
