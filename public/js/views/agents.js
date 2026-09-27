@@ -41,7 +41,7 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Microsoft Copilot a Qwen Chat na webu vidí Agenteeq jen přes rozšíření pro Chrome. Bez něj o nich neví – stránku v prohlížeči odjinud přečíst nelze.')}</p>
+      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome. Bez něj se ke stránce otevřené v prohlížeči nedostane.')}</p>
       <a class="link-inline" href="#/nastaveni">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
   </li>`;

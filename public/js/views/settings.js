@@ -100,7 +100,7 @@ function tailscaleCard() {
     : bezi
       ? tr('Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu.')
       : detekce?.installed
-        ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený – spusť „tailscale up“.')
+        ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený. Otevři aplikaci Tailscale a přihlas se.')
         : tr('Tailscale na tomto Macu není. Nainstaluj ho z tailscale.com a přihlas se.');
   return `
     ${head(ICON.shield, tr('Přístup přes Tailscale'), tr('Privátní síť jen mezi tvými vlastními zařízeními. Telefon se k Macu dostane odkudkoli – z mobilních dat i z cizí Wi-Fi – a adresa přitom nikde veřejně neexistuje.'))}
@@ -113,7 +113,7 @@ function tailscaleCard() {
       ? `${tr('HTTPS přes „tailscale serve“ běží na')} <code>${esc(serve.url || '')}</code>  ${tr('Na téhle adrese si aplikaci uložíš na plochu telefonu.')}`
       : tr('HTTPS zatím zapnuté není. Bez něj aplikace v prohlížeči funguje normálně, jen si ji telefon neuloží na plochu. Zapneš ho příkazem <code>tailscale serve</code> – Agenteeq ho sám nespouští.')}</p>` : ''}
     ${!pripraveno ? `<ol class="steps steps--compact">
-      <li>${tr('Nainstaluj Tailscale (tailscale.com nebo <code>brew install --cask tailscale</code>).')}</li>
+      <li>${tr('Nainstaluj Tailscale z tailscale.com nebo z App Storu.')}</li>
       <li>${tr('Přihlas se na Macu (')}<code>tailscale up</code>${tr(') i v appce na telefonu – stejným účtem.')}</li>
       <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon kódem.')}</li>
     </ol>` : ''}
@@ -151,7 +151,7 @@ function phoneCard() {
       ${pin ? parovaciKod(l.url, pin, cas) : ''}
       ${l.devices?.length ? `<div class="conn-source-head"><span>${tr('Spárované telefony')}</span><small>${tr('Odpárováním přestane zařízení vidět cokoli.')}</small></div>
         <ul class="privacy-list">${l.devices.map((d) => `<li><b>${esc(d.label)}</b><span>${tr('spárováno {0} ·', dateLong(d.at))} <button class="link-inline" type="button" data-action="lan-forget" data-id="${esc(d.id)}">${tr('Odpárovat')}</button></span></li>`).join('')}</ul>` : `<p class="set-note">${tr('Zatím žádný spárovaný telefon.')}</p>`}` : ''}
-    <p class="set-note">${tr('Zapnuté jen doma: adresa je z privátního rozsahu, z internetu se na ni nikdo nedostane. Token má telefon v cookie, kterou nepřečte žádný skript, a v datech aplikace je z něj jen kontrolní součet. Vypnutím se spojení zavře a všechna zařízení se odpárují.')}</p>`;
+    <p class="set-note">${tr('Zapnuté jen doma: adresa je z privátního rozsahu, z internetu se na ni nikdo nedostane. Telefon si přístup drží v zabezpečené cookie a aplikace si z něj ukládá jen otisk. Vypnutím se spojení zavře a všechna zařízení se odpárují.')}</p>`;
 }
 
 function customAgentsCard() {
@@ -637,7 +637,7 @@ function syncBlock(u) {
       ${s.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(s.chyba)}</p>` : ''}`
     : '';
   return `<div class="set-divider"></div>
-    ${switchRow({ key: 'cloudSync', label: tr('Synchronizovat souhrny do účtu'), desc: tr('Tokeny po dnech, útrata po měsících, limity a počty agentů – uvidíš je i na webu. Nikdy text, názvy konverzací ani složky. Vypnutím se z účtu smažou.'), checked: s.zapnuto, disabled: u.stav !== 'prihlaseno' })}
+    ${switchRow({ key: 'cloudSync', label: tr('Synchronizovat souhrny do účtu'), desc: tr('Tokeny po dnech, útrata po měsících, limity a počty agentů – uvidíš je i na webu. Text zpráv, názvy konverzací ani složek se neposílají nikdy. Vypnutím se z účtu smažou.'), checked: s.zapnuto, disabled: u.stav !== 'prihlaseno' })}
     ${stav}
     ${fold('nahled', tr('Co přesně posíláme'), `<pre class="account-preview">${esc(v.nahled || tr('Načítám…'))}</pre>`)}`;
 }
@@ -687,7 +687,7 @@ function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), tr('Klikni na Napojit a přihlas se u dodavatele. Agenteeq sám pozná, až bude hotovo, a začne ukazovat práci, limity a spotřebu.'))}
     ${list ? `<ul class="model-list">${list.map(radekNapojeni).join('')}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
-    <p class="account-privacy">${ICON.shield}<span>${tr('Přihlašuješ se vždy přímo u dodavatele. Agenteeq nevidí hesla ani klíče a z webových chatů si nebere text – jen jestli agent pracuje, nebo čeká.')}</span></p>`;
+    <p class="account-privacy">${ICON.shield}<span>${tr('Přihlašuješ se vždy přímo u dodavatele. Agenteeq nevidí hesla ani klíče a z webových chatů se dozví jen to, jestli agent pracuje, nebo čeká.')}</span></p>`;
 }
 
 const head = (icon, title, desc, aside = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3>${title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
@@ -707,7 +707,7 @@ function update(topics) {
     ${head(ICON.sun, tr('Vzhled aplikace'), tr('Světlý vzhled je výchozí. Volba se uloží jen na tomto Macu a může sledovat nastavení systému.'))}
     <div class="appearance-options" role="group" aria-label="${tr('Vyber vzhled aplikace')}">
       ${appearanceOption('light', ICON.sun, tr('Světlý'), tr('Výchozí, jasný pracovní prostor'))}
-      ${appearanceOption('dark', ICON.moon, tr('Tmavý'), tr('Klidný večerní režim s AA kontrastem'))}
+      ${appearanceOption('dark', ICON.moon, tr('Tmavý'), tr('Klidný režim na večer, pořád dobře čitelný'))}
       ${appearanceOption('system', ICON.system, tr('Podle systému'), tr('Automaticky podle macOS'))}
     </div>
     <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Přehled se dá otevřít i v Safari nebo Chromu – hodí se na zvětšení, tisk nebo vývojářské nástroje. Odkaz platí jen pro tenhle Mac a jen do restartu aplikace.')}</small></span>
@@ -754,19 +754,22 @@ function update(topics) {
     ready: tr('Rozšíření {0} je připojené, naposledy se ozvalo {1}. Jakmile otevřeš konverzaci v Chromu, objeví se v přehledu.', esc(ext.version || ''), seen),
     quiet: `${tr('Rozšíření je spárované, ale naposledy se ozvalo {0}. Chrome je zavřený, nebo je rozšíření vypnuté v', seen)} <code>chrome://extensions</code>.`,
   }[ext.state];
-  // Jednorázový kód je společný oběma cestám instalace.
-  const pairStep = `<li>${tr('Připni si ikonu Agenteeq v liště Chromu (dílek skládačky), otevři ji a vlož jednorázový kód:')}
-        <div class="set-actions"><button class="btn btn--primary" type="button" data-action="extension-pair-code">${tr('Vytvořit jednorázový kód')}</button></div>
-        ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="${tr('Jednorázový kód zkopírován')}">${ICON.copy}${tr('Kopírovat kód')}</button></div><p class="set-note">${tr('Platí do {0} a po spárování se automaticky zneplatní.', new Date(v.pairCode.expiresAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</p>` : ''}</li>`;
+  // Rozšíření se spáruje samo (src/app.js#pozadatOSparovani). Jednorázový kód zůstává jako záloha
+  // pro prohlížeč, ve kterém se to nepovede – třeba rozšíření načtené z jiné složky.
+  const kod = `<p>${tr('Otevři ikonu Agenteeq v liště Chromu (dílek skládačky) a vlož do ní kód:')}</p>
+        <div class="set-actions"><button class="btn" type="button" data-action="extension-pair-code">${tr('Vytvořit jednorázový kód')}</button></div>
+        ${v.pairCode ? `<div class="code-line"><code class="secret">${esc(v.pairCode.code)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(v.pairCode.code)}" data-copy-message="${tr('Jednorázový kód zkopírován')}">${ICON.copy}${tr('Kopírovat kód')}</button></div><p class="set-note">${tr('Platí do {0} a po spárování se automaticky zneplatní.', new Date(v.pairCode.expiresAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</p>` : ''}`;
+  const pairStep = `<li>${tr('Hotovo. Rozšíření se s Agenteeq spáruje samo.')}
+        ${fold('ext-kod', tr('Nespárovalo se samo? Použij jednorázový kód'), kod, { open: Boolean(v.pairCode) })}</li>`;
   const manualSteps = `<ol class="steps">
       <li>${tr('V Chromu otevři adresu')} <code>chrome://extensions</code> ${tr('a vpravo nahoře zapni')} <b>${tr('Režim pro vývojáře')}</b>.
         <div class="code-line"><code>chrome://extensions</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="chrome://extensions" data-copy-message="${tr('Adresa zkopírována – vlož ji do Chromu')}">${ICON.copy}${tr('Kopírovat')}</button></div></li>
       <li>${tr('Klikni na')} <b>${tr('Načíst rozbalené')}</b> ${tr('a vyber tuto složku. Leží mimo aplikaci, takže ji aktualizace Agenteeq nerozbije:')}
         <div class="code-line"><code>${esc(ext.path)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(ext.path)}" data-copy-message="${tr('Cesta zkopírována')}">${ICON.copy}${tr('Kopírovat')}</button></div></li>
-      ${ext.obchod ? '' : pairStep}
+      ${pairStep}
     </ol>`;
-  // S rozšířením v Chrome Web Store: jedno kliknutí na „Přidat do Chromu“ a kód. Ruční cesta zůstává
-  // sbalená pro prohlížeče bez obchodu a pro vývoj.
+  // S rozšířením v Chrome Web Store: jedno kliknutí na „Přidat do Chromu“, spárování proběhne samo.
+  // Ruční cesta zůstává sbalená pro prohlížeče bez obchodu a pro vývoj.
   const installSteps = ext.obchod
     ? `<ol class="steps">
       <li>${tr('Přidej Agenteeq do Chromu z Chrome Web Store – stačí kliknout na')} <b>${tr('Přidat do Chromu')}</b>.
@@ -777,10 +780,10 @@ function update(topics) {
     : manualSteps;
   fill(el, 'extension', `
     ${head(ICON.spark, tr('Rozšíření pro Chrome'),
-      tr('Agenti z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem i přepisem a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu – nic neodchází na internet.'),
+      tr('Chaty z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem a počtem zpráv a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu, nic neodchází na internet.'),
       stateBadge(...badge))}
     <ul class="site-chips" aria-label="${tr('Podporované webové služby')}">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
-    ${ext.repair ? `<p class="set-note set-note--warn">${tr('Rozšíření je potřeba spárovat znovu. Každý prohlížeč teď dostává vlastní přístupový klíč a ten dřívější přestal platit. Vytvoř jednorázový kód a vlož ho do rozšíření.')}</p>` : ''}
+    ${ext.repair ? `<p class="set-note set-note--warn">${tr('Předchozí spárování přestalo platit. Rozšíření se spáruje znovu samo, jakmile se v Chromu ozve. Kdyby se to nestalo, použij jednorázový kód níž.')}</p>` : ''}
     ${ext.outdated ? `<p class="set-note set-note--warn">${tr('V Chromu běží rozšíření {0}, aplikace má {1}. Otevři', esc(ext.version), esc(ext.expectedVersion))} <code>chrome://extensions</code> ${ext.obchod ? tr('a klikni na Aktualizovat (rozšíření z obchodu se jinak aktualizuje samo do pár hodin; u ruční instalace na šipku ↻ u Agenteeq).') : tr('a u Agenteeq klikni na šipku obnovení ↻.')}</p>` : ''}
     ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
     ${paired ? fold('ext', tr('Instalace a spárování znovu'), installSteps, { cls: 'ext-reinstall' }) : installSteps}
@@ -870,7 +873,7 @@ function update(topics) {
   /* Náklady za API */
   fill(el, 'cloud', `
     ${head(ICON.wallet, tr('Skutečné náklady za API <span class="badge">Zkušební</span>'),
-      `${tr('Platíte za API (ne jen předplatné)? Správcovský klíč organizace doplní skutečné náklady do grafů a rozpočtů.')} ${i.keychain ? tr('Klíč se uloží do Klíčenky macOS a prohlížeč ho už neuvidí.') : tr('Klíčenka tu není dostupná – klíč nastav proměnnou prostředí.')}`)}
+      `${tr('Platíš za API, nejen předplatné? Správcovský klíč organizace doplní skutečné náklady do grafů a rozpočtů.')} ${i.keychain ? tr('Klíč se uloží do Klíčenky macOS a prohlížeč ho už neuvidí.') : tr('Klíčenka tu není dostupná – klíč nastav proměnnou prostředí.')}`)}
     ${CLOUD.map(([id, label, provider, placeholder, desc]) => {
       const c = i.cloud?.[id] || { state: 'missing' };
       return `<div class="key-row">

@@ -77,10 +77,12 @@ test('limity: každé okno Claude má jeden řádek – nejnovější měření,
 
   const merice = limitGauges(limity, now);
   assert.equal(merice.length, 3, '5 h a týden za Claude, 5 h za Codex – ne dvě čísla pro stejné okno');
-  assert.equal(merice.filter((h) => h.includes('42')).length, 1, 'při shodném čase platí přesná hodnota ze stavového řádku');
-  assert.equal(merice.some((h) => h.includes('13')), false, 'záložní historie téhož okna se vedle ní nezobrazuje');
-  assert.equal(merice.some((h) => h.includes('62')), true, 'týden změřila jen historie – je to skutečné měření, ukáže se');
-  assert.equal(merice.some((h) => h.includes('80')), true, 'Codex zůstává, jeho limit je samostatný');
+  // Hledá se hodnota měřidla („42 %“), ne libovolné číslo – čas obnovy („13:19“) by jinak test rozbil podle denní doby.
+  const hodnota = (h) => h.match(/class="gauge-value">([^<]*)</)?.[1] || '';
+  assert.equal(merice.filter((h) => hodnota(h) === '42 %').length, 1, 'při shodném čase platí přesná hodnota ze stavového řádku');
+  assert.equal(merice.some((h) => hodnota(h) === '13 %'), false, 'záložní historie téhož okna se vedle ní nezobrazuje');
+  assert.equal(merice.some((h) => hodnota(h) === '62 %'), true, 'týden změřila jen historie – je to skutečné měření, ukáže se');
+  assert.equal(merice.some((h) => hodnota(h) === '80 %'), true, 'Codex zůstává, jeho limit je samostatný');
   assert.equal(currentLimits(limity, now).some((l) => l.id === 'claude:weekly'), false, 'odhad z hlášky přesná okna nahrazují');
 
   // Historie změřená později než stavový řádek: číslo z ní, čas obnovy ze stavového řádku –

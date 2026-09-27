@@ -330,7 +330,7 @@ function renderProfile(name, working, all) {
   const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">${tr('Vítej zpět,')}<b>${esc(name)}</b></p>
     <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">${tr('tokenů dnes')}</div>${zdroje.length
-    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstup + výstup z přepisů na tomto Macu, bez cache. Není to cena ani limit předplatného.')}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
+    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstupní a výstupní tokeny všech agentů na tomto Macu, bez cache. Nejde o cenu ani o limit předplatného.')}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
     : ''}</div>`);
 }
 
@@ -557,12 +557,12 @@ function renderOffline(show) {
   const rada = window.agenteeqDesktop
     ? tr('Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.')
     : naMacu
-      ? tr('Agenteeq se připojí samo, jakmile server znovu poběží. Spusť ho v Terminálu příkazem <code>agenteeq --open</code> (ve složce projektu <code>npm start</code>).')
-      : tr('Agenteeq se připojí samo, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a že na něm Agenteeq běží.');
+      ? tr('Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.')
+      : tr('Agenteeq se připojí sám, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.');
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
-    <div class="offline-text"><strong>${tr('Agenteeq server neběží')}</strong>
+    <div class="offline-text"><strong>${tr('Agenteeq neběží')}</strong>
       <p>${rada}</p>
-      <p class="small">${naMacu ? tr('Aby server běžel vždy, zapni v Nastavení <b>Spouštět po přihlášení</b>. ') : ''}${tr('Adresa:')} ${esc(location.host)}</p></div>
+      <p class="small">${naMacu ? tr('Aby Agenteeq běžel pořád, zapni v Nastavení <b>Spouštět po přihlášení</b>. ') : ''}${tr('Adresa:')} ${esc(location.host)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>${tr('Zkusit znovu')}</button>`);
   offlineEl.hidden = false;
 }
@@ -584,7 +584,7 @@ offlineEl.addEventListener('click', async (e) => {
   if (ok) location.reload();
   else {
     b.disabled = false;
-    toast(tr('Server Agenteeq pořád neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.'), { tone: 'err' });
+    toast(tr('Agenteeq pořád neodpovídá. Otevři aplikaci Agenteeq a zkus to znovu.'), { tone: 'err' });
   }
 });
 

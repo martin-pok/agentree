@@ -407,7 +407,7 @@ export function limitState(l, now = Date.now()) {
     label: renewed ? tr('Obnoveno') : reached ? tr('Vyčerpáno') : `${pct} %`,
     tone: renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free',
     // Po obnově nikdo nové vytížení nezměřil – „plná kapacita“ ani „právě“ by nebyla pravda.
-    advice: renewed ? tr('Okno se od měření obnovilo, nový stav zatím není')
+    advice: renewed ? tr('Limit se od posledního měření obnovil, nový stav zatím nepřišel')
       : reached || pct >= 100 ? tr('Vyčerpáno, počkej na obnovu')
         : pct >= 80 ? tr('Šetři na důležité úlohy')
           : pct >= 50 ? tr('V pohodě pro běžnou práci') : tr('Dobrý čas na velké úlohy'),

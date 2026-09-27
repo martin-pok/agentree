@@ -101,10 +101,25 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Během generování je session „Pracuje“, po dokončení „Čeká na zadání“ do 2 s.
 - [ ] Session nese jen stav a počty zpráv: žádný přepis, název „<Služba> · konverzace <konec ID>“.
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá počty.
-- [ ] Okno rozšíření → **Ověřit tuto stránku**: konverzace podle adresy, pole pro zadání nalezeno,
-      počty zpráv odpovídají stránce, „Pracuje → hotovo zachyceno“. Klikni **Sedí**, nebo **Nesedí**.
+- [ ] Rozšíření se po načtení spáruje samo (okno ukáže **Připojeno**), bez kódu.
+- [ ] Okno rozšíření → karta **Tato stránka** → **Počty nesedí? Ověřit stránku**: konverzace má
+      vlastní adresu, pole pro zadání nalezeno, počty zpráv odpovídají stránce, „Začátek i konec
+      odpovědi zachycen“. Klikni **Sedí**, nebo **Nesedí**.
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
+
+## Protokol ověření – efektivita, texty, rozšíření (27. 9. 2026, Linux kontejner, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 576 testů, 572 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm run check` | 215 souborů bez syntaktické chyby |
+| `npm run qa:contrast` | všechny texty v aplikaci, na webu i v okně rozšíření splňují WCAG 2.2 AA; nejhorší místo okna (stav pod mosazným odleskem) 5,9 : 1 |
+| `npm run qa:extension` | 14 scénářů okna rozšíření v Chromiu (světlý i tmavý režim, výška do 600 px, česká sazba bez předložek na konci řádku); WebKit běží v CI |
+| `npm run qa:site`, `npm run qa:desktop` | prošly v Chromiu (`QA_ENGINE=chromium`); WebKit v CI |
+| Spárování bez kódu, naživo | aplikace na 127.0.0.1:4620, Chromium 140 načte rozšíření ze složky aplikace: token do 1 s, stav „ready“, okno ukáže „Připojeno“ |
+| ID rozbaleného rozšíření | `src/platform.js#idRozbalenehoRozsireni` = ID, které přidělilo Chromium (Linux); Windows (UTF-16) neověřeno |
+| Klid serveru | syntetický domov 2 400 přepisů Claude Code / 113 MB, připojený prohlížeč: CPU 4,6 % → 2,7 %, živý proud 45 kB → 12 kB za 30 s |
 
 ## Protokol ověření – 0.27.0 (25. 9. 2026, Linux kontejner, Node 22.22)
 

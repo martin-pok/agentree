@@ -22,30 +22,37 @@ const TYPY = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const server = http.createServer(async (req, res) => {
   const file = path.resolve(root, `.${decodeURIComponent(new URL(req.url, 'http://x').pathname)}`);
   if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
-  try {
-    res.writeHead(200, { 'Content-Type': TYPY[path.extname(file)] || 'application/octet-stream' }).end(await fs.readFile(file));
-  } catch { res.writeHead(404).end(); }
+  // Nejdřív načíst, až pak odpovědět – chybějící soubor musí dostat 404, ne rozbitou odpověď.
+  const obsah = await fs.readFile(file).catch(() => null);
+  if (!obsah) return res.writeHead(404).end();
+  res.writeHead(200, { 'Content-Type': TYPY[path.extname(file)] || 'application/octet-stream' }).end(obsah);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 const vystup = path.join(here, 'export');
 const zdroj = path.join(here, 'source');
 
 // 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
+//    „spárováno“: na stránce ChatGPT agent právě odpovídá, v prohlížeči jsou otevřené dvě konverzace.
+//    „služby“: rozbalený seznam sledovaných služeb, Grok vypnutý.
 async function okno(stav, soubor) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript(({ stav }) => {
+  await page.addInitScript(() => {
     const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'chatgpt', at: Date.now() } };
+    const otevrene = { 'chatgpt:a': { site: 'chatgpt', generating: true, at: Date.now() }, 'claude:b': { site: 'claude', generating: false, at: Date.now() } };
     window.chrome = {
-      storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) } },
-      runtime: { getManifest: () => ({ version: '0.28.1' }), sendMessage: async () => ({ paired: stav === 'paired', revoked: false, status: { expectedVersion: '0.28.1' } }) },
+      storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
+      runtime: { getManifest: () => ({ version: '0.28.1' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.28.1' } }) },
+      tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 4, assistant: 3, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: true }));
-  }, { stav });
+  });
   await page.goto(`${base}/extension/popup.html`);
   await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
-  if (stav === 'unpaired') await page.locator('#code').fill('K7Q2-M9XD');
+  await page.waitForFunction(() => !document.getElementById('check-card').hidden);
+  if (stav === 'sluzby') await page.locator('#sites-open').click();
+  await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
   await page.evaluate(() => document.fonts.ready);
   const vyska = Math.ceil(await page.evaluate(() => document.body.getBoundingClientRect().height));
   await page.screenshot({ path: path.join(zdroj, soubor), clip: { x: 0, y: 0, width: 344, height: vyska } });
@@ -54,14 +61,14 @@ async function okno(stav, soubor) {
 }
 
 try {
-  const vysky = { paired: await okno('paired', 'okno-sparovano.png'), unpaired: await okno('unpaired', 'okno-kod.png') };
+  const vysky = { paired: await okno('sparovano', 'okno-sparovano.png'), sluzby: await okno('sluzby', 'okno-sluzby.png') };
   // 2) Kompozice přesně 1280 × 800, poměr 1:1 (obchod jiné rozměry odmítne).
   for (const n of [1, 2, 3]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const chyby = [];
     page.on('pageerror', (e) => chyby.push(e.message));
     page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
-    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?paired=${vysky.paired}&kod=${vysky.unpaired}`);
+    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?paired=${vysky.paired}&sluzby=${vysky.sluzby}`);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(200);
     const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {

@@ -15,7 +15,7 @@ const hash = async (p) => crypto.createHash('sha256').update(await fs.readFile(p
 // tatáž písma. Kopie v extension/fonts je nutná (Chrome vidí jen složku rozšíření), a právě proto
 // se musí hlídat: jinak by se po výměně písma v aplikaci obě plochy tiše rozešly.
 test('rozšíření: písma jsou bajt po bajtu tatáž jako v aplikaci', async () => {
-  for (const soubor of ['urbanist-500.ttf', 'onest-400.ttf', 'onest-500.ttf', 'geist-mono-400.ttf']) {
+  for (const soubor of ['urbanist-300.ttf', 'urbanist-500.ttf', 'onest-400.ttf', 'onest-500.ttf', 'geist-mono-400.ttf']) {
     const app = path.join(ROOT, 'public/fonts', soubor);
     const ext = path.join(ROOT, 'extension/fonts', soubor);
     assert.equal(await hash(ext), await hash(app), `${soubor} se rozešel s public/fonts`);
@@ -23,6 +23,18 @@ test('rozšíření: písma jsou bajt po bajtu tatáž jako v aplikaci', async (
   const css = await fs.readFile(path.join(ROOT, 'extension/fonts/fonts.css'), 'utf8');
   for (const rodina of ['Urbanist', 'Onest', 'Geist Mono']) assert.match(css, new RegExp(`font-family: '${rodina}'`), rodina);
   assert.equal(/font-weight: (6|7|8|9)00/.test(css), false, 'maximální váha písma je 500');
+});
+
+test('rozšíření: loga služeb jsou tatáž jako v aplikaci a licence jde s nimi', async () => {
+  const loga = (await fs.readdir(path.join(ROOT, 'extension/logos'))).filter((f) => f.endsWith('.svg'));
+  assert.ok(loga.length >= 9, 'každá sledovaná služba má logo');
+  for (const soubor of loga) assert.equal(await hash(path.join(ROOT, 'extension/logos', soubor)), await hash(path.join(ROOT, 'public/logos', soubor)), `${soubor} se rozešel s public/logos`);
+  const readme = await fs.readFile(path.join(ROOT, 'extension/logos/README.md'), 'utf8');
+  assert.match(readme, /MIT/);
+  assert.match(readme, /Copyright \(c\) LobeHub/);
+  // Okno odkazuje jen na loga, která v balíčku opravdu jsou.
+  const okno = await fs.readFile(path.join(ROOT, 'extension/popup.js'), 'utf8');
+  for (const [, klic] of okno.matchAll(/\['[\w-]+', '[^']+', '(\w+)'\]/g)) assert.ok(loga.includes(`${klic}.svg`), `chybí logo ${klic}.svg`);
 });
 
 test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)', async () => {

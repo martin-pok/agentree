@@ -32,7 +32,7 @@ OAuth klienta v Google Cloud, který si musí vytvořit vlastník.
 | Pole | Hodnota |
 |---|---|
 | Název | z manifestu: `Agenteeq – AI agenti v reálném čase` |
-| Shrnutí | z manifestu (132 znaků): „Posílá stav a počty zpráv z webových AI aplikací do Agenteeq na tomto počítači (127.0.0.1). Text zpráv neposílá.“ |
+| Shrnutí | z manifestu (nejvýš 132 znaků): „Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.“ |
 | Kategorie | Productivity → Workflow & Planning |
 | Jazyk | čeština (okno rozšíření je zatím jen česky) |
 | Ikona obchodu | `branding/chrome-web-store/export/icon-128.png` (obraz 96 × 96, průhledný okraj 16 px) |
@@ -62,7 +62,7 @@ Soukromí
 • Data jdou jen do aplikace Agenteeq na tomtéž počítači (127.0.0.1), nikdy na internet.
 • Každou službu můžeš v okně rozšíření vypnout.
 
-Rozšíření potřebuje aplikaci Agenteeq pro Mac (zdarma ke stažení na https://agentree-fawn.vercel.app/). Spáruješ je jednorázovým kódem z aplikace: Nastavení → Propojení → Rozšíření pro Chrome.
+Rozšíření potřebuje aplikaci Agenteeq pro Mac (zdarma ke stažení na https://agentree-fawn.vercel.app/). S aplikací se spáruje samo, žádný kód opisovat nemusíš.
 
 Zásady ochrany soukromí: https://agentree-fawn.vercel.app/soukromi
 ```
@@ -83,7 +83,7 @@ Privacy
 • Data goes only to the Agenteeq app on the same computer (127.0.0.1), never to the internet.
 • You can turn off any service in the extension window.
 
-The extension needs the Agenteeq app for Mac (free at https://agentree-fawn.vercel.app/en). Pair them with a one-time code from the app: Settings → Connections → Chrome extension.
+The extension needs the Agenteeq app for Mac (free at https://agentree-fawn.vercel.app/en). It pairs with the app automatically – no codes to copy.
 
 Privacy policy: https://agentree-fawn.vercel.app/en/privacy
 ```
@@ -126,7 +126,7 @@ https://agentree-fawn.vercel.app/en/privacy). Zdroj: `site/soukromi/index.html`,
 
 ```
 The extension works together with the free Agenteeq desktop app for macOS (https://github.com/martin-pok/agentree/releases). Without the app, the extension window shows "Agenteeq na Macu neběží" (Agenteeq is not running on the Mac) – this is expected.
-To test: install the app, open Settings → Connections → Chrome extension, click "Vytvořit jednorázový kód" (create one-time code), paste the code into the extension window and click "Spárovat" (pair). Then open any conversation on chatgpt.com or claude.ai – it appears in the app's Overview within a few seconds.
+To test: install and open the app. Once the extension is published, it pairs with the app automatically. During review the app doesn't know the store ID yet, so pair it with a one-time code: in the app open Settings → Connections → Chrome extension → "Nespárovalo se samo? Použij jednorázový kód" (didn't pair on its own? use a one-time code), click "Vytvořit jednorázový kód" (create one-time code), paste the code into the extension window and click "Spárovat" (pair). Then open any conversation on chatgpt.com or claude.ai – it appears in the app's Overview within a few seconds.
 The extension only sends conversation status and message counts to http://127.0.0.1:4620 (the local app). It never sends message text.
 ```
 
@@ -135,6 +135,9 @@ The extension only sends conversation status and message counts to http://127.0.
 - Viditelnost: **veřejná** (Public). Kdo chce nejdřív zkoušet v úzkém kruhu, zvolí „Unlisted“ –
   rozšíření půjde nainstalovat jen z odkazu; adresa v `public/js/obchod.js` funguje stejně.
 - Regiony: všechny.
-- Po instalaci z obchodu dostane rozšíření jiné ID než ruční („rozbalená“) kopie. Párování na ID
-  nezávisí (každá instalace si vezme vlastní klíč přes jednorázový kód). Kdo měl ruční kopii,
-  po instalaci z obchodu ji v `chrome://extensions` odebere, ať se konverzace nehlásí dvakrát.
+- Po instalaci z obchodu dostane rozšíření jiné ID než ruční („rozbalená“) kopie. Aplikace věří
+  oběma: ID z adresy v `public/js/obchod.js` a ID odvozenému ze složky, kterou sama připravila
+  (`src/platform.js#idRozbalenehoRozsireni`). Obě se proto spárují samy a každá instalace dostane
+  vlastní klíč. Dokud adresa obchodu v aplikaci není (i během kontroly), spáruje se verze z obchodu
+  jednorázovým kódem. Kdo měl ruční kopii, po instalaci z obchodu ji v `chrome://extensions` odebere,
+  ať se konverzace nehlásí dvakrát.

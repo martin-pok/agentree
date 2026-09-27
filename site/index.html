@@ -63,7 +63,7 @@
 
 <section class="unit unit--dark tiles-unit" id="prohlidka" aria-labelledby="tour-heading">
   <div class="wrap unit-head">
-    <h2 id="tour-heading"><span class="radek"><span>Všechna práce.</span></span> <span class="radek"><span>V souvislostech.</span></span></h2>
+    <h2 id="tour-heading"><span class="radek"><span>Všechna práce.</span></span> <span class="radek"><span>Na jeden pohled.</span></span></h2>
     <p class="lead">Agenteeq hlídá agenty za tebe a ozve se, když je potřeba tvoje rozhodnutí.</p>
   </div>
   <div class="wrap tiles">
@@ -79,7 +79,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-ceka">
       <h3 id="t-ceka">Čeká na tebe.</h3>
-      <p>Agent, který potřebuje tvoje rozhodnutí, uvidíš hned. Bez něj by stál.</p>
+      <p>Agenta, který čeká na tvoje rozhodnutí, uvidíš hned. Nebude zbytečně stát.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/rozhodnuti-mobil.webp" width="342" height="142">
@@ -89,7 +89,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-limit">
       <h3 id="t-limit">Limit pod kontrolou.</h3>
-      <p>Kolik zbývá v okně, než se práce zastaví sama, a kdy se limit obnoví.</p>
+      <p>Kolik ti zbývá, než se práce zastaví, a kdy se limit obnoví.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/limit-mobil.webp" width="342" height="103">
@@ -99,7 +99,7 @@
     </article>
     <article class="tile tile--crop" aria-labelledby="t-kontext">
       <h3 id="t-kontext">Vrať se do kontextu.</h3>
-      <p>Projekty spojí konverzace napříč nástroji podle pracovní složky. Ráno víš, kde jsi včera skončil.</p>
+      <p>Projekty seskupí konverzace ze všech nástrojů podle pracovní složky. Ráno víš, kde jsi včera skončil.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/projekt-lumen-mobil.webp" width="342" height="378">
@@ -149,14 +149,14 @@
 
 <section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
   <div class="wrap unit-head">
-    <p class="kicker">Soukromí je součást návrhu</p>
+    <p class="kicker">Soukromí od základu</p>
     <h2 id="privacy-heading"><span class="radek"><span>Tvoje práce</span></span> <span class="radek"><span>má zůstat tvoje.</span></span></h2>
     <p class="lead">Agenteeq nemá cloudový účet pro tvé přepisy, protože žádný nepotřebuje. Všechno zpracovává na tvém Macu a rozšíření předává data jenom místní aplikaci.</p>
   </div>
   <div class="wrap facts">
-    <article><h3>Bez účtu a bez sledování</h3><p>Žádná registrace, žádná analytika. Písma i rozhraní jsou součástí aplikace, takže nic nedotahuje z cizích serverů. Volitelná API a spuštěné AI služby připojuješ ty.</p></article>
+    <article><h3>Bez registrace a bez sledování</h3><p>Aplikace funguje bez účtu a nic neměří. Písma i rozhraní má v sobě, takže nic nestahuje z cizích serverů. Placená API a další služby připojuješ jen ty, když chceš.</p></article>
     <article><h3>Na telefonu, když jsi pryč</h3><p>Zapni přístup ve stejné Wi-Fi nebo přes vlastní síť Tailscale a namiř na QR kód v aplikaci foťák telefonu. Žádné opisování adresy ani čísla.</p></article>
-    <article><h3>Data jen z běžícího Macu</h3><p>Mac musí být zapnutý, vzhůru a Agenteeq spuštěné. Zavřené okno nevadí; ukončená aplikace ani vypnutý Mac data neposkytnou.</p></article>
+    <article><h3>Data jen z běžícího Macu</h3><p>Mac musí být zapnutý, vzhůru a Agenteeq spuštěný. Zavřené okno nevadí; ukončená aplikace ani vypnutý Mac data neposkytnou.</p></article>
   </div>
 </section>
 
@@ -186,25 +186,24 @@
         <!-- rozsireni:obchod -->
         <ol>
           <li>Otevři <a data-obchod-chrome href="#">Agenteeq v Chrome Web Store</a> a klikni na <b>Přidat do Chromu</b>.</li>
-          <li>V aplikaci otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b> a vytvoř jednorázový kód.</li>
-          <li>Připni si ikonu Agenteeq v liště Chromu a vlož do ní kód.</li>
+          <li>Hotovo. Rozšíření se s aplikací spáruje samo, stačí mít Agenteeq spuštěný.</li>
         </ol>
-        <p class="small muted">Posílá jen stav konverzace a počty zpráv, žádný text, a to jenom aplikaci na stejném počítači. Jednotlivé služby můžeš kdykoli vypnout. Funguje i v Brave, Arcu a Edge.</p>
+        <p class="small muted">Aplikaci na tvém počítači hlásí jen to, jestli agent pracuje, kolik má konverzace zpráv a který model odpovídá. Text zpráv ani názvy konverzací nikam neposílá. Jednotlivé služby můžeš kdykoli vypnout. Funguje i v Brave, Arcu a Edge.</p>
         <!-- /rozsireni:obchod -->
         <!-- rozsireni:rucne -->
         <ol>
           <li>V aplikaci otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b> a klikni na <b>Zkopírovat cestu</b>.</li>
           <li>V Chromu otevři <code class="kopirovat" data-kopirovat="chrome://extensions">chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
           <li>Klikni na <b>Načíst rozbalené</b>, v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>, vlož zkopírovanou cestu a potvrď.</li>
-          <li>Připni si ikonu Agenteeq a vlož do ní jednorázový kód z aplikace.</li>
+          <li>Hotovo. Rozšíření se s aplikací spáruje samo.</li>
         </ol>
-        <p class="small muted">Rozšíření zatím není v Chrome Web Store, proto ta ruční cesta. Posílá jen stav konverzace a počty zpráv, žádný text, a to jenom aplikaci na stejném počítači. Jednotlivé služby můžeš kdykoli vypnout.</p>
+        <p class="small muted">Rozšíření zatím není v Chrome Web Store, proto ta ruční cesta. Aplikaci na tvém počítači hlásí jen to, jestli agent pracuje, kolik má konverzace zpráv a který model odpovídá. Text zpráv ani názvy konverzací nikam neposílá. Jednotlivé služby můžeš kdykoli vypnout.</p>
         <!-- /rozsireni:rucne -->
       </div></details>
 
       <details><summary>Dívat se na agenty z telefonu <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
         <ol>
-          <li>Nech Mac vzhůru a Agenteeq spuštěné. Okno můžeš klidně zavřít.</li>
+          <li>Nech Mac vzhůru a Agenteeq spuštěný. Okno můžeš klidně zavřít.</li>
           <li>V <b>Nastavení → Otevřít na telefonu</b> zapni přístup pro domácí síť nebo pro Tailscale.</li>
           <li>Klikni na <b>Vytvořit kód pro telefon</b> a namiř na QR kód foťák. Telefon se otevře už spárovaný.</li>
         </ol>
@@ -222,7 +221,7 @@
     <details><summary>Kolik to stojí?</summary><p>Beta je zdarma a má odemčené všechny funkce. Až z bety vyjdeme, část funkcí zůstane zdarma; co bude placené, řekneme dopředu a nikoho nepřekvapíme účtem.</p></details>
     <details><summary>Ukáže přesnou útratu za všechna předplatná?</summary><p>Tokeny, limity a peníze jsou tři různé údaje. Předplatné a dokoupené kredity zadáváš ručně, podporované Admin API umí doplnit ověřené náklady. Agenteeq nepřevádí tokeny na domnělou cenu.</p></details>
     <details><summary>Musím připojit všechny služby?</summary><p>Ne. Začni nástrojem, který používáš nejvíc. Rozšíření, hooky i další zdroje jsou volitelné a dostupnost každého konektoru vidíš v Nastavení.</p></details>
-    <details><summary>A co Windows?</summary><p>Aplikace pro Windows se při každé změně sestaví a automaticky spustí: rozhraní se v okně načte a po zavření skončí i server. Balíček je u každého vydání na GitHubu jako beta. Oznámení, ikonu v oznamovací oblasti a další nativní ovládání ale ještě musí vyzkoušet člověk u skutečného počítače, proto tlačítko na stránce zatím vede jen na verzi pro Mac.</p></details>
+    <details><summary>A co Windows?</summary><p>Verze pro Windows je rozpracovaná. Zkušební balíček je u každého vydání na GitHubu, ale dokud ji neotestujeme na skutečných počítačích, stahování tady vede jen na verzi pro Mac.</p></details>
   </div>
 </section>
 

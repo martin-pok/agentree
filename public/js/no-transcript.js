@@ -20,7 +20,7 @@ export const MA_PREPIS = new Set([
 // a co s tím jde udělat. Tohle je text, který uživatel uvidí místo prázdna.
 export const BEZ_PREPISU = {
   chatgpt: {
-    duvod: tr('Aplikace ChatGPT konverzace na tento Mac neukládá – ani ty, kde agent pracuje s postupem a zdroji. Ověřeno 13. 9. 2026 za běhu takové úlohy: složka aplikace nezapsala za 40 minut jediný soubor, v datech Codexu se změnily jen cookies a mezipaměť sítě a text konverzace není nikde na disku.'),
+    duvod: tr('Aplikace ChatGPT si konverzace na tento Mac neukládá, ani ty, ve kterých pracuje agent. Agenteeq je proto nemá odkud přečíst.'),
     rada: tr('Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agenteeq. Kódovací vlákna spuštěná jako samostatný Codex se sledují normálně.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
@@ -30,18 +30,18 @@ export const BEZ_PREPISU = {
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
   'ms-copilot': {
-    duvod: tr('Desktopová aplikace Microsoft Copilot nemá konverzace v čitelném formátu na disku.'),
-    rada: tr('V prohlížeči s rozšířením Agenteeq se sleduje.'),
+    duvod: tr('Aplikace Microsoft Copilot si konverzace neukládá v podobě, kterou by šlo přečíst.'),
+    rada: tr('V prohlížeči ho Agenteeq uvidí přes rozšíření.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
   perplexity: {
     duvod: tr('Aplikace Perplexity konverzace na disk neukládá.'),
-    rada: tr('V prohlížeči s rozšířením Agenteeq se sleduje.'),
+    rada: tr('V prohlížeči ho Agenteeq uvidí přes rozšíření.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
   grok: {
     duvod: tr('Aplikace Grok konverzace na disk neukládá.'),
-    rada: tr('V prohlížeči s rozšířením Agenteeq se sleduje.'),
+    rada: tr('V prohlížeči ho Agenteeq uvidí přes rozšíření.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },
 };

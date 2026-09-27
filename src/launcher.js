@@ -81,7 +81,7 @@ export function launchTargets(env) {
   if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'S osobním Google účtem má bezplatný denní limit.' });
   if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'Podle nastavení Qwen Code.' });
   if (ollama.ok) {
-    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale nemá stažený žádný model (ollama pull llama3.2).' });
+    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale zatím nemá stažený žádný model. Stáhneš ho v aplikaci Ollama.' });
   }
   for (const [id, w] of Object.entries(WEB)) {
     out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Zadání se předvyplní do nové konverzace; zůstane i ve schránce (⌘V).' : 'Zadání čeká ve schránce (⌘V) – vložíš ho do pole zprávy.' });
@@ -149,7 +149,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     case 'qwen-code':
       return { ok: true, plan: { ...base, kind: 'terminal', command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.qwen)} -i ${promptArg()}` } };
     case 'ollama': {
-      if (!target.models.length) return fail('Ollama nemá stažený žádný model. Spusť v Terminálu: ollama pull llama3.2', 'model');
+      if (!target.models.length) return fail('Ollama zatím nemá stažený žádný model. Stáhni si ho v aplikaci Ollama a zkus to znovu.', 'model');
       const model = input.model ?? target.models[0];
       if (!target.models.includes(model)) return fail('Tento model v Ollamě není.', 'model');
       return { ok: true, plan: { ...base, kind: 'local', model } };

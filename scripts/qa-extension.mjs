@@ -33,7 +33,7 @@ try {
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 3, assistant: 3, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } }
             : { site: 'mscopilot', konverzace: 'karta', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } };
           window.chrome = {
-            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) } },
+            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', generating: true, at: Date.now() } } }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async m => {
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
@@ -53,6 +53,8 @@ try {
         }, { state });
         await page.goto(`http://127.0.0.1:${server.address().port}/popup.html`);
         await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
+        // Česká sazba: jednopísmenná předložka nikdy nestojí na konci řádku (za ní je nezlomitelná mezera).
+        assert.doesNotMatch(await page.evaluate(() => document.body.innerText), /(^|\s)[vkszouaiVKSZOUAI] /m, `${state}: předložka na konci řádku`);
         await page.evaluate(() => document.fonts.ready);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         // Chrome zobrazí z okna rozšíření nejvýš 600 px. Vyšší okno se posouvá a stav i spárování
@@ -65,9 +67,16 @@ try {
         assert.equal(sluzbyVidet, ['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state), `${state}: viditelnost seznamu služeb`);
         assert.equal(await page.locator('#check-card').isVisible(), state.startsWith('overeni'), `${state}: karta ověření jen na podporované stránce`);
         if (sluzbyVidet) {
+          // Seznam služeb je sbalený; rozbalený se musí vejít do 600 px.
+          await page.locator('#sites-open').click();
+          assert.equal(await page.locator('#sites-open').getAttribute('aria-expanded'), 'true');
+          const sRozbalenymi = await page.evaluate(() => document.body.getBoundingClientRect().height);
+          assert.ok(sRozbalenymi <= 600, `${engine} ${theme} ${state}: rozbalené služby mají ${Math.round(sRozbalenymi)} px`);
           await page.locator('input[type=checkbox]').first().focus();
           await page.keyboard.press('Space');
           assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
+          assert.equal(await page.locator('#sites-count').textContent(), '8\u00a0z\u00a09');
+          await page.locator('#sites-open').click();
         }
         if (['unpaired', 'revoked'].includes(state)) {
           await page.locator('#code').fill('bad'); await page.locator('#pair').click();
@@ -84,13 +93,13 @@ try {
           await page.keyboard.press('Enter');
           await page.waitForFunction(() => document.querySelectorAll('#checks li').length >= 4);
           assert.equal(await page.locator('#check-open').getAttribute('aria-expanded'), 'true');
-          assert.equal(await page.locator('#sites-card').isVisible(), false);
+          assert.equal(await page.locator('#sites').isVisible(), false, 'rozbalené ověření sbalí seznam služeb');
           const rozbalene = await page.evaluate(() => document.body.getBoundingClientRect().height);
           assert.ok(rozbalene <= 600, `${engine} ${theme} ${state}: rozbalené ověření má ${Math.round(rozbalene)} px`);
           const radky = await page.locator('#checks li').allTextContents();
           assert.ok(radky.every((t) => t.trim().length > 10), 'každý řádek nese stav větou');
-          if (state === 'overeni') assert.ok(radky.includes('Tvoje zprávy 3 · odpovědi 3') && radky.includes('Pracuje → hotovo zachyceno'));
-          else assert.ok(radky.some((t) => t.includes('obecná záloha')) && radky.some((t) => t.includes('nenalezeno')) && radky.some((t) => t.includes('limitu')));
+          if (state === 'overeni') assert.ok(radky.includes('Tvoje zprávy 3 · odpovědi 3') && radky.includes('Začátek i konec odpovědi zachycen'));
+          else assert.ok(radky.some((t) => t.includes('přibližně')) && radky.some((t) => t.includes('nenalezeno')) && radky.some((t) => t.includes('limit')));
           assert.equal(await page.locator('#check-site').textContent(), state === 'overeni' ? 'ChatGPT' : 'Microsoft Copilot');
           await page.locator(state === 'overeni' ? '#check-yes' : '#check-no').click();
           assert.equal(await page.locator(state === 'overeni' ? '#check-yes' : '#check-no').getAttribute('aria-pressed'), 'true');
@@ -104,6 +113,14 @@ try {
           await page.keyboard.press('Shift+Tab');
         }
         if (state === 'offline') assert.ok((await page.locator('#headline').textContent()).includes('neběží'));
+        if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
+          // Pás ukazuje skutečný počet otevřených konverzací z background workeru, ne výmysl.
+          assert.equal(await page.locator('#headline .num').textContent(), '1');
+          assert.match(await page.locator('#sub').textContent(), /1\u00a0?agent právě pracuje|1 agent právě pracuje/);
+          // Test výš vypnul ChatGPT – karta stránky to musí hned říct; Microsoft Copilot zůstal zapnutý a generuje.
+          if (state.startsWith('overeni')) assert.match(await page.locator('#tab-state').textContent(), state === 'overeni' ? /Sledování této služby je vypnuté/ : /Agent právě odpovídá/);
+          else assert.equal(await page.locator('#tab-other').isVisible(), true, 'stránka mimo podporované služby to řekne');
+        }
         if (state === 'outdated') assert.equal(await page.locator('#outdated').isVisible(), true);
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png`, fullPage: true });

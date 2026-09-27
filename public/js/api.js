@@ -22,7 +22,7 @@ export async function request(method, path, body) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw Object.assign(new Error(tr('Server Agenteeq neodpovídá. Spusť ho v Terminálu příkazem agenteeq --open.')), { status: 0 });
+    throw Object.assign(new Error(tr('Agenteeq neodpovídá. Otevři aplikaci Agenteeq a zkus to znovu.')), { status: 0 });
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
@@ -102,7 +102,7 @@ export const api = {
     try {
       res = await fetch(`/api/projects/${encodeURIComponent(id)}/media/${kind}`, { method: 'PUT', headers: { 'X-Agenteeq': '1', 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
     } catch {
-      throw new Error(tr('Server Agenteeq neodpovídá. Obrázek se nenahrál.'));
+      throw new Error(tr('Agenteeq neodpovídá, obrázek se proto nenahrál.'));
     }
     const json = await res.json().catch(() => null);
     if (!res.ok) throw new Error(json?.error || tr('Obrázek se nenahrál (chyba {0}).', res.status));

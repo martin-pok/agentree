@@ -115,15 +115,15 @@
   // Diagnostika pro člověka: tón (ok / warn / err / none) a věta. Stav nese vždy text.
   function radkyOvereni(d) {
     const r = [];
-    r.push(d.konverzace === 'adresa' ? ['ok', 'Konverzace podle adresy stránky'] : ['none', 'Nová konverzace, zatím bez adresy']);
-    r.push(d.pole === 'presne' ? ['ok', 'Pole pro zadání nalezeno'] : d.pole === 'obecne' ? ['warn', 'Pole pro zadání jen přes obecnou zálohu'] : ['err', 'Pole pro zadání nenalezeno']);
+    r.push(d.konverzace === 'adresa' ? ['ok', 'Konverzace má vlastní adresu'] : ['none', 'Nová konverzace, zatím bez vlastní adresy']);
+    r.push(d.pole === 'presne' ? ['ok', 'Pole pro zadání nalezeno'] : d.pole === 'obecne' ? ['warn', 'Pole pro zadání nalezeno jen přibližně'] : ['err', 'Pole pro zadání nenalezeno']);
     const { user, assistant, zdroj } = d.zpravy;
     if (!user && !assistant) r.push(['none', 'Zatím žádné zprávy – pošli jednu']);
-    else r.push([zdroj === 'presne' ? 'ok' : 'warn', `Tvoje zprávy ${user} · odpovědi ${assistant}${zdroj === 'presne' ? '' : ' (obecná záloha)'}`]);
-    if (d.videl?.konec) r.push(['ok', 'Pracuje → hotovo zachyceno']);
-    else if (d.generuje || d.videl?.generovani) r.push(['none', 'Právě pracuje – počkej na konec odpovědi']);
-    else r.push(['none', 'Pracuje → hotovo: pošli zprávu a počkej']);
-    if (d.limit) r.push(['warn', 'Na stránce je hláška o limitu']);
+    else r.push([zdroj === 'presne' ? 'ok' : 'warn', `Tvoje zprávy ${user} · odpovědi ${assistant}${zdroj === 'presne' ? '' : ' (přibližně)'}`]);
+    if (d.videl?.konec) r.push(['ok', 'Začátek i konec odpovědi zachycen']);
+    else if (d.generuje || d.videl?.generovani) r.push(['none', 'Agent odpovídá – počkej na konec']);
+    else r.push(['none', 'Pošli zprávu a počkej na celou odpověď']);
+    if (d.limit) r.push(['warn', 'Stránka hlásí vyčerpaný limit']);
     return r;
   }
 

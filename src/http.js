@@ -503,6 +503,15 @@ export function createHttpServer(app, existingServer = null) {
       if (!zTohotoMacu(req)) throw new HttpError(403, 'Párovací kód rozšíření lze vytvořit jen na Macu.');
       return app.createExtensionPairCode();
     }],
+    // Naše rozšíření se spáruje samo, bez kódu (viz app.js#pozadatOSparovani). Jiné dostane 409 –
+    // pak zbývá jednorázový kód z Nastavení.
+    ['POST', /^\/api\/extension\/pripojit$/, async (req) => {
+      const origin = String(req.headers.origin || '');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      const pair = await app.pozadatOSparovani({ origin, installationId: String(req.headers['x-agenteeq-installation-id'] || '') });
+      if (!pair) throw new HttpError(409, 'Tohle rozšíření se musí spárovat jednorázovým kódem z Agenteeq → Nastavení → Propojení.');
+      return pair;
+    }, { token: true }],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
       const origin = String(req.headers.origin || '');
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');

@@ -330,7 +330,7 @@ test('banner průvodce sedí s obsahem průvodce', async () => {
   const cislovky = { 4: 'Čtyři', 5: 'Pět', 6: 'Šest', 7: 'Sedm' };
   assert.match(settings, new RegExp(`<p>\\$\\{tr\\('${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
   // Průvodce musí mluvit o tom, co aplikace umí teď.
-  for (const [co, kde] of [['limits', 'ukázka limitů'], ['kurzem ČNB', 'přepočet do korun'], ['logo klienta', 'obrázky projektů'], ['klíč tohoto spuštění', 'zabezpečení okna']]) {
+  for (const [co, kde] of [['limits', 'ukázka limitů'], ['kurzu ČNB', 'přepočet do korun'], ['logo klienta', 'obrázky projektů'], ['data jen čte', 'zabezpečení spárovaného telefonu']]) {
     assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);
   }
 });

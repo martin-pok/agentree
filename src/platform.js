@@ -9,6 +9,7 @@
 //
 // Co tu není a nebude: domněnky. Když pro nějaký systém mechanismus neznáme, funkce vrátí
 // prázdno a volající se podle toho zachová. Nikdy nevrátí vymyšlenou cestu.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { run } from './util.js';
@@ -300,6 +301,23 @@ export async function fullUserName(runImpl = run) {
     return r?.ok ? r.stdout.trim() : '';
   }
   return '';
+}
+
+// ── ID rozbaleného rozšíření ─────────────────────────────────────────────────
+//
+// Chrome dá rozšíření načtenému ze složky („Načíst rozbalené“) ID odvozené z cesty ke složce:
+// SHA-256 bajtů cesty, prvních 32 šestnáctkových číslic převedených na písmena a–p. Na macOS
+// a Linuxu jsou bajty cesty UTF-8 (ověřeno 27. 9. 2026 v Chromiu 140 – shoda s ID, které Chrome
+// přidělil). Ve Windows jde o UTF-16LE s velkým písmenem disku – podle zdrojů Chromia, na
+// skutečném Windows neověřeno; neshoda znamená jen jedno potvrzení párování v aplikaci navíc.
+export function idRozbalenehoRozsireni(cesta, { jeWindows = JE_WINDOWS } = {}) {
+  if (typeof cesta !== 'string' || !cesta) return '';
+  let skutecna = cesta;
+  try { skutecna = fs.realpathSync(cesta); } catch { /* složka ještě není – počítá se ze zadané cesty */ }
+  const bajty = jeWindows
+    ? Buffer.from(skutecna.replace(/^[a-z]:/, (d) => d.toUpperCase()), 'utf16le')
+    : Buffer.from(skutecna, 'utf8');
+  return crypto.createHash('sha256').update(bajty).digest('hex').slice(0, 32).replace(/[0-9a-f]/g, (c) => 'abcdefghijklmnop'[parseInt(c, 16)]);
 }
 
 // Je aplikace opravdu nainstalovaná? Hledá se v /Applications a v ~/Applications; `null` = nevím

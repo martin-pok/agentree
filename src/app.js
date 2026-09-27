@@ -35,7 +35,7 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
@@ -1126,10 +1126,35 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!pair || pair.expiresAt <= Date.now() || typeof code !== 'string' || code.length !== pair.code.length) return null;
     const equal = crypto.timingSafeEqual(Buffer.from(code), Buffer.from(pair.code));
     if (!equal || typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin)) return null;
+    datastore.data.extensionPairing = null;
+    return vydejTokenRozsireni(origin, installationId);
+  }
+
+  // ── Párování bez kódu ──────────────────────────────────────────────────────
+  // Rozšíření o spárování požádá samo (po instalaci, po startu Chromu, při otevření svého okna).
+  // Původ požadavku (chrome-extension://<ID>) nastavuje prohlížeč a web ani jiné rozšíření ho
+  // nepodvrhnou. Naše rozšíření – z Chrome Web Store, nebo ze složky, kterou připravila aplikace –
+  // se proto spáruje hned a bez kódu. Jakékoli jiné dostane odpověď „kód“: spárovat ho jde jen
+  // jednorázovým kódem, který člověk vytvoří na Macu. Schvalovací tlačítko pro cizí rozšíření tu
+  // záměrně není – jiné rozšíření by mohlo svou žádost podstrčit těsně před kliknutím.
+  function duveryhodnaRozsireni() {
+    const puvody = new Set();
+    const obchod = adresaObchodu().match(/([a-p]{32})$/)?.[1];
+    if (obchod) puvody.add(`chrome-extension://${obchod}`);
+    const rozbalene = idRozbalenehoRozsireni(extensionPath);
+    if (rozbalene) puvody.add(`chrome-extension://${rozbalene}`);
+    return puvody;
+  }
+
+  async function pozadatOSparovani({ origin, installationId } = {}) {
+    if (typeof origin !== 'string' || !EXTENSION_ORIGIN.test(origin) || !duveryhodnaRozsireni().has(origin)) return null;
+    return vydejTokenRozsireni(origin, installationId);
+  }
+
+  async function vydejTokenRozsireni(origin, installationId) {
     const id = typeof installationId === 'string' && EXTENSION_INSTALLATION_ID.test(installationId) ? installationId : '';
     const token = crypto.randomBytes(32).toString('base64url');
     const now = Date.now();
-    datastore.data.extensionPairing = null;
     datastore.data.extensionInstallations = [
       ...datastore.data.extensionInstallations.filter((x) => !(x.origin === origin && x.id === id)),
       { id, origin, tokenHash: hashToken(token), pairedAt: now },
@@ -1276,7 +1301,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

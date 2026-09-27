@@ -63,7 +63,7 @@
 
 <section class="unit unit--dark tiles-unit" id="prohlidka" aria-labelledby="tour-heading">
   <div class="wrap unit-head">
-    <h2 id="tour-heading"><span class="radek"><span>All your work.</span></span> <span class="radek"><span>In context.</span></span></h2>
+    <h2 id="tour-heading"><span class="radek"><span>All your work.</span></span> <span class="radek"><span>At a glance.</span></span></h2>
     <p class="lead">Agenteeq keeps an eye on your agents and speaks up when your decision is needed.</p>
   </div>
   <div class="wrap tiles">
@@ -79,7 +79,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-ceka">
       <h3 id="t-ceka">Waiting for you.</h3>
-      <p>You see right away which agent needs your decision. Without it, the work would stop.</p>
+      <p>You see right away which agent is waiting for your decision, so it never sits idle for nothing.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/rozhodnuti-mobil-en.webp" width="342" height="142">
@@ -89,7 +89,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-limit">
       <h3 id="t-limit">Limits under control.</h3>
-      <p>How much is left in the window before work stops on its own, and when the limit resets.</p>
+      <p>How much you have left before work stops, and when the limit resets.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/limit-mobil-en.webp" width="342" height="81">
@@ -149,12 +149,12 @@
 
 <section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
   <div class="wrap unit-head">
-    <p class="kicker">Privacy by design</p>
+    <p class="kicker">Private from the ground up</p>
     <h2 id="privacy-heading"><span class="radek"><span>Your work</span></span> <span class="radek"><span>should stay yours.</span></span></h2>
     <p class="lead">Agenteeq has no cloud account for your transcripts, because it doesn’t need one. Everything is processed on your Mac, and the extension sends data only to the local app.</p>
   </div>
   <div class="wrap facts">
-    <article><h3>No account, no tracking</h3><p>No sign-up, no analytics. Fonts and the interface ship with the app, so nothing is fetched from third-party servers. Optional APIs and AI services are yours to connect.</p></article>
+    <article><h3>No sign-up, no tracking</h3><p>The app works without an account and measures nothing. Fonts and the interface ship with it, so nothing is fetched from third-party servers. Paid APIs and other services are connected only by you, if you want.</p></article>
     <article><h3>On your phone when you’re away</h3><p>Turn on access on the same Wi-Fi or through your own Tailscale network and point your phone’s camera at the QR code in the app. No typing addresses or numbers.</p></article>
     <article><h3>Data only from a running Mac</h3><p>Your Mac must be on, awake and running Agenteeq. A closed window is fine; a quit app or a Mac that is off can’t provide data.</p></article>
   </div>
@@ -186,19 +186,18 @@
         <!-- rozsireni:obchod -->
         <ol>
           <li>Open <a data-obchod-chrome href="#">Agenteeq in the Chrome Web Store</a> and click <b>Add to Chrome</b>.</li>
-          <li>In the app, open <b>Settings → Connections → Chrome extension</b> and create a one-time code.</li>
-          <li>Pin the Agenteeq icon in the Chrome toolbar and enter the code.</li>
+          <li>That’s it. The extension pairs with the app on its own – just keep Agenteeq running.</li>
         </ol>
-        <p class="small muted">It sends only the conversation status and message counts, never any text, and only to the app on the same computer. You can turn off individual services at any time. Also works in Brave, Arc and Edge.</p>
+        <p class="small muted">It tells the app on your computer only whether the agent is working, how many messages the conversation has and which model is replying. It never sends message text or conversation titles. You can turn off individual services at any time. Also works in Brave, Arc and Edge.</p>
         <!-- /rozsireni:obchod -->
         <!-- rozsireni:rucne -->
         <ol>
           <li>In the app, open <b>Settings → Connections → Chrome extension</b> and click <b>Copy path</b>.</li>
           <li>In Chrome, open <code class="kopirovat" data-kopirovat="chrome://extensions">chrome://extensions</code> and turn on <b>Developer mode</b> in the top right.</li>
           <li>Click <b>Load unpacked</b>, press <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> in the dialog, paste the copied path and confirm.</li>
-          <li>Pin the Agenteeq icon and enter the one-time code from the app.</li>
+          <li>That’s it. The extension pairs with the app on its own.</li>
         </ol>
-        <p class="small muted">The extension isn’t in the Chrome Web Store yet, hence the manual steps. It sends only the conversation status and message counts, never any text, and only to the app on the same computer. You can turn off individual services at any time.</p>
+        <p class="small muted">The extension isn’t in the Chrome Web Store yet, hence the manual steps. It tells the app on your computer only whether the agent is working, how many messages the conversation has and which model is replying. It never sends message text or conversation titles. You can turn off individual services at any time.</p>
         <!-- /rozsireni:rucne -->
       </div></details>
 
@@ -222,7 +221,7 @@
     <details><summary>How much does it cost?</summary><p>The beta is free with every feature unlocked. When we leave the beta, some features will stay free; we’ll say in advance what will be paid, so nobody gets a surprise bill.</p></details>
     <details><summary>Does it show exact spend across all subscriptions?</summary><p>Tokens, limits and money are three different things. You enter subscriptions and purchased credits by hand; supported Admin APIs can add verified costs. Agenteeq doesn’t turn tokens into an imagined price.</p></details>
     <details><summary>Do I have to connect every service?</summary><p>No. Start with the tool you use most. The extension, hooks and other sources are optional, and you can see each connector’s availability in Settings.</p></details>
-    <details><summary>What about Windows?</summary><p>The Windows app is built and launched automatically with every change: the interface loads in its window and the server stops when the app closes. The package is attached to every release on GitHub as a beta. Notifications, the tray icon and other native controls still need a person to try them on a real PC, so the button on this page only offers the Mac version for now.</p></details>
+    <details><summary>What about Windows?</summary><p>The Windows version is a work in progress. A test package is attached to every release on GitHub, but until we’ve tested it on real PCs, downloads here offer only the Mac version.</p></details>
   </div>
 </section>
 

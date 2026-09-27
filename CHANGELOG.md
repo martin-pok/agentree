@@ -2,6 +2,28 @@
 
 ## Připravuje se (zatím nevydáno)
 
+### Rozšíření se spáruje samo a má nové okno
+
+- Žádné opisování kódu: rozšíření z Chrome Web Store i ze složky, kterou připraví aplikace, se
+  s Agenteeq spáruje samo hned po instalaci. Aplikace ho pozná podle ID, které mu přidělí Chrome
+  (`src/app.js#pozadatOSparovani`). Jednorázový kód zůstává jen jako záloha pro jiná rozšíření.
+- Nové okno rozšíření ve stylu aplikace: velké číslo otevřených konverzací, karta „Tato stránka“
+  s logem služby a stavem agenta, sbalitelný seznam služeb se skutečnými logy, ověření stránky
+  schované pod „Počty nesedí?“. Nové snímky do Chrome Web Store.
+
+### Texty, které dávají smysl
+
+- Přepsáno přes 40 nelogických nebo nepravdivých textů v aplikaci, na webu a v rozšíření. Pryč jsou
+  výzvy k Terminálu, vývojářské poznámky v rozhraní, špatný rod („Agenteeq se připojí samo“)
+  a dvě nepravdivá tvrzení, že rozšíření přenáší „přepis“ webových chatů (přenáší jen stav a počty).
+- Oprava: „3 procesů“ v přehledu aplikací; jednopísmenné předložky už v okně rozšíření nekončí řádek.
+
+### Méně práce na pozadí
+
+- V klidu Agenteeq nesouhrnuje nezměněné přepisy, staré soubory kontroluje jednou za minutu, `ps`
+  spouští jednou pro oba konektory procesů a neposílá do okna tikající dobu běhu. Změřeno na 2 400
+  přepisech: CPU 4,6 % → 2,7 %, data do okna 45 kB → 12 kB za 30 s.
+
 ### Napojení Claude Code a Codexu rovnou v prohlížeči, bez Terminálu
 
 - „Napojit“ dřív otevřelo Terminál s výpisem a otázkami a teprve pak prohlížeč. Přihlášení teď běží

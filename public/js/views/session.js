@@ -246,7 +246,7 @@ function renderTranscript(el, t) {
     }
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů si Agenteeq nebere text – jen jestli agent pracuje, nebo čeká. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
@@ -355,7 +355,7 @@ function update() {
           ${s.effort ? `<div><dt>${tr('Úroveň přemýšlení')}</dt><dd>${esc(s.effort)}</dd></div>` : ''}
           ${s.repo ? `<div><dt>${tr('Repozitář')}</dt><dd>${esc(s.repo)}</dd></div>` : ''}
           ${s.pr ? `<div><dt>${tr('Pull request')}</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
-          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena relace (API ekv.)')}</dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
+          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena podle ceníku API')}</dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
           <div><dt>${tr('Zahájeno')}</dt><dd>${dateTime(s.startedAt)}</dd></div>
           <div><dt>${tr('Doba trvání')}</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
           <div><dt>${tr('Zadání')}</dt><dd>${s.turns ?? '–'}</dd></div>
