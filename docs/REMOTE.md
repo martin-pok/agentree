@@ -101,8 +101,8 @@ rozhraní i se spodní lištou nepatří do marketingové prohlídky. Web místo
 
 Agenteeq čte přepisy práce s AI agenty – kód, klientská data, prompty (`docs/SECURITY.md`).
 Poslat je na server, který nevlastníš a nekontroluješ, je přesně to riziko, kterému se má
-produkt vyhnout. Proto je **local-first**: veškerá data zůstávají na Macu, žádná telemetrie,
-žádná analytika, žádný účet u Agenteeq. Tunel podle této stránky nic nemění – pořád jde jen o
+produkt vyhnout. Proto je **local-first**: přepisy zůstávají na Macu, žádná telemetrie,
+žádná analytika a účet u Agenteeq je volitelný (dostane jen souhrnná čísla, `docs/ACCOUNTS.md`). Tunel podle této stránky nic nemění – pořád jde jen o
 to, jak se **tvůj vlastní telefon** dostane na **tvůj vlastní Mac**. Cloudflare/ngrok vidí
 zašifrovaný HTTPS provoz procházet jejich sítí (ne jeho obsah, pokud HTTPS funguje správně –
 ale vidí, že provoz existuje a kdy), Tailscale nevidí ani to.

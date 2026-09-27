@@ -27,10 +27,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Projekt nemá žádné závislosti, takže žádná instalace není potřeba — jen Node.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -58,9 +58,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -83,7 +83,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: qa-native-windows
@@ -92,7 +92,7 @@ jobs:
 
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
@@ -106,9 +106,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -118,7 +118,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: qa-native-macos
@@ -130,8 +130,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
       # Výhradně nástroj QA; nevstupuje do runtime balíčku ani package.json.
       - run: npm install --no-save --package-lock=false playwright@1.62.1
@@ -141,7 +141,7 @@ jobs:
       - run: npm run qa:extension
       - run: npm run qa:contrast
       - run: npm run qa:tvary
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: browser-qa

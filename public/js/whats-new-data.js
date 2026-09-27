@@ -2,6 +2,19 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.29.0',
+    date: '2026-09-27',
+    title: 'Nové okno rozšíření a jednotná tlačítka',
+    extension: true,
+    items: [
+      'Rozšíření pro Chrome má nové okno: nahoře vidíš, kolik agentů právě pracuje, pod tím všechny otevřené konverzace s AI a co v nich agent dělá („odpovídá“, „narazil na limit“, „dokončil před 3 min“). Kliknutím na řádek se přepneš do té karty. V Chromu v jiném jazyce než češtině mluví rozšíření anglicky.',
+      'Rozšíření se s Agenteeq spáruje samo hned po instalaci, žádný kód už neopisuješ.',
+      'Tlačítka, pole a volby mají v aplikaci, na webu i v rozšíření jeden oblý tvar a jen tři výšky. Vybraná volba už neztuční, takže text při výběru neposkočí.',
+      'Napojení Claude Code a Codexu neotevírá Terminál: přihlašovací stránka se otevře rovnou v prohlížeči a Agenteeq napojení sám potvrdí. Když se prohlížeč neotevře, pomůže záložní odkaz.',
+      'U každého okna limitů je vidět, kdy se obnoví – přesný čas s odpočtem, nebo výslovně, že ho zdroj neuvádí. Obnova týdenního limitu Claude se už chybně neukazuje na dnešek nebo zítřek.',
+    ],
+  },
+  {
     version: '0.28.1',
     date: '2026-09-26',
     title: 'Vzdálený Claude se objeví v přehledu',

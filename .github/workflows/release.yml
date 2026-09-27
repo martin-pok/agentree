@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: github.event_name == 'workflow_dispatch'
       - name: Založit tag, když ještě není
         if: github.event_name == 'workflow_dispatch'
@@ -71,9 +71,9 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
       # Vydává se jen to, co prošlo. Testy tu nejsou formalita: na Macu běží i ty, které se
@@ -87,7 +87,7 @@ jobs:
           AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
         run: npm run build:mac
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: mac-arm64
           path: |
@@ -108,16 +108,16 @@ jobs:
     timeout-minutes: 25
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
       - name: Sestavit aplikaci
         env:
           AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
           AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
         run: npm run build:mac
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: mac-x64
           path: dist/Agenteeq-*-macOS-*.zip
@@ -129,15 +129,15 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
       - uses: ilammy/msvc-dev-cmd@v1
         with: { arch: x64 }
       - name: Sestavit plášť
         run: npm run build:windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: windows
           path: dist/Agenteeq-*-Windows-x64.zip
@@ -149,13 +149,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
       - name: Sestavit rozšíření
         run: npm run build:extension
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: rozsireni
           path: dist/agenteeq-extension-*.zip
@@ -174,12 +174,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with: { path: stazeno }
 
       # Přílohy z různých úloh chodí každá ve své složce; vydání je chce pohromadě.

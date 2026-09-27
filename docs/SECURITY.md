@@ -25,7 +25,7 @@ Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské inform
 | Spuštění cizího příkazu přes „Spustit agenta“ (nejcitlivější místo) | Klient posílá jen `agent`, `mode`, zadání a cestu; příkaz sestaví server z pevné šablony a cesty k binárce zjištěné na serveru. Zadání **nikdy není součástí příkazu**: na pozadí jde jako samostatný prvek argv za `--` (spawn bez shellu), v Terminálu se čte ze souboru 0600 přes `"$(cat '<soubor>')"`. Složka musí být absolutní existující adresář bez řídicích znaků a prochází `shellQuote`. Oprávnění Claude Code jen `plan`/`acceptEdits`, sandbox Codexu jen `read-only`/`workspace-write` (nikdy `bypassPermissions` ani `danger-full-access`). Mutace chráněná proti CSRF | `src/launcher.js`, `src/app.js#launch`, `test/launcher.test.mjs` |
 | Procházení disku přes prohlížeč složek | Jen názvy podsložek (ne soubory) v domovském adresáři, bez skrytých a bez symlinků; v kořeni domova se nenahlíží do podsložek (macOS by žádal o přístup k Dokumentům/Ploše); GET bez CORS nejde přečíst z cizího webu | `src/app.js#listFolders` |
 | Podvržená licence | Ed25519 podpis nad celými daty klíče, veřejný klíč v kódu, soukromý mimo repozitář a mimo balíček (`npm run smoke` hlídá); klientovi se vrací jen maskovaný klíč | `src/license.js`, `scripts/license.mjs` |
-| Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'` | `src/projects.js#projectCsv` |
+| Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'`; platí pro export projektu i útraty | `src/csv.js#bunka` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
 ## Zpevnění desktopu – 2026-09-11
@@ -51,7 +51,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Agent spuštěný z Agenteeq má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agenteeq/prompts` (0600) a výstup běhů v `~/.agenteeq/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
 - **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq – to je vlastnost macOS, ne Agenteeq.
-- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a posílá ho jen na `127.0.0.1`. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy.
+- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele, ale na `127.0.0.1` posílá jen stav a počty zpráv (od 0.25.0), nikdy text. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy (odpovědi do formuláře obchodu: `docs/CHROME-WEB-STORE.md`).
 
 ## Nezávislý audit 2026-09-20: co je opraveno a co ne
 
@@ -75,7 +75,7 @@ Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF,
 
 ## Soukromí
 
-- Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
+- Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: denní kurz ČNB bez údajů o uživateli (vypíná `AGENTEEQ_CLOUD=0`), Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
 - Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agenteeq/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
 - **Vzorek stránky z rozšíření (od 0.26.0):** vzniká jen na kliknutí a jen jako soubor u uživatele,
   nikam se neposílá. Obsahuje stavbu stránky bez textu zpráv, názvů, jmen, odkazů, obrázků,
@@ -83,7 +83,7 @@ Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF,
   zůstanou jen krátká slova stavby. Hlídá to `test/extension-overeni.test.mjs`.
 - **Účet Agenteeq (od 0.25.0, `docs/ACCOUNTS.md`):** jen na výslovné přihlášení přes Google. Do cloudu (Supabase, Frankfurt) smí jen účet a souhrny – nikdy text konverzací, jejich názvy, cesty ke složkám ani kód. Přihlášení je PKCE s jednorázovým pokusem, návrat přijme jen tento Mac, obnovovací token leží v Klíčence, přístupový jen v paměti. Databáze má RLS na každé tabulce, ověřené skriptem `supabase/tests/rls.sql`.
 - **Přehled na webu** (`/app?ucet`) drží relaci účtu v `localStorage` prohlížeče (jako běžné webové aplikace nad Supabase). Stránka nenačítá cizí skripty ani písma a nemá vložený kód třetích stran; web do souhrnů jen čte. Odhlášení relaci smaže a zneplatní na serveru.
-- Před ostrým spuštěním účtů: zásady zpracování údajů (GDPR) a smlouva se zpracovatelem (Supabase).
+- Zásady ochrany soukromí jsou od 0.29.0 na webu (`site/soukromi/index.html`, `site/en/privacy/index.html`). Před ostrým spuštěním účtů zbývá jejich právní kontrola a smlouva se zpracovatelem (Supabase).
 
 ## Hlášení problému
 

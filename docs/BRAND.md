@@ -46,7 +46,8 @@ Seřazeno podle toho, co uživatele bolí nejvíc.
 6. Štítek LaunchAgentu `cz.agenteeq.agent` (`src/launch-agent.js`) – starý je potřeba odinstalovat,
    jinak zůstane v systému viset.
 7. Rozšíření pro Chrome: změna názvu je v pořádku, ale **přeinstalace ztratí spárování**, protože
-   token leží v úložišti rozšíření.
+   token leží v úložišti rozšíření. Od 0.29.0 se rozšíření z obchodu nebo ze složky, kterou připraví
+   aplikace, spáruje znovu samo; jiná kopie potřebuje jednorázový kód.
 
 **Nebolí, ale je toho hodně**
 
