@@ -26,7 +26,7 @@
   --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
 
-  --r-tile: 28px; --r-lg: 24px; --r-md: 16px; --r-sm: 12px;
+  --r-tile: 28px; --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-xs: 6px; --r-full: 999px;
   --ease: cubic-bezier(.2, .8, .2, 1);
   --page: 1120px;
   --unit-y: clamp(96px, 11vw, 160px);
@@ -56,11 +56,13 @@ a { color: inherit; text-underline-offset: 4px; }
 button { color: inherit; font: inherit; cursor: pointer; }
 button, a, summary { -webkit-tap-highlight-color: transparent; }
 b, strong { font-weight: 500; }
-:focus-visible { outline: 2px solid var(--teal-ink); outline-offset: 4px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--teal-ink); outline-offset: 4px; }
+/* Obrys kopíruje tvar prvku (kapsle zůstane kapslí); vlastní zaoblení dostane jen holý odkaz v textu. */
+:where(a:not([class])):focus-visible { border-radius: var(--r-xs); }
 .unit--dark :focus-visible, .nav :focus-visible { outline-color: #76E6CD; }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.skip { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--action); color: var(--on-action); padding: 12px 20px; border-radius: var(--r-sm); }
+.skip { position: fixed; top: -100px; left: 16px; z-index: 100; display: inline-flex; align-items: center; height: 40px; padding: 0 20px; background: var(--action); color: var(--on-action); border-radius: var(--r-full); font-size: 15px; font-weight: 500; }
 .skip:focus { top: 12px; }
 .wrap { width: min(100% - 48px, var(--page)); margin-inline: auto; }
 
@@ -93,15 +95,16 @@ section[id] { scroll-margin-top: 56px; }
 .unit-head .lead { margin-inline: auto; }
 
 /* ---------- tlačítka a odkazy ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 24px; border: 0; border-radius: 999px; background: var(--action); color: var(--on-action); font-weight: 500; text-decoration: none; transition: background 180ms var(--ease), transform 90ms var(--ease); }
+/* Velikosti tlačítek jsou stejné jako v aplikaci: 40 (malé), 48 (základ na webu) a 56 px (hlavní výzva). */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 8px 24px; font-size: 15px; border: 0; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font-weight: 500; text-decoration: none; transition: background 180ms var(--ease), transform 90ms var(--ease); }
 .btn:hover { background: var(--action-hover); transform: translateY(-1px); }
 .btn:active { transform: translateY(0) scale(.98); }
-.btn--sm { padding: 8px 16px; font-size: 14px; }
+.btn--sm { min-height: 40px; padding: 6px 18px; font-size: 14px; }
 /* Tlačítko v liště je jen text. Doplněk „ pro Mac“ je vlastní položka flexu, takže by mezi slovy
    byla mezera z `gap` místo obyčejné mezery; ta zůstává v textu kvůli čtečkám. */
 .nav .btn { gap: 0; }
 .nav-cta-extra { white-space: pre; }
-.btn--lg { padding: 16px 30px; font-size: 17px; }
+.btn--lg { min-height: 56px; padding: 8px 30px; font-size: 17px; }
 .nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
 .nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
 .text-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); text-decoration: underline; text-decoration-thickness: 1px; }
@@ -130,8 +133,8 @@ section[id] { scroll-margin-top: 56px; }
    jazyková verze má vlastní adresu (/ a /en), kterou jde sdílet i najít ve vyhledávači. */
 /* Kapsli nese linka, ne výplň: neaktivní jazyk leží přímo na liště jako ostatní odkazy v ní,
    takže drží kontrast i tam, kde je pod průsvitnou lištou světlá stránka. */
-.lang { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(244, 243, 247, .14); border-radius: 999px; }
-.lang a { min-width: 36px; padding: 5px 10px; border-radius: 999px; font-size: 13px; line-height: 1.4; letter-spacing: .02em; text-align: center; color: var(--on-stage-mute); text-decoration: none; transition: background 180ms var(--ease), color 180ms var(--ease); }
+.lang { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(244, 243, 247, .14); border-radius: var(--r-full); }
+.lang a { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 10px; border-radius: var(--r-full); font-size: 13px; line-height: 1.4; letter-spacing: .02em; text-align: center; color: var(--on-stage-mute); text-decoration: none; transition: background 180ms var(--ease), color 180ms var(--ease); }
 .lang a:hover { color: var(--on-stage); }
 .lang a[aria-current] { background: rgba(244, 243, 247, .16); color: var(--on-stage); }
 
@@ -208,15 +211,15 @@ summary { display: flex; align-items: center; justify-content: space-between; ga
 summary::-webkit-details-marker { display: none; }
 summary::after { content: '+'; flex: none; font-size: 24px; line-height: 1; color: var(--mute); transition: transform 200ms var(--ease); }
 details[open] > summary::after { transform: rotate(45deg); }
-.detail-tag { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: var(--paper-2); font-size: 13px; color: var(--mute); white-space: nowrap; }
+.detail-tag { margin-left: auto; padding: 4px 10px; border-radius: var(--r-full); background: var(--paper-2); font-size: 13px; color: var(--mute); white-space: nowrap; }
 .unit--tint .detail-tag { background: var(--paper); }
 .detail-body { display: grid; gap: 14px; padding: 0 4px 26px; }
 .detail-body ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); }
 .detail-body li { padding-left: 4px; }
 .rows details > p { padding: 0 4px 26px; color: var(--ink-2); max-width: 64ch; }
 #otazky .rows { margin-top: clamp(40px, 5vw, 64px); }
-kbd { display: inline-block; padding: 1px 6px; border-radius: 5px; background: var(--paper-2); border: 1px solid var(--line); }
-.kopirovat { padding: 2px 8px; border-radius: 6px; background: var(--paper-2); border: 1px solid var(--line); cursor: pointer; }
+kbd { display: inline-block; padding: 1px 6px; border-radius: var(--r-full); background: var(--paper-2); border: 1px solid var(--line); }
+.kopirovat { padding: 2px 8px; border-radius: var(--r-full); background: var(--paper-2); border: 1px solid var(--line); cursor: pointer; }
 .kopirovat:hover { border-color: var(--mute); }
 
 /* ---------- patička ---------- */
@@ -252,7 +255,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .nav-links { display: none; }
   .nav-in { gap: 10px; }
   .brand { font-size: 17px; }
-  .btn--lg { padding: 15px 26px; font-size: 16px; }
+  .btn--lg { padding: 8px 26px; font-size: 16px; }
   /* Telefon: dlaždice pod sebou, výřezy z telefonního rozvržení v přirozené velikosti. */
   .tiles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .tile { padding: 40px 20px 0; border-radius: var(--r-lg); }

@@ -68,24 +68,50 @@ async function forgetToken() {
   await chrome.storage.local.remove('token');
 }
 
-// Otevřené konverzace pro okno rozšíření: jen služba, jestli agent pracuje a kdy se ozvala.
+// Otevřené konverzace pro okno rozšíření: služba, karta (aby se do ní dalo přepnout), jestli agent
+// odpovídá nebo narazil na limit a kdy odpověď začala a skončila. Jen čísla a stav, nic ze stránky.
 // Drží se v paměti prohlížeče (storage.session) a mizí se zavřením Chromu. Karta se hlásí
 // nejpozději po minutě, takže co mlčí přes 150 s, už zavřená je.
 const OTEVRENA_MS = 150e3;
-async function zapamatujKonverzaci(payload) {
+async function zapamatujKonverzaci(payload, karta) {
   if (!chrome.storage.session) return;
   const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
   const ted = Date.now();
-  for (const [klic, k] of Object.entries(otevrene)) if (ted - k.at > OTEVRENA_MS) delete otevrene[klic];
-  otevrene[`${payload.site}:${payload.conversationId}`] = { site: payload.site, generating: Boolean(payload.generating), at: ted };
+  const klic = `${payload.site}:${payload.conversationId}`;
+  const tab = typeof karta?.id === 'number' ? karta.id : null;
+  for (const [k, x] of Object.entries(otevrene)) {
+    // V jedné kartě je vždy jen jedna konverzace: přejde-li karta na jinou, stará zmizí hned.
+    if (ted - x.at > OTEVRENA_MS || (tab !== null && x.tab === tab && k !== klic)) delete otevrene[k];
+  }
+  const pred = otevrene[klic];
+  const generating = Boolean(payload.generating);
+  otevrene[klic] = {
+    site: payload.site,
+    generating,
+    limit: Boolean(payload.limit),
+    at: ted,
+    tab: tab ?? pred?.tab ?? null,
+    okno: typeof karta?.windowId === 'number' ? karta.windowId : pred?.okno ?? null,
+    od: generating ? (pred?.generating && pred.od ? pred.od : ted) : null,
+    konec: !generating && pred?.generating ? ted : pred?.konec ?? null,
+  };
   await chrome.storage.session.set({ otevrene });
 }
 
+// Zavřená karta z okna zmizí hned, ne až po 150 s ticha.
+async function zapomenKartu(tabId) {
+  if (!chrome.storage.session) return;
+  const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
+  let zmena = false;
+  for (const [k, x] of Object.entries(otevrene)) if (x.tab === tabId) { delete otevrene[k]; zmena = true; }
+  if (zmena) await chrome.storage.session.set({ otevrene });
+}
+
 // Vrací, jestli aplikace hlášení přijala. Vypnutá služba se počítá jako vyřízená – opakovat nemá smysl.
-async function send(payload) {
+async function send(payload, karta) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
   if (disabledSites.includes(payload.site)) return true;
-  await zapamatujKonverzaci(payload).catch(() => {});
+  await zapamatujKonverzaci(payload, karta).catch(() => {});
   const res = await post(await getToken(), payload);
   if (res.status === 401) await forgetToken();
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
@@ -151,10 +177,11 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
 });
 chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
+chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() => {}); });
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'agenteeq:update') {
-    send(msg.payload).then((ok) => sendResponse({ ok }), (err) => {
+    send(msg.payload, sender?.tab).then((ok) => sendResponse({ ok }), (err) => {
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } });
       sendResponse({ ok: false });
     });

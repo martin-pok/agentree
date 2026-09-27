@@ -15,6 +15,7 @@ function spust(sit) {
   const session = {};
   const volani = [];
   let posluchac = null;
+  let zavreni = null;
   let ted = 1_000_000;
   const oblast = (data) => ({
     get: async (klice) => Object.fromEntries((Array.isArray(klice) ? klice : [klice]).filter((k) => k in data).map((k) => [k, data[k]])),
@@ -39,12 +40,13 @@ function spust(sit) {
         onMessage: { addListener: (fn) => { posluchac = fn; } },
       },
       alarms: { create() {}, onAlarm: { addListener() {} } },
-      tabs: { query: async () => [] },
+      tabs: { query: async () => [], onRemoved: { addListener: (fn) => { zavreni = fn; } } },
     },
   });
   vm.runInContext(zdroj, kontext);
-  const zprava = (msg) => new Promise((resolve) => { posluchac(msg, {}, resolve); });
-  return { local, session, volani, zprava, posun: (ms) => { ted += ms; } };
+  const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
+  const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
+  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; } };
 }
 
 test('pozadí rozšíření: aplikace neběží → „nedostupné“, bez tokenu a bez zahlcení dotazy', async () => {
@@ -105,10 +107,30 @@ test('pozadí rozšíření: odvolaný token (401) → jedno nové spárování,
 
 test('pozadí rozšíření: otevřené konverzace pro okno – jen stav, staré se zapomenou', async () => {
   const r = spust((url) => (url === '/api/extension/pripojit' ? { status: 200, body: { token: 't'.repeat(43) } } : { status: 200, body: {} }));
-  await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: true, counts: { user: 1, assistant: 1 } } });
-  await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude', conversationId: 'b', generating: false } });
+  const karta = (id) => ({ tab: { id, windowId: 3 } });
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: true, counts: { user: 1, assistant: 1 } } }, karta(11));
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude', conversationId: 'b', generating: false, limit: true } }, karta(12));
   assert.deepEqual(Object.keys(r.session.otevrene).sort(), ['chatgpt:a', 'claude:b']);
-  assert.deepEqual(Object.keys(r.session.otevrene['chatgpt:a']).sort(), ['at', 'generating', 'site'], 'v paměti jen služba, stav a čas – nic ze stránky');
+  assert.deepEqual(Object.keys(r.session.otevrene['chatgpt:a']).sort(), ['at', 'generating', 'konec', 'limit', 'od', 'okno', 'site', 'tab'], 'v paměti jen služba, karta, stav a časy – nic ze stránky');
+  assert.equal(r.session.otevrene['chatgpt:a'].tab, 11, 'okno ví, do které karty přepnout');
+  assert.equal(r.session.otevrene['chatgpt:a'].okno, 3);
+  assert.equal(r.session.otevrene['claude:b'].limit, true);
+  // Začátek odpovědi se drží, dokud agent odpovídá; po dopsání se zapíše konec.
+  const zacatek = r.session.otevrene['chatgpt:a'].od;
+  assert.ok(zacatek > 0);
+  r.posun(5e3);
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: true } }, karta(11));
+  assert.equal(r.session.otevrene['chatgpt:a'].od, zacatek, 'začátek odpovědi se s dalším hlášením neposouvá');
+  r.posun(5e3);
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: false } }, karta(11));
+  assert.equal(r.session.otevrene['chatgpt:a'].od, null);
+  assert.equal(r.session.otevrene['chatgpt:a'].konec, zacatek + 10e3, 'konec odpovědi = první hlášení bez generování');
+  // Karta přešla na jinou konverzaci: stará z okna zmizí hned.
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a2', generating: false } }, karta(11));
+  assert.deepEqual(Object.keys(r.session.otevrene).sort(), ['chatgpt:a2', 'claude:b']);
+  // Zavřená karta zmizí hned, ne až po 150 s ticha.
+  await r.zavri(12);
+  assert.deepEqual(Object.keys(r.session.otevrene), ['chatgpt:a2']);
   r.posun(151e3);
   await r.zprava({ type: 'agenteeq:update', payload: { site: 'gemini', conversationId: 'c', generating: false } });
   assert.deepEqual(Object.keys(r.session.otevrene), ['gemini:c'], 'karta, která přes 150 s mlčí, je zavřená');

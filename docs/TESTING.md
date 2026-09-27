@@ -102,7 +102,9 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Session nese jen stav a počty zpráv: žádný přepis, název „<Služba> · konverzace <konec ID>“.
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá počty.
 - [ ] Rozšíření se po načtení spáruje samo (okno ukáže **Připojeno**), bez kódu.
-- [ ] Okno rozšíření → karta **Tato stránka** → **Počty nesedí? Ověřit stránku**: konverzace má
+- [ ] Okno rozšíření ukáže konverzaci v seznamu („odpovídá · 0:12“, po dopsání „právě dokončil“)
+      a kliknutí na řádek jiné karty do ní přepne.
+- [ ] Okno rozšíření → řádek **tato karta** → **Počty nesedí? Ověřit stránku**: konverzace má
       vlastní adresu, pole pro zadání nalezeno, počty zpráv odpovídají stránce, „Začátek i konec
       odpovědi zachycen“. Klikni **Sedí**, nebo **Nesedí**.
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).

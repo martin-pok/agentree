@@ -18,7 +18,8 @@ await new Promise(r => server.listen(0, '127.0.0.1', r));
 await fs.mkdir('dist/qa-extension', { recursive: true });
 const results = [];
 try {
-  for (const engine of ['chromium', 'webkit']) {
+  // QA_ENGINE=chromium omezí běh na jeden prohlížeč (lokálně bez WebKitu); CI jede oba.
+  for (const engine of process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit']) {
     const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
     try {
       for (const theme of ['light', 'dark']) for (const state of ['offline', 'unpaired', 'revoked', 'paired', 'outdated', 'overeni', 'overeni-chyby']) {
@@ -33,7 +34,7 @@ try {
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 3, assistant: 3, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } }
             : { site: 'mscopilot', konverzace: 'karta', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } };
           window.chrome = {
-            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', generating: true, at: Date.now() } } }), set: async () => {} } },
+            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async m => {
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
@@ -42,8 +43,13 @@ try {
               return { paired: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
             } },
           };
+          // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
+          window.chrome.tabs = { query: async () => [{ id: 99 }], sendMessage: async () => { throw new Error('bez skriptu'); }, update: async (id) => { fixture.prepnuto = id; } };
+          window.chrome.windows = { update: async (id) => { fixture.okno = id; } };
+          window.close = () => { fixture.zavreno = true; };
           if (state.startsWith('overeni')) {
             window.chrome.tabs = {
+              update: async (id) => { fixture.prepnuto = id; },
               query: async () => [{ id: 7 }],
               sendMessage: async (_tab, m) => (m.type === 'agenteeq:diagnostika' ? diagnostika
                 : { format: 'agenteeq-vzorek', verze: 1, site: diagnostika.site, adresa: { host: 'chatgpt.com', cesta: '/c/x-id' }, prvku: 812, zkraceno: false, strom: { t: 'body' } }),
@@ -53,6 +59,15 @@ try {
         }, { state });
         await page.goto(`http://127.0.0.1:${server.address().port}/popup.html`);
         await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
+        if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
+          // Nahoře skutečný počet pracujících agentů a otevřených konverzací z background workeru, ne výmysl.
+          const [pracuje, otevreno] = { paired: [1, 1], outdated: [1, 1], overeni: [1, 2], 'overeni-chyby': [2, 2] }[state];
+          assert.equal(await page.locator('#hero-num').textContent(), String(pracuje), `${state}: počet pracujících agentů`);
+          assert.equal(await page.locator('#headline').textContent(), pracuje === 1 ? 'agent právě pracuje' : 'agenti právě pracují');
+          assert.equal(await page.locator('#sub').textContent(), otevreno === 1 ? '1 otevřená konverzace' : '2 otevřené konverzace');
+          // Odpovídající agent ukazuje, jak dlouho už odpovídá.
+          assert.match(await page.locator('#konverzace').innerText(), /odpovídá · 0:4\d/);
+        }
         // Česká sazba: jednopísmenná předložka nikdy nestojí na konci řádku (za ní je nezlomitelná mezera).
         assert.doesNotMatch(await page.evaluate(() => document.body.innerText), /(^|\s)[vkszouaiVKSZOUAI] /m, `${state}: předložka na konci řádku`);
         await page.evaluate(() => document.fonts.ready);
@@ -63,20 +78,29 @@ try {
         assert.ok(vyska <= 600, `${engine} ${theme} ${state}: okno má ${Math.round(vyska)} px, Chrome ukáže jen 600`);
         assert.equal(await page.locator('input[type=checkbox]').count(), 9);
         // Přepínače služeb se nabízejí, až rozšíření posílá data; jinde je karta schovaná.
-        const sluzbyVidet = await page.locator('#sites-card').isVisible();
+        const sluzbyVidet = await page.locator('#sites-open').isVisible();
         assert.equal(sluzbyVidet, ['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state), `${state}: viditelnost seznamu služeb`);
-        assert.equal(await page.locator('#check-card').isVisible(), state.startsWith('overeni'), `${state}: karta ověření jen na podporované stránce`);
+        assert.equal(await page.locator('.radek--tato').isVisible(), state.startsWith('overeni'), `${state}: aktuální karta jen na podporované stránce`);
+        if (state === 'paired') {
+          // Řádek konverzace v jiné kartě do ní kliknutím přepne a okno se zavře.
+          await page.locator('#konverzace button.radek').click();
+          assert.deepEqual(await page.evaluate(() => [fixture.prepnuto, fixture.okno, fixture.zavreno]), [5, 2, true]);
+        }
         if (sluzbyVidet) {
-          // Seznam služeb je sbalený; rozbalený se musí vejít do 600 px.
+          // Služby jsou vlastní pohled se zpátečním tlačítkem; musí se vejít do 600 px.
           await page.locator('#sites-open').click();
           assert.equal(await page.locator('#sites-open').getAttribute('aria-expanded'), 'true');
+          assert.equal(await page.locator('#view-sluzby').isVisible(), true);
           const sRozbalenymi = await page.evaluate(() => document.body.getBoundingClientRect().height);
-          assert.ok(sRozbalenymi <= 600, `${engine} ${theme} ${state}: rozbalené služby mají ${Math.round(sRozbalenymi)} px`);
+          assert.ok(sRozbalenymi <= 600, `${engine} ${theme} ${state}: služby mají ${Math.round(sRozbalenymi)} px`);
           await page.locator('input[type=checkbox]').first().focus();
           await page.keyboard.press('Space');
           assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
           assert.equal(await page.locator('#sites-count').textContent(), '8\u00a0z\u00a09');
-          await page.locator('#sites-open').click();
+          await page.keyboard.press('Escape');
+          assert.equal(await page.locator('#view-sluzby').isVisible(), false, 'Esc vrátí hlavní pohled');
+          // Vypnutá služba hned zmizí ze seznamu konverzací (ChatGPT se v seznamu už neukazuje).
+          assert.doesNotMatch(await page.locator('#view-hlavni').innerText(), /odpovídá · 0:4\d[\s\S]*ChatGPT|ChatGPT\s*\n\s*odpovídá/);
         }
         if (['unpaired', 'revoked'].includes(state)) {
           await page.locator('#code').fill('bad'); await page.locator('#pair').click();
@@ -92,8 +116,8 @@ try {
           await page.locator('#check-open').focus();
           await page.keyboard.press('Enter');
           await page.waitForFunction(() => document.querySelectorAll('#checks li').length >= 4);
-          assert.equal(await page.locator('#check-open').getAttribute('aria-expanded'), 'true');
-          assert.equal(await page.locator('#sites').isVisible(), false, 'rozbalené ověření sbalí seznam služeb');
+          assert.equal(await page.locator('#view-overeni').isVisible(), true);
+          assert.equal(await page.locator('#sites').isVisible(), false, 'ověření je samostatný pohled');
           const rozbalene = await page.evaluate(() => document.body.getBoundingClientRect().height);
           assert.ok(rozbalene <= 600, `${engine} ${theme} ${state}: rozbalené ověření má ${Math.round(rozbalene)} px`);
           const radky = await page.locator('#checks li').allTextContents();
@@ -110,16 +134,13 @@ try {
           assert.equal(soubor.diagnostika.site, soubor.site);
           assert.match(stazeni.suggestedFilename(), /^agenteeq-vzorek-[\w-]+-\d{4}-\d{2}-\d{2}\.json$/);
           await page.waitForFunction(() => document.getElementById('check-msg').textContent.includes('Uloženo'));
-          await page.keyboard.press('Shift+Tab');
+          await page.locator('#back').click();
+          assert.equal(await page.locator('#view-hlavni').isVisible(), true, 'zpět vede na hlavní pohled');
         }
         if (state === 'offline') assert.ok((await page.locator('#headline').textContent()).includes('neběží'));
-        if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
-          // Pás ukazuje skutečný počet otevřených konverzací z background workeru, ne výmysl.
-          assert.equal(await page.locator('#headline .num').textContent(), '1');
-          assert.match(await page.locator('#sub').textContent(), /1\u00a0?agent právě pracuje|1 agent právě pracuje/);
-          // Test výš vypnul ChatGPT – karta stránky to musí hned říct; Microsoft Copilot zůstal zapnutý a generuje.
-          if (state.startsWith('overeni')) assert.match(await page.locator('#tab-state').textContent(), state === 'overeni' ? /Sledování této služby je vypnuté/ : /Agent právě odpovídá/);
-          else assert.equal(await page.locator('#tab-other').isVisible(), true, 'stránka mimo podporované služby to řekne');
+        if (state.startsWith('overeni')) {
+          // Test výš vypnul ChatGPT – aktuální karta to musí hned říct; Microsoft Copilot zůstal zapnutý a odpovídá.
+          assert.match(await page.locator('.radek--tato .st').textContent(), state === 'overeni' ? /sledování této služby je vypnuté/ : /odpovídá/);
         }
         if (state === 'outdated') assert.equal(await page.locator('#outdated').isVisible(), true);
         assert.deepEqual(errors, []);

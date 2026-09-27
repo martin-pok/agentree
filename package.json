@@ -36,6 +36,7 @@
     "license": "node scripts/license.mjs",
     "qa:desktop": "node scripts/qa-desktop.mjs",
     "qa:contrast": "node scripts/qa-contrast.mjs",
+    "qa:tvary": "node scripts/qa-tvary.mjs",
     "qa:site": "node scripts/qa-site.mjs",
     "qa:extension": "node scripts/qa-extension.mjs",
     "qa:native": "node scripts/qa-native.mjs",

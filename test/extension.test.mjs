@@ -97,7 +97,7 @@ test('rozšíření nepřehlédne otevřenou konverzaci: po aktualizaci, po výp
   const obsah = await fs.readFile(path.join(ROOT, 'extension/content.js'), 'utf8');
   assert.match(pozadi, /reason === 'install' \|\| reason === 'update'\) vlozDoOtevrenychKaret\(\)/);
   assert.match(pozadi, /chrome\.scripting\.executeScript\(\{ target: \{ tabId: karta\.id \}, files: skript\.js \}\)/);
-  assert.match(pozadi, /send\(msg\.payload\)\.then\(\(ok\) => sendResponse\(\{ ok \}\)/, 'obsahový skript se dozví, že odeslání nevyšlo');
+  assert.match(pozadi, /send\(msg\.payload, sender\?\.tab\)\.then\(\(ok\) => sendResponse\(\{ ok \}\)/, 'obsahový skript se dozví, že odeslání nevyšlo');
   assert.match(obsah, /if \(!r\?\.ok\) lastSig = ''/, 'a zkusí to znovu při dalším průchodu');
   assert.match(obsah, /payload\.generating \? 10000 : 60000/, 'klidná konverzace se ohlásí aspoň jednou za minutu');
 });

@@ -7,163 +7,210 @@
   <link rel="stylesheet" href="fonts/fonts.css">
   <style>
     /* Okno rozšíření je menší sestra aplikace: tytéž tokeny (public/styles.css :root), tatáž
-       písma a tentýž programový pás nahoře – velké číslo a pod ním, co znamená. Dvě rodiny písma
-       (Urbanist na čísla a nadpisy, Onest na text), váha nejvýš 500, 8px mřížka, karty drží
-       vlasová linka místo stínu. Chrome okno ukáže nejvýš 600 px vysoké. */
+       písma a tentýž tvarový systém (docs/DESIGN.md). Jedna souvislá plocha bez karet: nahoře
+       kolik agentů pracuje, pod tím seznam otevřených konverzací, kliknutím se přepneš do karty.
+       Dvě rodiny písma (Urbanist na čísla a nadpisy, Onest na text), váha nejvýš 500, 8px mřížka.
+       Chrome okno ukáže nejvýš 600 px vysoké. */
     :root {
-      --stage: #121019; --stage-2: #1D1A26; --on-stage: #F4F3F7; --on-stage-mute: #B9B3C1;
+      --stage: #121019; --stage-2: #1D1A26;
       --paper: #F4F3F7; --card: #FFFFFF; --ink: #16141D; --ink-2: #3A3743; --mute: #686472; --line: #E3E1E9; --line-2: #EFEDF3;
       --brass: #C99A3E; --brass-ink: #86620F; --brass-tint: #F7EEDA;
-      --teal: #0D7A67; --teal-tint: #E0F3EF; --velvet: #A8254A; --velvet-tint: #FBE8EE;
-      --on-ink: #FFFFFF;
-      --hairline: 0 0 0 1px rgba(22, 20, 29, .085);
+      --teal: #0D7A67; --dot: #22A38C; --velvet: #A8254A;
+      --action: #16141D; --on-action: #FFFFFF; --action-hover: #3A3646;
+      --bg: var(--paper); --surface: var(--card); --tile-line: rgba(22, 20, 29, .09);
+      --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-xs: 6px; --r-full: 999px; --r-logo: 28%;
       --f-display: 'Urbanist', 'Avenir Next', system-ui, sans-serif;
       --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
       --ease: cubic-bezier(.2, .8, .2, 1);
     }
-    /* Noční sál: vrstvy odlišuje hloubka, ne křiklavá barva (html[data-theme='dark'] v aplikaci). */
+    /* Noční sál: plocha je scéna aplikace, vrstvy odlišuje hloubka, ne křiklavá barva. */
     @media (prefers-color-scheme: dark) {
       :root {
-        --paper: #181620; --card: #211F2A; --ink: #F5F2F8; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #3B3747; --line-2: #2C2935;
-        --teal: #76E6CD; --teal-tint: #153C37; --velvet: #FFB3C7; --velvet-tint: #43202E;
+        --card: #211F2A; --ink: #F5F2F8; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #2E2A38; --line-2: #26232F;
         --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #3B2E17;
-        --on-ink: #16141D;
-        --hairline: 0 0 0 1px rgba(255, 255, 255, .14);
+        --teal: #76E6CD; --dot: #43D1B1; --velvet: #FFB3C7;
+        --action: #F5F2F8; --on-action: #16141D; --action-hover: #FFFFFF;
+        --bg: var(--stage); --surface: var(--stage-2); --tile-line: rgba(255, 255, 255, .08);
       }
       /* Černá loga (ChatGPT, Grok, GitHub Copilot) se na tmavé ploše obrátí do světlé. */
       .logo--mono { filter: invert(1); }
     }
     * { box-sizing: border-box; }
-    body { width: 344px; margin: 0; background: var(--paper); color: var(--ink); font: 400 13px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+    body { width: 344px; margin: 0; background: var(--bg); color: var(--ink); font: 400 13px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
     b, strong { font-weight: 500; }
     [hidden] { display: none !important; }
-    :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 8px; }
+    /* Obrys zaostření kopíruje tvar prvku – kapsle zůstane kapslí. */
+    :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     button { font: inherit; color: inherit; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    ol, ul { margin: 0; padding: 0; list-style: none; }
 
-    /* ---------- Programový pás ---------- */
-    .band { position: relative; padding: 16px 24px 20px; color: var(--on-stage); background-color: var(--stage);
-      background-image: radial-gradient(120% 90% at 92% -10%, rgba(201, 154, 62, .20), transparent 60%), linear-gradient(180deg, var(--stage-2) 0%, var(--stage) 100%); }
-    .bar { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+    /* ---------- Horní lišta ---------- */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px; padding: 0 16px; }
     .mark { display: inline-flex; align-items: center; gap: 8px; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; }
-    .stav { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--on-stage-mute); font-size: 12px; }
-    .stav i { width: 8px; height: 8px; border-radius: 50%; background: var(--on-stage-mute); flex: none; }
+    .mark path { stroke: currentColor; }
+    .mark .tecka { fill: currentColor; }
+    .mark .zlato { fill: var(--brass); }
+    .zpet { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-left: -8px; padding: 0 12px 0 6px; border: 0; border-radius: var(--r-full); background: none; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; cursor: pointer; }
+    .zpet:hover { background: var(--line-2); }
+    .stav { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); font-size: 12px; white-space: nowrap; }
+    .stav i { width: 6px; height: 6px; border-radius: 50%; background: var(--mute); flex: none; }
     /* Smaragd = připojeno, mosaz = ještě krok, samet = neběží. Stav nese vždy i text. */
-    .stav[data-tone="ok"] i { background: #43D1B1; box-shadow: 0 0 0 3px rgba(67, 209, 177, .18); }
-    .stav[data-tone="warn"] i { background: #E4B95F; }
-    .stav[data-tone="err"] i { background: #F08AA8; }
-    .headline { margin: 20px 0 0; display: flex; align-items: flex-end; gap: 12px; font: 500 22px/1.2 var(--f-display); letter-spacing: -.015em; }
-    .headline .num { font: 300 56px/.84 var(--f-display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-    .headline .num-label { padding-bottom: 2px; font: 500 15px/1.25 var(--f-body); letter-spacing: 0; }
-    .sub { margin: 8px 0 0; color: var(--on-stage-mute); font-size: 13px; }
+    .stav[data-tone="ok"] i { background: var(--dot); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dot) 22%, transparent); }
+    .stav[data-tone="warn"] i { background: var(--brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 22%, transparent); }
+    .stav[data-tone="err"] i { background: var(--velvet); }
 
-    /* ---------- Plocha ---------- */
-    main { display: grid; gap: 8px; padding: 8px; }
-    .card { min-width: 0; background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--hairline); }
-    .label { margin: 0 0 12px; color: var(--mute); font-size: 12px; }
-    .note { margin: 0; padding: 12px 16px; border-radius: 16px; background: var(--brass-tint); color: var(--brass-ink); font-size: 12px; }
+    /* ---------- Hlavička obsahu: číslo, nebo věta ---------- */
+    .hero { display: flex; align-items: flex-end; gap: 12px; padding: 8px 16px 20px; }
+    .num { font: 300 64px/.8 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .hero-text { min-width: 0; }
+    .headline { margin: 0; font: 300 28px/1.15 var(--f-display); letter-spacing: -.01em; }
+    .hero--cislo .headline { font: 500 16px/1.2 var(--f-display); letter-spacing: 0; }
+    .sub { margin: 8px 0 0; color: var(--mute); font-size: 13px; }
+    .hero--cislo .sub { margin-top: 2px; }
+    .note { margin: 0 16px 16px; padding: 12px 16px; border-radius: var(--r-md); background: var(--brass-tint); color: var(--brass-ink); font-size: 12px; }
 
-    /* Tato stránka */
-    .tab-head { display: flex; align-items: center; gap: 12px; }
-    .tile { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--paper); }
-    .tile img { width: 20px; height: 20px; }
-    .tab-head > span { display: grid; min-width: 0; }
-    .tab-name { font-weight: 500; }
-    .tab-state { color: var(--ink-2); font-size: 12px; }
-    .tab-state[data-tone="work"]::before, .tab-state[data-tone="warn"]::before { content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 6px 1px 0; border-radius: 50%; background: var(--teal); vertical-align: middle; }
-    .tab-state[data-tone="warn"]::before { background: var(--brass); }
-    .tab-empty { margin: 0; color: var(--ink-2); }
-    .linkbtn { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; margin: 8px -8px -8px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--mute); font-size: 12px; cursor: pointer; }
-    .linkbtn:hover { color: var(--ink); }
-    .linkbtn svg { transition: transform .2s var(--ease); }
-    .linkbtn[aria-expanded="true"] svg { transform: rotate(180deg); }
+    /* ---------- Otevřené konverzace ---------- */
+    .konverzace { padding: 4px 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+    /* Řádky jsou odsazené od okraje, aby zvýraznění i panel aktuální karty měly celé zaoblení. */
+    .radek { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 12px 8px; border: 0; border-radius: var(--r-md); background: none; text-align: left; }
+    button.radek { cursor: pointer; }
+    button.radek:hover { background: color-mix(in srgb, var(--surface) 80%, transparent); }
+    button.radek:focus-visible { outline-offset: -2px; }
+    .radek--tato { align-items: flex-start; background: color-mix(in srgb, var(--surface) 72%, transparent); }
+    /* Mosazná linka = karta, ve které právě jsi. */
+    .radek--tato::before { content: ''; position: absolute; left: -6px; top: 14px; bottom: 14px; width: 2px; border-radius: var(--r-full); background: var(--brass); }
+    .tile { width: 28px; height: 28px; flex: none; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--card); box-shadow: 0 0 0 1px var(--tile-line); }
+    .radek--tato .tile { margin-top: 2px; }
+    .tile img { width: 16px; height: 16px; }
+    .t { flex: 1; min-width: 0; }
+    .t > b { display: block; font: 500 14px/1.3 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .st { display: flex; align-items: center; gap: 6px; color: var(--mute); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .st i { width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
+    .st:not([data-tone]) i { display: none; }
+    .st[data-tone="work"] { color: var(--teal); }
+    .st[data-tone="warn"] { color: var(--velvet); }
+    .tag { flex: none; color: var(--brass-ink); font-size: 11px; line-height: 20px; }
+    .sipka { flex: none; width: 16px; height: 16px; color: var(--mute); }
+    .pocty { display: flex; gap: 20px; margin-top: 12px; }
+    .pocty div { font: 300 24px/1 var(--f-display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+    .pocty small { display: block; margin-top: 4px; color: var(--mute); font: 400 11px/1.3 var(--f-body); letter-spacing: 0; }
+    .overit { display: inline-flex; align-items: center; height: 32px; margin: 8px 0 -8px -12px; padding: 0 12px; border: 0; border-radius: var(--r-full); background: none; color: var(--mute); font-size: 12px; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+    .overit:hover { color: var(--ink); background: var(--line-2); }
 
-    /* Ověření stránky – nástroj pro opravu rozpoznávání, proto sbalený. */
-    .check-body { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
-    .checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
-    .checks li { display: grid; grid-template-columns: 8px 1fr; gap: 8px; align-items: start; color: var(--ink-2); font-size: 12px; }
-    .checks li i { width: 6px; height: 6px; margin-top: 7px; border-radius: 50%; background: var(--mute); }
-    .checks li[data-tone="ok"] i { background: var(--teal); }
-    .checks li[data-tone="warn"] i { background: var(--brass); }
-    .checks li[data-tone="err"] i { background: var(--velvet); }
-    .check-q { margin: 8px 0; font-size: 12px; }
-    .check-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .check-actions .btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); box-shadow: none; }
-    .btn--wide { width: 100%; margin-top: 8px; }
+    /* Sledované služby: kapsle s logy pod seznamem, klepnutím se otevře nastavení. */
+    .sluzby { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 16px); height: 40px; margin: 8px; padding: 0 12px 0 16px; border: 0; border-radius: var(--r-full); background: none; cursor: pointer; }
+    .sluzby:hover { background: var(--line-2); }
+    .loga { display: flex; gap: 8px; }
+    .loga img { width: 14px; height: 14px; }
+    .loga img.vyp { opacity: .28; filter: grayscale(1); }
+    @media (prefers-color-scheme: dark) { .loga img.vyp.logo--mono, .site[data-off] .logo--mono { filter: invert(1) grayscale(1); } }
+    .sluzby-pocet { display: inline-flex; align-items: center; gap: 4px; color: var(--mute); font-size: 12px; font-variant-numeric: tabular-nums; }
 
-    /* Sledované služby */
-    .fold { width: calc(100% + 16px); display: flex; align-items: center; gap: 8px; min-height: 44px; margin: -8px; padding: 0 8px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; }
-    .fold b { flex: 1; }
-    .fold small { color: var(--mute); font-size: 12px; font-variant-numeric: tabular-nums; }
-    .fold svg { flex: none; color: var(--mute); transition: transform .2s var(--ease); }
-    .fold[aria-expanded="true"] svg { transform: rotate(180deg); }
-    .sluzby-rozbalene #check-card, .sluzby-rozbalene #tab-other, .overeni-rozbalene #sites-card, .overeni-rozbalene #check-label { display: none; }
-    .sites { display: grid; margin: 12px -8px -8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-    .site { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 8px; border-radius: 10px; cursor: pointer; }
-    .site:hover { background: var(--paper); }
-    .site img { width: 18px; height: 18px; flex: none; }
-    .site .name { flex: 1; }
-    .site .seen { color: var(--mute); font-size: 12px; }
+    /* ---------- Nastavení služeb ---------- */
+    .sites { border-top: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+    .site { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .site .name { flex: 1; min-width: 0; }
+    .site .name small { display: block; color: var(--mute); font-size: 12px; }
     .site[data-off] img { opacity: .4; filter: grayscale(1); }
     .site[data-off] .name { color: var(--mute); }
-    @media (prefers-color-scheme: dark) { .site[data-off] .logo--mono { filter: invert(1) grayscale(1); } }
-    .switch { position: relative; width: 36px; height: 20px; flex: none; }
-    .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-    .switch i { position: absolute; inset: 0; border-radius: 10px; background: var(--line); transition: background-color .2s var(--ease); pointer-events: none; }
-    .switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .2s var(--ease); }
-    .switch input:checked + i { background: var(--teal); }
-    .switch input:checked + i::after { transform: translateX(16px); }
+    /* Přepínač je tentýž jako v Nastavení aplikace (.switch): kapsle v barvě akce, jen v malé
+       velikosti 40 × 24 (docs/DESIGN.md) – devět velkých by v úzkém okně přehlušilo seznam. */
+    .switch { position: relative; width: 40px; height: 24px; flex: none; }
+    .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+    .switch i { position: absolute; inset: 0; border-radius: var(--r-full); background: var(--line); transition: background-color .2s var(--ease); pointer-events: none; }
+    .switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 2px 6px rgba(22, 20, 29, .25); transition: transform .2s var(--ease); }
+    .switch input:checked + i { background: var(--action); }
+    .switch input:checked + i::after { background: var(--on-action); transform: translateX(16px); }
     .switch input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .drobne { margin: 0; padding: 12px 16px 16px; color: var(--mute); font-size: 12px; }
 
-    /* Spárování kódem */
-    .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: s; }
-    .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; color: var(--ink-2); }
-    .steps li::before { counter-increment: s; content: counter(s); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+    /* ---------- Ověření stránky ---------- */
+    .overeni-hlava { display: flex; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+    .overeni-hlava b { font: 500 16px/1.2 var(--f-display); }
+    .checks { border-top: 1px solid var(--line); }
+    .checks li { display: grid; grid-template-columns: 6px 1fr; gap: 12px; align-items: start; padding: 10px 16px; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 12px; }
+    .checks li i { width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: var(--mute); }
+    .checks li[data-tone="ok"] i { background: var(--dot); }
+    .checks li[data-tone="warn"] i { background: var(--brass); }
+    .checks li[data-tone="err"] i { background: var(--velvet); }
+    .check-q { margin: 16px 16px 8px; font-size: 13px; }
+    .check-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; }
+    .check-save { margin: 8px 16px 0; width: calc(100% - 32px); }
+
+    /* ---------- Spárování kódem ---------- */
+    .pairing { padding: 0 16px 8px; }
+    .steps { display: grid; gap: 8px; counter-reset: s; border-top: 1px solid var(--line); padding-top: 16px; }
+    .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; color: var(--ink-2); }
+    .steps li::before { counter-increment: s; content: counter(s); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); box-shadow: 0 0 0 1px var(--tile-line); color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
     .pair { display: flex; gap: 8px; margin-top: 16px; }
-    input[type=text] { flex: 1; width: 0; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: 400 14px var(--f-body); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+    input[type=text] { flex: 1; width: 0; min-width: 0; height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface); color: var(--ink); font: 400 14px var(--f-body); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
     input[type=text]::placeholder { color: var(--mute); letter-spacing: 0; }
     input[type=text]:focus-visible { outline-offset: 1px; border-color: var(--ink); }
-    .msg { margin: 8px 0 0; font-size: 12px; color: var(--mute); min-height: 18px; }
+    .msg { margin: 8px 16px 0; font-size: 12px; color: var(--mute); min-height: 18px; }
+    .pairing .msg { margin: 8px 0 0; }
     .msg[data-tone="err"] { color: var(--velvet); }
     .msg[data-tone="ok"] { color: var(--teal); }
 
-    /* Co rozšíření dělá (jen když aplikace neběží – jinde by okno zbytečně natahovalo) */
-    .feats { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-    .feats li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; }
-    .feats li > span:first-child { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--paper); color: var(--ink-2); }
-    .feats b { display: block; }
-    .feats li > span:last-child > span { color: var(--mute); font-size: 12px; }
+    /* ---------- Aplikace neběží ---------- */
+    .offline { padding: 0 16px 20px; }
+    .fakta { border-top: 1px solid var(--line); }
+    .fakta li { display: grid; grid-template-columns: 16px 1fr; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 12px; }
+    .fakta svg { margin-top: 1px; color: var(--mute); }
 
-    .btn { min-height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: var(--ink); color: var(--on-ink); font: 500 13px/1 var(--f-body); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; }
-    .btn:disabled { opacity: .5; cursor: default; }
-    .btn--ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-    .btn--sm { min-height: 36px; padding: 0 12px; font-size: 12px; }
-    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px 16px 24px; color: var(--mute); font-size: 12px; }
-    footer .btn { min-height: 36px; }
+    /* ---------- Tlačítka (docs/DESIGN.md): kapsle, 40 px, popisek Onest 500 ---------- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 14px/1 var(--f-body); cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .btn:hover { background: var(--action-hover); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn--line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+    .btn--line:hover { background: transparent; box-shadow: inset 0 0 0 1px var(--ink); }
+    .btn--line[aria-pressed="true"] { background: var(--action); color: var(--on-action); box-shadow: none; }
+    .btn--wide { width: 100%; }
 
-    .btn, .site, .fold, .linkbtn { transition: transform 180ms var(--ease), background-color 180ms var(--ease), color 180ms var(--ease); }
-    .btn:not(:disabled):active { transform: translateY(1px); transition-duration: 90ms; }
-    @media (hover: hover) and (pointer: fine) { .btn:not(:disabled):hover { transform: translateY(-1px); } }
-    @media (prefers-reduced-motion: reduce) { * { transition: none !important; transform: none !important; } }
+    /* ---------- Patička ---------- */
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 14px; color: var(--mute); font-size: 12px; }
+    footer a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); font-weight: 500; text-decoration: none; border-radius: var(--r-xs); }
+    footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    .btn, .radek, .sluzby, .zpet, .overit { transition: transform 180ms var(--ease), background-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease); }
+    .btn:not(:disabled):active { transform: scale(.98); transition-duration: 90ms; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; transform: none !important; animation: none !important; } }
   </style>
 </head>
-<body>
-  <header class="band">
-    <div class="bar">
-      <span class="mark">
-        <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke="#F4F3F7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="8.5" r="4.2" fill="#C99A3E"/><circle cx="10.5" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="20" cy="31" r="3.4" fill="#F4F3F7"/><circle cx="29.5" cy="31" r="3.4" fill="#F4F3F7"/></svg>
-        Agenteeq
-      </span>
-      <span class="stav" id="pill" role="status"><i></i><span id="pill-text">Zjišťuji…</span></span>
-    </div>
-    <h1 class="headline" id="headline">Chvilku…</h1>
-    <p class="sub" id="sub">Hledám Agenteeq na tomto počítači.</p>
+<body data-pohled="hlavni">
+  <header class="top">
+    <span class="mark" id="brand">
+      <svg width="20" height="20" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle class="zlato" cx="20" cy="8.5" r="4.2"/><circle class="tecka" cx="10.5" cy="31" r="3.4"/><circle class="tecka" cx="20" cy="31" r="3.4"/><circle class="tecka" cx="29.5" cy="31" r="3.4"/></svg>
+      Agenteeq
+    </span>
+    <button class="zpet" id="back" type="button" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      <span id="back-title"></span>
+    </button>
+    <span class="stav" id="pill" role="status"><i></i><span id="pill-text">Zjišťuji…</span></span>
   </header>
 
-  <main>
+  <!-- Hlavní pohled -->
+  <div id="view-hlavni">
+    <section class="hero" id="hero">
+      <span class="num" id="hero-num" hidden></span>
+      <div class="hero-text">
+        <h1 class="headline" id="headline">Chvilku…</h1>
+        <p class="sub" id="sub">Hledám Agenteeq na tomto počítači.</p>
+      </div>
+    </section>
+
     <p class="note" id="outdated" hidden></p>
 
-    <section class="card" id="pairing" hidden aria-labelledby="pairing-label">
-      <p class="label" id="pairing-label">Jednorázový kód</p>
+    <ol class="konverzace" id="konverzace" aria-label="Otevřené konverzace" hidden></ol>
+    <button class="sluzby" id="sites-open" type="button" aria-expanded="false" aria-controls="view-sluzby" hidden>
+      <span class="sr-only">Sledované služby</span>
+      <span class="loga" id="sites-logos" aria-hidden="true"></span>
+      <span class="sluzby-pocet"><span id="sites-count"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <section class="pairing" id="pairing" hidden aria-label="Spárování jednorázovým kódem">
       <ol class="steps">
         <li><span>V&nbsp;Agenteeq otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b>.</span></li>
         <li><span>Klikni na <b>Vytvořit jednorázový kód</b> a&nbsp;vlož ho sem.</span></li>
@@ -175,54 +222,38 @@
       <p class="msg" id="pair-msg" role="status">Kód platí 10 minut a&nbsp;použít ho jde jen jednou.</p>
     </section>
 
-    <section class="card" id="check-card" hidden aria-labelledby="check-label">
-      <p class="label" id="check-label">Tato stránka</p>
-      <div class="tab-head">
-        <span class="tile"><img id="tab-logo" alt="" width="20" height="20"></span>
-        <span><span class="tab-name" id="check-site"></span><span class="tab-state" id="tab-state"></span></span>
-      </div>
-      <button class="linkbtn" id="check-open" type="button" aria-expanded="false" aria-controls="check-body">
-        Počty nesedí? Ověřit stránku
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div class="check-body" id="check-body" hidden>
-        <ul class="checks" id="checks" aria-live="polite"></ul>
-        <p class="check-q" id="check-q">Sedí počty zpráv s&nbsp;tím, co na stránce vidíš?</p>
-        <div class="check-actions" role="group" aria-labelledby="check-q">
-          <button class="btn btn--ghost btn--sm" id="check-yes" type="button" aria-pressed="false">Sedí</button>
-          <button class="btn btn--ghost btn--sm" id="check-no" type="button" aria-pressed="false">Nesedí</button>
-        </div>
-        <button class="btn btn--sm btn--wide" id="check-save" type="button">Uložit vzorek stránky</button>
-        <p class="msg" id="check-msg" role="status">Vzorek obsahuje jen stavbu stránky, žádný text.</p>
-      </div>
-    </section>
-
-    <section class="card" id="tab-other" hidden>
-      <p class="label">Tato stránka</p>
-      <p class="tab-empty">Tady Agenteeq nic nesleduje. Otevři konverzaci v&nbsp;ChatGPT, Claude.ai, Gemini nebo jiné službě ze seznamu.</p>
-    </section>
-
-    <section class="card" id="sites-card" hidden>
-      <button class="fold" id="sites-open" type="button" aria-expanded="false" aria-controls="sites">
-        <b>Sledované služby</b><small id="sites-count"></small>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div class="sites" id="sites" hidden></div>
-    </section>
-
-    <section class="card" id="feats">
-      <p class="label">Co rozšíření dělá</p>
-      <ul class="feats">
-        <li><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><span><b>Webové chaty v&nbsp;přehledu</b><span>Agenteeq uvidí, jestli agent v&nbsp;ChatGPT, Claude.ai nebo Gemini pracuje, kolik má konverzace zpráv a&nbsp;jestli narazil na limit. Text zpráv rozšíření nikam neposílá.</span></span></li>
-        <li><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><span><b>Zadání se vloží samo</b><span>Spustíš službu z&nbsp;Agenteeq a&nbsp;zadání už čeká v&nbsp;poli zprávy. Odešleš ho sám.</span></span></li>
+    <section id="feats" hidden aria-label="Co rozšíření dělá">
+      <div class="offline"><button class="btn btn--wide" id="retry" type="button">Zkusit znovu</button></div>
+      <ul class="fakta">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Uvidíš, jestli agent v&nbsp;ChatGPT, Claude.ai nebo Gemini pracuje a&nbsp;kolik má konverzace zpráv. Text zpráv rozšíření nikam neposílá.</span></li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><span>Spustíš službu z&nbsp;Agenteeq a&nbsp;zadání už čeká v&nbsp;poli zprávy. Odešleš ho sám.</span></li>
       </ul>
-      <button class="btn btn--ghost btn--wide" id="retry" type="button">Zkusit znovu</button>
     </section>
-  </main>
+  </div>
+
+  <!-- Sledované služby -->
+  <section id="view-sluzby" hidden aria-label="Sledované služby">
+    <div class="sites" id="sites"></div>
+    <p class="drobne">Vypnutou službu rozšíření vůbec nečte.</p>
+  </section>
+
+  <!-- Ověření stránky: nástroj pro opravu rozpoznávání -->
+  <section id="view-overeni" hidden aria-label="Ověření stránky">
+    <div class="overeni-hlava"><span class="tile"><img id="check-logo" alt="" width="16" height="16"></span><b id="check-site"></b></div>
+    <ul class="checks" id="checks" aria-live="polite"></ul>
+    <p class="check-q" id="check-q">Sedí počty zpráv s&nbsp;tím, co na stránce vidíš?</p>
+    <div class="check-actions" role="group" aria-labelledby="check-q">
+      <button class="btn btn--line" id="check-yes" type="button" aria-pressed="false">Sedí</button>
+      <button class="btn btn--line" id="check-no" type="button" aria-pressed="false">Nesedí</button>
+    </div>
+    <button class="btn check-save" id="check-save" type="button">Uložit vzorek stránky</button>
+    <p class="msg" id="check-msg" role="status">Vzorek obsahuje jen stavbu stránky, žádný text.</p>
+  </section>
 
   <footer>
     <span>Nic neodchází na internet.</span>
-    <a class="btn btn--ghost" href="http://127.0.0.1:4620/" target="_blank" rel="noopener">Otevřít Agenteeq</a>
+    <a id="app-link" href="http://127.0.0.1:4620/" target="_blank" rel="noopener"><span id="app-link-text">Otevřít Agenteeq</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
   </footer>
   <script src="sites.js"></script>
   <script src="popup.js"></script>

@@ -1,5 +1,6 @@
-// Okno rozšíření: stav spojení s Agenteeq, co rozšíření vidí na aktuální stránce a které služby
-// sleduje. Text zpráv tu nikde není – okno ukazuje jen stav a počty (viz content.js).
+// Okno rozšíření: kolik agentů právě pracuje, seznam otevřených konverzací (kliknutím se přepneš do
+// karty), nastavení sledovaných služeb a ověření stránky. Text zpráv tu nikde není – okno ukazuje
+// jen stav, časy a počty (viz content.js a background.js).
 const SITES = [
   ['chatgpt', 'ChatGPT', 'openai'],
   ['codex-web', 'Codex na webu', 'codex'],
@@ -13,115 +14,157 @@ const SITES = [
 ];
 // Loga, která jsou černá a v tmavém režimu se obracejí do světlé.
 const MONO = new Set(['openai', 'grok', 'githubcopilot']);
+const APLIKACE = 'http://127.0.0.1:4620/';
+const WEB = 'https://agentree-fawn.vercel.app/';
+// Background zapomene kartu, která přes 150 s mlčí (hlásí se nejpozději po minutě).
+const OTEVRENA_MS = 150e3;
+// Chrome ukáže okno rozšíření nejvýš 600 px vysoké.
+const MAX_VYSKA = 600;
 
 const $ = (id) => document.getElementById(id);
 // Česká sazba: jednopísmenná předložka nebo spojka (v, k, s, z, o, u, a, i) nezůstane na konci řádku.
 const sazba = (text) => String(text).replace(/(?<=^|\s)([vkszouaiVKSZOUAI]) (?=\S)/g, '$1\u00a0');
 const sluzba = (id) => SITES.find(([s]) => s === id);
-
 // Český tvar podle počtu: 1 zpráva, 2–4 zprávy, 0 a 5+ zpráv.
 const tvar = (n, jedna, dve, pet) => (n === 1 ? jedna : n >= 2 && n <= 4 ? dve : pet);
+const el = (tag, trida, text) => {
+  const e = document.createElement(tag);
+  if (trida) e.className = trida;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const SIPKA = '<svg class="sipka" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
 function ago(at) {
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (s < 60) return 'teď';
-  if (s < 3600) return `před ${Math.round(s / 60)} min`;
+  if (s < 3600) return `před ${Math.max(1, Math.round(s / 60))} min`;
   if (s < 86400) return `před ${Math.round(s / 3600)} h`;
   return new Date(at).toLocaleDateString('cs-CZ');
+}
+// Jak dlouho agent odpovídá: 0:42, 3:05, 1:02:10.
+function trvani(od) {
+  const s = Math.max(0, Math.floor((Date.now() - od) / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
 
 function logo(img, klic) {
   img.src = `logos/${klic}.svg`;
+  img.alt = '';
   img.classList.toggle('logo--mono', MONO.has(klic));
 }
+function dlazdice(klic) {
+  const t = el('span', 'tile');
+  const img = el('img');
+  img.width = 16;
+  img.height = 16;
+  if (klic) logo(img, klic);
+  t.append(img);
+  return t;
+}
 
-// Pás nahoře: stav spojení, nadpis (volitelně s velkým číslem) a jedna věta pod ním.
+async function vypnute() {
+  const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
+  return disabledSites;
+}
+
+// ── Pohledy ─────────────────────────────────────────────────────────────────
+// Hlavní pohled, nastavení služeb a ověření stránky. Podpohled má v liště tlačítko zpět.
+let otevrel = null;
+function ukaz(pohled) {
+  if (pohled !== 'hlavni') otevrel = document.activeElement;
+  document.body.dataset.pohled = pohled;
+  $('view-hlavni').hidden = pohled !== 'hlavni';
+  $('view-sluzby').hidden = pohled !== 'sluzby';
+  $('view-overeni').hidden = pohled !== 'overeni';
+  $('brand').hidden = pohled !== 'hlavni';
+  $('back').hidden = pohled === 'hlavni';
+  $('back-title').textContent = pohled === 'sluzby' ? 'Sledované služby' : 'Ověření stránky';
+  $('sites-open').setAttribute('aria-expanded', String(pohled === 'sluzby'));
+  clearInterval(overeni.casovac);
+  if (pohled === 'overeni') {
+    obnovOvereni();
+    overeni.casovac = setInterval(obnovOvereni, 2000);
+  }
+  if (pohled === 'sluzby') {
+    const seznam = $('sites');
+    seznam.style.maxHeight = '';
+    const navic = document.body.getBoundingClientRect().height - MAX_VYSKA;
+    if (navic > 0) seznam.style.maxHeight = `${Math.max(144, Math.floor(seznam.getBoundingClientRect().height - navic))}px`;
+  }
+  if (pohled === 'hlavni') {
+    vykresliSeznam();
+    const zpet = otevrel?.id ? $(otevrel.id) : null;
+    (zpet && !zpet.hidden ? zpet : $('sites-open')).focus({ preventScroll: true });
+  } else $('back').focus({ preventScroll: true });
+}
+$('back').addEventListener('click', () => ukaz('hlavni'));
+$('sites-open').addEventListener('click', () => ukaz('sluzby'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.dataset.pohled !== 'hlavni') { e.preventDefault(); ukaz('hlavni'); } });
+
+// Horní část: stav spojení, a buď velké číslo s popisem, nebo jedna věta.
 function setHero({ tone, pill, headline, sub, pocet = null }) {
   $('pill').dataset.tone = tone;
   $('pill-text').textContent = pill;
-  const h = $('headline');
-  h.textContent = '';
-  if (pocet !== null) {
-    const num = document.createElement('span');
-    num.className = 'num';
-    num.textContent = String(pocet);
-    const popis = document.createElement('span');
-    popis.className = 'num-label';
-    popis.textContent = sazba(headline);
-    h.append(num, popis);
-  } else {
-    h.textContent = sazba(headline);
-  }
+  $('hero').classList.toggle('hero--cislo', pocet !== null);
+  $('hero-num').hidden = pocet === null;
+  $('hero-num').textContent = pocet === null ? '' : String(pocet);
+  $('headline').textContent = sazba(headline);
   $('sub').textContent = sazba(sub);
 }
 
 // ── Sledované služby ────────────────────────────────────────────────────────
 async function renderSites(lastStatus) {
-  const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
+  const off = await vypnute();
   const box = $('sites');
   box.textContent = '';
-  const zapnute = SITES.filter(([id]) => !disabledSites.includes(id)).length;
-  $('sites-count').textContent = `${zapnute}\u00a0z\u00a0${SITES.length}`;
+  const loga = $('sites-logos');
+  loga.textContent = '';
+  $('sites-count').textContent = `${SITES.length - off.length}\u00a0z\u00a0${SITES.length}`;
   for (const [id, name, klic] of SITES) {
-    const row = document.createElement('label');
-    row.className = 'site';
-    if (disabledSites.includes(id)) row.dataset.off = '';
-    const img = document.createElement('img');
-    img.alt = '';
-    img.width = 18;
-    img.height = 18;
+    const img = el('img');
+    img.width = 14;
+    img.height = 14;
     logo(img, klic);
-    const label = document.createElement('span');
-    label.className = 'name';
-    label.textContent = name;
-    row.append(img, label);
-    if (lastStatus?.ok && lastStatus.site === id) {
-      const seen = document.createElement('span');
-      seen.className = 'seen';
-      seen.textContent = ago(lastStatus.at);
-      row.append(seen);
-    }
-    const sw = document.createElement('span');
-    sw.className = 'switch';
-    const input = document.createElement('input');
+    img.classList.toggle('vyp', off.includes(id));
+    loga.append(img);
+
+    const row = el('label', 'site');
+    if (off.includes(id)) row.dataset.off = '';
+    const nazev = el('span', 'name', name);
+    if (lastStatus?.ok && lastStatus.site === id) nazev.append(el('small', '', `naposledy ${ago(lastStatus.at)}`));
+    const sw = el('span', 'switch');
+    const input = el('input');
     input.type = 'checkbox';
-    input.checked = !disabledSites.includes(id);
+    input.setAttribute('role', 'switch');
+    input.checked = !off.includes(id);
     input.setAttribute('aria-label', `Sledovat ${name}`);
     input.addEventListener('change', async () => {
-      const cur = (await chrome.storage.local.get(['disabledSites'])).disabledSites || [];
+      const cur = await vypnute();
       const next = input.checked ? cur.filter((x) => x !== id) : [...new Set([...cur, id])];
       await chrome.storage.local.set({ disabledSites: next });
       if (input.checked) delete row.dataset.off;
       else row.dataset.off = '';
+      img.classList.toggle('vyp', !input.checked);
       $('sites-count').textContent = `${SITES.length - next.length}\u00a0z\u00a0${SITES.length}`;
-      if (overeni.diagnostika) vykresliKartu(overeni.diagnostika);
+      // Vypnutá služba hned zmizí ze seznamu i z počtu nahoře.
+      seznam.off = next;
+      vykresliSeznam();
+      hlavicka();
+      if (overeni.diagnostika) vykresliOvereni(overeni.diagnostika);
     });
-    sw.append(input, document.createElement('i'));
-    row.append(sw);
+    sw.append(input, el('i'));
+    row.append(dlazdice(klic), nazev, sw);
     box.append(row);
   }
 }
 
-// Chrome ukáže okno rozšíření nejvýš 600 px vysoké. Rozbalený seznam proto na chvíli schová kartu
-// stránky a vezme si jen místo, které zbývá – zbytek služeb se posune uvnitř seznamu.
-const MAX_VYSKA = 600;
-function rozbalSluzby(otevrit) {
-  $('sites-open').setAttribute('aria-expanded', String(otevrit));
-  const seznam = $('sites');
-  seznam.hidden = !otevrit;
-  document.body.classList.toggle('sluzby-rozbalene', otevrit);
-  if (!otevrit) return;
-  rozbalOvereni(false);
-  seznam.style.maxHeight = '';
-  const navic = document.body.getBoundingClientRect().height - MAX_VYSKA;
-  if (navic > 0) seznam.style.maxHeight = `${Math.max(132, Math.floor(seznam.getBoundingClientRect().height - navic))}px`;
-}
-$('sites-open').addEventListener('click', () => rozbalSluzby($('sites-open').getAttribute('aria-expanded') !== 'true'));
-
-// ── Tato stránka ────────────────────────────────────────────────────────────
+// ── Ověření stránky ─────────────────────────────────────────────────────────
 // Rozšíření se na stránce zeptá svého adaptéru, co našel (bez textu, jen ano/ne a počty). Ověření
-// pod „Počty nesedí?“ nechá uživatele potvrdit, jestli počty sedí, a uložit vzorek stránky – stavbu
-// bez obsahu, podle které se adaptér opraví (test/fixtures/web/). Nic z toho se neposílá.
+// nechá uživatele potvrdit, jestli počty sedí, a uložit vzorek stránky – stavbu bez obsahu, podle
+// které se adaptér opraví (test/fixtures/web/). Nic z toho se neposílá.
 const overeni = { tab: null, diagnostika: null, potvrzeni: null, casovac: null };
 
 async function aktivniKarta() {
@@ -134,7 +177,7 @@ async function aktivniKarta() {
 }
 
 async function zeptejSe(tab, type) {
-  if (tab === null) return null;
+  if (tab === null || !chrome.tabs?.sendMessage) return null;
   try {
     return (await chrome.tabs.sendMessage(tab, { type })) || null;
   } catch {
@@ -142,32 +185,10 @@ async function zeptejSe(tab, type) {
   }
 }
 
-async function vykresliKartu(d) {
+function vykresliOvereni(d) {
   const [, name, klic] = sluzba(d.site) || [d.site, d.site, ''];
   $('check-site').textContent = name;
-  if (klic) logo($('tab-logo'), klic);
-  const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
-  const stav = $('tab-state');
-  const { user = 0, assistant = 0 } = d.zpravy || {};
-  if (disabledSites.includes(d.site)) {
-    stav.dataset.tone = '';
-    stav.textContent = 'Sledování této služby je vypnuté';
-  } else if (d.generuje) {
-    stav.dataset.tone = 'work';
-    stav.textContent = 'Agent právě odpovídá';
-  } else if (d.limit) {
-    stav.dataset.tone = 'warn';
-    stav.textContent = 'Služba hlásí vyčerpaný limit';
-  } else if (!user && !assistant) {
-    stav.dataset.tone = '';
-    stav.textContent = 'Zatím bez zpráv';
-  } else {
-    stav.dataset.tone = '';
-    stav.textContent = `${user} ${tvar(user, 'tvoje zpráva', 'tvoje zprávy', 'tvých zpráv')} · ${assistant} ${tvar(assistant, 'odpověď', 'odpovědi', 'odpovědí')}`;
-  }
-}
-
-function vykresliOvereni(d) {
+  if (klic) logo($('check-logo'), klic);
   const seznam = $('checks');
   const radky = window.AgenteeqSites.radkyOvereni(d);
   // Obnovuje se každé 2 s; beze změny se nepřekresluje, aby čtečka neopakovala totéž dokola.
@@ -176,11 +197,9 @@ function vykresliOvereni(d) {
   seznam.dataset.podpis = podpis;
   seznam.textContent = '';
   for (const [ton, text] of radky) {
-    const li = document.createElement('li');
+    const li = el('li');
     li.dataset.tone = ton;
-    const span = document.createElement('span');
-    span.textContent = text;
-    li.append(document.createElement('i'), span);
+    li.append(el('i'), el('span', '', text));
     seznam.append(li);
   }
 }
@@ -189,32 +208,8 @@ async function obnovOvereni() {
   const d = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
   if (!d) return;
   overeni.diagnostika = d;
-  vykresliKartu(d);
   vykresliOvereni(d);
-}
-
-function rozbalOvereni(otevrit) {
-  $('check-open').setAttribute('aria-expanded', String(otevrit));
-  $('check-body').hidden = !otevrit;
-  // Rozbalené ověření by se se seznamem služeb nevešlo do 600 px okna.
-  document.body.classList.toggle('overeni-rozbalene', otevrit);
-  clearInterval(overeni.casovac);
-  if (otevrit) {
-    rozbalSluzby(false);
-    obnovOvereni();
-    overeni.casovac = setInterval(obnovOvereni, 2000);
-  }
-}
-
-async function nabidniKartu() {
-  overeni.tab = await aktivniKarta();
-  const d = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
-  $('check-card').hidden = !d;
-  $('tab-other').hidden = Boolean(d);
-  if (!d) return;
-  overeni.diagnostika = d;
-  vykresliKartu(d);
-  vykresliOvereni(d);
+  vykresliSeznam();
 }
 
 function potvrd(hodnota) {
@@ -226,7 +221,6 @@ function potvrd(hodnota) {
   msg.textContent = sazba(hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek, podle něj se rozpoznávání opraví.');
 }
 
-$('check-open').addEventListener('click', () => rozbalOvereni($('check-open').getAttribute('aria-expanded') !== 'true'));
 $('check-yes').addEventListener('click', () => potvrd('sedi'));
 $('check-no').addEventListener('click', () => potvrd('nesedi'));
 $('check-save').addEventListener('click', async () => {
@@ -250,46 +244,178 @@ $('check-save').addEventListener('click', async () => {
   msg.textContent = sazba(`Uloženo do Stažených souborů (${v.prvku} prvků${v.zkraceno ? ', zkráceno' : ''}).`);
 });
 
-// ── Otevřené konverzace (pás nahoře) ────────────────────────────────────────
-// Background si pamatuje, které konverzace se v poslední chvíli hlásily (storage.session).
-async function otevreneKonverzace() {
+// ── Otevřené konverzace ─────────────────────────────────────────────────────
+// Background si pamatuje, které konverzace se v poslední chvíli hlásily (storage.session): službu,
+// kartu, jestli agent odpovídá, kdy začal a kdy skončil. Nic ze stránky.
+const seznam = { konverzace: [], off: [], casovac: null, lastStatus: null, zastarala: false, pripojeno: false };
+
+async function nactiKonverzace() {
   try {
     const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
     const ted = Date.now();
-    const zive = Object.values(otevrene).filter((k) => ted - k.at <= 150e3);
-    return { pocet: zive.length, pracuje: zive.filter((k) => k.generating).length };
+    return Object.values(otevrene).filter((k) => ted - k.at <= OTEVRENA_MS);
   } catch {
-    return null;
+    return [];
   }
 }
 
+// Stav řádku jednou větou. Aktuální karta bere čerstvou diagnostiku ze stránky.
+function stavRadku(k, d, off) {
+  if (d && off.includes(d.site)) return ['', 'sledování této služby je vypnuté'];
+  const generuje = d ? d.generuje : k?.generating;
+  const limit = d ? d.limit : k?.limit;
+  if (generuje) return ['work', k?.od ? `odpovídá · ${trvani(k.od)}` : 'odpovídá', k?.od];
+  if (limit) return ['warn', 'narazil na limit'];
+  if (d && !d.zpravy?.user && !d.zpravy?.assistant) return ['', 'zatím bez zpráv'];
+  if (k?.konec) return ['', Date.now() - k.konec < 60e3 ? 'právě dokončil' : `dokončil ${ago(k.konec)}`];
+  return ['', 'čeká na zadání'];
+}
+
+function radekStav(ton, text, od) {
+  const st = el('span', 'st');
+  if (ton) st.dataset.tone = ton;
+  const popis = el('span', '', text);
+  if (od) popis.dataset.od = String(od);
+  st.append(el('i'), popis);
+  return st;
+}
+// Každou sekundu se přepíše jen čas odpovědi – seznam zůstane, jak je, a zaostření neuteče.
+function tikni() {
+  for (const x of document.querySelectorAll('#konverzace [data-od]')) x.textContent = `odpovídá · ${trvani(Number(x.dataset.od))}`;
+}
+
+async function prepni(k) {
+  try {
+    await chrome.tabs.update(k.tab, { active: true });
+    if (k.okno !== null && k.okno !== undefined) await chrome.windows?.update(k.okno, { focused: true });
+    window.close();
+  } catch {
+    // Karta se mezitím zavřela – seznam se překreslí bez ní.
+    const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
+    for (const [klic, x] of Object.entries(otevrene)) if (x.tab === k.tab) delete otevrene[klic];
+    await chrome.storage.session?.set({ otevrene });
+    obnovSeznam();
+  }
+}
+
+function vykresliSeznam() {
+  const box = $('konverzace');
+  if (box.hidden && !seznam.konverzace.length && !overeni.diagnostika) return;
+  const d = overeni.diagnostika;
+  const off = seznam.off;
+  const tato = seznam.konverzace.find((k) => overeni.tab !== null && k.tab === overeni.tab) || null;
+  const ostatni = seznam.konverzace
+    .filter((k) => k !== tato && !off.includes(k.site))
+    .sort((a, b) => (b.generating - a.generating) || (Boolean(b.limit) - Boolean(a.limit)) || (b.at - a.at));
+  // Beze změny dat se nepřekresluje (jen čas), jinak by čtečka i zaostření začínaly znovu.
+  const podpis = JSON.stringify([d && [d.site, d.generuje, d.limit, d.zpravy], tato && [tato.od, tato.konec], ostatni.map((k) => [k.site, k.tab, k.generating, k.limit, k.od, k.konec, Math.floor((Date.now() - (k.konec || 0)) / 60e3)]), off]);
+  if (box.dataset.podpis === podpis) { tikni(); return; }
+  box.dataset.podpis = podpis;
+  box.textContent = '';
+  let bezi = false;
+
+  if (d) {
+    const [, name, klic] = sluzba(d.site) || [d.site, d.site, ''];
+    const li = el('li');
+    const radek = el('div', 'radek radek--tato');
+    const t = el('div', 't');
+    const [ton, text, od] = stavRadku(tato, d, off);
+    bezi ||= Boolean(od);
+    t.append(el('b', '', name), radekStav(ton, text, od));
+    const { user = 0, assistant = 0 } = d.zpravy || {};
+    if (!off.includes(d.site) && (user || assistant)) {
+      const pocty = el('div', 'pocty');
+      for (const [n, a, b, c] of [[user, 'tvoje zpráva', 'tvoje zprávy', 'tvých zpráv'], [assistant, 'odpověď', 'odpovědi', 'odpovědí']]) {
+        const bunka = el('div', '', String(n));
+        bunka.append(el('small', '', tvar(n, a, b, c)));
+        pocty.append(bunka);
+      }
+      t.append(pocty);
+    }
+    const overit = el('button', 'overit', 'Počty nesedí? Ověřit stránku');
+    overit.type = 'button';
+    overit.id = 'check-open';
+    overit.setAttribute('aria-controls', 'view-overeni');
+    overit.addEventListener('click', () => ukaz('overeni'));
+    t.append(overit);
+    radek.append(dlazdice(klic), t, el('span', 'tag', 'tato karta'));
+    li.append(radek);
+    box.append(li);
+  }
+
+  for (const k of ostatni) {
+    const [, name, klic] = sluzba(k.site) || [k.site, k.site, ''];
+    const [ton, text, od] = stavRadku(k, null, off);
+    bezi ||= Boolean(od);
+    const li = el('li');
+    const radek = el('button', 'radek');
+    radek.type = 'button';
+    radek.setAttribute('aria-label', `Přepnout na kartu ${name}, ${text}`);
+    const t = el('div', 't');
+    t.append(el('b', '', name), radekStav(ton, text, od));
+    radek.append(dlazdice(klic), t);
+    radek.insertAdjacentHTML('beforeend', SIPKA);
+    if (typeof k.tab === 'number') radek.addEventListener('click', () => prepni(k));
+    else radek.disabled = true;
+    li.append(radek);
+    box.append(li);
+  }
+
+  box.hidden = !box.children.length;
+  // Čas odpovědi běží po sekundách, jen dokud nějaký agent odpovídá.
+  clearInterval(seznam.casovac);
+  if (bezi) seznam.casovac = setInterval(tikni, 1000);
+  // Dlouhý seznam se posune uvnitř, okno zůstane do 600 px.
+  box.style.maxHeight = '';
+  const navic = document.body.getBoundingClientRect().height - MAX_VYSKA;
+  if (navic > 0) box.style.maxHeight = `${Math.max(120, Math.floor(box.getBoundingClientRect().height - navic))}px`;
+}
+
+async function obnovSeznam() {
+  seznam.konverzace = await nactiKonverzace();
+  seznam.off = await vypnute();
+  vykresliSeznam();
+  return seznam.konverzace;
+}
+
 // ── Celkový stav ────────────────────────────────────────────────────────────
+function zakladniStav() {
+  seznam.pripojeno = false;
+  $('outdated').hidden = true;
+  $('konverzace').hidden = true;
+  $('sites-open').hidden = true;
+  $('pairing').hidden = true;
+  $('feats').hidden = true;
+  $('app-link').href = APLIKACE;
+  $('app-link-text').textContent = 'Otevřít Agenteeq';
+}
+
+// Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
+// načtení na okamžik prázdně bliklo.
 async function render() {
   const { lastStatus } = await chrome.storage.local.get(['lastStatus']);
   await renderSites(lastStatus);
-  $('outdated').hidden = true;
-  $('check-card').hidden = true;
-  $('tab-other').hidden = true;
-  $('sites-card').hidden = true;
 
   let health = null;
   try {
-    const res = await fetch('http://127.0.0.1:4620/api/health', { signal: AbortSignal.timeout(2000) });
+    const res = await fetch(`${APLIKACE}api/health`, { signal: AbortSignal.timeout(2000) });
     health = await res.json();
   } catch {
     health = null;
   }
   if (!health?.ok) {
-    $('pairing').hidden = true;
+    zakladniStav();
     $('feats').hidden = false;
-    setHero({ tone: 'err', pill: 'Neběží', headline: 'Agenteeq neběží', sub: 'Otevři aplikaci Agenteeq na tomto počítači. Rozšíření se k ní připojí samo.' });
+    $('app-link').href = WEB;
+    $('app-link-text').textContent = 'Stáhnout Agenteeq';
+    setHero({ tone: 'err', pill: 'Neběží', headline: 'Agenteeq na tomto počítači neběží', sub: 'Spusť aplikaci. Rozšíření se k ní připojí samo, nic nenastavuješ.' });
     return;
   }
-  $('feats').hidden = true;
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
   if (!r?.paired) {
+    zakladniStav();
     $('pairing').hidden = false;
     setHero({
       tone: 'warn',
@@ -300,25 +426,52 @@ async function render() {
     return;
   }
 
-  $('pairing').hidden = true;
-  $('sites-card').hidden = false;
-  nabidniKartu();
   const version = chrome.runtime.getManifest().version;
   const expected = r.status?.expectedVersion;
   const outdated = Boolean(expected && expected !== version);
+
+  overeni.tab = await aktivniKarta();
+  overeni.diagnostika = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
+  seznam.konverzace = await nactiKonverzace();
+  seznam.off = await vypnute();
+  zakladniStav();
+  $('sites-open').hidden = false;
   $('outdated').hidden = !outdated;
   if (outdated) $('outdated').textContent = sazba(`Je k dispozici verze ${expected}. Chrome ji nainstaluje sám; hned ji získáš na stránce chrome://extensions tlačítkem Aktualizovat.`);
-
-  const failed = lastStatus && !lastStatus.ok;
-  const k = await otevreneKonverzace();
-  const pocet = k ? k.pocet : 0;
-  let sub;
-  if (failed) sub = 'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.';
-  else if (!pocet) sub = 'Jakmile otevřeš chat s AI, objeví se tady i v Agenteeq.';
-  else if (k.pracuje) sub = `${k.pracuje} ${tvar(k.pracuje, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje')}`;
-  else sub = 'Žádný agent teď nepracuje';
-  setHero({ tone: outdated || failed ? 'warn' : 'ok', pill: 'Připojeno', headline: `${tvar(pocet, 'konverzace', 'konverzace', 'konverzací')} v prohlížeči`, sub, pocet });
+  seznam.lastStatus = lastStatus;
+  seznam.zastarala = outdated;
+  seznam.pripojeno = true;
+  vykresliSeznam();
+  hlavicka();
 }
+
+// Kolik agentů pracuje a kolik je otevřených konverzací (aktuální karta se počítá, i když se ještě
+// nestihla ohlásit).
+function hlavicka() {
+  if (!seznam.pripojeno) return;
+  const { lastStatus, zastarala: outdated, off } = seznam;
+  const zive = seznam.konverzace.filter((k) => !off.includes(k.site));
+  const d = overeni.diagnostika && !off.includes(overeni.diagnostika.site) ? overeni.diagnostika : null;
+  const tataVSeznamu = zive.some((k) => overeni.tab !== null && k.tab === overeni.tab);
+  const pocet = zive.length + (d && !tataVSeznamu && (d.zpravy?.user || d.zpravy?.assistant || d.generuje) ? 1 : 0);
+  const pracuje = zive.filter((k) => (k.tab === overeni.tab && d ? d.generuje : k.generating)).length + (d && !tataVSeznamu && d.generuje ? 1 : 0);
+  const failed = Boolean(lastStatus && !lastStatus.ok);
+  const tone = outdated || failed ? 'warn' : 'ok';
+  if (!pocet) {
+    setHero({ tone, pill: 'Připojeno', headline: 'Žádná otevřená konverzace', sub: failed ? 'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.' : 'Otevři chat s AI a objeví se tady i v Agenteeq.' });
+    return;
+  }
+  const popis = pracuje === 0 ? 'agentů teď pracuje' : tvar(pracuje, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
+  const sub = failed ? 'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.' : `${pocet} ${tvar(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: pracuje });
+}
+
+// Konverzace se mění, i když je okno otevřené: agent dopíše, karta se zavře.
+chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
+  if (oblast !== 'session' || !zmeny.otevrene || !seznam.pripojeno) return;
+  await obnovSeznam();
+  hlavicka();
+});
 
 $('retry').addEventListener('click', () => render());
 

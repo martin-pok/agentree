@@ -137,7 +137,7 @@
 .skel-row {
   position: relative;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--r-full, 999px);
   background: var(--line-2);
   overflow: hidden;
 }

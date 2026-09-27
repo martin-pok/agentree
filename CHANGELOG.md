@@ -7,9 +7,23 @@
 - Žádné opisování kódu: rozšíření z Chrome Web Store i ze složky, kterou připraví aplikace, se
   s Agenteeq spáruje samo hned po instalaci. Aplikace ho pozná podle ID, které mu přidělí Chrome
   (`src/app.js#pozadatOSparovani`). Jednorázový kód zůstává jen jako záloha pro jiná rozšíření.
-- Nové okno rozšíření ve stylu aplikace: velké číslo otevřených konverzací, karta „Tato stránka“
-  s logem služby a stavem agenta, sbalitelný seznam služeb se skutečnými logy, ověření stránky
-  schované pod „Počty nesedí?“. Nové snímky do Chrome Web Store.
+- Nové okno rozšíření: nahoře kolik agentů právě pracuje, pod tím všechny otevřené konverzace
+  s AI. Každý řádek řekne, co agent dělá („odpovídá · 0:42“, „narazil na limit“, „dokončil před
+  3 min“), a kliknutím se přepneš do té karty. Aktuální karta ukazuje počty zpráv. Sledované
+  služby a ověření stránky jsou vlastní pohledy se zpátečním tlačítkem. Nové snímky do Chrome
+  Web Store.
+
+### Jednotný tvar a velikost všech tlačítek
+
+- Všechno, na co se klepe a má jeden řádek, je v aplikaci, na webu, v rozšíření i v podkladech
+  obchodu kapsle. Dřív se míchalo šest různých zaoblení (6 až 20 px), pole měla jiné rohy než
+  tlačítko vedle nich a obrys zaostření z klávesnice měnil tvar prvku.
+- Výšky ovládacích prvků mají jen tři stupně (32, 40 a 48 px, na webu k tomu 56 px pro hlavní
+  výzvu). Pole, výběry a segmentové volby mají stejnou výšku jako tlačítko vedle nich.
+- Popisek tlačítka má vždy stejný řez písma. Vybraná volba už neztuční, takže text při výběru
+  neposkočí.
+- Pravidla jsou v `docs/DESIGN.md` a nová kontrola `npm run qa:tvary` změří v CI tvar každého
+  ovládacího prvku na vykreslené ploše.
 
 ### Texty, které dávají smysl
 

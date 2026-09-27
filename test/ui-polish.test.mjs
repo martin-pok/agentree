@@ -129,9 +129,12 @@ test('poslední zadání jde rozbalit a bere celý text z přepisu', async () =>
   assert.match(css, /\.quote\.is-clamped \{[^}]*-webkit-line-clamp: 5/);
 });
 
-test('výběry v přepínačích mají tučnější písmo a tlačítko na tmavém pásu je čitelné', async () => {
+test('volby v přepínačích mají stálý řez písma a tlačítko na tmavém pásu je čitelné', async () => {
   const css = await zdroj('public/styles.css');
-  assert.match(css, /\.seg button\[aria-pressed='true'\] \{[^}]*font-weight: 500/);
+  // Popisek tlačítka má vždy Onest 500. Kdyby vybraná volba ztučněla, text by při výběru poskočil do šířky.
+  assert.match(css, /\.seg button \{[^}]*font-weight: 500/);
+  assert.doesNotMatch(css, /\.seg button\[aria-pressed='true'\] \{[^}]*font-weight/);
+  assert.doesNotMatch(css, /\.lchip\[aria-checked='true'\] \{[^}]*font-weight/);
   assert.match(css, /\.pulse-bar \.pb-all \{[^}]*color: #F4F3F7/, 'bílé tlačítko se světlým textem se nesmí vrátit');
   assert.match(css, /\.budget-cards \{[^}]*auto-fit/, 'jediná karta rozpočtu vyplní celou šířku');
   const sk = await zdroj('public/js/views/skills.js');

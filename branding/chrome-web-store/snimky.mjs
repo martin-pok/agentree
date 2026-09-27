@@ -34,23 +34,28 @@ const vystup = path.join(here, 'export');
 const zdroj = path.join(here, 'source');
 
 // 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
-//    „spárováno“: na stránce ChatGPT agent právě odpovídá, v prohlížeči jsou otevřené dvě konverzace.
-//    „služby“: rozbalený seznam sledovaných služeb, Grok vypnutý.
+//    „spárováno“: na stránce ChatGPT agent právě odpovídá, v dalších kartách Claude.ai dopsal
+//    a Gemini narazil na limit. „služby“: nastavení sledovaných služeb, Grok vypnutý.
 async function okno(stav, soubor) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
   await page.addInitScript(() => {
-    const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'chatgpt', at: Date.now() } };
-    const otevrene = { 'chatgpt:a': { site: 'chatgpt', generating: true, at: Date.now() }, 'claude:b': { site: 'claude', generating: false, at: Date.now() } };
+    const ted = Date.now();
+    const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
+    const otevrene = {
+      'chatgpt:a': { site: 'chatgpt', tab: 1, okno: 1, generating: true, od: ted - 42000, at: ted },
+      'claude:b': { site: 'claude', tab: 2, okno: 1, generating: false, konec: ted - 180000, at: ted - 60000 },
+      'gemini:c': { site: 'gemini', tab: 3, okno: 1, generating: false, limit: true, at: ted - 30000 },
+    };
     window.chrome = {
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
       runtime: { getManifest: () => ({ version: '0.28.1' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.28.1' } }) },
-      tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 4, assistant: 3, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
+      tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: true }));
   });
   await page.goto(`${base}/extension/popup.html`);
   await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
-  await page.waitForFunction(() => !document.getElementById('check-card').hidden);
+  await page.waitForFunction(() => document.querySelector('.radek--tato'));
   if (stav === 'sluzby') await page.locator('#sites-open').click();
   await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
   await page.evaluate(() => document.fonts.ready);
