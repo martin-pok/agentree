@@ -81,8 +81,23 @@ test('manifest rozšíření drží verzi aplikace a má ikony pro Chrome', asyn
 
 test('rozšíření mluví jen s Agenteeq na tomto počítači', async () => {
   const manifest = JSON.parse(await fs.readFile(path.join(ROOT, 'extension/manifest.json'), 'utf8'));
-  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:4620/*'], 'žádná jiná adresa tam nepatří');
+  // Kromě aplikace na tomto počítači jen weby, kde rozšíření čte stav konverzace (content skripty).
+  // Oprávnění k nim slouží jen k vložení skriptu do už otevřených karet po instalaci či aktualizaci.
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:4620/*', ...manifest.content_scripts[0].matches], 'žádná jiná adresa tam nepatří');
   const pozadi = await fs.readFile(path.join(ROOT, 'extension/background.js'), 'utf8');
   const adresy = [...pozadi.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((m) => m[0]);
   assert.deepEqual([...new Set(adresy)], ['http://127.0.0.1:4620'], 'data nesmí odejít nikam jinam');
+});
+
+// Po aktualizaci rozšíření (z obchodu přichází sama) by otevřené karty do obnovení nic nehlásily
+// a nepovedené odeslání by se nezopakovalo, dokud se v konverzaci něco nezmění. Obojí by znamenalo
+// agenta, který v Agenteeq chybí, přestože v prohlížeči běží.
+test('rozšíření nepřehlédne otevřenou konverzaci: po aktualizaci, po výpadku aplikace i v klidu', async () => {
+  const pozadi = await fs.readFile(path.join(ROOT, 'extension/background.js'), 'utf8');
+  const obsah = await fs.readFile(path.join(ROOT, 'extension/content.js'), 'utf8');
+  assert.match(pozadi, /reason === 'install' \|\| reason === 'update'\) vlozDoOtevrenychKaret\(\)/);
+  assert.match(pozadi, /chrome\.scripting\.executeScript\(\{ target: \{ tabId: karta\.id \}, files: skript\.js \}\)/);
+  assert.match(pozadi, /send\(msg\.payload\)\.then\(\(ok\) => sendResponse\(\{ ok \}\)/, 'obsahový skript se dozví, že odeslání nevyšlo');
+  assert.match(obsah, /if \(!r\?\.ok\) lastSig = ''/, 'a zkusí to znovu při dalším průchodu');
+  assert.match(obsah, /payload\.generating \? 10000 : 60000/, 'klidná konverzace se ohlásí aspoň jednou za minutu');
 });

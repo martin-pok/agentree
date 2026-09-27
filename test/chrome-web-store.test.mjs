@@ -28,8 +28,8 @@ test('Chrome Web Store: manifest v limitech obchodu a s nejmenšími oprávněn�
   assert.ok(m.short_name.length <= 12, 'krátký název nejvýš 12 znaků');
   assert.ok(m.description.length <= 132, `popis má ${m.description.length} znaků, obchod bere nejvýš 132`);
   assert.equal(m.key, undefined, 'klíč do balíčku pro obchod nepatří – ID přidělí obchod');
-  assert.deepEqual(m.permissions, ['storage', 'alarms'], 'každé oprávnění musí mít zdůvodnění v docs/CHROME-WEB-STORE.md');
-  assert.deepEqual(m.host_permissions, ['http://127.0.0.1:4620/*'], 'data jdou jen do aplikace na tomtéž počítači');
+  assert.deepEqual(m.permissions, ['storage', 'alarms', 'scripting'], 'každé oprávnění musí mít zdůvodnění v docs/CHROME-WEB-STORE.md');
+  assert.deepEqual(m.host_permissions, ['http://127.0.0.1:4620/*', ...m.content_scripts[0].matches], 'data jdou jen do aplikace na tomtéž počítači, přístup jen k webům content skriptů');
   for (const [velikost, soubor] of Object.entries(m.icons)) {
     assert.deepEqual(await rozmeryPng(`extension/${soubor}`), [Number(velikost), Number(velikost)], soubor);
   }

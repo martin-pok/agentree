@@ -44,12 +44,14 @@ async function forgetToken() {
   await chrome.storage.local.remove('token');
 }
 
+// Vrací, jestli aplikace hlášení přijala. Vypnutá služba se počítá jako vyřízená – opakovat nemá smysl.
 async function send(payload) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
-  if (disabledSites.includes(payload.site)) return;
+  if (disabledSites.includes(payload.site)) return true;
   const res = await post(await getToken(), payload);
   if (res.status === 401) await forgetToken();
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
+  return res.ok;
 }
 
 async function takeHandoff(site) {
@@ -92,16 +94,34 @@ async function hello() {
   }
 }
 
+// Po instalaci a po každé aktualizaci (z obchodu přichází sama) by karty, které už jsou otevřené,
+// do obnovení stránky nic nehlásily: nové do nich Chrome skript nevloží a starý po aktualizaci ztratí
+// spojení. Agent rozepsaný v takové kartě by v Agenteeq chyběl – proto se skript vloží hned.
+async function vlozDoOtevrenychKaret() {
+  const [skript] = chrome.runtime.getManifest().content_scripts || [];
+  if (!skript || !chrome.scripting) return;
+  for (const karta of await chrome.tabs.query({ url: skript.matches })) {
+    chrome.scripting.executeScript({ target: { tabId: karta.id }, files: skript.js }).catch(() => {});
+  }
+}
+
 const HELLO_ALARM = 'agenteeq-hello';
 const armHello = () => chrome.alarms.create(HELLO_ALARM, { periodInMinutes: 30 });
-chrome.runtime.onInstalled.addListener(() => { armHello(); hello(); });
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  armHello();
+  hello();
+  if (reason === 'install' || reason === 'update') vlozDoOtevrenychKaret().catch(() => {});
+});
 chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'agenteeq:update') {
-    send(msg.payload).catch((err) =>
-      chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } }));
+    send(msg.payload).then((ok) => sendResponse({ ok }), (err) => {
+      chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } });
+      sendResponse({ ok: false });
+    });
+    return true;
   } else if (msg?.type === 'agenteeq:handoff' && typeof msg.site === 'string') {
     takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
     return true;
