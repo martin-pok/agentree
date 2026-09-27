@@ -69,7 +69,7 @@ flowchart LR
 1. `createApp()` načte `data.json` (vytvoří token pro hooky a rozšíření).
 2. `start()` spustí všechny konektory paralelně (`Promise.allSettled` – chyba jednoho neblokuje ostatní).
 3. Po úvodním skenu: `store.reevaluate()`, `store.ready = true`, `alerts.start()` si zapamatuje výchozí stavy (staré události tak nevyvolají notifikace), kontrola rozpočtů.
-4. Časovače: přehodnocení stavů 5 s, plný průchod souborů 10 s (pojistka proti ztraceným událostem watcheru), seznam konektorů 5 s, rozpočty 1 h.
+4. Časovače: přehodnocení stavů 5 s (klidné konverzace starší než den jednou za minutu), průchod souborů 10 s jako pojistka proti ztraceným událostem watcheru – nové a hodinu psané soubory pokaždé, starší při každém šestém průchodu; nezměněný soubor se znovu nesouhrnuje. Seznam konektorů 5 s, rozpočty 1 h. Výpis procesů (`ps`) sdílejí konektory procesů a lokálních agentů; do okna jde čas startu procesu, ne tikající doba běhu. Chyba pravidelné úlohy se jednou zapíše do logu.
 5. Teprve potom server začne poslouchat. Hooky během startu tiše selžou (curl `-m 2 || true`), Claude Code nezdržují.
 
 ### Realtime cesta a latence
@@ -116,11 +116,14 @@ Paleta dark mode je tokenová, nikoli CSS filter/inverze: `--paper`, `--card`, t
 
 - Úvodní načtení 82 sessions (≈106 MB přepisů Claude + 206 souborů Codexu, okno 30 dní): **1,3 s**.
 - Další aktualizace čtou jen přírůstky souborů.
+- Klid (27. 9. 2026, Linux, syntetický domov s 2 400 přepisy Claude Code / 113 MB, připojený prohlížeč):
+  CPU serveru **4,6 % → 2,7 %**, živý proud do okna **45 kB → 12 kB za 30 s**. Měřeno `process.cpuUsage`
+  za 30 s po startu; zbytek tvoří `ps`/`lsof` a čtení složek.
 - Paměť: přepis držen max. 400 posledních položek na session, texty zkrácené na 4 000 znaků.
 
 ## Odolnost
 
-- Watcher spadne nebo složka neexistuje → nový pokus každých 5 s; plný průchod každých 10 s.
+- Watcher spadne nebo složka neexistuje → nový pokus každých 5 s; průchod souborů každých 10 s (starší soubory každou minutu).
 - Poškozený nebo rozepsaný řádek JSONL se přeskočí; offset se posune jen za kompletní řádky.
 - Zkrácený soubor (přepsaný) → session se znovu načte od začátku.
 - SSE výpadek → EventSource se připojí sám, klient znovu stáhne snapshot.

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, shellQuote, MIN, DAY } from '../util.js';
+import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, shellQuote, MIN, HOUR, DAY } from '../util.js';
 import { touch, addTokens, pushEntry } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
@@ -393,6 +393,7 @@ export function createClaudeCodeConnector(ctx) {
     const stat = await statSafe(file);
     if (!stat?.isFile()) {
       // Přepis zmizel (uživatel konverzaci smazal): nesmí v přehledu viset jako duch až do restartu.
+      mimoObdobi.delete(file);
       const gone = files.get(file);
       if (gone) {
         store.remove(`claude-code:${gone.localId}`);
@@ -402,7 +403,11 @@ export function createClaudeCodeConnector(ctx) {
       return;
     }
     let f = files.get(file);
-    if (!f && Date.now() - stat.mtimeMs > windowMs) return;
+    if (!f && Date.now() - stat.mtimeMs > windowMs) {
+      mimoObdobi.set(file, stat.mtimeMs);
+      return;
+    }
+    mimoObdobi.delete(file);
     if (!f) {
       const drzi = drzitele.get(path.basename(file, '.jsonl'));
       if (drzi && drzi !== file && files.has(drzi)) return;
@@ -412,6 +417,9 @@ export function createClaudeCodeConnector(ctx) {
       files.delete(file);
       f = null;
     }
+    // Nezměněný soubor nemá co přinést. Pravidelný průchod (pojistka za sledování souborů) by jinak
+    // každých pár vteřin znovu souhrnoval všechny konverzace ve sledovaném období.
+    if (f && f.size === stat.size && f.mtimeMs === stat.mtimeMs) return;
     if (!f) {
       f = { tail: new JsonlTail(file), st: newFileState(Boolean(parentLocalId)), localId: path.basename(file, '.jsonl'), parentLocalId };
       f.st.ownSessionId = parentLocalId || f.localId;
@@ -445,20 +453,38 @@ export function createClaudeCodeConnector(ctx) {
     // modelu nezapisuje nic, proto „pracuje“ drží až 30 min a teprve pak přejde do stavu bez aktivity.
     s.staleMs = 30 * MIN;
     if (lines.length) lastEventAt = Date.now();
+    f.size = stat.size;
+    f.mtimeMs = stat.mtimeMs;
     store.commit(s);
   }
 
-  async function scanKoren(koren) {
+  // Pravidelný průchod je pojistka za sledování souborů. Soubor, do kterého se hodinu nezapsalo,
+  // stačí zkontrolovat při každém šestém průchodu (jednou za minutu) – změnu v něm stejně okamžitě
+  // ohlásí sledování. Nové soubory a ty, do kterých se nedávno psalo, se kontrolují pokaždé.
+  let pruchod = 0;
+  const mimoObdobi = new Map(); // soubory starší než sledované období: cesta → mtime
+  const klidny = (f) => {
+    const m = files.get(f)?.mtimeMs ?? mimoObdobi.get(f);
+    return m !== undefined && Date.now() - m > HOUR;
+  };
+
+  async function scanKoren(koren, plny = true) {
     const jsonl = (x) => x.endsWith('.jsonl');
-    for (const f of await listFiles(koren, 1, jsonl)) await queue.run(f);
-    for (const f of await listFiles(koren, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents')) await queue.run(f);
+    const soubory = [
+      ...await listFiles(koren, 1, jsonl),
+      ...await listFiles(koren, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents'),
+    ];
+    for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
+    return soubory;
   }
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    const plny = pruchod++ % 6 === 0;
+    const videne = new Set();
+    for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
     // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou – ta je z přehledu odebere.
-    for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
-    for (const koren of koreny.seznam()) await scanKoren(koren);
+    for (const known of [...files.keys()]) if (!videne.has(known)) await queue.run(known);
   }
 
   // Kořen, který prozradil běžící proces nebo hook. Nový se hned projde a začne sledovat.

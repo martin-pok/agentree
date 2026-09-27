@@ -141,6 +141,35 @@ export function agentniProcesy(out) {
   return procesy;
 }
 
+// Výpis procesů sdílený konektory (tento a src/connectors/local-agents.js). Kdo se zeptá do pár
+// vteřin po jiném, dostane tentýž výsledek – `ps` se nespouští dvakrát pro totéž.
+export function sdilenyVypis(vypis = processList, platnostMs = 4000) {
+  let posledni = null;
+  return () => {
+    const ted = Date.now();
+    if (!posledni || ted - posledni.at > platnostMs) posledni = { at: ted, vysledek: vypis() };
+    return posledni.vysledek;
+  };
+}
+
+// Start procesu dopočtený z doby běhu kolísá o vteřinu mezi průchody. Drží se první hodnota, ať
+// se přehled neposílá znovu jen kvůli tomu (doba běhu se dopočítá v rozhraní z času startu).
+export function createStabilniStart(tolerance = 3000) {
+  const starty = new Map();
+  return {
+    od(klic, uptimeSec, now = Date.now()) {
+      const od = now - uptimeSec * 1000;
+      const drive = starty.get(klic);
+      if (drive && Math.abs(drive - od) < tolerance) return drive;
+      starty.set(klic, od);
+      return od;
+    },
+    ponech(klice) {
+      for (const k of starty.keys()) if (!klice.has(k)) starty.delete(k);
+    },
+  };
+}
+
 export function createProcessesConnector(ctx) {
   const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu } = ctx;
   let timer = null;
@@ -164,9 +193,12 @@ export function createProcessesConnector(ctx) {
     return seznam.map((p) => ({ ...p, ...znamy.get(klic(p)) }));
   }
 
+  const starty = createStabilniStart();
+
   async function poll() {
     const res = await procesy();
-    const runtimes = res.ok ? parsePs(res.stdout) : store.runtimes;
+    const runtimes = res.ok ? parsePs(res.stdout).map(({ uptimeSec, ...r }) => ({ ...r, od: r.running ? starty.od(r.id, uptimeSec) : 0 })) : store.runtimes;
+    if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
     // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
     onAgenti(res.ok ? await agenti(res.stdout).catch(() => null) : null);
     try {
@@ -214,7 +246,8 @@ export function createProcessesConnector(ctx) {
           : `Seznam běžících aplikací se na tomto systému nepodařilo získat${ollama.ok ? `, Ollama ale odpovídá: ${ollama.models.length} modelů` : ''}.`,
         count: running,
         watching: Boolean(timer),
-        lastEventAt: lastOk,
+        // Výpis běží každých pár vteřin; na minuty zaokrouhlený čas nerozhýbe seznam zdrojů při každém průchodu.
+        lastEventAt: lastOk ? Math.floor(lastOk / 60e3) * 60e3 : 0,
       };
     },
   };

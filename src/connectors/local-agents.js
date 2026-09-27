@@ -3,7 +3,7 @@
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
-import { etimeToSec, program, aplikace } from './processes.js';
+import { etimeToSec, program, aplikace, createStabilniStart } from './processes.js';
 import { clip } from '../util.js';
 import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
 
@@ -175,15 +175,17 @@ export function parseListeningPorts(lsofOutput) {
 }
 
 export function createLocalAgentsConnector(ctx) {
-  const onDetect = ctx?.onDetect;
+  const { onDetect, procesy = processList } = ctx || {};
   let timer = null;
   let list = [];
   let lastOk = 0;
+  const starty = createStabilniStart();
 
   async function poll() {
-    const [psRes, lsofRes] = await Promise.all([processList(), listeningPorts()]);
+    const [psRes, lsofRes] = await Promise.all([procesy(), listeningPorts()]);
     const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
-    list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports });
+    list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports }).map(({ uptimeSec, ...a }) => ({ ...a, od: starty.od(a.id, uptimeSec) }));
+    starty.ponech(new Set(list.map((a) => a.id)));
     if (psRes.ok) lastOk = Date.now();
     onDetect?.(list);
   }

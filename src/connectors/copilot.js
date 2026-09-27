@@ -222,7 +222,7 @@ export function createCopilotCliConnector(ctx) {
       if (Date.now() - stat.mtimeMs > windowMs) return;
       tail = new JsonlTail(file);
       tails.set(file, tail);
-    }
+    } else if (tail.size === stat.size && tail.mtimeMs === stat.mtimeMs) return;
     const rel = path.relative(path.join(root, 'session-state'), file).split(path.sep);
     const localId = rel.length > 1 ? rel[0] : path.basename(file, '.jsonl');
     const s = store.ensure({ connector: 'copilot-cli', localId, provider: 'github', app: 'Copilot CLI' });
@@ -231,6 +231,8 @@ export function createCopilotCliConnector(ctx) {
     const lines = await tail.read(stat.size);
     for (const o of lines) applyCopilotEvent(s, o);
     if (lines.length) lastEventAt = Date.now();
+    tail.size = stat.size;
+    tail.mtimeMs = stat.mtimeMs;
     store.commit(s);
   }
 

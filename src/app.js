@@ -25,7 +25,7 @@ import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createClaudeDesktopCodeConnector } from './connectors/claude-desktop-code.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
-import { createProcessesConnector } from './connectors/processes.js';
+import { createProcessesConnector, sdilenyVypis } from './connectors/processes.js';
 import { createLocalAgentsConnector } from './connectors/local-agents.js';
 import { detectApps, openTargets, planOpen, executeOpen, planRuntimeFocus, RUNTIME_APPS, ALL_APPS, copyToClipboard } from './openers.js';
 import { migrateLegacyData } from './migrate.js';
@@ -258,9 +258,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     bezici.upravit(procesy);
   }
   if (config.processes) {
-    list.push(createProcessesConnector({ ...ctx, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
+    const vypis = sdilenyVypis();
+    list.push(createProcessesConnector({ ...ctx, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
-    list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
+    list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
@@ -1214,7 +1215,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
-    const every = (fn, ms) => { const t = setInterval(() => { Promise.resolve().then(fn).catch(() => {}); }, ms); t.unref?.(); timers.push(t); };
+    // Chyba pravidelné úlohy se zapíše jednou (stejná hláška se neopakuje) – tiše spolknutá by
+    // v provozu zůstala neviditelná, i kdyby úloha padala při každém průchodu.
+    const nahlasene = new Set();
+    const every = (fn, ms) => {
+      const t = setInterval(() => {
+        Promise.resolve().then(fn).catch((err) => {
+          const zprava = err?.stack || String(err);
+          if (nahlasene.has(zprava)) return;
+          nahlasene.add(zprava);
+          console.error('Agenteeq: pravidelná úloha selhala:', zprava);
+        });
+      }, ms);
+      t.unref?.();
+      timers.push(t);
+    };
     every(() => store.reevaluate(), 5000);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
     every(() => restoreRemoteAccess(), 30000);
