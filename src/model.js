@@ -117,6 +117,9 @@ export function deriveStatus(s, now) {
     return { status: 'failed', reason: s.failure.text || 'Spuštění selhalo', stale: false };
   }
   if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || 'Potřebuje tvé rozhodnutí', stale: false };
+  // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, ale přepis zatím není. Nejčastěji
+  // čeká na první zadání; „pracuje“ ani „hotovo“ by bylo tvrzení, které z procesu nevyčteme.
+  if (s.proces) return { status: 'waiting', reason: s.proces.popis, stale: false };
   if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
     // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
     const maybePermission = s.toolWaitSince && !s.hookAt && now - s.toolWaitSince > 90e3;
@@ -178,6 +181,7 @@ export function summarize(s, now, windowMs) {
     resume: s.resume,
     url: s.url,
     hooked: Boolean(s.hookAt),
+    proces: s.proces ? { pid: s.proces.pid, od: s.proces.od } : null,
     failure: s.failure || null,
     context: s.context || null,
     effort: s.effort || '',

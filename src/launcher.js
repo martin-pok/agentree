@@ -34,6 +34,7 @@ const WEB = {
 };
 
 const PROGRAMY = ['claude', 'codex', 'gemini', 'qwen', 'copilot'];
+const PROMENNE_PREPISU = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME'];
 
 const spustitelny = (p) => {
   try {
@@ -45,12 +46,16 @@ const spustitelny = (p) => {
 };
 
 export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgramu, jeProgram = spustitelny, runImpl = run }) {
-  const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done`], { timeout: 6000 });
+  // Tentýž průchod shellem vypíše i proměnné, podle kterých agenti zapisují přepisy jinam
+  // (CLAUDE_CONFIG_DIR, CODEX_HOME) – aplikace z Finderu je sama nevidí.
+  const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done; for v in ${PROMENNE_PREPISU.join(' ')}; do eval "h=\\$$v"; [ -n "$h" ] && echo "env:$v=$h"; done`], { timeout: 6000 });
   const bins = {};
+  const env = {};
   for (const line of String(r?.stdout || '').split('\n')) {
     const [name, ...rest] = line.trim().split('=');
     const p = rest.join('=');
-    if (name && path.isAbsolute(p)) bins[name] = p;
+    if (name.startsWith('env:') && PROMENNE_PREPISU.includes(name.slice(4)) && path.isAbsolute(p)) env[name.slice(4)] = p;
+    else if (name && path.isAbsolute(p)) bins[name] = p;
   }
   // Přihlašovací shell nevidí, co instalátor zapsal do ~/.zshrc (src/platform.js, kandidatiProgramu).
   for (const name of PROGRAMY) {
@@ -58,7 +63,7 @@ export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgr
     if (!bins[name]) delete bins[name];
   }
   if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
-  return { bins, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
+  return { bins, env, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
 }
 
 export function launchTargets(env) {

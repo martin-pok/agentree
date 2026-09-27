@@ -760,6 +760,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .banner--action > .icon { color: var(--velvet-ink); }
 .banner--limit { background: var(--brass-tint); box-shadow: inset 4px 0 0 var(--brass); }
 .banner--limit > .icon { color: var(--brass-ink); }
+.banner--info { background: var(--teal-tint); box-shadow: inset 4px 0 0 var(--teal-ink); }
+.banner--info > .icon { color: var(--teal-ink); }
 .live-strip { display: flex; align-items: center; gap: 16px; margin-top: 24px; padding: 16px 24px; border-radius: var(--r-lg); background: var(--ink-surface); color: var(--on-ink); }
 .live-strip.is-static { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .pulse { position: relative; width: 12px; height: 12px; border-radius: 50%; background: var(--teal); flex: none; }

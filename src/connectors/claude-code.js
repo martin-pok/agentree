@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, shellQuote, MIN, DAY } from '../util.js';
 import { touch, addTokens, pushEntry } from '../model.js';
-import { watchTree, createFileQueue, listFiles, depthOf } from '../watch.js';
+import { createFileQueue, listFiles } from '../watch.js';
+import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
 
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
@@ -307,16 +308,42 @@ export function applyClaudeLine(st, s, o, hooks = {}) {
   }
 }
 
+// Kde Claude Code ukládá přepisy. Ověřeno ve zdroji Claude Code 2.1.283 (26. 9. 2026):
+// `CLAUDE_CONFIG_DIR/projects`, a bez té proměnné `~/.claude/projects`. Verze 1.0.x ukládaly
+// podle nástroje ccusage i do `~/.config/claude/projects`; ta se čte, jen když existuje.
+// Další kořeny přidá za běhu hook (transcript_path) nebo prostředí běžícího procesu.
+export function korenyClaudeCode({ home, configDir = '' }) {
+  const vlastni = rozbalCestu(configDir, home);
+  return [...new Set([
+    vlastni && path.join(vlastni, 'projects'),
+    path.join(home, '.claude', 'projects'),
+    path.join(home, '.config', 'claude', 'projects'),
+  ].filter(Boolean))];
+}
+
+// Přepis hlavní konverzace: <kořen>/<projekt>/<id>.jsonl, kořen se jmenuje `projects`.
+export function korenZPrepisu(cesta, sessionId) {
+  if (typeof cesta !== 'string' || !path.isAbsolute(cesta)) return '';
+  const soubor = path.resolve(cesta);
+  if (path.basename(soubor) !== `${sessionId}.jsonl`) return '';
+  const koren = path.dirname(path.dirname(soubor));
+  return path.basename(koren) === 'projects' ? koren : '';
+}
+
 export function createClaudeCodeConnector(ctx) {
   const { store, config } = ctx;
-  const root = path.join(config.sourceHome, '.claude', 'projects');
   const windowMs = config.windowDays * DAY;
   const files = new Map();
-  let watcher = null;
-  let exists = false;
+  // Tatáž konverzace může být vidět ze dvou kořenů (~/.config/claude jako symlink na ~/.claude,
+  // zkopírovaná složka). Čte se jen z prvního souboru, jinak by se tokeny i přepis započítaly dvakrát.
+  const drzitele = new Map(); // localId → soubor
   let lastEventAt = 0;
   let lastHookAt = 0;
+  let exists = false;
   const queue = createFileQueue(sync, 40);
+  const koreny = createKorenyPrepisu(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }), {
+    zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
+  });
 
   // Poslední úspěšná odpověď každého modelu ('' = model neznámý). Soubory se načítají souběžně,
   // takže úspěch téhož modelu se může načíst dřív než starší hláška o limitu – a ten by pak zůstal
@@ -360,7 +387,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function sync(file) {
     if (!file.endsWith('.jsonl')) return;
-    const depth = depthOf(root, file);
+    const depth = koreny.najdi(file)?.hloubka ?? -1;
     const parentLocalId = depth === 3 ? subagentParent(file) : '';
     if (depth !== 1 && !parentLocalId) return;
     const stat = await statSafe(file);
@@ -370,11 +397,16 @@ export function createClaudeCodeConnector(ctx) {
       if (gone) {
         store.remove(`claude-code:${gone.localId}`);
         files.delete(file);
+        drzitele.delete(gone.localId);
       }
       return;
     }
     let f = files.get(file);
     if (!f && Date.now() - stat.mtimeMs > windowMs) return;
+    if (!f) {
+      const drzi = drzitele.get(path.basename(file, '.jsonl'));
+      if (drzi && drzi !== file && files.has(drzi)) return;
+    }
     if (f && stat.size < f.tail.offset) {
       store.remove(`claude-code:${f.localId}`);
       files.delete(file);
@@ -384,6 +416,7 @@ export function createClaudeCodeConnector(ctx) {
       f = { tail: new JsonlTail(file), st: newFileState(Boolean(parentLocalId)), localId: path.basename(file, '.jsonl'), parentLocalId };
       f.st.ownSessionId = parentLocalId || f.localId;
       files.set(file, f);
+      drzitele.set(f.localId, file);
     }
     const s = store.ensure({ connector: 'claude-code', localId: f.localId, provider: 'anthropic', app: 'Claude Code' });
     if (f.parentLocalId) {
@@ -415,13 +448,24 @@ export function createClaudeCodeConnector(ctx) {
     store.commit(s);
   }
 
+  async function scanKoren(koren) {
+    const jsonl = (x) => x.endsWith('.jsonl');
+    for (const f of await listFiles(koren, 1, jsonl)) await queue.run(f);
+    for (const f of await listFiles(koren, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents')) await queue.run(f);
+  }
+
   async function scan() {
-    exists = Boolean(await statSafe(root));
+    exists = (await koreny.existujici()).length > 0;
     // Soubory, které mezitím zmizely, projdou synchronizací ještě jednou – ta je z přehledu odebere.
     for (const known of [...files.keys()]) if (!(await statSafe(known))) await queue.run(known);
-    const jsonl = (x) => x.endsWith('.jsonl');
-    for (const f of await listFiles(root, 1, jsonl)) await queue.run(f);
-    for (const f of await listFiles(root, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents')) await queue.run(f);
+    for (const koren of koreny.seznam()) await scanKoren(koren);
+  }
+
+  // Kořen, který prozradil běžící proces nebo hook. Nový se hned projde a začne sledovat.
+  async function pridejKoren(koren) {
+    if (!koreny.pridej(koren)) return false;
+    await scanKoren(path.resolve(koren));
+    return true;
   }
 
   // Okamžité události z Claude Code hooků (viz src/hooks-installer.js).
@@ -429,9 +473,12 @@ export function createClaudeCodeConnector(ctx) {
     if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
     const event = String(p.hook_event_name || '');
     if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'].includes(event)) return { ok: false, error: 'Neznámá událost.' };
-    if (typeof p.transcript_path === 'string') {
-      const tp = path.resolve(p.transcript_path);
-      if (depthOf(root, tp) === 1) await queue.run(tp);
+    // Hook zná přesnou cestu k přepisu. Leží-li mimo známé kořeny (CLAUDE_CONFIG_DIR, který aplikace
+    // z Finderu nevidí), přidá se jeho kořen – jinak by agent s hooky byl vidět bez přepisu a tokenů.
+    const koren = korenZPrepisu(p.transcript_path, p.session_id);
+    if (koren) {
+      await pridejKoren(koren);
+      await queue.run(path.resolve(p.transcript_path));
     }
     const s = store.ensure({ connector: 'claude-code', localId: p.session_id, provider: 'anthropic', app: 'Claude Code' });
     s.hookAt = now;
@@ -551,15 +598,17 @@ export function createClaudeCodeConnector(ctx) {
     provider: 'anthropic',
     kind: 'local',
     verified: true,
-    source: '~/.claude/projects',
+    source: '~/.claude/projects (a CLAUDE_CONFIG_DIR)',
     description: 'Přepis v reálném čase, nástroje, plán úkolů, dotazy na tebe, limity a tokeny.',
     async start() {
       await scan();
-      watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));
+      koreny.start();
     },
     scan,
+    pridejKoren,
+    koreny: () => koreny.seznam(),
     stop() {
-      watcher?.close();
+      koreny.stop();
       queue.clear();
     },
     idle: () => queue.idle(),
@@ -575,7 +624,7 @@ export function createClaudeCodeConnector(ctx) {
             ? 'Složka existuje, zatím bez sessions.'
             : 'Claude Code na tomto počítači není.',
         count,
-        watching: Boolean(watcher?.active),
+        watching: koreny.sleduje(),
         lastEventAt: Math.max(lastEventAt, lastHookAt),
         hooksActive: Boolean(lastHookAt),
       };

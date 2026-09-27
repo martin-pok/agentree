@@ -72,7 +72,8 @@ export class Store extends EventEmitter {
   list(now = Date.now()) {
     const out = [];
     for (const { value } of this.summaries.values()) {
-      if (now - value.lastAt <= this.windowMs || value.status === 'working' || value.status === 'needs_input') out.push(value);
+      // Běžící proces agenta je vidět vždy, i když byl spuštěný před víc než sledovaným obdobím.
+      if (now - value.lastAt <= this.windowMs || value.status === 'working' || value.status === 'needs_input' || value.proces) out.push(value);
     }
     return out.sort((a, b) => b.lastAt - a.lastAt);
   }

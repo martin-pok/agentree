@@ -286,7 +286,9 @@ function update() {
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">${s.observation ? tr('Stav hlásí Claude Desktop. Přesný důvod najdeš v původní konverzaci.') : tr('Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.')}</p></div></div>`
-        : '');
+        : s.proces
+          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Agent běží, přepis zatím není')}</strong><p>${esc(tr('Agenteeq ho našel mezi běžícími procesy (PID {0}, od {1}). Nejčastěji čeká na první zadání – jakmile zapíše první zprávu, objeví se tu celá konverzace.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
+          : '');
 
   fill(el, 'live', s.status === 'working'
     ? `<div class="live-strip" role="status">

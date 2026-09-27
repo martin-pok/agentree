@@ -79,6 +79,70 @@ export async function processList(runImpl = run) {
   return runImpl('ps', PS_ARGS);
 }
 
+// ── Podrobnosti běžícího procesu ─────────────────────────────────────────────
+//
+// Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js) potřebuje u procesu agenta vědět,
+// v jaké složce běží a kam zapisuje přepisy (CLAUDE_CONFIG_DIR, CODEX_HOME). Z prostředí se čtou
+// jen vyžádané proměnné – nic dalšího se neukládá ani neposílá.
+
+// `ps -E` na macOS připojí prostředí za příkaz: „/bin/claude --x HOME=/Users/eva PATH=…“. Hodnota
+// sahá do další mezery, za kterou začíná další NÁZEV=, nebo do konce řádku (hodnota s mezerou projde).
+export function promennaZPrikazu(radek, jmeno) {
+  const m = new RegExp(`(?:^|\\s)${jmeno}=(.*?)(?=\\s[A-Za-z_][A-Za-z0-9_]*=|$)`).exec(radek || '');
+  return m ? m[1].trim() : '';
+}
+
+// `lsof -Fpn` vypisuje „p<pid>“ a pod ním „n<cesta>“ pracovní složky.
+export function slozkyZLsof(vystup) {
+  const out = new Map();
+  let pid = 0;
+  for (const radek of String(vystup || '').split('\n')) {
+    if (radek.startsWith('p')) pid = Number(radek.slice(1));
+    else if (radek.startsWith('n') && pid) out.set(pid, radek.slice(1));
+  }
+  return out;
+}
+
+/**
+ * Pracovní složka a vyžádané proměnné prostředí procesů: Map pid → { cwd, env }.
+ * macOS: lsof a ps -E (jen procesy téhož uživatele). Linux: /proc. Windows: prázdné – bez nativního
+ * kódu cizí proces nepřečteme a hádat nebudeme; volající se pak obejde bez složky.
+ */
+export async function detailyProcesu(pids, jmena = [], { runImpl = run, cti = fs.promises, jeMac = JE_MAC, jeWindows = JE_WINDOWS } = {}) {
+  const out = new Map(pids.map((pid) => [pid, { cwd: '', env: {} }]));
+  if (!pids.length || jeWindows) return out;
+  if (jeMac) {
+    const seznam = pids.join(',');
+    const lsof = await runImpl('lsof', ['-a', '-d', 'cwd', '-Fpn', '-p', seznam], { timeout: 4000 });
+    for (const [pid, cwd] of slozkyZLsof(lsof.stdout)) if (out.has(pid)) out.get(pid).cwd = cwd;
+    if (jmena.length) {
+      const ps = await runImpl('ps', ['-wwE', '-o', 'pid=,command=', '-p', seznam], { timeout: 4000 });
+      for (const radek of String(ps.stdout || '').split('\n')) {
+        const m = /^\s*(\d+)\s+(.*)$/.exec(radek);
+        const d = m && out.get(Number(m[1]));
+        if (!d) continue;
+        for (const jmeno of jmena) {
+          const hodnota = promennaZPrikazu(m[2], jmeno);
+          if (hodnota) d.env[jmeno] = hodnota;
+        }
+      }
+    }
+    return out;
+  }
+  for (const pid of pids) {
+    const d = out.get(pid);
+    try { d.cwd = await cti.readlink(`/proc/${pid}/cwd`); } catch { /* proces skončil nebo patří jinému uživateli */ }
+    if (!jmena.length) continue;
+    try {
+      for (const par of (await cti.readFile(`/proc/${pid}/environ`, 'utf8')).split('\0')) {
+        const i = par.indexOf('=');
+        if (i > 0 && jmena.includes(par.slice(0, i)) && par.slice(i + 1)) d.env[par.slice(0, i)] = par.slice(i + 1);
+      }
+    } catch { /* dtto */ }
+  }
+  return out;
+}
+
 /**
  * Otevře cestu nebo adresu v tom, co je pro ni v systému nastavené.
  * Vrací `null`, když to systém neumí – nikdy nehádá jiný příkaz.

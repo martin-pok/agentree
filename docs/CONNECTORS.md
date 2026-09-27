@@ -97,11 +97,36 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 **Zdarma:** Agenteeq nemá vlastní AI – spuštění běží na předplatných a limitech uživatele. Skutečně zdarma jsou lokální modely v Ollamě a bezplatné úrovně služeb (např. Gemini CLI s osobním účtem Google, bezplatné webové verze).
 
+## Pojistka: běžící agent je vždy vidět (`src/bezici-agenti.js`)
+
+Hlavní úděl Agenteeq je vidět každého agenta, který na počítači běží. Přepis ale může chybět
+(agent čeká na první zadání – Claude Code i Codex zakládají soubor až s první zprávou), nebo leží
+ve složce, o které Agenteeq neví. Proto:
+
+- **Kořeny přepisů nejsou napevno** (`src/koreny-prepisu.js`). Claude Code: `CLAUDE_CONFIG_DIR/projects`,
+  jinak `~/.claude/projects` (ověřeno ve zdroji Claude Code 2.1.283), plus `~/.config/claude/projects`
+  z verzí 1.0.x (podle ccusage; čte se, jen když existuje). Codex: `CODEX_HOME`, jinak `~/.codex`.
+  Proměnné, které aplikace z Finderu nevidí, doplní za běhu: přihlašovací shell (sonda programů),
+  **prostředí běžícího procesu** (macOS `ps -E`, Linux `/proc/<pid>/environ`) a **hook** Claude Code
+  (`transcript_path` mimo známé kořeny přidá svůj kořen). Tatáž konverzace ze dvou kořenů
+  (symlink) se čte jen jednou.
+- **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
+  gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
+  2.1.283) se páruje s konverzací téhož nástroje, která od jeho startu žila a běží ve stejné složce
+  (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se jen podle času). Starší
+  proces bere starší konverzaci, spárování mezi průchody nepřeskakuje. Nespárovaný proces je agent
+  „běží od 14:02, zatím bez přepisu“ se stavem `waiting` – co přesně dělá, z procesu nevyčteme,
+  a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis
+  procesů nic nepřidá ani neubere.
+- **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
+  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se do 8 s, po prvním zápisu do přepisu
+  se spáruje a po skončení zmizí.
+
 ## Konektory v detailu
 
 ### Claude Code – `src/connectors/claude-code.js` ✅
 
-- **Zdroj:** `~/.claude/projects/<projekt>/<session-id>.jsonl` (hloubka 1). Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
+- **Zdroj:** `<kořen>/<projekt>/<session-id>.jsonl` (hloubka 1), kořeny viz „Pojistka“ výše – výchozí `~/.claude/projects`. Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
 - **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).

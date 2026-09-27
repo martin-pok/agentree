@@ -1,4 +1,4 @@
-import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel } from './format.js';
+import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
@@ -235,7 +235,9 @@ export const agentHref = (id) => `#/agent/${encodeURIComponent(id)}`;
 export function activityItem(s) {
   const meta = s.status === 'working' && s.activity
     ? `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity)}`
-    : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;
+    : s.proces
+      ? `${esc(tr('běží od {0}, zatím bez přepisu', timeHM(s.proces.od)))} · ${esc(s.app)}`
+      : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;
   return `<li><a class="act-item" href="${agentHref(s.id)}">
     <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
     <span class="act-text"><span class="act-title">${esc(s.title)}</span><span class="act-meta"><span class="sr-only">${esc(STATUS[s.status]?.label || '')}, </span>${meta}</span></span>

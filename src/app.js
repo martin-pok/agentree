@@ -41,6 +41,7 @@ import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
+import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA } from './bezici-agenti.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -243,8 +244,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createClaudeDesktopUsageConnector(ctx),
     createClaudeDesktopCodeConnector(ctx),
   ];
+  // Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js): běžící proces bez konverzace se
+  // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
+  // který aplikace spuštěná z Finderu jinak nevidí – přepis se pak najde a proces se spáruje.
+  const bezici = createBeziciAgenti({ store });
+  async function beziciAgenti(procesy) {
+    for (const p of procesy || []) {
+      const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
+      if (!domov || !path.isAbsolute(domov)) continue;
+      if (p.runtime === 'claude-code') await connectors['claude-code']?.pridejKoren(path.join(domov, 'projects'));
+      if (p.runtime === 'codex') await connectors.codex?.pridejDomov(domov);
+    }
+    bezici.upravit(procesy);
+  }
   if (config.processes) {
-    list.push(createProcessesConnector(ctx));
+    list.push(createProcessesConnector({ ...ctx, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, onDetect: (found) => store.setLocalAgents(found) }));
   }
@@ -349,7 +363,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const pd = projects();
     const live = new Map(store.list().map((s) => [s.id, s]));
     for (const s of live.values()) {
-      if (s.projectId && !s.parentId) pd.snapshots[s.id] = snapshotOf(s);
+      // Agent známý jen z běžícího procesu po skončení zmizí – do projektu se jako snímek neukládá.
+      if (s.projectId && !s.parentId && !s.proces) pd.snapshots[s.id] = snapshotOf(s);
       else delete pd.snapshots[s.id];
     }
     for (const [sid, snap] of Object.entries(pd.snapshots)) {
@@ -645,7 +660,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dokud se programy nehledaly (jiný systém než macOS, nebo spouštění vypnuté), nevíme – ne „není“.
     bins: () => (launchDetected || dry ? launchEnv.bins : null),
     // Kdy agent na tomhle Macu naposledy pracoval (z konverzací v úložišti, ne z času načtení).
-    posledni: (id) => store.list().reduce((m, s) => (s.connector === id && s.lastAt > m ? s.lastAt : m), 0),
+    posledni: (id) => store.list().reduce((m, s) => (s.connector === id && !s.proces && s.lastAt > m ? s.lastAt : m), 0),
     oknoDni: config.windowDays,
     run: napojeniRun || run,
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
@@ -667,6 +682,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (config.launchAgents && config.openMode === 'exec') {
       launchEnv = await detectLaunchEnv({ ollama, home: config.sourceHome });
       launchDetected = true;
+      if (launchEnv.env?.CLAUDE_CONFIG_DIR) await connectors['claude-code']?.pridejKoren(path.join(launchEnv.env.CLAUDE_CONFIG_DIR, 'projects'));
+      if (launchEnv.env?.CODEX_HOME) await connectors.codex?.pridejDomov(launchEnv.env.CODEX_HOME);
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
@@ -756,7 +773,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   store.on('session', (value) => {
     const pd = projects();
-    if (value.projectId) {
+    if (value.projectId && !value.proces) {
       pd.snapshots[value.id] = snapshotOf(value);
       persistSnapshots();
     } else if (pd.snapshots[value.id]) {

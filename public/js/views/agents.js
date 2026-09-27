@@ -1,6 +1,6 @@
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, shortPath, plural } from '../format.js';
+import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
@@ -116,6 +116,8 @@ function rowHtml(s) {
   let sub;
   if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || tr('Pracuje'))}`;
   else if (needsYou(s)) sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
+  // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, přepis zatím není.
+  else if (s.proces) sub = `${esc(tr('Běží od {0} · zatím bez přepisu', timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
   else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);

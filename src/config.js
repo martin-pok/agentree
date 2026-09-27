@@ -56,6 +56,11 @@ export function loadConfig(env = process.env) {
     // program) mají otevřený port na 127.0.0.1, ale bez klíče jim server nic nevydá.
     localKey: /^[\w-]{32,128}$/.test(env.AGENTEEQ_LOCAL_KEY || '') ? env.AGENTEEQ_LOCAL_KEY : '',
     sourceHome,
+    // Kam agenti zapisují přepisy, když je uživatel přesměroval: Claude Code poslechne
+    // CLAUDE_CONFIG_DIR, Codex CODEX_HOME. S podstrčeným domovem (testy, AGENTEEQ_SOURCE_HOME) se
+    // proměnné skutečného uživatele nečtou – jinak by testy sáhly na jeho skutečné konverzace.
+    claudeConfigDir: env.AGENTEEQ_SOURCE_HOME ? env.AGENTEEQ_CLAUDE_CONFIG_DIR || '' : env.CLAUDE_CONFIG_DIR || '',
+    codexHome: env.AGENTEEQ_SOURCE_HOME ? env.AGENTEEQ_CODEX_HOME || '' : env.CODEX_HOME || '',
     dataDir: env.AGENTEEQ_HOME || path.join(os.homedir(), '.agenteeq'),
     // Data ze starších názvů se jednou zkopírují: ~/.agentree (do 0.7.0) a ~/.dirigent (do 0.4.0).
     legacyDataDirs: env.AGENTEEQ_HOME ? [] : [path.join(os.homedir(), '.agentree'), path.join(os.homedir(), '.dirigent')],
