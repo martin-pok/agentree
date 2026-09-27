@@ -23,15 +23,19 @@ const radek = (sessionId, cwd, at = new Date().toISOString(), text = 'Oprav test
 });
 
 test('kořeny přepisů: CLAUDE_CONFIG_DIR, výchozí ~/.claude, starší ~/.config/claude; CODEX_HOME a ~/.codex', () => {
-  assert.deepEqual(korenyClaudeCode({ home: '/Users/eva' }), ['/Users/eva/.claude/projects', '/Users/eva/.config/claude/projects']);
-  assert.deepEqual(korenyClaudeCode({ home: '/Users/eva', configDir: '~/Design & Web/claude' })[0], '/Users/eva/Design & Web/claude/projects');
-  assert.equal(korenyClaudeCode({ home: '/Users/eva', configDir: 'relativni' }).length, 2, 'relativní cestu bez složky procesu nehádáme');
-  assert.deepEqual(domovyCodexu({ home: '/Users/eva', codexHome: '/data/codex' }), ['/data/codex', '/Users/eva/.codex']);
-  assert.equal(rozbalCestu('~', '/h'), '/h');
-  assert.equal(rozbalCestu('  ', '/h'), '');
-  assert.equal(korenZPrepisu('/x/projects/-Users-eva-web/abc12345.jsonl', 'abc12345'), '/x/projects');
-  assert.equal(korenZPrepisu('/x/projects/-Users-eva-web/jiny.jsonl', 'abc12345'), '', 'soubor musí patřit té konverzaci');
-  assert.equal(korenZPrepisu('/x/data/-p/abc12345.jsonl', 'abc12345'), '', 'kořen se jmenuje projects');
+  // Očekávané cesty přes path.* – na Windows mají zpětná lomítka a písmeno disku.
+  const eva = path.resolve('/Users/eva');
+  assert.deepEqual(korenyClaudeCode({ home: eva }), [path.join(eva, '.claude', 'projects'), path.join(eva, '.config', 'claude', 'projects')]);
+  assert.deepEqual(korenyClaudeCode({ home: eva, configDir: '~/Design & Web/claude' })[0], path.join(eva, 'Design & Web', 'claude', 'projects'));
+  assert.equal(korenyClaudeCode({ home: eva, configDir: 'relativni' }).length, 2, 'relativní cestu bez složky procesu nehádáme');
+  const data = path.resolve('/data/codex');
+  assert.deepEqual(domovyCodexu({ home: eva, codexHome: data }), [data, path.join(eva, '.codex')]);
+  assert.equal(rozbalCestu('~', eva), eva);
+  assert.equal(rozbalCestu('  ', eva), '');
+  const x = path.resolve('/x');
+  assert.equal(korenZPrepisu(path.join(x, 'projects', '-Users-eva-web', 'abc12345.jsonl'), 'abc12345'), path.join(x, 'projects'));
+  assert.equal(korenZPrepisu(path.join(x, 'projects', '-Users-eva-web', 'jiny.jsonl'), 'abc12345'), '', 'soubor musí patřit té konverzaci');
+  assert.equal(korenZPrepisu(path.join(x, 'data', '-p', 'abc12345.jsonl'), 'abc12345'), '', 'kořen se jmenuje projects');
   assert.equal(korenZPrepisu('relativni/projects/p/abc12345.jsonl', 'abc12345'), '');
 });
 
