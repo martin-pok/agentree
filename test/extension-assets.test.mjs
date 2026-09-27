@@ -15,13 +15,17 @@ const hash = async (p) => crypto.createHash('sha256').update(await fs.readFile(p
 // tatáž písma. Kopie v extension/fonts je nutná (Chrome vidí jen složku rozšíření), a právě proto
 // se musí hlídat: jinak by se po výměně písma v aplikaci obě plochy tiše rozešly.
 test('rozšíření: písma jsou bajt po bajtu tatáž jako v aplikaci', async () => {
-  for (const soubor of ['urbanist-300.ttf', 'urbanist-500.ttf', 'onest-400.ttf', 'onest-500.ttf', 'geist-mono-400.ttf']) {
+  for (const soubor of ['urbanist-300.ttf', 'urbanist-500.ttf', 'onest-400.ttf', 'onest-500.ttf']) {
     const app = path.join(ROOT, 'public/fonts', soubor);
     const ext = path.join(ROOT, 'extension/fonts', soubor);
     assert.equal(await hash(ext), await hash(app), `${soubor} se rozešel s public/fonts`);
   }
   const css = await fs.readFile(path.join(ROOT, 'extension/fonts/fonts.css'), 'utf8');
-  for (const rodina of ['Urbanist', 'Onest', 'Geist Mono']) assert.match(css, new RegExp(`font-family: '${rodina}'`), rodina);
+  // Okno má dvě rodiny písma (Urbanist na čísla a nadpisy, Onest na text) – každá další je navíc.
+  const rodiny = [...new Set([...css.matchAll(/font-family: '([^']+)'/g)].map((m) => m[1]))].sort();
+  assert.deepEqual(rodiny, ['Onest', 'Urbanist']);
+  const soubory = (await fs.readdir(path.join(ROOT, 'extension/fonts'))).filter((f) => f.endsWith('.ttf'));
+  for (const soubor of soubory) assert.ok(css.includes(`./${soubor}`), `${soubor} v balíčku, ale okno ho nenačítá`);
   assert.equal(/font-weight: (6|7|8|9)00/.test(css), false, 'maximální váha písma je 500');
 });
 
@@ -38,8 +42,10 @@ test('rozšíření: loga služeb jsou tatáž jako v aplikaci a licence jde s n
 });
 
 test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)', async () => {
-  for (const licence of ['urbanist-OFL.txt', 'onest-OFL.txt', 'geistmono-OFL.txt']) {
-    assert.ok(await fs.stat(path.join(ROOT, 'extension/fonts', licence)), licence);
+  // Každé písmo v balíčku má vedle sebe svou licenci (urbanist-500.ttf → urbanist-OFL.txt).
+  const soubory = await fs.readdir(path.join(ROOT, 'extension/fonts'));
+  for (const rodina of new Set(soubory.filter((f) => f.endsWith('.ttf')).map((f) => f.replace(/-\d{3}\.ttf$/, '').replace(/-/g, '')))) {
+    assert.ok(soubory.includes(`${rodina}-OFL.txt`), `chybí licence ${rodina}-OFL.txt`);
   }
 });
 
