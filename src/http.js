@@ -506,6 +506,10 @@ export function createHttpServer(app, existingServer = null) {
     // Naše rozšíření se spáruje samo, bez kódu (viz app.js#pozadatOSparovani). Jiné dostane 409 –
     // pak zbývá jednorázový kód z Nastavení.
     ['POST', /^\/api\/extension\/pripojit$/, async (req) => {
+      // Původ nastavuje prohlížeč, jenže mimo prohlížeč ho podvrhne kdokoli. Na tomhle Macu to
+      // nevadí (program pod stejným uživatelem se k datům dostane i jinak), ze sítě ale ano –
+      // spárovaný telefon by si jinak vyžádal token rozšíření a četl zadání. Proto jen z Macu.
+      if (!zTohotoMacu(req)) throw new HttpError(403, 'Rozšíření se páruje jen na Macu, kde běží Agenteeq.');
       const origin = String(req.headers.origin || '');
       if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
       const pair = await app.pozadatOSparovani({ origin, installationId: String(req.headers['x-agenteeq-installation-id'] || '') });

@@ -12,7 +12,11 @@ import { statSafe } from './util.js';
  * `zmena(koren, soubor)` dostane změněný soubor, nebo `soubor = null`, když je potřeba projít
  * celý kořen (sledování právě začalo nebo se obnovilo).
  */
-export function createKorenyPrepisu(vychozi, { zmena }) {
+// Kořeny přidává i hook (cesta k přepisu) a běžící proces. Každý znamená další sledování složky,
+// proto má jejich počet strop – ani nesmyslné nebo podvržené cesty nevyčerpají sledování souborů.
+export const MAX_KORENU = 24;
+
+export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU }) {
   const koreny = new Map(); // absolutní cesta → watcher | null
   let sleduje = false;
   const sleduj = (koren) => watchTree(koren, (soubor) => zmena(koren, soubor));
@@ -20,7 +24,7 @@ export function createKorenyPrepisu(vychozi, { zmena }) {
   function pridej(cesta) {
     if (typeof cesta !== 'string' || !cesta) return false;
     const koren = path.resolve(cesta);
-    if (koreny.has(koren)) return false;
+    if (koreny.has(koren) || koreny.size >= max) return false;
     koreny.set(koren, sleduje ? sleduj(koren) : null);
     return true;
   }

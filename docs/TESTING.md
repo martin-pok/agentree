@@ -112,7 +112,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 576 testů, 572 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm test` | 582 testů, 578 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
 | `npm run check` | 215 souborů bez syntaktické chyby |
 | `npm run qa:contrast` | všechny texty v aplikaci, na webu i v okně rozšíření splňují WCAG 2.2 AA; nejhorší místo okna (stav pod mosazným odleskem) 5,9 : 1 |
 | `npm run qa:extension` | 14 scénářů okna rozšíření v Chromiu (světlý i tmavý režim, výška do 600 px, česká sazba bez předložek na konci řádku); WebKit běží v CI |

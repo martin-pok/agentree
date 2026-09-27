@@ -37,6 +37,9 @@ test('párování bez kódu: naše rozšíření dostane token, cizí jen odkaz 
     const nase = `chrome-extension://${idRozbalenehoRozsireni(cesta)}`;
     const url = `${srv.url}/api/extension/pripojit`;
 
+    // Přes proxy nebo ze sítě se Origin dá podvrhnout – bez kódu se páruje jen přímo z tohoto Macu.
+    const zeSite = await post(url, { Origin: nase, 'X-Forwarded-For': '100.64.0.9' });
+    assert.equal(zeSite.status, 403, 'ze sítě se rozšíření bez kódu nespáruje ani s pravým původem');
     const web = await post(url, { Origin: 'https://evil.example' });
     assert.equal(web.status, 403, 'web se za rozšíření nevydává');
     const bezPuvodu = await post(url);

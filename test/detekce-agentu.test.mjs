@@ -8,7 +8,7 @@ import { domovyCodexu } from '../src/connectors/codex.js';
 import { agentniProcesy, vedeKonverzaci } from '../src/connectors/processes.js';
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
-import { rozbalCestu } from '../src/koreny-prepisu.js';
+import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { startTestServer, api, tempDir, waitFor, writeJsonl, fakeDatastore } from './helpers.mjs';
@@ -236,4 +236,13 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     agent.kill();
     await srv.close();
   }
+});
+
+test('kořeny přepisů mají strop – podvržené cesty z hooků nevyčerpají sledování souborů', () => {
+  const k = createKorenyPrepisu(['/a/projects'], { zmena() {}, max: 3 });
+  assert.equal(k.pridej('/b/projects'), true);
+  assert.equal(k.pridej('/b/projects'), false, 'tentýž kořen podruhé ne');
+  assert.equal(k.pridej('/c/projects'), true);
+  assert.equal(k.pridej('/d/projects'), false, 'nad strop se nepřidá');
+  assert.equal(k.seznam().length, 3);
 });
