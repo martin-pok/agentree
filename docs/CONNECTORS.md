@@ -129,7 +129,7 @@ ve složce, o které Agenteeq neví. Proto:
 - **Zdroj:** `<kořen>/<projekt>/<session-id>.jsonl` (hloubka 1), kořeny viz „Pojistka“ výše – výchozí `~/.claude/projects`. Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
-- **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“ (místní časová zóna).
+- **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“, u vzdálenější obnovy i s dnem („resets Oct 9, 5pm“) a ze starší podoby s časem za svislítkem (místní časová zóna; nerozpoznaný tvar = bez času obnovy, `parseResets`).
 - **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s – nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agenteeq-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
 
@@ -245,14 +245,14 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Webové aplikace – `extension/` + `src/connectors/web.js` 🧪
 
-- **Ověření webové služby (od 0.26.0):** okno rozšíření → *Ověřit tuto stránku* ukáže, co adaptér
+- **Ověření webové služby (od 0.26.0):** okno rozšíření → řádek *tato karta* → *Počty nesedí? Ověřit stránku* (od 0.29.0 samostatný pohled) ukáže, co adaptér
   na stránce našel a čím (přesným selektorem služby, nebo obecnou zálohou), a uloží anonymizovaný
   vzorek stránky. Vzorek v `test/fixtures/web/` je regresní test adaptéru. Služba smí dostat ✅
   až s potvrzeným vzorkem – do té doby 🧪, ať je to zadrátované sebelíp.
 - Rozšíření Chrome MV3 sleduje stránky (MutationObserver) a posílá **jen stav a počty**: `site`, `conversationId`, `url`, `generating`, `counts: { user, assistant }`, `model`, `limit` na `http://127.0.0.1:4620/api/ingest/web` s tokenem. Text zpráv ani název konverzace neodesílá (od 0.25.0, rozhodnutí vlastníka produktu – `docs/ACCOUNTS.md`). Server zahodí text i od starší verze rozšíření a webová konverzace nemá přepis.
 - **Napojení tlačítkem:** Nastavení → Napojené modely → Napojit u webového chatu otevře službu v prohlížeči; první stav z ní napojení potvrdí.
-- **Párování:** Dashboard vytvoří jednorázový 16znakový kód platný 10 minut. Uživatel jej vloží do okna rozšíření; `POST /api/extension/pair` ho jednou vymění za lokální ingest token. Token není v `/api/state`, URL ani argumentech procesu.
-- **Adaptéry:** ChatGPT (`[data-message-author-role]`, `stop-button`), Claude.ai (`[data-testid="user-message"]`, `[data-is-streaming]`), Gemini (`user-query`, `model-response`); ostatní generický adaptér podle atributů/tříd a tlačítka Stop.
+- **Párování (od 0.29.0 bez kódu):** rozšíření o spárování požádá samo (`POST /api/extension/pripojit`). Server mu vydá token jen tehdy, když jeho původ `chrome-extension://<ID>` odpovídá ID z Chrome Web Store (`public/js/obchod.js`) nebo ID složky, kterou připravila aplikace (`src/platform.js#idRozbalenehoRozsireni`). Jiná kopie dostane 409 a spáruje se postaru: Nastavení vytvoří jednorázový 16znakový kód platný 10 minut, uživatel ho vloží do okna rozšíření a `POST /api/extension/pair` ho jednou vymění za token této instalace. Token není v `/api/state`, URL ani argumentech procesu.
+- **Adaptéry:** ChatGPT a Codex na webu (`chatgpt.com/codex`; oba `[data-message-author-role]`, `stop-button`), Claude.ai (`[data-testid="user-message"]`, `[data-is-streaming]`), Gemini (`user-query`, `model-response`); ostatní generický adaptér podle atributů/tříd a tlačítka Stop.
 - **Neověřeno proti živým webům.** Služby DOM často mění. Postup ověření je v `docs/TESTING.md`.
 - **Omezení:** port 4620 je v manifestu napevno; u stránek s virtualizovaným seznamem zpráv jsou počty jen z vykreslených zpráv.
 

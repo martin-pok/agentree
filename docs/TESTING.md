@@ -7,6 +7,7 @@ npm test          # node:test, sériově, bez sítě, nad dočasnými fixturami
 npm run check     # node --check pro všechny .js/.mjs
 npm run smoke     # balíček: pack → instalace do dočasného prefixu → start s dočasnými složkami → API a statické soubory
 npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno rozšíření)
+npm run qa:tvary     # tvar (zaoblení) každého ovládacího prvku na vykreslené ploše: aplikace, web, okno rozšíření; pravidla v docs/DESIGN.md
 npm run qa:site      # prohlídka webu: Chromium/WebKit, light/dark, 360–1440 px, klávesnice a omezení pohybu
 npm run qa:extension # párování, výpadek, odebrání oprávnění a služby v popupu
 npm run qa:native    # macOS/Windows: rozbalí archiv z dist/, spustí aplikaci na vlastním volném portu, počká na server a vykreslené rozhraní v okně, nafotí ho a ověří, že po ukončení server skončil (CI: aplikace pro Mac, plášť pro Windows)

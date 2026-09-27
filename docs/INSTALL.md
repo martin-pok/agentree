@@ -10,7 +10,7 @@ Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně – tvo
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agenteeq → Ukončit Agenteeq** ukončí i lokální službu a agenty spuštěné z Agenteeq na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 
-První spuštění zobrazí pětikrokový průvodce. Vrátíš se k němu v Nastavení tlačítkem **Prohlédnout průvodce Agenteeq**. Co se změnilo v nové verzi, ukáže aplikace po aktualizaci sama; znovu to otevřeš kliknutím na verzi dole v postranním panelu. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
+První spuštění zobrazí šestikrokový průvodce. Vrátíš se k němu v Nastavení tlačítkem **Prohlédnout průvodce**. Co se změnilo v nové verzi, ukáže aplikace po aktualizaci sama; znovu to otevřeš kliknutím na verzi dole v postranním panelu. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
 
 Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
 
@@ -111,7 +111,7 @@ Vypnutím přepínače se spojení zavře. Když vypneš i druhou cestu, odpáru
 
 ## Licence
 
-Nastavení → Profil a vzhled → Licence → vlož klíč začínající `AGT1.` a klikni na **Aktivovat**. Klíč se ověřuje offline, bez připojení k internetu.
+Nastavení → Účet a vzhled → Licence → vlož klíč začínající `AGT1.` a klikni na **Aktivovat**. Klíč se ověřuje offline, bez připojení k internetu.
 
 ## Aktualizace a odinstalace
 

@@ -66,7 +66,7 @@ flowchart LR
 
 ### Životní cyklus
 
-1. `createApp()` načte `data.json` (vytvoří token pro hooky a rozšíření).
+1. `createApp()` načte `data.json` (vytvoří token pro hooky; rozšíření dostane vlastní token až při spárování).
 2. `start()` spustí všechny konektory paralelně (`Promise.allSettled` – chyba jednoho neblokuje ostatní).
 3. Po úvodním skenu: `store.reevaluate()`, `store.ready = true`, `alerts.start()` si zapamatuje výchozí stavy (staré události tak nevyvolají notifikace), kontrola rozpočtů.
 4. Časovače: přehodnocení stavů 5 s (klidné konverzace starší než den jednou za minutu), průchod souborů 10 s jako pojistka proti ztraceným událostem watcheru – nové a hodinu psané soubory pokaždé, starší při každém šestém průchodu; nezměněný soubor se znovu nesouhrnuje. Seznam konektorů 5 s, rozpočty 1 h. Výpis procesů (`ps`) sdílejí konektory procesů a lokálních agentů; do okna jde čas startu procesu, ne tikající doba běhu. Chyba pravidelné úlohy se jednou zapíše do logu.
@@ -86,14 +86,16 @@ Konektor nastavuje fakta, `deriveStatus()` z nich určí stav v tomto pořadí:
 | Priorita | Stav | Podmínka |
 |---|---|---|
 | 1 | `limited` | `limit.reached` a (čas obnovy v budoucnu, nebo bez času obnovy a < 5 h) |
-| 2 | `needs_input` | `pending` (povolení, otázka, plán) mladší než 12 h |
-| 3 | `working` | `running` a poslední známka běhu mladší než `staleMs` |
-| 4 | `idle`/`archived` | `ended` (SessionEnd) |
-| 5 | `waiting` | poslední aktivita < 3 h |
-| 6 | `idle` | < 24 h |
-| 7 | `archived` | starší |
+| 2 | `failed` | `failure` (spuštění skončilo chybou) mladší než 24 h, pokud agent od té doby znovu nezačal pracovat |
+| 3 | `needs_input` | `pending` (povolení, otázka, plán) mladší než 12 h |
+| 4 | `waiting` | `proces` – agent známý jen z běžícího procesu, zatím bez přepisu (`src/bezici-agenti.js`) |
+| 5 | `working` | `running` a poslední známka běhu mladší než `staleMs` |
+| 6 | `idle`/`archived` | `ended` (SessionEnd) |
+| 7 | `waiting` | poslední aktivita < 3 h |
+| 8 | `idle` | < 24 h |
+| 9 | `archived` | starší |
 
-`staleMs` podle zdroje: Claude Code 30 min (konec tahu je v přepisu explicitní – `end_turn`, přerušení, chyba API, hook `Stop`; model může několik minut generovat bez zápisu), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, web 45 s (heartbeat).
+`staleMs` podle zdroje: Claude Code 30 min (konec tahu je v přepisu explicitní – `end_turn`, přerušení, chyba API, hook `Stop`; model může několik minut generovat bez zápisu), Codex 15 min, Cursor 10 min, CLI chaty 2–3 min, vzdálený Claude z Claude Desktopu 2 min, web 150 s (Chrome v kartě na pozadí pouští časovače jen jednou za minutu).
 
 Když `running` vyprší bez explicitního konce, stav je `waiting`/`idle` s příznakem `stale: true` a důvodem „Delší dobu bez aktivity“. **Takový přechod nikdy nevyvolá upozornění „dokončil úlohu“.**
 
@@ -101,7 +103,7 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 
 ## Klient (`public/js/`)
 
-- `app.js` – hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
+- `app.js` – hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/projekty`, `#/projekt/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/dovednosti`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
 - `state.js` – jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
 - `views/*.js` – každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
 - `charts.js` – plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.

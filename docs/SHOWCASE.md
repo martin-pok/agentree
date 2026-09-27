@@ -41,7 +41,7 @@ v `site/detail/rozmery.json` a stejné musí být ve `width`/`height` v `site/in
 3. V Chromu otevři `chrome://extensions`, zapni Režim pro vývojáře, zvol Načíst rozbalené a vyber zkopírovanou složku (na Macu lze vložit cestu přes ⇧⌘G).
 4. Rozšíření se s aplikací spáruje samo. Otevři podporovaný webový chat; jednotlivé služby lze v okně rozšíření vypnout.
 
-Alternativně `npm run build:extension` vytvoří ZIP v `dist/`; před načtením ho rozbal. Rozšíření zatím není v Chrome Web Store a selektory služeb mají stav beta. Browserové QA s atrapou Chrome API nepotvrzuje funkčnost všech živých webů.
+Alternativně `npm run build:extension` vytvoří ZIP v `dist/`; před načtením ho rozbal. Taková kopie má jiné ID, takže se nespáruje sama, ale jednorázovým kódem z téže karty. Rozšíření zatím není v Chrome Web Store a selektory služeb mají stav beta. Browserové QA s atrapou Chrome API nepotvrzuje funkčnost všech živých webů.
 
 ## Telefon
 

@@ -40,7 +40,7 @@ Uživatel zvolí projekt, pracovní složku a agenta. Server sestaví bezpečný
 
 ### Připojení další služby
 
-Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede krátký pairing flow rozšíření Chrome. Přihlašování do cizích služeb nedělá Agenteeq za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence.
+Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skutečně přijímá data. Pro webové služby vede instalace rozšíření Chrome, které se s aplikací od 0.29.0 spáruje samo (jednorázový kód zůstává jen jako záloha pro jiné kopie rozšíření). Přihlašování do cizích služeb nedělá Agenteeq za uživatele a nikdy nesbírá jeho heslo; používá existující přihlášení v prohlížeči nebo oficiální API klíč uložený v Klíčence.
 
 ## 4. Designový systém a vzhled
 
