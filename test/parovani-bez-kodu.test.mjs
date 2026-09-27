@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { idRozbalenehoRozsireni } from '../src/platform.js';
 import { startTestServer, tempDir } from './helpers.mjs';
@@ -14,7 +15,8 @@ const post = (url, headers = {}) => fetch(url, { method: 'POST', headers });
 
 test('ID rozbaleného rozšíření: SHA-256 skutečné cesty převedené na písmena a–p', async () => {
   const slozka = await tempDir('agenteeq-ext-');
-  const skutecna = await fs.realpath(slozka);
+  // Stejné rozbalení cesty jako v kódu: ve Windows se fs.realpath a fs.realpathSync liší u krátkých jmen (RUNNER~1).
+  const skutecna = realpathSync(slozka);
   const ocekavane = crypto.createHash('sha256').update(skutecna).digest('hex').slice(0, 32).replace(/[0-9a-f]/g, (c) => 'abcdefghijklmnop'[parseInt(c, 16)]);
   assert.equal(idRozbalenehoRozsireni(slozka, { jeWindows: false }), ocekavane);
   assert.match(idRozbalenehoRozsireni(slozka, { jeWindows: true }), /^[a-p]{32}$/);
