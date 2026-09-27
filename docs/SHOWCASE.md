@@ -34,8 +34,6 @@ v `site/detail/rozmery.json` a stejné musí být ve `width`/`height` v `site/in
   posouvání (`animation-timeline: view()`), kde to prohlížeč neumí, jsou prostě vidět.
   `npm run qa:site` měří, že tah prstem i kolečko přes hero i každou dlaždici posune stránku.
 
-Staré celé snímky obrazovek v `site/shots/` web už nepoužívá.
-
 ## Rozšíření pro Chrome
 
 1. Spusť běžnou aplikaci Agenteeq na portu 4620.
