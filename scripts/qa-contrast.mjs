@@ -144,6 +144,16 @@ for (const rezim of ['light', 'dark']) {
       await page.keyboard.press('Escape'); // „Co je nového“ po aktualizaci
       await page.waitForTimeout(500);
       vypis(`${rezim} ${sirka}px /${trasa}`, await page.evaluate(zmer, PRECHODY));
+      // Bez spojení: hlášení o výpadku a „data z …“ u živých bloků (i na tmavém pruhu stavu agentů).
+      // Server se nezastavuje – okno jen ztratí spojení a nový se mu nepovede navázat.
+      if (trasa === 'prehled') {
+        await page.route('**/api/**', (r) => r.abort());
+        app.server.closeAllConnections();
+        await page.waitForFunction(() => document.documentElement.classList.contains('is-stale') && !document.getElementById('offline').hidden, null, { timeout: 20000 });
+        await page.waitForTimeout(300);
+        vypis(`${rezim} ${sirka}px /${trasa} bez spojení`, await page.evaluate(zmer, PRECHODY));
+        await page.unroute('**/api/**');
+      }
       // Nastavení ukazují vždy jen jednu skupinu – měří se každá zvlášť, ať nic nezůstane neměřené.
       if (trasa === 'nastaveni') {
         const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));
