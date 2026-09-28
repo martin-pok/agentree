@@ -1,6 +1,6 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer, api } from './helpers.mjs';
+import { startTestServer, api, openStream, waitFor } from './helpers.mjs';
 
 // Čerstvá data po výpadku a uspání. Každý test drží jednu opravu; popis vady je u testu.
 
@@ -25,4 +25,20 @@ test('snímek stavu odvozuje stav konverzace v okamžiku dotazu, ne před uspán
   const x = snimek.sessions.find((v) => v.id === session.id);
   assert.notEqual(x.status, 'working', 'po 40 minutách bez známky běhu to není „pracuje“');
   assert.equal(x.stale, true, 'je to „delší dobu bez aktivity“, ne dokončená práce');
+});
+
+// Server posílal známku života jako komentář SSE („: ping“). EventSource komentáře do JavaScriptu
+// nepředá, takže okno nemělo jak poznat spojení, které tiše umřelo (Mac usnul, telefon změnil síť)
+// – a dál hlásilo „Připojeno“ nad starými daty. Známka života je proto pojmenovaná událost.
+test('živý proud posílá známku života jako událost, kterou prohlížeč uvidí', async (t) => {
+  mock.timers.enable({ apis: ['setInterval'] });
+  let s;
+  try { s = await startTestServer(); } catch (err) { mock.timers.reset(); throw err; }
+  t.after(async () => { await s.close(); mock.timers.reset(); });
+  const proud = await openStream(s.url);
+  t.after(() => proud.close());
+  await waitFor(() => proud.events.some((e) => e.event === 'hello'));
+  mock.timers.tick(15000);
+  const ping = await waitFor(() => proud.events.find((e) => e.event === 'ping'));
+  assert.ok(Number.isFinite(ping.data.now), 'nese čas serveru');
 });
