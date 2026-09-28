@@ -1,5 +1,14 @@
 # Changelog
 
+## Připravuje se (zatím nevydáno)
+
+### Vydání a testy
+
+- Oprava: build pro Windows četl verzi pláště z `Agenteeq.exe` až po smazání složky buildu
+  a chybu tiše nahradil verzí z `package.json`, takže CI hlásilo zjištěnou verzi u souboru,
+  který neexistoval. Verze se teď čte z hotového `.exe` před archivem a build skončí, když ji
+  nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
+
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
 ### Rozšíření se spáruje samo a má nové okno

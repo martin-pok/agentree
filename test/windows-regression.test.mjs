@@ -101,3 +101,57 @@ test('Windows: most pláště přežije start dokumentu bez <html> a třídy dop
   assert.ok(hned.tridy.has('is-desktop') && hned.tridy.has('is-windows'));
   assert.equal(hned.pozorovatele.length, 0);
 });
+
+// Build pro Windows dřív četl verzi z Agenteeq.exe až po smazání složky buildu a chybu tiše
+// nahradil verzí z package.json. CI pak vypsalo „Cannot find path …\Agenteeq.exe“ a hned pod
+// tím „Verze pláště: 0.29.0“ (běh 36351816717). Rozhodování je čistá funkce, takže se ověří
+// na Linuxu s podvrženým výstupem PowerShellu.
+test('Windows build: verze pláště, kterou se nepodařilo zjistit, se nehlásí jako zjištěná', async () => {
+  const { overitVerziPlaste, zjistitVerziPlaste, prikazVerzePlaste } = await import('../scripts/exe-version.mjs');
+
+  // Přesně stav z CI: soubor neexistuje, PowerShell skončí chybou a nic nevypíše.
+  const ci = {
+    status: 1, stdout: '',
+    stderr: "Get-Item : Cannot find path 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\agenteeq-win-build-x\\Agenteeq\\Agenteeq.exe' because it does not exist.\r\nAt line:1 char:1\r\n",
+  };
+  assert.throws(() => overitVerziPlaste(ci, '0.29.0'), (e) => /nepodařilo zjistit/.test(e.message) && /Cannot find path/.test(e.message));
+
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '\r\n', stderr: '' }, '0.29.0'), /nepodařilo zjistit: Agenteeq\.exe nevrátil FileVersion/, 'prázdný výstup není verze');
+  assert.throws(() => overitVerziPlaste({ error: Object.assign(new Error('spawnSync powershell.exe ENOENT'), { code: 'ENOENT' }), status: null, stdout: null, stderr: null }, '0.29.0'), /nepodařilo zjistit: PowerShell nešel spustit/);
+  assert.throws(() => overitVerziPlaste({ status: null, stdout: '', stderr: '' }, '0.29.0'), /nepodařilo zjistit: PowerShell skončil bez kódu/);
+  assert.throws(() => overitVerziPlaste(undefined, '0.29.0'), /nepodařilo zjistit/);
+
+  // Přečtená, ale jiná verze je nesoulad, ne „nepodařilo se zjistit“ – a build taky zastaví.
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '0.28.0\r\n', stderr: '' }, '0.29.0'),
+    (e) => /verzi 0\.28\.0, package\.json 0\.29\.0/.test(e.message) && !/nepodařilo zjistit/.test(e.message));
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '0.29.0.0', stderr: '' }, '0.29.0'), /0\.29\.0\.0/, 'razítko nese přesně verzi z package.json');
+
+  assert.equal(overitVerziPlaste({ status: 0, stdout: '0.29.0\r\n', stderr: '' }, '0.29.0'), '0.29.0');
+
+  // Cesta jde do PowerShellu proměnnou prostředí, ne vepsaná do příkazu, který by ji rozebral podruhé.
+  const exe = "C:\\Users\\O'Brien\\Design & Web\\Agenteeq\\Agenteeq.exe";
+  const { prikaz, argumenty, prostredi } = prikazVerzePlaste(exe);
+  assert.equal(prikaz, 'powershell.exe');
+  assert.ok(argumenty.every((a) => !a.includes('Design & Web')), 'cesta nesmí být součástí textu příkazu');
+  assert.match(argumenty.at(-1), /\$ErrorActionPreference = 'Stop'/, 'chybějící soubor musí skončit chybou, ne prázdnou verzí');
+  assert.match(argumenty.at(-1), /Get-Item -LiteralPath \$env:AGENTEEQ_PLAST_EXE/);
+  assert.deepEqual(prostredi, { AGENTEEQ_PLAST_EXE: exe });
+
+  // Složení: spustí se příkaz s cestou v prostředí a výsledek jde přes stejné rozhodnutí.
+  const volani = [];
+  const spust = (p, a, o) => { volani.push({ p, a, env: o.env }); return ci; };
+  assert.throws(() => zjistitVerziPlaste(exe, '0.29.0', { spust }), /nepodařilo zjistit/);
+  assert.equal(volani.length, 1);
+  assert.equal(volani[0].env.AGENTEEQ_PLAST_EXE, exe);
+  assert.equal(zjistitVerziPlaste(exe, '0.29.0', { spust: () => ({ status: 0, stdout: '0.29.0\r\n', stderr: '' }) }), '0.29.0');
+
+  // A samotný build: verze se ověří dřív, než vznikne archiv a než se smaže složka buildu,
+  // a žádná tichá záloha na verzi z package.json.
+  const build = await (await import('node:fs/promises')).readFile(new URL('../scripts/build-windows.mjs', import.meta.url), 'utf8');
+  const overeni = build.indexOf('zjistitVerziPlaste(path.join(balik, \'Agenteeq.exe\'), version)');
+  assert.ok(overeni > 0, 'build musí verzi pláště ověřit');
+  assert.ok(overeni < build.indexOf('Compress-Archive'), 'ověřit před archivem');
+  assert.ok(overeni < build.indexOf('fs.rm(build'), 'ověřit dřív, než se složka buildu smaže');
+  assert.doesNotMatch(build, /\|\|\s*version\s*\}/, 'selhání čtení se nesmí nahradit verzí z package.json');
+  assert.match(build, /catch \(chyba\) \{[\s\S]{0,300}process\.exit\(1\)/, 'při chybě build končí');
+});
