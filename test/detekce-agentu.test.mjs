@@ -312,6 +312,61 @@ test('sledování kořene, který ještě neexistuje, začne, jakmile složka vz
   assert.ok(zmeny.includes(null), 'po vzniku složky se ohlásí plný průchod');
 });
 
+// Kořen, jehož složka ještě neexistuje, ale rodič ano (Claude Code je nainstalovaný, projects/ založí až
+// první zpráva; CLAUDE_CONFIG_DIR běžícího procesu): dřív se sledování zkoušelo znovu jen každých 5 s,
+// takže nový agent se ukázal až po 5 s – mimo cíl 2 s z AGENTS.md. Teď rodiče hlídá nerekurzivní
+// „strážce“ a sledování začne, jakmile složka vznikne. Hodiny řídí test: opakování je hodina daleko,
+// takže projít může jen strážce.
+test('sledování kořene převezme novou složku hned, bez čekání na opakování', async (t) => {
+  const rodic = path.join(await tempDir('agenteeq-strazce-'), 'claude cfg');
+  await fs.mkdir(rodic);
+  const koren = path.join(rodic, 'projects');
+  const zmeny = [];
+  const w = watchTree(koren, (soubor) => zmeny.push(soubor), { retryMs: 3_600_000, hlidatVznik: true });
+  t.after(() => w.close());
+  assert.equal(w.active, false);
+  assert.equal(w.strazi, rodic, 'hlídá se přímý rodič');
+  const pokusy = w.pokusy;
+
+  // Klid: soubory, které Claude Code píše vedle (todos, statsig…), nevyvolají žádný pokus navíc.
+  for (let i = 0; i < 50; i++) await fs.writeFile(path.join(rodic, `vedle-${i}.json`), '{}');
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(w.pokusy, pokusy, 'jiná položka v rodiči sledování nezkouší');
+
+  const zacatek = Date.now();
+  await writeJsonl(path.join(koren, '-Design---Web', 'a.jsonl'), [{}]);
+  await waitFor(() => w.active, 2000);
+  assert.ok(Date.now() - zacatek < 2000, 'do 2 s');
+  assert.ok(zmeny.includes(null), 'plný průchod najde i soubor zapsaný před začátkem sledování');
+  assert.equal(w.strazi, '', 'strážce po převzetí skončí');
+
+  // Strážce nikdy nad složkou, která chybí taky (nehlídá se nic širšího než rodič), ani nad domovem.
+  const hluboko = watchTree(path.join(rodic, 'chybi', 'projects'), () => {}, { retryMs: 3_600_000, hlidatVznik: true });
+  t.after(() => hluboko.close());
+  assert.equal(hluboko.strazi, '');
+  const domov = watchTree(path.join(rodic, 'projects-2'), () => {}, { retryMs: 3_600_000, hlidatVznik: true, bezStrazce: [rodic] });
+  t.after(() => domov.close());
+  assert.equal(domov.strazi, '', 'domov uživatele se nehlídá ani nerekurzivně');
+});
+
+// Totéž celou cestou: aplikace s nainstalovaným Claude Code bez jediné konverzace ukáže první
+// konverzaci do 2 s. Opakování sledování je 5 s po startu a plný průchod v testech 60 s, takže
+// do 2 s od startu ji může přinést jen strážce.
+test('první konverzace v kořeni bez projects/ se ukáže do 2 s', async () => {
+  const home = await tempDir('agenteeq-src-');
+  await fs.mkdir(path.join(home, '.claude'));
+  const srv = await startTestServer({ AGENTEEQ_SOURCE_HOME: home });
+  try {
+    const id = crypto.randomUUID();
+    const zacatek = Date.now();
+    await writeJsonl(path.join(home, '.claude', 'projects', '-tmp-w', `${id}.jsonl`), [radek(id, '/tmp/w')]);
+    await waitFor(() => srv.app.store.summary(`claude-code:${id}`), 2000);
+    assert.ok(Date.now() - zacatek < 2000);
+  } finally {
+    await srv.close();
+  }
+});
+
 test('kořeny přepisů mají strop – podvržené cesty z hooků nevyčerpají sledování souborů', () => {
   const k = createKorenyPrepisu(['/a/projects'], { zmena() {}, max: 3 });
   assert.equal(k.pridej('/b/projects'), true);

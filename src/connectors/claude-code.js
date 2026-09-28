@@ -343,6 +343,7 @@ export function createClaudeCodeConnector(ctx) {
   const queue = createFileQueue(sync, 40);
   const koreny = createKorenyPrepisu(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }), {
     zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
+    domov: config.sourceHome,
   });
 
   // Poslední úspěšná odpověď každého modelu ('' = model neznámý). Soubory se načítají souběžně,

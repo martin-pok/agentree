@@ -30,6 +30,9 @@
   (`/bin/sh -c … /opt/claude-code/bin/claude …`), a tak se jeden agent ukázal dvakrát. Agentem je
   teď jen běžící program – spustitelný soubor, nebo skript pod node/sh/python; `sh -c`, `sudo`,
   editor ani `ln` s cestou ke claude ne. Platí i pro Codex, Gemini, Qwen, Copilot a lokální modely.
+- Nový agent v kořeni přepisů, který ještě neexistoval (Claude Code zakládá `projects/` až s první
+  zprávou), se ukáže hned místo za 1–5 s: sledování rodiče pozná vznik složky. Naměřeno 5–6 ms
+  místo 1,1–4,7 s; v klidu stejně pokusů o sledování i CPU jako dřív.
 - Oprava: přehled běžících aplikací se ptal Ollamy natvrdo na `127.0.0.1:11434` a přehlížel
   `AGENTEEQ_OLLAMA_URL`. Teď jde stejnou cestou jako chat s Ollamou (`src/ollama.js`).
 

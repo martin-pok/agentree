@@ -109,7 +109,10 @@ ve složce, o které Agenteeq neví. Proto:
   Proměnné, které aplikace z Finderu nevidí, doplní za běhu: přihlašovací shell (sonda programů),
   **prostředí běžícího procesu** (macOS `ps -E`, Linux `/proc/<pid>/environ`) a **hook** Claude Code
   (`transcript_path` mimo známé kořeny přidá svůj kořen). Tatáž konverzace ze dvou kořenů
-  (symlink) se čte jen jednou.
+  (symlink) se čte jen jednou. Kořen, který ještě neexistuje (Claude Code zakládá `projects/` až
+  s první zprávou), převezme sledování hned po vzniku: přímého rodiče hlídá nerekurzivní strážce,
+  který reaguje jen na položku se jménem kořene (`src/watch.js#watchTree`, `hlidatVznik`). Nic
+  širšího než rodič a nikdy domov; když chybí i rodič, platí opakování po 5 s jako dřív.
 - **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
   gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
   2.1.283) se páruje s konverzací téhož nástroje. Procesem agenta je jen běžící program: spustitelný

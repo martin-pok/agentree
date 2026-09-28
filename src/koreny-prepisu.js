@@ -16,10 +16,11 @@ import { statSafe } from './util.js';
 // proto má jejich počet strop – ani nesmyslné nebo podvržené cesty nevyčerpají sledování souborů.
 export const MAX_KORENU = 24;
 
-export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU }) {
+export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU, domov = '' }) {
   const koreny = new Map(); // absolutní cesta → watcher | null
   let sleduje = false;
-  const sleduj = (koren) => watchTree(koren, (soubor) => zmena(koren, soubor));
+  // Kořen, který ještě neexistuje, převezme sledování hned po vzniku (strážce nad rodičem, src/watch.js).
+  const sleduj = (koren) => watchTree(koren, (soubor) => zmena(koren, soubor), { hlidatVznik: true, bezStrazce: [domov] });
 
   function pridej(cesta) {
     if (typeof cesta !== 'string' || !cesta) return false;

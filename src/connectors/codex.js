@@ -118,6 +118,7 @@ export function createCodexConnector(ctx) {
   const domovy = new Set(domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }));
   const koreny = createKorenyPrepisu([...domovy].map((d) => path.join(d, 'sessions')), {
     zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
+    domov: config.sourceHome,
   });
   const titles = new Map();
   const indexTails = new Map(); // soubor indexu → JsonlTail
