@@ -24,7 +24,7 @@ import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
-import { plynulePosouvani } from './plynule-posouvani.js';
+import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
@@ -175,7 +175,7 @@ function navigate() {
     current.mount(viewEl, r.params, r.query);
     // Ukázka v rámu na webu je jen na dívání: fokus by se jí nepatřilo brát stránce kolem.
     if (!firstNav && !UKAZKA) {
-      window.scrollTo({ top: 0 });
+      skocNa(0);
       titleEl.focus({ preventScroll: true });
     }
   } else {

@@ -476,9 +476,8 @@ for (const engine of engines) {
 
       await p.mouse.wheel(0, 1200);
       await p.waitForTimeout(60);
-      // WebKit může změnu inline scroll-behavior vyhodnotit až po dalším vykreslení.
-      // Výslovný okamžitý skok ověřuje skutečné přerušení dojezdu, ne časování CSS.
-      await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      // Otestovat produkční skok aplikace, ne napodobeninu v testu.
+      await p.evaluate(async () => (await import('/js/plynule-posouvani.js')).skocNa(0));
       await p.waitForTimeout(600);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
       const koleckoDojede = async (krok, zprava) => {

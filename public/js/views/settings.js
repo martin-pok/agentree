@@ -12,6 +12,7 @@ import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
 import { JE_MAC, SYSTEM } from '../system.js';
+import { skocNa } from '../plynule-posouvani.js';
 
 const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
@@ -227,7 +228,8 @@ function calloutExtension() {
   // přesně a u skrytého okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou.
   const instant = document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 96);
-  window.scrollTo({ top, behavior: instant ? 'instant' : 'smooth' });
+  if (instant) skocNa(top);
+  else window.scrollTo({ top, behavior: 'smooth' });
   card.classList.remove('is-called-out');
   void card.offsetWidth;
   card.classList.add('is-called-out');
@@ -317,7 +319,7 @@ function mount(el) {
       const skupina = el.querySelector('.set-group:not([hidden])').getBoundingClientRect();
       const vedle = menu.right <= skupina.left; // počítač: menu vlevo; mobil: lišta nad obsahem
       const posun = skupina.top - (vedle ? menu.top : menu.bottom + 16);
-      if (posun < -1) window.scrollTo({ top: window.scrollY + posun, behavior: 'instant' });
+      if (posun < -1) skocNa(window.scrollY + posun);
       return;
     }
     const pick = e.target.closest('[data-avatar-pick]');
