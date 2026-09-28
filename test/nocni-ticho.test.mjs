@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { jeNocniTicho, minutyDne, normalizujTicho } from '../src/nocni-ticho.js';
-import { AlertEngine, NARAZ, textSouhrnu } from '../src/alerts.js';
+import { AlertEngine, NARAZ, PROBUZENI, textSouhrnu } from '../src/alerts.js';
 import { Store } from '../src/store.js';
 import { loadConfig } from '../src/config.js';
 import { normalizeData } from '../src/datastore.js';
@@ -200,6 +200,28 @@ test('když se v noci všechno vyřeší samo, ráno nepřijde nic; jedna konver
   assert.equal(souhrn.route, '#/agent/claude-code%3Ajedina');
 });
 
+test('po probuzení Macu souhrn počká, až zdroje doženou noc – co se mezitím vyřešilo, v něm není', async () => {
+  const p = await prostredi();
+  p.hodiny.t = cas(23, 0);
+  p.alerts.tick();
+  const a = p.zepta('a', 'Refaktor');
+  p.zepta('b', 'Migrace');
+  p.hodiny.t = cas(23, 0, 28, 5);
+  p.alerts.tick();
+  // Mac spal do 7:30. Hned po probuzení je ticho pryč, ale stav konverzací je ještě z večera.
+  p.hodiny.t = cas(7, 30, 29);
+  assert.deepEqual(p.alerts.tick(), [], 'první průchod po probuzení nic neposílá');
+  p.hodiny.t = cas(7, 30, 29, 8);
+  p.vyres(a); // zdroj dohnal noc: rozhodnutí padlo z telefonu
+  assert.deepEqual(p.alerts.tick(), []);
+  p.hodiny.t = cas(7, 30, 29, 15);
+  const [souhrn, ...navic] = p.alerts.tick();
+  assert.equal(navic.length, 0);
+  assert.equal(souhrn.title, 'Během nočního ticha: 1× čeká na rozhodnutí');
+  assert.equal(souhrn.body, 'Migrace');
+  assert.equal(PROBUZENI.cekaniMs, 15e3);
+});
+
 test('souhrn po tichu přežije restart aplikace a vypnutí ticha pošle souhrn hned', async () => {
   const p = await prostredi();
   p.hodiny.t = cas(23, 0);
@@ -254,7 +276,7 @@ test('text souhrnu: pořadí podle naléhavosti a zkrácený výčet', () => {
   assert.equal(textSouhrnu('burst', osm).body, 'U0, U1, U2 a 5 dalších');
 });
 
-test('náraz: víc než tři za minutu → první tři samostatně, zbytek v jednom souhrnu po uklidnění', async () => {
+test('náraz: víc než tři za minutu → první tři samostatně, zbytek v jednom souhrnu, jakmile je místo', async () => {
   const p = await prostredi({ quietHours: false });
   const t0 = cas(12, 0);
   const s = [];
@@ -266,16 +288,16 @@ test('náraz: víc než tři za minutu → první tři samostatně, zbytek v jed
   assert.deepEqual(p.datastore.data.alerts.map((a) => a.muted || null), [null, null, null, 'burst', 'burst', 'burst']);
   p.hodiny.t = t0 + 8000;
   p.vyres(s[4]); // jedno z odložených se mezitím vyřešilo
-  p.hodiny.t = t0 + 14999;
-  assert.deepEqual(p.alerts.tick(), [], 'nával se ještě neuklidnil (poslední před 9,999 s)');
-  p.hodiny.t = t0 + 15000;
+  p.hodiny.t = t0 + 59999;
+  assert.deepEqual(p.alerts.tick(), [], 'v minutě od prvního oznámení už místo není');
+  p.hodiny.t = t0 + 60000;
   const [souhrn, ...navic] = p.alerts.tick();
   assert.equal(navic.length, 0);
   assert.equal(souhrn.digest, 'burst');
   assert.equal(souhrn.title, 'Další upozornění: 2× čeká na rozhodnutí');
   assert.equal(souhrn.body, 'Úloha 3, Úloha 5');
   assert.equal(p.oznameni.length, 4, 'tři samostatná a jeden souhrn místo série');
-  p.hodiny.t = t0 + 30000;
+  p.hodiny.t = t0 + 65000;
   assert.deepEqual(p.alerts.tick(), []);
 });
 
@@ -283,22 +305,23 @@ test('náraz: stálý přísun nikdy nepřekročí tři oznámení za minutu a n
   const p = await prostredi({ quietHours: false });
   const t0 = cas(12, 0);
   let alertu = 0;
-  for (let t = t0; t <= t0 + 180e3; t += 5000) {
+  // Tři minuty přijde upozornění každých 5 s, pak minutu nic. Průchod tick() jde po 5 s jako v aplikaci.
+  for (let t = t0; t <= t0 + 240e3; t += 5000) {
     p.hodiny.t = t;
-    p.zepta(`r${t}`, `Úloha ${(t - t0) / 1000}`);
-    alertu++;
-    p.alerts.tick(t);
+    if (t <= t0 + 180e3) { p.zepta(`r${t}`, `Úloha ${(t - t0) / 1000}`); alertu++; }
+    p.alerts.tick();
   }
-  p.hodiny.t = t0 + 400e3;
-  p.alerts.tick();
   const casy = p.oznameni.map((n) => n.at);
   for (const t of casy) assert.ok(casy.filter((x) => x >= t && x < t + NARAZ.oknoMs).length <= NARAZ.max, `v minutě od ${(t - t0) / 1000} s víc než tři oznámení`);
   const souhrny = p.datastore.data.alerts.filter((a) => a.kind === 'digest');
   const samostatne = p.datastore.data.alerts.filter((a) => a.kind !== 'digest' && !a.muted).length;
   assert.equal(samostatne + souhrny.reduce((n, a) => n + a.count, 0), alertu, 'každé upozornění přišlo samo, nebo je v souhrnu');
-  // Nával se neuklidní, takže souhrn odejde minutu po prvním odloženém (15 s → 75 s, 90 s → 150 s);
-  // poslední až po uklidnění.
-  assert.deepEqual(souhrny.map((d) => (d.at - t0) / 1000), [75, 150, 400]);
+  // Souhrn odejde, jakmile nejstarší oznámení vypadne z minuty: 0 s → 60 s, 65 s → 120 s, 125 s → 180 s.
+  assert.deepEqual(souhrny.map((d) => (d.at - t0) / 1000), [60, 120, 180]);
+  for (const d of souhrny) {
+    const prvniOdlozene = Math.min(...p.datastore.data.alerts.filter((a) => a.muted === 'burst' && a.at <= d.at && a.at > d.at - NARAZ.oknoMs).map((a) => a.at));
+    assert.ok(d.at - prvniOdlozene <= NARAZ.oknoMs, 'souhrn nejpozději minutu po prvním odloženém');
+  }
 });
 
 test('náraz těsně před tichem počká na ranní souhrn; zkušební upozornění ticho dodrží, náraz ne', async () => {
@@ -311,7 +334,10 @@ test('náraz těsně před tichem počká na ranní souhrn; zkušební upozorně
   p.hodiny.t = cas(22, 0, 28, 5);
   assert.deepEqual(p.alerts.tick(), [], 've 22:00 už je ticho – žádný souhrn nárazu');
   assert.ok(p.datastore.data.alerts.filter((a) => a.muted).every((a) => a.muted === 'quiet'));
+  // Mezi 22:00 a 7:00 neproběhl žádný průchod – Mac spal. Souhrn počká 15 s, než zdroje doženou noc.
   p.hodiny.t = cas(7, 0, 29);
+  assert.deepEqual(p.alerts.tick(), []);
+  p.hodiny.t = cas(7, 0, 29, 15);
   const [rano] = p.alerts.tick();
   assert.equal(rano.title, 'Během nočního ticha: 2× čeká na rozhodnutí');
 

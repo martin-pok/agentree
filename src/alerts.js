@@ -4,13 +4,17 @@ import { jeNocniTicho } from './nocni-ticho.js';
 
 const KEY_TTL = 60 * DAY;
 
-// Náraz: v klouzavé minutě přijdou nejvýš tři samostatná oznámení. Co přijde navíc, počká
-// a spojí se do jednoho souhrnu. Ten odejde, jakmile se nával na 10 s uklidní, nejpozději
-// minutu po prvním odloženém upozornění – rozhodnutí tak nečeká déle, než je nutné.
-export const NARAZ = { max: 3, oknoMs: 60e3, klidMs: 10e3 };
+// Náraz: v klouzavé minutě přijdou nejvýš tři oznámení (souhrn se počítá taky). Co se nevejde,
+// počká a spojí se do jednoho souhrnu, který odejde, jakmile je v minutě zase místo – nejpozději
+// minutu po prvním odloženém upozornění.
+export const NARAZ = { max: 3, oknoMs: 60e3 };
 // Souhrn bere jen upozornění z posledních 24 hodin. Starší (aplikace byla dny vypnutá) do
 // ranního přehledu nepatří – zůstávají v seznamu upozornění.
 const SOUHRN_STARI = 24 * HOUR;
+// Probuzení: průchody jdou po 5 s, takže mezera přes minutu znamená uspaný Mac. Zdroje pak dostanou
+// 15 s (víc než plný průchod po 10 s), aby dohnaly, co se mezitím stalo – jinak by souhrn mohl
+// hlásit rozhodnutí, které už padlo.
+export const PROBUZENI = { mezeraMs: 60e3, cekaniMs: 15e3 };
 
 // Skupiny v souhrnu, seřazené od nejnaléhavější. Tvar „2× …“ se neskloňuje, takže věta sedí
 // pro jakýkoli počet.
@@ -57,6 +61,9 @@ export class AlertEngine {
     this.turnStart = new Map();
     // Kdy odešla oznámení v poslední minutě. Jen v paměti – po restartu se počítá od nuly.
     this.ukazane = [];
+    // Poslední průchod tick() a do kdy po probuzení Macu se souhrn odkládá.
+    this.posledniTick = 0;
+    this.cekatDo = 0;
   }
 
   get settings() {
@@ -222,9 +229,11 @@ export class AlertEngine {
     return this.datastore.data.alerts.filter((a) => a.muted === duvod && !a.digested);
   }
 
-  // Volá se pravidelně (src/app.js). Po skončení ticha pošle ranní souhrn, po uklidnění nárazu
-  // souhrn nárazu. Vrací odeslané souhrny.
+  // Volá se po 5 s (src/app.js). Po skončení ticha pošle ranní souhrn, u nárazu souhrn, jakmile je
+  // v minutě místo. Vrací odeslané souhrny.
   tick(now = this.now()) {
+    if (this.posledniTick && now - this.posledniTick > PROBUZENI.mezeraMs) this.cekatDo = now + PROBUZENI.cekaniMs;
+    this.posledniTick = now;
     const naraz = this.odlozene('burst');
     if (jeNocniTicho(this.settings, now)) {
       // Nával, který nestihl odejít před začátkem ticha, počká na ranní souhrn.
@@ -232,12 +241,10 @@ export class AlertEngine {
       if (naraz.length) this.datastore.save();
       return [];
     }
+    if (now < (this.cekatDo || 0)) return [];
     const odeslane = [this.souhrn('quiet', this.odlozene('quiet'), now)];
-    if (naraz.length) {
-      const prvni = Math.min(...naraz.map((a) => a.at));
-      const posledni = Math.max(...naraz.map((a) => a.at));
-      if (now - posledni >= NARAZ.klidMs || now - prvni >= NARAZ.oknoMs) odeslane.push(this.souhrn('burst', naraz, now));
-    }
+    this.ukazane = this.ukazane.filter((t) => now - t < NARAZ.oknoMs);
+    if (naraz.length && this.ukazane.length < NARAZ.max) odeslane.push(this.souhrn('burst', naraz, now));
     return odeslane.filter(Boolean);
   }
 
