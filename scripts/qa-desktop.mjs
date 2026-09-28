@@ -14,7 +14,15 @@ const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', '
 // 620–1200 px při šířce 881, 1180 i 1440 px, česky i anglicky. Dřív se nabídka potichu rolovala
 // a na okně 1440 × 950 Nastavení schovala celé. Měří se nejhorší obsah: dva řádky zdrojů tokenů,
 // patička s hlášením o výpadku spojení a nakonec i víc zdrojů, než se kdy vypíše. Profil, který
-// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“.
+// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“. Zátěžový případ
+// (patička o 48 px vyšší, jako by prohlížeč měřil písmo jinak) ověří, že profil místo ořezu
+// zvolí menší podobu, nebo se schová celý.
+//
+// Po změně velikosti okna se měří až v ustáleném stavu: okno má novou velikost, panel výšku
+// podle ní a rozvržení panelu se dva snímky po sobě nezměnilo. Hned po velké změně okna má i
+// Chromium panel už v nové výšce, ale profil ještě ve staré podobě (avatar 80 px v kontejneru
+// 60 px) – ustálí se až o snímek později. Pevné čekání proto nestačilo a WebKit na pomalém stroji
+// měřil ještě během přeskládání (jednorázově „Nastavení skryté o 86 px“ při 1180 × 650).
 async function zkontrolujPostranniPanel(browser, engine, errors) {
   const server = await startTestServer();
   try {
@@ -43,9 +51,9 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
         const nr = nav.getBoundingClientRect();
         const polozky = [...nav.querySelectorAll('a')].filter((a) => getComputedStyle(a).display !== 'none');
         const posledni = polozky.at(-1).getBoundingClientRect();
-        const profil = document.querySelector('.profile');
-        const pr = profil.getBoundingClientRect();
-        const obsahProfilu = Math.max(...[...profil.children].map((c) => c.getBoundingClientRect().bottom));
+        const pr = document.querySelector('.profile').getBoundingClientRect();
+        const obsah = document.querySelector('.profile-in');
+        const schovany = getComputedStyle(obsah).visibility === 'hidden';
         const zdroje = document.querySelector('.budget-src');
         return {
           polozek: polozky.length,
@@ -53,7 +61,8 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           skryto: Math.round(Math.max(0, posledni.bottom - Math.min(nr.bottom, dole), nr.top - posledni.top)),
           roluje: nav.scrollHeight > nav.clientHeight + 1,
           paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
-          profil: Math.round(Math.max(0, obsahProfilu - (pr.bottom - parseFloat(getComputedStyle(profil).paddingBottom)))),
+          schovany,
+          profil: schovany ? 0 : Math.round(Math.max(0, obsah.getBoundingClientRect().bottom - pr.bottom)),
           pres: Math.round(Math.max(0, pr.bottom - nr.top)),
           radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
         };
@@ -65,18 +74,35 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
         [' bez spojení', () => document.getElementById('side-foot').insertAdjacentHTML('afterbegin', '<span class="source-state" data-qa-panel><i class="dot dot--down"></i>Bez spojení se serverem</span>')],
         // K tomu víc zdrojů, než aplikace vypisuje: rozpis má i tak nejvýš dva celé řádky.
         [' bez spojení a se šesti zdroji', () => { document.querySelector('.budget-src').insertAdjacentHTML('beforeend', '<span data-qa-panel>Gemini CLI <b>1 M</b></span><span data-qa-panel>Qwen Code <b>1 M</b></span><span data-qa-panel>Copilot CLI <b>1 M</b></span><span data-qa-panel>Ollama <b>1 M</b></span>'); }],
+        // Zátěž: patička o 48 px vyšší. Profil smí ustoupit do menší podoby nebo se schovat, ne oříznout.
+        [' s patičkou vyšší o 48 px', () => document.getElementById('side-foot').insertAdjacentHTML('beforeend', '<div data-qa-panel style="height:48px"></div>')],
       ]) {
         await p.evaluate(priprava);
         for (const sirka of [881, 1180, 1440]) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
-            await p.waitForTimeout(30);
+            await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 96)) < 1, [sirka, vyska]);
+            await p.evaluate(() => new Promise((hotovo) => {
+              const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
+                .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
+              let pred = '';
+              let stejne = 0;
+              (function snimek() {
+                const ted = podpis();
+                stejne = ted === pred ? stejne + 1 : 0;
+                pred = ted;
+                if (stejne >= 2) hotovo(); else requestAnimationFrame(snimek);
+              })();
+            }));
             const m = await zmer();
             const kde = `${engine} ${jazyk} ${sirka}×${vyska}${pripad}`;
             if (m.polozek !== 8 || !/nastaveni$/.test(m.posledni)) chyby.push(`${kde}: v nabídce je ${m.polozek} položek, poslední ${m.posledni}`);
             if (m.skryto || m.roluje) chyby.push(`${kde}: Nastavení je skryté o ${m.skryto} px${m.roluje ? ', nabídka roluje' : ''}`);
             if (m.paticka) chyby.push(`${kde}: patička přečnívá z panelu o ${m.paticka} px`);
             if (m.profil) chyby.push(`${kde}: profil je oříznutý o ${m.profil} px`);
+            // V běžném stavu má panel na každé výšce místo aspoň na profil na jeden řádek.
+            if (!pripad && m.schovany) chyby.push(`${kde}: profil se schoval, ač má být vidět`);
             if (m.pres) chyby.push(`${kde}: profil zasahuje do nabídky o ${m.pres} px`);
             if (m.radkyZdroju > 2) chyby.push(`${kde}: rozpis zdrojů má ${m.radkyZdroju} řádky`);
           }

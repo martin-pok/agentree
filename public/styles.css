@@ -186,12 +186,8 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    z něj nesmí vylézt (`overflow: hidden`) a navigace se nikdy nezmenší ani neroluje – je to
    jediná cesta po aplikaci a poslední položka (Nastavení) musí být vidět vždycky. Dřív se
    nabídka při nedostatku místa rolovala uvnitř bez náznaku a na okně 1440 × 950 schovala
-   Nastavení celé. Místo teď uvolňuje profil: podle výšky okna se z vysokého sloupce zmenší na
-   střední, překlopí do řádku a na nejnižším okně do jediného řádku bez rozpisu zdrojů (stupně
-   níže). Hranice stupňů jsou spočítané pro nejhorší obsah – úzký panel (240 px), dva řádky
-   zdrojů a patičku s hlášením o výpadku spojení – a hlídá je `npm run qa:desktop` pro okna
-   620–1200 px.
-   Vodorovné odsazení nese `--sb-x`, aby se k němu dal přiložit pruh aktivní položky. */
+   Nastavení celé. Místo teď uvolňuje profil (viz níže) a hlídá to `npm run qa:desktop` pro okna
+   620–1200 px. Vodorovné odsazení nese `--sb-x`, aby se k němu dal přiložit pruh aktivní položky. */
 .sidebar { --sb-x: 24px; position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); margin: 24px 0 24px 24px; padding: 32px var(--sb-x) 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
 .sidebar > .brand, .sidebar > .side-foot { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
@@ -199,12 +195,18 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .brand-mark .bm-branch { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .brand-mark .bm-root { fill: var(--brass); }
 .brand-mark .bm-node { fill: var(--ink); }
-/* Profil je jediná část panelu, která smí ustoupit (`flex-shrink`). Stupně níže ho drží celý;
-   kdyby se přesto nevešel (větší systémové písmo), zmenší se on a ořízne dole – nikdy ne
-   navigace. Ořez je jen svislý a odsazení nahoře a dole je rezerva pro prstenec „pracuje“ kolem
-   avataru a obrys zaostření. `min-height` drží místo, dokud se profil nenačte, ať nabídka
-   neposkočí. */
-.profile { flex: 0 1 auto; min-height: 228px; margin-top: 18px; padding: 14px 0 6px; overflow-x: visible; overflow-y: clip; text-align: center; }
+/* Profil je jediná část panelu, která ustupuje. O jeho podobě nerozhoduje výška okna, ale místo,
+   které v panelu opravdu zbylo po značce, nabídce a patičce – ať prohlížeč změří písmo jakkoli
+   a ať má patička jeden řádek nebo tři. Vnější `.profile` je kontejner (`container-type: size`),
+   který si vezme volné místo, nejvýš tolik, kolik potřebuje podoba zvolená pro danou výšku okna
+   (`max-height` ve stupních níže). Vnitřní `.profile-in` si podle skutečné výšky kontejneru
+   vybere podobu (`@container profil`): vysoký sloupec, střední, řádek, jeden řádek – a když není
+   místo ani na ten, schová se celý. Nikdy se neořízne napůl a nikdy nevezme místo navigaci.
+   Kontejner má pevnou výšku nezávislou na obsahu, takže načtení profilu nabídkou nepohne.
+   Ořez je jen svislý: prstenec „pracuje“ kolem avataru smí přesahovat do stran. Odsazení uvnitř
+   je rezerva pro prstenec a obrys zaostření. */
+.profile { container: profil / size; flex: 1 1 0; min-height: 0; max-height: 300px; margin-top: 18px; overflow-x: visible; overflow-y: clip; }
+.profile-in { padding: 14px 0 6px; text-align: center; }
 .avatar { position: relative; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); display: grid; place-items: center; font: 400 28px/1 var(--f-display); letter-spacing: .02em; }
 .avatar.is-loading { background: var(--line-2); }
 .avatar::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--teal); opacity: 0; }
@@ -226,13 +228,13 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .budget-src b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .budget-src:hover span { color: var(--ink); }
 @media (max-width: 880px) { .budget-src { flex: 1 0 100%; grid-auto-flow: column; justify-content: start; gap: 4px 12px; margin-top: 4px; } }
-/* Nabídka se nikdy nezmenší (`flex-shrink: 0`) a nikdy neroluje. Místo navíc si vezme a položky
-   drží uprostřed mezi profilem a patičkou. Položka má výšku ze stupnice ovládacích prvků (40 px,
+/* Nabídka se nikdy nezmenší ani neroluje (`flex: none`). Místo, které zbude po profilu, se rozdělí
+   nad a pod ni (`margin-block: auto`), takže stojí uprostřed mezi profilem a patičkou. Položka má výšku ze stupnice ovládacích prvků (40 px,
    na nejnižším okně 32 px, na monitoru na výšku 48 px) a jeden řez písma ve všech stavech:
    aktivní stránku ukazuje plocha, barva a mosazný pruh, ne tučnější písmo, které by text posunulo.
    `grid-template-columns` musí být určené: bez něj si mřížka vezme šířku podle nejdelší položky,
    nabídka přeteče panel a odsazení vlevo a vpravo přestane sedět (na užším okně 16 px × 11 px). */
-.nav { flex: 1 0 auto; margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: center; align-content: safe center; }
+.nav { flex: none; margin-block: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: center; }
 .nav a { position: relative; display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 16px; border-radius: var(--r-full); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
 .nav a svg { width: 20px; height: 20px; flex: none; }
 /* Název se musí umět zkrátit. Bez toho roztlačí „Upozornění“ s odznakem „10+“ položku nad šířku
@@ -249,58 +251,72 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
 .nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-full); background: var(--teal-solid); color: #fff; font: 500 12px/24px var(--f-mono); text-align: center; }
 .nav-badge[data-tone='coral'] { background: var(--velvet-solid); color: #fff; }
-/* Stupně podle výšky okna. Na nižším okně ustupuje dekorace, ne navigace.
-   1. Profil zůstává ve sloupci, jen menší: avatar 56 px, bez pozdravu (jméno zůstává), menší
-      číslo. Ušetří 70 px a panel pod vysokým stupněm nezeje prázdnotou kolem nabídky. */
-@media (min-width: 881px) and (max-height: 989px) {
-  .profile { min-height: 0; }
-  .avatar { width: 56px; height: 56px; font-size: 20px; }
-  .avatar::after { inset: -5px; }
-  .welcome { margin-top: 10px; font-size: 0; }
-  .welcome b { font-size: 16px; }
-  .budget { margin-top: 12px; }
-  .budget-num { font-size: 28px; }
+/* Podoby profilu podle místa, které mu v panelu zbylo. Hranice jsou výška obsahu dané podoby
+   plus rezerva 12 px na rozdíly v měření písma mezi prohlížeči (vysoký 287 → 300, střední
+   217 → 230, řádek 136 → 148, jeden řádek 48 → 60 px; půl pixelu proti zaokrouhlení).
+   Střední: sloupec zůstává, avatar 56 px, bez pozdravu (jméno zůstává), menší číslo. */
+@container profil (height < 299.5px) {
+  .profile-in .avatar { width: 56px; height: 56px; font-size: 20px; }
+  .profile-in .avatar::after { inset: -5px; }
+  .profile-in .welcome { margin-top: 10px; font-size: 0; }
+  .profile-in .budget { margin-top: 12px; }
+  .profile-in .budget-num { font-size: 28px; }
 }
-/* 2. Profil v řádku: avatar vlevo, jméno, číslo a zdroje vedle něj. Ušetří dalších 80 px. */
-@media (min-width: 881px) and (max-height: 919px) {
+/* Řádek: avatar vlevo, jméno, číslo a zdroje vedle něj. */
+@container profil (height < 229.5px) {
+  .profile-in { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; padding-top: 0; text-align: left; }
+  .profile-in .avatar { width: 48px; height: 48px; font-size: 18px; }
+  .profile-in .avatar::after { inset: -4px; }
+  .profile-in .welcome { margin: 0; }
+  .profile-in .welcome b { font-size: 15px; }
+  .profile-in .budget { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .profile-in .budget-num, .profile-in .budget-label { flex: none; }
+  .profile-in .budget-num { font-size: 26px; }
+  .profile-in .budget-src { flex: 1 0 100%; }
+}
+/* Jeden řádek: jméno a pod ním dnešní tokeny, bez rozpisu zdrojů (ten je ve Statistikách). */
+@container profil (height < 147.5px) {
+  .profile-in { gap: 0 12px; }
+  .profile-in .avatar { width: 36px; height: 36px; font-size: 14px; }
+  .profile-in .budget { flex-wrap: nowrap; margin-top: 0; gap: 6px; }
+  .profile-in .budget-num { font-size: 16px; }
+  .profile-in .budget-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .profile-in .budget-src { display: none; }
+}
+/* Ani na jeden řádek není místo (větší systémové písmo na nejnižším okně): profil se schová
+   celý, včetně tlačítka avataru, místo aby se ořízl napůl. */
+@container profil (height < 59.5px) {
+  .profile-in { visibility: hidden; }
+}
+/* Stupně podle výšky okna určují, jakou podobu profilu panel chce (`max-height` kontejneru)
+   a jak husté jsou nabídka a patička. Přesnost hranic už nerozhoduje o tom, jestli se něco
+   vejde – když místo chybí, profil sám zvolí menší podobu. Hranice mají ještě aspoň 15 px
+   volného místa i s hlášením o výpadku spojení v patičce, aby drobné rozdíly v měření písma
+   mezi prohlížeči podobu profilu nezměnily a nabídka stála uprostřed volného místa. */
+@media (min-width: 881px) and (max-height: 999px) {
+  .profile { max-height: 230px; }
+}
+@media (min-width: 881px) and (max-height: 931px) {
   .sidebar { padding-top: 28px; }
-  .profile { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; margin-top: 24px; padding-top: 0; min-height: 0; text-align: left; }
-  .avatar { width: 48px; height: 48px; font-size: 18px; }
-  .avatar::after { inset: -4px; }
-  .welcome { margin: 0; font-size: 0; }
-  .welcome b { font-size: 15px; }
-  .budget { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-  .budget-num, .budget-label { flex: none; }
-  .budget-num { font-size: 26px; }
-  .budget-src { flex: 1 0 100%; }
-  .nav { margin-top: 14px; }
+  .profile { max-height: 148px; margin-top: 24px; }
 }
-/* 3. Menší avatar a číslo, hustší nabídka a patička bez jména Macu (je v Nastavení). */
-@media (min-width: 881px) and (max-height: 839px) {
+/* Hustší nabídka a patička bez jména Macu (je v Nastavení). */
+@media (min-width: 881px) and (max-height: 851px) {
   .sidebar { padding-top: 24px; padding-bottom: 20px; }
-  .profile { margin-top: 18px; gap: 2px 12px; }
-  .avatar { width: 40px; height: 40px; font-size: 15px; }
-  .budget { margin-top: 8px; }
-  .budget-num { font-size: 22px; }
-  .nav { margin-top: 10px; gap: 4px; }
+  .profile { margin-top: 18px; }
+  .nav { gap: 4px; }
   .side-foot { margin-top: 14px; padding-top: 14px; }
   .side-foot .source-host { display: none; }
 }
-/* 4. Nízké okno: profil na jeden řádek – jméno a pod ním dnešní tokeny, bez rozpisu zdrojů (ten
-   je ve Statistikách). */
-@media (min-width: 881px) and (max-height: 779px) {
+@media (min-width: 881px) and (max-height: 791px) {
   .sidebar { padding-top: 20px; padding-bottom: 16px; }
-  .profile { margin-top: 16px; gap: 0 12px; }
-  .avatar { width: 36px; height: 36px; font-size: 14px; }
-  .budget { flex-wrap: nowrap; margin-top: 0; gap: 6px; }
-  .budget-num { font-size: 16px; }
-  .budget-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
-  .budget-src { display: none; }
+  .profile { max-height: 60px; margin-top: 16px; }
   .side-foot { margin-top: 12px; padding-top: 12px; }
 }
-/* 5. Nejnižší okno: položky nabídky v malé velikosti stupnice, 32 px. Pořád nad hranicí
-   WCAG 2.2 pro cíl prstu (24 px). */
-@media (min-width: 881px) and (max-height: 689px) {
+/* Nejnižší okno: položky nabídky v malé velikosti stupnice, 32 px, těsněji pod sebou. Pořád nad
+   hranicí WCAG 2.2 pro cíl prstu (24 px). */
+@media (min-width: 881px) and (max-height: 701px) {
+  .nav { gap: 2px; }
   .nav a { height: 32px; }
 }
 .side-foot { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }

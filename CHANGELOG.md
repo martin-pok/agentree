@@ -1,5 +1,17 @@
 # Changelog
 
+## Připravuje se
+
+### Postranní panel nezávisí na tom, jak prohlížeč měří písmo
+
+- Profil v postranním panelu si podobu vybírá podle místa, které mu v panelu skutečně zbylo
+  (`@container`), ne podle výšky okna. Když je něco vyšší, než se čekalo (jiné metriky písma ve
+  WebKitu, patička s výpadkem spojení), zvolí menší podobu, nebo se na nejnižším okně schová celý
+  – nikdy se neořízne. Hranice stupňů mají aspoň 20 px volného místa. Profil má pevnou výšku,
+  takže jeho načtení už nabídkou nepohne.
+- `qa:desktop` měří panel až v ustáleném stavu po změně velikosti okna (hned po ní má i Chromium
+  profil ještě ve staré podobě) a přidává zátěžový případ s patičkou o 48 px vyšší.
+
 ## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
 
 Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření

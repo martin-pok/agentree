@@ -68,9 +68,12 @@ postranního panelu má výšku ze stupnice: 40 px, na nejnižším okně 32 px,
 (dlaždice spodní lišty na telefonu má ikonu nad popiskem, není jednořádková).
 
 **Postranní panel** se skládá ze značky, profilu, navigace a patičky. Navigace se nikdy nezmenší
-ani neroluje – místo na nízkém okně uvolňuje profil, který se po stupních přeskládá (vysoký,
-střední, v řádku, na jednom řádku). Řádky profilu a patičky jsou jednořádkové (dlouhé se zkrátí),
-aby výška panelu nezávisela na jménu ani na počtu zdrojů.
+ani neroluje – místo na nízkém okně uvolňuje profil. Ten si podobu (vysoký, střední, v řádku, na
+jednom řádku) vybírá podle místa, které mu v panelu skutečně zbylo (`@container`), ne podle výšky
+okna; výška okna jen určuje, kterou podobu panel chce. Když místo chybí – jiné měření písma
+v jiném prohlížeči, delší patička –, profil zvolí menší podobu, a když není místo ani na jeden
+řádek, schová se celý. Nikdy se neořízne napůl. Řádky profilu a patičky jsou jednořádkové
+(dlouhé se zkrátí), aby výška panelu nezávisela na jménu ani na počtu zdrojů.
 
 **Varianty.**
 
@@ -94,6 +97,8 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
 - `npm run qa:desktop` ověří postranní panel na oknech 620–1200 px vysokých při šířce 881, 1180
-  a 1440 px, česky i anglicky, i s patičkou při výpadku spojení a s víc zdroji tokenů, než se
-  vypisuje: poslední položka navigace je celá vidět, nabídka neroluje a profil není oříznutý.
+  a 1440 px, česky i anglicky, i s patičkou při výpadku spojení, s víc zdroji tokenů, než se
+  vypisuje, a s patičkou uměle vyšší o 48 px: poslední položka navigace je celá vidět, nabídka
+  neroluje a profil není oříznutý (smí se jen přeskládat nebo schovat). Měří se až v ustáleném
+  stavu po změně velikosti okna, ne po pevném čekání.
 - `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše.
