@@ -31,7 +31,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/spend/ledger` | Nový výdaj → 201 `{ entry, spend }`; 422 s `errors` |
 | PATCH | `/api/spend/ledger/:id` | `{ endDate: "RRRR-MM-DD" \| null }` – ukončení předplatného |
 | DELETE | `/api/spend/ledger/:id` | `{ spend }` |
-| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API / Podle ceníku). Součty po měsících = `monthlyTotals` |
+| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM) v jazyce z Nastavení: česky středníky a desetinná čárka, `filename="agenteeq-utrata-RRRR-MM-DD.csv"`; anglicky čárky a desetinná tečka, `filename="agenteeq-spend-RRRR-MM-DD.csv"`. Data vždy RRRR-MM-DD. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API / Podle ceníku). Hlavička, typy, opakování, zdroj a poznámka automatického záznamu v jazyce aplikace, poznámka uživatele beze změny. Součty po měsících = `monthlyTotals` |
 | PUT | `/api/spend/budgets` | `{ total?, currency?, rates?: {USD, EUR}, services?: {služba: částka \| ""} }` → `{ spend }` |
 | GET | `/api/alerts` | `{ unread, items }` (max 300, nejnovější první) |
 | POST | `/api/alerts/read` | `{ ids: string[] \| "all" }` → `{ unread }` |
@@ -65,7 +65,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | PATCH | `/api/projects/:id` | Částečná změna (`name`, `description`, `color`, `folders`, `notes`, `archived`) → `{ project, projects }`; 404, 422 |
 | DELETE | `/api/projects/:id` | `{ projects }` – konverzace zůstanou, jen se uvolní z projektu |
 | POST | `/api/projects/assign` | `{ sessionIds: string[] (1–1000), projectId: string \| "" \| null }` → `{ projects }`. `id` = ručně do projektu, `""` = mimo projekty (přebije složku), `null` = zpět na pravidlo složky. ID nemusí ještě existovat (webový chat, budoucí session) |
-| GET | `/api/projects/:id/export` | `text/csv` (UTF-8 s BOM, středníky), `Content-Disposition: attachment` |
+| GET | `/api/projects/:id/export` | `text/csv` (UTF-8 s BOM) v jazyce z Nastavení: česky středníky, anglicky čárky; hlavička a názvy stavů přeložené, název konverzace jen když ho napsal Agenteeq; `Content-Disposition: attachment` |
 | GET | `/api/launch` | `LaunchPayload` |
 | POST | `/api/launch` | `LaunchRequest` → `{ ok, kind, mode, label, sessionId, run, copyPrompt, dry?, plan? }`; 422 s `field`; 402 `upgrade`; 502 macOS akci odmítl |
 | POST | `/api/launch/refresh` | Znovu zjistí nainstalované agenty → `LaunchPayload` |
@@ -144,6 +144,7 @@ interface SessionSummary {
   subagent: { kind: 'review' | 'agent' | 'other'; label: string } | null;
   taskName: string;           // plánovaná úloha ze značky <scheduled-task>; spuštění téže úlohy jsou v seznamu agentů jedním řádkem
   title: string;              // název vlákna → první skutečné zadání → „Plánovaná úloha · <název>“ / popis pomocného vlákna → název složky
+  titleAuto: boolean;         // true = název složil Agenteeq („Konverzace bez názvu“, webová konverzace); jen takový rozhraní v angličtině přeloží
   cwd: string; project: string; model: string; branch: string;
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)
@@ -219,7 +220,7 @@ interface Notifications {
 //   chat?: { available: boolean };                        // jen connector 'local-chat'
 
 interface Project { id: string; name: string; color: string; description: string; notes: string; folders: string[]; archived: boolean; createdAt: number; updatedAt: number }
-interface ProjectSnapshot { id: string; projectId: string; title: string; app: string; provider: Provider; connector: string; source: string; model: string; cwd: string; url: string; resume: string; startedAt: number; lastAt: number; turns: number; tokens: { input: number; output: number; cacheWrite: number } }
+interface ProjectSnapshot { id: string; projectId: string; title: string; titleAuto: boolean; app: string; provider: Provider; connector: string; source: string; model: string; cwd: string; url: string; resume: string; startedAt: number; lastAt: number; turns: number; tokens: { input: number; output: number; cacheWrite: number } }
 interface ProjectsPayload { items: Project[]; assignments: Record<string, string>; snapshots: Record<string, ProjectSnapshot>; colors: string[]; limits: { name: number; description: number; notes: number; folders: number; assign: number } }
 
 interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; note: string; beta?: boolean; prefill?: boolean }

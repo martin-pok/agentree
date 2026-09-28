@@ -33,7 +33,7 @@ export function tr(text, ...args) {
  * vzoru s proměnnými. Data ze serveru ho dostávají automaticky v prelozData() (state.js, api.js);
  * volat ho přímo je potřeba jen u textu, který jde do klientu jinudy.
  */
-export const trServer = slovnik ? vytvorPrekladac(slovnik.server, slovnik.texty, LOCALE) : (text) => text;
+export const trServer = slovnik ? vytvorPrekladac(slovnik.server, LOCALE) : (text) => text;
 /** Projde data ze serveru (snímek, událost, odpověď API) a přeloží v nich texty rozhraní. */
 export const prelozData = slovnik ? vytvorPrelozData(trServer) : (data) => data;
 

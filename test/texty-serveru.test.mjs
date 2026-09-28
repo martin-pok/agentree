@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import EN from '../public/js/i18n/en.js';
 import { vytvorPrekladac, vytvorPrelozData } from '../public/js/texty-serveru.js';
 import { AlertEngine, textSouhrnu } from '../src/alerts.js';
 import { budgetAlertCandidates } from '../src/spend.js';
 import { launchTargets, MODES } from '../src/launcher.js';
 import { ui } from '../src/texty.js';
+import { snapshotOf } from '../src/projects.js';
 import { startTestServer, api, fakeDatastore } from './helpers.mjs';
 
 // Texty, které skládá server, se v angličtině překládají na klientu (public/js/texty-serveru.js).
@@ -14,7 +18,7 @@ import { startTestServer, api, fakeDatastore } from './helpers.mjs';
 // spouštění, stavy zdrojů, útrata i titulky upozornění.
 
 const CZ = /[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/;
-const trServer = vytvorPrekladac(EN.server, EN.texty, 'en-GB');
+const trServer = vytvorPrekladac(EN.server, 'en-GB');
 const prelozData = vytvorPrelozData(trServer);
 
 test('překlad: celý text, vzor s proměnnými, vnořený text a hodnoty v zápisu jazyka', () => {
@@ -160,4 +164,60 @@ test('snímek stavu ze serveru: zdroje, útrata, spouštění a licence po přek
   texty.push(stav.license.planLabel);
   const cesky = texty.filter((x) => typeof x === 'string' && CZ.test(x));
   assert.deepEqual(cesky, []);
+});
+
+// Obsah uživatele se nepřekládá nikdy – ani když se shoduje s textem rozhraní. Dřív se v angličtině
+// konverzace „Moje“ ukázala jako „Mine“, projekt „Útrata“ jako „Spend“ a název z prvního zadání
+// „Připojeno“ jako „Connected“. Texty, které složil Agenteeq (stav, důvod, náhradní název
+// konverzace), se přeloží dál – i když je v nich jméno od uživatele, to zůstane.
+test('snímek ze serveru: obsah uživatele zůstane, texty Agenteequ se přeloží', async (t) => {
+  const slozka = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-obsah-'));
+  const srv = await startTestServer();
+  t.after(() => srv.close());
+  const a = api(srv.url);
+  const now = Date.now();
+  const konverzace = (localId, fakta) => {
+    const s = srv.app.store.ensure({ connector: 'codex', localId, provider: 'openai', app: 'Codex' });
+    Object.assign(s, { lastAt: now - 60e3, startedAt: now - 120e3 }, fakta);
+    srv.app.store.commit(s);
+  };
+  konverzace('moje', { title: 'Moje', lastPrompt: 'Připojeno', cwd: slozka });
+  konverzace('zadani', { firstPrompt: 'Připojeno' });
+  konverzace('slozka', { cwd: path.join(slozka, 'Útrata') });
+  konverzace('bez-nazvu', {});
+  konverzace('uloha', { taskName: 'Útrata' });
+  assert.equal((await a.send('POST', '/api/projects', { name: 'Útrata', description: 'Moje', notes: 'Připojeno', folders: [slozka] })).status, 201);
+  assert.equal((await a.send('POST', '/api/spend/ledger', { service: 'claude', kind: 'extra', amount: '5', currency: 'USD', date: '2026-09-01', note: 'Moje' })).status, 201);
+  assert.equal((await a.send('POST', '/api/custom-agents', { name: 'Útrata', type: 'ollama', url: 'http://127.0.0.1:9' })).status, 200);
+
+  const puvodni = (await a.get('/api/state')).body;
+  const stav = prelozData(structuredClone(puvodni));
+  const s = (id) => stav.sessions.find((x) => x.id === `codex:${id}`);
+  assert.equal(s('moje').title, 'Moje', 'název konverzace od uživatele');
+  assert.equal(s('moje').lastPrompt, 'Připojeno');
+  assert.equal(s('zadani').title, 'Připojeno', 'název z prvního zadání je obsah uživatele');
+  assert.equal(s('slozka').title, 'Útrata', 'název podle složky je jméno složky');
+  assert.equal(s('bez-nazvu').title, 'Untitled conversation', 'náhradní název od Agenteequ se přeloží');
+  assert.equal(s('uloha').title, 'Scheduled task · Útrata', 'jméno úlohy uvnitř textu Agenteequ zůstane');
+  assert.equal(s('moje').status, 'waiting');
+  assert.ok(s('moje').reason && !CZ.test(s('moje').reason), `důvod se přeloží: ${s('moje').reason}`);
+  assert.equal(stav.projects.items[0].name, 'Útrata', 'název projektu');
+  assert.equal(stav.projects.items[0].description, 'Moje', 'popis projektu');
+  assert.equal(stav.projects.items[0].notes, 'Připojeno');
+  assert.equal(stav.spend.ledger[0].note, 'Moje', 'poznámka k výdaji');
+  assert.equal(stav.customAgents[0].name, 'Útrata', 'jméno vlastního agenta');
+
+  // Tatáž data jinudy: samostatná událost streamu, snímek konverzace v projektu, odpověď API.
+  const summary = puvodni.sessions.find((x) => x.id === 'codex:moje');
+  assert.equal(prelozData(structuredClone(summary)).title, 'Moje');
+  assert.equal(prelozData({ projects: { snapshots: { x: snapshotOf(summary) } } }).projects.snapshots.x.title, 'Moje');
+  assert.equal(prelozData({ project: structuredClone(puvodni.projects.items[0]) }).project.name, 'Útrata');
+  assert.equal(prelozData({ agents: structuredClone(puvodni.customAgents) }).agents[0].name, 'Útrata');
+  assert.equal(prelozData(structuredClone(puvodni.customAgents))[0].name, 'Útrata');
+  assert.deepEqual(prelozData({ skills: [{ id: 'a', name: 'Moje', description: 'Připojeno', source: 'shared', sourceLabel: ui('Sdílené') }] }).skills[0], { id: 'a', name: 'Moje', description: 'Připojeno', source: 'shared', sourceLabel: 'Shared' });
+  assert.deepEqual(prelozData({ name: 'Moje', description: 'Připojeno', file: '/x/SKILL.md', text: 'Připojeno' }), { name: 'Moje', description: 'Připojeno', file: '/x/SKILL.md', text: 'Připojeno' });
+
+  // Jméno od uživatele uvnitř věty Agenteequ (titulek upozornění) zůstane, věta se přeloží.
+  assert.equal(trServer('Moje potřebuje tvé rozhodnutí'), 'Moje needs your decision');
+  assert.equal(trServer('Připojeno dokončil úlohu'), 'Připojeno finished a task');
 });

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { csv } from './csv.js';
 import { uid, hourKey, DAY } from './util.js';
 import { isSafeRef } from './git.js';
-import { ui } from './texty.js';
+import { ui, prekladac } from './texty.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
@@ -81,7 +81,8 @@ export function normalizeWork(list) {
 // Prázdný řetězec v přiřazení = konverzace je záměrně mimo projekty (přebije automatické pravidlo složky).
 export const NO_PROJECT = '';
 
-const STATUS_CS = { needs_input: 'Potřebuje rozhodnutí', limited: 'Vyčerpaný limit', working: 'Pracuje', waiting: 'Čeká na zadání', idle: 'Nečinná', archived: 'Archiv' };
+// Názvy stavů v CSV (src/model.js#deriveStatus); do jazyka aplikace je přeloží projectCsv.
+const NAZVY_STAVU = { needs_input: ui('Potřebuje rozhodnutí'), limited: ui('Vyčerpaný limit'), failed: ui('Selhalo'), working: ui('Pracuje'), waiting: ui('Čeká na zadání'), idle: ui('Nečinná'), archived: ui('Archiv') };
 const str = (v, n = 500) => (typeof v === 'string' ? v.slice(0, n) : '');
 
 // Snímek konverzace v projektu: zůstane v projektu i po vypadnutí z okna sledování (výchozí 30 dní).
@@ -90,6 +91,7 @@ export function snapshotOf(s) {
     id: str(s.id, 200),
     projectId: typeof s.projectId === 'string' ? s.projectId : null,
     title: str(s.title, 120),
+    titleAuto: s.titleAuto === true, // název od Agenteequ, ne od uživatele (src/model.js#summarize)
     app: str(s.app, 80),
     provider: str(s.provider, 40),
     connector: str(s.connector, 40),
@@ -330,15 +332,21 @@ const localStamp = (ts) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-export function projectCsv(sessions, now = Date.now()) {
+// CSV projektu v jazyce aplikace. Název konverzace se přeloží, jen když ho složil Agenteeq
+// („Konverzace bez názvu“, `titleAuto`); název od uživatele zůstane, jak je. Model, složka a odkaz
+// se nepřekládají nikdy.
+export function projectCsv(sessions, now = Date.now(), jazyk = 'cs') {
+  const t = prekladac(jazyk);
   const since = hourKey(now - 30 * DAY);
-  const rows = [['Konverzace', 'Aplikace', 'Model', 'Stav', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Tokeny', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Odkaz']];
+  const hlavicka = [ui('Konverzace'), ui('Aplikace'), ui('Model'), ui('Stav'), ui('Zahájeno'), ui('Poslední aktivita'), ui('Počet zadání'), ui('Tokeny'), ui('Hodiny s aktivitou (30 dní)'), ui('Složka'), ui('Odkaz')];
+  const rows = [hlavicka.map(t)];
   for (const s of sessions) {
     const tokens = (s.tokens?.input || 0) + (s.tokens?.output || 0); // bez režie cache, viz model.js#addTokens
     const hours = Object.entries(s.hourly || {}).filter(([k, v]) => k >= since && v > 0).length;
-    rows.push([s.title, s.app, s.model || '', s.status ? STATUS_CS[s.status] || s.status : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
+    const stav = !s.status ? t(ui('Mimo okno sledování')) : NAZVY_STAVU[s.status] ? t(NAZVY_STAVU[s.status]) : s.status;
+    rows.push([s.titleAuto ? t(s.title || '') : s.title || '', t(s.app || ''), s.model || '', stav, localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }
-  return csv(rows); // src/csv.js: středník, BOM, ochrana proti vzorcům
+  return csv(rows, jazyk); // src/csv.js: oddělovač a desetinné znaménko podle jazyka, BOM, ochrana proti vzorcům
 }
 
 // Ruční pořadí karet. `ids` je nové pořadí (viditelných) projektů; projekty, které v seznamu nejsou

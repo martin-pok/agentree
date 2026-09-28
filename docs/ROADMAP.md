@@ -83,7 +83,6 @@ Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřen
 - Párování rozšíření bez kódu na Windows: ID rozbaleného rozšíření se tam počítá z cesty v UTF-16
   podle zdrojů Chromia, na skutečném Windows neověřeně (`src/platform.js#idRozbalenehoRozsireni`).
   Když nesedí, zbývá jednorázový kód z Nastavení.
-- Zbývající angličtina: CSV exporty útraty a projektů mají české hlavičky i hodnoty (`src/spend.js#spendCsv`,
-  `src/projects.js#projectCsv`), stránka po návratu z přihlášení Google je jen česky (`src/ucet-stranka.js`)
-  a pole kalendáře píše datum česky „D. M. RRRR“ (`public/js/datepicker.js`). Test úplnosti je
-  vyjmenovává jako texty mimo rozhraní (`test/i18n.test.mjs`, `MIMO_ROZHRANI`).
+- Zbývající angličtina mimo webové rozhraní: nabídky a texty při načítání v plášti aplikace pro Mac
+  (`desktop/Agenteeq.swift`) a pro Windows (`desktop/windows/Agenteeq.cpp`) a manifest pro instalaci
+  na plochu telefonu (`public/manifest.webmanifest`) jsou jen česky. Test úplnosti je nevidí.

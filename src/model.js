@@ -137,10 +137,12 @@ export function deriveStatus(s, now) {
 }
 
 // Bez názvu i skutečného zadání pojmenuj vlákno podle toho, čím je; název složky až jako poslední možnost.
+// `auto`: název je text Agenteequ (ui()), který rozhraní v angličtině přeloží; jméno složky ne.
 function fallbackTitle(s) {
-  if (s.taskName) return ui('Plánovaná úloha · {0}', s.taskName);
-  if (s.subagent?.label) return s.subagent.label;
-  return lastSegment(s.cwd).replace(/[-_]+/g, ' ') || ui('Konverzace bez názvu');
+  if (s.taskName) return { text: ui('Plánovaná úloha · {0}', s.taskName), auto: true };
+  if (s.subagent?.label) return { text: s.subagent.label, auto: true };
+  const slozka = lastSegment(s.cwd).replace(/[-_]+/g, ' ');
+  return slozka ? { text: slozka, auto: false } : { text: ui('Konverzace bez názvu'), auto: true };
 }
 
 export function summarize(s, now, windowMs) {
@@ -149,6 +151,8 @@ export function summarize(s, now, windowMs) {
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
   const working = status === 'working';
+  const vlastni = s.title || s.firstPrompt;
+  const nahradni = vlastni ? null : fallbackTitle(s);
   return {
     id: s.id,
     connector: s.connector,
@@ -158,7 +162,10 @@ export function summarize(s, now, windowMs) {
     parentId: s.parentId || null,
     subagent: s.subagent || null,
     taskName: s.taskName || '',
-    title: clip(s.title || s.firstPrompt || fallbackTitle(s), 100),
+    title: clip(vlastni || nahradni.text, 100),
+    // Název složil Agenteeq (náhradní název, webová konverzace): jen takový rozhraní přeloží. Název
+    // od uživatele nebo ze zdroje, i první zadání, zůstává, jak je (public/js/texty-serveru.js).
+    titleAuto: nahradni ? nahradni.auto : Boolean(s.title && s.titleAuto),
     cwd: s.cwd,
     project: lastSegment(s.cwd),
     model: s.model,

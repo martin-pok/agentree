@@ -22,12 +22,12 @@ export function ui(text, ...args) {
 
 let anglicky = null;
 /**
- * Překladač pro to, co server posílá mimo rozhraní – oznámení systému (src/alerts.js). Rozhraní si
- * texty překládá samo; tady se použije tentýž slovník i tatáž pravidla (public/js/texty-serveru.js,
- * bez DOM). Pro češtinu vrací text beze změny.
+ * Překladač pro to, co server posílá mimo rozhraní – oznámení systému (src/alerts.js), CSV exporty,
+ * stránky pro prohlížeč. Rozhraní si texty překládá samo; tady se použije tentýž slovník i tatáž
+ * pravidla (public/js/texty-serveru.js, bez DOM). Pro češtinu vrací text beze změny.
  */
 export function prekladac(jazyk) {
   if (jazyk !== 'en') return (text) => text;
-  anglicky ??= vytvorPrekladac(EN.server, EN.texty, 'en-GB');
+  anglicky ??= vytvorPrekladac(EN.server, 'en-GB');
   return anglicky;
 }

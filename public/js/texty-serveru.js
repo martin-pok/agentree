@@ -11,6 +11,11 @@
 // vyjmou, samy se zkusí přeložit (název limitu, druh složky) a dosadí se do anglické věty, klidně
 // v jiném pořadí. Co ve slovníku není, zůstane, jak přišlo – nikdy se nevymýšlí.
 //
+// Slovník je jen ten serverový (ui()), ne slovník textů klientu: data ze serveru nesou i obsah
+// uživatele a ten se nepřekládá nikdy. Se slovníkem klientu se konverzace „Moje“ měnila na „Mine“
+// a projekt „Útrata“ na „Spend“ – celé i uvnitř titulku upozornění. Pole, která obsah uživatele
+// nesou vždy, se navíc vynechávají celá (NEPREKLADAT, obsahObjektu níž).
+//
 // Modul je bez DOM, aby šel testovat v Node (test/i18n.test.mjs).
 
 // Delší texty jsou obsah (přepis, odpověď modelu, stderr), ne věty rozhraní: vzory se na ně nezkouší.
@@ -67,10 +72,10 @@ function preformatuj(hodnota, locale) {
 }
 
 /**
- * Vrátí funkci, která přeloží jeden text ze serveru. `server` je slovník textů označených ui(),
- * `zaloha` slovník textů klientu (stejné věty se nepřekládají dvakrát).
+ * Vrátí funkci, která přeloží jeden text ze serveru. `server` je slovník textů označených ui()
+ * (public/js/i18n/en-server.js).
  */
-export function vytvorPrekladac(server = {}, zaloha = {}, locale = 'en-GB') {
+export function vytvorPrekladac(server = {}, locale = 'en-GB') {
   const vzory = Object.entries(server)
     .filter(([k]) => /\{\d+\}/.test(k))
     .map(([k, v]) => sestavVzor(k, v))
@@ -78,7 +83,7 @@ export function vytvorPrekladac(server = {}, zaloha = {}, locale = 'en-GB') {
     .sort((a, b) => b.pevne - a.pevne);
   const cache = new Map();
 
-  const presne = (text) => (Object.hasOwn(server, text) ? server[text] : Object.hasOwn(zaloha, text) ? zaloha[text] : undefined);
+  const presne = (text) => (Object.hasOwn(server, text) ? server[text] : undefined);
 
   function preloz(text, hloubka = 0) {
     if (typeof text !== 'string' || !text) return text;
@@ -129,14 +134,36 @@ export function vytvorPrekladac(server = {}, zaloha = {}, locale = 'en-GB') {
 }
 
 // Pole, která nesou obsah uživatele nebo identifikátory – ty se nepřekládají nikdy (cesty, zadání,
-// poznámky, nastavení, kódy stavů, adresy, příkazy).
+// poznámky, nastavení, kódy stavů, adresy, příkazy, jména z účtu a počítače).
 const NEPREKLADAT = new Set([
   'id', 'key', 'kind', 'state', 'status', 'level', 'scope', 'provider', 'connector', 'logo', 'group',
-  'cwd', 'path', 'home', 'root', 'dataDir', 'bin', 'node', 'folders', 'repo', 'worktree', 'branch', 'base', 'url', 'remoteUrl',
+  'cwd', 'path', 'file', 'home', 'root', 'dataDir', 'bin', 'node', 'folders', 'repo', 'worktree', 'branch', 'base', 'url', 'remoteUrl',
   'resume', 'command', 'argv', 'args', 'log', 'origin', 'model', 'models', 'effort', 'version',
   'prompt', 'lastPrompt', 'firstPrompt', 'notes', 'instructions', 'email', 'jmeno', 'user', 'fullName',
   'settings', 'host', 'confidence', 'code', 'pin', 'token', 'maskedKey', 'taskName', 'project', 'dnsName', 'ips', 'addresses',
 ]);
+
+// Obsah uživatele (a cizích souborů) pod klíči, které jinde nesou text Agenteequ – `title` je
+// i titulek upozornění, `name` i název zdroje dat, `note` i poznámka k ceně plánu. Rozhoduje, co je
+// to za objekt. Pozná se podle tvaru, protože objekt přichází i samostatně (událost streamu,
+// odpověď API), nejen v kolekci snímku stavu.
+const NIC = new Set();
+const NAZEV = new Set(['title']);
+const PROJEKT = new Set(['name', 'description']);
+const JMENO = new Set(['name']);
+const POZNAMKA = new Set(['note']);
+const DOVEDNOST = new Set(['name', 'description', 'text']);
+function obsahObjektu(v, rodic) {
+  // Konverzace a její snímek v projektu (src/model.js#summarize, src/projects.js#snapshotOf):
+  // název přeloží jen, když ho složil Agenteeq („Konverzace bez názvu“), ne od uživatele ani zdroje.
+  if (typeof v.titleAuto === 'boolean') return v.titleAuto ? NIC : NAZEV;
+  if (Array.isArray(v.folders) && typeof v.name === 'string') return PROJEKT;
+  if (typeof v.typeLabel === 'string' && typeof v.origin === 'string') return JMENO; // vlastní agent
+  if (rodic === 'ledger') return POZNAMKA; // výdaj zapsaný uživatelem
+  if (rodic === 'skills' || (typeof v.file === 'string' && typeof v.name === 'string')) return DOVEDNOST; // SKILL.md
+  return NIC;
+}
+
 // Přepis: překládají se jen texty, které píše sám Agenteeq nebo konektor (název nástroje, systémové
 // a chybové řádky, zástupný text odpovědi); zadání uživatele nikdy.
 const ROLE_S_TEXTEM_APLIKACE = new Set(['system', 'error', 'tool', 'assistant']);
@@ -149,20 +176,21 @@ export function vytvorPrelozData(trServer) {
     if (typeof e.text === 'string' && ROLE_S_TEXTEM_APLIKACE.has(e.role) && e.text.length <= VZOR_MAX) e.text = trServer(e.text);
     return e;
   }
-  function projdi(v) {
+  function projdi(v, rodic = '') {
     if (typeof v === 'string') return trServer(v);
     if (Array.isArray(v)) {
-      for (let i = 0; i < v.length; i++) v[i] = projdi(v[i]);
+      for (let i = 0; i < v.length; i++) v[i] = projdi(v[i], rodic);
       return v;
     }
     if (v && typeof v === 'object') {
+      const obsah = obsahObjektu(v, rodic);
       for (const k of Object.keys(v)) {
-        if (NEPREKLADAT.has(k)) continue;
+        if (NEPREKLADAT.has(k) || obsah.has(k)) continue;
         if ((k === 'entries' || k === 'transcript') && Array.isArray(v[k])) v[k].forEach(zaznam);
-        else v[k] = projdi(v[k]);
+        else v[k] = projdi(v[k], k);
       }
     }
     return v;
   }
-  return projdi;
+  return (data) => projdi(data);
 }

@@ -118,6 +118,16 @@ test('projekty, rychlé spouštění, licence a složky přes HTTP', async (t) =
     assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'BOM pro Excel');
     assert.ok(bytes.toString('utf8').includes('Navrhni menu'));
     assert.equal((await fetch(`${srv.url}/api/projects/neexistuje/export`)).status, 404);
+
+    // V jazyce z Nastavení: anglicky hlavička a čárka, zadání uživatele beze změny.
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'en' })).status, 200);
+    try {
+      const en = Buffer.from(await (await fetch(`${srv.url}/api/projects/${project.id}/export`)).arrayBuffer()).toString('utf8');
+      assert.ok(en.startsWith('﻿Conversation,App,Model,Status,'), en.slice(0, 80));
+      assert.ok(en.includes('Navrhni menu'));
+    } finally {
+      await a.send('PUT', '/api/settings', { language: 'cs' });
+    }
   });
 
   await t.test('spuštění agenta: Terminál, pozadí, web a chybové stavy', async () => {

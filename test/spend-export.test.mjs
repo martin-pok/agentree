@@ -4,11 +4,12 @@ import { spendCsv, monthlyTotals, addMonths, DEFAULT_SPEND } from '../src/spend.
 import { startTestServer, api } from './helpers.mjs';
 
 // Export útraty do CSV pro účetnictví: jeden řádek za platbu v každém měsíci. Hlídá se, že
-// součty sedí s obrazovkou Útrata, že převod měn jde zkontrolovat a že soubor otevře česká
-// tabulka (středník, desetinná čárka, BOM) bez spuštění vzorce z poznámky.
+// součty sedí s obrazovkou Útrata, že převod měn jde zkontrolovat a že soubor otevře tabulka
+// v jazyce aplikace (česky středník a desetinná čárka, anglicky čárka a desetinná tečka; vždy BOM)
+// bez spuštění vzorce z poznámky.
 
-// Minimální čtečka CSV se středníkem a uvozovkami – stačí na to, co export píše.
-function precti(text) {
+// Minimální čtečka CSV s oddělovačem a uvozovkami – stačí na to, co export píše.
+function precti(text, oddelovac = ';') {
   assert.equal(text.charCodeAt(0), 0xfeff, 'BOM, aby Excel poznal UTF-8');
   const radky = [];
   for (const radek of text.slice(1).split('\r\n').filter(Boolean)) {
@@ -24,7 +25,7 @@ function precti(text) {
         }
         bunky.push(s); i = j + 1;
       } else {
-        const j = radek.indexOf(';', i);
+        const j = radek.indexOf(oddelovac, i);
         bunky.push(radek.slice(i, j === -1 ? radek.length : j)); i = j === -1 ? radek.length + 1 : j + 1;
       }
     }
@@ -32,7 +33,8 @@ function precti(text) {
   }
   return radky;
 }
-const cislo = (s) => Number(String(s).replace(',', '.'));
+const cislo = (s, jazyk = 'cs') => Number(jazyk === 'en' ? s : String(s).replace(',', '.'));
+const ODDELOVAC = { cs: ';', en: ',' };
 
 const now = new Date(2026, 8, 15, 12).getTime(); // 15. 9. 2026
 const spend = {
@@ -69,13 +71,32 @@ test('export útraty: řádek za platbu v každém měsíci, převod a zdroj zá
   assert.equal(radky.find((r) => r[1] === '2026-08-12')[4], 'jednorázově');
 });
 
-test('export útraty: součty po měsících sedí s obrazovkou Útrata', () => {
+test('export útraty anglicky: hlavička a hodnoty v angličtině, čárka a desetinná tečka', () => {
+  const text = spendCsv(spend, now, automaticke, 4, 'en');
+  const [hlavicka, ...radky] = precti(text, ',');
+  assert.deepEqual(hlavicka, ['Month', 'Payment date', 'Service', 'Type', 'Recurrence', 'Note', 'Amount', 'Currency', 'Rate to CZK', 'Amount in CZK', 'Source']);
+  assert.equal(radky.length, 9, 'tytéž řádky jako česky');
+  assert.deepEqual(radky.find((r) => r[1] === '2026-07-05'), ['2026-07', '2026-07-05', 'ChatGPT', 'Subscription', 'monthly until 2026-08-31', 'Plus', '20', 'USD', '23', '460', 'Manual']);
+  assert.deepEqual(radky.find((r) => r[2] === 'OpenAI API').slice(3), ['API', 'one-off', 'Admin API', '1.5', 'USD', '23', '34.5', 'Admin API'], 'desetinná tečka pro anglickou tabulku');
+  const predplatne = radky.find((r) => r[1] === '2026-09-01');
+  assert.deepEqual([predplatne[4], predplatne[5], predplatne[10]], ['monthly', 'Claude Max from the price list', 'Price list'], 'poznámka automatického záznamu je text aplikace');
+  assert.deepEqual(radky.find((r) => r[2] === 'Claude' && r[0] === '2026-08').slice(3, 7), ['Extra usage', 'one-off', `'=HYPERLINK("http://zle.example";"klik")`, '512.5']);
+  assert.doesNotMatch(text, /[áčďéěíňóřšťúůýž]/i, 'v anglickém exportu nezůstala čeština');
+  // Poznámka od uživatele se nepřekládá, jen se kvůli čárce dá do uvozovek.
+  const vlastni = spendCsv({ ...spend, ledger: [{ ...spend.ledger[0], note: 'Měsíčně, ručně' }] }, now, [], 2, 'en');
+  assert.ok(vlastni.includes(',"Měsíčně, ručně",'), vlastni);
+  assert.equal(precti(vlastni, ',')[1][5], 'Měsíčně, ručně');
+});
+
+test('export útraty: součty po měsících sedí s obrazovkou Útrata v obou jazycích', () => {
   const mesice = Array.from({ length: 6 }, (_, i) => addMonths('2026-09', i - 5));
   const obrazovka = monthlyTotals(spend, mesice, automaticke);
-  const [, ...radky] = precti(spendCsv(spend, now, automaticke, 6));
-  for (const { key, total } of obrazovka) {
-    const soucet = radky.filter((r) => r[0] === key).reduce((s, r) => s + cislo(r[9]), 0);
-    assert.ok(Math.abs(soucet - total) < 0.01, `${key}: export ${soucet} × obrazovka ${total}`);
+  for (const jazyk of ['cs', 'en']) {
+    const [, ...radky] = precti(spendCsv(spend, now, automaticke, 6, jazyk), ODDELOVAC[jazyk]);
+    for (const { key, total } of obrazovka) {
+      const soucet = radky.filter((r) => r[0] === key).reduce((s, r) => s + cislo(r[9], jazyk), 0);
+      assert.ok(Math.abs(soucet - total) < 0.01, `${jazyk} ${key}: export ${soucet} × obrazovka ${total}`);
+    }
   }
 });
 
@@ -114,6 +135,14 @@ test('export útraty přes HTTP: soubor ke stažení a hlídaný počet měsíc�
       assert.equal((await fetch(`${s.url}/api/spend/export?mesicu=${spatne}`)).status, 422, `mesicu=${spatne}`);
     }
     assert.equal((await fetch(`${s.url}/api/spend/export?mesicu=36`)).status, 200);
+
+    // Anglicky z Nastavení: soubor i jeho jméno v angličtině, čárka jako oddělovač.
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'en' })).status, 200);
+    const en = await fetch(`${s.url}/api/spend/export`);
+    assert.match(en.headers.get('content-disposition'), /filename="agenteeq-spend-\d{4}-\d{2}-\d{2}\.csv"/);
+    const [hlavicka, ...enRadky] = precti(Buffer.from(await en.arrayBuffer()).toString('utf8'), ',');
+    assert.equal(hlavicka[0], 'Month');
+    assert.ok(enRadky.some((r) => r[2] === 'Perplexity' && r[3] === 'Subscription' && r[4] === 'monthly' && r[5] === 'Pro' && r[10] === 'Manual'));
   } finally {
     await s.close();
   }

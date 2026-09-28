@@ -51,6 +51,7 @@ export function applyWebPayload(s, v, now = Date.now()) {
   s.url = v.url;
   // Název konverzace vzniká z jejího obsahu, a tak se nebere. Rozliší ji konec jejího ID.
   s.title = ui('{0} · konverzace {1}', WEB_SITES[v.site]?.name || ui('Webový chat'), v.conversationId.replace(/[^A-Za-z0-9]/g, '').slice(-4) || v.conversationId.slice(-4));
+  s.titleAuto = true;
   if (v.model) s.model = v.model;
   // Chrome v kartě na pozadí (skryté déle než 5 minut) pouští časovače nejvýš jednou za minutu.
   // Při 45 s by dlouho běžící úloha – Codex na webu, hloubkový výzkum – uprostřed práce spadla

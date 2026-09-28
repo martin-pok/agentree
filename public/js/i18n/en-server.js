@@ -377,6 +377,8 @@ export default {
   "Metoda není povolena.": "Method not allowed.",
   "Neznámá adresa API.": "Unknown API address.",
   "Chyba serveru.": "Server error.",
+  "Agenteeq běží": "Agenteeq is running",
+  "Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.": "The overview opens from the Agenteeq app window. Without the key, this address shows nothing.",
 
   // src/lan.js
   "Tailscale na {0} neběží nebo nejsi přihlášený.": "Tailscale isn’t running on {0}, or you’re not signed in.",
@@ -534,6 +536,23 @@ export default {
   "Pravidla mohou mít nejvýš {0} znaků.": "Rules can be at most {0} characters.",
   "Rozpočet musí být celé nezáporné číslo.": "The budget must be a whole number of zero or more.",
   "Neplatný výběr konverzací.": "Invalid conversation selection.",
+  "Potřebuje rozhodnutí": "Needs a decision",
+  "Selhalo": "Failed",
+  "Čeká na zadání": "Waiting for a task",
+  "Nečinná": "Idle",
+  "Archiv": "Archived",
+  "Konverzace": "Conversation",
+  "Aplikace": "App",
+  "Model": "Model",
+  "Stav": "Status",
+  "Zahájeno": "Started",
+  "Poslední aktivita": "Last activity",
+  "Počet zadání": "Prompts",
+  "Tokeny": "Tokens",
+  "Hodiny s aktivitou (30 dní)": "Active hours (30 days)",
+  "Složka": "Folder",
+  "Odkaz": "Link",
+  "Mimo okno sledování": "Outside the tracking window",
 
   // src/remote-scope.js
   "Procházet disk lze jen {0}.": "The disk can only be browsed {0}.",
@@ -572,6 +591,22 @@ export default {
   "Rozpočet překročen: {0}": "Budget exceeded: {0}",
   "Vyčerpáno {0} % rozpočtu: {1}": "{0} % of the budget used: {1}",
   "Tento měsíc {0} z {1}.": "{0} of {1} this month.",
+  "Podle ceníku": "Price list",
+  "Ručně": "Manual",
+  "Měsíc": "Month",
+  "Datum platby": "Payment date",
+  "Služba": "Service",
+  "Typ": "Type",
+  "Opakování": "Recurrence",
+  "Poznámka": "Note",
+  "Částka": "Amount",
+  "Měna": "Currency",
+  "Kurz na {0}": "Rate to {0}",
+  "Částka v {0}": "Amount in {0}",
+  "Zdroj": "Source",
+  "měsíčně do {0}": "monthly until {0}",
+  "měsíčně": "monthly",
+  "jednorázově": "one-off",
 
   // src/subscriptions.js
   "veřejné přehledy cen (oficiální stránka nebyla dostupná)": "public price overviews (the official page wasn’t available)",
@@ -618,6 +653,17 @@ export default {
   "Nainstaluj Tailscale (tailscale.com nebo \"brew install --cask tailscale\").": "Install Tailscale (tailscale.com or \"brew install --cask tailscale\").",
   "Přihlas se stejným účtem {0} i na telefonu.": "Sign in with the same account {0} and on your phone.",
   "Spusť detekci znovu.": "Run detection again.",
+
+  // src/ucet-stranka.js
+  "Dokončuji přihlášení": "Finishing sign-in",
+  "Chvilku strpení.": "Just a moment.",
+  "Vítej, {0}": "Welcome, {0}",
+  "Přihlášení proběhlo": "Signed in",
+  "Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.": "You’re signed in to Agenteeq. You can close this window and go back to the app.",
+  "Přihlášení se nepovedlo": "Sign-in failed",
+  "Zkus to prosím znovu z Agenteeq.": "Please try again from Agenteeq.",
+  "Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.": "The sign-in didn’t return a result. Please try again from Agenteeq.",
+  "Agenteeq · přihlášení": "Agenteeq · sign-in",
 
   // src/ucet.js
   "Server účtů Agenteeq neodpovídá. Zkontroluj připojení k internetu.": "The Agenteeq account server isn’t responding. Check your internet connection.",
