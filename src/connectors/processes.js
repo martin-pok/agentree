@@ -16,17 +16,55 @@ const utec = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Přípona .exe se píše různě, jméno programu ale ne.
 const EXE = '(\\.[eE][xX][eE])?';
 
+// Interprety, pod kterými program běží jako skript: npm balíček přes shebang („node /…/bin/claude“),
+// obalový skript instalátoru („/bin/sh /…/bin/claude“), Python u lokálních modelů.
+const INTERPRET = /^(node|nodejs|bun|deno|sh|bash|zsh|dash|ksh|fish|python[\d.]*)(\.exe)?$/i;
+// Přepínač, za kterým interpret nečte skript, ale text příkazu: `sh -c`, `bash -lc`, `node -e`/`-p`,
+// `python -c`/`-m`. Cesta k programu v takovém textu je jen zmínka – program, pokud se spustí,
+// bude ve výpisu jako vlastní proces.
+const PRIKAZ_TEXTEM = /^-(?:[a-z]*c[a-z]*|e|p|m)$|^--(?:eval|print|command)(?:=|$)/i;
+// Začátek cesty: „/“, „~/“, „./“, „../“, „C:\“, „\\server“. Podle něj se pozná, kde cesta
+// s mezerou („Application Support“, „Jana Nováková“) začíná.
+const ZACATEK_CESTY = /^(\/|~(\/|$)|\.\.?[\\/]|[A-Za-z]:[\\/]|\\\\)/;
+
+/**
+ * Běží v procesu opravdu program `jmeno`? Ano, když je to samotný spustitelný soubor, nebo skript
+ * pod interpretem (se spouštěcími přepínači). Ne, když jde jen o argument jiného programu
+ * (`sudo …`, `vim …`, `ln -sf …`) nebo o text příkazu shellu (`sh -c "… /bin/claude …"`).
+ */
+function spusteny(args, vzor) {
+  const text = String(args || '');
+  const m = vzor.exec(text);
+  if (!m) return false;
+  // Kde začíná cesta, ve které jméno programu stojí: nejbližší slovo před ním, které začíná jako
+  // cesta; slova mezi tím patří téže cestě s mezerou. Bez takového slova je cesta relativní
+  // a začíná posledním slovem.
+  const slova = text.slice(0, m.index + m[1].length).split(' ');
+  let i = slova.length - 1;
+  for (let j = slova.length - 1; j >= 0; j--) if (ZACATEK_CESTY.test(slova[j])) { i = j; break; }
+  const pred = slova.slice(0, i).filter(Boolean);
+  if (!pred.length) return true;
+  // Před cestou smí stát jen interpret a jeho přepínače – nic, co by znamenalo text příkazu.
+  let k = pred.length;
+  while (k > 0 && pred[k - 1].startsWith('-')) k--;
+  if (!k || pred.slice(k).some((x) => PRIKAZ_TEXTEM.test(x))) return false;
+  return INTERPRET.test(pred.slice(0, k).join(' ').split(/[\\/]/).pop());
+}
+
 /**
  * Program spuštěný z příkazové řádky – pozná se podle jména bez ohledu na to, jestli
  * je cesta psaná lomítkem nebo zpětným lomítkem a jestli má příponu `.exe`.
- * `program('claude')` sedne na `/usr/local/bin/claude`, `C:\…\claude.exe` i `claude --help`.
+ * `program('claude')` sedne na `/usr/local/bin/claude`, `C:\…\claude.exe`, `claude --help`
+ * i `node /usr/local/bin/claude`, ale ne na shell nebo příkaz, který ho jen zmiňuje (viz `spusteny`).
  *
  * Na velikosti písmen ZÁLEŽÍ, a je to schválně: `claude` je nástroj příkazové řádky,
  * `Claude` je desktopová aplikace. Na macOS se tím ty dva odlišují spolehlivě a stejná
  * zvyklost platí i pro `claude.exe` vs `Claude.exe`.
  */
-export const program = (...jmena) =>
-  new RegExp(`(^|[\\\\/])(${jmena.map(utec).join('|')})${EXE}(\\s|$)`);
+export const program = (...jmena) => {
+  const vzor = new RegExp(`(^|[\\\\/])(${jmena.map(utec).join('|')})${EXE}(\\s|$)`);
+  return { test: (args) => spusteny(args, vzor) };
+};
 
 /**
  * Desktopová aplikace – na macOS balíček `.app`, na Windows spustitelný soubor.

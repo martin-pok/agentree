@@ -24,6 +24,13 @@
 - Oprava: přepínač nebo výběr v Nastavení po uložení ztratil fokus a klávesnice začínala znovu od
   začátku stránky. Překreslení teď fokus vrátí (`public/js/ui.js#fill`).
 
+### Detekce běžících agentů
+
+- Oprava: jako agent Claude Code se počítal i shell, který ho jen spouští nebo o něm mluví
+  (`/bin/sh -c … /opt/claude-code/bin/claude …`), a tak se jeden agent ukázal dvakrát. Agentem je
+  teď jen běžící program – spustitelný soubor, nebo skript pod node/sh/python; `sh -c`, `sudo`,
+  editor ani `ln` s cestou ke claude ne. Platí i pro Codex, Gemini, Qwen, Copilot a lokální modely.
+
 ### Vydání a testy
 
 - Oprava: build pro Windows četl verzi pláště z `Agenteeq.exe` až po smazání složky buildu

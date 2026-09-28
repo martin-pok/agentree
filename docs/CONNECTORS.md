@@ -112,8 +112,13 @@ ve složce, o které Agenteeq neví. Proto:
   (symlink) se čte jen jednou.
 - **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
   gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
-  2.1.283) se páruje s konverzací téhož nástroje, která od jeho startu žila a běží ve stejné složce
-  (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se jen podle času). Starší
+  2.1.283) se páruje s konverzací téhož nástroje. Procesem agenta je jen běžící program: spustitelný
+  soubor, nebo skript pod interpretem (`node /…/bin/claude`, obalový `/bin/sh /…/bin/claude`). Shell,
+  který ho jen spouští nebo zmiňuje (`sh -c "… /bin/claude …"`), `sudo`, `caffeinate` ani editor
+  s cestou agentem nejsou – skutečný program je ve výpisu jako vlastní proces
+  (`src/connectors/processes.js#program`). Páruje se s konverzací, která od jeho startu žila
+  a běží ve stejné složce (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se
+  jen podle času). Starší
   proces bere starší konverzaci, spárování mezi průchody nepřeskakuje. Nespárovaný proces je agent
   „běží od 14:02, zatím bez přepisu“ se stavem `waiting` – co přesně dělá, z procesu nevyčteme,
   a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis

@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { korenyClaudeCode, korenZPrepisu } from '../src/connectors/claude-code.js';
 import { domovyCodexu } from '../src/connectors/codex.js';
-import { agentniProcesy, vedeKonverzaci } from '../src/connectors/processes.js';
+import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs } from '../src/connectors/processes.js';
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
 import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
@@ -138,6 +138,50 @@ test('procesy: každý agent zvlášť, bez pomocných procesů a příkazů bez
   assert.equal(vedeKonverzaci('claude daemon run', 'claude-code'), false);
   assert.equal(vedeKonverzaci('claude --resume abc', 'claude-code'), true);
   assert.equal(vedeKonverzaci('codex exec "oprav testy"', 'codex'), true);
+});
+
+// Agent je proces, který program claude opravdu běží – sám, nebo jako skript pod interpretem (node,
+// sh…). Shell, který ho jen spouští nebo o něm mluví, agent není: skutečný claude se ve výpisu objeví
+// jako vlastní proces. Dřív se počítal každý řádek s cestou končící na /claude, takže obal spouštěcího
+// skriptu v kontejneru Claude Code (`/bin/sh -c … ln -sf /opt/claude-code/bin/claude …`, ověřeno
+// 28. 9. 2026) vypadal jako druhý agent.
+test('procesy: agent je jen běžící program, ne shell nebo příkaz, který ho zmiňuje', () => {
+  const obal = '/bin/sh -c if [ -d /opt/claude-code ]; then ln -sf /opt/claude-code/bin/claude /opt/node22/bin/claude; fi; mkdir -p /home/user ; cd /home/user && /usr/local/bin/environment-manager task-run --stdin';
+  const agent = [
+    '/opt/claude-code/bin/claude --output-format=stream-json --verbose',
+    '/Users/e/.local/bin/claude',
+    'claude --resume abc',
+    'node /usr/local/bin/claude',
+    'node --no-warnings /usr/local/bin/claude -p x',
+    '/Users/Jana Nováková/.nvm/versions/node/v22.13.0/bin/node /Users/Jana Nováková/.nvm/versions/node/v22.13.0/bin/claude',
+    'node /root/.npm/_npx/6a9f0c/node_modules/.bin/claude',
+    '/bin/sh /tmp/agenteeq-zivy-x/bin/claude',
+    '/bin/bash /home/u/.local/bin/claude --resume abc',
+    '/Users/m/Library/Application Support/Claude/claude-code/2.1.260/claude.app/Contents/MacOS/claude --output-format stream-json',
+    'C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe -p',
+    'C:\\Program Files\\nodejs\\node.exe C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe',
+  ];
+  const neniAgent = [
+    obal,
+    '/bin/zsh -lc /usr/local/bin/claude',
+    'bash -c /home/u/.local/bin/claude --resume abc',
+    'sudo /usr/local/bin/claude',
+    'caffeinate -i /usr/local/bin/claude',
+    'vim /Users/e/.local/bin/claude',
+    'ln -sf /opt/claude-code/bin/claude /usr/local/bin/claude',
+    'tail -f /var/log/claude',
+    'C:\\Windows\\System32\\cmd.exe /c C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe -p',
+  ];
+  for (const a of agent) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
+  for (const a of neniAgent) assert.notEqual(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
+  // Stejné pravidlo platí pro ostatní nástroje příkazové řádky.
+  assert.equal(RUNTIMES.find((r) => r.test('/bin/sh -c /opt/homebrew/bin/codex exec x'))?.id, undefined);
+  assert.equal(RUNTIMES.find((r) => r.test('node /opt/homebrew/bin/gemini'))?.id, 'gemini-cli');
+
+  // Výpis z kontejneru: obal a skutečný claude pod ním jsou jeden agent, ne dva.
+  const vystup = [`   81 55:06 0.0 3000 ${obal}`, '  103 55:04 1.0 400000 /opt/claude-code/bin/claude --output-format=stream-json --verbose'].join('\n');
+  assert.deepEqual(agentniProcesy(vystup).map((p) => p.pid), [103]);
+  assert.equal(parsePs(vystup).find((r) => r.id === 'claude-code').processes, 1);
 });
 
 test('párování procesů s konverzacemi', () => {
