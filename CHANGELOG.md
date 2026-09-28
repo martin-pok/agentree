@@ -1,6 +1,10 @@
 # Changelog
 
-## Připravuje se
+## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
+
+Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
+bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
+Rozšíření čeká na schválení v Chrome Web Store.
 
 ### Postranní panel nezávisí na tom, jak prohlížeč měří písmo
 
@@ -14,12 +18,6 @@
 - Test přerušení dojezdu posouvání čeká, až dojezd prokazatelně běží. Playwright ve WebKitu vrací
   kolečko dřív, než ho stránka zpracuje; kolečko pak dorazilo až po skoku aplikace a správně
   rozjelo nový dojezd. Chyba byla v testu, ne v aplikaci.
-
-## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
-
-Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
-bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
-Rozšíření čeká na schválení v Chrome Web Store.
 
 ### Angličtina bez zbytků češtiny a Windows bez Macu
 
