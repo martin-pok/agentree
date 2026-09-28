@@ -73,7 +73,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -258,7 +258,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     bezici.upravit(procesy);
   }
   if (config.processes) {
-    const vypis = sdilenyVypis();
+    // `vypisProcesu` podstrkují jen testy: omezí skutečný výpis na své procesy (test/helpers.mjs#jenProcesy).
+    const vypis = sdilenyVypis(vypisProcesu);
     list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));

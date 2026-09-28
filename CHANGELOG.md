@@ -47,6 +47,9 @@
   proměnnými prostředí přes `scripts/powershell.mjs`; hlídá to `test/windows-regression.test.mjs`.
 - Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
   „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
+- Testy se zapnutými procesy vidí jen své procesy (`test/helpers.mjs#jenProcesy`): dřív si
+  přidaly `CLAUDE_CONFIG_DIR` každého procesu na počítači a četly cizí přepisy. Bez omezení
+  `startTestServer` odmítne start.
 - Test živého procesu `claude` (`test/detekce-agentu.test.mjs`) padal při souběžných bězích:
   server vidí procesy celého počítače, přidal si CLAUDE_CONFIG_DIR cizího běhu a jeho přepis
   s tímtéž pevným ID obsadil konverzaci. Každý běh má teď vlastní ID, průchod spustí test sám

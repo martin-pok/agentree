@@ -5,7 +5,8 @@ import path from 'node:path';
 import { sdilenyVypis, createStabilniStart } from '../src/connectors/processes.js';
 import { Store } from '../src/store.js';
 import { loadConfig } from '../src/config.js';
-import { startTestServer, writeJsonl, fakeDatastore } from './helpers.mjs';
+import { spawn } from 'node:child_process';
+import { startTestServer, writeJsonl, fakeDatastore, jenProcesy, tempDir, waitFor } from './helpers.mjs';
 
 // Agenteeq běží celý den na pozadí. Tyhle testy hlídají, že v klidu nedělá zbytečnou práci
 // (nesouhrnuje nezměněné konverzace, nespouští `ps` dvakrát, neposílá do okna tikající čísla) –
@@ -124,9 +125,20 @@ test('efektivita: výpis procesů se sdílí a start procesu nekolísá', async 
   assert.equal(start.od('claude', 50, t + 20e3), t + 20e3 - 50e3);
 });
 
-test('efektivita: v klidu se do okna neposílá tikající doba běhu ani čas průchodu', async () => {
-  const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' });
+test('efektivita: v klidu se do okna neposílá tikající doba běhu ani čas průchodu', async (t) => {
+  // Vlastní běžící „claude“, aby měl co tikat; cizí procesy počítače test nevidí (jenProcesy) – jejich
+  // start nebo konec mezi průchody by změnil přehled a z CLAUDE_CONFIG_DIR by se četla cizí data.
+  const bin = path.join(await tempDir('agenteeq-efekt-'), 'bin');
+  await fs.mkdir(bin);
+  await fs.writeFile(path.join(bin, 'claude'), '#!/bin/sh\nsleep 60\n', { mode: 0o755 });
+  const agent = process.platform === 'win32' ? null : spawn(path.join(bin, 'claude'), [], { env: { PATH: process.env.PATH }, stdio: 'ignore' });
+  t.after(() => agent?.kill());
+  const vypis = jenProcesy(new Set(agent ? [agent.pid] : []));
+  // Až ho výpis ukazuje jako „claude“ (po exec), jinak by se přehled změnil mezi průchody sám.
+  if (agent) await waitFor(async () => (await vypis()).stdout.includes(bin), 8000);
+  const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' }, { vypisProcesu: vypis });
   try {
+    if (agent) assert.ok(srv.app.store.runtimes.find((r) => r.id === 'claude-code')?.running, 'vlastní proces je v přehledu – je co hlídat');
     const conn = srv.app.connectors.processes;
     const udalosti = [];
     for (const ev of ['runtimes', 'connectors']) srv.app.store.on(ev, () => udalosti.push(ev));

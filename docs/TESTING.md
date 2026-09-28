@@ -52,7 +52,7 @@ Regrese interakcí modalu jsou povinné: křížek, klik mimo, Escape a návrat 
 
 Testy závislé na macOS (`lsof` při převzetí portu, chování `/private/tmp`) se na jiném systému **přeskočí s důvodem**, ne přeskočí tiše a ne spadnou: `npm test` je proto zelený na Macu i na Linuxu.
 
-Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agenteeq` (vždy `AGENTEEQ_SOURCE_HOME` a `AGENTEEQ_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté.
+Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agenteeq` (vždy `AGENTEEQ_SOURCE_HOME` a `AGENTEEQ_HOME` do `os.tmpdir()`), nativní notifikace, Klíčenka a síť jsou vypnuté. Test se zapnutými procesy (`AGENTEEQ_PROCESSES=1`) vidí jen své procesy (`startTestServer(env, { vypisProcesu: jenProcesy(pidy) })`, jinak `startTestServer` odmítne start): z prostředí cizích procesů by se přidaly jejich `CLAUDE_CONFIG_DIR` a `CODEX_HOME` a četly by se cizí přepisy.
 
 ## Ruční QA checklist (před vydáním)
 

@@ -13,7 +13,7 @@ import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
 import { watchTree } from '../src/watch.js';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
-import { startTestServer, api, tempDir, waitFor, writeJsonl, fakeDatastore } from './helpers.mjs';
+import { startTestServer, api, tempDir, waitFor, writeJsonl, fakeDatastore, jenProcesy } from './helpers.mjs';
 
 // Hlavní úděl Agenteeq: běžící agent na počítači musí být vidět. Tyhle testy hlídají všechny cesty,
 // kudy by mohl propadnout – přepis v nečekané složce, hook s cestou mimo známé kořeny, proces bez
@@ -267,10 +267,16 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
   await fs.mkdir(bin, { recursive: true });
   await fs.writeFile(path.join(bin, 'claude'), '#!/bin/sh\nsleep 60\n', { mode: 0o755 });
   const agent = spawn(path.join(bin, 'claude'), [], { cwd: slozka, env: { ...process.env, CLAUDE_CONFIG_DIR: cfg }, stdio: 'ignore' });
+  // Cizí agent se svým CLAUDE_CONFIG_DIR – jako jiný souběžný běh nebo Claude Code uživatele. Server
+  // vidí jen procesy testu (jenProcesy), takže jeho kořen ani přepisy nikdy nečte.
+  const cizi = path.join(await tempDir('agenteeq-cizi-'), 'claude cfg');
+  const cizak = spawn(path.join(bin, 'claude'), [], { cwd: slozka, env: { ...process.env, CLAUDE_CONFIG_DIR: cizi }, stdio: 'ignore' });
   // Hned po spawn() může v /proc ještě stát příkazová řádka rodiče (před exec) a sdílený výpis procesů
   // pak platí 4 s. Server se proto spustí, až proces opravdu běží jako „claude“ – podmínka, ne čas.
-  await waitFor(async () => (await fs.readFile(`/proc/${agent.pid}/cmdline`, 'utf8').catch(() => '')).includes(path.join(bin, 'claude')), 8000);
-  const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' });
+  const bezi = (p) => fs.readFile(`/proc/${p.pid}/cmdline`, 'utf8').catch(() => '').then((c) => c.includes(path.join(bin, 'claude')));
+  await waitFor(async () => (await bezi(agent)) && bezi(cizak), 8000);
+  const pidy = new Set([agent.pid]);
+  const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' }, { vypisProcesu: jenProcesy(pidy) });
   try {
     const klient = api(srv.url);
     const najdi = async () => (await klient.get('/api/state')).body.sessions.find((s) => s.proces?.pid === agent.pid);
@@ -280,6 +286,11 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     assert.match(v.reason, /Claude Code běží v Design & Web/);
     // Kořen z prostředí procesu se přidal – první zadání se najde a spáruje.
     assert.ok(srv.app.connectors['claude-code'].koreny().includes(path.join(cfg, 'projects')));
+    // Žádný kořen mimo dočasné složky testu: cizí proces nic nepřidal.
+    for (const k of srv.app.connectors['claude-code'].koreny()) {
+      assert.ok(k.startsWith(srv.sourceHome) || k.startsWith(dir), `kořen mimo dočasnou složku testu: ${k}`);
+    }
+    assert.equal((await klient.get('/api/state')).body.sessions.some((s) => s.proces?.pid === cizak.pid), false, 'cizí proces se neukáže');
     const id = crypto.randomUUID();
     await writeJsonl(path.join(cfg, 'projects', '-Design---Web', `${id}.jsonl`), [radek(id, slozka)]);
     // Složka projects/ vznikla až teď, po přidání kořene. Sledování to zkusí znovu za 5 s a pravidelný
@@ -293,6 +304,7 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     await waitFor(async () => !(await klient.get('/api/state')).body.sessions.some((s) => s.proces?.pid === agent.pid), 8000);
   } finally {
     agent.kill();
+    cizak.kill();
     await srv.close();
   }
 });
