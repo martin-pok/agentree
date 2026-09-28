@@ -1,6 +1,18 @@
 # Changelog
 
-## Připravuje se (zatím nevydáno)
+## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
+
+Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
+bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
+Rozšíření čeká na schválení v Chrome Web Store.
+
+### Plynulé posouvání po přerušení
+
+- Opravené kolečko a trackpad: po posunu klávesnicí, posuvníkem nebo přepnutí obrazovky nový dojezd
+  začíná na skutečné poloze. Starý kód událost převzal, ale před prvním snímkem ji zahodil. Přerušení
+  ruší i čekající snímek; omezení pohybu dojezd ukončí a kolečko posouvá přímo bez animace i ve WebKitu.
+- Regresní `qa:desktop` v Chromiu a WebKitu ověřuje první posun z nenulové polohy, opakované kroky
+  po přerušení, návrat z jiné obrazovky, vnitřní seznam, klávesnici, dialog i omezení pohybu.
 
 ### Noční ticho a souhrn místo série upozornění
 

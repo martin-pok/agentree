@@ -115,6 +115,16 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
+## Protokol ověření – dokončení 0.29.1 (28. 9. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| `qa:desktop` | Chromium i WebKit: opakované kolečko, krátké dávky trackpadu, změna směru, vnořený seznam a posouvání po změně stránky i při omezeném pohybu prošly |
+| `qa:site` | Český i anglický web ve světlém a tmavém režimu, různé šířky, Chromium i WebKit prošly |
+| `qa:contrast`, `qa:tvary`, `qa:extension` | Kontrast a tvary aplikace, webu i rozšíření prošly; 33 scénářů okna rozšíření prošlo s atrapiemi Chrome API |
+| `build:mac`, `qa:native` | Sestavený ad-hoc podepsaný arm64 archiv a 10 nativních kontrol izolované aplikace prošly; archiv není notarizovaný |
+| Omezení | Skutečné stránky poskytovatelů v rozšíření, přihlášení Claude a doručení systémových oznámení nebyly v tomto běhu ověřeny |
+
 ## Protokol ověření – noční ticho a souhrn upozornění (28. 9. 2026, Linux kontejner, Node 22.22)
 
 | Kontrola | Výsledek |

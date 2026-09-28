@@ -413,6 +413,9 @@ for (const engine of engines) {
       // Karty Nastavení se plní až po prvním vykreslení; do té doby je stránka krátká.
       await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1000, null, { timeout: 5000 })
         .catch(() => { throw new Error(`${engine}: Nastavení jsou na zkoušku posouvání krátká`); });
+      // I první vstup musí fungovat z obnovené nenulové polohy, ne pouze odshora.
+      await p.evaluate(() => scrollTo({ top: 120, behavior: 'instant' }));
+      await p.waitForTimeout(50);
       await p.mouse.move(900, 500);
       const vzorky = p.evaluate(() => new Promise((hotovo) => {
         const v = [];
@@ -428,7 +431,7 @@ for (const engine of engines) {
       const { v, posouva } = await vzorky;
       const konec = v.at(-1);
       const mezi = new Set(v.filter((y) => y > 2 && y < konec - 2).map(Math.round)).size;
-      assert.ok(Math.abs(konec - 400) <= 2, `${engine}: kolečko 400 px v aplikaci dojelo na ${konec}`);
+      assert.ok(Math.abs(konec - 520) <= 2, `${engine}: kolečko 400 px z polohy 120 v aplikaci dojelo na ${konec}`);
       assert.ok(mezi >= 5, `${engine}: posun kolečkem v aplikaci neběžel plynule (mezipoloh ${mezi})`);
       assert.ok(v.every((y, i) => i === 0 || y >= v[i - 1] - 0.5), `${engine}: dojezd v aplikaci se vracel`);
       assert.ok(posouva, `${engine}: během posouvání chybí html.is-scrolling (hover efekty se nevypnou)`);
@@ -456,9 +459,75 @@ for (const engine of engines) {
 
       await p.mouse.wheel(0, 1200);
       await p.waitForTimeout(60);
-      await p.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, 0); document.documentElement.style.scrollBehavior = ''; });
+      // WebKit může změnu inline scroll-behavior vyhodnotit až po dalším vykreslení.
+      // Výslovný okamžitý skok ověřuje skutečné přerušení dojezdu, ne časování CSS.
+      await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
       await p.waitForTimeout(600);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
+      const koleckoDojede = async (krok, zprava) => {
+        const pred = await p.evaluate(() => scrollY);
+        const max = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        const cil = Math.min(max, Math.max(0, pred + krok));
+        await p.mouse.move(900, 500);
+        await p.mouse.wheel(0, krok);
+        await p.waitForFunction((y) => Math.abs(scrollY - y) <= 2, cil, { timeout: 3000 })
+          .catch(() => { throw new Error(`${engine}: ${zprava}, očekáváno ${cil}, skutečně ${pred} → kolečko se zablokovalo`); });
+        await p.waitForTimeout(100);
+      };
+      // Nestačí první kolečko od horního okraje. Starý dojezd po cizím posunu převzal
+      // událost, ale před prvním snímkem ji zrušil kvůli zastaralé poloze.
+      await koleckoDojede(240, 'kolečko po přerušení dojezdu skokem aplikace');
+      await p.evaluate(() => scrollTo({ top: 700, behavior: 'instant' }));
+      await koleckoDojede(-200, 'kolečko po posunu posuvníkem nebo odkazem');
+      await p.keyboard.press('PageDown');
+      await p.waitForTimeout(500);
+      await koleckoDojede(-160, 'kolečko po posunu klávesnicí');
+      // Změna obrazovky ruší dojezd a vrací okno nahoru; další vstup musí začít tam.
+      await p.mouse.wheel(0, 320);
+      await p.waitForTimeout(30);
+      await p.evaluate(() => { location.hash = '#/prehled'; });
+      await p.locator('.pulse-bar').waitFor();
+      await p.evaluate(() => { location.hash = '#/nastaveni'; });
+      await p.locator('.settings2').waitFor();
+      await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1000);
+      await p.waitForTimeout(400);
+      await koleckoDojede(240, 'kolečko po přepnutí obrazovky během dojezdu');
+      // Krátké opakované kroky trackpadu a změna směru se nesmějí zaseknout.
+      await p.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
+      await p.waitForTimeout(120);
+      for (let i = 0; i < 8; i++) await p.mouse.wheel(0, 15);
+      await p.waitForFunction(() => Math.abs(scrollY - 520) <= 2);
+      await koleckoDojede(-120, 'změna směru po malých krocích trackpadu');
+      // Vnitřní seznam dostane kolečko nativně, hlavní stránka přitom stojí.
+      await p.evaluate(() => {
+        const box = document.createElement('div');
+        box.id = 'qa-scroll-list';
+        box.style.cssText = 'position:fixed;right:40px;top:350px;width:240px;height:150px;overflow:auto;z-index:100;background:white';
+        box.innerHTML = '<div style="height:1200px">Posuvný seznam</div>';
+        document.body.append(box);
+      });
+      const predSeznamem = await p.evaluate(() => scrollY);
+      await p.mouse.move(1300, 400);
+      await p.mouse.wheel(0, 160);
+      await p.waitForFunction(() => document.querySelector('#qa-scroll-list').scrollTop > 0);
+      assert.equal(await p.evaluate(() => scrollY), predSeznamem, `${engine}: kolečko uvnitř seznamu posunulo stránku`);
+      await p.evaluate(() => document.querySelector('#qa-scroll-list').remove());
+      // Zapnutí omezení pohybu během dojezdu ho zastaví; další krok je okamžitý bez animace.
+      await p.mouse.move(900, 500);
+      await p.mouse.wheel(0, 300);
+      await p.emulateMedia({ reducedMotion: 'reduce' });
+      await p.waitForFunction(() => !('plynule' in document.documentElement.dataset));
+      await p.waitForTimeout(80);
+      const poOmezeni = await p.evaluate(() => scrollY);
+      await p.waitForTimeout(250);
+      assert.equal(await p.evaluate(() => scrollY), poOmezeni, `${engine}: dojezd ignoruje zapnuté omezení pohybu`);
+      await p.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
+      await p.waitForTimeout(120);
+      const predNativnim = await p.evaluate(() => scrollY);
+      assert.ok(predNativnim >= 390, `${engine}: není odkud ověřit přímý posun nahoru`);
+      await p.mouse.move(900, 500);
+      await p.mouse.wheel(0, -100);
+      await p.waitForFunction((y) => scrollY < y - 20, predNativnim, { timeout: 3000 });
       await ctx.close();
     }
     await zkontrolujPostranniPanel(browser, engine, errors);

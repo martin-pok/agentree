@@ -28,16 +28,23 @@ test('security: foreign origins cannot read state, transcripts or SSE; same-orig
 test('security: SSE client limit and disconnect release', async () => {
   const s = await startTestServer();
   const controllers = [];
+  // Ponechat otevřená i těla odpovědí: pokud fetch Response není nikde uložená,
+  // klient ji může uklidit a spojení SSE zavřít ještě před 33. požadavkem.
+  const streams = [];
   try {
     for (let i = 0; i < 32; i++) {
       const c = new AbortController(); controllers.push(c);
-      assert.equal((await fetch(s.url + '/api/stream', { signal: c.signal })).status, 200);
+      const r = await fetch(s.url + '/api/stream', { signal: c.signal });
+      assert.equal(r.status, 200);
+      streams.push(r);
     }
     assert.equal((await fetch(s.url + '/api/stream')).status, 503);
     controllers.pop().abort();
     await new Promise(r => setTimeout(r, 50));
     const c = new AbortController(); controllers.push(c);
-    assert.equal((await fetch(s.url + '/api/stream', { signal: c.signal })).status, 200);
+    const r = await fetch(s.url + '/api/stream', { signal: c.signal });
+    assert.equal(r.status, 200);
+    streams.push(r);
   } finally { controllers.forEach(c => c.abort()); await s.close(); }
 });
 
