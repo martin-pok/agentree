@@ -1,5 +1,127 @@
 # Changelog
 
+## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
+
+Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
+bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
+Rozšíření čeká na schválení v Chrome Web Store.
+
+### Angličtina bez zbytků češtiny a Windows bez Macu
+
+- Texty ze serveru (režimy a poznámky spouštění, stavy zdrojů, činnost agentů, chybové hlášky,
+  útrata, titulky upozornění) se v angličtině překládají na klientu. Server je dál píše česky
+  a označuje `ui('…')` (`src/texty.js`), klient je při příjmu přeloží podle
+  `public/js/i18n/en-server.js` – i složené věty s čísly, daty a částkami. Tvar dat se nemění,
+  přeloží se i dřív uložená upozornění.
+- Oznámení systému odcházejí v jazyce z Nastavení: server je před odesláním přeloží stejným
+  slovníkem, uložené upozornění zůstává česky. V anglickém souhrnu nočního ticha jsou anglicky
+  i názvy limitů a rozpočtů.
+- „Co je nového“ má anglické znění všech vydání.
+- Na Windows (a Linuxu) rozhraní píše „tento počítač“ místo „tento Mac“ a zkratky Ctrl+K, Ctrl+↵,
+  Ctrl+V místo ⌘; zkratky poslouchají na Macu jen ⌘, jinde jen Ctrl. Systém posílá server
+  (`<html data-system>`, `host.system`).
+- Testy: úplnost překladů hlídá i texty ze `src/` (česká věta mimo `ui()` neprojde),
+  `test/texty-serveru.test.mjs` překládá skutečné výstupy serveru i oznámení systému,
+  `test/system.test.mjs` obě varianty systému.
+
+### Vždy aktuální verze po aktualizaci
+
+- Oprava: loga služeb, brand, ikony a písma se posílala s `immutable` na rok pod adresou bez verze,
+  takže okno aplikace pro Mac (WKWebView), Windows (WebView2) i prohlížeč po aktualizaci dál
+  ukazovaly stará loga. Natrvalo se teď ukládá jen adresa se značkou obsahu (`?v=`), vše ostatní
+  se před použitím ověří (`no-cache` + ETag, odpověď „nic nového“ má pár bajtů). Loga při
+  překreslení neproblikávají (`src/verze-souboru.js`, `test/cerstvost.test.mjs`).
+- Service worker má jméno mezipaměti podle verze a obsahu místo ručního „v6“: po vydání se
+  nainstaluje nový a staré mezipaměti smaže; odpovědi s `no-store` neukládá.
+- Web: loga, brand, ikony a písma na Vercelu se před použitím ověří (`no-cache`) místo roční
+  neměnné mezipaměti, takže nové logo se po nasazení ukáže hned.
+
+### Plynulé posouvání po přerušení
+
+- Opravené kolečko a trackpad: po posunu klávesnicí, posuvníkem nebo přepnutí obrazovky nový dojezd
+  začíná na skutečné poloze. Starý kód událost převzal, ale před prvním snímkem ji zahodil. Přerušení
+  ruší i čekající snímek; omezení pohybu dojezd ukončí a kolečko posouvá přímo bez animace i ve WebKitu.
+- Regresní `qa:desktop` v Chromiu a WebKitu ověřuje první posun z nenulové polohy, opakované kroky
+  po přerušení, návrat z jiné obrazovky, vnitřní seznam, klávesnici, dialog i omezení pohybu.
+
+### Noční ticho a souhrn místo série upozornění
+
+- Nastavení → Upozornění → **Noční ticho**: v nastavený čas (výchozí 22:00–7:00 podle hodin
+  počítače, může jít přes půlnoc) nepřijde žádné oznámení ani zvuk – v aplikaci pro Mac, ve Windows,
+  v macOS z příkazové řádky ani v prohlížeči. Seznam upozornění, zvoneček, stav agentů a odznak
+  v Docku, v řádku nabídek i v hlavním panelu Windows se mění dál: to je stav, ne vyrušení. Výchozí
+  stav je vypnuto, starší nastavení se nemění.
+- Na konci ticha přijde jedno souhrnné oznámení, třeba „Během nočního ticha: 2× čeká na rozhodnutí,
+  1× limit“. Počítá jen to, co pořád platí: rozhodnutí, které mezitím padlo, obnovený limit ani
+  přečtené upozornění v něm nejsou. Klik vede rovnou do konverzace, u víc agentů na Agenty
+  s filtrem „Potřebuje tebe“. Souhrn přežije restart aplikace i uspaný Mac; po probuzení počká 15 s,
+  než zdroje doženou, co se v noci vyřešilo.
+- Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu („Další
+  upozornění: 3× dokončeno“). Za minutu tak přijdou nejvýš tři oznámení i se souhrnem; souhrn
+  dorazí, jakmile je zase místo, nejpozději minutu po prvním odloženém.
+- Zkušební upozornění ticho dodrží a řekne to, jinak by klik vypadal, že nic neudělal.
+- Oprava: s vypnutým „Dokončený úkol“ se stránka Nastavení zasekla (ověřeno v Chromiu). Zakázaný
+  výběr z nabídky rozjel nekonečnou smyčku mezi pozorovatelem změn a vlastním tlačítkem
+  (`public/js/selects.js`).
+- Oprava: přepínač nebo výběr v Nastavení po uložení ztratil fokus a klávesnice začínala znovu od
+  začátku stránky. Překreslení teď fokus vrátí (`public/js/ui.js#fill`).
+
+### Detekce běžících agentů
+
+- Oprava: jako agent Claude Code se počítal i shell, který ho jen spouští nebo o něm mluví
+  (`/bin/sh -c … /opt/claude-code/bin/claude …`), a tak se jeden agent ukázal dvakrát. Agentem je
+  teď jen běžící program – spustitelný soubor, nebo skript pod node/sh/python; `sh -c`, `sudo`,
+  editor ani `ln` s cestou ke claude ne. Platí i pro Codex, Gemini, Qwen, Copilot a lokální modely.
+- Nový agent v kořeni přepisů, který ještě neexistoval (Claude Code zakládá `projects/` až s první
+  zprávou), se ukáže hned místo za 1–5 s: sledování rodiče pozná vznik složky. Naměřeno 5–6 ms
+  místo 1,1–4,7 s; v klidu stejně pokusů o sledování i CPU jako dřív.
+- Oprava: přehled běžících aplikací se ptal Ollamy natvrdo na `127.0.0.1:11434` a přehlížel
+  `AGENTEEQ_OLLAMA_URL`. Teď jde stejnou cestou jako chat s Ollamou (`src/ollama.js`).
+
+### Opravy rozvržení a tvarů
+
+- Postranní panel už neschová Nastavení. Nabídka se na okně od 881 px šířky a do 1070 px výšky
+  potichu rolovala a poslední položku uřízla nebo schovala celou (1440 × 950: 87 px). Teď se nabídka nikdy nezmenší ani neroluje a místo uvolňuje profil: podle výšky okna je vysoký,
+  střední (menší avatar, bez pozdravu), v řádku, nebo na jednom řádku bez rozpisu zdrojů. Jméno,
+  zdroje i jméno Macu mají vždy jeden řádek a zdrojů se vypíšou nejvýš dva, takže výška profilu
+  nezávisí na obsahu. `qa:desktop` hlídá okna 620–1200 px na 881, 1180 a 1440 px, česky
+  i anglicky, i s patičkou při výpadku spojení.
+- Mosazný pruh u aktivní stránky je vidět i na okně do 1180 px – ležel celý mimo kartu panelu.
+- Výběr nemění řez písma: položky hlavní nabídky mají Onest 400 a položky nabídky Nastavení
+  Onest 500 ve všech stavech, vybranou stránku ukazuje plocha, barva a pruh.
+- Výšky jen ze stupnice 32 / 40 / 48 px: položky nabídky (dřív 44,5 px, na monitoru na výšku až
+  68 px), čipy agentů a menu Nastavení na telefonu (36 → 40 px), volba jazyka v Nastavení (karta
+  54 px → kapsle 40 px), pole pro správcovský klíč (36 → 32 px jako tlačítko vedle), položky palety
+  příkazů (42,5 → 40 px) a přepínač jazyka na webu (26 → 28 px v rámu 32 px jako `.seg--sm`).
+- Karta „Přidat vlastního agenta“ nemá nad jediným sbaleným řádkem prázdné místo a linku.
+- `qa:tvary` nově měří, že se řez písma při výběru nemění a že jednořádkové ovládací prvky mají
+  výšku ze stupnice.
+
+### Vydání a testy
+
+- Oprava: build pro Windows četl verzi pláště z `Agenteeq.exe` až po smazání složky buildu
+  a chybu tiše nahradil verzí z `package.json`, takže CI hlásilo zjištěnou verzi u souboru,
+  který neexistoval. Verze se teď čte z hotového `.exe` před archivem a build skončí, když ji
+  nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
+- Oprava: build a QA pro Windows vkládaly cesty do `powershell -Command` v apostrofech, takže
+  složka jako `C:\Users\O'Brien\…` (i dočasná pod %TEMP%) příkaz rozbila. Cesty teď jdou jen
+  proměnnými prostředí přes `scripts/powershell.mjs`; hlídá to `test/windows-regression.test.mjs`.
+- Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
+  „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
+- Testy se zapnutými procesy vidí jen své procesy (`test/helpers.mjs#jenProcesy`): dřív si
+  přidaly `CLAUDE_CONFIG_DIR` každého procesu na počítači a četly cizí přepisy. Bez omezení
+  `startTestServer` odmítne start.
+- Test živého procesu ověřuje i to, co sliboval v názvu: nespárovaný proces po skončení zmizí
+  (dřív poslední krok prošel vždy, protože spárovaný proces zmizel už spárováním). Sdílený výpis
+  procesů není starší než jeden průchod, takže `AGENTEEQ_PROCESS_MS` pod 4 s opravdu platí.
+- Test živého procesu `claude` (`test/detekce-agentu.test.mjs`) padal při souběžných bězích:
+  server vidí procesy celého počítače, přidal si CLAUDE_CONFIG_DIR cizího běhu a jeho přepis
+  s tímtéž pevným ID obsadil konverzaci. Každý běh má teď vlastní ID, průchod spustí test sám
+  místo čekání na 5s časovač a převzetí nově vzniklého kořene hlídá samostatný test.
+- Popis vydání na GitHubu má čistou osnovu nadpisů: název vydání je `##` s velkým počátečním
+  písmenem, skupiny změn pod ním `###`, „Ke stažení“ a další sekce zase `##`. Dřív byl název
+  `###` a začínal malým písmenem. Zveřejnění popis přegeneruje, takže se to projeví i u 0.29.0.
+
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
 ### Rozšíření se spáruje samo a má nové okno

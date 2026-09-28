@@ -109,18 +109,27 @@ ve složce, o které Agenteeq neví. Proto:
   Proměnné, které aplikace z Finderu nevidí, doplní za běhu: přihlašovací shell (sonda programů),
   **prostředí běžícího procesu** (macOS `ps -E`, Linux `/proc/<pid>/environ`) a **hook** Claude Code
   (`transcript_path` mimo známé kořeny přidá svůj kořen). Tatáž konverzace ze dvou kořenů
-  (symlink) se čte jen jednou.
+  (symlink) se čte jen jednou. Kořen, který ještě neexistuje (Claude Code zakládá `projects/` až
+  s první zprávou), převezme sledování hned po vzniku: přímého rodiče hlídá nerekurzivní strážce,
+  který reaguje jen na položku se jménem kořene (`src/watch.js#watchTree`, `hlidatVznik`). Nic
+  širšího než rodič a nikdy domov; když chybí i rodič, platí opakování po 5 s jako dřív.
 - **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
   gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
-  2.1.283) se páruje s konverzací téhož nástroje, která od jeho startu žila a běží ve stejné složce
-  (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se jen podle času). Starší
+  2.1.283) se páruje s konverzací téhož nástroje. Procesem agenta je jen běžící program: spustitelný
+  soubor, nebo skript pod interpretem (`node /…/bin/claude`, obalový `/bin/sh /…/bin/claude`). Shell,
+  který ho jen spouští nebo zmiňuje (`sh -c "… /bin/claude …"`), `sudo`, `caffeinate` ani editor
+  s cestou agentem nejsou – skutečný program je ve výpisu jako vlastní proces
+  (`src/connectors/processes.js#program`). Páruje se s konverzací, která od jeho startu žila
+  a běží ve stejné složce (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se
+  jen podle času). Starší
   proces bere starší konverzaci, spárování mezi průchody nepřeskakuje. Nespárovaný proces je agent
   „běží od 14:02, zatím bez přepisu“ se stavem `waiting` – co přesně dělá, z procesu nevyčteme,
   a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis
   procesů nic nepřidá ani neubere.
 - **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
-  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se do 8 s, po prvním zápisu do přepisu
-  se spáruje a po skončení zmizí.
+  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se, po prvním zápisu do přepisu se
+  spáruje, cizí proces s jiným `CLAUDE_CONFIG_DIR` test nevidí a druhý, nespárovaný proces po skončení
+  zmizí. Sdílený výpis procesů není starší než jeden průchod (výchozí platnost 4 s při průchodu po 5 s).
 
 ## Konektory v detailu
 
@@ -281,7 +290,8 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
 
 ### Procesy – `src/connectors/processes.js` ✅
 
-- `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `http://127.0.0.1:11434/api/ps`.
+- `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `/api/ps` na adrese
+  z `AGENTEEQ_OLLAMA_URL` (výchozí `http://127.0.0.1:11434`), stejným klientem jako chat (`src/ollama.js`).
 
 ## Předplatné a kurz koruny (Útrata)
 

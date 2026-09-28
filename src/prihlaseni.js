@@ -11,6 +11,7 @@
 // jinak vkládal do Terminálu; Agenteeq ho nechá vložit do svého okna a předá ho procesu na vstup.
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { ui } from './texty.js';
 
 // Odkaz z výstupu se otevírá v prohlížeči, takže projde jen adresa dodavatele – nikdy nic jiného,
 // co by se ve výpisu mohlo objevit.
@@ -48,7 +49,7 @@ export function spustPrihlaseni(bin, args, { spawnImpl = spawn, env = prostrediP
     try {
       child = spawnImpl(bin, args, { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     } catch (err) {
-      resolve({ ok: false, error: `Přihlášení se nepodařilo spustit: ${err.message}` });
+      resolve({ ok: false, error: ui('Přihlášení se nepodařilo spustit: {0}', err.message) });
       return;
     }
     let vystup = '';
@@ -88,7 +89,7 @@ export function spustPrihlaseni(bin, args, { spawnImpl = spawn, env = prostrediP
     child.on('error', (err) => {
       skoncil = true;
       hotovo(null);
-      if (!bezi) resolve({ ok: false, error: `Přihlášení se nepodařilo spustit: ${err.code === 'ENOENT' ? 'program nebyl nalezen' : err.message}` });
+      if (!bezi) resolve({ ok: false, error: ui('Přihlášení se nepodařilo spustit: {0}', err.code === 'ENOENT' ? ui('program nebyl nalezen') : err.message) });
     });
     child.on('exit', (code) => {
       skoncil = true;

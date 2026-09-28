@@ -60,6 +60,36 @@ export function napovedaProMac(podpis) {
   ].join('\n');
 }
 
+/**
+ * Název vydání pro nadpis popisu: text za „·“ v nadpisu changelogu, s velkým počátečním
+ * písmenem. CHANGELOG ho píše malým („0.29.0 – … · nové okno rozšíření…“), protože tam
+ * navazuje na verzi a datum; v popisu vydání stojí sám jako nadpis, takže je to začátek věty.
+ */
+export function nazevVydani(nadpis) {
+  const nazev = String(nadpis).split('·').slice(1).join('·').trim() || String(nadpis).trim();
+  return nazev.replace(/^\p{Ll}/u, (p) => p.toLocaleUpperCase('cs'));
+}
+
+/**
+ * Posune nadpisy v těle sekce tak, aby nejvyšší z nich byl o úroveň pod názvem vydání (`##`).
+ * Popis vydání má pak čistou osnovu: `## Název` → `### skupiny změn` → `## Ke stažení` …
+ * Řádky v kódových blocích (komentáře `# …` v ukázce příkazů) nadpisy nejsou.
+ */
+export function nadpisyPodNazev(telo, uroven = 3) {
+  const radky = String(telo).split('\n');
+  const nadpisy = [];
+  let vKodu = false;
+  radky.forEach((radek, i) => {
+    if (/^\s*(```|~~~)/.test(radek)) { vKodu = !vKodu; return; }
+    const m = !vKodu && radek.match(/^(#{1,6})\s/);
+    if (m) nadpisy.push([i, m[1].length]);
+  });
+  if (!nadpisy.length) return radky.join('\n');
+  const posun = uroven - Math.min(...nadpisy.map(([, u]) => u));
+  for (const [i, u] of nadpisy) radky[i] = '#'.repeat(Math.min(6, u + posun)) + radky[i].slice(u);
+  return radky.join('\n');
+}
+
 const MB = (b) => `${(b / 1024 / 1024).toFixed(1)} MB`;
 
 /**
@@ -99,7 +129,8 @@ const popisSouboru = (jmeno) => POPIS_PRILOHY.find(([vzor]) => vzor.test(jmeno))
 export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' }) {
   const { nadpis, telo } = sekceZmen(changelog, verze);
   const maMac = soubory.some((s) => /macOS/.test(s.jmeno));
-  const casti = [`### ${nadpis.split('·').slice(1).join('·').trim() || nadpis}`, '', telo, ''];
+  // Název je nadpis sekce změn a stojí na stejné úrovni jako „Ke stažení“ a další sekce níž.
+  const casti = [`## ${nazevVydani(nadpis)}`, '', nadpisyPodNazev(telo), ''];
 
   if (soubory.length) {
     casti.push('## Ke stažení', '');

@@ -3,7 +3,7 @@ import { esc, norm, rel, fmtNum, shortPath, plural } from '../format.js';
 import { ICON } from '../icons.js';
 import { fill, emptyState, toast, copy, modal } from '../ui.js';
 import { renderMarkdown, splitFrontMatter } from '../markdown.js';
-import { tr } from '../i18n.js';
+import { tr, tomtoPocitaci } from '../i18n.js';
 
 const v = { el: null, items: null, q: '', source: 'all', origin: 'all', sort: 'name', error: '', shown: 36, sig: '' };
 const STRANA = 36; // karet najednou: 147 dovedností dělalo na telefonu stránku vysokou přes 37 000 px
@@ -155,7 +155,7 @@ function mount(el) {
       <div class="sk-filtr" data-blok="zdroje"><span class="sk-filtr-popis" id="sk-z">${tr('Zdroj')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-z" data-region="sources"></div></div>
       <div class="sk-filtr" data-blok="puvod"><span class="sk-filtr-popis" id="sk-p">${tr('Původ')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-p" data-region="origins"></div></div>
     </section>
-    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">${tr('Dovednosti jsou soubory')} <code>SKILL.md</code> ${tr('na tomto Macu – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.')}</p>
+    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">${tr('Dovednosti jsou soubory')} <code>SKILL.md</code> ${tr('na {0} – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.', tomtoPocitaci())}</p>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {
@@ -200,7 +200,7 @@ function update() {
     return;
   }
   if (!v.items) {
-    fill(el, 'list', `<div class="loading" role="status"><span class="loader"></span>${tr('Hledám dovednosti na tomto Macu…')}</div>`);
+    fill(el, 'list', `<div class="loading" role="status"><span class="loader"></span>${tr('Hledám dovednosti na {0}…', tomtoPocitaci())}</div>`);
     return;
   }
   fill(el, 'sum', v.items.length ? souhrnHtml(v.items) : '');
@@ -234,7 +234,7 @@ function update() {
     ? `<div class="skills">${ukazane.map(cardHtml).join('')}</div>${list.length > ukazane.length
       ? `<div class="skills-more"><span class="muted small">${tr('Zobrazeno {0} z {1}', ukazane.length, list.length)}</span><button class="btn" type="button" data-more>${tr('Zobrazit dalších {0}', Math.min(STRANA, list.length - ukazane.length))}</button></div>` : ''}`
     : emptyState({
-      title: v.items.length ? tr('Tomuto filtru neodpovídá žádná dovednost') : tr('Na tomto Macu zatím žádné dovednosti nejsou'),
+      title: v.items.length ? tr('Tomuto filtru neodpovídá žádná dovednost') : tr('Na {0} zatím žádné dovednosti nejsou', tomtoPocitaci()),
       text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq hledá soubory SKILL.md u Claude (včetně pluginů a plánovaných úloh) a u Codexu.'),
     }));
 }

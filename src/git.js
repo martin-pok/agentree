@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { run, clip } from './util.js';
+import { ui } from './texty.js';
 
 // Git pro projekty: přehled repozitáře a bezpečné pracovní kopie (worktree) pro paralelní agenty.
 // Vše přes execFile s polem argumentů (bez shellu); názvy větví a cesty se ověřují před použitím.
@@ -78,13 +79,13 @@ export function parseWorktrees(out) {
 }
 
 export async function repoInfo(dir) {
-  if (typeof dir !== 'string' || !path.isAbsolute(dir)) return { isRepo: false, error: 'Cesta musí začínat lomítkem.' };
+  if (typeof dir !== 'string' || !path.isAbsolute(dir)) return { isRepo: false, error: ui('Cesta musí začínat lomítkem.') };
   const st = await fs.stat(dir).catch(() => null);
-  if (!st?.isDirectory()) return { isRepo: false, path: dir, error: 'Složka neexistuje.' };
+  if (!st?.isDirectory()) return { isRepo: false, path: dir, error: ui('Složka neexistuje.') };
   const top = await git(dir, ['rev-parse', '--show-toplevel']);
   if (!top.ok) {
     const missing = /ENOENT|not found/i.test(top.stderr);
-    return { isRepo: false, path: dir, error: missing ? 'Git není nainstalovaný.' : '' };
+    return { isRepo: false, path: dir, error: missing ? ui('Git není nainstalovaný.') : '' };
   }
   const root = top.stdout.trim();
   const [status, log, branches, worktrees, remote] = await Promise.all([
@@ -115,28 +116,28 @@ export async function repoInfo(dir) {
 }
 
 export async function createWorktree({ repo, base, branch, dir }) {
-  if (!isSafeRef(branch)) return { ok: false, error: 'Neplatný název větve.' };
-  if (!isSafeRef(base)) return { ok: false, error: 'Neplatná výchozí větev.' };
-  if (!path.isAbsolute(dir) || /[\n\r\0]/.test(dir)) return { ok: false, error: 'Neplatná cesta pracovní kopie.' };
+  if (!isSafeRef(branch)) return { ok: false, error: ui('Neplatný název větve.') };
+  if (!isSafeRef(base)) return { ok: false, error: ui('Neplatná výchozí větev.') };
+  if (!path.isAbsolute(dir) || /[\n\r\0]/.test(dir)) return { ok: false, error: ui('Neplatná cesta pracovní kopie.') };
   const verify = await git(repo, ['rev-parse', '--verify', '--quiet', `${base}^{commit}`]);
-  if (!verify.ok) return { ok: false, error: `Větev ${base} v repozitáři neexistuje.` };
-  if (await fs.stat(dir).catch(() => null)) return { ok: false, error: 'Pracovní kopie s tímto názvem už existuje.' };
+  if (!verify.ok) return { ok: false, error: ui('Větev {0} v repozitáři neexistuje.', base) };
+  if (await fs.stat(dir).catch(() => null)) return { ok: false, error: ui('Pracovní kopie s tímto názvem už existuje.') };
   await fs.mkdir(path.dirname(dir), { recursive: true });
   const r = await git(repo, ['worktree', 'add', '-b', branch, dir, base], 60000);
-  if (!r.ok) return { ok: false, error: clip(r.stderr.trim().split('\n').pop() || 'Pracovní kopii se nepodařilo vytvořit.', 200) };
+  if (!r.ok) return { ok: false, error: clip(r.stderr.trim().split('\n').pop() || ui('Pracovní kopii se nepodařilo vytvořit.'), 200) };
   return { ok: true, path: dir, branch, base };
 }
 
 // Změny agenta proti výchozí větvi: commity i neuložené změny v jeho pracovní kopii.
 export async function workDiff({ dir, base }) {
-  if (!isSafeRef(base)) return { ok: false, error: 'Neplatná výchozí větev.' };
+  if (!isSafeRef(base)) return { ok: false, error: ui('Neplatná výchozí větev.') };
   const [short, numstat, untracked, ahead] = await Promise.all([
     git(dir, ['diff', '--shortstat', base]),
     git(dir, ['diff', '--numstat', base]),
     git(dir, ['ls-files', '--others', '--exclude-standard']),
     git(dir, ['rev-list', '--count', `${base}..HEAD`]),
   ]);
-  if (!short.ok) return { ok: false, error: 'Pracovní kopie není dostupná.' };
+  if (!short.ok) return { ok: false, error: ui('Pracovní kopie není dostupná.') };
   const files = numstat.stdout.split('\n').filter(Boolean).map((l) => {
     const [add, del, file] = l.split('\t');
     return { file, added: Number(add) || 0, removed: Number(del) || 0 };
@@ -157,36 +158,36 @@ export async function workDiff({ dir, base }) {
 // Přijmout práci agenta: uložit jeho změny (commit) a sloučit větev do výchozí větve v hlavní složce.
 // Při konfliktu se sloučení vrátí a nic se nezmění.
 export async function acceptWork({ repo, dir, branch, base, message }) {
-  if (!isSafeRef(branch) || !isSafeRef(base)) return { ok: false, error: 'Neplatná větev.' };
+  if (!isSafeRef(branch) || !isSafeRef(base)) return { ok: false, error: ui('Neplatná větev.') };
   const wt = await git(dir, ['status', '--porcelain']);
-  if (!wt.ok) return { ok: false, error: 'Pracovní kopie agenta není dostupná.' };
+  if (!wt.ok) return { ok: false, error: ui('Pracovní kopie agenta není dostupná.') };
   if (wt.stdout.trim()) {
     const add = await git(dir, ['add', '-A']);
     const commit = add.ok ? await git(dir, ['commit', '-m', clip(message || `Agenteeq: práce na ${branch}`, 200)], 30000) : add;
     if (!commit.ok) {
       const identity = /user\.name|user\.email|identity/i.test(commit.stderr);
-      return { ok: false, error: identity ? 'Git nezná tvoje jméno a e-mail. Nastav je v Terminálu: git config --global user.name "Jméno" a git config --global user.email "email".' : `Změny se nepodařilo uložit: ${clip(commit.stderr.trim().split('\n').pop(), 160)}` };
+      return { ok: false, error: identity ? ui('Git nezná tvoje jméno a e-mail. Nastav je v Terminálu: git config --global user.name "Jméno" a git config --global user.email "email".') : ui('Změny se nepodařilo uložit: {0}', clip(commit.stderr.trim().split('\n').pop(), 160)) };
     }
   }
   const ahead = await git(repo, ['rev-list', '--count', `${base}..${branch}`]);
-  if (!ahead.ok) return { ok: false, error: 'Větev agenta nebo výchozí větev neexistuje.' };
+  if (!ahead.ok) return { ok: false, error: ui('Větev agenta nebo výchozí větev neexistuje.') };
   if (Number(ahead.stdout.trim()) === 0) return { ok: true, merged: false, nothing: true };
   const head = await git(repo, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  if (head.stdout.trim() !== base) return { ok: false, error: `Hlavní složka repozitáře je na větvi ${head.stdout.trim() || '?'}, ne na ${base}. Přepni ji na ${base} a zkus to znovu.` };
+  if (head.stdout.trim() !== base) return { ok: false, error: ui('Hlavní složka repozitáře je na větvi {0}, ne na {1}. Přepni ji na {1} a zkus to znovu.', head.stdout.trim() || '?', base) };
   const main = await git(repo, ['status', '--porcelain', '--untracked-files=no']);
-  if (main.stdout.trim()) return { ok: false, error: 'Hlavní složka repozitáře má neuložené změny. Ulož je (commit) nebo odlož, pak změny agenta přijmi.' };
+  if (main.stdout.trim()) return { ok: false, error: ui('Hlavní složka repozitáře má neuložené změny. Ulož je (commit) nebo odlož, pak změny agenta přijmi.') };
   const merge = await git(repo, ['merge', '--no-ff', '--no-edit', branch], 60000);
   if (!merge.ok) {
     await git(repo, ['merge', '--abort']);
-    return { ok: false, conflict: true, error: 'Změny se nedají sloučit automaticky (konflikt v souborech). Nic se nezměnilo – požádej agenta, ať se přizpůsobí aktuální větvi, nebo to vyřeš ručně.' };
+    return { ok: false, conflict: true, error: ui('Změny se nedají sloučit automaticky (konflikt v souborech). Nic se nezměnilo – požádej agenta, ať se přizpůsobí aktuální větvi, nebo to vyřeš ručně.') };
   }
   return { ok: true, merged: true };
 }
 
 export async function discardWork({ repo, dir, branch }) {
-  if (!isSafeRef(branch)) return { ok: false, error: 'Neplatná větev.' };
+  if (!isSafeRef(branch)) return { ok: false, error: ui('Neplatná větev.') };
   const rm = await git(repo, ['worktree', 'remove', '--force', dir], 30000);
-  if (!rm.ok && await fs.stat(dir).catch(() => null)) return { ok: false, error: `Pracovní kopii se nepodařilo odstranit: ${clip(rm.stderr.trim(), 160)}` };
+  if (!rm.ok && await fs.stat(dir).catch(() => null)) return { ok: false, error: ui('Pracovní kopii se nepodařilo odstranit: {0}', clip(rm.stderr.trim(), 160)) };
   await git(repo, ['worktree', 'prune']);
   await git(repo, ['branch', '-D', branch]);
   return { ok: true };
@@ -194,9 +195,9 @@ export async function discardWork({ repo, dir, branch }) {
 
 // Po přijetí: uklidit pracovní kopii, větev smazat jen když je sloučená.
 export async function cleanupWork({ repo, dir, branch }) {
-  if (!isSafeRef(branch)) return { ok: false, error: 'Neplatná větev.' };
+  if (!isSafeRef(branch)) return { ok: false, error: ui('Neplatná větev.') };
   const dirty = await git(dir, ['status', '--porcelain']);
-  if (dirty.ok && dirty.stdout.trim()) return { ok: false, error: 'Pracovní kopie má neuložené změny.' };
+  if (dirty.ok && dirty.stdout.trim()) return { ok: false, error: ui('Pracovní kopie má neuložené změny.') };
   await git(repo, ['worktree', 'remove', dir], 30000);
   await git(repo, ['worktree', 'prune']);
   const del = await git(repo, ['branch', '-d', branch]);

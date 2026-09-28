@@ -18,7 +18,7 @@ test('Windows capabilities retain web opening and launching without native appli
   assert.equal((await s.app.launch({ agent: 'chatgpt', mode: 'web', prompt: 'Test' })).status, 422);
 });
 
-test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', { skip: process.platform !== 'win32' }, async t => {
+test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', { skip: process.platform !== 'win32' && 'jen Windows: spouští powershell.exe z příkazu hooku pro Windows' }, async t => {
   const received = [];
   const server = http.createServer(async (req, res) => {
     let body = ''; for await (const chunk of req) body += chunk.toString('utf8');
@@ -100,4 +100,112 @@ test('Windows: most pláště přežije start dokumentu bez <html> a třídy dop
   vm.runInNewContext(skript, hned.g);
   assert.ok(hned.tridy.has('is-desktop') && hned.tridy.has('is-windows'));
   assert.equal(hned.pozorovatele.length, 0);
+});
+
+// Build pro Windows dřív četl verzi z Agenteeq.exe až po smazání složky buildu a chybu tiše
+// nahradil verzí z package.json. CI pak vypsalo „Cannot find path …\Agenteeq.exe“ a hned pod
+// tím „Verze pláště: 0.29.0“ (běh 36351816717). Rozhodování je čistá funkce, takže se ověří
+// na Linuxu s podvrženým výstupem PowerShellu.
+test('Windows build: verze pláště, kterou se nepodařilo zjistit, se nehlásí jako zjištěná', async () => {
+  const { overitVerziPlaste, zjistitVerziPlaste, prikazVerzePlaste } = await import('../scripts/exe-version.mjs');
+
+  // Přesně stav z CI: soubor neexistuje, PowerShell skončí chybou a nic nevypíše.
+  const ci = {
+    status: 1, stdout: '',
+    stderr: "Get-Item : Cannot find path 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\agenteeq-win-build-x\\Agenteeq\\Agenteeq.exe' because it does not exist.\r\nAt line:1 char:1\r\n",
+  };
+  assert.throws(() => overitVerziPlaste(ci, '0.29.0'), (e) => /nepodařilo zjistit/.test(e.message) && /Cannot find path/.test(e.message));
+
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '\r\n', stderr: '' }, '0.29.0'), /nepodařilo zjistit: Agenteeq\.exe nevrátil FileVersion/, 'prázdný výstup není verze');
+  assert.throws(() => overitVerziPlaste({ error: Object.assign(new Error('spawnSync powershell.exe ENOENT'), { code: 'ENOENT' }), status: null, stdout: null, stderr: null }, '0.29.0'), /nepodařilo zjistit: PowerShell nešel spustit/);
+  assert.throws(() => overitVerziPlaste({ status: null, stdout: '', stderr: '' }, '0.29.0'), /nepodařilo zjistit: PowerShell skončil bez kódu/);
+  assert.throws(() => overitVerziPlaste(undefined, '0.29.0'), /nepodařilo zjistit/);
+
+  // Přečtená, ale jiná verze je nesoulad, ne „nepodařilo se zjistit“ – a build taky zastaví.
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '0.28.0\r\n', stderr: '' }, '0.29.0'),
+    (e) => /verzi 0\.28\.0, package\.json 0\.29\.0/.test(e.message) && !/nepodařilo zjistit/.test(e.message));
+  assert.throws(() => overitVerziPlaste({ status: 0, stdout: '0.29.0.0', stderr: '' }, '0.29.0'), /0\.29\.0\.0/, 'razítko nese přesně verzi z package.json');
+
+  assert.equal(overitVerziPlaste({ status: 0, stdout: '0.29.0\r\n', stderr: '' }, '0.29.0'), '0.29.0');
+
+  // Cesta jde do PowerShellu proměnnou prostředí, ne vepsaná do příkazu, který by ji rozebral podruhé.
+  const exe = "C:\\Users\\O'Brien\\Design & Web\\Agenteeq\\Agenteeq.exe";
+  const { prikaz, argumenty, prostredi } = prikazVerzePlaste(exe);
+  assert.equal(prikaz, 'powershell.exe');
+  assert.ok(argumenty.every((a) => !a.includes('Design & Web')), 'cesta nesmí být součástí textu příkazu');
+  assert.match(argumenty.at(-1), /\$ErrorActionPreference = 'Stop'/, 'chybějící soubor musí skončit chybou, ne prázdnou verzí');
+  assert.match(argumenty.at(-1), /Get-Item -LiteralPath \$env:AGENTEEQ_PLAST_EXE/);
+  assert.deepEqual(prostredi, { AGENTEEQ_PLAST_EXE: exe });
+
+  // Složení: spustí se příkaz s cestou v prostředí a výsledek jde přes stejné rozhodnutí.
+  const volani = [];
+  const spust = (p, a, o) => { volani.push({ p, a, env: o.env }); return ci; };
+  assert.throws(() => zjistitVerziPlaste(exe, '0.29.0', { spust }), /nepodařilo zjistit/);
+  assert.equal(volani.length, 1);
+  assert.equal(volani[0].env.AGENTEEQ_PLAST_EXE, exe);
+  assert.equal(zjistitVerziPlaste(exe, '0.29.0', { spust: () => ({ status: 0, stdout: '0.29.0\r\n', stderr: '' }) }), '0.29.0');
+
+  // A samotný build: verze se ověří dřív, než vznikne archiv a než se smaže složka buildu,
+  // a žádná tichá záloha na verzi z package.json.
+  const build = await (await import('node:fs/promises')).readFile(new URL('../scripts/build-windows.mjs', import.meta.url), 'utf8');
+  const overeni = build.indexOf('zjistitVerziPlaste(path.join(balik, \'Agenteeq.exe\'), version)');
+  assert.ok(overeni > 0, 'build musí verzi pláště ověřit');
+  assert.ok(overeni < build.indexOf('Compress-Archive'), 'ověřit před archivem');
+  assert.ok(overeni < build.indexOf('fs.rm(build'), 'ověřit dřív, než se složka buildu smaže');
+  assert.doesNotMatch(build, /\|\|\s*version\s*\}/, 'selhání čtení se nesmí nahradit verzí z package.json');
+  assert.match(build, /catch \(chyba\) \{[\s\S]{0,300}process\.exit\(1\)/, 'při chybě build končí');
+});
+
+// `powershell.exe -Command` rozebere text jako kód. Cesta vepsaná v apostrofech se rozbije
+// o první apostrof – dočasné složky buildu a QA jsou pod %TEMP%, takže C:\Users\O'Brien\… je
+// běžný případ. Skripty v scripts/ proto spouštějí PowerShell jen přes scripts/powershell.mjs,
+// který cesty předá proměnnými prostředí.
+test('Windows skripty: do -Command se nevkládá žádná cesta', async () => {
+  const fs = await import('node:fs/promises');
+  const { powershell } = await import('../scripts/powershell.mjs');
+
+  const cesta = "C:\\Users\\O'Brien\\AppData\\Local\\Temp\\Design & Web $HOME\\Agenteeq";
+  const { argumenty, prostredi } = powershell('Compress-Archive -LiteralPath $env:AGENTEEQ_BALIK -DestinationPath $env:AGENTEEQ_ARCHIV',
+    { AGENTEEQ_BALIK: cesta, AGENTEEQ_ARCHIV: `${cesta}.zip` });
+  assert.deepEqual(argumenty.slice(0, 3), ['-NoProfile', '-NonInteractive', '-Command']);
+  assert.ok(argumenty.every((a) => !a.includes("O'Brien")), 'cesta nesmí být v textu příkazu');
+  assert.match(argumenty[3], /\$ErrorActionPreference = 'Stop'/, 'selhání musí skončit chybou');
+  assert.deepEqual(prostredi, { AGENTEEQ_BALIK: cesta, AGENTEEQ_ARCHIV: `${cesta}.zip` });
+
+  // Pomocník chybu nahlas odmítne, místo aby ji pustil dál.
+  assert.throws(() => powershell(`Get-Item -LiteralPath '${cesta}' # $env:AGENTEEQ_X`, { AGENTEEQ_X: cesta }), /vepsaná přímo do skriptu/);
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:AGENTEEQ_JINA', { AGENTEEQ_X: cesta }), /nepoužívá/);
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:AGENTEEQ_XY', { AGENTEEQ_X: cesta }), /nepoužívá/, 'předpona jiné proměnné nestačí');
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:TEMP', { TEMP: cesta }), /AGENTEEQ_/);
+
+  // Zdroj: -Command skládá jen pomocník a každý skript, který mu dá, je stálý text.
+  const slozka = new URL('../scripts/', import.meta.url);
+  const soubory = (await fs.readdir(slozka)).filter((f) => f.endsWith('.mjs'));
+  const volani = [];
+  for (const f of soubory) {
+    const text = await fs.readFile(new URL(f, slozka), 'utf8');
+    if (f !== 'powershell.mjs') {
+      assert.doesNotMatch(text, /['"`]-(?:Command|EncodedCommand)['"`]/, `${f}: PowerShell jen přes scripts/powershell.mjs`);
+    }
+    for (const m of text.matchAll(/\bpowershell\(\s*/g)) {
+      const zbytek = text.slice(m.index + m[0].length);
+      if (/^skript\b/.test(zbytek)) continue; // definice pomocníka
+      const q = zbytek[0];
+      assert.ok(['\'', '"', '`'].includes(q), `${f}: skript pro PowerShell musí být přímo zapsaný text, ne složený výraz`);
+      let i = 1;
+      while (i < zbytek.length && zbytek[i] !== q) i += zbytek[i] === '\\' ? 2 : 1;
+      const skript = zbytek.slice(1, i);
+      assert.ok(!(q === '`' && skript.includes('${')), `${f}: do skriptu pro PowerShell se nic nevkládá (\${…})`);
+      assert.match(zbytek.slice(i + 1), /^\s*[,)]/, `${f}: skript pro PowerShell se neskládá (+)`);
+      volani.push(`${f}: ${skript.split(/\s/)[0]}`);
+    }
+  }
+  // Pojistka, že kontrola opravdu něco prošla: všechna známá místa, kde se PowerShell spouští.
+  assert.deepEqual(volani.sort(), [
+    'build-windows.mjs: Compress-Archive',
+    'build-windows.mjs: Expand-Archive',
+    'exe-version.mjs: (Get-Item',
+    'qa-native.mjs: Add-Type',
+    'qa-native.mjs: Expand-Archive',
+  ]);
 });

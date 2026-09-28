@@ -55,7 +55,7 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti 
 | 1 | Nativní aplikace s ikonou stavu | **Zčásti hotovo:** aplikace pro Mac (Swift, `desktop/`) spouští server a počet agentů, kteří čekají na tebe (rozhodnutí, limit, selhání), ukazuje v Docku i u ikony v řádku nabídek (`desktop/Agenteeq.swift#handleDesktopEvent`). Zbývá podpis s notarizací („Teď“ #3, odložené) |
 | 2 | Historie > 30 dní | Statistiky za 12 měsíců do 1 s; migrace bez ztráty dat; bez runtime závislostí |
 | 3 | ~~Export útraty (CSV)~~ **hotovo v 0.27.0** | Útrata → Výdaje → *Export CSV*: řádek za platbu v každém měsíci včetně automatických záznamů, kurz a částka v měně aplikace; součty po měsících sedí s obrazovkou (`test/spend-export.test.mjs`) |
-| 4 | Pravidla upozornění | **Zčásti hotovo:** ztlumení projektu a „jen rozhodnutí“ podle projektu. Zbývá noční ticho a souhrn místo jednotlivých upozornění |
+| 4 | ~~Pravidla upozornění~~ **hotovo, vyjde v příští verzi** | Ztlumení projektu a „jen rozhodnutí“ podle projektu; noční ticho (místní čas počítače, přes půlnoc, výchozí vypnuto) bez oznámení a zvuku, ale se stavem, zvonečkem a odznakem; na konci ticha jeden souhrn jen za to, co pořád platí; víc než 3 upozornění za minutu → zbytek v jednom souhrnu (`src/alerts.js`, testy s pevnými hodinami v `test/nocni-ticho.test.mjs`). Skutečná oznámení v aplikaci pro Mac a ve Windows čekají na ruční ověření |
 
 ## v1.0 – SaaS (Pro a Team)
 
@@ -83,3 +83,7 @@ Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřen
 - Párování rozšíření bez kódu na Windows: ID rozbaleného rozšíření se tam počítá z cesty v UTF-16
   podle zdrojů Chromia, na skutečném Windows neověřeně (`src/platform.js#idRozbalenehoRozsireni`).
   Když nesedí, zbývá jednorázový kód z Nastavení.
+- Zbývající angličtina: CSV exporty útraty a projektů mají české hlavičky i hodnoty (`src/spend.js#spendCsv`,
+  `src/projects.js#projectCsv`), stránka po návratu z přihlášení Google je jen česky (`src/ucet-stranka.js`)
+  a pole kalendáře píše datum česky „D. M. RRRR“ (`public/js/datepicker.js`). Test úplnosti je
+  vyjmenovává jako texty mimo rozhraní (`test/i18n.test.mjs`, `MIMO_ROZHRANI`).

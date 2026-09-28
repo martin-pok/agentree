@@ -1,4 +1,5 @@
-import { tr } from './i18n.js';
+import { tr, tomtoPocitaci } from './i18n.js';
+import { adresaSouboru } from './verze.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
@@ -61,7 +62,7 @@ export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
   if (key) {
     const l = LOGOS[key];
-    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="/logos/${key}.svg" alt="" width="18" height="18" decoding="sync" draggable="false" data-label="${l.label}">`;
+    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="${adresaSouboru(`/logos/${key}.svg`)}" alt="" width="18" height="18" decoding="sync" draggable="false" data-label="${l.label}">`;
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
@@ -118,7 +119,7 @@ export const ICON = {
 // Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.
 export const ENV = {
   cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
-  local: { icon: ICON.mac, label: tr('Běží na tomto Macu'), short: tr('Na tomto Macu') },
+  local: { icon: ICON.mac, label: tr('Běží na {0}', tomtoPocitaci()), short: tr('Na {0}', tomtoPocitaci()) },
 };
 
 export const envOf = (s) => (s.source === 'web' ? ENV.cloud : ENV.local);

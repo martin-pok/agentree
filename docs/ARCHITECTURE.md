@@ -58,7 +58,8 @@ flowchart LR
 | `http.js` | Směrování, validace vstupu, bezpečnost (Host, CSRF, token), SSE vysílání, statické soubory. |
 | `model.js` | Jednotný model session a **jediné místo, kde se odvozuje stav** (`deriveStatus`) a souhrn pro klienta (`summarize`). |
 | `store.js` | Mapa sessions, souhrny s porovnáním JSON (vysílá jen skutečné změny), limity, kredity, běhová prostředí. |
-| `alerts.js` | Přechody stavů → upozornění, deduplikace klíčem, TTL klíčů 60 dní, nativní notifikace. |
+| `alerts.js` | Přechody stavů → upozornění, deduplikace klíčem, TTL klíčů 60 dní, nativní notifikace. Noční ticho a náraz (víc než 3 za minutu) upozornění jen ztlumí (`muted`): uloží se a zvednou počet, ale oznámení nepřijde. Za ztlumená pošle `tick()` jeden souhrn – jen za to, co pořád platí. |
+| `nocni-ticho.js` | Čistá funkce, jestli je teď noční ticho (místní čas počítače, rozsah přes půlnoc, polouzavřený), a normalizace uložených časů. |
 | `spend.js` | Čisté funkce: validace, měsíční součty, opakované platby, převody měn, prognóza, prahy rozpočtu. |
 | `datastore.js` | Trvalá data s atomickým zápisem (tmp + rename, práva 0600) a debounce 300 ms. |
 | `watch.js` | `fs.watch` rekurzivně s automatickou obnovou, fronta souborů (debounce + sériové zpracování). |

@@ -4,7 +4,8 @@ import { esc, rel, shortPath, durShort, clock, castiCesty } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
 import { pickFolder, recentFolders, pdot } from './projects-ui.js';
-import { tr, LOCALE } from './i18n.js';
+import { tr, LOCALE, tomtoPocitaci } from './i18n.js';
+import { modifikator, zkratka, MOD, JE_MAC } from './system.js';
 import { spustNapojeni } from './napojeni-ui.js';
 
 const STORE_KEY = 'agenteeq.launch';
@@ -60,7 +61,7 @@ function runHtml(r, now) {
     : `<i class="run-mark" aria-hidden="true">${r.status === 'done' ? ICON.check : r.status === 'failed' ? ICON.close : ''}</i>`;
   const timing = live
     ? `<small><span data-clock-from="${r.startedAt}">${clock(now - r.startedAt)}</span></small>`
-    : took ? `<small>${r.status === 'failed' ? 'po' : 'za'} ${took}</small>` : '';
+    : took ? `<small>${r.status === 'failed' ? tr('po {0}', took) : tr('za {0}', took)}</small>` : '';
   const problem = r.status === 'failed' ? runProblem(r) : null;
   return `<li class="run" data-status="${esc(r.status)}">
     <span class="run-icon">${glyph({ connector: r.agent })}</span>
@@ -90,12 +91,12 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   clearTimeout(handoffTimer);
   // S rozšířením se zadání do webové služby vloží samo; bez něj zůstává schránka.
   const steps = autofill
-    ? [tr('Zadání se do okna vloží samo.'), tr('Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce (⌘V).')]
+    ? [tr('Zadání se do okna vloží samo.'), tr('Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce ({0}).', zkratka('V'))]
     : handoff === 'confirm'
       ? [tr('Zadání je v aplikaci předvyplněné.'), tr('Zkontroluj ho a potvrď klávesou Enter.')]
       : handoff === 'confirm-or-paste'
-        ? [tr('Zadání by mělo být předvyplněné.'), tr('Pokud není, vlož ho ⌘V – je ve schránce.')]
-        : [tr('Zadání máš ve schránce.'), tr('V {0} ho vlož ⌘V a odešli Enterem.', label)];
+        ? [tr('Zadání by mělo být předvyplněné.'), tr('Pokud není, vlož ho {0} – je ve schránce.', zkratka('V'))]
+        : [tr('Zadání máš ve schránce.'), tr('V {0} ho vlož {1} a odešli Enterem.', label, zkratka('V'))];
   const foot = mode !== 'web'
     ? tr('Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.')
     : autofill
@@ -150,7 +151,7 @@ export function createLauncher(root) {
       <div class="launch-controls" data-region="controls"></div>
       <div class="launch-foot">
         <p class="launch-note" data-region="note"></p>
-        <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami Command a Enter')}"><span>${tr('Spustit')}</span><kbd>⌘</kbd><kbd>↵</kbd></span>
+        <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami {0} a Enter', JE_MAC ? 'Command' : 'Ctrl')}"><span>${tr('Spustit')}</span><kbd>${MOD}</kbd><kbd>↵</kbd></span>
         <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}${tr('Spustit')}</button>
       </div>
     </div>
@@ -180,14 +181,14 @@ export function createLauncher(root) {
     if (t && prefs.agent !== t.id) prefs.agent = t.id;
     if (prefs.projectId && !project()) prefs.projectId = '';
 
-    const groups = [['agent', tr('Na tomto Macu')], ['local', tr('Zdarma lokálně')], ['web', tr('Na webu')]];
+    const groups = [['agent', tr('Na {0}', tomtoPocitaci())], ['local', tr('Zdarma lokálně')], ['web', tr('Na webu')]];
     fill(root, 'agents', list.length
       ? groups.map(([g, label]) => {
         const items = list.filter((x) => x.group === g);
         if (!items.length) return '';
         return `<div class="launch-group"><span class="launch-group-label">${label}</span><div class="launch-chips">${items.map((x) => `<button type="button" class="lchip" role="radio" aria-checked="${x.id === t?.id}" data-agent="${esc(x.id)}">${glyph(x)}<span>${esc(x.label)}</span>${x.beta ? `<span class="badge">${tr('Zkušební')}</span>` : ''}</button>`).join('')}</div></div>`;
       }).join('')
-      : `<p class="muted small">${tr('Načítám, co jde na tomto Macu spustit…')}</p>`);
+      : `<p class="muted small">${tr('Načítám, co jde na {0} spustit…', tomtoPocitaci())}</p>`);
 
     if (!t) {
       fill(root, 'controls', '');
@@ -357,7 +358,7 @@ export function createLauncher(root) {
     draftTimer = setTimeout(persist, 400);
   });
   promptEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && modifikator(e)) {
       e.preventDefault();
       go();
     }

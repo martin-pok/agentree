@@ -100,7 +100,9 @@ function sync(select) {
   if (!button) return;
   const text = select.selectedOptions[0]?.textContent || tr('Vybrat');
   if (button.firstElementChild.textContent !== text) button.firstElementChild.textContent = text;
-  button.disabled = select.disabled;
+  // Jen při změně: zápis `disabled = true` zapíše atribut znovu i beze změny, a to je mutace, na kterou
+  // čeká pozorovatel níž – zakázaný výběr (vypnuté „Dokončený úkol“, noční ticho) pak zasekl stránku.
+  if (button.disabled !== select.disabled) button.disabled = select.disabled;
   const label = `${labelOf(select)}: ${text}`;
   if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
   for (const attr of ['aria-invalid', 'aria-describedby']) {

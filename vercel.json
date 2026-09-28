@@ -6,11 +6,21 @@
   "headers": [
     {
       "source": "/(.*)\\.(js|css|webmanifest)",
-      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     },
     {
       "source": "/(fonts|logos|brand|icons)/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, no-cache"
+        }
+      ]
     }
   ]
 }

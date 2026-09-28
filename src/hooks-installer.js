@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writeFileAtomic } from './util.js';
 import { JE_WINDOWS } from './platform.js';
+import { ui } from './texty.js';
 
 // Claude Code hooky posílají události do Agenteeq okamžitě (start, zadání, žádost o povolení, konec tahu).
 export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
@@ -78,7 +79,7 @@ async function readSettings(file) {
     if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('not object');
     return { raw, json };
   } catch {
-    const err = new Error('Soubor ~/.claude/settings.json není platný JSON. Oprav ho a zkus to znovu.');
+    const err = new Error(ui('Soubor ~/.claude/settings.json není platný JSON. Oprav ho a zkus to znovu.'));
     err.code = 'INVALID_SETTINGS';
     throw err;
   }

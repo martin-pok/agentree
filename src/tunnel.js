@@ -1,6 +1,7 @@
 import fs from 'node:fs';
-import { tailscalePaths, whichCommand, bezziProces } from './platform.js';
+import { tailscalePaths, whichCommand, bezziProces, POCITAC } from './platform.js';
 import { run as execRun } from './util.js';
+import { ui } from './texty.js';
 
 // Vzdálený přístup mimo domácí síť – postavený na tunelu, který si uživatel spustí sám.
 // Tenhle modul nic neinstaluje ani nespouští na pozadí: jen zjišťuje stav (je nástroj
@@ -26,27 +27,27 @@ export const TUNNELS = [
   {
     id: 'tailscale',
     name: 'Tailscale',
-    description: 'Vytvoří privátní síť (VPN) jen mezi tvými vlastními zařízeními – telefon se k Macu připojí, jako by byl doma.',
+    description: ui('Vytvoří privátní síť (VPN) jen mezi tvými vlastními zařízeními – telefon se k {0} připojí, jako by byl doma.', POCITAC.tvemu),
     kind: 'privatni-sit',
-    security: 'Provoz jde šifrovaným tunelem jen mezi tvými zařízeními a adresa nikde veřejně neexistuje – nejbezpečnější a doporučená volba.',
+    security: ui('Provoz jde šifrovaným tunelem jen mezi tvými zařízeními a adresa nikde veřejně neexistuje – nejbezpečnější a doporučená volba.'),
     detectedBy: `binárka (${TAILSCALE_BINARKY.join(', ')}) nebo "tailscale" v PATH; stav a adresa z "tailscale status --json" (pole Self.DNSName a TailscaleIPs), HTTPS z "tailscale serve status --json"`,
     startedBy: 'uživatel spustí "tailscale up" na Macu a nainstaluje appku Tailscale na telefonu se stejným účtem',
   },
   {
     id: 'cloudflared',
     name: 'Cloudflare Tunnel',
-    description: 'Vytvoří dočasnou veřejnou adresu k tvému Macu bez nutnosti účtu u Cloudflare.',
+    description: ui('Vytvoří dočasnou veřejnou adresu k {0} bez nutnosti účtu u Cloudflare.', POCITAC.tvemu),
     kind: 'verejny-tunel',
-    security: 'Adresa je veřejná a provoz jde přes Cloudflarovu infrastrukturu – kdokoli, kdo adresu zná, se na ni teoreticky může připojit.',
+    security: ui('Adresa je veřejná a provoz jde přes Cloudflarovu infrastrukturu – kdokoli, kdo adresu zná, se na ni teoreticky může připojit.'),
     detectedBy: '"cloudflared" v PATH; běžící tunel se pozná podle procesu, veřejnou adresu ale vypisuje jen sám příkaz do terminálu',
     startedBy: 'uživatel spustí "cloudflared tunnel --url http://127.0.0.1:PORT" v Terminálu',
   },
   {
     id: 'ngrok',
     name: 'ngrok',
-    description: 'Vytvoří veřejnou adresu k tvému Macu přes ngrok, i s webovým přehledem provozu.',
+    description: ui('Vytvoří veřejnou adresu k {0} přes ngrok, i s webovým přehledem provozu.', POCITAC.tvemu),
     kind: 'verejny-tunel',
-    security: 'Adresa je veřejná a provoz jde přes ngrokovu infrastrukturu – kdokoli, kdo adresu zná, se na ni teoreticky může připojit.',
+    security: ui('Adresa je veřejná a provoz jde přes ngrokovu infrastrukturu – kdokoli, kdo adresu zná, se na ni teoreticky může připojit.'),
     detectedBy: `"ngrok" v PATH; běžící tunel a jeho adresa se zjistí z lokálního API ${NGROK_API}`,
     startedBy: 'uživatel spustí "ngrok http PORT" v Terminálu',
   },
@@ -102,7 +103,7 @@ async function detectTailscale({ run, fileExists, port }) {
     const nainstalovana = TAILSCALE_BINARKY.find((cesta) => fileExists(cesta)) || null;
     const bin = nainstalovana || ((await run(whichCommand, ['tailscale'], { timeout: 1000 }))?.ok ? 'tailscale' : null);
     if (!bin) {
-      return { ...zaklad, installed: false, running: false, url: '', hint: 'Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.' };
+      return { ...zaklad, installed: false, running: false, url: '', hint: ui('Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.') };
     }
     const res = await run(bin, ['status', '--json'], { timeout: 1500 });
     let data = null;
@@ -119,10 +120,10 @@ async function detectTailscale({ run, fileExists, port }) {
     // Na co jsme se nezeptali (odhlášený Tailscale) nebo čemu jsme nerozuměli, je neznámé –
     // nikdy ne „vypnuté“. Rozhraní o HTTPS mlčí, dokud to neví jistě.
     const serve = serveRes?.ok ? readServe(serveRes.stdout, port) : { running: false, unknown: true };
-    const hint = running ? '' : 'Přihlas se v Tailscale – na Macu "tailscale up", v appce na telefonu stejným účtem.';
+    const hint = running ? '' : ui('Přihlas se v Tailscale – {0} "tailscale up", v appce na telefonu stejným účtem.', POCITAC.naHostiteli);
     return { ...zaklad, installed: true, running, url, dnsName: dns, ips, tailnet, serve, hint };
   } catch {
-    return { ...zaklad, installed: false, running: false, url: '', hint: 'Stav Tailscale se nepodařilo zjistit.' };
+    return { ...zaklad, installed: false, running: false, url: '', hint: ui('Stav Tailscale se nepodařilo zjistit.') };
   }
 }
 
@@ -132,18 +133,18 @@ async function detectCloudflared({ run }) {
     const which = await run(whichCommand, ['cloudflared'], { timeout: 1000 });
     const installed = Boolean(which?.ok);
     if (!installed) {
-      return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Nainstaluj cloudflared (brew install cloudflared).' };
+      return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Nainstaluj cloudflared (brew install cloudflared).') };
     }
     // Quick tunnel nemá lokální API – adresu vypisuje jen do stdout ve chvíli spuštění.
     // Poctivě proto zjišťujeme jen to, jestli proces běží, adresu si nevymýšlíme.
     const proc = await bezziProces(/cloudflared[^\n]*tunnel/i, run);
     const running = Boolean(proc?.ok && String(proc.stdout || '').trim());
     const hint = running
-      ? 'Tunel běží – veřejnou adresu najdeš ve výstupu příkazu v Terminálu (řádek končící na trycloudflare.com).'
-      : 'Spusť "cloudflared tunnel --url http://127.0.0.1:PORT" v Terminálu a nech okno otevřené.';
+      ? ui('Tunel běží – veřejnou adresu najdeš ve výstupu příkazu v Terminálu (řádek končící na trycloudflare.com).')
+      : ui('Spusť "cloudflared tunnel --url http://127.0.0.1:PORT" v Terminálu a nech okno otevřené.');
     return { id: m.id, name: m.name, installed: true, running, url: '', kind: m.kind, security: m.security, hint };
   } catch {
-    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Stav cloudflared se nepodařilo zjistit.' };
+    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Stav cloudflared se nepodařilo zjistit.') };
   }
 }
 
@@ -158,11 +159,11 @@ async function detectNgrok({ run, fetchJson }) {
     const running = Boolean(pick?.public_url);
     const url = pick?.public_url || '';
     const hint = !installed
-      ? 'Nainstaluj ngrok (ngrok.com) a přihlas se účtem (ngrok config add-authtoken …).'
-      : running ? '' : 'Spusť "ngrok http PORT" v Terminálu a nech okno otevřené.';
+      ? ui('Nainstaluj ngrok (ngrok.com) a přihlas se účtem (ngrok config add-authtoken …).')
+      : running ? '' : ui('Spusť "ngrok http PORT" v Terminálu a nech okno otevřené.');
     return { id: m.id, name: m.name, installed, running, url, kind: m.kind, security: m.security, hint };
   } catch {
-    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: 'Stav ngrok se nepodařilo zjistit.' };
+    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Stav ngrok se nepodařilo zjistit.') };
   }
 }
 
@@ -189,23 +190,23 @@ export function remoteAdvice(tunnels) {
   if (tailscale?.installed) {
     return {
       doporuceni: 'tailscale',
-      text: 'Tailscale má nejlepší poměr bezpečnosti a pohodlí: vytvoří privátní síť jen mezi tvými zařízeními, žádná veřejná adresa nikde nevzniká.',
+      text: ui('Tailscale má nejlepší poměr bezpečnosti a pohodlí: vytvoří privátní síť jen mezi tvými zařízeními, žádná veřejná adresa nikde nevzniká.'),
       kroky: tailscale.running
-        ? ['Zapni výš přepínač „Přístup přes Tailscale“ – Agenteeq začne poslouchat i na adrese v tvé privátní síti.', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako na Macu.', 'Vytvoř v Agenteeq jednorázový kód a na telefonu otevři adresu z karty Tailscale.']
-        : ['Na Macu se přihlas do Tailscale ("tailscale up").', 'Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.', 'Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon kódem.'],
+        ? [ui('Zapni výš přepínač „Přístup přes Tailscale“ – Agenteeq začne poslouchat i na adrese v tvé privátní síti.'), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako {0}.', POCITAC.naHostiteli), ui('Vytvoř v Agenteeq jednorázový kód a na telefonu otevři adresu z karty Tailscale.')]
+        : [ui('Přihlas se do Tailscale {0} ("tailscale up").', POCITAC.naHostiteli), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.'), ui('Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon kódem.')],
     };
   }
   if (cloudflared?.installed) {
     return {
       doporuceni: 'cloudflared',
-      text: 'Cloudflare Tunnel je rychlá cesta bez účtu, ale vytváří veřejnou adresu – provoz jde přes cizí infrastrukturu a adresu teoreticky může použít kdokoli, kdo ji zná.',
-      kroky: ['V Terminálu spusť "cloudflared tunnel --url http://127.0.0.1:PORT".', 'Zkopíruj adresu, kterou příkaz vypíše.', 'Nech okno Terminálu otevřené, dokud vzdálený přístup potřebuješ.'],
+      text: ui('Cloudflare Tunnel je rychlá cesta bez účtu, ale vytváří veřejnou adresu – provoz jde přes cizí infrastrukturu a adresu teoreticky může použít kdokoli, kdo ji zná.'),
+      kroky: [ui('V Terminálu spusť "cloudflared tunnel --url http://127.0.0.1:PORT".'), ui('Zkopíruj adresu, kterou příkaz vypíše.'), ui('Nech okno Terminálu otevřené, dokud vzdálený přístup potřebuješ.')],
     };
   }
   return {
     doporuceni: 'zadny',
-    text: 'Žádný nástroj pro vzdálený přístup není nainstalovaný. Nejdřív zkus Tailscale – je zdarma pro osobní použití a nevytváří veřejnou adresu.',
-    kroky: ['Nainstaluj Tailscale (tailscale.com nebo "brew install --cask tailscale").', 'Přihlas se stejným účtem na Macu i na telefonu.', 'Spusť detekci znovu.'],
+    text: ui('Žádný nástroj pro vzdálený přístup není nainstalovaný. Nejdřív zkus Tailscale – je zdarma pro osobní použití a nevytváří veřejnou adresu.'),
+    kroky: [ui('Nainstaluj Tailscale (tailscale.com nebo "brew install --cask tailscale").'), ui('Přihlas se stejným účtem {0} i na telefonu.', POCITAC.naHostiteli), ui('Spusť detekci znovu.')],
   };
 }
 

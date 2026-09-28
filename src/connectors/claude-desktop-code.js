@@ -5,6 +5,7 @@ import { createSession, touch } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { readClaudeDesktopCache } from '../claude-desktop-cache.js';
 import { applyClaudeLine, newFileState, STATUS_WINDOWS } from './claude-code.js';
+import { ui } from '../texty.js';
 
 const SESSION = /^session_[A-Za-z0-9]{8,80}$/;
 export const remoteId = (value) => typeof value === 'string' && SESSION.test(value) ? value : '';
@@ -95,7 +96,7 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   touch(s, updated);
   s.title = clip(typeof metadata.title === 'string' ? metadata.title : '', 100);
   s.source = 'desktop-cache';
-  s.app = 'Claude Desktop · vzdálený Code';
+  s.app = ui('Claude Desktop · vzdálený Code');
   s.url = `https://claude.ai/code/${metadata.id}`;
   s.resume = null; s.cwd = ''; // Remote VM paths are never local folders/resume commands.
   s.model = clip(typeof metadata.session_context?.model === 'string' ? metadata.session_context.model : s.model, 80);
@@ -119,14 +120,14 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.runningAt = Math.min(observedAt || updated, now);
   s.staleMs = 2 * MIN;
   s.toolWaitSince = 0;
-  s.activity = s.running ? 'Pracuje podle stavu v Claude Desktopu' : '';
+  s.activity = s.running ? ui('Pracuje podle stavu v Claude Desktopu') : '';
   s.pending = null; s.limit = null; s.failure = null;
   const category = metadata.post_turn_summary?.status_category;
   if (['failed', 'error'].includes(metadata.status_bucket) || category === 'failed') {
     s.running = false;
-    s.failure = { at: updated, text: 'Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.' };
+    s.failure = { at: updated, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
   } else if (fresh && (metadata.session_status === 'needs_input' || category === 'needs_action')) {
-    s.pending = { kind: 'question', at: s.runningAt, text: 'Vzdálený agent potřebuje rozhodnutí. Otevři Claude.', source: 'desktop-cache' };
+    s.pending = { kind: 'question', at: s.runningAt, text: ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
   }
 }
 export function createClaudeDesktopCodeConnector({ config, store }) {
@@ -143,7 +144,7 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
       const records = await readClaudeDesktopCache(dir), data = remoteSessions(records);
       // Vytížení plánu z uložené stránky Usage – nezávisle na tom, jestli cache nese vzdálené relace.
       if (applyDesktopUsage(store, desktopUsage(records))) lastEventAt = Date.now();
-      if (!data) { error = 'Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'; return; }
+      if (!data) { error = ui('Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'); return; }
       const cache = new Map();
       for (const { value } of records) {
         if (value?.product !== 'code' || value.tree?.kind !== 'code_session') continue;
@@ -165,7 +166,7 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
           }
           continue;
         }
-        const s = createSession({ connector: 'claude-desktop-code', localId: metadata.id, provider: 'anthropic', app: 'Claude Desktop · vzdálený Code' });
+        const s = createSession({ connector: 'claude-desktop-code', localId: metadata.id, provider: 'anthropic', app: ui('Claude Desktop · vzdálený Code') });
         const previous = store.get(id);
         if (previous) s.seq = previous.seq; // A shorter cache must not look like an older SSE snapshot.
         applyRemoteSession(s, metadata, cache.get(metadata.id), metadata._observedAt);
@@ -178,16 +179,16 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
       // The list is paginated: absence from its first page is not proof of deletion.
       error = '';
     } catch {
-      error = 'Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.';
+      error = ui('Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.');
     }
   }
   return {
-    id: 'claude-desktop-code', name: 'Claude Desktop · vzdálený Code', provider: 'anthropic', kind: 'local', verified: false,
-    source: 'Claude/IndexedDB (místní cache vzdálených relací)',
-    description: 'Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.',
+    id: 'claude-desktop-code', name: ui('Claude Desktop · vzdálený Code'), provider: 'anthropic', kind: 'local', verified: false,
+    source: ui('Claude/IndexedDB (místní cache vzdálených relací)'),
+    description: ui('Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.'),
     async start() { await queue.run(dir); watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 }); },
     scan: () => queue.run(dir),
     stop() { stopped = true; watcher?.close(); queue.clear(); }, idle: () => queue.idle(),
-    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? `Sleduji ${known.size} vzdálených relací z místní cache Claude Desktopu.` : 'Zatím bez místní cache vzdálených agentů.'), count: known.size, watching: Boolean(watcher?.active), lastEventAt }),
+    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, watching: Boolean(watcher?.active), lastEventAt }),
   };
 }

@@ -1,4 +1,5 @@
 import { hourKey, minuteKey, spansFromMinutes, clip, lastSegment, MIN, HOUR, DAY } from './util.js';
+import { ui } from './texty.js';
 
 export const TRANSCRIPT_MAX = 400;
 // Jednotný model session pro všechny konektory. Konektor plní pole, stav se odvozuje centrálně.
@@ -110,36 +111,36 @@ export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
-    if (active) return { status: 'limited', reason: s.limit.text || 'Vyčerpaný limit', stale: false };
+    if (active) return { status: 'limited', reason: s.limit.text || ui('Vyčerpaný limit'), stale: false };
   }
   // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
   if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {
-    return { status: 'failed', reason: s.failure.text || 'Spuštění selhalo', stale: false };
+    return { status: 'failed', reason: s.failure.text || ui('Spuštění selhalo'), stale: false };
   }
-  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || 'Potřebuje tvé rozhodnutí', stale: false };
+  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || ui('Potřebuje tvé rozhodnutí'), stale: false };
   // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, ale přepis zatím není. Nejčastěji
   // čeká na první zadání; „pracuje“ ani „hotovo“ by bylo tvrzení, které z procesu nevyčteme.
   if (s.proces) return { status: 'waiting', reason: s.proces.popis, stale: false };
   if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
     // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
     const maybePermission = s.toolWaitSince && !s.hookAt && now - s.toolWaitSince > 90e3;
-    const activity = s.activity || 'Pracuje';
-    return { status: 'working', reason: maybePermission ? `${activity} · možná čeká na tvé povolení` : activity, stale: false };
+    const activity = s.activity || ui('Pracuje');
+    return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
   const stale = Boolean(s.running);
-  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: 'Konverzace ukončena', stale: false };
+  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
-  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? 'Delší dobu bez aktivity' : answered ? 'Hotovo, čeká na další zadání' : 'Zatím bez odpovědi agenta', stale };
+  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale };
   if (age < DAY) return { status: 'idle', reason: '', stale };
   return { status: 'archived', reason: '', stale };
 }
 
 // Bez názvu i skutečného zadání pojmenuj vlákno podle toho, čím je; název složky až jako poslední možnost.
 function fallbackTitle(s) {
-  if (s.taskName) return `Plánovaná úloha · ${s.taskName}`;
+  if (s.taskName) return ui('Plánovaná úloha · {0}', s.taskName);
   if (s.subagent?.label) return s.subagent.label;
-  return lastSegment(s.cwd).replace(/[-_]+/g, ' ') || 'Konverzace bez názvu';
+  return lastSegment(s.cwd).replace(/[-_]+/g, ' ') || ui('Konverzace bez názvu');
 }
 
 export function summarize(s, now, windowMs) {

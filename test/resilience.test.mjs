@@ -11,9 +11,11 @@ import { touch } from '../src/model.js';
 
 // Test si nedostupnost zápisu vyrábí přes chmod. Na Windows chmod na složku nic neudělá,
 // takže by se netestovalo selhání zápisu, ale to, že se zápis povedl.
-const BEZ_CHMOD = process.platform === 'win32' && 'chmod na složku na Windows nic nemění';
+// Root zapíše i do složky jen pro čtení, takže pod ním by chmod nic nezamkl.
+const BEZ_CHMOD = (process.platform === 'win32' && 'chmod na složku na Windows nic nemění')
+  || (process.getuid?.() === 0 && 'pod rootem chmod nic nezamkne, root zapíše i do složky jen pro čtení');
 
-test('uložení nastavení, které na disku selže, se nehlásí jako úspěch', { skip: BEZ_CHMOD || process.getuid?.() === 0 }, async (t) => {
+test('uložení nastavení, které na disku selže, se nehlásí jako úspěch', { skip: BEZ_CHMOD }, async (t) => {
   const dataHome = await tempDir('agenteeq-data-');
   const s = await startTestServer({ AGENTEEQ_HOME: dataHome });
   t.after(async () => { await fs.chmod(dataHome, 0o700).catch(() => {}); await s.close(); });

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { startTestServer, tempDir } from './helpers.mjs';
 import { noDataState } from '../src/connectors/install-state.js';
-import { appSupportDir, appInstalled } from '../src/platform.js';
+import { appSupportDir, appInstalled, POCITAC } from '../src/platform.js';
 
 // Složka s daty není důkaz instalace. ~/.gemini drží i nastavení MCP, ~/.copilot i VS Code zůstanou
 // po odinstalaci — a aplikace z nich tvrdila „Gemini CLI je nainstalovaný“, přestože příkaz `gemini`
@@ -19,7 +19,8 @@ test('tři stavy: nalezeno, nenalezeno, nevím — a nikdy tvrzení bez opory', 
 
   const ne = noDataState({ ...zaklad, installed: false });
   assert.equal(ne.state, 'missing', 'chybějící nástroj se nesmí tvářit jako připojený');
-  assert.match(ne.detail, /na tomto Macu není/);
+  // Mac, nebo počítač – podle systému, na kterém test běží (src/platform.js#POCITAC).
+  assert.ok(ne.detail.includes(`na ${POCITAC.tomto} není`), ne.detail);
   assert.match(ne.detail, /zůstala po něm jen složka ~\/\.gemini/, 'uživatel se dozví, proč aplikace nějakou stopu vidí');
   assert.doesNotMatch(ne.detail, /je nainstalovaný/);
 
@@ -33,7 +34,7 @@ test('bez stopy a bez nástroje je odpověď stejná ve všech případech', () 
   for (const installed of [false, null]) {
     const r = noDataState({ installed, trace: false, name: 'Qwen Code', traceLabel: 'složka ~/.qwen', whatMissing: 'x' });
     assert.equal(r.state, 'missing');
-    assert.equal(r.detail, 'Qwen Code na tomto počítači není.');
+    assert.equal(r.detail, `Qwen Code na ${POCITAC.tomto} není.`);
   }
 });
 
@@ -87,5 +88,5 @@ test('Copilot CLI a VS Code: stejné pravidlo, nezávisle na sobě', async () =>
 test('Qwen Code bez stopy i bez příkazu hlásí „není“', async () => {
   const r = await stav({ bin: () => false, app: () => false }, async () => {});
   assert.equal(r['qwen-code'].state, 'missing');
-  assert.equal(r['qwen-code'].detail, 'Qwen Code na tomto počítači není.');
+  assert.equal(r['qwen-code'].detail, `Qwen Code na ${POCITAC.tomto} není.`);
 });

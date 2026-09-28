@@ -6,7 +6,7 @@ import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
-import { tr } from '../i18n.js';
+import { tr, tomtoPocitaci } from '../i18n.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
 const v = { el: null, visible: [] };
@@ -55,7 +55,7 @@ function bezPrepisuHtml(sessions) {
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
   const pocet = bezi.length + lokalni.length + (web ? 1 : 0);
   return `<section class="card pad runtime-note" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">${tr('Běží na Macu, ale bez přepisu')}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
+    <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}, ale bez přepisu', tomtoPocitaci())}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
     <ul class="runtime-list">${web}${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;

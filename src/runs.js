@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { uid, clip } from './util.js';
+import { ui } from './texty.js';
 
 const MAX_RUNS = 50;
 const KILL_GRACE_MS = 5000;
@@ -60,7 +61,7 @@ export class RunManager {
       const cur = this.runs.get(id);
       if (!cur || cur.status !== 'running' && cur.status !== 'stopping') return;
       const stopped = cur.status === 'stopping' || signal === 'SIGTERM' || signal === 'SIGKILL';
-      this.update(id, { status: stopped ? 'stopped' : code === 0 ? 'done' : 'failed', exitCode: code, endedAt: Date.now(), error: code && !stopped ? this.tail(id, 400).trim().split('\n').pop() || `Skončilo s kódem ${code}` : '' });
+      this.update(id, { status: stopped ? 'stopped' : code === 0 ? 'done' : 'failed', exitCode: code, endedAt: Date.now(), error: code && !stopped ? this.tail(id, 400).trim().split('\n').pop() || ui('Skončilo s kódem {0}', code) : '' });
     });
     this.trim();
     this.onChange(this.list(), run);

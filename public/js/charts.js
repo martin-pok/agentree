@@ -48,7 +48,7 @@ export function stackedColumns({ id, labels, tips, series, height = 208, format 
   const summary = visible.map((s) => `${s.label} ${format(s.values.reduce((a, b) => a + (b || 0), 0))}`).join(', ');
   return `<div class="chart" style="--chart-h:${height}px">
     ${yAxis(max, axisFormat)}
-    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.', summary || 'bez dat')}`)}">
+    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.', summary || tr('bez dat'))}`)}">
       ${grid()}
       <div class="bars" style="--n:${n}" aria-hidden="true">${bars}</div>
       <div class="tip" aria-hidden="true"></div>
@@ -61,7 +61,7 @@ export function stackedColumns({ id, labels, tips, series, height = 208, format 
 
 function timeLabel(t, span, prev) {
   const d = new Date(t);
-  const day = `${d.getDate()}. ${d.getMonth() + 1}.`;
+  const day = podleJazyka(`${d.getDate()}. ${d.getMonth() + 1}.`, `${d.getDate()}/${d.getMonth() + 1}`);
   if (span > 3 * 86400e3) return day;
   const p = prev ? new Date(prev) : null;
   const sameDay = p && p.getDate() === d.getDate() && p.getMonth() === d.getMonth();

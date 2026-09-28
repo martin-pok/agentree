@@ -1,12 +1,27 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { readdirSafe, statSafe } from './util.js';
 
 // Rekurzivní sledování složky (macOS FSEvents). Když složka neexistuje nebo watcher spadne, zkouší to znovu.
-export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
+//
+// `hlidatVznik`: když složka neexistuje, ale její přímý rodič ano, hlídá ho nerekurzivní „strážce“
+// a sledování začne hned, jak složka vznikne – ne až při dalším opakování. Kořen přepisů to potřebuje:
+// Claude Code zakládá projects/ až s první zprávou a nový agent se má ukázat do 2 s (AGENTS.md).
+// Strážce hlídá jen přímého rodiče (nikdy nic širšího, nikdy domov z `bezStrazce`) a reaguje jen na
+// položku se jménem sledované složky – soubory, které nástroj píše vedle, žádnou práci nevyvolají.
+// Opakování zůstává jako pojistka, kdyby strážce událost minul.
+export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, bezStrazce = [] } = {}) {
   let watcher = null;
   let closed = false;
   let retry = null;
+  let strazce = null;
+  let strazeno = '';
+  let rodicChybi = false;
+  let pokusy = 0;
+  const jmeno = path.basename(dir).toLowerCase();
+  const rodic = path.dirname(dir);
+  const zakazano = new Set([os.homedir(), ...bezStrazce].filter(Boolean).map((d) => path.resolve(d)));
 
   const schedule = () => {
     if (closed) return;
@@ -15,8 +30,46 @@ export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
     retry.unref?.();
   };
 
-  function arm() {
-    if (closed) return;
+  function konecStraze() {
+    strazce?.close();
+    strazce = null;
+    strazeno = '';
+  }
+
+  // Vrátí true, když rodiče hlídá strážce (už dřív, nebo nově).
+  function hlidej() {
+    if (!hlidatVznik || rodic === dir || zakazano.has(path.resolve(rodic))) return false;
+    if (strazce) return true;
+    rodicChybi = false;
+    try {
+      strazce = fs.watch(rodic, (_event, name) => {
+        // Bez jména (systém ho nedal) se zkusí vždy; jinak jen na položku se jménem složky.
+        if (name && name.toString().toLowerCase() !== jmeno) return;
+        arm();
+      });
+      strazce.on('error', () => {
+        konecStraze();
+        schedule();
+      });
+      strazce.unref?.();
+      strazeno = rodic;
+      return true;
+    } catch (err) {
+      strazce = null;
+      rodicChybi = err?.code === 'ENOENT';
+      return false;
+    }
+  }
+
+  function arm(znovu = true) {
+    if (closed || watcher) return;
+    // Dokud chybí i rodič, složka existovat nemůže: v kole se zkusí jen strážce nad rodičem, ne obojí.
+    // V klidu tak zůstává jeden pokus za kolo jako dřív.
+    if (rodicChybi && !hlidej()) {
+      schedule();
+      return;
+    }
+    pokusy++;
     try {
       watcher = fs.watch(dir, { recursive: true }, (_event, name) => {
         onChange(name ? path.join(dir, name.toString()) : null);
@@ -26,10 +79,14 @@ export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
         watcher = null;
         schedule();
       });
+      konecStraze();
+      clearTimeout(retry);
       // Složka mohla vzniknout mezi skenem a sledováním – ohlásit plný průchod.
       onChange(null);
     } catch {
       watcher = null;
+      // Složka mohla vzniknout mezi neúspěšným pokusem a začátkem hlídání – jednou hned znovu.
+      if (hlidej() && znovu && fs.existsSync(dir)) return arm(false);
       schedule();
     }
   }
@@ -39,11 +96,20 @@ export function watchTree(dir, onChange, { retryMs = 5000 } = {}) {
     close() {
       closed = true;
       clearTimeout(retry);
+      konecStraze();
       watcher?.close();
       watcher = null;
     },
     get active() {
       return Boolean(watcher);
+    },
+    /** Složka, kterou právě hlídá strážce ('' = žádná). */
+    get strazi() {
+      return strazeno;
+    },
+    /** Kolik pokusů o sledování proběhlo (měření práce v klidu). */
+    get pokusy() {
+      return pokusy;
     },
   };
 }

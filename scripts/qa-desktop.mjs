@@ -9,6 +9,87 @@ const out = process.env.QA_OUTPUT_DIR || 'dist/qa';
 await fs.mkdir(out, { recursive: true });
 const results = [];
 const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
+
+// Postranní panel: poslední položka nabídky (Nastavení) je celá vidět na každé výšce okna
+// 620–1200 px při šířce 881, 1180 i 1440 px, česky i anglicky. Dřív se nabídka potichu rolovala
+// a na okně 1440 × 950 Nastavení schovala celé. Měří se nejhorší obsah: dva řádky zdrojů tokenů,
+// patička s hlášením o výpadku spojení a nakonec i víc zdrojů, než se kdy vypíše. Profil, který
+// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“.
+async function zkontrolujPostranniPanel(browser, engine, errors) {
+  const server = await startTestServer();
+  try {
+    for (const [id, app, provider] of [['a', 'Codex', 'openai'], ['b', 'Claude Code', 'anthropic'], ['c', 'Cursor', 'cursor']]) {
+      const s = server.app.store.ensure({ connector: 'codex', localId: `qa-panel-${id}`, provider, app });
+      Object.assign(s, { title: `QA panel ${id}`, lastAt: Date.now(), startedAt: Date.now() - 60000 });
+      addTokens(s, Date.now(), { input: 1200000, output: 300000 });
+      server.app.store.commit(s);
+    }
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+    await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+    for (const jazyk of ['cs', 'en']) {
+      assert.equal((await api(server.url).send('PUT', '/api/settings', { language: jazyk })).status, 200);
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => errors.push(`postranní panel ${jazyk}: ${e.message}`));
+      await p.goto(`${server.url}/#/prehled`);
+      await p.waitForFunction(() => document.querySelectorAll('.budget-src span').length === 2);
+      await p.evaluate(() => document.fonts.ready);
+      assert.equal(await p.evaluate(() => document.documentElement.lang), jazyk);
+      const zmer = () => p.evaluate(() => {
+        const sb = document.querySelector('.sidebar');
+        const sbr = sb.getBoundingClientRect();
+        const dole = sbr.bottom - parseFloat(getComputedStyle(sb).paddingBottom);
+        const nav = document.querySelector('.nav');
+        const nr = nav.getBoundingClientRect();
+        const polozky = [...nav.querySelectorAll('a')].filter((a) => getComputedStyle(a).display !== 'none');
+        const posledni = polozky.at(-1).getBoundingClientRect();
+        const profil = document.querySelector('.profile');
+        const pr = profil.getBoundingClientRect();
+        const obsahProfilu = Math.max(...[...profil.children].map((c) => c.getBoundingClientRect().bottom));
+        const zdroje = document.querySelector('.budget-src');
+        return {
+          polozek: polozky.length,
+          posledni: polozky.at(-1).getAttribute('href'),
+          skryto: Math.round(Math.max(0, posledni.bottom - Math.min(nr.bottom, dole), nr.top - posledni.top)),
+          roluje: nav.scrollHeight > nav.clientHeight + 1,
+          paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
+          profil: Math.round(Math.max(0, obsahProfilu - (pr.bottom - parseFloat(getComputedStyle(profil).paddingBottom)))),
+          pres: Math.round(Math.max(0, pr.bottom - nr.top)),
+          radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
+        };
+      });
+      const chyby = [];
+      for (const [pripad, priprava] of [
+        ['', () => {}],
+        // Patička s hlášením o výpadku spojení je nejvyšší, jakou může mít.
+        [' bez spojení', () => document.getElementById('side-foot').insertAdjacentHTML('afterbegin', '<span class="source-state" data-qa-panel><i class="dot dot--down"></i>Bez spojení se serverem</span>')],
+        // K tomu víc zdrojů, než aplikace vypisuje: rozpis má i tak nejvýš dva celé řádky.
+        [' bez spojení a se šesti zdroji', () => { document.querySelector('.budget-src').insertAdjacentHTML('beforeend', '<span data-qa-panel>Gemini CLI <b>1 M</b></span><span data-qa-panel>Qwen Code <b>1 M</b></span><span data-qa-panel>Copilot CLI <b>1 M</b></span><span data-qa-panel>Ollama <b>1 M</b></span>'); }],
+      ]) {
+        await p.evaluate(priprava);
+        for (const sirka of [881, 1180, 1440]) {
+          for (let vyska = 620; vyska <= 1200; vyska += 30) {
+            await p.setViewportSize({ width: sirka, height: vyska });
+            await p.waitForTimeout(30);
+            const m = await zmer();
+            const kde = `${engine} ${jazyk} ${sirka}×${vyska}${pripad}`;
+            if (m.polozek !== 8 || !/nastaveni$/.test(m.posledni)) chyby.push(`${kde}: v nabídce je ${m.polozek} položek, poslední ${m.posledni}`);
+            if (m.skryto || m.roluje) chyby.push(`${kde}: Nastavení je skryté o ${m.skryto} px${m.roluje ? ', nabídka roluje' : ''}`);
+            if (m.paticka) chyby.push(`${kde}: patička přečnívá z panelu o ${m.paticka} px`);
+            if (m.profil) chyby.push(`${kde}: profil je oříznutý o ${m.profil} px`);
+            if (m.pres) chyby.push(`${kde}: profil zasahuje do nabídky o ${m.pres} px`);
+            if (m.radkyZdroju > 2) chyby.push(`${kde}: rozpis zdrojů má ${m.radkyZdroju} řádky`);
+          }
+        }
+      }
+      await p.close();
+      assert.deepEqual(chyby, [], `${engine}: postranní panel\n${chyby.join('\n')}`);
+    }
+    await ctx.close();
+  } finally {
+    await server.close();
+  }
+}
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -332,6 +413,9 @@ for (const engine of engines) {
       // Karty Nastavení se plní až po prvním vykreslení; do té doby je stránka krátká.
       await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1000, null, { timeout: 5000 })
         .catch(() => { throw new Error(`${engine}: Nastavení jsou na zkoušku posouvání krátká`); });
+      // I první vstup musí fungovat z obnovené nenulové polohy, ne pouze odshora.
+      await p.evaluate(() => scrollTo({ top: 120, behavior: 'instant' }));
+      await p.waitForTimeout(50);
       await p.mouse.move(900, 500);
       const vzorky = p.evaluate(() => new Promise((hotovo) => {
         const v = [];
@@ -347,7 +431,7 @@ for (const engine of engines) {
       const { v, posouva } = await vzorky;
       const konec = v.at(-1);
       const mezi = new Set(v.filter((y) => y > 2 && y < konec - 2).map(Math.round)).size;
-      assert.ok(Math.abs(konec - 400) <= 2, `${engine}: kolečko 400 px v aplikaci dojelo na ${konec}`);
+      assert.ok(Math.abs(konec - 520) <= 2, `${engine}: kolečko 400 px z polohy 120 v aplikaci dojelo na ${konec}`);
       assert.ok(mezi >= 5, `${engine}: posun kolečkem v aplikaci neběžel plynule (mezipoloh ${mezi})`);
       assert.ok(v.every((y, i) => i === 0 || y >= v[i - 1] - 0.5), `${engine}: dojezd v aplikaci se vracel`);
       assert.ok(posouva, `${engine}: během posouvání chybí html.is-scrolling (hover efekty se nevypnou)`);
@@ -375,13 +459,80 @@ for (const engine of engines) {
 
       await p.mouse.wheel(0, 1200);
       await p.waitForTimeout(60);
-      await p.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, 0); document.documentElement.style.scrollBehavior = ''; });
+      // WebKit může změnu inline scroll-behavior vyhodnotit až po dalším vykreslení.
+      // Výslovný okamžitý skok ověřuje skutečné přerušení dojezdu, ne časování CSS.
+      await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
       await p.waitForTimeout(600);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
+      const koleckoDojede = async (krok, zprava) => {
+        const pred = await p.evaluate(() => scrollY);
+        const max = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        const cil = Math.min(max, Math.max(0, pred + krok));
+        await p.mouse.move(900, 500);
+        await p.mouse.wheel(0, krok);
+        await p.waitForFunction((y) => Math.abs(scrollY - y) <= 2, cil, { timeout: 3000 })
+          .catch(() => { throw new Error(`${engine}: ${zprava}, očekáváno ${cil}, skutečně ${pred} → kolečko se zablokovalo`); });
+        await p.waitForTimeout(100);
+      };
+      // Nestačí první kolečko od horního okraje. Starý dojezd po cizím posunu převzal
+      // událost, ale před prvním snímkem ji zrušil kvůli zastaralé poloze.
+      await koleckoDojede(240, 'kolečko po přerušení dojezdu skokem aplikace');
+      await p.evaluate(() => scrollTo({ top: 700, behavior: 'instant' }));
+      await koleckoDojede(-200, 'kolečko po posunu posuvníkem nebo odkazem');
+      await p.keyboard.press('PageDown');
+      await p.waitForTimeout(500);
+      await koleckoDojede(-160, 'kolečko po posunu klávesnicí');
+      // Změna obrazovky ruší dojezd a vrací okno nahoru; další vstup musí začít tam.
+      await p.mouse.wheel(0, 320);
+      await p.waitForTimeout(30);
+      await p.evaluate(() => { location.hash = '#/prehled'; });
+      await p.locator('.pulse-bar').waitFor();
+      await p.evaluate(() => { location.hash = '#/nastaveni'; });
+      await p.locator('.settings2').waitFor();
+      await p.waitForFunction(() => document.documentElement.scrollHeight - innerHeight > 1000);
+      await p.waitForTimeout(400);
+      await koleckoDojede(240, 'kolečko po přepnutí obrazovky během dojezdu');
+      // Krátké opakované kroky trackpadu a změna směru se nesmějí zaseknout.
+      await p.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
+      await p.waitForTimeout(120);
+      for (let i = 0; i < 8; i++) await p.mouse.wheel(0, 15);
+      await p.waitForFunction(() => Math.abs(scrollY - 520) <= 2);
+      await koleckoDojede(-120, 'změna směru po malých krocích trackpadu');
+      // Vnitřní seznam dostane kolečko nativně, hlavní stránka přitom stojí.
+      await p.evaluate(() => {
+        const box = document.createElement('div');
+        box.id = 'qa-scroll-list';
+        box.style.cssText = 'position:fixed;right:40px;top:350px;width:240px;height:150px;overflow:auto;z-index:100;background:white';
+        box.innerHTML = '<div style="height:1200px">Posuvný seznam</div>';
+        document.body.append(box);
+      });
+      const predSeznamem = await p.evaluate(() => scrollY);
+      await p.mouse.move(1300, 400);
+      await p.mouse.wheel(0, 160);
+      await p.waitForFunction(() => document.querySelector('#qa-scroll-list').scrollTop > 0);
+      assert.equal(await p.evaluate(() => scrollY), predSeznamem, `${engine}: kolečko uvnitř seznamu posunulo stránku`);
+      await p.evaluate(() => document.querySelector('#qa-scroll-list').remove());
+      // Zapnutí omezení pohybu během dojezdu ho zastaví; další krok je okamžitý bez animace.
+      await p.mouse.move(900, 500);
+      await p.mouse.wheel(0, 300);
+      await p.emulateMedia({ reducedMotion: 'reduce' });
+      await p.waitForFunction(() => !('plynule' in document.documentElement.dataset));
+      await p.waitForTimeout(80);
+      const poOmezeni = await p.evaluate(() => scrollY);
+      await p.waitForTimeout(250);
+      assert.equal(await p.evaluate(() => scrollY), poOmezeni, `${engine}: dojezd ignoruje zapnuté omezení pohybu`);
+      await p.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
+      await p.waitForTimeout(120);
+      const predNativnim = await p.evaluate(() => scrollY);
+      assert.ok(predNativnim >= 390, `${engine}: není odkud ověřit přímý posun nahoru`);
+      await p.mouse.move(900, 500);
+      await p.mouse.wheel(0, -100);
+      await p.waitForFunction((y) => scrollY < y - 20, predNativnim, { timeout: 3000 });
       await ctx.close();
     }
+    await zkontrolujPostranniPanel(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import http from 'node:http';
 import os from 'node:os';
+import { POCITAC } from './platform.js';
+import { ui } from './texty.js';
 
 // Přístup z telefonu. Výchozí stav je vypnuto – dokud ho uživatel sám nezapne, server poslouchá
 // jen na 127.0.0.1 jako dřív. Zapnout jde dvě nezávislé cesty a obě přidají další listener:
@@ -154,7 +156,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
         enabled: tailscaleOn(),
         available: tsAddresses.length > 0,
         listening: tsAddresses.some((a) => servers.has(a)),
-        error: tailscaleOn() ? (tsAddresses.length ? firstError(tsAddresses) : 'Tailscale na tomto Macu neběží nebo nejsi přihlášený.') : '',
+        error: tailscaleOn() ? (tsAddresses.length ? firstError(tsAddresses) : ui('Tailscale na {0} neběží nebo nejsi přihlášený.', POCITAC.tomto)) : '',
         addresses: tsAddresses,
         name: tsName,
         url: tsHost ? `http://${tsHost}:${port}` : '',
@@ -171,17 +173,18 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
 
   // Spáruje telefon. Vrací token jen jednou – v datech zůstane pouze jeho hash.
   async function pair(code, label, now = Date.now()) {
-    if (!lanOn() && !tailscaleOn()) return { status: 403, error: 'Přístup z telefonu je vypnutý.' };
-    if (!pin || pin.expiresAt <= now) return { status: 410, error: 'Kód vypršel. Vytvoř na Macu nový.' };
+    if (!lanOn() && !tailscaleOn()) return { status: 403, error: ui('Přístup z telefonu je vypnutý.') };
+    if (!pin || pin.expiresAt <= now) return { status: 410, error: ui('Kód vypršel. Vytvoř {0} nový.', POCITAC.naHostiteli) };
     if (pin.tries >= PIN_TRIES_MAX) {
       pin = null;
-      return { status: 429, error: 'Příliš mnoho pokusů. Vytvoř na Macu nový kód.' };
+      return { status: 429, error: ui('Příliš mnoho pokusů. Vytvoř {0} nový kód.', POCITAC.naHostiteli) };
     }
     pin.tries++;
     const given = Buffer.from(String(code || ''));
     const expected = Buffer.from(pin.code);
     if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) {
-      return { status: 401, error: `Kód nesouhlasí. Zbývají ${PIN_TRIES_MAX - pin.tries} pokusy.` };
+      const zbyva = PIN_TRIES_MAX - pin.tries;
+      return { status: 401, error: zbyva === 1 ? ui('Kód nesouhlasí. Zbývá poslední pokus.') : zbyva <= 4 ? ui('Kód nesouhlasí. Zbývají {0} pokusy.', zbyva) : ui('Kód nesouhlasí. Zbývá {0} pokusů.', zbyva) };
     }
     pin = null; // na jedno použití
     const token = crypto.randomBytes(32).toString('base64url');
@@ -202,7 +205,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
 
   async function revoke(id) {
     const i = devices().findIndex((d) => d.id === id);
-    if (i === -1) return { status: 404, error: 'Takové zařízení v seznamu není.' };
+    if (i === -1) return { status: 404, error: ui('Takové zařízení v seznamu není.') };
     devices().splice(i, 1);
     onAuthorizationChange();
     await datastore.flush();
@@ -216,7 +219,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
     return new Promise((resolve) => {
       const s = http.createServer(handler);
       const selhalStart = (err) => {
-        errors.set(address, err.code === 'EADDRINUSE' ? `Port ${port} už někdo obsadil.` : `Nepodařilo se otevřít přístup: ${err.code || err.message}`);
+        errors.set(address, err.code === 'EADDRINUSE' ? ui('Port {0} už někdo obsadil.', port) : ui('Nepodařilo se otevřít přístup: {0}', err.code || err.message));
         servers.delete(address);
         resolve();
       };
@@ -228,7 +231,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
         // port. Listener se proto od téhle chvíle uklidí sám a teprve pak zmizí ze seznamu.
         s.off('error', selhalStart);
         s.on('error', (err) => {
-          errors.set(address, `Spojení se přerušilo: ${err.code || err.message}`);
+          errors.set(address, ui('Spojení se přerušilo: {0}', err.code || err.message));
           servers.delete(address);
           closeServer(s).catch(() => {});
         });
@@ -254,7 +257,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
       await closeServer(s);
     }
     for (const address of [...errors.keys()]) if (!want.includes(address)) errors.delete(address);
-    if (lanOn() && !lanAddresses(interfaces()).length) errors.set('lan', 'Mac není v žádné místní síti.');
+    if (lanOn() && !lanAddresses(interfaces()).length) errors.set('lan', ui('{0} není v žádné místní síti.', POCITAC.Tento));
     else errors.delete('lan');
     await Promise.all(want.filter((a) => !servers.has(a)).map((a) => open(a, port)));
     const s = status();

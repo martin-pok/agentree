@@ -6,6 +6,8 @@
 // z rozšíření. Terminál se nikdy neotvírá. Hesla ani tokeny dodavatelů Agenteeq nevidí, nečte
 // a neukládá.
 import { prostrediPro } from './prihlaseni.js';
+import { POCITAC } from './platform.js';
+import { ui } from './texty.js';
 
 const INTERVAL_MS = 2000;
 const LIMIT_MS = 10 * 60 * 1000;
@@ -126,7 +128,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       // dál by znamenalo tvrdit „čekám“, i když už není na co.
       if (c.skoncil) {
         ukonci(id);
-        emit({ id, label: a.label, udalost: 'selhalo', chyba: c.chyba || `Přihlášení ${a.label} skončilo bez napojení. Zkus to prosím znovu.` });
+        emit({ id, label: a.label, udalost: 'selhalo', chyba: c.chyba || ui('Přihlášení {0} skončilo bez napojení. Zkus to prosím znovu.', a.label) });
         return;
       }
       if (!c.casovac) {
@@ -155,7 +157,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
         return;
       }
       zaznam.skoncil = true;
-      if (kod !== 0) zaznam.chyba = `Přihlášení ${a.label} skončilo s chybou. Zkus to prosím znovu.`;
+      if (kod !== 0) zaznam.chyba = ui('Přihlášení {0} skončilo s chybou. Zkus to prosím znovu.', a.label);
       // Konec procesu je nejlepší chvíle se zeptat – obvykle právě dokončil přihlášení.
       hlidej(id, 0);
     };
@@ -169,7 +171,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
         hlidej(id);
       } else {
         r.zastav();
-        return { ok: false, error: `Přihlášení ${a.label} bylo zrušeno.` };
+        return { ok: false, error: ui('Přihlášení {0} bylo zrušeno.', a.label) };
       }
     }
     zaznam.proces = r;
@@ -180,9 +182,9 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     if (AGENTI[id]) {
       const a = AGENTI[id];
       const nalezene = bins();
-      if (!nalezene) return { status: 422, error: `Nepodařilo se zjistit, jestli je ${a.label} na tomhle Macu nainstalovaný.` };
+      if (!nalezene) return { status: 422, error: ui('Nepodařilo se zjistit, jestli je {0} na {1} nainstalovaný.', a.label, POCITAC.tomto) };
       const bin = nalezene[a.bin];
-      if (!bin) return { status: 422, error: `${a.label} se na tomhle Macu nepodařilo najít.` };
+      if (!bin) return { status: 422, error: ui('{0} se na {1} nepodařilo najít.', a.label, POCITAC.tomto) };
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
       if (z.napojeno === true) {
         const p = await plan(id).catch(() => '');
@@ -191,14 +193,14 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       }
       ukonci(id);
       const r = await spust(id, bin, a.prihlaseni);
-      if (!r.ok) return { status: 422, error: r.error || `Přihlášení ${a.label} se nepodařilo spustit.` };
+      if (!r.ok) return { status: 422, error: r.error || ui('Přihlášení {0} se nepodařilo spustit.', a.label) };
       return { ok: true, ceka: true, dry: Boolean(r.dry) };
     }
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;
-    if (!web) return { status: 404, error: 'Tohle napojit neumíme.' };
-    if (extension().state === 'missing') return { status: 409, error: 'Webové chaty se napojují přes rozšíření pro Chrome. Nejdřív ho přidej a spáruj.', rozsireni: true };
+    if (!web) return { status: 404, error: ui('Tohle napojit neumíme.') };
+    if (extension().state === 'missing') return { status: 409, error: ui('Webové chaty se napojují přes rozšíření pro Chrome. Nejdřív ho přidej a spáruj.'), rozsireni: true };
     const r = await open(web.url);
-    if (!r.ok) return { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+    if (!r.ok) return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
     ukonci(id);
     ceka.set(id, { od: now() });
     const c = ceka.get(id);
@@ -221,28 +223,28 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
   // až chvíli po startu, proto se na něj krátce počká.
   async function odkaz(id) {
     const a = AGENTI[id];
-    if (!a) return { status: 404, error: 'Tohle napojit neumíme.' };
+    if (!a) return { status: 404, error: ui('Tohle napojit neumíme.') };
     const konec = now() + odkazMs;
     let url = null;
     while (ceka.get(id)?.proces && !(url = ceka.get(id).proces.odkaz?.()) && now() < konec) {
       await new Promise((res) => setTimeout(res, 100));
     }
     const proces = ceka.get(id)?.proces;
-    if (!proces) return { status: 409, error: `Přihlášení ${a.label} už neběží. Zkus Napojit znovu.` };
-    if (!url) return { status: 409, error: 'Přihlašovací stránka ještě není připravená. Zkus to za pár vteřin.' };
+    if (!proces) return { status: 409, error: ui('Přihlášení {0} už neběží. Zkus Napojit znovu.', a.label) };
+    if (!url) return { status: 409, error: ui('Přihlašovací stránka ještě není připravená. Zkus to za pár vteřin.') };
     const r = await open(url);
-    if (!r.ok) return { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+    if (!r.ok) return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
     // Claude Code se pak ptá na kód ze stránky; Codex ne (vrací se na localhost sám).
     return { ok: true, kod: Boolean(a.zaloha) || Boolean(proces.chceKod?.()) };
   }
 
   function kod(id, hodnota) {
     const a = AGENTI[id];
-    if (!a) return { status: 404, error: 'Tohle napojit neumíme.' };
+    if (!a) return { status: 404, error: ui('Tohle napojit neumíme.') };
     const text = typeof hodnota === 'string' ? hodnota.trim() : '';
-    if (!KOD.test(text)) return { status: 422, error: 'Tohle nevypadá jako kód z přihlašovací stránky. Zkopíruj ho celý.' };
+    if (!KOD.test(text)) return { status: 422, error: ui('Tohle nevypadá jako kód z přihlašovací stránky. Zkopíruj ho celý.') };
     const proces = ceka.get(id)?.proces;
-    if (!proces?.posliKod(text)) return { status: 409, error: `Přihlášení ${a.label} už neběží. Zkus Napojit znovu.` };
+    if (!proces?.posliKod(text)) return { status: 409, error: ui('Přihlášení {0} už neběží. Zkus Napojit znovu.', a.label) };
     hlidej(id, 500);
     return { ok: true };
   }

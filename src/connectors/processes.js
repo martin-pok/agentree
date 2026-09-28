@@ -1,4 +1,5 @@
-import { processList, detailyProcesu, JE_WINDOWS } from '../platform.js';
+import { processList, detailyProcesu, JE_WINDOWS, POCITAC } from '../platform.js';
+import { ui } from '../texty.js';
 
 // ── Jak se pozná program v příkazové řádce ───────────────────────────────────
 //
@@ -16,17 +17,55 @@ const utec = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Přípona .exe se píše různě, jméno programu ale ne.
 const EXE = '(\\.[eE][xX][eE])?';
 
+// Interprety, pod kterými program běží jako skript: npm balíček přes shebang („node /…/bin/claude“),
+// obalový skript instalátoru („/bin/sh /…/bin/claude“), Python u lokálních modelů.
+const INTERPRET = /^(node|nodejs|bun|deno|sh|bash|zsh|dash|ksh|fish|python[\d.]*)(\.exe)?$/i;
+// Přepínač, za kterým interpret nečte skript, ale text příkazu: `sh -c`, `bash -lc`, `node -e`/`-p`,
+// `python -c`/`-m`. Cesta k programu v takovém textu je jen zmínka – program, pokud se spustí,
+// bude ve výpisu jako vlastní proces.
+const PRIKAZ_TEXTEM = /^-(?:[a-z]*c[a-z]*|e|p|m)$|^--(?:eval|print|command)(?:=|$)/i;
+// Začátek cesty: „/“, „~/“, „./“, „../“, „C:\“, „\\server“. Podle něj se pozná, kde cesta
+// s mezerou („Application Support“, „Jana Nováková“) začíná.
+const ZACATEK_CESTY = /^(\/|~(\/|$)|\.\.?[\\/]|[A-Za-z]:[\\/]|\\\\)/;
+
+/**
+ * Běží v procesu opravdu program `jmeno`? Ano, když je to samotný spustitelný soubor, nebo skript
+ * pod interpretem (se spouštěcími přepínači). Ne, když jde jen o argument jiného programu
+ * (`sudo …`, `vim …`, `ln -sf …`) nebo o text příkazu shellu (`sh -c "… /bin/claude …"`).
+ */
+function spusteny(args, vzor) {
+  const text = String(args || '');
+  const m = vzor.exec(text);
+  if (!m) return false;
+  // Kde začíná cesta, ve které jméno programu stojí: nejbližší slovo před ním, které začíná jako
+  // cesta; slova mezi tím patří téže cestě s mezerou. Bez takového slova je cesta relativní
+  // a začíná posledním slovem.
+  const slova = text.slice(0, m.index + m[1].length).split(' ');
+  let i = slova.length - 1;
+  for (let j = slova.length - 1; j >= 0; j--) if (ZACATEK_CESTY.test(slova[j])) { i = j; break; }
+  const pred = slova.slice(0, i).filter(Boolean);
+  if (!pred.length) return true;
+  // Před cestou smí stát jen interpret a jeho přepínače – nic, co by znamenalo text příkazu.
+  let k = pred.length;
+  while (k > 0 && pred[k - 1].startsWith('-')) k--;
+  if (!k || pred.slice(k).some((x) => PRIKAZ_TEXTEM.test(x))) return false;
+  return INTERPRET.test(pred.slice(0, k).join(' ').split(/[\\/]/).pop());
+}
+
 /**
  * Program spuštěný z příkazové řádky – pozná se podle jména bez ohledu na to, jestli
  * je cesta psaná lomítkem nebo zpětným lomítkem a jestli má příponu `.exe`.
- * `program('claude')` sedne na `/usr/local/bin/claude`, `C:\…\claude.exe` i `claude --help`.
+ * `program('claude')` sedne na `/usr/local/bin/claude`, `C:\…\claude.exe`, `claude --help`
+ * i `node /usr/local/bin/claude`, ale ne na shell nebo příkaz, který ho jen zmiňuje (viz `spusteny`).
  *
  * Na velikosti písmen ZÁLEŽÍ, a je to schválně: `claude` je nástroj příkazové řádky,
  * `Claude` je desktopová aplikace. Na macOS se tím ty dva odlišují spolehlivě a stejná
  * zvyklost platí i pro `claude.exe` vs `Claude.exe`.
  */
-export const program = (...jmena) =>
-  new RegExp(`(^|[\\\\/])(${jmena.map(utec).join('|')})${EXE}(\\s|$)`);
+export const program = (...jmena) => {
+  const vzor = new RegExp(`(^|[\\\\/])(${jmena.map(utec).join('|')})${EXE}(\\s|$)`);
+  return { test: (args) => spusteny(args, vzor) };
+};
 
 /**
  * Desktopová aplikace – na macOS balíček `.app`, na Windows spustitelný soubor.
@@ -170,8 +209,21 @@ export function createStabilniStart(tolerance = 3000) {
   };
 }
 
+// Kolik AI aplikací běží, s tvarem podle počtu. Každý tvar je celý text rozhraní (src/texty.js),
+// aby šel přeložit i s číslem uprostřed; `modelu` = počet modelů v Ollamě, null = Ollama neodpovídá.
+function aplikaciBezi(n, modelu) {
+  if (modelu === null) return n === 1 ? ui('1 AI aplikace běží.') : n >= 2 && n <= 4 ? ui('{0} AI aplikace běží.', n) : ui('{0} AI aplikací běží.', n);
+  return n === 1 ? ui('1 AI aplikace běží · Ollama: {0} modelů.', modelu) : n >= 2 && n <= 4 ? ui('{0} AI aplikace běží · Ollama: {1} modelů.', n, modelu) : ui('{0} AI aplikací běží · Ollama: {1} modelů.', n, modelu);
+}
+
+const adresaOllamy = (klient) => {
+  try { return new URL(klient?.baseUrl).host; } catch { return ui('Ollama nenastavená'); }
+};
+
 export function createProcessesConnector(ctx) {
-  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu } = ctx;
+  // Ollama jde přes sdíleného klienta z src/ollama.js, tedy na adresu z AGENTEEQ_OLLAMA_URL. Bez klienta
+  // se na Ollamu neptá vůbec – nikdy natvrdo na 127.0.0.1:11434.
+  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
   let timer = null;
   let ollama = { ok: false, models: [] };
   let lastOk = 0;
@@ -201,17 +253,11 @@ export function createProcessesConnector(ctx) {
     if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
     // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
     onAgenti(res.ok ? await agenti(res.stdout).catch(() => null) : null);
-    try {
-      const r = await fetch('http://127.0.0.1:11434/api/ps', { signal: AbortSignal.timeout(600) });
-      const json = r.ok ? await r.json() : null;
-      ollama = { ok: Boolean(json), models: (json?.models || []).map((m) => m.name) };
-    } catch {
-      ollama = { ok: false, models: [] };
-    }
+    ollama = ollamaKlient ? await ollamaKlient.loaded() : { ok: false, models: [] };
     const o = runtimes.find((r) => r.id === 'ollama');
     if (o && ollama.ok) {
       o.running = true;
-      o.detail = ollama.models.length ? `Načteno: ${ollama.models.join(', ')}` : 'Žádný model v paměti';
+      o.detail = ollama.models.length ? ui('Načteno: {0}', ollama.models.join(', ')) : ui('Žádný model v paměti');
     }
     if (res.ok) lastOk = Date.now();
     store.setRuntimes(runtimes);
@@ -219,12 +265,12 @@ export function createProcessesConnector(ctx) {
 
   return {
     id: 'processes',
-    name: JE_WINDOWS ? 'Aplikace na tomto počítači' : 'Aplikace na tomto Macu',
+    name: ui('Aplikace na {0}', POCITAC.tomto),
     provider: 'other',
     kind: 'local',
     verified: true,
-    source: JE_WINDOWS ? 'Win32_Process · localhost:11434' : 'ps · localhost:11434',
-    description: 'Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.',
+    source: `${JE_WINDOWS ? 'Win32_Process' : 'ps'} · ${adresaOllamy(ollamaKlient)}`,
+    description: ui('Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.'),
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), config.processIntervalMs);
@@ -242,8 +288,10 @@ export function createProcessesConnector(ctx) {
       return {
         state: lastOk ? 'connected' : 'error',
         detail: lastOk
-          ? `${running} AI aplikací běží${ollama.ok ? ` · Ollama: ${ollama.models.length} modelů` : ''}.`
-          : `Seznam běžících aplikací se na tomto systému nepodařilo získat${ollama.ok ? `, Ollama ale odpovídá: ${ollama.models.length} modelů` : ''}.`,
+          ? aplikaciBezi(running, ollama.ok ? ollama.models.length : null)
+          : ollama.ok
+            ? ui('Seznam běžících aplikací se na tomto systému nepodařilo získat, Ollama ale odpovídá: {0} modelů.', ollama.models.length)
+            : ui('Seznam běžících aplikací se na tomto systému nepodařilo získat.'),
         count: running,
         watching: Boolean(timer),
         // Výpis běží každých pár vteřin; na minuty zaokrouhlený čas nerozhýbe seznam zdrojů při každém průchodu.

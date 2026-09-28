@@ -4,6 +4,7 @@ import http from 'node:http';
 import os from 'node:os';
 import { createLanAccess, lanAddresses, isLoopback, cookieValue, COOKIE } from '../src/lan.js';
 import { loadConfig } from '../src/config.js';
+import { POCITAC } from '../src/platform.js';
 import { startTestServer, api, tempDir } from './helpers.mjs';
 
 const fakeDatastore = () => {
@@ -94,7 +95,7 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
     req.end();
   });
 
-  if (!lanIp) return; // Mac bez místní sítě – test nemá co ověřit
+  if (!lanIp) return t.skip('počítač nemá adresu v místní síti – požadavek z LAN není odkud poslat');
 
   // 1) Dokud je přístup vypnutý, na místní síti vůbec nikdo neposlouchá.
   await assert.rejects(() => zLan('/api/state'), /ECONNREFUSED/, 'vypnuto = žádný listener pro síť');
@@ -140,7 +141,8 @@ test('HTTP: z místní sítě se bez spárování nedá načíst nic, zapnout to
   for (const [cesta, method] of [['/api/launch', 'POST'], ['/api/settings', 'PUT'], ['/api/integrations/claude-hooks/install', 'POST'], ['/api/secrets/openai-admin', 'PUT'], ['/api/custom-agents', 'POST']]) {
     const r = await zLan(cesta, { method, headers: { Cookie: token, 'X-Agenteeq': '1', ...telo }, body: '{}' });
     assert.equal(r.status, 403, `${method} ${cesta} z telefonu`);
-    assert.match(r.body, /jen na Macu/);
+    // Text podle systému: na Macu „jen na Macu“, jinde „jen na počítači s Agenteeq“ (src/platform.js#POCITAC).
+    assert.ok(r.body.includes(`jen ${POCITAC.naHostiteli}`), `${method} ${cesta}: ${r.body}`);
   }
   assert.equal((await zLan('/api/fs/folders', { headers: { Cookie: token } })).status, 403, 'telefon neprochází disk');
   assert.equal((await zLan('/api/alerts/read', { method: 'POST', headers: { Cookie: token, 'X-Agenteeq': '1', ...telo }, body: '{"ids":[]}' })).status, 200, 'přečtená upozornění smí označit');

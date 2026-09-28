@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import { writeJsonAtomic, randomToken, debounce } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
+import { ui } from './texty.js';
+import { VYCHOZI_TICHO, normalizujTicho } from './nocni-ticho.js';
 
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
@@ -19,6 +21,8 @@ export const DEFAULT_SETTINGS = {
     doneMinSeconds: 120,
     native: true,
     browser: false,
+    // Noční ticho (src/nocni-ticho.js): výchozí vypnuto, časy podle místního času počítače.
+    ...VYCHOZI_TICHO,
   },
   disabledConnectors: [],
   lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
@@ -92,7 +96,7 @@ export function normalizeData(raw) {
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,
-      notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
+      notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}), ...normalizujTicho(s.notifications) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       lanAccess: s.lanAccess === true,
       tailscaleAccess: s.tailscaleAccess === true,
@@ -179,7 +183,7 @@ export class DataStore {
         raw = await this.recover();
       } else if (err.code !== 'ENOENT') {
         // Oprávnění nebo složka místo souboru: nový soubor by nepomohl a přepsal by skutečná data.
-        throw new Error('Agenteeq nemá oprávnění ke složce ~/.agenteeq, data proto nejdou načíst. Původní soubor zůstal zachovaný.');
+        throw new Error(ui('Agenteeq nemá oprávnění ke složce ~/.agenteeq, data proto nejdou načíst. Původní soubor zůstal zachovaný.'));
       }
     }
     this.data = normalizeData(raw);
@@ -216,10 +220,10 @@ export class DataStore {
         key: `data-recovery:${stamp}`,
         level: 'critical',
         kind: 'system',
-        title: raw ? 'Data Agenteeq byla poškozená – obnovena ze zálohy' : 'Data Agenteeq byla poškozená',
+        title: raw ? ui('Data Agenteeq byla poškozená – obnovena ze zálohy') : ui('Data Agenteeq byla poškozená'),
         body: raw
-          ? `Použil jsem poslední dobrou zálohu, přijít jsi mohl nejvýš o poslední změny. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq.`
-          : `Záloha nebyla k dispozici, nastavení začíná od výchozích hodnot. Poškozený soubor zůstal uložený jako ${name} ve složce ~/.agenteeq – projekty a výdaje z něj jde obnovit.`,
+          ? ui('Použil jsem poslední dobrou zálohu, přijít jsi mohl nejvýš o poslední změny. Poškozený soubor zůstal uložený jako {0} ve složce ~/.agenteeq.', name)
+          : ui('Záloha nebyla k dispozici, nastavení začíná od výchozích hodnot. Poškozený soubor zůstal uložený jako {0} ve složce ~/.agenteeq – projekty a výdaje z něj jde obnovit.', name),
       },
     };
     console.error(`Agenteeq: data.json byl poškozený, ${raw ? 'obnoveno ze zálohy' : 'začínám od výchozích hodnot'}; původní soubor: ${preserved}`);

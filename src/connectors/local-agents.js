@@ -6,6 +6,7 @@
 import { etimeToSec, program, aplikace, createStabilniStart } from './processes.js';
 import { clip } from '../util.js';
 import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
+import { ui } from '../texty.js';
 
 // Katalog známých lokálních běhových prostředí. `match` dostane celý řetězec argumentů
 // jednoho procesu (`ps ... args=`) a vrátí, jestli proces patří k tomuto nástroji.
@@ -93,7 +94,7 @@ function parseRow(line) {
   return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
 }
 
-const HEURISTIC_NOTE = 'Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.';
+const HEURISTIC_NOTE = ui('Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.');
 
 /**
  * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde
@@ -125,7 +126,7 @@ export function detectLocalAgents(psOutput, { ports = [], now = Date.now() } = {
         key = model ? `heuristika:model:${model}` : `heuristika:prikaz:${commandBase(row.args)}`;
         base = {
           id: key,
-          name: model ? `Neznámý model (${model})` : `Neznámý lokální proces (${commandBase(row.args)})`,
+          name: model ? ui('Neznámý model ({0})', model) : ui('Neznámý lokální proces ({0})', commandBase(row.args)),
           kind: 'server',
           source: 'heuristika',
           confidence: 'nízká',
@@ -192,12 +193,12 @@ export function createLocalAgentsConnector(ctx) {
 
   return {
     id: 'local-agents',
-    name: 'Neznámí a lokální agenti',
+    name: ui('Neznámí a lokální agenti'),
     provider: 'local',
     kind: 'local',
     verified: false,
     source: JE_WINDOWS ? 'Win32_Process · Get-NetTCPConnection' : 'ps · lsof',
-    description: 'Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).',
+    description: ui('Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).'),
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), 10000);
@@ -213,11 +214,11 @@ export function createLocalAgentsConnector(ctx) {
       // Bez úspěšného výpisu procesů se neví nic. Hlásit „nic neběží“ by znamenalo
       // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
       if (!lastOk) {
-        return { state: 'error', detail: 'Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.', count: 0 };
+        return { state: 'error', detail: ui('Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.'), count: 0 };
       }
       return {
         state: list.length ? 'connected' : 'idle',
-        detail: list.length ? `${list.length} lokálních agentů mimo známý seznam.` : 'Žádný neznámý ani lokální agent teď neběží.',
+        detail: list.length === 1 ? ui('1 lokální agent mimo známý seznam.') : list.length >= 2 && list.length <= 4 ? ui('{0} lokální agenti mimo známý seznam.', list.length) : list.length ? ui('{0} lokálních agentů mimo známý seznam.', list.length) : ui('Žádný neznámý ani lokální agent teď neběží.'),
         count: list.length,
       };
     },

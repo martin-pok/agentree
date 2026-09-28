@@ -28,16 +28,23 @@ test('security: foreign origins cannot read state, transcripts or SSE; same-orig
 test('security: SSE client limit and disconnect release', async () => {
   const s = await startTestServer();
   const controllers = [];
+  // Ponechat otevřená i těla odpovědí: pokud fetch Response není nikde uložená,
+  // klient ji může uklidit a spojení SSE zavřít ještě před 33. požadavkem.
+  const streams = [];
   try {
     for (let i = 0; i < 32; i++) {
       const c = new AbortController(); controllers.push(c);
-      assert.equal((await fetch(s.url + '/api/stream', { signal: c.signal })).status, 200);
+      const r = await fetch(s.url + '/api/stream', { signal: c.signal });
+      assert.equal(r.status, 200);
+      streams.push(r);
     }
     assert.equal((await fetch(s.url + '/api/stream')).status, 503);
     controllers.pop().abort();
     await new Promise(r => setTimeout(r, 50));
     const c = new AbortController(); controllers.push(c);
-    assert.equal((await fetch(s.url + '/api/stream', { signal: c.signal })).status, 200);
+    const r = await fetch(s.url + '/api/stream', { signal: c.signal });
+    assert.equal(r.status, 200);
+    streams.push(r);
   } finally { controllers.forEach(c => c.abort()); await s.close(); }
 });
 
@@ -113,8 +120,11 @@ test('reliability: corrupt data without a backup start from defaults, loudly, an
 // Obě kontroly níž si nedostupnost vyrábějí přes POSIXová práva (mode). Windows je nemá:
 // soubor v profilu uživatele chrání ACL, které zdědí, a chmod 0o000 tam nic nezamkne.
 const BEZ_PRAV = process.platform === 'win32' && 'Windows nemá POSIXová práva (mode), chrání ACL profilu';
+// Jen první kontrola potřebuje, aby soubor opravdu nešel přečíst. Root přečte i mode 0o000,
+// kontrola práv datové složky níž pod ním ale platí dál.
+const POD_ROOTEM = process.getuid?.() === 0 && 'pod rootem mode 0o000 nic nezamkne, root soubor přečte i tak';
 
-test('reliability: a permission problem is not masked as corruption', { skip: BEZ_PRAV || process.getuid?.() === 0 }, async () => {
+test('reliability: a permission problem is not masked as corruption', { skip: BEZ_PRAV || POD_ROOTEM }, async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-corrupt-qa-'));
   await fs.writeFile(dir + '/data.json', '{}', { mode: 0o000 });
   try {

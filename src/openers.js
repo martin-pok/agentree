@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { run, shellQuote } from './util.js';
 import { openCommand, JE_MAC, jeAbsolutniCesta } from './platform.js';
+import { ui } from './texty.js';
 
 // Otevření session přímo v aplikaci, kde běží. Plán se skládá jen ze serverových dat – nikdy z textu od klienta.
 
@@ -23,10 +24,10 @@ export function bezpecnaSlozka(cesta, { stat = fs.statSync, real = fs.realpathSy
 }
 
 export const APPS = {
-  codex: { name: 'ChatGPT', path: '/Applications/ChatGPT.app', label: 'Otevřít v Codexu' },
-  claude: { name: 'Claude', path: '/Applications/Claude.app', label: 'Otevřít Claude' },
-  cursor: { name: 'Cursor', path: '/Applications/Cursor.app', label: 'Otevřít v Cursoru' },
-  vscode: { name: 'Visual Studio Code', path: '/Applications/Visual Studio Code.app', label: 'Otevřít ve VS Code' },
+  codex: { name: 'ChatGPT', path: '/Applications/ChatGPT.app', label: ui('Otevřít v Codexu') },
+  claude: { name: 'Claude', path: '/Applications/Claude.app', label: ui('Otevřít Claude') },
+  cursor: { name: 'Cursor', path: '/Applications/Cursor.app', label: ui('Otevřít v Cursoru') },
+  vscode: { name: 'Visual Studio Code', path: '/Applications/Visual Studio Code.app', label: ui('Otevřít ve VS Code') },
 };
 
 export const ALL_APPS = { codex: true, claude: true, cursor: true, vscode: true, cli: { claude: true, codex: true, copilot: true } };
@@ -49,7 +50,7 @@ export const RUNTIME_APPS = {
 export function planRuntimeFocus(id) {
   const r = RUNTIME_APPS[id];
   if (!r) return null;
-  return { kind: 'open', args: ['-a', r.app], label: r.label, title: `Přepnout do ${r.label}` };
+  return { kind: 'open', args: ['-a', r.app], label: r.label, title: ui('Přepnout do {0}', r.label) };
 }
 
 export async function detectApps() {
@@ -77,21 +78,21 @@ function appPlan(s, apps) {
   const id = localIdOf(s);
   switch (s.connector) {
     case 'codex':
-      return apps.codex && UUID.test(id) ? { kind: 'open', args: [`codex://threads/${id}`], label: 'Codex', title: 'Otevřít v Codexu' } : null;
+      return apps.codex && UUID.test(id) ? { kind: 'open', args: [`codex://threads/${id}`], label: 'Codex', title: ui('Otevřít v Codexu') } : null;
     case 'claude-code':
-      return apps.claude ? { kind: 'open', args: ['-a', APPS.claude.name], label: 'Claude', title: 'Otevřít Claude' } : null;
+      return apps.claude ? { kind: 'open', args: ['-a', APPS.claude.name], label: 'Claude', title: ui('Otevřít Claude') } : null;
     case 'cursor':
-      return apps.cursor && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.cursor.name, s.cwd], label: 'Cursor', title: 'Otevřít v Cursoru' } : null;
+      return apps.cursor && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.cursor.name, s.cwd], label: 'Cursor', title: ui('Otevřít v Cursoru') } : null;
     case 'vscode-copilot':
-      return apps.vscode && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.vscode.name, s.cwd], label: 'VS Code', title: 'Otevřít ve VS Code' } : null;
+      return apps.vscode && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.vscode.name, s.cwd], label: 'VS Code', title: ui('Otevřít ve VS Code') } : null;
     case 'claude-desktop-code': {
       if (!/^session_[A-Za-z0-9]{8,80}$/.test(id)) return null;
-      return { kind: 'open', args: [`https://claude.ai/code/${id}`], label: 'Claude', title: 'Otevřít konverzaci' };
+      return { kind: 'open', args: [`https://claude.ai/code/${id}`], label: 'Claude', title: ui('Otevřít konverzaci') };
     }
     case 'web': {
       let url;
       try { url = new URL(s.url); } catch { return null; }
-      return url.protocol === 'https:' ? { kind: 'open', args: [url.href], label: 'prohlížeč', title: 'Otevřít konverzaci' } : null;
+      return url.protocol === 'https:' ? { kind: 'open', args: [url.href], label: ui('prohlížeč'), title: ui('Otevřít konverzaci') } : null;
     }
     default:
       return null;
@@ -116,11 +117,11 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   if (target === 'terminal') {
     if (!aplikace) return null;
     const command = terminalCommand(s, apps);
-    return command ? { kind: 'terminal', command, label: 'Terminál', title: 'Pokračovat v Terminálu' } : null;
+    return command ? { kind: 'terminal', command, label: ui('Terminál'), title: ui('Pokračovat v Terminálu') } : null;
   }
   if (target === 'folder') {
     if (!hasFolder(s) || s.source === 'web') return null;
-    return { kind: 'open', args: [s.cwd], folderOnly: true, label: aplikace ? 'Finder' : 'Správce souborů', title: 'Otevřít složku' };
+    return { kind: 'open', args: [s.cwd], folderOnly: true, label: aplikace ? 'Finder' : ui('Správce souborů'), title: ui('Otevřít složku') };
   }
   return null;
 }
@@ -159,20 +160,20 @@ export async function executeOpen(plan, { dry = false } = {}) {
   if (dry) return { ok: true, dry: true };
   if (plan.kind === 'open') {
     if (plan.folderOnly && !bezpecnaSlozka(plan.args[plan.args.length - 1])) {
-      return { ok: false, error: `${plan.label}: tohle není obyčejná složka, a tak ji Agenteeq neotevře (balíček by se mohl spustit jako program).` };
+      return { ok: false, error: ui('{0}: tohle není obyčejná složka, a tak ji Agenteeq neotevře (balíček by se mohl spustit jako program).', plan.label) };
     }
     // Přepínače `open` (-a, -R) zná jen macOS. Jinde je plán vždycky jediný cíl –
     // cesta nebo adresa – a ten se předá tomu, co systém pro otevírání má.
     if (!JE_MAC) {
       const cil = plan.args[plan.args.length - 1];
       const prikaz = openCommand(cil);
-      if (!prikaz) return { ok: false, error: `${plan.label}: tenhle systém otevírání neumí` };
+      if (!prikaz) return { ok: false, error: ui('{0}: tenhle systém otevírání neumí', plan.label) };
       // explorer.exe vrací nenulový kód i při úspěchu, takže se podle něj nedá řídit.
       await run(prikaz.cmd, prikaz.args, { timeout: 8000 });
       return { ok: true };
     }
     const r = await run('open', plan.args, { timeout: 8000 });
-    return r.ok ? { ok: true } : { ok: false, error: `${plan.label}: ${r.stderr.trim() || 'aplikaci se nepodařilo otevřít'}` };
+    return r.ok ? { ok: true } : { ok: false, error: r.stderr.trim() ? `${plan.label}: ${r.stderr.trim()}` : ui('{0}: aplikaci se nepodařilo otevřít', plan.label) };
   }
   if (plan.kind === 'terminal') {
     // Příkaz jde do AppleScriptu jako argument (argv), ne jako součást skriptu.
@@ -182,9 +183,9 @@ export async function executeOpen(plan, { dry = false } = {}) {
     return {
       ok: false,
       error: denied
-        ? 'macOS nepovolil ovládání Terminálu. Povol ho v Nastavení systému → Soukromí a zabezpečení → Automatizace.'
-        : `Terminál se nepodařilo otevřít: ${r.stderr.trim() || 'neznámá chyba'}`,
+        ? ui('macOS nepovolil ovládání Terminálu. Povol ho v Nastavení systému → Soukromí a zabezpečení → Automatizace.')
+        : ui('Terminál se nepodařilo otevřít: {0}', r.stderr.trim() || ui('neznámá chyba')),
     };
   }
-  return { ok: false, error: 'Neznámý typ akce.' };
+  return { ok: false, error: ui('Neznámý typ akce.') };
 }

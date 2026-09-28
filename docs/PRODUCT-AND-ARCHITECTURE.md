@@ -60,6 +60,8 @@ Kontrast textu a důležitých stavů musí být minimálně WCAG 2.2 AA (4.5:1 
 
 Každé klikatelné místo má jasný hover, `:focus-visible`, aktivní stav a chybný/disabled stav. Vlastní nabídky jsou součástí designu: nepoužívat nekontrolovaný systémový dropdown tam, kde je potřeba kontext, projekty nebo navigace. Pohyb je funkční, krátký a respektuje `prefers-reduced-motion`; žádné živé aktualizace nesmí zavřít otevřený formulář, menu nebo sebrat fokus.
 
+Kolečko používá společný dojezd v `public/js/plynule-posouvani.js` pro aplikaci i web. Každý nový dojezd přebírá skutečnou polohu okna; přerušení ruší i čekající snímek. Klávesnice, posuvník a přepnutí obrazovky mají přednost, ale nesmějí zablokovat další kolečko. Při omezeném pohybu je krok kolečka okamžitý bez animace (WebKit bez něj někdy událost doručí, ale stránku neposune); dotyk zůstává nativní. Regresní scénáře včetně nenulové počáteční polohy ověřuje `qa:desktop` v Chromiu a WebKitu.
+
 Na monitoru na výšku jsou velké navigační dlaždice v klidu průhledné a odsazené od hran panelu. Barva se objeví při hoveru nebo fokusu; aktivní stránka zůstává rozpoznatelná i bez kurzoru výraznějším textem a mosazným bodem.
 
 ### Profilové obrázky

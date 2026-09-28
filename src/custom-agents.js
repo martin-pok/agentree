@@ -4,11 +4,12 @@
 // (validateEndpoint) má přednost před vším ostatním: co neprojde, se nikdy nezavolá.
 
 import crypto from 'node:crypto';
+import { ui } from './texty.js';
 
 export const AGENT_TYPES = {
   comfyui: { label: 'ComfyUI', path: '/queue' },
   ollama: { label: 'Ollama', path: '/api/tags' },
-  openai: { label: 'OpenAI-kompatibilní (LM Studio, vLLM, llama.cpp)', path: '/v1/models' },
+  openai: { label: ui('OpenAI-kompatibilní (LM Studio, vLLM, llama.cpp)'), path: '/v1/models' },
 };
 
 export const MAX_AGENTS = 8;
@@ -52,22 +53,22 @@ function isAllowedHost(hostname) {
 // Ověří a znormalizuje adresu lokální služby. Nikdy nic síťově nevolá – jen parsuje řetězec.
 export function validateEndpoint(raw) {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_INPUT_LEN) {
-    return { ok: false, error: 'Adresa je povinná a smí mít nejvýš 200 znaků.' };
+    return { ok: false, error: ui('Adresa je povinná a smí mít nejvýš 200 znaků.') };
   }
   let url;
   try {
     url = new URL(raw);
   } catch {
-    return { ok: false, error: 'Adresa nedává smysl – zkontroluj formát (např. http://127.0.0.1:8188).' };
+    return { ok: false, error: ui('Adresa nedává smysl – zkontroluj formát (např. http://127.0.0.1:8188).') };
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    return { ok: false, error: 'Podporuje se jen http:// nebo https://.' };
+    return { ok: false, error: ui('Podporuje se jen http:// nebo https://.') };
   }
   if (url.username || url.password) {
-    return { ok: false, error: 'Adresa nesmí obsahovat jméno ani heslo.' };
+    return { ok: false, error: ui('Adresa nesmí obsahovat jméno ani heslo.') };
   }
   if (!isAllowedHost(url.hostname)) {
-    return { ok: false, error: 'Hostitel musí být lokální nebo v privátní síti (localhost, 127.0.0.1, 10.x, 172.16–31.x, 192.168.x nebo .local).' };
+    return { ok: false, error: ui('Hostitel musí být lokální nebo v privátní síti (localhost, 127.0.0.1, 10.x, 172.16–31.x, 192.168.x nebo .local).') };
   }
   // Origin bez cesty, dotazu a fragmentu – přes adresu se tak nedá propašovat jiný požadavek.
   return { ok: true, origin: url.origin };
@@ -84,12 +85,12 @@ export function normalizeAgent(input, { now = Date.now() } = {}) {
   const src = input && typeof input === 'object' ? input : {};
 
   if (typeof src.type !== 'string' || !Object.prototype.hasOwnProperty.call(AGENT_TYPES, src.type)) {
-    return { ok: false, error: 'Neznámý typ agenta.' };
+    return { ok: false, error: ui('Neznámý typ agenta.') };
   }
 
   const name = sanitizeName(src.name, '');
   if (name.length === 0) {
-    return { ok: false, error: 'Název je povinný.' };
+    return { ok: false, error: ui('Název je povinný.') };
   }
 
   const endpoint = validateEndpoint(src.origin ?? src.endpoint ?? src.url);
@@ -129,27 +130,26 @@ async function readBounded(res, maxBytes) {
   }
 }
 
-// Jednoduché skloňování slovesa „čekat" podle počtu (1 čeká, 2–4 čekají, jinak čeká).
-const waitWord = (n) => (n >= 2 && n <= 4 ? 'čekají' : 'čeká');
 
 function summarize(type, json) {
   if (type === 'comfyui') {
     if (!Array.isArray(json?.queue_running) || !Array.isArray(json?.queue_pending)) {
-      return { running: true, detail: 'Odpovídá' };
+      return { running: true, detail: ui('Odpovídá') };
     }
     const running = json.queue_running.length;
     const pending = json.queue_pending.length;
-    return { running: true, detail: `Fronta: ${running} běží, ${pending} ${waitWord(pending)}` };
+    // Sloveso podle počtu (1 čeká, 2–4 čekají, jinak čeká) – každý tvar je celý text (src/texty.js).
+    return { running: true, detail: pending >= 2 && pending <= 4 ? ui('Fronta: {0} běží, {1} čekají', running, pending) : ui('Fronta: {0} běží, {1} čeká', running, pending) };
   }
   if (type === 'ollama') {
-    if (!Array.isArray(json?.models)) return { running: true, detail: 'Odpovídá' };
-    return { running: true, detail: `Modelů: ${json.models.length}` };
+    if (!Array.isArray(json?.models)) return { running: true, detail: ui('Odpovídá') };
+    return { running: true, detail: ui('Modelů: {0}', json.models.length) };
   }
   if (type === 'openai') {
-    if (!Array.isArray(json?.data)) return { running: true, detail: 'Odpovídá' };
-    return { running: true, detail: `Modelů: ${json.data.length}` };
+    if (!Array.isArray(json?.data)) return { running: true, detail: ui('Odpovídá') };
+    return { running: true, detail: ui('Modelů: {0}', json.data.length) };
   }
-  return { running: true, detail: 'Odpovídá' };
+  return { running: true, detail: ui('Odpovídá') };
 }
 
 // Zjistí stav zaregistrované lokální služby jedním GET požadavkem. Nikdy nevyhazuje výjimku ven –
@@ -167,26 +167,26 @@ export async function probeAgent(agent, { fetchImpl = globalThis.fetch, timeoutM
     });
 
     if (res.status >= 300 && res.status < 400) {
-      return { ok: false, running: false, detail: 'Služba odpovídá přesměrováním, to Agenteeq nenásleduje.', at };
+      return { ok: false, running: false, detail: ui('Služba odpovídá přesměrováním, to Agenteeq nenásleduje.'), at };
     }
     if (res.status < 200 || res.status >= 300) {
-      return { ok: false, running: false, detail: `Služba odpověděla ${res.status}.`, at };
+      return { ok: false, running: false, detail: ui('Služba odpověděla {0}.', res.status), at };
     }
 
     const body = await readBounded(res, maxBytes);
     if (body.tooLarge) {
-      return { ok: false, running: false, detail: 'Odpověď je příliš velká.', at };
+      return { ok: false, running: false, detail: ui('Odpověď je příliš velká.'), at };
     }
 
     let json;
     try {
       json = JSON.parse(body.text);
     } catch {
-      return { ok: false, running: false, detail: 'Odpověď není JSON.', at };
+      return { ok: false, running: false, detail: ui('Odpověď není JSON.'), at };
     }
 
     return { ...summarize(agent.type, json), ok: true, at };
   } catch {
-    return { ok: false, running: false, detail: 'Služba neodpovídá.', at };
+    return { ok: false, running: false, detail: ui('Služba neodpovídá.'), at };
   }
 }

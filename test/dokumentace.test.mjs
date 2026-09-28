@@ -40,3 +40,34 @@ test('changelog a „Co je nového“ znají vydanou verzi', async () => {
   assert.match(await zdroj('public/js/whats-new-data.js'), new RegExp(`version: '${verze.replace(/\./g, '\\.')}'`), '„Co je nového“ nemá záznam k této verzi');
   assert.equal(JSON.parse(await zdroj('extension/manifest.json')).version, verze, 'rozšíření má jinou verzi než aplikace');
 });
+
+// docs/TESTING.md slibuje, že se test přeskočí „s důvodem“. `skip: podmínka` bez textu ale
+// runner vypíše jen „# SKIP“ a z výpisu nejde poznat, jestli test chybí schválně, nebo omylem.
+// Každá větev výrazu u skip/todo proto musí končit textem důvodu (`podmínka && 'důvod'`).
+test('přeskočený test říká proč', async () => {
+  const dir = new URL('../test/', import.meta.url);
+  const retezec = /(?:^|&&|\?|:)\s*(['"`])[^'"`]+\1\s*$/;
+  const bezZavorek = (v) => v.trim().replace(/^\((.*)\)$/s, '$1').trim();
+  const sDuvodem = (vyraz, zdrojTestu, hloubka = 0) => vyraz.split('||').map(bezZavorek).every((vetev) => {
+    if (retezec.test(vetev)) return true;
+    const konstanta = hloubka === 0 && vetev.match(/^[A-Za-z_$][\w$]*$/)
+      && zdrojTestu.match(new RegExp(`const ${vetev} = ([^;]+);`));
+    return Boolean(konstanta) && sDuvodem(konstanta[1], zdrojTestu, 1);
+  });
+  const bezDuvodu = [];
+  for (const f of await fs.readdir(dir)) {
+    if (!f.endsWith('.test.mjs')) continue;
+    const text = await fs.readFile(new URL(f, dir), 'utf8');
+    const kod = text.split('\n').filter((r) => !r.trim().startsWith('//')).join('\n');
+    for (const m of kod.matchAll(/\b(skip|todo):\s*([^}\n]+)/g)) {
+      if (!sDuvodem(m[2], text)) bezDuvodu.push(`${f}: ${m[1]}: ${m[2].trim()}`);
+    }
+    for (const m of kod.matchAll(/\bt\.(skip|todo)\(\s*\)/g)) bezDuvodu.push(`${f}: ${m[0]}`);
+  }
+  assert.deepEqual(bezDuvodu, [], 'u přeskočení chybí důvod (`podmínka && \'důvod\'`)');
+
+  // Kontrola sama musí starý tvar poznat, jinak by byla k ničemu.
+  assert.equal(sDuvodem("process.platform !== 'win32'", ''), false);
+  assert.equal(sDuvodem('BEZ_PRAV || process.getuid?.() === 0', "const BEZ_PRAV = x && 'důvod';"), false);
+  assert.equal(sDuvodem("process.platform !== 'win32' && 'jen Windows'", ''), true);
+});

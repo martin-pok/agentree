@@ -121,6 +121,15 @@ test('nabídky a kalendář v modálním okně jsou uvnitř něj a ve vrchní vr
   assert.match(css, /\.picker-option\[aria-selected='true'\]::after \{ content: '✓'; content: '✓' \/ '';/, 'fajfka nemá být v názvu položky pro čtečku');
 });
 
+// Zakázaný výběr (vypnuté „Dokončený úkol“, vypnuté noční ticho) zasekl celé Nastavení: sync()
+// zapisoval `button.disabled = true` při každém průchodu, zápis atributu je mutace i beze změny
+// a pozorovatel na ni znovu zavolal sync(). Ve skutečném prohlížeči to hlídá qa:tvary.
+test('zakázaný výběr nerozjede nekonečnou smyčku pozorovatele', async () => {
+  const sel = await zdroj('public/js/selects.js');
+  assert.match(sel, /if \(button\.disabled !== select\.disabled\) button\.disabled = select\.disabled;/);
+  assert.doesNotMatch(sel, /^\s*button\.disabled = select\.disabled;/m);
+});
+
 test('poslední zadání jde rozbalit a bere celý text z přepisu', async () => {
   const s = await zdroj('public/js/views/session.js');
   assert.match(s, /data-quote-toggle/);
@@ -253,13 +262,14 @@ test('stránky s daty ze souborů je načítají při každém otevření', asyn
   }
 });
 
+// Chování hlaviček (natrvalo jen se značkou obsahu, jinak no-cache + 304) hlídá test/cerstvost.test.mjs.
 test('statické soubory nesou značku verze, aby prohlížeč nestahoval totéž dokola', async () => {
   const http = await zdroj('src/http.js');
-  assert.match(http, /const znacka = \(file, body\) =>/, 'značka se počítá z obsahu');
-  assert.match(http, /createHash\('sha1'\)\.update\(body\)/, 'z obsahu, ne z času změny');
+  const verze = await zdroj('src/verze-souboru.js');
+  assert.match(verze, /export const znackaObsahu = \(telo\) => crypto\.createHash\('sha1'\)\.update\(telo\)/, 'značka se počítá z obsahu, ne z času změny');
+  assert.match(http, /const znacka = znackaObsahu\(body\);/);
   assert.match(http, /if \(req\.headers\['if-none-match'\] === etag\) \{/, 'opakovaný dotaz dostane 304');
   assert.match(http, /res\.writeHead\(304, \{ \.\.\.SECURITY, ETag: etag/);
-  assert.match(http, /'Cache-Control': asset \? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag/, 'kód a styly se vždy ověří u serveru');
 });
 
 // Nabídka je mřížka. Bez určené šířky sloupce si ji vezme podle nejdelší položky („Upozornění“
