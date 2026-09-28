@@ -34,7 +34,7 @@ test('bez stopy a bez nástroje je odpověď stejná ve všech případech', () 
   for (const installed of [false, null]) {
     const r = noDataState({ installed, trace: false, name: 'Qwen Code', traceLabel: 'složka ~/.qwen', whatMissing: 'x' });
     assert.equal(r.state, 'missing');
-    assert.equal(r.detail, 'Qwen Code na tomto počítači není.');
+    assert.equal(r.detail, `Qwen Code na ${POCITAC.tomto} není.`);
   }
 });
 
@@ -88,5 +88,5 @@ test('Copilot CLI a VS Code: stejné pravidlo, nezávisle na sobě', async () =>
 test('Qwen Code bez stopy i bez příkazu hlásí „není“', async () => {
   const r = await stav({ bin: () => false, app: () => false }, async () => {});
   assert.equal(r['qwen-code'].state, 'missing');
-  assert.equal(r['qwen-code'].detail, 'Qwen Code na tomto počítači není.');
+  assert.equal(r['qwen-code'].detail, `Qwen Code na ${POCITAC.tomto} není.`);
 });
