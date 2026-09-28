@@ -6,9 +6,9 @@
 // Skript jen rozloží každý krok kolečka do plynulého dojezdu.
 //
 // Dotyk zůstává celý nativní: telefon a tablet mají vlastní setrvačnost a web už jednou kvůli
-// převzatému dotyku na iPhonu nešel posunout. Proto se nezapne na zařízení s dotykem ani
-// s „omezit pohyb“. Klávesnice, posuvník, odkazy na sekce i přepnutí obrazovky zůstávají
-// prohlížeči – jakmile se ozvou, dojezd se zastaví a skript převezme polohu, kde stránka je.
+// převzatému dotyku na iPhonu nešel posunout. Omezení pohybu dojezd vypne, ale kolečko na
+// počítači provede přímo: WebKit někdy událost doručí a přitom nativní posun nezahájí.
+// Klávesnice, posuvník, odkazy na sekce i přepnutí obrazovky mají vždy přednost.
 
 // Časová konstanta dojezdu. Kratší působí tvrdě jako bez efektu, delší už jako zpoždění.
 const DOJEZD_MS = 110;
@@ -28,21 +28,37 @@ export function plynulePosouvani() {
   let nastaveno = -1;  // co skript naposledy okně nastavil; jiný posun přišel odjinud
   let bezi = false;
   let cas = 0;
+  let snimekId = 0;
 
   const maximum = () => Math.max(0, html.scrollHeight - innerHeight);
   // Během dojezdu se plynulost z CSS (scroll-behavior: smooth, pro odkazy na sekce) vypne, jinak
   // by každý snímek spustil ještě vlastní animaci prohlížeče. Nespoléhá se na behavior: 'instant',
   // který starší Safari nezná.
   const posun = (y) => { nastaveno = y; scrollTo(0, y); };
-  const zastav = () => { bezi = false; cas = 0; html.style.scrollBehavior = ''; };
-  const spust = () => { bezi = true; html.style.scrollBehavior = 'auto'; requestAnimationFrame(snimek); };
+  const zastav = () => {
+    bezi = false;
+    cas = 0;
+    cancelAnimationFrame(snimekId);
+    snimekId = 0;
+    html.style.scrollBehavior = '';
+  };
+  const spust = () => {
+    // Nový dojezd začíná na skutečné poloze okna, i když mezitím posunula stránku
+    // klávesnice, posuvník nebo router. Jinak první snímek zruší převzaté kolečko
+    // jako „cizí posun“ a okno se už vůbec nehne.
+    nastaveno = scrollY;
+    bezi = true;
+    html.style.scrollBehavior = 'auto';
+    snimekId = requestAnimationFrame(snimek);
+  };
   const posunutoJinak = () => Math.abs(scrollY - nastaveno) > 2;
 
   function snimek(t) {
+    snimekId = 0;
     if (!bezi) return;
     // Stránku mezitím posunulo něco jiného (přepnutí obrazovky, klávesnice) a událost scroll
     // ještě nedorazila – dojezd by to přepsal zpátky.
-    if (posunutoJinak()) { zastav(); return; }
+    if (!zapnuto() || posunutoJinak()) { zastav(); return; }
     const dt = Math.min(48, cas ? t - cas : 16);
     cas = t;
     poloha += (cil - poloha) * (1 - Math.exp(-dt / DOJEZD_MS));
@@ -52,7 +68,7 @@ export function plynulePosouvani() {
       return;
     }
     posun(poloha);
-    requestAnimationFrame(snimek);
+    snimekId = requestAnimationFrame(snimek);
   }
 
   // Posuvný prvek uvnitř stránky (kód, seznam, přepis konverzace) dostane kolečko sám, dokud má
@@ -76,10 +92,22 @@ export function plynulePosouvani() {
     || Boolean(cilUdalosti?.closest?.('dialog[open]'));
 
   addEventListener('wheel', (e) => {
-    if (!zapnuto() || e.defaultPrevented || e.ctrlKey || e.metaKey) return; // ctrl = přiblížení na trackpadu
+    const plynule = zapnuto();
+    if ((!plynule && !(omezitPohyb.matches && presnyUkazatel.matches && navigator.maxTouchPoints === 0))
+      || e.defaultPrevented || e.ctrlKey || e.metaKey) return; // ctrl = přiblížení na trackpadu
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;       // vodorovný posun nechat být
     if (zamceno(e.target) || vnitrniPosuv(e.target, e.deltaY > 0)) return;
     const krok = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
+    if (!plynule) {
+      const kam = Math.min(maximum(), Math.max(0, scrollY + krok));
+      if (Math.abs(kam - scrollY) < 1) return;
+      e.preventDefault();
+      zastav();
+      html.style.scrollBehavior = 'auto';
+      scrollTo(0, kam);
+      html.style.scrollBehavior = '';
+      return;
+    }
     const novy = Math.min(maximum(), Math.max(0, (bezi ? cil : scrollY) + krok));
     // Na kraji stránky není kam dojíždět: odraz na Macu (a posun stránky kolem, kdyby byla
     // vložená v rámu) zůstane prohlížeči.

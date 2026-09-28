@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.29.1 – 2026-09-28 · plynulé posouvání a klidná upozornění
+
+- Opravené kolečko a trackpad: po posunu klávesnicí, posuvníkem nebo přepnutí obrazovky nový dojezd začíná na skutečné poloze. Starý kód událost převzal, ale před prvním snímkem ji zahodil. Přerušení ruší i čekající snímek; omezení pohybu dojezd ukončí a kolečko posouvá přímo bez animace i ve WebKitu.
+- Převzata Claudeova dokončená, dosud nesloučená práce: noční ticho s jedním souhrnem platných upozornění a omezením nárazových oznámení. Součástí jsou opravy Windows cest v PowerShellu, testu detekce agentů a podkladů vydání.
+- Regresní desktop QA v Chromiu a WebKitu ověřuje první posun z nenulové polohy, opakované kroky po přerušení, návrat z jiné obrazovky, vnitřní seznam, klávesnici, dialog i omezení pohybu.
+- Obsah původního konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření bez kódu) je součástí tohoto vydání. Verze 0.29.0 nebyla samostatně publikovaná. Rozšíření čeká na schválení v Chrome Web Store.
+
+
+## Připravuje se (zatím nevydáno)
+
+### Noční ticho a souhrn místo série upozornění
+
+- Nastavení → Upozornění → **Noční ticho**: v nastavený čas (výchozí 22:00–7:00 podle hodin
+  počítače, může jít přes půlnoc) nepřijde žádné oznámení ani zvuk – v aplikaci pro Mac, ve Windows,
+  v macOS z příkazové řádky ani v prohlížeči. Seznam upozornění, zvoneček, stav agentů a odznak
+  v Docku, v řádku nabídek i v hlavním panelu Windows se mění dál: to je stav, ne vyrušení. Výchozí
+  stav je vypnuto, starší nastavení se nemění.
+- Na konci ticha přijde jedno souhrnné oznámení, třeba „Během nočního ticha: 2× čeká na rozhodnutí,
+  1× limit“. Počítá jen to, co pořád platí: rozhodnutí, které mezitím padlo, obnovený limit ani
+  přečtené upozornění v něm nejsou. Klik vede rovnou do konverzace, u víc agentů na Agenty
+  s filtrem „Potřebuje tebe“. Souhrn přežije restart aplikace i uspaný Mac; po probuzení počká 15 s,
+  než zdroje doženou, co se v noci vyřešilo.
+- Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu („Další
+  upozornění: 3× dokončeno“). Za minutu tak přijdou nejvýš tři oznámení i se souhrnem; souhrn
+  dorazí, jakmile je zase místo, nejpozději minutu po prvním odloženém.
+- Zkušební upozornění ticho dodrží a řekne to, jinak by klik vypadal, že nic neudělal.
+- Oprava: s vypnutým „Dokončený úkol“ se stránka Nastavení zasekla (ověřeno v Chromiu). Zakázaný
+  výběr z nabídky rozjel nekonečnou smyčku mezi pozorovatelem změn a vlastním tlačítkem
+  (`public/js/selects.js`).
+- Oprava: přepínač nebo výběr v Nastavení po uložení ztratil fokus a klávesnice začínala znovu od
+  začátku stránky. Překreslení teď fokus vrátí (`public/js/ui.js#fill`).
+
+### Vydání a testy
+
+- Oprava: build pro Windows četl verzi pláště z `Agenteeq.exe` až po smazání složky buildu
+  a chybu tiše nahradil verzí z `package.json`, takže CI hlásilo zjištěnou verzi u souboru,
+  který neexistoval. Verze se teď čte z hotového `.exe` před archivem a build skončí, když ji
+  nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
+- Oprava: build a QA pro Windows vkládaly cesty do `powershell -Command` v apostrofech, takže
+  složka jako `C:\Users\O'Brien\…` (i dočasná pod %TEMP%) příkaz rozbila. Cesty teď jdou jen
+  proměnnými prostředí přes `scripts/powershell.mjs`; hlídá to `test/windows-regression.test.mjs`.
+- Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
+  „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
+- Test živého procesu `claude` (`test/detekce-agentu.test.mjs`) padal při souběžných bězích:
+  server vidí procesy celého počítače, přidal si CLAUDE_CONFIG_DIR cizího běhu a jeho přepis
+  s tímtéž pevným ID obsadil konverzaci. Každý běh má teď vlastní ID, průchod spustí test sám
+  místo čekání na 5s časovač a převzetí nově vzniklého kořene hlídá samostatný test.
+- Popis vydání na GitHubu má čistou osnovu nadpisů: název vydání je `##` s velkým počátečním
+  písmenem, skupiny změn pod ním `###`, „Ke stažení“ a další sekce zase `##`. Dřív byl název
+  `###` a začínal malým písmenem. Zveřejnění popis přegeneruje, takže se to projeví i u 0.29.0.
+
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
 ### Rozšíření se spáruje samo a má nové okno

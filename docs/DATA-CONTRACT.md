@@ -160,7 +160,20 @@ interface Limit { id: string; provider: Provider; app: string; label: string; us
 
 interface CreditRecord { id: string; provider: Provider; app: string; label: string; balance: number; unlimited: boolean; at: number; history: { at: number; balance: number }[] }
 
-interface Alert { id: string; key: string; at: number; read: boolean; level: 'action' | 'critical' | 'warning' | 'info'; kind: 'needs_input' | 'limit' | 'limit_near' | 'budget' | 'done' | 'test'; title: string; body: string; sessionId?: string }
+interface Alert {
+  id: string; key: string; at: number; read: boolean; level: 'action' | 'critical' | 'warning' | 'info';
+  kind: 'needs_input' | 'failed' | 'limit' | 'limit_near' | 'limit_reset' | 'budget' | 'done' | 'test' | 'system' | 'digest';
+  title: string; body: string; sessionId?: string;
+  limitId?: string;                  // upozornění na limit účtu (ne konverzace) – souhrn podle něj pozná, jestli pořád platí
+  muted?: 'quiet' | 'burst';         // uloženo a počítá se do nepřečtených, ale oznámení ani bublina nepřišly (noční ticho / náraz)
+  digested?: true;                   // ztlumené upozornění už prošlo souhrnem
+  digest?: 'quiet' | 'burst';        // jen kind 'digest': souhrn po nočním tichu, nebo po nárazu
+  count?: number;                    // jen kind 'digest': kolik věcí souhrn nese
+  route?: string;                    // jen kind 'digest': kam vede klik („#/agent/…“, „#/agenti?stav=needs_input“, „#/utrata“, „#/prehled“, „#/upozorneni“)
+}
+// Pravidla souhrnu (src/alerts.js): do souhrnu patří jen ztlumené upozornění, které pořád platí –
+// konverzace je pořád ve stejném stavu, limit pořád vyčerpaný, rozpočet ve stejném měsíci – a není
+// přečtené ani starší než 24 h. Každá věc (konverzace, limit, rozpočet) se počítá jednou.
 
 interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'extra' | 'credits' | 'api'; amount: number; currency: 'CZK' | 'USD' | 'EUR'; date: string; recurring: 'monthly' | null; endDate: string | null; note: string; createdAt: number }
 
@@ -175,7 +188,14 @@ interface SpendPayload {
   services: Record<string, { label: string; provider: Provider }>; kinds: Record<string, string>; currencies: string[];
 }
 
-interface Notifications { needsInput: boolean; limits: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean }
+interface Notifications {
+  needsInput: boolean; limits: boolean; limitReset: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean;
+  quietHours: boolean;               // noční ticho, výchozí false (i u starého data.json bez tohoto pole)
+  quietFrom: string; quietTo: string; // "HH:MM", místní čas počítače, výchozí "22:00" a "07:00"; začátek za koncem = přes půlnoc
+}
+// PUT /api/settings odmítne (422) čas v jiném tvaru než HH:MM a stejný začátek a konec ticha –
+// nešlo by poznat, jestli má jít o prázdný rozsah, nebo o celý den. Kontrola ticha proběhne dřív, než
+// se cokoli uloží, takže takový požadavek nezmění ani ostatní pole.
 
 // SessionSummary navíc (0.5.0):
 //   projectId: string | null;

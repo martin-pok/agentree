@@ -436,6 +436,9 @@ kbd { font: 500 11px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .field--wide { grid-column: 1 / -1; }
 .field--row { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; }
 .field--row > span { font-size: 15px; color: var(--ink); }
+/* Noční ticho: popisek a dva časy. Na úzkém okně časy spadnou pod popisek, nic se neuřízne. */
+.quiet-row { flex-wrap: wrap; row-gap: 8px; }
+.quiet-row > .quiet-times { gap: 8px; flex-wrap: nowrap; }
 input[type='text'], input[type='search'], input[type='password'], input[type='date'], input:not([type]), select, textarea {
   height: 40px; padding: 0 18px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--card); min-width: 0; transition: border-color .2s, box-shadow .2s;
 }
