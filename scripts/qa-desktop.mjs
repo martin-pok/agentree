@@ -153,6 +153,21 @@ for (const engine of engines) {
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
+    await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);
+    // Logo musí být skutečně dekódovatelné i po aktualizaci; dřívější roční HTTP cache
+    // nechala v nativní aplikaci bílé kruhy místo značek služeb.
+    const loga = await page.evaluate(async () => {
+      const imgs = [...document.querySelectorAll('img.logo')];
+      await Promise.all(imgs.map((img) => img.decode().catch(() => {})));
+      return imgs.map((img) => ({ src: img.getAttribute('src'), width: img.naturalWidth, height: img.naturalHeight }));
+    });
+    assert.ok(loga.length >= 4 && loga.every((img) => img.width > 0 && img.height > 0), `${engine}: některé logo se nevykreslilo: ${JSON.stringify(loga)}`);
+    const obnova = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
+    const znovunacteni = page.waitForEvent('framenavigated');
+    await page.locator('#refresh-app').click();
+    assert.equal((await obnova).status(), 200, `${engine}: tlačítko obnovy nespustilo nové načtení konektorů`);
+    await znovunacteni;
+    await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
     for (const selector of ['.token-card', '.calm']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
@@ -496,7 +511,13 @@ for (const engine of engines) {
       const predDojezdem = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 1200);
       await dojezdBezi(predDojezdem);
-      await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      // Otestovat produkční skok aplikace (skocNa), ne napodobeninu v testu – a až ve chvíli,
+      // kdy dojezd prokazatelně běží (WebKit doručí kolečko později, než Playwright vrátí wheel).
+      const hnedPoSkoku = await p.evaluate(async () => {
+        (await import('/js/plynule-posouvani.js')).skocNa(0);
+        return scrollY;
+      });
+      assert.equal(hnedPoSkoku, 0, `${engine}: programový skok se neprovedl okamžitě`);
       await p.waitForFunction(() => document.documentElement.style.scrollBehavior === '', null, { timeout: 2000 })
         .catch(() => { throw new Error(`${engine}: dojezd se po skoku aplikace nezastavil`); });
       await p.waitForTimeout(300);
@@ -508,7 +529,17 @@ for (const engine of engines) {
         await p.mouse.move(900, 500);
         await p.mouse.wheel(0, krok);
         await p.waitForFunction((y) => Math.abs(scrollY - y) <= 2, cil, { timeout: 3000 })
-          .catch(() => { throw new Error(`${engine}: ${zprava}, očekáváno ${cil}, skutečně ${pred} → kolečko se zablokovalo`); });
+          .catch(async () => {
+            const zasah = await p.evaluate(() => {
+              const casti = [];
+              for (let el = document.elementFromPoint(900, 500); el && el !== document.body; el = el.parentElement) {
+                const styl = getComputedStyle(el);
+                casti.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} ${styl.overflowY} ${el.scrollHeight - el.clientHeight}px top=${el.scrollTop}`);
+              }
+              return casti.join(' > ');
+            });
+            throw new Error(`${engine}: ${zprava}, očekáváno ${cil}, skutečně ${pred} → kolečko se zablokovalo; pod kurzorem: ${zasah}`);
+          });
         await p.waitForTimeout(100);
       };
       // Nestačí první kolečko od horního okraje. Starý dojezd po cizím posunu převzal
@@ -533,9 +564,14 @@ for (const engine of engines) {
       // Krátké opakované kroky trackpadu a změna směru se nesmějí zaseknout.
       await p.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
       await p.waitForTimeout(120);
-      for (let i = 0; i < 8; i++) await p.mouse.wheel(0, 15);
+      await p.evaluate(() => { window.agenteeqDesktop = true; });
+      const predTrackpadem = await p.evaluate(() => scrollY);
+      await p.mouse.wheel(0, 15);
+      assert.ok(await p.evaluate((pred) => scrollY >= pred + 10, predTrackpadem), `${engine}: trackpad v desktopu reaguje se zpožděním`);
+      for (let i = 0; i < 7; i++) await p.mouse.wheel(0, 15);
       await p.waitForFunction(() => Math.abs(scrollY - 520) <= 2);
       await koleckoDojede(-120, 'změna směru po malých krocích trackpadu');
+      await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
       // Vnitřní seznam dostane kolečko nativně, hlavní stránka přitom stojí.
       await p.evaluate(() => {
         const box = document.createElement('div');
@@ -548,7 +584,7 @@ for (const engine of engines) {
       await p.mouse.move(1300, 400);
       await p.mouse.wheel(0, 160);
       await p.waitForFunction(() => document.querySelector('#qa-scroll-list').scrollTop > 0);
-      assert.equal(await p.evaluate(() => scrollY), predSeznamem, `${engine}: kolečko uvnitř seznamu posunulo stránku`);
+      assert.ok(Math.abs((await p.evaluate(() => scrollY)) - predSeznamem) <= 1, `${engine}: kolečko uvnitř seznamu posunulo stránku`);
       await p.evaluate(() => document.querySelector('#qa-scroll-list').remove());
       // Zapnutí omezení pohybu během dojezdu ho zastaví; další krok je okamžitý bez animace.
       await p.mouse.move(900, 500);

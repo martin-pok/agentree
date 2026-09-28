@@ -395,7 +395,8 @@ test('plynulé posouvání je jeden modul pro web i aplikaci a během posouván�
     assert.match(await zdroj(html), /<script type="module" src="\/lp\.js"><\/script>/, `${html}: lp.js musí být modul, jinak import neprojde`);
   }
   const app = await zdroj('public/js/app.js');
-  assert.match(app, /import \{ plynulePosouvani \} from '\.\/plynule-posouvani\.js';/);
+  assert.match(app, /import \{[^}]*\bplynulePosouvani\b[^}]*\} from '\.\/plynule-posouvani\.js';/);
+  assert.match(app, /skocNa\(0\)/, 'navigace musí přerušit dojezd kolečka');
   assert.match(app, /^plynulePosouvani\(\);$/m);
   assert.match(app, /document\.documentElement\.classList\.add\('is-scrolling'\)/);
   const css = await zdroj('public/styles.css');

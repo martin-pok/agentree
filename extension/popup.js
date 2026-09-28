@@ -480,6 +480,24 @@ chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
 });
 
 $('retry').addEventListener('click', () => render());
+$('refresh-popup').addEventListener('click', async () => {
+  const button = $('refresh-popup');
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    // Vynutit nové hlášení i pro nezměněnou konverzaci. Odpověď čeká až na uložení
+    // a odeslání přes background worker; následné render() čte tentýž aktuální stav.
+    const matches = chrome.runtime.getManifest().content_scripts?.flatMap((script) => script.matches || []) || [];
+    const tabs = matches.length ? await chrome.tabs.query({ url: matches }).catch(() => []) : [];
+    await Promise.allSettled(tabs.map((tab) => chrome.tabs.sendMessage(tab.id, { type: 'agenteeq:refresh' })));
+    await render();
+  } catch {
+    // Selhání jedné stránky ani dočasně nedostupná aplikace nesmí rozbít okno rozšíření.
+    await render().catch(() => {});
+  } finally {
+    button.disabled = false;
+  }
+});
 
 $('pair-form').addEventListener('submit', async (e) => {
   e.preventDefault();

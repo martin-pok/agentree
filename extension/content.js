@@ -31,30 +31,31 @@
     };
   }
 
-  function tick() {
+  function tick(force = false) {
     timer = null;
-    if (dead) return;
+    if (dead) return Promise.resolve({ ok: false });
     let payload;
     try {
       payload = collect();
     } catch {
-      return;
+      return Promise.resolve({ ok: false });
     }
-    if (!payload.counts.user && !payload.counts.assistant && !payload.generating) return;
+    if (!payload.counts.user && !payload.counts.assistant && !payload.generating) return Promise.resolve({ ok: true, empty: true });
     const sig = JSON.stringify([payload.conversationId, payload.generating, payload.counts, posledniDelka, payload.limit]);
     const now = Date.now();
     // Beze změny se posílá jen udržovací signál: během generování po 10 s (agent stále pracuje),
     // jinak po minutě – aplikace, která se mezitím restartovala, tak otevřenou konverzaci nepřehlédne.
-    if (sig === lastSig && now - lastSentAt < (payload.generating ? 10000 : 60000)) return;
+    if (!force && sig === lastSig && now - lastSentAt < (payload.generating ? 10000 : 60000)) return Promise.resolve({ ok: true, unchanged: true });
     lastSig = sig;
     lastSentAt = now;
     try {
       // Nepovedené odeslání (aplikace zrovna neběží) se zopakuje při dalším průchodu, ne až při změně.
-      chrome.runtime.sendMessage({ type: 'agenteeq:update', payload })
-        .then((r) => { if (!r?.ok) lastSig = ''; })
-        .catch(() => { lastSig = ''; });
+      return Promise.resolve(chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }))
+        .then((r) => { if (!r?.ok) lastSig = ''; return r; })
+        .catch(() => { lastSig = ''; return { ok: false }; });
     } catch {
       dead = true; // rozšíření bylo znovu načteno – tento skript už nemá spojení
+      return Promise.resolve({ ok: false });
     }
   }
 
@@ -99,6 +100,10 @@
           odpovez({ ...window.AgenteeqSites.diagnose(adapter, document, location), videl: { ...videl } });
         } else if (msg?.type === 'agenteeq:vzorek') {
           odpovez(window.AgenteeqSites.vzorek(document, location));
+        } else if (msg?.type === 'agenteeq:refresh') {
+          if (timer) clearTimeout(timer);
+          Promise.resolve(tick(true)).then((r) => odpovez(r)).catch(() => odpovez({ ok: false }));
+          return true;
         }
       } catch {
         odpovez(null);

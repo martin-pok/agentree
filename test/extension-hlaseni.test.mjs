@@ -13,6 +13,7 @@ const zdroj = await fs.readFile(fileURLToPath(new URL('../extension/content.js',
 function spust(odpoved) {
   let ted = 1_000_000;
   let interval = null;
+  let posluchac = null;
   const cekajici = [];
   const odeslano = [];
   const stranka = { generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
@@ -32,10 +33,11 @@ function spust(odpoved) {
     MutationObserver: class { observe() {} },
     Date: { now: () => ted },
     setTimeout: (fn) => { cekajici.push(fn); return cekajici.length; },
+    clearTimeout: (id) => { cekajici[id - 1] = () => {}; },
     setInterval: (fn) => { interval = fn; return 1; },
     chrome: {
       runtime: {
-        onMessage: { addListener() {} },
+        onMessage: { addListener(fn) { posluchac = fn; } },
         sendMessage: async (zprava) => {
           if (zprava.type !== 'agenteeq:update') return { prompt: null };
           odeslano.push(zprava.payload);
@@ -52,7 +54,8 @@ function spust(odpoved) {
     while (cekajici.length) cekajici.shift()();
     for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
   };
-  return { odeslano, stranka, pruchod };
+  const zprava = (msg) => new Promise((resolve) => posluchac(msg, {}, resolve));
+  return { odeslano, stranka, pruchod, zprava };
 }
 
 test('rozšíření: nepovedené odeslání se zopakuje při dalším průchodu, ne až při změně stránky', async () => {
@@ -91,4 +94,14 @@ test('rozšíření: prázdná stránka bez zpráv se neohlašuje', async () => 
   await r.pruchod(0);
   await r.pruchod(60000);
   assert.equal(r.odeslano.length, 0);
+});
+
+test('ruční obnova vynutí nové hlášení i beze změny a počká na jeho výsledek', async () => {
+  const r = spust(() => ({ ok: true }));
+  await r.pruchod(0);
+  assert.equal(r.odeslano.length, 1);
+  const vysledek = await r.zprava({ type: 'agenteeq:refresh' });
+  assert.equal(vysledek.ok, true);
+  assert.equal(r.odeslano.length, 2);
+  assert.equal(r.odeslano.at(-1).counts.assistant, 1);
 });

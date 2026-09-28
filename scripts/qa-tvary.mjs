@@ -12,6 +12,7 @@
 //     (vnitřní tlačítko malé segmentové volby 28 px a hlavní výzva webu 56 px jsou jediné výjimky),
 //   – řez písma se při výběru nemění: vybraná volba má stejnou váhu písma jako nevybraná vedle ní.
 import { createRequire } from 'node:module';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startTestServer, api } from '../test/helpers.mjs';
@@ -128,6 +129,9 @@ function zmer({ maxJednoradkovy, radky, stupnice, vyjimky }) {
       if (!povoleno) nalezy.push({ ...popis(), chyba: `výška ${Math.round(vyska * 10) / 10} px mimo stupnici ${stupnice.join('/')}` });
     }
     const nejmensi = Math.min(...rohy);
+    if (plocha && Math.max(...rohy) - nejmensi > 1 && (tag === 'button' || el.matches('[role="button"]'))) {
+      nalezy.push({ ...popis(), chyba: 'různé zaoblení rohů jednoho tlačítka' });
+    }
     if (tag === 'input' && typ === 'checkbox') {
       // Zaškrtávací políčko je jediná výjimka: zaoblený čtverec, ne kruh (ten patří přepínači jedné volby).
       if (plocha && (nejmensi < 2 || nejmensi >= Math.min(r.width, r.height) / 2 - 1)) nalezy.push({ ...popis(), chyba: 'zaškrtávací políčko má být zaoblený čtverec' });
@@ -157,6 +161,24 @@ const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
 /* ---------- Aplikace ---------- */
 console.log('Aplikace');
 const app = await startTestServer();
+for (let i = 0; i < 15; i++) {
+  const dir = path.join(app.sourceHome, '.agents', 'skills', `vlastni-${i}`);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: Vlastní dovednost ${i}\ndescription: Ukázka skutečného seznamu vlastních dovedností\n---\nText.\n`);
+}
+for (const [rootDir, name] of [['.claude', 'Claude'], ['.codex', 'Codex']]) {
+  const dir = path.join(app.sourceHome, rootDir, 'skills', 'qa-dovednost');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: ${name} dovednost\ndescription: Kontrola filtru zdroje\n---\nText.\n`);
+}
+for (const [rel, name] of [
+  [['.claude', 'plugins', 'cache', 'claude-plugins-official', 'sample', 'skills', 'official'], 'Oficiální plugin'],
+  [['.codex', 'skills', '.system', 'system'], 'Systémová dovednost'],
+]) {
+  const dir = path.join(app.sourceHome, ...rel);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: Kontrola filtru původu\n---\nText.\n`);
+}
 app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-tvary', provider: 'openai', app: 'Codex' }), { title: 'QA tvary', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
 await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, appearance: 'light' });
@@ -191,6 +213,23 @@ for (const sirka of SIRKY) {
     await page.waitForTimeout(300);
     vypis(`${sirka}px upozornění`, await page.evaluate(zmer, PARAM));
   }
+  await page.close();
+}
+await fs.mkdir('dist/qa', { recursive: true });
+await api(app.url).send('PUT', '/api/settings', { appearance: 'dark' });
+for (const sirka of SIRKY) {
+  const page = await browser.newPage({ viewport: { width: sirka, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+  await page.goto(`${app.url}/#/dovednosti`);
+  await page.waitForFunction(() => document.querySelectorAll('.skill').length >= 15);
+  // Nástupy karet jsou řízené viditelností; projdeme celou stránku, aby snímek
+  // odpovídal tomu, co uživatel uvidí při skutečném posouvání.
+  for (let y = 0; y < await page.evaluate(() => document.documentElement.scrollHeight); y += 600) {
+    await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+    await page.waitForTimeout(60);
+  }
+  await page.waitForTimeout(450);
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await page.screenshot({ path: `dist/qa/skills-populated-dark-${sirka}.png`, fullPage: true });
   await page.close();
 }
 await app.close();

@@ -14,7 +14,7 @@ function ukazkaOdpoved(method, path) {
 
 export async function request(method, path, body) {
   if (ukazka) return ukazkaOdpoved(method, path);
-  const init = { method, headers: {} };
+  const init = { method, headers: {}, ...(method === 'GET' ? { cache: 'no-store' } : {}) };
   if (method !== 'GET') {
     init.headers['X-Agenteeq'] = '1';
     init.headers['Content-Type'] = 'application/json';
@@ -75,7 +75,7 @@ export const api = {
   skills: () => request('GET', '/api/skills'),
   // Obsah dovednosti je čistý markdown, ne JSON – proto mimo `request()`.
   async skillText(id) {
-    const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`);
+    const res = await fetch(`/api/skills/${encodeURIComponent(id)}/raw`, { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status === 404 ? tr('Soubor dovednosti už na disku není.') : tr('Dovednost se nepodařilo načíst (chyba {0}).', res.status));
     return res.text();
   },
