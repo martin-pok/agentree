@@ -72,6 +72,7 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti 
 
 Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 27. 9. 2026).
 
+- Obsah uživatele se v angličtině nepřekládá (`titleAuto`, pole podle tvaru objektu v `public/js/texty-serveru.js`). Zbývá okrajový případ: jméno konverzace uvnitř věty Agenteequ (titulek upozornění) se přeloží, když se přesně shoduje s textem serveru (konverzace „Pracuje“ → „Working“). Úplné řešení: server v upozornění označí, která hodnota je obsah uživatele.
 - Bez hooků se žádost o povolení nepozná jistě: po 90 s čekání nástroje stav řekne „možná čeká na tvé povolení“, ale zůstává „Pracuje“ (`src/model.js#deriveStatus`).
 - Webové služby vykreslují dlouhé konverzace jen zčásti (virtualizované seznamy), takže počet zpráv z rozšíření může být u dlouhé konverzace nižší než skutečný.
 - Codex nezapisuje žádosti o schválení – nelze detekovat „potřebuje rozhodnutí“.
