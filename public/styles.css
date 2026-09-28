@@ -1234,9 +1234,11 @@ html.is-cloud body { background: var(--paper); }
 /* ---------- Nastavení ---------- */
 .settings2 { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 48px; align-items: start; }
 .set-nav { position: sticky; top: 24px; display: grid; gap: 2px; }
-.set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
+.set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
-.set-nav button[aria-current] { color: var(--ink); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; }
+/* Popisek je Onest 500 ve všech stavech – vybraná skupina se pozná podle plochy, ne podle řezu,
+   který by text při přepnutí posunul. */
+.set-nav button[aria-current] { color: var(--ink); background: var(--card); box-shadow: var(--shadow-sm); }
 /* Bez shrinknutelného sloupce určí minimální šířku nejdelší nezalomitelná cesta v kartě
    a všechny sekce se rozjedou mimo obrazovku telefonu. */
 .set-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; min-width: 0; max-width: 880px; }
@@ -1266,9 +1268,11 @@ html.is-cloud body { background: var(--paper); }
 .appearance-option strong, .appearance-option small { display: block; }
 .appearance-option strong { font-weight: 500; line-height: 1.3; }
 .appearance-option small { margin-top: 4px; color: var(--mute); font-size: 12px; line-height: 1.4; }
-/* Jazyk má jen dvě volby bez popisku – bez ikonového sloupce a na střed, ne tři čtvrtiny prázdné. */
-.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.appearance-options--lang .appearance-option { grid-template-columns: 1fr; text-align: center; }
+/* Jazyk má jen dvě volby na jeden řádek, bez ikony a popisku. Je to tedy volba jedné ze dvou jako
+   segmentová volba: kapsle v základní výšce 40 px, ne karta 54 px jako vzhled nad ní. Dvě vedle
+   sebe i na telefonu – obě slova se vejdou. */
+.appearance-options.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.appearance-options--lang .appearance-option { grid-template-columns: 1fr; height: 40px; min-height: 0; padding: 0 16px; border-radius: var(--r-full); text-align: center; }
 .set-actions { display: flex; gap: 12px; margin-top: 16px; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--line-2); }
 .set-row-text { min-width: 0; }
@@ -1297,7 +1301,8 @@ html.is-cloud body { background: var(--paper); }
 .key-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .key-head .state { margin-left: auto; }
 .key-form { display: flex; gap: 8px; margin-top: 10px; }
-.key-form input { flex: 1; height: 36px; }
+/* Pole má stejnou výšku jako malé tlačítko vedle něj (docs/DESIGN.md). */
+.key-form input { flex: 1; height: 32px; padding: 0 14px; }
 .conn { padding: 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 8px; }
 .conn p { margin: 0; font-size: 13px; color: var(--ink-2); }
 .conn-source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 28px 0 12px; padding-top: 20px; border-top: 1px solid var(--line-2); }
@@ -1380,7 +1385,7 @@ html.is-cloud body { background: var(--paper); }
 /* `contain` drží posouvání uvnitř seznamu. Bez něj kolečko po dojetí na konec pokračovalo
    na stránce vzadu, což u překryvu přes celou obrazovku nedává smysl. */
 .palette-list { list-style: none; margin: 0; padding: 8px; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; scroll-padding: 8px; }
-.palette-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-full); cursor: pointer; transition: background-color .16s ease, color .16s ease, transform .16s var(--ease); }
+.palette-list li { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px; border-radius: var(--r-full); cursor: pointer; transition: background-color .16s ease, color .16s ease, transform .16s var(--ease); }
 .palette-list li .icon, .palette-list li .glyph { width: 18px; height: 18px; }
 .pl-text { flex: 1; min-width: 0; }
 .pl-text span, .pl-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1426,7 +1431,7 @@ html.is-cloud body { background: var(--paper); }
   .settings2 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .set-nav { top: 0; z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
   .set-nav::-webkit-scrollbar { display: none; }
-  .set-nav button { flex: none; height: 36px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
+  .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
   .set-group { scroll-margin-top: 72px; }
   .pulse-bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
@@ -1988,7 +1993,6 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .launch-group { min-width: 0; }
   .launch-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding-inline: 16px; scrollbar-width: none; }
   .launch-chips::-webkit-scrollbar { display: none; }
-  .lchip { height: 36px; font-size: 13px; }
   .launch-foot { flex-wrap: wrap; padding-left: 8px; }
   .launch-note { flex-basis: 100%; order: -1; }
   .launch-kbd { display: none; }
