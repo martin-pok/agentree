@@ -1261,6 +1261,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
     every(() => (datastore.data.customAgents.length ? probeCustomAgents() : null), 30000);
     every(() => alerts.checkLimitResets(), 20000);
+    // Souhrn po skončení nočního ticha a po nárazu upozornění (src/alerts.js#tick). Po probuzení
+    // Macu doběhne hned při prvním průchodu.
+    every(() => alerts.tick(), 5000);
     every(() => checkProjectBudgets(), 60000);
     every(async () => {
       for (const c of list) if (c.kind === 'local' && c.id !== 'processes' && c.id !== 'cursor') await c.scan();

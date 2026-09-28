@@ -63,6 +63,10 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Zapni okamžité události v Nastavení → v nové session požádá Claude o povolení nástroje → do 1 s karta „Potřebuje tvé rozhodnutí“, notifikace macOS, sametový bod ve scéně, číslo v titulku karty.
 - [ ] Codex v aplikaci ChatGPT: zadej úlohu → „Pracuje“, po dokončení „Čeká na zadání“; limity v Přehledu odpovídají aplikaci.
 - [ ] Útrata: přidej výdaj, nastav rozpočet pod útratu → upozornění 100 %; ukonči předplatné; smaž výdaj.
+- [ ] Nastavení → **Noční ticho** s časem kolem teď → „Poslat zkušební“: žádné oznámení ani zvuk, bublina
+      řekne, že je ticho. Nech agenta požádat o povolení → odznak v Docku (Windows: hlavní panel) a ikona
+      v řádku nabídek se zvednou, oznámení nepřijde. Ticho vypni → do 5 s přijde jeden souhrn a klik
+      vede do konverzace. Totéž s rozhodnutím, které mezitím padlo → souhrn nepřijde.
 - [ ] Detail vlákna Codexu → „Otevřít v Codexu“ otevře aplikaci ChatGPT přímo na daném vláknu.
 - [ ] Detail session Claude Code → „Pokračovat v Terminálu“ otevře Terminál s `cd <projekt> && claude --resume <id>` (při prvním použití macOS požádá o povolení Automatizace; po odmítnutí se zobrazí návod).
 - [ ] „Otevřít složku“ otevře Finder; u webové konverzace „Otevřít konverzaci“ otevře správnou URL.
@@ -110,6 +114,17 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
       odpovědi zachycen“. Klikni **Sedí**, nebo **Nesedí**.
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
+
+## Protokol ověření – noční ticho a souhrn upozornění (28. 9. 2026, Linux kontejner, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 602 testů, 598 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm run check` | 223 souborů bez syntaktické chyby |
+| `test/nocni-ticho.test.mjs` | 15 testů na pevných hodinách, nikde se nečeká: hranice 21:59:59 / 22:00 / 6:59:59 / 7:00, rozsah v rámci dne, stejné časy, starý soubor, API (422 beze změny), souhrn s vyřešenými, přečtenými a nevyřešenými, probuzení Macu, restart, náraz 6 za 5 s, stálý přísun 3 minuty (nikdy víc než 3 oznámení za minutu, nic se neztratí), náraz těsně před tichem, most `desktop/server.mjs` do aplikace pro Mac a pláště pro Windows |
+| `npm run qa:tvary`, `npm run qa:contrast` | prošly v Chromiu: aplikace (1440 i 375 px, světlý i tmavý režim), web i okno rozšíření |
+| Nastavení a upozornění v Chromiu | 1440 a 375 px, česky i anglicky: přepínač i časy myší a klávesnicí (šipky, Home, Enter), fokus po uložení zůstane na prvku, čas druhého konce nejde vybrat, zkušební upozornění v tichu to řekne, ztlumené upozornění bez bubliny, souhrn v seznamu i u zvonečku vede na Agenty s filtrem; konzole čistá, bez vodorovného rolování |
+| Neověřeno | skutečná oznámení v aplikaci pro Mac (UNUserNotification) a ve Windows (toast přes ikonu v oznamovací oblasti) a WebKit; ověřeno jen, že `desktop/server.mjs` ztlumené upozornění do pláště vůbec nepošle a odznak ano |
 
 ## Protokol ověření – efektivita, texty, rozšíření (27. 9. 2026, Linux kontejner, Node 22.22)
 

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import { writeJsonAtomic, randomToken, debounce } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
+import { VYCHOZI_TICHO, normalizujTicho } from './nocni-ticho.js';
 
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
@@ -19,6 +20,8 @@ export const DEFAULT_SETTINGS = {
     doneMinSeconds: 120,
     native: true,
     browser: false,
+    // Noční ticho (src/nocni-ticho.js): výchozí vypnuto, časy podle místního času počítače.
+    ...VYCHOZI_TICHO,
   },
   disabledConnectors: [],
   lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
@@ -92,7 +95,7 @@ export function normalizeData(raw) {
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,
-      notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}) },
+      notifications: { ...DEFAULT_SETTINGS.notifications, ...(s.notifications || {}), ...normalizujTicho(s.notifications) },
       disabledConnectors: Array.isArray(s.disabledConnectors) ? s.disabledConnectors.filter((x) => typeof x === 'string') : [],
       lanAccess: s.lanAccess === true,
       tailscaleAccess: s.tailscaleAccess === true,

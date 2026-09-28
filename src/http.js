@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets, EXPORT_MESICU } from './spend.js';
 import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
+import { CAS_TICHA } from './nocni-ticho.js';
 import { remoteScope } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
@@ -603,6 +604,14 @@ export function createHttpServer(app, existingServer = null) {
       const body = await readBody(req);
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
       const cur = datastore.data.settings.notifications;
+      // Noční ticho se ověří dřív, než se cokoli změní. Stejný začátek a konec se odmítne: nešlo
+      // by poznat, jestli má jít o prázdný rozsah, nebo o celý den (src/nocni-ticho.js).
+      for (const k of ['quietFrom', 'quietTo']) {
+        if (n[k] !== undefined && (typeof n[k] !== 'string' || !CAS_TICHA.test(n[k]))) throw new HttpError(422, 'Čas nočního ticha musí mít tvar HH:MM.');
+      }
+      if ((n.quietFrom !== undefined || n.quietTo !== undefined) && (n.quietFrom ?? cur.quietFrom) === (n.quietTo ?? cur.quietTo)) {
+        throw new HttpError(422, 'Noční ticho musí začínat a končit v jiný čas.');
+      }
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
       if (body.lastSeenVersion !== undefined) {
@@ -635,7 +644,8 @@ export function createHttpServer(app, existingServer = null) {
         }
         datastore.data.settings.layout = normalizeLayout(merged);
       }
-      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
+      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser', 'quietHours']) if (typeof n[k] === 'boolean') cur[k] = n[k];
+      for (const k of ['quietFrom', 'quietTo']) if (n[k] !== undefined) cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
         if (!(v >= 0 && v <= 86400)) throw new HttpError(422, 'Minimální délka úlohy musí být 0–86400 sekund.');
