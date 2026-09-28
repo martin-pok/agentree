@@ -235,6 +235,7 @@ const MIMO_ROZHRANI = {
   'src/connectors/local-agents.js': ['vysoká', 'nízká'], // kód jistoty, klient ho porovnává
   'src/connectors/claude-code.js': ['týden {0} %'], // stavový řádek v Claude Code
   'src/alerts.js': null, // celý soubor: překládá klient (viz JEN_KLIENT)
+  'src/verze-souboru.js': ['Stránka nemá </head>', 'sw.js nemá řádek „const CACHE'], // chyba vývojáře při úpravě index.html nebo sw.js
 };
 const mimoRozhrani = (soubor, text) => (MIMO_ROZHRANI[soubor] || []).some((z) => text === z || (z.length >= 16 && text.startsWith(z)));
 
