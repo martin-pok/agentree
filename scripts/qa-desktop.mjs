@@ -477,7 +477,11 @@ for (const engine of engines) {
       await p.mouse.wheel(0, 1200);
       await p.waitForTimeout(60);
       // Otestovat produkční skok aplikace, ne napodobeninu v testu.
-      await p.evaluate(async () => (await import('/js/plynule-posouvani.js')).skocNa(0));
+      const hnedPoSkoku = await p.evaluate(async () => {
+        (await import('/js/plynule-posouvani.js')).skocNa(0);
+        return scrollY;
+      });
+      assert.equal(hnedPoSkoku, 0, `${engine}: programový skok se neprovedl okamžitě`);
       await p.waitForTimeout(600);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
       const koleckoDojede = async (krok, zprava) => {

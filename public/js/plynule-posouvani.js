@@ -12,10 +12,12 @@
 
 // Časová konstanta dojezdu. Kratší působí tvrdě jako bez efektu, delší už jako zpoždění.
 const DOJEZD_MS = 110;
+let zrusDojezd = () => {};
 
 // Přepnutí obrazovky a výběr skupiny mají přednost před CSS smooth scroll. WebKit
 // při probíhajícím kolečku někdy ignoruje samotné behavior: 'instant'.
 export function skocNa(y) {
+  zrusDojezd();
   const html = document.documentElement;
   const puvodni = html.style.scrollBehavior;
   html.style.scrollBehavior = 'auto';
@@ -54,6 +56,7 @@ export function plynulePosouvani() {
     snimekId = 0;
     html.style.scrollBehavior = '';
   };
+  zrusDojezd = zastav;
   const spust = () => {
     // Nový dojezd začíná na skutečné poloze okna, i když mezitím posunula stránku
     // klávesnice, posuvník nebo router. Jinak první snímek zruší převzaté kolečko
