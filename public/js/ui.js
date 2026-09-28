@@ -7,10 +7,38 @@ import { tr, LOCALE } from './i18n.js';
 export function fill(root, name, html) {
   const el = root.querySelector(`[data-region="${name}"]`);
   if (!el || el._html === html) return false;
+  const fokus = klicFokusu(el);
   el.innerHTML = html;
   el._html = html;
+  if (fokus) vratFokus(el, fokus);
   oznacRolovani();
   return true;
+}
+
+// Překreslení oblasti nesmí vzít fokus prvku, kterým člověk právě něco změnil: přepínač v Nastavení
+// se po uložení překreslí s novým stavem a klávesnice pak začínala znovu od začátku stránky. Prvek
+// se po překreslení najde podle stálého atributu. Výběr z nabídky (selects.js) má vlastní tlačítko,
+// které vznikne až po vložení HTML – na něj se počká do dalšího mikroúkolu.
+const KLICE_FOKUSU = ['data-setting', 'data-quiet', 'data-action', 'data-appearance', 'data-lang', 'data-done-min', 'id', 'name'];
+function klicFokusu(el) {
+  if (typeof document === 'undefined') return null;
+  let a = document.activeElement;
+  if (!a || a === document.body || !el.contains(a)) return null;
+  const picker = a.classList.contains('picker-trigger') && a.previousElementSibling?.tagName === 'SELECT';
+  if (picker) a = a.previousElementSibling;
+  const attr = KLICE_FOKUSU.find((k) => a.hasAttribute(k));
+  if (!attr) return null;
+  const id = a.hasAttribute('data-id') ? `[data-id="${CSS.escape(a.getAttribute('data-id'))}"]` : '';
+  return { selector: `${a.tagName.toLowerCase()}[${attr}="${CSS.escape(a.getAttribute(attr))}"]${id}`, picker };
+}
+function vratFokus(el, { selector, picker }) {
+  const cil = el.querySelector(selector);
+  if (!cil) return;
+  if (!picker) { cil.focus({ preventScroll: true }); return; }
+  queueMicrotask(() => {
+    const tlacitko = cil.nextElementSibling;
+    if (tlacitko?.classList.contains('picker-trigger') && document.activeElement === document.body) tlacitko.focus({ preventScroll: true });
+  });
 }
 
 /* ---------- Vodorovné rolování: dát najevo, že řádek pokračuje ---------- */
