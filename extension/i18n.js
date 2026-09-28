@@ -16,6 +16,7 @@
       'Sledované služby': 'Tracked services',
       'Ověření stránky': 'Page check',
       'Zpět': 'Back',
+      'Obnovit aktuální stav': 'Refresh current status',
       // Hlavní pohled
       'Otevřené konverzace': 'Open conversations',
       'Žádná otevřená konverzace': 'No open conversations',

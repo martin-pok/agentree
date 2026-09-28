@@ -29,6 +29,8 @@ import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPoc
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 
+for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
+
 initSelects();
 initWelcome();
 initWhatsNew();
@@ -493,7 +495,7 @@ const palette = createPalette(
 
 /* ---------- Události ---------- */
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
   const c = e.target.closest('[data-copy]');
   if (c) {
     e.preventDefault();
@@ -507,6 +509,22 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
+  if (e.target.closest('#refresh-app')) {
+    const button = document.getElementById('refresh-app');
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      await api.rescan();
+      // Úplné načtení znovu načte i právě otevřené Skills, historii a skripty.
+      // Když server neběží, původní rozhraní zůstane a ukáže se chyba.
+      await api.state();
+      location.reload();
+    } catch (err) {
+      button.disabled = false;
+      toast(err.message, { tone: 'err' });
+    }
+    return;
+  }
   if (e.target.closest('[data-avatar-cycle]')) { cycleAvatar(); return; }
   if (e.target.closest('[data-nav-action="more"]')) { if (sheet.hidden) openSheet(); else closeSheet({ restoreFocus: true }); return; }
   if (e.target.closest('[data-nav-action="launch"]')) {

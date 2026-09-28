@@ -77,7 +77,10 @@ export function plynulePosouvani() {
     for (let el = prvek; el && el !== document.body && el !== html; el = el.parentElement) {
       if (!(el instanceof Element)) continue;
       const styl = getComputedStyle(el).overflowY;
-      if ((styl === 'auto' || styl === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+      // overflow-x:auto může v prohlížeči změnit i vypočtené overflow-y na auto.
+      // Jedno až několik pixelů přetečení z fontu pak vypadá jako vnitřní seznam a
+      // stránka pod kurzem přestane reagovat. Skutečný vnitřní posuv má větší rozsah.
+      if ((styl === 'auto' || styl === 'scroll') && el.scrollHeight > el.clientHeight + 8) {
         if (dolu ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
       }
     }
@@ -98,7 +101,10 @@ export function plynulePosouvani() {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;       // vodorovný posun nechat být
     if (zamceno(e.target) || vnitrniPosuv(e.target, e.deltaY > 0)) return;
     const krok = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
-    if (!plynule) {
+    // Trackpad posílá v aplikaci malé kroky se setrvačností už od macOS. Další 110ms
+    // dojezd je zdvojoval a působil opožděně; velké kroky myši zůstávají plynulé.
+    const primo = !plynule || (window.agenteeqDesktop === true && e.deltaMode === 0 && Math.abs(krok) < 50);
+    if (primo) {
       const kam = Math.min(maximum(), Math.max(0, scrollY + krok));
       if (Math.abs(kam - scrollY) < 1) return;
       e.preventDefault();

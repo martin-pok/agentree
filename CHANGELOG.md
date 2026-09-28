@@ -6,6 +6,14 @@ Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy lim
 bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
 Rozšíření čeká na schválení v Chrome Web Store.
 
+### Dodatečné opravy před vydáním
+
+- Krátká gesta trackpadu v nativní aplikaci teď reagují přímo na setrvačnost macOS; plynulý dojezd zůstává pro větší kroky kolečka. Tlačítko obnovy v horní liště znovu načte konektory, stav a právě otevřenou stránku.
+- Drobné zdánlivé svislé přetečení ve vodorovně rolovacích prvcích už nemůže zadržet kolečko celé stránky.
+- Dovednosti se nově načítají také ze sdílené složky `~/.agents/skills`. Skupina filtrů zmizí, pokud není co filtrovat; vybrané kapsle se v rolovacích filtrech neořezávají.
+- Opraven kontrast červeného počítadla v tmavém režimu. Cache log používá značku obsahu z tohoto vydání a nový build ji ověřuje v desktopovém QA.
+- Okno rozšíření má vlastní tlačítko obnovy, které si vyžádá nové hlášení z otevřených podporovaných karet a teprve potom překreslí stav. Obnova projde i nezměněnou konverzaci bez čekání na minutový udržovací signál.
+
 ### Angličtina bez zbytků češtiny a Windows bez Macu
 
 - Texty ze serveru (režimy a poznámky spouštění, stavy zdrojů, činnost agentů, chybové hlášky,

@@ -11,6 +11,7 @@ const MAX_SKILLS = 400;
 const MAX_BYTES = 512 * 1024;
 
 export const SOURCES = [
+  { id: 'shared', label: ui('Sdílené'), rel: ['.agents', 'skills'], depth: 2 },
   { id: 'claude', label: 'Claude', rel: ['.claude', 'skills'], depth: 2 },
   { id: 'claude-plugin', label: 'Claude · plugin', rel: ['.claude', 'plugins'], depth: 7 },
   { id: 'claude-task', label: ui('Claude · plánovaná úloha'), rel: ['.claude', 'scheduled-tasks'], depth: 2 },

@@ -125,6 +125,15 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 | `build:mac`, `qa:native` | Sestavený ad-hoc podepsaný arm64 archiv a 10 nativních kontrol izolované aplikace prošly; archiv není notarizovaný |
 | Omezení | Skutečné stránky poskytovatelů v rozšíření, přihlášení Claude a doručení systémových oznámení nebyly v tomto běhu ověřeny |
 
+Dodatečná regrese 0.29.1: `test/extension-hlaseni.test.mjs` ověřuje, že ruční obnova rozšíření
+obejde časové omezení nezměněné konverzace a počká na odpověď background workeru.
+`qa:extension` zkouší obnovu okna nad atrapou Chrome API. `qa:contrast` měří i červený
+počet u agenta čekajícího na rozhodnutí. `qa:tvary` nyní zakládá skutečné dovednosti
+v několika zdrojích, měří všechny čtyři rohy tlačítek a ukládá snímky naplněné stránky
+Skills na šířkách 1440 a 375 px. `qa:desktop` navíc dekóduje loga a zkouší přímé
+malé kroky trackpadu. Chování přihlášených externích služeb a Chrome Web Store
+se stále musí ověřit po jejich vlastním vydání.
+
 ## Protokol ověření – noční ticho a souhrn upozornění (28. 9. 2026, Linux kontejner, Node 22.22)
 
 | Kontrola | Výsledek |

@@ -151,11 +151,11 @@ function mount(el) {
       <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat dovednost')}</span><input type="search" data-q placeholder="${tr('Název, popis nebo cesta…')}" autocomplete="off"></label>
       <div class="sk-sort" data-blok="razeni"><span class="sk-filtr-popis" id="sk-r">${tr('Řadit')}</span><div class="seg seg--light seg--sm" role="group" aria-labelledby="sk-r" data-region="sort"></div></div>
     </div>
-    <section class="sk-filters" data-enter style="--i:2" aria-label="${tr('Filtry dovedností')}">
+    <section class="sk-filters" data-enter data-sk-filters style="--i:2" aria-label="${tr('Filtry dovedností')}">
       <div class="sk-filtr" data-blok="zdroje"><span class="sk-filtr-popis" id="sk-z">${tr('Zdroj')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-z" data-region="sources"></div></div>
       <div class="sk-filtr" data-blok="puvod"><span class="sk-filtr-popis" id="sk-p">${tr('Původ')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-p" data-region="origins"></div></div>
     </section>
-    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">${tr('Dovednosti jsou soubory')} <code>SKILL.md</code> ${tr('na {0} – od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.', tomtoPocitaci())}</p>
+    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">${tr('Dovednosti jsou soubory')} <code>SKILL.md</code> ${tr('na {0} – ze sdílené složky, od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.', tomtoPocitaci())}</p>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {
@@ -222,6 +222,7 @@ function update() {
     .map(([k, label]) => `<button type="button" data-origin-filter="${esc(k)}" aria-pressed="${v.origin === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.origin === k).length}</span></button>`).join(''));
 
   for (const [blok, ano] of Object.entries(viditelne)) ukaz(el, blok, ano);
+  el.querySelector('[data-sk-filters]').hidden = !viditelne.zdroje && !viditelne.puvod;
 
   const q = norm(v.q.trim());
   const list = serad(v.items.filter((s) => (v.source === 'all' || s.source === v.source)
@@ -235,7 +236,7 @@ function update() {
       ? `<div class="skills-more"><span class="muted small">${tr('Zobrazeno {0} z {1}', ukazane.length, list.length)}</span><button class="btn" type="button" data-more>${tr('Zobrazit dalších {0}', Math.min(STRANA, list.length - ukazane.length))}</button></div>` : ''}`
     : emptyState({
       title: v.items.length ? tr('Tomuto filtru neodpovídá žádná dovednost') : tr('Na {0} zatím žádné dovednosti nejsou', tomtoPocitaci()),
-      text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq hledá soubory SKILL.md u Claude (včetně pluginů a plánovaných úloh) a u Codexu.'),
+      text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq hledá soubory SKILL.md ve sdílené složce .agents/skills, u Claude (včetně pluginů a plánovaných úloh) a u Codexu.'),
     }));
 }
 
