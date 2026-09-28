@@ -253,10 +253,9 @@ test('podrobnosti procesu na macOS se skládají z lsof a ps -E', async () => {
 // musí najít z výpisu procesů, ukázat ho jako běžícího agenta a po prvním zápisu do přepisu v jeho
 // CLAUDE_CONFIG_DIR ho spárovat s konverzací. Na Linuxu přes /proc, bez jakékoli atrapy.
 //
-// Výpis procesů je celý počítač, takže server vidí i procesy „claude“ z jiných souběžných běhů
-// téhož testu a přidá si jejich CLAUDE_CONFIG_DIR. S pevným ID konverzace pak cizí přepis se stejným
-// ID obsadil session dřív než vlastní (každé ID drží jeden soubor), měla cizí složku a proces se
-// nespároval nikdy – ne pomalu. Proto má každý běh vlastní ID, jako skutečné konverzace (UUID).
+// Dřív server viděl procesy celého počítače, přidal si CLAUDE_CONFIG_DIR jiného souběžného běhu a jeho
+// přepis s tímtéž pevným ID obsadil konverzaci – proces se nespároval nikdy. Teď test vidí jen své
+// procesy (jenProcesy) a ID je náhodné jako u skutečných konverzací (UUID).
 test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení zmizí', async (t) => {
   if (process.platform !== 'linux') return t.skip('živý proces se ověřuje na Linuxu (/proc); macOS jde přes lsof');
   const dir = await tempDir('agenteeq-zivy-');
@@ -276,6 +275,7 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
   const bezi = (p) => fs.readFile(`/proc/${p.pid}/cmdline`, 'utf8').catch(() => '').then((c) => c.includes(path.join(bin, 'claude')));
   await waitFor(async () => (await bezi(agent)) && bezi(cizak), 8000);
   const pidy = new Set([agent.pid]);
+  let druhy = null;
   const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' }, { vypisProcesu: jenProcesy(pidy) });
   try {
     const klient = api(srv.url);
@@ -300,11 +300,40 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     await waitFor(() => srv.app.store.summary(`claude-code:${id}`), 8000);
     assert.equal(srv.app.store.get(`claude-code:${id}`).cwd, slozka, 'konverzace se načetla z vlastního přepisu');
     await waitFor(async () => !(await najdi()), 8000);
-    agent.kill();
-    await waitFor(async () => !(await klient.get('/api/state')).body.sessions.some((s) => s.proces?.pid === agent.pid), 8000);
+
+    // Nespárovaný proces po skončení zmizí. Spárovaný zmizel už spárováním, takže konec musí ukázat
+    // proces, ke kterému konverzace není: jiná složka, žádný přepis.
+    const jinde = path.join(dir, 'Jiný projekt');
+    await fs.mkdir(jinde);
+    druhy = spawn(path.join(bin, 'claude'), [], { cwd: jinde, env: { PATH: process.env.PATH }, stdio: 'ignore' });
+    pidy.add(druhy.pid);
+    const druhyZaznam = async () => (await klient.get('/api/state')).body.sessions.find((s) => s.proces?.pid === druhy.pid);
+    const z = await waitFor(druhyZaznam, 8000);
+    assert.equal(z.cwd, jinde);
+    assert.equal(z.status, 'waiting', 'běží, zatím bez přepisu');
+    const konec = new Promise((r) => druhy.once('exit', r));
+    druhy.kill();
+    await konec;
+    await waitFor(async () => !(await druhyZaznam()), 8000);
   } finally {
     agent.kill();
     cizak.kill();
+    druhy?.kill();
+    await srv.close();
+  }
+});
+
+// Výpis procesů se mezi konektory sdílí, ale nikdy není starší než jeden průchod: s pevnými 4 s by
+// AGENTEEQ_PROCESS_MS kratší než 4 s nic neznamenal a skončený agent by v přehledu visel až 4 s.
+test('výpis procesů není starší než jeden průchod', async () => {
+  let volani = 0;
+  const vypis = jenProcesy(new Set());
+  const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' }, { vypisProcesu: () => { volani++; return vypis(); } });
+  try {
+    const zacatek = volani;
+    await new Promise((r) => setTimeout(r, 1200));
+    assert.ok(volani - zacatek >= 3, `za 1,2 s při průchodu po 200 ms jen ${volani - zacatek} výpisů`);
+  } finally {
     await srv.close();
   }
 });

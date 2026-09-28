@@ -127,8 +127,9 @@ ve složce, o které Agenteeq neví. Proto:
   a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis
   procesů nic nepřidá ani neubere.
 - **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
-  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se do 8 s, po prvním zápisu do přepisu
-  se spáruje a po skončení zmizí.
+  „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se, po prvním zápisu do přepisu se
+  spáruje, cizí proces s jiným `CLAUDE_CONFIG_DIR` test nevidí a druhý, nespárovaný proces po skončení
+  zmizí. Sdílený výpis procesů není starší než jeden průchod (výchozí platnost 4 s při průchodu po 5 s).
 
 ## Konektory v detailu
 

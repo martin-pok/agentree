@@ -50,6 +50,9 @@
 - Testy se zapnutými procesy vidí jen své procesy (`test/helpers.mjs#jenProcesy`): dřív si
   přidaly `CLAUDE_CONFIG_DIR` každého procesu na počítači a četly cizí přepisy. Bez omezení
   `startTestServer` odmítne start.
+- Test živého procesu ověřuje i to, co sliboval v názvu: nespárovaný proces po skončení zmizí
+  (dřív poslední krok prošel vždy, protože spárovaný proces zmizel už spárováním). Sdílený výpis
+  procesů není starší než jeden průchod, takže `AGENTEEQ_PROCESS_MS` pod 4 s opravdu platí.
 - Test živého procesu `claude` (`test/detekce-agentu.test.mjs`) padal při souběžných bězích:
   server vidí procesy celého počítače, přidal si CLAUDE_CONFIG_DIR cizího běhu a jeho přepis
   s tímtéž pevným ID obsadil konverzaci. Každý běh má teď vlastní ID, průchod spustí test sám
