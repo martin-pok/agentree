@@ -437,6 +437,38 @@ for (const engine of engines) {
       await page.evaluate(() => { sessionStorage.setItem('agenteeq.jump', 'extension'); window.dispatchEvent(new Event('agenteeq-jump')); });
       await page.waitForFunction(() => !document.querySelector('[data-region="extension"]').closest('.set-group').hidden, null, { timeout: 3000 });
     }
+    // Na širokém desktopu má svislé podmenu zůstat ve výšce, kde se otevřelo.
+    // Původní sticky top: 24 px ho při dlouhé skupině vytáhl až k hornímu okraji
+    // okna, zatímco hlavní postranní panel stál na místě.
+    for (const [sirka, vyska] of [[1181, 620], [1440, 900], [1893, 1337]]) {
+      await page.setViewportSize({ width: sirka, height: vyska });
+      await page.goto(`${server.url}/#/nastaveni`);
+      await page.locator('.settings2').waitFor();
+      await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
+      await page.locator('.set-nav [data-jump="set-propojeni"]').click();
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForTimeout(100);
+      const merit = () => page.evaluate(() => ({
+        y: scrollY,
+        menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        posledni: Math.round(document.querySelector('.set-nav button:last-child').getBoundingClientRect().bottom),
+        max: document.documentElement.scrollHeight - innerHeight,
+      }));
+      const vychozi = await merit();
+      assert.ok(vychozi.max > 300, `${engine} ${sirka}: dlouhé Nastavení se musí dát posouvat`);
+      for (const y of [300, vychozi.max]) {
+        await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+        await page.waitForTimeout(100);
+        const po = await merit();
+        assert.ok(po.y >= 299, `${engine} ${sirka}: stránka se neposunula (${po.y} px)`);
+        assert.ok(Math.abs(po.menu - vychozi.menu) <= 1,
+          `${engine} ${sirka}: podmenu vyjelo z ${vychozi.menu} na ${po.menu} px`);
+        assert.ok(po.posledni < vyska, `${engine} ${sirka}: poslední položka podmenu je mimo okno`);
+      }
+      // Po posunu musí zůstat přepnutí skupin dostupné bez návratu nahoru.
+      await page.locator('.set-nav [data-jump="set-ucet"]').click();
+      assert.equal(await page.locator('.set-nav [data-jump="set-ucet"]').getAttribute('aria-current'), 'true');
+    }
     await page.setViewportSize({ width: 1440, height: 1000 });
     // Plynulé posouvání (public/js/plynule-posouvani.js). Hlavní kontext běží s „omezit pohyb“,
     // kde se zapnout nesmí; na počítači bez omezení krok kolečka dojede plynule a přesně, hover

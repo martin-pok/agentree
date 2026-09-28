@@ -115,6 +115,17 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
+## Protokol ověření – 0.29.2, podnabídka Nastavení (28. 9. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm run qa:desktop` | Chromium i WebKit: podnabídka zůstala na počáteční výšce po posunu o 300 px i na konec dlouhé skupiny při 1181 × 620, 1440 × 900 a 1893 × 1337 px; skupiny šlo dál přepínat, mobilní lišta zůstala funkční |
+| Vizuální WebKit QA | Snímek `dist/qa/settings-menu-scrolled-webkit.png`: při maximálním posunu 864 px je horní okraj podnabídky na 280 px, poslední položka je vidět |
+| `npm test`, `npm run check` | 639 testů prošlo, 2 přeskočeny; 234 souborů bez syntaktické chyby |
+| `qa:contrast`, `qa:tvary` | Kontrast WCAG 2.2 AA a tvary ovládacích prvků aplikace, webu a rozšíření prošly |
+| `build:mac`, `qa:native`, `smoke` | Sestavený ad-hoc podepsaný archiv 0.29.2; 10/10 nativních kontrol a instalace do dočasné složky prošly |
+| `build:site`, `qa:site`, `build:extension`, `qa:extension` | Web sestaven, české a anglické stránky prošly v Chromiu i WebKitu; všech 33 scénářů okna rozšíření prošlo s atrapou Chrome API |
+
 ## Protokol ověření – dokončení 0.29.1 (28. 9. 2026, macOS)
 
 | Kontrola | Výsledek |

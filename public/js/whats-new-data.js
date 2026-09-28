@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.2',
+    date: '2026-09-28',
+    title: 'Menu Nastavení zůstává na místě',
+    items: [
+      'Podnabídka na levé straně Nastavení zůstává při posouvání dlouhé skupiny ve stejné výšce. Už nevyjede až k hornímu okraji okna.',
+    ],
+    en: {
+      title: 'The Settings menu stays in place',
+      items: [
+        'The Settings submenu on the left remains at the same height while you scroll through a long group. It no longer slides up to the top edge of the window.',
+      ],
+    },
+  },
+  {
     version: '0.29.1',
     date: '2026-09-28',
     title: 'Posouvání funguje i po změně obrazovky',

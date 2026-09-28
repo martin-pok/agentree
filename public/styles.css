@@ -1253,7 +1253,11 @@ html.is-cloud body { background: var(--paper); }
 
 /* ---------- Nastavení ---------- */
 .settings2 { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 48px; align-items: start; }
-.set-nav { position: sticky; top: 24px; display: grid; gap: 2px; }
+/* Svislé menu stojí ve stejné výšce jako při otevření Nastavení i po posunu dlouhé
+   skupiny. 132 px = vnější odsazení shellu (24) + mezera nad obsahem (32) +
+   horní lišta (40) + její spodní mezera (36). Na užších oknech je menu
+   vodorovné a má vlastní top: 0 níže. */
+.set-nav { position: sticky; top: calc(var(--band-h) + 132px); display: grid; gap: 2px; }
 .set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
 /* Popisek je Onest 500 ve všech stavech – vybraná skupina se pozná podle plochy, ne podle řezu,
