@@ -30,6 +30,8 @@
   (`/bin/sh -c … /opt/claude-code/bin/claude …`), a tak se jeden agent ukázal dvakrát. Agentem je
   teď jen běžící program – spustitelný soubor, nebo skript pod node/sh/python; `sh -c`, `sudo`,
   editor ani `ln` s cestou ke claude ne. Platí i pro Codex, Gemini, Qwen, Copilot a lokální modely.
+- Oprava: přehled běžících aplikací se ptal Ollamy natvrdo na `127.0.0.1:11434` a přehlížel
+  `AGENTEEQ_OLLAMA_URL`. Teď jde stejnou cestou jako chat s Ollamou (`src/ollama.js`).
 
 ### Vydání a testy
 

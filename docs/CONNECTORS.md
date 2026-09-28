@@ -286,7 +286,8 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
 
 ### Procesy – `src/connectors/processes.js` ✅
 
-- `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `http://127.0.0.1:11434/api/ps`.
+- `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `/api/ps` na adrese
+  z `AGENTEEQ_OLLAMA_URL` (výchozí `http://127.0.0.1:11434`), stejným klientem jako chat (`src/ollama.js`).
 
 ## Předplatné a kurz koruny (Útrata)
 

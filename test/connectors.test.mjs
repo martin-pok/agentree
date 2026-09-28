@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { createSession, deriveStatus } from '../src/model.js';
@@ -13,7 +14,7 @@ import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries, horniMezObnovy } from '../src/connectors/claude-desktop-usage.js';
 import { appSupportDir } from '../src/platform.js';
-import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
+import { tempDir, writeJsonl, fakeDatastore, startTestServer } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
   const home = await tempDir();
@@ -244,6 +245,46 @@ test('Procesy: rozpoznání AI aplikací z výpisu ps', () => {
   assert.equal(r.codex.processes, 1, 'vnitřní codex app-server v ChatGPT.app se nepočítá jako samostatný Codex CLI');
   assert.equal(r.cursor.running, false);
   assert.equal(etimeToSec('01-22:59:09'), 86400 + 22 * 3600 + 59 * 60 + 9);
+});
+
+// Konektor procesů se ptal Ollamy natvrdo na 127.0.0.1:11434 a AGENTEEQ_OLLAMA_URL přehlížel. Testy, které
+// Ollamu vypínají (port 9 = spojení odmítnuto), tak při každém průchodu sahaly na skutečnou Ollamu na počítači.
+test('Procesy: Ollamu hledají na nastavené adrese a jinde nic', async (t) => {
+  const volani = [];
+  const puvodni = globalThis.fetch;
+  globalThis.fetch = (url, ...zbytek) => { volani.push(String(url)); return puvodni(url, ...zbytek); };
+  t.after(() => { globalThis.fetch = puvodni; });
+
+  // Vypnutá Ollama (helpers: port 9): na výchozí adresu nejde žádný dotaz.
+  const vypnuta = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' });
+  try {
+    await vypnuta.app.connectors.processes.scan();
+    assert.equal(vypnuta.app.store.runtimes.find((r) => r.id === 'ollama').detail, '', 'nedostupná Ollama nic nehlásí');
+  } finally {
+    await vypnuta.close();
+  }
+  assert.deepEqual(volani.filter((u) => /:11434(\/|$)/.test(u)), [], 'na skutečnou Ollamu se nesahá');
+  assert.ok(volani.some((u) => u.startsWith('http://127.0.0.1:9/api/ps')), 'dotaz jde na nastavenou adresu');
+
+  // Ollama na jiné adrese: načtené modely se berou odtud.
+  const dotazy = [];
+  const ollama = http.createServer((req, res) => {
+    dotazy.push(req.url);
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ models: req.url === '/api/ps' ? [{ name: 'qwen2.5:7b' }] : [] }));
+  });
+  await new Promise((r) => ollama.listen(0, '127.0.0.1', r));
+  t.after(() => ollama.close());
+  const s = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000', AGENTEEQ_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}/` });
+  try {
+    await s.app.connectors.processes.scan();
+    const o = s.app.store.runtimes.find((r) => r.id === 'ollama');
+    assert.equal(o.running, true);
+    assert.equal(o.detail, 'Načteno: qwen2.5:7b');
+    assert.ok(dotazy.includes('/api/ps'));
+  } finally {
+    await s.close();
+  }
 });
 
 test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/týden (a extra usage, pokud je)', () => {

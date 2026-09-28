@@ -17,6 +17,17 @@ export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchIm
       }
     },
 
+    // Modely právě načtené v paměti (běžící Ollama) – pro přehled běžících aplikací.
+    async loaded() {
+      try {
+        const res = await fetchImpl(url('/api/ps'), { signal: AbortSignal.timeout(600) });
+        const json = res.ok ? await res.json() : null;
+        return { ok: Boolean(json), models: (json?.models || []).map((m) => String(m.name || m.model || '')).filter(Boolean) };
+      } catch {
+        return { ok: false, models: [] };
+      }
+    },
+
     // Streamovaná odpověď: onDelta(text) pro každý kousek, na konci { tokensIn, tokensOut }.
     async chat({ model, messages, signal, onDelta }) {
       const res = await fetchImpl(url('/api/chat'), {

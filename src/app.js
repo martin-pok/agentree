@@ -259,7 +259,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   if (config.processes) {
     const vypis = sdilenyVypis();
-    list.push(createProcessesConnector({ ...ctx, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
+    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
   }

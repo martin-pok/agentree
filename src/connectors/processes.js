@@ -208,8 +208,14 @@ export function createStabilniStart(tolerance = 3000) {
   };
 }
 
+const adresaOllamy = (klient) => {
+  try { return new URL(klient?.baseUrl).host; } catch { return 'Ollama nenastavená'; }
+};
+
 export function createProcessesConnector(ctx) {
-  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu } = ctx;
+  // Ollama jde přes sdíleného klienta z src/ollama.js, tedy na adresu z AGENTEEQ_OLLAMA_URL. Bez klienta
+  // se na Ollamu neptá vůbec – nikdy natvrdo na 127.0.0.1:11434.
+  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
   let timer = null;
   let ollama = { ok: false, models: [] };
   let lastOk = 0;
@@ -239,13 +245,7 @@ export function createProcessesConnector(ctx) {
     if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
     // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
     onAgenti(res.ok ? await agenti(res.stdout).catch(() => null) : null);
-    try {
-      const r = await fetch('http://127.0.0.1:11434/api/ps', { signal: AbortSignal.timeout(600) });
-      const json = r.ok ? await r.json() : null;
-      ollama = { ok: Boolean(json), models: (json?.models || []).map((m) => m.name) };
-    } catch {
-      ollama = { ok: false, models: [] };
-    }
+    ollama = ollamaKlient ? await ollamaKlient.loaded() : { ok: false, models: [] };
     const o = runtimes.find((r) => r.id === 'ollama');
     if (o && ollama.ok) {
       o.running = true;
@@ -261,7 +261,7 @@ export function createProcessesConnector(ctx) {
     provider: 'other',
     kind: 'local',
     verified: true,
-    source: JE_WINDOWS ? 'Win32_Process · localhost:11434' : 'ps · localhost:11434',
+    source: `${JE_WINDOWS ? 'Win32_Process' : 'ps'} · ${adresaOllamy(ollamaKlient)}`,
     description: 'Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.',
     async start() {
       await poll();
