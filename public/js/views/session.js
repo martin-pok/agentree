@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, stariUdaj } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -270,7 +270,7 @@ function update() {
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${stariUdaj()}${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     <div class="session-actions">
       ${openButtons(s)}

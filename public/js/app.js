@@ -2,7 +2,7 @@ import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agents
 import { api, connectStream, jeUkazka } from './api.js';
 import { vytvorSpojeni } from './spojeni.js';
 import { loaderHtml } from './loader.js';
-import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
+import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS, casUdaju, udajeZ } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
@@ -234,6 +234,29 @@ function refresh(topics) {
   tweenAll(document);
   restoreHover(viewEl);
   tick();
+  oznacStara();
+}
+
+/* ---------- Data bez spojení ---------- */
+
+// Bez spojení okno dál ukazuje poslední známý stav, ale nevydává ho za živý: pohyb živých
+// ukazatelů stojí (html.is-stale, styles.css), stopky „Pracuje už“ se zastaví na čase posledních
+// ověřených dat a u živých bloků stojí, z kdy data jsou (ui.js#stariUdaj). Relativní časy
+// („před 5 min“) a odpočty obnovy limitů běží dál – počítají se z pevných okamžiků, ne ze spojení.
+let stara = false;
+function oznacStara() {
+  const text = stara ? udajeZ(spojeni.dataZ()) : '';
+  for (const el of document.querySelectorAll('[data-stale-at]')) {
+    if (el.hidden !== !text) el.hidden = !text;
+    if (el.textContent !== text) el.textContent = text;
+  }
+}
+function nastavStara(ano) {
+  if (stara === ano) return;
+  stara = ano;
+  document.documentElement.classList.toggle('is-stale', ano);
+  oznacStara();
+  tickClock(true);
 }
 
 // Úložiště: když se data nedaří zapsat na disk, uživatel to musí vidět hned – jinak by po restartu
@@ -391,7 +414,8 @@ function tickClock(hned = false) {
   if (document.hidden || (!hned && behemRolovani())) return;
   const uzly = document.querySelectorAll('[data-clock-from]');
   if (!uzly.length) return;
-  const now = Date.now();
+  // Bez spojení stojí stopky na čase posledních ověřených dat – jestli agent pracuje dál, okno neví.
+  const now = stara ? spojeni.dataZ() : Date.now();
   prepis(uzly, (el) => clock(now - Number(el.dataset.clockFrom)));
 }
 
@@ -585,20 +609,33 @@ function renderOffline(show) {
     : naMacu
       ? tr('Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.')
       : tr('Agenteeq se připojí sám, jakmile bude {0} zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.', tvujPocitac());
+  const dataZ = spojeni.dataZ();
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>${tr('Agenteeq neběží')}</strong>
       <p>${rada}</p>
+      ${dataZ ? `<p>${tr('Údaje na stránce jsou z {0}. Až se spojení obnoví, načtou se znovu.', esc(casUdaju(dataZ)))}</p>` : ''}
       <p class="small">${naMacu ? tr('Aby Agenteeq běžel pořád, zapni v Nastavení <b>Spouštět po přihlášení</b>. ') : ''}${tr('Adresa:')} ${esc(location.host)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>${tr('Zkusit znovu')}</button>`);
   offlineEl.hidden = false;
 }
 
-function onConnection(s) {
+// `info.okamzite`: data jsou neověřená už teď (probuzení počítače, spojení, které tiše umřelo) –
+// označí se hned. Krátký výpadek (restart serveru) do 4 s ukazuje jen štítek „Obnovuji spojení“;
+// potom je to skutečný výpadek s hlášením a označenými daty.
+function onConnection(s, info = {}) {
   state.connection = s;
   clearTimeout(offlineTimer);
-  if (s === 'live') renderOffline(false);
-  // Krátké výpadky (restart serveru) nezobrazujeme; po 4 s už je to skutečný výpadek.
-  else offlineTimer = setTimeout(() => { if (state.connection !== 'live') renderOffline(true); }, 4000);
+  if (s === 'live') {
+    renderOffline(false);
+    nastavStara(false);
+  } else {
+    if (info.okamzite) nastavStara(true);
+    offlineTimer = setTimeout(() => {
+      if (state.connection === 'live') return;
+      nastavStara(true);
+      renderOffline(true);
+    }, 4000);
+  }
   updateChrome();
 }
 

@@ -73,6 +73,8 @@ export default {
     "Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.": "Agenteeq reconnects on its own as soon as the app is running again. Open it from Applications or the Dock.",
     "Agenteeq se připojí sám, jakmile bude {0} zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.": "Agenteeq reconnects on its own as soon as {0} is reachable again. Check that it’s on, awake and running Agenteeq.",
     "Agenteeq neběží": "Agenteeq isn’t running",
+    "Údaje na stránce jsou z {0}. Až se spojení obnoví, načtou se znovu.": "The data on this page is from {0}. It will reload once the connection is back.",
+    "data z {0}": "data from {0}",
     "Aby Agenteeq běžel pořád, zapni v Nastavení <b>Spouštět po přihlášení</b>. ": "To keep Agenteeq running all the time, turn on <b>Start at login</b> in Settings. ",
     "Adresa:": "Address:",
     "Zkusit znovu": "Try again",

@@ -352,6 +352,11 @@ export function untilLabel(ts, now = Date.now()) {
   return dny < 5 ? tr('za {0} dny', dny) : tr('za {0} dní', dny);
 }
 
+// Značka u živého bloku (stav agentů, limity, útrata, detail agenta): bez spojení se serverem
+// ukáže, z kdy údaje jsou („data z 14:32“). Obsah a viditelnost jí nastavuje app.js#oznacStara –
+// při spojení je skrytá a prázdná, takže nemění podobu stránky ani to, co přečte čtečka.
+export const stariUdaj = () => '<span class="stale-at" data-stale-at hidden></span>';
+
 // Údaje o limitech ze stavového řádku Claude Code jsou přesné; odhady z textu hlášek pak nezobrazujeme.
 // Vyčerpání dokoupeného extra usage není okno předplatného – patří na Útratu, ne mezi limity plánu.
 export const isSpendLimit = (l) => l.kind === 'spend';

@@ -6,7 +6,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, stariUdaj } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -115,7 +115,7 @@ function mount(el) {
       </section>
       <section data-enter style="--i:4" data-region="limits" aria-label="${tr('Limity předplatných')}"></section>
       <section data-enter style="--i:4" aria-labelledby="sp-h" data-float>
-        <div class="sec-head"><h2 id="sp-h">${tr('Útrata tento měsíc')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
+        <div class="sec-head"><h2 id="sp-h">${tr('Útrata tento měsíc')}${stariUdaj()}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
         <div class="card spend-mini" data-region="spend"></div>
       </section>
       <section data-enter style="--i:5" aria-labelledby="act-h" data-float>
@@ -207,7 +207,7 @@ function update(topics = new Set(['all'])) {
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
       <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
-        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
+        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small>${stariUdaj()}</span>
     </div>
     <div class="pb-stats">
       <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${tr('potřebuje tebe')}</span></a>
@@ -272,7 +272,7 @@ function update(topics = new Set(['all'])) {
     const limitHint = usesClaude && !claudeExact
       ? `<p class="lwin-hint">${tr('Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v')} <a class="link-inline" href="#/nastaveni">${tr('Nastavení')}</a> ${tr('– Claude Code je pak posílá sám.')}</p>`
       : '';
-    fill(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
+    fill(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}${stariUdaj()}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
        ${windows}${limitHint}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}</b>${creditAge(c)?.stary ? `<small class="je-stare">${esc(creditAge(c).kratce)}</small>` : ''}</a>`).join('')}
        ${limitsAll(state, now)}`);

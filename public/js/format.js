@@ -113,6 +113,11 @@ export const startOfDay = (ts) => {
 };
 export const hourTs = (key) => Date.parse(`${key}:00:00Z`);
 
+// Z kdy jsou údaje, které okno ukazuje bez spojení se serverem (public/js/app.js). Dnešek stačí
+// časem, starší údaje (Mac spal přes noc) i s datem.
+export const casUdaju = (ts, now = Date.now()) => (startOfDay(ts) === startOfDay(now) ? timeHM(ts) : dateTime(ts));
+export const udajeZ = (ts, now = Date.now()) => (ts ? tr('data z {0}', casUdaju(ts, now)) : '');
+
 export function localDate(ts = Date.now()) {
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

@@ -1569,6 +1569,21 @@ html.is-cloud body { background: var(--paper); }
 .offline-text strong { font-size: 16px; }
 .offline-text p { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
 .offline-text .small { color: var(--mute); }
+
+/* Data bez spojení (html.is-stale, public/js/app.js): okno dál ukazuje poslední známý stav, ale nic
+   nepředstírá, že žije. Pohyb živých ukazatelů (puls, blikání, běžící pruh, točící se značka) stojí
+   a jejich smaragd zešedne; texty a čísla mají dál plný kontrast. U živých bloků stojí, z kdy data
+   jsou (.stale-at, „data z 14:32“). */
+html.is-stale :is(.pb-live, .pulse, .tl-live, .avatar.is-live)::after { animation: none; opacity: 0; }
+html.is-stale :is(.live-dot, .pill[data-status='working'] i, .pb-agent[data-state='working'] small i, .run-mark--spin, .indeterminate i) { animation: none; }
+html.is-stale .pulse-bar.is-live .pb-live { background: rgba(244, 243, 247, .28); }
+html.is-stale :is(.pulse, .indeterminate i) { background: rgba(255, 255, 255, .36); }
+html.is-stale :is(.live-dot, .rt-status) { background: var(--line); }
+html.is-stale .indeterminate i { left: 30%; }
+.stale-at { font: 400 13px/1.3 var(--f-body); color: var(--mute); white-space: nowrap; }
+.sec-head h2 .stale-at { margin-left: 10px; }
+.session-meta .stale-at { font-size: 14px; }
+.pulse-bar .stale-at { color: rgba(244, 243, 247, .78); }
 .logo-fallback { display: inline-grid; place-items: center; border-radius: 50%; background: var(--line-2); color: var(--ink-2); font: 500 10px/1 var(--f-body); text-transform: uppercase; }
 
 /* ---------- Okna limitů ---------- */

@@ -382,3 +382,33 @@ test('spojení: ukázka bez serveru nehlídá ticho ani probuzení', async () =>
   assert.equal(sim.proudy.length, 1);
   assert.equal(sim.stav(), 'live');
 });
+
+/* ---------- Data bez spojení v rozhraní ---------- */
+
+// Bez spojení okno ukazovalo poslední stav beze změny: „3 agenti pracují“ s pulzující tečkou,
+// stopky „Pracuje už“ běžely dál a o výpadku mluvila jen patička a štítek nahoře. U živých bloků
+// teď stojí, z kdy data jsou; dnešek časem, starší údaje i s datem.
+test('popisek „data z …“: dnešní údaje časem, starší s datem, bez dat nic', async () => {
+  const { udajeZ, casUdaju, timeHM, dateTime } = await import('../public/js/format.js');
+  const ted = new Date(2026, 8, 28, 15, 0).getTime();
+  const rano = new Date(2026, 8, 28, 9, 5).getTime();
+  const vcera = new Date(2026, 8, 27, 22, 40).getTime();
+  assert.equal(casUdaju(rano, ted), timeHM(rano));
+  assert.equal(udajeZ(rano, ted), `data z ${timeHM(rano)}`);
+  assert.equal(casUdaju(vcera, ted), dateTime(vcera), 'přes noc i s datem');
+  assert.equal(udajeZ(0, ted), '', 'bez ověřených dat žádný popisek');
+});
+
+test('živé bloky nesou značku „data z …“ a stopky bez spojení stojí', async () => {
+  const fs = await import('node:fs/promises');
+  const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+  const prehled = await zdroj('public/js/views/overview.js');
+  for (const blok of ["tr('Okna limitů')}${stariUdaj()}", "tr('Útrata tento měsíc')}${stariUdaj()}", '</small>${stariUdaj()}</span>']) {
+    assert.ok(prehled.includes(blok), `Přehled: chybí značka u ${blok}`);
+  }
+  assert.ok((await zdroj('public/js/views/session.js')).includes('${stariUdaj()}'), 'detail agenta nese značku');
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /const now = stara \? spojeni\.dataZ\(\) : Date\.now\(\);\n\s*prepis\(uzly, \(el\) => clock/, 'stopky počítají do posledních ověřených dat');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /html\.is-stale :is\(\.pb-live, \.pulse, \.tl-live, \.avatar\.is-live\)::after \{ animation: none;/, 'puls živých bodů bez spojení stojí');
+});
