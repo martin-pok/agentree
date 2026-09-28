@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
-import { createSession, deriveStatus } from '../src/model.js';
+import { createSession, deriveStatus, summarize } from '../src/model.js';
 import { createCodexConnector, mapCodexItem, windowLabel } from '../src/connectors/codex.js';
 import { applyGeminiChat } from '../src/connectors/gemini-family.js';
 import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js';
@@ -210,6 +210,7 @@ test('Web: z webových chatů se bere jen stav a počty – text ani název konv
   applyWebPayload(s, validateWebPayload({ ...base, counts: { user: 1, assistant: 1 } }).value, now);
   assert.equal(deriveStatus(s, now).status, 'working');
   assert.equal(s.title, 'ChatGPT · konverzace 1f2e');
+  assert.equal(summarize(s, now, 30 * 864e5).titleAuto, true, 'název složil Agenteeq, rozhraní ho v angličtině přeloží');
   applyWebPayload(s, validateWebPayload({ ...base, generating: false, counts: { user: 1, assistant: 1 } }).value, now + 3000);
   assert.equal(deriveStatus(s, now + 4000).status, 'waiting');
   assert.equal(deriveStatus(s, now + 4000).reason, 'Hotovo, čeká na další zadání');

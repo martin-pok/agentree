@@ -41,6 +41,10 @@ Rozšíření čeká na schválení v Chrome Web Store.
 - V jazyce z Nastavení jsou i CSV exporty útraty a projektů (anglicky s čárkou a desetinnou
   tečkou, jak je čte anglický Excel a Numbers; součty po měsících sedí s obrazovkou), stránka po
   návratu z přihlášení přes Google včetně `<html lang>` a pole kalendáře (anglicky 28/09/2026).
+- Oprava: obsah uživatele se v angličtině nepřekládá, ani když se shoduje s textem rozhraní –
+  konverzace „Moje“ už není „Mine“ a projekt „Útrata“ není „Spend“, celé ani v titulku upozornění.
+  Data ze serveru se překládají jen slovníkem textů serveru; název konverzace jen ten, který složil
+  Agenteeq (`titleAuto`), a názvy projektů, vlastních agentů, dovedností a poznámky k výdajům nikdy.
 - Na Windows (a Linuxu) rozhraní píše „tento počítač“ místo „tento Mac“ a zkratky Ctrl+K, Ctrl+↵,
   Ctrl+V místo ⌘; zkratky poslouchají na Macu jen ⌘, jinde jen Ctrl. Systém posílá server
   (`<html data-system>`, `host.system`).

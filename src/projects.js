@@ -91,6 +91,7 @@ export function snapshotOf(s) {
     id: str(s.id, 200),
     projectId: typeof s.projectId === 'string' ? s.projectId : null,
     title: str(s.title, 120),
+    titleAuto: s.titleAuto === true, // název od Agenteequ, ne od uživatele (src/model.js#summarize)
     app: str(s.app, 80),
     provider: str(s.provider, 40),
     connector: str(s.connector, 40),
@@ -331,12 +332,11 @@ const localStamp = (ts) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-// CSV projektu v jazyce aplikace. U názvu konverzace a aplikace se přeloží jen texty, které píše
-// Agenteeq („Konverzace bez názvu“, „Plánovaná úloha · …“); název od uživatele zůstane, jak je.
-// Model, složka a odkaz se nepřekládají nikdy.
+// CSV projektu v jazyce aplikace. Název konverzace se přeloží, jen když ho složil Agenteeq
+// („Konverzace bez názvu“, `titleAuto`); název od uživatele zůstane, jak je. Model, složka a odkaz
+// se nepřekládají nikdy.
 export function projectCsv(sessions, now = Date.now(), jazyk = 'cs') {
   const t = prekladac(jazyk);
-  const tNazev = prekladac(jazyk, { jenServer: true });
   const since = hourKey(now - 30 * DAY);
   const hlavicka = [ui('Konverzace'), ui('Aplikace'), ui('Model'), ui('Stav'), ui('Zahájeno'), ui('Poslední aktivita'), ui('Počet zadání'), ui('Tokeny'), ui('Hodiny s aktivitou (30 dní)'), ui('Složka'), ui('Odkaz')];
   const rows = [hlavicka.map(t)];
@@ -344,7 +344,7 @@ export function projectCsv(sessions, now = Date.now(), jazyk = 'cs') {
     const tokens = (s.tokens?.input || 0) + (s.tokens?.output || 0); // bez režie cache, viz model.js#addTokens
     const hours = Object.entries(s.hourly || {}).filter(([k, v]) => k >= since && v > 0).length;
     const stav = !s.status ? t(ui('Mimo okno sledování')) : NAZVY_STAVU[s.status] ? t(NAZVY_STAVU[s.status]) : s.status;
-    rows.push([tNazev(s.title || ''), tNazev(s.app || ''), s.model || '', stav, localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
+    rows.push([s.titleAuto ? t(s.title || '') : s.title || '', t(s.app || ''), s.model || '', stav, localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }
   return csv(rows, jazyk); // src/csv.js: oddělovač a desetinné znaménko podle jazyka, BOM, ochrana proti vzorcům
 }
