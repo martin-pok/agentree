@@ -14,6 +14,19 @@ Rozšíření čeká na schválení v Chrome Web Store.
 - Opraven kontrast červeného počítadla v tmavém režimu. Cache log používá značku obsahu z tohoto vydání a nový build ji ověřuje v desktopovém QA.
 - Okno rozšíření má vlastní tlačítko obnovy, které si vyžádá nové hlášení z otevřených podporovaných karet a teprve potom překreslí stav. Obnova projde i nezměněnou konverzaci bez čekání na minutový udržovací signál.
 
+### Postranní panel nezávisí na tom, jak prohlížeč měří písmo
+
+- Profil v postranním panelu si podobu vybírá podle místa, které mu v panelu skutečně zbylo
+  (`@container`), ne podle výšky okna. Když je něco vyšší, než se čekalo (jiné metriky písma ve
+  WebKitu, patička s výpadkem spojení), zvolí menší podobu, nebo se na nejnižším okně schová celý
+  – nikdy se neořízne. Hranice stupňů mají aspoň 20 px volného místa. Profil má pevnou výšku,
+  takže jeho načtení už nabídkou nepohne.
+- `qa:desktop` měří panel až v ustáleném stavu po změně velikosti okna (hned po ní má i Chromium
+  profil ještě ve staré podobě) a přidává zátěžový případ s patičkou o 48 px vyšší.
+- Test přerušení dojezdu posouvání čeká, až dojezd prokazatelně běží. Playwright ve WebKitu vrací
+  kolečko dřív, než ho stránka zpracuje; kolečko pak dorazilo až po skoku aplikace a správně
+  rozjelo nový dojezd. Chyba byla v testu, ne v aplikaci.
+
 ### Angličtina bez zbytků češtiny a Windows bez Macu
 
 - Texty ze serveru (režimy a poznámky spouštění, stavy zdrojů, činnost agentů, chybové hlášky,

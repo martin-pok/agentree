@@ -14,7 +14,15 @@ const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', '
 // 620–1200 px při šířce 881, 1180 i 1440 px, česky i anglicky. Dřív se nabídka potichu rolovala
 // a na okně 1440 × 950 Nastavení schovala celé. Měří se nejhorší obsah: dva řádky zdrojů tokenů,
 // patička s hlášením o výpadku spojení a nakonec i víc zdrojů, než se kdy vypíše. Profil, který
-// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“.
+// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“. Zátěžový případ
+// (patička o 48 px vyšší, jako by prohlížeč měřil písmo jinak) ověří, že profil místo ořezu
+// zvolí menší podobu, nebo se schová celý.
+//
+// Po změně velikosti okna se měří až v ustáleném stavu: okno má novou velikost, panel výšku
+// podle ní a rozvržení panelu se dva snímky po sobě nezměnilo. Hned po velké změně okna má i
+// Chromium panel už v nové výšce, ale profil ještě ve staré podobě (avatar 80 px v kontejneru
+// 60 px) – ustálí se až o snímek později. Pevné čekání proto nestačilo a WebKit na pomalém stroji
+// měřil ještě během přeskládání (jednorázově „Nastavení skryté o 86 px“ při 1180 × 650).
 async function zkontrolujPostranniPanel(browser, engine, errors) {
   const server = await startTestServer();
   try {
@@ -43,9 +51,9 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
         const nr = nav.getBoundingClientRect();
         const polozky = [...nav.querySelectorAll('a')].filter((a) => getComputedStyle(a).display !== 'none');
         const posledni = polozky.at(-1).getBoundingClientRect();
-        const profil = document.querySelector('.profile');
-        const pr = profil.getBoundingClientRect();
-        const obsahProfilu = Math.max(...[...profil.children].map((c) => c.getBoundingClientRect().bottom));
+        const pr = document.querySelector('.profile').getBoundingClientRect();
+        const obsah = document.querySelector('.profile-in');
+        const schovany = getComputedStyle(obsah).visibility === 'hidden';
         const zdroje = document.querySelector('.budget-src');
         return {
           polozek: polozky.length,
@@ -53,7 +61,8 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           skryto: Math.round(Math.max(0, posledni.bottom - Math.min(nr.bottom, dole), nr.top - posledni.top)),
           roluje: nav.scrollHeight > nav.clientHeight + 1,
           paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
-          profil: Math.round(Math.max(0, obsahProfilu - (pr.bottom - parseFloat(getComputedStyle(profil).paddingBottom)))),
+          schovany,
+          profil: schovany ? 0 : Math.round(Math.max(0, obsah.getBoundingClientRect().bottom - pr.bottom)),
           pres: Math.round(Math.max(0, pr.bottom - nr.top)),
           radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
         };
@@ -65,20 +74,35 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
         [' bez spojení', () => document.getElementById('side-foot').insertAdjacentHTML('afterbegin', '<span class="source-state" data-qa-panel><i class="dot dot--down"></i>Bez spojení se serverem</span>')],
         // K tomu víc zdrojů, než aplikace vypisuje: rozpis má i tak nejvýš dva celé řádky.
         [' bez spojení a se šesti zdroji', () => { document.querySelector('.budget-src').insertAdjacentHTML('beforeend', '<span data-qa-panel>Gemini CLI <b>1 M</b></span><span data-qa-panel>Qwen Code <b>1 M</b></span><span data-qa-panel>Copilot CLI <b>1 M</b></span><span data-qa-panel>Ollama <b>1 M</b></span>'); }],
+        // Zátěž: patička o 48 px vyšší. Profil smí ustoupit do menší podoby nebo se schovat, ne oříznout.
+        [' s patičkou vyšší o 48 px', () => document.getElementById('side-foot').insertAdjacentHTML('beforeend', '<div data-qa-panel style="height:48px"></div>')],
       ]) {
         await p.evaluate(priprava);
         for (const sirka of [881, 1180, 1440]) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
-            // WebKit po skoku z 1200 na 620 px může vrátit starý flex layout ještě
-            // v prvním snímku. Měříme až po dvou vykresleních nového viewportu.
-            await p.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 96)) < 1, [sirka, vyska]);
+            await p.evaluate(() => new Promise((hotovo) => {
+              const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
+                .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
+              let pred = '';
+              let stejne = 0;
+              (function snimek() {
+                const ted = podpis();
+                stejne = ted === pred ? stejne + 1 : 0;
+                pred = ted;
+                if (stejne >= 2) hotovo(); else requestAnimationFrame(snimek);
+              })();
+            }));
             const m = await zmer();
             const kde = `${engine} ${jazyk} ${sirka}×${vyska}${pripad}`;
             if (m.polozek !== 8 || !/nastaveni$/.test(m.posledni)) chyby.push(`${kde}: v nabídce je ${m.polozek} položek, poslední ${m.posledni}`);
             if (m.skryto || m.roluje) chyby.push(`${kde}: Nastavení je skryté o ${m.skryto} px${m.roluje ? ', nabídka roluje' : ''}`);
             if (m.paticka) chyby.push(`${kde}: patička přečnívá z panelu o ${m.paticka} px`);
             if (m.profil) chyby.push(`${kde}: profil je oříznutý o ${m.profil} px`);
+            // V běžném stavu má panel na každé výšce místo aspoň na profil na jeden řádek.
+            if (!pripad && m.schovany) chyby.push(`${kde}: profil se schoval, ač má být vidět`);
             if (m.pres) chyby.push(`${kde}: profil zasahuje do nabídky o ${m.pres} px`);
             if (m.radkyZdroju > 2) chyby.push(`${kde}: rozpis zdrojů má ${m.radkyZdroju} řádky`);
           }
@@ -474,15 +498,29 @@ for (const engine of engines) {
       await p.keyboard.press('Escape');
       await p.waitForFunction(() => !document.body.classList.contains('has-modal'));
 
+      // Dojezd běží, když skript drží `scroll-behavior: auto` na <html> (spust → zastav v
+      // public/js/plynule-posouvani.js) a okno se od výchozí polohy už pohnulo.
+      const dojezdBezi = (od) => p.waitForFunction((y) => document.documentElement.style.scrollBehavior === 'auto' && Math.abs(scrollY - y) > 40, od, { timeout: 3000 })
+        .catch(() => { throw new Error(`${engine}: dojezd po kolečku nezačal`); });
+      // Cizí posun musí dojezd přerušit. Playwright ve WebKitu vrátí mouse.wheel dřív, než stránka
+      // kolečko zpracuje (událost jde přes UI proces), takže po pevných 60 ms dojezd ještě nemusel
+      // začít: kolečko pak přišlo až po skoku aplikace a správně rozjelo nový dojezd z 0 (ve WebKitu
+      // 1124 px po 600 ms – přesně dojezd z 0 po ~300 ms). Proto skok až ve chvíli, kdy dojezd
+      // prokazatelně běží, a pak čekat, až se sám zastaví.
+      await p.mouse.move(900, 500);
+      const predDojezdem = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 1200);
-      await p.waitForTimeout(60);
-      // Otestovat produkční skok aplikace, ne napodobeninu v testu.
+      await dojezdBezi(predDojezdem);
+      // Otestovat produkční skok aplikace (skocNa), ne napodobeninu v testu – a až ve chvíli,
+      // kdy dojezd prokazatelně běží (WebKit doručí kolečko později, než Playwright vrátí wheel).
       const hnedPoSkoku = await p.evaluate(async () => {
         (await import('/js/plynule-posouvani.js')).skocNa(0);
         return scrollY;
       });
       assert.equal(hnedPoSkoku, 0, `${engine}: programový skok se neprovedl okamžitě`);
-      await p.waitForTimeout(600);
+      await p.waitForFunction(() => document.documentElement.style.scrollBehavior === '', null, { timeout: 2000 })
+        .catch(() => { throw new Error(`${engine}: dojezd se po skoku aplikace nezastavil`); });
+      await p.waitForTimeout(300);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
       const koleckoDojede = async (krok, zprava) => {
         const pred = await p.evaluate(() => scrollY);
@@ -513,8 +551,9 @@ for (const engine of engines) {
       await p.waitForTimeout(500);
       await koleckoDojede(-160, 'kolečko po posunu klávesnicí');
       // Změna obrazovky ruší dojezd a vrací okno nahoru; další vstup musí začít tam.
+      const predPrepnutim = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 320);
-      await p.waitForTimeout(30);
+      await dojezdBezi(predPrepnutim);
       await p.evaluate(() => { location.hash = '#/prehled'; });
       await p.locator('.pulse-bar').waitFor();
       await p.evaluate(() => { location.hash = '#/nastaveni'; });
@@ -549,7 +588,9 @@ for (const engine of engines) {
       await p.evaluate(() => document.querySelector('#qa-scroll-list').remove());
       // Zapnutí omezení pohybu během dojezdu ho zastaví; další krok je okamžitý bez animace.
       await p.mouse.move(900, 500);
+      const predOmezenim = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 300);
+      await dojezdBezi(predOmezenim); // jinak by ve WebKitu kolečko mohlo dorazit až po zapnutí omezení
       await p.emulateMedia({ reducedMotion: 'reduce' });
       await p.waitForFunction(() => !('plynule' in document.documentElement.dataset));
       await p.waitForTimeout(80);
