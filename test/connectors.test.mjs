@@ -14,7 +14,7 @@ import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries, horniMezObnovy } from '../src/connectors/claude-desktop-usage.js';
 import { appSupportDir } from '../src/platform.js';
-import { tempDir, writeJsonl, fakeDatastore, startTestServer } from './helpers.mjs';
+import { tempDir, writeJsonl, fakeDatastore, startTestServer, jenProcesy } from './helpers.mjs';
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
   const home = await tempDir();
@@ -256,7 +256,8 @@ test('Procesy: Ollamu hledají na nastavené adrese a jinde nic', async (t) => {
   t.after(() => { globalThis.fetch = puvodni; });
 
   // Vypnutá Ollama (helpers: port 9): na výchozí adresu nejde žádný dotaz.
-  const vypnuta = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' });
+  // Procesy počítače test nevidí (jenProcesy bez PID) – jde jen o dotaz na Ollamu.
+  const vypnuta = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' }, { vypisProcesu: jenProcesy(new Set()) });
   try {
     await vypnuta.app.connectors.processes.scan();
     assert.equal(vypnuta.app.store.runtimes.find((r) => r.id === 'ollama').detail, '', 'nedostupná Ollama nic nehlásí');
@@ -275,7 +276,7 @@ test('Procesy: Ollamu hledají na nastavené adrese a jinde nic', async (t) => {
   });
   await new Promise((r) => ollama.listen(0, '127.0.0.1', r));
   t.after(() => ollama.close());
-  const s = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000', AGENTEEQ_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}/` });
+  const s = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000', AGENTEEQ_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}/` }, { vypisProcesu: jenProcesy(new Set()) });
   try {
     await s.app.connectors.processes.scan();
     const o = s.app.store.runtimes.find((r) => r.id === 'ollama');
