@@ -4,6 +4,38 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.3',
+    date: '2026-09-28',
+    title: 'Přehled ukazuje jen ověřený stav',
+    items: [
+      'Nadpis i podnabídka Nastavení zůstávají při posouvání na místě.',
+      'Selhaný agent má vlastní filtr. V „Potřebuje tvé rozhodnutí“ uvidíš jen agenta, který se skutečně ptá.',
+      'U limitů se nezobrazuje staré měření ani dopočítaný čas obnovy. Tokeny jsou jasně označené jako záznam z místních přepisů.',
+    ],
+    en: {
+      title: 'The overview shows verified status',
+      items: [
+        'The Settings heading and submenu remain in place while you scroll.',
+        'Failed agents have their own filter. “Needs your decision” shows only agents that actually asked you a question.',
+        'Old limit readings and calculated reset times are no longer displayed. Tokens are clearly identified as readings from local transcripts.',
+      ],
+    },
+  },
+  {
+    version: '0.29.2',
+    date: '2026-09-28',
+    title: 'Menu Nastavení zůstává na místě',
+    items: [
+      'Podnabídka na levé straně Nastavení zůstává při posouvání dlouhé skupiny ve stejné výšce. Už nevyjede až k hornímu okraji okna.',
+    ],
+    en: {
+      title: 'The Settings menu stays in place',
+      items: [
+        'The Settings submenu on the left remains at the same height while you scroll through a long group. It no longer slides up to the top edge of the window.',
+      ],
+    },
+  },
+  {
     version: '0.29.1',
     date: '2026-09-28',
     title: 'Posouvání funguje i po změně obrazovky',

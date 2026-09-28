@@ -148,7 +148,7 @@ export default {
   // src/connectors/claude-desktop-usage.js
   "Soubor s historií limitů Claude Desktop se nepodařilo přečíst.": "Couldn’t read the Claude Desktop limit history file.",
   "Claude Desktop · historie limitů": "Claude Desktop · limit history",
-  "Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) – doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.": "Backup history of the 5-hour and weekly limits (and extra usage, if available) – fills in status line data when no conversation is running.",
+  "Historie čerpání plánu Claude pro graf ve Statistikách. Přesný čas obnovy neobsahuje.": "Claude plan usage history for the chart in Statistics. It does not include an exact reset time.",
   "Poslední vzorek historie limitů: {0}.": "Latest limit history sample: {0}.",
   "Claude Desktop je nainstalovaný, ale historie limitů zatím neobsahuje žádný vzorek.": "Claude Desktop is installed, but the limit history has no samples yet.",
   "Claude Desktop na {0} není.": "Claude Desktop isn’t on {0}.",

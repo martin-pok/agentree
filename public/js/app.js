@@ -163,6 +163,7 @@ function navigate() {
     current?.unmount?.();
     current = r.view;
     currentKey = r.key;
+    document.querySelector('.main').classList.toggle('main--settings', current === settings);
     // #view byl trvalý uzel a každý pohled si na něj při vstupu přidával posluchače, které nikdo
     // neodebíral – po N návštěvách se jedna akce provedla N× (dvojí hláška, dvojí dialog).
     // Výměna za čistou kopii je zahodí všechny naráz; grafy i průvodce se váží na document, ne sem.
@@ -347,8 +348,7 @@ function renderProfile(name, working, all) {
   </button>`);
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
   if (hadFocus && !document.activeElement?.closest?.('[data-avatar-cycle]')) slot.querySelector('button')?.focus({ preventScroll: true });
-  // Číslo bez zdroje vypadá jako útrata a nedá se ověřit. Pod ním proto stojí, který nástroj ho způsobil
-  // (jeden agent Codexu v noci klidně udělá milion tokenů), a v popisku je řečeno, co číslo znamená.
+  // Číslo má přímo pod sebou rozpad podle zdrojů, aby šlo ověřit, co jej tvoří.
   const dnes = startOfDay(Date.now());
   const podleNastroje = new Map();
   for (const s of all) {
@@ -360,8 +360,8 @@ function renderProfile(name, working, all) {
   }
   const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">${tr('Vítej zpět,')}<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">${tr('tokenů dnes')}</div>${zdroje.length
-    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstupní a výstupní tokeny všech agentů na {0}, bez cache. Nejde o cenu ani o limit předplatného.', tomtoPocitaci())}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label" aria-label="${tr('Zaznamenané tokeny dnes')}">${tr('tokenů dnes')}</div>${zdroje.length
+    ? `<a class="budget-src" href="#/statistiky">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
     : ''}</div>`);
 }
 

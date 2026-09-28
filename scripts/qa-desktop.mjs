@@ -55,6 +55,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
         const obsah = document.querySelector('.profile-in');
         const schovany = getComputedStyle(obsah).visibility === 'hidden';
         const zdroje = document.querySelector('.budget-src');
+        const popisek = document.querySelector('.budget-label');
         return {
           polozek: polozky.length,
           posledni: polozky.at(-1).getAttribute('href'),
@@ -65,6 +66,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           profil: schovany ? 0 : Math.round(Math.max(0, obsah.getBoundingClientRect().bottom - pr.bottom)),
           pres: Math.round(Math.max(0, pr.bottom - nr.top)),
           radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
+          popisekUseknuty: !schovany && popisek.scrollWidth > popisek.clientWidth + 1,
         };
       });
       const chyby = [];
@@ -105,6 +107,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
             if (!pripad && m.schovany) chyby.push(`${kde}: profil se schoval, ač má být vidět`);
             if (m.pres) chyby.push(`${kde}: profil zasahuje do nabídky o ${m.pres} px`);
             if (m.radkyZdroju > 2) chyby.push(`${kde}: rozpis zdrojů má ${m.radkyZdroju} řádky`);
+            if (m.popisekUseknuty) chyby.push(`${kde}: popisek dnešních tokenů je uříznutý`);
           }
         }
       }
@@ -123,6 +126,9 @@ for (const engine of engines) {
   Object.assign(sample, { title: 'QA – kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
   addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
   server.app.store.commit(sample);
+  const failed = server.app.store.ensure({ connector: 'codex', localId: 'qa-failed-no-question', provider: 'openai', app: 'Codex' });
+  Object.assign(failed, { title: 'QA – limit zastavil agenta', lastAt: Date.now(), failure: { at: Date.now(), text: 'Limit vyčerpán' } });
+  server.app.store.commit(failed);
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
@@ -172,6 +178,17 @@ for (const engine of engines) {
     for (const selector of ['.token-card', '.calm']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
     }
+    assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
+    assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
+    assert.equal(await page.locator('.decision').count(), 0, `${engine}: selhání se nesmí objevit mezi rozhodnutími`);
+    assert.equal(await page.locator('.metric-note, .lwin-hint, .token-card .note').count(), 0, `${engine}: Přehled znovu ukazuje dlouhé vysvětlivky`);
+    assert.match(await page.locator('.budget-label').getAttribute('aria-label'), /Zaznamenané tokeny dnes/);
+    await page.locator('.pb-stat').nth(1).click();
+    await page.waitForURL('**/#/agenti?stav=failed');
+    await page.locator('[data-region="table"] .row:not(.row-head)').first().waitFor();
+    assert.equal(await page.locator('[data-region="table"] .row:not(.row-head)').count(), 1, `${engine}: klik na selhání filtruje skutečně selhané agenty`);
+    await page.goto(`${server.url}/#/prehled`);
+    await page.locator('.token-card').waitFor();
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
@@ -436,6 +453,42 @@ for (const engine of engines) {
       // Skok na kartu rozšíření odjinud (průvodce, „Co je nového“) ukáže její skupinu.
       await page.evaluate(() => { sessionStorage.setItem('agenteeq.jump', 'extension'); window.dispatchEvent(new Event('agenteeq-jump')); });
       await page.waitForFunction(() => !document.querySelector('[data-region="extension"]').closest('.set-group').hidden, null, { timeout: 3000 });
+    }
+    // Na širokém desktopu má svislé podmenu zůstat ve výšce, kde se otevřelo.
+    // Původní sticky top: 24 px ho při dlouhé skupině vytáhl až k hornímu okraji
+    // okna, zatímco hlavní postranní panel stál na místě.
+    for (const [sirka, vyska] of [[375, 812], [1181, 620], [1440, 900], [1893, 1337]]) {
+      await page.setViewportSize({ width: sirka, height: vyska });
+      await page.goto(`${server.url}/#/nastaveni`);
+      await page.locator('.settings2').waitFor();
+      await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
+      await page.locator('.set-nav [data-jump="set-propojeni"]').click();
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForTimeout(100);
+      const merit = () => page.evaluate(() => ({
+        y: scrollY,
+        nadpis: Math.round(document.getElementById('page-title').getBoundingClientRect().top),
+        menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        posledni: Math.round(document.querySelector('.set-nav button:last-child').getBoundingClientRect().bottom),
+        max: document.documentElement.scrollHeight - innerHeight,
+      }));
+      const vychozi = await merit();
+      assert.ok(vychozi.max > 300, `${engine} ${sirka}: dlouhé Nastavení se musí dát posouvat`);
+      for (const y of [300, vychozi.max]) {
+        await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+        await page.waitForTimeout(100);
+        const po = await merit();
+        assert.ok(po.y >= 299, `${engine} ${sirka}: stránka se neposunula (${po.y} px)`);
+        assert.ok(Math.abs(po.menu - vychozi.menu) <= 1,
+          `${engine} ${sirka}: podmenu vyjelo z ${vychozi.menu} na ${po.menu} px`);
+        assert.ok(Math.abs(po.nadpis - vychozi.nadpis) <= 1,
+          `${engine} ${sirka}: nadpis Nastavení vyjel z ${vychozi.nadpis} na ${po.nadpis} px`);
+        assert.ok(po.posledni < vyska, `${engine} ${sirka}: poslední položka podmenu je mimo okno`);
+        if (sirka === 1440 && y === vychozi.max) await page.screenshot({ path: `dist/qa/${engine}-settings-scrolled.png` });
+      }
+      // Po posunu musí zůstat přepnutí skupin dostupné bez návratu nahoru.
+      await page.locator('.set-nav [data-jump="set-ucet"]').click();
+      assert.equal(await page.locator('.set-nav [data-jump="set-ucet"]').getAttribute('aria-current'), 'true');
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
     // Plynulé posouvání (public/js/plynule-posouvani.js). Hlavní kontext běží s „omezit pohyb“,

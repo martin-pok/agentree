@@ -7,7 +7,7 @@ import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, creditAgeHtml } from '../ui.js';
 import { tr, LOCALE } from '../i18n.js';
 
-const v = { el: null, onClick: null, usage: undefined };
+const v = { el: null, onClick: null };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
 // Dokoupení kreditů rozpoznává server ze všech odečtů zůstatku (src/credits.js) – v prohlížeči
@@ -145,10 +145,6 @@ function plansHtml(sp) {
 
 function mount(el, _params, query) {
   v.el = el;
-  // Historie extra usage Claude se čte ze souboru, který během dne roste – proto při každém
-  // otevření stránky, ne jednou za běh aplikace. Předchozí graf zůstane, dokud nedorazí čerstvý.
-  if (v.usage === undefined) v.usage = null;
-  nactiHistorii();
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <span class="toolbar-title" data-region="month"></span>
@@ -158,9 +154,6 @@ function mount(el, _params, query) {
       </div>
     </div>
     <div class="spend-hero card" data-enter style="--i:2" data-region="hero"></div>
-    <!-- Kredity a extra usage jsou jediná část Útraty, kterou Agenteeq zná sám ze souborů na disku;
-         výdaje, rozpočty a předplatné si uživatel zapisuje ručně. Patří proto nahoru, hned pod
-         souhrn – dřív byly až pod třemi prázdnými bloky s nulami a stránka působila mrtvě. -->
     <div data-enter style="--i:3" data-region="plans"></div>
     <div data-enter style="--i:3" data-region="credits"></div>
     <div data-enter style="--i:4" data-region="budgets"></div>
@@ -213,11 +206,8 @@ function mount(el, _params, query) {
   if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry());
 }
 
-const nactiHistorii = () => api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { /* historie na tomto Macu není */ });
-
 function update(topics) {
   const el = v.el;
-  if (el && topics?.has?.('znovu')) nactiHistorii();
   const sp = state.spend;
   if (!el || !sp) return;
   const total = sp.budgetsConfig?.total || 0;
@@ -283,36 +273,12 @@ function update(topics) {
     : `<p class="muted">${tr('Tento měsíc zatím žádné výdaje.')}</p>`);
 
   const credits = state.credits.filter((c) => c.history?.length >= 2);
-  const spendLimits = state.limits.filter((l) => l.kind === 'spend' && (typeof l.usedPercent === 'number' || typeof l.value === 'number'));
+  const now = Date.now();
+  const spendLimits = state.limits.filter((l) => l.kind === 'spend' && l.source !== 'plan-history'
+    && now - l.at <= 30 * 60 * 1000 && l.at - now <= 60 * 1000
+    && (!l.resetsAt || l.resetsAt > now)
+    && (typeof l.usedPercent === 'number' || typeof l.value === 'number'));
   const num = (x) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 });
-  // Procenta kreslíme jen tam, kde je zdroj skutečně hlásí. Historie Claude Desktopu dává u extra usage
-  // holé číslo bez zdokumentované jednotky – ukáže se jako číslo a označí za neověřené.
-  // Historie extra usage Claude: kumulativní procento za období + skoky, kdy čerpání narostlo.
-  // Čte se ze stejné historie plánu jako limity (na vyžádání, nikam se neukládá).
-  const extraSeries = () => (v.usage?.extraUsage || []).filter((p) => Number.isFinite(p.value));
-  const extraJumps = (body) => {
-    const out = [];
-    for (let i = 1; i < body.length; i++) {
-      const d = body[i].value - body[i - 1].value;
-      if (d <= 0.01) continue;
-      const posledni = out[out.length - 1];
-      if (posledni && body[i].at - posledni.at <= 15 * 60 * 1000) { posledni.at = body[i].at; posledni.amount += d; }
-      else out.push({ at: body[i].at, amount: d });
-    }
-    return out;
-  };
-  const extraUsageHtml = () => {
-    const body = extraSeries();
-    if (body.length < 2) return '';
-    const skoky = extraJumps(body).slice(-6).reverse();
-    const od = dateLong(body[0].at);
-    const doKdy = dateLong(body[body.length - 1].at);
-    return `<div class="credit-chart"><div class="credit-head">${glyph('anthropic')}<strong>Claude – extra usage</strong>
-        <span class="muted small">${tr('vyčerpáno {0} % · {1} –', num(body[body.length - 1].value), od)} ${doKdy}</span></div>
-      ${timeLine({ id: 'sp-claude-xu', points: body, height: 150, color: chartColor('anthropic'), format: (x) => `${num(x)} %`, axisFormat: (x) => `${Math.round(x)}`, label: tr('Extra usage Claude'), riseLabel: tr('Přibylo čerpání') })}
-      ${skoky.length ? `<ul class="topups">${skoky.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)} %</b></li>`).join('')}</ul>` : ''}
-      <p class="small muted">${tr('Claude si vytížení plánu ukládá do vlastního souboru a Agenteeq z něj čte i čerpání extra usage. Jednotku soubor neuvádí; podle souvislostí jde o procenta, stejně jako u 5hodinového a týdenního limitu. Oficiálně to zdokumentované není, proto Beta.')}</p></div>`;
-  };
 
   const spendRow = (l) => {
     const pct = typeof l.usedPercent === 'number' ? Math.max(0, Math.min(100, l.usedPercent)) : null;
@@ -321,17 +287,15 @@ function update(topics) {
     const bar = pct === null ? '' : `<span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>`;
     return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} – ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · ${tr('obnova {0}', dateLong(l.resetsAt))}` : ''}</span></div>${bar}</div>`;
   };
-  fill(el, 'credits', credits.length || spendLimits.length || extraSeries().length >= 2
-    ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">${tr('Kredity a extra usage')}</h2><span class="muted small">${spendLimits.length ? tr('zůstatek a čerpání podle aplikace') : tr('zůstatek podle aplikace')}</span></div>
+  fill(el, 'credits', credits.length || spendLimits.length
+    ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">${tr('Kredity a čerpání')}</h2></div>
       ${spendLimits.map(spendRow).join('')}
-      ${extraUsageHtml()}
       ${credits.map((c) => {
       const ups = c.topUps || [];
       const recent = ups.slice(-6).reverse();
       return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} ${tr('zbývá')}${creditAgeHtml(c) ? ` · ${creditAgeHtml(c)}` : ''}${ups.length ? ` ${tr('· {0}× doplněno', ups.length)}` : ''}</span></div>
         ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: tr('Doplněno') })}
-        ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>
-          <p class="small muted">${tr('Doplnění kreditů Agenteeq pozná z toho, že zůstatek hlášený Codexem v jedné konverzaci vzroste. Nákup i vrácení kreditů ale v datech vypadají stejně, proto tu nestojí „koupeno“. Kvůli tomu se procházejí i konverzace starší než {0} dní, pokud je Codex ještě má na disku.', state.windowDays)}</p>` : ''}</div>`;
+        ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>` : ''}</div>`;
     }).join('')}</section>`
     : '');
 

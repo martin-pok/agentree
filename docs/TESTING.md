@@ -115,6 +115,17 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
+## Protokol ověření – 0.29.2, podnabídka Nastavení (28. 9. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm run qa:desktop` | Chromium i WebKit: podnabídka zůstala na počáteční výšce po posunu o 300 px i na konec dlouhé skupiny při 1181 × 620, 1440 × 900 a 1893 × 1337 px; skupiny šlo dál přepínat, mobilní lišta zůstala funkční |
+| Vizuální WebKit QA | Snímek `dist/qa/settings-menu-scrolled-webkit.png`: při maximálním posunu 864 px je horní okraj podnabídky na 280 px, poslední položka je vidět |
+| `npm test`, `npm run check` | 639 testů prošlo, 2 přeskočeny; 234 souborů bez syntaktické chyby |
+| `qa:contrast`, `qa:tvary` | Kontrast WCAG 2.2 AA a tvary ovládacích prvků aplikace, webu a rozšíření prošly |
+| `build:mac`, `qa:native`, `smoke` | Sestavený ad-hoc podepsaný archiv 0.29.2; 10/10 nativních kontrol a instalace do dočasné složky prošly |
+| `build:site`, `qa:site`, `build:extension`, `qa:extension` | Web sestaven, české a anglické stránky prošly v Chromiu i WebKitu; všech 33 scénářů okna rozšíření prošlo s atrapou Chrome API |
+
 ## Protokol ověření – dokončení 0.29.1 (28. 9. 2026, macOS)
 
 | Kontrola | Výsledek |
@@ -138,7 +149,7 @@ se stále musí ověřit po jejich vlastním vydání.
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test` | 602 testů, 598 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
+| `npm test` | 668 testů, 598 prošlo, 4 přeskočeny s důvodem (2× jen macOS nebo Windows, 2× oprávnění souborů nejde ověřit pod rootem) |
 | `npm run check` | 223 souborů bez syntaktické chyby |
 | `test/nocni-ticho.test.mjs` | 15 testů na pevných hodinách, nikde se nečeká: hranice 21:59:59 / 22:00 / 6:59:59 / 7:00, rozsah v rámci dne, stejné časy, starý soubor, API (422 beze změny), souhrn s vyřešenými, přečtenými a nevyřešenými, probuzení Macu, restart, náraz 6 za 5 s, stálý přísun 3 minuty (nikdy víc než 3 oznámení za minutu, nic se neztratí), náraz těsně před tichem, most `desktop/server.mjs` do aplikace pro Mac a pláště pro Windows |
 | `npm run qa:tvary`, `npm run qa:contrast` | prošly v Chromiu: aplikace (1440 i 375 px, světlý i tmavý režim), web i okno rozšíření |

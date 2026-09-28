@@ -1,18 +1,6 @@
 # Changelog
 
-## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
-
-Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
-bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
-Rozšíření čeká na schválení v Chrome Web Store.
-
-### Dodatečné opravy před vydáním
-
-- Krátká gesta trackpadu v nativní aplikaci teď reagují přímo na setrvačnost macOS; plynulý dojezd zůstává pro větší kroky kolečka. Tlačítko obnovy v horní liště znovu načte konektory, stav a právě otevřenou stránku.
-- Drobné zdánlivé svislé přetečení ve vodorovně rolovacích prvcích už nemůže zadržet kolečko celé stránky.
-- Dovednosti se nově načítají také ze sdílené složky `~/.agents/skills`. Skupina filtrů zmizí, pokud není co filtrovat; vybrané kapsle se v rolovacích filtrech neořezávají.
-- Opraven kontrast červeného počítadla v tmavém režimu. Cache log používá značku obsahu z tohoto vydání a nový build ji ověřuje v desktopovém QA.
-- Okno rozšíření má vlastní tlačítko obnovy, které si vyžádá nové hlášení z otevřených podporovaných karet a teprve potom překreslí stav. Obnova projde i nezměněnou konverzaci bez čekání na minutový udržovací signál.
+## Připravuje se (zatím nevydáno)
 
 ### Čerstvá data po výpadku a uspání
 
@@ -38,6 +26,29 @@ Rozšíření čeká na schválení v Chrome Web Store.
 - Rozšíření: otevřené konverzace v úložišti relace nesou verzi tvaru; záznam jiné verze se po
   aktualizaci zahodí, místo aby ho nová verze převzala.
 
+### Angličtina bez zbytků češtiny
+
+- V jazyce z Nastavení jsou i CSV exporty útraty a projektů (anglicky s čárkou a desetinnou
+  tečkou, jak je čte anglický Excel a Numbers; součty po měsících sedí s obrazovkou), stránka po
+  návratu z přihlášení přes Google včetně `<html lang>` a pole kalendáře (anglicky 28/09/2026).
+- Oprava: obsah uživatele se v angličtině nepřekládá, ani když se shoduje s textem rozhraní –
+  konverzace „Moje“ už není „Mine“ a projekt „Útrata“ není „Spend“, celé ani v titulku upozornění.
+  Data ze serveru se překládají jen slovníkem textů serveru; název konverzace jen ten, který složil
+  Agenteeq (`titleAuto`), a názvy projektů, vlastních agentů, dovedností a poznámky k výdajům nikdy.
+
+## 0.29.3 – 2026-09-28 · čitelnější stav agentů a měřených dat
+
+- Nadpis Nastavení zůstává při posouvání společně s podnabídkou na místě i na úzké obrazovce.
+- Selhaný agent zůstává v hlavním přehledu a má vlastní filtr v Agentech; do „Potřebuje tvé rozhodnutí“ patří jen skutečný dotaz agenta. Limit má samostatný filtr.
+- Přehled limitů používá jen měření mladší 30 minut. Neznámý čas obnovy nedopočítává a historické vzorky Claude Desktopu nevydává za aktuální procento předplatného. Nezdokumentovaná hodnota `xu` se nevydává za procento útraty.
+- Hlavní tokenová metrika je výslovně označená jako zaznamenané tokeny z místních přepisů. Z Přehledu, Statistik a Projektů zmizely dlouhé vysvětlivky, které překrývaly účel karet.
+- Desktopové QA kontroluje ukotvení nadpisu a podnabídky v Chromiu i WebKitu a oddělení selhání od rozhodnutí.
+
+## 0.29.2 – 2026-09-28 · stabilní podnabídka Nastavení
+
+- Levá podnabídka Nastavení zůstává při posunu dlouhé skupiny v původní výšce vedle obsahu; už nesjíždí k horní hraně okna. Vodorovná podnabídka na menších oknech si zachovává své chování.
+- Regresní desktopové QA měří počáteční i koncovou polohu podnabídky na třech šířkách v Chromiu i WebKitu a ověřuje, že skupiny lze přepnout i po posunutí stránky.
+
 ### Postranní panel nezávisí na tom, jak prohlížeč měří písmo
 
 - Profil v postranním panelu si podobu vybírá podle místa, které mu v panelu skutečně zbylo
@@ -51,6 +62,20 @@ Rozšíření čeká na schválení v Chrome Web Store.
   kolečko dřív, než ho stránka zpracuje; kolečko pak dorazilo až po skoku aplikace a správně
   rozjelo nový dojezd. Chyba byla v testu, ne v aplikaci.
 
+## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
+
+Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
+bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
+Rozšíření čeká na schválení v Chrome Web Store.
+
+### Dodatečné opravy před vydáním
+
+- Krátká gesta trackpadu v nativní aplikaci teď reagují přímo na setrvačnost macOS; plynulý dojezd zůstává pro větší kroky kolečka. Tlačítko obnovy v horní liště znovu načte konektory, stav a právě otevřenou stránku.
+- Drobné zdánlivé svislé přetečení ve vodorovně rolovacích prvcích už nemůže zadržet kolečko celé stránky.
+- Dovednosti se nově načítají také ze sdílené složky `~/.agents/skills`. Skupina filtrů zmizí, pokud není co filtrovat; vybrané kapsle se v rolovacích filtrech neořezávají.
+- Opraven kontrast červeného počítadla v tmavém režimu. Cache log používá značku obsahu z tohoto vydání a nový build ji ověřuje v desktopovém QA.
+- Okno rozšíření má vlastní tlačítko obnovy, které si vyžádá nové hlášení z otevřených podporovaných karet a teprve potom překreslí stav. Obnova projde i nezměněnou konverzaci bez čekání na minutový udržovací signál.
+
 ### Angličtina bez zbytků češtiny a Windows bez Macu
 
 - Texty ze serveru (režimy a poznámky spouštění, stavy zdrojů, činnost agentů, chybové hlášky,
@@ -62,13 +87,6 @@ Rozšíření čeká na schválení v Chrome Web Store.
   slovníkem, uložené upozornění zůstává česky. V anglickém souhrnu nočního ticha jsou anglicky
   i názvy limitů a rozpočtů.
 - „Co je nového“ má anglické znění všech vydání.
-- V jazyce z Nastavení jsou i CSV exporty útraty a projektů (anglicky s čárkou a desetinnou
-  tečkou, jak je čte anglický Excel a Numbers; součty po měsících sedí s obrazovkou), stránka po
-  návratu z přihlášení přes Google včetně `<html lang>` a pole kalendáře (anglicky 28/09/2026).
-- Oprava: obsah uživatele se v angličtině nepřekládá, ani když se shoduje s textem rozhraní –
-  konverzace „Moje“ už není „Mine“ a projekt „Útrata“ není „Spend“, celé ani v titulku upozornění.
-  Data ze serveru se překládají jen slovníkem textů serveru; název konverzace jen ten, který složil
-  Agenteeq (`titleAuto`), a názvy projektů, vlastních agentů, dovedností a poznámky k výdajům nikdy.
 - Na Windows (a Linuxu) rozhraní píše „tento počítač“ místo „tento Mac“ a zkratky Ctrl+K, Ctrl+↵,
   Ctrl+V místo ⌘; zkratky poslouchají na Macu jen ⌘, jinde jen Ctrl. Systém posílá server
   (`<html data-system>`, `host.system`).
@@ -522,7 +540,6 @@ Našel čtyři údaje, které se se zdrojem neshodovaly, a tři skryté slabiny.
 - `npm run audit:data` – audit jako nástroj: porovná aplikaci se zdroji na tomto Macu kdykoli znovu.
 - Česká sazba: číslo s jednotkou a předložka „v“ s časem se nerozdělují na dva řádky.
 
-
 ## 0.23.1 – 2026-09-22 · grafy v čase říkají pravdu o tom, co je pod kurzorem
 
 - **Kurzor v grafu už neuskakuje o dny.** Historie kreditů i limitů se ukládá komprimovaně,
@@ -534,7 +551,6 @@ Našel čtyři údaje, které se se zdrojem neshodovaly, a tři skryté slabiny.
   Tvrdit „v tomhle čase to bylo X“ by bylo tvrzení, které nemáme z čeho doložit.
 - **Zůstatek kreditů má datum.** Dřív svítilo jen číslo, i když pocházelo z odečtu starého
   měsíc. Vedle něj je teď „zjištěno před …“, a co je starší než dva dny, se zvýrazní mosazí.
-
 
 ## 0.23.0 – 2026-09-22 · QR kód pro telefon a skutečné stažení
 
@@ -552,7 +568,6 @@ Našel čtyři údaje, které se se zdrojem neshodovaly, a tři skryté slabiny.
   z téže ukázkové scény jako prohlídka, zvlášť pro světlý a tmavý režim a zvlášť pro telefon.
 - Prohlídka i snímky běží pod neutrální identitou, ne pod jménem majitele Macu.
 
-
 ### Vizuální revize · 2026-09-18
 
 - Web: neutrální grafitový/světlý podklad s jemným statickým mesh světlem místo plošné fialové. Bez canvasu, blur filtru a animovaného překreslování pozadí.
@@ -566,7 +581,6 @@ Našel čtyři údaje, které se se zdrojem neshodovaly, a tři skryté slabiny.
 - Kratší web s interaktivní prohlídkou, pravdivými instalačními pokyny, responzivitou, reduced-motion variantou, canonical, sitemap a llms.txt.
 - Přehled nenatahuje prázdné karty; scéna nemá nekonečný dekorativní přejezd. Rozšíření má čitelnější texty, větší ovládací cíle a přístupné chyby párování.
 - Browser QA v CI kontroluje aplikaci, web a popup v Chromiu/WebKitu a textový kontrast. Chrome API v popup testech jsou simulované; nejde o potvrzení selektorů živých služeb.
-
 
 ## 0.22.0 – 2026-09-21 · využití plochy a ikona průvodce
 

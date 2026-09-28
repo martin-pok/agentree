@@ -329,6 +329,8 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 /* ---------- Horní lišta ---------- */
 .main { position: relative; min-width: 0; padding: calc(var(--band-h) + 32px) 56px 64px 64px; }
 .topbar { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
+/* V Nastavení zůstává nadpis se stavem ve své původní výšce spolu s podmenu. */
+.main--settings > .topbar { position: sticky; top: calc(var(--band-h) + 56px); z-index: 13; background: var(--paper); }
 .page-title { margin: 0; font: 400 36px/1.1 var(--f-display); letter-spacing: -.02em; outline: none; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; }
@@ -591,7 +593,6 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .meter-row .of { color: var(--mute); }
 .meter-track { height: 8px; margin: 0 8px; border-radius: var(--r-full); background: var(--line); overflow: hidden; }
 .meter-track i { display: block; height: 100%; border-radius: var(--r-full); background: var(--action); transition: width .8s var(--ease); }
-.metric-note { margin: 10px 8px 0; color: var(--mute); font-size: 12px; line-height: 1.45; }
 
 .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .gauges--sm { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
@@ -1253,7 +1254,8 @@ html.is-cloud body { background: var(--paper); }
 
 /* ---------- Nastavení ---------- */
 .settings2 { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 48px; align-items: start; }
-.set-nav { position: sticky; top: 24px; display: grid; gap: 2px; }
+/* Nadpis a menu drží stejný rozestup při posouvání celé stránky. */
+.set-nav { position: sticky; top: calc(var(--band-h) + 132px); display: grid; gap: 2px; }
 .set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
 /* Popisek je Onest 500 ve všech stavech – vybraná skupina se pozná podle plochy, ne podle řezu,
@@ -1449,7 +1451,7 @@ html.is-cloud body { background: var(--paper); }
 }
 @media (max-width: 1180px) {
   .settings2 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  .set-nav { top: 0; z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  .set-nav { z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
   .set-nav::-webkit-scrollbar { display: none; }
   .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
@@ -1496,6 +1498,8 @@ html.is-cloud body { background: var(--paper); }
   .stage { display: none; }
   .main { padding: calc(24px + env(safe-area-inset-top)) 24px calc(120px + env(safe-area-inset-bottom)); }
   .topbar { margin-bottom: 24px; gap: 12px; }
+  .main--settings > .topbar { top: calc(24px + env(safe-area-inset-top)); }
+  .set-nav { top: calc(88px + env(safe-area-inset-top)); }
   .page-title { font-size: 30px; }
   .topbar-actions { margin-left: auto; }
   .search-btn span, .search-btn kbd { display: none; }
@@ -1604,7 +1608,6 @@ html.is-stale .indeterminate i { left: 30%; }
 .lwin-sub { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
 .lwin-reset { color: var(--ink-2); }
 .lwin-reset.is-unknown { color: var(--mute); }
-.lwin-hint { margin: 10px 4px 0; font-size: 13px; color: var(--ink-2); }
 .lim-all { margin-top: 14px; }
 .lim-all > summary { list-style: none; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; cursor: pointer; font-size: 14px; border-radius: var(--r-full); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); transition: background-color .18s, box-shadow .18s; }
 .lim-all > summary:hover { background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink); }
@@ -1635,7 +1638,6 @@ html.is-stale .indeterminate i { left: 30%; }
 .lim-chip[data-tone='low'] b { color: var(--brass-ink); }
 .lim-chip[data-tone='out'] b { color: var(--velvet-ink); }
 .ltool-note { font-size: 12px; color: var(--mute); line-height: 18px; }
-.ltool-foot { margin: 8px 4px 0; font-size: 12px; color: var(--mute); }
 @media (prefers-reduced-motion: reduce) { .lim-all > summary .icon { transition: none; } }
 
 /* ---------- Mobilní navigace: 5 cílů + panel Více ---------- */

@@ -12,7 +12,7 @@ import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js
 import { applyCursorComposer } from '../src/connectors/cursor.js';
 import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
-import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries, horniMezObnovy } from '../src/connectors/claude-desktop-usage.js';
+import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
 import { appSupportDir } from '../src/platform.js';
 import { tempDir, writeJsonl, fakeDatastore, startTestServer, jenProcesy } from './helpers.mjs';
 
@@ -289,7 +289,7 @@ test('Procesy: Ollamu hledají na nastavené adrese a jinde nic', async (t) => {
   }
 });
 
-test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/týden (a extra usage, pokud je)', () => {
+test('Claude Desktop · historie limitů: poslední vzorek se zapíše jen jako 5h/týden', () => {
   const home = '/tmp/nepouzito';
   const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
@@ -303,44 +303,17 @@ test('Claude Desktop · historie limitů: poslední vzorek se zapíše jako 5h/t
   assert.equal(byId['claude:five_hour:history'].kind, 'window');
   assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
   assert.equal(byId['claude:seven_day:history'].windowMinutes, 10080);
-  // `xu` je vyčerpaný limit extra usage v procentech (viz komentář v konektoru: sousední fh/sd jsou
-  // procenta, stavový řádek Claude Code hlásí stejnou trojici a hodnota nikdy nepřekročila 100).
-  assert.equal(byId['claude:spend_limit:history'].usedPercent, 64.35);
-  assert.equal(byId['claude:spend_limit:history'].value, 64.35, 'původní hodnota zůstává k dispozici');
-  assert.equal(byId['claude:spend_limit:history'].label, 'Extra usage');
-  assert.equal(byId['claude:spend_limit:history'].kind, 'spend');
-  assert.equal(byId['claude:spend_limit:history'].id.endsWith(':history'), true, 'id se nikdy nesrazí s přesným údajem ze stavového řádku');
-  // Vlastní id ('…:history') se nikdy nepřepisuje přes id stavového řádku ('claude:five_hour') a naopak –
-  // ui.js#currentLimits dá při souběhu přednost zdroji 'statusline', tahle historie zůstane jen záloha.
-  assert.equal(Object.keys(byId).sort().join(','), 'claude:five_hour:history,claude:seven_day:history,claude:spend_limit:history');
+  assert.equal(byId['claude:spend_limit:history'], undefined, 'xu bez ověřené jednotky nesmí být vykázáno jako útrata');
+  assert.equal(Object.keys(byId).sort().join(','), 'claude:five_hour:history,claude:seven_day:history');
 });
 
-// Historie čas obnovy nenese. Horní mez je pravdivá: okno, které běží při posledním vzorku,
-// začalo nejpozději jeho prvním nenulovým vzorkem po poslední obnově (pokles vytížení).
-test('Claude Desktop · historie limitů: horní mez obnovy z průběhu vzorků', () => {
-  const H = 3600e3;
-  const t0 = Date.UTC(2026, 8, 26, 6);
-  const json = { samples: [
-    { t: t0, org: 'a', u: { fh: 80, sd: 40 } },
-    { t: t0 + 1 * H, org: 'a', u: { fh: 95, sd: 41 } },
-    { t: t0 + 2 * H, org: 'a', u: { fh: 0, sd: 41 } }, // obnova 5h okna, nic nečerpáno
-    { t: t0 + 3 * H, org: 'a', u: { fh: 12, sd: 43 } }, // nové okno začalo nejpozději tady
-    { t: t0 + 3.5 * H, org: 'b', u: { fh: 99, sd: 99 } }, // jiný účet se nemíchá
-    { t: t0 + 4 * H, org: 'a', u: { fh: 30, sd: 45 } },
-  ] };
-  const posledni = json.samples[5];
-  assert.equal(horniMezObnovy(json, 'fh', 300, posledni), t0 + 3 * H + 5 * H);
-  // Týden rostl celou dobu – okno začalo nejpozději prvním vzorkem.
-  assert.equal(horniMezObnovy(json, 'sd', 10080, posledni), t0 + 7 * 24 * H);
-  assert.equal(horniMezObnovy(json, 'fh', 300, json.samples[2]), null, 'bez čerpání žádné okno neběží');
-  assert.equal(horniMezObnovy({ samples: [] }, 'fh', 300, posledni), null);
-
+test('Claude Desktop · historie limitů nevydává dopočtený čas obnovy', () => {
   const home = '/tmp/nepouzito';
   const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const store = new Store({ config, datastore: fakeDatastore() });
-  applyPlanUsageSample(store, posledni, Date.now(), json);
+  applyPlanUsageSample(store, { t: Date.now(), org: 'a', u: { fh: 30, sd: 45 } });
   const byId = Object.fromEntries(store.limitList().map((l) => [l.id, l]));
-  assert.equal(byId['claude:five_hour:history'].resetsBy, t0 + 8 * H);
+  assert.equal(byId['claude:five_hour:history'].resetsBy, undefined);
   assert.equal(byId['claude:five_hour:history'].resetsAt, null, 'přesný čas se nevydává');
 });
 
@@ -386,7 +359,7 @@ test('Claude Desktop · historie limitů (konektor): poslední vzorek ze souboru
   const byId = Object.fromEntries(store.limitList().map((l) => [l.id, l]));
   assert.equal(byId['claude:five_hour:history'].usedPercent, 99, 'zapíše se jen poslední vzorek, ne první');
   assert.equal(byId['claude:seven_day:history'].usedPercent, 41);
-  assert.equal(byId['claude:spend_limit:history'].usedPercent, 64.35, 'extra usage je procento vyčerpaného limitu');
+  assert.equal(byId['claude:spend_limit:history'], undefined, 'xu bez ověřené jednotky se nesmí mapovat na útratu');
   assert.equal(connector2.status().state, 'connected');
   connector2.stop();
 
