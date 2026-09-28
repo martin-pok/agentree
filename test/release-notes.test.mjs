@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { sekceZmen, napovedaProMac, poznamky } from '../scripts/release-notes.mjs';
+import { sekceZmen, napovedaProMac, poznamky, nazevVydani, nadpisyPodNazev } from '../scripts/release-notes.mjs';
 
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -82,6 +82,91 @@ test('popis vydání říká pravdu o tom, co odchází na internet', async () =
   assert.match(text, /kurzy ČNB/);
   assert.match(text, /účet Agenteeq, kam při zapnuté synchronizaci\s+odcházejí jen souhrnná čísla/);
   assert.match(text, /Text konverzací, jejich názvy ani kód počítač neopouštějí/);
+});
+
+// Nadpisy popisu vydání mimo kódové bloky: [úroveň, text].
+const nadpisy = (md) => {
+  let vKodu = false;
+  const out = [];
+  for (const r of md.split('\n')) {
+    if (/^\s*(```|~~~)/.test(r)) { vKodu = !vKodu; continue; }
+    const m = !vKodu && r.match(/^(#{1,6})\s+(.*)$/);
+    if (m) out.push([m[1].length, m[2]]);
+  }
+  return out;
+};
+
+// Osnova bez skoků: začíná `##` (h1 je název vydání na GitHubu), nikdy nesestoupí o víc než
+// jednu úroveň a nic není nad `##`.
+const cistaOsnova = (md) => {
+  const h = nadpisy(md);
+  assert.equal(h[0]?.[0], 2, `popis začíná nadpisem ## (je: ${JSON.stringify(h[0])})`);
+  for (let i = 1; i < h.length; i++) {
+    assert.ok(h[i][0] >= 2, `nadpis „${h[i][1]}“ je nad úrovní ##`);
+    assert.ok(h[i][0] <= h[i - 1][0] + 1, `„${h[i][1]}“ (${h[i][0]}) přeskakuje úroveň pod „${h[i - 1][1]}“ (${h[i - 1][0]})`);
+  }
+  return h;
+};
+
+// Dřív byl název `###` (stejně jako skupiny změn pod ním a hlouběji než „## Ke stažení“)
+// a začínal malým písmenem, protože se bral z CHANGELOG.md tak, jak navazuje na datum.
+test('popis vydání má čistou osnovu nadpisů a název s velkým písmenem', async () => {
+  assert.equal(nazevVydani('0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu'), 'Nové okno rozšíření, párování bez kódu');
+  assert.equal(nazevVydani('0.13.0 – 2026-10-01 · účet · synchronizace'), 'Účet · synchronizace', 'další „·“ patří do názvu');
+  assert.equal(nazevVydani('0.13.0 – 2026-10-01'), '0.13.0 – 2026-10-01', 'bez názvu zůstane verze a datum');
+
+  const log = [
+    '# Changelog',
+    '',
+    '## 0.14.0 – 2026-10-02 · čistší osnova',
+    '',
+    '#### Hlouběji, než je třeba',
+    '',
+    '- Změna.',
+    '',
+    '```bash',
+    '# komentář v ukázce není nadpis',
+    'npm test',
+    '```',
+    '',
+    '##### Podskupina',
+    '',
+    '- Další změna.',
+    '',
+  ].join('\n');
+  assert.equal(nadpisyPodNazev('#### A\n\n##### B\n'), '### A\n\n#### B\n', 'nejvyšší nadpis těla je o úroveň pod názvem');
+  assert.equal(nadpisyPodNazev('- jen body\n'), '- jen body\n');
+
+  const text = poznamky({
+    changelog: log,
+    verze: '0.14.0',
+    soubory: [
+      { jmeno: 'Agenteeq-0.14.0-macOS-arm64.zip', bajtu: 34_000_000 },
+      { jmeno: 'Agenteeq-0.14.0-Windows-x64.zip', bajtu: 32_500_000 },
+      { jmeno: 'agenteeq-extension-0.14.0.zip', bajtu: 240_000 },
+    ],
+  });
+  assert.ok(text.startsWith('## Čistší osnova\n'), 'název je ## s velkým počátečním písmenem');
+  assert.match(text, /\n# komentář v ukázce není nadpis\n/, 'obsah kódového bloku zůstane, jak je');
+  assert.deepEqual(cistaOsnova(text), [
+    [2, 'Čistší osnova'],
+    [3, 'Hlouběji, než je třeba'],
+    [4, 'Podskupina'],
+    [2, 'Ke stažení'],
+    [2, 'Instalace na Macu'],
+    [2, 'Co Agenteeq potřebuje'],
+  ]);
+
+  // Skutečný CHANGELOG pro aktuální verzi, se všemi přílohami, aby se ukázaly všechny sekce.
+  const verze = JSON.parse(await zdroj('package.json')).version;
+  const aktualni = poznamky({
+    changelog: await zdroj('CHANGELOG.md'),
+    verze,
+    soubory: [`Agenteeq-${verze}-macOS-arm64.zip`, `Agenteeq-${verze}-Windows-x64.zip`, `agenteeq-extension-${verze}.zip`]
+      .map((jmeno) => ({ jmeno, bajtu: 1_000_000 })),
+  });
+  const h = cistaOsnova(aktualni);
+  assert.match(h[0][1], /^\p{Lu}/u, 'název vydání začíná velkým písmenem');
 });
 
 test('popis pro aktuální verzi se dá sestavit', async () => {

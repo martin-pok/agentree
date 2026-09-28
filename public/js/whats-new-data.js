@@ -2,6 +2,15 @@
 // (hlídá test/whats-new.test.mjs), jinak uživatel neví, co se v aplikaci změnilo.
 export const RELEASES = [
   {
+    version: '0.29.1',
+    date: '2026-09-28',
+    title: 'Posouvání funguje i po změně obrazovky',
+    items: [
+      'Kolečko a trackpad se znovu plynule rozjedou po posunu klávesnicí, posuvníkem i po přepnutí obrazovky. Předchozí dojezd už další krok nezablokuje.',
+      'Noční ticho nepřeruší práci oznámením. Po jeho skončení se ozve jen za upozornění, která stále platí; více událostí za minutu shrne do jedné zprávy.',
+    ],
+  },
+  {
     version: '0.29.0',
     date: '2026-09-27',
     title: 'Nové okno rozšíření a jednotná tlačítka',

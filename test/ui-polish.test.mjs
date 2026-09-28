@@ -121,6 +121,15 @@ test('nabídky a kalendář v modálním okně jsou uvnitř něj a ve vrchní vr
   assert.match(css, /\.picker-option\[aria-selected='true'\]::after \{ content: '✓'; content: '✓' \/ '';/, 'fajfka nemá být v názvu položky pro čtečku');
 });
 
+// Zakázaný výběr (vypnuté „Dokončený úkol“, vypnuté noční ticho) zasekl celé Nastavení: sync()
+// zapisoval `button.disabled = true` při každém průchodu, zápis atributu je mutace i beze změny
+// a pozorovatel na ni znovu zavolal sync(). Ve skutečném prohlížeči to hlídá qa:tvary.
+test('zakázaný výběr nerozjede nekonečnou smyčku pozorovatele', async () => {
+  const sel = await zdroj('public/js/selects.js');
+  assert.match(sel, /if \(button\.disabled !== select\.disabled\) button\.disabled = select\.disabled;/);
+  assert.doesNotMatch(sel, /^\s*button\.disabled = select\.disabled;/m);
+});
+
 test('poslední zadání jde rozbalit a bere celý text z přepisu', async () => {
   const s = await zdroj('public/js/views/session.js');
   assert.match(s, /data-quote-toggle/);

@@ -50,8 +50,11 @@ try {
   const scheduleBadge = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(badge, 100); badgeTimer.unref(); };
   app.store.on('session', scheduleBadge);
   app.store.on('session:remove', scheduleBadge);
+  // Odznak výš se mění vždy – to je stav. Oznámení (se zvukem) je vyrušení: ztlumené upozornění
+  // (noční ticho, náraz) ho nedostane, přijde za něj souhrn (src/alerts.js).
   app.store.on('alert', (alert) => {
-    if (app.datastore.data.settings.notifications.native) report({ type: 'notification', title: alert.title, body: alert.body || '', id: alert.id, route: alert.sessionId ? `#/agent/${encodeURIComponent(alert.sessionId)}` : '#/upozorneni' });
+    if (alert.muted || !app.datastore.data.settings.notifications.native) return;
+    report({ type: 'notification', title: alert.title, body: alert.body || '', id: alert.id, route: alert.route || (alert.sessionId ? `#/agent/${encodeURIComponent(alert.sessionId)}` : '#/upozorneni') });
   });
   report({ ready: true, port: server.address().port, version: VERSION });
   badge();

@@ -2,10 +2,12 @@ import { state, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, timeHM, startOfDay, DAY, dateLong } from '../format.js';
 import { ICON } from '../icons.js';
-import { fill, alertIcon, emptyState, toast, agentHref } from '../ui.js';
+import { fill, alertIcon, alertHref, emptyState, toast, agentHref } from '../ui.js';
 import { tr } from '../i18n.js';
 
 const v = { el: null, filter: 'all' };
+// Odkaz u souhrnu, který nevede do jedné konverzace (src/alerts.js#souhrn).
+const CIL = { '#/agenti?stav=needs_input': tr('Ukázat agenty, kteří tě potřebují'), '#/utrata': tr('Otevřít útratu'), '#/prehled': tr('Ukázat limity') };
 const FILTERS = [
   ['all', tr('Vše'), () => true],
   ['unread', tr('Nepřečtené'), (a) => !a.read],
@@ -78,7 +80,8 @@ function update() {
       <div class="alert-main">
         <div class="alert-top"><strong>${esc(a.title)}</strong><time datetime="${new Date(a.at).toISOString()}">${timeHM(a.at)}</time></div>
         ${a.body ? `<p>${esc(a.body)}</p>` : ''}
-        ${a.sessionId ? `<a class="link-inline" href="${agentHref(a.sessionId)}" data-read="${esc(a.id)}">${tr('Otevřít agenta')} ${ICON.arrow}</a>` : ''}
+        ${a.sessionId ? `<a class="link-inline" href="${agentHref(a.sessionId)}" data-read="${esc(a.id)}">${tr('Otevřít agenta')} ${ICON.arrow}</a>`
+          : alertHref(a) !== '#/upozorneni' ? `<a class="link-inline" href="${esc(alertHref(a))}" data-read="${esc(a.id)}">${CIL[alertHref(a)] || tr('Otevřít')} ${ICON.arrow}</a>` : ''}
       </div>
       ${a.read ? '' : `<button class="icon-btn" type="button" data-read="${esc(a.id)}" aria-label="${tr('Označit jako přečtené')}">${ICON.check}</button>`}
     </li>`;

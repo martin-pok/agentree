@@ -132,9 +132,11 @@ section[id] { scroll-margin-top: 56px; }
    kapsle patří výzvě ke stažení hned vedle a v liště má být jediná. Odkaz, ne tlačítko: každá
    jazyková verze má vlastní adresu (/ a /en), kterou jde sdílet i najít ve vyhledávači. */
 /* Kapsli nese linka, ne výplň: neaktivní jazyk leží přímo na liště jako ostatní odkazy v ní,
-   takže drží kontrast i tam, kde je pod průsvitnou lištou světlá stránka. */
-.lang { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(244, 243, 247, .14); border-radius: var(--r-full); }
-.lang a { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 26px; padding: 0 10px; border-radius: var(--r-full); font-size: 13px; line-height: 1.4; letter-spacing: .02em; text-align: center; color: var(--on-stage-mute); text-decoration: none; transition: background 180ms var(--ease), color 180ms var(--ease); }
+   takže drží kontrast i tam, kde je pod průsvitnou lištou světlá stránka. Rozměry má jako malá
+   segmentová volba v aplikaci (`.seg--sm`): rám 32 px, uvnitř kapsle 28 px. Linka je proto
+   vnitřní stín, ne okraj – okraj by ubral z výšky a volba měla 26 px mimo stupnici. */
+.lang { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px rgba(244, 243, 247, .14); }
+.lang a { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 28px; padding: 0 10px; border-radius: var(--r-full); font-size: 13px; line-height: 1.4; letter-spacing: .02em; text-align: center; color: var(--on-stage-mute); text-decoration: none; transition: background 180ms var(--ease), color 180ms var(--ease); }
 .lang a:hover { color: var(--on-stage); }
 .lang a[aria-current] { background: rgba(244, 243, 247, .16); color: var(--on-stage); }
 

@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.29.0 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.29.1 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
 Pro Mac: stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 
@@ -33,13 +33,13 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 | Detail agenta | Živý přepis (zprávy, nástroje, výstupy), běžící čas tahu a počet kroků, složení tokenů; **otevření přímo v aplikaci** (vlákno Codexu, Claude, Cursor, VS Code, web) nebo **pokračování v Terminálu** |
 | Statistiky | Tokeny podle poskytovatele, heatmapa aktivity, podíl aplikací, projekty, modely, limity a kredity |
 | Útrata | Výdaje a předplatné (ruční i z Admin API), rozpočty s upozorněním na 80 % a 100 %, prognóza do konce měsíce, historie kreditů |
-| Upozornění | Rozhodnutí, limity, rozpočty, dokončené dlouhé úlohy. Nativní notifikace macOS, notifikace prohlížeče, přehled v aplikaci |
+| Upozornění | Rozhodnutí, limity, rozpočty, dokončené dlouhé úlohy. Nativní notifikace macOS, notifikace prohlížeče, přehled v aplikaci. Noční ticho s jedním souhrnem na konci (jen za to, co pořád platí) a souhrn místo série, když jich přijde víc než tři za minutu |
 
 ## Vývoj
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 586 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
+npm test          # 612 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/

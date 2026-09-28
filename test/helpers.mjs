@@ -4,6 +4,7 @@ import path from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
+import { processList } from '../src/platform.js';
 
 export async function tempDir(prefix = 'agenteeq-test-') {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -42,6 +43,19 @@ export function fakeDatastore(settings = {}) {
   };
 }
 
+// Výpis procesů omezený na procesy testu. Se zapnutými procesy (AGENTEEQ_PROCESSES=1) by server jinak
+// viděl celý počítač – agenty jiných běhů i uživatele – a z jejich CLAUDE_CONFIG_DIR a CODEX_HOME by
+// četl cizí přepisy (CLAUDE.md: v testech nikdy data mimo dočasnou složku). `pidy` je Set, do kterého
+// test smí přidávat. Výpis je skutečný (ps, /proc), jen se z něj vezmou řádky povolených procesů.
+export function jenProcesy(pidy) {
+  return async () => {
+    const r = await processList();
+    if (!r?.ok) return r;
+    const radky = String(r.stdout).split('\n').filter((l) => pidy.has(Number(l.trim().split(/\s+/)[0])));
+    return { ...r, stdout: radky.join('\n') };
+  };
+}
+
 export async function startTestServer(env = {}, appOptions = {}) {
   const sourceHome = env.AGENTEEQ_SOURCE_HOME || (await tempDir('agenteeq-src-'));
   const dataHome = env.AGENTEEQ_HOME || (await tempDir('agenteeq-data-'));
@@ -62,6 +76,9 @@ export async function startTestServer(env = {}, appOptions = {}) {
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
     ...env,
   });
+  if (config.processes && !appOptions.vypisProcesu) {
+    throw new Error('Test s AGENTEEQ_PROCESSES=1 musí omezit výpis procesů na vlastní: startTestServer(env, { vypisProcesu: jenProcesy(pidy) }).');
+  }
   const app = await createApp(config, appOptions);
   await app.start();
   const server = createHttpServer(app);

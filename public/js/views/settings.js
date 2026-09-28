@@ -24,6 +24,19 @@ const CLOUD = [
 
 const WEB_FRESH_MS = 10 * 60 * 1000;
 
+// Noční ticho: nabídka po půlhodinách. Čas, který v ní není (ručně upravený soubor), se přidá,
+// aby výběr neukazoval něco jiného, než co platí. Začátek a konec nesmí být stejné – server by
+// je odmítl, takže čas druhého konce nejde vybrat.
+const CASY_TICHA = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`);
+const casTicha = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
+};
+function casyTicha(value, druhy) {
+  const casy = CASY_TICHA.includes(value) ? CASY_TICHA : [...CASY_TICHA, value].sort();
+  return casy.map((c) => `<option value="${esc(c)}"${c === value ? ' selected' : ''}${c === druhy ? ' disabled' : ''}>${esc(casTicha(c))}</option>`).join('');
+}
+
 // Webová služba v kartě rozšíření: čip s tečkou, když od ní přišla data. Podrobnost je v popisku,
 // aby se nerozpadlo na devět karet, které říkají pořád totéž.
 function webChip(id, site, web, now) {
@@ -348,7 +361,10 @@ function mount(el) {
           update();
         }
       } else if (a.dataset.action === 'test-alert') {
-        await api.testAlert();
+        const { alert } = await api.testAlert();
+        // Ztlumené upozornění nepřijde jako oznámení ani jako bublina – bez téhle věty by klik
+        // vypadal, že nic neudělal.
+        if (alert?.muted === 'quiet') toast(tr('Teď je noční ticho, takže oznámení nepřijde. Zkušební upozornění je v seznamu upozornění.'), { tone: 'info', action: { label: tr('Otevřít'), href: '#/upozorneni' } });
       } else if (a.dataset.action === 'rescan') {
         a.disabled = true;
         state.connectors = (await api.rescan()).connectors;
@@ -467,6 +483,17 @@ function mount(el) {
   });
 
   el.addEventListener('change', async (e) => {
+    const q = e.target.closest('[data-quiet]');
+    if (q) {
+      try {
+        state.settings = (await api.saveSettings({ notifications: { [q.dataset.quiet]: q.value } })).settings;
+        toast(tr('Uloženo'));
+      } catch (err) {
+        toast(err.message, { tone: 'err' });
+      }
+      update();
+      return;
+    }
     if (!e.target.matches('[data-done-min]')) return;
     try {
       state.settings = (await api.saveSettings({ notifications: { doneMinSeconds: Number(e.target.value) } })).settings;
@@ -816,8 +843,9 @@ function update(topics) {
   fill(el, 'custom', customAgentsCard());
 
   /* Upozornění */
+  const ticho = n.quietHours === true;
   fill(el, 'notifications', `
-    ${head(ICON.bell, tr('Kdy a jak tě upozornit'), '', `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`)}
+    ${head(ICON.bell, tr('Kdy a jak tě upozornit'), tr('Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu.'), `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`)}
     ${switchRow({ key: 'native', label: JE_MAC ? tr('Oznámení v macOS') : tr('Oznámení systému'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
     ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), desc: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
     <div class="set-divider"></div>
@@ -827,7 +855,15 @@ function update(topics) {
     ${switchRow({ key: 'budget', label: tr('Rozpočet'), desc: tr('Při 80 % a 100 % měsíčního rozpočtu útraty i tokenů projektu.'), checked: n.budget })}
     ${switchRow({ key: 'done', label: tr('Dokončený úkol'), desc: tr('Když agent dokončí zadaný úkol.'), checked: n.done })}
     <label class="field field--row"><span>${tr('Hlásit dokončené úkoly')}</span>
-      <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`);
+      <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+    <div class="set-divider"></div>
+    ${switchRow({ key: 'quietHours', label: tr('Noční ticho'), desc: tr('V nastavený čas nepřijde oznámení ani zvuk. Stav v aplikaci a počet u ikony se mění dál a co zůstane nevyřešené, shrne na konci ticha jedno oznámení.'), checked: ticho })}
+    <div class="field field--row quiet-row"><span id="lbl-quiet-time">${tr('Čas ticha podle hodin tohoto počítače')}</span>
+      <span class="quiet-times" role="group" aria-labelledby="lbl-quiet-time">
+        <select data-quiet="quietFrom" aria-label="${tr('Začátek ticha')}"${ticho ? '' : ' disabled'}>${casyTicha(n.quietFrom || '22:00', n.quietTo)}</select>
+        <span aria-hidden="true">–</span>
+        <select data-quiet="quietTo" aria-label="${tr('Konec ticha')}"${ticho ? '' : ' disabled'}>${casyTicha(n.quietTo || '07:00', n.quietFrom)}</select>
+      </span></div>`);
 
   /* Napojené modely */
   fill(el, 'models', modelsCard());

@@ -183,9 +183,14 @@ async function textyServeru() {
   for (const f of await souboryServeru()) {
     const src = await fs.readFile(f, 'utf8');
     const soubor = rel(f);
+    // Souhrn upozornění (textSouhrnu) skládá server sám v jazyce z Nastavení – klient ho podruhé
+    // nepřekládá, jeho texty proto do slovníku nepatří.
+    const souhrnOd = src.indexOf('const SKUPINY');
+    const souhrnDo = src.indexOf('\n}\n', src.indexOf('export function textSouhrnu'));
+    const vSouhrnu = (od) => souhrnOd >= 0 && souhrnDo > souhrnOd && od > souhrnOd && od < souhrnDo;
     for (const l of literaly(src)) {
       if (l.druh === 'retezec' && l.ui) klice.set(literal(l.text), soubor);
-      if (!JEN_KLIENT.includes(soubor)) continue;
+      if (!JEN_KLIENT.includes(soubor) || vSouhrnu(l.od) || /^[#/]/.test(l.text)) continue;
       // Věty upozornění: šablony (kromě klíčů pro deduplikaci) a české texty. „{0}: {1} na {2} %“
       // diakritiku nemá, a přesto je to věta.
       const pred = src.slice(Math.max(0, l.od - 20), l.od);

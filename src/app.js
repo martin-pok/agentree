@@ -74,7 +74,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -261,8 +261,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     bezici.upravit(procesy);
   }
   if (config.processes) {
-    const vypis = sdilenyVypis();
-    list.push(createProcessesConnector({ ...ctx, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
+    // `vypisProcesu` podstrkují jen testy: omezí skutečný výpis na své procesy (test/helpers.mjs#jenProcesy).
+    // Sdílený výpis nesmí být starší než jeden průchod – jinak by kratší AGENTEEQ_PROCESS_MS nic neznamenal
+    // a skončený agent by visel až 4 s. Výchozích 5 s průchodu platnost 4 s nemění.
+    const vypis = sdilenyVypis(vypisProcesu, config.processIntervalMs < 4000 ? config.processIntervalMs / 2 : 4000);
+    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
     list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
   }
@@ -1266,6 +1269,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
     every(() => (datastore.data.customAgents.length ? probeCustomAgents() : null), 30000);
     every(() => alerts.checkLimitResets(), 20000);
+    // Souhrn po skončení nočního ticha a po nárazu upozornění (src/alerts.js#tick). Po probuzení
+    // Macu doběhne hned při prvním průchodu.
+    every(() => alerts.tick(), 5000);
     every(() => checkProjectBudgets(), 60000);
     every(async () => {
       for (const c of list) if (c.kind === 'local' && c.id !== 'processes' && c.id !== 'cursor') await c.scan();
