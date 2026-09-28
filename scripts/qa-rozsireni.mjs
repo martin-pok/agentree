@@ -20,7 +20,7 @@ function atrapa({ stav, ted }) {
   window.chrome = {
     storage: {
       local: { get: async (k) => Object.fromEntries((Array.isArray(k) ? k : [k]).map((x) => [x, data[x]])), set: async (o) => Object.assign(data, o) },
-      session: { get: async () => ({ otevrene }), set: async () => {} },
+      session: { get: async () => ({ otevrene, otevreneTvar: 1 }), set: async () => {} },
     },
     runtime: { getManifest: () => ({ version: '0.0.0' }), sendMessage: async () => ({ paired: sparovano, status: { expectedVersion: stav === 'spárováno' ? '0.0.1' : '0.0.0' } }) },
     tabs: { query: async () => [{ id: 1 }], sendMessage: async () => (sparovano ? diagnostika : null), update: async () => {} },

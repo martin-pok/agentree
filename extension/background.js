@@ -73,9 +73,19 @@ async function forgetToken() {
 // Drží se v paměti prohlížeče (storage.session) a mizí se zavřením Chromu. Karta se hlásí
 // nejpozději po minutě, takže co mlčí přes 150 s, už zavřená je.
 const OTEVRENA_MS = 150e3;
+// Verze tvaru záznamu. Chrome úložiště relace při aktualizaci rozšíření maže sám; kdyby ho přesto
+// něco zachovalo (jiný prohlížeč na Chromiu), záznam jiné verze se zahodí, místo aby nová verze
+// ukazovala konverzace, o kterých nic neví. Při změně tvaru zvyš číslo i v popup.js.
+const TVAR_OTEVRENYCH = 1;
+async function nactiOtevrene() {
+  const { otevrene, otevreneTvar } = await chrome.storage.session.get(['otevrene', 'otevreneTvar']);
+  return otevreneTvar === TVAR_OTEVRENYCH && otevrene && typeof otevrene === 'object' ? otevrene : {};
+}
+const ulozOtevrene = (otevrene) => chrome.storage.session.set({ otevrene, otevreneTvar: TVAR_OTEVRENYCH });
+
 async function zapamatujKonverzaci(payload, karta) {
   if (!chrome.storage.session) return;
-  const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
+  const otevrene = await nactiOtevrene();
   const ted = Date.now();
   const klic = `${payload.site}:${payload.conversationId}`;
   const tab = typeof karta?.id === 'number' ? karta.id : null;
@@ -95,16 +105,16 @@ async function zapamatujKonverzaci(payload, karta) {
     od: generating ? (pred?.generating && pred.od ? pred.od : ted) : null,
     konec: !generating && pred?.generating ? ted : pred?.konec ?? null,
   };
-  await chrome.storage.session.set({ otevrene });
+  await ulozOtevrene(otevrene);
 }
 
 // Zavřená karta z okna zmizí hned, ne až po 150 s ticha.
 async function zapomenKartu(tabId) {
   if (!chrome.storage.session) return;
-  const { otevrene = {} } = await chrome.storage.session.get(['otevrene']);
+  const otevrene = await nactiOtevrene();
   let zmena = false;
   for (const [k, x] of Object.entries(otevrene)) if (x.tab === tabId) { delete otevrene[k]; zmena = true; }
-  if (zmena) await chrome.storage.session.set({ otevrene });
+  if (zmena) await ulozOtevrene(otevrene);
 }
 
 // Vrací, jestli aplikace hlášení přijala. Vypnutá služba se počítá jako vyřízená – opakovat nemá smysl.

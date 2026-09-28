@@ -383,6 +383,69 @@ test('spojení: ukázka bez serveru nehlídá ticho ani probuzení', async () =>
   assert.equal(sim.stav(), 'live');
 });
 
+/* ---------- Rozšíření: otevřené konverzace po aktualizaci ---------- */
+
+// Background si otevřené konverzace drží v chrome.storage.session. Tvar záznamu se nikde
+// nekontroloval: kdyby úložiště relace aktualizaci přežilo (Chrome ho podle dokumentace maže,
+// jiný prohlížeč na Chromiu nemusí), nová verze by vzala záznamy staré verze tak, jak jsou – a okno
+// rozšíření by ukazovalo „odpovídá · 12:34“ z konverzace, o které nic neví. Záznam nese verzi tvaru;
+// jiná verze se zahodí.
+async function pozadiRozsireni() {
+  const vm = await import('node:vm');
+  const fs = await import('node:fs/promises');
+  const zdroj = await fs.readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const oblast = (data) => ({
+    get: async (klice) => Object.fromEntries((Array.isArray(klice) ? klice : [klice]).filter((k) => k in data).map((k) => [k, structuredClone(data[k])])),
+    set: async (o) => { Object.assign(data, structuredClone(o)); },
+    remove: async (k) => { for (const x of [].concat(k)) delete data[x]; },
+  });
+  const local = { token: 't'.repeat(43) };
+  const session = {};
+  let posluchac = null;
+  let instalace = null;
+  const kontext = vm.createContext({
+    crypto: { randomUUID: () => 'instalace-1234' },
+    Date,
+    fetch: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+    chrome: {
+      storage: { local: oblast(local), session: oblast(session) },
+      runtime: {
+        getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
+        onInstalled: { addListener: (fn) => { instalace = fn; } },
+        onStartup: { addListener() {} },
+        onMessage: { addListener: (fn) => { posluchac = fn; } },
+      },
+      alarms: { create() {}, onAlarm: { addListener() {} } },
+      tabs: { query: async () => [], onRemoved: { addListener() {} } },
+    },
+  });
+  vm.runInContext(zdroj, kontext);
+  const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
+  return { session, zprava, instalace: () => instalace, TVAR: vm.runInContext('TVAR_OTEVRENYCH', kontext) };
+}
+
+test('rozšíření: otevřené konverzace z jiné verze tvaru se zahodí, ne převezmou', async () => {
+  const r = await pozadiRozsireni();
+  // Záznam uložený starší verzí (bez verze tvaru, jiná pole).
+  r.session.otevrene = { 'chatgpt:stara': { site: 'chatgpt', generating: true, od: Date.now() - 600e3, at: Date.now(), karta: 7 } };
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude', conversationId: 'nova', generating: false } }, { tab: { id: 3, windowId: 1 } });
+  assert.deepEqual(Object.keys(r.session.otevrene), ['claude:nova'], 'stará konverzace nepřežila');
+  assert.equal(r.session.otevreneTvar, r.TVAR, 'nový záznam nese verzi tvaru');
+  // Stejná verze se pochopitelně drží dál (restart service workeru úložiště relace nemaže).
+  await r.zprava({ type: 'agenteeq:update', payload: { site: 'gemini', conversationId: 'dalsi', generating: true } }, { tab: { id: 4, windowId: 1 } });
+  assert.deepEqual(Object.keys(r.session.otevrene).sort(), ['claude:nova', 'gemini:dalsi']);
+});
+
+test('rozšíření: okno čte otevřené konverzace jen ve stejné verzi tvaru jako background', async () => {
+  const fs = await import('node:fs/promises');
+  const pozadi = await fs.readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const okno = await fs.readFile(new URL('../extension/popup.js', import.meta.url), 'utf8');
+  const verze = (text) => text.match(/const TVAR_OTEVRENYCH = (\d+);/)?.[1];
+  assert.ok(verze(pozadi), 'background má verzi tvaru');
+  assert.equal(verze(okno), verze(pozadi), 'okno a background znají stejnou verzi tvaru');
+  assert.doesNotMatch(okno, /const \{ otevrene = \{\} \} = \(await chrome\.storage\.session/, 'okno nečte úložiště relace bez kontroly verze');
+});
+
 /* ---------- Data bez spojení v rozhraní ---------- */
 
 // Bez spojení okno ukazovalo poslední stav beze změny: „3 agenti pracují“ s pulzující tečkou,
