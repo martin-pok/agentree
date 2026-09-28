@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { RELEASES, compareVersions, unseenReleases } from '../public/js/whats-new-data.js';
 
 // Uživatel musí vědět, co se v aplikaci změnilo. Vydání bez záznamu v „Co je nového“ neprojde.
@@ -18,6 +19,29 @@ test('vydání jdou od nejnovějšího a každé má datum, název a body', () =
     assert.ok(r.title.length > 5);
     assert.ok(r.items.length > 0 && r.items.every((t) => typeof t === 'string' && t.length > 10));
   }
+});
+
+// Anglické rozhraní ukazuje anglický záznam. Každé vydání ho musí mít se stejným počtem bodů,
+// jinak by se v angličtině ukázalo česky, nebo by něco chybělo.
+const CZ = /[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/;
+test('každé vydání má anglický název a stejný počet bodů', () => {
+  for (const r of RELEASES) {
+    assert.ok(r.en && typeof r.en.title === 'string' && r.en.title.length > 5, `${r.version}: chybí en.title`);
+    assert.equal(r.en.items?.length, r.items.length, `${r.version}: jiný počet bodů v en`);
+    assert.doesNotMatch(r.en.title, CZ, `${r.version}: čeština v en.title`);
+    for (const t of r.en.items) {
+      assert.ok(typeof t === 'string' && t.length > 10, r.version);
+      // Uvozovky „…“ smějí citovat češtinu (třeba rozbitou diakritiku ve schránce), jinak ne.
+      assert.doesNotMatch(t.replace(/“[^”]*”/g, ''), CZ, `${r.version}: čeština v bodu: ${t.slice(0, 60)}`);
+    }
+  }
+});
+
+test('„Co je nového“ vybírá text podle jazyka rozhraní', () => {
+  const kod = (lang) => `globalThis.document = { documentElement: { lang: '${lang}', dataset: {} } }; const { textVydani } = await import('./public/js/whats-new.js'); const { RELEASES } = await import('./public/js/whats-new-data.js'); console.log(JSON.stringify(RELEASES.map(textVydani).map((t) => t.title)));`;
+  const spust = (lang) => JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', kod(lang)], { cwd: new URL('..', import.meta.url), encoding: 'utf8' }));
+  assert.deepEqual(spust('cs'), RELEASES.map((r) => r.title));
+  assert.deepEqual(spust('en'), RELEASES.map((r) => r.en.title));
 });
 
 test('ukáže se jen to, co uživatel ještě neviděl', () => {

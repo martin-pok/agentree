@@ -4,15 +4,19 @@ import { esc } from './format.js';
 import { modal } from './ui.js';
 import { RELEASES, unseenReleases } from './whats-new-data.js';
 import { goToExtension } from './jump.js';
-import { tr, LOCALE } from './i18n.js';
+import { tr, LOCALE, podleJazyka } from './i18n.js';
 
 const dateCs = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 
+// Záznam v jazyce rozhraní: angličtina má u každého vydání vlastní název a body (`en`).
+export const textVydani = (r) => podleJazyka(r, r.en || r);
+
 function releaseHtml(r, { lead = false } = {}) {
+  const t = textVydani(r);
   return `<article class="wn-release${lead ? ' wn-release--lead' : ''}">
     <header class="wn-head"><span class="wn-version">${esc(r.version)}</span><span class="wn-date">${esc(dateCs(r.date))}</span></header>
-    <h3 class="wn-title">${esc(r.title)}</h3>
-    <ul class="wn-items">${r.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <h3 class="wn-title">${esc(t.title)}</h3>
+    <ul class="wn-items">${t.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
   </article>`;
 }
 
