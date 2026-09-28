@@ -18,7 +18,7 @@ test('Windows capabilities retain web opening and launching without native appli
   assert.equal((await s.app.launch({ agent: 'chatgpt', mode: 'web', prompt: 'Test' })).status, 422);
 });
 
-test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', { skip: process.platform !== 'win32' }, async t => {
+test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', { skip: process.platform !== 'win32' && 'jen Windows: spouští powershell.exe z příkazu hooku pro Windows' }, async t => {
   const received = [];
   const server = http.createServer(async (req, res) => {
     let body = ''; for await (const chunk of req) body += chunk.toString('utf8');

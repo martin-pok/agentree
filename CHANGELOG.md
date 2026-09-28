@@ -8,6 +8,8 @@
   a chybu tiše nahradil verzí z `package.json`, takže CI hlásilo zjištěnou verzi u souboru,
   který neexistoval. Verze se teď čte z hotového `.exe` před archivem a build skončí, když ji
   nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
+- Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
+  „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
 
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
