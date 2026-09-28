@@ -51,13 +51,26 @@ jako tlačítko vedle nich.
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |
 
-Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka 32 px a rám 4 px), malá 32 px.
-Přepínač má 48 × 28 px, v okně rozšíření malou velikost 40 × 24 px. Tvar (kapsle) a barva zapnutého
-stavu (`--action`) jsou všude stejné.
+Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka 32 px a rám 4 px), malá 32 px
+(tlačítka 28 px a rám 2 px – `.seg--sm` v aplikaci, přepínač jazyka `.lang` na webu). Vnitřních
+28 px smí být jen uvnitř takového rámu. Volba jedné ze dvou (třeba jazyk v Nastavení) je taky
+segmentová volba: kapsle 40 px, ne karta. Přepínač má 48 × 28 px, v okně rozšíření malou velikost
+40 × 24 px. Tvar (kapsle) a barva zapnutého stavu (`--action`) jsou všude stejné.
 
 **Popisek** je vždy Onest 500, věta s malými písmeny, sloveso, které říká, co se stane. Řez se při
 výběru nemění: vybraná volba se pozná podle plochy, ne podle tučnějšího písma, které by text
-posunulo.
+posunulo. Totéž platí pro menu Nastavení, které je z tlačítek: Onest 500 ve všech stavech.
+
+**Položka navigace a nabídky** (postranní panel, spodní lišta na telefonu, paleta příkazů, panel
+Více) tlačítko není – je to řádek seznamu míst a má Onest 400 jako ostatní text v seznamu. I tady
+jeden řez pro všechny stavy: aktivní stránku ukazuje plocha, barva textu a mosazný pruh. Položka
+postranního panelu má výšku ze stupnice: 40 px, na nejnižším okně 32 px, na monitoru na výšku 48 px
+(dlaždice spodní lišty na telefonu má ikonu nad popiskem, není jednořádková).
+
+**Postranní panel** se skládá ze značky, profilu, navigace a patičky. Navigace se nikdy nezmenší
+ani neroluje – místo na nízkém okně uvolňuje profil, který se po stupních přeskládá (vysoký,
+střední, v řádku, na jednom řádku). Řádky profilu a patičky jsou jednořádkové (dlouhé se zkrátí),
+aby výška panelu nezávisela na jménu ani na počtu zdrojů.
 
 **Varianty.**
 
@@ -75,6 +88,12 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
-  a upozornění), web a okno rozšíření a změří tvar každého ovládacího prvku. Porušení pravidla
-  shodí CI.
+  a upozornění), web a okno rozšíření a změří tvar každého ovládacího prvku. Stejným průchodem
+  změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 48 px;
+  výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
+  má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
+  věty do stupnice nepatří. Porušení pravidla shodí CI.
+- `npm run qa:desktop` ověří postranní panel na oknech 620–1200 px vysokých při šířce 881, 1180
+  a 1440 px, česky i anglicky, i s patičkou při výpadku spojení a s víc zdroji tokenů, než se
+  vypisuje: poslední položka navigace je celá vidět, nabídka neroluje a profil není oříznutý.
 - `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše.

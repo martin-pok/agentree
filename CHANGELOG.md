@@ -36,6 +36,25 @@
 - Oprava: přehled běžících aplikací se ptal Ollamy natvrdo na `127.0.0.1:11434` a přehlížel
   `AGENTEEQ_OLLAMA_URL`. Teď jde stejnou cestou jako chat s Ollamou (`src/ollama.js`).
 
+### Opravy rozvržení a tvarů
+
+- Postranní panel už neschová Nastavení. Nabídka se na okně od 881 px šířky a do 1070 px výšky
+  potichu rolovala a poslední položku uřízla nebo schovala celou (1440 × 950: 87 px). Teď se nabídka nikdy nezmenší ani neroluje a místo uvolňuje profil: podle výšky okna je vysoký,
+  střední (menší avatar, bez pozdravu), v řádku, nebo na jednom řádku bez rozpisu zdrojů. Jméno,
+  zdroje i jméno Macu mají vždy jeden řádek a zdrojů se vypíšou nejvýš dva, takže výška profilu
+  nezávisí na obsahu. `qa:desktop` hlídá okna 620–1200 px na 881, 1180 a 1440 px, česky
+  i anglicky, i s patičkou při výpadku spojení.
+- Mosazný pruh u aktivní stránky je vidět i na okně do 1180 px – ležel celý mimo kartu panelu.
+- Výběr nemění řez písma: položky hlavní nabídky mají Onest 400 a položky nabídky Nastavení
+  Onest 500 ve všech stavech, vybranou stránku ukazuje plocha, barva a pruh.
+- Výšky jen ze stupnice 32 / 40 / 48 px: položky nabídky (dřív 44,5 px, na monitoru na výšku až
+  68 px), čipy agentů a menu Nastavení na telefonu (36 → 40 px), volba jazyka v Nastavení (karta
+  54 px → kapsle 40 px), pole pro správcovský klíč (36 → 32 px jako tlačítko vedle), položky palety
+  příkazů (42,5 → 40 px) a přepínač jazyka na webu (26 → 28 px v rámu 32 px jako `.seg--sm`).
+- Karta „Přidat vlastního agenta“ nemá nad jediným sbaleným řádkem prázdné místo a linku.
+- `qa:tvary` nově měří, že se řez písma při výběru nemění a že jednořádkové ovládací prvky mají
+  výšku ze stupnice.
+
 ### Vydání a testy
 
 - Oprava: build pro Windows četl verzi pláště z `Agenteeq.exe` až po smazání složky buildu

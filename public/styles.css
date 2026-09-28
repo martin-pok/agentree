@@ -182,42 +182,58 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @keyframes sweep { to { transform: translateX(100%); } }
 
 /* ---------- Postranní panel ---------- */
-/* Panel je karta s pevnou výškou – nesmí z ní nic vylézt. Dřív měl `min-height: 640px` a žádné
-   `overflow`, takže na nižším okně patička i poslední položky nabídky visely mimo bílou plochu
-   na pozadí (naměřeno 112 px ven při okně 800 px). Teď kartu drží `overflow: hidden`, značka
-   sedí nahoře, stav dole a prostor mezi nimi patří nabídce – když se nevejde, roluje se uvnitř. */
-.sidebar { position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); margin: 24px 0 24px 24px; padding: 36px 24px 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
-.sidebar > .brand, .sidebar > .profile, .sidebar > .side-foot { flex: none; }
+/* Panel je karta s výškou okna a skládá se shora dolů: značka, profil, navigace, patička. Nic
+   z něj nesmí vylézt (`overflow: hidden`) a navigace se nikdy nezmenší ani neroluje – je to
+   jediná cesta po aplikaci a poslední položka (Nastavení) musí být vidět vždycky. Dřív se
+   nabídka při nedostatku místa rolovala uvnitř bez náznaku a na okně 1440 × 950 schovala
+   Nastavení celé. Místo teď uvolňuje profil: podle výšky okna se z vysokého sloupce zmenší na
+   střední, překlopí do řádku a na nejnižším okně do jediného řádku bez rozpisu zdrojů (stupně
+   níže). Hranice stupňů jsou spočítané pro nejhorší obsah – úzký panel (240 px), dva řádky
+   zdrojů a patičku s hlášením o výpadku spojení – a hlídá je `npm run qa:desktop` pro okna
+   620–1200 px.
+   Vodorovné odsazení nese `--sb-x`, aby se k němu dal přiložit pruh aktivní položky. */
+.sidebar { --sb-x: 24px; position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); margin: 24px 0 24px 24px; padding: 32px var(--sb-x) 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
+.sidebar > .brand, .sidebar > .side-foot { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
 .brand-mark { width: 34px; height: 34px; flex: none; }
 .brand-mark .bm-branch { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .brand-mark .bm-root { fill: var(--brass); }
 .brand-mark .bm-node { fill: var(--ink); }
-.profile { margin-top: 40px; text-align: center; min-height: 208px; }
+/* Profil je jediná část panelu, která smí ustoupit (`flex-shrink`). Stupně níže ho drží celý;
+   kdyby se přesto nevešel (větší systémové písmo), zmenší se on a ořízne dole – nikdy ne
+   navigace. Ořez je jen svislý a odsazení nahoře a dole je rezerva pro prstenec „pracuje“ kolem
+   avataru a obrys zaostření. `min-height` drží místo, dokud se profil nenačte, ať nabídka
+   neposkočí. */
+.profile { flex: 0 1 auto; min-height: 228px; margin-top: 18px; padding: 14px 0 6px; overflow-x: visible; overflow-y: clip; text-align: center; }
 .avatar { position: relative; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); display: grid; place-items: center; font: 400 28px/1 var(--f-display); letter-spacing: .02em; }
 .avatar.is-loading { background: var(--line-2); }
 .avatar::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--teal); opacity: 0; }
 .avatar.is-live::after { animation: ring 2.4s var(--ease) infinite; }
 @keyframes ring { 0% { transform: scale(.94); opacity: .9; } 100% { transform: scale(1.14); opacity: 0; } }
 .welcome { margin: 16px 0 0; color: var(--mute); font-size: 14px; }
-.welcome b { display: block; color: var(--ink); font-size: 16px; }
+/* Jméno i řádky zdrojů mají vždy jeden řádek (dlouhé se zkrátí), jinak by výška profilu závisela
+   na jménu Macu a nástroje a spočítané stupně by přestaly platit. */
+.welcome b { display: block; overflow: hidden; color: var(--ink); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .budget { margin-top: 24px; }
 /* Číslo ani jeho popisek se nikdy nelámou uprostřed – „482 tis.“ na dvou řádcích vypadá jako
    chyba. Když na sebe vedle sebe nezbude místo, popisek se přesune celý pod číslo. */
 .budget-num { font: 400 34px/1.1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .budget-label { color: var(--mute); font-size: 14px; white-space: nowrap; }
-/* Odkud číslo je: které nástroje ho dnes způsobily. Odkaz vede do Statistik, kde je celý rozpis. */
-.budget-src { display: grid; gap: 2px; margin-top: 8px; color: var(--mute); font-size: 12px; line-height: 1.4; text-decoration: none; }
+/* Odkud číslo je: které nástroje ho dnes způsobily. Odkaz vede do Statistik, kde je celý rozpis.
+   Nejvýš dva řádky při libovolném počtu nástrojů – další se schovají celé, ne useknuté. */
+.budget-src { display: grid; gap: 2px; min-width: 0; max-height: calc(2 * 1.4em + 2px); margin-top: 8px; overflow: hidden; color: var(--mute); font-size: 12px; line-height: 1.4; text-decoration: none; }
+.budget-src span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .budget-src b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .budget-src:hover span { color: var(--ink); }
 @media (max-width: 880px) { .budget-src { flex: 1 0 100%; grid-auto-flow: column; justify-content: start; gap: 4px 12px; margin-top: 4px; } }
-/* Nabídka je pružná část karty: vezme si, co zbude, a když je toho málo, roluje se sama.
-   Posuvník schováváme – na kartě by rušil a hranici tvoří linka nad stavem spojení. */
-/* `grid-template-columns` musí být určené: bez něj si mřížka vezme šířku podle nejdelší položky,
+/* Nabídka se nikdy nezmenší (`flex-shrink: 0`) a nikdy neroluje. Místo navíc si vezme a položky
+   drží uprostřed mezi profilem a patičkou. Položka má výšku ze stupnice ovládacích prvků (40 px,
+   na nejnižším okně 32 px, na monitoru na výšku 48 px) a jeden řez písma ve všech stavech:
+   aktivní stránku ukazuje plocha, barva a mosazný pruh, ne tučnější písmo, které by text posunulo.
+   `grid-template-columns` musí být určené: bez něj si mřížka vezme šířku podle nejdelší položky,
    nabídka přeteče panel a odsazení vlevo a vpravo přestane sedět (na užším okně 16 px × 11 px). */
-.nav { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(4px, 1dvh, 12px); align-content: center; align-content: safe center; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
-.nav::-webkit-scrollbar { display: none; }
-.nav a { position: relative; display: flex; align-items: center; gap: 16px; padding: 11px 16px; border-radius: var(--r-full); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
+.nav { flex: 1 0 auto; margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: center; align-content: safe center; }
+.nav a { position: relative; display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 16px; border-radius: var(--r-full); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
 .nav a svg { width: 20px; height: 20px; flex: none; }
 /* Název se musí umět zkrátit. Bez toho roztlačí „Upozornění“ s odznakem „10+“ položku nad šířku
    panelu, nabídka se začne posouvat do stran a odsazení vlevo a vpravo přestane sedět. */
@@ -226,51 +242,70 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .nav .stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
 .nav .stroke.inv { stroke: var(--card); opacity: 1; }
 .nav a:hover { color: var(--ink); background: var(--line-2); }
-.nav a[aria-current='page'] { color: var(--ink); font-weight: 500; background: var(--paper); }
-.nav a[aria-current='page']::before { content: ''; position: absolute; left: -24px; top: 10px; bottom: 10px; width: 3px; border-radius: var(--r-full); background: var(--brass); }
+.nav a[aria-current='page'] { color: var(--ink); background: var(--paper); }
+/* Pruh leží na hraně karty – odsazení panelu se mění podle šířky okna, proto `--sb-x`. Dřív byl
+   zapsaný jako −24 px a na okně do 1180 px (odsazení 16 px) ležel celý mimo kartu. */
+.nav a[aria-current='page']::before { content: ''; position: absolute; left: calc(-1 * var(--sb-x)); top: 25%; bottom: 25%; width: 3px; border-radius: var(--r-full); background: var(--brass); }
 .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
 .nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-full); background: var(--teal-solid); color: #fff; font: 500 12px/24px var(--f-mono); text-align: center; }
 .nav-badge[data-tone='coral'] { background: var(--velvet-solid); color: #fff; }
-/* Na nižších oknech ustupuje nejdřív dekorace, ne navigace: profil se stáhne, aby se všechny
-   položky vešly bez rolování. Hodnoty jsou spočítané – při okně 800 px chybělo 56 px. */
-/* Na nižším okně ustupuje dekorace, ne navigace. Profil se z vysokého sloupce (avatar nad jménem
-   nad číslem, 214 px) překlopí do řádku: avatar vlevo, jméno vedle, číslo pod tím. Ušetří to přes
-   sto pixelů a všechny položky nabídky zůstanou vidět bez rolování. */
-@media (min-width: 881px) and (max-height: 940px) {
+/* Stupně podle výšky okna. Na nižším okně ustupuje dekorace, ne navigace.
+   1. Profil zůstává ve sloupci, jen menší: avatar 56 px, bez pozdravu (jméno zůstává), menší
+      číslo. Ušetří 70 px a panel pod vysokým stupněm nezeje prázdnotou kolem nabídky. */
+@media (min-width: 881px) and (max-height: 989px) {
+  .profile { min-height: 0; }
+  .avatar { width: 56px; height: 56px; font-size: 20px; }
+  .avatar::after { inset: -5px; }
+  .welcome { margin-top: 10px; font-size: 0; }
+  .welcome b { font-size: 16px; }
+  .budget { margin-top: 12px; }
+  .budget-num { font-size: 28px; }
+}
+/* 2. Profil v řádku: avatar vlevo, jméno, číslo a zdroje vedle něj. Ušetří dalších 80 px. */
+@media (min-width: 881px) and (max-height: 919px) {
   .sidebar { padding-top: 28px; }
-  .profile { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; margin-top: 24px; min-height: 0; text-align: left; }
+  .profile { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; margin-top: 24px; padding-top: 0; min-height: 0; text-align: left; }
   .avatar { width: 48px; height: 48px; font-size: 18px; }
   .avatar::after { inset: -4px; }
   .welcome { margin: 0; font-size: 0; }
   .welcome b { font-size: 15px; }
-  .budget { grid-column: 1 / -1; margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .budget { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
   .budget-num, .budget-label { flex: none; }
   .budget-num { font-size: 26px; }
-  .nav { margin-top: 20px; }
+  .budget-src { flex: 1 0 100%; }
+  .nav { margin-top: 14px; }
 }
-@media (min-width: 881px) and (max-height: 800px) {
+/* 3. Menší avatar a číslo, hustší nabídka a patička bez jména Macu (je v Nastavení). */
+@media (min-width: 881px) and (max-height: 839px) {
   .sidebar { padding-top: 24px; padding-bottom: 20px; }
-  .nav a { padding-top: 9px; padding-bottom: 9px; }
-  .side-foot { margin-top: 14px; padding-top: 14px; }
-}
-/* Nejnižší stupeň: na malém okně se vejde všech osm položek jen tak, že ubereme i v nabídce
-   a v patičce. Řádek nabídky má pak 34 px, pořád nad hranicí WCAG pro cíl prstu. Jméno Macu
-   a verze zmizí – jsou v Nastavení, kdežto navigace musí být vidět vždycky. */
-@media (min-width: 881px) and (max-height: 760px) {
-  .sidebar { padding: 20px 20px 16px; }
   .profile { margin-top: 18px; gap: 2px 12px; }
   .avatar { width: 40px; height: 40px; font-size: 15px; }
   .budget { margin-top: 8px; }
   .budget-num { font-size: 22px; }
-  .nav { margin-top: 16px; gap: 2px; }
-  .nav a { padding-top: 7px; padding-bottom: 7px; }
-  .nav a[aria-current='page']::before { left: -20px; }
-  .side-foot { margin-top: 12px; padding-top: 12px; }
+  .nav { margin-top: 10px; gap: 4px; }
+  .side-foot { margin-top: 14px; padding-top: 14px; }
   .side-foot .source-host { display: none; }
 }
-.side-foot { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }
+/* 4. Nízké okno: profil na jeden řádek – jméno a pod ním dnešní tokeny, bez rozpisu zdrojů (ten
+   je ve Statistikách). */
+@media (min-width: 881px) and (max-height: 779px) {
+  .sidebar { padding-top: 20px; padding-bottom: 16px; }
+  .profile { margin-top: 16px; gap: 0 12px; }
+  .avatar { width: 36px; height: 36px; font-size: 14px; }
+  .budget { flex-wrap: nowrap; margin-top: 0; gap: 6px; }
+  .budget-num { font-size: 16px; }
+  .budget-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .budget-src { display: none; }
+  .side-foot { margin-top: 12px; padding-top: 12px; }
+}
+/* 5. Nejnižší okno: položky nabídky v malé velikosti stupnice, 32 px. Pořád nad hranicí
+   WCAG 2.2 pro cíl prstu (24 px). */
+@media (min-width: 881px) and (max-height: 689px) {
+  .nav a { height: 32px; }
+}
+.side-foot { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }
 .source-state { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.source-host { font: 400 11px/1.4 var(--f-mono); color: var(--mute); overflow-wrap: anywhere; }
+.source-host { overflow: hidden; font: 400 11px/1.4 var(--f-mono); color: var(--mute); text-overflow: ellipsis; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); flex: none; }
 .dot--live { background: var(--teal); box-shadow: 0 0 0 4px rgba(34, 163, 140, .18); }
 .dot--down { background: var(--velvet-ink); }
@@ -1202,9 +1237,11 @@ html.is-cloud body { background: var(--paper); }
 /* ---------- Nastavení ---------- */
 .settings2 { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 48px; align-items: start; }
 .set-nav { position: sticky; top: 24px; display: grid; gap: 2px; }
-.set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
+.set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; transition: background-color .2s, color .2s; }
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
-.set-nav button[aria-current] { color: var(--ink); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; }
+/* Popisek je Onest 500 ve všech stavech – vybraná skupina se pozná podle plochy, ne podle řezu,
+   který by text při přepnutí posunul. */
+.set-nav button[aria-current] { color: var(--ink); background: var(--card); box-shadow: var(--shadow-sm); }
 /* Bez shrinknutelného sloupce určí minimální šířku nejdelší nezalomitelná cesta v kartě
    a všechny sekce se rozjedou mimo obrazovku telefonu. */
 .set-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; min-width: 0; max-width: 880px; }
@@ -1234,9 +1271,11 @@ html.is-cloud body { background: var(--paper); }
 .appearance-option strong, .appearance-option small { display: block; }
 .appearance-option strong { font-weight: 500; line-height: 1.3; }
 .appearance-option small { margin-top: 4px; color: var(--mute); font-size: 12px; line-height: 1.4; }
-/* Jazyk má jen dvě volby bez popisku – bez ikonového sloupce a na střed, ne tři čtvrtiny prázdné. */
-.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.appearance-options--lang .appearance-option { grid-template-columns: 1fr; text-align: center; }
+/* Jazyk má jen dvě volby na jeden řádek, bez ikony a popisku. Je to tedy volba jedné ze dvou jako
+   segmentová volba: kapsle v základní výšce 40 px, ne karta 54 px jako vzhled nad ní. Dvě vedle
+   sebe i na telefonu – obě slova se vejdou. */
+.appearance-options.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.appearance-options--lang .appearance-option { grid-template-columns: 1fr; height: 40px; min-height: 0; padding: 0 16px; border-radius: var(--r-full); text-align: center; }
 .set-actions { display: flex; gap: 12px; margin-top: 16px; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--line-2); }
 .set-row-text { min-width: 0; }
@@ -1265,7 +1304,8 @@ html.is-cloud body { background: var(--paper); }
 .key-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .key-head .state { margin-left: auto; }
 .key-form { display: flex; gap: 8px; margin-top: 10px; }
-.key-form input { flex: 1; height: 36px; }
+/* Pole má stejnou výšku jako malé tlačítko vedle něj (docs/DESIGN.md). */
+.key-form input { flex: 1; height: 32px; padding: 0 14px; }
 .conn { padding: 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 8px; }
 .conn p { margin: 0; font-size: 13px; color: var(--ink-2); }
 .conn-source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 28px 0 12px; padding-top: 20px; border-top: 1px solid var(--line-2); }
@@ -1348,7 +1388,7 @@ html.is-cloud body { background: var(--paper); }
 /* `contain` drží posouvání uvnitř seznamu. Bez něj kolečko po dojetí na konec pokračovalo
    na stránce vzadu, což u překryvu přes celou obrazovku nedává smysl. */
 .palette-list { list-style: none; margin: 0; padding: 8px; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; scroll-padding: 8px; }
-.palette-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-full); cursor: pointer; transition: background-color .16s ease, color .16s ease, transform .16s var(--ease); }
+.palette-list li { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px; border-radius: var(--r-full); cursor: pointer; transition: background-color .16s ease, color .16s ease, transform .16s var(--ease); }
 .palette-list li .icon, .palette-list li .glyph { width: 18px; height: 18px; }
 .pl-text { flex: 1; min-width: 0; }
 .pl-text span, .pl-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1394,7 +1434,7 @@ html.is-cloud body { background: var(--paper); }
   .settings2 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .set-nav { top: 0; z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
   .set-nav::-webkit-scrollbar { display: none; }
-  .set-nav button { flex: none; height: 36px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
+  .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
   .set-group { scroll-margin-top: 72px; }
   .pulse-bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
@@ -1402,7 +1442,7 @@ html.is-cloud body { background: var(--paper); }
   .pb-stat:first-child { padding-left: 0; }
   .pb-strip { margin-top: 2px; }
   .shell { grid-template-columns: 240px minmax(0, 1fr); }
-  .sidebar { padding: 28px 16px 20px; }
+  .sidebar { --sb-x: 16px; }
   /* Na telefonu jeden sloupec – bloky jdou prostě pod sebou v pořadí, v jakém jsou v kódu. */
   .ov { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .session-grid, .grid-2, .grid-2--wide { grid-template-columns: minmax(0, 1fr); }
@@ -1423,7 +1463,7 @@ html.is-cloud body { background: var(--paper); }
   .brand, .profile, .side-foot { display: none; }
   .nav { margin: 0; width: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; gap: 2px; }
   .nav .nav-secondary { display: none; }
-  .nav a, .nav-more { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 6px 2px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 11px; line-height: 1.2; text-align: center; text-decoration: none; }
+  .nav a, .nav-more { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: auto; min-height: 56px; padding: 6px 2px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 11px; line-height: 1.2; text-align: center; text-decoration: none; }
   .nav a svg, .nav-more svg { width: 22px; height: 22px; }
   .nav-more[aria-current='page'], .nav-more[aria-expanded='true'] { color: var(--ink); background: var(--paper); }
   .nav-more .fill { fill: currentColor; opacity: .7; }
@@ -1956,7 +1996,6 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .launch-group { min-width: 0; }
   .launch-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding-inline: 16px; scrollbar-width: none; }
   .launch-chips::-webkit-scrollbar { display: none; }
-  .lchip { height: 36px; font-size: 13px; }
   .launch-foot { flex-wrap: wrap; padding-left: 8px; }
   .launch-note { flex-basis: 100%; order: -1; }
   .launch-kbd { display: none; }
@@ -2037,6 +2076,9 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .src-beta { margin-left: 8px; padding: 0 8px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); font-size: 11px; color: var(--mute); vertical-align: 1px; }
 .src-row[data-state='missing'] .src-main b { color: var(--ink-2); }
 .src-fold { margin-top: 12px; border-top: 1px solid var(--line-2); }
+/* Linka odděluje sbalený řádek od obsahu karty nad ním. Když je první (karta „Přidat vlastního
+   agenta“ nemá nic jiného), neodděluje nic a nad řádkem zbylo jen prázdné místo s linkou. */
+.set-card > .src-fold:first-child { margin-top: 0; border-top: 0; }
 .src-fold > summary { display: flex; align-items: center; gap: 10px; min-height: 48px; cursor: pointer; font-size: 14px; color: var(--ink-2); list-style: none; }
 .src-fold > summary::-webkit-details-marker { display: none; }
 .src-fold > summary::before { content: ''; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .2s var(--ease); flex: none; opacity: .7; }
@@ -2140,13 +2182,13 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 .set-row-inline strong { font-weight: 500; font-size: 14px; }
 .set-row-inline small { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
 
-/* Monitor na výšku: v panelu je víc místa, tak se nabídka rozestoupí a cíle jsou vyšší.
-   Vzhled se nemění – barva, hover, zaostření i označení aktivní stránky zůstávají stejné jako
+/* Monitor na výšku: v panelu je víc místa, tak se nabídka rozestoupí a cíle mají velkou výšku
+   stupnice (48 px, dřív až 68 px mimo stupnici). Vzhled se nemění – barva, hover, zaostření i označení aktivní stránky zůstávají stejné jako
    na šířku. Dřív tu byly vlastní dlaždice s jiným hoverem a tečkou místo pruhu; uživatel pak
    přecházel mezi dvěma různě vypadajícími aplikacemi podle toho, jak měl otočený monitor. */
 @media (orientation: portrait) and (min-width: 881px) and (min-height: 1100px) {
-  .nav { gap: clamp(6px, 1.1dvh, 16px); }
-  .nav a { min-height: clamp(48px, 4.4dvh, 68px); }
+  .nav { gap: clamp(8px, 1.1dvh, 16px); }
+  .nav a { min-height: 48px; }
 }
 .skills-more { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 24px 0 8px; }
 .tl-more { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); text-decoration: none; }

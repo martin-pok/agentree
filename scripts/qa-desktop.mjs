@@ -9,6 +9,87 @@ const out = process.env.QA_OUTPUT_DIR || 'dist/qa';
 await fs.mkdir(out, { recursive: true });
 const results = [];
 const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
+
+// Postranní panel: poslední položka nabídky (Nastavení) je celá vidět na každé výšce okna
+// 620–1200 px při šířce 881, 1180 i 1440 px, česky i anglicky. Dřív se nabídka potichu rolovala
+// a na okně 1440 × 950 Nastavení schovala celé. Měří se nejhorší obsah: dva řádky zdrojů tokenů,
+// patička s hlášením o výpadku spojení a nakonec i víc zdrojů, než se kdy vypíše. Profil, který
+// místo uvolňuje, se přitom nesmí oříznout – musí se přeskládat, ne „nějak vejít“.
+async function zkontrolujPostranniPanel(browser, engine, errors) {
+  const server = await startTestServer();
+  try {
+    for (const [id, app, provider] of [['a', 'Codex', 'openai'], ['b', 'Claude Code', 'anthropic'], ['c', 'Cursor', 'cursor']]) {
+      const s = server.app.store.ensure({ connector: 'codex', localId: `qa-panel-${id}`, provider, app });
+      Object.assign(s, { title: `QA panel ${id}`, lastAt: Date.now(), startedAt: Date.now() - 60000 });
+      addTokens(s, Date.now(), { input: 1200000, output: 300000 });
+      server.app.store.commit(s);
+    }
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+    await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+    for (const jazyk of ['cs', 'en']) {
+      assert.equal((await api(server.url).send('PUT', '/api/settings', { language: jazyk })).status, 200);
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => errors.push(`postranní panel ${jazyk}: ${e.message}`));
+      await p.goto(`${server.url}/#/prehled`);
+      await p.waitForFunction(() => document.querySelectorAll('.budget-src span').length === 2);
+      await p.evaluate(() => document.fonts.ready);
+      assert.equal(await p.evaluate(() => document.documentElement.lang), jazyk);
+      const zmer = () => p.evaluate(() => {
+        const sb = document.querySelector('.sidebar');
+        const sbr = sb.getBoundingClientRect();
+        const dole = sbr.bottom - parseFloat(getComputedStyle(sb).paddingBottom);
+        const nav = document.querySelector('.nav');
+        const nr = nav.getBoundingClientRect();
+        const polozky = [...nav.querySelectorAll('a')].filter((a) => getComputedStyle(a).display !== 'none');
+        const posledni = polozky.at(-1).getBoundingClientRect();
+        const profil = document.querySelector('.profile');
+        const pr = profil.getBoundingClientRect();
+        const obsahProfilu = Math.max(...[...profil.children].map((c) => c.getBoundingClientRect().bottom));
+        const zdroje = document.querySelector('.budget-src');
+        return {
+          polozek: polozky.length,
+          posledni: polozky.at(-1).getAttribute('href'),
+          skryto: Math.round(Math.max(0, posledni.bottom - Math.min(nr.bottom, dole), nr.top - posledni.top)),
+          roluje: nav.scrollHeight > nav.clientHeight + 1,
+          paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
+          profil: Math.round(Math.max(0, obsahProfilu - (pr.bottom - parseFloat(getComputedStyle(profil).paddingBottom)))),
+          pres: Math.round(Math.max(0, pr.bottom - nr.top)),
+          radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
+        };
+      });
+      const chyby = [];
+      for (const [pripad, priprava] of [
+        ['', () => {}],
+        // Patička s hlášením o výpadku spojení je nejvyšší, jakou může mít.
+        [' bez spojení', () => document.getElementById('side-foot').insertAdjacentHTML('afterbegin', '<span class="source-state" data-qa-panel><i class="dot dot--down"></i>Bez spojení se serverem</span>')],
+        // K tomu víc zdrojů, než aplikace vypisuje: rozpis má i tak nejvýš dva celé řádky.
+        [' bez spojení a se šesti zdroji', () => { document.querySelector('.budget-src').insertAdjacentHTML('beforeend', '<span data-qa-panel>Gemini CLI <b>1 M</b></span><span data-qa-panel>Qwen Code <b>1 M</b></span><span data-qa-panel>Copilot CLI <b>1 M</b></span><span data-qa-panel>Ollama <b>1 M</b></span>'); }],
+      ]) {
+        await p.evaluate(priprava);
+        for (const sirka of [881, 1180, 1440]) {
+          for (let vyska = 620; vyska <= 1200; vyska += 30) {
+            await p.setViewportSize({ width: sirka, height: vyska });
+            await p.waitForTimeout(30);
+            const m = await zmer();
+            const kde = `${engine} ${jazyk} ${sirka}×${vyska}${pripad}`;
+            if (m.polozek !== 8 || !/nastaveni$/.test(m.posledni)) chyby.push(`${kde}: v nabídce je ${m.polozek} položek, poslední ${m.posledni}`);
+            if (m.skryto || m.roluje) chyby.push(`${kde}: Nastavení je skryté o ${m.skryto} px${m.roluje ? ', nabídka roluje' : ''}`);
+            if (m.paticka) chyby.push(`${kde}: patička přečnívá z panelu o ${m.paticka} px`);
+            if (m.profil) chyby.push(`${kde}: profil je oříznutý o ${m.profil} px`);
+            if (m.pres) chyby.push(`${kde}: profil zasahuje do nabídky o ${m.pres} px`);
+            if (m.radkyZdroju > 2) chyby.push(`${kde}: rozpis zdrojů má ${m.radkyZdroju} řádky`);
+          }
+        }
+      }
+      await p.close();
+      assert.deepEqual(chyby, [], `${engine}: postranní panel\n${chyby.join('\n')}`);
+    }
+    await ctx.close();
+  } finally {
+    await server.close();
+  }
+}
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -380,8 +461,9 @@ for (const engine of engines) {
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
       await ctx.close();
     }
+    await zkontrolujPostranniPanel(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
