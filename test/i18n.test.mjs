@@ -229,8 +229,6 @@ const MIMO_ROZHRANI = {
   'src/http.js': ['<!doctype html><meta', 'index.html nemá <html', 'Access removed'], // stránka pro prohlížeč bez klíče okna, chyba vývojáře
   // Stránka, na kterou se prohlížeč vrátí z přihlášení Google (mimo okno aplikace, zatím jen česky).
   'src/ucet-stranka.js': null,
-  'src/projects.js': ['Potřebuje rozhodnutí', 'Vyčerpaný limit', 'Čeká na zadání', 'Nečinná', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Mimo okno sledování'], // hlavička a stavy v CSV
-  'src/spend.js': ['Podle ceníku', 'Ručně', 'Měsíc', 'Datum platby', 'Služba', 'Opakování', 'Poznámka', 'Částka', 'Měna', 'Kurz na {0}', 'Částka v {0}', 'měsíčně', 'měsíčně do {0}', 'jednorázově'], // CSV
   'src/tunnel.js': ['binárka ({0}) nebo', '"cloudflared" v PATH', '"ngrok" v PATH; běžící', 'uživatel spustí "'], // technický popis, rozhraní ho nezobrazuje
   'src/connectors/local-agents.js': ['vysoká', 'nízká'], // kód jistoty, klient ho porovnává
   'src/connectors/claude-code.js': ['týden {0} %'], // stavový řádek v Claude Code

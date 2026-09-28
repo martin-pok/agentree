@@ -106,6 +106,9 @@ export function createHttpServer(app, existingServer = null) {
   // a cesty s vlastním tajemstvím (hooky a rozšíření). Vrací true, když už odpověděl.
   let keyUsed = 0;
   const instalace = () => app.installInfo();
+  // Stránky a texty, které jdou přímo do prohlížeče (ne přes rozhraní, které si texty překládá
+  // samo), dostanou jazyk z Nastavení tady.
+  const jazyk = () => (datastore.data.settings.language === 'en' ? 'en' : 'cs');
   const keyHash = (v) => crypto.createHash('sha256').update(String(v || '')).digest();
   const keyMatches = (v) => Boolean(v) && crypto.timingSafeEqual(keyHash(v), keyHash(config.localKey));
   function localKeyGate(req, res, url) {
@@ -540,7 +543,7 @@ export function createHttpServer(app, existingServer = null) {
       const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return {
         raw: true,
-        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agenteeq-utrata-${date}.csv"`, 'Cache-Control': 'no-store' },
+        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="agenteeq-${jazyk() === 'en' ? 'spend' : 'utrata'}-${date}.csv"`, 'Cache-Control': 'no-store' },
         body: app.exportSpend(mesicu),
       };
     }],
@@ -718,7 +721,7 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['GET', /^\/api\/projects\/([\w-]+)\/export$/, (_req, m) => {
       const r = unwrap(app.exportProject(m[1]));
-      const slug = r.project.name.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'projekt';
+      const slug = r.project.name.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || (jazyk() === 'en' ? 'project' : 'projekt');
       const d = new Date();
       const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return {

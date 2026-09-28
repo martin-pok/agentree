@@ -20,14 +20,19 @@ export function ui(text, ...args) {
   return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text;
 }
 
-let anglicky = null;
+const anglicky = {};
 /**
- * Překladač pro to, co server posílá mimo rozhraní – oznámení systému (src/alerts.js). Rozhraní si
- * texty překládá samo; tady se použije tentýž slovník i tatáž pravidla (public/js/texty-serveru.js,
- * bez DOM). Pro češtinu vrací text beze změny.
+ * Překladač pro to, co server posílá mimo rozhraní – oznámení systému (src/alerts.js), CSV exporty,
+ * stránky pro prohlížeč. Rozhraní si texty překládá samo; tady se použije tentýž slovník i tatáž
+ * pravidla (public/js/texty-serveru.js, bez DOM). Pro češtinu vrací text beze změny.
+ *
+ * `jenServer`: jen slovník textů ze serveru (ui()), bez textů klientu. Pro pole, kde vedle textu
+ * aplikace může stát i text od uživatele – název konverzace „Konverzace bez názvu“ se přeloží,
+ * název „Moje“ zůstane, i když ho rozhraní jinde používá jako popisek.
  */
-export function prekladac(jazyk) {
+export function prekladac(jazyk, { jenServer = false } = {}) {
   if (jazyk !== 'en') return (text) => text;
-  anglicky ??= vytvorPrekladac(EN.server, EN.texty, 'en-GB');
-  return anglicky;
+  const klic = jenServer ? 'server' : 'vse';
+  anglicky[klic] ??= vytvorPrekladac(EN.server, jenServer ? {} : EN.texty, 'en-GB');
+  return anglicky[klic];
 }

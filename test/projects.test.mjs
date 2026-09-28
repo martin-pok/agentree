@@ -80,3 +80,23 @@ test('projekty: CSV export pro vyúčtování (BOM, středníky, uvozovky, ochra
   assert.ok(line.includes(';3;30;2;'), 'zadání, tokeny (vstup + výstup, bez režie cache) a hodiny s aktivitou za 30 dní');
   assert.ok(line.includes('"/Users/x/web; klient"'));
 });
+
+test('projekty: CSV export v angličtině (hlavička, stavy, čárka) a názvy od uživatele beze změny', () => {
+  const now = Date.parse('2026-09-11T12:00:00Z');
+  const konverzace = [
+    { title: 'Konverzace bez názvu', app: 'Claude Code', model: 'claude-opus', status: 'failed', startedAt: now - 3600e3, lastAt: now, turns: 2, tokens: { input: 1000, output: 234 }, hourly: { '2026-09-11T11': 3 }, cwd: '/Users/x/web, klient', url: '' },
+    { title: 'Moje', app: 'Codex', status: 'needs_input', startedAt: now, lastAt: now },
+    { title: 'Plánovaná úloha · Ranní souhrn', app: 'Claude Code', status: null, startedAt: now, lastAt: now },
+  ];
+  const cs = projectCsv(konverzace, now).split('\r\n');
+  assert.ok(cs[1].includes(';Selhalo;'), 'selhání má český název, ne kód stavu');
+  assert.ok(cs[3].includes(';Mimo okno sledování;'));
+
+  const text = projectCsv(konverzace, now, 'en');
+  const [hlavicka, prvni, druhy, treti] = text.split('\r\n');
+  assert.equal(hlavicka, '\uFEFFConversation,App,Model,Status,Started,Last activity,Prompts,Tokens,Active hours (30 days),Folder,Link');
+  assert.ok(prvni.startsWith('Untitled conversation,Claude Code,claude-opus,Failed,'), 'název od Agenteeq se přeloží');
+  assert.ok(prvni.endsWith(',2,1234,1,"/Users/x/web, klient",'), 'čísla bez oddělovače tisíců, složka s čárkou v uvozovkách a nepřeložená');
+  assert.ok(druhy.startsWith('Moje,Codex,,Needs a decision,'), 'název od uživatele se nepřekládá, i když ho rozhraní zná jako popisek');
+  assert.ok(treti.startsWith('Scheduled task · Ranní souhrn,Claude Code,,Outside the tracking window,'), 'jméno úlohy zůstane, přeloží se jen text Agenteeq');
+});
