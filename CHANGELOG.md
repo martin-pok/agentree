@@ -10,6 +10,9 @@
   nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
 - Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
   „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
+- Popis vydání na GitHubu má čistou osnovu nadpisů: název vydání je `##` s velkým počátečním
+  písmenem, skupiny změn pod ním `###`, „Ke stažení“ a další sekce zase `##`. Dřív byl název
+  `###` a začínal malým písmenem. Zveřejnění popis přegeneruje, takže se to projeví i u 0.29.0.
 
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
