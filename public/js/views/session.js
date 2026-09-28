@@ -9,7 +9,8 @@ import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
-import { tr, LOCALE } from '../i18n.js';
+import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
+import { modifikator, MOD } from '../system.js';
 
 const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
 const MAX_RENDERED = 400;
@@ -202,7 +203,7 @@ function mount(el, [id]) {
     }
   });
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && e.target.closest('[data-reply] textarea')) {
+    if (e.key === 'Enter' && modifikator(e) && e.target.closest('[data-reply] textarea')) {
       e.preventDefault();
       e.target.closest('form').requestSubmit();
     }
@@ -271,7 +272,7 @@ function update() {
   }
 
   fill(el, 'head', `
-    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na tomto Macu')}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
+    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
@@ -325,7 +326,7 @@ function update() {
       slot.innerHTML = `<form class="reply" data-reply>
         <label class="sr-only" for="reply-in">${tr('Zpráva pro model')}</label>
         <textarea id="reply-in" rows="2" maxlength="20000" placeholder="${tr('Napiš další zprávu…')}"></textarea>
-        <div class="reply-actions"><span class="muted small"><kbd>⌘</kbd><kbd>↵</kbd> ${tr('odešle')}</span><button type="button" class="btn btn--sm" data-chat-stop hidden>${tr('Zastavit')}</button><button type="submit" class="btn btn--sm btn--primary">${tr('Odeslat')}</button></div>
+        <div class="reply-actions"><span class="muted small"><kbd>${MOD}</kbd><kbd>↵</kbd> ${tr('odešle')}</span><button type="button" class="btn btn--sm" data-chat-stop hidden>${tr('Zastavit')}</button><button type="submit" class="btn btn--sm btn--primary">${tr('Odeslat')}</button></div>
       </form>`;
     }
     const working = s.status === 'working';

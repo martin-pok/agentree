@@ -3,7 +3,8 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { run, shellQuote } from './util.js';
-import { kandidatiProgramu } from './platform.js';
+import { kandidatiProgramu, POCITAC, ZKRATKA_VLOZIT } from './platform.js';
+import { ui } from './texty.js';
 
 // Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů – klient nikdy neposílá příkaz.
 
@@ -11,15 +12,15 @@ export const PROMPT_MAX = 20000;
 const URL_PROMPT_MAX = 6000;
 const BUNDLED_CODEX = '/Applications/ChatGPT.app/Contents/Resources/codex';
 
-export const CLAUDE_PERMISSIONS = { plan: 'Jen plán, bez změn', acceptEdits: 'Smí upravovat soubory' };
-export const CODEX_SANDBOXES = { 'read-only': 'Jen čtení', 'workspace-write': 'Smí upravovat projekt' };
+export const CLAUDE_PERMISSIONS = { plan: ui('Jen plán, bez změn'), acceptEdits: ui('Smí upravovat soubory') };
+export const CODEX_SANDBOXES = { 'read-only': ui('Jen čtení'), 'workspace-write': ui('Smí upravovat projekt') };
 
 export const MODES = {
-  terminal: 'V Terminálu',
-  background: 'Na pozadí',
-  app: 'V aplikaci',
-  web: 'Na webu',
-  local: 'Lokálně',
+  terminal: ui('V Terminálu'),
+  background: ui('Na pozadí'),
+  app: ui('V aplikaci'),
+  web: ui('Na webu'),
+  local: ui('Lokálně'),
 };
 
 // Parametr ?q= není u webových služeb oficiálně dokumentovaný – zadání se proto vždy i zkopíruje do schránky.
@@ -72,19 +73,19 @@ export function launchTargets(env) {
   // Pořadí režimů = doporučení: nejdřív aplikace, pak práce na pozadí, Terminál až nakonec.
   const claudeModes = [...(claudeApp ? ['app'] : []), ...(bins.claude ? ['background', 'terminal'] : [])];
   if (claudeModes.length) {
-    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: claudeModes, projectModes: ['background', 'terminal'], optionalFolderModes: ['app'], permissions: CLAUDE_PERMISSIONS, note: 'Běží na tvém předplatném Claude.' });
+    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: claudeModes, projectModes: ['background', 'terminal'], optionalFolderModes: ['app'], permissions: CLAUDE_PERMISSIONS, note: ui('Běží na tvém předplatném Claude.') });
   }
   const codexModes = [...(chatgptApp ? ['app'] : []), ...(bins.codex ? ['background', 'terminal'] : [])];
   if (codexModes.length) {
-    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['background', 'terminal'], sandboxes: CODEX_SANDBOXES, note: 'Běží na tvém předplatném ChatGPT.' });
+    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['background', 'terminal'], sandboxes: CODEX_SANDBOXES, note: ui('Běží na tvém předplatném ChatGPT.') });
   }
-  if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'S osobním Google účtem má bezplatný denní limit.' });
-  if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: 'Podle nastavení Qwen Code.' });
+  if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: ui('S osobním Google účtem má bezplatný denní limit.') });
+  if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: ui('Podle nastavení Qwen Code.') });
   if (ollama.ok) {
-    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? 'Lokální model na tvém Macu – zdarma, data nikam neodcházejí.' : 'Ollama běží, ale zatím nemá stažený žádný model. Stáhneš ho v aplikaci Ollama.' });
+    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? ui('Lokální model na {0} – zdarma, data nikam neodcházejí.', POCITAC.tvem) : ui('Ollama běží, ale zatím nemá stažený žádný model. Stáhneš ho v aplikaci Ollama.') });
   }
   for (const [id, w] of Object.entries(WEB)) {
-    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? 'Zadání se předvyplní do nové konverzace; zůstane i ve schránce (⌘V).' : 'Zadání čeká ve schránce (⌘V) – vložíš ho do pole zprávy.' });
+    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? ui('Zadání se předvyplní do nové konverzace; zůstane i ve schránce ({0}).', ZKRATKA_VLOZIT) : ui('Zadání čeká ve schránce ({0}) – vložíš ho do pole zprávy.', ZKRATKA_VLOZIT) });
   }
   return out;
 }
@@ -93,19 +94,19 @@ const fail = (error, field) => ({ ok: false, error, field });
 
 export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.randomUUID() } = {}) {
   const target = launchTargets(env).find((t) => t.id === input?.agent);
-  if (!target) return fail('Tento agent na tomto počítači není k dispozici.', 'agent');
+  if (!target) return fail(ui('Tento agent na tomto počítači není k dispozici.'), 'agent');
   const mode = input.mode;
-  if (!target.modes.includes(mode)) return fail('Tento režim agent nepodporuje.', 'mode');
+  if (!target.modes.includes(mode)) return fail(ui('Tento režim agent nepodporuje.'), 'mode');
   const prompt = typeof input.prompt === 'string' ? input.prompt.trim() : '';
-  if (!prompt) return fail('Napiš, co má agent udělat.', 'prompt');
-  if (prompt.length > PROMPT_MAX) return fail(`Zadání může mít nejvýš ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, 'prompt');
+  if (!prompt) return fail(ui('Napiš, co má agent udělat.'), 'prompt');
+  if (prompt.length > PROMPT_MAX) return fail(ui('Zadání může mít nejvýš {0} znaků.', PROMPT_MAX.toLocaleString('cs-CZ')), 'prompt');
 
   let cwd = null;
   const folderOptional = target.optionalFolderModes?.includes(mode) && typeof input.cwd === 'string' && input.cwd !== '';
   if (target.projectModes.includes(mode) || folderOptional) {
-    if (typeof input.cwd !== 'string' || !path.isAbsolute(input.cwd) || /[\n\r\0]/.test(input.cwd)) return fail('Vyber složku projektu.', 'cwd');
+    if (typeof input.cwd !== 'string' || !path.isAbsolute(input.cwd) || /[\n\r\0]/.test(input.cwd)) return fail(ui('Vyber složku projektu.'), 'cwd');
     const st = await fsp.stat(input.cwd).catch(() => null);
-    if (!st?.isDirectory()) return fail('Tato složka neexistuje.', 'cwd');
+    if (!st?.isDirectory()) return fail(ui('Tato složka neexistuje.'), 'cwd');
     cwd = path.resolve(input.cwd);
   }
 
@@ -128,7 +129,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
         return { ok: true, plan: { ...base, kind: 'terminal', sessionId: `claude-code:${sessionUuid}`, command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.claude)} --session-id ${sessionUuid} -- ${promptArg()}` } };
       }
       const permission = input.permission ?? 'plan';
-      if (!CLAUDE_PERMISSIONS[permission]) return fail('Neznámé oprávnění.', 'permission');
+      if (!CLAUDE_PERMISSIONS[permission]) return fail(ui('Neznámé oprávnění.'), 'permission');
       return {
         ok: true,
         plan: { ...base, kind: 'background', permission, sessionId: `claude-code:${sessionUuid}`, argv: [bins.claude, '-p', '--session-id', sessionUuid, '--permission-mode', permission, '--', prompt] },
@@ -141,7 +142,7 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
       }
       if (mode === 'terminal') return { ok: true, plan: { ...base, kind: 'terminal', command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.codex)} -- ${promptArg()}` } };
       const sandbox = input.sandbox ?? 'read-only';
-      if (!CODEX_SANDBOXES[sandbox]) return fail('Neznámý režim sandboxu.', 'sandbox');
+      if (!CODEX_SANDBOXES[sandbox]) return fail(ui('Neznámý režim sandboxu.'), 'sandbox');
       return { ok: true, plan: { ...base, kind: 'background', sandbox, sessionId: null, argv: [bins.codex, 'exec', '--skip-git-repo-check', '-C', cwd, '-s', sandbox, '--', prompt] } };
     }
     case 'gemini-cli':
@@ -149,14 +150,14 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     case 'qwen-code':
       return { ok: true, plan: { ...base, kind: 'terminal', command: `cd ${shellQuote(cwd)} && ${shellQuote(bins.qwen)} -i ${promptArg()}` } };
     case 'ollama': {
-      if (!target.models.length) return fail('Ollama zatím nemá stažený žádný model. Stáhni si ho v aplikaci Ollama a zkus to znovu.', 'model');
+      if (!target.models.length) return fail(ui('Ollama zatím nemá stažený žádný model. Stáhni si ho v aplikaci Ollama a zkus to znovu.'), 'model');
       const model = input.model ?? target.models[0];
-      if (!target.models.includes(model)) return fail('Tento model v Ollamě není.', 'model');
+      if (!target.models.includes(model)) return fail(ui('Tento model v Ollamě není.'), 'model');
       return { ok: true, plan: { ...base, kind: 'local', model } };
     }
     default: {
       const w = WEB[target.id];
-      if (!w) return fail('Neznámý agent.', 'agent');
+      if (!w) return fail(ui('Neznámý agent.'), 'agent');
       const prefilled = Boolean(w.url && prompt.length <= URL_PROMPT_MAX);
       return { ok: true, plan: { ...base, kind: 'open', args: [prefilled ? w.url(prompt) : w.base], copyPrompt: true, handoff: prefilled ? 'confirm-or-paste' : 'paste' } };
     }

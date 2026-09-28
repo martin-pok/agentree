@@ -1,4 +1,5 @@
 // Klient Ollamy – lokální modely běží na počítači uživatele, zdarma a bez odesílání dat.
+import { ui } from './texty.js';
 
 export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchImpl = globalThis.fetch } = {}) {
   const url = (p) => `${baseUrl.replace(/\/$/, '')}${p}`;
@@ -39,7 +40,7 @@ export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchIm
       if (!res.ok || !res.body) {
         let detail = '';
         try { detail = (await res.json()).error || ''; } catch { /* bez těla */ }
-        throw new Error(`Ollama odpověděla ${res.status}${detail ? `: ${detail}` : ''}`);
+        throw new Error(detail ? ui('Ollama odpověděla {0}: {1}', res.status, detail) : ui('Ollama odpověděla {0}', res.status));
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

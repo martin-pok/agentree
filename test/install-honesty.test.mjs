@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { startTestServer, tempDir } from './helpers.mjs';
 import { noDataState } from '../src/connectors/install-state.js';
-import { appSupportDir, appInstalled } from '../src/platform.js';
+import { appSupportDir, appInstalled, POCITAC } from '../src/platform.js';
 
 // Složka s daty není důkaz instalace. ~/.gemini drží i nastavení MCP, ~/.copilot i VS Code zůstanou
 // po odinstalaci — a aplikace z nich tvrdila „Gemini CLI je nainstalovaný“, přestože příkaz `gemini`
@@ -19,7 +19,8 @@ test('tři stavy: nalezeno, nenalezeno, nevím — a nikdy tvrzení bez opory', 
 
   const ne = noDataState({ ...zaklad, installed: false });
   assert.equal(ne.state, 'missing', 'chybějící nástroj se nesmí tvářit jako připojený');
-  assert.match(ne.detail, /na tomto Macu není/);
+  // Mac, nebo počítač – podle systému, na kterém test běží (src/platform.js#POCITAC).
+  assert.ok(ne.detail.includes(`na ${POCITAC.tomto} není`), ne.detail);
   assert.match(ne.detail, /zůstala po něm jen složka ~\/\.gemini/, 'uživatel se dozví, proč aplikace nějakou stopu vidí');
   assert.doesNotMatch(ne.detail, /je nainstalovaný/);
 

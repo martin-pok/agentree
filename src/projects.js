@@ -3,6 +3,7 @@ import path from 'node:path';
 import { csv } from './csv.js';
 import { uid, hourKey, DAY } from './util.js';
 import { isSafeRef } from './git.js';
+import { ui } from './texty.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
@@ -151,7 +152,7 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
   const errors = {};
   const body = input && typeof input === 'object' ? input : {};
   const current = id ? items.find((p) => p.id === id) : null;
-  if (id && !current) return { ok: false, status: 404, errors: {}, error: 'Projekt neexistuje.' };
+  if (id && !current) return { ok: false, status: 404, errors: {}, error: ui('Projekt neexistuje.') };
   const next = current
     ? { ...current, folders: [...current.folders], settings: { ...current.settings } }
     : {
@@ -160,7 +161,7 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
     };
   if (body.cover !== undefined) {
     if (body.cover && COVER_PRESETS.includes(body.cover.preset)) next.cover = { preset: body.cover.preset };
-    else errors.cover = 'Vyber pozadí z nabídky.';
+    else errors.cover = ui('Vyber pozadí z nabídky.');
   }
   if (body.settings !== undefined) {
     const r = validateSettings(body.settings, next.settings);
@@ -170,46 +171,46 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
 
   if (!current || body.name !== undefined) {
     const name = typeof body.name === 'string' ? body.name.replace(/\s+/g, ' ').trim() : '';
-    if (!name) errors.name = 'Zadej název projektu.';
-    else if (name.length > LIMITS.name) errors.name = `Název může mít nejvýš ${LIMITS.name} znaků.`;
-    else if (items.some((p) => p.id !== next.id && p.name.toLowerCase() === name.toLowerCase())) errors.name = 'Projekt s tímto názvem už máš.';
+    if (!name) errors.name = ui('Zadej název projektu.');
+    else if (name.length > LIMITS.name) errors.name = ui('Název může mít nejvýš {0} znaků.', LIMITS.name);
+    else if (items.some((p) => p.id !== next.id && p.name.toLowerCase() === name.toLowerCase())) errors.name = ui('Projekt s tímto názvem už máš.');
     else next.name = name;
   }
   if (body.color !== undefined) {
     if (knownColor(body.color)) next.color = knownColor(body.color);
-    else errors.color = 'Vyber barvu z nabídky.';
+    else errors.color = ui('Vyber barvu z nabídky.');
   }
   if (body.description !== undefined) {
-    if (typeof body.description !== 'string' || body.description.length > LIMITS.description) errors.description = `Popis může mít nejvýš ${LIMITS.description} znaků.`;
+    if (typeof body.description !== 'string' || body.description.length > LIMITS.description) errors.description = ui('Popis může mít nejvýš {0} znaků.', LIMITS.description);
     else next.description = body.description.trim();
   }
   if (body.notes !== undefined) {
-    if (typeof body.notes !== 'string' || body.notes.length > LIMITS.notes) errors.notes = 'Poznámky jsou příliš dlouhé.';
+    if (typeof body.notes !== 'string' || body.notes.length > LIMITS.notes) errors.notes = ui('Poznámky jsou příliš dlouhé.');
     else next.notes = body.notes;
   }
   if (body.folders !== undefined) {
-    if (!Array.isArray(body.folders)) errors.folders = 'Neplatný seznam složek.';
+    if (!Array.isArray(body.folders)) errors.folders = ui('Neplatný seznam složek.');
     else {
       const folders = [];
       for (const raw of body.folders) {
         const f = typeof raw === 'string' ? raw.trim() : '';
         if (!f) continue;
-        if (!path.isAbsolute(f) || /[\n\r\0]/.test(f)) { errors.folders = `Cesta musí začínat lomítkem: ${f}`; break; }
+        if (!path.isAbsolute(f) || /[\n\r\0]/.test(f)) { errors.folders = ui('Cesta musí začínat lomítkem: {0}', f); break; }
         let st = null;
         try { st = fs.statSync(f); } catch { /* neexistuje */ }
-        if (!st?.isDirectory()) { errors.folders = `Složka neexistuje: ${f}`; break; }
+        if (!st?.isDirectory()) { errors.folders = ui('Složka neexistuje: {0}', f); break; }
         const resolved = path.resolve(f);
         if (!folders.includes(resolved)) folders.push(resolved);
       }
-      if (!errors.folders && folders.length > LIMITS.folders) errors.folders = `Projekt může mít nejvýš ${LIMITS.folders} složek.`;
+      if (!errors.folders && folders.length > LIMITS.folders) errors.folders = ui('Projekt může mít nejvýš {0} složek.', LIMITS.folders);
       if (!errors.folders) next.folders = folders;
     }
   }
   if (body.archived !== undefined) {
-    if (typeof body.archived !== 'boolean') errors.archived = 'Neplatná hodnota.';
+    if (typeof body.archived !== 'boolean') errors.archived = ui('Neplatná hodnota.');
     else next.archived = body.archived;
   }
-  if (Object.keys(errors).length) return { ok: false, status: 422, errors, error: 'Zkontroluj zvýrazněná pole.' };
+  if (Object.keys(errors).length) return { ok: false, status: 422, errors, error: ui('Zkontroluj zvýrazněná pole.') };
   next.updatedAt = now;
   return { ok: true, value: next };
 }
@@ -221,27 +222,27 @@ export function validateSettings(input, current = DEFAULT_PROJECT_SETTINGS) {
   if (b.repo !== undefined) {
     const repo = typeof b.repo === 'string' ? b.repo.trim() : null;
     if (repo === '') v.repo = '';
-    else if (!repo || !path.isAbsolute(repo) || /[\n\r\0]/.test(repo)) errors['settings.repo'] = 'Cesta k repozitáři musí začínat lomítkem.';
+    else if (!repo || !path.isAbsolute(repo) || /[\n\r\0]/.test(repo)) errors['settings.repo'] = ui('Cesta k repozitáři musí začínat lomítkem.');
     else {
       let st = null;
       try { st = fs.statSync(repo); } catch { /* neexistuje */ }
-      if (!st?.isDirectory()) errors['settings.repo'] = 'Složka repozitáře neexistuje.';
+      if (!st?.isDirectory()) errors['settings.repo'] = ui('Složka repozitáře neexistuje.');
       else v.repo = path.resolve(repo);
     }
   }
   if (b.baseBranch !== undefined) {
     if (b.baseBranch === '') v.baseBranch = '';
     else if (isSafeRef(b.baseBranch)) v.baseBranch = b.baseBranch;
-    else errors['settings.baseBranch'] = 'Neplatný název větve.';
+    else errors['settings.baseBranch'] = ui('Neplatný název větve.');
   }
   for (const k of ['isolate', 'attachBrief']) {
     if (b[k] === undefined) continue;
     if (typeof b[k] === 'boolean') v[k] = b[k];
-    else errors[`settings.${k}`] = 'Neplatná hodnota.';
+    else errors[`settings.${k}`] = ui('Neplatná hodnota.');
   }
   if (b.agents !== undefined) {
     const list = Array.isArray(b.agents) ? [...new Set(b.agents)] : null;
-    if (!list || !list.length || list.length > 4 || list.some((a) => !TEAM_AGENTS.includes(a))) errors['settings.agents'] = 'Vyber 1 až 4 agenty.';
+    if (!list || !list.length || list.length > 4 || list.some((a) => !TEAM_AGENTS.includes(a))) errors['settings.agents'] = ui('Vyber 1 až 4 agenty.');
     else v.agents = list;
   }
   const oneOf = (k, allowed, msg) => {
@@ -249,17 +250,17 @@ export function validateSettings(input, current = DEFAULT_PROJECT_SETTINGS) {
     if (allowed.includes(b[k])) v[k] = b[k];
     else errors[`settings.${k}`] = msg;
   };
-  oneOf('mode', ['terminal', 'background'], 'Neplatný režim spuštění.');
-  oneOf('permission', ['plan', 'acceptEdits'], 'Neplatné oprávnění.');
-  oneOf('sandbox', ['read-only', 'workspace-write'], 'Neplatný sandbox.');
-  oneOf('notify', NOTIFY_MODES, 'Neplatné nastavení upozornění.');
+  oneOf('mode', ['terminal', 'background'], ui('Neplatný režim spuštění.'));
+  oneOf('permission', ['plan', 'acceptEdits'], ui('Neplatné oprávnění.'));
+  oneOf('sandbox', ['read-only', 'workspace-write'], ui('Neplatný sandbox.'));
+  oneOf('notify', NOTIFY_MODES, ui('Neplatné nastavení upozornění.'));
   if (b.instructions !== undefined) {
-    if (typeof b.instructions !== 'string' || b.instructions.length > LIMITS.instructions) errors['settings.instructions'] = `Pravidla mohou mít nejvýš ${LIMITS.instructions} znaků.`;
+    if (typeof b.instructions !== 'string' || b.instructions.length > LIMITS.instructions) errors['settings.instructions'] = ui('Pravidla mohou mít nejvýš {0} znaků.', LIMITS.instructions);
     else v.instructions = b.instructions;
   }
   if (b.tokenBudget !== undefined) {
     const n = Number(b.tokenBudget);
-    if (!Number.isInteger(n) || n < 0 || n > 1e11) errors['settings.tokenBudget'] = 'Rozpočet musí být celé nezáporné číslo.';
+    if (!Number.isInteger(n) || n < 0 || n > 1e11) errors['settings.tokenBudget'] = ui('Rozpočet musí být celé nezáporné číslo.');
     else v.tokenBudget = n;
   }
   return { value: v, errors };
@@ -291,9 +292,9 @@ export function resolveProject(summary, { items, assignments }, { worktreeRoot =
 // projectId: id projektu = ručně do projektu, NO_PROJECT = záměrně mimo projekty, null = zpět na automatické pravidlo složky.
 export function assignSessions(data, sessionIds, projectId, summaryOf = () => null) {
   if (!Array.isArray(sessionIds) || !sessionIds.length || sessionIds.length > LIMITS.assign || sessionIds.some((s) => typeof s !== 'string' || !s || s.length > 200)) {
-    return { ok: false, error: 'Neplatný výběr konverzací.' };
+    return { ok: false, error: ui('Neplatný výběr konverzací.') };
   }
-  if (projectId !== null && projectId !== NO_PROJECT && !data.items.some((p) => p.id === projectId)) return { ok: false, error: 'Projekt neexistuje.' };
+  if (projectId !== null && projectId !== NO_PROJECT && !data.items.some((p) => p.id === projectId)) return { ok: false, error: ui('Projekt neexistuje.') };
   const unique = [...new Set(sessionIds)];
   for (const sid of unique) {
     if (projectId === null) delete data.assignments[sid];

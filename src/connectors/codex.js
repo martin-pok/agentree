@@ -4,6 +4,8 @@ import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, l
 import { touch, pushEntry, resetTranscript } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
+import { ui } from '../texty.js';
+import { POCITAC } from '../platform.js';
 
 const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,24 +21,24 @@ export function subagentOf(meta) {
   const sub = meta.source?.subagent;
   if (sub?.thread_spawn) {
     const nick = typeof sub.thread_spawn.agent_nickname === 'string' ? sub.thread_spawn.agent_nickname.trim() : '';
-    return { parentId, kind: 'agent', label: nick ? `Pomocný agent ${clip(nick, 40)}` : 'Pomocný agent' };
+    return { parentId, kind: 'agent', label: nick ? ui('Pomocný agent {0}', clip(nick, 40)) : ui('Pomocný agent') };
   }
-  if (meta.thread_source === 'guardian_review' || sub?.other === 'guardian') return { parentId, kind: 'review', label: 'Automatická kontrola Codexu' };
-  return { parentId, kind: 'other', label: 'Pomocné vlákno Codexu' };
+  if (meta.thread_source === 'guardian_review' || sub?.other === 'guardian') return { parentId, kind: 'review', label: ui('Automatická kontrola Codexu') };
+  return { parentId, kind: 'other', label: ui('Pomocné vlákno Codexu') };
 }
 
 export function codexAppName(originator = '') {
   if (/desktop/i.test(originator)) return 'Codex · ChatGPT app';
   if (/vscode/i.test(originator)) return 'Codex · VS Code';
-  if (/exec/i.test(originator)) return 'Codex · na pozadí';
+  if (/exec/i.test(originator)) return ui('Codex · na pozadí');
   return 'Codex CLI';
 }
 
 export function windowLabel(minutes) {
-  if (minutes === 300) return 'Limit 5 h';
-  if (minutes === 10080) return 'Týdenní limit';
-  if (minutes >= 1440 && minutes % 1440 === 0) return `Limit ${minutes / 1440} d`;
-  return minutes ? `Limit ${Math.round(minutes / 60)} h` : 'Limit';
+  if (minutes === 300) return ui('Limit 5 h');
+  if (minutes === 10080) return ui('Týdenní limit');
+  if (minutes >= 1440 && minutes % 1440 === 0) return ui('Limit {0} d', minutes / 1440);
+  return minutes ? ui('Limit {0} h', Math.round(minutes / 60)) : 'Limit';
 }
 
 const parseJson = (v) => {
@@ -78,12 +80,12 @@ export function mapCodexItem(item) {
       let names = [];
       if (Array.isArray(changes)) names = changes.map((c) => lastSegment(typeof c === 'string' ? c : c?.path || c?.file || ''));
       else if (changes && typeof changes === 'object') names = Object.keys(changes).map(lastSegment);
-      return { role: 'tool', tool: 'Úprava souborů', text: names.filter(Boolean).slice(0, 6).join(', ') };
+      return { role: 'tool', tool: ui('Úprava souborů'), text: names.filter(Boolean).slice(0, 6).join(', ') };
     }
     case 'WebSearch':
       return { role: 'tool', tool: 'Web', text: clip(item.query || item.action?.query || '', 200) };
     case 'ContextCompaction':
-      return { role: 'system', text: 'Starší část konverzace byla shrnuta' };
+      return { role: 'system', text: ui('Starší část konverzace byla shrnuta') };
     default:
       return null;
   }
@@ -190,7 +192,7 @@ export function createCodexConnector(ctx) {
     const zustatek = zustatekKreditu(c);
     if (zustatek !== null) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
     if (rl.rate_limit_reached_type) {
-      s.limit = { reached: true, text: `Limit plánu ${rl.plan_type || ''} je vyčerpaný`.replace('  ', ' '), at: ts, resetsAt: toTs(rl.primary?.resets_at) || null };
+      s.limit = { reached: true, text: rl.plan_type ? ui('Limit plánu {0} je vyčerpaný', rl.plan_type) : ui('Limit plánu je vyčerpaný'), at: ts, resetsAt: toTs(rl.primary?.resets_at) || null };
     } else if (s.limit && ts > s.limit.at) {
       s.limit = null;
     }
@@ -218,7 +220,7 @@ export function createCodexConnector(ctx) {
         if (p.cwd) s.cwd = p.cwd;
         return;
       case 'compacted':
-        pushEntry(s, { at: ts, role: 'system', text: 'Starší část konverzace byla shrnuta' });
+        pushEntry(s, { at: ts, role: 'system', text: ui('Starší část konverzace byla shrnuta') });
         return;
       case 'event_msg':
         switch (p.type) {
@@ -228,7 +230,7 @@ export function createCodexConnector(ctx) {
             s.runningAt = Math.min(ts, Date.now());
             s.turnStartedAt = ts;
             s.turnSteps = 0;
-            s.activity = 'Přemýšlí…';
+            s.activity = ui('Přemýšlí…');
             s.pending = null;
             touch(s, ts);
             return;
@@ -452,12 +454,12 @@ export function createCodexConnector(ctx) {
 
   return {
     id: 'codex',
-    name: 'Codex · ChatGPT app, CLI a VS Code',
+    name: ui('Codex · ChatGPT app, CLI a VS Code'),
     provider: 'openai',
     kind: 'local',
     verified: true,
     source: '~/.codex/sessions (a CODEX_HOME)',
-    description: 'Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.',
+    description: ui('Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.'),
     async start() {
       await scan();
       koreny.start();
@@ -477,7 +479,7 @@ export function createCodexConnector(ctx) {
       const count = files.size;
       return {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? `Sleduji ${count} konverzací za posledních ${config.windowDays} dní.` : exists ? 'Složka existuje, zatím bez konverzací.' : 'Codex na tomto počítači není.',
+        detail: count ? ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays) : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Codex na {0} není.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt,

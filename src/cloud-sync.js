@@ -6,7 +6,8 @@
 // Každý řádek projde seznamem povolených polí (POVOLENA) – co v něm není, do cloudu neodejde,
 // i kdyby to sem někdo omylem přidal. Tabulky v databázi textový sloupec pro obsah nemají.
 import os from 'node:os';
-import { SYSTEM_UCTU } from './platform.js';
+import { SYSTEM_UCTU, POCITAC } from './platform.js';
+import { ui } from './texty.js';
 
 const INTERVAL_MS = 5 * 60 * 1000;
 const CASOVY_LIMIT_MS = 20000;
@@ -149,11 +150,11 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
         signal: AbortSignal.timeout(CASOVY_LIMIT_MS),
       });
     } catch {
-      throw Object.assign(new Error('Server účtů neodpovídá. Souhrny se pošlou při dalším pokusu.'), { sit: true });
+      throw Object.assign(new Error(ui('Server účtů neodpovídá. Souhrny se pošlou při dalším pokusu.')), { sit: true });
     }
     let json = null;
     try { json = await res.json(); } catch { /* prázdná odpověď */ }
-    if (!res.ok) throw Object.assign(new Error(String(json?.message || `Chyba ${res.status}`)), { status: res.status });
+    if (!res.ok) throw Object.assign(new Error(String(json?.message || ui('Chyba {0}', res.status))), { status: res.status });
     return json;
   }
 
@@ -214,7 +215,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
   async function nastav(hodnota) {
     const token = await ucet.pristup();
     const uzivatel = ucet.uzivatelId();
-    if (!token || !uzivatel) throw Object.assign(new Error('Pro synchronizaci se nejdřív přihlas.'), { status: 401 });
+    if (!token || !uzivatel) throw Object.assign(new Error(ui('Pro synchronizaci se nejdřív přihlas.')), { status: 401 });
     await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: Boolean(hodnota) }, prefer: 'return=minimal' });
     // Vypnutí souhrny z účtu smaže (všech zařízení – volba platí pro celý účet). Zařízení zůstanou.
     if (!hodnota) {
@@ -259,7 +260,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
 
   // Náhled přesně toho, co by odešlo – rozhraní ho ukazuje v „Co přesně posíláme“.
   function nahled() {
-    return data('(id tohoto Macu v účtu)');
+    return data(ui('(id {0} v účtu)', POCITAC.tohoto));
   }
 
   return { status, start, stop, synchronizuj, nastav, nactiVolbu, nahled };

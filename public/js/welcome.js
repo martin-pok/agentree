@@ -3,7 +3,8 @@ import { state, subscribe } from './state.js';
 import { ICON, glyph } from './icons.js';
 import { esc } from './format.js';
 import { goToExtension } from './jump.js';
-import { tr } from './i18n.js';
+import { tr, tvemPocitaci } from './i18n.js';
+import { JE_MAC, SYSTEM } from './system.js';
 import { adresaSouboru } from './verze.js';
 
 let dialog;
@@ -13,7 +14,7 @@ const steps = [
   { tag: tr('Limity a peníze'), title: tr('Víš, kolik\nti zbývá.'), text: tr('Limity Claude a Codexu vedle sebe, po rozbalení i ostatní nástroje. Útrata sama pozná tvá předplatná a přepočítá je na koruny podle kurzu ČNB.'), visual: 'limits' },
   { tag: tr('Pořádek v každé zakázce'), title: tr('Konverzace patří\nk projektům.'), text: tr('Spoj agenty podle klienta nebo složky. Přidej logo klienta, přetáhni karty do svého pořadí a měj brief po ruce, když zadáváš další práci.'), visual: 'projects' },
   { tag: tr('Agenti i v prohlížeči'), title: 'ChatGPT, Gemini\na Claude.ai taky.', text: tr('Rozšíření pro Chrome přidá do přehledu i chaty z webu: jestli agent pracuje, počet zpráv a dosažený limit. Zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.'), visual: 'browser', action: tr('Nainstalovat rozšíření') },
-  { tag: tr('Připraveno na tvém Macu'), title: tr('Tvá práce.\nTvá data.'), text: tr('Přepisy zůstávají na tomto počítači, bez účtu a bez odesílání. Telefon, který spáruješ, data jen čte.'), visual: 'privacy' },
+  { tag: tr('Připraveno na {0}', tvemPocitaci()), title: tr('Tvá práce.\nTvá data.'), text: tr('Přepisy zůstávají na tomto počítači, bez účtu a bez odesílání. Telefon, který spáruješ, data jen čte.'), visual: 'privacy' },
 ];
 
 function visual(kind) {
@@ -23,9 +24,9 @@ function visual(kind) {
   if (kind === 'limits') return `<div class="welcome-limits"><span class="welcome-demo-label">${tr('Ukázka limitů')}</span>
     ${[['Claude · Limit 5 h', 41, 'teal'], [tr('Codex · Týdenní limit'), 78, 'brass']].map(([l, p, t]) => `<div class="wl-row"><span>${esc(l)}</span><b>${p} %</b><i class="wl-bar wl-bar--${t}"><em style="width:${p}%"></em></i></div>`).join('')}
     <div class="wl-spend"><span>${tr('Útrata tento měsíc')}</span><b>${tr('850 Kč')}</b></div></div><p class="welcome-caption">${tr('Ceny předplatných v korunách, kurzem ČNB')}</p>`;
-  if (kind === 'browser') return `<div class="welcome-browser"><div class="wb-bar"><i></i><i></i><i></i><span>gemini.google.com</span></div><div class="wb-body"><div class="wb-agent">${glyph('gemini')}<span>Gemini</span><em><i class="welcome-dot working"></i>${tr('pracuje')}</em></div><div class="wb-input"><span>${tr('Navrhni název kavárny…')}</span><small>${ICON.spark}${tr('Vloženo z Agenteeq')}</small></div></div></div><div class="welcome-browser-sites">${['openai', 'claude', 'gemini', 'perplexity', 'copilot'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div><p class="welcome-caption">${tr('Rozšíření pro Chrome')}<br>${tr('Data jdou jen do Agenteeq na tvém Macu.')}</p>`;
+  if (kind === 'browser') return `<div class="welcome-browser"><div class="wb-bar"><i></i><i></i><i></i><span>gemini.google.com</span></div><div class="wb-body"><div class="wb-agent">${glyph('gemini')}<span>Gemini</span><em><i class="welcome-dot working"></i>${tr('pracuje')}</em></div><div class="wb-input"><span>${tr('Navrhni název kavárny…')}</span><small>${ICON.spark}${tr('Vloženo z Agenteeq')}</small></div></div></div><div class="welcome-browser-sites">${['openai', 'claude', 'gemini', 'perplexity', 'copilot'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div><p class="welcome-caption">${tr('Rozšíření pro Chrome')}<br>${tr('Data jdou jen do Agenteeq na {0}.', tvemPocitaci())}</p>`;
   const n = state.sessions.size;
-  return `<div class="welcome-local"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na tvém Macu')}</span><span class="welcome-local-count">${n}</span><span>${tr('nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
+  return `<div class="welcome-local"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na {0}', tvemPocitaci())}</span><span class="welcome-local-count">${n}</span><span>${tr('nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
 }
 
 export function showWelcome() {
@@ -34,7 +35,7 @@ export function showWelcome() {
   dialog = document.createElement('dialog');
   dialog.className = 'welcome-dialog';
   dialog.setAttribute('aria-labelledby', 'welcome-title');
-  dialog.innerHTML = `<div class="welcome-art" aria-hidden="true"></div><div class="welcome-content"><div class="welcome-top"><span>Agenteeq <span class="welcome-mac">${tr('pro Mac')}</span></span><button type="button" class="link" data-welcome-skip>${tr('Přeskočit')}</button></div><div class="welcome-copy" aria-live="polite"></div><p class="welcome-error" role="alert" hidden></p><footer class="welcome-footer"><div class="welcome-dots" aria-label="${tr('Postup průvodcem')}"></div><div class="welcome-buttons"><button type="button" class="btn" data-welcome-back>${tr('Zpět')}</button><button type="button" class="btn btn--primary" data-welcome-next>${tr('Pokračovat')}</button></div></footer></div>`;
+  dialog.innerHTML = `<div class="welcome-art" aria-hidden="true"></div><div class="welcome-content"><div class="welcome-top"><span>Agenteeq${JE_MAC ? ` <span class="welcome-mac">${tr('pro Mac')}</span>` : SYSTEM === 'windows' ? ` <span class="welcome-mac">${tr('pro Windows')}</span>` : ''}</span><button type="button" class="link" data-welcome-skip>${tr('Přeskočit')}</button></div><div class="welcome-copy" aria-live="polite"></div><p class="welcome-error" role="alert" hidden></p><footer class="welcome-footer"><div class="welcome-dots" aria-label="${tr('Postup průvodcem')}"></div><div class="welcome-buttons"><button type="button" class="btn" data-welcome-back>${tr('Zpět')}</button><button type="button" class="btn btn--primary" data-welcome-next>${tr('Pokračovat')}</button></div></footer></div>`;
   document.body.append(dialog);
   let index = 0;
   let busy = false;

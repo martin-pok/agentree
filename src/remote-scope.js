@@ -4,6 +4,9 @@
 // složkou, instalovat hooky, měnit klíče a číst disk. Ukradený telefon nebo token z cizí Wi‑Fi
 // by tak byl vzdálené spouštění příkazů. Teď je nejhorší dopad přečtení stavu.
 
+import { POCITAC } from './platform.js';
+import { ui } from './texty.js';
+
 // Jediné změny, které telefon smí: spárovat se a označit upozornění jako přečtená.
 const POVOLENE_ZMENY = [
   ['POST', /^\/api\/lan\/pair$/],
@@ -18,9 +21,9 @@ export function remoteScope(method, pathname) {
   const m = String(method || 'GET').toUpperCase();
   if (m === 'GET' || m === 'HEAD') {
     return ZAKAZANE_CTENI.some((re) => re.test(pathname))
-      ? { ok: false, error: 'Procházet disk lze jen na Macu.' }
+      ? { ok: false, error: ui('Procházet disk lze jen {0}.', POCITAC.naHostiteli) }
       : { ok: true };
   }
   if (POVOLENE_ZMENY.some(([mm, re]) => mm === m && re.test(pathname))) return { ok: true };
-  return { ok: false, error: 'Tuhle akci lze provést jen na Macu. Telefon slouží ke čtení stavu.' };
+  return { ok: false, error: ui('Tuhle akci lze provést jen {0}. Telefon slouží ke čtení stavu.', POCITAC.naHostiteli) };
 }

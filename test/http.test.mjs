@@ -206,18 +206,21 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.equal((await a.get('/api/state')).body.settings.language, 'cs');
     const cesky = await fetch(`${srv.url}/`);
     assert.equal(cesky.headers.get('content-type'), 'text/html; charset=utf-8');
-    assert.match(await cesky.text(), /<html lang="cs">/);
+    const ceskyText = await cesky.text();
+    assert.match(ceskyText, /<html lang="cs" data-system="(macos|windows|linux)">/);
+    // Systém je týž, jaký pošle snímek stavu – rozhraní podle něj píše „tento Mac“ a ⌘, nebo „tento počítač“ a Ctrl.
+    assert.equal(ceskyText.match(/data-system="([a-z]+)"/)[1], (await a.get('/api/state')).body.host.system);
 
     assert.equal((await a.send('PUT', '/api/settings', { language: 'de' })).status, 422);
     assert.equal((await a.send('PUT', '/api/settings', { language: 'en' })).body.settings.language, 'en');
     const anglicky = await fetch(`${srv.url}/`);
     const anglickyText = await anglicky.text();
-    assert.match(anglickyText, /<html lang="en">/);
-    assert.doesNotMatch(anglickyText, /<html lang="cs">/);
+    assert.match(anglickyText, /<html lang="en" data-system="/);
+    assert.doesNotMatch(anglickyText, /<html lang="cs"/);
     assert.notEqual(cesky.headers.get('etag'), anglicky.headers.get('etag'), 'jiný jazyk musí dostat jiný ETag, jinak prohlížeč ukáže starou cache');
 
     assert.equal((await a.send('PUT', '/api/settings', { language: 'cs' })).body.settings.language, 'cs');
-    assert.match(await (await fetch(`${srv.url}/`)).text(), /<html lang="cs">/);
+    assert.match(await (await fetch(`${srv.url}/`)).text(), /<html lang="cs" data-system="/);
   });
 });
 

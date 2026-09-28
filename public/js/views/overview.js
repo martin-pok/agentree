@@ -10,7 +10,7 @@ import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toas
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
-import { tr, LOCALE } from '../i18n.js';
+import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -64,16 +64,16 @@ function onboardingHtml() {
   // Propojení s Claude Code nabízet jen tomu, kdo Claude Code na Macu má.
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   const steps = [
-    { done: state.sessions.size > 0, label: tr('Agenti na tomto Macu nalezeni'), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni">${tr('Zdroje dat')}</a>` },
+    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni">${tr('Zdroje dat')}</a>` },
     ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' }] : []),
     { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
     { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
-    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: '<button class="btn btn--sm" type="button" data-onboard-launch>Zkusit</button>' },
+    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
   ];
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return '';
   return `<section class="card onboard" aria-labelledby="ob-h">
-    <div class="onboard-head"><div><h2 id="ob-h">${tr('Začni s Agenteeq')}</h2><p class="muted small">${done} z ${steps.length} hotovo</p></div>
+    <div class="onboard-head"><div><h2 id="ob-h">${tr('Začni s Agenteeq')}</h2><p class="muted small">${tr('{0} z {1} hotovo', done, steps.length)}</p></div>
       <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="${tr('Průvodce nastavením')}"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
       <button class="link" type="button" data-onboard-dismiss>${tr('Skrýt průvodce')}</button></div>
     <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
@@ -105,7 +105,7 @@ function mount(el) {
         </div>
         <div data-region="chart"></div>
         <div class="legend" data-region="legend"></div>
-        <p class="note note--tight">${tr('Vstup + výstup z přepisů na tomto Macu. Není to cena ani kredity – ty najdeš v')} <a class="link-inline" href="#/utrata">${tr('Útratě')}</a>.</p>
+        <p class="note note--tight">${tr('Vstup + výstup z přepisů na {0}. Není to cena ani kredity – ty najdeš v', tomtoPocitaci())} <a class="link-inline" href="#/utrata">${tr('Útratě')}</a>.</p>
       </section>
     </div>
     <div class="ov-col bal-col">
@@ -125,7 +125,7 @@ function mount(el) {
     </div>
   </div>
   <section class="ov-wide" data-enter style="--i:5" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">${tr('Běží na tomto Macu')}</h2><a class="link" href="#/nastaveni">${tr('Zdroje dat')}</a></div>
+    <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}', tomtoPocitaci())}</h2><a class="link" href="#/nastaveni">${tr('Zdroje dat')}</a></div>
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
 `;
@@ -326,7 +326,7 @@ function update(topics = new Set(['all'])) {
         ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: tr('rozpočtu'), size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
           <span class="big">${tween('ov-spend', sp.month.total, `money:${sp.currency}`)}</span>
-          <span class="muted small">${total ? `z ${fmtMoney(total, sp.currency)}` : tr('Rozpočet zatím nemáš nastavený')}</span>
+          <span class="muted small">${total ? tr('z {0}', fmtMoney(total, sp.currency)) : tr('Rozpočet zatím nemáš nastavený')}</span>
           <span class="muted small">${tr('Prognóza do konce měsíce')} ${fmtMoney(sp.forecast, sp.currency)}</span>
         </div>
       </div>

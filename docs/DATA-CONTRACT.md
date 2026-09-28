@@ -108,6 +108,22 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 
 Každých 15 s komentář `: ping`.
 
+## Jazyk textů a systém počítače
+
+Texty, které server posílá do rozhraní (chybové hlášky `error`/`errors`, stavy zdrojů `detail`,
+popisky `label`/`note`/`description`, titulky upozornění, činnost agenta), jsou vždy česky – API ani
+data se podle jazyka nemění. Server je označuje `ui('…')` (`src/texty.js`) a klient je v angličtině
+přeloží při příjmu podle slovníku `public/js/i18n/en-server.js` (`public/js/texty-serveru.js`, volá
+se z `public/js/api.js` pro odpovědi, stream i ukázku). Texty složené z proměnných se poznají podle
+vzoru (`„{0} konverzací s aktivitou za {1} dní.“`). Obsah uživatele (zadání, přepis, cesty, názvy)
+se nepřekládá. Titulky upozornění ze `src/alerts.js` se překládají podle vzorů odvozených z jeho
+šablon. Uložená upozornění zůstávají česky; do oznámení systému (OS) je server pošle v jazyce z
+Nastavení přeložená stejným slovníkem (`src/texty.js#prekladac` nad `public/js/texty-serveru.js`).
+
+`state.host.system` je `macos` | `windows` | `linux` (`src/platform.js#SYSTEM`). Stejná hodnota je
+v `<html data-system>` už při vydání `index.html`, aby rozhraní od prvního vykreslení psalo „tento
+Mac“ a ⌘, nebo „tento počítač“ a Ctrl (`public/js/system.js`).
+
 ## Typy
 
 ### UcetStatus (`state.ucet`, událost `ucet`)

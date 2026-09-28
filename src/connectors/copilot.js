@@ -5,6 +5,7 @@ import { touch, pushEntry, resetTranscript, addTokens } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 import { noDataState } from './install-state.js';
+import { ui } from '../texty.js';
 
 // Totéž co u Cursoru: mění se jen základ složky, struktura pod ním ne.
 const VSCODE_ZDROJ = JE_WINDOWS
@@ -41,7 +42,7 @@ export function applyVsCodeChat(s, j, mtimeMs, now = Date.now()) {
         pushEntry(s, {
           at,
           role: 'tool',
-          tool: clip(part.toolId || 'Nástroj', 60),
+          tool: clip(part.toolId || ui('Nástroj'), 60),
           text: clip(part.pastTenseMessage?.value || part.invocationMessage?.value || '', 300),
         });
       }
@@ -115,7 +116,7 @@ export function createVsCodeCopilotConnector(ctx) {
     kind: 'local',
     verified: false,
     source: VSCODE_ZDROJ,
-    description: 'Chaty a agentní režim Copilotu ve VS Code: přepis, nástroje a model.',
+    description: ui('Chaty a agentní režim Copilotu ve VS Code: přepis, nástroje a model.'),
     async start() {
       await scan();
       for (const ed of editions) {
@@ -134,8 +135,8 @@ export function createVsCodeCopilotConnector(ctx) {
       const count = [...store.sessions.values()].filter((x) => x.connector === 'vscode-copilot').length;
       return {
         ...(count
-          ? { state: 'connected', detail: `Sleduji ${count} chatů Copilotu.` }
-          : noDataState({ installed: ctx.installed?.app(['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium']) ?? null, trace: exists, name: 'VS Code', traceLabel: 'složka s daty editoru', whatMissing: 'nemá uložené chaty Copilotu' })),
+          ? { state: 'connected', detail: ui('Sleduji {0} chatů Copilotu.', count) }
+          : noDataState({ installed: ctx.installed?.app(['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium']) ?? null, trace: exists, name: 'VS Code', traceLabel: ui('složka s daty editoru'), whatMissing: ui('nemá uložené chaty Copilotu') })),
         count,
         watching: watchers.some((w) => w.active),
         lastEventAt,
@@ -169,7 +170,7 @@ export function applyCopilotEvent(s, o) {
       s.runningAt = ts;
       s.turnStartedAt = ts;
       s.turnSteps = 0;
-      s.activity = 'Přemýšlí…';
+      s.activity = ui('Přemýšlí…');
     }
     return;
   }
@@ -180,7 +181,7 @@ export function applyCopilotEvent(s, o) {
     return;
   }
   if (/tool\.execution_start|tool\.start/.test(type)) {
-    const tool = clip(d.toolName || d.name || 'Nástroj', 60);
+    const tool = clip(d.toolName || d.name || ui('Nástroj'), 60);
     const detail = clip(d.arguments?.command || d.arguments?.description || d.arguments?.path || '', 300);
     pushEntry(s, { at: ts, role: 'tool', tool, text: detail });
     s.turnSteps++;
@@ -253,7 +254,7 @@ export function createCopilotCliConnector(ctx) {
     kind: 'local',
     verified: false,
     source: '~/.copilot/session-state',
-    description: 'Konverzace Copilotu v Terminálu: zadání, odpovědi, použité nástroje a průběh práce.',
+    description: ui('Konverzace Copilotu v Terminálu: zadání, odpovědi, použité nástroje a průběh práce.'),
     async start() {
       await scan();
       watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));
@@ -268,8 +269,8 @@ export function createCopilotCliConnector(ctx) {
       const count = tails.size;
       return {
         ...(count
-          ? { state: 'connected', detail: `Sleduji ${count} konverzací.` }
-          : noDataState({ installed: ctx.installed?.bin('copilot') ?? null, trace: exists, name: 'Copilot CLI', traceLabel: 'složka ~/.copilot', whatMissing: 'nemá uložené konverzace' })),
+          ? { state: 'connected', detail: ui('Sleduji {0} konverzací.', count) }
+          : noDataState({ installed: ctx.installed?.bin('copilot') ?? null, trace: exists, name: 'Copilot CLI', traceLabel: ui('složka ~/.copilot'), whatMissing: ui('nemá uložené konverzace') })),
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

@@ -1,4 +1,5 @@
 import { HOUR, DAY, round2 } from '../util.js';
+import { ui } from '../texty.js';
 
 // Náklady a spotřeba organizace z oficiálních Admin API. Neověřeno proti skutečným klíčům – viz docs/CONNECTORS.md
 // a docs/CLOUD-ACCOUNTS.md (matice schopností a zdroje pro každý poskytovatele).
@@ -81,8 +82,8 @@ export function parseAnthropicUsage(json) {
 export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch } = {}) {
   const { config, secrets } = ctx;
   const state = {
-    'openai-admin': { state: 'missing', detail: 'Přidej OpenAI Admin API klíč.', daily: {}, usage: {}, at: 0 },
-    'anthropic-admin': { state: 'missing', detail: 'Přidej Anthropic Admin API klíč.', daily: {}, usage: {}, at: 0 },
+    'openai-admin': { state: 'missing', detail: ui('Přidej OpenAI Admin API klíč.'), daily: {}, usage: {}, at: 0 },
+    'anthropic-admin': { state: 'missing', detail: ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, at: 0 },
   };
   let timer = null;
 
@@ -92,7 +93,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
     url.searchParams.set('bucket_width', '1d');
     url.searchParams.set('limit', '180');
     const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`OpenAI odpověděla ${res.status}`);
+    if (!res.ok) throw new Error(ui('OpenAI odpověděla {0}', res.status));
     return parseOpenAICosts(await res.json());
   }
 
@@ -101,7 +102,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
     url.searchParams.set('starting_at', new Date(Date.now() - 180 * DAY).toISOString().slice(0, 10));
     url.searchParams.set('ending_at', new Date().toISOString().slice(0, 10));
     const res = await fetchImpl(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'error', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`Anthropic odpověděla ${res.status}`);
+    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
     return parseAnthropicCosts(await res.json());
   }
 
@@ -113,9 +114,9 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
     url.searchParams.set('bucket_width', '1d');
     url.searchParams.set('limit', '180');
     const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${key}` }, redirect: 'manual', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`OpenAI odpověděla ${res.status}`);
+    if (!res.ok) throw new Error(ui('OpenAI odpověděla {0}', res.status));
     const json = await readBoundedJson(res, 5_000_000);
-    if (json === null) throw new Error('OpenAI vrátila neočekávanou nebo příliš velkou odpověď.');
+    if (json === null) throw new Error(ui('OpenAI vrátila neočekávanou nebo příliš velkou odpověď.'));
     return parseOpenAIUsage(json);
   }
 
@@ -127,9 +128,9 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
     url.searchParams.set('bucket_width', '1d');
     url.searchParams.set('limit', '31');
     const res = await fetchImpl(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'manual', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`Anthropic odpověděla ${res.status}`);
+    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
     const json = await readBoundedJson(res, 5_000_000);
-    if (json === null) throw new Error('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.');
+    if (json === null) throw new Error(ui('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.'));
     return parseAnthropicUsage(json);
   }
 
@@ -141,7 +142,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const key = await secrets.get(id);
       const st = state[id];
       if (!key) {
-        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? 'Přidej OpenAI Admin API klíč.' : 'Přidej Anthropic Admin API klíč.', daily: {}, usage: {} });
+        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {} });
         continue;
       }
       try {
@@ -152,7 +153,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
         } catch {
           st.usage = {};
         }
-        Object.assign(st, { state: 'connected', detail: 'Denní náklady a spotřeba tokenů organizace za 180 dní.', at: Date.now() });
+        Object.assign(st, { state: 'connected', detail: ui('Denní náklady a spotřeba tokenů organizace za 180 dní.'), at: Date.now() });
       } catch (err) {
         Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160) });
       }
@@ -162,12 +163,12 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
 
   return {
     id: 'cloud-billing',
-    name: 'Náklady za API',
+    name: ui('Náklady za API'),
     provider: 'other',
     kind: 'cloud',
     verified: false,
     source: 'OpenAI Admin API · Anthropic Admin API',
-    description: 'Automaticky doplní útratu a spotřebu tokenů za API do grafů a rozpočtů.',
+    description: ui('Automaticky doplní útratu a spotřebu tokenů za API do grafů a rozpočtů.'),
     async start() {
       await refresh().catch(() => {});
       timer = setInterval(() => refresh().catch(() => {}), HOUR);
@@ -205,7 +206,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const errors = Object.values(state).filter((v) => v.state === 'error');
       return {
         state: errors.length ? 'error' : connected ? 'connected' : 'missing',
-        detail: errors.length ? errors[0].detail : connected ? `Připojeno ${connected} z 2 API.` : 'Žádný API klíč. Útratu můžeš zapisovat ručně.',
+        detail: errors.length ? errors[0].detail : connected ? ui('Připojeno {0} z 2 API.', connected) : ui('Žádný API klíč. Útratu můžeš zapisovat ručně.'),
         count: connected,
         watching: Boolean(timer),
         lastEventAt: Math.max(...Object.values(state).map((v) => v.at)),

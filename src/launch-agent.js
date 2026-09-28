@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { run } from './util.js';
+import { ui } from './texty.js';
 
 export const LABEL = 'cz.agenteeq.agent';
 
@@ -53,7 +54,7 @@ export async function isLaunchAgentInstalled(home = os.homedir()) {
 // po tom složka, která tam nepatří, a chyba, které uživatel nerozumí.
 function jenNaMacu() {
   if (process.platform === 'darwin') return;
-  throw new Error('Automatické spouštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).');
+  throw new Error(ui('Automatické spouštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).'));
 }
 
 export async function installLaunchAgent({ script, home = os.homedir(), node = process.execPath }) {

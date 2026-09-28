@@ -25,7 +25,8 @@ import { initWelcome } from './welcome.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
 import { plynulePosouvani } from './plynule-posouvani.js';
-import { tr } from './i18n.js';
+import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
+import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 
 initSelects();
@@ -71,6 +72,9 @@ for (const [nav, text] of Object.entries({ prehled: tr('Přehled'), upozorneni: 
 document.querySelector('[data-nav-action="launch"]').setAttribute('aria-label', tr('Spustit agenta'));
 document.querySelector('[data-nav-action="more"] span').textContent = tr('Více');
 document.querySelector('.search-btn span').textContent = tr('Hledat');
+// Zkratka hledání podle systému: ⌘K na Macu, Ctrl+K jinde (public/js/system.js).
+document.querySelector('.search-btn kbd').textContent = zkratka('K');
+document.querySelector('.search-btn').setAttribute('aria-keyshortcuts', ariaZkratka('K'));
 titleEl.textContent = tr('Přehled');
 bell.setAttribute('aria-label', tr('Upozornění'));
 pop.setAttribute('aria-label', tr('Poslední upozornění'));
@@ -214,7 +218,7 @@ function refresh(topics) {
   if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
   if (!state.loaded) {
-    if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml(tr('Načítám agenty z tohoto Macu…')));
+    if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml(tr('Načítám agenty z {0}…', tohotoPocitace())));
     return;
   }
   viewEl.querySelector(':scope > .loader-wrap')?.remove();
@@ -291,7 +295,7 @@ function updateChrome() {
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
-    ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
+    ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
@@ -331,7 +335,7 @@ function renderProfile(name, working, all) {
   const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">${tr('Vítej zpět,')}<b>${esc(name)}</b></p>
     <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label">${tr('tokenů dnes')}</div>${zdroje.length
-    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstupní a výstupní tokeny všech agentů na tomto Macu, bez cache. Nejde o cenu ani o limit předplatného.')}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
+    ? `<a class="budget-src" href="#/statistiky" title="${tr('Vstupní a výstupní tokeny všech agentů na {0}, bez cache. Nejde o cenu ani o limit předplatného.', tomtoPocitaci())}">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
     : ''}</div>`);
 }
 
@@ -520,8 +524,7 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if (document.body.classList.contains('has-modal')) return;
-  const mod = e.metaKey || e.ctrlKey;
-  if (mod && e.key.toLowerCase() === 'k') {
+  if (modifikator(e) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
     if (palette.isOpen) palette.close();
     else palette.open();
@@ -562,7 +565,7 @@ function renderOffline(show) {
     ? tr('Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.')
     : naMacu
       ? tr('Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.')
-      : tr('Agenteeq se připojí sám, jakmile bude Mac zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.');
+      : tr('Agenteeq se připojí sám, jakmile bude {0} zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.', tvujPocitac());
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>${tr('Agenteeq neběží')}</strong>
       <p>${rada}</p>
@@ -706,7 +709,7 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na tomhle Macu.')}</p></div>`,
+        <p>${tr('Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na {0}.', tomtoPocitaci())}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {
@@ -781,12 +784,12 @@ function parovaciObrazovka(zprava = '') {
     <form class="pair-box" novalidate>
       <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Připojit telefon')}</h1>
-      <p>${tr('V Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a vytvoř kód. Platí pět minut a jen na jedno spárování.')}</p>
-      <label class="sr-only" for="pin">${tr('Kód z Macu')}</label>
+      <p>${tr('V Agenteeq na {0} otevři', tvemPocitaci())} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a vytvoř kód. Platí pět minut a jen na jedno spárování.')}</p>
+      <label class="sr-only" for="pin">${tr('Kód z {0}', tvehoPocitace())}</label>
       <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="submit">${tr('Spárovat')}</button>
-      <small>${tr('Data zůstávají na tvém Macu. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.')}</small>
+      <small>${tr('Data zůstávají na {0}. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.', tvemPocitaci())}</small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');

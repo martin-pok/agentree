@@ -1,6 +1,6 @@
 import { startOfDay, hourTs, DAY, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
 import { PROVIDERS, pkey } from './icons.js';
-import { tr } from './i18n.js';
+import { tr, podleJazyka } from './i18n.js';
 
 // Vstup + výstup: spotřeba, kterou uživatel pozná i u dodavatele. Zápis a čtení cache jsou
 // technická režie a mají vlastní místo ve složení tokenů, ne v hlavních číslech.
@@ -66,11 +66,12 @@ export function periodBuckets(period, now) {
     indexOf: (ts) => index.get(startOfDay(ts)) ?? -1,
     labels: starts.map((t) => {
       const d = new Date(t);
-      return days <= 7 ? `${WEEKDAYS[d.getDay()]} ${d.getDate()}.` : `${d.getDate()}. ${d.getMonth() + 1}.`;
+      // Angličtina (britská) píše den bez tečky a datum lomítkem: „Tue 22“, „22/9“.
+      return days <= 7 ? podleJazyka(`${WEEKDAYS[d.getDay()]} ${d.getDate()}.`, `${WEEKDAYS[d.getDay()]} ${d.getDate()}`) : podleJazyka(`${d.getDate()}. ${d.getMonth() + 1}.`, `${d.getDate()}/${d.getMonth() + 1}`);
     }),
     tips: starts.map((t) => {
       const d = new Date(t);
-      return `${WEEKDAYS_FULL[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.`;
+      return podleJazyka(`${WEEKDAYS_FULL[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.`, `${WEEKDAYS_FULL[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`);
     }),
   };
 }

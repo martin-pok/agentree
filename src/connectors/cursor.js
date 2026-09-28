@@ -5,6 +5,7 @@ import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { todosProgress } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 import { noDataState } from './install-state.js';
+import { ui } from '../texty.js';
 
 // Cesta k datům Cursoru se liší jen základem složky; zbytek struktury je všude stejný.
 // Windows varianta zatím není ověřená na skutečném stroji – proto je v docs/CONNECTORS.md
@@ -63,8 +64,8 @@ export function applyCursorComposer(s, { header, head, data, bubbles, folder, no
   s.staleMs = 10 * MIN;
   s.running = generating && now - Math.max(s.lastAt, dbChangedAt) < 10 * MIN;
   s.runningAt = s.running ? now : s.lastAt;
-  s.activity = s.running ? 'Pracuje v editoru' : '';
-  s.pending = head?.hasBlockingPendingActions ? { kind: 'permission', text: 'Cursor čeká na schválení akce', at: s.pending?.at || toTs(header.lastUpdatedAt) || now, source: 'cursor' } : null;
+  s.activity = s.running ? ui('Pracuje v editoru') : '';
+  s.pending = head?.hasBlockingPendingActions ? { kind: 'permission', text: ui('Cursor čeká na schválení akce'), at: s.pending?.at || toTs(header.lastUpdatedAt) || now, source: 'cursor' } : null;
 }
 
 export function createCursorConnector(ctx) {
@@ -112,7 +113,7 @@ export function createCursorConnector(ctx) {
       try {
         ({ DatabaseSync: Database } = await import('node:sqlite'));
       } catch {
-        error = 'Tato verze Node.js neumí číst SQLite (potřeba Node 22.13+).';
+        error = ui('Tato verze Node.js neumí číst SQLite (potřeba Node 22.13+).');
         return;
       }
     }
@@ -144,7 +145,7 @@ export function createCursorConnector(ctx) {
       }
       error = '';
     } catch (err) {
-      error = `Databázi Cursoru se nepodařilo přečíst: ${clip(err.message, 120)}`;
+      error = ui('Databázi Cursoru se nepodařilo přečíst: {0}', clip(err.message, 120));
     } finally {
       try { db?.close(); } catch { /* už zavřeno */ }
     }
@@ -152,12 +153,12 @@ export function createCursorConnector(ctx) {
 
   return {
     id: 'cursor',
-    name: 'Cursor · agenti',
+    name: ui('Cursor · agenti'),
     provider: 'cursor',
     kind: 'local',
     verified: true,
     source: CURSOR_ZDROJ,
-    description: 'Agenti v Cursoru: přepis, nástroje, plán úkolů, generování a čekání na schválení.',
+    description: ui('Agenti v Cursoru: přepis, nástroje, plán úkolů, generování a čekání na schválení.'),
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), 3000);
@@ -170,10 +171,10 @@ export function createCursorConnector(ctx) {
     idle: async () => {},
     status() {
       const count = [...store.sessions.values()].filter((s) => s.connector === 'cursor').length;
-      const bezDat = noDataState({ installed: ctx.installed?.app('Cursor') ?? null, trace: exists, name: 'Cursor', traceLabel: 'databáze Cursoru', whatMissing: `za posledních ${config.windowDays} dní nemá žádné agenty` });
+      const bezDat = noDataState({ installed: ctx.installed?.app('Cursor') ?? null, trace: exists, name: 'Cursor', traceLabel: ui('databáze Cursoru'), whatMissing: ui('za posledních {0} dní nemá žádné agenty', config.windowDays) });
       return {
         state: error ? 'error' : count ? 'connected' : bezDat.state,
-        detail: error || (count ? `Sleduji ${count} agentů za ${config.windowDays} dní.` : bezDat.detail),
+        detail: error || (count ? ui('Sleduji {0} agentů za {1} dní.', count, config.windowDays) : bezDat.detail),
         count,
         watching: Boolean(timer),
         lastEventAt,

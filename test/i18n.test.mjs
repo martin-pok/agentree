@@ -90,3 +90,190 @@ test('i18n: v angličtině nezůstala čeština a slovník nenese staré texty',
   assert.deepEqual(stare, [], 'slovník drží texty, které už v kódu nejsou');
   assert.deepEqual(Object.keys(EN.mnozne).filter((k) => !mnozne.has(k)), []);
 });
+
+// ---------------------------------------------------------------------------------------------
+// Texty ze serveru. Server píše česky a texty rozhraní označuje ui('…') (src/texty.js); klient je
+// v angličtině přeloží podle public/js/i18n/en-server.js (public/js/texty-serveru.js). Dřív tu
+// test hlídal jen klienta, a tak v angličtině zůstávaly české režimy spouštění, stavy zdrojů,
+// chybové hlášky i titulky upozornění.
+
+// Literály a šablony v kódu bez komentářů. Šablona vrací své pevné části a proměnné jako {0}, {1}…
+function literaly(src) {
+  const out = [];
+  const n = src.length;
+  const radek = (pos) => src.slice(0, pos).split('\n').length;
+  const retezecKonec = (j) => {
+    const q = src[j];
+    let k = j + 1;
+    while (k < n && src[k] !== q) k += src[k] === '\\' ? 2 : 1;
+    return k;
+  };
+  const sablona = (j) => {
+    let k = j + 1;
+    let text = '';
+    let promenna = 0;
+    while (k < n && src[k] !== '`') {
+      if (src[k] === '\\') { text += src[k + 1]; k += 2; continue; }
+      if (src[k] === '$' && src[k + 1] === '{') {
+        let hloubka = 1;
+        k += 2;
+        while (k < n && hloubka) {
+          if (src[k] === '`') { k = sablona(k).konec + 1; continue; }
+          if (src[k] === "'" || src[k] === '"') { const e = retezecKonec(k); out.push({ druh: 'retezec', text: src.slice(k + 1, e), od: k, radek: radek(k) }); k = e + 1; continue; }
+          if (src[k] === '{') hloubka++;
+          if (src[k] === '}') hloubka--;
+          k++;
+        }
+        text += `{${promenna++}}`;
+        continue;
+      }
+      text += src[k];
+      k++;
+    }
+    return { konec: k, text };
+  };
+  let i = 0;
+  while (i < n) {
+    const c = src[i];
+    if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && src[i + 1] === '*') { i = src.indexOf('*/', i + 2) + 2; continue; }
+    if (c === '`') { const s = sablona(i); out.push({ druh: 'sablona', text: s.text, od: i, radek: radek(i) }); i = s.konec + 1; continue; }
+    if (c === "'" || c === '"') { const e = retezecKonec(i); out.push({ druh: 'retezec', text: src.slice(i + 1, e), od: i, radek: radek(i) }); i = e + 1; continue; }
+    // Regulární výraz po znaku, za kterým nemůže stát dělení.
+    if (c === '/' && /(?:[(,=:[!&|?{};]|^)\s*$/.test(src.slice(Math.max(0, i - 20), i))) {
+      let k = i + 1;
+      let trida = false;
+      while (k < n && src[k] !== '\n') {
+        if (src[k] === '\\') { k += 2; continue; }
+        if (src[k] === '[') trida = true;
+        else if (src[k] === ']') trida = false;
+        else if (src[k] === '/' && !trida) break;
+        k++;
+      }
+      i = k + 1;
+      continue;
+    }
+    i++;
+  }
+  return out.map((l) => ({ ...l, ui: /\bui\(\s*$/.test(src.slice(Math.max(0, l.od - 6), l.od)) }));
+}
+
+async function souboryServeru() {
+  const out = [];
+  const projdi = async (dir) => {
+    for (const e of await fs.readdir(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) await projdi(p);
+      else if (e.name.endsWith('.js')) out.push(p);
+    }
+  };
+  await projdi(path.join(ROOT, 'src'));
+  return out.sort();
+}
+const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
+const literal = (s) => s.replace(/\\(['"\\])/g, '$1').replace(/\\n/g, '\n');
+
+// Upozornění se ukládají česky (data.json), rozhraní je překládá samo a do systému je server pošle
+// přeložené (src/texty.js#prekladac). Titulky
+// upozornění se proto překládají na klientu podle vzorů odvozených přímo ze šablon v alerts.js –
+// když se text upozornění změní, test řekne, že chybí překlad.
+const JEN_KLIENT = ['src/alerts.js'];
+
+async function textyServeru() {
+  const klice = new Map();
+  for (const f of await souboryServeru()) {
+    const src = await fs.readFile(f, 'utf8');
+    const soubor = rel(f);
+    // Souhrn upozornění (textSouhrnu) skládá server sám v jazyce z Nastavení – klient ho podruhé
+    // nepřekládá, jeho texty proto do slovníku nepatří.
+    const souhrnOd = src.indexOf('const SKUPINY');
+    const souhrnDo = src.indexOf('\n}\n', src.indexOf('export function textSouhrnu'));
+    const vSouhrnu = (od) => souhrnOd >= 0 && souhrnDo > souhrnOd && od > souhrnOd && od < souhrnDo;
+    for (const l of literaly(src)) {
+      if (l.druh === 'retezec' && l.ui) klice.set(literal(l.text), soubor);
+      if (!JEN_KLIENT.includes(soubor) || vSouhrnu(l.od) || /^[#/]/.test(l.text)) continue;
+      // Věty upozornění: šablony (kromě klíčů pro deduplikaci) a české texty. „{0}: {1} na {2} %“
+      // diakritiku nemá, a přesto je to věta.
+      const pred = src.slice(Math.max(0, l.od - 20), l.od);
+      if (l.druh === 'sablona' && !/key:\s*$/.test(pred) && /[a-zá-ž]{2}/i.test(l.text.replace(/\{\d+\}/g, ''))) klice.set(l.text, soubor);
+      if (l.druh === 'retezec' && CZ.test(l.text)) klice.set(literal(l.text), soubor);
+    }
+  }
+  return klice;
+}
+
+test('i18n: každý text ze serveru (ui()) má anglický překlad a slovník nenese staré', async () => {
+  const klice = await textyServeru();
+  assert.ok(klice.size > 300, `čekali jsme stovky textů ze serveru, našli jsme ${klice.size}`);
+  const chybi = [...klice].filter(([k]) => !Object.hasOwn(EN.server, k)).map(([k, f]) => `${f}: ${k.slice(0, 90)}`);
+  assert.deepEqual(chybi, [], 'texty ze serveru bez překladu v public/js/i18n/en-server.js');
+  const stare = Object.keys(EN.server).filter((k) => !klice.has(k)).map((k) => k.slice(0, 80));
+  assert.deepEqual(stare, [], 'en-server.js drží texty, které server už neposílá');
+  const vadne = [];
+  for (const [cz, en] of Object.entries(EN.server)) {
+    if (promenne(cz) !== promenne(en)) vadne.push(`proměnné: ${cz.slice(0, 60)}`);
+    if (!en.trim()) vadne.push(`prázdný překlad: ${cz.slice(0, 60)}`);
+    if (CZ.test(en)) vadne.push(`čeština v překladu: ${cz.slice(0, 60)}`);
+    // Vzor, který je celý jen z proměnných, by „přeložil“ cokoli.
+    if (/^[\s\W]*(\{\d+\}[\s\W]*)+$/.test(cz)) vadne.push(`vzor bez pevného textu: ${cz}`);
+  }
+  assert.deepEqual(vadne, []);
+});
+
+// Texty v src/, které do rozhraní nejdou, a proč. Položka je celý text, nebo (od 16 znaků) jeho začátek.
+const MIMO_ROZHRANI = {
+  'src/platform.js': ['\n$ErrorActionPreference'], // skript PowerShellu
+  'src/datastore.js': ['Neplatný JSON', 'Neplatný kořen dat', 'obnoveno ze zálohy', 'začínám od výchozích hodnot'], // vnitřní kód chyby a log
+  'src/extension-install.js': ['Zdrojová složka rozšíření chybí.', 'Kopii rozšíření se nepodařilo vytvořit: '], // jen log při startu
+  'src/hooks-installer.js': ['Neplatný token', 'not object', 'curl -s -m 1 -X POST'], // vnitřní chyba a text ve stavovém řádku Claude Code
+  'src/http.js': ['<!doctype html><meta', 'index.html nemá <html', 'Access removed'], // stránka pro prohlížeč bez klíče okna, chyba vývojáře
+  // Stránka, na kterou se prohlížeč vrátí z přihlášení Google (mimo okno aplikace, zatím jen česky).
+  'src/ucet-stranka.js': null,
+  'src/projects.js': ['Potřebuje rozhodnutí', 'Vyčerpaný limit', 'Čeká na zadání', 'Nečinná', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Mimo okno sledování'], // hlavička a stavy v CSV
+  'src/spend.js': ['Podle ceníku', 'Ručně', 'Měsíc', 'Datum platby', 'Služba', 'Opakování', 'Poznámka', 'Částka', 'Měna', 'Kurz na {0}', 'Částka v {0}', 'měsíčně', 'měsíčně do {0}', 'jednorázově'], // CSV
+  'src/tunnel.js': ['binárka ({0}) nebo', '"cloudflared" v PATH', '"ngrok" v PATH; běžící', 'uživatel spustí "'], // technický popis, rozhraní ho nezobrazuje
+  'src/connectors/local-agents.js': ['vysoká', 'nízká'], // kód jistoty, klient ho porovnává
+  'src/connectors/claude-code.js': ['týden {0} %'], // stavový řádek v Claude Code
+  'src/alerts.js': null, // celý soubor: překládá klient (viz JEN_KLIENT)
+};
+const mimoRozhrani = (soubor, text) => (MIMO_ROZHRANI[soubor] || []).some((z) => text === z || (z.length >= 16 && text.startsWith(z)));
+
+test('i18n: česká věta v src/ jde do rozhraní jen přes ui()', async () => {
+  const nalezy = [];
+  for (const f of await souboryServeru()) {
+    const soubor = rel(f);
+    if (soubor === 'src/texty.js' || MIMO_ROZHRANI[soubor] === null) continue;
+    const src = await fs.readFile(f, 'utf8');
+    for (const l of literaly(src)) {
+      if (l.ui || !CZ.test(l.text)) continue;
+      const text = l.druh === 'retezec' ? literal(l.text) : l.text;
+      if (/^Agenteeq:/.test(text) || /console\.(log|error|warn)\([^)]*$|\blog\(\s*$/.test(src.slice(Math.max(0, l.od - 60), l.od))) continue; // log
+      if (mimoRozhrani(soubor, text)) continue;
+      nalezy.push(`${soubor}:${l.radek} ${l.druh === 'sablona' ? '`' : "'"}${text.slice(0, 90)}`);
+    }
+  }
+  assert.deepEqual(nalezy, [], 'text pro rozhraní obal voláním ui() ze src/texty.js (proměnné jako {0}) a přidej překlad do en-server.js; text mimo rozhraní zapiš do MIMO_ROZHRANI s důvodem');
+});
+
+// Věty bez diakritiky („Projekt neexistuje.“) první test nepozná. Chyby, stavy a popisky se proto
+// hlídají i podle místa, kam míří.
+test('i18n: chybové hlášky, stavy a popisky ze serveru jsou označené ui()', async () => {
+  const nalezy = [];
+  const POLE = /\b(?:error|detail|reason|hint|message|chyba|zprava|text|title|body|description|note|label|activity)\s*:\s*$|\berrors(?:\.\w+|\['[^']+'\])\s*=\s*$/;
+  for (const f of await souboryServeru()) {
+    const soubor = rel(f);
+    if (MIMO_ROZHRANI[soubor] === null) continue;
+    const src = await fs.readFile(f, 'utf8');
+    for (const l of literaly(src)) {
+      if (l.ui || l.druh !== 'retezec') continue;
+      const pred = src.slice(Math.max(0, l.od - 40), l.od);
+      if (!POLE.test(pred) && !/HttpError\(\d+,\s*$|\bfail\(\s*$|new Error\(\s*$/.test(pred)) continue;
+      const text = literal(l.text);
+      // Věta = aspoň dvě slova s malými písmeny nebo slovo s tečkou na konci; jména a kódy ne.
+      if (!/[a-zá-ž]{2,}\s+[a-zá-ž]{2,}|[a-zá-ž]{3,}[.…]$/.test(text)) continue;
+      if (mimoRozhrani(soubor, text)) continue;
+      nalezy.push(`${soubor}:${l.radek} '${text.slice(0, 80)}'`);
+    }
+  }
+  assert.deepEqual(nalezy, []);
+});

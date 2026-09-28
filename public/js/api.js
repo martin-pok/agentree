@@ -1,4 +1,6 @@
-import { tr } from './i18n.js';
+import { tr, trServer, prelozData } from './i18n.js';
+// Každá data ze serveru jdou do klientu tudy (request, stream, ukázka), takže texty, které server
+// píše česky (src/texty.js), se tady jednou přeloží do jazyka rozhraní (public/js/texty-serveru.js).
 // Ukázkový režim (public/js/ukazka.js): místo serveru odpovídá snímek smyšlených dat. Čte se jen
 // to, co snímek obsahuje; cokoli, co by něco měnilo, se odmítne – v ukázce se nic neukládá.
 let ukazka = null;
@@ -7,7 +9,7 @@ export function zapniUkazku(odpovedi) { ukazka = odpovedi; }
 function ukazkaOdpoved(method, path) {
   if (method !== 'GET') throw Object.assign(new Error(tr('Tohle je ukázka – nic se v ní neukládá.')), { status: 403 });
   if (!Object.hasOwn(ukazka, path)) throw Object.assign(new Error(tr('V ukázce tahle data nejsou.')), { status: 404 });
-  return structuredClone(ukazka[path]);
+  return prelozData(structuredClone(ukazka[path]));
 }
 
 export async function request(method, path, body) {
@@ -26,8 +28,8 @@ export async function request(method, path, body) {
   }
   let json = null;
   try { json = await res.json(); } catch { /* prázdná odpověď */ }
-  if (!res.ok) throw Object.assign(new Error(json?.error || `${tr('Chyba')} ${res.status}`), { status: res.status, errors: json?.errors });
-  return json;
+  if (!res.ok) throw Object.assign(new Error(trServer(json?.error) || `${tr('Chyba')} ${res.status}`), { status: res.status, errors: json?.errors ? prelozData(json.errors) : json?.errors });
+  return prelozData(json);
 }
 
 export const api = {
@@ -105,8 +107,8 @@ export const api = {
       throw new Error(tr('Agenteeq neodpovídá, obrázek se proto nenahrál.'));
     }
     const json = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(json?.error || tr('Obrázek se nenahrál (chyba {0}).', res.status));
-    return json;
+    if (!res.ok) throw new Error(trServer(json?.error) || tr('Obrázek se nenahrál (chyba {0}).', res.status));
+    return prelozData(json);
   },
   removeProjectMedia: (id, kind) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/media/${kind}`),
   projectGit: (id) => request('GET', `/api/projects/${encodeURIComponent(id)}/git`),
@@ -130,7 +132,7 @@ export function connectStream({ onHello, onEvent, onStatus }) {
   });
   for (const name of EVENTS) {
     es.addEventListener(name, (e) => {
-      try { onEvent(name, JSON.parse(e.data)); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
+      try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
     });
   }
   es.onerror = () => onStatus(es.readyState === EventSource.CLOSED ? 'offline' : 'reconnecting');

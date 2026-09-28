@@ -6,6 +6,24 @@ Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy lim
 bez kódu, jednotná tlačítka) vychází až v tomto vydání; 0.29.0 samostatně publikovaná nebyla.
 Rozšíření čeká na schválení v Chrome Web Store.
 
+### Angličtina bez zbytků češtiny a Windows bez Macu
+
+- Texty ze serveru (režimy a poznámky spouštění, stavy zdrojů, činnost agentů, chybové hlášky,
+  útrata, titulky upozornění) se v angličtině překládají na klientu. Server je dál píše česky
+  a označuje `ui('…')` (`src/texty.js`), klient je při příjmu přeloží podle
+  `public/js/i18n/en-server.js` – i složené věty s čísly, daty a částkami. Tvar dat se nemění,
+  přeloží se i dřív uložená upozornění.
+- Oznámení systému odcházejí v jazyce z Nastavení: server je před odesláním přeloží stejným
+  slovníkem, uložené upozornění zůstává česky. V anglickém souhrnu nočního ticha jsou anglicky
+  i názvy limitů a rozpočtů.
+- „Co je nového“ má anglické znění všech vydání.
+- Na Windows (a Linuxu) rozhraní píše „tento počítač“ místo „tento Mac“ a zkratky Ctrl+K, Ctrl+↵,
+  Ctrl+V místo ⌘; zkratky poslouchají na Macu jen ⌘, jinde jen Ctrl. Systém posílá server
+  (`<html data-system>`, `host.system`).
+- Testy: úplnost překladů hlídá i texty ze `src/` (česká věta mimo `ui()` neprojde),
+  `test/texty-serveru.test.mjs` překládá skutečné výstupy serveru i oznámení systému,
+  `test/system.test.mjs` obě varianty systému.
+
 ### Plynulé posouvání po přerušení
 
 - Opravené kolečko a trackpad: po posunu klávesnicí, posuvníkem nebo přepnutí obrazovky nový dojezd

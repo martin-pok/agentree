@@ -130,7 +130,7 @@ function plansHtml(sp) {
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
       <span class="plan-main"><span class="plan-title"><b>${esc(p.label)}</b>${price}</span>
-        <span class="plan-sub">${tr('Zjištěno:')} ${esc(p.evidence)}${p.since ? `, od ${esc(dateLong(Date.parse(p.since)))}` : ''}</span>
+        <span class="plan-sub">${tr('Zjištěno:')} ${esc(p.evidence)}${p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>
         <span class="plan-sub">${status}${!p.since && p.counted ? tr(' Začátek předplatného Agenteeq nezná, počítá ho od tohoto měsíce.') : ''}</span>
         ${p.priceSource ? `<span class="plan-sub plan-src">${tr('Cena z:')} ${esc(p.priceSource)}${p.priceChecked ? `${tr(', zkontrolováno')} ${esc(dateLong(Date.parse(p.priceChecked)))}` : ''}</span>` : ''}
         ${actions ? `<span class="plan-actions">${actions}</span>` : ''}
@@ -248,7 +248,7 @@ function update() {
       return `<div class="card budget-card${over ? ' is-over' : warn ? ' is-warn' : ''}">
         <div class="budget-top">${svc ? glyph(svc.provider) : ''}<span>${esc(b.label)}</span><b>${Math.round(b.pct)} %</b></div>
         <div class="budget-track"><i style="width:${Math.min(100, b.pct).toFixed(1)}%"></i></div>
-        <span class="muted small">${money(b.spent)} z ${money(b.budget)}</span>
+        <span class="muted small">${tr('{0} z {1}', money(b.spent), money(b.budget))}</span>
       </div>`;
     }).join('')}</div>`
     : `<div class="cta-card card">${ICON.wallet}<div><strong>${tr('Nastav si měsíční rozpočet')}</strong><p class="muted small">${tr('Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.')}</p></div><button class="btn" type="button" data-action="budgets">${tr('Nastavit rozpočet')}</button></div>`);
@@ -342,7 +342,7 @@ function update() {
           return `<tr>
             <td>${dateLong(Date.parse(e.date))}</td>
             <td><span class="svc">${glyph(svc?.provider)}${esc(svc?.label || e.service)}</span></td>
-            <td>${esc(sp.kinds[e.kind] || e.kind)}${e.recurring === 'monthly' ? ` <span class="badge">${e.endDate ? `do ${dateLong(Date.parse(e.endDate))}` : tr('měsíčně')}</span>` : ''}</td>
+            <td>${esc(sp.kinds[e.kind] || e.kind)}${e.recurring === 'monthly' ? ` <span class="badge">${e.endDate ? tr('do {0}', dateLong(Date.parse(e.endDate))) : tr('měsíčně')}</span>` : ''}</td>
             <td class="muted">${esc(e.note || '')}</td>
             <td class="num">${fmtMoney(e.amount, e.currency)}</td>
             <td class="actions">${running ? `<button class="btn btn--sm" type="button" data-action="end" data-id="${esc(e.id)}">${tr('Ukončit')}</button>` : ''}<button class="icon-btn" type="button" data-action="delete" data-id="${esc(e.id)}" aria-label="${tr('Smazat výdaj')} ${esc(svc?.label || '')} ${esc(e.date)}">${ICON.trash}</button></td>

@@ -4,16 +4,19 @@
 // oporu, je horší než mlčení, proto se stav rozhoduje ze tří údajů:
 //   installed: true = příkaz nebo aplikace nalezena · false = hledáno a nenalezeno · null = nevím
 //   trace:     existuje složka nebo databáze, ze které se čtou konverzace
+import { ui } from '../texty.js';
+import { POCITAC } from '../platform.js';
+
 export function noDataState({ installed, trace, name, traceLabel, whatMissing }) {
-  if (installed === true) return { state: 'idle', detail: `${name} je nainstalovaný, ale ${whatMissing}.` };
+  if (installed === true) return { state: 'idle', detail: ui('{0} je nainstalovaný, ale {1}.', name, whatMissing) };
   if (installed === false) {
     return {
       state: 'missing',
-      detail: trace ? `${name} na tomto Macu není – zůstala po něm jen ${traceLabel}.` : `${name} na tomto počítači není.`,
+      detail: trace ? ui('{0} na {1} není – zůstala po něm jen {2}.', name, POCITAC.tomto, traceLabel) : ui('{0} na {1} není.', name, POCITAC.tomto),
     };
   }
   // Instalaci se nepodařilo ověřit: nic o ní netvrdíme, jen popíšeme, co je vidět.
   return trace
-    ? { state: 'idle', detail: `Nalezena ${traceLabel}, ${whatMissing}.` }
-    : { state: 'missing', detail: `${name} na tomto počítači není.` };
+    ? { state: 'idle', detail: ui('Nalezena {0}, {1}.', traceLabel, whatMissing) }
+    : { state: 'missing', detail: ui('{0} na {1} není.', name, POCITAC.tomto) };
 }
