@@ -724,7 +724,7 @@ function modelsCard() {
 const head = (icon, title, desc, aside = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3>${title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
 
 function update(topics) {
-  if (v.el && v.napojeni && (topics?.has?.('napojeni') || topics?.has?.('integrations'))) nactiNapojeni();
+  if (v.el && v.napojeni && (topics?.has?.('napojeni') || topics?.has?.('integrations') || topics?.has?.('znovu'))) nactiNapojeni();
   const el = v.el;
   const i = state.integrations;
   const n = state.settings?.notifications;

@@ -192,9 +192,10 @@ function mount(el) {
   load();
 }
 
-function update() {
+function update(topics) {
   const el = v.el;
   if (!el) return;
+  if (topics?.has?.('znovu')) load();
   if (v.error) {
     fill(el, 'list', emptyState({ title: tr('Dovednosti se nepodařilo načíst'), text: esc(v.error) }));
     return;

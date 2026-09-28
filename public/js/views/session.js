@@ -1,4 +1,4 @@
-import { state, emit } from '../state.js';
+import { state, emit, zacniNacitaniPrepisu, dokonciNacitaniPrepisu, nacitaniPrepisuSelhalo } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
@@ -78,19 +78,15 @@ function progressHtml(p) {
 
 async function load() {
   const id = v.id;
-  if (!state.transcripts.has(id)) state.transcripts.set(id, { entries: new Map(), stale: false, loaded: false, error: '' });
-  const t = state.transcripts.get(id);
+  zacniNacitaniPrepisu(id);
   v.loading = true;
   try {
     const r = await api.session(id);
     if (v.id !== id) return;
-    t.entries = new Map(r.transcript.map((e) => [e.seq, e]));
-    t.loaded = true;
-    t.error = '';
+    dokonciNacitaniPrepisu(id, r.transcript);
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
   } catch (err) {
-    t.loaded = true;
-    t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
+    nacitaniPrepisuSelhalo(id, err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message);
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);

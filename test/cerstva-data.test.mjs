@@ -1,6 +1,6 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer, api, openStream, waitFor } from './helpers.mjs';
+import { startTestServer, api, openStream, waitFor, sleep } from './helpers.mjs';
 
 // Čerstvá data po výpadku a uspání. Každý test drží jednu opravu; popis vady je u testu.
 
@@ -78,4 +78,44 @@ test('po probuzení aplikace hned znovu projde zdroje a přepočítá stavy', as
   assert.ok(prosle.includes('codex') && prosle.includes('claude-code'), `projité zdroje: ${prosle.join(', ')}`);
   assert.equal(store.summary(session.id).status, 'waiting', 'stav přepočítaný hned, ne až dalším průchodem');
   assert.ok(udalosti.some((x) => x.id === session.id), 'změna odešla do živého proudu');
+});
+
+/* ---------- Okno (public/js) ---------- */
+
+globalThis.requestAnimationFrame ??= () => 0;
+const okno = await import('../public/js/state.js');
+
+const snimek = (zmeny = {}) => ({
+  ready: true, version: 'test', host: null, windowDays: 30, sessions: [], runtimes: [], limits: [], credits: [], connectors: [],
+  spend: null, alerts: { unread: 0, items: [] }, settings: null, integrations: null,
+  projects: { items: [], assignments: {}, snapshots: {}, colors: [], limits: {} }, launch: { targets: [], modes: {} }, runs: [], license: null, usage: {}, ...zmeny,
+});
+
+// Snímek stavu přepisy nenese – otevřený přepis si detail agenta načte zvlášť a dál ho plní živý
+// proud. Po obnovení spojení se ale snímek načetl znovu a přepis ne: co agent napsal během výpadku,
+// v okně chybělo, dokud člověk neodešel a nevrátil se.
+test('po obnovení spojení se otevřený přepis načte celý znovu', async () => {
+  const temata = [];
+  const odhlas = okno.subscribe((t) => temata.push(...t));
+  okno.state.transcripts.set('codex:a', { entries: new Map([[1, { seq: 1, role: 'user', text: 'Ahoj' }]]), stale: false, loaded: true, error: '' });
+  okno.applySnapshot(snimek(), { znovu: true });
+  assert.equal(okno.state.transcripts.get('codex:a').stale, true, 'přepis je označený k novému načtení');
+  await sleep(300);
+  // Pohledy, které si data stahují samy (Dovednosti, historie limitů), se podle tématu načtou taky.
+  assert.ok(temata.includes('znovu'), `témata: ${temata.join(', ')}`);
+  odhlas();
+  okno.state.transcripts.clear();
+});
+
+// Přepis se načítá celou odpovědí serveru. Položka, která mezitím přišla živým proudem, se dřív
+// přepsala starší odpovědí a zmizela až do dalšího načtení.
+test('přírůstek přepisu, který přijde během načítání, se neztratí', () => {
+  okno.zacniNacitaniPrepisu('codex:b');
+  okno.applyEvent('transcript', { id: 'codex:b', reset: false, entries: [{ seq: 3, role: 'assistant', text: 'Hotovo' }] });
+  // Odpověď vznikla na serveru dřív, než agent zprávu dopsal.
+  okno.dokonciNacitaniPrepisu('codex:b', [{ seq: 1, role: 'user', text: 'Uprav ceník' }, { seq: 2, role: 'tool', text: 'edit' }]);
+  const t = okno.state.transcripts.get('codex:b');
+  assert.deepEqual([...t.entries.keys()].sort(), [1, 2, 3]);
+  assert.equal(t.loaded, true);
+  okno.state.transcripts.clear();
 });

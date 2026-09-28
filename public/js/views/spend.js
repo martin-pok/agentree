@@ -148,7 +148,7 @@ function mount(el, _params, query) {
   // Historie extra usage Claude se čte ze souboru, který během dne roste – proto při každém
   // otevření stránky, ne jednou za běh aplikace. Předchozí graf zůstane, dokud nedorazí čerstvý.
   if (v.usage === undefined) v.usage = null;
-  api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { /* historie na tomto Macu není */ });
+  nactiHistorii();
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <span class="toolbar-title" data-region="month"></span>
@@ -213,8 +213,11 @@ function mount(el, _params, query) {
   if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry());
 }
 
-function update() {
+const nactiHistorii = () => api.planUsage(90).then((r) => { v.usage = r && r.available !== false ? r : null; update(); }).catch(() => { /* historie na tomto Macu není */ });
+
+function update(topics) {
   const el = v.el;
+  if (el && topics?.has?.('znovu')) nactiHistorii();
   const sp = state.spend;
   if (!el || !sp) return;
   const total = sp.budgetsConfig?.total || 0;
