@@ -1,5 +1,29 @@
 # Changelog
 
+## Připravuje se (zatím nevydáno)
+
+### Noční ticho a souhrn místo série upozornění
+
+- Nastavení → Upozornění → **Noční ticho**: v nastavený čas (výchozí 22:00–7:00 podle hodin
+  počítače, může jít přes půlnoc) nepřijde žádné oznámení ani zvuk – v aplikaci pro Mac, ve Windows,
+  v macOS z příkazové řádky ani v prohlížeči. Seznam upozornění, zvoneček, stav agentů a odznak
+  v Docku, v řádku nabídek i v hlavním panelu Windows se mění dál: to je stav, ne vyrušení. Výchozí
+  stav je vypnuto, starší nastavení se nemění.
+- Na konci ticha přijde jedno souhrnné oznámení, třeba „Během nočního ticha: 2× čeká na rozhodnutí,
+  1× limit“. Počítá jen to, co pořád platí: rozhodnutí, které mezitím padlo, obnovený limit ani
+  přečtené upozornění v něm nejsou. Klik vede rovnou do konverzace, u víc agentů na Agenty
+  s filtrem „Potřebuje tebe“. Souhrn přežije restart aplikace i uspaný Mac; po probuzení počká 15 s,
+  než zdroje doženou, co se v noci vyřešilo.
+- Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu („Další
+  upozornění: 3× dokončeno“). Za minutu tak přijdou nejvýš tři oznámení i se souhrnem; souhrn
+  dorazí, jakmile je zase místo, nejpozději minutu po prvním odloženém.
+- Zkušební upozornění ticho dodrží a řekne to, jinak by klik vypadal, že nic neudělal.
+- Oprava: s vypnutým „Dokončený úkol“ se stránka Nastavení zasekla (ověřeno v Chromiu). Zakázaný
+  výběr z nabídky rozjel nekonečnou smyčku mezi pozorovatelem změn a vlastním tlačítkem
+  (`public/js/selects.js`).
+- Oprava: přepínač nebo výběr v Nastavení po uložení ztratil fokus a klávesnice začínala znovu od
+  začátku stránky. Překreslení teď fokus vrátí (`public/js/ui.js#fill`).
+
 ## 0.29.0 – 2026-09-27 · nové okno rozšíření, párování bez kódu a jednotná tlačítka
 
 ### Rozšíření se spáruje samo a má nové okno

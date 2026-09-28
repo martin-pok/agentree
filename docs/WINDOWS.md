@@ -105,7 +105,10 @@ oznámení. Dělá tři věci: spustí `desktop/server.mjs` přibaleným Node, �
 protokol `AGENTEEQ_DESKTOP {json}` a zobrazí okno.
 
 **Ten protokol je přesně ten šev, na kterém se dá stavět jinde.** `desktop/server.mjs` je
-obyčejný Node a nic macOSového v sobě nemá.
+obyčejný Node a nic macOSového v sobě nemá. Rozhoduje i o tom, co do systému vůbec dojde:
+upozornění ztlumené nočním tichem nebo nárazem (`src/alerts.js`) jako `notification` neodejde,
+souhrn ano – s cílem kliknutí v `route`. Odznak (`badge`) chodí vždy. Plášť tak pravidla
+upozornění nemusí znát, platí stejně na Macu i ve Windows.
 
 **Rozhodnuto: vlastní okno nad WebView2** (varianta B v tabulce níž). Postavené je
 v `desktop/windows/Agenteeq.cpp`, sestavuje ho `npm run build:windows`.
