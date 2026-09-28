@@ -14,7 +14,7 @@ import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
 import { SYSTEM, POCITAC } from './platform.js';
-import { ui } from './texty.js';
+import { ui, prekladac } from './texty.js';
 import { createVerzeSouboru, znackaObsahu, AKTIVA, NATRVALO } from './verze-souboru.js';
 
 const TYPES = {
@@ -109,6 +109,7 @@ export function createHttpServer(app, existingServer = null) {
   // Stránky a texty, které jdou přímo do prohlížeče (ne přes rozhraní, které si texty překládá
   // samo), dostanou jazyk z Nastavení tady.
   const jazyk = () => (datastore.data.settings.language === 'en' ? 'en' : 'cs');
+  const vJazyce = (text) => prekladac(jazyk())(text);
   const keyHash = (v) => crypto.createHash('sha256').update(String(v || '')).digest();
   const keyMatches = (v) => Boolean(v) && crypto.timingSafeEqual(keyHash(v), keyHash(config.localKey));
   function localKeyGate(req, res, url) {
@@ -124,7 +125,7 @@ export function createHttpServer(app, existingServer = null) {
     }
     if (keyMatches(cookieValue(req.headers.cookie, 'agenteeq_local')) || keyMatches(req.headers['x-agenteeq-key'])) { keyUsed++; return false; }
     if (url.pathname.startsWith('/api/')) throw new HttpError(403, ui('Chybí klíč okna aplikace.'));
-    res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>Agenteeq běží</h1><p>Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.</p>');
+    res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end(`<!doctype html><html lang="${jazyk()}"><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>${vJazyce(ui('Agenteeq běží'))}</h1><p>${vJazyce(ui('Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.'))}</p>`);
     return true;
   }
 
@@ -163,7 +164,7 @@ export function createHttpServer(app, existingServer = null) {
     const pokus = url.pathname.match(/^\/ucet\/navrat\/([A-Za-z0-9_-]{43})$/)?.[1];
     const hlavicky = { ...SECURITY, 'Cache-Control': 'no-store' };
     if (!zTohotoMacu(req) || req.method !== 'GET') {
-      res.writeHead(403, { ...hlavicky, 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
+      res.writeHead(403, { ...hlavicky, 'Content-Type': 'text/plain; charset=utf-8' }).end(vJazyce(ui('Zakázáno')));
       return;
     }
     if (url.pathname === '/ucet/navrat.js') {
@@ -173,11 +174,11 @@ export function createHttpServer(app, existingServer = null) {
     const code = url.searchParams.get('code') || '';
     const chyba = url.searchParams.get('chyba') || url.searchParams.get('error_description') || url.searchParams.get('error') || '';
     let html;
-    if (!pokus) html = strankaNavratu({ zprava: ui('Neplatná adresa přihlášení.') });
-    else if (!code && !chyba) html = strankaNavratu({ ceka: true });
+    if (!pokus) html = strankaNavratu({ zprava: ui('Neplatná adresa přihlášení.'), jazyk: jazyk() });
+    else if (!code && !chyba) html = strankaNavratu({ ceka: true, jazyk: jazyk() });
     else {
       const r = await app.ucet.navrat(pokus, { code, chyba });
-      html = strankaNavratu(r);
+      html = strankaNavratu({ ...r, jazyk: jazyk() });
       if (r.ok) app.vratOkno?.().catch(() => {});
     }
     res.writeHead(200, { ...hlavicky, 'Content-Type': 'text/html; charset=utf-8' }).end(html);
@@ -914,7 +915,7 @@ export function createHttpServer(app, existingServer = null) {
     const hostOk = host === '127.0.0.1' || host === 'localhost'
       || Boolean(app.lan && app.lan.hosts().includes(host));
     if (!hostOk) {
-      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end(vJazyce(ui('Zakázáno')));
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');

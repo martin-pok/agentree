@@ -109,6 +109,12 @@ test('klíč okna aplikace: bez něj server z tohoto Macu nic nevydá, s ním fu
     assert.match(cookie, /SameSite=Strict/);
     assert.equal((await fetch(`${t.url}/api/state`, { headers: { Cookie: cookie.split(';')[0] } })).status, 200, 'cookie z adresy stačí');
     assert.equal((await fetch(`${t.url}/api/state?k=${klic}`)).status, 403, 'klíč v adrese API se neuznává');
+    // Stránka pro prohlížeč bez klíče mluví jazykem z Nastavení.
+    assert.match(await (await fetch(`${t.url}/`)).text(), /<html lang="cs">[\s\S]*<h1>Agenteeq běží<\/h1>/);
+    assert.equal((await fetch(`${t.url}/api/settings`, { method: 'PUT', headers: { ...hlavicky, 'X-Agenteeq-Key': klic, 'Content-Type': 'application/json' }, body: '{"language":"en"}' })).status, 200);
+    const en = await (await fetch(`${t.url}/`)).text();
+    assert.match(en, /<html lang="en">[\s\S]*<h1>Agenteeq is running<\/h1><p>The overview opens from the Agenteeq app window\./);
+    assert.doesNotMatch(en, /[áčďéěíňóřšťúůýž]/i);
   } finally {
     await t.close();
   }

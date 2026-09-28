@@ -1,6 +1,10 @@
 // Stránka, na kterou se prohlížeč vrátí z přihlášení přes Google (src/ucet.js). Otevírá se v běžném
 // prohlížeči, ne v okně aplikace, takže nemá styly ani skripty aplikace – všechno potřebné nese sama.
 // Skript smí být jen ze stejné adresy (CSP), proto žije na /ucet/navrat.js, ne uvnitř stránky.
+//
+// Rozhraní aplikace si texty ze serveru překládá samo; tahle stránka jde do prohlížeče přímo, a tak
+// je v jazyce z Nastavení už ze serveru – tentýž slovník (src/texty.js#prekladac), i <html lang>.
+import { ui, prekladac } from './texty.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -20,17 +24,23 @@ const STYL = `
   @keyframes nastup { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 `;
 
-export function strankaNavratu({ ok = false, ceka = false, jmeno = '', zprava = '' } = {}) {
+// Vzor věty se přeloží dřív, než se do něj dosadí jméno – jméno z Googlu se nepřekládá nikdy.
+const vloz = (t, vzor, ...hodnoty) => ui(t(vzor), ...hodnoty);
+
+export function strankaNavratu({ ok = false, ceka = false, jmeno = '', zprava = '', jazyk = 'cs' } = {}) {
+  const t = prekladac(jazyk);
   const [znak, trida, nadpis, text] = ceka
-    ? ['…', 'ceka', 'Dokončuji přihlášení', 'Chvilku strpení.']
+    ? ['…', 'ceka', t(ui('Dokončuji přihlášení')), t(ui('Chvilku strpení.'))]
     : ok
-      ? ['✓', 'ok', jmeno ? `Vítej, ${jmeno}` : 'Přihlášení proběhlo', 'Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.']
-      : ['!', 'chyba', 'Přihlášení se nepovedlo', zprava || 'Zkus to prosím znovu z Agenteeq.'];
+      ? ['✓', 'ok', jmeno ? vloz(t, ui('Vítej, {0}'), jmeno) : t(ui('Přihlášení proběhlo')), t(ui('Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.'))]
+      : ['!', 'chyba', t(ui('Přihlášení se nepovedlo')), t(zprava || ui('Zkus to prosím znovu z Agenteeq.'))];
+  // Texty pro skript návratu (SKRIPT_NAVRATU): skript je statický soubor, jazyk nese stránka.
+  const proSkript = ceka ? ` data-chyba-nadpis="${esc(t(ui('Přihlášení se nepovedlo')))}" data-chyba-text="${esc(t(ui('Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.')))}"` : '';
   return `<!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer"><title>Agenteeq · přihlášení</title><style>${STYL}</style>
+<html lang="${jazyk === 'en' ? 'en' : 'cs'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer"><title>${esc(t(ui('Agenteeq · přihlášení')))}</title><style>${STYL}</style>
 ${ceka ? '<script src="/ucet/navrat.js" defer></script>' : ''}</head>
-<body><main><div class="znak znak--${trida}" aria-hidden="true">${znak}</div><h1>${esc(nadpis)}</h1><p id="zprava">${esc(text)}</p></main></body></html>`;
+<body><main${proSkript}><div class="znak znak--${trida}" aria-hidden="true">${znak}</div><h1>${esc(nadpis)}</h1><p id="zprava">${esc(text)}</p></main></body></html>`;
 }
 
 // Supabase posílá chybu přihlášení v části adresy za #, kterou server nevidí. Skript ji předá
@@ -40,7 +50,8 @@ export const SKRIPT_NAVRATU = `(() => {
   const q = new URLSearchParams(location.search);
   const chyba = h.get('error_description') || h.get('error') || q.get('error_description') || q.get('error');
   if (chyba) { location.replace(location.pathname + '?chyba=' + encodeURIComponent(chyba.slice(0, 200))); return; }
-  document.querySelector('h1').textContent = 'Přihlášení se nepovedlo';
-  document.getElementById('zprava').textContent = 'Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.';
+  const texty = document.querySelector('main').dataset;
+  document.querySelector('h1').textContent = texty.chybaNadpis;
+  document.getElementById('zprava').textContent = texty.chybaText;
 })();
 `;

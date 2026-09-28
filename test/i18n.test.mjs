@@ -226,9 +226,7 @@ const MIMO_ROZHRANI = {
   'src/datastore.js': ['Neplatný JSON', 'Neplatný kořen dat', 'obnoveno ze zálohy', 'začínám od výchozích hodnot'], // vnitřní kód chyby a log
   'src/extension-install.js': ['Zdrojová složka rozšíření chybí.', 'Kopii rozšíření se nepodařilo vytvořit: '], // jen log při startu
   'src/hooks-installer.js': ['Neplatný token', 'not object', 'curl -s -m 1 -X POST'], // vnitřní chyba a text ve stavovém řádku Claude Code
-  'src/http.js': ['<!doctype html><meta', 'index.html nemá <html', 'Access removed'], // stránka pro prohlížeč bez klíče okna, chyba vývojáře
-  // Stránka, na kterou se prohlížeč vrátí z přihlášení Google (mimo okno aplikace, zatím jen česky).
-  'src/ucet-stranka.js': null,
+  'src/http.js': ['index.html nemá <html', 'Access removed'], // chyba vývojáře
   'src/tunnel.js': ['binárka ({0}) nebo', '"cloudflared" v PATH', '"ngrok" v PATH; běžící', 'uživatel spustí "'], // technický popis, rozhraní ho nezobrazuje
   'src/connectors/local-agents.js': ['vysoká', 'nízká'], // kód jistoty, klient ho porovnává
   'src/connectors/claude-code.js': ['týden {0} %'], // stavový řádek v Claude Code

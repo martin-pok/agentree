@@ -377,6 +377,8 @@ export default {
   "Metoda není povolena.": "Method not allowed.",
   "Neznámá adresa API.": "Unknown API address.",
   "Chyba serveru.": "Server error.",
+  "Agenteeq běží": "Agenteeq is running",
+  "Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.": "The overview opens from the Agenteeq app window. Without the key, this address shows nothing.",
 
   // src/lan.js
   "Tailscale na {0} neběží nebo nejsi přihlášený.": "Tailscale isn’t running on {0}, or you’re not signed in.",
@@ -651,6 +653,17 @@ export default {
   "Nainstaluj Tailscale (tailscale.com nebo \"brew install --cask tailscale\").": "Install Tailscale (tailscale.com or \"brew install --cask tailscale\").",
   "Přihlas se stejným účtem {0} i na telefonu.": "Sign in with the same account {0} and on your phone.",
   "Spusť detekci znovu.": "Run detection again.",
+
+  // src/ucet-stranka.js
+  "Dokončuji přihlášení": "Finishing sign-in",
+  "Chvilku strpení.": "Just a moment.",
+  "Vítej, {0}": "Welcome, {0}",
+  "Přihlášení proběhlo": "Signed in",
+  "Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.": "You’re signed in to Agenteeq. You can close this window and go back to the app.",
+  "Přihlášení se nepovedlo": "Sign-in failed",
+  "Zkus to prosím znovu z Agenteeq.": "Please try again from Agenteeq.",
+  "Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.": "The sign-in didn’t return a result. Please try again from Agenteeq.",
+  "Agenteeq · přihlášení": "Agenteeq · sign-in",
 
   // src/ucet.js
   "Server účtů Agenteeq neodpovídá. Zkontroluj připojení k internetu.": "The Agenteeq account server isn’t responding. Check your internet connection.",

@@ -198,6 +198,49 @@ test('návrat z přihlášení přijme jen tento Mac – ne proxy ani cizí zař
   });
 });
 
+// Stránka návratu jde do prohlížeče přímo, mimo rozhraní, které si texty překládá samo – jazyk
+// z Nastavení proto dostane už ze serveru, včetně <html lang> a textů pro skript návratu.
+test('stránka návratu z přihlášení je v jazyce z Nastavení', async () => {
+  await sAtrapou(async ({ auth, srv, klient }) => {
+    assert.equal((await klient.send('PUT', '/api/settings', { language: 'en' })).status, 200);
+    const bezCestiny = (html, jmeno = '') => assert.doesNotMatch(html.replace(jmeno, ''), /[áčďéěíňóřšťúůýž]/i, html);
+
+    const r = await klient.send('POST', '/api/ucet/prihlaseni', {});
+    const zpet = new URL(r.body.url).searchParams.get('redirect_to');
+    const ceka = (await navrat(zpet)).html;
+    assert.match(ceka, /<html lang="en">/);
+    assert.match(ceka, /<title>Agenteeq · sign-in<\/title>/);
+    assert.match(ceka, /<h1>Finishing sign-in<\/h1>/);
+    assert.match(ceka, /data-chyba-nadpis="Sign-in failed"/);
+    bezCestiny(ceka);
+
+    const hotovo = (await navrat(`${zpet}?code=${auth.vydejKod(r.body.url)}`)).html;
+    assert.match(hotovo, /<h1>Welcome, Eva Nováková<\/h1>/, 'jméno z Googlu se nepřekládá');
+    assert.match(hotovo, /You’re signed in to Agenteeq/);
+    bezCestiny(hotovo, 'Eva Nováková');
+
+    const r2 = await klient.send('POST', '/api/ucet/prihlaseni', {});
+    const zruseno = (await navrat(`${new URL(r2.body.url).searchParams.get('redirect_to')}?chyba=access_denied`)).html;
+    assert.match(zruseno, /<h1>Sign-in failed<\/h1><p id="zprava">Sign-in failed: access_denied<\/p>/);
+    const neplatne = (await navrat(`${srv.url}/ucet/navrat/kratky`)).html;
+    assert.match(neplatne, /Invalid sign-in address\./);
+    bezCestiny(zruseno + neplatne);
+    const cizi = await fetch(`${zpet}?code=x`, { headers: { 'X-Forwarded-For': '100.64.0.7' } });
+    assert.equal(await cizi.text(), 'Forbidden');
+
+    // Skript návratu je statický a bez textů: nadpis a zprávu bere ze stránky.
+    const skript = await (await fetch(`${srv.url}/ucet/navrat.js`)).text();
+    bezCestiny(skript);
+    const data = (jmeno) => ceka.match(new RegExp(`data-${jmeno}="([^"]*)"`))[1];
+    const h1 = {};
+    const zprava = {};
+    const dokument = { querySelector: (sel) => (sel === 'main' ? { dataset: { chybaNadpis: data('chyba-nadpis'), chybaText: data('chyba-text') } } : h1), getElementById: () => zprava };
+    new Function('location', 'document', skript)({ hash: '', search: '', pathname: '/ucet/navrat/x', replace() {} }, dokument);
+    assert.equal(h1.textContent, 'Sign-in failed');
+    assert.equal(zprava.textContent, 'The sign-in didn’t return a result. Please try again from Agenteeq.');
+  });
+});
+
 test('když přihlášení přes Google na serveru účtů ještě neběží, aplikace to řekne rovnou', async () => {
   await sAtrapou(async ({ klient }) => {
     const r = await klient.send('POST', '/api/ucet/prihlaseni', {});
