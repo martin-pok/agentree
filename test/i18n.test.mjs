@@ -274,3 +274,41 @@ test('i18n: chybové hlášky, stavy a popisky ze serveru jsou označené ui()',
   }
   assert.deepEqual(nalezy, []);
 });
+
+// Pole kalendáře (public/js/datepicker.js) píše datum stejně jako data jinde v aplikaci
+// (format.js#dateLong): česky „28. 9. 2026“, anglicky britsky „28/09/2026“. Dřív psalo česky
+// i v angličtině. Hodnota formuláře zůstává RRRR-MM-DD; zápis jazyka rozhraní pole přečte také.
+test('i18n: pole kalendáře píše a čte datum v zápisu jazyka rozhraní', async () => {
+  const { zobrazDatum, prectiDatum } = await import('../public/js/datepicker.js');
+  const iso = (d) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null);
+  const zari = new Date(2026, 8, 5);
+  assert.equal(zobrazDatum(zari, 'cs'), '5. 9. 2026');
+  assert.equal(zobrazDatum(zari, 'en'), '05/09/2026');
+  assert.equal(zobrazDatum(new Date(2026, 11, 28), 'en'), '28/12/2026');
+  for (const jazyk of ['cs', 'en']) {
+    assert.equal(iso(prectiDatum('2026-09-28', jazyk)), '2026-09-28', `${jazyk}: RRRR-MM-DD platí vždy`);
+    assert.equal(iso(prectiDatum(zobrazDatum(zari, jazyk), jazyk)), '2026-09-05', `${jazyk}: přečte, co samo napíše`);
+    for (const spatne of ['', null, '2026-02-30', '2026-9-5', 'zítra', '5 9 2026']) assert.equal(prectiDatum(spatne, jazyk), null, `${jazyk}: ${spatne}`);
+  }
+  assert.equal(iso(prectiDatum('28.9.2026', 'cs')), '2026-09-28', 'česky i bez mezer');
+  assert.equal(iso(prectiDatum(' 28. 9. 2026 ', 'cs')), '2026-09-28');
+  assert.equal(iso(prectiDatum('28/09/2026', 'en')), '2026-09-28');
+  assert.equal(iso(prectiDatum('5/9/2026', 'en')), '2026-09-05', 'den je první, jako v britském zápisu');
+  assert.equal(prectiDatum('09/28/2026', 'en'), null, 'americký zápis (měsíc první) se nehádá');
+  assert.equal(prectiDatum('31/02/2026', 'en'), null, 'neexistující den se nedopočítá na jiný');
+  assert.equal(prectiDatum('28/09/2026', 'cs'), null, 'česky se lomítka nečtou');
+  assert.equal(prectiDatum('28. 9. 2026', 'en'), null);
+
+  // Bez jazyka v argumentu platí jazyk rozhraní (<html lang>) a zápis sedí s dateLong.
+  const script = `
+    globalThis.document = { documentElement: { lang: 'en' } };
+    const { zobrazDatum, prectiDatum } = await import('./public/js/datepicker.js');
+    const { dateLong } = await import('./public/js/format.js');
+    const dny = [new Date(2026, 0, 3), new Date(2026, 8, 28), new Date(2027, 10, 11)];
+    console.log(JSON.stringify({ shoda: dny.every((d) => zobrazDatum(d) === dateLong(d.getTime())), text: zobrazDatum(dny[1]), cteni: prectiDatum('28/09/2026')?.getDate() }));
+  `;
+  const en = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], { cwd: ROOT, encoding: 'utf8' }));
+  assert.deepEqual(en, { shoda: true, text: '28/09/2026', cteni: 28 });
+  const { dateLong } = await import('../public/js/format.js');
+  for (const d of [new Date(2026, 0, 3), new Date(2026, 8, 28)]) assert.equal(zobrazDatum(d), dateLong(d.getTime()), 'česky stejně jako data jinde');
+});

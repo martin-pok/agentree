@@ -1,5 +1,5 @@
 import { esc, MONTHS } from './format.js';
-import { tr, podleJazyka, LOCALE } from './i18n.js';
+import { tr, podleJazyka, jazyk, LOCALE } from './i18n.js';
 
 // Vlastní kalendář. Nativní <input type="date"> otevírá okno operačního systému, které nejde
 // ostylovat, takže by v aplikaci vždycky vypadalo jako cizí prvek. Původní prvek zůstává v DOM
@@ -84,14 +84,28 @@ const labelText = (el) => {
 /* ---------- Kalendář ---------- */
 
 const DAYS = podleJazyka(['po', 'út', 'st', 'čt', 'pá', 'so', 'ne'], ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
-const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const parse = (s) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
-  if (!m) return null;
-  const d = new Date(+m[1], +m[2] - 1, +m[3]);
-  return d.getMonth() === +m[2] - 1 ? d : null;
-};
-const show = (d) => `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+const dva = (n) => String(n).padStart(2, '0');
+const iso = (d) => `${d.getFullYear()}-${dva(d.getMonth() + 1)}-${dva(d.getDate())}`;
+
+// Datum v poli stejně jako data jinde v aplikaci (format.js#dateLong): česky „28. 9. 2026“,
+// anglicky britsky „28/09/2026“. Hodnota formuláře zůstává RRRR-MM-DD.
+export const zobrazDatum = (d, j = jazyk()) => (j === 'en' ? `${dva(d.getDate())}/${dva(d.getMonth() + 1)}/${d.getFullYear()}` : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`);
+
+// Hodnota pole: RRRR-MM-DD, jak ji píše kalendář a čte server, nebo datum v zápisu jazyka rozhraní
+// (vložené nebo doplněné prohlížečem) – česky D. M. RRRR, anglicky DD/MM/RRRR, den vždy první.
+// Datum, které neexistuje (31. 2.), vrátí null – nikdy se nedopočítá na jiný den.
+export function prectiDatum(text, j = jazyk()) {
+  const s = String(text ?? '').trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  let [r, mes, den] = m ? [m[1], m[2], m[3]] : [];
+  if (!m) {
+    m = j === 'en' ? /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s) : /^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/.exec(s);
+    if (!m) return null;
+    [den, mes, r] = [m[1], m[2], m[3]];
+  }
+  const d = new Date(+r, +mes - 1, +den);
+  return d.getFullYear() === +r && d.getMonth() === +mes - 1 && d.getDate() === +den ? d : null;
+}
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const addMonths = (d, n) => {
   const t = new Date(d.getFullYear(), d.getMonth() + n, 1);
@@ -115,10 +129,12 @@ function enhanceDate(inp) {
   inp.tabIndex = -1;
   inp.setAttribute('aria-hidden', 'true');
   const sync = () => {
-    const d = parse(inp.value);
-    btn.querySelector('.dd-value').textContent = d ? show(d) : tr('Vyber datum');
+    const d = prectiDatum(inp.value);
+    // Datum zapsané jinak než RRRR-MM-DD se převede, ať formulář i server dostanou vždy tentýž tvar.
+    if (d && inp.value !== iso(d)) inp.value = iso(d);
+    btn.querySelector('.dd-value').textContent = d ? zobrazDatum(d) : tr('Vyber datum');
     btn.classList.toggle('is-placeholder', !d);
-    btn.setAttribute('aria-label', `${name ? `${name}: ` : ''}${d ? show(d) : tr('nevybráno')}`);
+    btn.setAttribute('aria-label', `${name ? `${name}: ` : ''}${d ? zobrazDatum(d) : tr('nevybráno')}`);
     btn.disabled = inp.disabled;
   };
   inp.addEventListener('change', sync);
@@ -126,7 +142,7 @@ function enhanceDate(inp) {
 
   const openCal = () => {
     if (btn.disabled) return;
-    const selected = parse(inp.value);
+    const selected = prectiDatum(inp.value);
     const today = new Date();
     let cursor = selected || new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const pop = document.createElement('div');
@@ -175,7 +191,7 @@ function enhanceDate(inp) {
       if (nav) { cursor = addMonths(cursor, Number(nav.dataset.nav)); draw(); return; }
       if (e.target.closest('[data-today]')) { commit(new Date(today.getFullYear(), today.getMonth(), today.getDate()), close); return; }
       const day = e.target.closest('[data-d]');
-      if (day) commit(parse(day.dataset.d), close);
+      if (day) commit(prectiDatum(day.dataset.d), close);
     });
   };
   btn.addEventListener('click', () => { if (current?.trigger === btn) closePicker(); else openCal(); });
