@@ -1192,6 +1192,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function state({ local = true } = {}) {
+    // Stav konverzace závisí na čase a jinak se přepočítává po 5 s. Po probuzení Macu ale časovače
+    // chvíli stojí a snímek by vydal „pracuje“ spočítané před uspáním. Snímek je proto vždycky
+    // odvozený v okamžiku dotazu; co se tím změní, odejde zároveň živým proudem.
+    store.reevaluate();
     return {
       version: VERSION,
       now: Date.now(),
