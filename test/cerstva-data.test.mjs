@@ -42,3 +42,40 @@ test('živý proud posílá známku života jako událost, kterou prohlížeč u
   const ping = await waitFor(() => proud.events.find((e) => e.event === 'ping'));
   assert.ok(Number.isFinite(ping.data.now), 'nese čas serveru');
 });
+
+// Po probuzení Macu čekalo všechno, co se zjišťuje dotazem, na svůj další průchod: výpis procesů
+// až 5 s, vlastní agenti („Odpovídá“) 30 s, průchod souborů 10 s. Okno mezitím dostávalo stav
+// z doby před uspáním jako živý. Hlídač pozná spánek podle mezery mezi průchody a vše zjistí hned.
+test('hlídač probuzení pozná uspaný počítač podle mezery mezi průchody', async () => {
+  const { hlidacProbuzeni, PROBUZENI_MEZERA_MS } = await import('../src/probuzeni.js');
+  let ted = 1_000_000;
+  const spal = hlidacProbuzeni({ now: () => ted });
+  assert.equal(spal(), false, 'první průchod nic nesrovnává');
+  ted += 5000;
+  assert.equal(spal(), false, 'běžný průchod po 5 s');
+  ted += PROBUZENI_MEZERA_MS + 1;
+  assert.equal(spal(), true, 'mezera přes minutu = počítač spal');
+  ted += 5000;
+  assert.equal(spal(), false, 'probuzení se hlásí jednou');
+});
+
+test('po probuzení aplikace hned znovu projde zdroje a přepočítá stavy', async (t) => {
+  const s = await startTestServer();
+  t.after(() => s.close());
+  const prosle = [];
+  for (const c of Object.values(s.app.connectors)) {
+    if (c.kind !== 'local') continue;
+    c.scan = async () => { prosle.push(c.id); };
+  }
+  const { store } = s.app;
+  const pred = Date.now() - 40 * MIN;
+  const session = store.ensure({ connector: 'codex', localId: 'po-probuzeni', provider: 'openai', app: 'Codex' });
+  Object.assign(session, { title: 'Běžel před uspáním', running: true, runningAt: pred, lastAt: pred, startedAt: pred, staleMs: 15 * MIN });
+  store.commit(session, pred + 1000);
+  const udalosti = [];
+  store.on('session', (x) => udalosti.push(x));
+  await s.app.poProbuzeni();
+  assert.ok(prosle.includes('codex') && prosle.includes('claude-code'), `projité zdroje: ${prosle.join(', ')}`);
+  assert.equal(store.summary(session.id).status, 'waiting', 'stav přepočítaný hned, ne až dalším průchodem');
+  assert.ok(udalosti.some((x) => x.id === session.id), 'změna odešla do živého proudu');
+});

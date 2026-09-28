@@ -49,6 +49,7 @@ import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSes
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
+import { hlidacProbuzeni } from './probuzeni.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -1230,6 +1231,19 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const timers = [];
   let connectorsJson = '';
 
+  // Po probuzení Macu se hned znovu zjistí všechno, co se jinak zjišťuje dotazem v pravidelném
+  // průchodu: soubory zdrojů (co se stalo těsně před uspáním), běžící procesy, vlastní agenti a
+  // obnovy limitů. Bez toho by okno až 30 s dostávalo stav z doby před uspáním jako živý.
+  async function poProbuzeni() {
+    log('Agenteeq: počítač se probudil, znovu zjišťuji stav zdrojů.');
+    await Promise.allSettled([
+      ...list.filter((c) => c.kind === 'local').map((c) => c.scan()),
+      datastore.data.customAgents.length ? probeCustomAgents() : null,
+    ]);
+    alerts.checkLimitResets();
+    store.reevaluate();
+  }
+
   async function start() {
     const t0 = Date.now();
     // Kopie rozšíření mimo balíček aplikace, ať ho aktualizace Agenteeq nerozbije.
@@ -1267,7 +1281,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       t.unref?.();
       timers.push(t);
     };
-    every(() => store.reevaluate(), 5000);
+    const spal = hlidacProbuzeni();
+    every(() => (spal() ? poProbuzeni() : store.reevaluate()), 5000);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
     every(() => restoreRemoteAccess(), 30000);
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
@@ -1316,7 +1331,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, poProbuzeni, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
