@@ -1232,8 +1232,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let connectorsJson = '';
 
   // Po probuzení Macu se hned znovu zjistí všechno, co se jinak zjišťuje dotazem v pravidelném
-  // průchodu: soubory zdrojů (co se stalo těsně před uspáním), běžící procesy, vlastní agenti a
-  // obnovy limitů. Bez toho by okno až 30 s dostávalo stav z doby před uspáním jako živý.
+  // průchodu: soubory zdrojů (co se stalo těsně před uspáním), běžící procesy, vlastní agenti,
+  // obnovy limitů a útrata „tento měsíc“ (Mac mohl spát přes přelom měsíce; jinak po hodině).
+  // Bez toho by okno až 30 s (útrata hodinu) dostávalo stav z doby před uspáním jako živý.
   async function poProbuzeni() {
     log('Agenteeq: počítač se probudil, znovu zjišťuji stav zdrojů.');
     await Promise.allSettled([
@@ -1241,6 +1242,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       datastore.data.customAgents.length ? probeCustomAgents() : null,
     ]);
     alerts.checkLimitResets();
+    spendChanged();
     store.reevaluate();
   }
 

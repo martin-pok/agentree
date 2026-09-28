@@ -74,7 +74,11 @@ test('po probuzení aplikace hned znovu projde zdroje a přepočítá stavy', as
   store.commit(session, pred + 1000);
   const udalosti = [];
   store.on('session', (x) => udalosti.push(x));
+  // Útrata „tento měsíc“ se jinak přepočítává po hodině – Mac mohl spát přes přelom měsíce.
+  const utrata = [];
+  store.on('spend', (x) => utrata.push(x));
   await s.app.poProbuzeni();
+  assert.equal(utrata.length, 1, 'útrata se po probuzení přepočítá hned');
   assert.ok(prosle.includes('codex') && prosle.includes('claude-code'), `projité zdroje: ${prosle.join(', ')}`);
   assert.equal(store.summary(session.id).status, 'waiting', 'stav přepočítaný hned, ne až dalším průchodem');
   assert.ok(udalosti.some((x) => x.id === session.id), 'změna odešla do živého proudu');
