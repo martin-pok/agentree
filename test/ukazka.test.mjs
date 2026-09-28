@@ -51,9 +51,10 @@ test('ukázka odpovídá ze snímku, nic neukládá a na síť se neptá', async
     await assert.rejects(request('GET', '/api/sessions/a'), (e) => e.status === 404);
 
     const udalosti = [];
-    const spojeni = connectStream({ onHello: () => udalosti.push('hello'), onEvent: () => udalosti.push('event'), onStatus: (s) => udalosti.push(s) });
+    const spojeni = connectStream({ onHello: () => udalosti.push('hello'), onEvent: () => udalosti.push('event'), onPing: () => udalosti.push('ping'), onError: () => udalosti.push('chyba') });
     await Promise.resolve();
-    assert.deepEqual(udalosti, ['live', 'hello'], 'jednou „připojeno“, žádné živé změny');
+    assert.deepEqual(udalosti, ['hello'], 'jeden pozdrav, žádné živé změny ani výpadky');
+    assert.equal(spojeni.otevreno(), true);
     assert.equal(typeof spojeni.close, 'function');
   } finally {
     globalThis.fetch = puvodniFetch;

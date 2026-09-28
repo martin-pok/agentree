@@ -118,23 +118,25 @@ export const api = {
 
 const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
 
-// EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
-export function connectStream({ onHello, onEvent, onStatus }) {
-  // Ukázka nemá server ani živé změny: jednou „připojeno“ a hotovo.
+export const jeUkazka = () => Boolean(ukazka);
+
+// Živý proud ze serveru. Každý pozdrav (hello) znamená načíst celý snímek stavu; kdy je okno
+// „připojené“, co dělat po výpadku a jak poznat mrtvé spojení, řídí public/js/spojeni.js.
+// `onError(natrvalo)`: natrvalo = prohlížeč to sám znovu nezkusí (HTTP chyba, proxy).
+export function connectStream({ onHello, onEvent, onPing = () => {}, onError = () => {} }) {
+  // Ukázka nemá server ani živé změny: jeden pozdrav a hotovo.
   if (ukazka) {
-    queueMicrotask(() => { onStatus('live'); onHello({}); });
-    return { close() {} };
+    queueMicrotask(() => onHello({}));
+    return { close() {}, otevreno: () => true };
   }
   const es = new EventSource('/api/stream');
-  es.addEventListener('hello', (e) => {
-    onStatus('live');
-    onHello(JSON.parse(e.data));
-  });
+  es.addEventListener('hello', (e) => onHello(JSON.parse(e.data)));
+  es.addEventListener('ping', () => onPing());
   for (const name of EVENTS) {
     es.addEventListener(name, (e) => {
       try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
     });
   }
-  es.onerror = () => onStatus(es.readyState === EventSource.CLOSED ? 'offline' : 'reconnecting');
-  return es;
+  es.onerror = () => onError(es.readyState === EventSource.CLOSED);
+  return { close: () => es.close(), otevreno: () => es.readyState === EventSource.OPEN };
 }

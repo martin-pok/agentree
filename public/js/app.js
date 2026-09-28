@@ -1,5 +1,6 @@
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
-import { api, connectStream } from './api.js';
+import { api, connectStream, jeUkazka } from './api.js';
+import { vytvorSpojeni } from './spojeni.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
@@ -708,9 +709,6 @@ if (UKAZKA) {
   });
 }
 
-let loadingSnapshot = null;
-const queued = [];
-
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
   if (vysledek?.ucet) udalostUctu(vysledek.ucet);
@@ -735,65 +733,30 @@ function udalostUctu(u) {
   }
 }
 
-// Nespárovaný telefon nedostane ani stav, ani realtime stream – obsluha 401 uvnitř streamu by se
-// tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
-const autorizace = api.state().then((snap) => {
-  // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
-  // proudu – když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
-  if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
-  return true;
-}).catch((err) => {
-  if (err.status === 401) {
-    parovaciObrazovka();
-    return false;
+// Nativní obal (desktop/Agenteeq.swift) schová úvodní obrazovku, jakmile jsou data v okně.
+let pripraveno = false;
+function prijmiSnimek(snap, { znovu = false } = {}) {
+  applySnapshot(snap, { znovu });
+  if (!pripraveno) {
+    pripraveno = true;
+    window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
   }
-  return true;
-});
-
-function prijmiSnimek(snap) {
-  applySnapshot(snap);
-  window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
-  for (const [name, data] of queued.splice(0)) handle(name, data);
 }
 
-// Pojistka pro první načtení: dokud stav není načtený, zkouší se ho stáhnout znovu (4 s, 6 s, 8 s…
-// nejvýš po 15 s). Běží jen do prvního úspěchu; živé změny pak dál nese proud.
-let pokusyNacteni = 0;
-function hlidejNacteni() {
-  if (state.loaded) return;
-  setTimeout(async () => {
-    if (state.loaded) return;
-    if (!loadingSnapshot) {
-      try {
-        prijmiSnimek(await api.state());
-        return;
-      } catch (err) {
-        if (err.status === 401) return;
-      }
-    }
-    pokusyNacteni++;
-    hlidejNacteni();
-  }, Math.min(15000, 4000 + pokusyNacteni * 2000));
-}
-hlidejNacteni();
-
-connectStream({
-  onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
-  onHello: () => {
-    loadingSnapshot = api
-      .state()
-      .then(prijmiSnimek)
-      .catch((err) => {
-        if (err.status === 401) return parovaciObrazovka();
-        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
-      })
-      .finally(() => { loadingSnapshot = null; });
-  },
-  onEvent: (name, data) => {
-    if (!state.loaded || loadingSnapshot) queued.push([name, data]);
-    else handle(name, data);
-  },
-});
+// Spojení se serverem: snímek stavu, živý proud, obnova po výpadku, po uspání a po návratu k oknu
+// (public/js/spojeni.js). Nespárovaný telefon dostane od serveru 401 – místo prázdné aplikace
+// se ukáže párování.
+const spojeni = vytvorSpojeni({
+  proud: connectStream,
+  nactiSnimek: () => api.state(),
+  naSnimek: prijmiSnimek,
+  naUdalost: handle,
+  naStav: onConnection,
+  naOdparovani: () => parovaciObrazovka(),
+  naChybuSnimku: (err) => toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 }),
+  skryto: () => document.hidden,
+  hlidat: !jeUkazka(),
+}).start();
 
 // Telefon, který ještě není spárovaný, dostane od serveru 401. Místo prázdné aplikace se zeptáme
 // na jednorázový kód z Agenteeq na Macu; po spárování se stránka načte znovu už s daty.
@@ -835,22 +798,10 @@ function parovaciObrazovka(zprava = '') {
 }
 
 // Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po
-// obnovení sítě) proto vždy natáhneme čerstvý stav – jinak by uživatel chvíli koukal na stará čísla.
-let posledniObnova = Date.now();
-async function obnovStav(duvod) {
-  if (document.visibilityState !== 'visible' || loadingSnapshot) return;
-  if (Date.now() - posledniObnova < 3000) return;
-  posledniObnova = Date.now();
-  try {
-    applySnapshot(await api.state());
-  } catch {
-    onConnection('offline');
-    void duvod;
-  }
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav(tr('návrat do aplikace')); });
-window.addEventListener('online', () => obnovStav(tr('obnovená síť')));
-window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav(tr('stránka z paměti')); });
+// obnovení sítě) se proto stav vždy srovná – jinak by uživatel chvíli koukal na stará čísla.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') spojeni.obnov(); });
+window.addEventListener('online', () => spojeni.obnov());
+window.addEventListener('pageshow', (e) => { if (e.persisted) spojeni.obnov(); });
 
 navigate();
 setInterval(tickClock, 1000);

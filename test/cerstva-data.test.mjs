@@ -119,3 +119,266 @@ test('přírůstek přepisu, který přijde během načítání, se neztratí', 
   assert.equal(t.loaded, true);
   okno.state.transcripts.clear();
 });
+
+/* ---------- Spojení okna se serverem (public/js/spojeni.js) ---------- */
+
+// Simulace bez prohlížeče: vlastní hodiny a časovače, proud ovládaný testem a snímky, které test
+// „doručí“, kdy chce – tak jde přesně nastavit, co přijde během načítání.
+function simulace({ hlidat = true, skryto = () => false } = {}) {
+  let ted = 1_000_000;
+  let id = 0;
+  const casovace = new Map();
+  const hodiny = {
+    now: () => ted,
+    setTimeout: (f, ms) => { casovace.set(++id, { f, kdy: ted + ms }); return id; },
+    clearTimeout: (i) => { casovace.delete(i); },
+    setInterval: (f, ms) => { casovace.set(++id, { f, kdy: ted + ms, kazdych: ms }); return id; },
+    clearInterval: (i) => { casovace.delete(i); },
+  };
+  const dorucit = () => new Promise((r) => setImmediate(r));
+  const proudy = [];
+  const snimky = [];
+  const zaznam = [];
+  const stavy = [];
+  const odparovano = [];
+  const chyby = [];
+  const spojeni = vytvorSpojeni({
+    proud: (h) => {
+      const p = { h, zavreny: false, otevreny: false, close() { this.zavreny = true; }, otevreno() { return this.otevreny && !this.zavreny; } };
+      proudy.push(p);
+      return p;
+    },
+    nactiSnimek: () => new Promise((ok, ko) => { snimky.push({ ok, ko }); }),
+    naSnimek: (snap, { znovu }) => zaznam.push(['snimek', snap.v, znovu]),
+    naUdalost: (name, data) => zaznam.push([name, data]),
+    naStav: (stav, info) => stavy.push({ stav, ...info }),
+    naOdparovani: (err) => odparovano.push(err),
+    naChybuSnimku: (err) => chyby.push(err),
+    hodiny,
+    hlidat,
+    skryto,
+  });
+  return {
+    spojeni, proudy, snimky, zaznam, stavy, odparovano, chyby, dorucit,
+    get ted() { return ted; },
+    // Uspaný počítač: čas běží, časovače stojí.
+    spanek(ms) { ted += ms; for (const c of casovace.values()) c.kdy += ms; },
+    async posun(ms) {
+      const cil = ted + ms;
+      for (;;) {
+        const dalsi = [...casovace.entries()].filter(([, c]) => c.kdy <= cil).sort((a, b) => a[1].kdy - b[1].kdy)[0];
+        if (!dalsi) break;
+        const [i, c] = dalsi;
+        ted = c.kdy;
+        if (c.kazdych) c.kdy += c.kazdych;
+        else casovace.delete(i);
+        c.f();
+        await dorucit();
+      }
+      ted = cil;
+      await dorucit();
+    },
+    posledni: () => proudy.at(-1),
+    stav: () => stavy.at(-1)?.stav,
+    async pozdrav() { const p = proudy.at(-1); p.otevreny = true; p.h.onHello({}); await dorucit(); },
+    async snimek(v) { snimky.shift().ok({ v }); await dorucit(); },
+    async selze(err) { snimky.shift().ko(err); await dorucit(); },
+  };
+}
+
+const { vytvorSpojeni, TICHO_MS } = await import('../public/js/spojeni.js').catch(() => ({}));
+
+// Připojené spojení: první snímek, pozdrav proudu a snímek vyžádaný po pozdravu.
+async function pripojene(sim) {
+  sim.spojeni.start();
+  await sim.dorucit();
+  await sim.snimek(1);
+  await sim.pozdrav();
+  await sim.snimek(2);
+  return sim;
+}
+
+// Dřív se „Připojeno“ rozsvítilo už při pozdravu proudu, před načtením stavu – a svítilo i tehdy,
+// když se stav načíst nepodařilo. Okno tak vydávalo data z doby před výpadkem za aktuální.
+test('spojení: „Připojeno“ až po načtení snímku vyžádaného po pozdravu proudu', async () => {
+  const sim = simulace();
+  sim.spojeni.start();
+  await sim.dorucit();
+  await sim.snimek(1);
+  assert.notEqual(sim.stav(), 'live', 'první snímek bez proudu ještě není živý stav');
+  assert.equal(sim.proudy.length, 1, 'proud se otevře po prvním snímku');
+  await sim.pozdrav();
+  assert.notEqual(sim.stav(), 'live', 'pozdrav sám nic nepotvrzuje');
+  sim.posledni().h.onEvent('limits', ['L1']);
+  assert.deepEqual(sim.zaznam, [['snimek', 1, false]], 'událost během načítání čeká ve frontě');
+  await sim.snimek(2);
+  assert.deepEqual(sim.zaznam.slice(1), [['snimek', 2, true], ['limits', ['L1']]], 'po snímku se fronta přehraje');
+  assert.equal(sim.stav(), 'live');
+  assert.equal(sim.spojeni.dataZ(), sim.ted);
+});
+
+// Návrat k oknu (a obnovená síť) stahoval snímek mimo frontu událostí: co mezitím přišlo živým
+// proudem, přepsal snímek vzniklý o chvíli dřív – a tahle změna už znovu nepřišla.
+test('spojení: obnova po návratu k oknu nepřepíše novější události starším snímkem', async () => {
+  const sim = await pripojene(simulace());
+  await sim.posun(4000);
+  sim.spojeni.obnov();
+  await sim.dorucit();
+  sim.posledni().h.onEvent('session', { id: 'x', status: 'needs_input' });
+  await sim.snimek(3);
+  assert.deepEqual(sim.zaznam.slice(-2), [['snimek', 3, true], ['session', { id: 'x', status: 'needs_input' }]]);
+  assert.equal(sim.stav(), 'live');
+});
+
+// Proud, který prohlížeč zavřel natrvalo (HTTP chyba od proxy, 503), se dřív už nikdy nenavázal:
+// okno zůstalo „Bez spojení“ nad starými daty, dokud ho člověk ručně nenačetl znovu.
+test('spojení: natrvalo zavřený proud se naváže znovu s pauzou', async () => {
+  const sim = await pripojene(simulace());
+  sim.posledni().h.onError(true);
+  assert.equal(sim.stav(), 'reconnecting');
+  await sim.posun(2000);
+  await sim.snimek(3); // snímek zároveň ověří, že nejde o zrušené spárování
+  assert.equal(sim.proudy.length, 2, 'nový proud');
+  assert.equal(sim.proudy[0].zavreny, true);
+  await sim.pozdrav();
+  await sim.snimek(4);
+  assert.equal(sim.stav(), 'live');
+});
+
+// Spojení, které tiše umřelo (Mac usnul, telefon změnil síť), prohlížeč drží otevřené klidně
+// hodiny. Okno ho dřív nepoznalo a hlásilo „Připojeno“ nad starými daty.
+test('spojení: bez zprávy ze serveru déle než tři známky života se spojení obnoví', async () => {
+  const sim = await pripojene(simulace());
+  for (let i = 0; i < 6; i++) { await sim.posun(15000); sim.posledni().h.onPing(); }
+  assert.equal(sim.proudy.length, 1, 'se známkami života spojení drží');
+  const dataZ = sim.spojeni.dataZ();
+  await sim.posun(TICHO_MS + 5000);
+  assert.equal(sim.proudy.length, 2, 'po tichu nový proud');
+  assert.equal(sim.proudy[0].zavreny, true);
+  const s = sim.stavy.at(-1);
+  assert.equal(s.stav, 'reconnecting');
+  assert.equal(s.okamzite, true, 'data se hned označí jako neověřená, bez čekání');
+  assert.equal(s.dataZ, dataZ, 'okno ví, z kdy jsou poslední ověřená data');
+});
+
+// Uspaný počítač s otevřeným oknem: po probuzení běželo spojení dál, žádný nový pozdrav, žádný
+// nový snímek – stopky „Pracuje už“ a stavy „běží“ z doby před spánkem se tvářily jako živé.
+test('spojení: po probuzení počítače se data hned označí a načtou znovu', async () => {
+  const sim = await pripojene(simulace());
+  await sim.posun(5000);
+  sim.spanek(2 * 3600e3);
+  await sim.posun(5000);
+  const s = sim.stavy.at(-1);
+  assert.equal(s.stav, 'reconnecting');
+  assert.equal(s.probuzeni, true);
+  assert.equal(s.okamzite, true);
+  assert.equal(sim.proudy.length, 2, 'nové spojení místo toho z doby před spánkem');
+  await sim.pozdrav();
+  await sim.snimek(3);
+  assert.deepEqual(sim.zaznam.at(-1), ['snimek', 3, true]);
+  assert.equal(sim.stav(), 'live');
+});
+
+test('spojení: skrytá karta se za probuzení nepovažuje (prohlížeč jí časovače zpomaluje)', async () => {
+  let skryto = false;
+  const sim = await pripojene(simulace({ skryto: () => skryto }));
+  skryto = true;
+  sim.spanek(60e3);
+  sim.posledni().h.onPing();
+  await sim.posun(5000);
+  assert.equal(sim.proudy.length, 1);
+  skryto = false;
+  sim.spojeni.obnov();
+  await sim.dorucit();
+  assert.equal(sim.proudy.length, 1, 'živé spojení se jen tiše srovná snímkem');
+  await sim.snimek(3);
+  assert.equal(sim.stav(), 'live');
+});
+
+test('spojení: zrušené spárování (401) ukončí pokusy a vrátí párování', async () => {
+  const sim = await pripojene(simulace());
+  sim.posledni().h.onError(true);
+  await sim.posun(2000);
+  await sim.selze(Object.assign(new Error('Nespárováno'), { status: 401 }));
+  assert.equal(sim.odparovano.length, 1);
+  await sim.posun(120e3);
+  assert.equal(sim.proudy.length, 1, 'žádné další pokusy');
+  assert.equal(sim.proudy[0].zavreny, true);
+});
+
+test('spojení: snímek, který po pozdravu selže, nehlásí „Připojeno“ a zkusí se znovu', async () => {
+  const sim = simulace();
+  sim.spojeni.start();
+  await sim.dorucit();
+  await sim.snimek(1);
+  await sim.pozdrav();
+  await sim.selze(Object.assign(new Error('Chyba 500'), { status: 500 }));
+  assert.equal(sim.stav(), 'reconnecting');
+  assert.equal(sim.chyby.length, 1, 'skutečná chyba serveru se ukáže');
+  await sim.posun(2000);
+  await sim.snimek(2);
+  assert.equal(sim.proudy.length, 2);
+  await sim.pozdrav();
+  await sim.snimek(3);
+  assert.equal(sim.stav(), 'live');
+});
+
+// Událost z dřívějšího spojení nesmí přijít po snímku, který vznikl až po novém pozdravu –
+// přepsala by novější stav starším (třeba limity) a ten by se tvářil jako živý.
+test('spojení: po novém pozdravu se nepřehrají události z předchozího spojení', async () => {
+  const sim = await pripojene(simulace());
+  sim.spojeni.obnov(); // obnova čeká na snímek…
+  await sim.posun(3500);
+  sim.spojeni.obnov();
+  await sim.dorucit();
+  sim.posledni().h.onEvent('limits', ['stare']);
+  sim.posledni().h.onError(false); // …spojení na chvíli spadne a prohlížeč ho naváže sám
+  await sim.pozdrav();
+  await sim.snimek(3);
+  await sim.snimek(4);
+  assert.ok(!sim.zaznam.some(([n]) => n === 'limits'), `záznam: ${JSON.stringify(sim.zaznam)}`);
+  assert.deepEqual(sim.zaznam.at(-1), ['snimek', 4, true]);
+  assert.equal(sim.stav(), 'live');
+});
+
+// Transport: známku života musí proud předat dál a natrvalo zavřený proud ohlásit jako takový –
+// jinak by se nový nenavázal.
+test('živý proud v okně předá známku života i natrvalo zavřené spojení', async () => {
+  const { connectStream } = await import('../public/js/api.js');
+  const puvodni = globalThis.EventSource;
+  class Atrapa {
+    static CONNECTING = 0; static OPEN = 1; static CLOSED = 2;
+    constructor(url) { this.url = url; this.readyState = 0; this.posluchaci = {}; Atrapa.posledni = this; }
+    addEventListener(name, fn) { this.posluchaci[name] = fn; }
+    close() { this.readyState = 2; }
+  }
+  globalThis.EventSource = Atrapa;
+  try {
+    const zaznam = [];
+    const p = connectStream({ onHello: () => zaznam.push('hello'), onEvent: (n) => zaznam.push(n), onPing: () => zaznam.push('ping'), onError: (natrvalo) => zaznam.push(`chyba:${natrvalo}`) });
+    const es = Atrapa.posledni;
+    assert.equal(es.url, '/api/stream');
+    es.readyState = 1;
+    es.posluchaci.hello({ data: '{"now":1}' });
+    assert.equal(p.otevreno(), true);
+    es.posluchaci.ping({ data: '{"now":2}' });
+    es.readyState = 0;
+    es.onerror();
+    es.readyState = 2;
+    es.onerror();
+    assert.deepEqual(zaznam, ['hello', 'ping', 'chyba:false', 'chyba:true']);
+    p.close();
+    assert.equal(p.otevreno(), false);
+  } finally {
+    globalThis.EventSource = puvodni;
+  }
+});
+
+test('spojení: ukázka bez serveru nehlídá ticho ani probuzení', async () => {
+  const sim = await pripojene(simulace({ hlidat: false }));
+  await sim.posun(10 * 60e3);
+  sim.spanek(3600e3);
+  await sim.posun(10e3);
+  assert.equal(sim.proudy.length, 1);
+  assert.equal(sim.stav(), 'live');
+});
