@@ -13,6 +13,21 @@
 // Pravidla pro vzory: vzor musí mít pevný text, nejen proměnné, a tvary podle počtu se nepíšou jako
 // proměnná – jeden tvar = jeden text (viz src/app.js, konverzace). Výjimkou je „Popisek: obsah“
 // (činnost agenta „Spouští příkaz: npm test“): stačí označit popisek, klient přeloží část před dvojtečkou.
+import EN from '../public/js/i18n/en.js';
+import { vytvorPrekladac } from '../public/js/texty-serveru.js';
+
 export function ui(text, ...args) {
   return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text;
+}
+
+let anglicky = null;
+/**
+ * Překladač pro to, co server posílá mimo rozhraní – oznámení systému (src/alerts.js). Rozhraní si
+ * texty překládá samo; tady se použije tentýž slovník i tatáž pravidla (public/js/texty-serveru.js,
+ * bez DOM). Pro češtinu vrací text beze změny.
+ */
+export function prekladac(jazyk) {
+  if (jazyk !== 'en') return (text) => text;
+  anglicky ??= vytvorPrekladac(EN.server, EN.texty, 'en-GB');
+  return anglicky;
 }

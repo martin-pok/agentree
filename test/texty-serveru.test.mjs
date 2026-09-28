@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import EN from '../public/js/i18n/en.js';
 import { vytvorPrekladac, vytvorPrelozData } from '../public/js/texty-serveru.js';
-import { AlertEngine } from '../src/alerts.js';
+import { AlertEngine, textSouhrnu } from '../src/alerts.js';
 import { budgetAlertCandidates } from '../src/spend.js';
 import { launchTargets, MODES } from '../src/launcher.js';
 import { ui } from '../src/texty.js';
@@ -62,7 +62,7 @@ test('překlad dat: obsah uživatele a kódy se nemění, texty rozhraní ano', 
   assert.equal(data.settings.profile, 'Na pozadí');
 });
 
-test('upozornění ze src/alerts.js jsou po překladu anglicky (alerts.js se nemění)', () => {
+test('upozornění ze src/alerts.js jsou po překladu na klientu anglicky', () => {
   const now = Date.now();
   const limity = [
     { id: 'c5', app: 'Claude Code', label: 'Limit 5 h', windowMinutes: 300, resetsAt: now - 1000, usedPercent: 60 },
@@ -97,6 +97,46 @@ test('upozornění ze src/alerts.js jsou po překladu anglicky (alerts.js se nem
   assert.ok(prelozene.some((a) => a.title === 'Claude Code: 5-hour limit at 85 %'));
   assert.ok(prelozene.some((a) => a.title === 'Codex: weekly limit has reset'));
   assert.ok(prelozene.some((a) => a.title === 'Budget exceeded: Total'));
+});
+
+// Oznámení systému čte uživatel mimo aplikaci, takže ho server posílá rovnou v jazyce z Nastavení.
+// Uložené upozornění zůstává česky – rozhraní si ho přeloží samo a nesmí ho překládat podruhé.
+function oznameni(jazyk) {
+  const odeslana = [];
+  const datastore = fakeDatastore({ native: true });
+  datastore.data.settings.language = jazyk;
+  const store = { emit() {}, on() {}, list: () => [], limitList: () => [] };
+  const alerts = new AlertEngine({ store, datastore, notifier: { native: async (n) => { odeslana.push(n); return true; } } });
+  const now = Date.now();
+  alerts.onSession({ id: 's1', app: 'Codex', title: 'Refactor login', status: 'working', lastAt: now });
+  alerts.onSession({ id: 's1', app: 'Codex', title: 'Refactor login', status: 'needs_input', reason: 'Potřebuje tvé rozhodnutí', pending: { at: now }, lastAt: now });
+  alerts.onLimit({ id: 'l1', app: 'Codex', label: 'Týdenní limit', reached: true, resetsAt: new Date(2026, 8, 29, 14, 5).getTime() }, null);
+  return { odeslana, ulozena: datastore.data.alerts };
+}
+
+test('oznámení systému: s angličtinou odejde anglicky, s češtinou česky, uložené zůstane česky', () => {
+  const en = oznameni('en');
+  assert.deepEqual(en.odeslana.map((n) => [n.title, n.body]), [
+    ['Codex needs your decision', 'Needs your decision'],
+    ['Codex: Weekly limit used up', `Resets ${new Date(2026, 8, 29, 14, 5).toLocaleString('en-GB', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.`],
+  ]);
+  assert.deepEqual(en.ulozena.map((a) => a.title), ['Codex potřebuje tvé rozhodnutí', 'Codex: Týdenní limit vyčerpán'], 'data.json zůstává česky');
+  const cs = oznameni('cs');
+  assert.deepEqual(cs.odeslana.map((n) => n.title), ['Codex potřebuje tvé rozhodnutí', 'Codex: Týdenní limit vyčerpán']);
+  assert.equal(cs.odeslana[0].body, 'Potřebuje tvé rozhodnutí');
+});
+
+test('souhrn: názvy limitů a rozpočtů v těle jsou v angličtině anglicky, konverzace beze změny', () => {
+  const polozky = [
+    { kind: 'needs_input', nazev: 'Refactor login' },
+    { kind: 'limit', nazev: 'Codex: Týdenní limit', limit: { app: 'Codex', label: 'Týdenní limit' } },
+    { kind: 'budget', nazev: 'Rozpočet překročen: Celkem' },
+  ];
+  assert.deepEqual(textSouhrnu('quiet', polozky, 'en'), {
+    title: 'During quiet hours: 1× waiting for your decision, 1× limit, 1× budget',
+    body: 'Refactor login, Codex: Weekly limit, Budget exceeded: Total',
+  });
+  assert.equal(textSouhrnu('quiet', polozky, 'cs').body, 'Refactor login, Codex: Týdenní limit, Rozpočet překročen: Celkem');
 });
 
 test('nabídka spouštění a rozpočty jsou po překladu anglicky', () => {

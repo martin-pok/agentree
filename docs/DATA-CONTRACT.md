@@ -117,7 +117,8 @@ přeloží při příjmu podle slovníku `public/js/i18n/en-server.js` (`public/
 se z `public/js/api.js` pro odpovědi, stream i ukázku). Texty složené z proměnných se poznají podle
 vzoru (`„{0} konverzací s aktivitou za {1} dní.“`). Obsah uživatele (zadání, přepis, cesty, názvy)
 se nepřekládá. Titulky upozornění ze `src/alerts.js` se překládají podle vzorů odvozených z jeho
-šablon; systémová oznámení (OS) zůstávají česky.
+šablon. Uložená upozornění zůstávají česky; do oznámení systému (OS) je server pošle v jazyce z
+Nastavení přeložená stejným slovníkem (`src/texty.js#prekladac` nad `public/js/texty-serveru.js`).
 
 `state.host.system` je `macos` | `windows` | `linux` (`src/platform.js#SYSTEM`). Stejná hodnota je
 v `<html data-system>` už při vydání `index.html`, aby rozhraní od prvního vykreslení psalo „tento

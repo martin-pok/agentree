@@ -1,6 +1,7 @@
 import { uid, DAY, HOUR } from './util.js';
 import { budgetAlertCandidates } from './spend.js';
 import { jeNocniTicho } from './nocni-ticho.js';
+import { prekladac } from './texty.js';
 
 const KEY_TTL = 60 * DAY;
 
@@ -28,9 +29,12 @@ const SKUPINY = [
 ];
 
 // Text souhrnu. Upozornění vznikají na serveru a nativní oznámení je nese beze změny, proto se
-// jazyk vybírá už tady – podle volby v Nastavení.
+// jazyk vybírá už tady – podle volby v Nastavení. Názvy v těle (limit, rozpočet, konverzace) přišly
+// česky, v angličtině je přeloží stejný slovník jako rozhraní; u limitu jen jeho název, aplikace ne.
 export function textSouhrnu(duvod, polozky, jazyk = 'cs') {
   const en = jazyk === 'en';
+  const t = prekladac(jazyk);
+  const nazev = (p) => (p.limit ? `${p.limit.app}: ${t(p.limit.label)}` : t(p.nazev));
   const skupina = (p) => SKUPINY.findIndex((g) => g.druhy.includes(p.kind));
   const casti = SKUPINY
     .map((g) => [g, polozky.filter((p) => g.druhy.includes(p.kind)).length])
@@ -38,7 +42,7 @@ export function textSouhrnu(duvod, polozky, jazyk = 'cs') {
     .map(([g, n]) => `${n}× ${en ? g.en : g.cs}`);
   const uvod = duvod === 'quiet' ? (en ? 'During quiet hours' : 'Během nočního ticha') : (en ? 'More alerts' : 'Další upozornění');
   // Výčet jmen ve stejném pořadí jako titulek: nejdřív to, co čeká na rozhodnutí.
-  const jmena = [...new Set([...polozky].sort((a, b) => skupina(a) - skupina(b)).map((p) => p.nazev).filter(Boolean))];
+  const jmena = [...new Set([...polozky].sort((a, b) => skupina(a) - skupina(b)).map(nazev).filter(Boolean))];
   const zbyva = jmena.length - 3;
   const dalsi = zbyva > 0 ? (en ? ` and ${zbyva} more` : ` a ${zbyva} ${zbyva >= 5 ? 'dalších' : 'další'}`) : '';
   return { title: `${uvod}: ${casti.join(', ')}`, body: jmena.slice(0, 3).join(', ') + dalsi };
@@ -204,8 +208,11 @@ export class AlertEngine {
     this.datastore.pushAlert(alert);
     this.store.emit('alert', alert);
     if (!muted && this.settings.native) {
+      // Uložené upozornění zůstává česky (rozhraní si ho přeloží samo); do systému jde v jazyce
+      // z Nastavení. Souhrn už v něm je a slovník ho nezná, takže projde beze změny.
+      const t = prekladac(this.datastore.data.settings.language);
       this.notifier
-        .native({ title: alert.title, body: alert.body || '', subtitle: 'Agenteeq', sound: alert.level === 'action' || alert.level === 'critical' })
+        .native({ title: t(alert.title), body: t(alert.body || ''), subtitle: 'Agenteeq', sound: alert.level === 'action' || alert.level === 'critical' })
         .catch(() => {});
     }
     return alert;
@@ -303,7 +310,7 @@ export class AlertEngine {
           // Obnova platí, dokud se okno znovu nevyčerpalo. Bez nových dat zůstane v paměti starý
           // odečet (reached) s časem obnovy v minulosti – i to znamená obnovený limit.
           : a.kind === 'limit_reset' && (obnoveno || !l.reached);
-      return ok ? { klic: `l:${a.limitId}`, nazev: `${l.app}: ${l.label}` } : null;
+      return ok ? { klic: `l:${a.limitId}`, nazev: `${l.app}: ${l.label}`, limit: { app: l.app, label: l.label } } : null;
     }
     // Útrata v měsíci zpátky neklesne; 80 % a 100 % téhož rozpočtu jsou jedna věc.
     if (a.kind === 'budget' && mesic(a.at) === mesic(now)) return { klic: `k:${a.key.replace(/:\d+$/, '')}`, nazev: a.title };

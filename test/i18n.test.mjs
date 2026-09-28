@@ -173,7 +173,8 @@ async function souboryServeru() {
 const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
 const literal = (s) => s.replace(/\\(['"\\])/g, '$1').replace(/\\n/g, '\n');
 
-// src/alerts.js se kvůli jazyku nemění (souběžná práce na tichém režimu upozornění). Titulky
+// Upozornění se ukládají česky (data.json), rozhraní je překládá samo a do systému je server pošle
+// přeložené (src/texty.js#prekladac). Titulky
 // upozornění se proto překládají na klientu podle vzorů odvozených přímo ze šablon v alerts.js –
 // když se text upozornění změní, test řekne, že chybí překlad.
 const JEN_KLIENT = ['src/alerts.js'];
