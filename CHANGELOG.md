@@ -38,6 +38,9 @@ Rozšíření čeká na schválení v Chrome Web Store.
   slovníkem, uložené upozornění zůstává česky. V anglickém souhrnu nočního ticha jsou anglicky
   i názvy limitů a rozpočtů.
 - „Co je nového“ má anglické znění všech vydání.
+- V jazyce z Nastavení jsou i CSV exporty útraty a projektů (anglicky s čárkou a desetinnou
+  tečkou, jak je čte anglický Excel a Numbers; součty po měsících sedí s obrazovkou), stránka po
+  návratu z přihlášení přes Google včetně `<html lang>` a pole kalendáře (anglicky 28/09/2026).
 - Na Windows (a Linuxu) rozhraní píše „tento počítač“ místo „tento Mac“ a zkratky Ctrl+K, Ctrl+↵,
   Ctrl+V místo ⌘; zkratky poslouchají na Macu jen ⌘, jinde jen Ctrl. Systém posílá server
   (`<html data-system>`, `host.system`).
