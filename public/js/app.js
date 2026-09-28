@@ -26,7 +26,7 @@ import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
 import { plynulePosouvani } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
-import { modifikator, zkratka, ariaZkratka } from './system.js';
+import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 
 initSelects();
 initWelcome();
@@ -294,7 +294,7 @@ function updateChrome() {
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
-    ${state.host ? `<span class="source-host">${esc(`Mac: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
+    ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;

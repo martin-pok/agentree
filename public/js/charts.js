@@ -61,7 +61,7 @@ export function stackedColumns({ id, labels, tips, series, height = 208, format 
 
 function timeLabel(t, span, prev) {
   const d = new Date(t);
-  const day = `${d.getDate()}. ${d.getMonth() + 1}.`;
+  const day = podleJazyka(`${d.getDate()}. ${d.getMonth() + 1}.`, `${d.getDate()}/${d.getMonth() + 1}`);
   if (span > 3 * 86400e3) return day;
   const p = prev ? new Date(prev) : null;
   const sameDay = p && p.getDate() === d.getDate() && p.getMonth() === d.getMonth();

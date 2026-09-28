@@ -1,4 +1,5 @@
-import { processList, detailyProcesu, JE_WINDOWS } from '../platform.js';
+import { processList, detailyProcesu, JE_WINDOWS, POCITAC } from '../platform.js';
+import { ui } from '../texty.js';
 
 // ── Jak se pozná program v příkazové řádce ───────────────────────────────────
 //
@@ -170,6 +171,13 @@ export function createStabilniStart(tolerance = 3000) {
   };
 }
 
+// Kolik AI aplikací běží, s tvarem podle počtu. Každý tvar je celý text rozhraní (src/texty.js),
+// aby šel přeložit i s číslem uprostřed; `modelu` = počet modelů v Ollamě, null = Ollama neodpovídá.
+function aplikaciBezi(n, modelu) {
+  if (modelu === null) return n === 1 ? ui('1 AI aplikace běží.') : n >= 2 && n <= 4 ? ui('{0} AI aplikace běží.', n) : ui('{0} AI aplikací běží.', n);
+  return n === 1 ? ui('1 AI aplikace běží · Ollama: {0} modelů.', modelu) : n >= 2 && n <= 4 ? ui('{0} AI aplikace běží · Ollama: {1} modelů.', n, modelu) : ui('{0} AI aplikací běží · Ollama: {1} modelů.', n, modelu);
+}
+
 export function createProcessesConnector(ctx) {
   const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu } = ctx;
   let timer = null;
@@ -211,7 +219,7 @@ export function createProcessesConnector(ctx) {
     const o = runtimes.find((r) => r.id === 'ollama');
     if (o && ollama.ok) {
       o.running = true;
-      o.detail = ollama.models.length ? `Načteno: ${ollama.models.join(', ')}` : 'Žádný model v paměti';
+      o.detail = ollama.models.length ? ui('Načteno: {0}', ollama.models.join(', ')) : ui('Žádný model v paměti');
     }
     if (res.ok) lastOk = Date.now();
     store.setRuntimes(runtimes);
@@ -219,12 +227,12 @@ export function createProcessesConnector(ctx) {
 
   return {
     id: 'processes',
-    name: JE_WINDOWS ? 'Aplikace na tomto počítači' : 'Aplikace na tomto Macu',
+    name: ui('Aplikace na {0}', POCITAC.tomto),
     provider: 'other',
     kind: 'local',
     verified: true,
     source: JE_WINDOWS ? 'Win32_Process · localhost:11434' : 'ps · localhost:11434',
-    description: 'Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.',
+    description: ui('Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.'),
     async start() {
       await poll();
       timer = setInterval(() => poll().catch(() => {}), config.processIntervalMs);
@@ -242,8 +250,10 @@ export function createProcessesConnector(ctx) {
       return {
         state: lastOk ? 'connected' : 'error',
         detail: lastOk
-          ? `${running} AI aplikací běží${ollama.ok ? ` · Ollama: ${ollama.models.length} modelů` : ''}.`
-          : `Seznam běžících aplikací se na tomto systému nepodařilo získat${ollama.ok ? `, Ollama ale odpovídá: ${ollama.models.length} modelů` : ''}.`,
+          ? aplikaciBezi(running, ollama.ok ? ollama.models.length : null)
+          : ollama.ok
+            ? ui('Seznam běžících aplikací se na tomto systému nepodařilo získat, Ollama ale odpovídá: {0} modelů.', ollama.models.length)
+            : ui('Seznam běžících aplikací se na tomto systému nepodařilo získat.'),
         count: running,
         watching: Boolean(timer),
         // Výpis běží každých pár vteřin; na minuty zaokrouhlený čas nerozhýbe seznam zdrojů při každém průchodu.

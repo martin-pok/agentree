@@ -12,7 +12,8 @@ import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
-import { SYSTEM } from './platform.js';
+import { SYSTEM, POCITAC } from './platform.js';
+import { ui } from './texty.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -117,7 +118,7 @@ export function createHttpServer(app, existingServer = null) {
       return true;
     }
     if (keyMatches(cookieValue(req.headers.cookie, 'agenteeq_local')) || keyMatches(req.headers['x-agenteeq-key'])) { keyUsed++; return false; }
-    if (url.pathname.startsWith('/api/')) throw new HttpError(403, 'Chybí klíč okna aplikace.');
+    if (url.pathname.startsWith('/api/')) throw new HttpError(403, ui('Chybí klíč okna aplikace.'));
     res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>Agenteeq běží</h1><p>Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.</p>');
     return true;
   }
@@ -128,15 +129,15 @@ export function createHttpServer(app, existingServer = null) {
     if (!app.lan || zTohotoMacu(req)) return;
     // Loopback proxies are the Tailscale Serve route, never the direct LAN listener.
     // Turning off Tailscale must also disable a proxy still running outside Agenteeq.
-    if (isLoopback(req.socket?.remoteAddress) && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup přes Tailscale je vypnutý.');
-    if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, 'Přístup z telefonu je vypnutý.');
+    if (isLoopback(req.socket?.remoteAddress) && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, ui('Přístup přes Tailscale je vypnutý.'));
+    if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(403, ui('Přístup z telefonu je vypnutý.'));
     // Statické soubory (HTML, CSS, JS, ikony) se vydají i nespárovanému telefonu – jinak by neměl
     // z čeho zobrazit párovací obrazovku. Je to týž veřejný kód jako v repozitáři, žádná data.
     const verejne = !url.pathname.startsWith('/api/') && (req.method === 'GET' || req.method === 'HEAD');
     if (verejne || url.pathname === '/api/lan/pair' || url.pathname === '/api/health') return;
     // Spárované telefony mají cookie ještě pod starým názvem – platí obě.
     if (!app.lan.tokenOk(cookieValue(req.headers.cookie) || cookieValue(req.headers.cookie, 'agentree_device'))) {
-      throw new HttpError(401, 'Tohle zařízení není spárované. Zadej kód z Agenteeq na Macu.');
+      throw new HttpError(401, ui('Tohle zařízení není spárované. Zadej kód z Agenteeq {0}.', POCITAC.naHostiteli));
     }
   }
 
@@ -157,7 +158,7 @@ export function createHttpServer(app, existingServer = null) {
     const pokus = url.pathname.match(/^\/ucet\/navrat\/([A-Za-z0-9_-]{43})$/)?.[1];
     const hlavicky = { ...SECURITY, 'Cache-Control': 'no-store' };
     if (!zTohotoMacu(req) || req.method !== 'GET') {
-      res.writeHead(403, { ...hlavicky, 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
+      res.writeHead(403, { ...hlavicky, 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
       return;
     }
     if (url.pathname === '/ucet/navrat.js') {
@@ -167,7 +168,7 @@ export function createHttpServer(app, existingServer = null) {
     const code = url.searchParams.get('code') || '';
     const chyba = url.searchParams.get('chyba') || url.searchParams.get('error_description') || url.searchParams.get('error') || '';
     let html;
-    if (!pokus) html = strankaNavratu({ zprava: 'Neplatná adresa přihlášení.' });
+    if (!pokus) html = strankaNavratu({ zprava: ui('Neplatná adresa přihlášení.') });
     else if (!code && !chyba) html = strankaNavratu({ ceka: true });
     else {
       const r = await app.ucet.navrat(pokus, { code, chyba });
@@ -242,7 +243,7 @@ export function createHttpServer(app, existingServer = null) {
   heartbeat.unref?.();
 
   function stream(req, res) {
-    if (clients.size >= 32) throw new HttpError(503, 'Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agenteeq.');
+    if (clients.size >= 32) throw new HttpError(503, ui('Příliš mnoho otevřených spojení. Zavři nepoužívaná okna Agenteeq.'));
     res.writeHead(200, {
       ...SECURITY,
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -261,7 +262,7 @@ export function createHttpServer(app, existingServer = null) {
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > 1_000_000) throw new HttpError(413, 'Příliš velký požadavek.');
+      if (size > 1_000_000) throw new HttpError(413, ui('Příliš velký požadavek.'));
       chunks.push(chunk);
     }
     const raw = Buffer.concat(chunks).toString('utf8');
@@ -269,7 +270,7 @@ export function createHttpServer(app, existingServer = null) {
     try {
       return JSON.parse(raw);
     } catch {
-      throw new HttpError(400, 'Neplatný JSON.');
+      throw new HttpError(400, ui('Neplatný JSON.'));
     }
   }
 
@@ -292,13 +293,13 @@ export function createHttpServer(app, existingServer = null) {
     const given = String(req.headers['x-agenteeq-token'] || req.headers['x-agentree-token'] || '');
     return Boolean(app.extensionInstallation(given, String(req.headers.origin || '')));
   }
-  const EXTENSION_UNPAIRED = 'Rozšíření není spárované s touto aplikací. Spáruj ho znovu v Agenteeq → Nastavení.';
+  const EXTENSION_UNPAIRED = ui('Rozšíření není spárované s touto aplikací. Spáruj ho znovu v Agenteeq → Nastavení.');
 
   // Ochrana proti CSRF: vlastní hlavička vynutí CORS preflight, který server nepovolí; navíc kontrola Origin.
   function guardMutation(req) {
-    if (req.headers['x-agenteeq'] !== '1' && req.headers['x-agentree'] !== '1') throw new HttpError(403, 'Chybí hlavička X-Agenteeq.');
+    if (req.headers['x-agenteeq'] !== '1' && req.headers['x-agentree'] !== '1') throw new HttpError(403, ui('Chybí hlavička X-Agenteeq.'));
     const origin = req.headers.origin;
-    if (origin && !allowedOrigins().has(origin)) throw new HttpError(403, 'Nepovolený původ požadavku.');
+    if (origin && !allowedOrigins().has(origin)) throw new HttpError(403, ui('Nepovolený původ požadavku.'));
   }
 
   // Výsledky aplikační vrstvy ve tvaru { status, error, errors?, field?, upgrade? } převede na HTTP chybu.
@@ -316,7 +317,7 @@ export function createHttpServer(app, existingServer = null) {
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > max) throw new HttpError(413, 'Soubor je příliš velký.');
+      if (size > max) throw new HttpError(413, ui('Soubor je příliš velký.'));
       chunks.push(chunk);
     }
     return Buffer.concat(chunks);
@@ -326,7 +327,7 @@ export function createHttpServer(app, existingServer = null) {
     try {
       return decodeURIComponent(m[1]);
     } catch {
-      throw new HttpError(400, 'Neplatné ID konverzace.');
+      throw new HttpError(400, ui('Neplatné ID konverzace.'));
     }
   };
 
@@ -334,7 +335,7 @@ export function createHttpServer(app, existingServer = null) {
   const ledger = () => datastore.data.spend.ledger;
   const findEntry = (id) => {
     const e = ledger().find((x) => x.id === id);
-    if (!e) throw new HttpError(404, 'Položka nenalezena.');
+    if (!e) throw new HttpError(404, ui('Položka nenalezena.'));
     return e;
   };
 
@@ -354,7 +355,7 @@ export function createHttpServer(app, existingServer = null) {
     // Obsah se hledá podle id z čerstvého seznamu – cesta nikdy nepochází z požadavku.
     ['GET', /^\/api\/skills\/([0-9a-f]{12})\/raw$/, async (_req, m, url) => {
       const skill = await skills.read(m[1]);
-      if (!skill) throw new HttpError(404, 'Dovednost nenalezena.');
+      if (!skill) throw new HttpError(404, ui('Dovednost nenalezena.'));
       const safeName = `${skill.name.replace(/[^\p{L}\p{N} ._-]/gu, '').trim() || 'dovednost'}.md`;
       const headers = { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store' };
       if (url.searchParams.get('download') === '1') headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}`;
@@ -364,7 +365,7 @@ export function createHttpServer(app, existingServer = null) {
 
     /* ---------- Přístup z telefonu ---------- */
     ['POST', /^\/api\/remote\/detect$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zjišťovat tunely lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Zjišťovat tunely lze jen {0}.', POCITAC.naHostiteli));
       return { tunnels: await app.refreshTunnels() };
     }],
     ['GET', /^\/api\/lan$/, (req) => {
@@ -373,25 +374,25 @@ export function createHttpServer(app, existingServer = null) {
       return zTohotoMacu(req) ? s : { ...s, pin: null, devices: [] };
     }],
     ['POST', /^\/api\/tailscale\/(enable|disable)$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Zapnout přístup lze jen {0}.', POCITAC.naHostiteli));
       return unwrap(await app.setTailscaleAccess(m[1] === 'enable'));
     }],
     ['POST', /^\/api\/lan\/(enable|disable)$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Zapnout přístup lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Zapnout přístup lze jen {0}.', POCITAC.naHostiteli));
       return unwrap(await app.setLanAccess(m[1] === 'enable'));
     }],
     // Odkaz do prohlížeče. Okno aplikace drží klíč spuštění a bez něj server nic nevydá – uživatel
     // by si tak nemohl přehled otevřít v Safari ani v Chromu, kde má vývojářské nástroje a zvětšení.
     // Odkaz nese klíč v adrese, server ho při prvním otevření vymění za cookie a z adresy zmizí.
     ['POST', /^\/api\/local\/browser-link$/, (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odkaz do prohlížeče lze vytvořit jen na tomto Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Odkaz do prohlížeče lze vytvořit jen na {0}.', POCITAC.tomto));
       // Vrací se jen cesta. Adresu složí okno, které zná tu svou – server běží i na jiném portu
       // a za `tailscale serve`, takže pevně zapsané 127.0.0.1:4620 by v takovém případě lhalo.
       return { path: config.localKey ? `/?k=${config.localKey}` : '/' };
     }],
     ['POST', /^\/api\/lan\/pin$/, (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Kód lze vytvořit jen na Macu.');
-      if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, 'Nejdřív zapni přístup z telefonu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Kód lze vytvořit jen {0}.', POCITAC.naHostiteli));
+      if (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess) throw new HttpError(409, ui('Nejdřív zapni přístup z telefonu.'));
       return { pin: app.lan.newPin() };
     }],
     ['POST', /^\/api\/lan\/pair$/, async (req) => {
@@ -415,7 +416,7 @@ export function createHttpServer(app, existingServer = null) {
       };
     }],
     ['DELETE', /^\/api\/lan\/devices\/([\w-]{1,40})$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odpárovat zařízení lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Odpárovat zařízení lze jen {0}.', POCITAC.naHostiteli));
       unwrap(await app.lan.revoke(m[1]));
       return { lan: app.lan.status() };
     }],
@@ -431,7 +432,7 @@ export function createHttpServer(app, existingServer = null) {
       const series = await app.planUsageHistory({ days });
       // Chybějící historie (Mac bez aplikace Claude Desktop) není chyba – 404 plnila konzoli
       // hláškami „Failed to load resource“ u každého nového uživatele.
-      if (!series) return { available: false, message: 'Historie vytížení plánu na tomto Macu není.' };
+      if (!series) return { available: false, message: ui('Historie vytížení plánu na {0} není.', POCITAC.tomto) };
       return series;
     }],
     ['GET', /^\/api\/health$/, (req) => ({
@@ -443,12 +444,12 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
-      if (!session) throw new HttpError(404, 'Konverzace nenalezena.');
+      if (!session) throw new HttpError(404, ui('Konverzace nenalezena.'));
       return { session, transcript: store.transcript(id) };
     }],
     ['GET', /^\/api\/sessions\/([^/]+)\/transcript$/, (_req, m, url) => {
       const entries = store.transcript(decodeURIComponent(m[1]), { after: Number(url.searchParams.get('after')) || 0 });
-      if (!entries) throw new HttpError(404, 'Konverzace nenalezena.');
+      if (!entries) throw new HttpError(404, ui('Konverzace nenalezena.'));
       return { entries };
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/open$/, async (req, m) => {
@@ -458,13 +459,13 @@ export function createHttpServer(app, existingServer = null) {
       return r;
     }],
     ['POST', /^\/api\/hooks\/claude-code$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
       const r = await app.connectors['claude-code'].ingestHook(await readBody(req));
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
     ['POST', /^\/api\/hooks\/claude-statusline$/, async (req) => {
-      if (!tokenOk(req)) throw new HttpError(401, 'Neplatný token.');
+      if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
       const r = app.connectors['claude-code'].ingestStatusline(await readBody(req));
       if (!r.ok) throw new HttpError(400, r.error);
       return { raw: true, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: r.text };
@@ -493,7 +494,7 @@ export function createHttpServer(app, existingServer = null) {
     }, { token: true }],
     // „Přidat do Chromu“ otevře stránku rozšíření v obchodě – jen člověk u Macu.
     ['POST', /^\/api\/extension\/obchod$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Chrome Web Store se otevírá jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Chrome Web Store se otevírá jen {0}.', POCITAC.naHostiteli));
       const r = await app.otevriObchod();
       if (r.status) throw new HttpError(r.status, r.error);
       return r;
@@ -501,7 +502,7 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/extension\/pair-code$/, async (req) => {
       // Kód spáruje rozšíření a vydá dlouhodobý token. Vytvořit ho smí jen člověk u Macu — spárovaný
       // telefon by si jinak mohl token sám vyžádat a přežil by i své odpárování.
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Párovací kód rozšíření lze vytvořit jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Párovací kód rozšíření lze vytvořit jen {0}.', POCITAC.naHostiteli));
       return app.createExtensionPairCode();
     }],
     // Naše rozšíření se spáruje samo, bez kódu (viz app.js#pozadatOSparovani). Jiné dostane 409 –
@@ -510,29 +511,29 @@ export function createHttpServer(app, existingServer = null) {
       // Původ nastavuje prohlížeč, jenže mimo prohlížeč ho podvrhne kdokoli. Na tomhle Macu to
       // nevadí (program pod stejným uživatelem se k datům dostane i jinak), ze sítě ale ano –
       // spárovaný telefon by si jinak vyžádal token rozšíření a četl zadání. Proto jen z Macu.
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Rozšíření se páruje jen na Macu, kde běží Agenteeq.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Rozšíření se páruje jen {0}, kde běží Agenteeq.', POCITAC.naHostiteli));
       const origin = String(req.headers.origin || '');
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, ui('Párování je dostupné jen pro rozšíření Agenteeq.'));
       const pair = await app.pozadatOSparovani({ origin, installationId: String(req.headers['x-agenteeq-installation-id'] || '') });
-      if (!pair) throw new HttpError(409, 'Tohle rozšíření se musí spárovat jednorázovým kódem z Agenteeq → Nastavení → Propojení.');
+      if (!pair) throw new HttpError(409, ui('Tohle rozšíření se musí spárovat jednorázovým kódem z Agenteeq → Nastavení → Propojení.'));
       return pair;
     }, { token: true }],
     ['POST', /^\/api\/extension\/pair$/, async (req) => {
       const origin = String(req.headers.origin || '');
-      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, 'Párování je dostupné jen pro rozšíření Agenteeq.');
+      if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) throw new HttpError(403, ui('Párování je dostupné jen pro rozšíření Agenteeq.'));
       const pair = await app.pairExtension({
         code: String(req.headers['x-agenteeq-pair-code'] || ''),
         origin,
         installationId: String(req.headers['x-agenteeq-installation-id'] || ''),
       });
-      if (!pair) throw new HttpError(401, 'Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agenteeq.');
+      if (!pair) throw new HttpError(401, ui('Párovací kód neplatí nebo už vypršel. Vytvoř nový v Agenteeq.'));
       return pair;
     }, { token: true }],
     // Útrata do CSV pro účetnictví: `mesicu` = kolik posledních měsíců včetně tohoto (1–36).
     ['GET', /^\/api\/spend\/export$/, (_req, _m, url) => {
       const zadano = url.searchParams.get('mesicu');
       const mesicu = zadano === null ? EXPORT_MESICU.vychozi : Number(zadano);
-      if (!Number.isInteger(mesicu) || mesicu < 1 || mesicu > EXPORT_MESICU.max) throw new HttpError(422, `Počet měsíců musí být 1 až ${EXPORT_MESICU.max}.`);
+      if (!Number.isInteger(mesicu) || mesicu < 1 || mesicu > EXPORT_MESICU.max) throw new HttpError(422, ui('Počet měsíců musí být 1 až {0}.', EXPORT_MESICU.max));
       const d = new Date();
       const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return {
@@ -543,7 +544,7 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['POST', /^\/api\/spend\/ledger$/, async (req) => {
       const r = validateEntry(await readBody(req));
-      if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
+      if (!r.ok) throw new HttpError(422, ui('Zkontroluj zvýrazněná pole.'), { errors: r.errors });
       ledger().push(r.value);
       datastore.save();
       app.spendChanged();
@@ -553,7 +554,7 @@ export function createHttpServer(app, existingServer = null) {
       const e = findEntry(m[1]);
       const body = await readBody(req);
       const valid = body.endDate === null || (typeof body.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.endDate) && body.endDate >= e.date);
-      if (!valid) throw new HttpError(422, 'Datum ukončení musí být ve tvaru RRRR-MM-DD a nejdříve v den začátku.');
+      if (!valid) throw new HttpError(422, ui('Datum ukončení musí být ve tvaru RRRR-MM-DD a nejdříve v den začátku.'));
       e.endDate = body.endDate;
       datastore.save();
       app.spendChanged();
@@ -570,7 +571,7 @@ export function createHttpServer(app, existingServer = null) {
       const sp = datastore.data.spend;
       const body = await readBody(req);
       const r = validateBudgets(body, { currency: sp.currency, rates: sp.rates, budgets: sp.budgets });
-      if (!r.ok) throw new HttpError(422, 'Zkontroluj zvýrazněná pole.', { errors: r.errors });
+      if (!r.ok) throw new HttpError(422, ui('Zkontroluj zvýrazněná pole.'), { errors: r.errors });
       const changedRate = ['USD', 'EUR'].some((c) => Number(r.value.rates[c]) !== Number(sp.rates[c]));
       Object.assign(sp, { currency: r.value.currency, rates: r.value.rates, budgets: r.value.budgets });
       if (changedRate) sp.ratesSource = 'manual';
@@ -595,8 +596,8 @@ export function createHttpServer(app, existingServer = null) {
         key: `test:${Date.now()}:${Math.random()}`,
         level: 'action',
         kind: 'test',
-        title: 'Testovací upozornění',
-        body: 'Takhle tě Agenteeq upozorní, když agent bude potřebovat tvé rozhodnutí.',
+        title: ui('Testovací upozornění'),
+        body: ui('Takhle tě Agenteeq upozorní, když agent bude potřebovat tvé rozhodnutí.'),
       });
       return { alert };
     }],
@@ -607,28 +608,28 @@ export function createHttpServer(app, existingServer = null) {
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
       if (body.lastSeenVersion !== undefined) {
-        if (typeof body.lastSeenVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(body.lastSeenVersion)) throw new HttpError(422, 'Neplatná verze.');
+        if (typeof body.lastSeenVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(body.lastSeenVersion)) throw new HttpError(422, ui('Neplatná verze.'));
         datastore.data.settings.lastSeenVersion = body.lastSeenVersion;
       }
       if (body.appearance !== undefined) {
-        if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, 'Vzhled musí být světlý, tmavý nebo podle systému.');
+        if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, ui('Vzhled musí být světlý, tmavý nebo podle systému.'));
         datastore.data.settings.appearance = body.appearance;
       }
       if (body.language !== undefined) {
-        if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, 'Jazyk musí být čeština nebo angličtina.');
+        if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, ui('Jazyk musí být čeština nebo angličtina.'));
         datastore.data.settings.language = body.language;
       }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
-        if (!ok) throw new HttpError(422, 'Neplatný profilový obrázek.');
+        if (!ok) throw new HttpError(422, ui('Neplatný profilový obrázek.'));
         datastore.data.settings.avatar = body.avatar;
       }
       if (body.layout !== undefined) {
-        if (!body.layout || typeof body.layout !== 'object' || Array.isArray(body.layout)) throw new HttpError(422, 'Neplatné rozložení.');
+        if (!body.layout || typeof body.layout !== 'object' || Array.isArray(body.layout)) throw new HttpError(422, ui('Neplatné rozložení.'));
         const cur2 = datastore.data.settings.layout || {};
         for (const [k, ids] of Object.entries(body.layout)) {
-          if (!LAYOUT_KEYS.includes(k)) throw new HttpError(422, 'Neznámé rozložení.');
-          if (ids !== null && (!Array.isArray(ids) || ids.length > 20)) throw new HttpError(422, 'Neplatné pořadí karet.');
+          if (!LAYOUT_KEYS.includes(k)) throw new HttpError(422, ui('Neznámé rozložení.'));
+          if (ids !== null && (!Array.isArray(ids) || ids.length > 20)) throw new HttpError(422, ui('Neplatné pořadí karet.'));
         }
         const merged = { ...cur2 };
         for (const [k, ids] of Object.entries(body.layout)) {
@@ -639,13 +640,13 @@ export function createHttpServer(app, existingServer = null) {
       for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
-        if (!(v >= 0 && v <= 86400)) throw new HttpError(422, 'Minimální délka úlohy musí být 0–86400 sekund.');
+        if (!(v >= 0 && v <= 86400)) throw new HttpError(422, ui('Minimální délka úlohy musí být 0–86400 sekund.'));
         cur.doneMinSeconds = Math.round(v);
       }
       // Uložení se čeká: dřív se hned vrátilo 200 a zápis, který potom selhal (plný disk, práva),
       // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
-      if (!(await datastore.flush())) throw new HttpError(500, 'Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.');
+      if (!(await datastore.flush())) throw new HttpError(500, ui('Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.'));
       return { settings: datastore.data.settings };
     }],
     ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall)$/, async (_req, m) => {
@@ -661,7 +662,7 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['PUT', /^\/api\/secrets\/([\w-]+)$/, async (req, m) => {
       // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
-      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, 'Neznámý klíč.');
+      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, ui('Neznámý klíč.'));
       const body = await readBody(req);
       await app.secrets.set(m[1], body.value);
       await app.connectors['cloud-billing'].scan();
@@ -669,7 +670,7 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['DELETE', /^\/api\/secrets\/([\w-]+)$/, async (_req, m) => {
       // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
-      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, 'Neznámý klíč.');
+      if (!SECRET_IDS[m[1]]?.rucne) throw new HttpError(404, ui('Neznámý klíč.'));
       await app.secrets.remove(m[1]);
       await app.connectors['cloud-billing'].scan();
       return { integrations: await refreshIntegrations() };
@@ -684,7 +685,7 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/projects\/assign$/, async (req) => {
       const body = await readBody(req);
       const pid = body.projectId === null || typeof body.projectId === 'string' ? body.projectId : undefined;
-      if (pid === undefined) throw new HttpError(422, 'Chybí projekt.');
+      if (pid === undefined) throw new HttpError(422, ui('Chybí projekt.'));
       unwrap(app.assignToProject(body.sessionIds, pid));
       return { projects: app.projectsPayload() };
     }],
@@ -736,12 +737,12 @@ export function createHttpServer(app, existingServer = null) {
       return { runs: app.runsPayload() };
     }],
     ['POST', /^\/api\/runs\/([\w-]+)\/stop$/, (_req, m) => {
-      if (!app.runs.get(m[1])) throw new HttpError(404, 'Běh nenalezen.');
-      if (!app.runs.stop(m[1])) throw new HttpError(409, 'Běh už skončil.');
+      if (!app.runs.get(m[1])) throw new HttpError(404, ui('Běh nenalezen.'));
+      if (!app.runs.stop(m[1])) throw new HttpError(409, ui('Běh už skončil.'));
       return { runs: app.runsPayload() };
     }],
     ['GET', /^\/api\/runs\/([\w-]+)\/log$/, (_req, m) => {
-      if (!app.runs.get(m[1])) throw new HttpError(404, 'Běh nenalezen.');
+      if (!app.runs.get(m[1])) throw new HttpError(404, ui('Běh nenalezen.'));
       return { log: app.runs.tail(m[1], 16000) };
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/reply$/, async (req, m) => {
@@ -751,7 +752,7 @@ export function createHttpServer(app, existingServer = null) {
       return { ok: true };
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/stop$/, (_req, m) => {
-      if (!app.localChat.stop(sessionParam(m))) throw new HttpError(409, 'Model právě neodpovídá.');
+      if (!app.localChat.stop(sessionParam(m))) throw new HttpError(409, ui('Model právě neodpovídá.'));
       return { ok: true };
     }],
 
@@ -762,68 +763,68 @@ export function createHttpServer(app, existingServer = null) {
     // Účet: přihlášení, odhlášení a smazání jen od člověka u Macu. Spárovaný telefon by jinak mohl
     // Mac přihlásit k cizímu účtu nebo účet smazat.
     ['POST', /^\/api\/ucet\/prihlaseni$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlásit se lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Přihlásit se lze jen {0}.', POCITAC.naHostiteli));
       return ucetVolani(() => app.ucet.zacniPrihlaseni({ port: port() }));
     }],
     // Napojení modelů: jen člověk u Macu. Zjišťování stavu spouští nástroje dodavatelů (claude, codex),
     // takže ani čtení nesmí jít z telefonu.
     ['GET', /^\/api\/napojeni$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojení modelů je vidět jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení modelů je vidět jen {0}.', POCITAC.naHostiteli));
       return { napojeni: await app.napojeni.prehled() };
     }],
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
       const r = await app.napojeni.napojit(m[1]);
       if (r.status) throw new HttpError(r.status, r.error, r.rozsireni ? { rozsireni: true } : {});
       return r;
     }],
     // Záložní cesta, když se prohlížeč sám neotevřel: otevřít odkaz z přihlášení a vložit kód.
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/odkaz$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
       const r = await app.napojeni.odkaz(m[1]);
       if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/kod$/, async (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojit model lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
       const body = await readBody(req);
       const r = app.napojeni.kod(m[1], body?.kod);
       if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
     ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/zrusit$/, (req, m) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Napojení lze zrušit jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení lze zrušit jen {0}.', POCITAC.naHostiteli));
       return app.napojeni.zrusit(m[1]);
     }],
     ['POST', /^\/api\/ucet\/zruseni$/, (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Přihlášení lze zrušit jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Přihlášení lze zrušit jen {0}.', POCITAC.naHostiteli));
       app.ucet.zrusit();
       return { ucet: app.ucetStav() };
     }],
     // Synchronizace souhrnů: zapnout/vypnout (volba v účtu), poslat hned a ukázat přesně, co odchází.
     ['POST', /^\/api\/ucet\/synchronizace$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Synchronizaci lze zapnout jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Synchronizaci lze zapnout jen {0}.', POCITAC.naHostiteli));
       const body = await readBody(req);
-      if (typeof body?.zapnuto !== 'boolean') throw new HttpError(422, 'Chybí volba zapnuto: true/false.');
+      if (typeof body?.zapnuto !== 'boolean') throw new HttpError(422, ui('Chybí volba zapnuto: true/false.'));
       await ucetVolani(() => app.cloudSync.nastav(body.zapnuto));
       return { ucet: app.ucetStav() };
     }],
     ['POST', /^\/api\/ucet\/synchronizovat$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Synchronizovat lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Synchronizovat lze jen {0}.', POCITAC.naHostiteli));
       await app.cloudSync.synchronizuj();
       return { ucet: app.ucetStav() };
     }],
     ['GET', /^\/api\/ucet\/nahled$/, (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Náhled je jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Náhled je jen {0}.', POCITAC.naHostiteli));
       return { nahled: app.cloudSync.nahled() };
     }],
     ['POST', /^\/api\/ucet\/odhlaseni$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Odhlásit se lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Odhlásit se lze jen {0}.', POCITAC.naHostiteli));
       await app.ucet.odhlasit();
       return { ucet: app.ucetStav() };
     }],
     ['POST', /^\/api\/ucet\/smazani$/, async (req) => {
-      if (!zTohotoMacu(req)) throw new HttpError(403, 'Smazat účet lze jen na Macu.');
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Smazat účet lze jen {0}.', POCITAC.naHostiteli));
       await ucetVolani(() => app.ucet.smazat());
       return { ucet: app.ucetStav() };
     }],
@@ -843,17 +844,17 @@ export function createHttpServer(app, existingServer = null) {
     try {
       rel = decodeURIComponent(url.pathname);
     } catch {
-      throw new HttpError(400, 'Neplatná adresa.');
+      throw new HttpError(400, ui('Neplatná adresa.'));
     }
     if (rel === '/') rel = '/index.html';
     let file = path.normalize(path.join(PUBLIC_DIR, rel));
-    if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, 'Zakázáno.');
+    if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
     let body;
     try {
       body = await fs.readFile(file);
     } catch (err) {
       if (err.code !== 'ENOENT' && err.code !== 'EISDIR') throw err;
-      if (path.extname(rel)) throw new HttpError(404, 'Nenalezeno.');
+      if (path.extname(rel)) throw new HttpError(404, ui('Nenalezeno.'));
       file = path.join(PUBLIC_DIR, 'index.html');
       body = await fs.readFile(file);
     }
@@ -893,7 +894,7 @@ export function createHttpServer(app, existingServer = null) {
     const hostOk = host === '127.0.0.1' || host === 'localhost'
       || Boolean(app.lan && app.lan.hosts().includes(host));
     if (!hostOk) {
-      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Zakázáno');
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
@@ -908,14 +909,14 @@ export function createHttpServer(app, existingServer = null) {
       if (!scope.ok && !route?.[3]?.token) throw new HttpError(403, scope.error);
     }
     if (url.pathname.startsWith('/api/') && req.method === 'GET') {
-      if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Nepovolený původ požadavku.');
+      if ((req.headers.origin && !allowedOrigins().has(req.headers.origin)) || req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, ui('Nepovolený původ požadavku.'));
     }
     if (url.pathname === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (url.pathname.startsWith('/api/')) {
       const route = routes.find(([method, re]) => method === req.method && re.test(url.pathname));
       if (!route) {
         const known = routes.some(([, re]) => re.test(url.pathname));
-        throw new HttpError(known ? 405 : 404, known ? 'Metoda není povolena.' : 'Neznámá adresa API.');
+        throw new HttpError(known ? 405 : 404, known ? ui('Metoda není povolena.') : ui('Neznámá adresa API.'));
       }
       const [method, re, handler, opts = {}] = route;
       if (method !== 'GET' && !opts.token) guardMutation(req);
@@ -928,7 +929,7 @@ export function createHttpServer(app, existingServer = null) {
       if (result && typeof result.status === 'number' && result.body) return send(res, result.status, result.body);
       return send(res, 200, result);
     }
-    if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'Metoda není povolena.');
+    if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, ui('Metoda není povolena.'));
     return serveStatic(req, res, url);
   }
 
@@ -940,7 +941,7 @@ export function createHttpServer(app, existingServer = null) {
         res.end();
         return;
       }
-      send(res, status, { error: status >= 500 && !err.status ? 'Chyba serveru.' : err.message, ...(err.extra || {}) });
+      send(res, status, { error: status >= 500 && !err.status ? ui('Chyba serveru.') : err.message, ...(err.extra || {}) });
     });
   };
 

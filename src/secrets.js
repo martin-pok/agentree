@@ -1,12 +1,14 @@
 import { run } from './util.js';
+import { JE_MAC } from './platform.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { ui } from './texty.js';
 
 export const SECRET_IDS = {
-  'openai-admin': { env: 'OPENAI_ADMIN_KEY', label: 'OpenAI Admin API klíč', pattern: /^sk-[\w-]{20,}$/, rucne: true },
-  'anthropic-admin': { env: 'ANTHROPIC_ADMIN_KEY', label: 'Anthropic Admin API klíč', pattern: /^sk-ant-[\w-]{20,}$/, rucne: true },
+  'openai-admin': { env: 'OPENAI_ADMIN_KEY', label: ui('OpenAI Admin API klíč'), pattern: /^sk-[\w-]{20,}$/, rucne: true },
+  'anthropic-admin': { env: 'ANTHROPIC_ADMIN_KEY', label: ui('Anthropic Admin API klíč'), pattern: /^sk-ant-[\w-]{20,}$/, rucne: true },
   // Obnovovací token účtu Agenteeq (src/ucet.js). Nastavuje ho jen přihlášení, nikdy uživatel ručně.
-  ucet: { env: 'AGENTEEQ_UCET_TOKEN', label: 'Přihlášení k účtu Agenteeq', pattern: /^[\w-]{8,512}$/ },
+  ucet: { env: 'AGENTEEQ_UCET_TOKEN', label: ui('Přihlášení k účtu Agenteeq'), pattern: /^[\w-]{8,512}$/ },
 };
 
 // API klíče ukládáme do macOS Klíčenky (služba cz.agenteeq.<id>). Proměnné prostředí mají přednost.
@@ -25,17 +27,17 @@ export function createSecrets({ keychain }, { runImpl = run, helper = path.join(
     },
     async set(id, value) {
       const def = SECRET_IDS[id];
-      if (!def) throw Object.assign(new Error('Neznámý klíč.'), { status: 400 });
-      if (typeof value !== 'string' || value.length > 4096 || !def.pattern.test(value.trim())) throw Object.assign(new Error(`${def.label} nemá očekávaný formát.`), { status: 400 });
-      if (!keychain) throw Object.assign(new Error('Klíčenka macOS není dostupná. Použij proměnnou prostředí.'), { status: 400 });
-      if (!native) throw Object.assign(new Error('Pro bezpečné uložení klíče použij desktopovou aplikaci Agenteeq. V CLI lze použít proměnnou prostředí.'), { status: 400 });
+      if (!def) throw Object.assign(new Error(ui('Neznámý klíč.')), { status: 400 });
+      if (typeof value !== 'string' || value.length > 4096 || !def.pattern.test(value.trim())) throw Object.assign(new Error(ui('{0} nemá očekávaný formát.', def.label)), { status: 400 });
+      if (!keychain) throw Object.assign(new Error(JE_MAC ? ui('Klíčenka macOS není dostupná. Použij proměnnou prostředí.') : ui('Bezpečné úložiště klíčů tu není. Použij proměnnou prostředí.')), { status: 400 });
+      if (!native) throw Object.assign(new Error(ui('Pro bezpečné uložení klíče použij desktopovou aplikaci Agenteeq. V CLI lze použít proměnnou prostředí.')), { status: 400 });
       const r = await runImpl(helper, ['set', id], { input: value.trim(), timeout: 30000 });
-      if (!r.ok) throw Object.assign(new Error('Uložení do Klíčenky selhalo.'), { status: 500 });
+      if (!r.ok) throw Object.assign(new Error(ui('Uložení do Klíčenky selhalo.')), { status: 500 });
     },
     async remove(id) {
       if (!SECRET_IDS[id] || !keychain) return;
       const r = native ? await runImpl(helper, ['remove', id]) : await runImpl('/usr/bin/security', ['delete-generic-password', '-a', 'agenteeq', '-s', service(id)]);
-      if (!r.ok && r.code !== 44 && r.code !== 2) throw Object.assign(new Error('Odstranění z Klíčenky selhalo.'), { status: 500 });
+      if (!r.ok && r.code !== 44 && r.code !== 2) throw Object.assign(new Error(ui('Odstranění z Klíčenky selhalo.')), { status: 500 });
     },
     source(id) {
       return process.env[SECRET_IDS[id]?.env] ? 'env' : 'keychain';

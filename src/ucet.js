@@ -11,6 +11,7 @@
 // Z účtu se v paměti drží jen to, co rozhraní ukazuje: jméno a e-mail. Bez přihlášení Agenteeq
 // funguje dál celý; účet nic nezamyká.
 import crypto from 'node:crypto';
+import { ui } from './texty.js';
 
 const PLATNOST_POKUSU_MS = 10 * 60 * 1000;
 const MAX_POKUSU = 3;
@@ -81,19 +82,19 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
         signal: AbortSignal.timeout(CASOVY_LIMIT_MS),
       });
     } catch {
-      throw new UcetChyba('Server účtů Agenteeq neodpovídá. Zkontroluj připojení k internetu.', { sit: true });
+      throw new UcetChyba(ui('Server účtů Agenteeq neodpovídá. Zkontroluj připojení k internetu.'), { sit: true });
     }
     let json = null;
     try { json = await res.json(); } catch { /* prázdná odpověď */ }
     if (!res.ok) {
       const kod = String(json?.error_code || json?.error || json?.code || '');
-      throw new UcetChyba(String(json?.error_description || json?.msg || json?.message || `Chyba ${res.status}`), { status: res.status, kod });
+      throw new UcetChyba(String(json?.error_description || json?.msg || json?.message || ui('Chyba {0}', res.status)), { status: res.status, kod });
     }
     return json;
   }
 
   async function ulozRelaci(odpoved) {
-    if (!odpoved?.access_token || !odpoved?.refresh_token) throw new UcetChyba('Server účtů vrátil neúplné přihlášení.');
+    if (!odpoved?.access_token || !odpoved?.refresh_token) throw new UcetChyba(ui('Server účtů vrátil neúplné přihlášení.'));
     relace = {
       access: odpoved.access_token,
       refresh: odpoved.refresh_token,
@@ -141,7 +142,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
         } else {
           await zapomen();
           stav = 'odhlaseno';
-          chyba = 'Přihlášení vypršelo. Přihlas se znovu.';
+          chyba = ui('Přihlášení vypršelo. Přihlas se znovu.');
         }
         return false;
       }
@@ -178,11 +179,11 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
   }
 
   async function zacniPrihlaseni({ port }) {
-    if (!cfg) throw new UcetChyba('Účty v téhle instalaci nejsou zapnuté.', { status: 404 });
+    if (!cfg) throw new UcetChyba(ui('Účty v téhle instalaci nejsou zapnuté.'), { status: 404 });
     // Nejdřív se zeptat, jestli přihlášení přes Google na serveru účtů vůbec běží. Poslat člověka
     // na chybovou stránku Supabase by vypadalo jako rozbitá aplikace.
     const nastaveni = await volej('/auth/v1/settings');
-    if (!nastaveni?.external?.google) throw new UcetChyba('Přihlášení přes Google se na serveru Agenteeq ještě nastavuje. Zkus to prosím později.', { status: 503 });
+    if (!nastaveni?.external?.google) throw new UcetChyba(ui('Přihlášení přes Google se na serveru Agenteeq ještě nastavuje. Zkus to prosím později.'), { status: 503 });
     for (const [id, p] of pokusy) if (now() - p.at >= PLATNOST_POKUSU_MS) pokusy.delete(id);
     while (pokusy.size >= MAX_POKUSU) pokusy.delete(pokusy.keys().next().value);
     const pokus = b64url(crypto.randomBytes(32));
@@ -201,17 +202,17 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     const p = POKUS.test(pokus) ? pokusy.get(pokus) : null;
     if (p) pokusy.delete(pokus);
     if (!p || now() - p.at >= PLATNOST_POKUSU_MS) {
-      return { ok: false, zprava: 'Tohle přihlášení už neplatí. Začni znovu v Agenteeq.' };
+      return { ok: false, zprava: ui('Tohle přihlášení už neplatí. Začni znovu v Agenteeq.') };
     }
     if (chybaZProhlizece || !code) {
-      chyba = chybaZProhlizece ? `Přihlášení se nepovedlo: ${String(chybaZProhlizece).slice(0, 200)}` : 'Přihlášení se nepovedlo. Zkus to znovu.';
+      chyba = chybaZProhlizece ? ui('Přihlášení se nepovedlo: {0}', String(chybaZProhlizece).slice(0, 200)) : ui('Přihlášení se nepovedlo. Zkus to znovu.');
       ohlas('chyba');
       return { ok: false, zprava: chyba };
     }
     try {
       await ulozRelaci(await volej('/auth/v1/token?grant_type=pkce', { method: 'POST', body: { auth_code: code, code_verifier: p.verifier } }));
     } catch (err) {
-      chyba = err.sit ? err.message : 'Přihlášení se nepovedlo ověřit. Zkus to znovu.';
+      chyba = err.sit ? err.message : ui('Přihlášení se nepovedlo ověřit. Zkus to znovu.');
       ohlas('chyba');
       return { ok: false, zprava: chyba };
     }
@@ -240,7 +241,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
   // Smazání účtu i všech dat v cloudu (databáze je smaže kaskádou). Na Macu se nic nemaže.
   async function smazat() {
     const token = await pristup();
-    if (!token) throw new UcetChyba('Pro smazání účtu se nejdřív přihlas.', { status: 401 });
+    if (!token) throw new UcetChyba(ui('Pro smazání účtu se nejdřív přihlas.'), { status: 401 });
     await volej('/rest/v1/rpc/smazat_muj_ucet', { method: 'POST', token, body: {} });
     await zapomen();
     stav = 'odhlaseno';

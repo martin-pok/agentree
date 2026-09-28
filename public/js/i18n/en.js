@@ -1,7 +1,11 @@
 // Anglický slovník rozhraní. Klíčem je český text přesně tak, jak stojí v kódu v tr('…');
 // {0}, {1}… jsou proměnné a v překladu smějí stát jinde. Úplnost a shodu proměnných hlídá
 // test/i18n.test.mjs. Tvary podle počtu (plural) jsou v „mnozne“ pod trojicí českých tvarů.
+// Texty, které posílá server (src/texty.js, ui('…')), mají vlastní slovník v en-server.js.
+import server from './en-server.js';
+
 export default {
+  server,
   texty: {
     "vzdálený agent · místní cache": "remote agent \u00b7 local cache",
     "Poslední hlášená změna": "Last reported change",
@@ -1265,6 +1269,11 @@ export default {
     "po {0}": "after {0}",
     "za {0}": "in {0}",
     "Agenteeq {0} pro {1}.": "Agenteeq {0} for {1}.",
+    "Zkusit": "Try it",
+    "{0} z {1} hotovo": "{0} of {1} done",
+    "z {0}": "of {0}",
+    "{0} z {1}": "{0} of {1}",
+    "Počítač": "Computer",
   },
   mnozne: {
     "složka|složky|složek": ["folder","folders"],

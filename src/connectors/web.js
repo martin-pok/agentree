@@ -1,5 +1,6 @@
 import { clip, MIN, DAY } from '../util.js';
 import { touch } from '../model.js';
+import { ui } from '../texty.js';
 
 // Webové AI aplikace posílá rozšíření prohlížeče (extension/). Server data validuje a normalizuje.
 export const WEB_SITES = {
@@ -18,10 +19,10 @@ const MAX_POCET = 100000;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
 
 export function validateWebPayload(p) {
-  if (!p || typeof p !== 'object') return { ok: false, error: 'Chybí data.' };
-  if (!WEB_SITES[p.site]) return { ok: false, error: 'Neznámá služba.' };
-  if (typeof p.conversationId !== 'string' || !/^[\w.:-]{1,200}$/.test(p.conversationId)) return { ok: false, error: 'Neplatné ID konverzace.' };
-  if (typeof p.url !== 'string' || !/^https:\/\//.test(p.url) || p.url.length > 2000) return { ok: false, error: 'Neplatná adresa.' };
+  if (!p || typeof p !== 'object') return { ok: false, error: ui('Chybí data.') };
+  if (!WEB_SITES[p.site]) return { ok: false, error: ui('Neznámá služba.') };
+  if (typeof p.conversationId !== 'string' || !/^[\w.:-]{1,200}$/.test(p.conversationId)) return { ok: false, error: ui('Neplatné ID konverzace.') };
+  if (typeof p.url !== 'string' || !/^https:\/\//.test(p.url) || p.url.length > 2000) return { ok: false, error: ui('Neplatná adresa.') };
   // Z webových chatů bere Agenteeq jen stav a počty zpráv. Starší rozšíření (do 0.24) posílá ještě
   // text a název konverzace – z toho se tu spočítají role a text se zahodí, nikam se neuloží.
   let counts = { user: 0, assistant: 0 };
@@ -49,7 +50,7 @@ export function applyWebPayload(s, v, now = Date.now()) {
   s.source = 'web';
   s.url = v.url;
   // Název konverzace vzniká z jejího obsahu, a tak se nebere. Rozliší ji konec jejího ID.
-  s.title = `${WEB_SITES[v.site]?.name || 'Webový chat'} · konverzace ${v.conversationId.replace(/[^A-Za-z0-9]/g, '').slice(-4) || v.conversationId.slice(-4)}`;
+  s.title = ui('{0} · konverzace {1}', WEB_SITES[v.site]?.name || ui('Webový chat'), v.conversationId.replace(/[^A-Za-z0-9]/g, '').slice(-4) || v.conversationId.slice(-4));
   if (v.model) s.model = v.model;
   // Chrome v kartě na pozadí (skryté déle než 5 minut) pouští časovače nejvýš jednou za minutu.
   // Při 45 s by dlouho běžící úloha – Codex na webu, hloubkový výzkum – uprostřed práce spadla
@@ -66,7 +67,7 @@ export function applyWebPayload(s, v, now = Date.now()) {
   }
   s.running = v.generating;
   s.runningAt = now;
-  s.activity = v.generating ? 'Generuje odpověď…' : '';
+  s.activity = v.generating ? ui('Generuje odpověď…') : '';
   if (changed || v.generating || !s.lastAt) touch(s, now);
 
   s.pending = v.needsInput ? { kind: 'question', text: v.needsInput, at: s.pending?.at || now, source: 'web' } : null;
@@ -79,12 +80,12 @@ export function createWebConnector(ctx) {
 
   return {
     id: 'web',
-    name: 'Webové aplikace (rozšíření prohlížeče)',
+    name: ui('Webové aplikace (rozšíření prohlížeče)'),
     provider: 'other',
     kind: 'web',
     verified: false,
-    source: 'Rozšíření Agenteeq pro Chrome',
-    description: 'ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.',
+    source: ui('Rozšíření Agenteeq pro Chrome'),
+    description: ui('ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.'),
     async start() {},
     async scan() {},
     stop() {},
@@ -111,14 +112,14 @@ export function createWebConnector(ctx) {
       return {
         state: active.length ? 'connected' : recent || paired ? 'idle' : 'missing',
         detail: active.length
-          ? `Aktivní: ${active.join(', ')}.`
+          ? ui('Aktivní: {0}.', active.join(', '))
           : recent
-            ? 'Rozšíření posílalo data během dne.'
+            ? ui('Rozšíření posílalo data během dne.')
             : heard
-              ? 'Rozšíření je připojené. Jakmile otevřeš konverzaci v Chromu, objeví se tady.'
+              ? ui('Rozšíření je připojené. Jakmile otevřeš konverzaci v Chromu, objeví se tady.')
               : paired
-                ? 'Rozšíření je spárované, ale teď se neozývá – Chrome je zavřený nebo je rozšíření vypnuté.'
-                : 'Rozšíření zatím neposlalo žádná data. Nainstaluj ho v Nastavení.',
+                ? ui('Rozšíření je spárované, ale teď se neozývá – Chrome je zavřený nebo je rozšíření vypnuté.')
+                : ui('Rozšíření zatím neposlalo žádná data. Nainstaluj ho v Nastavení.'),
         count: lastSeen.size,
         watching: true,
         lastEventAt: Math.max(0, ...lastSeen.values()),

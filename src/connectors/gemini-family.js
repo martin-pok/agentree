@@ -3,6 +3,7 @@ import { statSafe, readJson, toTs, textOf, isInjectedPrompt, clip, clipBlock, MI
 import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { watchTree, createFileQueue, listFiles } from '../watch.js';
 import { noDataState } from './install-state.js';
+import { ui } from '../texty.js';
 
 export function roleOf(m) {
   const t = String(m?.type || m?.role || '').toLowerCase();
@@ -43,7 +44,7 @@ export function applyGeminiChat(s, j, mtimeMs, now = Date.now()) {
       pushEntry(s, {
         at: ts,
         role: 'tool',
-        tool: clip(call?.displayName || call?.name || 'Nástroj', 60),
+        tool: clip(call?.displayName || call?.name || ui('Nástroj'), 60),
         text: clip(call?.description || (call?.args ? JSON.stringify(call.args) : ''), 300),
         status: call?.status === 'error' ? 'error' : undefined,
       });
@@ -103,7 +104,7 @@ export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app,
     kind: 'local',
     verified,
     source: `~/${dir}/tmp/*/chats`,
-    description: 'Přepis chatů, modely a tokeny z uložených konverzací.',
+    description: ui('Přepis chatů, modely a tokeny z uložených konverzací.'),
     async start() {
       await scan();
       watcher = watchTree(root, (f) => (f ? queue.schedule(f) : scan()));
@@ -118,8 +119,8 @@ export function createGeminiFamilyConnector(ctx, { id, name, dir, provider, app,
       const count = seen.size;
       return {
         ...(count
-          ? { state: 'connected', detail: `Sleduji ${count} chatů.` }
-          : noDataState({ installed: ctx.installed?.bin(bin) ?? null, trace: exists, name: app, traceLabel: `složka ~/${dir}`, whatMissing: 'zatím neuložil žádný chat' })),
+          ? { state: 'connected', detail: ui('Sleduji {0} chatů.', count) }
+          : noDataState({ installed: ctx.installed?.bin(bin) ?? null, trace: exists, name: app, traceLabel: ui('složka ~/{0}', dir), whatMissing: ui('zatím neuložil žádný chat') })),
         count,
         watching: Boolean(watcher?.active),
         lastEventAt,

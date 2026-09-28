@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { run } from './util.js';
+import { ui } from './texty.js';
 
 export const JE_MAC = process.platform === 'darwin';
 export const JE_WINDOWS = process.platform === 'win32';
@@ -169,6 +170,23 @@ export function openCommand(cil) {
  */
 export const SYSTEM = JE_MAC ? 'macos' : JE_WINDOWS ? 'windows' : 'linux';
 export const SYSTEM_UCTU = SYSTEM;
+
+/**
+ * Klávesová zkratka pro vložení ze schránky, jak ji uživatel na tomhle systému zná. Server ji
+ * píše do nápověd, které sám skládá (src/launcher.js); klient má vlastní pomocníka se stejným
+ * pravidlem (public/js/system.js#zkratka).
+ */
+export const ZKRATKA_VLOZIT = JE_MAC ? '⌘V' : 'Ctrl+V';
+
+/**
+ * Tenhle počítač v textech, které skládá server: na Macu „Mac“, jinde „počítač“, v pádech, jak je
+ * věty potřebují – ui('Tailscale na {0} neběží.', POCITAC.tomto). Každý tvar je sám text rozhraní,
+ * takže ho klient v angličtině přeloží (this Mac / this computer). Klient má pro své věty obdobné
+ * pomocníky v public/js/i18n.js (tomtoPocitaci() …).
+ */
+export const POCITAC = JE_MAC
+  ? { Tento: ui('Tento Mac'), tento: ui('tento Mac'), tohoto: ui('tohoto Macu'), tomto: ui('tomto Macu'), tvemu: ui('tvému Macu'), tvem: ui('tvém Macu'), naHostiteli: ui('na Macu') }
+  : { Tento: ui('Tento počítač'), tento: ui('tento počítač'), tohoto: ui('tohoto počítače'), tomto: ui('tomto počítači'), tvemu: ui('tvému počítači'), tvem: ui('tvém počítači'), naHostiteli: ui('na počítači s Agenteeq') };
 
 /**
  * Vrátí do popředí okno desktopové aplikace Agenteeq (po přihlášení v prohlížeči). Umí to macOS

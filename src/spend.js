@@ -1,5 +1,6 @@
 import { uid, round2 } from './util.js';
 import { csv } from './csv.js';
+import { ui } from './texty.js';
 
 export const SERVICES = {
   chatgpt: { label: 'ChatGPT', provider: 'openai' },
@@ -13,13 +14,13 @@ export const SERVICES = {
   cursor: { label: 'Cursor', provider: 'cursor' },
   'openai-api': { label: 'OpenAI API', provider: 'openai' },
   'anthropic-api': { label: 'Anthropic API', provider: 'anthropic' },
-  other: { label: 'Ostatní', provider: 'other' },
+  other: { label: ui('Ostatní'), provider: 'other' },
 };
 
 export const KINDS = {
-  subscription: 'Předplatné',
-  extra: 'Extra usage',
-  credits: 'Kredity',
+  subscription: ui('Předplatné'),
+  extra: ui('Extra usage'),
+  credits: ui('Kredity'),
   api: 'API',
 };
 
@@ -55,15 +56,15 @@ export function convert(amount, currency, spend) {
 export function validateEntry(input, now = Date.now()) {
   const errors = {};
   const service = SERVICES[input?.service] ? input.service : null;
-  if (!service) errors.service = 'Vyber službu.';
+  if (!service) errors.service = ui('Vyber službu.');
   const kind = KINDS[input?.kind] ? input.kind : null;
-  if (!kind) errors.kind = 'Vyber typ platby.';
+  if (!kind) errors.kind = ui('Vyber typ platby.');
   const amount = Number(String(input?.amount ?? '').replace(/\s/g, '').replace(',', '.'));
-  if (!(amount > 0) || amount > 1e7) errors.amount = 'Zadej částku větší než 0.';
+  if (!(amount > 0) || amount > 1e7) errors.amount = ui('Zadej částku větší než 0.');
   const currency = CURRENCIES.includes(input?.currency) ? input.currency : null;
-  if (!currency) errors.currency = 'Vyber měnu.';
+  if (!currency) errors.currency = ui('Vyber měnu.');
   const date = typeof input?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.date) && Number.isFinite(Date.parse(input.date)) ? input.date : null;
-  if (!date) errors.date = 'Zadej datum ve tvaru RRRR-MM-DD.';
+  if (!date) errors.date = ui('Zadej datum ve tvaru RRRR-MM-DD.');
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
     ok: true,
@@ -87,20 +88,20 @@ export function validateBudgets(input, current) {
   const next = structuredClone(current);
   if (input?.currency !== undefined) {
     if (CURRENCIES.includes(input.currency)) next.currency = input.currency;
-    else errors.currency = 'Nepodporovaná měna.';
+    else errors.currency = ui('Nepodporovaná měna.');
   }
   if (input?.rates !== undefined) {
     for (const c of ['USD', 'EUR']) {
       if (input.rates[c] === undefined) continue;
       const v = Number(String(input.rates[c]).replace(',', '.'));
       if (v > 0 && v < 1000) next.rates[c] = round2(v);
-      else errors[`rates.${c}`] = 'Kurz musí být kladné číslo.';
+      else errors[`rates.${c}`] = ui('Kurz musí být kladné číslo.');
     }
   }
   if (input?.total !== undefined) {
     const v = Number(String(input.total).replace(/\s/g, '').replace(',', '.'));
     if (v >= 0 && v < 1e8) next.budgets.total = round2(v);
-    else errors.total = 'Rozpočet musí být 0 nebo kladné číslo.';
+    else errors.total = ui('Rozpočet musí být 0 nebo kladné číslo.');
   }
   if (input?.services && typeof input.services === 'object') {
     for (const [svc, raw] of Object.entries(input.services)) {
@@ -108,7 +109,7 @@ export function validateBudgets(input, current) {
       const v = Number(String(raw ?? '').replace(/\s/g, '').replace(',', '.'));
       if (raw === '' || raw === null || v === 0) delete next.budgets.services[svc];
       else if (v > 0 && v < 1e8) next.budgets.services[svc] = round2(v);
-      else errors[`services.${svc}`] = 'Rozpočet musí být kladné číslo.';
+      else errors[`services.${svc}`] = ui('Rozpočet musí být kladné číslo.');
     }
   }
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: next };
@@ -163,7 +164,7 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
 
   const budgets = [];
   const total = Number(spend.budgets?.total) || 0;
-  if (total > 0) budgets.push({ scope: 'total', label: 'Celkem', spent: month.total, budget: total, pct: round2((month.total / total) * 100) });
+  if (total > 0) budgets.push({ scope: 'total', label: ui('Celkem'), spent: month.total, budget: total, pct: round2((month.total / total) * 100) });
   for (const [svc, b] of Object.entries(spend.budgets?.services || {})) {
     if (!(b > 0) || !SERVICES[svc]) continue;
     const spent = month.services[svc] || 0;
@@ -260,8 +261,8 @@ export function budgetAlertCandidates(summary) {
       alsoKeys: hit === 100 ? [keyFor(80)] : [],
       level: hit === 100 ? 'critical' : 'warning',
       kind: 'budget',
-      title: hit === 100 ? `Rozpočet překročen: ${b.label}` : `Vyčerpáno ${Math.round(b.pct)} % rozpočtu: ${b.label}`,
-      body: `Tento měsíc ${money(b.spent, summary.currency)} z ${money(b.budget, summary.currency)}.`,
+      title: hit === 100 ? ui('Rozpočet překročen: {0}', b.label) : ui('Vyčerpáno {0} % rozpočtu: {1}', Math.round(b.pct), b.label),
+      body: ui('Tento měsíc {0} z {1}.', money(b.spent, summary.currency), money(b.budget, summary.currency)),
     });
   }
   return out;

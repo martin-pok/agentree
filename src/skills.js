@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { readdirSafe, statSafe, clip } from './util.js';
+import { ui } from './texty.js';
 
 // Dovednosti = soubory SKILL.md, které si na disk ukládají Claude, jeho pluginy a Codex.
 // Čteme je jen lokálně a jen na vyžádání; nic se nikam neodesílá.
@@ -12,9 +13,9 @@ const MAX_BYTES = 512 * 1024;
 export const SOURCES = [
   { id: 'claude', label: 'Claude', rel: ['.claude', 'skills'], depth: 2 },
   { id: 'claude-plugin', label: 'Claude · plugin', rel: ['.claude', 'plugins'], depth: 7 },
-  { id: 'claude-task', label: 'Claude · plánovaná úloha', rel: ['.claude', 'scheduled-tasks'], depth: 2 },
+  { id: 'claude-task', label: ui('Claude · plánovaná úloha'), rel: ['.claude', 'scheduled-tasks'], depth: 2 },
   { id: 'codex', label: 'Codex', rel: ['.codex', 'skills'], depth: 3 },
-  { id: 'codex-memory', label: 'Codex · paměť', rel: ['.codex', 'memories', 'skills'], depth: 2 },
+  { id: 'codex-memory', label: ui('Codex · paměť'), rel: ['.codex', 'memories', 'skills'], depth: 2 },
 ];
 
 // Hlavička souboru je YAML mezi dvěma řádky `---`. Bereme jen `name` a `description`,

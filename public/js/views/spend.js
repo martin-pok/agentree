@@ -248,7 +248,7 @@ function update() {
       return `<div class="card budget-card${over ? ' is-over' : warn ? ' is-warn' : ''}">
         <div class="budget-top">${svc ? glyph(svc.provider) : ''}<span>${esc(b.label)}</span><b>${Math.round(b.pct)} %</b></div>
         <div class="budget-track"><i style="width:${Math.min(100, b.pct).toFixed(1)}%"></i></div>
-        <span class="muted small">${money(b.spent)} z ${money(b.budget)}</span>
+        <span class="muted small">${tr('{0} z {1}', money(b.spent), money(b.budget))}</span>
       </div>`;
     }).join('')}</div>`
     : `<div class="cta-card card">${ICON.wallet}<div><strong>${tr('Nastav si měsíční rozpočet')}</strong><p class="muted small">${tr('Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.')}</p></div><button class="btn" type="button" data-action="budgets">${tr('Nastavit rozpočet')}</button></div>`);

@@ -35,7 +35,7 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni, SYSTEM } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni, SYSTEM, POCITAC } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
@@ -48,6 +48,7 @@ import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
+import { ui } from './texty.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -111,7 +112,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       // Po přihlášení se načte volba synchronizace z účtu (mohla být zapnutá na jiném Macu).
       if (stav.udalost === 'prihlaseno') cloudSync.nactiVolbu().then(() => cloudSync.synchronizuj()).catch(() => {});
     },
-    open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
+    open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
   });
   // Synchronizace souhrnů do účtu (src/cloud-sync.js): jen čísla, jen na výslovné zapnutí.
   const cloudSync = createCloudSync({
@@ -173,13 +174,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   function recordRunFailure(run) {
     if (failedRuns.has(run.id)) return;
     failedRuns.add(run.id);
-    const rawError = String(run.error || `Skončilo s kódem ${run.exitCode}`).trim();
-    const raw = /[.!?]$/.test(rawError) ? rawError : `${rawError}.`;
-    let hint = '';
+    const rawError = String(run.error || ui('Skončilo s kódem {0}', run.exitCode)).trim();
+    // Původní chyba se zkracuje sama, aby rada za ní zůstala celá – a v angličtině šla přeložit.
+    const raw = clip(/[.!?]$/.test(rawError) ? rawError : `${rawError}.`, 140);
+    let text = raw;
     if (/authenticat|oauth|log ?in|unauthori|401|credential/i.test(raw)) {
-      hint = ' Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení (otevře se v prohlížeči).';
+      text = ui('{0} Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení (otevře se v prohlížeči).', raw);
     } else if (/limit|quota|rate/i.test(raw)) {
-      hint = ' Nejspíš vyčerpaný limit předplatného.';
+      text = ui('{0} Nejspíš vyčerpaný limit předplatného.', raw);
     }
     const now = run.endedAt || Date.now();
     const [connector, localId] = run.sessionId ? [run.sessionId.split(':')[0], run.sessionId.slice(run.sessionId.indexOf(':') + 1)] : ['launch', run.id];
@@ -189,8 +191,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!s.title && !s.firstPrompt) s.title = run.prompt;
     if (!s.startedAt) s.startedAt = run.startedAt;
     s.running = false;
-    s.failure = { text: clip(`${raw}${hint}`, 240), at: now };
-    pushEntry(s, { at: now, role: 'error', text: `Spuštění selhalo: ${raw}${hint}` });
+    s.failure = { text, at: now };
+    pushEntry(s, { at: now, role: 'error', text: ui('Spuštění selhalo: {0}', text) });
     touch(s, now);
     store.commit(s, now);
     if (run.projectId && projects().assignments[s.id] === undefined) assignToProject([s.id], run.projectId);
@@ -208,16 +210,16 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function openSession(id, target) {
     const s = store.summary(id);
-    if (!s) return { status: 404, error: 'Konverzace nenalezena.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
+    if (!s) return { status: 404, error: ui('Konverzace nenalezena.') };
+    if (config.openMode === 'off') return { status: 422, error: ui('Otevírání odsud tenhle systém neumí.') };
     // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
     if (!config.openApps && (target === 'terminal' || (target === 'app' && s.connector !== 'web'))) {
       return { status: 422, error: target === 'terminal'
-        ? 'Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.'
-        : 'Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.' };
+        ? ui('Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.')
+        : ui('Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.') };
     }
     const plan = planOpen(s, target, apps, { aplikace: config.openApps });
-    if (!plan) return { status: 422, error: 'Tuto akci pro konverzaci nelze provést.' };
+    if (!plan) return { status: 422, error: ui('Tuto akci pro konverzaci nelze provést.') };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true, plan } : {}) };
@@ -278,8 +280,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         const count = visible.filter((s) => s.connector === c.id).length;
         status = { ...status, count };
         if (status.state === 'connected' && c.id !== 'web') {
-          const word = count === 1 ? 'konverzace' : count > 1 && count < 5 ? 'konverzace' : 'konverzací';
-          status.detail = `${count} ${word} s aktivitou za ${config.windowDays} dní.${status.hooksActive ? ' Propojení je aktivní.' : ''}`;
+          // Tvar podle počtu je celý text (src/texty.js): „1 konverzace“ se v angličtině liší od „2 konverzace“.
+          const days = config.windowDays;
+          const pocet = count === 1 ? ui('1 konverzace s aktivitou za {0} dní.', days) : count > 1 && count < 5 ? ui('{0} konverzace s aktivitou za {1} dní.', count, days) : ui('{0} konverzací s aktivitou za {1} dní.', count, days);
+          status.detail = status.hooksActive ? ui('{0} Propojení je aktivní.', pocet) : pocet;
         }
       }
       return { id: c.id, name: c.name, provider: c.provider, kind: c.kind, verified: c.verified, source: c.source, description: c.description, ...status };
@@ -335,7 +339,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ...base, ...r, hasKey: true, plan, planLabel: PLANS[plan].label, activatedAt: saved.activatedAt, maskedKey: `${saved.key.slice(0, 9)}…${saved.key.slice(-6)}` };
   }
 
-  const locked = (feature) => (canUse(feature, licenseStatus()) ? null : { status: 402, upgrade: true, error: `Tato funkce je součástí tarifu ${PLANS[PAID_FEATURES[feature]]?.label || 'Pro'}. Aktivuj licenci v Nastavení.` });
+  const locked = (feature) => (canUse(feature, licenseStatus()) ? null : { status: 402, upgrade: true, error: ui('Tato funkce je součástí tarifu {0}. Aktivuj licenci v Nastavení.', PLANS[PAID_FEATURES[feature]]?.label || 'Pro') });
 
   function activateLicense(key) {
     const clean = typeof key === 'string' ? key.trim() : '';
@@ -389,7 +393,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   function createProject(body) {
     const active = projects().items.filter((p) => !p.archived).length;
     if (active >= FREE_PROJECT_LIMIT && !canUse('projectsUnlimited', licenseStatus())) {
-      return { status: 402, upgrade: true, error: `Ve verzi Zdarma můžeš mít ${FREE_PROJECT_LIMIT} aktivní projekty. Pro neomezený počet aktivuj licenci Pro.` };
+      return { status: 402, upgrade: true, error: ui('Ve verzi Zdarma můžeš mít {0} aktivní projekty. Pro neomezený počet aktivuj licenci Pro.', FREE_PROJECT_LIMIT) };
     }
     const r = validateProject(body, projects().items);
     if (!r.ok) return r;
@@ -408,13 +412,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   function reorderProjectList(ids) {
-    if (!reorderProjects(projects(), ids)) return { status: 422, error: 'Pořadí se nepodařilo změnit.' };
+    if (!reorderProjects(projects(), ids)) return { status: 422, error: ui('Pořadí se nepodařilo změnit.') };
     projectsChanged();
     return { ok: true };
   }
 
   function removeProject(id) {
-    if (!/^[\w-]{1,64}$/.test(id) || !deleteProject(projects(), id)) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!/^[\w-]{1,64}$/.test(id) || !deleteProject(projects(), id)) return { status: 404, error: ui('Projekt neexistuje.') };
     fsp.rm(path.join(mediaRoot, id), { recursive: true, force: true }).catch(() => {});
     projectsChanged();
     return { ok: true };
@@ -437,11 +441,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function setProjectMedia(id, kind, buf) {
     const p = findProject(id);
-    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: 'Projekt neexistuje.' };
-    if (!buf.length) return { status: 422, error: 'Soubor je prázdný.' };
-    if (buf.length > MEDIA_MAX[kind]) return { status: 413, error: `Obrázek je příliš velký (nejvýš ${MEDIA_MAX[kind] / 1e6} MB).` };
+    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: ui('Projekt neexistuje.') };
+    if (!buf.length) return { status: 422, error: ui('Soubor je prázdný.') };
+    if (buf.length > MEDIA_MAX[kind]) return { status: 413, error: ui('Obrázek je příliš velký (nejvýš {0} MB).', MEDIA_MAX[kind] / 1e6) };
     const ext = sniffImage(buf);
-    if (!ext) return { status: 415, error: 'Nahraj obrázek ve formátu PNG, JPG nebo WebP.' };
+    if (!ext) return { status: 415, error: ui('Nahraj obrázek ve formátu PNG, JPG nebo WebP.') };
     const dir = path.join(mediaRoot, p.id);
     await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
     const file = `${kind}-${Date.now()}.${ext}`;
@@ -456,7 +460,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function removeProjectMedia(id, kind) {
     const p = findProject(id);
-    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!p || !MEDIA_MAX[kind]) return { status: 404, error: ui('Projekt neexistuje.') };
     const old = p[kind]?.file;
     if (old) await fsp.rm(path.join(mediaRoot, p.id, old), { force: true });
     p[kind] = kind === 'cover' ? { preset: COVER_PRESETS[0] } : null;
@@ -468,9 +472,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function readProjectMedia(id, kind) {
     const p = findProject(id);
     const file = p?.[kind]?.file;
-    if (!file || !MEDIA_FILE.test(file) || !file.startsWith(`${kind}-`)) return { status: 404, error: 'Obrázek neexistuje.' };
+    if (!file || !MEDIA_FILE.test(file) || !file.startsWith(`${kind}-`)) return { status: 404, error: ui('Obrázek neexistuje.') };
     const body = await fsp.readFile(path.join(mediaRoot, p.id, file)).catch(() => null);
-    if (!body) return { status: 404, error: 'Obrázek neexistuje.' };
+    if (!body) return { status: 404, error: ui('Obrázek neexistuje.') };
     return { ok: true, type: MEDIA_TYPES[file.split('.').pop()], body };
   }
 
@@ -478,7 +482,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function projectGit(id) {
     const p = findProject(id);
-    if (!p) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!p) return { status: 404, error: ui('Projekt neexistuje.') };
     const dir = repoOf(p);
     const repo = dir ? await repoInfo(dir) : null;
     const active = p.work.filter((w) => w.status === 'active');
@@ -506,28 +510,28 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function launchTeam(id, input) {
     const p = findProject(id);
-    if (!p) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!p) return { status: 404, error: ui('Projekt neexistuje.') };
     const b = input && typeof input === 'object' ? input : {};
     const prompt = typeof b.prompt === 'string' ? b.prompt.trim() : '';
-    if (!prompt) return { status: 422, error: 'Napiš, co mají agenti udělat.', field: 'prompt' };
+    if (!prompt) return { status: 422, error: ui('Napiš, co mají agenti udělat.'), field: 'prompt' };
     const agents = Array.isArray(b.agents) ? [...new Set(b.agents)] : p.settings.agents;
-    if (!agents.length || agents.length > 4 || agents.some((a) => !TEAM_AGENTS.includes(a))) return { status: 422, error: 'Vyber 1 až 4 agenty.', field: 'agents' };
+    if (!agents.length || agents.length > 4 || agents.some((a) => !TEAM_AGENTS.includes(a))) return { status: 422, error: ui('Vyber 1 až 4 agenty.'), field: 'agents' };
     const targets = new Map(launchPayload().targets.map((t) => [t.id, t]));
     const missing = agents.filter((a) => !targets.has(a));
-    if (missing.length) return { status: 422, error: `Na tomto Macu není k dispozici: ${missing.join(', ')}. Nainstaluj ho nebo ho z týmu odeber.`, field: 'agents' };
+    if (missing.length) return { status: 422, error: ui('Na {0} není k dispozici: {1}. Nainstaluj ho nebo ho z týmu odeber.', POCITAC.tomto, missing.join(', ')), field: 'agents' };
     const isolate = typeof b.isolate === 'boolean' ? b.isolate : p.settings.isolate;
     const attachBrief = typeof b.attachBrief === 'boolean' ? b.attachBrief : p.settings.attachBrief;
     const text = composePrompt(p, prompt, attachBrief);
-    if (text.length > PROMPT_MAX) return { status: 422, error: `Zadání s pravidly a podklady je delší než ${PROMPT_MAX.toLocaleString('cs-CZ')} znaků.`, field: 'prompt' };
+    if (text.length > PROMPT_MAX) return { status: 422, error: ui('Zadání s pravidly a podklady je delší než {0} znaků.', PROMPT_MAX.toLocaleString('cs-CZ')), field: 'prompt' };
     const repoDir = repoOf(p);
-    if (!repoDir) return { status: 422, error: 'Nastav projektu složku repozitáře (Nastavení projektu → Repozitář).', field: 'repo' };
+    if (!repoDir) return { status: 422, error: ui('Nastav projektu složku repozitáře (Nastavení projektu → Repozitář).'), field: 'repo' };
     let info = null;
     let base = '';
     if (isolate) {
       info = await repoInfo(repoDir);
-      if (!info.isRepo) return { status: 422, error: 'Složka projektu není Git repozitář. Vyber repozitář, nebo vypni „Každý agent ve vlastní větvi“.', field: 'repo' };
+      if (!info.isRepo) return { status: 422, error: ui('Složka projektu není Git repozitář. Vyber repozitář, nebo vypni „Každý agent ve vlastní větvi“.'), field: 'repo' };
       base = p.settings.baseBranch || info.branch;
-      if (!base) return { status: 422, error: 'Repozitář není na žádné větvi. Přepni ho na větev (např. main) nebo ji nastav v projektu.', field: 'repo' };
+      if (!base) return { status: 422, error: ui('Repozitář není na žádné větvi. Přepni ho na větev (např. main) nebo ji nastav v projektu.'), field: 'repo' };
     }
     const d = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -576,13 +580,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function projectWorkAction(id, workId, action) {
     const p = findProject(id);
     const w = p?.work.find((x) => x.id === workId && x.status === 'active');
-    if (!w) return { status: 404, error: 'Pracovní větev nenalezena.' };
-    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: 'Pracovní kopie leží mimo Agenteeq – uprav ji ručně.' };
+    if (!w) return { status: 404, error: ui('Pracovní větev nenalezena.') };
+    if (!w.path.startsWith(worktreeRoot + path.sep)) return { status: 422, error: ui('Pracovní kopie leží mimo Agenteeq – uprav ji ručně.') };
     const running = (w.runId && ['running', 'stopping'].includes(runs.get(w.runId)?.status)) || (w.sessionId && store.summary(w.sessionId)?.status === 'working');
-    if (running) return { status: 409, error: 'Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.' };
+    if (running) return { status: 409, error: ui('Agent na této větvi ještě pracuje. Počkej, až skončí, nebo ho zastav.') };
     if (dry) return { ok: true, dry: true };
     const info = await repoInfo(repoOf(p));
-    if (!info.isRepo) return { status: 422, error: 'Repozitář projektu není dostupný.' };
+    if (!info.isRepo) return { status: 422, error: ui('Repozitář projektu není dostupný.') };
     let r;
     if (action === 'accept') {
       r = await acceptWork({ repo: info.root, dir: w.path, branch: w.branch, base: w.base, message: `Agenteeq: ${w.label || w.agent} – ${clip(w.prompt, 72)}` });
@@ -622,8 +626,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         key: `project_budget:${p.id}:${month}:${hit}`,
         level: hit === 100 ? 'critical' : 'warning',
         kind: 'budget',
-        title: hit === 100 ? `Projekt ${p.name}: rozpočet tokenů vyčerpán` : `Projekt ${p.name}: ${Math.round(pct)} % rozpočtu tokenů`,
-        body: `${used.toLocaleString('cs-CZ')} z ${budget.toLocaleString('cs-CZ')} tokenů tento měsíc.`,
+        title: hit === 100 ? ui('Projekt {0}: rozpočet tokenů vyčerpán', p.name) : ui('Projekt {0}: {1} % rozpočtu tokenů', p.name, Math.round(pct)),
+        body: ui('{0} z {1} tokenů tento měsíc.', used.toLocaleString('cs-CZ'), budget.toLocaleString('cs-CZ')),
       });
     }
   }
@@ -637,7 +641,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function exportProject(id) {
     const p = projects().items.find((x) => x.id === id);
-    if (!p) return { status: 404, error: 'Projekt neexistuje.' };
+    if (!p) return { status: 404, error: ui('Projekt neexistuje.') };
     const gate = locked('projectExport');
     if (gate) return gate;
     const live = store.list().filter((s) => s.projectId === id);
@@ -667,7 +671,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     run: napojeniRun || run,
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
     prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
-    open: (url) => executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry }),
+    open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
     emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
@@ -698,7 +702,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const body = input && typeof input === 'object' ? { ...input } : {};
     const projectId = typeof body.projectId === 'string' && body.projectId ? body.projectId : null;
     const project = projectId ? findProject(projectId) : null;
-    if (projectId && !project) return { status: 422, error: 'Projekt neexistuje.', field: 'projectId' };
+    if (projectId && !project) return { status: 422, error: ui('Projekt neexistuje.'), field: 'projectId' };
     // Pravidla projektu jdou s každým zadáním z projektu (tým je skládá sám).
     if (project && !body.skipProjectRules && typeof body.prompt === 'string' && body.prompt.trim() && project.settings.instructions.trim()) {
       body.prompt = `${body.prompt.trim()}\n\n---\nPravidla projektu ${project.name}:\n${project.settings.instructions.trim()}`;
@@ -709,8 +713,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (!r.ok) return { status: 422, error: r.error, field: r.field };
     const plan = r.plan;
     const webOpen = plan.kind === 'open' && plan.mode === 'web';
-    if (!config.launchAgents && plan.kind !== 'local' && !webOpen) return { status: 422, error: 'Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.' };
-    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: 'Otevírání odsud tenhle systém neumí.' };
+    if (!config.launchAgents && plan.kind !== 'local' && !webOpen) return { status: 422, error: ui('Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.') };
+    if (config.openMode === 'off' && plan.kind !== 'local') return { status: 422, error: ui('Otevírání odsud tenhle systém neumí.') };
     const gate = plan.kind === 'background' ? locked('launchBackground') : plan.kind === 'local' ? locked('localChat') : null;
     if (gate) return gate;
 
@@ -719,7 +723,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     let copied = false;
     if (plan.kind === 'terminal') {
       if (!dry) await writePromptFile(promptDir, plan.prompt, uuid);
-      const x = await executeOpen({ kind: 'terminal', command: plan.command, label: 'Terminál' }, { dry });
+      const x = await executeOpen({ kind: 'terminal', command: plan.command, label: ui('Terminál') }, { dry });
       if (!x.ok) return { status: 502, error: x.error };
     } else if (plan.kind === 'open') {
       // Zadání musí být ve schránce dřív, než se okno služby otevře a uživatel sáhne po ⌘V.
@@ -732,7 +736,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         const started = runs.start({ agent: plan.agent, label: plan.label, argv: plan.argv, cwd: plan.cwd, prompt: plan.prompt, sessionId, projectId });
         const { logFile, ...rest } = started;
         runInfo = rest;
-        if (started.status === 'failed') return { status: 502, error: `${plan.label} se nepodařilo spustit: ${started.error}` };
+        if (started.status === 'failed') return { status: 502, error: ui('{0} se nepodařilo spustit: {1}', plan.label, started.error) };
       }
     } else if (plan.kind === 'local') {
       sessionId = localChat.start({ model: plan.model, prompt: plan.prompt });
@@ -789,14 +793,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function listFolders(requested) {
     const home = path.resolve(config.sourceHome);
-    if (requested && (typeof requested !== 'string' || !path.isAbsolute(requested))) return { status: 400, error: 'Cesta musí začínat lomítkem.' };
+    if (requested && (typeof requested !== 'string' || !path.isAbsolute(requested))) return { status: 400, error: ui('Cesta musí začínat lomítkem.') };
     const target = requested ? path.resolve(requested) : home;
-    if (target !== home && !target.startsWith(home + path.sep)) return { status: 403, error: 'Procházet lze jen složky v domovském adresáři. Jinou cestu zadej ručně.' };
+    if (target !== home && !target.startsWith(home + path.sep)) return { status: 403, error: ui('Procházet lze jen složky v domovském adresáři. Jinou cestu zadej ručně.') };
     let entries;
     try {
       entries = await fsp.readdir(target, { withFileTypes: true });
     } catch (err) {
-      return { status: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 404 : 403, error: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 'Složka neexistuje.' : 'Do této složky nemá Agenteeq přístup.' };
+      return { status: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? 404 : 403, error: err.code === 'ENOENT' || err.code === 'ENOTDIR' ? ui('Složka neexistuje.') : ui('Do této složky nemá Agenteeq přístup.') };
     }
     const atHome = target === home;
     const dirs = entries
@@ -814,8 +818,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function autostart(action) {
-    if (config.desktop) return { status: 422, error: 'Desktopovou aplikaci přidej v Nastavení systému → Obecné → Přihlašovací položky.' };
-    if (!config.autostart) return { status: 422, error: 'Spuštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).' };
+    if (config.desktop) return { status: 422, error: ui('Desktopovou aplikaci přidej v Nastavení systému → Obecné → Přihlašovací položky.') };
+    if (!config.autostart) return { status: 422, error: ui('Spuštění po přihlášení umí Agenteeq zatím jen na macOS (přes LaunchAgent).') };
     if (!dry) {
       try {
         if (action === 'install') await installLaunchAgent({ script: BIN_PATH, home: config.sourceHome });
@@ -832,14 +836,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // „Přidat do Chromu“: stránka rozšíření v Chrome Web Store, rovnou v prohlížeči, který ho umí.
   async function otevriObchod() {
     const url = adresaObchodu();
-    if (!url) return { status: 409, error: 'Rozšíření zatím v Chrome Web Store není. Použij ruční instalaci.' };
+    if (!url) return { status: 409, error: ui('Rozšíření zatím v Chrome Web Store není. Použij ruční instalaci.') };
     const vChromu = otevritVProhlizeciSRozsirenim(url, config.sourceHome);
     if (vChromu && !dry) {
       const r = await run(vChromu.cmd, vChromu.args, { timeout: 8000 });
       if (r.ok) return { ok: true, prohlizec: vChromu.prohlizec };
     }
-    const r = await executeOpen({ kind: 'open', args: [url], label: 'prohlížeč' }, { dry });
-    return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || 'Prohlížeč se nepodařilo otevřít.' };
+    const r = await executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry });
+    return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
   }
 
   async function integrations() {
@@ -868,12 +872,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Uživateli proto ukážeme samotnou aplikaci: ve Finderu si ji zabalí a výsledný ZIP pošle dál.
     const bundle = path.resolve(ROOT_DIR, '..', '..', '..');
     const target = pkg?.path || (config.desktop && bundle.endsWith('.app') ? bundle : null);
-    if (!target) return { status: 404, error: 'Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.' };
-    if (config.openMode === 'off') return { status: 422, error: 'Ukázat balíček ve správci souborů tenhle systém neumí.' };
+    if (!target) return { status: 404, error: ui('Instalační balíček nenalezen. Vytvoř ho příkazem npm run build:mac.') };
+    if (config.openMode === 'off') return { status: 422, error: ui('Ukázat balíček ve správci souborů tenhle systém neumí.') };
     // -R (ukázat v nadřazené složce) zná jen `open` na macOS; jinde se otevře samotná složka.
     const plan = config.openApps
       ? { kind: 'open', args: ['-R', target], label: 'Finder' }
-      : { kind: 'open', args: [path.dirname(target)], label: 'Správce souborů' };
+      : { kind: 'open', args: [path.dirname(target)], label: ui('Správce souborů') };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
@@ -922,10 +926,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function addCustomAgent(input) {
     const list = datastore.data.customAgents;
-    if (list.length >= MAX_AGENTS) return { status: 422, error: `Víc než ${MAX_AGENTS} vlastních agentů Agenteeq nesleduje.` };
+    if (list.length >= MAX_AGENTS) return { status: 422, error: ui('Víc než {0} vlastních agentů Agenteeq nesleduje.', MAX_AGENTS) };
     const r = normalizeAgent({ ...input, origin: input?.url ?? input?.origin });
     if (!r.ok) return { status: 400, error: r.error, field: 'url' };
-    if (list.some((a) => a.origin === r.agent.origin && a.type === r.agent.type)) return { status: 409, error: 'Tenhle agent už je v seznamu.', field: 'url' };
+    if (list.some((a) => a.origin === r.agent.origin && a.type === r.agent.type)) return { status: 409, error: ui('Tenhle agent už je v seznamu.'), field: 'url' };
     list.push(r.agent);
     await datastore.flush();
     customStatus.set(r.agent.id, await probeAgent(r.agent));
@@ -935,7 +939,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function removeCustomAgent(id) {
     const list = datastore.data.customAgents;
     const i = list.findIndex((a) => a.id === id);
-    if (i === -1) return { status: 404, error: 'Takový agent v seznamu není.' };
+    if (i === -1) return { status: 404, error: ui('Takový agent v seznamu není.') };
     list.splice(i, 1);
     customStatus.delete(id);
     await datastore.flush();
@@ -946,9 +950,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // z požadavku přichází výhradně id běhového prostředí.
   async function focusRuntime(id) {
     const plan = planRuntimeFocus(id);
-    if (!plan) return { status: 404, error: 'Tuhle aplikaci Agenteeq neumí přepnout do popředí.' };
+    if (!plan) return { status: 404, error: ui('Tuhle aplikaci Agenteeq neumí přepnout do popředí.') };
     const bezi = store.runtimes.find((r) => r.id === id && r.running);
-    if (!bezi) return { status: 409, error: `${plan.label} teď neběží.` };
+    if (!bezi) return { status: 409, error: ui('{0} teď neběží.', plan.label) };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
     return { ok: true, label: plan.label, ...(r.dry ? { dry: true } : {}) };
@@ -994,16 +998,16 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function setLanAccess(enabled) {
-    if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
-    if (enabled && !lan.status().addresses.length) return { status: 422, error: 'Mac není v žádné místní síti – připoj se na Wi-Fi.' };
-    return applyAccess('lanAccess', enabled, 'Přístup z telefonu se nepodařilo otevřít.');
+    if (enabled && !lanHandler) return { status: 503, error: ui('Server ještě není připravený, zkus to za chvíli.') };
+    if (enabled && !lan.status().addresses.length) return { status: 422, error: ui('{0} není v žádné místní síti – připoj se na Wi-Fi.', POCITAC.Tento) };
+    return applyAccess('lanAccess', enabled, ui('Přístup z telefonu se nepodařilo otevřít.'));
   }
 
   // Přístup z vlastní privátní sítě Tailscale. Chová se stejně jako přístup z domácí sítě –
   // jen se naslouchá na adrese 100.x místo 192.168.x a adresa nikde veřejně neexistuje.
   // Párování kódem a token platí i tady: bez spárovaného zařízení se nepřečte nic.
   async function setTailscaleAccess(enabled) {
-    if (enabled && !lanHandler) return { status: 503, error: 'Server ještě není připravený, zkus to za chvíli.' };
+    if (enabled && !lanHandler) return { status: 503, error: ui('Server ještě není připravený, zkus to za chvíli.') };
     if (enabled) {
       // Adresa z rozsahu 100.64.0.0/10 sama o sobě Tailscale nedokazuje: je to rozsah pro
       // CGNAT (RFC 6598) a od některých operátorů ji Mac dostane i bez něj. Zeptáme se proto
@@ -1014,13 +1018,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         return {
           status: 422,
           error: stav?.installed
-            ? 'Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.'
-            : 'Tailscale na tomto Macu neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.',
+            ? ui('Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.')
+            : ui('Tailscale na {0} neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.', POCITAC.tomto),
         };
       }
-      if (!lan.status().tailscale.available) return { status: 422, error: 'Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu. Zkus to za chvíli.' };
+      if (!lan.status().tailscale.available) return { status: 422, error: ui('Tailscale běží, ale {0} zatím nemá adresu v tailnetu. Zkus to za chvíli.', POCITAC.tento) };
     }
-    return applyAccess('tailscaleAccess', enabled, 'Přístup přes Tailscale se nepodařilo otevřít.');
+    return applyAccess('tailscaleAccess', enabled, ui('Přístup přes Tailscale se nepodařilo otevřít.'));
   }
 
   // Společné přepnutí obou cest. Odpárování zařízení nastává, teprve když se zavírá poslední

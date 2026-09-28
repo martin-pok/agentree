@@ -3,35 +3,37 @@ import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, l
 import { touch, addTokens, pushEntry } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
+import { ui } from '../texty.js';
+import { POCITAC } from '../platform.js';
 
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
 // Okna limitů předplatného, která Claude Code předává stavovému řádku (`rate_limits`).
 // `spend_limit` není okno předplatného, ale vyčerpání dokoupeného extra usage – proto vlastní druh.
 export const STATUS_WINDOWS = {
-  five_hour: { id: 'claude:five_hour', label: 'Limit 5 h', minutes: 300 },
-  seven_day: { id: 'claude:seven_day', label: 'Týdenní limit', minutes: 10080 },
-  spend_limit: { id: 'claude:spend_limit', label: 'Extra usage', minutes: null, kind: 'spend' },
+  five_hour: { id: 'claude:five_hour', label: ui('Limit 5 h'), minutes: 300 },
+  seven_day: { id: 'claude:seven_day', label: ui('Týdenní limit'), minutes: 10080 },
+  spend_limit: { id: 'claude:spend_limit', label: ui('Extra usage'), minutes: null, kind: 'spend' },
 };
 
 const TOOL_LABELS = {
-  Bash: 'Spouští příkaz',
-  Read: 'Čte soubor',
-  Edit: 'Upravuje soubor',
-  MultiEdit: 'Upravuje soubor',
-  Write: 'Zapisuje soubor',
-  NotebookEdit: 'Upravuje notebook',
-  Glob: 'Hledá soubory',
-  Grep: 'Prohledává kód',
-  WebFetch: 'Načítá web',
-  WebSearch: 'Hledá na webu',
-  Task: 'Spustil subagenta',
-  Agent: 'Spustil subagenta',
-  TodoWrite: 'Aktualizuje plán',
-  AskUserQuestion: 'Ptá se tě',
-  ExitPlanMode: 'Předkládá plán',
-  ToolSearch: 'Hledá nástroje',
-  Skill: 'Načítá dovednost',
+  Bash: ui('Spouští příkaz'),
+  Read: ui('Čte soubor'),
+  Edit: ui('Upravuje soubor'),
+  MultiEdit: ui('Upravuje soubor'),
+  Write: ui('Zapisuje soubor'),
+  NotebookEdit: ui('Upravuje notebook'),
+  Glob: ui('Hledá soubory'),
+  Grep: ui('Prohledává kód'),
+  WebFetch: ui('Načítá web'),
+  WebSearch: ui('Hledá na webu'),
+  Task: ui('Spustil subagenta'),
+  Agent: ui('Spustil subagenta'),
+  TodoWrite: ui('Aktualizuje plán'),
+  AskUserQuestion: ui('Ptá se tě'),
+  ExitPlanMode: ui('Předkládá plán'),
+  ToolSearch: ui('Hledá nástroje'),
+  Skill: ui('Načítá dovednost'),
 };
 
 export function toolDetail(name, input) {
@@ -48,7 +50,7 @@ export function toolDetail(name, input) {
 }
 
 export function describeTool(name, input) {
-  const label = TOOL_LABELS[name] || (String(name).startsWith('mcp__') ? 'Používá nástroj' : name);
+  const label = TOOL_LABELS[name] || (String(name).startsWith('mcp__') ? ui('Používá nástroj') : name);
   const detail = toolDetail(name, input);
   return clip(detail ? `${label}: ${detail}` : label, 160);
 }
@@ -103,10 +105,10 @@ export function parseResets(text, ts) {
 }
 
 export function limitKind(text) {
-  if (/monthly spend|spend limit/i.test(text)) return { id: 'claude:spend', label: 'Měsíční limit útraty' };
-  if (/weekly/i.test(text)) return { id: 'claude:weekly', label: 'Týdenní limit' };
-  if (/session/i.test(text)) return { id: 'claude:session', label: 'Limit relace' };
-  return { id: 'claude:usage', label: 'Limit využití' };
+  if (/monthly spend|spend limit/i.test(text)) return { id: 'claude:spend', label: ui('Měsíční limit útraty') };
+  if (/weekly/i.test(text)) return { id: 'claude:weekly', label: ui('Týdenní limit') };
+  if (/session/i.test(text)) return { id: 'claude:session', label: ui('Limit relace') };
+  return { id: 'claude:usage', label: ui('Limit využití') };
 }
 
 export const newFileState = (subagentFile = false) => ({
@@ -162,7 +164,7 @@ function onUser(st, s, o, ts) {
         at: ts,
         role: 'result',
         tool: pending?.name,
-        text: rejected ? 'Uživatel akci zamítl.' : clipBlock(raw, 800),
+        text: rejected ? ui('Uživatel akci zamítl.') : clipBlock(raw, 800),
         status: part.is_error || rejected ? 'error' : 'ok',
       });
       if (s.pending?.toolUseId && s.pending.toolUseId === part.tool_use_id) s.pending = null;
@@ -180,7 +182,7 @@ function onUser(st, s, o, ts) {
     s.pending = null;
     s.toolWaitSince = 0;
     st.pendingTools.clear();
-    pushEntry(s, { at: ts, role: 'system', text: 'Přerušeno uživatelem' });
+    pushEntry(s, { at: ts, role: 'system', text: ui('Přerušeno uživatelem') });
     return;
   }
   if (isInjectedPrompt(text)) return;
@@ -191,7 +193,7 @@ function onUser(st, s, o, ts) {
   s.pending = null;
   s.turnStartedAt = ts;
   s.turnSteps = 0;
-  s.activity = 'Přemýšlí…';
+  s.activity = ui('Přemýšlí…');
   markRunning(s, ts);
 }
 
@@ -202,7 +204,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
   touch(s, ts);
 
   if (o.isApiErrorMessage) {
-    const text = clip(textOf(m.content), 240) || 'Chyba API';
+    const text = clip(textOf(m.content), 240) || ui('Chyba API');
     pushEntry(s, { at: ts, role: 'error', text });
     s.running = false;
     s.activity = '';
@@ -241,9 +243,9 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
         s.activity = describeTool(part.name, part.input);
         pushEntry(s, { at: ts, role: 'tool', tool: part.name, text: toolInputText(part.name, part.input) });
         if (part.name === 'AskUserQuestion') {
-          s.pending = { kind: 'question', text: clip(part.input?.questions?.[0]?.question || 'Má pro tebe otázku', 200), at: ts, toolUseId: part.id, source: 'transcript' };
+          s.pending = { kind: 'question', text: clip(part.input?.questions?.[0]?.question || ui('Má pro tebe otázku'), 200), at: ts, toolUseId: part.id, source: 'transcript' };
         } else if (part.name === 'ExitPlanMode') {
-          s.pending = { kind: 'plan', text: 'Čeká na schválení plánu', at: ts, toolUseId: part.id, source: 'transcript' };
+          s.pending = { kind: 'plan', text: ui('Čeká na schválení plánu'), at: ts, toolUseId: part.id, source: 'transcript' };
         } else if (part.name === 'TodoWrite') {
           s.progress = todosProgress(part.input?.todos) || s.progress;
         }
@@ -429,7 +431,7 @@ export function createClaudeCodeConnector(ctx) {
     const s = store.ensure({ connector: 'claude-code', localId: f.localId, provider: 'anthropic', app: 'Claude Code' });
     if (f.parentLocalId) {
       s.parentId = `claude-code:${f.parentLocalId}`;
-      s.subagent = { kind: 'agent', label: 'Pomocný agent' };
+      s.subagent = { kind: 'agent', label: ui('Pomocný agent') };
     }
     const lines = await f.tail.read(stat.size);
     for (const o of lines) applyClaudeLine(f.st, s, o, hooks);
@@ -496,9 +498,9 @@ export function createClaudeCodeConnector(ctx) {
 
   // Okamžité události z Claude Code hooků (viz src/hooks-installer.js).
   async function ingestHook(p, now = Date.now()) {
-    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
+    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
     const event = String(p.hook_event_name || '');
-    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'].includes(event)) return { ok: false, error: 'Neznámá událost.' };
+    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'].includes(event)) return { ok: false, error: ui('Neznámá událost.') };
     // Hook zná přesnou cestu k přepisu. Leží-li mimo známé kořeny (CLAUDE_CONFIG_DIR, který aplikace
     // z Finderu nevidí), přidá se jeho kořen – jinak by agent s hooky byl vidět bez přepisu a tokenů.
     const koren = korenZPrepisu(p.transcript_path, p.session_id);
@@ -527,7 +529,7 @@ export function createClaudeCodeConnector(ctx) {
         s.turnStartedAt = now;
         s.turnSteps = 0;
         s.pending = null;
-        s.activity = 'Přemýšlí…';
+        s.activity = ui('Přemýšlí…');
         if (typeof p.prompt === 'string' && p.prompt.trim() && !isInjectedPrompt(p.prompt)) {
           s.lastPrompt = p.prompt;
           if (!s.firstPrompt) s.firstPrompt = p.prompt;
@@ -537,9 +539,9 @@ export function createClaudeCodeConnector(ctx) {
         const type = p.notification_type;
         const msg = clip(p.message || '', 200);
         if (type === 'permission_prompt' || (!type && /permission/i.test(msg))) {
-          s.pending = { kind: 'permission', text: msg || 'Potřebuje povolení k akci', at: now, source: 'hook' };
+          s.pending = { kind: 'permission', text: msg || ui('Potřebuje povolení k akci'), at: now, source: 'hook' };
         } else if (type === 'elicitation_dialog') {
-          s.pending = { kind: 'question', text: msg || 'Potřebuje doplnit údaje', at: now, source: 'hook' };
+          s.pending = { kind: 'question', text: msg || ui('Potřebuje doplnit údaje'), at: now, source: 'hook' };
         } else if (type === 'idle_prompt') {
           s.running = false;
           s.activity = '';
@@ -583,7 +585,7 @@ export function createClaudeCodeConnector(ctx) {
   }
 
   function ingestStatusline(p, now = Date.now()) {
-    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: 'Neplatné session_id.' };
+    if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
     const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
     const five = statusLimit('five_hour', rl.five_hour, now);
     const week = statusLimit('seven_day', rl.seven_day, now);
@@ -620,12 +622,12 @@ export function createClaudeCodeConnector(ctx) {
 
   return {
     id: 'claude-code',
-    name: 'Claude Code · CLI a Claude Desktop',
+    name: ui('Claude Code · CLI a Claude Desktop'),
     provider: 'anthropic',
     kind: 'local',
     verified: true,
     source: '~/.claude/projects (a CLAUDE_CONFIG_DIR)',
-    description: 'Přepis v reálném čase, nástroje, plán úkolů, dotazy na tebe, limity a tokeny.',
+    description: ui('Přepis v reálném čase, nástroje, plán úkolů, dotazy na tebe, limity a tokeny.'),
     async start() {
       await scan();
       koreny.start();
@@ -645,10 +647,10 @@ export function createClaudeCodeConnector(ctx) {
       return {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
         detail: count
-          ? `Sleduji ${count} sessions za ${config.windowDays} dní.${lastHookAt ? ' Okamžité události jsou aktivní.' : ''}`
+          ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
           : exists
-            ? 'Složka existuje, zatím bez sessions.'
-            : 'Claude Code na tomto počítači není.',
+            ? ui('Složka existuje, zatím bez sessions.')
+            : ui('Claude Code na {0} není.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt: Math.max(lastEventAt, lastHookAt),

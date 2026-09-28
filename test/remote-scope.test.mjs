@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { remoteScope } from '../src/remote-scope.js';
+import { POCITAC } from '../src/platform.js';
 
 test('telefon smí číst stav a přepisy', () => {
   for (const p of ['/api/state', '/api/sessions/abc', '/api/sessions/abc/transcript', '/api/alerts', '/api/projects', '/api/stream', '/api/skills']) {
@@ -24,5 +25,5 @@ test('výjimky: párování a označení upozornění za přečtená; disk se ne
   assert.equal(remoteScope('POST', '/api/alerts/read').ok, true);
   assert.equal(remoteScope('POST', '/api/alerts/clear').ok, false);
   assert.equal(remoteScope('GET', '/api/fs/folders').ok, false);
-  assert.match(remoteScope('POST', '/api/launch').error, /jen na Macu/);
+  assert.ok(remoteScope('POST', '/api/launch').error.includes(`jen ${POCITAC.naHostiteli}`));
 });

@@ -1,6 +1,7 @@
 // Tarify Agenteeq. Rozhodnutí o cenách a o tom, co bude placené, patří vlastníkovi produktu (docs/LICENSING.md).
+import { ui } from './texty.js';
 export const PLANS = {
-  free: { label: 'Zdarma', rank: 0 },
+  free: { label: ui('Zdarma'), rank: 0 },
   pro: { label: 'Pro', rank: 1 },
   team: { label: 'Team', rank: 2 },
 };

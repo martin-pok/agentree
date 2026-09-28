@@ -12,6 +12,7 @@
 import path from 'node:path';
 import { touch } from './model.js';
 import { lastSegment } from './util.js';
+import { ui } from './texty.js';
 
 // Nástroje, které se hledají po procesech. `domov` = proměnná, podle které zapisují jinam.
 export const AGENTI = {
@@ -55,9 +56,10 @@ export function nesparovane(procesy, sessions) {
 }
 
 export function popisProcesu(p, a) {
-  const kde = p.cwd ? ` v ${lastSegment(p.cwd) || p.cwd}` : '';
   const od = new Date(p.od).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-  return `${a.app} běží${kde} od ${od}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.`;
+  return p.cwd
+    ? ui('{0} běží v {1} od {2}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.', a.app, lastSegment(p.cwd) || p.cwd, od)
+    : ui('{0} běží od {1}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.', a.app, od);
 }
 
 /**

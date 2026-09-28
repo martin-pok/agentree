@@ -7,6 +7,7 @@
 // probliknutí češtiny. Změna jazyka stránku znovu načte: texty vznikají i při načtení modulů.
 
 import { SYSTEM } from './system.js';
+import { vytvorPrekladac, vytvorPrelozData } from './texty-serveru.js';
 
 const html = globalThis.document?.documentElement;
 const lang = html?.lang === 'en' ? 'en' : 'cs';
@@ -26,6 +27,15 @@ export function tr(text, ...args) {
   const s = slovnik ? (slovnik.texty[text] ?? text) : text;
   return args.length ? s.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : s;
 }
+
+/**
+ * Přeloží text, který poslal server (src/texty.js, slovník i18n/en-server.js) – celý, nebo podle
+ * vzoru s proměnnými. Data ze serveru ho dostávají automaticky v prelozData() (state.js, api.js);
+ * volat ho přímo je potřeba jen u textu, který jde do klientu jinudy.
+ */
+export const trServer = slovnik ? vytvorPrekladac(slovnik.server, slovnik.texty, LOCALE) : (text) => text;
+/** Projde data ze serveru (snímek, událost, odpověď API) a přeloží v nich texty rozhraní. */
+export const prelozData = slovnik ? vytvorPrelozData(trServer) : (data) => data;
 
 /**
  * Tvar slova podle počtu. Čeština má tři (1 / 2–4 / 5+), angličtina dva; anglické tvary jsou ve

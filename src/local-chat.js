@@ -1,5 +1,6 @@
 import { uid, clip, clipBlock, MIN } from './util.js';
 import { touch, pushEntry, updateEntry, addTokens } from './model.js';
+import { ui } from './texty.js';
 
 const TEXT_MAX = 20000;
 
@@ -18,7 +19,7 @@ export function createLocalChat({ store, ollama }) {
     pushEntry(s, { at: started, role: 'user', text: clipBlock(prompt, TEXT_MAX) });
     chat.messages.push({ role: 'user', content: prompt });
     const entry = pushEntry(s, { at: started, role: 'assistant', text: '' });
-    Object.assign(s, { running: true, runningAt: started, turnStartedAt: started, turnSteps: 0, staleMs: 10 * MIN, activity: `Generuje odpověď (${chat.model})…` });
+    Object.assign(s, { running: true, runningAt: started, turnStartedAt: started, turnSteps: 0, staleMs: 10 * MIN, activity: ui('Generuje odpověď ({0})…', chat.model) });
     store.commit(s);
 
     const controller = new AbortController();
@@ -42,11 +43,11 @@ export function createLocalChat({ store, ollama }) {
           }
         },
       });
-      updateEntry(s, entry, { text: text || '(model nevrátil žádný text)' });
+      updateEntry(s, entry, { text: text || ui('(model nevrátil žádný text)') });
       chat.messages.push({ role: 'assistant', content: text });
       addTokens(s, Date.now(), { input: usage.tokensIn, output: usage.tokensOut });
     } catch (err) {
-      const message = controller.signal.aborted ? 'Odpověď zastavena.' : clip(err.message, 300);
+      const message = controller.signal.aborted ? ui('Odpověď zastavena.') : clip(err.message, 300);
       if (text) {
         updateEntry(s, entry, { text });
         chat.messages.push({ role: 'assistant', content: text });
@@ -75,11 +76,11 @@ export function createLocalChat({ store, ollama }) {
     reply(id, prompt) {
       const chat = chats.get(id);
       const s = store.get(id);
-      if (!chat || !s) return { ok: false, status: 404, error: 'Tahle lokální konverzace už neexistuje (server se restartoval).' };
-      if (chat.controller) return { ok: false, status: 409, error: 'Model ještě odpovídá. Počkej na dokončení nebo ho zastav.' };
+      if (!chat || !s) return { ok: false, status: 404, error: ui('Tahle lokální konverzace už neexistuje (server se restartoval).') };
+      if (chat.controller) return { ok: false, status: 409, error: ui('Model ještě odpovídá. Počkej na dokončení nebo ho zastav.') };
       const text = typeof prompt === 'string' ? prompt.trim() : '';
-      if (!text) return { ok: false, status: 422, error: 'Napiš zprávu.' };
-      if (text.length > TEXT_MAX) return { ok: false, status: 422, error: 'Zpráva je příliš dlouhá.' };
+      if (!text) return { ok: false, status: 422, error: ui('Napiš zprávu.') };
+      if (text.length > TEXT_MAX) return { ok: false, status: 422, error: ui('Zpráva je příliš dlouhá.') };
       runTurn(s, text);
       return { ok: true };
     },

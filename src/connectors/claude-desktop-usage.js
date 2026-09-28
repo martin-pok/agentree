@@ -3,6 +3,8 @@ import { statSafe, readJson } from '../util.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { STATUS_WINDOWS } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
+import { ui } from '../texty.js';
+import { POCITAC } from '../platform.js';
 
 // Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů – nejde o veřejně
 // zdokumentovaný formát, jen soubor, který jsme na disku našli a ověřili proti skutečným datům
@@ -132,7 +134,7 @@ export function applyPlanUsageSample(store, sample, now = Date.now(), json = nul
       id: 'claude:spend_limit:history',
       provider: 'anthropic',
       app: 'Claude',
-      label: 'Extra usage',
+      label: ui('Extra usage'),
       usedPercent: used,
       value: u.xu,
       windowMinutes: null,
@@ -171,7 +173,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
     if (seenMtime === stat.mtimeMs) return;
     const json = await readJson(file, null);
     if (!json) {
-      error = 'Soubor s historií limitů Claude Desktop se nepodařilo přečíst.';
+      error = ui('Soubor s historií limitů Claude Desktop se nepodařilo přečíst.');
       return;
     }
     const sample = findLatestSample(json);
@@ -191,12 +193,12 @@ export function createClaudeDesktopUsageConnector(ctx) {
 
   return {
     id: 'claude-desktop-usage',
-    name: 'Claude Desktop · historie limitů',
+    name: ui('Claude Desktop · historie limitů'),
     provider: 'anthropic',
     kind: 'local',
     verified: false,
     source: `${JE_WINDOWS ? '%APPDATA%\\Claude' : '~/Library/Application Support/Claude'}/${FILE_NAME}`,
-    description: 'Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) – doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.',
+    description: ui('Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) – doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.'),
     async start() {
       await scan();
       watcher = watchTree(dir, (f) => (f ? queue.schedule(f) : scan()));
@@ -220,10 +222,10 @@ export function createClaudeDesktopUsageConnector(ctx) {
       const detail = error
         ? error
         : lastSampleAt
-          ? `Poslední vzorek historie limitů: ${new Date(lastSampleAt).toLocaleString('cs-CZ')}.`
+          ? ui('Poslední vzorek historie limitů: {0}.', new Date(lastSampleAt).toLocaleString('cs-CZ'))
           : exists
-            ? 'Claude Desktop je nainstalovaný, ale historie limitů zatím neobsahuje žádný vzorek.'
-            : 'Claude Desktop na tomto počítači není.';
+            ? ui('Claude Desktop je nainstalovaný, ale historie limitů zatím neobsahuje žádný vzorek.')
+            : ui('Claude Desktop na {0} není.', POCITAC.tomto);
       return {
         state,
         detail,
