@@ -25,13 +25,15 @@ test('Dovednosti: najdou se u Claude, v pluginech i u Codexu; seznam je řazený
   await writeSkill(home, ['.claude', 'skills', 'shrnuti', 'SKILL.md'], '---\nname: Shrnutí změn\ndescription: Popíše diff\n---\nobsah');
   await writeSkill(home, ['.claude', 'plugins', 'cache', 'balik', 'skills', 'zaloha', 'SKILL.md'], '---\nname: Záloha\n---\nobsah');
   await writeSkill(home, ['.codex', 'skills', '.system', 'review-agent', 'SKILL.md'], '---\nname: Revize\ndescription: Kontrola příkazů\n---\nobsah');
+  await writeSkill(home, ['.agents', 'skills', 'muj-postup', 'SKILL.md'], '---\nname: Můj postup\ndescription: Vlastní sdílená dovednost\n---\nobsah');
   await writeSkill(home, ['.claude', 'skills', 'shrnuti', 'POZNAMKY.md'], 'tohle není dovednost');
 
   const skills = createSkills({ config });
   const list = await skills.list();
-  assert.equal(list.length, 3, 'jen soubory SKILL.md');
-  assert.deepEqual(list.map((s) => s.name), ['Revize', 'Shrnutí změn', 'Záloha'], 'řazeno česky podle názvu');
-  assert.deepEqual(list.map((s) => s.sourceId).sort(), ['claude', 'claude-plugin', 'codex']);
+  assert.equal(list.length, 4, 'jen soubory SKILL.md ze všech aktivních zdrojů');
+  assert.deepEqual(list.map((s) => s.name), ['Můj postup', 'Revize', 'Shrnutí změn', 'Záloha'], 'řazeno česky podle názvu');
+  assert.deepEqual(list.map((s) => s.sourceId).sort(), ['claude', 'claude-plugin', 'codex', 'shared']);
+  assert.equal(list.find((s) => s.sourceId === 'shared').origin, 'own');
   const bezPopisu = list.find((s) => s.name === 'Záloha');
   assert.equal(bezPopisu.description, '', 'chybějící popis se nedomýšlí');
   assert.ok(bezPopisu.bytes > 0 && bezPopisu.at > 0);

@@ -10,6 +10,7 @@
 // a okno rozšíření pro Chrome. Playwright se bere stejně jako v qa-desktop.mjs – z PLAYWRIGHT_PATH
 // nebo z globální instalace, aby projekt zůstal bez závislostí.
 import { createRequire } from 'node:module';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startTestServer, api } from '../test/helpers.mjs';
@@ -117,7 +118,17 @@ const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
 console.log('Aplikace');
 const app = await startTestServer();
 // Trocha obsahu, aby se měřily i stavy s daty, ne jen prázdné obrazovky.
-app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-kontrast', provider: 'openai', app: 'Codex' }), { title: 'QA kontrast', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
+app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-kontrast', provider: 'openai', app: 'Codex' }), { title: 'QA kontrast', status: 'needs_input', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
+for (let i = 0; i < 3; i++) {
+  const dir = path.join(app.sourceHome, '.agents', 'skills', `vlastni-${i}`);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: Vlastní dovednost ${i}\ndescription: Ukázka vlastního zdroje\n---\nText.\n`);
+}
+for (const [rootDir, name] of [['.claude', 'Claude'], ['.codex', 'Codex']]) {
+  const dir = path.join(app.sourceHome, rootDir, 'skills', 'qa-dovednost');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: ${name} dovednost\ndescription: Kontrola filtru zdroje\n---\nText.\n`);
+}
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
 await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true });
 

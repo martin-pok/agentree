@@ -53,6 +53,11 @@
     .mark .zlato { fill: var(--brass); }
     .zpet { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-left: -8px; padding: 0 12px 0 6px; border: 0; border-radius: var(--r-full); background: none; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; cursor: pointer; }
     .zpet:hover { background: var(--line-2); }
+    .top-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+    .refresh { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink-2); cursor: pointer; }
+    .refresh:hover { background: var(--line-2); color: var(--ink); }
+    .refresh:disabled { opacity: .55; cursor: wait; }
+    .refresh svg { width: 16px; height: 16px; }
     .stav { display: inline-flex; align-items: center; gap: 8px; color: var(--mute); font-size: 12px; white-space: nowrap; }
     .stav i { width: 6px; height: 6px; border-radius: 50%; background: var(--mute); flex: none; }
     /* Smaragd = připojeno, mosaz = ještě krok, samet = neběží. Stav nese vždy i text. */
@@ -187,7 +192,12 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
       <span id="back-title"></span>
     </button>
-    <span class="stav" id="pill" role="status"><i></i><span id="pill-text" data-i18n>Zjišťuji…</span></span>
+    <div class="top-actions">
+      <button class="refresh" id="refresh-popup" type="button" aria-label="Obnovit aktuální stav" title="Obnovit aktuální stav" data-i18n-attr="aria-label,title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></svg>
+      </button>
+      <span class="stav" id="pill" role="status"><i></i><span id="pill-text" data-i18n>Zjišťuji…</span></span>
+    </div>
   </header>
 
   <!-- Hlavní pohled -->

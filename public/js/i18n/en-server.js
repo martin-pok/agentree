@@ -551,6 +551,7 @@ export default {
   "Odstranění z Klíčenky selhalo.": "Removing from the Keychain failed.",
 
   // src/skills.js
+  "Sdílené": "Shared",
   "Claude · plánovaná úloha": "Claude · scheduled task",
   "Codex · paměť": "Codex · memory",
 

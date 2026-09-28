@@ -35,7 +35,7 @@ try {
             : { site: 'mscopilot', konverzace: 'karta', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } };
           window.chrome = {
             storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
-            runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async m => {
+            runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
@@ -44,14 +44,14 @@ try {
             } },
           };
           // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
-          window.chrome.tabs = { query: async () => [{ id: 99 }], sendMessage: async () => { throw new Error('bez skriptu'); }, update: async (id) => { fixture.prepnuto = id; } };
+          window.chrome.tabs = { query: async () => [{ id: 99 }], sendMessage: async (_id, m) => { if (m.type === 'agenteeq:refresh') { fixture.refreshes = (fixture.refreshes || 0) + 1; return { ok: true }; } throw new Error('bez skriptu'); }, update: async (id) => { fixture.prepnuto = id; } };
           window.chrome.windows = { update: async (id) => { fixture.okno = id; } };
           window.close = () => { fixture.zavreno = true; };
           if (state.startsWith('overeni')) {
             window.chrome.tabs = {
               update: async (id) => { fixture.prepnuto = id; },
               query: async () => [{ id: 7 }],
-              sendMessage: async (_tab, m) => (m.type === 'agenteeq:diagnostika' ? diagnostika
+              sendMessage: async (_tab, m) => (m.type === 'agenteeq:refresh' ? (fixture.refreshes = (fixture.refreshes || 0) + 1, { ok: true }) : m.type === 'agenteeq:diagnostika' ? diagnostika
                 : { format: 'agenteeq-vzorek', verze: 1, site: diagnostika.site, adresa: { host: 'chatgpt.com', cesta: '/c/x-id' }, prvku: 812, zkraceno: false, strom: { t: 'body' } }),
             };
           }
@@ -59,6 +59,13 @@ try {
         }, { state });
         await page.goto(`http://127.0.0.1:${server.address().port}/popup.html`);
         await page.waitForFunction(() => document.getElementById('headline').textContent !== 'Chvilku…');
+        assert.equal(await page.locator('#refresh-popup').isVisible(), true, 'obnova musí být dostupná v každém stavu');
+        if (state === 'paired') {
+          await page.locator('#refresh-popup').click();
+          await page.waitForFunction(() => fixture.refreshes === 1 && !document.getElementById('refresh-popup').disabled);
+          assert.equal(await page.evaluate(() => fixture.refreshes), 1, 'obnova znovu načte stav otevřené karty');
+          assert.equal(await page.locator('#refresh-popup').isEnabled(), true);
+        }
         if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
           // Nahoře skutečný počet pracujících agentů a otevřených konverzací z background workeru, ne výmysl.
           const [pracuje, otevreno] = { paired: [1, 1], outdated: [1, 1], overeni: [1, 2], 'overeni-chyby': [2, 2] }[state];
