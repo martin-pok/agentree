@@ -60,6 +60,7 @@ flowchart LR
 | `store.js` | Mapa sessions, souhrny s porovnáním JSON (vysílá jen skutečné změny), limity, kredity, běhová prostředí. |
 | `alerts.js` | Přechody stavů → upozornění, deduplikace klíčem, TTL klíčů 60 dní, nativní notifikace. Noční ticho a náraz (víc než 3 za minutu) upozornění jen ztlumí (`muted`): uloží se a zvednou počet, ale oznámení nepřijde. Za ztlumená pošle `tick()` jeden souhrn – jen za to, co pořád platí. |
 | `nocni-ticho.js` | Čistá funkce, jestli je teď noční ticho (místní čas počítače, rozsah přes půlnoc, polouzavřený), a normalizace uložených časů. |
+| `probuzeni.js` | Pozná probuzení počítače ze spánku podle mezery mezi průchody pravidelné úlohy (časovače Node ve spánku stojí, `Date.now()` ne). |
 | `spend.js` | Čisté funkce: validace, měsíční součty, opakované platby, převody měn, prognóza, prahy rozpočtu. |
 | `datastore.js` | Trvalá data s atomickým zápisem (tmp + rename, práva 0600) a debounce 300 ms. |
 | `watch.js` | `fs.watch` rekurzivně s automatickou obnovou, fronta souborů (debounce + sériové zpracování). |
@@ -104,7 +105,8 @@ Nástroj Claude Code čekající bez hooků déle než 90 s dostane důvod „�
 
 ## Klient (`public/js/`)
 
-- `app.js` – hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/projekty`, `#/projekt/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/dovednosti`, `#/nastaveni`), SSE s frontou událostí během načítání snapshotu, horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace.
+- `app.js` – hash router (`#/prehled`, `#/agenti`, `#/agent/<id>`, `#/projekty`, `#/projekt/<id>`, `#/statistiky`, `#/utrata`, `#/upozorneni`, `#/dovednosti`, `#/nastaveni`), horní lišta, scéna s body aktivních agentů, paleta ⌘K, notifikace, označení dat bez spojení.
+- `spojeni.js` – spojení se serverem: snímek stavu a živý proud (SSE) s frontou událostí během načítání snímku, obnova po výpadku, po tichu, po probuzení a po návratu k oknu.
 - `state.js` – jediný zdroj pravdy v prohlížeči; `emit()` slévá témata změn.
 - `views/*.js` – každá obrazovka má `mount(el, params, query)`, `update(topics)`, `unmount()` a volitelně `query()`.
 - `charts.js` – plošný graf s crosshairem a ovládáním šipkami, donut, gauge, heatmapa, sloupcový graf, časová osa. Vše SVG/HTML bez knihoven.
@@ -129,7 +131,15 @@ Paleta dark mode je tokenová, nikoli CSS filter/inverze: `--paper`, `--card`, t
 - Watcher spadne nebo složka neexistuje → nový pokus každých 5 s; průchod souborů každých 10 s (starší soubory každou minutu).
 - Poškozený nebo rozepsaný řádek JSONL se přeskočí; offset se posune jen za kompletní řádky.
 - Zkrácený soubor (přepsaný) → session se znovu načte od začátku.
-- SSE výpadek → EventSource se připojí sám, klient znovu stáhne snapshot.
+- SSE výpadek → klient znovu stáhne celý snapshot a „Připojeno“ ukáže až po něm (`public/js/spojeni.js`).
+  Mrtvé spojení pozná podle ticha (server posílá událost `ping` po 15 s, bez zprávy 45 s = nové spojení),
+  proud zavřený natrvalo naváže znovu s pauzou 2–30 s, zrušené spárování (401) vrátí párování.
+- Uspaný Mac: časovače Node během spánku stojí, `Date.now()` ne. Průchod po 5 s pozná mezeru přes minutu
+  (`src/probuzeni.js`) a hned projde zdroje, procesy, vlastní agenty, obnovy limitů a útratu. `GET /api/state`
+  navíc stav konverzací vždy přepočítá v okamžiku dotazu. Okno pozná vlastní uspání podle mezery mezi
+  kontrolami (přes 30 s u viditelné karty) a data hned označí jako neověřená.
+- Bez spojení okno ukazuje poslední stav s označením „data z HH:MM“ u živých bloků, stopky stojí a živé
+  ukazatele se nehýbou (`html.is-stale`). Krátký výpadek do 4 s ukazuje jen štítek „Obnovuji spojení“.
 - Zápis `data.json` je atomický; poškozený soubor se nahradí výchozími hodnotami (bez pádu).
 
 ## Rozhodnutí

@@ -1,9 +1,9 @@
-import { state, emit } from '../state.js';
+import { state, emit, zacniNacitaniPrepisu, dokonciNacitaniPrepisu, nacitaniPrepisuSelhalo } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, stariUdaj } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -78,19 +78,15 @@ function progressHtml(p) {
 
 async function load() {
   const id = v.id;
-  if (!state.transcripts.has(id)) state.transcripts.set(id, { entries: new Map(), stale: false, loaded: false, error: '' });
-  const t = state.transcripts.get(id);
+  zacniNacitaniPrepisu(id);
   v.loading = true;
   try {
     const r = await api.session(id);
     if (v.id !== id) return;
-    t.entries = new Map(r.transcript.map((e) => [e.seq, e]));
-    t.loaded = true;
-    t.error = '';
+    dokonciNacitaniPrepisu(id, r.transcript);
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
   } catch (err) {
-    t.loaded = true;
-    t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
+    nacitaniPrepisuSelhalo(id, err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message);
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);
@@ -274,7 +270,7 @@ function update() {
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${stariUdaj()}${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     <div class="session-actions">
       ${openButtons(s)}

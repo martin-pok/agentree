@@ -102,9 +102,10 @@ function usageHistoryHtml() {
     ${charts.join('')}${note ? `<p class="note">${esc(note)}</p>` : ''}</div>`;
 }
 
-function update() {
+function update(topics) {
   const el = v.el;
   if (!el) return;
+  if (topics?.has?.('znovu')) loadUsage();
   const now = Date.now();
   const all = sessionsList();
   const ser = providerSeries(all, v.period, now, v.hidden);

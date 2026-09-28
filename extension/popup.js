@@ -252,9 +252,16 @@ $('check-save').addEventListener('click', async () => {
 // kartu, jestli agent odpovídá, kdy začal a kdy skončil. Nic ze stránky.
 const seznam = { konverzace: [], off: [], casovac: null, lastStatus: null, zastarala: false, pripojeno: false };
 
+// Stejná verze tvaru jako v background.js. Záznam jiné verze (ze staršího rozšíření) okno nečte.
+const TVAR_OTEVRENYCH = 1;
+async function nactiOtevrene() {
+  const { otevrene, otevreneTvar } = (await chrome.storage.session?.get(['otevrene', 'otevreneTvar'])) || {};
+  return otevreneTvar === TVAR_OTEVRENYCH && otevrene && typeof otevrene === 'object' ? otevrene : {};
+}
+
 async function nactiKonverzace() {
   try {
-    const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
+    const otevrene = await nactiOtevrene();
     const ted = Date.now();
     return Object.values(otevrene).filter((k) => ted - k.at <= OTEVRENA_MS);
   } catch {
@@ -294,9 +301,9 @@ async function prepni(k) {
     window.close();
   } catch {
     // Karta se mezitím zavřela – seznam se překreslí bez ní.
-    const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
+    const otevrene = await nactiOtevrene();
     for (const [klic, x] of Object.entries(otevrene)) if (x.tab === k.tab) delete otevrene[klic];
-    await chrome.storage.session?.set({ otevrene });
+    await chrome.storage.session?.set({ otevrene, otevreneTvar: TVAR_OTEVRENYCH });
     obnovSeznam();
   }
 }

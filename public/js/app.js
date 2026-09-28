@@ -1,7 +1,8 @@
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
-import { api, connectStream } from './api.js';
+import { api, connectStream, jeUkazka } from './api.js';
+import { vytvorSpojeni } from './spojeni.js';
 import { loaderHtml } from './loader.js';
-import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
+import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS, casUdaju, udajeZ } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
@@ -233,6 +234,29 @@ function refresh(topics) {
   tweenAll(document);
   restoreHover(viewEl);
   tick();
+  oznacStara();
+}
+
+/* ---------- Data bez spojení ---------- */
+
+// Bez spojení okno dál ukazuje poslední známý stav, ale nevydává ho za živý: pohyb živých
+// ukazatelů stojí (html.is-stale, styles.css), stopky „Pracuje už“ se zastaví na čase posledních
+// ověřených dat a u živých bloků stojí, z kdy data jsou (ui.js#stariUdaj). Relativní časy
+// („před 5 min“) a odpočty obnovy limitů běží dál – počítají se z pevných okamžiků, ne ze spojení.
+let stara = false;
+function oznacStara() {
+  const text = stara ? udajeZ(spojeni.dataZ()) : '';
+  for (const el of document.querySelectorAll('[data-stale-at]')) {
+    if (el.hidden !== !text) el.hidden = !text;
+    if (el.textContent !== text) el.textContent = text;
+  }
+}
+function nastavStara(ano) {
+  if (stara === ano) return;
+  stara = ano;
+  document.documentElement.classList.toggle('is-stale', ano);
+  oznacStara();
+  tickClock(true);
 }
 
 // Úložiště: když se data nedaří zapsat na disk, uživatel to musí vidět hned – jinak by po restartu
@@ -390,7 +414,8 @@ function tickClock(hned = false) {
   if (document.hidden || (!hned && behemRolovani())) return;
   const uzly = document.querySelectorAll('[data-clock-from]');
   if (!uzly.length) return;
-  const now = Date.now();
+  // Bez spojení stojí stopky na čase posledních ověřených dat – jestli agent pracuje dál, okno neví.
+  const now = stara ? spojeni.dataZ() : Date.now();
   prepis(uzly, (el) => clock(now - Number(el.dataset.clockFrom)));
 }
 
@@ -584,20 +609,33 @@ function renderOffline(show) {
     : naMacu
       ? tr('Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.')
       : tr('Agenteeq se připojí sám, jakmile bude {0} zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.', tvujPocitac());
+  const dataZ = spojeni.dataZ();
   setHtml(offlineEl, `<span class="offline-mark" aria-hidden="true">${ICON.alert}</span>
     <div class="offline-text"><strong>${tr('Agenteeq neběží')}</strong>
       <p>${rada}</p>
+      ${dataZ ? `<p>${tr('Údaje na stránce jsou z {0}. Až se spojení obnoví, načtou se znovu.', esc(casUdaju(dataZ)))}</p>` : ''}
       <p class="small">${naMacu ? tr('Aby Agenteeq běžel pořád, zapni v Nastavení <b>Spouštět po přihlášení</b>. ') : ''}${tr('Adresa:')} ${esc(location.host)}</p></div>
     <button class="btn btn--sm" type="button" data-offline-retry>${tr('Zkusit znovu')}</button>`);
   offlineEl.hidden = false;
 }
 
-function onConnection(s) {
+// `info.okamzite`: data jsou neověřená už teď (probuzení počítače, spojení, které tiše umřelo) –
+// označí se hned. Krátký výpadek (restart serveru) do 4 s ukazuje jen štítek „Obnovuji spojení“;
+// potom je to skutečný výpadek s hlášením a označenými daty.
+function onConnection(s, info = {}) {
   state.connection = s;
   clearTimeout(offlineTimer);
-  if (s === 'live') renderOffline(false);
-  // Krátké výpadky (restart serveru) nezobrazujeme; po 4 s už je to skutečný výpadek.
-  else offlineTimer = setTimeout(() => { if (state.connection !== 'live') renderOffline(true); }, 4000);
+  if (s === 'live') {
+    renderOffline(false);
+    nastavStara(false);
+  } else {
+    if (info.okamzite) nastavStara(true);
+    offlineTimer = setTimeout(() => {
+      if (state.connection === 'live') return;
+      nastavStara(true);
+      renderOffline(true);
+    }, 4000);
+  }
   updateChrome();
 }
 
@@ -708,9 +746,6 @@ if (UKAZKA) {
   });
 }
 
-let loadingSnapshot = null;
-const queued = [];
-
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
   if (vysledek?.ucet) udalostUctu(vysledek.ucet);
@@ -735,65 +770,30 @@ function udalostUctu(u) {
   }
 }
 
-// Nespárovaný telefon nedostane ani stav, ani realtime stream – obsluha 401 uvnitř streamu by se
-// tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
-const autorizace = api.state().then((snap) => {
-  // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
-  // proudu – když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
-  if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
-  return true;
-}).catch((err) => {
-  if (err.status === 401) {
-    parovaciObrazovka();
-    return false;
+// Nativní obal (desktop/Agenteeq.swift) schová úvodní obrazovku, jakmile jsou data v okně.
+let pripraveno = false;
+function prijmiSnimek(snap, { znovu = false } = {}) {
+  applySnapshot(snap, { znovu });
+  if (!pripraveno) {
+    pripraveno = true;
+    window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
   }
-  return true;
-});
-
-function prijmiSnimek(snap) {
-  applySnapshot(snap);
-  window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
-  for (const [name, data] of queued.splice(0)) handle(name, data);
 }
 
-// Pojistka pro první načtení: dokud stav není načtený, zkouší se ho stáhnout znovu (4 s, 6 s, 8 s…
-// nejvýš po 15 s). Běží jen do prvního úspěchu; živé změny pak dál nese proud.
-let pokusyNacteni = 0;
-function hlidejNacteni() {
-  if (state.loaded) return;
-  setTimeout(async () => {
-    if (state.loaded) return;
-    if (!loadingSnapshot) {
-      try {
-        prijmiSnimek(await api.state());
-        return;
-      } catch (err) {
-        if (err.status === 401) return;
-      }
-    }
-    pokusyNacteni++;
-    hlidejNacteni();
-  }, Math.min(15000, 4000 + pokusyNacteni * 2000));
-}
-hlidejNacteni();
-
-connectStream({
-  onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
-  onHello: () => {
-    loadingSnapshot = api
-      .state()
-      .then(prijmiSnimek)
-      .catch((err) => {
-        if (err.status === 401) return parovaciObrazovka();
-        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
-      })
-      .finally(() => { loadingSnapshot = null; });
-  },
-  onEvent: (name, data) => {
-    if (!state.loaded || loadingSnapshot) queued.push([name, data]);
-    else handle(name, data);
-  },
-});
+// Spojení se serverem: snímek stavu, živý proud, obnova po výpadku, po uspání a po návratu k oknu
+// (public/js/spojeni.js). Nespárovaný telefon dostane od serveru 401 – místo prázdné aplikace
+// se ukáže párování.
+const spojeni = vytvorSpojeni({
+  proud: connectStream,
+  nactiSnimek: () => api.state(),
+  naSnimek: prijmiSnimek,
+  naUdalost: handle,
+  naStav: onConnection,
+  naOdparovani: () => parovaciObrazovka(),
+  naChybuSnimku: (err) => toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 }),
+  skryto: () => document.hidden,
+  hlidat: !jeUkazka(),
+}).start();
 
 // Telefon, který ještě není spárovaný, dostane od serveru 401. Místo prázdné aplikace se zeptáme
 // na jednorázový kód z Agenteeq na Macu; po spárování se stránka načte znovu už s daty.
@@ -835,22 +835,10 @@ function parovaciObrazovka(zprava = '') {
 }
 
 // Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po
-// obnovení sítě) proto vždy natáhneme čerstvý stav – jinak by uživatel chvíli koukal na stará čísla.
-let posledniObnova = Date.now();
-async function obnovStav(duvod) {
-  if (document.visibilityState !== 'visible' || loadingSnapshot) return;
-  if (Date.now() - posledniObnova < 3000) return;
-  posledniObnova = Date.now();
-  try {
-    applySnapshot(await api.state());
-  } catch {
-    onConnection('offline');
-    void duvod;
-  }
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav(tr('návrat do aplikace')); });
-window.addEventListener('online', () => obnovStav(tr('obnovená síť')));
-window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav(tr('stránka z paměti')); });
+// obnovení sítě) se proto stav vždy srovná – jinak by uživatel chvíli koukal na stará čísla.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') spojeni.obnov(); });
+window.addEventListener('online', () => spojeni.obnov());
+window.addEventListener('pageshow', (e) => { if (e.persisted) spojeni.obnov(); });
 
 navigate();
 setInterval(tickClock, 1000);

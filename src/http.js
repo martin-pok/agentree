@@ -17,6 +17,9 @@ import { SYSTEM, POCITAC } from './platform.js';
 import { ui, prekladac } from './texty.js';
 import { createVerzeSouboru, znackaObsahu, AKTIVA, NATRVALO } from './verze-souboru.js';
 
+// Jak často živý proud hlásí, že žije. Klient (public/js/spojeni.js) po třech zmeškaných spojení obnoví.
+export const PING_MS = 15000;
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -243,9 +246,13 @@ export function createHttpServer(app, existingServer = null) {
   };
   for (const [event, fn] of Object.entries(listeners)) store.on(event, fn);
 
+  // Známka života je pojmenovaná událost, ne komentář SSE: komentář EventSource do JavaScriptu
+  // nepředá a okno by nepoznalo spojení, které tiše umřelo (uspaný Mac, jiná síť na telefonu).
+  // Klient bez zprávy déle než tři známky spojení zahodí a naváže nové (public/js/spojeni.js).
   const heartbeat = setInterval(() => {
-    for (const [res, req] of clients) if (authorizedStream(res, req)) res.write(': ping\n\n');
-  }, 15000);
+    const msg = `event: ping\ndata: ${JSON.stringify({ now: Date.now() })}\n\n`;
+    for (const [res, req] of clients) if (authorizedStream(res, req)) res.write(msg);
+  }, PING_MS);
   heartbeat.unref?.();
 
   function stream(req, res) {

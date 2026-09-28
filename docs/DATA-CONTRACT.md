@@ -106,7 +106,18 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `ucet` | `UcetStatus` + `udalost?: 'prihlaseno' \| 'chyba' \| 'odhlaseno' \| 'smazano'` |
 | `usage` | `{ launches }` |
 
-Každých 15 s komentář `: ping`.
+Každých 15 s událost `ping` s daty `{ now }` (čas serveru). Je to pojmenovaná událost, ne komentář
+SSE: komentář `EventSource` do JavaScriptu nepředá a okno by nepoznalo spojení, které tiše umřelo.
+Klient (`public/js/spojeni.js`) bez jakékoli zprávy déle než 45 s spojení zahodí a naváže nové.
+
+Pořadí po každém (znovu)připojení: `hello` → klient stáhne `GET /api/state` → události, které mezitím
+přišly, přehraje nad snímkem → teprve potom je okno „Připojeno“. `GET /api/state` odvozuje stav
+konverzací v okamžiku dotazu (i hned po probuzení Macu, kdy pravidelný přepočet ještě neproběhl).
+
+Bez spojení okno dál ukazuje poslední stav, ale označí ho: živé ukazatele stojí (`html.is-stale`),
+stopky „Pracuje už“ se zastaví na čase posledních ověřených dat a živé bloky nesou „data z HH:MM“.
+Otevřený přepis a data, která si pohledy stahují samy (Dovednosti, historie limitů, napojené
+modely), se po obnovení spojení načtou znovu (téma `znovu` v `public/js/state.js`).
 
 ## Jazyk textů a systém počítače
 

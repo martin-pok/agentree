@@ -64,7 +64,10 @@ export function emit(...topics) {
   for (const x of topics) pending.add(x);
 }
 
-export function applySnapshot(s) {
+// `znovu` = snímek po obnovení spojení (restart serveru, probuzení, návrat k oknu). Živý proud mezitím
+// nic nenesl, takže i otevřený přepis, který snímek nenese, se musí načíst celý znovu.
+export function applySnapshot(s, { znovu = false } = {}) {
+  if (znovu) for (const t of state.transcripts.values()) t.stale = true;
   Object.assign(state, {
     ready: s.ready,
     version: s.version,
@@ -92,7 +95,10 @@ export function applySnapshot(s) {
     usage: s.usage,
   });
   state.loaded = true;
-  emit('all');
+  // Pohledy, které si data stahují samy (Dovednosti, historie limitů, napojené modely), je po
+  // obnovení spojení podle tématu „znovu“ načtou taky – jinak by zůstala z doby před výpadkem.
+  if (znovu) emit('all', 'znovu');
+  else emit('all');
 }
 
 export function applyEvent(name, data) {
@@ -116,8 +122,12 @@ export function applyEvent(name, data) {
         if (data.reset) {
           t.entries.clear();
           t.stale = true;
+          if (t.mezitim) t.mezitim = new Map();
         }
-        for (const e of data.entries) t.entries.set(e.seq, e);
+        for (const e of data.entries) {
+          t.entries.set(e.seq, e);
+          t.mezitim?.set(e.seq, e);
+        }
       }
       emit(`transcript:${data.id}`);
       return null;
@@ -205,6 +215,28 @@ export function applyEvent(name, data) {
     default:
       return null;
   }
+}
+
+// Přepis otevřené konverzace se načítá celou odpovědí serveru. Co mezitím přijde živým proudem, je
+// novější než odpověď, nebo v ní už je – proto se to po načtení položí navrch, ve stejném pořadí.
+// Jinak by zpráva dopsaná během načítání zmizela pod starší odpovědí.
+export function zacniNacitaniPrepisu(id) {
+  let t = state.transcripts.get(id);
+  if (!t) state.transcripts.set(id, (t = { entries: new Map(), stale: false, loaded: false, error: '' }));
+  t.stale = false;
+  t.mezitim = new Map();
+  return t;
+}
+export function dokonciNacitaniPrepisu(id, entries) {
+  const t = state.transcripts.get(id);
+  if (!t) return;
+  const vse = new Map(entries.map((e) => [e.seq, e]));
+  for (const [seq, e] of t.mezitim || []) vse.set(seq, e);
+  Object.assign(t, { entries: vse, mezitim: null, loaded: true, error: '' });
+}
+export function nacitaniPrepisuSelhalo(id, error) {
+  const t = state.transcripts.get(id);
+  if (t) Object.assign(t, { mezitim: null, loaded: true, error });
 }
 
 export const sessionsList = () => [...state.sessions.values()].sort((a, b) => b.lastAt - a.lastAt);

@@ -34,7 +34,7 @@ try {
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 3, assistant: 3, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } }
             : { site: 'mscopilot', konverzace: 'karta', pole: 'zadne', zpravy: { user: 2, assistant: 1, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } };
           window.chrome = {
-            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
+            storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevreneTvar: 1, otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
@@ -171,7 +171,7 @@ try {
         const sparovano = !['offline', 'unpaired'].includes(state);
         window.chrome = {
           i18n: { getMessage: (k) => (k === 'jazyk' ? 'en' : '') },
-          storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene: {
+          storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevreneTvar: 1, otevrene: {
             a: { site: 'chatgpt', tab: 1, okno: 1, generating: true, od: ted - 42000, at: ted },
             b: { site: 'claude', tab: 2, okno: 1, generating: false, konec: ted - 180000, at: ted },
             c: { site: 'codex-web', tab: 3, okno: 1, generating: false, limit: true, at: ted },
