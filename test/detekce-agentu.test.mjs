@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { korenyClaudeCode, korenZPrepisu } from '../src/connectors/claude-code.js';
 import { domovyCodexu } from '../src/connectors/codex.js';
@@ -9,6 +10,7 @@ import { agentniProcesy, vedeKonverzaci } from '../src/connectors/processes.js';
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
 import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
+import { watchTree } from '../src/watch.js';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { startTestServer, api, tempDir, waitFor, writeJsonl, fakeDatastore } from './helpers.mjs';
@@ -206,6 +208,11 @@ test('podrobnosti procesu na macOS se skládají z lsof a ps -E', async () => {
 // Skutečný běžící proces „claude“ (skript) ve složce s ampersandem a s CLAUDE_CONFIG_DIR. Aplikace ho
 // musí najít z výpisu procesů, ukázat ho jako běžícího agenta a po prvním zápisu do přepisu v jeho
 // CLAUDE_CONFIG_DIR ho spárovat s konverzací. Na Linuxu přes /proc, bez jakékoli atrapy.
+//
+// Výpis procesů je celý počítač, takže server vidí i procesy „claude“ z jiných souběžných běhů
+// téhož testu a přidá si jejich CLAUDE_CONFIG_DIR. S pevným ID konverzace pak cizí přepis se stejným
+// ID obsadil session dřív než vlastní (každé ID drží jeden soubor), měla cizí složku a proces se
+// nespároval nikdy – ne pomalu. Proto má každý běh vlastní ID, jako skutečné konverzace (UUID).
 test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení zmizí', async (t) => {
   if (process.platform !== 'linux') return t.skip('živý proces se ověřuje na Linuxu (/proc); macOS jde přes lsof');
   const dir = await tempDir('agenteeq-zivy-');
@@ -216,6 +223,9 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
   await fs.mkdir(bin, { recursive: true });
   await fs.writeFile(path.join(bin, 'claude'), '#!/bin/sh\nsleep 60\n', { mode: 0o755 });
   const agent = spawn(path.join(bin, 'claude'), [], { cwd: slozka, env: { ...process.env, CLAUDE_CONFIG_DIR: cfg }, stdio: 'ignore' });
+  // Hned po spawn() může v /proc ještě stát příkazová řádka rodiče (před exec) a sdílený výpis procesů
+  // pak platí 4 s. Server se proto spustí, až proces opravdu běží jako „claude“ – podmínka, ne čas.
+  await waitFor(async () => (await fs.readFile(`/proc/${agent.pid}/cmdline`, 'utf8').catch(() => '')).includes(path.join(bin, 'claude')), 8000);
   const srv = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' });
   try {
     const klient = api(srv.url);
@@ -226,9 +236,14 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     assert.match(v.reason, /Claude Code běží v Design & Web/);
     // Kořen z prostředí procesu se přidal – první zadání se najde a spáruje.
     assert.ok(srv.app.connectors['claude-code'].koreny().includes(path.join(cfg, 'projects')));
-    const id = '12345678-aaaa-bbbb-cccc-000000000099';
+    const id = crypto.randomUUID();
     await writeJsonl(path.join(cfg, 'projects', '-Design---Web', `${id}.jsonl`), [radek(id, slozka)]);
+    // Složka projects/ vznikla až teď, po přidání kořene. Sledování to zkusí znovu za 5 s a pravidelný
+    // průchod přijde za 10 s (v testech 60 s); na tyhle hodiny test nečeká a jeden průchod spustí sám –
+    // totéž, co dělá časovač v src/app.js. Že sledování kořen po vzniku převezme, hlídá test watchTree níž.
+    await srv.app.connectors['claude-code'].scan();
     await waitFor(() => srv.app.store.summary(`claude-code:${id}`), 8000);
+    assert.equal(srv.app.store.get(`claude-code:${id}`).cwd, slozka, 'konverzace se načetla z vlastního přepisu');
     await waitFor(async () => !(await najdi()), 8000);
     agent.kill();
     await waitFor(async () => !(await klient.get('/api/state')).body.sessions.some((s) => s.proces?.pid === agent.pid), 8000);
@@ -236,6 +251,21 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     agent.kill();
     await srv.close();
   }
+});
+
+// Kořen z procesu často ještě neexistuje: Claude Code zakládá projects/ až s první zprávou. Sledování
+// to pak zkouší znovu a po vzniku složky ohlásí plný průchod (null), který najde i soubor zapsaný dřív,
+// než sledování začalo. Hodiny tu řídí test (retryMs), ne skutečných 5 s.
+test('sledování kořene, který ještě neexistuje, začne, jakmile složka vznikne', async (t) => {
+  const koren = path.join(await tempDir('agenteeq-koren-'), 'claude cfg', 'projects');
+  const zmeny = [];
+  const w = watchTree(koren, (soubor) => zmeny.push(soubor), { retryMs: 20 });
+  t.after(() => w.close());
+  assert.equal(w.active, false, 'složka zatím neexistuje');
+  assert.deepEqual(zmeny, []);
+  await writeJsonl(path.join(koren, '-Design---Web', 'a.jsonl'), [{}]);
+  await waitFor(() => w.active, 4000);
+  assert.ok(zmeny.includes(null), 'po vzniku složky se ohlásí plný průchod');
 });
 
 test('kořeny přepisů mají strop – podvržené cesty z hooků nevyčerpají sledování souborů', () => {

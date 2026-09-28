@@ -13,6 +13,10 @@
   proměnnými prostředí přes `scripts/powershell.mjs`; hlídá to `test/windows-regression.test.mjs`.
 - Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
   „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
+- Test živého procesu `claude` (`test/detekce-agentu.test.mjs`) padal při souběžných bězích:
+  server vidí procesy celého počítače, přidal si CLAUDE_CONFIG_DIR cizího běhu a jeho přepis
+  s tímtéž pevným ID obsadil konverzaci. Každý běh má teď vlastní ID, průchod spustí test sám
+  místo čekání na 5s časovač a převzetí nově vzniklého kořene hlídá samostatný test.
 - Popis vydání na GitHubu má čistou osnovu nadpisů: název vydání je `##` s velkým počátečním
   písmenem, skupiny změn pod ním `###`, „Ke stažení“ a další sekce zase `##`. Dřív byl název
   `###` a začínal malým písmenem. Zveřejnění popis přegeneruje, takže se to projeví i u 0.29.0.
