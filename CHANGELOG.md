@@ -24,6 +24,18 @@ Rozšíření čeká na schválení v Chrome Web Store.
   `test/texty-serveru.test.mjs` překládá skutečné výstupy serveru i oznámení systému,
   `test/system.test.mjs` obě varianty systému.
 
+### Vždy aktuální verze po aktualizaci
+
+- Oprava: loga služeb, brand, ikony a písma se posílala s `immutable` na rok pod adresou bez verze,
+  takže okno aplikace pro Mac (WKWebView), Windows (WebView2) i prohlížeč po aktualizaci dál
+  ukazovaly stará loga. Natrvalo se teď ukládá jen adresa se značkou obsahu (`?v=`), vše ostatní
+  se před použitím ověří (`no-cache` + ETag, odpověď „nic nového“ má pár bajtů). Loga při
+  překreslení neproblikávají (`src/verze-souboru.js`, `test/cerstvost.test.mjs`).
+- Service worker má jméno mezipaměti podle verze a obsahu místo ručního „v6“: po vydání se
+  nainstaluje nový a staré mezipaměti smaže; odpovědi s `no-store` neukládá.
+- Web: loga, brand, ikony a písma na Vercelu se před použitím ověří (`no-cache`) místo roční
+  neměnné mezipaměti, takže nové logo se po nasazení ukáže hned.
+
 ### Plynulé posouvání po přerušení
 
 - Opravené kolečko a trackpad: po posunu klávesnicí, posuvníkem nebo přepnutí obrazovky nový dojezd
