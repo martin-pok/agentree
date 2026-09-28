@@ -8,6 +8,9 @@
   a chybu tiše nahradil verzí z `package.json`, takže CI hlásilo zjištěnou verzi u souboru,
   který neexistoval. Verze se teď čte z hotového `.exe` před archivem a build skončí, když ji
   nejde přečíst nebo nesedí (`scripts/exe-version.mjs`).
+- Oprava: build a QA pro Windows vkládaly cesty do `powershell -Command` v apostrofech, takže
+  složka jako `C:\Users\O'Brien\…` (i dočasná pod %TEMP%) příkaz rozbila. Cesty teď jdou jen
+  proměnnými prostředí přes `scripts/powershell.mjs`; hlídá to `test/windows-regression.test.mjs`.
 - Přeskočené testy vždy říkají proč: tři z nich (pod rootem, mimo Windows) vypisovaly jen
   „# SKIP“. Důvod u každého `skip`/`todo` hlídá `test/dokumentace.test.mjs`.
 - Popis vydání na GitHubu má čistou osnovu nadpisů: název vydání je `##` s velkým počátečním

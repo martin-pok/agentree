@@ -155,3 +155,57 @@ test('Windows build: verze pláště, kterou se nepodařilo zjistit, se nehlás�
   assert.doesNotMatch(build, /\|\|\s*version\s*\}/, 'selhání čtení se nesmí nahradit verzí z package.json');
   assert.match(build, /catch \(chyba\) \{[\s\S]{0,300}process\.exit\(1\)/, 'při chybě build končí');
 });
+
+// `powershell.exe -Command` rozebere text jako kód. Cesta vepsaná v apostrofech se rozbije
+// o první apostrof – dočasné složky buildu a QA jsou pod %TEMP%, takže C:\Users\O'Brien\… je
+// běžný případ. Skripty v scripts/ proto spouštějí PowerShell jen přes scripts/powershell.mjs,
+// který cesty předá proměnnými prostředí.
+test('Windows skripty: do -Command se nevkládá žádná cesta', async () => {
+  const fs = await import('node:fs/promises');
+  const { powershell } = await import('../scripts/powershell.mjs');
+
+  const cesta = "C:\\Users\\O'Brien\\AppData\\Local\\Temp\\Design & Web $HOME\\Agenteeq";
+  const { argumenty, prostredi } = powershell('Compress-Archive -LiteralPath $env:AGENTEEQ_BALIK -DestinationPath $env:AGENTEEQ_ARCHIV',
+    { AGENTEEQ_BALIK: cesta, AGENTEEQ_ARCHIV: `${cesta}.zip` });
+  assert.deepEqual(argumenty.slice(0, 3), ['-NoProfile', '-NonInteractive', '-Command']);
+  assert.ok(argumenty.every((a) => !a.includes("O'Brien")), 'cesta nesmí být v textu příkazu');
+  assert.match(argumenty[3], /\$ErrorActionPreference = 'Stop'/, 'selhání musí skončit chybou');
+  assert.deepEqual(prostredi, { AGENTEEQ_BALIK: cesta, AGENTEEQ_ARCHIV: `${cesta}.zip` });
+
+  // Pomocník chybu nahlas odmítne, místo aby ji pustil dál.
+  assert.throws(() => powershell(`Get-Item -LiteralPath '${cesta}' # $env:AGENTEEQ_X`, { AGENTEEQ_X: cesta }), /vepsaná přímo do skriptu/);
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:AGENTEEQ_JINA', { AGENTEEQ_X: cesta }), /nepoužívá/);
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:AGENTEEQ_XY', { AGENTEEQ_X: cesta }), /nepoužívá/, 'předpona jiné proměnné nestačí');
+  assert.throws(() => powershell('Get-Item -LiteralPath $env:TEMP', { TEMP: cesta }), /AGENTEEQ_/);
+
+  // Zdroj: -Command skládá jen pomocník a každý skript, který mu dá, je stálý text.
+  const slozka = new URL('../scripts/', import.meta.url);
+  const soubory = (await fs.readdir(slozka)).filter((f) => f.endsWith('.mjs'));
+  const volani = [];
+  for (const f of soubory) {
+    const text = await fs.readFile(new URL(f, slozka), 'utf8');
+    if (f !== 'powershell.mjs') {
+      assert.doesNotMatch(text, /['"`]-(?:Command|EncodedCommand)['"`]/, `${f}: PowerShell jen přes scripts/powershell.mjs`);
+    }
+    for (const m of text.matchAll(/\bpowershell\(\s*/g)) {
+      const zbytek = text.slice(m.index + m[0].length);
+      if (/^skript\b/.test(zbytek)) continue; // definice pomocníka
+      const q = zbytek[0];
+      assert.ok(['\'', '"', '`'].includes(q), `${f}: skript pro PowerShell musí být přímo zapsaný text, ne složený výraz`);
+      let i = 1;
+      while (i < zbytek.length && zbytek[i] !== q) i += zbytek[i] === '\\' ? 2 : 1;
+      const skript = zbytek.slice(1, i);
+      assert.ok(!(q === '`' && skript.includes('${')), `${f}: do skriptu pro PowerShell se nic nevkládá (\${…})`);
+      assert.match(zbytek.slice(i + 1), /^\s*[,)]/, `${f}: skript pro PowerShell se neskládá (+)`);
+      volani.push(`${f}: ${skript.split(/\s/)[0]}`);
+    }
+  }
+  // Pojistka, že kontrola opravdu něco prošla: všechna známá místa, kde se PowerShell spouští.
+  assert.deepEqual(volani.sort(), [
+    'build-windows.mjs: Compress-Archive',
+    'build-windows.mjs: Expand-Archive',
+    'exe-version.mjs: (Get-Item',
+    'qa-native.mjs: Add-Type',
+    'qa-native.mjs: Expand-Archive',
+  ]);
+});

@@ -20,6 +20,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { zjistitVerziPlaste } from './exe-version.mjs';
+import { powershell } from './powershell.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
@@ -31,6 +32,8 @@ if (process.platform !== 'win32') {
 }
 
 const run = (command, args, options = {}) => execFileSync(command, args, { cwd: root, stdio: 'inherit', ...options });
+// PowerShell dostává cesty jen v proměnných prostředí, nikdy vepsané do -Command (scripts/powershell.mjs).
+const runPs = ({ argumenty, prostredi }) => run('powershell.exe', argumenty, { env: { ...process.env, ...prostredi } });
 
 const zdroje = path.join(root, 'desktop', 'windows');
 const build = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-win-build-'));
@@ -53,8 +56,8 @@ if (!(await fs.stat(path.join(webview2, 'build', 'native', 'include', 'WebView2.
   const nupkg = path.join(balicky, `webview2-${WEBVIEW2_VERZE}.zip`);
   const url = `https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${WEBVIEW2_VERZE}`;
   run('curl.exe', ['-sSL', '-o', nupkg, url]);
-  run('powershell.exe', ['-NoProfile', '-Command',
-    `Expand-Archive -LiteralPath '${nupkg}' -DestinationPath '${webview2}' -Force`]);
+  runPs(powershell('Expand-Archive -LiteralPath $env:AGENTEEQ_NUPKG -DestinationPath $env:AGENTEEQ_WEBVIEW2 -Force',
+    { AGENTEEQ_NUPKG: nupkg, AGENTEEQ_WEBVIEW2: webview2 }));
   await fs.rm(nupkg, { force: true });
 }
 
@@ -156,8 +159,8 @@ await fs.mkdir(path.join(root, 'dist'), { recursive: true });
 const archiv = path.join(root, 'dist', `Agenteeq-${version}-Windows-x64.zip`);
 await fs.rm(archiv, { force: true });
 console.log('Archiv…');
-run('powershell.exe', ['-NoProfile', '-Command',
-  `Compress-Archive -LiteralPath '${balik}' -DestinationPath '${archiv}' -CompressionLevel Optimal`]);
+runPs(powershell('Compress-Archive -LiteralPath $env:AGENTEEQ_BALIK -DestinationPath $env:AGENTEEQ_ARCHIV -CompressionLevel Optimal',
+  { AGENTEEQ_BALIK: balik, AGENTEEQ_ARCHIV: archiv }));
 
 const velikost = (await fs.stat(archiv)).size;
 await fs.rm(build, { recursive: true, force: true });

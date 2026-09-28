@@ -15,6 +15,7 @@ import path from 'node:path';
 import net from 'node:net';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { powershell } from './powershell.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
@@ -46,7 +47,12 @@ await fs.mkdir(domov, { recursive: true });
 
 // Rozbalit přesně tak, jak to udělá člověk: Finder (ditto) na Macu, Průzkumník na Windows.
 if (mac) spawnSync('ditto', ['-x', '-k', archiv, rozbaleno], { stdio: 'inherit' });
-else spawnSync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -LiteralPath '${archiv}' -DestinationPath '${rozbaleno}'`], { stdio: 'inherit' });
+else {
+  // Cesty do PowerShellu jen proměnnou prostředí: pracovní složka je pod %TEMP% (scripts/powershell.mjs).
+  const { argumenty, prostredi } = powershell('Expand-Archive -LiteralPath $env:AGENTEEQ_ARCHIV -DestinationPath $env:AGENTEEQ_ROZBALENO',
+    { AGENTEEQ_ARCHIV: archiv, AGENTEEQ_ROZBALENO: rozbaleno });
+  spawnSync('powershell.exe', argumenty, { stdio: 'inherit', env: { ...process.env, ...prostredi } });
+}
 const spustitelny = mac ? path.join(rozbaleno, 'Agenteeq.app', 'Contents', 'MacOS', 'Agenteeq') : path.join(rozbaleno, 'Agenteeq', 'Agenteeq.exe');
 try { await fs.access(spustitelny); zapis(true, `archiv se rozbalil (${path.basename(archiv)})`); } catch {
   zapis(false, `v archivu chybí ${path.relative(rozbaleno, spustitelny)}`);
@@ -101,15 +107,13 @@ const portOtevreny = (port) => new Promise((resolve) => {
 
 function snimekObrazovky(soubor) {
   if (mac) return spawnSync('screencapture', ['-x', soubor]).status === 0;
-  const ps = [
-    'Add-Type -AssemblyName System.Windows.Forms, System.Drawing;',
-    '$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds;',
-    '$i = New-Object System.Drawing.Bitmap $b.Width, $b.Height;',
-    '$g = [System.Drawing.Graphics]::FromImage($i);',
-    '$g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size);',
-    `$i.Save('${soubor}', [System.Drawing.Imaging.ImageFormat]::Png);`,
-  ].join(' ');
-  return spawnSync('powershell.exe', ['-NoProfile', '-Command', ps]).status === 0;
+  const { argumenty, prostredi } = powershell(`Add-Type -AssemblyName System.Windows.Forms, System.Drawing;
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds;
+    $i = New-Object System.Drawing.Bitmap $b.Width, $b.Height;
+    $g = [System.Drawing.Graphics]::FromImage($i);
+    $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size);
+    $i.Save($env:AGENTEEQ_SNIMEK, [System.Drawing.Imaging.ImageFormat]::Png);`, { AGENTEEQ_SNIMEK: soubor });
+  return spawnSync('powershell.exe', argumenty, { env: { ...process.env, ...prostredi } }).status === 0;
 }
 
 let port = 0;

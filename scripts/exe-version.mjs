@@ -8,19 +8,16 @@
 //
 // Rozhodování je čistá funkce nad výsledkem procesu, aby šla testovat bez PowerShellu.
 import { spawnSync } from 'node:child_process';
+import { powershell } from './powershell.mjs';
 
 // Cesta jde do PowerShellu proměnnou prostředí, ne vepsaná do příkazu: -Command by ji rozebral
-// podruhé a složka s apostrofem nebo „Design & Web“ by příkaz rozbila.
-const PROMENNA = 'AGENTEEQ_PLAST_EXE';
-
+// podruhé a složka s apostrofem nebo „Design & Web“ by příkaz rozbila (scripts/powershell.mjs).
 export function prikazVerzePlaste(exe) {
-  return {
-    prikaz: 'powershell.exe',
-    argumenty: ['-NoProfile', '-NonInteractive', '-Command',
-      "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; "
-        + `(Get-Item -LiteralPath $env:${PROMENNA}).VersionInfo.FileVersion`],
-    prostredi: { [PROMENNA]: String(exe) },
-  };
+  const { argumenty, prostredi } = powershell(
+    '(Get-Item -LiteralPath $env:AGENTEEQ_PLAST_EXE).VersionInfo.FileVersion',
+    { AGENTEEQ_PLAST_EXE: exe },
+  );
+  return { prikaz: 'powershell.exe', argumenty, prostredi };
 }
 
 const prvniRadek = (text) => String(text ?? '').split(/\r?\n/).map((r) => r.trim()).find(Boolean) || '';
