@@ -11,6 +11,9 @@
   takže jeho načtení už nabídkou nepohne.
 - `qa:desktop` měří panel až v ustáleném stavu po změně velikosti okna (hned po ní má i Chromium
   profil ještě ve staré podobě) a přidává zátěžový případ s patičkou o 48 px vyšší.
+- Test přerušení dojezdu posouvání čeká, až dojezd prokazatelně běží. Playwright ve WebKitu vrací
+  kolečko dřív, než ho stránka zpracuje; kolečko pak dorazilo až po skoku aplikace a správně
+  rozjelo nový dojezd. Chyba byla v testu, ne v aplikaci.
 
 ## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
 

@@ -483,12 +483,23 @@ for (const engine of engines) {
       await p.keyboard.press('Escape');
       await p.waitForFunction(() => !document.body.classList.contains('has-modal'));
 
+      // Dojezd běží, když skript drží `scroll-behavior: auto` na <html> (spust → zastav v
+      // public/js/plynule-posouvani.js) a okno se od výchozí polohy už pohnulo.
+      const dojezdBezi = (od) => p.waitForFunction((y) => document.documentElement.style.scrollBehavior === 'auto' && Math.abs(scrollY - y) > 40, od, { timeout: 3000 })
+        .catch(() => { throw new Error(`${engine}: dojezd po kolečku nezačal`); });
+      // Cizí posun musí dojezd přerušit. Playwright ve WebKitu vrátí mouse.wheel dřív, než stránka
+      // kolečko zpracuje (událost jde přes UI proces), takže po pevných 60 ms dojezd ještě nemusel
+      // začít: kolečko pak přišlo až po skoku aplikace a správně rozjelo nový dojezd z 0 (ve WebKitu
+      // 1124 px po 600 ms – přesně dojezd z 0 po ~300 ms). Proto skok až ve chvíli, kdy dojezd
+      // prokazatelně běží, a pak čekat, až se sám zastaví.
+      await p.mouse.move(900, 500);
+      const predDojezdem = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 1200);
-      await p.waitForTimeout(60);
-      // WebKit může změnu inline scroll-behavior vyhodnotit až po dalším vykreslení.
-      // Výslovný okamžitý skok ověřuje skutečné přerušení dojezdu, ne časování CSS.
+      await dojezdBezi(predDojezdem);
       await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-      await p.waitForTimeout(600);
+      await p.waitForFunction(() => document.documentElement.style.scrollBehavior === '', null, { timeout: 2000 })
+        .catch(() => { throw new Error(`${engine}: dojezd se po skoku aplikace nezastavil`); });
+      await p.waitForTimeout(300);
       assert.equal(await p.evaluate(() => scrollY), 0, `${engine}: dojezd přepsal posun, který udělala aplikace`);
       const koleckoDojede = async (krok, zprava) => {
         const pred = await p.evaluate(() => scrollY);
@@ -509,8 +520,9 @@ for (const engine of engines) {
       await p.waitForTimeout(500);
       await koleckoDojede(-160, 'kolečko po posunu klávesnicí');
       // Změna obrazovky ruší dojezd a vrací okno nahoru; další vstup musí začít tam.
+      const predPrepnutim = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 320);
-      await p.waitForTimeout(30);
+      await dojezdBezi(predPrepnutim);
       await p.evaluate(() => { location.hash = '#/prehled'; });
       await p.locator('.pulse-bar').waitFor();
       await p.evaluate(() => { location.hash = '#/nastaveni'; });
@@ -540,7 +552,9 @@ for (const engine of engines) {
       await p.evaluate(() => document.querySelector('#qa-scroll-list').remove());
       // Zapnutí omezení pohybu během dojezdu ho zastaví; další krok je okamžitý bez animace.
       await p.mouse.move(900, 500);
+      const predOmezenim = await p.evaluate(() => scrollY);
       await p.mouse.wheel(0, 300);
+      await dojezdBezi(predOmezenim); // jinak by ve WebKitu kolečko mohlo dorazit až po zapnutí omezení
       await p.emulateMedia({ reducedMotion: 'reduce' });
       await p.waitForFunction(() => !('plynule' in document.documentElement.dataset));
       await p.waitForTimeout(80);
