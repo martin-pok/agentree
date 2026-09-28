@@ -259,6 +259,10 @@ export function howToAnswer(s) {
 }
 
 export const agentHref = (id) => `#/agent/${encodeURIComponent(id)}`;
+// Kam vede klik na upozornění. Souhrn nese vlastní cíl (seznam agentů, Útrata…), ostatní vedou
+// do konverzace nebo na seznam upozornění. Cíl přijde ze serveru, ale bere se jen tvar „#/…“.
+export const alertHref = (a) => (typeof a.route === 'string' && /^#\/[\w/?=&%.-]*$/.test(a.route) ? a.route
+  : a.sessionId ? agentHref(a.sessionId) : '#/upozorneni');
 
 export function activityItem(s) {
   const meta = s.status === 'working' && s.activity
@@ -333,6 +337,7 @@ export function alertIcon(a) {
   if (a.kind === 'limit_reset') return ICON.refresh;
   if (a.kind === 'budget') return ICON.wallet;
   if (a.kind === 'done') return ICON.check;
+  if (a.kind === 'digest' && a.digest === 'quiet') return ICON.moon;
   return ICON.bell;
 }
 

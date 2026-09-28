@@ -3,7 +3,7 @@ import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, agentHref, untilLabel } from './ui.js';
+import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
@@ -398,7 +398,7 @@ function renderPopover() {
   const items = state.alerts.items.slice(0, 8);
   pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all>${tr('Označit vše jako přečtené')}</button>` : ''}</div>
     <ul class="pop-list">${items.length
-      ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${a.sessionId ? agentHref(a.sessionId) : '#/upozorneni'}" data-alert-id="${esc(a.id)}">
+      ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${esc(alertHref(a))}" data-alert-id="${esc(a.id)}">
           <span class="pop-icon">${alertIcon(a)}</span>
           <span class="pop-text"><span class="pop-title">${esc(a.title)}</span>${a.body ? `<span class="pop-body">${esc(a.body)}</span>` : ''}<span class="pop-time" data-ago="${a.at}">${rel(a.at)}</span></span>
         </a></li>`).join('')
@@ -419,7 +419,10 @@ function closePopover() {
 }
 
 function onAlert(a) {
-  const href = a.sessionId ? agentHref(a.sessionId) : '#/upozorneni';
+  // Ztlumené upozornění (noční ticho, náraz) je jen v seznamu a u zvonečku – bublina ani oznámení
+  // prohlížeče nepřijde, za ztlumená přijde jeden souhrn (src/alerts.js).
+  if (a.muted) return;
+  const href = alertHref(a);
   const urgent = a.level === 'action' || a.level === 'critical';
   toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: tr('Otevřít'), href }, timeout: urgent ? 12000 : 5000 });
   const n = state.settings?.notifications;
