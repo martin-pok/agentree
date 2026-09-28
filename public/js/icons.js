@@ -1,4 +1,4 @@
-import { tr } from './i18n.js';
+import { tr, tomtoPocitaci } from './i18n.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
@@ -118,7 +118,7 @@ export const ICON = {
 // Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.
 export const ENV = {
   cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
-  local: { icon: ICON.mac, label: tr('Běží na tomto Macu'), short: tr('Na tomto Macu') },
+  local: { icon: ICON.mac, label: tr('Běží na {0}', tomtoPocitaci()), short: tr('Na {0}', tomtoPocitaci()) },
 };
 
 export const envOf = (s) => (s.source === 'web' ? ENV.cloud : ENV.local);

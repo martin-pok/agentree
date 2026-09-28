@@ -1,4 +1,4 @@
-import { tr } from './i18n.js';
+import { tr, tentoPocitac } from './i18n.js';
 // Které aplikace umí Agenteeq číst a které ne – na jednom místě, ať se nikdy nestane, že nějaká
 // běží a aplikace o ní mlčí. Test `test/runtimes-coverage.test.mjs` hlídá, že každá aplikace ze
 // seznamu v `src/connectors/processes.js` je zařazená právě do jedné z těchto dvou skupin.
@@ -20,7 +20,7 @@ export const MA_PREPIS = new Set([
 // a co s tím jde udělat. Tohle je text, který uživatel uvidí místo prázdna.
 export const BEZ_PREPISU = {
   chatgpt: {
-    duvod: tr('Aplikace ChatGPT si konverzace na tento Mac neukládá, ani ty, ve kterých pracuje agent. Agenteeq je proto nemá odkud přečíst.'),
+    duvod: tr('Aplikace ChatGPT si konverzace na {0} neukládá, ani ty, ve kterých pracuje agent. Agenteeq je proto nemá odkud přečíst.', tentoPocitac()),
     rada: tr('Chceš je vidět? Otevři ChatGPT v prohlížeči a zapni rozšíření Agenteeq. Kódovací vlákna spuštěná jako samostatný Codex se sledují normálně.'),
     odkaz: { href: '#/nastaveni', text: tr('Nastavit rozšíření') },
   },

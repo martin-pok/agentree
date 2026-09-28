@@ -10,7 +10,8 @@ import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
-import { tr, LOCALE, jazyk } from '../i18n.js';
+import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
+import { JE_MAC, SYSTEM } from '../system.js';
 
 const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
@@ -55,7 +56,7 @@ const GROUPS = [
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
   ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
-  ['set-aplikace', tr('Aplikace na tomto Macu'), ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
+  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -97,14 +98,14 @@ function tailscaleCard() {
   const bezi = Boolean(detekce?.running);
   const pripraveno = bezi && t.available;
   const popis = pripraveno
-    ? `${tr('Adresa tohoto Macu v síti Tailscale:')} ${t.name || t.addresses[0]}`
+    ? `${tr('Adresa {0} v síti Tailscale:', tohotoPocitace())} ${t.name || t.addresses[0]}`
     : bezi
-      ? tr('Tailscale běží, ale tenhle Mac zatím nemá adresu v tailnetu.')
+      ? tr('Tailscale běží, ale {0} zatím nemá adresu v tailnetu.', tentoPocitac())
       : detekce?.installed
         ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený. Otevři aplikaci Tailscale a přihlas se.')
-        : tr('Tailscale na tomto Macu není. Nainstaluj ho z tailscale.com a přihlas se.');
+        : tr('Tailscale na {0} není. Nainstaluj ho z tailscale.com a přihlas se.', tomtoPocitaci());
   return `
-    ${head(ICON.shield, tr('Přístup přes Tailscale'), tr('Privátní síť jen mezi tvými vlastními zařízeními. Telefon se k Macu dostane odkudkoli – z mobilních dat i z cizí Wi-Fi – a adresa přitom nikde veřejně neexistuje.'))}
+    ${head(ICON.shield, tr('Přístup přes Tailscale'), tr('Privátní síť jen mezi tvými vlastními zařízeními. Telefon se k {0} dostane odkudkoli – z mobilních dat i z cizí Wi-Fi – a adresa přitom nikde veřejně neexistuje.', tomutoPocitaci()))}
     ${switchRow({ key: 'tailscaleAccess', label: tr('Přístup ze sítě Tailscale'), desc: esc(popis), checked: t.enabled, disabled: !pripraveno })}
     ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
     ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>
@@ -115,7 +116,7 @@ function tailscaleCard() {
       : tr('HTTPS zatím zapnuté není. Bez něj aplikace v prohlížeči funguje normálně, jen si ji telefon neuloží na plochu. Zapneš ho příkazem <code>tailscale serve</code> – Agenteeq ho sám nespouští.')}</p>` : ''}
     ${!pripraveno ? `<ol class="steps steps--compact">
       <li>${tr('Nainstaluj Tailscale z tailscale.com nebo z App Storu.')}</li>
-      <li>${tr('Přihlas se na Macu (')}<code>tailscale up</code>${tr(') i v appce na telefonu – stejným účtem.')}</li>
+      <li>${tr('Přihlas se na {0} (', tomtoPocitaci())}<code>tailscale up</code>${tr(') i v appce na telefonu – stejným účtem.')}</li>
       <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon kódem.')}</li>
     </ol>` : ''}
     <p class="set-note">${tr('Provoz jde šifrovaným tunelem (WireGuard) přímo mezi tvými zařízeními. Agenteeq nic neinstaluje ani nespouští – jen se zapnutým přepínačem začne naslouchat na adrese, kterou ti Tailscale už přidělil. Vypnutím naslouchání skončí.')}</p>`;
@@ -142,8 +143,8 @@ function phoneCard() {
   const pin = v.pin && v.pin.expiresAt > Date.now() ? v.pin : null;
   const cas = (ms) => new Date(ms).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
   return `
-    ${head(ICON.mac, tr('Otevřít na telefonu'), tr('Agenteeq normálně poslouchá jen na tomto Macu. Když to zapneš, přidá se adresa v tvé domácí síti – a telefon se k datům dostane jen po spárování jednorázovým kódem.'))}
-    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? `${tr('Adresa tohoto Macu:')} ${l.addresses.join(', ')}` : tr('Mac není v žádné místní síti – připoj se na Wi-Fi.'), checked: l.enabled, disabled: !l.addresses.length })}
+    ${head(ICON.mac, tr('Otevřít na telefonu'), tr('Agenteeq normálně poslouchá jen na {0}. Když to zapneš, přidá se adresa v tvé domácí síti – a telefon se k datům dostane jen po spárování jednorázovým kódem.', tomtoPocitaci()))}
+    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? `${tr('Adresa {0}:', tohotoPocitace())} ${l.addresses.join(', ')}` : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
     ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
     ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>
       <div class="set-actions">
@@ -173,12 +174,12 @@ function customAgentsCard() {
     <p class="set-desc">${tr('Lokální služby, které nemají vlastní konektor. Agenteeq se jich jen ptá na stav.')}</p>
     ${rows ? `<div class="custom-agents">${rows}</div>` : ''}
     <form class="custom-agent-form" data-custom-form novalidate>
-      <label class="field"><span>${tr('Název')}</span><input name="name" type="text" maxlength="40" autocomplete="off" placeholder="${tr('Třeba ComfyUI na Macu')}" value="${esc(draft.name || '')}"></label>
+      <label class="field"><span>${tr('Název')}</span><input name="name" type="text" maxlength="40" autocomplete="off" placeholder="${tr('Třeba ComfyUI na {0}', tomtoPocitaci())}" value="${esc(draft.name || '')}"></label>
       <label class="field"><span>${tr('Typ')}</span><select name="type">${types.map((t) => `<option value="${esc(t.id)}"${draft.type === t.id ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>
       <label class="field"><span>${tr('Adresa')}</span><input name="url" type="text" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8188" value="${esc(draft.url || '')}"${v.customError ? ' aria-invalid="true"' : ''}>${v.customError ? `<span class="field-error" role="alert">${esc(v.customError)}</span>` : ''}</label>
       <button class="btn btn--sm btn--primary" type="submit">${tr('Přidat agenta')}</button>
     </form>
-    <p class="set-note">${tr('Adresa smí mířit jen na tento Mac nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.')}</p>`, { open: Boolean(list.length || v.customError), count: list.length || null });
+    <p class="set-note">${tr('Adresa smí mířit jen na {0} nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.', tentoPocitac())}</p>`, { open: Boolean(list.length || v.customError), count: list.length || null });
 }
 
 // Soukromí: karta říká jen ověřitelná fakta – co je v paměti, co na disku a co odchází ven.
@@ -187,12 +188,12 @@ function privacyCard() {
   const dataFile = `${state.integrations?.install?.dataDir || '~/.agenteeq'}/data.json`;
   const keysOn = (state.connectors || []).filter((c) => c.id === 'cloud-billing' && c.state !== 'missing').length > 0;
   return `
-    ${head(ICON.key, tr('Soukromí a bezpečnost'), tr('Agenteeq běží jen na tomto Macu. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.'))}
+    ${head(ICON.key, tr('Soukromí a bezpečnost'), tr('Agenteeq běží jen na {0}. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.', tomtoPocitaci()))}
     <ul class="privacy-list">
       <li><b>${tr('Konverzace agentů')}</b><span>${tr('Čtou se ze souborů na disku ({0}, {1} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.', esc(`~/.claude`), esc(`~/.codex`))}</span></li>
       <li><b>${tr('Na disku v ~/.agenteeq/data.json')}</b><span>${tr('Nastavení, projekty, rozpočty a historie upozornění – soubor má práva jen pro tebe (0600) a složka 0700.')}</span></li>
       <li><b>${tr('Klíče k API')}</b><span>${keysOn ? tr('Uložené v systémové Klíčence, nikdy v souboru aplikace.') : tr('Zatím žádné. Když je přidáš, uloží se do systémové Klíčenky, ne do souboru.')}</span></li>
-      <li><b>${tr('Ven z Macu')}</b><span>${tr('Jen když si sám zapneš náklady za API – pak se Agenteeq zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.')}</span></li>
+      <li><b>${tr('Ven z {0}', tohotoPocitace())}</b><span>${tr('Jen když si sám zapneš náklady za API – pak se Agenteeq zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.')}</span></li>
     </ul>
     <div class="set-actions">
       <button class="btn btn--sm" type="button" data-action="clear-alerts"${alertCount ? '' : ' disabled'}>${tr('Smazat historii upozornění')}${alertCount ? ` (${alertCount})` : ''}</button>
@@ -389,13 +390,13 @@ function mount(el) {
         toast(tr('Odhlášeno. Agenteeq funguje dál bez účtu.'));
         update();
       } else if (a.dataset.action === 'ucet-smazat') {
-        if (await confirmDialog({ title: tr('Smazat účet Agenteeq'), message: tr('Účet a všechno, co je k němu uložené v cloudu, se nevratně smaže. Data na tomhle Macu zůstanou, jak jsou.'), confirmLabel: tr('Smazat účet'), danger: true })) {
+        if (await confirmDialog({ title: tr('Smazat účet Agenteeq'), message: tr('Účet a všechno, co je k němu uložené v cloudu, se nevratně smaže. Data na {0} zůstanou, jak jsou.', tomtoPocitaci()), confirmLabel: tr('Smazat účet'), danger: true })) {
           state.ucet = (await api.ucetSmazat()).ucet;
           toast(tr('Účet je smazaný.'));
           update();
         }
       } else if (a.dataset.action === 'license-remove') {
-        if (await confirmDialog({ title: tr('Odebrat licenci'), message: tr('Licenční klíč se z tohoto Macu odebere. Znovu ho můžeš kdykoli vložit.'), confirmLabel: tr('Odebrat licenci'), danger: true })) {
+        if (await confirmDialog({ title: tr('Odebrat licenci'), message: tr('Licenční klíč se z {0} odebere. Znovu ho můžeš kdykoli vložit.', tohotoPocitace()), confirmLabel: tr('Odebrat licenci'), danger: true })) {
           state.license = (await api.removeLicense()).license;
           toast(tr('Licence odebrána'));
           update();
@@ -425,7 +426,7 @@ function mount(el) {
         const r = await api.revealInstallPackage();
         toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Balíček je vidět ve Finderu'));
       } else if (a.dataset.action === 'clear-alerts') {
-        if (await confirmDialog({ title: tr('Smazat historii upozornění'), message: tr('Všechna uložená upozornění zmizí z tohoto Macu. Práci agentů to nijak neovlivní.'), confirmLabel: tr('Smazat'), danger: true })) {
+        if (await confirmDialog({ title: tr('Smazat historii upozornění'), message: tr('Všechna uložená upozornění zmizí z {0}. Práci agentů to nijak neovlivní.', tohotoPocitace()), confirmLabel: tr('Smazat'), danger: true })) {
           const r = await api.clearAlerts();
           state.alerts = { unread: r.unread, items: [] };
           toast(r.cleared ? tr('Smazáno {0} upozornění', r.cleared) : tr('Nebylo co mazat'), r.cleared ? {} : { tone: 'info' });
@@ -593,7 +594,7 @@ async function setAppearance(value) {
   try {
     state.settings = (await api.saveSettings({ appearance: next })).settings;
     applyAppearance(state.settings.appearance, { persist: true });
-    toast(next === 'system' ? tr('Vzhled se řídí nastavením macOS') : next === 'dark' ? tr('Tmavý vzhled je zapnutý') : tr('Světlý vzhled je zapnutý'));
+    toast(next === 'system' ? tr('Vzhled se řídí nastavením {0}', podleSystemu()) : next === 'dark' ? tr('Tmavý vzhled je zapnutý') : tr('Světlý vzhled je zapnutý'));
     update();
   } catch (err) {
     applyAppearance(previous);
@@ -619,7 +620,7 @@ async function connectClaude() {
   const ok = await modal({
     title: tr('Zapnout propojení s Claude Code'),
     submitLabel: tr('Zapnout propojení'),
-    body: `<p class="modal-text">${tr('Agenteeq zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného. Vše zůstává jen na tomto Macu a Claude Code to nikdy nezpomalí.')}</p>
+    body: `<p class="modal-text">${tr('Agenteeq zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného. Vše zůstává jen na {0} a Claude Code to nikdy nezpomalí.', tomtoPocitaci())}</p>
       <ul class="checklist"><li>${tr('Původní nastavení se uloží jako záloha.')}</li><li>${tr('Tvoje ostatní nastavení zůstane beze změny. Vlastní informační řádek, pokud ho máš, nepřepíšeme.')}</li><li>${tr('Pod zadáním v Claude Code uvidíš: „Agenteeq · 5 h 34 % · týden 12 % · kontext 41 %“.')}</li><li>${tr('Platí pro nově otevřené konverzace v Claude Code.')}</li></ul>${h?.path ? `<p class="small muted">${tr('Soubor:')} ${esc(h.path)}</p>` : ''}`,
   });
   if (!ok) return;
@@ -629,7 +630,7 @@ async function connectClaude() {
 }
 
 // Účet Agenteeq (src/ucet.js). Co se do účtu dostane, stojí přímo u tlačítka – ne až v zásadách.
-const UCET_SOUKROMI = tr('Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek tenhle Mac neopustí.');
+const UCET_SOUKROMI = tr('Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek {0} neopustí.', tentoPocitac());
 // Synchronizace souhrnů (src/cloud-sync.js): přepínač, kdy naposledy odešla a přesně co odchází.
 function syncBlock(u) {
   const s = u.sync || { zapnuto: false };
@@ -652,7 +653,7 @@ function accountCard() {
       stateBadge(nedostupne ? 'unavailable' : 'connected', nedostupne ? tr('Nedostupné') : tr('Přihlášeno')))}
       <div class="account-who"><span class="account-avatar" aria-hidden="true">${esc(initials(u.jmeno || u.email || '?'))}</span>
         <div><b>${esc(u.jmeno || u.email)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}</div></div>
-      ${u.trvale ? '' : `<p class="set-note">${tr('Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.')}</p>`}
+      ${u.trvale ? '' : `<p class="set-note">${JE_MAC ? tr('Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.') : tr('Přihlášení vydrží do zavření Agenteeq – na tomto systému ho nemáme kam bezpečně uložit.')}</p>`}
       <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
       ${syncBlock(u)}
       <div class="set-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
@@ -680,7 +681,7 @@ function nactiNapojeni() {
   v.napojeniNacita = true;
   api.napojeni()
     .then((r) => { v.napojeni = r.napojeni; v.napojeniChyba = ''; })
-    .catch((err) => { v.napojeniChyba = err.status === 403 ? tr('Modely se napojují v Agenteeq na Macu.') : `${tr('Nepodařilo se zjistit, co je napojené:')} ${err.message}`; })
+    .catch((err) => { v.napojeniChyba = err.status === 403 ? tr('Modely se napojují v Agenteeq na {0}.', tvemPocitaci()) : `${tr('Nepodařilo se zjistit, co je napojené:')} ${err.message}`; })
     .finally(() => { v.napojeniNacita = false; update(); });
 }
 
@@ -705,13 +706,13 @@ function update(topics) {
     <span class="appearance-icon">${icon}</span><span><strong>${label}</strong><small>${desc}</small></span>
   </button>`;
   fill(el, 'appearance', `
-    ${head(ICON.sun, tr('Vzhled aplikace'), tr('Světlý vzhled je výchozí. Volba se uloží jen na tomto Macu a může sledovat nastavení systému.'))}
+    ${head(ICON.sun, tr('Vzhled aplikace'), tr('Světlý vzhled je výchozí. Volba se uloží jen na {0} a může sledovat nastavení systému.', tomtoPocitaci()))}
     <div class="appearance-options" role="group" aria-label="${tr('Vyber vzhled aplikace')}">
       ${appearanceOption('light', ICON.sun, tr('Světlý'), tr('Výchozí, jasný pracovní prostor'))}
       ${appearanceOption('dark', ICON.moon, tr('Tmavý'), tr('Klidný režim na večer, pořád dobře čitelný'))}
-      ${appearanceOption('system', ICON.system, tr('Podle systému'), tr('Automaticky podle macOS'))}
+      ${appearanceOption('system', ICON.system, tr('Podle systému'), tr('Automaticky podle {0}', podleSystemu()))}
     </div>
-    <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Přehled se dá otevřít i v Safari nebo Chromu – hodí se na zvětšení, tisk nebo vývojářské nástroje. Odkaz platí jen pro tenhle Mac a jen do restartu aplikace.')}</small></span>
+    <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Přehled se dá otevřít i v prohlížeči – hodí se na zvětšení, tisk nebo vývojářské nástroje. Odkaz platí jen pro {0} a jen do restartu aplikace.', tentoPocitac())}</small></span>
       <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
@@ -781,7 +782,7 @@ function update(topics) {
     : manualSteps;
   fill(el, 'extension', `
     ${head(ICON.spark, tr('Rozšíření pro Chrome'),
-      tr('Chaty z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem a počtem zpráv a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na tomto Macu, nic neodchází na internet.'),
+      tr('Chaty z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem a počtem zpráv a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na {0}, nic neodchází na internet.', tomtoPocitaci()),
       stateBadge(...badge))}
     <ul class="site-chips" aria-label="${tr('Podporované webové služby')}">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
     ${ext.repair ? `<p class="set-note set-note--warn">${tr('Předchozí spárování přestalo platit. Rozšíření se spáruje znovu samo, jakmile se v Chromu ozve. Kdyby se to nestalo, použij jednorázový kód níž.')}</p>` : ''}
@@ -799,10 +800,10 @@ function update(topics) {
   const nenalezene = zdroje.filter((c) => c.state === 'missing');
   const doplnky = dle(EXTRA_IDS);
   fill(el, 'connectors', `
-    ${head(ICON.plug, tr('Zdroje agentů'), tr('Odkud Agenteeq čte práci agentů na tomto Macu. Nový nástroj se přidá sám, jakmile ho poprvé použiješ.'),
+    ${head(ICON.plug, tr('Zdroje agentů'), tr('Odkud Agenteeq čte práci agentů na {0}. Nový nástroj se přidá sám, jakmile ho poprvé použiješ.', tomtoPocitaci()),
       `<button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}${tr('Načíst znovu')}</button>`)}
     ${nalezene.length ? `<ul class="src-list">${nalezene.map(sourceRow).join('')}</ul>` : `<p class="set-note">${tr('Zatím nebyl nalezen žádný agent. Spusť třeba Claude Code, Codex nebo Cursor a objeví se tady.')}</p>`}
-    ${nenalezene.length ? fold('missing', tr('Nenalezeno na tomto Macu'), `<ul class="src-list">${nenalezene.map(sourceRow).join('')}</ul>`, { count: nenalezene.length }) : ''}
+    ${nenalezene.length ? fold('missing', tr('Nenalezeno na {0}', tomtoPocitaci()), `<ul class="src-list">${nenalezene.map(sourceRow).join('')}</ul>`, { count: nenalezene.length }) : ''}
     ${doplnky.length ? fold('extra', tr('Doplňková data'), `<ul class="src-list">${doplnky.map(sourceRow).join('')}</ul>`, { count: doplnky.length }) : ''}`);
 
   /* Soukromí */
@@ -817,7 +818,7 @@ function update(topics) {
   /* Upozornění */
   fill(el, 'notifications', `
     ${head(ICON.bell, tr('Kdy a jak tě upozornit'), '', `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`)}
-    ${switchRow({ key: 'native', label: tr('Oznámení v macOS'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
+    ${switchRow({ key: 'native', label: JE_MAC ? tr('Oznámení v macOS') : tr('Oznámení systému'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
     ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), desc: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), desc: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
@@ -852,7 +853,7 @@ function update(topics) {
     const locked = Object.entries(lic.paidFeatures || {});
     const expires = lic.license?.expiresAt ? new Date(lic.license.expiresAt).toLocaleDateString(LOCALE) : tr('bez omezení');
     fill(el, 'license', `
-      ${head(ICON.key, tr('Licence'), lic.valid ? `Agenteeq ${esc(lic.planLabel)} pro ${esc(lic.license.name)}.` : locked.length ? tr('Verze Zdarma. Licence Pro odemkne placené funkce.') : tr('Všechny funkce jsou teď odemčené. Licenční klíč si schovej pro budoucí verze.'),
+      ${head(ICON.key, tr('Licence'), lic.valid ? tr('Agenteeq {0} pro {1}.', esc(lic.planLabel), esc(lic.license.name)) : locked.length ? tr('Verze Zdarma. Licence Pro odemkne placené funkce.') : tr('Všechny funkce jsou teď odemčené. Licenční klíč si schovej pro budoucí verze.'),
         stateBadge(lic.valid ? 'connected' : lic.expired ? 'missing' : 'idle', lic.valid ? lic.planLabel : lic.expired ? tr('Vypršela') : tr('Zdarma')))}
       ${lic.valid ? `<dl class="facts">
           <div><dt>${tr('Držitel')}</dt><dd>${esc(lic.license.name)}</dd></div>
@@ -892,8 +893,10 @@ function update(topics) {
   const auto = i.autostart || { supported: false };
   fill(el, 'system', `
     ${head(ICON.terminal, tr('Spouštění po přihlášení'),
-      i.desktop ? tr('Zavřením okna zůstane Agenteeq na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agenteeq v Nastavení systému → Obecné → Přihlašovací položky.') : tr('Aby upozornění chodila vždy, nech Agenteeq spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.'),
-      i.desktop ? stateBadge('connected', tr('Aplikace pro Mac')) : auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? tr('Zapnuto') : tr('Vypnuto')) : stateBadge('unavailable', tr('Jen macOS')))}
+      // Okno na Windows aplikaci zavřením ukončí (desktop/windows/Agenteeq.cpp, WM_CLOSE); Dock a
+      // přihlašovací položky jsou jen v macOS.
+      i.desktop ? (JE_MAC ? tr('Zavřením okna zůstane Agenteeq na pozadí. Vrátíš se ikonou v Docku nebo v horní liště. Pro start po přihlášení přidej Agenteeq v Nastavení systému → Obecné → Přihlašovací položky.') : tr('Zavřením okna se Agenteeq ukončí. Upozornění chodí, dokud aplikace běží.')) : tr('Aby upozornění chodila vždy, nech Agenteeq spouštět automaticky po přihlášení. Když nečekaně spadne, znovu se zapne.'),
+      i.desktop ? stateBadge('connected', JE_MAC ? tr('Aplikace pro Mac') : SYSTEM === 'windows' ? tr('Aplikace pro Windows') : tr('Desktopová aplikace')) : auto.supported ? stateBadge(auto.installed ? 'connected' : 'idle', auto.installed ? tr('Zapnuto') : tr('Vypnuto')) : stateBadge('unavailable', tr('Jen macOS')))}
     ${auto.supported ? `<div class="set-actions">${auto.installed
       ? `<button class="btn" type="button" data-action="autostart-uninstall">${tr('Vypnout spouštění po přihlášení')}</button>`
       : `<button class="btn btn--primary" type="button" data-action="autostart-install">${tr('Spouštět po přihlášení')}</button>`}</div>
@@ -902,7 +905,7 @@ function update(topics) {
       <div><dt>${tr('Verze')}</dt><dd>${esc(state.version)}</dd></div>
       <div><dt>${tr('Data aplikace')}</dt><dd>${esc((inst.dataDir || '~/.agenteeq').replace(/^\/Users\/[^/]+/, '~'))}</dd></div>
       <div><dt>${tr('Historie')}</dt><dd>${tr('posledních {0} dní', state.windowDays)}</dd></div>
-      <div><dt>${tr('Soukromí')}</dt><dd>${tr('vše zůstává na tomto Macu')}</dd></div>
+      <div><dt>${tr('Soukromí')}</dt><dd>${tr('vše zůstává na {0}', tomtoPocitaci())}</dd></div>
     </dl>`);
 
   const packCmd = 'npm run pack';

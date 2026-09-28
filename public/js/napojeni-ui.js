@@ -5,7 +5,7 @@ import { api } from './api.js';
 import { esc, rel } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { modal, toast, stateBadge } from './ui.js';
-import { tr } from './i18n.js';
+import { tr, tomtoPocitaci } from './i18n.js';
 
 const DODAVATEL = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', perplexity: 'Perplexity' };
 const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Potom už jen ověřuje, že napojení platí. Z webových chatů se dozví jen stav konverzace, text zpráv ne.');
@@ -38,7 +38,7 @@ export function radekNapojeni(n) {
     akce = `<button class="btn btn--sm${n.napojeno === false ? ' btn--primary' : ''}" type="button" data-napojit="${esc(n.id)}">${tr('Napojit')}</button>`;
   }
   return `<li class="model-row"><span class="model-logo">${logo}</span>
-    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? tr('Webový chat') : `${tr('Agent na tomhle Macu')} · ${posledniPrace(n)}`}</span></div>
+    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? tr('Webový chat') : `${tr('Agent na {0}', tomtoPocitaci())} · ${posledniPrace(n)}`}</span></div>
     ${stav}${akce}</li>`;
 }
 
@@ -111,7 +111,7 @@ function obsahHotovo(u) {
   return `<div class="model-done"><span class="model-done-check" aria-hidden="true">${ICON.check}</span>
     <b>${esc(u.uz ? `${u.label} ${tr('už je napojený')}` : tr('Napojení {0} proběhlo v pořádku', u.label))}</b>
     ${u.plan ? `<span>${esc(u.plan)}</span>` : ''}
-    <p>${tr('Agenteeq teď ukazuje jeho práci, limity a spotřebu. Konverzace zůstávají jen na tomhle Macu.')}</p></div>`;
+    <p>${tr('Agenteeq teď ukazuje jeho práci, limity a spotřebu. Konverzace zůstávají jen na {0}.', tomtoPocitaci())}</p></div>`;
 }
 
 function ukazHotovo(u) {

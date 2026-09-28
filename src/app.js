@@ -35,7 +35,7 @@ import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
-import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni } from './platform.js';
+import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni, SYSTEM } from './platform.js';
 import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
@@ -94,7 +94,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     projectNotify: (s) => (s.projectId ? datastore.data.projects.items.find((p) => p.id === s.projectId)?.settings.notify : null) || 'all',
   });
   // Prohlídka a snímky na web nesmí prozradit jméno majitele počítače ani název Macu.
-  const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome, ...hostIdentity };
+  // `system` řídí v rozhraní „tento Mac“ proti „tento počítač“ a ⌘ proti Ctrl (public/js/system.js).
+  const host = { name: os.hostname().replace(/\.local$/, ''), user: os.userInfo().username, fullName: '', home: config.sourceHome, system: SYSTEM, ...hostIdentity };
   const log = (...args) => { if (!config.quiet) console.log(...args); };
   const dry = config.openMode === 'dry';
 

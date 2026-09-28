@@ -12,6 +12,7 @@ import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
+import { SYSTEM } from './platform.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -858,12 +859,15 @@ export function createHttpServer(app, existingServer = null) {
     }
     // Jazyk rozhraní: server ho vepíše přímo do <html lang>, aby stránka naběhla ve zvoleném
     // jazyce bez probliknutí češtiny – volbu a slovník řeší jen public/js/i18n.js. Výchozí
-    // stránka na disku je česká; do angličtiny se přepisuje jen tenhle jeden atribut.
+    // stránka na disku je česká; přepisuje se jen tenhle jeden prvek. Vedle jazyka dostane
+    // i systém (src/platform.js#SYSTEM), aby rozhraní hned psalo „tento Mac“, nebo „tento
+    // počítač“ a ⌘, nebo Ctrl (public/js/system.js).
     const indexHtml = path.join(PUBLIC_DIR, 'index.html');
-    if (file === indexHtml && datastore.data.settings.language === 'en') {
+    if (file === indexHtml) {
       const text = body.toString('utf8');
       if (!text.includes('<html lang="cs">')) throw new Error('index.html nemá <html lang="cs"> — uprav server.');
-      body = Buffer.from(text.replace('<html lang="cs">', '<html lang="en">'));
+      const lang = datastore.data.settings.language === 'en' ? 'en' : 'cs';
+      body = Buffer.from(text.replace('<html lang="cs">', `<html lang="${lang}" data-system="${SYSTEM}">`));
     }
     // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
     // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.

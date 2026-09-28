@@ -2,7 +2,7 @@ import { esc, rel, fmtTok, startOfDay } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { currentLimits, limitState, limitObnova } from './ui.js';
 import { tokensSince } from './data.js';
-import { tr } from './i18n.js';
+import { tr, tomtoPocitaci } from './i18n.js';
 
 // Rozbalovací přehled „Všechny nástroje“. Nahoře zůstávají jen změřená okna limitů; tady je
 // každý sledovaný nástroj včetně těch, jejichž limit se z místních dat zjistit nedá. U takového
@@ -38,9 +38,9 @@ function chips(rows, now) {
 
 function poznamka(t, spojene) {
   const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene[0];
-  if (!stav) return tr('Tenhle zdroj Agenteeq na tomto Macu nesleduje.');
+  if (!stav) return tr('Tenhle zdroj Agenteeq na {0} nesleduje.', tomtoPocitaci());
   if (t.web) return `${tr('Webové chaty limity ani tokeny nesdílejí.')}${stav.state === 'missing' ? tr(' Rozšíření pro Chrome zatím nic neposlalo.') : ''}`;
-  if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na tomto Macu není.')}`;
+  if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
   if (t.id === 'claude') return tr('Přesné limity Claude (5hodinový a týdenní) se ukážou po zapnutí propojení s Claude Code v Nastavení.');
   if (t.id === 'codex') return tr('Codex zapisuje limity až po první odpovědi. Zatím žádné nezapsal.');
   return tr('Limit se z místních dat zjistit nedá, Agenteeq měří jen tokeny.');
@@ -67,7 +67,7 @@ export function limitsAll(state, now = Date.now()) {
     return `<li class="ltool${chybi ? ' is-off' : ''}">
       <span class="lwin-logo">${glyph(t.logo)}</span>
       <span class="ltool-main">
-        <span class="ltool-top"><b>${esc(t.name)}</b>${tok > 0 ? `<span class="ltool-tok" title="${tr('Vstup + výstup z přepisů na tomto Macu, bez cache')}">${fmtTok(tok)} ${tr('tokenů dnes')}</span>` : ''}</span>
+        <span class="ltool-top"><b>${esc(t.name)}</b>${tok > 0 ? `<span class="ltool-tok" title="${tr('Vstup + výstup z přepisů na {0}, bez cache', tomtoPocitaci())}">${fmtTok(tok)} ${tr('tokenů dnes')}</span>` : ''}</span>
         ${okna.length ? `<span class="ltool-chips">${chips([...okna], now)}</span><span class="ltool-note">${tr('Změřeno')} ${esc(rel(stari, now))}</span>` : `<span class="ltool-note">${esc(nota)}</span>`}
       </span>
     </li>`;
@@ -76,6 +76,6 @@ export function limitsAll(state, now = Date.now()) {
   return `<details class="lim-all" data-lim-all${otevreno ? ' open' : ''}>
     <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${tr('z {0} s měřeným limitem', rows.length)}</span>${ICON.chev}</summary>
     <ul class="ltool-list">${items.join('')}</ul>
-    <p class="ltool-foot">${tr('Čísla jsou z toho, co nástroje samy zapisují na tomhle Macu. Nic se neodhaduje a nikam se neposílá.')}</p>
+    <p class="ltool-foot">${tr('Čísla jsou z toho, co nástroje samy zapisují na {0}. Nic se neodhaduje a nikam se neposílá.', tomtoPocitaci())}</p>
   </details>`;
 }

@@ -580,7 +580,7 @@ export function createPalette(getItems, onPick) {
   root.setAttribute('aria-modal', 'true');
   root.setAttribute('aria-label', tr('Rychlé hledání'));
   root.innerHTML = `<div class="palette-box">
-    <div class="palette-input">${ICON.search}<input type="text" placeholder="Hledat agenta, projekt nebo sekci…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list"><kbd>Esc</kbd></div>
+    <div class="palette-input">${ICON.search}<input type="text" placeholder="${tr('Hledat agenta, projekt nebo sekci…')}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list"><kbd>Esc</kbd></div>
     <ul class="palette-list" id="palette-list" role="listbox"></ul>
   </div>`;
   document.body.appendChild(root);

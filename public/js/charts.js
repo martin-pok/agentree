@@ -48,7 +48,7 @@ export function stackedColumns({ id, labels, tips, series, height = 208, format 
   const summary = visible.map((s) => `${s.label} ${format(s.values.reduce((a, b) => a + (b || 0), 0))}`).join(', ');
   return `<div class="chart" style="--chart-h:${height}px">
     ${yAxis(max, axisFormat)}
-    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.', summary || 'bez dat')}`)}">
+    <div class="chart-plot chart-plot--cols" data-chart="${esc(id)}" tabindex="0" role="img" aria-label="${esc(`${label}${tr(': {0}. Šipkami vlevo a vpravo procházej jednotlivé sloupce.', summary || tr('bez dat'))}`)}">
       ${grid()}
       <div class="bars" style="--n:${n}" aria-hidden="true">${bars}</div>
       <div class="tip" aria-hidden="true"></div>
