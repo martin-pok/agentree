@@ -38,7 +38,7 @@ test('rozbalovací limity vypisují všechny nástroje a u neměřených to ří
   const html = limitsAll(state, now);
   assert.match(html, /Limit 5 h<\/span><b>34 %/);
   assert.match(html, /Gemini CLI na tomto Macu není/);
-  assert.match(html, /Limit se z místních dat zjistit nedá/, 'Cursor nemá měřený limit a má to říct');
+  assert.match(html, /Cursor[\s\S]*Bez údajů o limitu/, 'Cursor nemá měřený limit a má to říct');
   assert.doesNotMatch(html, /undefined|NaN/);
 });
 
@@ -191,9 +191,8 @@ test('nabídka na výšku se od nabídky na šířku liší jen rozestupy, ne vz
 });
 
 
-// Tentýž limit hlásil na Přehledu „0 %“, ve Statistikách „Obnoven“ a rozbalený seznam „obnoveno“.
-// Tři zobrazení, tři různá tvrzení o jednom čísle. Popis stavu proto vzniká na jednom místě.
-test('obnovené i vyčerpané okno limitu hlásí všechna tři zobrazení stejně', async () => {
+// Po resetu nemáme nový odečet. Staré procento ani „Obnoveno“ nesmí v živých oknech zůstat.
+test('po resetu staré okno zmizí ze všech živých zobrazení', async () => {
   const { limitState, limitWindows, limitGauges } = await import('../public/js/ui.js');
   const { limitsAll } = await import('../public/js/limits-ui.js');
   const now = Date.UTC(2026, 8, 21, 12);
@@ -204,12 +203,10 @@ test('obnovené i vyčerpané okno limitu hlásí všechna tři zobrazení stejn
   assert.doesNotMatch(s.advice, /^Obnoveno –/, 'popisek se nesmí opakovat vedle stejného slova');
 
   const stav = { limits: [obnovene], connectors: [{ id: 'codex', state: 'connected' }], sessions: new Map() };
-  for (const html of [limitWindows([obnovene], now), limitGauges([obnovene], now).join(''), limitsAll(stav, now)]) {
-    assert.match(html, /Obnoveno/, 'všude stejné slovo');
-    assert.doesNotMatch(html, />0 %|>34 %/, 'žádné zastaralé ani vymyšlené číslo');
-  }
+  for (const html of [limitWindows([obnovene], now), limitGauges([obnovene], now).join(''), limitsAll(stav, now)])
+    assert.doesNotMatch(html, /Obnoveno|>0 %|>34 %/, 'bez nového odečtu žádný živý limit');
 
-  const vycerpane = { ...obnovene, reached: true, resetsAt: now + 3_600_000, usedPercent: 100 };
+  const vycerpane = { ...obnovene, reached: true, resetsAt: now + 3_600_000, usedPercent: 100, at: now };
   assert.equal(limitState(vycerpane, now).label, 'Vyčerpáno');
   for (const html of [limitWindows([vycerpane], now), limitGauges([vycerpane], now).join(''), limitsAll({ ...stav, limits: [vycerpane] }, now)]) {
     assert.match(html, /Vyčerpáno/);

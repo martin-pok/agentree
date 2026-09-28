@@ -9,8 +9,8 @@ import { POCITAC } from '../platform.js';
 // Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů – nejde o veřejně
 // zdokumentovaný formát, jen soubor, který jsme na disku našli a ověřili proti skutečným datům
 // (viz docs/CONNECTORS.md). Slouží jako záložní zdroj: přesná data ze stavového řádku Claude Code
-// (`ingestStatusline` v claude-code.js) mají vždy přednost, tahle historie doplní čísla ve chvíli,
-// kdy neběží žádná konverzace a stavový řádek se tudíž nepřekresluje.
+// (`ingestStatusline` v claude-code.js) jsou jediná spolehlivá živá okna; tato historie slouží
+// jen pro graf v čase. Její procenta a časy se nesmí vydávat za aktuální stav předplatného.
 const FILE_NAME = 'plan-usage-history.json';
 
 // Poslední vzorek pole `samples`: { t: <ms epoch>, org, u: { fh, sd, xu? } }.
@@ -64,44 +64,18 @@ export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints =
   };
 }
 
-// Horní mez obnovy okna z historie. Soubor čas obnovy nenese, ale nese vzorky: vytížení v jednom
-// okně jen roste, takže pokles mezi dvěma vzorky znamená obnovu. Okno, které běží při posledním
-// vzorku, začalo nejpozději prvním vzorkem s nenulovým vytížením po poslední obnově – a skončí
-// nejpozději o délku okna později. Je to mez, ne odhad: dřív skončit může, později ne.
-// Bez nenulového vytížení žádné okno neběží a mez není (null).
-export function horniMezObnovy(json, pole, minuty, posledni) {
-  const delka = Number(minuty) * 60e3;
-  if (!(delka > 0) || !posledni) return null;
-  const vzorky = (Array.isArray(json?.samples) ? json.samples : [])
-    .filter((x) => x && Number.isFinite(Number(x.t)) && Number(x.t) <= Number(posledni.t) && typeof x.u?.[pole] === 'number' && Number.isFinite(x.u[pole]))
-    .filter((x) => !posledni.org || !x.org || x.org === posledni.org)
-    .sort((a, b) => Number(a.t) - Number(b.t));
-  const konec = vzorky[vzorky.length - 1];
-  if (!konec || !(konec.u[pole] > 0)) return null;
-  let zacatek = konec;
-  for (let i = vzorky.length - 2; i >= 0; i--) {
-    const v = vzorky[i];
-    if (Number(konec.t) - Number(v.t) >= delka) break; // do běžícího okna už patřit nemůže
-    if (!(v.u[pole] > 0) || v.u[pole] > zacatek.u[pole] + 0.5) break; // před oknem prázdno, nebo obnova
-    zacatek = v;
-  }
-  return Number(zacatek.t) + delka;
-}
-
-// Čistá funkce bez souborového systému, ať jde snadno testovat. `json` (celý soubor) je volitelný:
-// s ním se k oknu dopočítá horní mez obnovy (`resetsBy`).
-export function applyPlanUsageSample(store, sample, now = Date.now(), json = null) {
+// Čistá funkce bez souborového systému, ať jde snadno testovat.
+export function applyPlanUsageSample(store, sample, now = Date.now()) {
   if (!sample || typeof sample !== 'object') return false;
   const at = Number(sample.t);
   if (!Number.isFinite(at) || at <= 0) return false;
   const u = sample.u && typeof sample.u === 'object' ? sample.u : {};
   let wrote = false;
 
-  const window = (key, raw, pole) => {
+  const window = (key, raw) => {
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return;
     const def = STATUS_WINDOWS[key];
     const used = Math.max(0, Math.min(100, raw));
-    const resetsBy = json ? horniMezObnovy(json, pole, def.minutes, sample) : null;
     store.setLimit({
       id: `claude:${key}:history`,
       provider: 'anthropic',
@@ -110,7 +84,6 @@ export function applyPlanUsageSample(store, sample, now = Date.now(), json = nul
       usedPercent: used,
       windowMinutes: def.minutes,
       resetsAt: null, // přesný čas obnovy historie nemá
-      ...(resetsBy ? { resetsBy } : {}),
       reached: used >= 100,
       plan: null,
       text: '',
@@ -120,34 +93,8 @@ export function applyPlanUsageSample(store, sample, now = Date.now(), json = nul
     });
     wrote = true;
   };
-  window('five_hour', u.fh, 'fh');
-  window('seven_day', u.sd, 'sd');
-
-  if (typeof u.xu === 'number' && Number.isFinite(u.xu)) {
-    // `xu` je vyčerpaný limit extra usage v procentech. Jednotku soubor neuvádí, ale tři indicie
-    // to potvrzují: sousední `fh` a `sd` jsou procenta okna, oficiální stavový řádek Claude Code
-    // hlásí přesně trojici five_hour / seven_day / spend_limit, kde spend_limit má `used_percentage`,
-    // a `xu` na skutečných datech nikdy nepřekročilo 100 (18,2 → 64,4 za měsíc). Přesná data ze
-    // stavového řádku mají dál přednost (`claude:spend_limit`), tohle je záloha. 🧪 Beta.
-    const used = Math.max(0, Math.min(100, u.xu));
-    store.setLimit({
-      id: 'claude:spend_limit:history',
-      provider: 'anthropic',
-      app: 'Claude',
-      label: ui('Extra usage'),
-      usedPercent: used,
-      value: u.xu,
-      windowMinutes: null,
-      resetsAt: null,
-      reached: used >= 100,
-      plan: null,
-      text: '',
-      at,
-      source: 'plan-history',
-      kind: 'spend',
-    });
-    wrote = true;
-  }
+  window('five_hour', u.fh);
+  window('seven_day', u.sd);
 
   void now; // rezervováno pro budoucí použití (stárnutí vzorku), zatím se řídí `at` ze souboru
   return wrote;
@@ -180,7 +127,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
     seenMtime = stat.mtimeMs;
     error = '';
     if (!sample) return;
-    if (applyPlanUsageSample(store, sample, Date.now(), json)) {
+    if (applyPlanUsageSample(store, sample)) {
       lastEventAt = Date.now();
       lastSampleAt = Number(sample.t) || lastSampleAt;
     }
@@ -198,7 +145,7 @@ export function createClaudeDesktopUsageConnector(ctx) {
     kind: 'local',
     verified: false,
     source: `${JE_WINDOWS ? '%APPDATA%\\Claude' : '~/Library/Application Support/Claude'}/${FILE_NAME}`,
-    description: ui('Záložní historie limitů 5 h a týden (a extra usage, pokud je k dispozici) – doplní údaje ze stavového řádku, když zrovna neběží žádná konverzace.'),
+    description: ui('Historie čerpání plánu Claude pro graf ve Statistikách. Přesný čas obnovy neobsahuje.'),
     async start() {
       await scan();
       watcher = watchTree(dir, (f) => (f ? queue.schedule(f) : scan()));

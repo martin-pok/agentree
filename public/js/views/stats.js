@@ -43,8 +43,7 @@ function mount(el) {
       <div class="sec-head"><h2 id="lim-h">${tr('Limity a kredity')}</h2></div>
       <div data-region="limits"></div>
       <div data-region="usage-history"></div>
-    </section>
-    <p class="note">${tr('Tokeny = vstup + výstup, tedy stejná spotřeba, jakou vidíš u dodavatele. Práce s cache (zápis i čtení) je technická režie a do těchto čísel nepatří – najdeš ji ve složení tokenů u konkrétní konverzace. Nejsou to peníze ani limit předplatného. Webové aplikace počty tokenů nesdílejí.')}</p>`;
+    </section>`;
   v.unwatch?.();
   v.unwatch = watchBalance(el.querySelector('.st-cards'));
   el.addEventListener('click', (e) => {
@@ -58,19 +57,6 @@ function mount(el) {
       update();
     }
   });
-}
-
-// Poctivé pokrytí limitů: co hlásí samy aplikace a co na disku prostě není.
-function coverageNote() {
-  const apps = [...new Set(state.limits.map((l) => l.app))].sort();
-  if (!apps.length) return '';
-  const covered = (name) => apps.some((a) => name === a || name.startsWith(`${a} `) || a.startsWith(`${name} `));
-  const missing = [...new Set((state.runtimes || []).filter((r) => r.running && !covered(r.name)).map((r) => r.name))].sort();
-  const head = tr('Každá aplikace má vlastní limit – limit Codexu je oddělený od chatu v aplikaci ChatGPT. Limity teď hlásí {0}.', apps.join(', '));
-  const tail = missing.length
-    ? ` ${missing.join(', ')} ${missing.length > 1 ? tr('běží, ale své limity na disk nezapisují') : tr('běží, ale svůj limit na disk nezapisuje')}${missing.length > 1 ? tr(', takže je Agenteeq nemá odkud přečíst.') : tr(', takže ho Agenteeq nemá odkud přečíst.')}`
-    : '';
-  return `<p class="note">${esc(head + tail)}</p>`;
 }
 
 // Historie vytížení plánu Claude (30 dní) – čte se na vyžádání ze souboru aplikace Claude Desktop.
@@ -90,16 +76,12 @@ function usageHistoryHtml() {
   const charts = [
     ['fiveHour', tr('Limit 5 h'), '%'],
     ['sevenDay', tr('Týdenní limit'), '%'],
-    ['extraUsage', tr('Extra usage'), ''],
   ].filter(([key]) => (u[key] || []).length >= 2)
     .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? tr('vytížení okna v %') : tr('hodnota bez jednotky'))}</span></div>
       ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString(LOCALE, { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
   if (!charts.length) return '';
-  const note = u.extraUsage?.length
-    ? tr('Extra usage je hodnota, u které zdroj neuvádí jednotku – Agenteeq z ní nedělá procenta ani koruny.')
-    : '';
   return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} ${tr('za 30 dní ze souboru aplikace Claude Desktop')}</span></div>
-    ${charts.join('')}${note ? `<p class="note">${esc(note)}</p>` : ''}</div>`;
+    ${charts.join('')}</div>`;
 }
 
 function update() {
@@ -117,7 +99,7 @@ function update() {
   const hours = activeHours(all, since);
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);
   fill(el, 'kpis', [
-    [tr('Tokeny'), tween(`st-tok-${v.period}`, tokens, 'tok'), tr('vstup + výstup; ne cena ani limit')],
+    [tr('Zaznamenané tokeny'), tween(`st-tok-${v.period}`, tokens, 'tok'), tr('vstup + výstup')],
     [tr('Aktivní konverzace'), tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} ${plural(new Set(active.map((s) => s.app)).size, 'aplikace', 'aplikace', 'aplikací')}`],
     [tr('Hodiny s aktivitou'), tween(`st-h-${v.period}`, hours), tr('hodiny, kdy aspoň jeden agent pracoval')],
     [tr('Zadání'), tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
@@ -160,7 +142,7 @@ function update() {
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: tr('Doplněno') })}</div>`;
     });
   fill(el, 'usage-history', usageHistoryHtml());
-  fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${gauges.length || creditCharts.length ? coverageNote() : ''}${limitsAll(state, now)}`);
+  fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${limitsAll(state, now)}`);
 }
 
 export default { id: 'statistiky', title: tr('Statistiky'), mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };

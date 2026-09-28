@@ -356,17 +356,22 @@ export function untilLabel(ts, now = Date.now()) {
 // Vyčerpání dokoupeného extra usage není okno předplatného – patří na Útratu, ne mezi limity plánu.
 export const isSpendLimit = (l) => l.kind === 'spend';
 
-// Okna Claude (5 h a týden) chodí až ze tří zdrojů: stavový řádek Claude Code a cache Usage
-// v Claude Desktopu nesou přesný čas obnovy, historie Claude Desktopu jen procento. Na každé okno
-// je jeden řádek: nejnovější měření. Když samo čas obnovy nenese, převezme ho od přesného zdroje –
-// ale jen tehdy, když to měření leží v témž okně (proběhlo před tou obnovou). Jinak by se ke
-// stavu nového okna přilepil konec starého.
+// Živá okna Claude (5 h a týden) chodí ze stavového řádku Claude Code nebo z cache Usage
+// v Claude Desktopu. Historie bez přesného resetu patří pouze do grafu. Na každé okno
+// je jeden řádek: nejnovější měření. Když samo čas obnovy nenese, převezme ho od přesného
+// zdroje jen ve stejném okně; jinak by se připojil konec starého okna.
 const OKNO_CLAUDE = /^claude:(five_hour|seven_day)(?::|$)/;
 const PRESNE = new Set(['statusline', 'desktop-usage']);
+const LIMIT_FRESH_MS = 30 * 60e3;
 
 export function currentLimits(limits, now = Date.now()) {
-  const fresh = limits.filter((l) => !isSpendLimit(l) && now - l.at < 7 * DAY);
-  const claudePresne = fresh.some((l) => PRESNE.has(l.source));
+  // Interní historie Desktopu nemá přesný reset a na skutečných datech se může rozcházet s plánem.
+  // Patří do historického grafu, nikoli mezi aktuální okna. Ostatní měření po 30 minutách
+  // zmizí z živého přehledu: staré procento už nemůže tvrdit, jaký je stav právě teď.
+  const fresh = limits.filter((l) => !isSpendLimit(l) && l.source !== 'plan-history'
+    && Number.isFinite(l.at) && now - l.at >= -60e3 && now - l.at <= LIMIT_FRESH_MS
+    && !(Number(l.resetsAt) > 0 && l.resetsAt <= now));
+  const claudePresne = fresh.some((l) => l.provider === 'anthropic' && PRESNE.has(l.source));
   const okna = new Map();
   const ostatni = [];
   for (const l of fresh) {
@@ -381,26 +386,17 @@ export function currentLimits(limits, now = Date.now()) {
     const presny = zaznamy
       .filter((l) => l.resetsAt && l.resetsAt > nejnovejsi.at)
       .reduce((a, b) => (!a || b.at > a.at ? b : a), null);
-    return presny ? { ...nejnovejsi, resetsAt: presny.resetsAt, resetsBy: null } : nejnovejsi;
+    return presny ? { ...nejnovejsi, resetsAt: presny.resetsAt } : nejnovejsi;
   });
   // Hlášky „hit your limit“ jsou odhad z textu; přesná okna je nahrazují.
   return [...slozena, ...ostatni.filter((l) => !(claudePresne && l.provider === 'anthropic' && !PRESNE.has(l.source)))];
 }
 
-// Kdy se okno obnoví – u každého okna vždycky, a vždycky pravdivě:
-//   přesný čas od zdroje (stavový řádek, Usage v Claude Desktopu, Codex, hláška o limitu),
-//   horní mez z historie měření („nejpozději“ – okno, které při měření běželo, déle trvat nemůže),
-//   a když čas neuvádí žádný zdroj, řekne se to. Nikdy se nedomýšlí.
+// Čas obnovy se zobrazuje jen tehdy, když jej poslal zdroj jako konkrétní čas.
 export function limitObnova(l, now = Date.now()) {
   const presne = Number(l.resetsAt) > 0 ? Number(l.resetsAt) : 0;
-  const mez = presne ? 0 : Number(l.resetsBy) > 0 ? Number(l.resetsBy)
-    : Number(l.windowMinutes) > 0 && Number(l.at) > 0 ? Number(l.at) + Number(l.windowMinutes) * 60e3 : 0;
-  const kdy = presne || mez;
-  if (kdy && kdy > now) {
-    return { kdy, presne: Boolean(presne), probehla: false, text: presne ? tr('obnova {0}', resetsLabel(kdy, now)) : tr('obnova nejpozději {0}', resetsLabel(kdy, now)) };
-  }
-  if (kdy) return { kdy, presne: Boolean(presne), probehla: true, text: presne ? tr('obnoveno {0}', resetsLabel(kdy, now)) : tr('obnoveno nejpozději {0}', resetsLabel(kdy, now)) };
-  if (!l.reached && Number(l.usedPercent) === 0) return { kdy: 0, presne: false, probehla: false, text: tr('okno se zatím nečerpá') };
+  if (presne && presne > now) return { kdy: presne, presne: true, probehla: false, text: tr('obnova {0}', resetsLabel(presne, now)) };
+  if (presne) return { kdy: presne, presne: true, probehla: true, text: tr('obnoveno {0}', resetsLabel(presne, now)) };
   return { kdy: 0, presne: false, probehla: false, text: tr('čas obnovy zdroj neuvádí') };
 }
 
@@ -411,7 +407,7 @@ export function limitObnova(l, now = Date.now()) {
 // Kdy byl limit změřený, pokud už to není „teď“. Okno se od té doby mohlo změnit a číslo bez data
 // by se četlo jako současný stav – týdenní limit Codexu tak 20 hodin po odečtu svítil jako živý.
 export function limitAge(l, now = Date.now()) {
-  return l.at && now - l.at > 30 * 60e3 ? `${tr('změřeno')} ${rel(l.at, now)}` : '';
+  return l.at && now - l.at > 2 * 60e3 ? `${tr('změřeno')} ${rel(l.at, now)}` : '';
 }
 
 // Kdy byl zůstatek kreditů zjištěný. Jedno místo pro Přehled, Statistiky i Útratu – číslo bez data
@@ -426,9 +422,8 @@ export function creditAgeHtml(c, now = Date.now()) {
 }
 
 export function limitState(l, now = Date.now()) {
-  // Okno bez přesného času obnovy (historie Claude Desktopu) nejpozději po své délce vyprší: odečet
-  // starší než samo okno o současném vytížení nic neříká. Bez toho by pětihodinové okno svítilo
-  // i týden starým číslem. Horní mez z historie (`resetsBy`) je přesnější, platí stejně.
+  // Obnovu odvozujeme jen z přesného času od zdroje. Stará nebo interní historická měření
+  // filtruje currentLimits dřív, než se k vykreslení vůbec dostanou.
   const renewed = limitObnova(l, now).probehla;
   const reached = Boolean(l.reached) && !renewed;
   const pct = renewed ? 0 : reached ? 100 : Math.round(Number(l.usedPercent) || 0);
@@ -447,8 +442,7 @@ export function limitState(l, now = Date.now()) {
   };
 }
 
-// Řádek s obnovou. Přesný budoucí čas má i odpočet („za 2 h 13 min“), který se překresluje každou
-// minutu (app.js, [data-until]); horní mez odpočet nemá – tvrdila by přesnost, kterou nemá.
+// Přesný budoucí čas má i odpočet („za 2 h 13 min“), který se překresluje každou minutu.
 export function obnovaHtml(l, now = Date.now()) {
   const o = limitObnova(l, now);
   if (o.presne && !o.probehla) return `<span class="lwin-reset">${tr('obnova')} <span data-until="${o.kdy}">${untilLabel(o.kdy, now)}</span> · ${esc(resetsLabel(o.kdy, now))}</span>`;
