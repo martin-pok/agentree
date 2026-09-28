@@ -230,8 +230,7 @@ function update(topics = new Set(['all'])) {
   const hooks = state.integrations?.claudeHooks;
   if (changed(topics, 'sessions', 'integrations')) fill(el, 'decisions', needs.length
     ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${tr('A dalších {0}', needs.length - 4)}</a>` : ''}`
-    : `<div class="calm"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Všechno běží bez tebe')}</strong>
-        <p>${tr('Jakmile agent bude chtít souhlas, odpověď nebo narazí na limit, objeví se tady a přijde ti upozornění.')}</p>
+    : `<div class="calm"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Nikdo teď nečeká na tvé rozhodnutí')}</strong>
         ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div>`);
 
   if (changed(topics, 'sessions', 'tick')) {

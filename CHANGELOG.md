@@ -1,5 +1,9 @@
 # Changelog
 
+## Nezveřejněno
+
+- Prázdná sekce rozhodnutí už netvrdí, že všichni agenti běží nebo že se v ní zobrazí vyčerpaný limit. Zobrazuje jen ověřený stav čekajících dotazů.
+
 ## 0.29.3 – 2026-09-28 · čitelnější stav agentů a měřených dat
 
 - Nadpis Nastavení zůstává při posouvání společně s podnabídkou na místě i na úzké obrazovce.
