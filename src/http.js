@@ -13,6 +13,7 @@ import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
+import { createVerzeSouboru, znackaObsahu, AKTIVA, NATRVALO } from './verze-souboru.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -843,9 +844,10 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- Statické soubory ---------- */
 
-  // Značka verze souboru. Počítá se z obsahu, takže se nemůže rozejít se skutečností ani u souboru,
-  // kterému se změnil čas bez změny obsahu (kopie balíčku při aktualizaci aplikace).
-  const znacka = (file, body) => `"${crypto.createHash('sha1').update(body).digest('base64url').slice(0, 20)}"`;
+  // Značky obsahu a odkazy se značkou (src/verze-souboru.js). Počítají se z obsahu, takže se
+  // nemůžou rozejít se skutečností ani u souboru, kterému se změnil čas bez změny obsahu (kopie
+  // balíčku při aktualizaci aplikace), a změna na disku se projeví bez restartu serveru.
+  const verzeSouboru = createVerzeSouboru(PUBLIC_DIR, { verze: VERSION });
 
   async function serveStatic(req, res, url) {
     let rel;
@@ -875,20 +877,25 @@ export function createHttpServer(app, existingServer = null) {
       if (!text.includes('<html lang="cs">')) throw new Error('index.html nemá <html lang="cs"> — uprav server.');
       body = Buffer.from(text.replace('<html lang="cs">', '<html lang="en">'));
     }
-    // Loga, fonty a brand se nikdy nemění v rámci verze; bez trvalé cache je prohlížeč při každém překreslení
-    // znovu ověřuje a ikony probliknou. Skripty a styly zůstávají bez cache, ať se úpravy projeví ihned.
-    const asset = /^\/(logos|fonts|brand|icons)\//.test(rel);
-    // `no-cache` znamená „před použitím se zeptej“. Bez značky verze se ale prohlížeč nemá čím zeptat
-    // a stahuje celý soubor pokaždé znovu – u aplikace, která běží celý den, zbytečné megabajty.
-    // Značka ze jména, velikosti a času změny dovolí odpovědět „nic nového“ v pár bajtech, a přitom
-    // se každá skutečná změna projeví okamžitě.
-    const etag = znacka(file, body);
+    // Odkazy na loga, písma a ikony dostanou značku obsahu, stránka seznam značek pro skripty
+    // a sw.js jméno mezipaměti podle verze a obsahu.
+    const cestaSouboru = `/${path.relative(PUBLIC_DIR, file).split(path.sep).join('/')}`;
+    body = await verzeSouboru.priprav(cestaSouboru, body);
+    // `no-cache` = „před použitím se zeptej“; ETag z obsahu dovolí odpovědět „nic nového“ v pár
+    // bajtech, a přitom se každá skutečná změna projeví hned. Natrvalo jen adresa, jejíž značka
+    // sedí na obsah: tu se změnou obsahu nahradí nová adresa. Stará stránka, která se po aktualizaci
+    // ptá na starou značku, dostane nový soubor jen k ověření – pod cizí značku se nic neuloží.
+    // (Loga dřív měla `immutable` i bez značky a po aktualizaci svítila stará.)
+    const znacka = znackaObsahu(body);
+    const etag = `"${znacka}"`;
+    const natrvalo = AKTIVA.test(cestaSouboru) && url.searchParams.get('v') === znacka;
+    const cacheControl = natrvalo ? `private, ${NATRVALO}` : 'no-cache';
     if (req.headers['if-none-match'] === etag) {
-      res.writeHead(304, { ...SECURITY, ETag: etag, 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache' });
+      res.writeHead(304, { ...SECURITY, ETag: etag, 'Cache-Control': cacheControl });
       res.end();
       return;
     }
-    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': asset ? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag });
+    res.writeHead(200, { ...SECURITY, 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cacheControl, ETag: etag });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
 

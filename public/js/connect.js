@@ -1,4 +1,5 @@
 import { tr } from './i18n.js';
+import { adresaSouboru } from './verze.js';
 // Rozhraní Agenteeq se dá otevřít odkudkoli – i ze statické kopie na webhostingu. Data ale vždycky
 // leží na Macu. Když za stránkou žádný server Agenteeq není, nemá smysl hlásit „server neběží“ a
 // ukazovat 127.0.0.1: na telefonu je to sám telefon. Místo toho se zeptáme, kde ten Mac je,
@@ -68,7 +69,7 @@ export function pripojovaciObrazovka(zprava = '') {
   const rucne = Boolean(posledni || zprava);
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
-      <img src="/icons/icon-192.png" alt="" width="64" height="64">
+      <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Připoj se ke svému Macu')}</h1>
       <p>${tr('Agenti, limity i útrata zůstávají na tvém Macu, tohle je jen okno k nim.')}</p>
       <p class="pair-navod">${tr('Na telefonu nejsnáz: v Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a namiř na QR kód foťák. Telefon se otevře už spárovaný.')}</p>

@@ -4,6 +4,7 @@ import { ICON, glyph } from './icons.js';
 import { esc } from './format.js';
 import { goToExtension } from './jump.js';
 import { tr } from './i18n.js';
+import { adresaSouboru } from './verze.js';
 
 let dialog;
 const steps = [
@@ -16,7 +17,7 @@ const steps = [
 ];
 
 function visual(kind) {
-  if (kind === 'orchestra') return `<div class="welcome-network"><div class="welcome-line"></div><div class="welcome-logo"><img src="/brand/agenteeq-mark.svg" width="72" height="72" alt="Agenteeq"></div><div class="welcome-providers">${['claude', 'codex', 'cursor'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div></div><p class="welcome-caption">${tr('Prostor pro soustředěnou práci')}</p>`;
+  if (kind === 'orchestra') return `<div class="welcome-network"><div class="welcome-line"></div><div class="welcome-logo"><img src="${adresaSouboru('/brand/agenteeq-mark.svg')}" width="72" height="72" alt="Agenteeq"></div><div class="welcome-providers">${['claude', 'codex', 'cursor'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div></div><p class="welcome-caption">${tr('Prostor pro soustředěnou práci')}</p>`;
   if (kind === 'attention') return `<div class="welcome-demo"><span class="welcome-demo-label">${tr('Ukázka stavů')}</span><div><i class="welcome-dot working"></i><span>${tr('Agent pracuje')}</span><small>${tr('máš klid')}</small></div><div class="welcome-attention"><i class="welcome-dot attention"></i><span>${tr('Potřebuje rozhodnutí')}</span>${ICON.arrowRight || ICON.check}</div><div><i class="welcome-dot done"></i><span>${tr('Úloha dokončena')}</span>${ICON.check}</div></div><p class="welcome-caption">${tr('Žádosti Claude Code o povolení uvidíš po zapnutí propojení.')}<br>${tr('Codex je do přepisů nezapisuje.')}</p>`;
   if (kind === 'projects') return `<div class="welcome-project"><span class="welcome-demo-label">${tr('Ukázka projektu')}</span><div class="welcome-project-title">${ICON.folder}<span>${tr('Nový web')}</span></div><div class="welcome-project-row"><span>${tr('Brief a pravidla')}</span>${ICON.check}</div><div class="welcome-project-row"><span>${tr('Konverzace na jednom místě')}</span><div class="welcome-mini-logos">${glyph('claude')}${glyph('codex')}</div></div><div class="welcome-project-bar"></div></div><p class="welcome-caption">${tr('Od prvního zadání po poslední detail')}</p>`;
   if (kind === 'limits') return `<div class="welcome-limits"><span class="welcome-demo-label">${tr('Ukázka limitů')}</span>
@@ -24,7 +25,7 @@ function visual(kind) {
     <div class="wl-spend"><span>${tr('Útrata tento měsíc')}</span><b>${tr('850 Kč')}</b></div></div><p class="welcome-caption">${tr('Ceny předplatných v korunách, kurzem ČNB')}</p>`;
   if (kind === 'browser') return `<div class="welcome-browser"><div class="wb-bar"><i></i><i></i><i></i><span>gemini.google.com</span></div><div class="wb-body"><div class="wb-agent">${glyph('gemini')}<span>Gemini</span><em><i class="welcome-dot working"></i>${tr('pracuje')}</em></div><div class="wb-input"><span>${tr('Navrhni název kavárny…')}</span><small>${ICON.spark}${tr('Vloženo z Agenteeq')}</small></div></div></div><div class="welcome-browser-sites">${['openai', 'claude', 'gemini', 'perplexity', 'copilot'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div><p class="welcome-caption">${tr('Rozšíření pro Chrome')}<br>${tr('Data jdou jen do Agenteeq na tvém Macu.')}</p>`;
   const n = state.sessions.size;
-  return `<div class="welcome-local"><img src="/brand/agenteeq-mark-dark.svg" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na tvém Macu')}</span><span class="welcome-local-count">${n}</span><span>${tr('nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
+  return `<div class="welcome-local"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na tvém Macu')}</span><span class="welcome-local-count">${n}</span><span>${tr('nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
 }
 
 export function showWelcome() {

@@ -262,13 +262,14 @@ test('stránky s daty ze souborů je načítají při každém otevření', asyn
   }
 });
 
+// Chování hlaviček (natrvalo jen se značkou obsahu, jinak no-cache + 304) hlídá test/cerstvost.test.mjs.
 test('statické soubory nesou značku verze, aby prohlížeč nestahoval totéž dokola', async () => {
   const http = await zdroj('src/http.js');
-  assert.match(http, /const znacka = \(file, body\) =>/, 'značka se počítá z obsahu');
-  assert.match(http, /createHash\('sha1'\)\.update\(body\)/, 'z obsahu, ne z času změny');
+  const verze = await zdroj('src/verze-souboru.js');
+  assert.match(verze, /export const znackaObsahu = \(telo\) => crypto\.createHash\('sha1'\)\.update\(telo\)/, 'značka se počítá z obsahu, ne z času změny');
+  assert.match(http, /const znacka = znackaObsahu\(body\);/);
   assert.match(http, /if \(req\.headers\['if-none-match'\] === etag\) \{/, 'opakovaný dotaz dostane 304');
   assert.match(http, /res\.writeHead\(304, \{ \.\.\.SECURITY, ETag: etag/);
-  assert.match(http, /'Cache-Control': asset \? 'private, max-age=31536000, immutable' : 'no-cache', ETag: etag/, 'kód a styly se vždy ověří u serveru');
 });
 
 // Nabídka je mřížka. Bez určené šířky sloupce si ji vezme podle nejdelší položky („Upozornění“

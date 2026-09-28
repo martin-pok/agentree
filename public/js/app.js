@@ -26,6 +26,7 @@ import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, initAppearance } from './appearance.js';
 import { plynulePosouvani } from './plynule-posouvani.js';
 import { tr } from './i18n.js';
+import { adresaSouboru } from './verze.js';
 
 initSelects();
 initWelcome();
@@ -778,7 +779,7 @@ connectStream({
 function parovaciObrazovka(zprava = '') {
   document.body.innerHTML = `<main class="pair">
     <form class="pair-box" novalidate>
-      <img src="/icons/icon-192.png" alt="" width="64" height="64">
+      <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Připojit telefon')}</h1>
       <p>${tr('V Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a vytvoř kód. Platí pět minut a jen na jedno spárování.')}</p>
       <label class="sr-only" for="pin">${tr('Kód z Macu')}</label>

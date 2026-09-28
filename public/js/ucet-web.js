@@ -9,6 +9,7 @@ import { esc, fmtTok, fmtMoney, rel, initials, plural, resetsLabel, MONTHS } fro
 import { miniBars } from './charts.js';
 import { applyAppearance } from './appearance.js';
 import { tr } from './i18n.js';
+import { adresaSouboru } from './verze.js';
 
 const KLIC_RELACE = 'agenteeq-ucet-web';
 const KLIC_OVEROVAC = 'agenteeq-ucet-pkce';
@@ -169,7 +170,7 @@ export function utrataMesice(radky) {
 
 function hlavicka(r) {
   return `<header class="cloud-top">
-    <a class="cloud-brand" href="/"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28">Agenteeq</a>
+    <a class="cloud-brand" href="/"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" alt="" width="28" height="28">Agenteeq</a>
     ${r ? `<div class="cloud-who"><span class="account-avatar" aria-hidden="true">${esc(initials(r.jmeno || r.email))}</span><span>${esc(r.jmeno || r.email)}</span>
       <button class="btn btn--sm" type="button" data-odhlasit>${tr('Odhlásit se')}</button></div>` : ''}
   </header>`;
@@ -178,7 +179,7 @@ function hlavicka(r) {
 function prihlasovaciObrazovka(zprava = '') {
   document.body.innerHTML = `${hlavicka(null)}<main class="pair">
     <div class="pair-box">
-      <img src="/icons/icon-192.png" alt="" width="64" height="64">
+      <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Tvůj Agenteeq odkudkoli')}</h1>
       <p>${tr('Přihlas se stejným účtem jako v Agenteeq na Macu. Uvidíš, jestli agenti pracují, kolik spotřebovali a kolik stojí – i když jsi zrovna mimo domov.')}</p>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
