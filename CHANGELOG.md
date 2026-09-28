@@ -14,6 +14,30 @@ Rozšíření čeká na schválení v Chrome Web Store.
 - Opraven kontrast červeného počítadla v tmavém režimu. Cache log používá značku obsahu z tohoto vydání a nový build ji ověřuje v desktopovém QA.
 - Okno rozšíření má vlastní tlačítko obnovy, které si vyžádá nové hlášení z otevřených podporovaných karet a teprve potom překreslí stav. Obnova projde i nezměněnou konverzaci bez čekání na minutový udržovací signál.
 
+### Čerstvá data po výpadku a uspání
+
+- Po každém připojení (restart serveru, probuzení Macu, výpadek sítě u telefonu) se stav načte
+  celý znovu a „Připojeno“ svítí až potom. Dřív se rozsvítilo už při pozdravu živého proudu, před
+  načtením stavu, a zůstalo i tehdy, když se stav načíst nepodařilo.
+- Návrat k oknu a obnovená síť stahovaly stav mimo frontu živých změn: změnu, která přišla během
+  stahování, přepsal o chvíli starší snímek. Teď jde každý snímek přes jednu frontu a události
+  z předchozího spojení se po novém pozdravu zahodí.
+- Server posílá známku života jako událost (dřív komentář, který okno nevidělo). Spojení, které
+  tiše umřelo (Mac usnul, telefon změnil síť), okno pozná do 45 s a naváže nové. Proud, který
+  prohlížeč zavřel natrvalo (chyba od proxy, 503), se naváže znovu s rostoucí pauzou; zrušené
+  spárování vrátí párování.
+- Uspaný počítač s otevřeným oknem: po probuzení se data hned označí jako neověřená a načtou se
+  znovu. Server po probuzení hned projde zdroje, procesy, vlastní agenty, obnovy limitů a útratu
+  (dřív až 30 s, útrata hodinu) a snímek stavu počítá v okamžiku dotazu – už nevydá „pracuje“
+  spočítané před uspáním.
+- Bez spojení okno nevydává poslední stav za živý: pohyb živých ukazatelů stojí, stopky
+  „Pracuje už“ se zastaví, stav agentů, okna limitů, útrata a detail agenta nesou „data z 14:32“
+  a hlášení o výpadku říká, z kdy údaje na stránce jsou.
+- Po obnovení spojení se znovu načte i otevřený přepis (co agent napsal během výpadku, dřív
+  chybělo) a data, která si pohledy stahují samy: Dovednosti, historie limitů, napojené modely.
+- Rozšíření: otevřené konverzace v úložišti relace nesou verzi tvaru; záznam jiné verze se po
+  aktualizaci zahodí, místo aby ho nová verze převzala.
+
 ### Postranní panel nezávisí na tom, jak prohlížeč měří písmo
 
 - Profil v postranním panelu si podobu vybírá podle místa, které mu v panelu skutečně zbylo

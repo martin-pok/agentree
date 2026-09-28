@@ -61,6 +61,7 @@ public/index.html           kostra aplikace
 public/styles.css           design systém a všechny komponenty
 public/js/app.js            router, SSE, horní lišta, notifikace, paleta ⌘K
 public/js/state.js          klientský stav a slučování událostí do jednoho snímku
+public/js/spojeni.js        spojení se serverem: snímek po každém připojení, ticho, probuzení, obnova
 public/js/views/*.js        obrazovky (mount/update/unmount)
 public/js/projects-ui.js    formulář projektu, prohlížeč složek, dialog zařazení
 public/js/launcher-ui.js    karta „Spustit agenta“ a běhy na pozadí
