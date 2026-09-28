@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.29.2 – 2026-09-28 · stabilní podnabídka Nastavení
+
+- Levá podnabídka Nastavení zůstává při posunu dlouhé skupiny v původní výšce vedle obsahu; už nesjíždí k horní hraně okna. Vodorovná podnabídka na menších oknech si zachovává své chování.
+- Regresní desktopové QA měří počáteční i koncovou polohu podnabídky na třech šířkách v Chromiu i WebKitu a ověřuje, že skupiny lze přepnout i po posunutí stránky.
+
 ## 0.29.1 – 2026-09-28 · plynulé posouvání, noční ticho a opravy z QA
 
 Obsah konceptu 0.29.0 (přihlášení bez Terminálu, pravdivé časy obnovy limitů, párování rozšíření
