@@ -190,7 +190,7 @@ function update() {
   }
 
   fill(el, 'suggest', sugg.length && v.tab === 'active'
-    ? `<div class="sec-head"><h2>${tr('Návrhy ze složek, kde pracují agenti')}</h2><span class="muted small">${tr('Jedním kliknutím vznikne projekt se zařazenými konverzacemi')}</span></div>
+    ? `<div class="sec-head"><h2>${tr('Návrhy ze složek, kde pracují agenti')}</h2></div>
        <div class="psuggest-grid">${sugg.map((x) => `<button class="psuggest-item" type="button" data-suggest="${esc(x.cwd)}" data-name="${esc(x.name)}">
          <span class="icon-tile">${ICON.folder}</span><span class="psuggest-text"><b>${esc(x.name)}</b><small>${esc(shortPath(x.cwd))} · ${x.count} ${plural(x.count, 'konverzace', 'konverzace', 'konverzací')}</small></span>${ICON.plus}</button>`).join('')}</div>`
     : '');

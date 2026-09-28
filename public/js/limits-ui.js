@@ -36,14 +36,13 @@ function chips(rows, now) {
     .join('');
 }
 
-function poznamka(t, spojene) {
+function poznamka(t, spojene, state) {
   const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene[0];
-  if (!stav) return tr('Tenhle zdroj Agenteeq na {0} nesleduje.', tomtoPocitaci());
-  if (t.web) return `${tr('Webové chaty limity ani tokeny nesdílejí.')}${stav.state === 'missing' ? tr(' Rozšíření pro Chrome zatím nic neposlalo.') : ''}`;
+  if (!stav) return tr('Bez údajů o limitu');
+  if (t.web) return tr('Limity nejsou dostupné');
   if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
-  if (t.id === 'claude') return tr('Přesné limity Claude (5hodinový a týdenní) se ukážou po zapnutí propojení s Claude Code v Nastavení.');
-  if (t.id === 'codex') return tr('Codex zapisuje limity až po první odpovědi. Zatím žádné nezapsal.');
-  return tr('Limit se z místních dat zjistit nedá, Agenteeq měří jen tokeny.');
+  if (t.id === 'claude' && !(state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current)) return tr('Propoj Claude Code v Nastavení');
+  return tr('Bez údajů o limitu');
 }
 
 export function allToolLimits(state, now = Date.now()) {
@@ -62,7 +61,7 @@ export function limitsAll(state, now = Date.now()) {
   const rows = allToolLimits(state, now);
   const items = rows.map(({ t, spojene, okna, tok }) => {
     const stari = okna.length ? Math.max(...okna.map((l) => l.at || 0)) : 0;
-    const nota = poznamka(t, spojene);
+    const nota = poznamka(t, spojene, state);
     const chybi = !okna.length && spojene.every((c) => c.state === 'missing');
     return `<li class="ltool${chybi ? ' is-off' : ''}">
       <span class="lwin-logo">${glyph(t.logo)}</span>
@@ -76,6 +75,5 @@ export function limitsAll(state, now = Date.now()) {
   return `<details class="lim-all" data-lim-all${otevreno ? ' open' : ''}>
     <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${tr('z {0} s měřeným limitem', rows.length)}</span>${ICON.chev}</summary>
     <ul class="ltool-list">${items.join('')}</ul>
-    <p class="ltool-foot">${tr('Čísla jsou z toho, co nástroje samy zapisují na {0}. Nic se neodhaduje a nikam se neposílá.', tomtoPocitaci())}</p>
   </details>`;
 }

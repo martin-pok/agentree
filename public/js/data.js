@@ -7,8 +7,8 @@ import { tr, podleJazyka } from './i18n.js';
 export const sessionTotal = (s) => (s.tokens?.input || 0) + (s.tokens?.output || 0);
 
 export const STATUS_ORDER = { needs_input: 0, limited: 1, failed: 2, working: 3, waiting: 4, idle: 5, archived: 6 };
-// Stavy, které vyžadují člověka: rozhodnutí, vyčerpaný limit, selhané spuštění.
-export const needsYou = (s) => s.status === 'needs_input' || s.status === 'limited' || s.status === 'failed';
+// Rozhodnutí vyžaduje jen skutečný dotaz agenta. Limit a selhání mají vlastní stavy.
+export const needsYou = (s) => s.status === 'needs_input';
 // Pořadí v seznamech: nejdřív co potřebuje tebe, pak co pracuje, zbytek podle času.
 export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.working ? STATUS_ORDER[s.status] : STATUS_ORDER.working + 1);
 

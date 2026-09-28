@@ -98,14 +98,13 @@ function mount(el) {
         <div class="sec-head"><h2 id="tl-h">${tr('Dnešní směna')}</h2><span class="muted small">${tr('posledních 12 hodin')}</span></div>
         <div class="card tl-card" data-region="timeline"></div>
       </section>
-      <section data-enter style="--i:3" data-region="meter" aria-label="${tr('Tokeny dnes')}"></section>
+      <section data-enter style="--i:3" data-region="meter" aria-label="${tr('Zaznamenané tokeny dnes')}"></section>
       <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
-        <div class="sec-head"><h2 id="chart-h">${tr('Tokeny')}</h2>
+        <div class="sec-head"><h2 id="chart-h">${tr('Tokeny z přepisů')}</h2>
           <label class="select"><span class="sr-only">${tr('Období')}</span><select data-action="period"><option value="today">${tr('Dnes')}</option><option value="day">${tr('24 hodin')}</option><option value="week">${tr('Týden')}</option><option value="fortnight">${tr('14 dní')}</option><option value="month">${tr('30 dní')}</option></select></label>
         </div>
         <div data-region="chart"></div>
         <div class="legend" data-region="legend"></div>
-        <p class="note note--tight">${tr('Vstup + výstup z přepisů na {0}. Není to cena ani kredity – ty najdeš v', tomtoPocitaci())} <a class="link-inline" href="#/utrata">${tr('Útratě')}</a>.</p>
       </section>
     </div>
     <div class="ov-col bal-col">
@@ -195,10 +194,12 @@ function update(topics = new Set(['all'])) {
   const running = state.runtimes.filter((r) => r.running).length;
 
   // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti (needsYou, stav working/waiting).
-  const failedCount = needs.filter((s) => s.status === 'failed').length;
-  const decideCount = needs.length - failedCount;
+  const failed = all.filter((s) => s.status === 'failed');
+  const limited = all.filter((s) => s.status === 'limited');
+  const failedCount = failed.length;
+  const decideCount = needs.length;
   const waiting = all.filter((s) => s.status === 'waiting');
-  const live = [...needs, ...working, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
+  const live = [...needs, ...failed, ...limited, ...working, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
   const STRIP_MAX = 12;
   if (changed(topics, 'sessions', 'runtimes')) {
     el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
@@ -211,14 +212,14 @@ function update(topics = new Set(['all'])) {
     </div>
     <div class="pb-stats">
       <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${tr('potřebuje tebe')}</span></a>
-      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${failedCount}</b><span>${tr('selhalo')}</span></a>
+      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=failed"><b data-odo>${failedCount}</b><span>${tr('selhalo')}</span></a>
       <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b data-odo>${waiting.length}</b><span>${tr('čeká na zadání')}</span></a>
     </div>
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
-        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : needsYou(s) ? s.reason : tr('Čeká na zadání');
-        return `<li><a class="pb-agent" data-state="${needsYou(s) ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
+        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
+        return `<li><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
@@ -238,8 +239,8 @@ function update(topics = new Set(['all'])) {
     const avg = Math.max(0, tokensSince(everything,startOfDay(now - 7 * DAY)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     fill(el, 'meter', `
-    <div class="meter-row"><span>${tr('Tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>
-    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div><p class="metric-note">${tr('Technická metrika z lokálních přepisů, ne cena ani limit předplatného. Skutečné náklady jsou v Útratě.')}${everything.some((s) => s.observation?.partial) ? ` ${tr('Vzdálený Claude ukládá jen část přepisu; jeho spotřeba nemusí být v součtu úplná.')}` : ''}</p>`);
+    <div class="meter-row"><span>${tr('Zaznamenané tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>
+    <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div>`);
   }
 
   // Souhrn „kolik dnes" je nahoře; tohle odpovídá na druhou půlku otázky – který nástroj to byl.
@@ -267,13 +268,8 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {
     const windows = limitWindows(state.limits, now);
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-    const claudeExact = state.limits.some((l) => l.source === 'statusline' || l.source === 'desktop-usage');
-    const usesClaude = all.some((s) => s.connector === 'claude-code');
-    const limitHint = usesClaude && !claudeExact
-      ? `<p class="lwin-hint">${tr('Přesné limity Claude (5 h a týden) uvidíš po zapnutí propojení s Claude Code v')} <a class="link-inline" href="#/nastaveni">${tr('Nastavení')}</a> ${tr('– Claude Code je pak posílá sám.')}</p>`
-      : '';
     fill(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
-       ${windows}${limitHint}
+       ${windows}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}</b>${creditAge(c)?.stary ? `<small class="je-stare">${esc(creditAge(c).kratce)}</small>` : ''}</a>`).join('')}
        ${limitsAll(state, now)}`);
   }

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.3',
+    date: '2026-09-28',
+    title: 'Přehled ukazuje jen ověřený stav',
+    items: [
+      'Nadpis i podnabídka Nastavení zůstávají při posouvání na místě.',
+      'Selhaný agent má vlastní filtr. V „Potřebuje tvé rozhodnutí“ uvidíš jen agenta, který se skutečně ptá.',
+      'U limitů se nezobrazuje staré měření ani dopočítaný čas obnovy. Tokeny jsou jasně označené jako záznam z místních přepisů.',
+    ],
+    en: {
+      title: 'The overview shows verified status',
+      items: [
+        'The Settings heading and submenu remain in place while you scroll.',
+        'Failed agents have their own filter. “Needs your decision” shows only agents that actually asked you a question.',
+        'Old limit readings and calculated reset times are no longer displayed. Tokens are clearly identified as readings from local transcripts.',
+      ],
+    },
+  },
+  {
     version: '0.29.2',
     date: '2026-09-28',
     title: 'Menu Nastavení zůstává na místě',

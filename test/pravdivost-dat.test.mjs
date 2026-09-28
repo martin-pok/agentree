@@ -7,7 +7,7 @@ import { zustatekKreditu } from '../src/connectors/codex.js';
 import { detectTopUps } from '../src/credits.js';
 import { findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
 import { CURSOR_HEADERS_SQL } from '../src/connectors/cursor.js';
-import { limitState, limitAge, creditAge } from '../public/js/ui.js';
+import { limitState, limitAge, creditAge, currentLimits } from '../public/js/ui.js';
 import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
 
 // Každý test tady odpovídá nepravdě, kterou audit 22. 9. 2026 našel ve skutečných datech: aplikace
@@ -289,12 +289,12 @@ test('zůstatek kreditů nese datum a starý se zvýrazní', () => {
 
 /* ---------- Limity v rozhraní: stáří a vypršelá okna ---------- */
 
-test('okno bez času obnovy po své délce vyprší – staré procento se neukáže jako současné', () => {
+test('okno bez přesného času obnovy se z živého přehledu odstraní, jakmile měření zestárne', () => {
   const now = Date.now();
-  const l = { windowMinutes: 300, usedPercent: 71, resetsAt: null, at: now - 6 * H };
-  assert.equal(limitState(l, now).renewed, true, 'šest hodin po odečtu pětihodinového okna');
-  assert.equal(limitState(l, now).label, 'Obnoveno');
-  assert.equal(limitState({ ...l, at: now - H }, now).label, '71 %', 'v rámci okna číslo platí');
+  const l = { id: 'codex:primary', provider: 'openai', windowMinutes: 300, usedPercent: 71, resetsAt: null, at: now - 6 * H };
+  assert.equal(currentLimits([l], now).length, 0);
+  assert.equal(currentLimits([{ ...l, at: now - H }], now).length, 0, 'ani hodinu starý údaj není živý');
+  assert.equal(currentLimits([{ ...l, at: now - 5 * 60e3 }], now).length, 1, 'čerstvé měření zůstává');
 });
 
 test('obnovené okno netvrdí, že je plná kapacita – nový stav nikdo nezměřil', () => {
@@ -305,7 +305,8 @@ test('obnovené okno netvrdí, že je plná kapacita – nový stav nikdo nezmě
 
 test('limit starší než půl hodiny nese datum měření', () => {
   const now = Date.now();
-  assert.equal(limitAge({ at: now - 5 * 60e3 }, now), '', 'čerstvý údaj data nepotřebuje');
+  assert.equal(limitAge({ at: now - 60e3 }, now), '', 'čerstvý údaj data nepotřebuje');
+  assert.equal(limitAge({ at: now - 5 * 60e3 }, now), 'změřeno před 5\u00a0min');
   assert.equal(limitAge({ at: now - 20 * H }, now), 'změřeno před 20\u00a0h');
 });
 

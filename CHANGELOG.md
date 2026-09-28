@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.3 – 2026-09-28 · čitelnější stav agentů a měřených dat
+
+- Nadpis Nastavení zůstává při posouvání společně s podnabídkou na místě i na úzké obrazovce.
+- Selhaný agent zůstává v hlavním přehledu a má vlastní filtr v Agentech; do „Potřebuje tvé rozhodnutí“ patří jen skutečný dotaz agenta. Limit má samostatný filtr.
+- Přehled limitů používá jen měření mladší 30 minut. Neznámý čas obnovy nedopočítává a historické vzorky Claude Desktopu nevydává za aktuální procento předplatného. Nezdokumentovaná hodnota `xu` se nevydává za procento útraty.
+- Hlavní tokenová metrika je výslovně označená jako zaznamenané tokeny z místních přepisů. Z Přehledu, Statistik a Projektů zmizely dlouhé vysvětlivky, které překrývaly účel karet.
+- Desktopové QA kontroluje ukotvení nadpisu a podnabídky v Chromiu i WebKitu a oddělení selhání od rozhodnutí.
+
 ## 0.29.2 – 2026-09-28 · stabilní podnabídka Nastavení
 
 - Levá podnabídka Nastavení zůstává při posunu dlouhé skupiny v původní výšce vedle obsahu; už nesjíždí k horní hraně okna. Vodorovná podnabídka na menších oknech si zachovává své chování.
