@@ -23,7 +23,8 @@ export function radekNapojeni(n) {
   if (n.druh === 'agent' && n.nainstalovano === null) {
     stav = stateBadge('unavailable', tr('Nepodařilo se zjistit'));
   } else if (n.druh === 'agent' && !n.nainstalovano) {
-    stav = stateBadge('missing', tr('Nenalezen'));
+    // Přepis agenta může být připojený i bez jeho příkazového programu.
+    stav = stateBadge('missing', tr('CLI nenalezeno'));
   } else if (n.druh === 'web' && !n.nainstalovano) {
     stav = stateBadge('missing', tr('Potřebuje rozšíření'));
     akce = `<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button>`;

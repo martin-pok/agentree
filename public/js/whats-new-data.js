@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.5',
+    date: '2026-09-30',
+    title: 'Codex z ChatGPT pro Mac je rozpoznaný',
+    items: [
+      'Agenteeq najde Codex přibalený v ChatGPT pro Mac i při spuštění z Finderu. Stav přihlášení se ověří přímo v Codexu; dostupné jsou také režimy na pozadí a v Terminálu.',
+    ],
+    en: {
+      title: 'Codex in ChatGPT for Mac is recognized',
+      items: [
+        'Agenteeq finds the Codex CLI bundled with ChatGPT for Mac even when launched from Finder. Sign-in is checked with Codex itself, and background and Terminal modes are available.',
+      ],
+    },
+  },
+  {
     version: '0.29.4',
     date: '2026-09-29',
     title: 'Rozhodnutí jen tehdy, když se agent ptá',

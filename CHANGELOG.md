@@ -2,6 +2,10 @@
 
 ## Nezveřejněno
 
+## 0.29.5 – 2026-09-30 · správné rozpoznání Codexu v ChatGPT pro Mac
+
+- ChatGPT pro Mac nyní zpřístupní přibalený Codex CLI i aplikaci Agenteeq spuštěné z Finderu. Stav „Napojené modely“ ho proto správně ověří i bez PATH a nabídne režimy Codexu na pozadí a v Terminálu. Když příkazový program skutečně chybí, karta to výslovně odliší od dostupných přepisů.
+
 ## 0.29.4 – 2026-09-29 · přesný prázdný stav rozhodnutí
 
 - Prázdná sekce rozhodnutí už netvrdí, že všichni agenti běží nebo že se v ní zobrazí vyčerpaný limit. Zobrazuje jen ověřený stav čekajících dotazů.

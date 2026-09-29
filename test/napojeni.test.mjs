@@ -317,3 +317,32 @@ test('program agenta se najde i mimo PATH přihlašovacího shellu (~/.local/bin
   assert.equal(zeShellu.bins.claude, '/opt/jinde/claude');
   assert.ok(kandidatiProgramu('claude', home).includes(path.join(home, '.claude', 'local', 'claude')));
 });
+
+test('Codex CLI zabalené v ChatGPT.app se najde i bez PATH a ověří napojení', async () => {
+  const { detectLaunchEnv } = await import('../src/launcher.js');
+  const home = await tempDir('agenteeq-codex-app-');
+  const chatgptApp = path.join(home, 'ChatGPT.app');
+  const codex = path.join(chatgptApp, 'Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex');
+  await fs.mkdir(path.dirname(codex), { recursive: true });
+  await fs.writeFile(codex, '#!/bin/sh\nprintf "Logged in using ChatGPT\\n" >&2\n', { mode: 0o755 });
+  const env = await detectLaunchEnv({
+    ollama: { models: async () => ({ ok: false, models: [] }) },
+    home,
+    chatgptApp,
+    runImpl: async () => ({ ok: true, stdout: '' }),
+    kandidati: () => [],
+  });
+  assert.equal(env.bins.codex, codex);
+  assert.equal(env.chatgptApp, true);
+  const napojeni = createNapojeni({
+    bins: () => env.bins,
+    run: async (bin, args) => {
+      assert.equal(bin, codex);
+      assert.deepEqual(args, ['login', 'status']);
+      return { stderr: 'Logged in using ChatGPT' };
+    },
+  });
+  const stav = (await napojeni.prehled()).find((agent) => agent.id === 'codex');
+  assert.equal(stav.nainstalovano, true);
+  assert.equal(stav.napojeno, true);
+});
