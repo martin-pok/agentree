@@ -147,6 +147,8 @@ okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … 
 | Codex | `codex login` na pozadí (Codex otevře přihlášení ChatGPT v prohlížeči) | `codex login status` → „Logged in using …“ | zdroj `codex-rs/cli/src/login.rs`, 24. 9. 2026 |
 | ChatGPT, Claude.ai, Gemini, Perplexity na webu | otevře službu v prohlížeči (potřebuje spárované rozšíření) | první stav z té služby od rozšíření | – |
 
+Na macOS se Codex CLI hledá také přímo v `ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` (a ve starším umístění `Contents/Resources/codex`). Finder nemusí mít stejný PATH jako interaktivní shell; přepisy Codexu lze číst i bez CLI, ale ověření přihlášení a spuštění agenta potřebují jeho spustitelný soubor.
+
 - **Přihlašuje se vždycky u dodavatele.** Anthropic ani OpenAI nenabízejí cizím aplikacím
   přihlášení k předplatnému (Pro, Max, Plus) – `docs/CLOUD-ACCOUNTS.md`. Převzít přihlášení Claude
   Code nebo Codexu by znamenalo vydávat se za jejich aplikaci; to Agenteeq nedělá. Spouští jejich

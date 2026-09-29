@@ -10,7 +10,11 @@ import { ui } from './texty.js';
 
 export const PROMPT_MAX = 20000;
 const URL_PROMPT_MAX = 6000;
-const BUNDLED_CODEX = '/Applications/ChatGPT.app/Contents/Resources/codex';
+const CHATGPT_APP = '/Applications/ChatGPT.app';
+const CODEX_IN_CHATGPT = [
+  'Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex',
+  'Contents/Resources/codex',
+];
 
 export const CLAUDE_PERMISSIONS = { plan: ui('Jen plán, bez změn'), acceptEdits: ui('Smí upravovat soubory') };
 export const CODEX_SANDBOXES = { 'read-only': ui('Jen čtení'), 'workspace-write': ui('Smí upravovat projekt') };
@@ -46,7 +50,7 @@ const spustitelny = (p) => {
   }
 };
 
-export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgramu, jeProgram = spustitelny, runImpl = run }) {
+export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgramu, jeProgram = spustitelny, runImpl = run, chatgptApp = CHATGPT_APP }) {
   // Tentýž průchod shellem vypíše i proměnné, podle kterých agenti zapisují přepisy jinam
   // (CLAUDE_CONFIG_DIR, CODEX_HOME) – aplikace z Finderu je sama nevidí.
   const r = await runImpl('/bin/zsh', ['-lc', `for c in ${PROGRAMY.join(' ')}; do p=$(command -v "$c" 2>/dev/null) && echo "$c=$p"; done; for v in ${PROMENNE_PREPISU.join(' ')}; do eval "h=\\$$v"; [ -n "$h" ] && echo "env:$v=$h"; done`], { timeout: 6000 });
@@ -63,8 +67,13 @@ export async function detectLaunchEnv({ ollama, home, kandidati = kandidatiProgr
     if (!bins[name]) bins[name] = kandidati(name, home).find(jeProgram);
     if (!bins[name]) delete bins[name];
   }
-  if (!bins.codex && fs.existsSync(BUNDLED_CODEX)) bins.codex = BUNDLED_CODEX;
-  return { bins, env, chatgptApp: fs.existsSync('/Applications/ChatGPT.app'), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
+  // ChatGPT dnes dodává Codex CLI uvnitř CodexCLI.app; starší balíky ho měly přímo
+  // v Resources. Aplikace spuštěná z Finderu nemusí mít cestu k tomuto programu v PATH.
+  if (!bins.codex) {
+    const bundled = CODEX_IN_CHATGPT.map((p) => path.join(chatgptApp, p)).find(jeProgram);
+    if (bundled) bins.codex = bundled;
+  }
+  return { bins, env, chatgptApp: fs.existsSync(chatgptApp), claudeApp: fs.existsSync('/Applications/Claude.app'), ollama: await ollama.models() };
 }
 
 export function launchTargets(env) {

@@ -270,7 +270,7 @@ export default {
     "z {0} s měřeným limitem": "of {0} with a measured limit",
     "Načítám data z {0}…": "Loading data from {0}…",
     "Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Potom už jen ověřuje, že napojení platí. Z webových chatů se dozví jen stav konverzace, text zpráv ne.": "Agenteeq never sees passwords or access keys – you sign in directly with the provider. After that it only checks that the connection still works. From web chats it learns only the conversation status, never the message text.",
-    "Nenalezen": "Not found",
+    "CLI nenalezeno": "CLI not found",
     "naposledy pracoval": "last worked",
     "posledních {0} dní tu nepracoval": "no work here in the last {0} days",
     "zatím tu nepracoval": "no work here yet",
