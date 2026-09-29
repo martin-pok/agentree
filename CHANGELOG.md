@@ -2,6 +2,8 @@
 
 ## Nezveřejněno
 
+## 0.29.4 – 2026-09-29 · přesný prázdný stav rozhodnutí
+
 - Prázdná sekce rozhodnutí už netvrdí, že všichni agenti běží nebo že se v ní zobrazí vyčerpaný limit. Zobrazuje jen ověřený stav čekajících dotazů.
 
 ## 0.29.3 – 2026-09-28 · čitelnější stav agentů a měřených dat

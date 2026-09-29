@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.4',
+    date: '2026-09-29',
+    title: 'Rozhodnutí jen tehdy, když se agent ptá',
+    items: [
+      'Prázdná sekce rozhodnutí ukazuje skutečný stav: žádný agent teď nečeká na tvou odpověď. Selhání a vyčerpané limity zůstávají ve svých vlastních přehledech.',
+    ],
+    en: {
+      title: 'Decisions only when an agent asks',
+      items: [
+        'The empty decisions section now shows the actual status: no agent is waiting for your answer. Failures and exhausted limits stay in their own views.',
+      ],
+    },
+  },
+  {
     version: '0.29.3',
     date: '2026-09-28',
     title: 'Přehled ukazuje jen ověřený stav',
