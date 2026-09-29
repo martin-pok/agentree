@@ -181,6 +181,7 @@ for (const engine of engines) {
     assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
     assert.equal(await page.locator('.decision').count(), 0, `${engine}: selhání se nesmí objevit mezi rozhodnutími`);
+    assert.equal(await page.locator('.calm p').count(), 0, `${engine}: prázdný stav rozhodnutí nesmí slibovat zobrazení vyčerpaného limitu`);
     assert.equal(await page.locator('.metric-note, .lwin-hint, .token-card .note').count(), 0, `${engine}: Přehled znovu ukazuje dlouhé vysvětlivky`);
     assert.match(await page.locator('.budget-label').getAttribute('aria-label'), /Zaznamenané tokeny dnes/);
     await page.locator('.pb-stat').nth(1).click();
