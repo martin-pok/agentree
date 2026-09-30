@@ -121,12 +121,11 @@ export function plynulePosouvani() {
     const primo = !plynule || (window.agenteeqDesktop === true && e.deltaMode === 0 && Math.abs(krok) < 50);
     if (primo) {
       const kam = Math.min(maximum(), Math.max(0, scrollY + krok));
-      if (Math.abs(kam - scrollY) < 1) return;
+      if (Math.abs(kam - scrollY) < 1) { if (bezi) zastav(); return; }
       e.preventDefault();
-      zastav();
-      html.style.scrollBehavior = 'auto';
-      scrollTo(0, kam);
-      html.style.scrollBehavior = '';
+      // Stejný okamžitý skok jako při přepnutí obrazovky: WebKit musí před scrollTo
+      // opravdu přepočítat `scroll-behavior`, jinak může krok trackpadu spolknout.
+      skocNa(kam);
       return;
     }
     const novy = Math.min(maximum(), Math.max(0, (bezi ? cil : scrollY) + krok));

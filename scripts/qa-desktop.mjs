@@ -168,6 +168,26 @@ for (const engine of engines) {
       return imgs.map((img) => ({ src: img.getAttribute('src'), width: img.naturalWidth, height: img.naturalHeight }));
     });
     assert.ok(loga.length >= 4 && loga.every((img) => img.width > 0 && img.height > 0), `${engine}: některé logo se nevykreslilo: ${JSON.stringify(loga)}`);
+    const obrazekPriAktualizaci = await page.evaluate(async () => {
+      const { fill } = await import('/js/ui.js');
+      const vzory = [...document.querySelectorAll('img.logo')].filter((img) => img.naturalWidth > 0);
+      const druhy = vzory.find((img) => img.src !== vzory[0].src);
+      if (!druhy) return null;
+      const host = document.createElement('div');
+      host.innerHTML = '<section data-region="qa-logo"></section>';
+      document.body.append(host);
+      const prvniHtml = vzory[0].outerHTML;
+      fill(host, 'qa-logo', `${prvniHtml}<span>První stav</span>`);
+      const prvni = host.querySelector('img');
+      await prvni.decode();
+      fill(host, 'qa-logo', `${prvniHtml}<span>Druhý živý stav</span>`);
+      const zachovany = host.querySelector('img') === prvni && host.querySelector('img').naturalWidth > 0;
+      fill(host, 'qa-logo', `${druhy.outerHTML}<span>Jiné logo</span>`);
+      const zmeneny = host.querySelector('img') !== prvni;
+      host.remove();
+      return { zachovany, zmeneny };
+    });
+    assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila dekódované logo nebo ponechala staré`);
     const obnova = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
     const znovunacteni = page.waitForEvent('framenavigated');
     await page.locator('#refresh-app').click();

@@ -8,7 +8,20 @@ export function fill(root, name, html) {
   const el = root.querySelector(`[data-region="${name}"]`);
   if (!el || el._html === html) return false;
   const fokus = klicFokusu(el);
+  // Živé přepisy mohou měnit text karty několikrát za sekundu. Již dekódované logo
+  // ponecháme jako stejný DOM uzel, aby mezi dvěma snímky nezmizelo při novém innerHTML.
+  const obrazky = new Map();
+  for (const img of el.querySelectorAll('img')) {
+    if (!img.complete || !img.naturalWidth) continue;
+    const key = img.outerHTML;
+    if (!obrazky.has(key)) obrazky.set(key, []);
+    obrazky.get(key).push(img);
+  }
   el.innerHTML = html;
+  for (const img of el.querySelectorAll('img')) {
+    const old = obrazky.get(img.outerHTML)?.shift();
+    if (old) img.replaceWith(old);
+  }
   el._html = html;
   if (fokus) vratFokus(el, fokus);
   oznacRolovani();
