@@ -7,10 +7,10 @@ export const RELEASES = [
     version: '0.29.7',
     date: '2026-09-30',
     title: 'Čistší posouvání Nastavení',
-    items: ['Nadpis a nabídka zůstávají na místě. Horní tlačítka při posouvání na širokém okně nepřekrývají karty a po návratu nahoru se znovu objeví.'],
+    items: ['Nadpis a nabídka zůstávají na místě. Horní tlačítka při posouvání na širokém okně nepřekrývají karty a po návratu nahoru se znovu objeví.', 'Popisky a štítky mají čitelnou velikost nejméně 12 px.'],
     en: {
       title: 'Cleaner scrolling in Settings',
-      items: ['The heading and navigation stay in place. On wide windows, top controls no longer cover cards while scrolling and reappear when you return to the top.'],
+      items: ['The heading and navigation stay in place. On wide windows, top controls no longer cover cards while scrolling and reappear when you return to the top.', 'Labels and badges use a readable 12 px minimum.'],
     },
   },
   {

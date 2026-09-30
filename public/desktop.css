@@ -58,9 +58,9 @@ input[type='checkbox']:not([role='switch']):checked::after { content: ''; width:
 .welcome-providers > span:nth-child(3) { animation-delay: .2s; }
 .welcome-providers .glyph, .welcome-providers .logo { width: 28px; height: 28px; }
 .welcome-demo, .welcome-project { width: 100%; border: 1px solid #393140; border-radius: var(--r-md); padding: 20px; background: var(--stage-2); }
-.welcome-demo-label { display: block; font-size: 11px; color: #B9B3C5; margin-bottom: 20px; }
+.welcome-demo-label { display: block; font-size: 12px; color: #B9B3C5; margin-bottom: 20px; }
 .welcome-demo > div { display: flex; align-items: center; gap: 12px; padding: 16px 0; font-size: 13px; }
-.welcome-demo small { margin-left: auto; color: #B9B3C5; font-size: 11px; }
+.welcome-demo small { margin-left: auto; color: #B9B3C5; font-size: 12px; }
 .welcome-demo .icon { width: 15px; margin-left: auto; }
 .welcome-demo .welcome-attention { color: #F5ABBF; border-top: 1px solid #393140; border-bottom: 1px solid #393140; }
 .welcome-dot { width: 8px; height: 8px; border-radius: 50%; background: #A3A0AA; flex: none; }
@@ -122,14 +122,14 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
 .welcome-browser { width: 280px; border: 1px solid #393140; border-radius: var(--r-md); overflow: hidden; background: var(--stage-2); animation: welcome-copy .55s var(--ease) both; }
 .wb-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid #393140; }
 .wb-bar i { width: 8px; height: 8px; border-radius: 50%; background: #4A4152; }
-.wb-bar span { margin-left: 8px; flex: 1; height: 20px; border-radius: var(--r-full); background: rgba(244, 243, 247, .06); color: #B9B3C5; font: 400 11px/20px var(--f-mono); text-align: center; }
+.wb-bar span { margin-left: 8px; flex: 1; height: 20px; border-radius: var(--r-full); background: rgba(244, 243, 247, .06); color: #B9B3C5; font: 400 12px/20px var(--f-mono); text-align: center; }
 .wb-body { display: grid; gap: 12px; padding: 16px; }
 .wb-agent { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .wb-agent .glyph, .wb-agent .logo { width: 20px; height: 20px; }
-.wb-agent em { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-style: normal; font-size: 11px; color: #B9B3C5; }
+.wb-agent em { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-style: normal; font-size: 12px; color: #B9B3C5; }
 .wb-input { display: grid; gap: 6px; padding: 12px; border-radius: var(--r-full); background: rgba(244, 243, 247, .07); box-shadow: inset 0 0 0 1px rgba(201, 154, 62, .45); }
 .wb-input span { font-size: 13px; color: var(--ivory); }
-.wb-input small { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--brass); }
+.wb-input small { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--brass); }
 .wb-input small .icon { width: 12px; height: 12px; }
 .welcome-browser-sites { display: flex; gap: 8px; margin-top: 20px; }
 .welcome-browser-sites span { width: 36px; height: 36px; border-radius: var(--r-full); display: grid; place-items: center; background: var(--card); animation: welcome-copy .65s var(--ease) both; }

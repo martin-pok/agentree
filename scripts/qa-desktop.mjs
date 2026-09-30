@@ -160,6 +160,20 @@ for (const engine of engines) {
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);
+    const malePismo = await page.evaluate(() => {
+      const nodes = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (!node.textContent.trim()) continue;
+        const element = node.parentElement;
+        const style = getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden') continue;
+        const size = Number.parseFloat(style.fontSize);
+        if (size < 12) nodes.push({ text: node.textContent.trim().slice(0, 48), size, selector: element.tagName.toLowerCase() + (element.className ? `.${String(element.className).split(/\s+/u)[0]}` : '') });
+      }
+      return nodes;
+    });
+    assert.deepEqual(malePismo, [], `${engine}: viditelný text menší než 12 px: ${JSON.stringify(malePismo)}`);
     // Logo musí být skutečně dekódovatelné i po aktualizaci; dřívější roční HTTP cache
     // nechala v nativní aplikaci bílé kruhy místo značek služeb.
     const loga = await page.evaluate(async () => {
