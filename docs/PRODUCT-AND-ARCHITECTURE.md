@@ -64,6 +64,8 @@ Kolečko používá společný dojezd v `public/js/plynule-posouvani.js` pro apl
 
 Na monitoru na výšku jsou velké navigační dlaždice v klidu průhledné a odsazené od hran panelu. Barva se objeví při hoveru nebo fokusu; aktivní stránka zůstává rozpoznatelná i bez kurzoru výraznějším textem a mosazným bodem.
 
+Nastavení na šířkách nad 1180 px ponechává nadpis a levé podmenu ve výchozí výšce. Pravé horní akce se při nenulovém posunu skryjí, po návratu nahoru se obnoví; ukotvený řádek nemá pozadí ani nesmí zachytávat kliknutí nad kartami. Na užších oknech zůstává společná hlavička nad vodorovnou navigací.
+
 ### Profilové obrázky
 
 Profilové obrázky jsou lokální inline SVG, ne vzdálené assety. Výhodou je ostrý Retina výstup, okamžité vykreslení, nulová síťová stopa a jednotná abstraktní řeč. Rozšiřování kolekce znamená přidat celou sadu konzistentních variant v `public/js/avatars.js`, zachovat stabilní indexy existujících voleb a ověřit grid na desktopu i mobilu.

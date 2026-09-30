@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.29.7 – 2026-09-30 · Nastavení bez překrývajícího pásu
+
+- Na širokém okně zůstává při posouvání Nastavení ukotvený nadpis a podmenu. Pravé horní akce se skryjí a průhledný zbytek řádku neblokuje karty; po návratu nahoru jsou akce znovu dostupné.
+- Všechny popisky, odznaky, časové osy a štítky v aplikaci, na webu i v rozšíření mají nejméně 12 px. Automatická kontrola odmítne jakýkoli menší text při dalším vývoji.
+- QA v Chromiu a WebKitu ověřuje polohu nadpisu a menu, odstranění pásu, průchod kliknutí a obnovení klávesového fokusu.
+
 ## 0.29.6 – 2026-09-30 · stabilnější posun a loga při živých změnách
 
 - Malé kroky trackpadu používají ve WebKitu stejný okamžitý posun jako přepnutí obrazovky. Před posunem se přepočítá režim `scroll-behavior`, aby gesto nezůstalo viset mezi nativním a plynulým posouváním.

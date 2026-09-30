@@ -360,8 +360,11 @@ const behemRolovani = () => Date.now() - roluje < 180;
 // html.is-scrolling ty efekty na dobu posouvání vypne (styles.css); klik zůstává funkční.
 let posouvaSe = false;
 let konecPosouvani = 0;
+const oznacPosunStranky = () => document.documentElement.classList.toggle('has-page-scroll', window.scrollY > 0);
+oznacPosunStranky();
 window.addEventListener('scroll', () => {
   roluje = Date.now();
+  oznacPosunStranky();
   if (!posouvaSe) { posouvaSe = true; document.documentElement.classList.add('is-scrolling'); }
   clearTimeout(konecPosouvani);
   konecPosouvani = setTimeout(() => { posouvaSe = false; document.documentElement.classList.remove('is-scrolling'); }, 160);
