@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.29.6 – 2026-09-30 · stabilnější posun a loga při živých změnách
+
+- Malé kroky trackpadu používají ve WebKitu stejný okamžitý posun jako přepnutí obrazovky. Před posunem se přepočítá režim `scroll-behavior`, aby gesto nezůstalo viset mezi nativním a plynulým posouváním.
+- Živá aktualizace karty ponechá již dekódovaná loga jako stejné DOM prvky. Nový obsah se může změnit bez prázdného snímku mezi odstraněním a opětovným načtením značky; odlišné logo se správně nahradí.
+- Desktopové QA ověřuje tento přechod v Chromiu i WebKitu a znovu měří kolečko, trackpad, zamčené překryvy a ukotvení Nastavení.
+
 ## 0.29.5 – 2026-09-30 · správné rozpoznání Codexu v ChatGPT pro Mac
 
 - ChatGPT pro Mac nyní zpřístupní přibalený Codex CLI i aplikaci Agenteeq spuštěné z Finderu. Stav „Napojené modely“ ho proto správně ověří i bez PATH a nabídne režimy Codexu na pozadí a v Terminálu. Když příkazový program skutečně chybí, karta to výslovně odliší od dostupných přepisů.

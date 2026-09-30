@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.6',
+    date: '2026-09-30',
+    title: 'Plynulejší posun a stálá loga',
+    items: [
+      'Malé kroky trackpadu v aplikaci se provedou spolehlivěji i po přepnutí obrazovky nebo směru posouvání.',
+      'Loga služeb při živé aktualizaci karet zůstávají na místě; změněná značka se načte správně.',
+    ],
+    en: {
+      title: 'Smoother scrolling and stable logos',
+      items: [
+        'Small trackpad steps in the app respond more reliably after switching screens or changing scroll direction.',
+        'Service logos stay visible while cards update live; a changed logo still loads correctly.',
+      ],
+    },
+  },
+  {
     version: '0.29.5',
     date: '2026-09-30',
     title: 'Codex z ChatGPT pro Mac je rozpoznaný',
