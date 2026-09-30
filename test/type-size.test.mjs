@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const textFiles = async (directory) => {
   const entries = await readdir(join(root, directory), { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {

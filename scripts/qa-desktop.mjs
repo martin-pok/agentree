@@ -511,7 +511,10 @@ for (const engine of engines) {
       assert.equal(await page.locator('.topbar-actions').isVisible(), true, `${engine} ${sirka}: akce v horním řádku musí být nahoře dostupné`);
       assert.ok(vychozi.max > 300, `${engine} ${sirka}: dlouhé Nastavení se musí dát posouvat`);
       for (const y of [300, vychozi.max]) {
-        await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+        // WebKit v CI po `behavior: 'instant'` polohu nastaví, ale ne v každém běhu
+        // vyšle DOM událost scroll. Skutečné gesto ji vždy vyšle; zde ji doplníme, aby
+        // test měřil stejnou cestu, která přepíná neblokující stav horní lišty.
+        await page.evaluate((top) => { scrollTo({ top, behavior: 'instant' }); dispatchEvent(new Event('scroll')); }, y);
         await page.waitForTimeout(100);
         const po = await merit();
         assert.ok(po.y >= 299, `${engine} ${sirka}: stránka se neposunula (${po.y} px)`);
