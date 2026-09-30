@@ -494,6 +494,7 @@ for (const engine of engines) {
         max: document.documentElement.scrollHeight - innerHeight,
       }));
       const vychozi = await merit();
+      assert.equal(await page.locator('.topbar-actions').isVisible(), true, `${engine} ${sirka}: akce v horním řádku musí být nahoře dostupné`);
       assert.ok(vychozi.max > 300, `${engine} ${sirka}: dlouhé Nastavení se musí dát posouvat`);
       for (const y of [300, vychozi.max]) {
         await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
@@ -505,8 +506,24 @@ for (const engine of engines) {
         assert.ok(Math.abs(po.nadpis - vychozi.nadpis) <= 1,
           `${engine} ${sirka}: nadpis Nastavení vyjel z ${vychozi.nadpis} na ${po.nadpis} px`);
         assert.ok(po.posledni < vyska, `${engine} ${sirka}: poslední položka podmenu je mimo okno`);
+        if (sirka > 1180) {
+          assert.equal(await page.locator('.topbar-actions').isVisible(), false, `${engine} ${sirka}: horní akce při posunu překrývají karty`);
+          const pruchozi = await page.evaluate(() => {
+            const bar = document.querySelector('.topbar');
+            const rect = bar.getBoundingClientRect();
+            const content = document.querySelector('.set-main').getBoundingClientRect();
+            const zasah = document.elementFromPoint(content.left + 32, rect.top + rect.height / 2);
+            return getComputedStyle(bar).backgroundColor === 'rgba(0, 0, 0, 0)' && !bar.contains(zasah);
+          });
+          assert.ok(pruchozi, `${engine} ${sirka}: prázdný pás zakrývá obsah nebo blokuje kliknutí`);
+        }
         if (sirka === 1440 && y === vychozi.max) await page.screenshot({ path: `dist/qa/${engine}-settings-scrolled.png` });
       }
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.topbar-actions')).visibility === 'visible');
+      await page.locator('#refresh-app').focus();
+      assert.equal(await page.locator('#refresh-app').evaluate((el) => document.activeElement === el), true, `${engine} ${sirka}: obnovené akce nejdou ovládat klávesnicí`);
+      await page.evaluate(() => scrollTo({ top: 300, behavior: 'instant' }));
       // Po posunu musí zůstat přepnutí skupin dostupné bez návratu nahoru.
       await page.locator('.set-nav [data-jump="set-ucet"]').click();
       assert.equal(await page.locator('.set-nav [data-jump="set-ucet"]').getAttribute('aria-current'), 'true');
@@ -562,7 +579,9 @@ for (const engine of engines) {
       assert.equal(await skladaci.evaluate((el) => el.parentElement.open), !bylOtevreny, `${engine}: klik hned po posunu kolečkem nezabral`);
       await p.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'));
 
-      await p.locator('[data-action="palette"]').click();
+      // Horní akce se ve scrolovaném Nastavení schovají; vyhledávání zůstává
+      // dostupné klávesovou zkratkou bez návratu nahoru.
+      await p.keyboard.press('ControlOrMeta+k');
       await p.waitForFunction(() => document.body.classList.contains('has-modal'));
       const predZamkem = await p.evaluate(() => scrollY);
       await p.mouse.move(60, 860); // pozadí vyhledávání, ne jeho seznam – ten si kolečko vezme sám

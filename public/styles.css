@@ -329,8 +329,15 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 /* ---------- Horní lišta ---------- */
 .main { position: relative; min-width: 0; padding: calc(var(--band-h) + 32px) 56px 64px 64px; }
 .topbar { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
-/* V Nastavení zůstává nadpis se stavem ve své původní výšce spolu s podmenu. */
+/* V Nastavení zůstává nadpis ve své původní výšce spolu s podmenu. */
 .main--settings > .topbar { position: sticky; top: calc(var(--band-h) + 56px); z-index: 13; background: var(--paper); }
+@media (min-width: 1181px) {
+  /* Pravý obsah prochází celou výškou okna. Prázdná část ukotveného řádku jej
+     nesmí zakrývat ani zachytávat kliknutí; akce jsou dostupné na začátku stránky. */
+  .main--settings > .topbar { background: transparent; pointer-events: none; }
+  .main--settings > .topbar > * { pointer-events: auto; }
+  .has-page-scroll .main--settings > .topbar .topbar-actions { visibility: hidden; pointer-events: none; }
+}
 .page-title { margin: 0; font: 400 36px/1.1 var(--f-display); letter-spacing: -.02em; outline: none; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; }
