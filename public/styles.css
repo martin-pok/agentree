@@ -235,7 +235,7 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    `grid-template-columns` musí být určené: bez něj si mřížka vezme šířku podle nejdelší položky,
    nabídka přeteče panel a odsazení vlevo a vpravo přestane sedět (na užším okně 16 px × 11 px). */
 .nav { flex: none; margin-block: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: center; }
-.nav a { position: relative; display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 16px; border-radius: var(--r-full); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
+.nav a { position: relative; display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 12px 0 16px; border-radius: var(--r-full); text-decoration: none; color: var(--mute); transition: color .2s, background-color .2s; }
 .nav a svg { width: 20px; height: 20px; flex: none; }
 /* Název se musí umět zkrátit. Bez toho roztlačí „Upozornění“ s odznakem „10+“ položku nad šířku
    panelu, nabídka se začne posouvat do stran a odsazení vlevo a vpravo přestane sedět. */
@@ -590,6 +590,8 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .decision-reason { margin: 0; font-size: 14px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .decision-actions { grid-column: 2; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .calm { display: flex; gap: 16px; padding: 24px; background: var(--card); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
+.calm--empty { justify-content: center; }
+.calm-content { display: flex; align-items: center; gap: 16px; }
 .calm strong { display: block; font-size: 15px; }
 .calm p { margin: 4px 0 8px; font-size: 14px; color: var(--ink-2); }
 .calm-mark { width: 36px; height: 36px; border-radius: 50%; background: var(--teal-tint); color: var(--teal-ink); display: grid; place-items: center; flex: none; }

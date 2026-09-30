@@ -242,10 +242,11 @@ for (const engine of engines) {
     });
     assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila dekódované logo nebo ponechala staré`);
     const obnova = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
-    const znovunacteni = page.waitForEvent('framenavigated');
+    const adresaPredObnovou = page.url();
     await page.locator('#refresh-app').click();
     assert.equal((await obnova).status(), 200, `${engine}: tlačítko obnovy nespustilo nové načtení konektorů`);
-    await znovunacteni;
+    await page.waitForFunction(() => !document.querySelector('#refresh-app')?.disabled);
+    assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
     for (const selector of ['.token-card', '.calm']) {
@@ -255,6 +256,18 @@ for (const engine of engines) {
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
     assert.equal(await page.locator('.decision').count(), 0, `${engine}: selhání se nesmí objevit mezi rozhodnutími`);
     assert.equal(await page.locator('.calm p').count(), 0, `${engine}: prázdný stav rozhodnutí nesmí slibovat zobrazení vyčerpaného limitu`);
+    const prazdnyStav = await page.locator('.calm--empty').evaluate((el) => {
+      const card = el.getBoundingClientRect();
+      const content = el.querySelector('.calm-content').getBoundingClientRect();
+      return { delta: Math.abs((card.left + card.width / 2) - (content.left + content.width / 2)), vertical: getComputedStyle(el.querySelector('.calm-content')).alignItems };
+    });
+    assert.ok(prazdnyStav.delta <= 1 && prazdnyStav.vertical === 'center', `${engine}: prázdný stav rozhodnutí není vycentrovaný: ${JSON.stringify(prazdnyStav)}`);
+    const odsazeniOdznaku = await page.locator('.nav [data-nav="upozorneni"]').evaluate((item) => {
+      const row = item.getBoundingClientRect();
+      const badge = item.querySelector('.nav-badge').getBoundingClientRect();
+      return Math.round((row.right - badge.right) * 10) / 10;
+    });
+    assert.equal(odsazeniOdznaku, 12, `${engine}: odznak upozornění musí mít stejný pravý vizuální odstup od pilulky`);
     assert.equal(await page.locator('.metric-note, .lwin-hint, .token-card .note').count(), 0, `${engine}: Přehled znovu ukazuje dlouhé vysvětlivky`);
     assert.match(await page.locator('.budget-label').getAttribute('aria-label'), /Zaznamenané tokeny dnes/);
     await page.locator('.pb-stat').nth(1).click();
@@ -263,6 +276,11 @@ for (const engine of engines) {
     assert.equal(await page.locator('[data-region="table"] .row:not(.row-head)').count(), 1, `${engine}: klik na selhání filtruje skutečně selhané agenty`);
     await page.goto(`${server.url}/#/prehled`);
     await page.locator('.token-card').waitFor();
+    // Změna, kterou server sám nevyslal do SSE, se po návratu nativního okna do popředí musí
+    // propsat bez kliknutí na obnovu. Simulujeme ji přímo v úložišti testovacího serveru.
+    server.app.datastore.data.settings.avatar = 7;
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForFunction(() => document.querySelector('[data-face]')?.dataset.face === '7');
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
@@ -758,7 +776,7 @@ for (const engine of engines) {
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'budget modal close button, overlay and Escape', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'centered empty decision state and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
