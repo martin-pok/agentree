@@ -518,13 +518,13 @@ document.addEventListener('click', async (e) => {
     button.disabled = true;
     try {
       await api.rescan();
-      // Úplné načtení znovu načte i právě otevřené Skills, historii a skripty.
-      // Když server neběží, původní rozhraní zůstane a ukáže se chyba.
-      await api.state();
-      location.reload();
+      // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
+      // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
+      await obnovStav(tr('ruční obnova'), { force: true });
     } catch (err) {
-      button.disabled = false;
       toast(err.message, { tone: 'err' });
+    } finally {
+      button.disabled = false;
     }
     return;
   }
@@ -840,20 +840,32 @@ function parovaciObrazovka(zprava = '') {
 // Na telefonu systém uspí kartu a spojení se streamem zahodí. Po návratu do aplikace (a po
 // obnovení sítě) proto vždy natáhneme čerstvý stav – jinak by uživatel chvíli koukal na stará čísla.
 let posledniObnova = Date.now();
-async function obnovStav(duvod) {
-  if (document.visibilityState !== 'visible' || loadingSnapshot) return;
-  if (Date.now() - posledniObnova < 3000) return;
+let obnovaSnapshot = null;
+async function obnovStav(duvod, { force = false } = {}) {
+  if (document.visibilityState !== 'visible') return;
+  if (loadingSnapshot) return loadingSnapshot;
+  if (obnovaSnapshot) return obnovaSnapshot;
+  if (!force && Date.now() - posledniObnova < 3000) return;
   posledniObnova = Date.now();
-  try {
-    applySnapshot(await api.state());
-  } catch {
-    onConnection('offline');
-    void duvod;
-  }
+  obnovaSnapshot = api.state()
+    .then(prijmiSnimek)
+    .catch((err) => {
+      onConnection('offline');
+      void duvod;
+      throw err;
+    })
+    .finally(() => { obnovaSnapshot = null; });
+  return obnovaSnapshot;
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') obnovStav(tr('návrat do aplikace')); });
-window.addEventListener('online', () => obnovStav(tr('obnovená síť')));
-window.addEventListener('pageshow', (e) => { if (e.persisted) obnovStav(tr('stránka z paměti')); });
+function tichaObnova(duvod, options) { void obnovStav(duvod, options).catch(() => {}); }
+// Native macOS okno se může vrátit do popředí, aniž by WebKit změnil visibility. Focus proto
+// stahuje snapshot stejně jako návrat z uspání. Pravidelná pojistka chrání před tichým výpadkem
+// EventSource, ale při běžícím proudu jen čte lokální API bez reloadu a bez ztráty rozpracované práce.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tichaObnova(tr('návrat do aplikace'), { force: true }); });
+window.addEventListener('focus', () => tichaObnova(tr('okno znovu v popředí'), { force: true }));
+window.addEventListener('online', () => tichaObnova(tr('obnovená síť'), { force: true }));
+window.addEventListener('pageshow', (e) => { if (e.persisted) tichaObnova(tr('stránka z paměti'), { force: true }); });
+setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 
 navigate();
 setInterval(tickClock, 1000);

@@ -159,6 +159,8 @@ export default {
   "Přidej Anthropic Admin API klíč.": "Add an Anthropic Admin API key.",
   "OpenAI odpověděla {0}": "OpenAI responded {0}",
   "Anthropic odpověděla {0}": "Anthropic responded {0}",
+  "Anthropic vrátila neúplné stránkování.": "Anthropic returned incomplete pagination.",
+  "Anthropic vrátila příliš mnoho stránek.": "Anthropic returned too many pages.",
   "OpenAI vrátila neočekávanou nebo příliš velkou odpověď.": "OpenAI returned an unexpected or too large response.",
   "Anthropic vrátila neočekávanou nebo příliš velkou odpověď.": "Anthropic returned an unexpected or too large response.",
   "Denní náklady a spotřeba tokenů organizace za 180 dní.": "The organisation’s daily costs and token usage for 180 days.",

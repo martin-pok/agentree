@@ -1,5 +1,6 @@
-import { HOUR, DAY, round2 } from '../util.js';
+import { DAY, round2 } from '../util.js';
 import { ui } from '../texty.js';
+import { VERSION } from '../config.js';
 
 // Náklady a spotřeba organizace z oficiálních Admin API. Neověřeno proti skutečným klíčům – viz docs/CONNECTORS.md
 // a docs/CLOUD-ACCOUNTS.md (matice schopností a zdroje pro každý poskytovatele).
@@ -23,6 +24,47 @@ async function readBoundedJson(res, maxBytes) {
   } catch {
     return null;
   }
+}
+
+const ANTHROPIC_DAILY_BUCKETS = 31;
+const ANTHROPIC_MAX_PAGES = 12;
+// Anthropic průběžně dopočítává denní report (obvykle do pěti minut). Deset minut drží data čerstvá,
+// aniž by aplikace zbytečně zatěžovala administrační API při každém vykreslení obrazovky.
+const CLOUD_REFRESH_MS = 10 * 60 * 1000;
+
+// Anthropic vrací při denním rozlišení nejvýš 31 košů na stránku. Původní jeden dotaz za 180 dní
+// proto mohl skončit chybou nebo vrátit jen část období. Vždy dočteme všechny navazující stránky,
+// ale máme pevný strop, aby po chybném cursoru nevznikla nekonečná smyčka ani neomezený přenos.
+async function fetchAnthropicPages(fetchImpl, pathname, key, redirect) {
+  const start = new Date(Date.now() - 180 * DAY).toISOString();
+  const end = new Date().toISOString();
+  const data = [];
+  let page = null;
+  for (let pages = 0; pages < ANTHROPIC_MAX_PAGES; pages++) {
+    const url = new URL(`https://api.anthropic.com${pathname}`);
+    url.searchParams.set('starting_at', start);
+    url.searchParams.set('ending_at', end);
+    url.searchParams.set('bucket_width', '1d');
+    url.searchParams.set('limit', String(ANTHROPIC_DAILY_BUCKETS));
+    if (page) url.searchParams.set('page', page);
+    const res = await fetchImpl(url, {
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'User-Agent': `Agenteeq/${VERSION} (https://agenteeq.app)`,
+      },
+      redirect,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
+    const json = await readBoundedJson(res, 5_000_000);
+    if (json === null || !Array.isArray(json.data)) throw new Error(ui('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.'));
+    data.push(...json.data);
+    if (!json.has_more) return { data };
+    if (typeof json.next_page !== 'string' || !json.next_page) throw new Error(ui('Anthropic vrátila neúplné stránkování.'));
+    page = json.next_page;
+  }
+  throw new Error(ui('Anthropic vrátila příliš mnoho stránek.'));
 }
 
 export function parseOpenAICosts(json) {
@@ -98,12 +140,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
   }
 
   async function fetchAnthropic(key) {
-    const url = new URL('https://api.anthropic.com/v1/organizations/cost_report');
-    url.searchParams.set('starting_at', new Date(Date.now() - 180 * DAY).toISOString().slice(0, 10));
-    url.searchParams.set('ending_at', new Date().toISOString().slice(0, 10));
-    const res = await fetchImpl(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'error', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
-    return parseAnthropicCosts(await res.json());
+    return parseAnthropicCosts(await fetchAnthropicPages(fetchImpl, '/v1/organizations/cost_report', key, 'error'));
   }
 
   // Spotřeba tokenů OpenAI (Admin klíč, stejný jako pro náklady). Nenásleduje přesměrování a
@@ -122,16 +159,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
 
   // Spotřeba tokenů Anthropic (stejný Admin klíč jako pro cost_report).
   async function fetchAnthropicUsage(key) {
-    const url = new URL('https://api.anthropic.com/v1/organizations/usage_report/messages');
-    url.searchParams.set('starting_at', new Date(Date.now() - 180 * DAY).toISOString());
-    url.searchParams.set('ending_at', new Date().toISOString());
-    url.searchParams.set('bucket_width', '1d');
-    url.searchParams.set('limit', '31');
-    const res = await fetchImpl(url, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'manual', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
-    const json = await readBoundedJson(res, 5_000_000);
-    if (json === null) throw new Error(ui('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.'));
-    return parseAnthropicUsage(json);
+    return parseAnthropicUsage(await fetchAnthropicPages(fetchImpl, '/v1/organizations/usage_report/messages', key, 'manual'));
   }
 
   const USAGE_FETCHERS = { 'openai-admin': fetchOpenAIUsage, 'anthropic-admin': fetchAnthropicUsage };
@@ -142,7 +170,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const key = await secrets.get(id);
       const st = state[id];
       if (!key) {
-        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {} });
+        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, at: 0 });
         continue;
       }
       try {
@@ -155,7 +183,9 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
         }
         Object.assign(st, { state: 'connected', detail: ui('Denní náklady a spotřeba tokenů organizace za 180 dní.'), at: Date.now() });
       } catch (err) {
-        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160) });
+        // Po selhání nesmí graf ani rozpočet dál používat poslední úspěšná data. Nevíme, zda se
+        // od nich stav u poskytovatele nezměnil, proto je vyřadíme až do další ověřené odpovědi.
+        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160), daily: {}, usage: {}, at: 0 });
       }
     }
     ctx.onSpendChanged?.();
@@ -171,7 +201,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
     description: ui('Automaticky doplní útratu a spotřebu tokenů za API do grafů a rozpočtů.'),
     async start() {
       await refresh().catch(() => {});
-      timer = setInterval(() => refresh().catch(() => {}), HOUR);
+      timer = setInterval(() => refresh().catch(() => {}), CLOUD_REFRESH_MS);
       timer.unref?.();
     },
     scan: refresh,

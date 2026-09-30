@@ -181,6 +181,46 @@ test('Konektor: úspěšné napojení natáhne náklady i spotřebu tokenů odd�
   for (const opts of seenOpts) assert.equal(opts.redirect, 'manual');
 });
 
+test('Konektor: Anthropic dočte denní report ze všech stránek, posílá ISO čas a nevydává část dat za celé období', async () => {
+  const pages = [];
+  const fetchImpl = routedFetch([
+    ['api.openai.com/v1/organization/costs', () => okJson({ data: [] })],
+    ['api.openai.com/v1/organization/usage/completions', () => okJson({ data: [] })],
+    ['api.anthropic.com/v1/organizations/cost_report', (href, opts) => {
+      const url = new URL(href); pages.push({ path: 'cost', url, opts });
+      return okJson(url.searchParams.get('page') ? {
+        data: [{ starting_at: '2026-01-02T00:00:00Z', results: [{ amount: 2 }] }], has_more: false,
+      } : {
+        data: [{ starting_at: '2026-01-01T00:00:00Z', results: [{ amount: 1 }] }], has_more: true, next_page: 'cost-next',
+      });
+    }],
+    ['api.anthropic.com/v1/organizations/usage_report/messages', (href, opts) => {
+      const url = new URL(href); pages.push({ path: 'usage', url, opts });
+      return okJson(url.searchParams.get('page') ? {
+        data: [{ starting_at: '2026-01-02T00:00:00Z', results: [{ uncached_input_tokens: 20 }] }], has_more: false,
+      } : {
+        data: [{ starting_at: '2026-01-01T00:00:00Z', results: [{ uncached_input_tokens: 10 }] }], has_more: true, next_page: 'usage-next',
+      });
+    }],
+  ]);
+  const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY, 'anthropic-admin': ANTHROPIC_KEY }), { fetchImpl });
+  await connector.scan();
+  const provider = connector.providers()['anthropic-admin'];
+  assert.equal(provider.state, 'connected');
+  assert.deepEqual(connector.autoEntries().filter((x) => x.service === 'anthropic-api').map((x) => x.amount), [1, 2]);
+  assert.deepEqual(provider.tokens['2026-01-01'], { input: 10, output: 0, cacheRead: 0, cacheWrite: 0 });
+  assert.deepEqual(provider.tokens['2026-01-02'], { input: 20, output: 0, cacheRead: 0, cacheWrite: 0 });
+  assert.equal(pages.length, 4, 'náklady i spotřeba musí dočíst druhou stránku');
+  for (const { path, url, opts } of pages) {
+    assert.equal(url.searchParams.get('bucket_width'), '1d');
+    assert.equal(url.searchParams.get('limit'), '31');
+    assert.match(url.searchParams.get('starting_at'), /T.*Z$/);
+    assert.match(url.searchParams.get('ending_at'), /T.*Z$/);
+    assert.equal(opts.redirect, path === 'cost' ? 'error' : 'manual');
+    assert.match(opts.headers['User-Agent'], /^Agenteeq\//);
+  }
+});
+
 test('Konektor: 401 od nákladového endpointu nastaví stav "error" a klíč se nikde neobjeví', async () => {
   const fetchImpl = routedFetch([
     ['api.openai.com/v1/organization/costs', () => errStatus(401)],
@@ -220,6 +260,26 @@ test('Konektor: timeout/výpadek sítě se nikdy nepropaguje jako výjimka ven z
   assert.equal(providers['openai-admin'].state, 'error');
   assert.equal(providers['anthropic-admin'].state, 'error');
   assertNoSecret(providers, OPENAI_KEY, ANTHROPIC_KEY);
+});
+
+test('Konektor: dřívější útrata po selhání dalšího dotazu nezůstane jako zdánlivě aktuální', async () => {
+  let healthy = true;
+  const fetchImpl = routedFetch([
+    ['api.openai.com/v1/organization/costs', () => healthy ? okJson({ data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: 4 }] }] }) : errStatus(503)],
+    ['api.openai.com/v1/organization/usage/completions', () => okJson({ data: [] })],
+    ['api.anthropic.com/v1/organizations/cost_report', () => okJson({ data: [] })],
+    ['api.anthropic.com/v1/organizations/usage_report/messages', () => okJson({ data: [] })],
+  ]);
+  const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY, 'anthropic-admin': ANTHROPIC_KEY }), { fetchImpl });
+  await connector.scan();
+  assert.equal(connector.autoEntries().some((x) => x.service === 'openai-api'), true);
+  healthy = false;
+  await connector.scan();
+  const provider = connector.providers()['openai-admin'];
+  assert.equal(provider.state, 'error');
+  assert.equal(provider.at, 0);
+  assert.deepEqual(provider.tokens, {});
+  assert.equal(connector.autoEntries().some((x) => x.service === 'openai-api'), false);
 });
 
 test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) – stav zůstává "connected", tokeny prázdné', async () => {
