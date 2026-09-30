@@ -6,7 +6,7 @@
 // přestože běží – a to je pro Agenteeq nejhorší možná chyba.
 //
 // Proto se běžící procesy agentů (src/connectors/processes.js) párují s konverzacemi. Proces, ke
-// kterému se žádná konverzace nenašla, se ukáže sám jako agent „běží, zatím bez přepisu“. Zmizí,
+// kterému se žádná konverzace nenašla, se ukáže jako detekovaný proces bez přepisu. Zmizí,
 // jakmile se přepis najde nebo proces skončí. Z procesu se bere jen to, co o něm víme jistě:
 // že běží, od kdy a v jaké složce. Co právě dělá, neví nikdo – a tak se to ani netvrdí.
 import path from 'node:path';
@@ -24,6 +24,10 @@ export const AGENTI = {
 };
 
 export const PROMENNE_DOMOVA = Object.values(AGENTI).map((a) => a.domov).filter(Boolean);
+
+// Tyto krátce žijící položky nevznikají z konverzace. Stejný tvar ID používají API i klient, aby
+// po skončení procesu neukázaly obecné „konverzace nenalezena“.
+export const jeProcesovyId = (id) => /:proces-\d+$/.test(String(id || ''));
 
 // Start procesu (z doby běhu) a první zápis do přepisu se mohou rozejít o pár vteřin.
 const REZERVA_MS = 15e3;
@@ -58,8 +62,8 @@ export function nesparovane(procesy, sessions) {
 export function popisProcesu(p, a) {
   const od = new Date(p.od).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   return p.cwd
-    ? ui('{0} běží v {1} od {2}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.', a.app, lastSegment(p.cwd) || p.cwd, od)
-    : ui('{0} běží od {1}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.', a.app, od);
+    ? ui('{0} běží v {1} od {2}. Přepis zatím není dostupný.', a.app, lastSegment(p.cwd) || p.cwd, od)
+    : ui('{0} běží od {1}. Přepis zatím není dostupný.', a.app, od);
 }
 
 /**
@@ -80,6 +84,8 @@ export function createBeziciAgenti({ store }) {
       chtene.add(id);
       const s = store.ensure({ connector: a.connector, localId, provider: a.provider, app: a.app, source: 'proces' });
       s.proces = { pid: p.pid, od: p.od, popis: popisProcesu(p, a) };
+      // Název složky není název konverzace. Dokud nemáme přepis, nesmí se za něj vydávat.
+      s.title = ui('{0} · detekovaný proces', a.app);
       if (p.cwd && !s.cwd) s.cwd = p.cwd;
       touch(s, p.od);
       drzene.add(id);

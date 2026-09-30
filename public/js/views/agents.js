@@ -17,6 +17,7 @@ const SEGMENTS = [
   ['failed', tr('Selhalo')],
   ['limited', tr('Na limitu')],
   ['working', tr('Pracuje')],
+  ['observed', tr('Detekované procesy')],
   ['waiting', tr('Čeká na zadání')],
   ['idle', tr('Nečinné')],
   ['archived', tr('Archiv')],
@@ -118,8 +119,9 @@ function rowHtml(s) {
   let sub;
   if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || tr('Pracuje'))}`;
   else if (needsYou(s) || s.status === 'failed' || s.status === 'limited') sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
-  // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, přepis zatím není.
-  else if (s.proces) sub = `${esc(tr('Běží od {0} · zatím bez přepisu', timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
+  // Tento záznam není ověřená konverzace: z procesu samého nepoznáme, jestli jde o hlavního
+  // nebo pomocného agenta. Složka proto zůstává jen kontextem, nikdy názvem konverzace.
+  else if (s.proces) sub = `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
   else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);
@@ -127,11 +129,11 @@ function rowHtml(s) {
   const runs = taskRunCount(s);
   const cells = `
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
-    <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.source === 'web' ? 'web' : '–'))}</small></span>
+    <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '–'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>
     <span class="cell-num">${total ? fmtTok(total) : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;
-  if (f.selecting) {
+  if (f.selecting && !s.proces) {
     const checked = f.selected.has(s.id);
     return `<label class="row row--select${checked ? ' is-selected' : ''}" draggable="true" data-session-drag="${esc(s.id)}">
       <span class="icon-tile icon-tile--check"><input type="checkbox" data-select-session value="${esc(s.id)}"${checked ? ' checked' : ''} aria-label="${tr('Vybrat')} ${esc(s.title)}"></span>${cells}<span></span>

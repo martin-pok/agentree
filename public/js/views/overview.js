@@ -193,13 +193,15 @@ function update(topics = new Set(['all'])) {
   const todayCount = all.filter((s) => s.lastAt >= today).length;
   const running = state.runtimes.filter((r) => r.running).length;
 
-  // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti (needsYou, stav working/waiting).
+  // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti. Proces bez přepisu není
+  // „čekání na zadání“, proto se drží mimo tento součet a má vlastní jasný popisek v pruhu.
   const failed = all.filter((s) => s.status === 'failed');
   const limited = all.filter((s) => s.status === 'limited');
   const failedCount = failed.length;
   const decideCount = needs.length;
   const waiting = all.filter((s) => s.status === 'waiting');
-  const live = [...needs, ...failed, ...limited, ...working, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
+  const observed = all.filter((s) => s.status === 'observed');
+  const live = [...needs, ...failed, ...limited, ...working, ...observed, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
   const STRIP_MAX = 12;
   if (changed(topics, 'sessions', 'runtimes')) {
     el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
@@ -218,7 +220,7 @@ function update(topics = new Set(['all'])) {
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
-        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
+        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
         return `<li><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>

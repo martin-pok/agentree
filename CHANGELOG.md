@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.29.8 – 2026-09-30 · ověřené procesy bez přepisu
+
+- Proces Claude Code, Codexu a dalších podporovaných CLI bez dostupného přepisu má vlastní stav „Detekovaný proces“. Už se nevydává za konverzaci, která čeká na zadání, ani nepoužívá název pracovní složky jako název úlohy.
+- Detail zobrazuje jen ověřené údaje procesu: PID, čas spuštění a pracovní složku. Výslovně rozlišuje, že bez přepisu nelze určit hlavního ani pomocného agenta; po nalezení přepisu se položka nahradí ověřenou konverzací.
+- Dočasnému procesu se nenabízí neplatné otevření v Claude ani přiřazení k projektu. Pokud skončí dřív, než se přepis objeví, API i aplikace vrátí přesný stav místo chybné hlášky „Konverzace nenalezena“.
+
 ## 0.29.7 – 2026-09-30 · Nastavení bez překrývajícího pásu
 
 - Na širokém okně zůstává při posouvání Nastavení ukotvený nadpis a podmenu. Pravé horní akce se skryjí a průhledný zbytek řádku neblokuje karty; po návratu nahoru jsou akce znovu dostupné.

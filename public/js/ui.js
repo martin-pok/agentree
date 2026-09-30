@@ -281,7 +281,7 @@ export function activityItem(s) {
   const meta = s.status === 'working' && s.activity
     ? `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity)}`
     : s.proces
-      ? `${esc(tr('běží od {0}, zatím bez přepisu', timeHM(s.proces.od)))} · ${esc(s.app)}`
+      ? `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))} · ${esc(s.app)}`
       : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;
   return `<li><a class="act-item" href="${agentHref(s.id)}">
     <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>

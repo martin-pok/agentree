@@ -119,6 +119,43 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
     await server.close();
   }
 }
+
+// Proces bez přepisu není konverzace. Musí mít vlastní ověřený stav, bez falešného „čeká na
+// zadání“, bez otevření aplikace a bez přiřazení k projektu. Po skončení se místo obecného 404
+// zobrazí přesný důvod. Výpis procesů je řízený, takže QA nečte data z počítače, na kterém běží.
+async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
+  const vypisProcesu = async () => ({ ok: true, stdout: ' 4242 00:01 0.0 100 /usr/local/bin/claude' });
+  const server = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' }, { vypisProcesu });
+  try {
+    const id = 'claude-code:proces-4242';
+    await new Promise((resolve, reject) => {
+      const end = Date.now() + 3000;
+      (async function check() {
+        if (server.app.store.summary(id)) return resolve();
+        if (Date.now() > end) return reject(new Error(`${engine}: proces bez přepisu se neobjevil`));
+        setTimeout(check, 25);
+      })();
+    });
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+    await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(`proces bez přepisu: ${e.message}`));
+    await page.goto(`${server.url}/#/agent/${encodeURIComponent(id)}`);
+    await page.getByText('Detekovaný proces bez přepisu', { exact: true }).waitFor();
+    assert.equal(await page.getByText('Čeká na zadání', { exact: true }).count(), 0, `${engine}: proces se vydává za čekající konverzaci`);
+    assert.equal(await page.locator('[data-open-target], [data-action="assign"]').count(), 0, `${engine}: proces nabízí akci pro neexistující konverzaci`);
+    assert.equal(await page.getByText('Bez přepisu nelze ověřit hlavního ani pomocného agenta.', { exact: true }).count(), 1, `${engine}: detail procesu nepopisuje hranici jistoty`);
+    await page.screenshot({ path: `dist/qa/${engine}-detected-process.png` });
+    server.app.store.remove(id);
+    await page.reload();
+    await page.getByText('Detekovaný proces už není aktivní', { exact: true }).waitFor();
+    await page.getByText('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.', { exact: true }).waitFor();
+    await ctx.close();
+  } finally {
+    await server.close();
+  }
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -717,8 +754,9 @@ for (const engine of engines) {
       await ctx.close();
     }
     await zkontrolujPostranniPanel(browser, engine, errors);
+    await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'palette hover without remount', 'budget modal close button, overlay and Escape', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'budget modal close button, overlay and Escape', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

@@ -15,6 +15,7 @@ import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
 import { SYSTEM, POCITAC } from './platform.js';
 import { ui } from './texty.js';
+import { jeProcesovyId } from './bezici-agenti.js';
 import { createVerzeSouboru, znackaObsahu, AKTIVA, NATRVALO } from './verze-souboru.js';
 
 const TYPES = {
@@ -446,12 +447,13 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
-      if (!session) throw new HttpError(404, ui('Konverzace nenalezena.'));
+      if (!session) throw new HttpError(jeProcesovyId(id) ? 410 : 404, jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.'));
       return { session, transcript: store.transcript(id) };
     }],
     ['GET', /^\/api\/sessions\/([^/]+)\/transcript$/, (_req, m, url) => {
-      const entries = store.transcript(decodeURIComponent(m[1]), { after: Number(url.searchParams.get('after')) || 0 });
-      if (!entries) throw new HttpError(404, ui('Konverzace nenalezena.'));
+      const id = decodeURIComponent(m[1]);
+      const entries = store.transcript(id, { after: Number(url.searchParams.get('after')) || 0 });
+      if (!entries) throw new HttpError(jeProcesovyId(id) ? 410 : 404, jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.'));
       return { entries };
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/open$/, async (req, m) => {
