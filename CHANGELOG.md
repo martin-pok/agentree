@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.29.9 – 2026-09-30 · čerstvý stav bez přeskoku stránky
+
+- Návrat okna do popředí, obnovení sítě a pojistná kontrola živého proudu teď načtou nový snímek stavu přímo do otevřené obrazovky. Ruční obnova také nepřenačítá celou aplikaci, takže neztratí rozepsaný formulář, aktuální stránku ani polohu posunu.
+- Prázdný stav „Nikdo teď nečeká na tvé rozhodnutí“ je opticky vycentrovaný. Odznaky upozornění v postranní nabídce mají stejné odsazení od pravého kraje podbarvení jako ostatní prvky.
+- Napojení Anthropic Admin API načítá všechny stránky denního reportu po povolených 31 dnech, používá přesné ISO časové hranice a ověřené údaje obnovuje každých deset minut. Když další ověření selže, předchozí náklady a tokeny se okamžitě vyřadí místo toho, aby vypadaly jako aktuální data.
+
 ## 0.29.8 – 2026-09-30 · ověřené procesy bez přepisu
 
 - Proces Claude Code, Codexu a dalších podporovaných CLI bez dostupného přepisu má vlastní stav „Detekovaný proces“. Už se nevydává za konverzaci, která čeká na zadání, ani nepoužívá název pracovní složky jako název úlohy.

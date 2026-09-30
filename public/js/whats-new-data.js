@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.9',
+    date: '2026-09-30',
+    title: 'Čerstvý stav bez přeskoku stránky',
+    items: ['Po návratu k oknu nebo síti se nové údaje promítnou přímo do otevřené stránky. Obnova už nemaže rozepsanou práci ani pozici posunu.', 'Anthropic Admin API nyní načítá kompletní denní report. Při chybě se staré náklady a tokeny skryjí, dokud nepřijdou nová ověřená data.'],
+    en: {
+      title: 'Fresh state without a page jump',
+      items: ['Returning to the window or network updates the open page in place. Refresh no longer clears in-progress work or the scroll position.', 'Anthropic Admin API now reads the complete daily report. On an error, old costs and tokens stay hidden until newly verified data arrives.'],
+    },
+  },
+  {
     version: '0.29.8',
     date: '2026-09-30',
     title: 'Procesy bez domněnek',
