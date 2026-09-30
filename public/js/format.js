@@ -133,6 +133,7 @@ export const STATUS = {
   limited: { label: tr('Vyčerpaný limit') },
   failed: { label: tr('Selhalo') },
   working: { label: tr('Pracuje') },
+  observed: { label: tr('Detekovaný proces') },
   waiting: { label: tr('Čeká na zadání') },
   idle: { label: tr('Nečinný') },
   archived: { label: tr('Archiv') },

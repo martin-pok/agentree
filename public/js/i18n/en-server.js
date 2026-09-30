@@ -25,6 +25,11 @@ export default {
   "{0} Nejspíš vyčerpaný limit předplatného.": "{0} Most likely the subscription limit is used up.",
   "Spuštění selhalo: {0}": "Start failed: {0}",
   "Konverzace nenalezena.": "Conversation not found.",
+  "{0} · detekovaný proces": "{0} · detected process",
+  "{0} běží v {1} od {2}. Přepis zatím není dostupný.": "{0} has been running in {1} since {2}. A transcript is not available yet.",
+  "{0} běží od {1}. Přepis zatím není dostupný.": "{0} has been running since {1}. A transcript is not available yet.",
+  "Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.": "The detected process is no longer in the overview. If it created a transcript, you can find it among the agents.",
+  "Detekovaný proces nemá dostupný přepis ani konverzaci k otevření.": "The detected process has no available transcript or conversation to open.",
   "Otevírání odsud tenhle systém neumí.": "This system can’t open things from here.",
   "Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.": "Agenteeq can continue in Terminal only on macOS for now. You can copy the command.",
   "Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.": "Agenteeq can open a conversation straight in the app only on macOS for now.",
@@ -81,10 +86,6 @@ export default {
   "Tailscale na {0} neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.": "Tailscale isn’t running on {0}. Install it, sign in (“tailscale up”) and try again.",
   "Tailscale běží, ale {0} zatím nemá adresu v tailnetu. Zkus to za chvíli.": "Tailscale is running, but {0} doesn’t have a tailnet address yet. Try again in a moment.",
   "Přístup přes Tailscale se nepodařilo otevřít.": "Couldn’t open access via Tailscale.",
-
-  // src/bezici-agenti.js
-  "{0} běží v {1} od {2}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.": "{0} has been running in {1} since {2}. No transcript yet – it’s waiting for the first prompt, or writing to a folder Agenteeq doesn’t know.",
-  "{0} běží od {1}. Přepis zatím není – čeká na první zadání, nebo zapisuje do složky, kterou Agenteeq nezná.": "{0} has been running since {1}. No transcript yet – it’s waiting for the first prompt, or writing to a folder Agenteeq doesn’t know.",
 
   // src/cloud-sync.js
   "Server účtů neodpovídá. Souhrny se pošlou při dalším pokusu.": "The account server isn’t responding. Summaries will be sent on the next attempt.",

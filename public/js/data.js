@@ -6,7 +6,7 @@ import { tr, podleJazyka } from './i18n.js';
 // technická režie a mají vlastní místo ve složení tokenů, ne v hlavních číslech.
 export const sessionTotal = (s) => (s.tokens?.input || 0) + (s.tokens?.output || 0);
 
-export const STATUS_ORDER = { needs_input: 0, limited: 1, failed: 2, working: 3, waiting: 4, idle: 5, archived: 6 };
+export const STATUS_ORDER = { needs_input: 0, limited: 1, failed: 2, working: 3, observed: 4, waiting: 5, idle: 6, archived: 7 };
 // Rozhodnutí vyžaduje jen skutečný dotaz agenta. Limit a selhání mají vlastní stavy.
 export const needsYou = (s) => s.status === 'needs_input';
 // Pořadí v seznamech: nejdřív co potřebuje tebe, pak co pracuje, zbytek podle času.

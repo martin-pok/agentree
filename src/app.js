@@ -41,7 +41,7 @@ import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
-import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA } from './bezici-agenti.js';
+import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -210,7 +210,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function openSession(id, target) {
     const s = store.summary(id);
-    if (!s) return { status: 404, error: ui('Konverzace nenalezena.') };
+    if (!s) return { status: jeProcesovyId(id) ? 410 : 404, error: jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.') };
+    if (s.proces) return { status: 409, error: ui('Detekovaný proces nemá dostupný přepis ani konverzaci k otevření.') };
     if (config.openMode === 'off') return { status: 422, error: ui('Otevírání odsud tenhle systém neumí.') };
     // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
     if (!config.openApps && (target === 'terminal' || (target === 'app' && s.connector !== 'web'))) {

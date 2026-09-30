@@ -247,7 +247,8 @@ function renderTranscript(el, t) {
     }
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : state.sessions.get(v.id)?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  const session = state.sessions.get(v.id);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
@@ -265,19 +266,24 @@ function update() {
     t.stale = false;
     load();
   }
-  if (t) renderTranscript(el, t);
   if (!s) {
-    if (t?.error) fill(el, 'head', `<h2 class="session-title">${tr('Agent nenalezen')}</h2><p class="muted">${esc(t.error)}</p>`);
+    if (t?.error) {
+      const procesovyId = /:proces-\d+$/.test(v.id);
+      fill(el, 'head', `<h2 class="session-title">${procesovyId ? tr('Detekovaný proces už není aktivní') : tr('Agent nenalezen')}</h2><p class="muted">${esc(t.error)}</p>`);
+      // Jediná přesná věta stačí. Stejný důvod také v prázdném přepisu by zbytečně duplikoval stav.
+      fill(el, 'tr-empty', '');
+    }
     return;
   }
+  if (t) renderTranscript(el, t);
 
   fill(el, 'head', `
-    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
+    <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     <div class="session-actions">
-      ${openButtons(s)}
+      ${s.proces ? '' : openButtons(s)}
       ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" title="${tr('Kopírovat příkaz pro pokračování')}">${ICON.copy}</button>` : ''}
     </div>`);
 
@@ -288,7 +294,7 @@ function update() {
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">${s.observation ? tr('Stav hlásí Claude Desktop. Přesný důvod najdeš v původní konverzaci.') : tr('Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.')}</p></div></div>`
         : s.proces
-          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Agent běží, přepis zatím není')}</strong><p>${esc(tr('Agenteeq ho našel mezi běžícími procesy (PID {0}, od {1}). Nejčastěji čeká na první zadání – jakmile zapíše první zprávu, objeví se tu celá konverzace.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
+          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
           : '');
 
   fill(el, 'live', s.status === 'working'
@@ -342,8 +348,16 @@ function update() {
   const proj = s.projectId ? projectById(s.projectId) : null;
   const sideBox = el.querySelector('[data-region="side"]');
   if (!v.sideDrag?.isDragging()) {
-  fill(el, 'side', `
-      <section class="card side-card" data-card="project" aria-labelledby="proj-h">${GRIP}<div class="side-head"><h3 id="proj-h">${tr('Projekt')}</h3><button class="link" type="button" data-action="assign">${proj ? tr('Změnit') : tr('Zařadit do projektu')}</button></div>
+  const processDetails = s.proces
+    ? `<section class="card side-card" data-card="process" aria-labelledby="facts-h">${GRIP}<h3 id="facts-h">${tr('Detaily procesu')}</h3>
+        <dl class="facts">
+          <div><dt>PID</dt><dd class="mono-sm">${s.proces.pid}</dd></div>
+          <div><dt>${tr('Spuštěno')}</dt><dd>${dateTime(s.proces.od)}</dd></div>
+          <div class="wide"><dt>${tr('Pracovní složka')}</dt><dd class="mono-sm">${esc(shortPath(s.cwd) || '–')}</dd></div>
+          <div class="wide"><dt>${tr('Rozlišení')}</dt><dd>${tr('Bez přepisu nelze ověřit hlavního ani pomocného agenta.')}</dd></div>
+        </dl>
+      </section>`
+    : `<section class="card side-card" data-card="project" aria-labelledby="proj-h">${GRIP}<div class="side-head"><h3 id="proj-h">${tr('Projekt')}</h3><button class="link" type="button" data-action="assign">${proj ? tr('Změnit') : tr('Zařadit do projektu')}</button></div>
         ${proj
           ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a><p class="small muted side-note">${s.projectSource === 'folder' ? tr('Zařazeno automaticky podle složky.') : tr('Zařazeno ručně.')}</p>`
           : `<p class="small muted side-note">${s.projectSource === 'none' ? tr('Záměrně mimo projekty.') : tr('Zatím v žádném projektu.')}</p>`}
@@ -372,8 +386,8 @@ function update() {
       ${hasTokens ? `<section class="card side-card" data-card="tokens" aria-labelledby="tok-h">${GRIP}<h3 id="tok-h">${tr('Složení tokenů')}</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
       ${hasTokens ? `<section class="card side-card" data-card="spark" aria-labelledby="spark-h">${GRIP}<h3 id="spark-h">${tr('Aktivita za 24 hodin')} · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
       ${limits.length ? `<section class="card side-card" data-card="limits" aria-labelledby="lim-h">${GRIP}<h3 id="lim-h">${tr('Limity')}</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
-      ${lastPrompt ? `<section class="card side-card" data-card="prompt" aria-labelledby="lp-h">${GRIP}<h3 id="lp-h">${tr('Poslední zadání')}</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? tr('Sbalit zadání') : tr('Zobrazit celé zadání')}</button>` : ''}</section>` : ''}
-    `);
+      ${lastPrompt ? `<section class="card side-card" data-card="prompt" aria-labelledby="lp-h">${GRIP}<h3 id="lp-h">${tr('Poslední zadání')}</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? tr('Sbalit zadání') : tr('Zobrazit celé zadání')}</button>` : ''}</section>` : ''}`;
+  fill(el, 'side', processDetails);
   applyOrder(sideBox, '.side-card[data-card]', 'agentSide');
   }
 }

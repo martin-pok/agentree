@@ -208,7 +208,8 @@ test('pojistka: proces bez přepisu se ukáže, s přepisem zmizí, po skončen�
   const proces = { pid: 4242, runtime: 'claude-code', od, cwd: '/Users/eva/Design & Web' };
   pojistka.upravit([proces]);
   const v = store.summary('claude-code:proces-4242');
-  assert.equal(v.status, 'waiting');
+  assert.equal(v.status, 'observed');
+  assert.equal(v.title, 'Claude Code · detekovaný proces');
   assert.match(v.reason, /Claude Code běží v Design & Web/);
   assert.match(v.reason, /Přepis zatím není/);
   assert.deepEqual(v.proces, { pid: 4242, od });
@@ -227,6 +228,20 @@ test('pojistka: proces bez přepisu se ukáže, s přepisem zmizí, po skončen�
   pojistka.upravit([proces]);
   assert.equal(store.summary('claude-code:proces-4343'), null);
   assert.equal(pojistka.pocet(), 0);
+});
+
+test('zmizelý proces bez přepisu vrací přesný stav místo nenalezené konverzace', async () => {
+  const srv = await startTestServer();
+  try {
+    const id = 'claude-code:proces-4242';
+    const klient = api(srv.url);
+    const zmizel = await klient.get(`/api/sessions/${encodeURIComponent(id)}`);
+    assert.equal(zmizel.status, 410);
+    assert.equal(zmizel.body.error, 'Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.');
+    assert.equal((await srv.app.openSession(id, 'app')).status, 410);
+  } finally {
+    await srv.close();
+  }
 });
 
 test('podrobnosti procesu: výstup lsof a ps -E z macOS', () => {
@@ -281,7 +296,8 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     const klient = api(srv.url);
     const najdi = async () => (await klient.get('/api/state')).body.sessions.find((s) => s.proces?.pid === agent.pid);
     const v = await waitFor(najdi, 8000);
-    assert.equal(v.status, 'waiting');
+    assert.equal(v.status, 'observed');
+    assert.equal(v.title, 'Claude Code · detekovaný proces');
     assert.equal(v.cwd, slozka);
     assert.match(v.reason, /Claude Code běží v Design & Web/);
     // Kořen z prostředí procesu se přidal – první zadání se najde a spáruje.
@@ -310,7 +326,7 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     const druhyZaznam = async () => (await klient.get('/api/state')).body.sessions.find((s) => s.proces?.pid === druhy.pid);
     const z = await waitFor(druhyZaznam, 8000);
     assert.equal(z.cwd, jinde);
-    assert.equal(z.status, 'waiting', 'běží, zatím bez přepisu');
+    assert.equal(z.status, 'observed', 'běží, zatím bez přepisu');
     const konec = new Promise((r) => druhy.once('exit', r));
     druhy.kill();
     await konec;

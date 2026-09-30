@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.29.8',
+    date: '2026-09-30',
+    title: 'Procesy bez domněnek',
+    items: ['Proces bez přepisu má vlastní jasný stav. Už se nevydává za konverzaci, která čeká na zadání.', 'V detailu uvidíš PID, čas spuštění a pracovní složku. Až se objeví přepis, položka se nahradí ověřenou konverzací.'],
+    en: {
+      title: 'Processes without assumptions',
+      items: ['A process without a transcript has its own clear state. It is no longer presented as a conversation waiting for a task.', 'The detail shows the PID, start time, and working folder. When a transcript appears, it is replaced by the verified conversation.'],
+    },
+  },
+  {
     version: '0.29.7',
     date: '2026-09-30',
     title: 'Čistší posouvání Nastavení',

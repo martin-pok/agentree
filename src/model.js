@@ -118,9 +118,9 @@ export function deriveStatus(s, now) {
     return { status: 'failed', reason: s.failure.text || ui('Spuštění selhalo'), stale: false };
   }
   if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || ui('Potřebuje tvé rozhodnutí'), stale: false };
-  // Agent známý jen z běžícího procesu (src/bezici-agenti.js): běží, ale přepis zatím není. Nejčastěji
-  // čeká na první zadání; „pracuje“ ani „hotovo“ by bylo tvrzení, které z procesu nevyčteme.
-  if (s.proces) return { status: 'waiting', reason: s.proces.popis, stale: false };
+  // Proces bez přepisu není konverzace ani stav „čeká na zadání“. Víme pouze, že příslušný program
+  // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
+  if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
   if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
     // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
     const maybePermission = s.toolWaitSince && !s.hookAt && now - s.toolWaitSince > 90e3;
