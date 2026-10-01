@@ -73,6 +73,9 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/runs/:id/stop` | `{ runs }`; 404, 409 už skončil |
 | GET | `/api/runs/:id/log` | `{ log }` – posledních 16 kB výstupu |
 | POST | `/api/runs/clear` | Skryje dokončené běhy → `{ runs }` |
+| POST | `/api/updates/check` | Jen z tohoto Macu. Ověří poslední veřejný nedraftový release oficiálního repozitáře → `{ updates: UpdateState }`. Selhání sítě ani neplatná odpověď se nikdy nevrací jako `current`. |
+| POST | `/api/updates/download` | Jen z tohoto Macu. Stáhne pouze balíček odpovídající `UpdateState.asset` do `~/.agenteeq/updates/` atomickým zápisem → `{ ok, update: UpdateState }`; nikdy nespouští ani nerozbaluje kód. |
+| POST | `/api/updates/reveal` | Jen z tohoto Macu. Otevře ve Finderu jen dříve ověřený, stažený ZIP z `~/.agenteeq/updates/`; cesta se nepřebírá z požadavku. |
 | POST | `/api/sessions/:id/reply` | Jen lokální chat: `{ text }` → `{ ok }`; 404, 409 model odpovídá, 422 |
 | POST | `/api/sessions/:id/stop` | Jen lokální chat → `{ ok }`; 409 model neodpovídá |
 | GET / PUT / DELETE | `/api/license` | PUT `{ key }` → `{ ok, license: LicenseStatus }`; 422 s důvodem. Celý klíč se nikdy nevrací |
@@ -97,6 +100,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `spend` | `SpendPayload` |
 | `connectors` | `ConnectorStatus[]` |
 | `settings` | `Settings` |
+| `updates` | `UpdateState` |
 | `integrations` | `Integrations` |
 | `projects` | `ProjectsPayload` |
 | `runs` | `Run[]` |
@@ -125,6 +129,16 @@ v `<html data-system>` už při vydání `index.html`, aby rozhraní od prvního
 Mac“ a ⌘, nebo „tento počítač“ a Ctrl (`public/js/system.js`).
 
 ## Typy
+
+### UpdateState (`state.updates`, událost `updates`)
+
+`{ status, currentVersion, checkedAt, latestVersion, asset, downloaded, error }`.
+
+- `status`: `checking` | `current` | `available` | `downloaded` | `unsupported` | `error` | `disabled`.
+- `current` je možné jen po platné odpovědi GitHubu se stejnou nebo nižší verzí; při selhání je vždy `error`.
+- `asset` je jen `{ name, url, size }` pro přesnou kombinaci verze, systému a architektury. `url` musí být oficiální GitHub release download URL.
+- `downloaded` je jen lokální metadata vlastního souboru. Účty, telefony ani vzdálený přístup tento blok nezískají.
+- `settings.updateMode` je `manual` (výchozí) | `automatic`. Automatický režim stáhne ověřený balíček, ale instalaci nikdy nespustí ani aplikaci sám nenahradí.
 
 ### UcetStatus (`state.ucet`, událost `ucet`)
 

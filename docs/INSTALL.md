@@ -117,7 +117,8 @@ Nastavení → Účet a vzhled → Licence → vlož klíč začínající `AGT1
 
 ### Desktopová aplikace
 
-- **Aktualizace:** ukonči Agenteeq (⌘Q), nahraď Agenteeq.app v Aplikacích novou verzí a spusť ji. Data v `~/.agenteeq` i spárování zůstanou; rozšíření pro Chrome se aktualizuje samo do své složky a v `chrome://extensions` ho jen obnovíš.
+- **Aktualizace:** Agenteeq při spuštění a potom pravidelně ověří poslední veřejné vydání na GitHubu. Dostupná verze se objeví v horní liště tlačítkem **Stáhnout** a také v **Nastavení → Aplikace na tomto Macu → Aktualizace**. Tam zvolíš **Ručně** (výchozí) nebo **Automaticky**. Automatický režim stáhne jen ověřený balíček pro tento Mac; samotná výměna aplikace se vždy otevře ve Finderu, takže běžící aplikace ani data nejsou potichu nahrazené.
+- **Instalace stažené verze:** v horní liště nebo Nastavení klikni na **Otevřít**. Ve Finderu rozbal archiv, ukonči Agenteeq (⌘Q) a nahraď Agenteeq.app ve složce Aplikace. Data v `~/.agenteeq` i spárování zůstanou; rozšíření pro Chrome se aktualizuje samo do své složky a v `chrome://extensions` ho jen obnovíš.
 - **Odinstalace – pořadí je důležité:**
   1. V Agenteeq **Nastavení → Propojení → Propojení s Claude Code → Vypnout propojení**. Jinak Claude Code dál zkouší posílat události a v jeho stavovém řádku zůstane „Agenteeq neběží“.
   2. V `chrome://extensions` odeber rozšíření Agenteeq.

@@ -49,6 +49,7 @@ import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSes
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
+import { UpdateService } from './updates.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -74,7 +75,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu, updateService, updateFetch } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -85,6 +86,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
+  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
   const secrets = createSecrets({ keychain: config.keychain });
   const notifier = createNotifier({ enabled: config.nativeNotify });
@@ -887,6 +889,35 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
   }
 
+  async function checkForUpdates() {
+    const value = await updates.check();
+    store.emit('updates', value);
+    // Automatická volba znamená stažení ověřeného balíčku, nikdy tichou výměnu běžící aplikace.
+    if (value.status === 'available' && datastore.data.settings.updateMode === 'automatic') {
+      await downloadUpdate();
+      return updates.state();
+    }
+    return value;
+  }
+
+  async function downloadUpdate() {
+    const result = await updates.download();
+    store.emit('updates', updates.state());
+    return result;
+  }
+
+  async function revealUpdate() {
+    const target = updates.downloadedPath();
+    const updatesDir = path.resolve(config.dataDir, 'updates');
+    if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
+    try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
+    if (config.openMode === 'off') return { status: 422, error: ui('Ukázat aktualizaci ve správci souborů tenhle systém neumí.') };
+    const plan = config.openApps ? { kind: 'open', args: ['-R', target], label: 'Finder' } : { kind: 'open', args: [updatesDir], label: ui('Správce souborů') };
+    const r = await executeOpen(plan, { dry });
+    if (!r.ok) return { status: 502, error: r.error };
+    return { ok: true, ...(r.dry ? { dry: true, plan } : {}) };
+  }
+
   /* ---------- Vlastní agenti (ComfyUI, Ollama, OpenAI-kompatibilní servery) ---------- */
   // Agenteeq od nich jen čte stav. Adresa smí mířit výhradně na tenhle počítač nebo do místní sítě
   // (kontroluje `validateEndpoint` v custom-agents.js), dotaz je vždy GET bez přesměrování, s časovým
@@ -1209,6 +1240,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       spend: spendPayload(),
       alerts: { unread: alerts.unread(), items: alerts.list().slice(0, 100) },
       settings: datastore.data.settings,
+      // Stáhnutý soubor i informace o verzi zůstávají na hostitelském Macu; telefon je nepotřebuje.
+      updates: local ? updates.state() : { status: 'disabled', currentVersion: VERSION, checkedAt: 0, latestVersion: '', asset: null, downloaded: null, error: '' },
       integrations: await integrations(),
       projects: projectsPayload(projects()),
       launch: launchPayload(),
@@ -1243,6 +1276,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     store.ready = true;
     syncSnapshots();
     alerts.start();
+    // Výsledek aktualizace se promítne přes SSE hned po startu. Síť nesmí brzdit načtení lokálních dat.
+    checkForUpdates().catch(() => {});
     // Ověření uloženého přihlášení jde po síti – start aplikace na něj nečeká.
     ucet.start().then(() => cloudSync.nactiVolbu()).then(() => cloudSync.synchronizuj()).catch(() => {});
     cloudSync.start();
@@ -1284,6 +1319,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     every(() => spendChanged(), HOUR);
     refreshSubscriptions().catch(() => {});
     every(() => refreshSubscriptions(), 10 * 60e3);
+    every(() => checkForUpdates(), 6 * HOUR);
     rateFeed.start();
     // Selhání zápisu na pozadí (upozornění, projekty, výdaje) dřív skončilo jen v logu.
     let storageJson = JSON.stringify(storageStatus());
@@ -1317,7 +1353,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
     lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),

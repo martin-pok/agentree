@@ -97,6 +97,9 @@ export const api = {
   removeLicense: () => request('DELETE', '/api/license'),
   autostart: (action) => request('POST', `/api/integrations/autostart/${action}`, {}),
   revealInstallPackage: () => request('POST', '/api/install/reveal', {}),
+  checkUpdates: () => request('POST', '/api/updates/check', {}),
+  downloadUpdate: () => request('POST', '/api/updates/download', {}),
+  revealUpdate: () => request('POST', '/api/updates/reveal', {}),
   folders: (path = '') => request('GET', `/api/fs/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`),
   // Obrázek jde jako surové bajty (ne JSON), server ho pozná podle obsahu a ne podle přípony.
   async setProjectMedia(id, kind, blob) {
@@ -116,7 +119,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
 
 // EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
 export function connectStream({ onHello, onEvent, onStatus }) {

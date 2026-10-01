@@ -75,7 +75,7 @@ Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF,
 
 ## Soukromí
 
-- Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: denní kurz ČNB bez údajů o uživateli (vypíná `AGENTEEQ_CLOUD=0`), Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
+- Žádná telemetrie, žádná analytika. Písma jsou lokální. Síťová komunikace: denní kurz ČNB bez údajů o uživateli a kontrola veřejného releasu Agenteeq na GitHubu (jen verze a přesně ověřený instalační balíček; obojí vypíná `AGENTEEQ_CLOUD=0`), Admin API jen s klíčem uživatele, Ollama na `127.0.0.1`, otevření zvolené služby na výslovnou akci uživatele.
 - Importované přepisy jsou v paměti (max. 400 položek na session). Výstup agentů spuštěných na pozadí se ukládá do lokálních logů v `~/.agenteeq/runs`; ty mohou obsahovat citlivé informace. Logy HTTP serveru obsah zpráv nevypisují.
 - **Vzorek stránky z rozšíření (od 0.26.0):** vzniká jen na kliknutí a jen jako soubor u uživatele,
   nikam se neposílá. Obsahuje stavbu stránky bez textu zpráv, názvů, jmen, odkazů, obrázků,

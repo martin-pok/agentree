@@ -56,6 +56,7 @@ const titleEl = document.getElementById('page-title');
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
 const connEl = document.getElementById('conn-pill');
+const updateEl = document.getElementById('update-chip');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
@@ -297,12 +298,27 @@ function updateChrome() {
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  renderUpdate();
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
     ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
   if (!pop.hidden) renderPopover();
+}
+
+function renderUpdate() {
+  const update = state.updates;
+  if (!updateEl || !update || !state.loaded || !['available', 'downloaded'].includes(update.status)) {
+    if (updateEl) updateEl.hidden = true;
+    return;
+  }
+  const downloaded = update.status === 'downloaded';
+  const label = downloaded ? tr('Aktualizace připravena') : tr('Nová verze {0}', update.latestVersion);
+  const action = downloaded ? 'reveal' : 'download';
+  const button = downloaded ? tr('Otevřít') : tr('Stáhnout');
+  setHtml(updateEl, `<span class="update-chip-label">${ICON.down}<span>${label}</span></span><button class="btn btn--sm update-chip-action" type="button" data-update-action="${action}">${button}</button>`);
+  updateEl.hidden = false;
 }
 
 // Profil: avatar má vlastní oblast, aby se při každé změně čísel nepřekresloval (a neblikal pod kurzorem).
@@ -525,6 +541,28 @@ document.addEventListener('click', async (e) => {
       toast(err.message, { tone: 'err' });
     } finally {
       button.disabled = false;
+    }
+    return;
+  }
+  const updateAction = e.target.closest('[data-update-action]');
+  if (updateAction) {
+    if (updateAction.disabled) return;
+    updateAction.disabled = true;
+    try {
+      if (updateAction.dataset.updateAction === 'download') {
+        const r = await api.downloadUpdate();
+        if (r.update) state.updates = r.update;
+        toast(tr('Aktualizace je stažená a připravená ve Finderu.'));
+      } else {
+        const r = await api.revealUpdate();
+        toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Aktualizace je vidět ve Finderu'));
+      }
+      updateChrome();
+      current?.update?.(new Set(['updates']));
+    } catch (err) {
+      toast(err.message, { tone: 'err' });
+    } finally {
+      updateAction.disabled = false;
     }
     return;
   }

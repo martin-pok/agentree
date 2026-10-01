@@ -23,6 +23,7 @@ export const state = {
   spend: null,
   alerts: { unread: 0, items: [] },
   settings: null,
+  updates: { status: 'checking', currentVersion: '', checkedAt: 0, latestVersion: '', asset: null, downloaded: null, error: '' },
   integrations: null,
   projects: { items: [], assignments: {}, snapshots: {}, colors: [], limits: {} },
   launch: { targets: [], modes: {}, openMode: 'off' },
@@ -82,6 +83,7 @@ export function applySnapshot(s) {
     spend: s.spend,
     alerts: s.alerts,
     settings: s.settings,
+    updates: s.updates || state.updates,
     integrations: s.integrations,
     projects: s.projects,
     launch: s.launch,
@@ -169,6 +171,10 @@ export function applyEvent(name, data) {
     case 'settings':
       state.settings = data;
       emit('settings');
+      return null;
+    case 'updates':
+      state.updates = data;
+      emit('updates');
       return null;
     case 'integrations':
       state.integrations = data;
