@@ -86,7 +86,7 @@ test('HTTP aktualizace: lokální UI ověří, stáhne a ve zkušebním režimu 
     assert.equal(reveal.status, 200);
     assert.equal(reveal.body.dry, true);
     assert.equal(reveal.body.plan.args[0], '-R');
-    assert.match(reveal.body.plan.args[1], /updates\/Agenteeq-0\.31\.0-macOS-arm64\.zip$/);
+    assert.match(reveal.body.plan.args[1], /updates[\\/]Agenteeq-0\.31\.0-macOS-arm64\.zip$/);
     const remote = await s.app.state({ local: false });
     assert.equal(remote.updates.status, 'disabled');
     assert.equal(remote.updates.downloaded, null);
