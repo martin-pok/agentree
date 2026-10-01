@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.30.0',
+    date: '2026-10-01',
+    title: 'Aktualizace připravené bez hledání',
+    items: ['Když vyjde nová verze pro tento Mac, uvidíš ji hned v horní liště a jedním kliknutím ji stáhneš.', 'V Nastavení si zvolíš ruční nebo automatické stahování. Automatika připraví ověřený balíček, instalaci si vždy potvrdíš ve Finderu.', 'Při výpadku nebo neplatných datech se aplikace netváří, že je aktuální – stav ukáže až po ověření veřejného releasu.'],
+    en: {
+      title: 'Updates ready without searching',
+      items: ['When a new version for this Mac is released, it appears in the top bar and downloads with one click.', 'In Settings, choose manual or automatic downloads. Automatic mode prepares a verified package; you always confirm installation in Finder.', 'If the network or release data fails, the app never pretends to be current – it only shows a status after verifying the public release.'],
+    },
+  },
+  {
     version: '0.29.9',
     date: '2026-09-30',
     title: 'Čerstvý stav bez přeskoku stránky',

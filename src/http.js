@@ -228,6 +228,7 @@ export function createHttpServer(app, existingServer = null) {
     spend: (s) => broadcast('spend', s),
     connectors: (l) => broadcast('connectors', l),
     settings: (s) => broadcast('settings', s),
+    updates: (u) => broadcast('updates', u),
     integrations: (i) => broadcast('integrations', i),
     projects: (p) => broadcast('projects', p),
     runs: (l) => broadcast('runs', l),
@@ -631,6 +632,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, ui('Jazyk musí být čeština nebo angličtina.'));
         datastore.data.settings.language = body.language;
       }
+      if (body.updateMode !== undefined) {
+        if (!['manual', 'automatic'].includes(body.updateMode)) throw new HttpError(422, ui('Aktualizace mohou být ruční nebo automatické.'));
+        datastore.data.settings.updateMode = body.updateMode;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, ui('Neplatný profilový obrázek.'));
@@ -660,6 +665,7 @@ export function createHttpServer(app, existingServer = null) {
       // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
       if (!(await datastore.flush())) throw new HttpError(500, ui('Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.'));
+      if (body.updateMode === 'automatic') app.checkForUpdates().catch(() => {});
       return { settings: datastore.data.settings };
     }],
     ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall)$/, async (_req, m) => {
@@ -843,6 +849,18 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['POST', /^\/api\/integrations\/autostart\/(install|uninstall)$/, async (_req, m) => unwrap(await app.autostart(m[1]))],
     ['POST', /^\/api\/install\/reveal$/, async () => unwrap(await app.revealInstallPackage())],
+    ['POST', /^\/api\/updates\/check$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizace lze zkontrolovat jen {0}.', POCITAC.naHostiteli));
+      return { updates: await app.checkForUpdates() };
+    }],
+    ['POST', /^\/api\/updates\/download$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizaci lze stáhnout jen {0}.', POCITAC.naHostiteli));
+      return unwrap(await app.downloadUpdate());
+    }],
+    ['POST', /^\/api\/updates\/reveal$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizaci lze otevřít jen {0}.', POCITAC.naHostiteli));
+      return unwrap(await app.revealUpdate());
+    }],
     ['GET', /^\/api\/fs\/folders$/, async (_req, _m, url) => unwrap(await app.listFolders(url.searchParams.get('path') || ''))],
   ];
 

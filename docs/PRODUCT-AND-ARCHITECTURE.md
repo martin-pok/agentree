@@ -121,7 +121,7 @@ Během změny:
 
 1. Používej existující tokeny, `esc()` a designové komponenty.
 2. U realtime UI preferuj selektivní `fill()` před přepisem rodičovského stromu.
-3. Nepřidávej runtime závislost, telemetrii, síťový endpoint ani cloudovou databázi bez explicitního produktového rozhodnutí. Jediný odchozí dotaz bez účtu uživatele je denní kurz z ČNB (`src/rates.js`, produktové rozhodnutí 2026-09-20: Útrata v Kč musí sedět s aktuálním kurzem); vypíná se `AGENTEEQ_CLOUD=0`.
+3. Nepřidávej runtime závislost, telemetrii, síťový endpoint ani cloudovou databázi bez explicitního produktového rozhodnutí. Bez účtu uživatele smějí ven jen dvě výslovně schválené věci: denní kurz z ČNB (`src/rates.js`, pro aktuální převod měn) a ověření veřejného releasu Agenteeq na GitHubu (`src/updates.js`, jen verze a ověřený instalační balíček). Obě se vypínají `AGENTEEQ_CLOUD=0`; ani jedna neposílá obsah, identitu nebo data uživatele.
 4. Nezapisuj ani neloguj přepisy, API klíče, pairing tokeny nebo osobní cesty.
 5. Při změně dat aktualizuj server, klientský stav, data contract a test ve stejném commitu.
 

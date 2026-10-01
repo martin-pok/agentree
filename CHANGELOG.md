@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.30.0 – 2026-10-01 · bezpečné aktualizace aplikace
+
+- Aplikace při spuštění a pak pravidelně ověří poslední veřejný release Agenteeq. Když je pro tento Mac dostupná nová verze, objeví se v horní liště výrazná akce **Stáhnout**; po stažení vede přímo na balíček ve Finderu.
+- V Nastavení → Aplikace na tomto Macu je volba **Ručně / Automaticky**. Automatický režim stáhne jen přesně odpovídající balíček z oficiálního releasu, ale běžící aplikaci nikdy potichu nenahradí.
+- Selhání sítě, neplatný release nebo chybějící balíček se nevydávají za aktuální verzi. Kontrola přijímá jen nedraftový release a balíček s přesnou verzí, systémem, architekturou a důvěryhodnou GitHub adresou.
+
 ## 0.29.9 – 2026-09-30 · čerstvý stav bez přeskoku stránky
 
 - Návrat okna do popředí, obnovení sítě a pojistná kontrola živého proudu teď načtou nový snímek stavu přímo do otevřené obrazovky. Ruční obnova také nepřenačítá celou aplikaci, takže neztratí rozepsaný formulář, aktuální stránku ani polohu posunu.

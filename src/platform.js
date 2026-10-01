@@ -17,6 +17,8 @@ import { ui } from './texty.js';
 
 export const JE_MAC = process.platform === 'darwin';
 export const JE_WINDOWS = process.platform === 'win32';
+export const PLATFORM = process.platform;
+export const ARCHITECTURE = process.arch;
 
 /**
  * Složka, kde desktopové aplikace (VS Code, Cursor, Claude Desktop) drží svá data.
