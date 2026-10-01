@@ -596,7 +596,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .decision-reason { margin: 0; font-size: 14px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .decision-actions { grid-column: 2; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .calm { display: flex; gap: 16px; padding: 24px; background: var(--card); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
-.calm--empty { justify-content: center; }
+.calm--empty { align-items: center; }
 .calm-content { display: flex; align-items: center; gap: 16px; }
 .calm strong { display: block; font-size: 15px; }
 .calm p { margin: 4px 0 8px; font-size: 14px; color: var(--ink-2); }
