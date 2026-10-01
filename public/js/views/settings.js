@@ -70,7 +70,7 @@ const GROUPS = [
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
   ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
-  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
+  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -334,6 +334,16 @@ function mount(el) {
     if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
     const lang = e.target.closest('button[data-lang]');
     if (lang) { await setLanguage(lang.dataset.lang); return; }
+    const updateMode = e.target.closest('button[data-update-mode]');
+    if (updateMode) {
+      const mode = updateMode.dataset.updateMode;
+      if (mode !== state.settings.updateMode) {
+        state.settings = (await api.saveSettings({ updateMode: mode })).settings;
+        toast(mode === 'automatic' ? tr('Nové aktualizace se budou stahovat automaticky.') : tr('Aktualizace budou čekat na tvoje potvrzení.'));
+        update();
+      }
+      return;
+    }
     const sw = e.target.closest('[data-setting]');
     if (sw) return toggleSetting(sw);
     const nap = e.target.closest('[data-napojit]');
@@ -443,6 +453,20 @@ function mount(el) {
       } else if (a.dataset.action === 'reveal-install-package') {
         const r = await api.revealInstallPackage();
         toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Balíček je vidět ve Finderu'));
+      } else if (a.dataset.action === 'check-updates') {
+        a.disabled = true;
+        state.updates = (await api.checkUpdates()).updates;
+        toast(state.updates.status === 'current' ? tr('Máš nejnovější verzi.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
+        update();
+      } else if (a.dataset.action === 'download-update') {
+        a.disabled = true;
+        const r = await api.downloadUpdate();
+        if (r.update) state.updates = r.update;
+        toast(tr('Aktualizace je stažená a připravená ve Finderu.'));
+        update();
+      } else if (a.dataset.action === 'reveal-update') {
+        const r = await api.revealUpdate();
+        toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Aktualizace je vidět ve Finderu'));
       } else if (a.dataset.action === 'clear-alerts') {
         if (await confirmDialog({ title: tr('Smazat historii upozornění'), message: tr('Všechna uložená upozornění zmizí z {0}. Práci agentů to nijak neovlivní.', tohotoPocitace()), confirmLabel: tr('Smazat'), danger: true })) {
           const r = await api.clearAlerts();
@@ -945,6 +969,31 @@ function update(topics) {
       <div><dt>${tr('Historie')}</dt><dd>${tr('posledních {0} dní', state.windowDays)}</dd></div>
       <div><dt>${tr('Soukromí')}</dt><dd>${tr('vše zůstává na {0}', tomtoPocitaci())}</dd></div>
     </dl>`);
+
+  /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
+  const upd = state.updates || {};
+  const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
+  const updTitle = upd.status === 'available' ? tr('Je dostupná verze {0}', upd.latestVersion)
+    : upd.status === 'downloaded' ? tr('Aktualizace je připravená')
+      : upd.status === 'current' ? tr('Používáš aktuální verzi')
+        : upd.status === 'error' ? tr('Aktualizaci se nepodařilo ověřit')
+          : tr('Kontroluji aktualizace');
+  const updDesc = upd.status === 'available' ? tr('Balíček odpovídá tomuto Macu a můžeš ho stáhnout hned.')
+    : upd.status === 'downloaded' ? tr('Otevři balíček ve Finderu a nahraď aplikaci v Aplikacích.')
+      : upd.status === 'error' ? esc(upd.error || tr('Zkus kontrolu znovu.'))
+        : tr('Při každém spuštění a potom pravidelně ověřujeme poslední veřejné vydání.');
+  const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
+  fill(el, 'updates', `
+    ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
+    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
+      ${updateOption('manual', tr('Ručně'), tr('Nejdřív ukážeme novou verzi, stažení potvrdíš ty'))}
+      ${updateOption('automatic', tr('Automaticky'), tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+    </div>
+    <div class="set-actions">
+      ${upd.status === 'available' ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
+      ${upd.status === 'downloaded' ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
+      <button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>
+    </div>`);
 
   const packCmd = 'npm run pack';
   const installCmd = `npm install -g ./agenteeq-${state.version}.tgz`;

@@ -312,6 +312,21 @@ export default {
 
   // src/hooks-installer.js
   "Soubor ~/.claude/settings.json není platný JSON. Oprav ho a zkus to znovu.": "~/.claude/settings.json isn’t valid JSON. Fix it and try again.",
+  "Služba aktualizací potřebuje platnou verzi.": "The update service needs a valid version.",
+  "Aktualizační balíček zatím není stažený.": "The update package is not downloaded yet.",
+  "Aktualizační balíček už na disku není.": "The update package is no longer on disk.",
+  "Ukázat aktualizaci ve správci souborů tenhle systém neumí.": "This system cannot show the update in the file manager.",
+  "Aktualizace mohou být ruční nebo automatické.": "Updates can be manual or automatic.",
+  "Aktualizace lze zkontrolovat jen {0}.": "Updates can only be checked {0}.",
+  "Aktualizaci lze stáhnout jen {0}.": "The update can only be downloaded {0}.",
+  "Aktualizaci lze otevřít jen {0}.": "The update can only be opened {0}.",
+  "Aktualizační balíček má neplatnou velikost.": "The update package has an invalid size.",
+  "Aktualizační balíček neodpovídá vydání.": "The update package does not match the release.",
+  "Zdroj aktualizací teď neodpovídá.": "The update source is not responding right now.",
+  "Zdroj aktualizací poslal neplatná data.": "The update source returned invalid data.",
+  "Aktualizace se nepodařilo zkontrolovat.": "Could not check for updates.",
+  "Nová aktualizace zatím není připravená ke stažení.": "A new update is not ready to download yet.",
+  "Aktualizační balíček se nepodařilo stáhnout.": "Could not download the update package.",
 
   // src/http.js
   "Chybí klíč okna aplikace.": "The app window key is missing.",
