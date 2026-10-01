@@ -259,9 +259,14 @@ for (const engine of engines) {
     const prazdnyStav = await page.locator('.calm--empty').evaluate((el) => {
       const card = el.getBoundingClientRect();
       const content = el.querySelector('.calm-content').getBoundingClientRect();
-      return { delta: Math.abs((card.left + card.width / 2) - (content.left + content.width / 2)), vertical: getComputedStyle(el.querySelector('.calm-content')).alignItems };
+      const style = getComputedStyle(el);
+      return {
+        left: Math.abs((content.left - card.left) - parseFloat(style.paddingLeft)),
+        vertical: Math.abs((card.top + card.height / 2) - (content.top + content.height / 2)),
+        alignItems: style.alignItems,
+      };
     });
-    assert.ok(prazdnyStav.delta <= 1 && prazdnyStav.vertical === 'center', `${engine}: prázdný stav rozhodnutí není vycentrovaný: ${JSON.stringify(prazdnyStav)}`);
+    assert.ok(prazdnyStav.left <= 1 && prazdnyStav.vertical <= 1 && prazdnyStav.alignItems === 'center', `${engine}: prázdný stav rozhodnutí nemá přirozené levé odsazení a svislé vystředění: ${JSON.stringify(prazdnyStav)}`);
     const odsazeniOdznaku = await page.locator('.nav [data-nav="upozorneni"]').evaluate((item) => {
       const row = item.getBoundingClientRect();
       const badge = item.querySelector('.nav-badge').getBoundingClientRect();
@@ -776,7 +781,7 @@ for (const engine of engines) {
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'centered empty decision state and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
