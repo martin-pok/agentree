@@ -1,7 +1,8 @@
 # Účty Agenteeq
 
-Stav k 24. 9. 2026: přihlášení přes Google v aplikaci na Macu i na webu, databáze v cloudu s RLS,
-napojování modelů tlačítkem, synchronizace souhrnů (opt-in) a přehled souhrnů na webu (`/app?ucet`).
+Stav k 1. 10. 2026: přihlášení přes Google je v produkci zapnuté pro aplikaci na Macu i web,
+databáze v cloudu má RLS, synchronizace souhrnů je opt-in a přehled souhrnů je na webu
+(`/app?ucet`).
 
 ## Rozhodnutí vlastníka produktu (23. 9. 2026)
 
@@ -73,23 +74,22 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
   veřejné z principu, přístup hlídá RLS. Tajný klíč (`service_role`) v repozitáři ani
   v aplikaci není a nikdy nebude.
 
-## Co musí nastavit vlastník projektu (jednorázově)
+## Produkční konfigurace Google OAuth
 
-Bez těchto kroků karta účtu po klepnutí na „Přihlásit se přes Google“ poctivě odpoví, že se
-přihlášení ještě nastavuje (`GET /auth/v1/settings` → `external.google: false`).
+1. 10. 2026 je Google provider v projektu Supabase aktivní (`GET /auth/v1/settings` vrací
+`external.google: true`). OAuth aplikace **Agenteeq** je v Google Cloud zveřejněná pro externí
+uživatele a žádá jen základní rozsahy `openid`, `email` a `profile`.
 
-1. **Google Cloud Console → APIs & Services**
-   - *OAuth consent screen:* typ External, název Agenteeq, e-mail podpory, autorizovaná doména
-     `supabase.co`, rozsahy `openid`, `email`, `profile`.
-   - *Credentials → Create OAuth client ID:* typ Web application, *Authorized redirect URI*
-     `https://quxfenxxdcafcuptucnn.supabase.co/auth/v1/callback`.
-2. **Supabase → Authentication → Sign In / Providers → Google:** zapnout a vložit Client ID a
-   Client Secret z kroku 1.
-3. **Supabase → Authentication → URL Configuration**
-   - *Site URL:* `https://agentree-fawn.vercel.app`
-   - *Redirect URLs:* `http://127.0.0.1:*/ucet/navrat/*` (aplikace na Macu, libovolný port) a
-     `https://agentree-fawn.vercel.app/app**` (přehled na webu; náhledy Vercelu případně
-     `https://agentree-*-martins-projects-3cd277b9.vercel.app/app**`).
+- *OAuth callback Googlu:* `https://quxfenxxdcafcuptucnn.supabase.co/auth/v1/callback`.
+- *Výchozí URL Supabase:* `https://agentree-fawn.vercel.app`.
+- *Povolené návraty:* `http://127.0.0.1:*/ucet/navrat/*` pro jednorázový lokální callback Macu a
+  přesně `https://agentree-fawn.vercel.app/app?ucet` pro webový účet.
+- OAuth client secret je uložený výhradně v Google Cloud a Supabase. Není v repozitáři, balíčku
+  aplikace ani v prohlížeči.
+
+Při změně domény nebo OAuth klienta se musí současně změnit callback v Google Cloud a oba návraty
+v Supabase; potom ověř `external.google: true` a spusť `test/ucet.test.mjs` i
+`test/ucet-web.test.mjs`.
 
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
 

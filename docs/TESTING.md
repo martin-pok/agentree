@@ -1,5 +1,15 @@
 # Testování a ověření
 
+## Protokol ověření – produkční Google SSO (1. 10. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| Google OAuth | Nový izolovaný klient **Agenteeq** je zveřejněný pro externí uživatele. Consent screen odkazuje na produkční web a zásady soukromí; používá jen `openid`, `email`, `profile`. |
+| Supabase Auth | Google provider je aktivní (`external.google: true`), kontrola nonce zůstává zapnutá. Callback Googlu míří jen na Supabase Auth. |
+| Návraty | Povolené jsou pouze produkční `https://agentree-fawn.vercel.app/app?ucet` a jednorázové `http://127.0.0.1:*/ucet/navrat/*` pro aplikaci na Macu. |
+| Bezpečnost databáze | Supabase Security Advisor i Performance Advisor: bez nálezů. |
+| Automatická regrese | `test/ucet.test.mjs` a `test/ucet-web.test.mjs`: PKCE S256, lokální jednorázový návrat, cizí nebo opakovaný kód, zrušení, obnova relace a webová návratová adresa. |
+
 ## Automatické testy
 
 ```bash
