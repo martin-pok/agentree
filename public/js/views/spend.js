@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtMoney, fmtNum, localDate, dateLong, MONTHS, MONTHS_SHORT } from '../format.js';
+import { esc, fmtMoney, fmtNum, localDate, dateLong, rel, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut, timeLine } from '../charts.js';
 import { chartColor } from '../data.js';
@@ -98,48 +98,34 @@ function openBudgets(opener = null) {
   });
 }
 
-// Zjištěná předplatná. Cena je z ceníku (bez DPH) a říká se to; co se z dat na disku rozlišit nedá,
-// se do útraty nepočítá, dokud si uživatel nevybere.
+// Nástroj umí přímo potvrdit identitu plánu, ne skutečně strženou částku. Částka se proto
+// zobrazuje a počítá jen tehdy, když ji uživatel doložil záznamem ve Výdajích.
 function plansHtml(sp) {
-  const toMain = (usd) => (usd * (sp.rates.USD || 0)) / (sp.rates[sp.currency] || 1);
-  const info = sp.rateInfo || {};
-  const kurz = sp.rates.USD ? String(sp.rates.USD).replace('.', ',') : '';
-  const rate = info.source === 'cnb' && info.date
-    ? tr('Kurz ČNB k {0}: 1 $ = {1} Kč', dateLong(Date.parse(info.date)), kurz)
-    : info.source === 'manual'
-      ? `${tr('Kurz zadaný ručně: 1 $ = {0} Kč', kurz)}${info.live ? ` <button class="link-inline" type="button" data-action="rates-auto">${tr('Použít kurz ČNB')}</button>` : ''}`
-      : tr('Orientační kurz 1 $ = {0} Kč. Aktuální kurz ČNB se stáhne po připojení k internetu.', kurz);
   const rows = (sp.subscriptions || []).map((p) => {
     const svc = sp.services[p.service];
-    const price = p.usd !== null && p.usd > 0
-      ? `<span class="plan-price"><b>${p.usd} $</b><em>${tr('≈ {0} / měsíc', money(toMain(p.usd)))}</em></span>`
-      : p.usd === 0 ? '<span class="plan-price"><b>0 $</b></span>' : `<span class="plan-price"><b>${tr('cena neurčena')}</b></span>`;
-    let status = '';
-    let actions = '';
-    if (p.covered) status = tr('Platí částka zapsaná ve Výdajích, zjištěná cena se nepočítá podruhé.');
-    else if (p.options) {
-      status = `${esc(p.note)} ${tr('Vyber, kterou platíš:')}`;
-      actions = p.options.map((o) => `<button class="btn btn--sm" type="button" data-action="plan-pick" data-service="${esc(p.service)}" data-usd="${o}">${o} ${tr('$ / měsíc')} <span class="muted">≈ ${esc(money(toMain(o)))}</span></button>`).join('');
-    } else if (p.usd === null) {
-      status = esc(p.note || tr('Cenu tohoto plánu Agenteeq nezná.'));
-      actions = `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Zapsat částku')}</button>`;
-    } else if (p.usd > 0) {
-      status = tr('Započítáno do útraty. Ceník je bez DPH, skutečná platba může být vyšší.');
-      actions = `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Upravit částku')}</button>`;
-    } else status = tr('Bez poplatku.');
+    const price = p.payment
+      ? `<span class="plan-price"><b>${esc(fmtMoney(p.payment.amount, p.payment.currency))}</b><em>${tr('/ měsíc')}</em></span>`
+      : `<span class="plan-price"><b>${p.free ? tr('Bezplatný plán') : tr('Cena nezjištěna')}</b></span>`;
+    const status = p.payment
+      ? tr('Skutečná platba zapsaná ve Výdajích.')
+      : p.free
+        ? tr('Poskytovatel hlásí bezplatný plán.')
+        : tr('Skutečná platba není dostupná z přímého zdroje.');
+    const actions = !p.payment && !p.free
+      ? `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Zapsat skutečnou platbu')}</button>`
+      : '';
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
       <span class="plan-main"><span class="plan-title"><b>${esc(p.label)}</b>${price}</span>
-        <span class="plan-sub">${tr('Zjištěno:')} ${esc(p.evidence)}${p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>
-        <span class="plan-sub">${status}${!p.since && p.counted ? tr(' Začátek předplatného Agenteeq nezná, počítá ho od tohoto měsíce.') : ''}</span>
-        ${p.priceSource ? `<span class="plan-sub plan-src">${tr('Cena z:')} ${esc(p.priceSource)}${p.priceChecked ? `${tr(', zkontrolováno')} ${esc(dateLong(Date.parse(p.priceChecked)))}` : ''}</span>` : ''}
+        <span class="plan-sub">${tr('Zdroj plánu:')} ${esc(p.evidence)}${p.observedAt ? `, ${tr('změřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>
+        <span class="plan-sub">${status}</span>
         ${actions ? `<span class="plan-actions">${actions}</span>` : ''}
       </span>
     </li>`;
   }).join('');
   return `<section class="card pad plans" aria-labelledby="plans-h">
-    <div class="sec-head"><h2 id="plans-h">${tr('Tvoje předplatná')}</h2><span class="muted small plan-rate">${rate}</span></div>
-    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Agenteeq zatím žádné předplatné nezjistil. Předplatné Claude pozná z přihlášeného Claude Code a plán ChatGPT z limitů Codexu. Ostatní si zapiš ručně tlačítkem Přidat výdaj.')}</p>`}
+    <div class="sec-head"><h2 id="plans-h">${tr('Rozpoznané plány')}</h2></div>
+    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Agenteeq zatím žádný plán z přímého zdroje nerozpoznal.')}</p>`}
   </section>`;
 }
 
@@ -179,18 +165,8 @@ function mount(el, _params, query) {
       if (a.dataset.action === 'add') openAddEntry();
       else if (a.dataset.action === 'plan-edit') {
         const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
-        if (p) openAddEntry({ title: `${tr('Skutečná částka:')} ${p.label}`, service: p.service, kind: 'subscription', amount: p.usd ?? '', currency: 'USD', recurring: true });
-      } else if (a.dataset.action === 'plan-pick') {
-        const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
-        if (!p) return;
-        const usd = Number(a.dataset.usd);
-        applySpend(await api.addLedger({ service: p.service, kind: 'subscription', amount: usd, currency: 'USD', date: `${localDate().slice(0, 7)}-01`, note: `${p.label}${tr(', vybráno ručně')}`, recurring: 'monthly' }));
-        toast(`${p.label}${tr(': {0} $ měsíčně zapsáno', usd)}`);
-      } else if (a.dataset.action === 'rates-auto') {
-        applySpend(await api.saveBudgets({ ratesAuto: true }));
-        toast(tr('Kurz se řídí ČNB'));
-      }
-      else if (a.dataset.action === 'budgets') openBudgets(a);
+        if (p) openAddEntry({ title: `${tr('Skutečná platba:')} ${p.label}`, service: p.service, kind: 'subscription', recurring: true });
+      } else if (a.dataset.action === 'budgets') openBudgets(a);
       else if (a.dataset.action === 'end') {
         const ok = await confirmDialog({ title: tr('Ukončit předplatné'), message: tr('Od příštího měsíce se platba přestane započítávat. Historie zůstane.'), confirmLabel: tr('Ukončit předplatné') });
         if (ok) { applySpend(await api.endLedger(id, localDate())); toast(tr('Předplatné ukončeno')); }

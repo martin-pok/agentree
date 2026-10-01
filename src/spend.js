@@ -188,7 +188,7 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
 // Převod jde přes kurzy nastavené v aplikaci – kurz je v řádku, aby šel převod zkontrolovat.
 export const EXPORT_MESICU = { vychozi: 12, max: 36 };
 
-const zdrojZaznamu = (e) => (String(e.id || '').startsWith('auto:sub:') ? 'Podle ceníku' : String(e.id || '').startsWith('auto:') ? 'Admin API' : 'Ručně');
+const zdrojZaznamu = (e) => (String(e.id || '').startsWith('auto:') ? 'Admin API' : 'Ručně');
 
 function datumVMesici(datum, mesic) {
   if (datum.slice(0, 7) === mesic) return datum.slice(0, 10);

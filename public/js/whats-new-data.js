@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.30.1',
+    date: '2026-10-01',
+    title: 'Plány a tokeny bez domněnek',
+    items: ['Rozpoznaný plán Claude nebo ChatGPT už nedostane cenu z veřejného ceníku. Do Útraty vstoupí jen ověřený billing nebo skutečná platba, kterou zapíšeš.', 'Souhrn v postranním panelu teď jasně označuje tokeny z lokálních přepisů, aby je nešlo zaměnit za peníze.'],
+    en: {
+      title: 'Plans and tokens without assumptions',
+      items: ['A detected Claude or ChatGPT plan no longer gets a price from a public price list. Only verified billing or an actual payment you enter appears in Spend.', 'The sidebar summary now clearly labels tokens from local transcripts so they cannot be mistaken for money.'],
+    },
+  },
+  {
     version: '0.30.0',
     date: '2026-10-01',
     title: 'Aktualizace připravené bez hledání',

@@ -11,7 +11,7 @@ import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
-import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionEntries } from './subscriptions.js';
+import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
@@ -130,7 +130,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       utrata: () => {
         const sp = datastore.data.spend;
         const mesice = spend().months.map((m) => m.key);
-        const zaznamy = [...(sp.ledger || []), ...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(Date.now()), Date.now())];
+        const zaznamy = [...(sp.ledger || []), ...connectors['cloud-billing'].autoEntries()];
         return utrataPoMesicich(zaznamy, { mesice, prevod: (e) => convert(e.amount, e.currency, sp), mena: sp.currency || 'CZK' });
       },
     },
@@ -310,8 +310,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return found.map((f) => describePlan(f, datastore.data.spend.ledger, now));
   }
 
-  // Automatické záznamy útraty: denní útrata z Admin API a předplatné podle ceníku.
-  const automatickeVydaje = (now) => [...connectors['cloud-billing'].autoEntries(), ...subscriptionEntries(subscriptions(now), now)];
+  // Automatické záznamy útraty pocházejí jen z ověřeného Admin API. Spotřebitelská
+  // předplatná nemají podporované billing API a do útraty vstupují pouze z ledgeru.
+  const automatickeVydaje = () => connectors['cloud-billing'].autoEntries();
 
   function spend() {
     const now = Date.now();

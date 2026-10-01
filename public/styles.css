@@ -221,6 +221,7 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    chyba. Když na sebe vedle sebe nezbude místo, popisek se přesune celý pod číslo. */
 .budget-num { font: 400 34px/1.1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .budget-label { color: var(--mute); font-size: 14px; white-space: nowrap; }
+.budget-label-short { display: none; }
 /* Odkud číslo je: které nástroje ho dnes způsobily. Odkaz vede do Statistik, kde je celý rozpis.
    Nejvýš dva řádky při libovolném počtu nástrojů – další se schovají celé, ne useknuté. */
 .budget-src { display: grid; gap: 2px; min-width: 0; max-height: calc(2 * 1.4em + 2px); margin-top: 8px; overflow: hidden; color: var(--mute); font-size: 12px; line-height: 1.4; text-decoration: none; }
@@ -281,6 +282,8 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
   .profile-in .budget { flex-wrap: nowrap; margin-top: 0; gap: 6px; }
   .profile-in .budget-num { font-size: 16px; }
   .profile-in .budget-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .profile-in .budget-label-full { display: none; }
+  .profile-in .budget-label-short { display: inline; }
   .profile-in .budget-src { display: none; }
 }
 /* Ani na jeden řádek není místo (větší systémové písmo na nejnižším okně): profil se schová
@@ -2143,7 +2146,6 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 
 /* Zjištěná předplatná na Útratě */
 .plans { margin-bottom: 24px; }
-.plan-rate { text-align: right; }
 .plan-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .plan-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; align-items: start; padding: 12px 4px; border-top: 1px solid var(--line-2); }
 .plan-row:first-child { border-top: 0; }
@@ -2154,7 +2156,6 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .plan-price b { font: 500 15px/1 var(--f-mono); }
 .plan-price em { font-style: normal; font-size: 13px; color: var(--ink-2); }
 .plan-sub { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
-.plan-src { font-size: 12px; color: var(--mute); }
 .plan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 
 /* Vlastní kalendář (public/js/datepicker.js). Spouštěč a nabídka sdílejí vzhled s výběrem z nabídky
