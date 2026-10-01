@@ -592,17 +592,10 @@ export default {
   "Tento měsíc {0} z {1}.": "{0} of {1} this month.",
 
   // src/subscriptions.js
-  "veřejné přehledy cen (oficiální stránka nebyla dostupná)": "public price overviews (the official page wasn’t available)",
-  "Cena závisí na počtu a typu míst.": "The price depends on the number and type of seats.",
-  "Cena je individuální.": "The price is individual.",
-  "ChatGPT Pro má dvě cenové úrovně a z dat na disku se nedají rozlišit.": "ChatGPT Pro has two price tiers, and the data on disk can’t tell them apart.",
-  "Cena závisí na počtu míst.": "The price depends on the number of seats.",
   "přihlášený účet Claude Code (typ účtu {0}, úroveň {1})": "the signed-in Claude Code account (account type {0}, tier {1})",
   "neuveden": "not stated",
   "přihlášený účet Claude Code (typ účtu {0})": "the signed-in Claude Code account (account type {0})",
   "limity Codexu (plán „{0}“)": "Codex limits (plan “{0}”)",
-  "Cenu tohoto plánu Agenteeq nezná.": "Agenteeq doesn’t know the price of this plan.",
-  "{0} podle ceníku": "{0} from the price list",
 
   // src/tunnel.js
   "Vytvoří privátní síť (VPN) jen mezi tvými vlastními zařízeními – telefon se k {0} připojí, jako by byl doma.": "Creates a private network (VPN) just between your own devices – your phone connects to {0} as if it were at home.",

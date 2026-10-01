@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { startTestServer, tempDir } from './helpers.mjs';
 import { parseCnb, applyLiveRates, createRateFeed } from '../src/rates.js';
-import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionEntries } from '../src/subscriptions.js';
+import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan } from '../src/subscriptions.js';
 import { spendSummary, DEFAULT_SPEND } from '../src/spend.js';
 import { normalizeData } from '../src/datastore.js';
 
@@ -63,35 +63,36 @@ test('typ účtu Claude se pozná z účtu a nic osobního se nepřenese', () =>
   assert.equal(claudePlanFromAccount(null), null);
 });
 
-test('plán ChatGPT se bere z limitů Codexu a Pro se cenově nerozliší', () => {
+test('plán ChatGPT se bere přesně z nejnovějšího limitu Codexu bez domnělé ceny', () => {
   const found = chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: 1 }, { provider: 'anthropic', plan: 'x', at: 9 }]);
   assert.equal(found.plan, 'plus');
+  assert.equal(found.observedAt, 1);
   assert.equal(chatgptPlanFromLimits([]), null);
   const pro = describePlan({ service: 'chatgpt', plan: 'pro', evidence: 'x' });
-  assert.equal(pro.usd, null);
-  assert.deepEqual(pro.options, [100, 200]);
-  assert.equal(pro.counted, false, 'nejednoznačná cena se do útraty nepočítá');
+  assert.equal(pro.label, 'ChatGPT Pro');
+  assert.equal(pro.payment, null);
   const plus = describePlan({ service: 'chatgpt', plan: 'plus', evidence: 'x' });
-  assert.equal(plus.usd, 20);
-  assert.equal(plus.counted, true);
+  assert.equal(plus.label, 'ChatGPT Plus');
+  assert.equal(plus.payment, null, 'veřejný ceník není skutečná platba uživatele');
 });
 
-test('ručně zapsané předplatné nahradí zjištěné, ne aby se počítalo dvakrát', () => {
+test('rozpoznaný plán ukáže jen aktivní skutečnou platbu zapsanou uživatelem', () => {
   const now = Date.parse('2026-09-20');
-  const ledger = [{ service: 'claude', kind: 'subscription', recurring: 'monthly', date: '2026-03-01', endDate: null }];
+  const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 612.4, currency: 'CZK', recurring: 'monthly', date: '2026-03-01', endDate: null }];
   const p = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, ledger, now);
-  assert.equal(p.covered, true);
-  assert.equal(p.counted, false);
-  assert.deepEqual(subscriptionEntries([p], now), []);
+  assert.deepEqual(p.payment, { id: 'real', amount: 612.4, currency: 'CZK', date: '2026-03-01', recurring: 'monthly' });
   const ended = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, [{ ...ledger[0], endDate: '2026-06-30' }], now);
-  assert.equal(ended.covered, false, 'ukončený zápis už nekryje');
+  assert.equal(ended.payment, null, 'ukončený zápis už není aktuální platba');
 });
 
-test('zjištěné předplatné jde do měsíčního součtu i předpovědi v korunách', () => {
+test('rozpoznaný plán bez billing dat nevytváří výdaj; ruční platba se počítá jednou', () => {
   const now = Date.parse('2026-09-20T12:00:00');
-  const p = describePlan({ service: 'claude', plan: 'pro', since: '2026-08-05', evidence: 'x' }, [], now);
-  const entries = subscriptionEntries([p], now);
-  const s = spendSummary({ ...DEFAULT_SPEND, ledger: [], rates: { CZK: 1, USD: 21, EUR: 24 } }, now, entries);
+  const detected = describePlan({ service: 'claude', plan: 'pro', since: '2026-08-05', evidence: 'x' }, [], now);
+  assert.equal(detected.payment, null);
+  const empty = spendSummary({ ...DEFAULT_SPEND, ledger: [], rates: { CZK: 1, USD: 21, EUR: 24 } }, now, []);
+  assert.equal(empty.month.total, 0);
+  const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 20, currency: 'USD', date: '2026-08-05', recurring: 'monthly', endDate: null }];
+  const s = spendSummary({ ...DEFAULT_SPEND, ledger, rates: { CZK: 1, USD: 21, EUR: 24 } }, now, []);
   assert.equal(s.month.total, 420);
   assert.equal(s.recurring, 420);
   assert.equal(s.forecast, 420);
@@ -106,7 +107,7 @@ test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výcho
   assert.equal(normalizeData({ spend: { liveRates: { date: 'zítra', USD: 21, EUR: 24 } } }).spend.liveRates, null);
 });
 
-test('aplikace s účtem Claude Pro ukáže předplatné a započítá ho', async () => {
+test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho útratu', async () => {
   const src = await tempDir('agenteeq-src-');
   await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
   const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src });
@@ -115,9 +116,9 @@ test('aplikace s účtem Claude Pro ukáže předplatné a započítá ho', asyn
     const sp = t.app.spendPayload();
     const claude = sp.subscriptions.find((x) => x.service === 'claude');
     assert.equal(claude.plan, 'pro');
-    assert.equal(claude.usd, 20);
-    assert.equal(claude.counted, true);
-    assert.ok(sp.month.total > 0);
+    assert.equal(claude.label, 'Claude Pro');
+    assert.equal(claude.payment, null);
+    assert.equal(sp.month.total, 0);
     assert.doesNotMatch(JSON.stringify(sp), /tajne@example\.com/);
     assert.equal(sp.rateInfo.source, 'default');
   } finally {

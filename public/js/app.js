@@ -352,7 +352,7 @@ function renderProfile(name, working, all) {
   }
   const zdroje = [...podleNastroje].sort((a, b) => b[1] - a[1]).slice(0, 2);
   setHtml(profileEl.querySelector('[data-p-text]'), `<p class="welcome">${tr('Vítej zpět,')}<b>${esc(name)}</b></p>
-    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label" aria-label="${tr('Zaznamenané tokeny dnes')}">${tr('tokenů dnes')}</div>${zdroje.length
+    <div class="budget"><div class="budget-num">${tween('side-today', tokensSince(all, dnes), 'tok')}</div><div class="budget-label"><span class="budget-label-full">${tr('tokenů z přepisů dnes')}</span><span class="budget-label-short">${tr('tokeny · log')}</span></div>${zdroje.length
     ? `<a class="budget-src" href="#/statistiky">${zdroje.map(([n, v]) => `<span>${esc(n)} <b>${fmtTok(v)}</b></span>`).join('')}</a>`
     : ''}</div>`);
 }

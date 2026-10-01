@@ -274,7 +274,7 @@ for (const engine of engines) {
     });
     assert.equal(odsazeniOdznaku, 12, `${engine}: odznak upozornění musí mít stejný pravý vizuální odstup od pilulky`);
     assert.equal(await page.locator('.metric-note, .lwin-hint, .token-card .note').count(), 0, `${engine}: Přehled znovu ukazuje dlouhé vysvětlivky`);
-    assert.match(await page.locator('.budget-label').getAttribute('aria-label'), /Zaznamenané tokeny dnes/);
+    assert.match(await page.locator('.budget-label').textContent(), /tokenů z přepisů dnes/);
     await page.locator('.pb-stat').nth(1).click();
     await page.waitForURL('**/#/agenti?stav=failed');
     await page.locator('[data-region="table"] .row:not(.row-head)').first().waitFor();

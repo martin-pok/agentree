@@ -47,7 +47,6 @@ const spend = {
 };
 const automaticke = [
   { id: 'auto:openai-admin:2026-09-03', service: 'openai-api', kind: 'api', amount: 1.5, currency: 'USD', date: '2026-09-03', recurring: null, note: 'Admin API', auto: true },
-  { id: 'auto:sub:claude', service: 'claude', kind: 'subscription', amount: 100, currency: 'USD', date: '2026-09-01', recurring: 'monthly', endDate: null, note: 'Claude Max podle ceníku', auto: true },
 ];
 
 test('export útraty: řádek za platbu v každém měsíci, převod a zdroj záznamu', () => {
@@ -58,14 +57,12 @@ test('export útraty: řádek za platbu v každém měsíci, převod a zdroj zá
     '2026-06-30 Cursor',
     '2026-07-05 ChatGPT', '2026-07-31 Cursor',
     '2026-08-05 ChatGPT', '2026-08-12 Claude', '2026-08-31 Cursor',
-    '2026-09-01 Claude', '2026-09-03 OpenAI API', '2026-09-30 Cursor',
+    '2026-09-03 OpenAI API', '2026-09-30 Cursor',
   ], 'měsíční předplatné v každém měsíci, kdy běželo; 31. se v kratším měsíci posune na poslední den; nic mimo okno');
   const chatgpt = radky.find((r) => r[1] === '2026-07-05');
   assert.deepEqual(chatgpt, ['2026-07', '2026-07-05', 'ChatGPT', 'Předplatné', 'měsíčně do 2026-08-31', 'Plus', '20', 'USD', '23', '460', 'Ručně']);
   const api = radky.find((r) => r[2] === 'OpenAI API');
   assert.deepEqual(api.slice(6), ['1,5', 'USD', '23', '34,5', 'Admin API'], 'desetinná čárka pro českou tabulku');
-  assert.equal(radky.find((r) => r[1] === '2026-09-01')[10], 'Podle ceníku');
-  assert.equal(radky.find((r) => r[1] === '2026-09-01')[4], 'měsíčně');
   assert.equal(radky.find((r) => r[1] === '2026-08-12')[4], 'jednorázově');
 });
 

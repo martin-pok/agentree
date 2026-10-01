@@ -2,6 +2,11 @@
 
 ## Nezveřejněno
 
+## 0.30.1 – 2026-10-01 · pravdivé plány a srozumitelné tokeny
+
+- Útrata už nepřebírá veřejný ceník jako skutečnou cenu předplatného. Claude Code a Codex dál potvrzují název plánu, ale částka se ukáže a započítá jen z ověřeného billing zdroje nebo z platby zapsané uživatelem.
+- Souhrn v postranním panelu výslovně označuje tokeny z lokálních přepisů, aby se technický počet vstupu a výstupu nedal zaměnit za finanční útratu.
+
 ## 0.30.0 – 2026-10-01 · bezpečné aktualizace aplikace
 
 - Aplikace při spuštění a pak pravidelně ověří poslední veřejný release Agenteeq. Když je pro tento Mac dostupná nová verze, objeví se v horní liště výrazná akce **Stáhnout**; po stažení vede přímo na balíček ve Finderu.
