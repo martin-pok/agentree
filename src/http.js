@@ -228,6 +228,7 @@ export function createHttpServer(app, existingServer = null) {
     spend: (s) => broadcast('spend', s),
     connectors: (l) => broadcast('connectors', l),
     settings: (s) => broadcast('settings', s),
+    updates: (u) => broadcast('updates', u),
     integrations: (i) => broadcast('integrations', i),
     projects: (p) => broadcast('projects', p),
     runs: (l) => broadcast('runs', l),
