@@ -67,7 +67,11 @@ test('aktualizace: chyba zdroje ani poškozený balíček se nikdy nevydává za
 });
 
 test('HTTP aktualizace: lokální UI ověří, stáhne a ve zkušebním režimu ukáže jen vlastní balíček', async () => {
-  const s = await startTestServer({ AGENTEEQ_CLOUD: '1' }, { updateFetch: fetchForUpdate(release('0.31.0')) });
+  // Testuje macOS balíček nezávisle na systému, na kterém běží CI. Produkce dál vybírá
+  // platformu procesu; sem ji vkládáme záměrně, aby se ověřilo lokální rozhraní i na Windows/Linuxu.
+  const dataHome = await tempDir('agenteeq-updates-http-');
+  const updateService = new UpdateService({ version: '0.30.0', dataDir: dataHome, fetchImpl: fetchForUpdate(release('0.31.0')), platform: 'darwin', arch: 'arm64' });
+  const s = await startTestServer({ AGENTEEQ_CLOUD: '1', AGENTEEQ_HOME: dataHome }, { updateService });
   try {
     const client = api(s.url);
     const initial = (await client.get('/api/state')).body;
