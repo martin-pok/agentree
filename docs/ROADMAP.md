@@ -17,7 +17,7 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti 
 
 | # | Úkol | Kdo | Akceptační kritéria |
 |---|---|---|---|
-| 1 | Přihlášení přes Google naostro | vlastník | OAuth klient v Google Cloud, poskytovatel Google zapnutý v Supabase, adresy návratu podle [ACCOUNTS.md](ACCOUNTS.md); přihlášení na Macu i na webu projde a zapíše se do protokolu v `docs/TESTING.md` |
+| 1 | Přihlášení přes Google naostro — **konfigurace hotová 1. 10. 2026** | vývoj + vlastník | Google OAuth aplikace je externí a zveřejněná, provider v Supabase aktivní a návraty jsou omezené na produkční web a jednorázový localhost callback. Automatická regrese prošla; poslední uživatelské ověření je přihlášení konkrétním Google účtem na Macu i na webu. Viz [ACCOUNTS.md](ACCOUNTS.md) a protokol v [TESTING.md](TESTING.md). |
 | 2 | Zásady ochrany údajů a DPA se Supabase | vlastník | Právně zkontrolované zásady (co odchází: jen souhrny, viz [ACCOUNTS.md](ACCOUNTS.md) a [DATA-CONTRACT.md](DATA-CONTRACT.md)), odkaz v Nastavení → Účet a na webu; DPA podepsané před prvním cizím uživatelem. **Zčásti hotovo v 0.29.0:** zásady ochrany soukromí včetně účtu jsou na webu (`/soukromi`, `/en/privacy`, zdroj `site/soukromi/index.html`) s odkazem v patičce. Zbývá právní kontrola, odkaz v Nastavení → Účet a DPA |
 | 3 | Podpis a notarizace aplikace pro Mac | vlastník | Developer ID a notarizační profil v tajemstvích GitHubu (`AGENTEEQ_SIGN_IDENTITY`, `AGENTEEQ_NOTARY_PROFILE`); popis vydání pak sám přestane radit `xattr`. **Odloženo na pokyn vlastníka.** Do té doby se vydání podepisuje ad-hoc; CI zatím neumí importovat certifikát (nálezy 10–11 v [SECURITY.md](SECURITY.md)) |
 | 4 | Ověřit webové konektory na živých stránkách | vlastník + vývoj | Pro každý z 8 webů: ověření stránky v okně rozšíření (řádek *tato karta* → *Počty nesedí? Ověřit stránku*) projde a vzorek stránky je v `test/fixtures/web/` s testem adaptéru; teprve pak ✅ v [CONNECTORS.md](CONNECTORS.md). Zatím tam žádný vzorek není |
@@ -61,7 +61,7 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti 
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
-| 1 | ~~Účty a přihlášení~~ **hotovo v 0.25.0, jinak než v plánu** | Přihlášení přes Google (PKCE) místo magic linku, Supabase v EU; lokální verze funguje bez účtu. Viz [ACCOUNTS.md](ACCOUNTS.md). Naostro chybí jen nastavení poskytovatele („Teď“ #1) |
+| 1 | ~~Účty a přihlášení~~ **hotovo** | Přihlášení přes Google (PKCE) místo magic linku, Supabase v EU; lokální verze funguje bez účtu. Produkční provider a návraty jsou aktivní od 1. 10. 2026. Viz [ACCOUNTS.md](ACCOUNTS.md). |
 | 2 | ~~E2E šifrovaná synchronizace přepisů~~ **nahrazeno v 0.25.0** | Rozhodnutí vlastníka: přepisy počítač neopouštějí vůbec. Synchronizují se jen souhrnná čísla (tokeny po dnech, útrata, limity, počty agentů), dobrovolně a s RLS; přehled na webu je jen čte |
 | 3 | Push upozornění na mobil | Upozornění „potřebuje rozhodnutí“ na telefonu < 3 s. Dnes je telefon jen přehled přes síť (Tailscale / LAN, [REMOTE.md](REMOTE.md)); účet by šel využít pro doručení bez otevřeného portu |
 | 4 | Platby (Stripe) | Předplatné Pro/Team, faktury s DPH (CZ/EU), zkušební období |
