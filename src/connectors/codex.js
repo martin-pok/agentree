@@ -1,5 +1,4 @@
 import path from 'node:path';
-import fsp from 'node:fs/promises';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, hourKey, MIN, DAY } from '../util.js';
 import { touch, pushEntry, resetTranscript } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
@@ -184,14 +183,14 @@ export function createCodexConnector(ctx) {
       indexTails.set(indexFile, indexTail);
     }
     const changed = new Set();
-    for (const r of await indexTail.read(stat.size)) {
-      if (typeof r?.id !== 'string' || typeof r.thread_name !== 'string' || !r.thread_name.trim()) continue;
+    await indexTail.read(stat.size, (r) => {
+      if (typeof r?.id !== 'string' || typeof r.thread_name !== 'string' || !r.thread_name.trim()) return;
       const at = toTs(r.updated_at);
       const prev = titles.get(r.id);
-      if (prev && prev.at > at) continue;
+      if (prev && prev.at > at) return;
       titles.set(r.id, { name: clip(r.thread_name, 100), at });
       changed.add(r.id);
-    }
+    });
     for (const id of changed) {
       const s = store.get(`codex:${id}`);
       if (s) {
@@ -375,9 +374,8 @@ export function createCodexConnector(ctx) {
     s.staleMs = 15 * MIN;
     const title = titles.get(st.localId);
     if (title) s.title = title.name;
-    const lines = await st.tail.read(stat.size);
-    for (const o of lines) apply(st, s, o);
-    if (lines.length) lastEventAt = Date.now();
+    const lines = await st.tail.read(stat.size, (o) => apply(st, s, o));
+    if (lines) lastEventAt = Date.now();
     st.size = stat.size;
     st.mtimeMs = stat.mtimeMs;
     store.commit(s);
@@ -418,20 +416,17 @@ export function createCodexConnector(ctx) {
     for (const f of soubory) {
       const stat = await statSafe(f);
       if (!stat?.isFile() || stat.mtimeMs >= hranice) continue; // novější soubory čte běžný průchod
-      let text;
-      try { text = await fsp.readFile(f, 'utf8'); } catch { continue; }
-      if (!text.includes('"credits"')) continue;
-      for (const line of text.split('\n')) {
-        if (!line.includes('"credits"')) continue;
-        let o;
-        try { o = JSON.parse(line); } catch { continue; }
+      const tail = new JsonlTail(f);
+      try {
+        await tail.read(stat.size, (o) => {
         const rl = o.payload?.info?.rate_limits ?? o.payload?.rate_limits ?? o.payload?.token_count?.rate_limits;
         const c = rl?.credits;
         const zustatek = zustatekKreditu(c);
         const at = toTs(o.timestamp);
-        if (zustatek === null || !at) continue;
+        if (zustatek === null || !at) return;
         odecty.push({ at, balance: zustatek, unlimited: Boolean(c.unlimited), kladny: maKredity(c, zustatek), zdroj: f });
-      }
+        });
+      } catch { continue; }
     }
     // Soubory se čtou v libovolném pořadí, proto se o nulách rozhoduje až nad všemi odečty naráz:
     // když kredity kdykoli byly, patří do historie i nuly (i ty z doby před prvním nákupem).

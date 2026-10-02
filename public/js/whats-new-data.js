@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.31.4',
+    date: '2026-10-02',
+    title: 'Spolehlivé čtení dlouhých relací',
+    items: ['Dlouhá relace Codexu se načítá postupně, takže se nezastaví na limitu paměti a její tokeny zůstanou v dnešním součtu.', 'Stejně odolně probíhá i kontrola kreditů a interní audit dat.'],
+    en: {
+      title: 'Reliable long-session reading',
+      items: ['Long Codex sessions now load incrementally, so they cannot hit a memory limit or disappear from today’s token total.', 'Credit history and the internal data audit use the same resilient reading path.'],
+    },
+  },
+  {
     version: '0.31.3',
     date: '2026-10-02',
     title: 'Přesné tokeny po kompakci',

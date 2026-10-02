@@ -67,24 +67,44 @@ export class JsonlTail {
     this.offset = 0;
   }
 
-  async read(size) {
+  async read(size, onRecord = null) {
     if (size < this.offset) this.offset = 0;
-    if (size === this.offset) return [];
+    if (size === this.offset) return onRecord ? 0 : [];
     const fh = await fs.open(this.file, 'r');
     try {
-      const len = size - this.offset;
-      const buf = Buffer.allocUnsafe(len);
-      const { bytesRead } = await fh.read(buf, 0, len, this.offset);
-      const view = buf.subarray(0, bytesRead);
-      const last = view.lastIndexOf(10);
-      if (last === -1) return [];
-      this.offset += last + 1;
       const out = [];
-      for (const line of view.toString('utf8', 0, last).split('\n')) {
-        if (line.length < 2) continue;
-        try { out.push(JSON.parse(line)); } catch { /* poškozený nebo rozepsaný řádek */ }
+      const chunkSize = 1024 * 1024;
+      let pos = this.offset;
+      let zbytek = Buffer.alloc(0);
+      let count = 0;
+      const emit = async (line) => {
+        if (line.length < 2) return;
+        try {
+          const record = JSON.parse(line.toString('utf8'));
+          count++;
+          if (onRecord) await onRecord(record);
+          else out.push(record);
+        } catch { /* poškozený nebo rozepsaný řádek */ }
+      };
+      while (pos < size) {
+        const len = Math.min(chunkSize, size - pos);
+        const buf = Buffer.allocUnsafe(len);
+        const { bytesRead } = await fh.read(buf, 0, len, pos);
+        if (!bytesRead) break;
+        pos += bytesRead;
+        const view = zbytek.length ? Buffer.concat([zbytek, buf.subarray(0, bytesRead)]) : buf.subarray(0, bytesRead);
+        let start = 0;
+        for (;;) {
+          const end = view.indexOf(10, start);
+          if (end === -1) break;
+          await emit(view.subarray(start, end));
+          start = end + 1;
+        }
+        // Nedokončený řádek se znovu přečte při dalším zápisu. Kopie nepodrží celý megabajtový blok.
+        zbytek = Buffer.from(view.subarray(start));
       }
-      return out;
+      this.offset = pos - zbytek.length;
+      return onRecord ? count : out;
     } finally {
       await fh.close();
     }

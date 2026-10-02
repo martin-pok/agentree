@@ -14,7 +14,25 @@ import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
 import { appSupportDir } from '../src/platform.js';
+import { JsonlTail } from '../src/util.js';
 import { tempDir, writeJsonl, fakeDatastore, startTestServer, jenProcesy } from './helpers.mjs';
+
+test('JsonlTail: dlouhý soubor zpracuje po blocích a neztratí navazující řádky', async () => {
+  const home = await tempDir();
+  const file = path.join(home, 'long.jsonl');
+  const large = 'x'.repeat(700000);
+  await fs.writeFile(file, `${JSON.stringify({ id: 1, large })}\n${JSON.stringify({ id: 2 })}\n${JSON.stringify({ id: 3, large })}\n`);
+  const tail = new JsonlTail(file);
+  const seen = [];
+  const size = (await fs.stat(file)).size;
+  assert.equal(await tail.read(size, (record) => seen.push(record.id)), 3);
+  assert.deepEqual(seen, [1, 2, 3]);
+  await fs.appendFile(file, '{"id":4');
+  assert.equal(await tail.read((await fs.stat(file)).size, (record) => seen.push(record.id)), 0, 'nekompletní řádek se nepočítá');
+  await fs.appendFile(file, '}\n');
+  assert.equal(await tail.read((await fs.stat(file)).size, (record) => seen.push(record.id)), 1);
+  assert.deepEqual(seen, [1, 2, 3, 4]);
+});
 
 test('Codex: automatická kontrola a pomocný agent patří k rodiči, plánovaná úloha má svůj název (ne název složky)', async () => {
   const home = await tempDir();
