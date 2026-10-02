@@ -347,7 +347,7 @@ test('banner průvodce sedí s obsahem průvodce', async () => {
   const cislovky = { 4: 'Čtyři', 5: 'Pět', 6: 'Šest', 7: 'Sedm' };
   assert.match(settings, new RegExp(`<p>\\$\\{tr\\('${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
   // Průvodce musí mluvit o tom, co aplikace umí teď.
-  for (const [co, kde] of [['limits', 'ukázka limitů'], ['kurzu ČNB', 'přepočet do korun'], ['logo klienta', 'obrázky projektů'], ['data jen čte', 'zabezpečení spárovaného telefonu']]) {
+  for (const [co, kde] of [['limits', 'ukázka limitů'], ['ověřené API náklady', 'ověřené náklady'], ['logo klienta', 'obrázky projektů'], ['data jen čte', 'zabezpečení spárovaného telefonu']]) {
     assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);
   }
 });
@@ -409,4 +409,15 @@ test('plynulé posouvání je jeden modul pro web i aplikaci a během posouván�
     assert.ok(css.includes(`:where(html:not(.is-scrolling)) ${pravidlo}`), `${pravidlo} během posouvání naskakuje`);
   }
   assert.doesNotMatch(css, /is-scrolling[^{]*\{[^}]*pointer-events: none/, 'vypnutý ukazatel spolkne klik (WebKit při kliknutí posouvá)');
+});
+
+test('Útrata: automaticky rozpoznaný plán nenutí ruční cenu ani nezobrazuje domněnku', async () => {
+  const src = await zdroj('public/js/views/spend.js');
+  assert.match(src, /p\.detected && !payments\.length \? '' :/,
+    'rozpoznaný plán bez platby nesmí dostat výzvu k ručnímu zápisu');
+  assert.doesNotMatch(src, /Cena nezjištěna/, 'neznámá částka se nemá tvářit jako údaj k doplnění');
+  assert.match(src, /Zjištěno automaticky/);
+  assert.match(src, /Napoj Claude Code nebo Codex v Nastavení a Agenteeq plán zjistí automaticky\./);
+  assert.doesNotMatch(src, /Předplatné a dokoupené extra usage[^\n]*zapisuj ručně/,
+    'sekce nesmí končit plošnou výzvou k ručnímu opisování');
 });

@@ -64,10 +64,13 @@ test('typ účtu Claude se pozná z účtu a nic osobního se nepřenese', () =>
 });
 
 test('plán ChatGPT se bere přesně z nejnovějšího limitu Codexu bez domnělé ceny', () => {
-  const found = chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: 1 }, { provider: 'anthropic', plan: 'x', at: 9 }]);
+  const now = Date.parse('2026-09-20T12:00:00Z');
+  const found = chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now - 1 }, { provider: 'anthropic', plan: 'x', at: now }], now);
   assert.equal(found.plan, 'plus');
-  assert.equal(found.observedAt, 1);
+  assert.equal(found.observedAt, now - 1);
   assert.equal(chatgptPlanFromLimits([]), null);
+  assert.equal(chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now - 24 * 60 * 60 * 1000 - 1 }], now), null, 'staré pozorování se nevydává za aktuální plán');
+  assert.equal(chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now + 60_001 }], now), null, 'čas z budoucnosti se odmítne');
   const pro = describePlan({ service: 'chatgpt', plan: 'pro', evidence: 'x' });
   assert.equal(pro.label, 'ChatGPT Pro');
   assert.equal(pro.payment, null);
@@ -138,7 +141,11 @@ test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výcho
 test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho útratu', async () => {
   const src = await tempDir('agenteeq-src-');
   await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
-  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src });
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
+    napojeniRun: async (_bin, args) => args[0] === 'auth'
+      ? { ok: true, stdout: JSON.stringify({ loggedIn: true }), stderr: '' }
+      : { ok: false, stdout: '', stderr: '' },
+  });
   try {
     await t.app.refreshSubscriptions();
     const sp = t.app.spendPayload();
@@ -149,6 +156,34 @@ test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho 
     assert.equal(sp.month.total, 0);
     assert.doesNotMatch(JSON.stringify(sp), /tajne@example\.com/);
     assert.equal(sp.rateInfo.source, 'default');
+  } finally {
+    await t.close();
+  }
+});
+
+test('starý účtový soubor Claude se po odhlášení nevydává za aktivní plán', async () => {
+  const src = await tempDir('agenteeq-sub-logout-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro' } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
+    napojeniRun: async () => ({ ok: true, stdout: JSON.stringify({ loggedIn: false }), stderr: '' }),
+  });
+  try {
+    const sp = t.app.spendPayload();
+    assert.equal(sp.subscriptions.some((x) => x.service === 'claude'), false);
+  } finally {
+    await t.close();
+  }
+});
+
+test('nový plán z limitů Codexu se propíše do Útraty okamžitě', async () => {
+  const t = await startTestServer();
+  try {
+    let pushed = null;
+    t.app.store.once('spend', (value) => { pushed = value; });
+    const now = Date.now();
+    t.app.store.setLimit({ id: 'openai:five_hour', provider: 'openai', app: 'Codex', kind: 'time', label: '5 h', plan: 'plus', at: now, resetsAt: now + 3600e3, usedPercent: 10 });
+    assert.equal(pushed?.subscriptions.find((p) => p.service === 'chatgpt')?.plan, 'plus');
+    assert.equal(pushed?.subscriptions.find((p) => p.service === 'chatgpt')?.observedAt, now);
   } finally {
     await t.close();
   }

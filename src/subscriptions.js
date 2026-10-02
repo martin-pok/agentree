@@ -1,6 +1,11 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { ui } from './texty.js';
+import { DAY } from './util.js';
+
+// Plán z rate-limit události je pouze poslední pozorování poskytovatele. Po jednom dni bez
+// nové události už ho nevydáváme za aktuální plán; přihlášení zůstává vidět samostatně v Nastavení.
+export const PLAN_OBSERVATION_MAX_AGE_MS = DAY;
 
 // Předplatné se zjišťuje z toho, co nástroje samy zapisují na tomto Macu. Z účtu Claude
 // se čte jen typ organizace a úroveň limitů (ne e-mail, jméno ani token). Názvy plánů jsou
@@ -32,7 +37,7 @@ const ymd = (ts) => {
 };
 
 // Vstup je objekt `oauthAccount` ze ~/.claude.json. Vrací jen nezbytné, nic osobního.
-export function claudePlanFromAccount(acc, now = Date.now()) {
+export function claudePlanFromAccount(acc, now = Date.now(), observedAt = now) {
   if (!acc || typeof acc !== 'object') return null;
   const org = String(acc.organizationType || '');
   const tier = String(acc.userRateLimitTier || acc.organizationRateLimitTier || '');
@@ -48,6 +53,7 @@ export function claudePlanFromAccount(acc, now = Date.now()) {
     service: 'claude',
     plan,
     since: Number.isFinite(created) && created <= now ? ymd(created) : null,
+    observedAt: Number.isFinite(Number(observedAt)) ? Number(observedAt) : now,
     evidence: tier && tier !== 'default_claude_ai'
       ? ui('přihlášený účet Claude Code (typ účtu {0}, úroveň {1})', org || ui('neuveden'), tier)
       : ui('přihlášený účet Claude Code (typ účtu {0})', org || ui('neuveden')),
@@ -55,16 +61,18 @@ export function claudePlanFromAccount(acc, now = Date.now()) {
   };
 }
 
-export function chatgptPlanFromLimits(limits) {
+export function chatgptPlanFromLimits(limits, now = Date.now(), maxAgeMs = PLAN_OBSERVATION_MAX_AGE_MS) {
   const codex = (limits || []).filter((l) => l.provider === 'openai' && typeof l.plan === 'string' && l.plan);
   if (!codex.length) return null;
   const newest = codex.sort((a, b) => (b.at || 0) - (a.at || 0))[0];
+  const observedAt = Number(newest.at);
+  if (!Number.isFinite(observedAt) || observedAt > now + 60_000 || now - observedAt > maxAgeMs) return null;
   const plan = newest.plan.toLowerCase();
   return {
     service: 'chatgpt',
     plan,
     since: null,
-    observedAt: Number.isFinite(Number(newest.at)) ? Number(newest.at) : null,
+    observedAt,
     evidence: ui('limity Codexu (plán „{0}“)', newest.plan),
     extraUsage: false,
   };

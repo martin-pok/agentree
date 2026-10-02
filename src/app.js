@@ -50,6 +50,7 @@ import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
 import { UpdateService } from './updates.js';
+import { watchExactFile } from './watch.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
 export const DIST_DIR = path.join(ROOT_DIR, 'dist');
@@ -298,15 +299,23 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Předplatné zjištěné z tohoto Macu (Claude z účtu Claude Code, ChatGPT z plánu, který hlásí Codex).
   let claudeAccount = null;
+  let subscriptionWatcher = null;
+  let subscriptionJson = '';
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
   async function refreshSubscriptions() {
-    const acc = await readClaudeAccount(config.sourceHome);
+    // Samotný starý ~/.claude.json nestačí: po odhlášení může na disku zůstat. Plán přijmeme
+    // pouze když vlastní `claude auth status --json` právě potvrdí aktivní přihlášení.
+    const auth = await napojeni.stav('claude-code').catch(() => ({ napojeno: null }));
+    const acc = auth.napojeno === true ? await readClaudeAccount(config.sourceHome) : null;
     const before = JSON.stringify(claudeAccount);
     claudeAccount = acc ? claudePlanFromAccount(acc) : null;
-    if (JSON.stringify(claudeAccount) !== before) spendChanged();
+    if (JSON.stringify(claudeAccount) !== before) {
+      subscriptionJson = JSON.stringify(subscriptions());
+      spendChanged();
+    }
   }
   function subscriptions(now = Date.now()) {
-    const found = [claudeAccount, chatgptPlanFromLimits(store.limitList())].filter(Boolean);
+    const found = [claudeAccount, chatgptPlanFromLimits(store.limitList(), now)].filter(Boolean);
     return subscriptionPortfolio(found, datastore.data.spend.ledger, now);
   }
 
@@ -334,6 +343,18 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     alerts.checkBudgets(spend());
     store.emit('spend', spendPayload());
   }
+
+  function subscriptionsChanged() {
+    const next = JSON.stringify(subscriptions());
+    if (next === subscriptionJson) return false;
+    subscriptionJson = next;
+    spendChanged();
+    return true;
+  }
+
+  // Nová rate-limit událost Codexu nese i plan_type. Promítnout ji do Útraty okamžitě,
+  // ne až při hodinovém přepočtu. Změny procent bez změny plánu další událost nevytvoří.
+  store.on('limits', () => subscriptionsChanged());
 
   /* ---------- Licence ---------- */
 
@@ -1318,7 +1339,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
-    refreshSubscriptions().catch(() => {});
+    await refreshSubscriptions().catch(() => {});
+    subscriptionJson = JSON.stringify(subscriptions());
+    subscriptionWatcher = watchExactFile(path.join(config.sourceHome, '.claude.json'), () => {
+      refreshSubscriptions().catch(() => {});
+    }, { retryMs: 1000 });
+    // Časem může zestárnout poslední pozorování plánu Codexu i bez nového souboru.
+    every(() => subscriptionsChanged(), 60_000);
     every(() => refreshSubscriptions(), 10 * 60e3);
     every(() => checkForUpdates(), 6 * HOUR);
     rateFeed.start();
@@ -1335,6 +1362,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     stoppingRemote = true;
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
+    subscriptionWatcher?.close();
+    subscriptionWatcher = null;
     ucet.stop();
     cloudSync.stop();
     napojeni.stop();

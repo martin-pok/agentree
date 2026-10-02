@@ -258,5 +258,5 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     for (const id of [...ceka.keys()]) ukonci(id);
   }
 
-  return { prehled, napojit, odkaz, kod, webOzvalo, zrusit, stop, ceka: (id) => ceka.has(id) };
+  return { prehled, stav: zjisti, napojit, odkaz, kod, webOzvalo, zrusit, stop, ceka: (id) => ceka.has(id) };
 }
