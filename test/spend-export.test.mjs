@@ -95,6 +95,14 @@ test('export útraty: v jiné měně aplikace se převádí přes kurzy v aplika
   assert.deepEqual(chatgpt[0].slice(7, 11), ['20', 'USD', '0,92', '18,4'], 'kurz USD → EUR z kurzů v aplikaci (23 / 25)');
 });
 
+test('export útraty: anglické rozhraní dostane anglické hlavičky a hodnoty', () => {
+  const [hlavicka, ...radky] = precti(spendCsv(spend, now, automaticke, 4, 'en'));
+  assert.deepEqual(hlavicka, ['Month', 'Payment date', 'Service', 'Type', 'Account / licence', 'Recurrence', 'Note', 'Amount', 'Currency', 'Rate to CZK', 'Amount in CZK', 'Source']);
+  assert.deepEqual(radky.find((r) => r[1] === '2026-07-05').slice(3, 6), ['Subscription', 'Studio', 'monthly until 2026-08-31']);
+  assert.equal(radky.find((r) => r[1] === '2026-08-12')[5], 'one-off');
+  assert.equal(radky.find((r) => r[1] === '2026-08-12')[11], 'Manual');
+});
+
 test('export útraty přes HTTP: soubor ke stažení a hlídaný počet měsíců', async () => {
   const s = await startTestServer();
   try {
@@ -107,6 +115,10 @@ test('export útraty přes HTTP: soubor ke stažení a hlídaný počet měsíc�
     assert.equal(res.headers.get('cache-control'), 'no-store');
     const radky = precti(Buffer.from(await res.arrayBuffer()).toString('utf8')); // text() by BOM zahodil
     assert.ok(radky.some((r) => r[2] === 'Perplexity' && r[6] === 'Pro'));
+    assert.equal((await a.send('PUT', '/api/settings', { language: 'en' })).status, 200);
+    const english = precti(Buffer.from(await (await fetch(`${s.url}/api/spend/export`)).arrayBuffer()).toString('utf8'));
+    assert.equal(english[0][0], 'Month', 'HTTP export následuje jazyk aplikace');
+    assert.equal(english.find((r) => r[2] === 'Perplexity')[3], 'Subscription');
     for (const spatne of ['0', '37', 'abc', '1.5', '-3']) {
       assert.equal((await fetch(`${s.url}/api/spend/export?mesicu=${spatne}`)).status, 422, `mesicu=${spatne}`);
     }

@@ -4,6 +4,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { startTestServer, api, openStream, waitFor } from './helpers.mjs';
 import { createUcet, pkcePar, uzivatelZOdpovedi } from '../src/ucet.js';
+import { strankaNavratu, SKRIPT_NAVRATU } from '../src/ucet-stranka.js';
 
 // Účet Agenteeq (src/ucet.js): přihlášení přes Google proti atrapě Supabase Auth. Skutečný server
 // účtů se v testech nikdy nevolá (test/helpers.mjs nastavuje AGENTEEQ_UCET_URL=0).
@@ -86,6 +87,33 @@ async function sAtrapou(fn, { google = true } = {}) {
 }
 
 const navrat = (url) => fetch(url).then(async (r) => ({ status: r.status, html: await r.text(), csp: r.headers.get('content-security-policy'), cache: r.headers.get('cache-control') }));
+
+test('stránka návratu z Google přihlášení respektuje jazyk aplikace', () => {
+  const wait = strankaNavratu({ ceka: true, language: 'en' });
+  assert.match(wait, /<html lang="en">/);
+  assert.match(wait, /Finishing sign-in/);
+  assert.match(wait, /data-error-title="Sign-in failed"/);
+  assert.match(wait, /rel="icon"[^>]+\/brand\/agenteeq-mark-dark\.svg/);
+  const done = strankaNavratu({ ok: true, jmeno: '<Eva>', language: 'en' });
+  assert.match(done, /Welcome, &lt;Eva&gt;/);
+  assert.match(done, /You can close this window/);
+  assert.doesNotMatch(done, /Přihlášení/);
+  assert.match(SKRIPT_NAVRATU, /main\.dataset\.errorTitle/);
+});
+
+test('HTTP návrat z Google přihlášení používá uloženou angličtinu', async () => {
+  const srv = await startTestServer();
+  try {
+    const klient = api(srv.url);
+    assert.equal((await klient.send('PUT', '/api/settings', { language: 'en' })).status, 200);
+    const r = await navrat(`${srv.url}/ucet/navrat/${'A'.repeat(43)}?code=unknown`);
+    assert.match(r.html, /<html lang="en">/);
+    assert.match(r.html, /Sign-in failed/);
+    assert.doesNotMatch(r.html, /Přihlášení se nepovedlo/);
+  } finally {
+    await srv.close();
+  }
+});
 
 test('PKCE: výzva je SHA-256 ověřovače v base64url a ověřovač má 64 znaků', () => {
   const { verifier, challenge } = pkcePar();

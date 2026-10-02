@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.31.1',
+    date: '2026-10-02',
+    title: 'Anglické výstupy bez českých zbytků',
+    items: ['V anglickém rozhraní mají CSV exporty útraty a projektů anglické hlavičky i stavy a kalendář používá anglický zápis data.', 'Návrat z přihlášení přes Google je kompletně anglicky. V účtu je přímý odkaz na zásady ochrany soukromí ve správném jazyce.'],
+    en: {
+      title: 'English outputs without Czech leftovers',
+      items: ['In the English interface, Spend and Projects CSV exports use English headers and statuses, and the calendar uses an English date format.', 'The Google sign-in return page is fully English. The account card links directly to the privacy policy in the correct language.'],
+    },
+  },
+  {
     version: '0.31.0',
     date: '2026-10-02',
     title: 'Více licencí na jednom místě',

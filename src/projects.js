@@ -82,6 +82,7 @@ export function normalizeWork(list) {
 export const NO_PROJECT = '';
 
 const STATUS_CS = { needs_input: 'Potřebuje rozhodnutí', limited: 'Vyčerpaný limit', working: 'Pracuje', waiting: 'Čeká na zadání', idle: 'Nečinná', archived: 'Archiv' };
+const STATUS_EN = { needs_input: 'Needs decision', limited: 'Limit exhausted', working: 'Working', waiting: 'Waiting for prompt', idle: 'Idle', archived: 'Archived' };
 const str = (v, n = 500) => (typeof v === 'string' ? v.slice(0, n) : '');
 
 // Snímek konverzace v projektu: zůstane v projektu i po vypadnutí z okna sledování (výchozí 30 dní).
@@ -330,13 +331,17 @@ const localStamp = (ts) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-export function projectCsv(sessions, now = Date.now()) {
+export function projectCsv(sessions, now = Date.now(), language = 'cs') {
   const since = hourKey(now - 30 * DAY);
-  const rows = [['Konverzace', 'Aplikace', 'Model', 'Stav', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Tokeny', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Odkaz']];
+  const english = language === 'en';
+  const status = english ? STATUS_EN : STATUS_CS;
+  const rows = [english
+    ? ['Conversation', 'Application', 'Model', 'Status', 'Started', 'Last activity', 'Prompts', 'Tokens', 'Active hours (30 days)', 'Folder', 'Link']
+    : ['Konverzace', 'Aplikace', 'Model', 'Stav', 'Zahájeno', 'Poslední aktivita', 'Počet zadání', 'Tokeny', 'Hodiny s aktivitou (30 dní)', 'Složka', 'Odkaz']];
   for (const s of sessions) {
     const tokens = (s.tokens?.input || 0) + (s.tokens?.output || 0); // bez režie cache, viz model.js#addTokens
     const hours = Object.entries(s.hourly || {}).filter(([k, v]) => k >= since && v > 0).length;
-    rows.push([s.title, s.app, s.model || '', s.status ? STATUS_CS[s.status] || s.status : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
+    rows.push([s.title, s.app, s.model || '', s.status ? status[s.status] || s.status : english ? 'Outside tracking window' : 'Mimo okno sledování', localStamp(s.startedAt), localStamp(s.lastAt), s.turns || 0, tokens, hours, s.cwd || '', s.url || '']);
   }
   return csv(rows); // src/csv.js: středník, BOM, ochrana proti vzorcům
 }

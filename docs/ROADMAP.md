@@ -1,10 +1,10 @@
 # Roadmapa
 
 Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
-Stav je prověřený proti kódu (naposledy 27. 9. 2026, s vydáním 0.29.0). Hotové položky zůstávají
+Stav je prověřený proti kódu (naposledy 2. 10. 2026, s vydáním 0.31.1). Hotové položky zůstávají
 přeškrtnuté s odkazem, kde to je, aby bylo vidět, co se rozhodlo jinak, než stálo v plánu.
 
-## Teď – po 0.29.0
+## Teď – po 0.31.1
 
 Pořadí podle toho, co brzdí ostrý provoz. U položek „vlastník“ je potřeba účet nebo rozhodnutí,
 které kód za nikoho neudělá.
@@ -13,12 +13,14 @@ Od 0.25.0 vyšlo mimo plán: ověření stránky v okně rozšíření (0.26.0),
 (0.28.0) a vzdálený Claude Code z Claude Desktopu (0.28.1). Verze 0.29.0 přidává párování
 rozšíření bez kódu, nové okno rozšíření se seznamem otevřených konverzací a přepnutím do karty,
 rozšíření v angličtině, napojení Claude Code a Codexu bez Terminálu a jednotný systém tvarů
-a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti jsou v `CHANGELOG.md`.
+a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Verze 0.31.0 přidala více licencí
+jedné služby a 0.31.1 dokončila anglické exporty, kalendář a návrat z Google přihlášení. Podrobnosti
+jsou v `CHANGELOG.md`.
 
 | # | Úkol | Kdo | Akceptační kritéria |
 |---|---|---|---|
 | 1 | Přihlášení přes Google naostro — **konfigurace hotová 1. 10. 2026** | vývoj + vlastník | Google OAuth aplikace je externí a zveřejněná, provider v Supabase aktivní a návraty jsou omezené na produkční web a jednorázový localhost callback. Automatická regrese prošla; poslední uživatelské ověření je přihlášení konkrétním Google účtem na Macu i na webu. Viz [ACCOUNTS.md](ACCOUNTS.md) a protokol v [TESTING.md](TESTING.md). |
-| 2 | Zásady ochrany údajů a DPA se Supabase | vlastník | Právně zkontrolované zásady (co odchází: jen souhrny, viz [ACCOUNTS.md](ACCOUNTS.md) a [DATA-CONTRACT.md](DATA-CONTRACT.md)), odkaz v Nastavení → Účet a na webu; DPA podepsané před prvním cizím uživatelem. **Zčásti hotovo v 0.29.0:** zásady ochrany soukromí včetně účtu jsou na webu (`/soukromi`, `/en/privacy`, zdroj `site/soukromi/index.html`) s odkazem v patičce. Zbývá právní kontrola, odkaz v Nastavení → Účet a DPA |
+| 2 | Zásady ochrany údajů a DPA se Supabase | vlastník | Právně zkontrolované zásady (co odchází: jen souhrny, viz [ACCOUNTS.md](ACCOUNTS.md) a [DATA-CONTRACT.md](DATA-CONTRACT.md)) a DPA podepsané před prvním cizím uživatelem. **Zčásti hotovo:** zásady ochrany soukromí včetně účtu jsou na webu (`/soukromi`, `/en/privacy`, zdroj `site/soukromi/index.html`) a od 0.31.1 na ně vede jazykově správný odkaz i z Nastavení → Účet. Zbývá právní kontrola a DPA |
 | 3 | Podpis a notarizace aplikace pro Mac | vlastník | Developer ID a notarizační profil v tajemstvích GitHubu (`AGENTEEQ_SIGN_IDENTITY`, `AGENTEEQ_NOTARY_PROFILE`); popis vydání pak sám přestane radit `xattr`. **Odloženo na pokyn vlastníka.** Do té doby se vydání podepisuje ad-hoc; CI zatím neumí importovat certifikát (nálezy 10–11 v [SECURITY.md](SECURITY.md)) |
 | 4 | Ověřit webové konektory na živých stránkách | vlastník + vývoj | Pro každý z 8 webů: ověření stránky v okně rozšíření (řádek *tato karta* → *Počty nesedí? Ověřit stránku*) projde a vzorek stránky je v `test/fixtures/web/` s testem adaptéru; teprve pak ✅ v [CONNECTORS.md](CONNECTORS.md). Zatím tam žádný vzorek není |
 | 5 | Ruční QA účtu a napojení modelů na Macu | vlastník | Od 0.29.0 spustí „Napojit“ přihlášení na pozadí bez Terminálu (`claude auth login --claudeai`, `codex login`) a prohlížeč dodavatele se otevře rovnou. Ověřit na Macu přihlášení, návrat do aplikace, potvrzení s plánem a záložní cestu „Prohlížeč se neotevřel?“ s vložením kódu; zápis do protokolu v `docs/TESTING.md` |
@@ -70,7 +72,7 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Podrobnosti 
 
 ## Známé problémy (backlog)
 
-Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 27. 9. 2026).
+Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 2. 10. 2026).
 
 - Bez hooků se žádost o povolení nepozná jistě: po 90 s čekání nástroje stav řekne „možná čeká na tvé povolení“, ale zůstává „Pracuje“ (`src/model.js#deriveStatus`).
 - Webové služby vykreslují dlouhé konverzace jen zčásti (virtualizované seznamy), takže počet zpráv z rozšíření může být u dlouhé konverzace nižší než skutečný.
@@ -83,7 +85,3 @@ Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřen
 - Párování rozšíření bez kódu na Windows: ID rozbaleného rozšíření se tam počítá z cesty v UTF-16
   podle zdrojů Chromia, na skutečném Windows neověřeně (`src/platform.js#idRozbalenehoRozsireni`).
   Když nesedí, zbývá jednorázový kód z Nastavení.
-- Zbývající angličtina: CSV exporty útraty a projektů mají české hlavičky i hodnoty (`src/spend.js#spendCsv`,
-  `src/projects.js#projectCsv`), stránka po návratu z přihlášení Google je jen česky (`src/ucet-stranka.js`)
-  a pole kalendáře píše datum česky „D. M. RRRR“ (`public/js/datepicker.js`). Test úplnosti je
-  vyjmenovává jako texty mimo rozhraní (`test/i18n.test.mjs`, `MIMO_ROZHRANI`).
