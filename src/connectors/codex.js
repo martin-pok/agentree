@@ -10,6 +10,51 @@ import { POCITAC } from '../platform.js';
 const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TASK_TAG = /^\s*<scheduled-task\s+name="([^"<>]{1,80})"/;
+const TOKEN_COUNTER_KEYS = ['input', 'cached', 'output', 'cacheWrite'];
+
+const finiteToken = (value) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
+
+// Codex posílá kumulativní čítače. Některé verze klienta po kompakci vynulují jen jeden
+// z nich (nejčastěji cache), takže rozdíl celého součtu by znovu započítal starý kontext.
+// Stav je proto veden po jednotlivých čítačích a každý reset se přičte do vlastní báze.
+export function createCodexTokenState() {
+  return {
+    prevUsage: null,
+    usageBase: { input: 0, cached: 0, output: 0, cacheWrite: 0 },
+    prevProcessed: 0,
+    lastTokens: null,
+  };
+}
+
+export function applyCodexTokenUsage(st, usage, ts, hourly) {
+  const current = {
+    input: finiteToken(usage?.input_tokens),
+    cached: finiteToken(usage?.cached_input_tokens),
+    output: finiteToken(usage?.output_tokens),
+    cacheWrite: finiteToken(usage?.cache_write_input_tokens),
+  };
+  if (st.prevUsage) {
+    for (const key of TOKEN_COUNTER_KEYS) {
+      if (current[key] < st.prevUsage[key]) st.usageBase[key] += st.prevUsage[key];
+    }
+  }
+  const cumulative = Object.fromEntries(TOKEN_COUNTER_KEYS.map((key) => [key, st.usageBase[key] + current[key]]));
+  const processed = Math.max(0, cumulative.input - cumulative.cached + cumulative.output);
+  const delta = Math.max(0, processed - st.prevProcessed);
+  if (hourly && ts && delta) {
+    const key = hourKey(ts);
+    hourly[key] = (hourly[key] || 0) + delta;
+  }
+  st.prevProcessed = Math.max(st.prevProcessed, processed);
+  st.prevUsage = current;
+  st.lastTokens = {
+    input: Math.max(0, cumulative.input - cumulative.cached),
+    output: cumulative.output,
+    cacheWrite: cumulative.cacheWrite,
+    cacheRead: cumulative.cached,
+  };
+  return { ...st.lastTokens, delta };
+}
 
 // Plánované spuštění vkládá zadání do značky <scheduled-task name="…">; její název je jediný lidský popis vlákna.
 export const scheduledTaskName = (text) => TASK_TAG.exec(text || '')?.[1]?.trim() || '';
@@ -242,28 +287,10 @@ export function createCodexConnector(ctx) {
           case 'token_count': {
             const t = p.info?.total_token_usage;
             if (t) {
-              const cached = t.cached_input_tokens || 0;
-              const cur = { input: (t.input_tokens || 0) - cached, output: t.output_tokens || 0, cacheWrite: t.cache_write_input_tokens || 0, cacheRead: cached };
-              // Stejné měřítko jako u Claude (model.js#addTokens): hlavní metrika je vstup + výstup,
-              // režie cache se drží zvlášť v `s.tokens`.
-              const processed = cur.input + cur.output;
-              // Codex své počítadlo občas vynuluje (např. po zkomprimování kontextu). Spotřeba před vynulováním se nezahazuje.
-              if (st.lastTokens && processed < st.prevProcessed) {
-                for (const key of Object.keys(st.tokenBase)) st.tokenBase[key] += st.lastTokens[key];
-                st.prevProcessed = 0;
-              }
-              if (processed > st.prevProcessed) {
-                const k = hourKey(ts);
-                s.hourly[k] = (s.hourly[k] || 0) + (processed - st.prevProcessed);
-                st.prevProcessed = processed;
-              }
-              st.lastTokens = cur;
-              s.tokens = {
-                input: st.tokenBase.input + cur.input,
-                output: st.tokenBase.output + cur.output,
-                cacheWrite: st.tokenBase.cacheWrite + cur.cacheWrite,
-                cacheRead: st.tokenBase.cacheRead + cur.cacheRead,
-              };
+              // Hlavní metrika je vstup + výstup bez cache; reset jednotlivého čítače
+              // se řeší v applyCodexTokenUsage, aby nevznikl falešný skok.
+              const cur = applyCodexTokenUsage(st, t, ts, s.hourly);
+              s.tokens = { input: cur.input, output: cur.output, cacheWrite: cur.cacheWrite, cacheRead: cur.cacheRead };
             }
             if (p.rate_limits) rateLimits(s, p.rate_limits, ts);
             touch(s, ts);
@@ -341,7 +368,7 @@ export function createCodexConnector(ctx) {
     if (st && st.size === stat.size && st.mtimeMs === stat.mtimeMs) return;
     if (!st) {
       const base = path.basename(file, '.jsonl');
-      st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, prevProcessed: 0, lastTokens: null, tokenBase: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 } };
+      st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, ...createCodexTokenState() };
       files.set(file, st);
     }
     const s = store.ensure({ connector: 'codex', localId: st.localId, provider: 'openai', app: 'Codex' });
