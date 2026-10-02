@@ -109,7 +109,7 @@ function plansHtml(sp) {
     const label = p.label || svc?.label || p.service;
     const price = payments.length
       ? `<span class="plan-price"><b>${payments.length === 1 ? tr('1 licence') : payments.length < 5 ? tr('{0} licence', payments.length) : tr('{0} licencí', payments.length)}</b></span>`
-      : `<span class="plan-price"><b>${p.free ? tr('Bezplatný plán') : tr('Cena nezjištěna')}</b></span>`;
+      : p.free ? `<span class="plan-price"><b>${tr('Bezplatný plán')}</b></span>` : '';
     const licenses = payments.length ? `<div class="license-list" aria-label="${esc(tr('Evidované licence'))}">${payments.map((payment, index) => `
       <div class="license-row">
         <span class="license-copy"><b>${esc(payment.account || tr('Licence {0}', index + 1))}</b><small>${esc(payment.note || tr('platba od {0}', dateLong(Date.parse(payment.date))))}</small></span>
@@ -119,15 +119,15 @@ function plansHtml(sp) {
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
       <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b>${price}</span>
-        ${p.detected ? `<span class="plan-sub"><span class="plan-kind">${tr('Rozpoznaný plán')}</span> ${tr('Zdroj:')} ${esc(p.evidence)}${p.observedAt ? `, ${tr('změřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>` : `<span class="plan-sub">${tr('Ručně evidované licence')}</span>`}
+        ${p.detected ? `<span class="plan-sub"><span class="plan-kind">${tr('Zjištěno automaticky')}</span> ${esc(p.evidence)}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>` : `<span class="plan-sub">${tr('Další licence')}</span>`}
         ${licenses}
-        <span class="plan-actions"><button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${payments.length ? tr('Přidat další licenci') : tr('Přidat licenci')}</button></span>
+        ${p.detected && !payments.length ? '' : `<span class="plan-actions"><button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Přidat další licenci')}</button></span>`}
       </span>
     </li>`;
   }).join('');
   return `<section class="card pad plans" aria-labelledby="plans-h">
-    <div class="sec-head"><h2 id="plans-h">${tr('Plány a licence')}</h2><button class="btn btn--sm" type="button" data-action="license-add">${ICON.plus}${tr('Přidat licenci')}</button></div>
-    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Agenteeq zatím žádný plán ani licenci neeviduje.')}</p>`}
+    <div class="sec-head"><h2 id="plans-h">${tr('Plány a licence')}</h2><button class="btn btn--sm" type="button" data-action="license-add">${ICON.plus}${tr('Další licence')}</button></div>
+    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Napoj Claude Code nebo Codex v Nastavení a Agenteeq plán zjistí automaticky.')}</p>`}
   </section>`;
 }
 
@@ -152,8 +152,7 @@ function mount(el, _params, query) {
     <section class="card pad" data-enter style="--i:6" aria-labelledby="led-h">
       <div class="sec-head"><h2 id="led-h">${tr('Výdaje')}</h2>${exportTlacitko()}</div>
       <div data-region="ledger"></div>
-    </section>
-    <p class="note">${tr('Útratu za API doplní Agenteeq sám po připojení Admin API klíčů. Předplatné a dokoupené extra usage u ChatGPT, Claude, Copilotu, Gemini, Perplexity, Groku nebo Qwenu zapisuj ručně – tyto služby útratu přes API nesdílejí.')}</p>`;
+    </section>`;
   // `el` je trvalý uzel #view, který router mezi navigacemi jen vyprazdňuje (innerHTML = ''),
   // nikdy nenahrazuje – starý posluchač proto musí zmizet, jinak se při každém návratu na
   // Útratu přidá další a jediný klik pak otevře tolik dialogů, kolik bylo návštěv (nejde zavřít,

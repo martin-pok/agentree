@@ -1,10 +1,10 @@
 # Roadmapa
 
 Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
-Stav je prověřený proti kódu (naposledy 2. 10. 2026, s vydáním 0.31.1). Hotové položky zůstávají
+Stav je prověřený proti kódu (naposledy 2. 10. 2026, s vydáním 0.31.2). Hotové položky zůstávají
 přeškrtnuté s odkazem, kde to je, aby bylo vidět, co se rozhodlo jinak, než stálo v plánu.
 
-## Teď – po 0.31.1
+## Teď – po 0.31.2
 
 Pořadí podle toho, co brzdí ostrý provoz. U položek „vlastník“ je potřeba účet nebo rozhodnutí,
 které kód za nikoho neudělá.

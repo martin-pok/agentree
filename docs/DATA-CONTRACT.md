@@ -223,6 +223,13 @@ interface SpendPayload {
   services: Record<string, { label: string; provider: Provider }>; kinds: Record<string, string>; currencies: string[];
 }
 
+// subscriptions[].observedAt = čas posledního ověření zdroje plánu.
+// Claude musí nejprve projít aktuálním `claude auth status --json`; pak se znovu načte při změně
+// přesně souboru ~/.claude.json a pojistně po 10 minutách. Starý soubor po odhlášení plán nevytvoří.
+// ChatGPT pochází z poslední rate-limit události Codexu; údaj starší než 24 hodin nebo s časem
+// v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Do součtů
+// vstupují jen skutečné payments z ledgeru a ověřené API položky z Admin API.
+
 interface Notifications {
   needsInput: boolean; limits: boolean; limitReset: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean;
   quietHours: boolean;               // noční ticho, výchozí false (i u starého data.json bez tohoto pole)

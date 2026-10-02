@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.31.2',
+    date: '2026-10-02',
+    title: 'Plány se ověřují samy',
+    items: ['Agenteeq aktualizuje plán Claude Code hned po změně přihlášeného účtu a ověří, že je účet stále připojený. Starý soubor po odhlášení už za aktivní plán nevydává.', 'Plán ChatGPT se propíše okamžitě z nových limitních dat Codexu. Pozorování starší než 24 hodin zmizí a skutečná cena se nikdy nedopočítává z veřejného ceníku.', 'Ruční evidence zůstává jen pro další licence, jejichž skutečnou platbu poskytovatel přes podporované rozhraní nesdílí.'],
+    en: {
+      title: 'Plans verify themselves',
+      items: ['Agenteeq updates the Claude Code plan as soon as the signed-in account changes and verifies that the account is still connected. A stale file after sign-out is no longer shown as an active plan.', 'The ChatGPT plan updates immediately from new Codex limit data. Observations older than 24 hours disappear, and the actual price is never inferred from a public price list.', 'Manual records remain only for additional licenses whose actual payment the provider does not expose through a supported interface.'],
+    },
+  },
+  {
     version: '0.31.1',
     date: '2026-10-02',
     title: 'Anglické výstupy bez českých zbytků',

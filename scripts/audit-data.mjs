@@ -13,6 +13,20 @@ import { startTestServer, api } from '../test/helpers.mjs';
 
 const HOME = os.homedir();
 const DEN = 86400e3;
+const snapshotHome = fs.mkdtempSync(path.join(os.tmpdir(), 'agenteeq-audit-source-'));
+const snapshotPaths = [
+  ['.claude', 'projects'],
+  ['.codex', 'sessions'],
+  ['Library', 'Application Support', 'Claude', 'plan-usage-history.json'],
+];
+for (const casti of snapshotPaths) {
+  const odkud = path.join(HOME, ...casti);
+  if (!fs.existsSync(odkud)) continue;
+  const kam = path.join(snapshotHome, ...casti);
+  fs.mkdirSync(path.dirname(kam), { recursive: true });
+  fs.cpSync(odkud, kam, { recursive: true, preserveTimestamps: true });
+}
+const SOURCE_HOME = snapshotHome;
 const jsonl = (koren) => {
   const out = [];
   if (!fs.existsSync(koren)) return out;
@@ -35,7 +49,9 @@ const porovnej = (nazev, zdroj, aplikace, { tolerance = 0 } = {}) => {
 };
 
 console.log('Spouštím Agenteeq nad zdroji tohoto Macu (dočasná datová složka)…');
-const demo = await startTestServer({ AGENTEEQ_SOURCE_HOME: HOME, AGENTEEQ_PROCESSES: '0' });
+// Audit i aplikace čtou stejný neměnný snapshot. Běžící Codex jinak může mezi dvěma odečty
+// připsat událost a vytvořit falešný rozdíl, přestože oba výpočty byly samy o sobě správně.
+const demo = await startTestServer({ AGENTEEQ_SOURCE_HOME: SOURCE_HOME, AGENTEEQ_PROCESSES: '0' });
 const klient = api(demo.url);
 let stav;
 let predtim = '';
@@ -56,7 +72,7 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
 /* ---------- Claude Code: tokeny (vstup + výstup), každá zpráva jednou ---------- */
 {
   const zpravy = new Map();
-  for (const f of jsonl(path.join(HOME, '.claude', 'projects'))) {
+  for (const f of jsonl(path.join(SOURCE_HOME, '.claude', 'projects'))) {
     if (fs.statSync(f).mtimeMs < od) continue;
     for (const o of radky(f)) {
       const m = o.message;
@@ -77,7 +93,7 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
   let dnes = 0;
   let limit = null;
   const kredity = [];
-  for (const f of jsonl(path.join(HOME, '.codex', 'sessions'))) {
+  for (const f of jsonl(path.join(SOURCE_HOME, '.codex', 'sessions'))) {
     const cerstvy = fs.statSync(f).mtimeMs >= od;
     let pred = 0;
     for (const o of radky(f)) {
@@ -120,7 +136,7 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
 
 /* ---------- Claude Desktop: historie vytížení plánu ---------- */
 {
-  const soubor = path.join(HOME, 'Library', 'Application Support', 'Claude', 'plan-usage-history.json');
+  const soubor = path.join(SOURCE_HOME, 'Library', 'Application Support', 'Claude', 'plan-usage-history.json');
   if (fs.existsSync(soubor)) {
     const vzorky = (JSON.parse(fs.readFileSync(soubor, 'utf8')).samples || []).filter((x) => Number.isFinite(Number(x?.t)));
     const posledni = vzorky.reduce((a, b) => (Number(b.t) > Number(a.t) ? b : a), vzorky[0]);
@@ -142,4 +158,5 @@ for (const v of vysledky) {
 }
 const spatne = vysledky.filter((v) => !v.sedi);
 console.log(spatne.length ? `\n✗ ${spatne.length} z ${vysledky.length} údajů nesedí se zdrojem.` : `\n✓ Všech ${vysledky.length} údajů sedí se zdrojem.`);
+fs.rmSync(snapshotHome, { recursive: true, force: true });
 process.exitCode = spatne.length ? 1 : 0;

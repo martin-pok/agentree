@@ -10,7 +10,7 @@ import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs } from '../src/connec
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
 import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
-import { watchTree } from '../src/watch.js';
+import { watchTree, watchExactFile } from '../src/watch.js';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { startTestServer, api, tempDir, waitFor, writeJsonl, fakeDatastore, jenProcesy } from './helpers.mjs';
@@ -367,6 +367,27 @@ test('sledování kořene, který ještě neexistuje, začne, jakmile složka vz
   await writeJsonl(path.join(koren, '-Design---Web', 'a.jsonl'), [{}]);
   await waitFor(() => w.active, 4000);
   assert.ok(zmeny.includes(null), 'po vzniku složky se ohlásí plný průchod');
+});
+
+test('sledování jednoho účtového souboru ignoruje ostatní změny v domovské složce', () => {
+  let callback = null;
+  let closed = false;
+  const fakeWatch = (_dir, cb) => {
+    callback = cb;
+    return { on() { return this; }, unref() {}, close() { closed = true; } };
+  };
+  const changes = [];
+  const w = watchExactFile('/Users/test/.claude.json', (file) => changes.push(file), { watch: fakeWatch });
+  assert.equal(w.active, true);
+  callback('change', 'unrelated.json');
+  assert.deepEqual(changes, []);
+  callback('rename', '.claude.json');
+  assert.deepEqual(changes, ['/Users/test/.claude.json']);
+  callback('change', null);
+  assert.equal(changes.length, 2, 'událost bez jména se bezpečně ověří');
+  w.close();
+  assert.equal(closed, true);
+  assert.equal(w.active, false);
 });
 
 // Kořen, jehož složka ještě neexistuje, ale rodič ano (Claude Code je nainstalovaný, projects/ založí až

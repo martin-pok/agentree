@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.31.2 – 2026-10-02 · automaticky ověřené plány
+
+- **Plány bez ručního opisování:** změna přihlášeného plánu Claude Code se propíše do Útraty ihned ze sledovaného účtového souboru. Nový `plan_type` Codexu se promítne přes živou událost a údaj starší než 24 hodin se přestane vydávat za aktuální.
+- Rozpoznaný plán už nenabádá k doplnění částky a nezobrazuje zavádějící „cenu nezjištěnou“. Ruční položka zůstává jen jako vedlejší evidence dalších licencí, jejichž skutečnou platbu poskytovatel přes podporované rozhraní neposkytuje.
+- Průvodce a dokumentace rozlišují spotřebitelský plán od firemní API útraty. Aplikace používá ověřené náklady z Admin API a nikdy je nevydává za cenu ChatGPT nebo Claude předplatného.
+
 ## 0.31.1 – 2026-10-02 · úplná angličtina výstupů
 
 - Anglické rozhraní exportuje anglické hlavičky a stavy v CSV útraty i projektů. Český export, bezpečnost proti tabulkovým vzorcům a účetní součty zůstávají beze změny.

@@ -114,6 +114,49 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
   };
 }
 
+// Sleduje jediny soubor pres jeho rodicovskou slozku. Dodavatele casto ukladaji konfiguraci
+// atomickou vymenou souboru, takze watch primo nad souborem by po prvni zmene prestal fungovat.
+// Callback se spusti jen pro presne jmeno; ostatni zmeny v domovske slozce ignorujeme.
+export function watchExactFile(file, onChange, { retryMs = 5000, watch = fs.watch } = {}) {
+  const dir = path.dirname(file);
+  const name = path.basename(file);
+  let watcher = null;
+  let retry = null;
+  let closed = false;
+
+  const arm = () => {
+    if (closed || watcher) return;
+    try {
+      watcher = watch(dir, (_event, changed) => {
+        if (changed && changed.toString() !== name) return;
+        onChange(file);
+      });
+      watcher.on?.('error', () => {
+        watcher?.close?.();
+        watcher = null;
+        if (!closed) {
+          retry = setTimeout(arm, retryMs);
+          retry.unref?.();
+        }
+      });
+      watcher.unref?.();
+    } catch {
+      retry = setTimeout(arm, retryMs);
+      retry.unref?.();
+    }
+  };
+  arm();
+  return {
+    close() {
+      closed = true;
+      clearTimeout(retry);
+      watcher?.close?.();
+      watcher = null;
+    },
+    get active() { return Boolean(watcher); },
+  };
+}
+
 // Fronta zpracování souborů: debounce na soubor a sériové zpracování (žádné dvojí čtení stejného offsetu).
 export function createFileQueue(worker, delay = 60) {
   const timers = new Map();
