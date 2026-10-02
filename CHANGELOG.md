@@ -2,6 +2,10 @@
 
 ## Nezveřejněno
 
+## 0.31.0 – 2026-10-02 · více licencí na jednom místě
+
+- **Více licencí na jednom místě:** Útrata seskupuje všechny aktivní licence podle služby. Každá může mít vlastní název účtu, částku a datum; další licenci lze přidat přímo z karty poskytovatele a jednotlivě ji ukončit. Rozpoznaný plán tohoto Macu zůstává oddělený od ručních plateb, takže Agenteeq nikdy nepředstírá, ke kterému účtu platba patří.
+
 ## 0.30.1 – 2026-10-01 · pravdivé plány a srozumitelné tokeny
 
 - Útrata už nepřebírá veřejný ceník jako skutečnou cenu předplatného. Claude Code a Codex dál potvrzují název plánu, ale částka se ukáže a započítá jen z ověřeného billing zdroje nebo z platby zapsané uživatelem.

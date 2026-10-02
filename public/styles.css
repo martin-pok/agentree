@@ -1574,6 +1574,8 @@ html.is-cloud body { background: var(--paper); }
   .kpi .val { font-size: 32px; }
   .spend-hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
   .spend-stats { grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100%; }
+  .license-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .license-row .btn { grid-column: 1 / -1; justify-self: start; }
   .form-grid { grid-template-columns: minmax(0, 1fr); }
   .facts { grid-template-columns: minmax(0, 1fr); }
   .donut-wrap { justify-content: center; }
@@ -2157,6 +2159,13 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .plan-price em { font-style: normal; font-size: 13px; color: var(--ink-2); }
 .plan-sub { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
 .plan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.plan-kind { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; margin-right: 4px; border-radius: var(--r-pill); background: var(--teal-tint); color: var(--teal-ink); font-size: 12px; line-height: 1; }
+.license-list { display: grid; gap: 8px; margin-top: 10px; }
+.license-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; min-height: 52px; padding: 8px 10px 8px 14px; border-radius: var(--r-md); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-2); }
+.license-copy { display: grid; gap: 2px; min-width: 0; }
+.license-copy b { overflow: hidden; color: var(--ink); font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.license-copy small, .license-amount small { color: var(--ink-2); font-size: 12px; }
+.license-amount { display: inline-flex; gap: 6px; align-items: baseline; color: var(--ink); font: 500 13px/1.2 var(--f-mono); white-space: nowrap; }
 
 /* Vlastní kalendář (public/js/datepicker.js). Spouštěč a nabídka sdílejí vzhled s výběrem z nabídky
    (.picker-trigger, .picker-menu v desktop.css), aby byl formulář jednotný. */

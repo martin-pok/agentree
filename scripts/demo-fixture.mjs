@@ -116,9 +116,10 @@ async function pridejUtratu(client, dnes, u) {
   };
   await client.send('PUT', '/api/spend/budgets', { total: 6000 });
   const vydaje = [
-    { service: 'claude', kind: 'subscription', amount: 100, currency: 'USD', date: datum(4, 1), recurring: 'monthly', note: u('Claude Max') },
-    { service: 'chatgpt', kind: 'subscription', amount: 20, currency: 'USD', date: datum(5, 3), recurring: 'monthly', note: u('ChatGPT Plus') },
-    { service: 'cursor', kind: 'subscription', amount: 20, currency: 'USD', date: datum(2, 8), recurring: 'monthly', note: u('Cursor Pro') },
+    { service: 'claude', kind: 'subscription', amount: 100, currency: 'USD', date: datum(4, 1), recurring: 'monthly', account: u('Osobní'), note: u('Claude Max') },
+    { service: 'claude', kind: 'subscription', amount: 20, currency: 'USD', date: datum(1, 9), recurring: 'monthly', account: u('Studio'), note: u('Claude Pro') },
+    { service: 'chatgpt', kind: 'subscription', amount: 20, currency: 'USD', date: datum(5, 3), recurring: 'monthly', account: u('Práce'), note: u('ChatGPT Plus') },
+    { service: 'cursor', kind: 'subscription', amount: 20, currency: 'USD', date: datum(2, 8), recurring: 'monthly', account: u('Vývoj'), note: u('Cursor Pro') },
     { service: 'openai-api', kind: 'credits', amount: 25, currency: 'USD', date: datum(0, 6), note: u('kredity API') },
     { service: 'anthropic-api', kind: 'api', amount: 18, currency: 'USD', date: datum(0, 12), note: u('API') },
     { service: 'openai-api', kind: 'credits', amount: 25, currency: 'USD', date: datum(2, 14), note: u('kredity API') },

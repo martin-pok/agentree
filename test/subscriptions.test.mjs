@@ -4,8 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { startTestServer, tempDir } from './helpers.mjs';
 import { parseCnb, applyLiveRates, createRateFeed } from '../src/rates.js';
-import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan } from '../src/subscriptions.js';
-import { spendSummary, DEFAULT_SPEND } from '../src/spend.js';
+import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionPortfolio } from '../src/subscriptions.js';
+import { spendSummary, DEFAULT_SPEND, validateEntry } from '../src/spend.js';
 import { normalizeData } from '../src/datastore.js';
 
 const CNB = `18.09.2026 #181
@@ -78,11 +78,39 @@ test('plán ChatGPT se bere přesně z nejnovějšího limitu Codexu bez domněl
 
 test('rozpoznaný plán ukáže jen aktivní skutečnou platbu zapsanou uživatelem', () => {
   const now = Date.parse('2026-09-20');
-  const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 612.4, currency: 'CZK', recurring: 'monthly', date: '2026-03-01', endDate: null }];
+  const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 612.4, currency: 'CZK', recurring: 'monthly', date: '2026-03-01', endDate: null, account: 'Osobní', note: 'Claude Pro' }];
   const p = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, ledger, now);
-  assert.deepEqual(p.payment, { id: 'real', amount: 612.4, currency: 'CZK', date: '2026-03-01', recurring: 'monthly' });
+  assert.deepEqual(p.payment, { id: 'real', amount: 612.4, currency: 'CZK', date: '2026-03-01', recurring: 'monthly', account: 'Osobní', note: 'Claude Pro' });
+  assert.equal(p.payments.length, 1);
   const ended = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, [{ ...ledger[0], endDate: '2026-06-30' }], now);
   assert.equal(ended.payment, null, 'ukončený zápis už není aktuální platba');
+});
+
+test('portfolio oddělí více licencí od rozpoznaného účtu a zachová ručně evidovanou službu', () => {
+  const now = Date.parse('2026-09-20');
+  const ledger = [
+    { id: 'c1', service: 'claude', kind: 'subscription', amount: 20, currency: 'USD', recurring: 'monthly', date: '2026-01-01', endDate: null, account: 'Osobní', note: '' },
+    { id: 'c2', service: 'claude', kind: 'subscription', amount: 25, currency: 'USD', recurring: 'monthly', date: '2026-02-01', endDate: null, account: 'Studio', note: '' },
+    { id: 'p1', service: 'perplexity', kind: 'subscription', amount: 20, currency: 'USD', recurring: 'monthly', date: '2026-03-01', endDate: null, account: 'Výzkum', note: '' },
+    { id: 'old', service: 'claude', kind: 'subscription', amount: 10, currency: 'USD', recurring: 'monthly', date: '2026-01-01', endDate: '2026-08-31', account: 'Ukončená', note: '' },
+  ];
+  const plans = subscriptionPortfolio([{ service: 'claude', plan: 'pro', evidence: 'Claude Code' }], ledger, now);
+  const claude = plans.find((p) => p.service === 'claude');
+  assert.equal(claude.detected, true);
+  assert.equal(claude.payments.length, 2);
+  assert.equal(claude.payment, null, 'u více licencí se žádná nevydává za platbu rozpoznaného účtu');
+  assert.deepEqual(claude.payments.map((p) => p.account), ['Osobní', 'Studio']);
+  const perplexity = plans.find((p) => p.service === 'perplexity');
+  assert.equal(perplexity.detected, false);
+  assert.equal(perplexity.payments[0].account, 'Výzkum');
+});
+
+test('název licence se ukládá jen k předplatnému a je omezený', () => {
+  const base = { service: 'claude', amount: 20, currency: 'USD', date: '2026-09-20', recurring: 'monthly', account: `  ${'x'.repeat(90)}  ` };
+  const subscription = validateEntry({ ...base, kind: 'subscription' }, 1);
+  assert.equal(subscription.value.account.length, 80);
+  const extra = validateEntry({ ...base, kind: 'extra' }, 1);
+  assert.equal(extra.value.account, '');
 });
 
 test('rozpoznaný plán bez billing dat nevytváří výdaj; ruční platba se počítá jednou', () => {

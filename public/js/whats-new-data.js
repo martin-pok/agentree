@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.31.0',
+    date: '2026-10-02',
+    title: 'Více licencí na jednom místě',
+    items: ['Útrata seskupí více licencí Claude, ChatGPT i dalších služeb. Každou pojmenuješ podle účtu, týmu nebo klienta a vidíš její skutečnou měsíční platbu.', 'Další licenci přidáš přímo z karty služby a každou ukončíš samostatně. Rozpoznaný plán zůstává oddělený od ručně evidovaných plateb.'],
+    en: {
+      title: 'Multiple licenses in one place',
+      items: ['Spend groups multiple Claude, ChatGPT, and other service licenses. Name each one by account, team, or client and see its actual monthly payment.', 'Add another license directly from the service card and end each one separately. The detected plan remains separate from manually recorded payments.'],
+    },
+  },
+  {
     version: '0.30.1',
     date: '2026-10-01',
     title: 'Plány a tokeny bez domněnek',

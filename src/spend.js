@@ -78,6 +78,9 @@ export function validateEntry(input, now = Date.now()) {
       recurring: input?.recurring === 'monthly' ? 'monthly' : null,
       endDate: null,
       note: typeof input?.note === 'string' ? input.note.trim().slice(0, 140) : '',
+      // Volitelné jméno odlišuje více licencí stejné služby. Je záměrně uživatelské:
+      // poskytovatelé identitu dalších spotřebitelských účtů přes podporované API neposílají.
+      account: kind === 'subscription' && typeof input?.account === 'string' ? input.account.trim().slice(0, 80) : '',
       createdAt: now,
     },
   };
@@ -210,7 +213,7 @@ export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXP
     for (const k of kdy) polozky.push({ mesic: k, datum: datumVMesici(e.date, k), e });
   }
   polozky.sort((a, b) => a.datum.localeCompare(b.datum) || String(a.e.service).localeCompare(String(b.e.service)));
-  const radky = [['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Opakování', 'Poznámka', 'Částka', 'Měna', `Kurz na ${mena}`, `Částka v ${mena}`, 'Zdroj']];
+  const radky = [['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Účet / licence', 'Opakování', 'Poznámka', 'Částka', 'Měna', `Kurz na ${mena}`, `Částka v ${mena}`, 'Zdroj']];
   for (const { mesic, datum, e } of polozky) {
     const opakovani = e.recurring === 'monthly' ? (e.endDate ? `měsíčně do ${e.endDate.slice(0, 10)}` : 'měsíčně') : 'jednorázově';
     radky.push([
@@ -218,6 +221,7 @@ export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXP
       datum,
       SERVICES[e.service]?.label || String(e.service || ''),
       KINDS[e.kind] || String(e.kind || ''),
+      e.account || '',
       opakovani,
       e.note || '',
       round2(Number(e.amount) || 0),

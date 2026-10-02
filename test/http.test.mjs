@@ -130,8 +130,12 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     const alerts = await a.get('/api/alerts');
     assert.ok(alerts.body.items.some((x) => x.kind === 'budget' && x.level === 'critical'), 'Claude přes rozpočet');
     assert.ok(alerts.body.items.some((x) => x.kind === 'budget' && x.level === 'warning'), 'celkem nad 80 %');
+    const license = await a.send('POST', '/api/spend/ledger', { service: 'claude', kind: 'subscription', amount: '20', currency: 'USD', date: localDate(), recurring: 'monthly', account: 'Studio' });
+    assert.equal(license.body.entry.account, 'Studio');
+    assert.equal(license.body.spend.subscriptions.find((p) => p.service === 'claude').payments[0].account, 'Studio');
     const del = await a.send('DELETE', `/api/spend/ledger/${ok.body.entry.id}`);
-    assert.equal(del.body.spend.month.total, 0);
+    assert.equal(del.body.spend.month.total > 0, true, 'aktivní licence po smazání extra výdaje zůstává');
+    await a.send('DELETE', `/api/spend/ledger/${license.body.entry.id}`);
     const read = await a.send('POST', '/api/alerts/read', { ids: 'all' });
     assert.equal(read.body.unread, 0);
   });

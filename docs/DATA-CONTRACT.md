@@ -31,7 +31,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/spend/ledger` | Nový výdaj → 201 `{ entry, spend }`; 422 s `errors` |
 | PATCH | `/api/spend/ledger/:id` | `{ endDate: "RRRR-MM-DD" \| null }` – ukončení předplatného |
 | DELETE | `/api/spend/ledger/:id` | `{ spend }` |
-| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API). Rozpoznaný spotřebitelský plán bez skutečné platby není výdaj ani řádek exportu. Součty po měsících = `monthlyTotals` |
+| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, účet/licence, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API). Rozpoznaný spotřebitelský plán bez skutečné platby není výdaj ani řádek exportu. Součty po měsících = `monthlyTotals` |
 | PUT | `/api/spend/budgets` | `{ total?, currency?, rates?: {USD, EUR}, services?: {služba: částka \| ""} }` → `{ spend }` |
 | GET | `/api/alerts` | `{ unread, items }` (max 300, nejnovější první) |
 | POST | `/api/alerts/read` | `{ ids: string[] \| "all" }` → `{ unread }` |
@@ -204,7 +204,7 @@ interface Alert {
 // konverzace je pořád ve stejném stavu, limit pořád vyčerpaný, rozpočet ve stejném měsíci – a není
 // přečtené ani starší než 24 h. Každá věc (konverzace, limit, rozpočet) se počítá jednou.
 
-interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'extra' | 'credits' | 'api'; amount: number; currency: 'CZK' | 'USD' | 'EUR'; date: string; recurring: 'monthly' | null; endDate: string | null; note: string; createdAt: number }
+interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'extra' | 'credits' | 'api'; amount: number; currency: 'CZK' | 'USD' | 'EUR'; date: string; recurring: 'monthly' | null; endDate: string | null; note: string; account: string /* volitelný název účtu/licence, jen subscription */; createdAt: number }
 
 interface SpendPayload {
   currency: string; monthKey: string;               // "2026-09"
@@ -214,6 +214,12 @@ interface SpendPayload {
   budgets: { scope: string; label: string; spent: number; budget: number; pct: number }[];
   ledger: LedgerEntry[]; budgetsConfig: { total: number; services: Record<string, number> };
   rates: Record<string, number>;                     // Kč za 1 jednotku měny
+  subscriptions: Array<{
+    service: string; plan: string | null; label: string | null; detected: boolean;
+    free: boolean; since: string | null; observedAt: number | null; evidence: string;
+    payments: Array<{ id: string; amount: number; currency: string; date: string; recurring: 'monthly'; account: string; note: string }>;
+    payment: null | object;                          // kompatibilita: jen když existuje právě jedna platba
+  }>;
   services: Record<string, { label: string; provider: Provider }>; kinds: Record<string, string>; currencies: string[];
 }
 
