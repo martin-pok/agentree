@@ -2,6 +2,11 @@
 
 ## Nezveřejněno
 
+## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu
+
+- Dlouhé JSONL relace Codexu se čtou po blocích místo jednoho velkého řetězce. Aplikace se tak nezastaví na limitu paměti Node a denní tokenový součet neztratí právě běžící relaci.
+- Stejný proudový parser používá i historie kreditů a audit skutečných dat. Regrese pokrývá soubor přes hranici bloku i rozepsaný poslední řádek.
+
 ## 0.31.3 – 2026-10-02 · přesný denní součet Codexu
 
 - Kumulativní tokenové čítače Codexu se agregují po jednotlivých složkách. Když se při kompakci vynuluje jen cache čítač, nevznikne falešný skok ve vstupu ani ve výstupu.

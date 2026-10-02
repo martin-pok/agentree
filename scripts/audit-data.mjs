@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import readline from 'node:readline';
 import { startTestServer, api } from '../test/helpers.mjs';
 import { applyCodexTokenUsage, createCodexTokenState } from '../src/connectors/codex.js';
 
@@ -39,7 +40,19 @@ const jsonl = (koren) => {
   })(koren);
   return out;
 };
-const radky = (f) => fs.readFileSync(f, 'utf8').split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+async function* radky(f) {
+  const vstup = fs.createReadStream(f, { encoding: 'utf8' });
+  const ctecka = readline.createInterface({ input: vstup, crlfDelay: Infinity });
+  try {
+    for await (const line of ctecka) {
+      if (!line.trim()) continue;
+      try { yield JSON.parse(line); } catch { /* Rozpracovaný řádek přeskočíme stejně jako dřív. */ }
+    }
+  } finally {
+    ctecka.close();
+    vstup.destroy();
+  }
+}
 const cislo = (n) => Number(n).toLocaleString('cs-CZ', { maximumFractionDigits: 2 });
 const cas = (t) => (t ? new Date(t).toLocaleString('cs-CZ') : '–');
 
@@ -75,7 +88,7 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
   const zpravy = new Map();
   for (const f of jsonl(path.join(SOURCE_HOME, '.claude', 'projects'))) {
     if (fs.statSync(f).mtimeMs < od) continue;
-    for (const o of radky(f)) {
+    for await (const o of radky(f)) {
       const m = o.message;
       if (o.type !== 'assistant' || !m?.usage) continue;
       zpravy.set(m.id || o.uuid, { t: Date.parse(o.timestamp), n: (m.usage.input_tokens || 0) + (m.usage.output_tokens || 0) });
@@ -97,7 +110,7 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
   for (const f of jsonl(path.join(SOURCE_HOME, '.codex', 'sessions'))) {
     const cerstvy = fs.statSync(f).mtimeMs >= od;
     const counter = createCodexTokenState();
-    for (const o of radky(f)) {
+    for await (const o of radky(f)) {
       const p = o.payload || {};
       const t = Date.parse(o.timestamp);
       const u = p.info?.total_token_usage;
