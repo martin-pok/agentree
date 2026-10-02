@@ -39,7 +39,7 @@ const spend = {
   ...DEFAULT_SPEND,
   rates: { CZK: 1, USD: 23, EUR: 25 },
   ledger: [
-    { id: 'a', service: 'chatgpt', kind: 'subscription', amount: 20, currency: 'USD', date: '2026-07-05', recurring: 'monthly', endDate: '2026-08-31', note: 'Plus' },
+    { id: 'a', service: 'chatgpt', kind: 'subscription', amount: 20, currency: 'USD', date: '2026-07-05', recurring: 'monthly', endDate: '2026-08-31', account: 'Studio', note: 'Plus' },
     { id: 'b', service: 'claude', kind: 'extra', amount: 512.5, currency: 'CZK', date: '2026-08-12', recurring: null, note: '=HYPERLINK("http://zle.example";"klik")' },
     { id: 'c', service: 'cursor', kind: 'subscription', amount: 20, currency: 'EUR', date: '2026-01-31', recurring: 'monthly', endDate: null, note: '' },
     { id: 'd', service: 'gemini', kind: 'credits', amount: 99, currency: 'CZK', date: '2026-02-10', recurring: null, note: 'mimo okno exportu' },
@@ -51,7 +51,7 @@ const automaticke = [
 
 test('export útraty: řádek za platbu v každém měsíci, převod a zdroj záznamu', () => {
   const [hlavicka, ...radky] = precti(spendCsv(spend, now, automaticke, 4));
-  assert.deepEqual(hlavicka, ['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Opakování', 'Poznámka', 'Částka', 'Měna', 'Kurz na CZK', 'Částka v CZK', 'Zdroj']);
+  assert.deepEqual(hlavicka, ['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Účet / licence', 'Opakování', 'Poznámka', 'Částka', 'Měna', 'Kurz na CZK', 'Částka v CZK', 'Zdroj']);
   const klic = (r) => `${r[1]} ${r[2]}`;
   assert.deepEqual(radky.map(klic), [
     '2026-06-30 Cursor',
@@ -60,10 +60,10 @@ test('export útraty: řádek za platbu v každém měsíci, převod a zdroj zá
     '2026-09-03 OpenAI API', '2026-09-30 Cursor',
   ], 'měsíční předplatné v každém měsíci, kdy běželo; 31. se v kratším měsíci posune na poslední den; nic mimo okno');
   const chatgpt = radky.find((r) => r[1] === '2026-07-05');
-  assert.deepEqual(chatgpt, ['2026-07', '2026-07-05', 'ChatGPT', 'Předplatné', 'měsíčně do 2026-08-31', 'Plus', '20', 'USD', '23', '460', 'Ručně']);
+  assert.deepEqual(chatgpt, ['2026-07', '2026-07-05', 'ChatGPT', 'Předplatné', 'Studio', 'měsíčně do 2026-08-31', 'Plus', '20', 'USD', '23', '460', 'Ručně']);
   const api = radky.find((r) => r[2] === 'OpenAI API');
-  assert.deepEqual(api.slice(6), ['1,5', 'USD', '23', '34,5', 'Admin API'], 'desetinná čárka pro českou tabulku');
-  assert.equal(radky.find((r) => r[1] === '2026-08-12')[4], 'jednorázově');
+  assert.deepEqual(api.slice(7), ['1,5', 'USD', '23', '34,5', 'Admin API'], 'desetinná čárka pro českou tabulku');
+  assert.equal(radky.find((r) => r[1] === '2026-08-12')[5], 'jednorázově');
 });
 
 test('export útraty: součty po měsících sedí s obrazovkou Útrata', () => {
@@ -71,7 +71,7 @@ test('export útraty: součty po měsících sedí s obrazovkou Útrata', () => 
   const obrazovka = monthlyTotals(spend, mesice, automaticke);
   const [, ...radky] = precti(spendCsv(spend, now, automaticke, 6));
   for (const { key, total } of obrazovka) {
-    const soucet = radky.filter((r) => r[0] === key).reduce((s, r) => s + cislo(r[9]), 0);
+    const soucet = radky.filter((r) => r[0] === key).reduce((s, r) => s + cislo(r[10]), 0);
     assert.ok(Math.abs(soucet - total) < 0.01, `${key}: export ${soucet} × obrazovka ${total}`);
   }
 });
@@ -80,19 +80,19 @@ test('export útraty: poznámka nespustí vzorec a středník nerozbije sloupce'
   const text = spendCsv(spend, now, [], 4);
   assert.ok(text.includes(`"'=HYPERLINK(""http://zle.example"";""klik"")"`), 'vzorec dostane apostrof, uvozovky se zdvojí');
   const radek = precti(text).find((r) => r[2] === 'Claude');
-  assert.equal(radek.length, 11);
-  assert.equal(radek[5], `'=HYPERLINK("http://zle.example";"klik")`);
-  assert.equal(radek[6], '512,5');
+  assert.equal(radek.length, 12);
+  assert.equal(radek[6], `'=HYPERLINK("http://zle.example";"klik")`);
+  assert.equal(radek[7], '512,5');
 });
 
 test('export útraty: v jiné měně aplikace se převádí přes kurzy v aplikaci', () => {
   const [hlavicka, ...radky] = precti(spendCsv({ ...spend, currency: 'EUR' }, now, [], 2));
-  assert.equal(hlavicka[9], 'Částka v EUR');
+  assert.equal(hlavicka[10], 'Částka v EUR');
   const cursor = radky.find((r) => r[2] === 'Cursor' && r[0] === '2026-09');
-  assert.deepEqual(cursor.slice(6, 10), ['20', 'EUR', '1', '20']);
+  assert.deepEqual(cursor.slice(7, 11), ['20', 'EUR', '1', '20']);
   const chatgpt = radky.filter((r) => r[2] === 'ChatGPT');
   assert.deepEqual(chatgpt.map((r) => r[0]), ['2026-08'], 'předplatné skončené v srpnu má v okně srpen–září jen srpen');
-  assert.deepEqual(chatgpt[0].slice(6, 10), ['20', 'USD', '0,92', '18,4'], 'kurz USD → EUR z kurzů v aplikaci (23 / 25)');
+  assert.deepEqual(chatgpt[0].slice(7, 11), ['20', 'USD', '0,92', '18,4'], 'kurz USD → EUR z kurzů v aplikaci (23 / 25)');
 });
 
 test('export útraty přes HTTP: soubor ke stažení a hlídaný počet měsíců', async () => {
@@ -106,7 +106,7 @@ test('export útraty přes HTTP: soubor ke stažení a hlídaný počet měsíc�
     assert.match(res.headers.get('content-disposition'), /filename="agenteeq-utrata-\d{4}-\d{2}-\d{2}\.csv"/);
     assert.equal(res.headers.get('cache-control'), 'no-store');
     const radky = precti(Buffer.from(await res.arrayBuffer()).toString('utf8')); // text() by BOM zahodil
-    assert.ok(radky.some((r) => r[2] === 'Perplexity' && r[5] === 'Pro'));
+    assert.ok(radky.some((r) => r[2] === 'Perplexity' && r[6] === 'Pro'));
     for (const spatne of ['0', '37', 'abc', '1.5', '-3']) {
       assert.equal((await fetch(`${s.url}/api/spend/export?mesicu=${spatne}`)).status, 422, `mesicu=${spatne}`);
     }

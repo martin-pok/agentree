@@ -11,7 +11,7 @@ import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
-import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, describePlan } from './subscriptions.js';
+import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, subscriptionPortfolio } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
@@ -307,7 +307,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   function subscriptions(now = Date.now()) {
     const found = [claudeAccount, chatgptPlanFromLimits(store.limitList())].filter(Boolean);
-    return found.map((f) => describePlan(f, datastore.data.spend.ledger, now));
+    return subscriptionPortfolio(found, datastore.data.spend.ledger, now);
   }
 
   // Automatické záznamy útraty pocházejí jen z ověřeného Admin API. Spotřebitelská

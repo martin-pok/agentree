@@ -35,6 +35,7 @@ function entryForm(sp, pre = {}) {
     <label class="field"><span>${tr('Částka')}</span><input name="amount" inputmode="decimal" autocomplete="off" required placeholder="0" value="${pre.amount ?? ''}"></label>
     <label class="field"><span>${tr('Měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === (pre.currency || sp.currency) ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="field"><span>${tr('Datum platby')}</span><input type="date" name="date" value="${localDate()}" required></label>
+    <label class="field"><span>${tr('Účet / licence (volitelné)')}</span><input name="account" maxlength="80" autocomplete="off" value="${esc(pre.account || '')}" placeholder="${tr('Osobní, studio nebo klient')}"></label>
     <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}"></label>
     <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"${pre.recurring ? ' checked' : ''}> ${tr('Opakuje se každý měsíc (předplatné)')}</label>
   </div>`;
@@ -46,7 +47,7 @@ export function openAddEntry(pre = {}) {
   modal({
     title: pre.title || tr('Přidat výdaj'),
     body: entryForm(sp, pre),
-    submitLabel: tr('Přidat výdaj'),
+    submitLabel: pre.submitLabel || tr('Přidat výdaj'),
     onSubmit: async (form) => {
       const d = new FormData(form);
       const r = await api.addLedger({
@@ -55,11 +56,12 @@ export function openAddEntry(pre = {}) {
         amount: d.get('amount'),
         currency: d.get('currency'),
         date: d.get('date'),
+        account: d.get('account'),
         note: d.get('note'),
         recurring: d.get('recurring') ? 'monthly' : null,
       });
       applySpend(r);
-      toast(tr('Výdaj přidán'));
+      toast(pre.kind === 'subscription' ? tr('Licence přidána') : tr('Výdaj přidán'));
     },
   });
 }
@@ -103,29 +105,29 @@ function openBudgets(opener = null) {
 function plansHtml(sp) {
   const rows = (sp.subscriptions || []).map((p) => {
     const svc = sp.services[p.service];
-    const price = p.payment
-      ? `<span class="plan-price"><b>${esc(fmtMoney(p.payment.amount, p.payment.currency))}</b><em>${tr('/ měsíc')}</em></span>`
+    const payments = Array.isArray(p.payments) ? p.payments : p.payment ? [p.payment] : [];
+    const label = p.label || svc?.label || p.service;
+    const price = payments.length
+      ? `<span class="plan-price"><b>${payments.length === 1 ? tr('1 licence') : payments.length < 5 ? tr('{0} licence', payments.length) : tr('{0} licencí', payments.length)}</b></span>`
       : `<span class="plan-price"><b>${p.free ? tr('Bezplatný plán') : tr('Cena nezjištěna')}</b></span>`;
-    const status = p.payment
-      ? tr('Skutečná platba zapsaná ve Výdajích.')
-      : p.free
-        ? tr('Poskytovatel hlásí bezplatný plán.')
-        : tr('Skutečná platba není dostupná z přímého zdroje.');
-    const actions = !p.payment && !p.free
-      ? `<button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Zapsat skutečnou platbu')}</button>`
-      : '';
+    const licenses = payments.length ? `<div class="license-list" aria-label="${esc(tr('Evidované licence'))}">${payments.map((payment, index) => `
+      <div class="license-row">
+        <span class="license-copy"><b>${esc(payment.account || tr('Licence {0}', index + 1))}</b><small>${esc(payment.note || tr('platba od {0}', dateLong(Date.parse(payment.date))))}</small></span>
+        <span class="license-amount">${esc(fmtMoney(payment.amount, payment.currency))}<small>${tr('/ měsíc')}</small></span>
+        <button class="btn btn--sm" type="button" data-action="end" data-id="${esc(payment.id)}">${tr('Ukončit')}</button>
+      </div>`).join('')}</div>` : '';
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
-      <span class="plan-main"><span class="plan-title"><b>${esc(p.label)}</b>${price}</span>
-        <span class="plan-sub">${tr('Zdroj plánu:')} ${esc(p.evidence)}${p.observedAt ? `, ${tr('změřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>
-        <span class="plan-sub">${status}</span>
-        ${actions ? `<span class="plan-actions">${actions}</span>` : ''}
+      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b>${price}</span>
+        ${p.detected ? `<span class="plan-sub"><span class="plan-kind">${tr('Rozpoznaný plán')}</span> ${tr('Zdroj:')} ${esc(p.evidence)}${p.observedAt ? `, ${tr('změřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : p.since ? tr(', od {0}', esc(dateLong(Date.parse(p.since)))) : ''}</span>` : `<span class="plan-sub">${tr('Ručně evidované licence')}</span>`}
+        ${licenses}
+        <span class="plan-actions"><button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${payments.length ? tr('Přidat další licenci') : tr('Přidat licenci')}</button></span>
       </span>
     </li>`;
   }).join('');
   return `<section class="card pad plans" aria-labelledby="plans-h">
-    <div class="sec-head"><h2 id="plans-h">${tr('Rozpoznané plány')}</h2></div>
-    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Agenteeq zatím žádný plán z přímého zdroje nerozpoznal.')}</p>`}
+    <div class="sec-head"><h2 id="plans-h">${tr('Plány a licence')}</h2><button class="btn btn--sm" type="button" data-action="license-add">${ICON.plus}${tr('Přidat licenci')}</button></div>
+    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Agenteeq zatím žádný plán ani licenci neeviduje.')}</p>`}
   </section>`;
 }
 
@@ -163,9 +165,10 @@ function mount(el, _params, query) {
     const id = a.dataset.id;
     try {
       if (a.dataset.action === 'add') openAddEntry();
+      else if (a.dataset.action === 'license-add') openAddEntry({ title: tr('Přidat licenci'), submitLabel: tr('Přidat licenci'), kind: 'subscription', recurring: true });
       else if (a.dataset.action === 'plan-edit') {
         const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
-        if (p) openAddEntry({ title: `${tr('Skutečná platba:')} ${p.label}`, service: p.service, kind: 'subscription', recurring: true });
+        if (p) openAddEntry({ title: `${tr('Přidat licenci:')} ${p.label || state.spend.services[p.service]?.label || p.service}`, submitLabel: tr('Přidat licenci'), service: p.service, kind: 'subscription', recurring: true });
       } else if (a.dataset.action === 'budgets') openBudgets(a);
       else if (a.dataset.action === 'end') {
         const ok = await confirmDialog({ title: tr('Ukončit předplatné'), message: tr('Od příštího měsíce se platba přestane započítávat. Historie zůstane.'), confirmLabel: tr('Ukončit předplatné') });
