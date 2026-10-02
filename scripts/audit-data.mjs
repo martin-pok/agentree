@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { startTestServer, api } from '../test/helpers.mjs';
+import { applyCodexTokenUsage, createCodexTokenState } from '../src/connectors/codex.js';
 
 const HOME = os.homedir();
 const DEN = 86400e3;
@@ -95,15 +96,14 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
   const kredity = [];
   for (const f of jsonl(path.join(SOURCE_HOME, '.codex', 'sessions'))) {
     const cerstvy = fs.statSync(f).mtimeMs >= od;
-    let pred = 0;
+    const counter = createCodexTokenState();
     for (const o of radky(f)) {
       const p = o.payload || {};
       const t = Date.parse(o.timestamp);
       const u = p.info?.total_token_usage;
       if (cerstvy && u) {
-        const n = (u.input_tokens || 0) - (u.cached_input_tokens || 0) + (u.output_tokens || 0);
-        if (n < pred) pred = 0;
-        if (n > pred) { if (t >= pulnoc.getTime() && t <= stav.now) dnes += n - pred; pred = n; }
+        const n = applyCodexTokenUsage(counter, u, t, null).delta;
+        if (t >= pulnoc.getTime() && t <= stav.now) dnes += n;
       }
       const rl = p.rate_limits || p.info?.rate_limits;
       if (rl?.primary && (!limit || t > limit.t)) limit = { t, rl };

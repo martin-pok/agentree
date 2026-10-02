@@ -86,6 +86,31 @@ test('Codex: vynulované počítadlo tokenů nezahodí dosavadní spotřebu (sou
   assert.equal(s.tokens.cacheRead, 5000 + 2000);
 });
 
+test('Codex: samostatný reset cache čítače nevytvoří falešný skok ve spotřebě', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createCodexConnector({ config, store });
+  const id = '01a05188-51d8-7903-85aa-9818c9b94628';
+  const t0 = Date.now() - 3 * 3600e3;
+  const at = (min) => new Date(t0 + min * 60e3).toISOString();
+  const usage = (input, cached, output) => ({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: input, cached_input_tokens: cached, output_tokens: output } } } });
+  const file = path.join(home, '.codex', 'sessions', '2026', '09', '05', `rollout-2026-09-05T10-00-00-${id}.jsonl`);
+  await writeJsonl(file, [
+    { timestamp: at(0), type: 'session_meta', payload: { id, cwd: '/Users/x/web', originator: 'Codex Desktop', timestamp: at(0) } },
+    { timestamp: at(1), ...usage(10000, 4000, 500) },
+    { timestamp: at(2), ...usage(15000, 7000, 700) },
+    // Cache counter reset, input/output pokračují kumulativně.
+    { timestamp: at(3), ...usage(20000, 1000, 900) },
+  ]);
+  await connector.start();
+  connector.stop();
+  const s = store.get(`codex:${id}`);
+  assert.equal(s.tokens.input + s.tokens.output, 12900, 'vstup bez cache + výstup zůstává monotónní');
+  assert.equal(s.tokens.cacheRead, 8000, 'cache se po resetu sečte po segmentech');
+  assert.equal(Object.values(s.hourly).reduce((a, b) => a + b, 0), 12900, 'hodinový součet odpovídá hlavní metrice');
+});
+
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {
   const home = await tempDir();
   const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });

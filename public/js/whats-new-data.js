@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.31.3',
+    date: '2026-10-02',
+    title: 'Přesné tokeny po kompakci',
+    items: ['Denní součet Codexu teď odolá i resetu samostatného cache čítače. Do spotřeby se nepřidá znovu už započítaný kontext.', 'Audit dat používá stejný výpočet jako živý konektor a ověřuje součet proti surovým přepisům.'],
+    en: {
+      title: 'Accurate tokens after compaction',
+      items: ['Codex daily totals now stay accurate when only the cache counter resets. Already counted context is never added again.', 'The data audit uses the same calculation as the live connector and reconciles the total with raw transcripts.'],
+    },
+  },
+  {
     version: '0.31.2',
     date: '2026-10-02',
     title: 'Plány se ověřují samy',

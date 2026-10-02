@@ -2,6 +2,11 @@
 
 ## Nezveřejněno
 
+## 0.31.3 – 2026-10-02 · přesný denní součet Codexu
+
+- Kumulativní tokenové čítače Codexu se agregují po jednotlivých složkách. Když se při kompakci vynuluje jen cache čítač, nevznikne falešný skok ve vstupu ani ve výstupu.
+- Datový audit používá stejný referenční výpočet jako živý konektor a regresní test pokrývá samostatný reset cache.
+
 ## 0.31.2 – 2026-10-02 · automaticky ověřené plány
 
 - **Plány bez ručního opisování:** změna přihlášeného plánu Claude Code se propíše do Útraty ihned ze sledovaného účtového souboru. Nový `plan_type` Codexu se promítne přes živou událost a údaj starší než 24 hodin se přestane vydávat za aktuální.
