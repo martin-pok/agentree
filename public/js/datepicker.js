@@ -91,7 +91,7 @@ const parse = (s) => {
   const d = new Date(+m[1], +m[2] - 1, +m[3]);
   return d.getMonth() === +m[2] - 1 ? d : null;
 };
-const show = (d) => `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+const show = (d) => d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric', year: 'numeric' });
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const addMonths = (d, n) => {
   const t = new Date(d.getFullYear(), d.getMonth() + n, 1);

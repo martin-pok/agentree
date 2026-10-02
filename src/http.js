@@ -14,7 +14,7 @@ import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
 import { isLoopback, cookieValue, COOKIE } from './lan.js';
 import { SYSTEM, POCITAC } from './platform.js';
-import { ui } from './texty.js';
+import { prekladac, ui } from './texty.js';
 import { jeProcesovyId } from './bezici-agenti.js';
 import { createVerzeSouboru, znackaObsahu, AKTIVA, NATRVALO } from './verze-souboru.js';
 
@@ -170,12 +170,15 @@ export function createHttpServer(app, existingServer = null) {
     }
     const code = url.searchParams.get('code') || '';
     const chyba = url.searchParams.get('chyba') || url.searchParams.get('error_description') || url.searchParams.get('error') || '';
+    const language = datastore.data.settings.language === 'en' ? 'en' : 'cs';
+    const preloz = prekladac(language);
+    const stranka = (data) => strankaNavratu({ ...data, language, zprava: data.zprava ? preloz(data.zprava) : '' });
     let html;
-    if (!pokus) html = strankaNavratu({ zprava: ui('Neplatná adresa přihlášení.') });
-    else if (!code && !chyba) html = strankaNavratu({ ceka: true });
+    if (!pokus) html = stranka({ zprava: ui('Neplatná adresa přihlášení.') });
+    else if (!code && !chyba) html = stranka({ ceka: true });
     else {
       const r = await app.ucet.navrat(pokus, { code, chyba });
-      html = strankaNavratu(r);
+      html = stranka(r);
       if (r.ok) app.vratOkno?.().catch(() => {});
     }
     res.writeHead(200, { ...hlavicky, 'Content-Type': 'text/html; charset=utf-8' }).end(html);

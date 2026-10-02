@@ -104,7 +104,14 @@ test('klikatelný text vypadá jako ovládací prvek a kalendář nahrazuje syst
   assert.match(app, /startDatePickers\(\)/);
   const dp = await zdroj('public/js/datepicker.js');
   assert.match(dp, /inp\.type = 'text'/, 'systémový kalendář se nekreslí');
+  assert.match(dp, /toLocaleDateString\(LOCALE, \{ day: 'numeric', month: 'numeric', year: 'numeric' \}\)/, 'zobrazené datum následuje jazyk aplikace');
   assert.doesNotMatch(dp, /select:not/, 'výběr z nabídky patří selects.js');
+});
+
+test('účet odkazuje na zásady soukromí ve zvoleném jazyce', async () => {
+  const settings = await zdroj('public/js/views/settings.js');
+  assert.match(settings, /jazyk\(\) === 'en' \? 'en\/privacy' : 'soukromi'/);
+  assert.match(settings, /tr\('Zásady ochrany soukromí'\)/);
 });
 
 // Nabídka nebo kalendář mimo modální okno (aria-modal) zmizí ze stromu přístupnosti – čtečka

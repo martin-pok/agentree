@@ -321,7 +321,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Útrata → Export CSV: tytéž záznamy jako souhrn na obrazovce, včetně automatických.
   function exportSpend(mesicu, now = Date.now()) {
-    return spendCsv(datastore.data.spend, now, automatickeVydaje(now), mesicu);
+    return spendCsv(datastore.data.spend, now, automatickeVydaje(now), mesicu, datastore.data.settings.language);
   }
 
   function spendPayload() {
@@ -654,7 +654,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const live = store.list().filter((s) => s.projectId === id);
     const liveIds = new Set(live.map((s) => s.id));
     const older = Object.values(projects().snapshots).filter((s) => s.projectId === id && !liveIds.has(s.id));
-    return { ok: true, project: p, csv: projectCsv([...live, ...older].sort((a, b) => b.lastAt - a.lastAt)) };
+    return { ok: true, project: p, csv: projectCsv([...live, ...older].sort((a, b) => b.lastAt - a.lastAt), Date.now(), datastore.data.settings.language) };
   }
 
   /* ---------- Spouštění agentů ---------- */

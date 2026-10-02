@@ -191,7 +191,20 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
 // Převod jde přes kurzy nastavené v aplikaci – kurz je v řádku, aby šel převod zkontrolovat.
 export const EXPORT_MESICU = { vychozi: 12, max: 36 };
 
-const zdrojZaznamu = (e) => (String(e.id || '').startsWith('auto:') ? 'Admin API' : 'Ručně');
+const EXPORT_TEXT = {
+  cs: {
+    headers: ['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Účet / licence', 'Opakování', 'Poznámka', 'Částka', 'Měna', 'Kurz na', 'Částka v', 'Zdroj'],
+    manual: 'Ručně', monthly: 'měsíčně', monthlyUntil: 'měsíčně do', once: 'jednorázově',
+    kinds: { subscription: 'Předplatné', extra: 'Extra usage', credits: 'Kredity', api: 'API' },
+  },
+  en: {
+    headers: ['Month', 'Payment date', 'Service', 'Type', 'Account / licence', 'Recurrence', 'Note', 'Amount', 'Currency', 'Rate to', 'Amount in', 'Source'],
+    manual: 'Manual', monthly: 'monthly', monthlyUntil: 'monthly until', once: 'one-off',
+    kinds: { subscription: 'Subscription', extra: 'Extra usage', credits: 'Credits', api: 'API' },
+  },
+};
+
+const zdrojZaznamu = (e, t) => (String(e.id || '').startsWith('auto:') ? 'Admin API' : t.manual);
 
 function datumVMesici(datum, mesic) {
   if (datum.slice(0, 7) === mesic) return datum.slice(0, 10);
@@ -200,7 +213,8 @@ function datumVMesici(datum, mesic) {
   return `${mesic}-${String(den).padStart(2, '0')}`;
 }
 
-export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXPORT_MESICU.vychozi) {
+export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXPORT_MESICU.vychozi, language = 'cs') {
+  const t = EXPORT_TEXT[language === 'en' ? 'en' : 'cs'];
   const mena = spend.currency || 'CZK';
   const current = monthKey(now);
   const months = Array.from({ length: mesicu }, (_, i) => addMonths(current, i - (mesicu - 1)));
@@ -213,14 +227,14 @@ export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXP
     for (const k of kdy) polozky.push({ mesic: k, datum: datumVMesici(e.date, k), e });
   }
   polozky.sort((a, b) => a.datum.localeCompare(b.datum) || String(a.e.service).localeCompare(String(b.e.service)));
-  const radky = [['Měsíc', 'Datum platby', 'Služba', 'Typ', 'Účet / licence', 'Opakování', 'Poznámka', 'Částka', 'Měna', `Kurz na ${mena}`, `Částka v ${mena}`, 'Zdroj']];
+  const radky = [[...t.headers.slice(0, 9), `${t.headers[9]} ${mena}`, `${t.headers[10]} ${mena}`, t.headers[11]]];
   for (const { mesic, datum, e } of polozky) {
-    const opakovani = e.recurring === 'monthly' ? (e.endDate ? `měsíčně do ${e.endDate.slice(0, 10)}` : 'měsíčně') : 'jednorázově';
+    const opakovani = e.recurring === 'monthly' ? (e.endDate ? `${t.monthlyUntil} ${e.endDate.slice(0, 10)}` : t.monthly) : t.once;
     radky.push([
       mesic,
       datum,
       SERVICES[e.service]?.label || String(e.service || ''),
-      KINDS[e.kind] || String(e.kind || ''),
+      t.kinds[e.kind] || String(e.kind || ''),
       e.account || '',
       opakovani,
       e.note || '',
@@ -228,7 +242,7 @@ export function spendCsv(spend, now = Date.now(), autoEntries = [], mesicu = EXP
       e.currency,
       Math.round(convert(1, e.currency, spend) * 1e4) / 1e4,
       round2(convert(e.amount, e.currency, spend)),
-      zdrojZaznamu(e),
+      zdrojZaznamu(e, t),
     ]);
   }
   return csv(radky);

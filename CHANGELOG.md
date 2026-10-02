@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.31.1 – 2026-10-02 · úplná angličtina výstupů
+
+- Anglické rozhraní exportuje anglické hlavičky a stavy v CSV útraty i projektů. Český export, bezpečnost proti tabulkovým vzorcům a účetní součty zůstávají beze změny.
+- Kalendář formátuje zobrazené datum podle jazyka aplikace. Návrat z přihlášení přes Google je v angličtině kompletní i v chybové větvi a už nevytváří požadavek na chybějící faviconu.
+- Karta účtu odkazuje přímo na českou nebo anglickou verzi zásad ochrany soukromí.
+
 ## 0.31.0 – 2026-10-02 · více licencí na jednom místě
 
 - **Více licencí na jednom místě:** Útrata seskupuje všechny aktivní licence podle služby. Každá může mít vlastní název účtu, částku a datum; další licenci lze přidat přímo z karty poskytovatele a jednotlivě ji ukončit. Rozpoznaný plán tohoto Macu zůstává oddělený od ručních plateb, takže Agenteeq nikdy nepředstírá, ke kterému účtu platba patří.

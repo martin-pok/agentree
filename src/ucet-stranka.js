@@ -20,17 +20,34 @@ const STYL = `
   @keyframes nastup { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 `;
 
-export function strankaNavratu({ ok = false, ceka = false, jmeno = '', zprava = '' } = {}) {
+const TEXT = {
+  cs: {
+    waitTitle: 'Dokončuji přihlášení', waitText: 'Chvilku strpení.', welcome: 'Vítej, {0}', doneTitle: 'Přihlášení proběhlo',
+    doneText: 'Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.',
+    errorTitle: 'Přihlášení se nepovedlo', errorText: 'Zkus to prosím znovu z Agenteeq.',
+    emptyText: 'Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.', title: 'Agenteeq · přihlášení',
+  },
+  en: {
+    waitTitle: 'Finishing sign-in', waitText: 'Just a moment.', welcome: 'Welcome, {0}', doneTitle: 'Signed in',
+    doneText: 'You are signed in to Agenteeq. You can close this window and return to the app.',
+    errorTitle: 'Sign-in failed', errorText: 'Try again from Agenteeq.',
+    emptyText: 'No sign-in result was returned. Try again from Agenteeq.', title: 'Agenteeq · sign-in',
+  },
+};
+
+export function strankaNavratu({ ok = false, ceka = false, jmeno = '', zprava = '', language = 'cs' } = {}) {
+  const lang = language === 'en' ? 'en' : 'cs';
+  const t = TEXT[lang];
   const [znak, trida, nadpis, text] = ceka
-    ? ['…', 'ceka', 'Dokončuji přihlášení', 'Chvilku strpení.']
+    ? ['…', 'ceka', t.waitTitle, t.waitText]
     : ok
-      ? ['✓', 'ok', jmeno ? `Vítej, ${jmeno}` : 'Přihlášení proběhlo', 'Přihlášení do Agenteeq proběhlo. Tohle okno můžeš zavřít a vrátit se do aplikace.']
-      : ['!', 'chyba', 'Přihlášení se nepovedlo', zprava || 'Zkus to prosím znovu z Agenteeq.'];
+      ? ['✓', 'ok', jmeno ? t.welcome.replace('{0}', jmeno) : t.doneTitle, t.doneText]
+      : ['!', 'chyba', t.errorTitle, zprava || t.errorText];
   return `<!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer"><title>Agenteeq · přihlášení</title><style>${STYL}</style>
+<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer"><link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg"><title>${esc(t.title)}</title><style>${STYL}</style>
 ${ceka ? '<script src="/ucet/navrat.js" defer></script>' : ''}</head>
-<body><main><div class="znak znak--${trida}" aria-hidden="true">${znak}</div><h1>${esc(nadpis)}</h1><p id="zprava">${esc(text)}</p></main></body></html>`;
+<body><main data-error-title="${esc(t.errorTitle)}" data-error-text="${esc(t.emptyText)}"><div class="znak znak--${trida}" aria-hidden="true">${znak}</div><h1>${esc(nadpis)}</h1><p id="zprava">${esc(text)}</p></main></body></html>`;
 }
 
 // Supabase posílá chybu přihlášení v části adresy za #, kterou server nevidí. Skript ji předá
@@ -40,7 +57,8 @@ export const SKRIPT_NAVRATU = `(() => {
   const q = new URLSearchParams(location.search);
   const chyba = h.get('error_description') || h.get('error') || q.get('error_description') || q.get('error');
   if (chyba) { location.replace(location.pathname + '?chyba=' + encodeURIComponent(chyba.slice(0, 200))); return; }
-  document.querySelector('h1').textContent = 'Přihlášení se nepovedlo';
-  document.getElementById('zprava').textContent = 'Z přihlášení se nevrátil žádný výsledek. Zkus to prosím znovu z Agenteeq.';
+  const main = document.querySelector('main');
+  document.querySelector('h1').textContent = main.dataset.errorTitle;
+  document.getElementById('zprava').textContent = main.dataset.errorText;
 })();
 `;

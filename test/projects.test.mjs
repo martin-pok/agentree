@@ -80,3 +80,15 @@ test('projekty: CSV export pro vyúčtování (BOM, středníky, uvozovky, ochra
   assert.ok(line.includes(';3;30;2;'), 'zadání, tokeny (vstup + výstup, bez režie cache) a hodiny s aktivitou za 30 dní');
   assert.ok(line.includes('"/Users/x/web; klient"'));
 });
+
+test('projekty: anglický CSV export překládá hlavičky i stavy', () => {
+  const now = Date.parse('2026-09-11T12:00:00Z');
+  const out = projectCsv([
+    { title: 'Build', app: 'Codex', status: 'needs_input', startedAt: now, lastAt: now, turns: 1, tokens: { input: 2, output: 3 }, hourly: {}, cwd: '/tmp/work' },
+    { title: 'Old', app: 'Claude', status: '', startedAt: 0, lastAt: 0, turns: 0, tokens: {}, hourly: {} },
+  ], now, 'en');
+  const [head, needs, outside] = out.slice(1).split('\r\n');
+  assert.equal(head, 'Conversation;Application;Model;Status;Started;Last activity;Prompts;Tokens;Active hours (30 days);Folder;Link');
+  assert.match(needs, /;Needs decision;/);
+  assert.match(outside, /;Outside tracking window;/);
+});

@@ -978,6 +978,7 @@ export default {
     "Přidat agenta": "Add agent",
     "Adresa smí mířit jen na {0} nebo do místní sítě (127.0.0.1, 192.168.x, .local). Veřejné adresy Agenteeq odmítne, dotaz posílá vždy jen jako čtení, nenásleduje přesměrování a nikdy neukládá přihlašovací údaje.": "The address may only point to {0} or the local network (127.0.0.1, 192.168.x, .local). Agenteeq rejects public addresses, always sends requests as read-only, doesn’t follow redirects and never stores credentials.",
     "Soukromí a bezpečnost": "Privacy and security",
+    "Zásady ochrany soukromí": "Privacy policy",
     "Agenteeq běží jen na {0}. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.": "Agenteeq runs only on {0}. The server listens exclusively on 127.0.0.1, so nobody can connect to it from another computer, and it sends no telemetry anywhere.",
     "Konverzace agentů": "Agent conversations",
     "Čtou se ze souborů na disku ({0}, {1} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.": "They’re read from files on disk ({0}, {1} and others) and held only in the running server’s memory. Agenteeq doesn’t make its own copy.",

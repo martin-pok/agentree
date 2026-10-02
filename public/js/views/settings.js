@@ -684,6 +684,8 @@ async function connectClaude() {
 
 // Účet Agenteeq (src/ucet.js). Co se do účtu dostane, stojí přímo u tlačítka – ne až v zásadách.
 const UCET_SOUKROMI = tr('Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek {0} neopustí.', tentoPocitac());
+const ZASADY_SOUKROMI = `${WEB_AGENTEEQ}${jazyk() === 'en' ? 'en/privacy' : 'soukromi'}`;
+const odkazSoukromi = () => `<a class="link-inline" href="${ZASADY_SOUKROMI}" target="_blank" rel="noopener">${tr('Zásady ochrany soukromí')}</a>`;
 // Synchronizace souhrnů (src/cloud-sync.js): přepínač, kdy naposledy odešla a přesně co odchází.
 function syncBlock(u) {
   const s = u.sync || { zapnuto: false };
@@ -707,7 +709,7 @@ function accountCard() {
       <div class="account-who"><span class="account-avatar" aria-hidden="true">${esc(initials(u.jmeno || u.email || '?'))}</span>
         <div><b>${esc(u.jmeno || u.email)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}</div></div>
       ${u.trvale ? '' : `<p class="set-note">${JE_MAC ? tr('Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.') : tr('Přihlášení vydrží do zavření Agenteeq – na tomto systému ho nemáme kam bezpečně uložit.')}</p>`}
-      <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
+      <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
       ${syncBlock(u)}
       <div class="set-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
         <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">${tr('Smazat účet')}</button></div>`;
@@ -723,7 +725,7 @@ function accountCard() {
   }
   return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Přihlas se, ať tě Agenteeq pozná na každém zařízení. Bez účtu funguje všechno dál.'), stateBadge('missing', tr('Nepřihlášeno')))}
     ${chyba}
-    <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)}</span></p>
+    <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
     <div class="set-actions"><button class="btn btn--primary" type="button" data-action="ucet-prihlasit">${tr('Přihlásit se přes Google')}</button></div>`;
 }
 
