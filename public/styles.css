@@ -120,6 +120,11 @@ html {
      „potáhni pro obnovení“ – data si obnovuje sama po návratu do aplikace. */
   overscroll-behavior-y: contain;
   scroll-behavior: smooth;
+  /* Nativní kotvu posouvání vypínáme: drží ji ui.js#kotva sama, jednou a celými pixely. WebKit
+     s nativní kotvou u řádků se zlomkovou výškou (66,5 px) zaokrouhloval střídavě nahoru a dolů
+     a každé přepnutí html.is-scrolling (po 160 ms) kotvu přepočítalo – okno pak donekonečna
+     cukalo o 1 px mezi dvěma polohami a řádek pod čtenářem se po živé události posunul o 2 px. */
+  overflow-anchor: none;
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 /* Během posouvání (html.is-scrolling, app.js) karty pod stojícím kurzorem nenaskakují do :hover

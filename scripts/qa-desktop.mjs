@@ -959,6 +959,9 @@ for (const engine of engines) {
         box.innerHTML = '<div style="height:1200px">Posuvný seznam</div>';
         document.body.append(box);
       });
+      // Kolečko až po dvou snímcích: WebKit nový posuvný box zařadí do svého stromu posouvání až
+      // s vykreslením; kolečko poslané hned potom občas propadlo (bez posunu seznamu i stránky).
+      await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const predSeznamem = await p.evaluate(() => scrollY);
       await p.mouse.move(1300, 400);
       await p.mouse.wheel(0, 160);
