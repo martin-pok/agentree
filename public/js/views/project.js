@@ -134,7 +134,7 @@ function mount(el, [id]) {
   const pside = el.querySelector('[data-region="pside"]');
   applyOrder(pside, '.side-card[data-card]', 'projectSide');
   pside.dataset.liftScale = '1.02';
-  enableReorder(pside, {
+  v.reorder = enableReorder(pside, {
     itemSelector: '.side-card[data-card]',
     idOf: (n) => n.dataset.card,
     handle: '[data-grip]',
@@ -288,6 +288,7 @@ export default {
       const textarea = v.el?.querySelector('[data-notes]');
       if (textarea) api.updateProject(v.id, { notes: textarea.value }).then((r) => { setProjects(r.projects); }).catch(() => {});
     }
-    Object.assign(v, { el: null, id: null, saveTimer: null });
+    v.reorder?.zrus();
+    Object.assign(v, { el: null, id: null, saveTimer: null, reorder: null });
   },
 };

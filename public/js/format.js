@@ -26,7 +26,17 @@ export function fmtAxis(n) {
   return String(Math.round(n));
 }
 
-export const fmtNum = (n) => Math.round(n || 0).toLocaleString(LOCALE);
+// Intl formátovač je drahý na vytvoření (desítky µs) a částky i časy se formátují v každém
+// snímku animovaného čísla a pro každý řádek osy. Pro stejné volby se proto vytvoří jen jednou.
+const formatovace = new Map();
+function formatovac(Druh, volby) {
+  const k = `${Druh.name}|${LOCALE}|${JSON.stringify(volby)}`;
+  let f = formatovace.get(k);
+  if (!f) { f = new Druh(LOCALE, volby); formatovace.set(k, f); }
+  return f;
+}
+
+export const fmtNum = (n) => formatovac(Intl.NumberFormat, {}).format(Math.round(n || 0));
 
 export function fmtMoney(v, currency = 'CZK', { compact = false } = {}) {
   // Celé částky bez haléřů („20 $“), necelé vždy na dvě místa („2,10 $“, ne „2,1 $“).
@@ -38,7 +48,7 @@ export function fmtMoney(v, currency = 'CZK', { compact = false } = {}) {
     opts.minimumFractionDigits = 0;
   }
   try {
-    return new Intl.NumberFormat(LOCALE, opts).format(v || 0);
+    return formatovac(Intl.NumberFormat, opts).format(v || 0);
   } catch {
     return `${fmtNum(v)} ${currency}`;
   }
@@ -83,10 +93,14 @@ export function clock(ms) {
   return h ? `${h}:${p(m)}:${p(s % 60)}` : `${m}:${p(s % 60)}`;
 }
 
-export const dateTime = (ts) =>
-  ts ? new Date(ts).toLocaleString(LOCALE, { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
-export const dateLong = (ts) => new Date(ts).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric', year: 'numeric' });
-export const timeHM = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
+// Neplatné datum vrací stejný text jako dřív toLocaleString („Invalid Date“); format() by vyhodil.
+const datum = (volby, ts) => {
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? String(d) : formatovac(Intl.DateTimeFormat, volby).format(d);
+};
+export const dateTime = (ts) => (ts ? datum({ day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }, ts) : '–');
+export const dateLong = (ts) => datum({ day: 'numeric', month: 'numeric', year: 'numeric' }, ts);
+export const timeHM = (ts) => datum({ hour: '2-digit', minute: '2-digit' }, ts);
 // Cesty chodí ze serveru tak, jak je napsal systém uživatele: na Macu a Linuxu
 // „/Users/jana/web“, na Windows „C:\\Users\\jana\\web“ nebo „\\\\server\\sdileni“.
 // Rozhraní je jedno a totéž, takže musí umět obojí – jinak by se na Windows ztratila

@@ -173,16 +173,16 @@ function navigate() {
     const nextEl = viewEl.cloneNode(false);
     viewEl.replaceWith(nextEl);
     viewEl = nextEl;
+    // Ukázka v rámu na webu je jen na dívání: fokus by se jí nepatřilo brát stránce kolem.
+    // Skok nahoru ještě nad prázdnou obrazovkou: skocNa si vynucuje přepočet stylů a nad právě
+    // vloženou obrazovkou to ve WebKitu stálo až 10 ms z každého přepnutí. Prázdná je hned.
+    if (!firstNav && !UKAZKA) skocNa(0);
     viewEl.classList.remove('is-entering');
     void viewEl.offsetWidth;
     if (!reduceMotion.matches) viewEl.classList.add('is-entering');
     nastupCeka = !reduceMotion.matches;
     current.mount(viewEl, r.params, r.query);
-    // Ukázka v rámu na webu je jen na dívání: fokus by se jí nepatřilo brát stránce kolem.
-    if (!firstNav && !UKAZKA) {
-      skocNa(0);
-      titleEl.focus({ preventScroll: true });
-    }
+    if (!firstNav && !UKAZKA) titleEl.focus({ preventScroll: true });
   } else {
     current.query?.(r.query);
   }
@@ -270,10 +270,12 @@ function updateChrome() {
   const setBadge = (key, count, tone, label) => {
     const b = document.querySelector(`[data-badge="${key}"]`);
     if (!b) return;
-    b.hidden = !count;
-    b.textContent = count > 9 ? '10+' : String(count);
-    b.dataset.tone = tone;
-    b.setAttribute('aria-label', label);
+    // Zapisovat jen změnu: odznak se ptá při každé živé události a beze změny nemá co překreslovat.
+    if (b.hidden !== !count) b.hidden = !count;
+    const text = count > 9 ? '10+' : String(count);
+    if (b.textContent !== text) b.textContent = text;
+    if (b.dataset.tone !== tone) b.dataset.tone = tone;
+    if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
   };
   setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} ${tr('potřebuje tebe')}` : `${working} pracuje`);
   setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} ${tr('nepřečtených')}`);
@@ -285,8 +287,9 @@ function updateChrome() {
     sheetBadge.dataset.tone = 'coral';
   }
 
-  bellBadge.hidden = !state.alerts.unread;
-  bellBadge.textContent = state.alerts.unread > 9 ? '10+' : String(state.alerts.unread);
+  if (bellBadge.hidden !== !state.alerts.unread) bellBadge.hidden = !state.alerts.unread;
+  const bellText = state.alerts.unread > 9 ? '10+' : String(state.alerts.unread);
+  if (bellBadge.textContent !== bellText) bellBadge.textContent = bellText;
   bell.setAttribute('aria-label', state.alerts.unread ? tr('Upozornění, {0} nepřečtených', state.alerts.unread) : tr('Upozornění'));
 
   renderStage(all);

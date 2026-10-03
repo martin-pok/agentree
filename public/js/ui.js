@@ -3,10 +3,22 @@ import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
 import { tr, LOCALE } from './i18n.js';
+import { posunSObsahem } from './plynule-posouvani.js';
 
-export function fill(root, name, html) {
+// `sloucit: true` – oblast se živými daty (seznam agentů, měřidla, aktivita) se nepřepisuje celá,
+// ale sloučí se s novým HTML: shodné uzly zůstanou, změní se jen text a atributy, které se opravdu
+// liší, a řádky s `data-key` se jen přesunou. Dřív každá živá událost vyměnila na Agentech přes
+// 800 uzlů: WebKit na to potřeboval snímek přes 50 ms, kurzor ztratil najetí, nástupové animace
+// karet se přehrály znovu a prohlížeč přišel o kotvu posouvání (obsah pod čtenářem poskočil).
+export function fill(root, name, html, { sloucit: slouceni = false, presun = false } = {}) {
   const el = root.querySelector(`[data-region="${name}"]`);
   if (!el || el._html === html) return false;
+  if (slouceni && el.firstChild) {
+    sloucit(el, html, { presun });
+    el._html = html;
+    oznacRolovani();
+    return true;
+  }
   const fokus = klicFokusu(el);
   // Živé přepisy mohou měnit text karty několikrát za sekundu. Již dekódované logo
   // ponecháme jako stejný DOM uzel, aby mezi dvěma snímky nezmizelo při novém innerHTML.
@@ -26,6 +38,153 @@ export function fill(root, name, html) {
   if (fokus) vratFokus(el, fokus);
   oznacRolovani();
   return true;
+}
+
+/* ---------- Sloučení živé oblasti s novým HTML ---------- */
+//
+// Vědomě jednoduché: děti se párují podle `data-key` (řádek seznamu), ostatní podle pořadí
+// a značky. Pravidla, na kterých závisí plynulost a pravdivost:
+//   - zaostřené pole a jeho hodnota se nepřepíšou (živá data nesmějí vzít rozepsaný text),
+//   - <details> si nechá otevření, které mu dal člověk,
+//   - číslo s `data-tween` řídí tweenAll – sloučení mu změní jen cílovou hodnotu, ne text,
+//   - vnořená oblast zapomene své `_html`, aby ji její vlastní fill() opravdu doplnil.
+const klic = (n) => (n.nodeType === 1 ? n.getAttribute('data-key') : null);
+
+export function sloucit(el, html, { presun = false } = {}) {
+  const sablona = document.createElement('template');
+  sablona.innerHTML = html;
+  // Polohy řádků se měří jen u odrolované stránky (kvůli kotvě) nebo pro dojezd přesunu.
+  const merit = typeof document !== 'undefined' && (scrollY > 0 || (presun && chcePresun()));
+  const pred = merit ? polohy(el) : null;
+  sloucitDeti(el, sablona.content);
+  if (!pred) return;
+  ukotvi(el, pred);
+  if (presun && chcePresun()) dojezd(el, pred);
+}
+
+// Kotva: řádek, který čtenář právě vidí, musí po živé události zůstat na stejném místě obrazovky,
+// i když se nad ním seznam přeskládal. Chromium to dělá sám (overflow-anchor), WebKit vlastnost
+// sice zná, ale v okně aplikace ji neuplatní – obsah pod čtenářem pak poskočil o řádek. Kotvou je
+// nejvyšší viditelný řádek, který se posunul stejně jako jeho soused (tím se vyloučí řádek, který
+// sám přeskočil jinam). Když prohlížeč vyrovnal posun sám, rozdíl je nula a nic se neděje.
+function ukotvi(el, pred) {
+  if (scrollY <= 0) return;
+  const vyska = innerHeight;
+  const posuny = [];
+  for (const [n, r0] of pred) {
+    if (!n.isConnected || r0.bottom <= 0 || r0.top >= vyska) continue;
+    posuny.push(n.getBoundingClientRect().top - r0.top);
+  }
+  for (let i = 0; i + 1 < posuny.length; i++) {
+    if (Math.abs(posuny[i] - posuny[i + 1]) < 1) { posunSObsahem(posuny[i]); return; }
+  }
+}
+
+// Přesun řádku (FLIP): když živá událost změní pořadí, řádek do nového místa dojede a ostatní
+// se rozestoupí, místo aby seznam v jednom snímku přeskládal. Jen transform a opacity (kompozitor),
+// jen řádky v okně a nikdy během posouvání nebo při omezeném pohybu. Měří se v souřadnicích okna
+// po rozvržení, takže kotva posouvání (overflow-anchor) se do pohybu nepromítne.
+const PRESUN_MAX = 40;
+const chcePresun = () => typeof Element.prototype.animate === 'function'
+  && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  && !document.documentElement.classList.contains('is-scrolling')
+  && document.visibilityState === 'visible';
+function polohy(el) {
+  const m = new Map();
+  const vyska = innerHeight;
+  for (const n of el.querySelectorAll('[data-key]')) {
+    if (m.size >= PRESUN_MAX) break;
+    const r = n.getBoundingClientRect();
+    if (r.bottom > -vyska / 2 && r.top < vyska * 1.5) m.set(n, r);
+  }
+  return m;
+}
+function dojezd(el, pred) {
+  const vyska = innerHeight;
+  const krivka = 'cubic-bezier(.2, .8, .2, 1)';
+  for (const n of el.querySelectorAll('[data-key]')) {
+    const r0 = pred.get(n);
+    const r = n.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > vyska) continue;
+    // Nový řádek, nebo řádek, který přijel z dálky mimo měřený úsek: objeví se prolnutím, až mu
+    // ostatní uvolní místo (do té doby je neviditelný). Bez odkladu by ležel přes řádek, který
+    // z jeho místa teprve odjíždí.
+    if (!r0) {
+      n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 100, easing: krivka, fill: 'backwards' });
+      continue;
+    }
+    const dx = r0.left - r.left;
+    const dy = r0.top - r.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+    n.animate([{ transform: `translate(${Math.round(dx)}px, ${Math.round(dy)}px)` }, { transform: 'none' }], { duration: 280, easing: krivka });
+  }
+}
+
+function sloucitDeti(a, b) {
+  const klicovane = new Map();
+  for (let c = a.firstElementChild; c; c = c.nextElementSibling) {
+    const k = klic(c);
+    if (k != null) klicovane.set(k, c);
+  }
+  let kurzor = a.firstChild;
+  for (let n = b.firstChild; n;) {
+    const dalsi = n.nextSibling;
+    const k = klic(n);
+    let shoda = null;
+    if (k != null) {
+      const s = klicovane.get(k);
+      if (s && s.nodeName === n.nodeName) { shoda = s; klicovane.delete(k); }
+    } else if (kurzor && klic(kurzor) == null && kurzor.nodeType === n.nodeType && kurzor.nodeName === n.nodeName) {
+      shoda = kurzor;
+    }
+    if (shoda) {
+      if (shoda === kurzor) kurzor = kurzor.nextSibling;
+      else a.insertBefore(shoda, kurzor);
+      sloucitUzel(shoda, n);
+    } else {
+      a.insertBefore(n, kurzor);
+    }
+    n = dalsi;
+  }
+  while (kurzor) {
+    const d = kurzor.nextSibling;
+    a.removeChild(kurzor);
+    kurzor = d;
+  }
+}
+
+function sloucitUzel(a, b) {
+  if (a.nodeType !== 1) {
+    if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue;
+    return;
+  }
+  const detaily = a.tagName === 'DETAILS';
+  for (const at of b.attributes) {
+    if (detaily && at.name === 'open') continue;
+    if (a.getAttributeNS(at.namespaceURI, at.localName) !== at.value) a.setAttributeNS(at.namespaceURI, at.name, at.value);
+  }
+  for (const at of [...a.attributes]) {
+    if (detaily && at.name === 'open') continue;
+    if (!b.hasAttributeNS(at.namespaceURI, at.localName)) a.removeAttributeNS(at.namespaceURI, at.localName);
+  }
+  const zaostreno = a === document.activeElement;
+  if (a.tagName === 'INPUT') {
+    if (a.type === 'checkbox' || a.type === 'radio') a.checked = b.hasAttribute('checked');
+    else if (!zaostreno) a.value = b.getAttribute('value') ?? '';
+    return;
+  }
+  if (a.tagName === 'TEXTAREA') {
+    if (!zaostreno) a.value = b.textContent;
+    return;
+  }
+  if (a.hasAttribute('data-region')) a._html = undefined;
+  // Animované číslo: text drží tweenAll (i odpočet při nástupu); sloučení by ho přeskočilo na cíl.
+  if (a.hasAttribute('data-tween') && a._tweenTo !== undefined) return;
+  sloucitDeti(a, b);
+  if (a.tagName === 'SELECT' && !zaostreno) {
+    const i = [...b.options].findIndex((o) => o.hasAttribute('selected'));
+    a.selectedIndex = i < 0 ? 0 : i;
+  }
 }
 
 // Překreslení oblasti nesmí vzít fokus prvku, kterým člověk právě něco změnil: přepínač v Nastavení
@@ -97,6 +256,14 @@ const formatter = (fmt) => (fmt?.startsWith('money:') ? (v) => fmtMoney(v, fmt.s
 export const tween = (key, value, fmt = 'int') =>
   `<span data-tween="${esc(key)}" data-fmt="${esc(fmt)}" data-value="${Number(value) || 0}">${esc(formatter(fmt)(tweenMemory.get(key) ?? value))}</span>`;
 
+// Text animovaného čísla se mění v každém snímku. Přepsat data stávajícího textového uzlu je
+// levnější než textContent, který uzel pokaždé zahodí a vytvoří nový (a s ním mutaci stromu).
+function nastavText(el, t) {
+  const n = el.firstChild;
+  if (n && n.nodeType === 3 && !n.nextSibling) { if (n.data !== t) n.data = t; }
+  else if (el.textContent !== t) el.textContent = t;
+}
+
 export function tweenAll(root) {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   for (const el of root.querySelectorAll('[data-tween]')) {
@@ -108,14 +275,14 @@ export function tweenAll(root) {
     const from = tweenMemory.has(key) ? tweenMemory.get(key) : 0;
     tweenMemory.set(key, to);
     if (reduce || from === to) {
-      el.textContent = fmt(to);
+      nastavText(el, fmt(to));
       continue;
     }
     const t0 = performance.now();
     const d = from === 0 ? 900 : 600;
     const step = (t) => {
       const p = Math.min(1, (t - t0) / d);
-      el.textContent = fmt(from + (to - from) * (1 - (1 - p) ** 3));
+      nastavText(el, fmt(from + (to - from) * (1 - (1 - p) ** 3)));
       if (p < 1 && el.isConnected) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -283,7 +450,7 @@ export function activityItem(s) {
     : s.proces
       ? `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))} · ${esc(s.app)}`
       : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;
-  return `<li><a class="act-item" href="${agentHref(s.id)}">
+  return `<li data-key="${esc(s.id)}"><a class="act-item" href="${agentHref(s.id)}">
     <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
     <span class="act-text"><span class="act-title">${esc(s.title)}</span><span class="act-meta"><span class="sr-only">${esc(STATUS[s.status]?.label || '')}, </span>${meta}</span></span>
     <span class="act-value">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : ''}</span>${ICON.chev}
@@ -294,7 +461,7 @@ export function decisionCard(s) {
   const limited = s.status === 'limited';
   const failed = s.status === 'failed';
   const since = s.failure?.at || s.pending?.at || s.limit?.at || s.lastAt;
-  return `<li class="decision${limited ? ' is-limit' : ''}">
+  return `<li class="decision${limited ? ' is-limit' : ''}" data-key="${esc(s.id)}">
     <span class="icon-tile">${glyph(s)}</span>
     <div class="decision-body">
       <span class="decision-kicker">${failed ? (s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')) : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>

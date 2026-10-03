@@ -178,6 +178,10 @@ function mount(el) {
   });
 }
 
+// Živé oblasti Přehledu se slučují (ui.js#sloucit): karty, které se nezměnily, zůstanou stejnými
+// uzly – nepřehrají znovu nástup, nepřijdou o najetí a logo se znovu nedekóduje.
+const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'activity' || name === 'hero' || name === 'decisions' });
+
 function update(topics = new Set(['all'])) {
   const el = v.el;
   if (!el) return;
@@ -206,7 +210,7 @@ function update(topics = new Set(['all'])) {
   const STRIP_MAX = 12;
   if (changed(topics, 'sessions', 'runtimes')) {
     el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
-    fill(el, 'hero', `
+    zivy(el, 'hero', `
     <div class="pb-main">
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
@@ -222,7 +226,7 @@ function update(topics = new Set(['all'])) {
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
         const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
-        return `<li><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
@@ -231,7 +235,7 @@ function update(topics = new Set(['all'])) {
   }
 
   const hooks = state.integrations?.claudeHooks;
-  if (changed(topics, 'sessions', 'integrations')) fill(el, 'decisions', needs.length
+  if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', needs.length
     ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${tr('A dalších {0}', needs.length - 4)}</a>` : ''}`
     : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Nikdo teď nečeká na tvé rozhodnutí')}</strong>
         ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
@@ -240,7 +244,7 @@ function update(topics = new Set(['all'])) {
     const todayTok = tokensSince(everything, today);
     const avg = Math.max(0, tokensSince(everything, dayStart(now, -7)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
-    fill(el, 'meter', `
+    zivy(el, 'meter', `
     <div class="meter-row"><span>${tr('Zaznamenané tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div>`);
   }
@@ -262,7 +266,7 @@ function update(topics = new Set(['all'])) {
       .map(([label, d]) => ({ label, value: d.value, icon: glyph({ app: label, provider: d.provider, runtime: d.runtime }) }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-    fill(el, 'today-apps', polozky.length
+    zivy(el, 'today-apps', polozky.length
       ? hbars(polozky)
       : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny. Jakmile agent začne pracovat, uvidíš tady, kam jdou.')}</p>`);
   }
@@ -270,13 +274,13 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick', 'detekce')) {
     const windows = limitWindows(state.limits, now);
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
-    fill(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
+    zivy(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
        ${windows}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}</b>${creditAge(c)?.stary ? `<small class="je-stare">${esc(creditAge(c).kratce)}</small>` : ''}</a>`).join('')}
        ${limitsAll(state, now)}`);
   }
 
-  if (changed(topics, 'sessions', 'dopln')) fill(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita. Spusť agenta a objeví se tady.')}</li>`);
+  if (changed(topics, 'sessions', 'dopln')) zivy(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita. Spusť agenta a objeví se tady.')}</li>`);
 
   if (changed(topics, 'sessions', 'tick')) {
     const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;
@@ -293,7 +297,7 @@ function update(topics = new Set(['all'])) {
       .slice(0, TIMELINE_MAX)
       .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
     const skryto = vybrane.length - rows.length;
-    fill(el, 'timeline', rows.length
+    zivy(el, 'timeline', rows.length
       ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
         ? `<a class="tl-more" href="#/agenti">${tr('Na ose je {0} nejdůležitějších agentů. {1} v sekci Agenti', TIMELINE_MAX, skryto === 1 ? tr('Další je') : tr('Dalších {0} je', skryto))}${ICON.arrow}</a>` : ''}`
       : `<div class="empty-inline">${tr('Za posledních 12 hodin žádná aktivita agentů.')}</div>`);
@@ -319,7 +323,7 @@ function update(topics = new Set(['all'])) {
     const total = sp.budgetsConfig?.total || 0;
     const bp = total ? (sp.month.total / total) * 100 : 0;
     const top = Object.entries(sp.month.services).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    fill(el, 'spend', `
+    zivy(el, 'spend', `
       <div class="spend-mini-top">
         ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: tr('rozpočtu'), size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
@@ -340,7 +344,7 @@ function update(topics = new Set(['all'])) {
     // Konverzace v prohlížeči vidí Agenteeq jen přes rozšíření. Dokud nikdy nic neposlalo, patří
     // sem dlaždice, která to řekne – jinak uživatel otevře Gemini na webu a aplikace mlčí.
     const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
-    fill(el, 'runtimes', rts.length
+    zivy(el, 'runtimes', rts.length
     ? rts.map((r) => {
       // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko – hlavní
       // úspora času: uživatel nemusí mezi okny hledat, kde mu který agent běží.
