@@ -11,6 +11,7 @@ import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
+import { pouzivaneNastroje } from '../nastroje.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -266,7 +267,7 @@ function update(topics = new Set(['all'])) {
       : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny. Jakmile agent začne pracovat, uvidíš tady, kam jdou.')}</p>`);
   }
 
-  if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick')) {
+  if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick', 'detekce')) {
     const windows = limitWindows(state.limits, now);
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
     fill(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
@@ -332,10 +333,10 @@ function update(topics = new Set(['all'])) {
         : `<p class="muted small">${tr('Zatím žádné výdaje.')} <a class="link-inline" href="#/utrata?pridat=1">${tr('Zapsat první')}</a></p>`}`);
   }
 
-  if (changed(topics, 'runtimes')) {
+  if (changed(topics, 'runtimes', 'detekce', 'connectors')) {
     // Vlastní agenti patří mezi běžící aplikace – jinak by na Přehledu chyběli.
     const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
-    const rts = [...state.runtimes, ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu).slice(0, 8);
+    const rts = [...pouzivaneNastroje(state), ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu || a.name.localeCompare(b.name, LOCALE)).slice(0, 8);
     // Konverzace v prohlížeči vidí Agenteeq jen přes rozšíření. Dokud nikdy nic neposlalo, patří
     // sem dlaždice, která to řekne – jinak uživatel otevře Gemini na webu a aplikace mlčí.
     const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
@@ -366,7 +367,9 @@ function update(topics = new Set(['all'])) {
           <span class="rt-flag">${tr('bez rozšíření')}</span>
         </a>`
       : '')
-      : `<div class="empty-inline">${tr('Sledování procesů je vypnuté.')}</div>`);
+      : `<div class="empty-inline">${!state.runtimes.length ? tr('Sledování procesů je vypnuté.')
+        : (state.connectors || []).find((c) => c.id === 'processes')?.state === 'error' ? tr('Nepodařilo se zjistit, co na {0} běží.', tomtoPocitaci())
+          : tr('Teď na {0} neběží žádný AI nástroj.', tomtoPocitaci())}</div>`);
   }
   v.aktivnichCelkem = all.length;
   // Až po vykreslení a vyvážení sloupců: teprve tehdy je vidět, kolik místa dole zbylo.

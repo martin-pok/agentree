@@ -36,9 +36,23 @@ function entryForm(sp, pre = {}) {
     <label class="field"><span>${tr('Měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === (pre.currency || sp.currency) ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="field"><span>${tr('Datum platby')}</span><input type="date" name="date" value="${localDate()}" required></label>
     <label class="field"><span>${tr('Účet / licence (volitelné)')}</span><input name="account" maxlength="80" autocomplete="off" value="${esc(pre.account || '')}" placeholder="${tr('Osobní, studio nebo klient')}"></label>
-    <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}"></label>
+    <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}" value="${esc(pre.note || '')}"></label>
     <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"${pre.recurring ? ' checked' : ''}> ${tr('Opakuje se každý měsíc (předplatné)')}</label>
   </div>`;
+}
+
+// Odkaz „Zapsat předplatné“ z Mých nástrojů: #/utrata?pridat=1&sluzba=cursor&poznamka=Warp.
+// Neznámou službu formulář nepřijme, takže se bere jen z nabídky; poznámka je obyčejný text.
+function predvyplneni(q) {
+  const sluzba = q?.get('sluzba');
+  if (!sluzba) return {};
+  return {
+    service: state.spend?.services?.[sluzba] ? sluzba : 'other',
+    kind: 'subscription',
+    recurring: true,
+    note: String(q.get('poznamka') || '').slice(0, 140),
+    title: tr('Zapsat předplatné'),
+  };
 }
 
 export function openAddEntry(pre = {}) {
@@ -181,7 +195,7 @@ function mount(el, _params, query) {
     }
   };
   el.addEventListener('click', v.onClick);
-  if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry());
+  if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry(predvyplneni(query)));
 }
 
 function update() {
@@ -365,7 +379,7 @@ export default {
   mount,
   update,
   query(q) {
-    if (q?.get('pridat')) openAddEntry();
+    if (q?.get('pridat')) openAddEntry(predvyplneni(q));
   },
   unmount: () => {
     if (v.el && v.onClick) v.el.removeEventListener('click', v.onClick);

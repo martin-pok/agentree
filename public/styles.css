@@ -1726,6 +1726,53 @@ html.is-cloud body { background: var(--paper); }
 .handoff.is-paused .handoff-progress { animation-play-state: paused; }
 @keyframes handoff-time { to { transform: scaleX(0); } }
 
+/* ---------- Zachycený agent (detekce-ui.js) ----------
+   Plovoucí karta vpravo dole: nepřekrývá obsah uprostřed a pod dialogy (70), předáním (75)
+   i hláškami (80) zůstává. Zmizí až po rozhodnutí nebo „Později“, nic neodpočítává. Puls
+   ohlásí příchod karty třemi vlnami a ztichne – nejde o živý stav agenta. */
+.detekce:empty { display: none; }
+.det-panel { position: fixed; z-index: 65; right: 24px; bottom: 24px; width: min(400px, calc(100vw - 48px)); max-height: min(640px, calc(100dvh - 48px)); display: grid; grid-template-rows: auto auto minmax(0, 1fr); border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow-lg), 0 0 0 1px var(--line-2); animation: toast-in .35s var(--ease) both; overflow: hidden; }
+.det-head { display: flex; align-items: center; gap: 10px; padding: 12px 8px 4px 20px; }
+.det-head h2 { flex: 1; min-width: 0; margin: 0; font: 400 16px/24px var(--f-display); letter-spacing: -.005em; text-wrap: balance; }
+.det-pulse { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+.det-pulse::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--teal); opacity: 0; animation: det-pulse 2.4s var(--ease) 3; }
+@keyframes det-pulse { 0% { transform: scale(.6); opacity: .7; } 70%, 100% { transform: scale(1.6); opacity: 0; } }
+.det-uvod { margin: 0; padding: 0 20px 8px 38px; font-size: 13px; line-height: 20px; color: var(--mute); text-wrap: pretty; }
+.det-list { list-style: none; margin: 0; padding: 8px 20px 20px; display: grid; align-content: start; gap: 16px; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--line-2); }
+.det-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; }
+.det-item + .det-item { padding-top: 16px; border-top: 1px solid var(--line-2); }
+.det-logo { width: 40px; height: 40px; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--paper); }
+.det-logo .logo, .det-logo .glyph { width: 22px; height: 22px; }
+.det-main { display: grid; gap: 2px; min-width: 0; }
+.det-name { font-weight: 500; font-size: 15px; line-height: 20px; }
+.det-kde { font-size: 12px; line-height: 16px; color: var(--mute); }
+.det-popis { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--ink-2); text-wrap: pretty; }
+.det-vidim, .det-rada { margin: 0; font-size: 12px; line-height: 18px; color: var(--mute); text-wrap: pretty; }
+.det-vidim { display: flex; align-items: baseline; gap: 6px; }
+.det-vidim::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--line); transform: translateY(-1px); }
+.det-vidim[data-tone="ok"] { color: var(--teal-ink); }
+.det-vidim[data-tone="ok"]::before { background: var(--teal); }
+.det-vidim[data-tone="info"]::before { background: var(--brass); }
+.det-rada { padding-left: 12px; }
+.det-rada .link-inline { color: var(--ink); }
+.det-akce { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.det-akce .btn .icon { width: 16px; height: 16px; }
+.det-akce .btn:focus-visible, .det-later:focus-visible, .det-rada .link-inline:focus-visible { outline: 2px solid var(--teal-ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .det-panel { animation: none; } .det-pulse::after { animation: none; } }
+
+/* Moje nástroje v Nastavení → Propojení */
+.moje-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.moje-item { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; }
+.moje-item + .moje-item { border-top: 1px solid var(--line-2); }
+.moje-item .lwin-logo .logo, .moje-item .lwin-logo .glyph { width: 20px; height: 20px; }
+.moje-main { display: grid; gap: 2px; min-width: 0; }
+.moje-main b { font-weight: 500; font-size: 14px; line-height: 20px; }
+.moje-stav { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: var(--mute); }
+.moje-stav.is-running { color: var(--teal-ink); }
+.moje-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+.moje-akce { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+[data-region="moje"] .src-fold { margin-top: 8px; }
+
 /* ---------- Víceřádková pole ---------- */
 textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55; resize: vertical; }
 
@@ -2105,6 +2152,12 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .chips-hint { display: none; }
   .selbar:not(:empty) { bottom: 96px; }
   .handoff { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .det-panel { left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom)); width: auto; max-height: min(460px, calc(100dvh - 124px - env(safe-area-inset-bottom))); }
+  .det-head { padding-left: 16px; }
+  .det-uvod { padding: 0 16px 8px 34px; }
+  .det-list { padding: 8px 16px 16px; }
+  .moje-item { grid-template-columns: 36px minmax(0, 1fr); }
+  .moje-akce { grid-column: 2; justify-content: flex-start; }
   .handoff-card { grid-template-columns: 40px minmax(0, 1fr); }
   .handoff-actions { grid-column: 1 / -1; justify-content: space-between; }
   .pick { grid-template-columns: 18px 40px minmax(0, 1fr); }

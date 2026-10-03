@@ -16,6 +16,35 @@
 - Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
 - Free projekt Supabase udržuje denní dotaz do databáze z GitHub Actions (`public.udrzet_aktivitu()`, tedy `select 1`). Dřívější požadavek na nastavení Auth databázi nečetl, takže by uspání podle pravidel Supabase nezabránil. Dotaz nečte ani nezapisuje žádnou tabulku a nepoužívá uživatelský token. Dokud migrace v databázi není, běh v Actions viditelně selže.
 
+## 0.32.0 – 2026-10-03 · zachycení agentů v činnosti
+
+- **Agenteeq pozná, co na počítači právě běží, i bez nastavování.** Když poprvé spustíš AI nástroj,
+  o kterém zatím nic neví (Warp, Windsurf, Google AI Studio jako aplikace z Chromu…), ukáže kartu
+  „Zachytil jsem agenta“: co to je, kde pracuje, od kdy běží a co z něj Agenteeq uvidí. Jedním
+  klikem ho přidáš do Mých nástrojů, nebo zvolíš „Nesledovat“ a už se neozve. Se zavřeným oknem
+  přijde jedno souhrnné oznámení systému, v jazyce z Nastavení a nikdy během nočního ticha.
+- **Katalog rozpoznaných nástrojů má 45 položek** (dřív 14): editory s agenty, agenti v terminálu,
+  prohlížeče s AI, lokální modely a webové aplikace nainstalované z Chromu. Nepotvrzené na skutečném
+  stroji jsou v docs/CONNECTORS.md označené 🧪. Rozšíření pro Chrome se už nevydává za zdroj
+  konverzací desktopových aplikací ChatGPT, Claude, Copilot, Perplexity a Grok.
+- **Moje nástroje** v Nastavení → Propojení: u každého je vidět, jestli právě běží, předplatné
+  zapíšeš jedním klikem do Útraty a rozhodnutí jde vzít zpět. Přepínač „Nově zachycený agent“
+  v Upozorněních se ukládá jako ostatní.
+- **Přehled ukazuje jen nástroje, které opravdu používáš** – co běží, co sis přidal a co tu už
+  někdy běželo. Přehled limitů ukáže i nástroje bez dat s poznámkou, že limity ani tokeny z nich
+  zatím nečte. Pravidlo z 0.29.3 (živý přehled jen s měřeními mladšími 30 minut) platí dál.
+- **Gemini CLI a Qwen Code se čtou ze skutečného formátu.** Obě aplikace dnes ukládají JSONL
+  (`~/.gemini/tmp/…/chats/*.jsonl`, `~/.qwen/projects/…/chats/*.jsonl`); Agenteeq četl jen starý
+  jednosouborový formát, takže moderní verze neukázaly nic. Tokeny: vstup bez mezipaměti + nástroje,
+  výstup + přemýšlení; větev relace v Qwen Code nepočítá práci rodiče podruhé.
+- Okno rozhraní hlásí serveru, že je vidět, s `keepalive`. Bez něj WebKit při přechodu mezi
+  stránkami rušil požadavek a zapisoval do konzole chybu přístupu (`qa:desktop` ve WebKitu: 11 chyb).
+  Přerušený požadavek se na serveru už nezapisuje jako chyba 500.
+- Nový test ověřuje každý pojmenovaný import v kódu rozhraní: chybějící export dřív prošel všemi
+  kontrolami a ukázal se až jako prázdná aplikace v prohlížeči.
+- `npm run release:mac -- --install` nechá na Macu jen aktuální verzi: předchozí přesune do Koše
+  místo do `~/.agenteeq/zalohy` (na macOS bez příkazu `trash` se odkládá jako dřív).
+
 ## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu
 
 - Dlouhé JSONL relace Codexu se čtou po blocích místo jednoho velkého řetězce. Aplikace se tak nezastaví na limitu paměti Node a denní tokenový součet neztratí právě běžící relaci.

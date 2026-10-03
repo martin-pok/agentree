@@ -28,6 +28,8 @@ import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
+import { mountDetekce } from './detekce-ui.js';
+import { goToSettings } from './jump.js';
 
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
 
@@ -36,6 +38,7 @@ initWelcome();
 initWhatsNew();
 initAppearance();
 plynulePosouvani();
+mountDetekce();
 
 const ROUTES = [
   [/^\/(?:prehled)?$/, overview],
@@ -424,7 +427,7 @@ function renderPopover() {
   const items = state.alerts.items.slice(0, 8);
   pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all>${tr('Označit vše jako přečtené')}</button>` : ''}</div>
     <ul class="pop-list">${items.length
-      ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${esc(alertHref(a))}" data-alert-id="${esc(a.id)}">
+      ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${esc(alertHref(a))}" data-alert-id="${esc(a.id)}"${a.kind === 'novy-nastroj' ? ' data-moje-nastroje' : ''}>
           <span class="pop-icon">${alertIcon(a)}</span>
           <span class="pop-text"><span class="pop-title">${esc(a.title)}</span>${a.body ? `<span class="pop-body">${esc(a.body)}</span>` : ''}<span class="pop-time" data-ago="${a.at}">${rel(a.at)}</span></span>
         </a></li>`).join('')
@@ -448,6 +451,9 @@ function onAlert(a) {
   // Ztlumené upozornění (noční ticho, náraz) je jen v seznamu a u zvonečku – bublina ani oznámení
   // prohlížeče nepřijde, za ztlumená přijde jeden souhrn (src/alerts.js).
   if (a.muted) return;
+  // Nově zachycený agent má vlastní kartu s volbami (detekce-ui.js); toast by ji jen zdvojil
+  // a oznámení mimo okno posílá server jedno souhrnné, ne za každý nástroj zvlášť.
+  if (a.kind === 'novy-nastroj') return;
   const href = alertHref(a);
   const urgent = a.level === 'action' || a.level === 'critical';
   toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: tr('Otevřít'), href }, timeout: urgent ? 12000 : 5000 });
@@ -577,6 +583,8 @@ document.addEventListener('click', async (e) => {
   if (e.target.closest('#bell')) { if (pop.hidden) openPopover(); else closePopover(); return; }
   const item = e.target.closest('[data-alert-id]');
   if (item) markRead([item.dataset.alertId]);
+  // Nastavení po otevření posune stránku ke kartě Moje nástroje (jump.js).
+  if (item?.hasAttribute('data-moje-nastroje')) { e.preventDefault(); goToSettings('moje'); }
   if (e.target.closest('[data-read-all]')) markRead('all');
   if (!pop.hidden && !e.target.closest('.bell-wrap')) closePopover();
 });

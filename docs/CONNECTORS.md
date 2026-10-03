@@ -37,7 +37,7 @@ to někdo nepotvrdí na skutečném stroji, patří sem 🧪, ne ✅.
 | Claude Code | `~/.claude/projects` | `%USERPROFILE%\.claude\projects` | 🧪 cesta se poskládá sama, neověřeno |
 | Codex | `~/.codex/sessions` | `%USERPROFILE%\.codex\sessions` | 🧪 neověřeno |
 | Copilot CLI | `~/.copilot/session-state` | `%USERPROFILE%\.copilot\session-state` | 🧪 neověřeno |
-| Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/tmp` | `%USERPROFILE%\.gemini\tmp`, `…\.qwen\tmp` | 🧪 neověřeno |
+| Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/projects` | `%USERPROFILE%\.gemini\tmp`, `…\.qwen\projects` | 🧪 neověřeno |
 | Cursor | `~/Library/Application Support/Cursor/User` | `%APPDATA%\Cursor\User` | 🧪 neověřeno |
 | Copilot ve VS Code | `~/Library/Application Support/Code/User` | `%APPDATA%\Code\User` | 🧪 neověřeno |
 | Claude Desktop (vzdálený Code) | `~/Library/Application Support/Claude/IndexedDB` | `%APPDATA%\Claude\IndexedDB` | 🧪 interní cache, macOS ověřený; Windows neověřený |
@@ -248,8 +248,21 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Gemini CLI a Qwen Code – `src/connectors/gemini-family.js` 🧪
 
-- **Zdroj:** `~/.gemini/tmp/<hash>/chats/*.json`, resp. `~/.qwen/tmp/…`. Pole `sessionId`, `startTime`, `messages[]` (`type` user/gemini/error, `content`, `toolCalls[]`, `tokens.{input,output,cached,thoughts}`, `model`).
-- **Ověření:** Gemini CLI je nainstalované, ale bez uložených chatů; Qwen Code nenainstalovaný.
+Tvar záznamů je převzatý ze zdrojového kódu obou nástrojů (`packages/core/src/services/chatRecordingService.ts`),
+ne odhadnutý. Hlídá ho `test/gemini-qwen.test.mjs`.
+
+- **Gemini CLI – zdroj:** `~/.gemini/tmp/<projekt>/chats/*.jsonl` (starší verze `*.json` se čtou dál).
+  První řádek jsou metadata (`sessionId`, `projectHash`, `startTime`), pak zprávy s `id`; tentýž `id`
+  znovu = novější verze téže zprávy (tokeny se dopisují až po dokončení), platí poslední. `$set.messages`
+  nahradí historii, `$rewindTo` ji zkrátí. Pomocní agenti leží v `chats/<rodič>/*.jsonl` a patří pod rodiče.
+- **Gemini CLI – tokeny:** vstup = `input − cached + tool`, výstup = `output + thoughts`, cache zvlášť.
+- **Qwen Code – zdroj:** `~/.qwen/projects/<projekt>/chats/*.jsonl`, strom záznamů (`uuid`, `parentUuid`,
+  `type` user/assistant/tool_result/system, `message.parts`, `usageMetadata`). Soubory `*.runtime.json`
+  nejsou konverzace. Název z `system/custom_title`.
+- **Qwen Code – tokeny:** z `usageMetadata` stejně jako u Gemini. Záznamy s `forkedFrom` jsou kopie
+  rodiče po `/branch` a tokeny se u nich nepočítají podruhé.
+- **Ověření:** formáty ze zdrojového kódu a test nad fixturami; Gemini CLI na vývojovém Macu bez
+  uložených chatů, Qwen Code nenainstalovaný. Proto 🧪.
 
 ### Webové aplikace – `extension/` + `src/connectors/web.js` 🧪
 
@@ -295,6 +308,31 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
 - `ps -axo pid=,etime=,%cpu=,rss=,args=` každých 5 s, pravidla v `RUNTIMES`; Ollama přes `/api/ps` na adrese
   z `AGENTEEQ_OLLAMA_URL` (výchozí `http://127.0.0.1:11434`), stejným klientem jako chat (`src/ollama.js`).
 
+
+### Zachycení agentů v činnosti – `src/detekce.js` + `public/js/detekce-ui.js`
+
+- **Co dělá:** když na Macu poprvé poběží AI nástroj z katalogu `RUNTIMES`, o kterém Agenteeq
+  zatím nic neví, ukáže kartu „Zachytil jsem agenta“: co to je (`popis`), kde pracuje (`druh`),
+  od kdy běží a co o něm Agenteeq uvidí. Uživatel ho přidá do Mých nástrojů, nebo zvolí
+  „Nesledovat“ – pak se už nikdy neozve. Se zavřeným oknem přijde jedno souhrnné oznámení macOS.
+- **Co se ukládá:** jen identifikátor z katalogu, čas prvního a posledního běhu a rozhodnutí
+  (`data.json → nastroje`, `normalizeNastroje`). Žádné cesty, argumenty ani názvy souborů.
+- **Kdy oznámení nepřijde:** nástroj, jehož data Agenteeq už čte (`konektory` s daty), je rovnou
+  „známý“. Výjimka je úplně nová instalace, kde uživatel zatím nic nevidí.
+- **Co karta tvrdí:** „Konverzace a tokeny už čtu“ jen u sledovaného nástroje; kde zdroj sdílí víc
+  nástrojů (záložka Code v Claude Desktop, Codex v ChatGPT), platí přesná věta `vidim`. Rozšíření
+  pro Chrome není zdroj desktopové aplikace téže služby. Hlídá `test/nastroje-ui.test.mjs`.
+- **Přehled:** dlaždice ukazují, co běží, co je v Mých nástrojích a co tu Agenteeq už někdy viděl
+  běžet – ne celý katalog. Přehled limitů ukáže i nástroje bez dat s poznámkou, že limity ani tokeny
+  z nich zatím nečte.
+- **Rozpoznávání (🧪 u položek s `overeno: false`):** podle cesty aplikace nebo názvu příkazu.
+  Ověřené na skutečném Macu: Claude Desktop, Claude Code, ChatGPT, Codex, Cursor, Warp, Ollama
+  a webové aplikace z Chromu (Google AI Studio, Stitch, Replit). Ostatní (Windsurf, Antigravity, Kiro, Trae, Zed,
+  Microsoft Copilot, Gemini CLI, Qwen Code, Aider, Goose, OpenCode, Amp, Crush, Droid, Auggie,
+  Perplexity, Comet, ChatGPT Atlas, Dia, Grok, LM Studio a webové aplikace Gemini, NotebookLM,
+  ChatGPT, Claude, Perplexity, Grok, Copilot, DeepSeek, Lovable, v0, Bolt) jsou podle názvu balíčku
+  nebo příkazu, zatím nepotvrzené na skutečném stroji. Zrádné případy (Adobe Express, `code` jako
+  složka, Codex uvnitř ChatGPT.app) hlídá `test/detekce.test.mjs`.
 ## Předplatné a kurz koruny (Útrata)
 
 Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.

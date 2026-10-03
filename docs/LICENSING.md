@@ -47,8 +47,10 @@ npm run release:mac -- --install       # navíc vymění aplikaci v /Application
 ```
 
 Přepínač `--install` je jediná část, která sahá na už nainstalovanou aplikaci, a proto se nikdy
-nespustí sám. Starou verzi nemaže: odloží ji do `~/.agenteeq/zalohy`, takže návrat zpět je jeden
-přesun ve Finderu. Běžící aplikaci nejdřív požádá o ukončení; když se neukončí, vydání se zastaví.
+nespustí sám. Na Macu nechá jen jednu, aktuální verzi: předchozí přesune do Koše (nikdy ji nemaže
+natrvalo), takže návrat zpět je „Vrátit zpět“ v Koši. Na macOS bez příkazu `trash` (starší než 14)
+ji odloží do `~/.agenteeq/zalohy`. Běžící aplikaci nejdřív požádá o ukončení; když se neukončí,
+vydání se zastaví.
 
 Pro veřejné vydání (jinak ho Gatekeeper na cizím Macu odmítne):
 

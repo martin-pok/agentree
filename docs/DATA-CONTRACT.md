@@ -60,6 +60,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
 | POST | `/api/remote/detect` | `{ tunnels: { at, list: Tunnel[], advice } }`; jen z `127.0.0.1` (403) |
+| POST | `/api/nastroje/:id/(pridat\|ignorovat\|rozumim\|odebrat)` | Rozhodnutí o zachyceném nástroji (`src/detekce.js`) → `Detekce`; 404 neznámý nástroj nebo akce. Jen z tohoto počítače (`src/remote-scope.js`), telefon smí jen číst |
+| POST | `/api/ui/pritomnost` | `{ videt: boolean }` → `{ ok }`. Okno rozhraní hlásí, že je vidět; detekce pak neposílá oznámení systému. Platí 45 s. Jen z tohoto počítače |
 | GET | `/api/projects` | `{ projects: ProjectsPayload }` |
 | POST | `/api/projects` | `{ name, description?, color?, folders?: string[] }` → 201 `{ project, projects }`; 422 s `errors`; 402 `upgrade` při limitu verze Zdarma (jen je-li zapnutý) |
 | PATCH | `/api/projects/:id` | Částečná změna (`name`, `description`, `color`, `folders`, `notes`, `archived`) → `{ project, projects }`; 404, 422 |
@@ -93,6 +95,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `session:remove` | `{ id }` |
 | `transcript` | `{ id, reset: boolean, entries: TranscriptEntry[] }` – nové **nebo aktualizované** položky (upsert podle `seq`) |
 | `runtimes` | `Runtime[]` |
+| `detekce` | `Detekce` – po novém nálezu nebo rozhodnutí |
 | `limits` | `Limit[]` |
 | `credits` | `CreditRecord[]` |
 | `alert` | `{ alert: Alert, unread }` |
@@ -139,6 +142,17 @@ Mac“ a ⌘, nebo „tento počítač“ a Ctrl (`public/js/system.js`).
 - `asset` je jen `{ name, url, size, sha256 }` pro přesnou kombinaci verze, systému a architektury. `url` musí být oficiální GitHub release download URL, `sha256` je otisk, který GitHub u přílohy zveřejňuje (`digest: "sha256:…"`). Příloha bez otisku se nenabízí (stav `unsupported`); stažený obsah s jiným otiskem se odmítne a na disk se neuloží.
 - `downloaded` je jen lokální metadata vlastního souboru. Účty, telefony ani vzdálený přístup tento blok nezískají.
 - `settings.updateMode` je `manual` (výchozí) | `automatic`. Automatický režim stáhne ověřený balíček, ale instalaci nikdy nespustí ani aplikaci sám nenahradí.
+
+### Detekce (`state.detekce`, událost `detekce`)
+
+`{ nove: Nastroj[], moje: Nastroj[], ignorovane: Nastroj[], videne: string[] }`. `Nastroj` =
+`{ id, name, provider, druh, popis, vidim, umiCist, overeno, sledovano, bezi, beziOd, poprve, naposledy, stav }`.
+`id` je z katalogu `src/connectors/processes.js#RUNTIMES`; `druh` je `aplikace` | `terminal` |
+`terminal-aplikace` | `editor` | `prohlizec` | `webova-aplikace` | `lokalni-model`. `beziOd` je čas startu
+procesu (ms, 0 = neběží), `stav` je `novy` | `pridany` | `ignorovany` | `znamy`. `videne` = id všech
+nástrojů, které tu kdy běžely. V `data.json` (`nastroje`) leží jen `{ poprve, naposledy, stav, pridano? }`
+pod id z katalogu – žádné cesty, příkazy ani obsah. `Runtime` nese navíc `druh`, `popis`, `konektory`,
+`overeno` z katalogu.
 
 ### UcetStatus (`state.ucet`, událost `ucet`)
 
@@ -191,13 +205,14 @@ interface CreditRecord { id: string; provider: Provider; app: string; label: str
 
 interface Alert {
   id: string; key: string; at: number; read: boolean; level: 'action' | 'critical' | 'warning' | 'info';
-  kind: 'needs_input' | 'failed' | 'limit' | 'limit_near' | 'limit_reset' | 'budget' | 'done' | 'test' | 'system' | 'digest';
+  kind: 'needs_input' | 'failed' | 'limit' | 'limit_near' | 'limit_reset' | 'budget' | 'done' | 'test' | 'system' | 'digest' | 'novy-nastroj';
   title: string; body: string; sessionId?: string;
   limitId?: string;                  // upozornění na limit účtu (ne konverzace) – souhrn podle něj pozná, jestli pořád platí
   muted?: 'quiet' | 'burst';         // uloženo a počítá se do nepřečtených, ale oznámení ani bublina nepřišly (noční ticho / náraz)
   digested?: true;                   // ztlumené upozornění už prošlo souhrnem
   digest?: 'quiet' | 'burst';        // jen kind 'digest': souhrn po nočním tichu, nebo po nárazu
   count?: number;                    // jen kind 'digest': kolik věcí souhrn nese
+  nastroj?: string;                  // jen kind 'novy-nastroj': id z katalogu; oznámení systému posílá detekce souhrnně za dávku
   route?: string;                    // jen kind 'digest': kam vede klik („#/agent/…“, „#/agenti?stav=needs_input“, „#/utrata“, „#/prehled“, „#/upozorneni“)
 }
 // Pravidla souhrnu (src/alerts.js): do souhrnu patří jen ztlumené upozornění, které pořád platí –
