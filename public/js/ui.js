@@ -62,6 +62,15 @@ export function sloucit(el, html, { presun = false } = {}) {
   if (presun && chcePresun()) dojezd(el, pred);
 }
 
+// Kotva celé obrazovky kolem jednoho živého překreslení (app.js#refresh): změní se i oblasti nad
+// seznamem (počty ve filtrech, pruh nahoře), a ty se do měření jedné oblasti nepromítnou – ve
+// WebKitu na Linuxu pak řádek pod čtenářem poskočil o 3 px. Měří se jen u odrolované stránky.
+export function kotva(el) {
+  if (typeof scrollY !== 'number' || scrollY <= 0 || !el) return () => {};
+  const pred = polohy(el);
+  return () => ukotvi(el, pred);
+}
+
 // Kotva: řádek, který čtenář právě vidí, musí po živé události zůstat na stejném místě obrazovky,
 // i když se nad ním seznam přeskládal. Chromium to dělá sám (overflow-anchor), WebKit vlastnost
 // sice zná, ale v okně aplikace ji neuplatní – obsah pod čtenářem pak poskočil o řádek. Kotvou je

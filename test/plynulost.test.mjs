@@ -74,6 +74,9 @@ test('přesun řádku je jen transform a opacity a respektuje omezený pohyb i p
   const plynule = await zdroj('public/js/plynule-posouvani.js');
   assert.match(plynule, /export function posunSObsahem\(dy\)/);
   assert.match(plynule, /poloha \+= dy;/);
+  // Kotva i kolem celého živého překreslení obrazovky: počty ve filtrech nad seznamem mění výšku.
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /const drzKotvu = kotva\(viewEl\);\s*\n\s*try \{\s*\n\s*current\?\.update\(topics\);[\s\S]*?drzKotvu\(\);/);
 });
 
 test('změna motivu je jeden okamžitý krok bez View Transitions (WebKit je skládal rozbitě)', async () => {

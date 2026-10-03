@@ -3,7 +3,7 @@ import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel } from './ui.js';
+import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel, kotva } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
@@ -229,11 +229,13 @@ function refresh(topics) {
     return;
   }
   viewEl.querySelector(':scope > .loader-wrap')?.remove();
+  const drzKotvu = kotva(viewEl);
   try {
     current?.update(topics);
   } catch (err) {
     console.error('Agenteeq: chyba vykreslení', err);
   }
+  drzKotvu();
   if (nastupCeka) zacniNastup();
   tweenAll(document);
   restoreHover(viewEl);
