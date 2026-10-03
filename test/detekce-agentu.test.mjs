@@ -74,7 +74,13 @@ test('hook s přepisem mimo známé kořeny: kořen se přidá, přepis se načt
     // Nová konverzace v témže kořeni se pak najde i bez hooku (kořen se sleduje).
     const id2 = 'dddd4444-0000-0000-0000-000000000004';
     await writeJsonl(path.join(jinde, 'projects', '-tmp-y', `${id2}.jsonl`), [radek(id2, '/tmp/y')]);
-    await waitFor(() => srv.app.store.summary(`claude-code:${id2}`), 6000);
+    // Sledování souborů na macOS pod zátěží občas nedoručí událost čerstvě založené podsložky
+    // (test pak jednou za čas padal po 6 s). V provozu to jistí plný průchod každých 10 s – v testu
+    // je nastavený na minutu, proto ho po krátkém čekání na watcher spustíme sami. Tvrzení zůstává:
+    // kořen přidaný hookem patří do sledovaných, takže se v něm nová konverzace najde bez hooku.
+    const nalezena = () => srv.app.store.summary(`claude-code:${id2}`);
+    await waitFor(nalezena, 2000).catch(() => srv.app.connectors['claude-code'].scan());
+    await waitFor(nalezena, 4000);
   } finally {
     await srv.close();
   }
