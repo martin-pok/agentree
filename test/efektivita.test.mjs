@@ -142,16 +142,21 @@ test('efektivita: v klidu se do okna neposílá tikající doba běhu ani čas p
     const conn = srv.app.connectors.processes;
     const udalosti = [];
     for (const ev of ['runtimes', 'connectors']) srv.app.store.on(ev, () => udalosti.push(ev));
+    // Výchozí stav vznikne z vlastního průchodu. Jinak může první scan při startu
+    // spadnout do předchozí minuty a test by omylem porovnával dvě legitimně odlišná měření.
+    await conn.scan();
     const runtimes = JSON.stringify(srv.app.store.runtimes);
     const status = JSON.stringify(conn.status());
+    const predDruhymPruchodem = Date.now();
     await new Promise((r) => setTimeout(r, 1100));
     await conn.scan();
+    const poDruhemPruchodu = Date.now();
     for (const r of srv.app.store.runtimes) {
       assert.equal(r.uptimeSec, undefined, 'doba běhu se dopočítá v rozhraní z času startu');
       assert.ok(r.running ? r.od > 0 : r.od === 0);
     }
     // Stav zdroje se mezi dvěma průchody v téže minutě nezmění.
-    if (Math.floor(Date.now() / 60e3) === Math.floor((Date.now() - 1100) / 60e3)) assert.equal(JSON.stringify(conn.status()), status);
+    if (Math.floor(predDruhymPruchodem / 60e3) === Math.floor(poDruhemPruchodu / 60e3)) assert.equal(JSON.stringify(conn.status()), status);
     // Procesy s kolísající zátěží se mohou legitimně změnit; doba běhu sama změnu vyvolat nesmí.
     const bezZateze = (j) => JSON.stringify(JSON.parse(j).map(({ cpu, memMB, ...r }) => r));
     assert.equal(bezZateze(JSON.stringify(srv.app.store.runtimes)), bezZateze(runtimes));

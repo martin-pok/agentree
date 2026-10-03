@@ -578,6 +578,10 @@ for (const engine of engines) {
         // test měřil stejnou cestu, která přepíná neblokující stav horní lišty.
         await page.evaluate((top) => { scrollTo({ top, behavior: 'instant' }); dispatchEvent(new Event('scroll')); }, y);
         await page.waitForTimeout(100);
+        // WebKit na vytíženém CI runneru doručí scroll, ale přepočet třídy pro horní
+        // lištu může přijít až po dalším vykreslení. Čekáme na skutečný stav místo
+        // křehkého pevného času; rozbitý scroll ani překrývající akce tím neprojdou.
+        if (sirka > 1180) await page.waitForFunction(() => document.documentElement.classList.contains('has-page-scroll'), null, { timeout: 1000 });
         const po = await merit();
         assert.ok(po.y >= 299, `${engine} ${sirka}: stránka se neposunula (${po.y} px)`);
         assert.ok(Math.abs(po.menu - vychozi.menu) <= 1,
