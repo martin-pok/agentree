@@ -324,6 +324,32 @@ async function zkontrolujPlynulost(browser, engine) {
   console.log(`${engine} plynulost: ${JSON.stringify(mereni)}`);
 }
 
+// Nadpis obrazovky se na telefonu nikdy nezkracuje („Stat…“): u spojení v pořádku mu lišta nechá místo.
+async function zkontrolujNadpisy(browser, engine) {
+  const server = await startTestServer();
+  const chyby = [];
+  try {
+    for (const jazyk of ['cs', 'en']) {
+      assert.equal((await api(server.url).send('PUT', '/api/settings', { language: jazyk })).status, 200);
+      for (const sirka of [375, 360]) {
+        const ctx = await browser.newContext({ viewport: { width: sirka, height: 800 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+        const p = await ctx.newPage();
+        for (const trasa of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'dovednosti', 'nastaveni']) {
+          await p.goto(`${server.url}/#/${trasa}`);
+          await p.waitForFunction(() => document.querySelector('#conn-pill .dot--live'), null, { timeout: 5000 }).catch(() => {});
+          const t = await p.evaluate(() => { const h = document.querySelector('.page-title'); return { txt: h.textContent.trim(), uriznuto: h.scrollWidth > h.clientWidth + 1 }; });
+          if (t.uriznuto) chyby.push(`${jazyk} ${sirka}px /${trasa}: „${t.txt}“ je zkrácený`);
+        }
+        await ctx.close();
+      }
+    }
+  } finally {
+    await server.close();
+  }
+  assert.deepEqual(chyby, [], `${engine}: nadpis obrazovky se na telefonu zkracuje\n${chyby.join('\n')}`);
+  results.push({ engine, check: 'nadpisy obrazovek se na telefonu nezkracují' });
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -338,6 +364,7 @@ for (const engine of engines) {
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   await zkontrolujPocitadla(browser, engine);
+  await zkontrolujNadpisy(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();

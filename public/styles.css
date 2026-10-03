@@ -1624,6 +1624,9 @@ html.is-cloud body { background: var(--paper); }
   .conn-pill { gap: 6px; height: 34px; padding: 0 10px; font-size: 12px; flex: none; }
   .conn-pill .conn-long { display: none; }
   .conn-pill .conn-short { display: inline; }
+  /* Žije-li spojení, pilulka nic nového neříká a na 327 px lišty ukrajovala nadpis na „Stat…“.
+     Ukáže se, až když se něco děje (obnovování, bez spojení) – tehdy je to informace, ne ozdoba. */
+  .conn-pill:has(.dot--live) { display: none; }
   .topbar { gap: 10px; flex-wrap: nowrap; }
   /* Lišta má na telefonu 327 px. Delší stav spojení („Bez spojení“) by ji zalomil a tlačítka by
      odskočila pod nadpis. Přednost ustoupit má proto nadpis – zkrátí se třemi tečkami, zatímco

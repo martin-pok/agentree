@@ -2,6 +2,10 @@
 
 ## Nezveřejněno
 
+## 0.33.1 – 2026-10-03 · nadpisy na telefonu celé
+
+- Na telefonu se nadpis obrazovky zkracoval na „Stat…“ nebo „Ag…“, protože lišta ukazovala i pilulku „Připojeno“, která při funkčním spojení nic neříká. Teď se pilulka na úzké obrazovce ukáže jen tehdy, když se něco děje (obnovování, bez spojení). `qa:desktop` hlídá všech 8 nadpisů česky i anglicky na 375 i 360 px v Chromiu i WebKitu.
+
 ## 0.33.0 – 2026-10-03 · plynulé živé seznamy
 
 - **Živá data už seznam nepřekreslují celý.** Agenti, Přehled a Statistiky slučují novou podobu se stávající: mění se jen to, co se opravdu změnilo. Na seznamu 140 agentů vymění živá událost ve WebKitu 12 uzlů místo 826 a zmizely snímky delší než 50 ms (dřív jeden na každou událost). Kurzor neztrácí najetí a karty nepřehrávají nástup znovu.
