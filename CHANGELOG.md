@@ -2,6 +2,10 @@
 
 ## Nezveřejněno
 
+- Landing page odkrývá obsah až po vstupu do čitelné části okna. Karty a výřezy mají sladěný rytmus; při omezeném pohybu nebo bez JavaScriptu zůstává obsah dostupný.
+- Načítání aplikace má novou scénu značky s postupně rozsvěcovanými body a přístupným stavovým textem.
+- Codex bere denní přírůstky primárně ze spotřeby jednotlivých požadavků. Reset kumulativního čítače ani opakovaný snapshot nevytvoří falešný skok; audit používá nezávislý součet požadavků.
+
 ## 0.32.1 – 2026-10-03 · čísla v Přehledu hned ve správné velikosti
 
 - Čísla v pásu Přehledu (potřebuje tebe, selhalo, čeká na zadání) při nástupu obrazovky vyjela drobná (12 px) a na správnou velikost naskočila až po animaci. Číslice počítadla teď mají vždy písmo svého čísla na všech obrazovkách; `qa:desktop` to měří během animace v Chromiu i WebKitu.

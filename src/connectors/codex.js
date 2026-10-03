@@ -20,18 +20,21 @@ export function createCodexTokenState() {
   return {
     prevUsage: null,
     usageBase: { input: 0, cached: 0, output: 0, cacheWrite: 0 },
+    prevCumulative: null,
+    usingRequest: false,
     prevProcessed: 0,
     lastTokens: null,
   };
 }
 
-export function applyCodexTokenUsage(st, usage, ts, hourly) {
+export function applyCodexTokenUsage(st, usage, ts, hourly, lastUsage = null) {
   const current = {
     input: finiteToken(usage?.input_tokens),
     cached: finiteToken(usage?.cached_input_tokens),
     output: finiteToken(usage?.output_tokens),
     cacheWrite: finiteToken(usage?.cache_write_input_tokens),
   };
+  const unchanged = st.prevUsage && TOKEN_COUNTER_KEYS.every((key) => current[key] === st.prevUsage[key]);
   if (st.prevUsage) {
     for (const key of TOKEN_COUNTER_KEYS) {
       if (current[key] < st.prevUsage[key]) st.usageBase[key] += st.prevUsage[key];
@@ -39,19 +42,47 @@ export function applyCodexTokenUsage(st, usage, ts, hourly) {
   }
   const cumulative = Object.fromEntries(TOKEN_COUNTER_KEYS.map((key) => [key, st.usageBase[key] + current[key]]));
   const processed = Math.max(0, cumulative.input - cumulative.cached + cumulative.output);
-  const delta = Math.max(0, processed - st.prevProcessed);
+  const legacyDelta = Math.max(0, processed - st.prevProcessed);
+  // Kde je k dispozici spotřeba posledního požadavku, dává přesnější hodinový
+  // přírůstek než rozdíl kumulativních čítačů po jejich částečném resetu.
+  const hasLast = lastUsage && typeof lastUsage === 'object'
+    && Number.isFinite(lastUsage.input_tokens)
+    && Number.isFinite(lastUsage.output_tokens);
+  const request = hasLast ? {
+    input: Math.max(0, finiteToken(lastUsage.input_tokens) - finiteToken(lastUsage.cached_input_tokens)),
+    output: finiteToken(lastUsage.output_tokens),
+    cacheWrite: finiteToken(lastUsage.cache_write_input_tokens),
+    cacheRead: finiteToken(lastUsage.cached_input_tokens),
+  } : null;
+  const delta = request ? (unchanged ? 0 : request.input + request.output) : legacyDelta;
   if (hourly && ts && delta) {
     const key = hourKey(ts);
     hourly[key] = (hourly[key] || 0) + delta;
   }
   st.prevProcessed = Math.max(st.prevProcessed, processed);
   st.prevUsage = current;
-  st.lastTokens = {
-    input: Math.max(0, cumulative.input - cumulative.cached),
-    output: cumulative.output,
-    cacheWrite: cumulative.cacheWrite,
-    cacheRead: cumulative.cached,
-  };
+  if (request) {
+    const prior = st.lastTokens || { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
+    st.lastTokens = Object.fromEntries(Object.keys(prior).map((key) => [key, prior[key] + (unchanged ? 0 : request[key])]));
+    st.usingRequest = true;
+  } else if (st.usingRequest) {
+    // Starší událost v jinak novém přepisu: navážeme na dosažené součty, místo
+    // přepsání číslem z jiného typu čítače.
+    const prev = st.prevCumulative || { input: 0, cached: 0, output: 0, cacheWrite: 0 };
+    const output = Math.max(0, cumulative.output - prev.output);
+    st.lastTokens.output += output;
+    st.lastTokens.input += Math.max(0, legacyDelta - output);
+    st.lastTokens.cacheRead += Math.max(0, cumulative.cached - prev.cached);
+    st.lastTokens.cacheWrite += Math.max(0, cumulative.cacheWrite - prev.cacheWrite);
+  } else {
+    st.lastTokens = {
+      input: Math.max(0, cumulative.input - cumulative.cached),
+      output: cumulative.output,
+      cacheWrite: cumulative.cacheWrite,
+      cacheRead: cumulative.cached,
+    };
+  }
+  st.prevCumulative = cumulative;
   return { ...st.lastTokens, delta };
 }
 
@@ -288,7 +319,7 @@ export function createCodexConnector(ctx) {
             if (t) {
               // Hlavní metrika je vstup + výstup bez cache; reset jednotlivého čítače
               // se řeší v applyCodexTokenUsage, aby nevznikl falešný skok.
-              const cur = applyCodexTokenUsage(st, t, ts, s.hourly);
+              const cur = applyCodexTokenUsage(st, t, ts, s.hourly, p.info?.last_token_usage);
               s.tokens = { input: cur.input, output: cur.output, cacheWrite: cur.cacheWrite, cacheRead: cur.cacheRead };
             }
             if (p.rate_limits) rateLimits(s, p.rate_limits, ts);

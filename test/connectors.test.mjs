@@ -6,7 +6,7 @@ import http from 'node:http';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { createSession, deriveStatus } from '../src/model.js';
-import { createCodexConnector, mapCodexItem, windowLabel } from '../src/connectors/codex.js';
+import { createCodexConnector, createCodexTokenState, applyCodexTokenUsage, mapCodexItem, windowLabel } from '../src/connectors/codex.js';
 import { applyGeminiChat } from '../src/connectors/gemini-family.js';
 import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js';
 import { applyCursorComposer } from '../src/connectors/cursor.js';
@@ -127,6 +127,33 @@ test('Codex: samostatný reset cache čítače nevytvoří falešný skok ve spo
   assert.equal(s.tokens.input + s.tokens.output, 12900, 'vstup bez cache + výstup zůstává monotónní');
   assert.equal(s.tokens.cacheRead, 8000, 'cache se po resetu sečte po segmentech');
   assert.equal(Object.values(s.hourly).reduce((a, b) => a + b, 0), 12900, 'hodinový součet odpovídá hlavní metrice');
+});
+
+test('Codex: spotřeba požadavku zabrání falešnému skoku i dvojímu započtení snapshotu', () => {
+  const state = createCodexTokenState();
+  const hourly = {};
+  const first = { input_tokens: 1000, cached_input_tokens: 600, output_tokens: 50 };
+  const next = { input_tokens: 900000, cached_input_tokens: 100, output_tokens: 80 };
+  const one = applyCodexTokenUsage(state, first, Date.now(), hourly, first);
+  const two = applyCodexTokenUsage(state, next, Date.now(), hourly,
+    { input_tokens: 500, cached_input_tokens: 300, output_tokens: 30 });
+  const repeat = applyCodexTokenUsage(state, next, Date.now(), hourly,
+    { input_tokens: 500, cached_input_tokens: 300, output_tokens: 30 });
+  assert.equal(one.delta, 450);
+  assert.equal(two.delta, 230);
+  assert.equal(repeat.delta, 0);
+  assert.equal(two.input + two.output, 680);
+  assert.equal(Object.values(hourly).reduce((a, b) => a + b, 0), 680);
+});
+
+test('Codex: přepis se smíšenými verzemi událostí zachová ověřený průběžný součet', () => {
+  const state = createCodexTokenState();
+  const first = { input_tokens: 1000, cached_input_tokens: 600, output_tokens: 50 };
+  applyCodexTokenUsage(state, first, Date.now(), null, first);
+  const next = applyCodexTokenUsage(state,
+    { input_tokens: 2000, cached_input_tokens: 1000, output_tokens: 70 }, Date.now(), null);
+  assert.equal(next.input + next.output, 1070);
+  assert.equal(next.cacheRead, 1000);
 });
 
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {

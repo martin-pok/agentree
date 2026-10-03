@@ -11,7 +11,6 @@ import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
 import { startTestServer, api } from '../test/helpers.mjs';
-import { applyCodexTokenUsage, createCodexTokenState } from '../src/connectors/codex.js';
 
 const HOME = os.homedir();
 const DEN = 86400e3;
@@ -109,13 +108,19 @@ const hodinoveTokeny = (connector, odKdy) => stav.sessions.filter((s) => s.conne
   const kredity = [];
   for (const f of jsonl(path.join(SOURCE_HOME, '.codex', 'sessions'))) {
     const cerstvy = fs.statSync(f).mtimeMs >= od;
-    const counter = createCodexTokenState();
+    let previous = null;
     for await (const o of radky(f)) {
       const p = o.payload || {};
       const t = Date.parse(o.timestamp);
       const u = p.info?.total_token_usage;
       if (cerstvy && u) {
-        const n = applyCodexTokenUsage(counter, u, t, null).delta;
+        const last = p.info?.last_token_usage;
+        const signature = [u.input_tokens, u.cached_input_tokens, u.output_tokens].join(':');
+        // Nezávislý audit: přímo poslední požadavek, bez parseru aplikace.
+        const n = last && signature !== previous
+          ? Math.max(0, Number(last.input_tokens || 0) - Number(last.cached_input_tokens || 0)) + Number(last.output_tokens || 0)
+          : 0;
+        previous = signature;
         if (t >= pulnoc.getTime() && t <= stav.now) dnes += n;
       }
       const rl = p.rate_limits || p.info?.rate_limits;

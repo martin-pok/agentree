@@ -1,5 +1,5 @@
 // Landing page. Produkt ukazují výřezy skutečného rozhraní (site/detail, scripts/shots-site.mjs)
-// a jejich nástup obstará CSS – ve stránce není žádný vložený rám, který by si mohl nechat dotyk
+// a jejich nástup obstará observer a CSS – ve stránce není žádný vložený rám, který by si mohl nechat dotyk
 // nebo kolečko myši a zastavit posouvání stránky. Tady zbývá plynulé posouvání, okénka počítadla
 // u kroků a drobnosti kolem návodu.
 //
@@ -55,15 +55,51 @@ const odkryjRozsireni = () => { if (location.hash === '#rozsireni') document.get
 addEventListener('hashchange', odkryjRozsireni);
 odkryjRozsireni();
 
-// Čísla kroků vyjedou v okénku jako počítadlo v aplikaci (site/lp.css, „pohyb“). Okénko se staví
-// jen tam, kde se opravdu rozjede – jinak zůstane obyčejná číslice. Čísla jsou aria-hidden.
-if (matchMedia('(prefers-reduced-motion: no-preference)').matches && CSS.supports('animation-timeline: view()')) {
+// Čísla kroků vyjedou v okénku jako počítadlo v aplikaci (site/lp.css, „pohyb“).
+// Bez pohybu zůstane obyčejná číslice.
+if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'IntersectionObserver' in window) {
   for (const el of document.querySelectorAll('.step-n')) {
     const n = Number(el.textContent.trim());
     if (!Number.isInteger(n) || n < 1 || n > 9) continue;
     const valec = Array.from({ length: n + 1 }, (_, i) => `<span>${i}</span>`).join('');
     el.innerHTML = `<span class="odo"><span class="odo-f">${n}</span><span class="odo-s" style="--n:${n + 1}">${valec}</span></span>`;
   }
+}
+
+// Nástup začíná teprve v čitelné části okna. Bez JS, podpory API nebo při
+// omezeném pohybu zůstává celý obsah viditelný a přístupný.
+if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'IntersectionObserver' in window) {
+  const prvky = [...document.querySelectorAll('.unit:not(.hero) .unit-head, .tile, .source-group, .facts article, .steps li, .prikaz')];
+  for (const prvek of prvky) prvek.classList.add('motion-pending');
+  const pozorovatel = new IntersectionObserver((zaznamy) => {
+    for (const zaznam of zaznamy) {
+      if (!zaznam.isIntersecting) continue;
+      zaznam.target.classList.remove('motion-pending');
+      zaznam.target.classList.add('motion-entered');
+      pozorovatel.unobserve(zaznam.target);
+    }
+  }, { rootMargin: '0px 0px -18% 0px', threshold: 0.12 });
+  for (const prvek of prvky) pozorovatel.observe(prvek);
+  addEventListener('pageshow', () => {
+    for (const prvek of prvky) if (prvek.getBoundingClientRect().top < innerHeight * .82)
+      prvek.classList.remove('motion-pending');
+  });
+}
+
+// Aktivní kapitola navigace odpovídá tomu, co návštěvník právě čte.
+if ('IntersectionObserver' in window) {
+  const odkazy = [...document.querySelectorAll('.nav-links a[href^="#"]')];
+  const kapitoly = [document.querySelector('.hero'), ...odkazy.map((a) => document.getElementById(a.hash.slice(1)))].filter(Boolean);
+  const navigace = new IntersectionObserver((zaznamy) => {
+    for (const zaznam of zaznamy) {
+      if (!zaznam.isIntersecting) continue;
+      for (const odkaz of odkazy) {
+        if (odkaz.hash === `#${zaznam.target.id}`) odkaz.setAttribute('aria-current', 'location');
+        else odkaz.removeAttribute('aria-current');
+      }
+    }
+  }, { rootMargin: '-22% 0px -62% 0px' });
+  for (const kapitola of kapitoly) navigace.observe(kapitola);
 }
 
 plynulePosouvani();

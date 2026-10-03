@@ -241,10 +241,8 @@ test('web nemá nekonečnou animaci a pohyb umí vypnout', async () => {
 });
 
 
-// Pohyb webu mluví stejným jazykem jako aplikace: řádky nadpisů vyjíždějí zpoza masky, obrazy
-// se odkrývají, čísla vyjíždějí v okénku. Pod posouváním stránky ale nesmí nic běžet podle hodin
-// (qa-site) a bez časové osy posouvání musí být všechno rovnou vidět.
-test('web: pohyb jako v aplikaci – nadpisy po řádcích, nástup jen podle posouvání', async () => {
+// Pohyb webu zůstává bez JS čitelný; observer přidá skrytý stav jen při plné podpoře.
+test('web: nástup začíná až v čitelné části okna a bez JS nic neskrývá', async () => {
   const css = await fs.readFile(path.join(ROOT, 'site', 'lp.css'), 'utf8');
   for (const soubor of ['site/index.html', 'site/en/index.html']) {
     const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
@@ -255,13 +253,14 @@ test('web: pohyb jako v aplikaci – nadpisy po řádcích, nástup jen podle po
       if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span> <span class="radek/, soubor);
     }
   }
-  // Všechny nástupy mimo hero stojí na časové ose posouvání a jsou za @supports.
-  const bezPodpory = css.replace(/@supports \(animation-timeline: view\(\)\) \{[^]*?\n  \}\n/, '');
-  assert.doesNotMatch(bezPodpory, /animation-timeline/, 'časová osa posouvání mimo @supports');
+  const js = await fs.readFile(path.join(ROOT, 'site', 'lp.js'), 'utf8');
+  assert.match(js, /IntersectionObserver/);
+  assert.match(js, /rootMargin: '0px 0px -18% 0px'/);
+  assert.match(css, /\.motion-pending \{ opacity: 0/);
+  assert.doesNotMatch(css, /animation-timeline/, 'časové osy vázané na scroll se nepoužívají');
   // Odkrytí výřezu v heru po doběhu ořez sundá, jinak by uřízlo stín pod výřezem.
   assert.match(css, /\.hero-shot \{ animation: odkryj [^;]*backwards; \}/);
-  // Hover v dlaždicích by po posunu spustil přechod podle hodin pod stojícím kurzorem.
-  assert.doesNotMatch(css, /\.tile:hover/);
+  assert.match(css, /pointer: fine/, 'pohyb výřezu při najetí patří jen přesnému ukazateli');
 });
 
 // Nejčastější tichá chyba webu: tlačítko Stáhnout ukazuje do prázdna. Odkaz proto vede na
