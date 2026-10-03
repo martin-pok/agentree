@@ -421,6 +421,10 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .odo-f { visibility: hidden; }
 .odo-s { position: absolute; inset: 0 0 auto; text-align: center; animation: odo-roll var(--motion-settle) var(--ease-settle) 150ms both; animation-duration: calc(900ms + var(--odo-r, 0) * 100ms); }
 .odo-s > span { display: block; }
+/* Číslice počítadla mají vždy písmo svého čísla. Bez toho je během nástupu chytila obecná
+   pravidla pro popisky (`.pb-stat span` = 12 px) a čísla v Přehledu naskočila drobná a až po
+   animaci se zvětšila. Specifičnost 0,3,0 přebije každé „.karta span“ v aplikaci. */
+.odo-cislo.odo-cislo, .odo-cislo.odo-cislo .odo, .odo-cislo.odo-cislo .odo span { font: inherit; letter-spacing: inherit; color: inherit; text-transform: none; }
 @keyframes odo-roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% + 100% / var(--n))); } }
 /* Ukázka v rámu na webu stojí na prvním snímku nástupu, dokud k ní návštěvník nedojede
    (public/js/ukazka.js, site/lp.js). */
@@ -554,7 +558,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .pb-stat { display: grid; gap: 2px; padding: 4px 24px; text-decoration: none; color: inherit; border-left: 1px solid rgba(244, 243, 247, .12); border-radius: 0; }
 .pb-stat:first-child { border-left: 0; }
 .pb-stat b { font: 400 26px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.pb-stat span { font-size: 12px; color: rgba(244, 243, 247, .78); white-space: nowrap; }
+.pb-stat > span { font-size: 12px; color: rgba(244, 243, 247, .78); white-space: nowrap; }
 .pb-stat:hover b { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .pb-stat.is-alert b { color: #F59BB4; }
 .pb-stat.is-wait b { color: #E6C27A; }
@@ -1594,7 +1598,7 @@ html.is-cloud body { background: var(--paper); }
   .pb-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pb-stat { padding: 2px 10px; }
   .pb-stat b { font-size: 22px; }
-  .pb-stat span { white-space: normal; line-height: 1.25; }
+  .pb-stat > span { white-space: normal; line-height: 1.25; }
   .pb-strip { margin: 2px -18px 0; padding: 12px 18px 14px; }
   .pb-agents { margin: 0 -18px; padding: 0 18px; scroll-padding-inline: 18px; }
   .pb-agent { max-width: 240px; }

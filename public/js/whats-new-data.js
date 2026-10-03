@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.32.1',
+    date: '2026-10-03',
+    title: 'Čísla v Přehledu hned ve správné velikosti',
+    items: [
+      'Počty v pásu Přehledu (potřebuje tebe, selhalo, čeká na zadání) už při otevření nenaskočí drobné, ale vyjedou rovnou ve své velikosti.',
+    ],
+    en: {
+      title: 'Overview numbers at full size from the start',
+      items: [
+        'The counts in the Overview band (needs you, failed, waiting for input) no longer appear tiny when the screen opens; they roll in at their real size.',
+      ],
+    },
+  },
+  {
     version: '0.32.0',
     date: '2026-10-03',
     title: 'Agenteeq sám pozná, co na počítači běží',
