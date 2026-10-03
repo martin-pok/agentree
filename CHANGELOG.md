@@ -2,6 +2,8 @@
 
 ## Nezveřejněno
 
+## 0.32.2 – 2026-10-03 · klidnější nástupy a přesnější tokeny
+
 - Landing page odkrývá obsah až po vstupu do čitelné části okna. Karty a výřezy mají sladěný rytmus; při omezeném pohybu nebo bez JavaScriptu zůstává obsah dostupný.
 - Načítání aplikace má novou scénu značky s postupně rozsvěcovanými body a přístupným stavovým textem.
 - Codex bere denní přírůstky primárně ze spotřeby jednotlivých požadavků. Reset kumulativního čítače ani opakovaný snapshot nevytvoří falešný skok; audit používá nezávislý součet požadavků.

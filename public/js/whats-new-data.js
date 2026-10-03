@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.32.2',
+    date: '2026-10-03',
+    title: 'Plynulejší web a přesnější tokeny',
+    items: [
+      'Obsah na webu nastupuje až ve chvíli, kdy se k němu dostaneš. Pohyb zůstává střídmý a respektuje omezení animací.',
+      'Načítání aplikace má novou animovanou scénu Agenteeq.',
+      'Codex počítá přírůstky tokenů z jednotlivých požadavků, takže reset čítače nevytvoří falešný skok.',
+    ],
+    en: {
+      title: 'Smoother site and more accurate token counts',
+      items: [
+        'Site content enters when you reach it. Motion stays restrained and respects reduced-motion settings.',
+        'App loading now features an animated Agenteeq scene.',
+        'Codex counts token increments from individual requests, so counter resets cannot create false spikes.',
+      ],
+    },
+  },
+  {
     version: '0.32.1',
     date: '2026-10-03',
     title: 'Čísla v Přehledu hned ve správné velikosti',
