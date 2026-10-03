@@ -194,6 +194,136 @@ async function zkontrolujPocitadla(browser, engine) {
   results.push({ engine, check: 'počítadla v nástupu mají písmo svého čísla', mereni });
 }
 
+// Plynulost (0.33.0). Měří se na seznamu 140 agentů s povoleným pohybem:
+//   - živá událost na Agentech vymění v DOM jen pár uzlů (dřív přes 800 a WebKit na to potřeboval
+//     snímek nad 50 ms; kurzor ztrácel najetí),
+//   - u odrolované stránky zůstane řádek pod čtenářem na místě, i když se seznam nad ním
+//     přeskládá (WebKit overflow-anchor neuplatní, obsah dřív poskočil o řádek),
+//   - po živé události nezůstane rozjetý přesun ani průhledný řádek,
+//   - změna motivu po sobě nenechá vypnuté přechody,
+//   - Chromium: přepnutí obrazovky bez dlouhé úlohy nad 50 ms, načtení bez posunu rozvržení
+//     (CLS) a opakované návštěvy Projektů bez úniku posluchačů a uzlů.
+async function zkontrolujPlynulost(browser, engine) {
+  const server = await startTestServer();
+  const store = server.app.store;
+  const radky = [];
+  const ted = Date.now();
+  for (let i = 0; i < 140; i++) {
+    const s = store.ensure({ connector: i % 2 ? 'codex' : 'claude-code', localId: `qa-plyn-${i}`, provider: i % 2 ? 'openai' : 'anthropic', app: i % 2 ? 'Codex' : 'Claude Code' });
+    Object.assign(s, { title: `QA plynulost ${i + 1}`, startedAt: ted - 9e6, lastAt: ted - (i + 1) * 6e5 });
+    addTokens(s, ted - (i + 1) * 6e5, { input: 1000 * (i + 1), output: 100 });
+    store.commit(s);
+    radky.push(s);
+  }
+  await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+  assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA plynulost' })).status, 201);
+  const ozivit = (s) => { s.lastAt = Date.now(); addTokens(s, Date.now(), { input: 500, output: 50 }); store.commit(s); };
+  const mereni = {};
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+  try {
+    await ctx.addInitScript(() => {
+      const P = (window.__qaPlyn = { lt: [], cls: 0 });
+      try { new PerformanceObserver((l) => l.getEntries().forEach((e) => P.lt.push(Math.round(e.duration)))).observe({ type: 'longtask', buffered: true }); } catch { /* WebKit longtask nemá */ }
+      try { new PerformanceObserver((l) => l.getEntries().forEach((e) => { if (!e.hadRecentInput) P.cls += e.value; })).observe({ type: 'layout-shift', buffered: true }); } catch { /* WebKit layout-shift nemá */ }
+    });
+    const p = await ctx.newPage();
+    const chyby = [];
+    p.on('pageerror', (e) => chyby.push(e.message));
+    await p.goto(`${server.url}/#/agenti`);
+    await p.waitForFunction(() => document.querySelectorAll('[data-region="table"] [data-key]').length >= 140, null, { timeout: 5000 });
+    await p.evaluate(() => document.fonts.ready);
+    await p.waitForTimeout(2400);
+    if (engine === 'chromium') {
+      mereni.clsNacteni = await p.evaluate(() => +window.__qaPlyn.cls.toFixed(4));
+      assert.ok(mereni.clsNacteni < 0.01, `${engine}: načtení posunulo rozvržení (CLS ${mereni.clsNacteni})`);
+    }
+
+    // Živá událost: počet vyměněných uzlů v tabulce.
+    await p.evaluate(() => {
+      window.__qaMut = 0;
+      new MutationObserver((ms) => { for (const m of ms) window.__qaMut += m.addedNodes.length + m.removedNodes.length; })
+        .observe(document.querySelector('[data-region="table"]'), { childList: true, subtree: true });
+    });
+    for (const i of [60, 61, 62]) {
+      ozivit(radky[i]);
+      await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
+    }
+    mereni.mutaciNaUdalost = Math.round((await p.evaluate(() => window.__qaMut)) / 3);
+    assert.ok(mereni.mutaciNaUdalost <= 60, `${engine}: živá událost vyměnila ${mereni.mutaciNaUdalost} uzlů tabulky (seznam se má slučovat, ne přepisovat)`);
+    await p.waitForTimeout(600);
+    const zbytky = await p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.target?.closest?.('[data-region="table"]')).length);
+    assert.equal(zbytky, 0, `${engine}: po živé události zůstal v tabulce rozjetý přesun`);
+    const pruhledne = await p.evaluate(() => [...document.querySelectorAll('[data-region="table"] [data-key]')].filter((n) => getComputedStyle(n).opacity !== '1').length);
+    assert.equal(pruhledne, 0, `${engine}: po živé události zůstal průhledný řádek`);
+
+    // Kotva: řádek pod čtenářem zůstane týž a na stejném místě.
+    await p.mouse.move(700, 450);
+    await p.mouse.wheel(0, 1400);
+    await p.waitForFunction(() => scrollY > 1000, null, { timeout: 3000 });
+    await p.waitForTimeout(500);
+    const pod = () => p.evaluate(() => { const r = document.elementFromPoint(700, 450)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; });
+    for (const i of [120, 121]) {
+      const pred = await pod();
+      assert.ok(pred, `${engine}: pod kurzorem není řádek`);
+      ozivit(radky[i]);
+      await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
+      await p.waitForTimeout(400);
+      const po = await pod();
+      assert.equal(po?.klic, pred.klic, `${engine}: živá událost nad čtenářem posunula obsah (pod kurzorem byl ${pred.klic}, je ${po?.klic})`);
+      assert.ok(Math.abs(po.top - pred.top) <= 1, `${engine}: řádek pod čtenářem poskočil o ${po.top - pred.top} px`);
+    }
+    mereni.kotva = 'drží';
+
+    // Změna motivu nenechá vypnuté přechody.
+    for (const vzhled of ['dark', 'light']) {
+      await api(server.url).send('PUT', '/api/settings', { appearance: vzhled });
+      await p.waitForFunction((v) => document.documentElement.dataset.theme === v, vzhled, { timeout: 3000 });
+      await p.waitForFunction(() => !document.documentElement.classList.contains('meni-motiv'), null, { timeout: 1500 });
+    }
+
+    if (engine === 'chromium') {
+      // Přepnutí obrazovek: obrazovka neprojde, jen když dlouhou úlohu nad 50 ms měla při obou
+      // návštěvách (jednorázový úklid paměti na sdíleném stroji CI tak test neshodí).
+      const dlouhe = {};
+      for (const kolo of [0, 1]) {
+        for (const trasa of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'dovednosti', 'nastaveni']) {
+          await p.evaluate(() => { window.__qaPlyn.lt = []; });
+          await p.click(`.nav [data-nav="${trasa}"]`);
+          await p.waitForTimeout(900);
+          const lt = await p.evaluate(() => window.__qaPlyn.lt.filter((d) => d > 50));
+          (dlouhe[trasa] ||= []).push(lt.length ? Math.max(...lt) : 0);
+        }
+      }
+      mereni.dlouheUlohyMs = dlouhe;
+      const spatne = Object.entries(dlouhe).filter(([, v]) => v.every((d) => d > 50));
+      assert.deepEqual(spatne, [], `${engine}: přepnutí obrazovky má dlouhou úlohu nad 50 ms: ${JSON.stringify(spatne)}`);
+
+      // Únik: deset návštěv Projektů a Agentů nesmí přidávat posluchače ani uzly.
+      const cdp = await ctx.newCDPSession(p);
+      await cdp.send('Performance.enable');
+      const stav = async () => {
+        await cdp.send('HeapProfiler.collectGarbage');
+        const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
+        return { posluchacu: m.JSEventListeners, uzlu: m.Nodes };
+      };
+      const kolo = async () => { for (const t of ['projekty', 'agenti']) { await p.click(`.nav [data-nav="${t}"]`); await p.waitForTimeout(500); } };
+      await kolo();
+      const zacatek = await stav();
+      for (let i = 0; i < 5; i++) await kolo();
+      const konec = await stav();
+      mereni.unik = { posluchacu: konec.posluchacu - zacatek.posluchacu, uzlu: konec.uzlu - zacatek.uzlu };
+      assert.ok(mereni.unik.posluchacu <= 2, `${engine}: návštěvy Projektů přidávají posluchače (${JSON.stringify(mereni.unik)})`);
+      assert.ok(mereni.unik.uzlu <= 300, `${engine}: návštěvy Projektů nechávají v paměti uzly (${JSON.stringify(mereni.unik)})`);
+    }
+    assert.deepEqual(chyby, [], `${engine}: chyby skriptu při měření plynulosti`);
+  } finally {
+    await ctx.close();
+    await server.close();
+  }
+  results.push({ engine, check: 'plynulost: slučování, kotva, motiv, dlouhé úlohy, únik', mereni });
+  console.log(`${engine} plynulost: ${JSON.stringify(mereni)}`);
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -208,6 +338,7 @@ for (const engine of engines) {
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   await zkontrolujPocitadla(browser, engine);
+  await zkontrolujPlynulost(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
