@@ -1,6 +1,6 @@
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, fmtMoney, plural, startOfDay, DAY, H, MIN } from '../format.js';
+import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
@@ -237,7 +237,7 @@ function update(topics = new Set(['all'])) {
 
   if (changed(topics, 'sessions', 'tick')) {
     const todayTok = tokensSince(everything, today);
-    const avg = Math.max(0, tokensSince(everything,startOfDay(now - 7 * DAY)) - todayTok) / 7;
+    const avg = Math.max(0, tokensSince(everything, dayStart(now, -7)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     fill(el, 'meter', `
     <div class="meter-row"><span>${tr('Zaznamenané tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>

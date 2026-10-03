@@ -9,7 +9,7 @@ import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createSecrets } from './secrets.js';
-import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
+import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, subscriptionPortfolio } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
@@ -45,7 +45,7 @@ import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProces
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
-import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
+import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, projectMonthTokens as mesicniTokenyProjektu, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
@@ -629,20 +629,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, merged: Boolean(r.merged), nothing: Boolean(r.nothing) };
   }
 
-  // Měsíční rozpočet tokenů projektu: upozornění při 80 % a 100 %.
+  // Měsíční rozpočet tokenů projektu: upozornění při 80 % a 100 %, měsíc je místní (src/projects.js).
   function projectMonthTokens(pid, now = Date.now()) {
-    const month = new Date(now).toISOString().slice(0, 7);
-    let sum = 0;
-    for (const s of store.list(now)) {
-      if (s.projectId !== pid) continue;
-      for (const [k, v] of Object.entries(s.hourly || {})) if (k.startsWith(month)) sum += v;
-    }
-    return sum;
+    return mesicniTokenyProjektu(store.list(now), pid, now);
   }
 
   function checkProjectBudgets(now = Date.now()) {
     if (!datastore.data.settings.notifications.budget) return;
-    const month = new Date(now).toISOString().slice(0, 7);
+    const month = monthKey(now);
     for (const p of projects().items) {
       const budget = p.settings.tokenBudget;
       if (!budget || p.archived) continue;

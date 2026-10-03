@@ -207,13 +207,17 @@ interface Alert {
 interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'extra' | 'credits' | 'api'; amount: number; currency: 'CZK' | 'USD' | 'EUR'; date: string; recurring: 'monthly' | null; endDate: string | null; note: string; account: string /* volitelný název účtu/licence, jen subscription */; createdAt: number }
 
 interface SpendPayload {
-  currency: string; monthKey: string;               // "2026-09"
-  month: { key: string; total: number; services: Record<string, number>; kinds: Record<string, number> };
+  currency: string; monthKey: string;               // "2026-09" – místní kalendářní měsíc
+  month: { key: string; total: number; auto: number /* část total z Admin API */; services: Record<string, number>; kinds: Record<string, number> };
   months: typeof month[];                            // posledních 6 měsíců
   recurring: number; forecast: number;
   budgets: { scope: string; label: string; spent: number; budget: number; pct: number }[];
   ledger: LedgerEntry[]; budgetsConfig: { total: number; services: Record<string, number> };
   rates: Record<string, number>;                     // Kč za 1 jednotku měny
+  rateInfo: { source: 'cnb' | 'manual' | 'default'; date: string | null /* RRRR-MM-DD lístku ČNB */; live: object | null };
+  // Automatické položky Admin API sečtené po měsíci a službě (jen měsíce z `months`), seřazené od
+  // nejnovějšího. Dny jsou UTC dny dodavatele. Součet `converted` za měsíc = `month.auto`.
+  automatic: Array<{ month: string; service: string; kind: 'api'; currency: string; amount: number; converted: number /* v `currency` aplikace */; days: number; from: string; to: string }>;
   subscriptions: Array<{
     service: string; plan: string | null; label: string | null; detected: boolean;
     free: boolean; since: string | null; observedAt: number | null; evidence: string;
@@ -229,6 +233,11 @@ interface SpendPayload {
 // ChatGPT pochází z poslední rate-limit události Codexu; údaj starší než 24 hodin nebo s časem
 // v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Do součtů
 // vstupují jen skutečné payments z ledgeru a ověřené API položky z Admin API.
+// Obrazovka Útrata ukazuje obojí: ruční řádky z `ledger` a skupinu jen ke čtení z `automatic`;
+// `month.total - month.auto` je ručně zapsaná část. Převod všech měsíců jde aktuálním kurzem
+// (`rateInfo`), historické kurzy aplikace nemá. `default` = orientační výchozí kurz.
+// integrations.cloud[id] = { state, detail, at, source, tokens: Record<den, …> | null, tokensError: string | null }
+// – `tokens: null` znamená „spotřebu se nepodařilo zjistit“ (důvod v `tokensError`), nikdy „nula“.
 
 interface Notifications {
   needsInput: boolean; limits: boolean; limitReset: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean;
