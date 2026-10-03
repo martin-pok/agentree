@@ -108,7 +108,7 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
 | Tabulka | Co odchází | Odkud |
 |---|---|---|
 | `devices` | jméno Macu (hostname), systém, verze aplikace, čas posledního spojení | `os.hostname()` |
-| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po dnech (UTC) a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
+| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po **místních kalendářních dnech Macu** a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
 | `spend_monthly` | součty útraty po měsících, službách a druzích v měně aplikace | zapsané výdaje a zjištěná předplatná – bez poznámek |
 | `limits` | procento, dosažení, obnova a čas měření oken limitů | limity – bez hlášek a popisků |
 | `agent_status` | počty agentů: pracuje, potřebuje tě, čeká, selhal | stav konverzací |
@@ -116,6 +116,12 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
 
 - **Seznam povolených polí (`POVOLENA`)** – každý řádek jím projde těsně před odesláním. Test
   pošle konverzaci s názvem, cestou, zadáním a poznámkou k výdaji a ověří, že nic z toho neodešlo.
+- **`usage_daily.day` je místní den zařízení**, stejný „dnes“, jaký ukazuje aplikace. Hodinové přihrádky
+  jsou v UTC; každá hodina patří ke dni podle místního času svého začátku (v časových pásmech
+  s půlhodinovým posunem tedy celá hodina k jednomu dni). Web účtu staví osu z místních dnů
+  prohlížeče a nic nepřepočítává do UTC. Schéma databáze se neměnilo, změnil se jen význam sloupce
+  (do 3. 10. 2026 to byl den UTC); řádky posledních 35 dní se při další synchronizaci přepíšou novým
+  významem, starší řádky mohou mít den UTC.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
 - **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`).

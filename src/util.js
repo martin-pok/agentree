@@ -8,6 +8,13 @@ export const HOUR = 3600e3;
 export const DAY = 86400e3;
 
 export const hourKey = (ts) => new Date(ts).toISOString().slice(0, 13);
+// Hodinové přihrádky (`hourly`) mají klíč v UTC („2026-10-31T23“). Kalendářní den a měsíc jsou
+// ale vždy místní – „dnes“ a „tento měsíc“ počítá člověk podle hodin na zdi, ne podle Greenwiche.
+export const hourKeyTs = (key) => Date.parse(`${key}:00:00Z`);
+export function localDay(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 export const minuteKey = (ts) => Math.floor(ts / MIN);
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 

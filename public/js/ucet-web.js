@@ -127,7 +127,14 @@ export function popisOkna(provider, klic) {
   return okno ? `${produkt} · ${okno}` : produkt;
 }
 
-const denUTC = (ts) => new Date(ts).toISOString().slice(0, 10);
+// Den v řádcích `usage_daily` je místní kalendářní den Macu, který je poslal (src/cloud-sync.js).
+// Web proto staví osu z místních dnů prohlížeče, ne z UTC – jinak by po půlnoci (do 1:00, v létě
+// do 2:00) dnešní řádek na ose chyběl a poslední sloupec ukazoval včerejšek.
+const denMistni = (ts, posun = 0) => {
+  const d = new Date(ts);
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + posun);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+};
 
 export function souhrnAgentu(radky) {
   const n = { working: 0, needs_you: 0, waiting: 0, failed: 0, aktualizovano: 0 };
@@ -139,7 +146,7 @@ export function souhrnAgentu(radky) {
 }
 
 export function tokenyZaDny(radky, now = Date.now(), dni = DNI) {
-  const dny = Array.from({ length: dni }, (_, i) => denUTC(now - (dni - 1 - i) * 86400000));
+  const dny = Array.from({ length: dni }, (_, i) => denMistni(now, i - (dni - 1)));
   const index = new Map(dny.map((d, i) => [d, i]));
   const hodnoty = new Array(dni).fill(0);
   const podle = {};
@@ -246,7 +253,7 @@ function kartaZarizeni(zarizeni, now) {
 }
 
 async function nactiData(r) {
-  const od = denUTC(Date.now() - (DNI - 1) * 86400000);
+  const od = denMistni(Date.now(), -(DNI - 1));
   const d = new Date();
   const mesic = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   const q = (cesta) => volej(`/rest/v1/${cesta}`, { token: r.access });

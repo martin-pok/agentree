@@ -1,6 +1,6 @@
 import { state, emit } from '../state.js';
 import { api } from '../api.js';
-import { esc, timeHM, startOfDay, DAY, dateLong } from '../format.js';
+import { esc, timeHM, startOfDay, dayStart, dateLong } from '../format.js';
 import { ICON } from '../icons.js';
 import { fill, alertIcon, alertHref, emptyState, toast, agentHref } from '../ui.js';
 import { tr } from '../i18n.js';
@@ -33,7 +33,7 @@ function dayLabel(ts) {
   const d = startOfDay(ts);
   const today = startOfDay(Date.now());
   if (d === today) return tr('Dnes');
-  if (d === startOfDay(today - DAY)) return tr('Včera');
+  if (d === dayStart(today, -1)) return tr('Včera');
   return dateLong(ts);
 }
 

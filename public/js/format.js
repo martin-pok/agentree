@@ -111,7 +111,20 @@ export const startOfDay = (ts) => {
   d.setHours(0, 0, 0, 0);
   return d.getTime();
 };
+// Půlnoc místního dne posunutého o `offset` kalendářních dní. Nikdy ne `now - N * DAY`: den při
+// změně času má 23 nebo 25 hodin a odečtení násobku 24 h pak u půlnoci skočí na sousední den.
+export const dayStart = (ts, offset = 0) => {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset).getTime();
+};
 export const hourTs = (key) => Date.parse(`${key}:00:00Z`);
+
+// Datum „RRRR-MM-DD“ jako místní půlnoc. Date.parse('2026-10-01') je půlnoc UTC, takže by
+// v Americe ukázal 30. září.
+export function dateOnlyTs(s) {
+  const [y, m, d] = String(s || '').split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1).getTime();
+}
 
 export function localDate(ts = Date.now()) {
   const d = new Date(ts);
@@ -123,8 +136,8 @@ export function resetsLabel(ts, now = Date.now()) {
   const d = new Date(ts);
   // Jednopísmenná předložka „v“ nezůstává na konci řádku a datum se nerozděluje – česká sazba.
   if (startOfDay(ts) === startOfDay(now)) return tr('dnes v\u00a0{0}', timeHM(ts));
-  if (startOfDay(ts) === startOfDay(now + DAY)) return tr('zítra v\u00a0{0}', timeHM(ts));
-  if (startOfDay(ts) === startOfDay(now - DAY)) return tr('včera v\u00a0{0}', timeHM(ts));
+  if (startOfDay(ts) === dayStart(now, 1)) return tr('zítra v\u00a0{0}', timeHM(ts));
+  if (startOfDay(ts) === dayStart(now, -1)) return tr('včera v\u00a0{0}', timeHM(ts));
   return tr('{0} {1}.\u00a0{2}. v\u00a0{3}', WEEKDAYS[d.getDay()], d.getDate(), d.getMonth() + 1, timeHM(ts));
 }
 
