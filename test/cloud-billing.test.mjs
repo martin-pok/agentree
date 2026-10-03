@@ -401,3 +401,11 @@ test('OpenAI: chybějící next_page u has_more nebo nekonečné stránkování 
   assert.equal(b.providers()['openai-admin'].state, 'error');
   assert.ok(pocet <= 12, `strop stránek, bylo ${pocet}`);
 });
+
+test('Anthropic cost_report: částka je v centech (příklad z dokumentace "123.45" = 1,2345 $)', () => {
+  const den = parseAnthropicCosts({ data: [{ starting_at: '2026-10-01T00:00:00Z', results: [{ amount: '123.45', currency: 'USD' }, { amount: '76.55', currency: 'USD' }] }] });
+  assert.ok(Math.abs(den['2026-10-01'] - 2) < 1e-9, `čekáme 2 $, ne ${den['2026-10-01']}`);
+  // OpenAI posílá dolary – jeho částka se nedělí.
+  const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000), results: [{ amount: { value: 2, currency: 'usd' } }] }] });
+  assert.equal(openai['2026-10-01'], 2);
+});

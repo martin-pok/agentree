@@ -65,7 +65,7 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
 
 - **RLS:** každý řádek čte a mění jen jeho vlastník. Souhrn jde zapsat jen k vlastnímu zařízení.
   Anonymní klíč nepřečte nic, tarif si uživatel nezmění. E-mail zůstává jen v `auth.users`.
-- **Kontrola:** `supabase/tests/rls.sql` projde 15 případů a vše vrátí zpět (výsledek je ve
+- **Kontrola:** `supabase/tests/rls.sql` projde 16 případů a vše vrátí zpět (výsledek je ve
   výjimce na konci). Naposledy spuštěno 24. 9. 2026: všech 15 `true`.
 - **Smazání účtu:** `public.smazat_muj_ucet()` smaže uživatele z `auth.users` a kaskádou všechno
   jeho. Poradce Supabase na tuhle funkci hlásí varování „security definer spustitelná
@@ -93,11 +93,17 @@ v Supabase; potom ověř `external.google: true` a spusť `test/ucet.test.mjs` i
 
 ## Dostupnost projektu na Free tarifu
 
-Projekt zůstává na tarifu Supabase Free. Workflow [`.github/workflows/supabase-keepalive.yml`](../.github/workflows/supabase-keepalive.yml) se každý den v 05:17 UTC spustí z GitHub Actions a provede jediný `GET /auth/v1/settings` s publikovatelným klíčem. Je to neosobní požadavek na API projektu; aktuální pravidla Supabase uvádějí API požadavky jako způsob, jak na Free tarifu udržet aktivitu.
+Projekt zůstává na tarifu Supabase Free. Ten se uspí, když týden nemá „dostatečnou uživatelskou
+aktivitu v databázi“ ([pravidla Supabase](https://supabase.com/docs/guides/platform/free-project-pausing)).
+Workflow [`.github/workflows/supabase-keepalive.yml`](../.github/workflows/supabase-keepalive.yml) se proto každý den v 05:17 UTC spustí z GitHub Actions a zavolá
+`POST /rest/v1/rpc/udrzet_aktivitu` s publikovatelným klíčem. Funkce z migrace
+`20261003100000_udrzeni_aktivity.sql` je `select 1`: skutečný dotaz v Postgresu, který nečte ani
+nezapisuje žádnou tabulku. Do 3. 10. 2026 se volal `GET /auth/v1/settings`, ten ale databázi
+nečte (nastavení Auth jde z konfigurace), takže projekt před uspáním nechránil.
 
-- Workflow odpověď vůbec nečte ani nevypisuje. Nezapisuje žádné řádky, nepoužívá uživatelský token a neposílá žádná uživatelská data.
-- Kontroluje se pouze HTTP stav. Když Supabase není dostupný, běh v Actions selže viditelně místo toho, aby aplikace ukazovala nepravdivý stav.
-- Běh lze kdykoli ručně spustit v **Actions → Udržet aktivní Supabase**. Pro jistotu běží denně; pravidlo Supabase uvádí API požadavky jako podporovanou cestu k udržení aktivity.
+- Nepoužívá uživatelský token a neposílá ani nevypisuje žádná uživatelská data.
+- Úspěch je jen odpověď `1` z databáze. Chybějící funkce (404), výpadek nebo jiná odpověď běh v Actions viditelně shodí.
+- **Nasazení migrace:** Supabase → projekt `agenteeq` → SQL Editor → vložit obsah migrace → Run. Potom ručně spustit **Actions → Udržet aktivní Supabase**; má skončit zeleně.
 - Jedinou smluvní garanci proti uspání dává placený Pro tarif. Aplikace ale i bez cloudového účtu zůstává plně lokálně funkční.
 
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
