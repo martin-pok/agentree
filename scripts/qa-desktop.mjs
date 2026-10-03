@@ -260,14 +260,22 @@ async function zkontrolujPlynulost(browser, engine) {
     await p.mouse.move(700, 450);
     await p.mouse.wheel(0, 1400);
     await p.waitForFunction(() => scrollY > 1000, null, { timeout: 3000 });
-    await p.waitForTimeout(500);
+    // Plynulý dojezd kolečka musí doběhnout, jinak se měří pohyb stránky, ne skok obsahu.
+    const ustalit = () => p.evaluate(() => new Promise((hotovo) => {
+      let posledni = -1, klid = 0;
+      const krok = () => { klid = scrollY === posledni ? klid + 1 : 0; posledni = scrollY; if (klid >= 8) hotovo(scrollY); else requestAnimationFrame(krok); };
+      requestAnimationFrame(krok);
+    }));
+    await ustalit();
     const pod = () => p.evaluate(() => { const r = document.elementFromPoint(700, 450)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; });
     for (const i of [120, 121]) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);
       ozivit(radky[i]);
       await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
-      await p.waitForTimeout(400);
+      // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
+      await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
+      await ustalit();
       const po = await pod();
       assert.equal(po?.klic, pred.klic, `${engine}: živá událost nad čtenářem posunula obsah (pod kurzorem byl ${pred.klic}, je ${po?.klic})`);
       assert.ok(Math.abs(po.top - pred.top) <= 1, `${engine}: řádek pod čtenářem poskočil o ${po.top - pred.top} px`);
