@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
+import { pathToFileURL } from 'node:url';
 import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
 import { appSupportDir } from '../src/platform.js';
 
@@ -102,11 +103,13 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
   let DatabaseSync;
   try { ({ DatabaseSync } = await import('node:sqlite')); } catch { cursorDostupny = false; }
   const cursorUser = path.join(appSupportDir(home), 'Cursor', 'User');
+  // Složka projektu jako skutečná cesta tohoto systému: „file:///Users/…“ na Windows cestou není.
+  const CURSOR_APP = path.join(home, 'projekty', 'cursor-app');
   if (cursorDostupny) {
     const dbPath = path.join(cursorUser, 'globalStorage', 'state.vscdb');
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
     await fs.mkdir(path.join(cursorUser, 'workspaceStorage', 'wsA'), { recursive: true });
-    await fs.writeFile(path.join(cursorUser, 'workspaceStorage', 'wsA', 'workspace.json'), JSON.stringify({ folder: 'file:///Users/x/cursor-app' }));
+    await fs.writeFile(path.join(cursorUser, 'workspaceStorage', 'wsA', 'workspace.json'), JSON.stringify({ folder: pathToFileURL(CURSOR_APP).href }));
     const db = new DatabaseSync(dbPath);
     db.exec('CREATE TABLE composerHeaders (composerId TEXT, workspaceId TEXT, createdAt INTEGER, lastUpdatedAt INTEGER, isArchived INTEGER, isSubagent INTEGER, value TEXT)');
     db.exec('CREATE TABLE cursorDiskKV (key TEXT PRIMARY KEY, value TEXT)');
@@ -141,9 +144,10 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
 
   /* ---------- 4b. GitHub Copilot ve VS Code ---------- */
   const vscodeUser = path.join(appSupportDir(home), 'Code', 'User');
+  const VSCODE_PROJ = path.join(home, 'projekty', 'vscode-proj');
   const wsDir = path.join(vscodeUser, 'workspaceStorage', 'wsB');
   await fs.mkdir(path.join(wsDir, 'chatSessions'), { recursive: true });
-  await fs.writeFile(path.join(wsDir, 'workspace.json'), JSON.stringify({ folder: 'file:///Users/x/vscode-proj' }));
+  await fs.writeFile(path.join(wsDir, 'workspace.json'), JSON.stringify({ folder: pathToFileURL(VSCODE_PROJ).href }));
   const vsT0 = now - 30 * MIN;
   await fs.writeFile(path.join(wsDir, 'chatSessions', 'session-vs1.json'), JSON.stringify({
     sessionId: 'vs1',
@@ -268,7 +272,7 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
       assert.equal(s.app, 'Cursor');
       assert.equal(s.provider, 'cursor');
       assert.equal(s.title, 'Uprav prihlasovaci tok');
-      assert.equal(s.cwd, '/Users/x/cursor-app');
+      assert.equal(s.cwd, CURSOR_APP);
       assert.equal(s.model, 'gpt-5.5-codex');
       // Cursor v docs/CONNECTORS.md nese 🧪 (formát ověřen, ale bez aktivních agentů na vývojovém Macu).
       // Kód nicméně tokeny z bubbliny (tokenCount) skutečně čte a sčítá – ověřujeme tady přesně to.
@@ -315,7 +319,7 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
     assert.equal(s.app, 'Copilot · VS Code');
     assert.equal(s.provider, 'github');
     assert.equal(s.title, 'Pridej prepinac tmaveho rezimu');
-    assert.equal(s.cwd, '/Users/x/vscode-proj');
+    assert.equal(s.cwd, VSCODE_PROJ);
     assert.equal(s.model, 'gpt-5');
     // applyVsCodeChat (src/connectors/copilot.js) nikde nevolá addTokens – Copilot ve VS Code
     // tokeny nedává, takže musí zůstat přesně na výchozí nule, ne na vymyšleném čísle.
