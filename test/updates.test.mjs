@@ -2,14 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { UpdateService, assetName, compareVersions, parseVersion, RELEASE_URL } from '../src/updates.js';
 import { api, startTestServer, tempDir } from './helpers.mjs';
 
-const release = (version = '0.30.0') => ({
+// Otisk, který GitHub u přílohy vydání zveřejňuje (pole `digest`), pro obsah atrapy 'zip!'.
+const OTISK = `sha256:${crypto.createHash('sha256').update('zip!').digest('hex')}`;
+const release = (version = '0.30.0', digest = OTISK) => ({
   tag_name: `v${version}`,
   draft: false,
   prerelease: false,
-  assets: [{ name: `Agenteeq-${version}-macOS-arm64.zip`, size: 4, browser_download_url: `https://github.com/martin-pok/agentree/releases/download/v${version}/Agenteeq-${version}-macOS-arm64.zip` }],
+  assets: [{ name: `Agenteeq-${version}-macOS-arm64.zip`, size: 4, digest, browser_download_url: `https://github.com/martin-pok/agentree/releases/download/v${version}/Agenteeq-${version}-macOS-arm64.zip` }],
 });
 
 function fetchForUpdate(payload = release()) {
@@ -93,4 +96,24 @@ test('HTTP aktualizace: lokální UI ověří, stáhne a ve zkušebním režimu 
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'automatic' })).body.settings.updateMode, 'automatic');
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'surprise' })).status, 422);
   } finally { await s.close(); }
+});
+
+test('aktualizace: balíček se stáhne jen s otiskem z GitHubu a jen když mu obsah odpovídá', async () => {
+  // Bez otisku se nic nenabízí: stav říká, že pro tento počítač balíček není, ne „kontroluji“.
+  const bezOtisku = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-'), fetchImpl: fetchForUpdate(release('0.30.0', null)), platform: 'darwin', arch: 'arm64' });
+  assert.equal((await bezOtisku.check()).status, 'unsupported');
+  const jinyAlgoritmus = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-'), fetchImpl: fetchForUpdate(release('0.30.0', 'md5:abc')), platform: 'darwin', arch: 'arm64' });
+  assert.equal((await jinyAlgoritmus.check()).status, 'unsupported');
+
+  // Stejná velikost, jiný obsah: dřív prošlo, protože se kontrolovala jen velikost.
+  const dir = await tempDir('agenteeq-updates-');
+  const podvrh = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl: async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(Buffer.from('zip?'), { status: 200, headers: { 'content-length': '4' } });
+  }, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await podvrh.check()).status, 'available');
+  const odmitnuto = await podvrh.download();
+  assert.equal(odmitnuto.status, 502);
+  assert.equal(podvrh.state().status, 'available');
+  await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')), 'podvržený balíček se na disk neuloží');
 });

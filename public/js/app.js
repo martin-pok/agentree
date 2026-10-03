@@ -818,7 +818,7 @@ function hlidejNacteni() {
 }
 hlidejNacteni();
 
-connectStream({
+const proud = connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
     loadingSnapshot = api
@@ -895,7 +895,11 @@ async function obnovStav(duvod, { force = false } = {}) {
     .finally(() => { obnovaSnapshot = null; });
   return obnovaSnapshot;
 }
-function tichaObnova(duvod, options) { void obnovStav(duvod, options).catch(() => {}); }
+function tichaObnova(duvod, options) {
+  // Proud zavřený chybou serveru se při návratu do okna nebo obnovení sítě připojí hned.
+  if (options?.force) proud.obnov();
+  void obnovStav(duvod, options).catch(() => {});
+}
 // Native macOS okno se může vrátit do popředí, aniž by WebKit změnil visibility. Focus proto
 // stahuje snapshot stejně jako návrat z uspání. Pravidelná pojistka chrání před tichým výpadkem
 // EventSource, ale při běžícím proudu jen čte lokální API bez reloadu a bez ztráty rozpracované práce.
