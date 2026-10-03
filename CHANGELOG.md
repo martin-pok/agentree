@@ -2,6 +2,16 @@
 
 ## Nezveřejněno
 
+## 0.33.0 – 2026-10-03 · plynulé živé seznamy
+
+- **Živá data už seznam nepřekreslují celý.** Agenti, Přehled a Statistiky slučují novou podobu se stávající: mění se jen to, co se opravdu změnilo. Na seznamu 140 agentů vymění živá událost ve WebKitu 12 uzlů místo 826 a zmizely snímky delší než 50 ms (dřív jeden na každou událost). Kurzor neztrácí najetí a karty nepřehrávají nástup znovu.
+- **Obsah pod čtenářem stojí.** Když se seznam nad odrolovaným místem přeskládá, řádek, který čteš, zůstane na místě (dřív ve WebKitu poskočil o řádek). Rozjetý dojezd kolečka se přitom nepřeruší.
+- **Změna pořadí je vidět.** Agent, který se přesune nahoru, do nového místa dojede a ostatní se rozestoupí; bez pohybu při omezení animací i během posouvání.
+- **Rychlejší otevření Agentů:** nejdřív první obrazovka řádků, zbytek po dávkách po nástupu. Ve WebKitu nejdelší snímek 75 → 32 ms.
+- **Únik paměti:** každá návštěva Projektů nechávala v paměti celou starou mřížku (+11 posluchačů a ~500 uzlů). Opraveno i v detailu projektu a agenta.
+- **Jeden pohybový systém:** všechny přechody berou délky a křivku z tokenů, žádné `transition: all`, jezdec průběhu jede transformací, nástup obrazovky začíná v prvním snímku po kliknutí, motiv se přepne naráz bez rozpadu na dvě barevnosti a na dotykové obrazovce nezůstává viset zvednutí karty.
+- `qa:desktop` měří plynulost v Chromiu i WebKitu (mutace na živou událost, kotva posouvání, dlouhé úlohy při přepínání obrazovek, CLS při načtení, úniky); `test/plynulost.test.mjs` hlídá zdroj.
+
 ## 0.32.2 – 2026-10-03 · klidnější nástupy a přesnější tokeny
 
 - Landing page odkrývá obsah až po vstupu do čitelné části okna. Karty a výřezy mají sladěný rytmus; při omezeném pohybu nebo bez JavaScriptu zůstává obsah dostupný.

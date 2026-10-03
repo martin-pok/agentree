@@ -1,5 +1,35 @@
 # Testování a ověření
 
+## Protokol ověření – plynulost 0.33.0 (3. 10. 2026, macOS)
+
+Měřeno harnessem nad ukázkovou scénou + 140 konverzacemi, okno 1440 × 900, Playwright 1.62.1
+(WebKit 26.5 = engine okna aplikace pro Mac, Chromium 151). Snímky z `requestAnimationFrame`,
+v Chromiu i `long-animation-frame`/`longtask`/`layout-shift`. Před → po:
+
+| Scénář | WebKit | Chromium |
+|---|---|---|
+| Živá událost na Agentech (uzlů DOM na událost) | 826 → 12 | 813 → 14 |
+| Živé události při posouvání: snímky > 50 ms / nejdelší | 20 / 72 ms → 0 / 29 ms | 0 → 0; CLS 0,126 → 0,089 |
+| Živé události v klidu na Agentech: snímky > 50 ms | 10 → 0 | 0 → 0 |
+| Řádek pod čtenářem po živé události (odrolováno) | poskočil o řádek → stojí | stojí → stojí |
+| Otevření Agentů: snímky > 50 ms / nejdelší | 3 / 75 ms → 0 / 32 ms | LoAF 54 ms → žádný |
+| Opakované přepnutí Agenti ↔ Přehled: nejdelší snímek | 84 → 43 ms | beze změny (< 10 ms) |
+| Načtení: nejdelší snímek | 148 → 112 ms | 53 → 36 ms, CLS 0,003 |
+| 10 návštěv Projektů (posluchači / uzly po GC) | – | +11 / +500 na návštěvu → bez nárůstu |
+| Server v klidu / při 5 commitech za s | CPU 0,5 % / 1,8 %, halda 14 → 15 MB za 90 s | |
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 754 testů: 752 prošlo, 2 přeskočeny s důvodem |
+| `npm run check` | 253 souborů bez syntaktické chyby |
+| `qa:desktop` | Chromium i WebKit prošly včetně nové kontroly plynulosti (2 uzly na událost, kotva drží, 0 dlouhých úloh při přepínání 8 obrazovek, únik 0) |
+| `qa:contrast`, `qa:tvary`, `qa:site` | Prošly |
+| Filmstripy (WebKit, krokované po 40–400 ms) | Přepnutí obrazovky, paleta ⌘K, upozornění, změna motivu, oznámení, živá událost nahoře i odrolovaná; světlý/tmavý, CZ/EN, 1440/375 px. Nalezeno a opraveno: prázdná plocha prvních 60–120 ms nástupu, překryv přijíždějícího řádku, rozbité snímky View Transitions ve WebKitu (prolnutí motivu zrušeno). |
+
+Neověřeno: skutečné okno aplikace pro Mac (WKWebView) a 120 Hz ProMotion – headless prohlížeč
+běží na pevné frekvenci; rozostření pod paletou stojí v headless Chromiu ~50 ms na snímek
+(softwarové vykreslování), ve WebKitu ne.
+
 ## Protokol ověření – motion LP, načítání a tokeny (3. 10. 2026, macOS)
 
 | Kontrola | Výsledek |
