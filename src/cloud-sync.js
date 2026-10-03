@@ -8,6 +8,7 @@
 import os from 'node:os';
 import { SYSTEM_UCTU, POCITAC } from './platform.js';
 import { ui } from './texty.js';
+import { hourKeyTs, localDay } from './util.js';
 
 const INTERVAL_MS = 5 * 60 * 1000;
 const CASOVY_LIMIT_MS = 20000;
@@ -39,17 +40,23 @@ export function jenPovolena(tabulka, radek) {
 const iso = (ts) => (Number.isFinite(ts) && ts > 0 ? new Date(ts).toISOString() : null);
 const idCloudu = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
-// Tokeny po dnech (UTC) a poskytovatelích z hodinových součtů konverzací (vstup + výstup).
+// Tokeny po dnech a poskytovatelích z hodinových součtů konverzací (vstup + výstup).
+// `day` je MÍSTNÍ kalendářní den tohoto počítače – stejný „dnes“, jaký ukazuje aplikace. Hodinové
+// přihrádky jsou v UTC; každá hodina se přiřadí ke dni podle místního času svého začátku. Dřív se
+// bral den UTC, takže v Praze práce mezi půlnocí a 1:00 (v létě 2:00) spadla do včerejška.
 export function tokenyPoDnech(sessions, now = Date.now(), dni = DNI_ZPET) {
-  const od = new Date(now - dni * 86400000).toISOString().slice(0, 10);
+  const d = new Date(now);
+  const od = localDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() - dni).getTime());
   const mapa = new Map();
   for (const s of sessions) {
     const provider = idCloudu(s.provider);
     if (!ID.test(provider)) continue;
     const dnyKonverzace = new Set();
     for (const [hodina, pocet] of Object.entries(s.hourly || {})) {
-      const day = hodina.slice(0, 10);
-      if (day < od || !(pocet > 0)) continue;
+      const ts = hourKeyTs(hodina);
+      if (!Number.isFinite(ts) || !(pocet > 0)) continue;
+      const day = localDay(ts);
+      if (day < od) continue;
       const k = `${day}|${provider}`;
       const r = mapa.get(k) || mapa.set(k, { day, provider, tokens: 0, sessions: 0 }).get(k);
       r.tokens += Math.round(pocet);

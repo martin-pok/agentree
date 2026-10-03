@@ -961,6 +961,7 @@ function update(topics) {
       return `<div class="key-row">
         <div class="key-head">${glyph(provider)}<strong>${esc(label)} ${tr('– správcovský klíč')}</strong>${stateBadge(c.state, c.state === 'missing' ? tr('Nepřipojeno') : STATE_LABEL[c.state] || c.state)}</div>
         <p class="set-desc">${esc(c.state === 'error' ? c.detail : desc)}</p>
+        ${c.state === 'connected' && c.tokensError ? `<p class="set-note set-note--warn">${tr('Spotřebu tokenů se nepodařilo zjistit ({0}), proto ji neukazujeme. Náklady jsou načtené a platí.', esc(c.tokensError))}</p>` : ''}
         ${c.source === 'env'
           ? `<p class="small muted">${tr('Klíč je nastavený proměnnou prostředí.')}</p>`
           : `<form class="key-form" data-secret-form="${id}"><label class="sr-only" for="key-${id}">${esc(label)} ${tr('– správcovský klíč')}</label><input id="key-${id}" name="value" type="password" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}"${i.keychain ? '' : ' disabled'}>

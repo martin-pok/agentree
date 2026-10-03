@@ -1,6 +1,6 @@
-# Free projekt Supabase se po týdnu nízké aktivity uspí.
-# Tento běh každý den zavolá neosobní endpoint nastavení Auth přes veřejný klíč.
-# Nečte ani nezapisuje žádná uživatelská data a pouze ověří HTTP stav.
+# Free projekt Supabase se po týdnu bez aktivity v databázi uspí.
+# Tento běh každý den spustí v databázi `select 1` (funkce public.udrzet_aktivitu) přes veřejný klíč.
+# Nečte ani nezapisuje žádnou tabulku ani uživatelská data (docs/ACCOUNTS.md).
 name: Udržet aktivní Supabase
 
 on:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   keepalive:
-    name: ověření Auth API
+    name: dotaz do databáze
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -25,5 +25,5 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Ověřit aktivní Auth API
+      - name: Udržovací dotaz do databáze
         run: node scripts/supabase-keepalive.mjs

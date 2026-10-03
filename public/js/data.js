@@ -1,4 +1,4 @@
-import { startOfDay, hourTs, DAY, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
+import { startOfDay, dayStart, hourTs, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
 import { PROVIDERS, pkey } from './icons.js';
 import { tr, podleJazyka } from './i18n.js';
 
@@ -57,8 +57,7 @@ export function periodBuckets(period, now) {
     };
   }
   const days = period === 'month' ? 30 : period === 'fortnight' ? 14 : 7;
-  const today = startOfDay(now);
-  const starts = Array.from({ length: days }, (_, i) => startOfDay(today - (days - 1 - i) * DAY + 2 * H));
+  const starts = Array.from({ length: days }, (_, i) => dayStart(now, i - (days - 1)));
   const index = new Map(starts.map((t, i) => [t, i]));
   return {
     starts,
@@ -99,7 +98,7 @@ export function providerSeries(sessions, period, now, hidden = new Set()) {
 // Podrobnosti ke každé buňce mapy: kolik tokenů, v kolika dnech z možných tam agent pracoval
 // a který nástroj na tom měl největší podíl. Počítá se ze stejných hodinových přihrádek jako mřížka.
 export function heatDetails(sessions, now, days = 30) {
-  const since = startOfDay(now - (days - 1) * DAY);
+  const since = dayStart(now, -(days - 1));
   const cells = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => ({ tokens: 0, dny: new Set(), apps: new Map() })));
   for (const s of sessions) {
     const app = String(s.app || tr('Ostatní')).split(' · ')[0];
@@ -116,7 +115,7 @@ export function heatDetails(sessions, now, days = 30) {
   }
   // Kolikrát se který den v týdnu v okně vyskytl (30 dní nemá vždy stejný počet pondělí).
   const mozne = new Array(7).fill(0);
-  for (let t = since; t <= now; t += DAY) mozne[(new Date(t).getDay() + 6) % 7]++;
+  for (let i = 0; i < days; i++) mozne[(new Date(dayStart(since, i)).getDay() + 6) % 7]++;
   return cells.map((row, d) => row.map((c) => {
     const top = [...c.apps].sort((a, b) => b[1] - a[1])[0];
     return { tokens: c.tokens, dny: c.dny.size, mozne: mozne[d], top: top ? { app: top[0], share: c.tokens ? top[1] / c.tokens : 0 } : null };
@@ -124,7 +123,7 @@ export function heatDetails(sessions, now, days = 30) {
 }
 
 export function heatGrid(sessions, now, days = 30) {
-  const since = startOfDay(now - (days - 1) * DAY);
+  const since = dayStart(now, -(days - 1));
   const grid = Array.from({ length: 7 }, () => new Array(24).fill(0));
   for (const s of sessions) {
     for (const k in s.hourly) {
