@@ -44,7 +44,14 @@ test('tabulka Výdaje ukazuje i automatické řádky Admin API jako skupinu jen 
   assert.match(html, /Automaticky z Admin API · Anthropic \/ OpenAI|Automaticky z Admin API · OpenAI \/ Anthropic/);
   assert.match(html, /jen ke čtení/);
   assert.match(html, /dny podle UTC/);
-  assert.match(html, /Tento měsíc <b>/);
+  // Součet: celek = ručně + automaticky; částka se nikdy neodtrhne od popisku (nedělitelná mezera).
+  const soucet = html.match(/<p class="ledger-sum">([\s\S]*?)<\/p>/)?.[1] || '';
+  assert.match(soucet, /Tento měsíc&nbsp;<b class="ledger-castka">/);
+  assert.match(soucet, /= zapsáno ručně&nbsp;<span class="ledger-castka">/);
+  assert.match(soucet, /\+ automaticky z Admin API&nbsp;<span class="ledger-castka">/);
+  const castky = [...soucet.matchAll(/class="ledger-castka">([^<]+)</g)].map((m) => Number(m[1].replace(/[^\d]/g, '')));
+  assert.equal(castky.length, 3);
+  assert.equal(castky[0], castky[1] + castky[2], 'celek se skládá z obou dílů');
   const autoRows = html.split('<tr class="ledger-auto">').slice(1).map((r) => r.split('</tr>')[0]);
   assert.equal(autoRows.length, 3, 'říjen OpenAI, říjen Anthropic, září Anthropic');
   for (const r of autoRows) assert.doesNotMatch(r, /data-action=/, 'automatický řádek nejde smazat ani ukončit');

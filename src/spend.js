@@ -285,7 +285,8 @@ const money = (v, currency) => {
       style: 'currency',
       currency,
       maximumFractionDigits: currency === 'CZK' ? 0 : 2,
-      minimumFractionDigits: 0,
+      // Celé částky bez haléřů („20 $“), necelé vždy na dvě místa („2,10 $“, ne „2,1 $“).
+      minimumFractionDigits: currency === 'CZK' || Number.isInteger(Math.round((v || 0) * 100) / 100) ? 0 : 2,
     }).format(v || 0);
   } catch {
     return `${Math.round(v).toLocaleString('cs-CZ')} ${currency}`;

@@ -1261,7 +1261,8 @@ html.is-cloud body { background: var(--paper); }
 .svc { display: inline-flex; align-items: center; gap: 8px; }
 /* Výdaje: ručně zapsané a automatické řádky z Admin API jsou dvě skupiny jedné tabulky, aby
    sloupce lícovaly. Převod do hlavní měny je pod částkou, menší a tlumený. */
-.ledger-sum { margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.ledger-sum { margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: var(--ink-2); display: flex; flex-wrap: wrap; column-gap: .3em; }
+.ledger-sum .ledger-castka { white-space: nowrap; }
 .ledger-sum b { color: var(--ink); }
 .ledger .ledger-group th { padding: 24px 12px 8px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 14px; }
 .ledger tbody:first-of-type .ledger-group th { padding-top: 16px; }
@@ -1272,6 +1273,27 @@ html.is-cloud body { background: var(--paper); }
 .ledger-group-title { font-weight: 500; }
 .ledger-group-note { color: var(--mute); font-size: 12px; font-weight: 400; }
 .ledger-conv { display: block; margin-top: 4px; font-size: 12px; color: var(--mute); }
+/* Telefon: místo tabulky, která rolovala do strany a schovávala částku, je každý výdaj karta –
+   služba a částka nahoře, typ a datum pod nimi, poznámka přes celou šířku. Hlavička sloupců
+   zůstává pro čtečky obrazovky. */
+@media (max-width: 620px) {
+  .table-wrap:has(> .ledger) { overflow: visible; }
+  .ledger { min-width: 0; display: block; }
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .ledger tbody { display: block; }
+  .ledger tr:not(.ledger-group) { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'svc num' 'typ num' 'den akce' 'pozn pozn'; column-gap: 16px; row-gap: 4px; align-items: start; padding: 16px 4px; border-bottom: 1px solid var(--line-2); }
+  .ledger td { display: block; padding: 0; border: 0; }
+  .ledger td:nth-child(1) { grid-area: den; align-self: center; font-size: 12px; color: var(--mute); }
+  .ledger td:nth-child(2) { grid-area: svc; font-weight: 500; }
+  .ledger td:nth-child(3) { grid-area: typ; font-size: 12px; color: var(--ink-2); }
+  .ledger td:nth-child(4) { grid-area: pozn; font-size: 12px; }
+  .ledger td:nth-child(4):empty { display: none; }
+  .ledger td:nth-child(5) { grid-area: num; }
+  .ledger td:nth-child(6) { grid-area: akce; }
+  .ledger tr.ledger-group, .ledger tr.ledger-group th { display: block; }
+  .ledger .ledger-group th { padding: 24px 4px 8px; }
+  .ledger-group-head { position: static; width: auto; }
+}
 .spend-foot { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--mute); }
 .spend-foot--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
 .spend-foot--warn b { color: var(--brass-ink); }

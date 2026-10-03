@@ -326,7 +326,9 @@ export function ledgerHtml(sp) {
   }).join('');
   const autoMonth = sp.month.auto || 0;
   const split = autoMonth > 0
-    ? `<p class="ledger-sum">${tr('Tento měsíc {0} = zapsáno ručně {1} + automaticky z Admin API {2}', `<b>${esc(money(sp.month.total))}</b>`, esc(money(Math.max(0, sp.month.total - autoMonth))), esc(money(autoMonth)))}</p>`
+    // Každý díl součtu začíná na novém místě a částka se nikdy neodtrhne od posledního slova
+    // popisku; na úzkém okně se zalomí uvnitř dílu, ne mezi „ručně“ a částkou.
+    ? `<p class="ledger-sum"><span>${tr('Tento měsíc')}&nbsp;<b class="ledger-castka">${esc(money(sp.month.total))}</b></span><span>= ${tr('zapsáno ručně')}&nbsp;<span class="ledger-castka">${esc(money(Math.max(0, sp.month.total - autoMonth)))}</span></span><span>+ ${tr('automaticky z Admin API')}&nbsp;<span class="ledger-castka">${esc(money(autoMonth))}</span></span></p>`
     : '';
   return `${split}<div class="table-wrap"><table class="ledger">
         <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>

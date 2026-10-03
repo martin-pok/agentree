@@ -29,10 +29,13 @@ export function fmtAxis(n) {
 export const fmtNum = (n) => Math.round(n || 0).toLocaleString(LOCALE);
 
 export function fmtMoney(v, currency = 'CZK', { compact = false } = {}) {
-  const opts = { style: 'currency', currency, maximumFractionDigits: currency === 'CZK' ? 0 : 2, minimumFractionDigits: 0 };
+  // Celé částky bez haléřů („20 $“), necelé vždy na dvě místa („2,10 $“, ne „2,1 $“).
+  const cele = currency === 'CZK' || Number.isInteger(Math.round((v || 0) * 100) / 100);
+  const opts = { style: 'currency', currency, maximumFractionDigits: currency === 'CZK' ? 0 : 2, minimumFractionDigits: cele ? 0 : 2 };
   if (compact && Math.abs(v) >= 10000) {
     opts.notation = 'compact';
     opts.maximumFractionDigits = 1;
+    opts.minimumFractionDigits = 0;
   }
   try {
     return new Intl.NumberFormat(LOCALE, opts).format(v || 0);
