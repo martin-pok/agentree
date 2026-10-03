@@ -260,14 +260,22 @@ async function zkontrolujPlynulost(browser, engine) {
     await p.mouse.move(700, 450);
     await p.mouse.wheel(0, 1400);
     await p.waitForFunction(() => scrollY > 1000, null, { timeout: 3000 });
-    await p.waitForTimeout(500);
+    // Plynulý dojezd kolečka musí doběhnout, jinak se měří pohyb stránky, ne skok obsahu.
+    const ustalit = () => p.evaluate(() => new Promise((hotovo) => {
+      let posledni = -1, klid = 0;
+      const krok = () => { klid = scrollY === posledni ? klid + 1 : 0; posledni = scrollY; if (klid >= 8) hotovo(scrollY); else requestAnimationFrame(krok); };
+      requestAnimationFrame(krok);
+    }));
+    await ustalit();
     const pod = () => p.evaluate(() => { const r = document.elementFromPoint(700, 450)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; });
     for (const i of [120, 121]) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);
       ozivit(radky[i]);
       await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
-      await p.waitForTimeout(400);
+      // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
+      await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
+      await ustalit();
       const po = await pod();
       assert.equal(po?.klic, pred.klic, `${engine}: živá událost nad čtenářem posunula obsah (pod kurzorem byl ${pred.klic}, je ${po?.klic})`);
       assert.ok(Math.abs(po.top - pred.top) <= 1, `${engine}: řádek pod čtenářem poskočil o ${po.top - pred.top} px`);
@@ -324,6 +332,32 @@ async function zkontrolujPlynulost(browser, engine) {
   console.log(`${engine} plynulost: ${JSON.stringify(mereni)}`);
 }
 
+// Nadpis obrazovky se na telefonu nikdy nezkracuje („Stat…“): u spojení v pořádku mu lišta nechá místo.
+async function zkontrolujNadpisy(browser, engine) {
+  const server = await startTestServer();
+  const chyby = [];
+  try {
+    for (const jazyk of ['cs', 'en']) {
+      assert.equal((await api(server.url).send('PUT', '/api/settings', { language: jazyk })).status, 200);
+      for (const sirka of [375, 360]) {
+        const ctx = await browser.newContext({ viewport: { width: sirka, height: 800 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+        const p = await ctx.newPage();
+        for (const trasa of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'dovednosti', 'nastaveni']) {
+          await p.goto(`${server.url}/#/${trasa}`);
+          await p.waitForFunction(() => document.querySelector('#conn-pill .dot--live'), null, { timeout: 5000 }).catch(() => {});
+          const t = await p.evaluate(() => { const h = document.querySelector('.page-title'); return { txt: h.textContent.trim(), uriznuto: h.scrollWidth > h.clientWidth + 1 }; });
+          if (t.uriznuto) chyby.push(`${jazyk} ${sirka}px /${trasa}: „${t.txt}“ je zkrácený`);
+        }
+        await ctx.close();
+      }
+    }
+  } finally {
+    await server.close();
+  }
+  assert.deepEqual(chyby, [], `${engine}: nadpis obrazovky se na telefonu zkracuje\n${chyby.join('\n')}`);
+  results.push({ engine, check: 'nadpisy obrazovek se na telefonu nezkracují' });
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -338,6 +372,7 @@ for (const engine of engines) {
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   await zkontrolujPocitadla(browser, engine);
+  await zkontrolujNadpisy(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
@@ -924,6 +959,9 @@ for (const engine of engines) {
         box.innerHTML = '<div style="height:1200px">Posuvný seznam</div>';
         document.body.append(box);
       });
+      // Kolečko až po dvou snímcích: WebKit nový posuvný box zařadí do svého stromu posouvání až
+      // s vykreslením; kolečko poslané hned potom občas propadlo (bez posunu seznamu i stránky).
+      await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const predSeznamem = await p.evaluate(() => scrollY);
       await p.mouse.move(1300, 400);
       await p.mouse.wheel(0, 160);

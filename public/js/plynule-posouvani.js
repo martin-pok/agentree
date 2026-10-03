@@ -12,6 +12,8 @@
 
 // Časová konstanta dojezdu. Kratší působí tvrdě jako bez efektu, delší už jako zpoždění.
 const DOJEZD_MS = 110;
+// Nejmenší rychlost konce dojezdu v px/ms (viz snimek()).
+const MIN_RYCHLOST = 0.12;
 let zrusDojezd = () => {};
 let korekce = (dy) => skocNa(scrollY + dy);
 
@@ -90,7 +92,13 @@ export function plynulePosouvani() {
     if (!zapnuto() || posunutoJinak()) { zastav(); return; }
     const dt = Math.min(48, cas ? t - cas : 16);
     cas = t;
-    poloha += (cil - poloha) * (1 - Math.exp(-dt / DOJEZD_MS));
+    // Exponenciální dojezd se posledním pixelům blíží donekonečna (0,1 px za snímek). WebKit
+    // zlomkovou polohu ořízne na celé pixely, takže okno desítky snímků stálo a pak samo
+    // poskočilo o pixel či dva – i dlouho poté, co posouvání vypadalo hotové. Konec proto jede
+    // aspoň MIN_RYCHLOST (≈ 1 px za snímek při 120 Hz) a skončí přesně v cíli.
+    const zbyva = cil - poloha;
+    const krok = Math.max(Math.abs(zbyva) * (1 - Math.exp(-dt / DOJEZD_MS)), MIN_RYCHLOST * dt);
+    poloha += Math.sign(zbyva) * Math.min(Math.abs(zbyva), krok);
     if (Math.abs(cil - poloha) < 0.5) {
       posun(cil);
       zastav();

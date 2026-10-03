@@ -74,7 +74,14 @@ test('přesun řádku je jen transform a opacity a respektuje omezený pohyb i p
   const plynule = await zdroj('public/js/plynule-posouvani.js');
   assert.match(plynule, /export function posunSObsahem\(dy\)/);
   assert.match(plynule, /poloha \+= dy;/);
+  // Konec dojezdu má nejmenší rychlost: jinak WebKit stál na celém pixelu a stránka se o 1–2 px
+  // pohnula až dlouho po zdánlivém zastavení.
+  assert.match(plynule, /const MIN_RYCHLOST = 0\.12;/);
+  assert.match(plynule, /Math\.max\(Math\.abs\(zbyva\) \* \(1 - Math\.exp\(-dt \/ DOJEZD_MS\)\), MIN_RYCHLOST \* dt\)/);
   // Kotva i kolem celého živého překreslení obrazovky: počty ve filtrech nad seznamem mění výšku.
+  // Nativní kotva je vypnutá: WebKit ji u zlomkových výšek řádků zaokrouhloval střídavě a okno
+  // donekonečna kmitalo o 1 px. Kotvu drží jen ui.js#kotva.
+  assert.match(await zdroj('public/styles.css'), /html \{[^}]*overflow-anchor: none;[^}]*\}/);
   const app = await zdroj('public/js/app.js');
   assert.match(app, /const drzKotvu = kotva\(viewEl\);\s*\n\s*try \{\s*\n\s*current\?\.update\(topics\);[\s\S]*?drzKotvu\(\);/);
 });

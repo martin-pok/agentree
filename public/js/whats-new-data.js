@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.33.1',
+    date: '2026-10-03',
+    title: 'Nadpisy na telefonu celé',
+    items: [
+      'Nadpis obrazovky se na telefonu už nezkracuje na „Stat…“. Stav spojení se v liště ukáže jen tehdy, když se něco děje.',
+    ],
+    en: {
+      title: 'Full screen titles on phones',
+      items: [
+        'Screen titles no longer get cut to “Stat…” on phones. The connection status only shows in the bar when something is going on.',
+      ],
+    },
+  },
+  {
     version: '0.33.0',
     date: '2026-10-03',
     title: 'Plynulé živé seznamy',
