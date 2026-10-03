@@ -975,15 +975,21 @@ function update(topics) {
   /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
   const upd = state.updates || {};
   const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
+  // Každý stav služby má vlastní větu: vypnutá kontrola ani vydání bez balíčku pro tento počítač
+  // se nesmí tvářit jako probíhající kontrola.
   const updTitle = upd.status === 'available' ? tr('Je dostupná verze {0}', upd.latestVersion)
     : upd.status === 'downloaded' ? tr('Aktualizace je připravená')
       : upd.status === 'current' ? tr('Používáš aktuální verzi')
         : upd.status === 'error' ? tr('Aktualizaci se nepodařilo ověřit')
-          : tr('Kontroluji aktualizace');
+          : upd.status === 'unsupported' ? tr('Verze {0} zatím bez balíčku', upd.latestVersion)
+            : upd.status === 'disabled' ? tr('Kontrola aktualizací je vypnutá')
+              : tr('Kontroluji aktualizace');
   const updDesc = upd.status === 'available' ? tr('Balíček odpovídá tomuto Macu a můžeš ho stáhnout hned.')
     : upd.status === 'downloaded' ? tr('Otevři balíček ve Finderu a nahraď aplikaci v Aplikacích.')
       : upd.status === 'error' ? esc(upd.error || tr('Zkus kontrolu znovu.'))
-        : tr('Při každém spuštění a potom pravidelně ověřujeme poslední veřejné vydání.');
+        : upd.status === 'unsupported' ? tr('Nové vydání nemá ověřený balíček pro {0}. Zkontrolujeme ho znovu při další kontrole.', tentoPocitac())
+          : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
+            : tr('Při každém spuštění a potom pravidelně ověřujeme poslední veřejné vydání.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
@@ -994,7 +1000,7 @@ function update(topics) {
     <div class="set-actions">
       ${upd.status === 'available' ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
       ${upd.status === 'downloaded' ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
-      <button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>
+      ${upd.status === 'disabled' ? '' : `<button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>`}
     </div>`);
 
   const packCmd = 'npm run pack';

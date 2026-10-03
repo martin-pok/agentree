@@ -136,7 +136,7 @@ Mac“ a ⌘, nebo „tento počítač“ a Ctrl (`public/js/system.js`).
 
 - `status`: `checking` | `current` | `available` | `downloaded` | `unsupported` | `error` | `disabled`.
 - `current` je možné jen po platné odpovědi GitHubu se stejnou nebo nižší verzí; při selhání je vždy `error`.
-- `asset` je jen `{ name, url, size }` pro přesnou kombinaci verze, systému a architektury. `url` musí být oficiální GitHub release download URL.
+- `asset` je jen `{ name, url, size, sha256 }` pro přesnou kombinaci verze, systému a architektury. `url` musí být oficiální GitHub release download URL, `sha256` je otisk, který GitHub u přílohy zveřejňuje (`digest: "sha256:…"`). Příloha bez otisku se nenabízí (stav `unsupported`); stažený obsah s jiným otiskem se odmítne a na disk se neuloží.
 - `downloaded` je jen lokální metadata vlastního souboru. Účty, telefony ani vzdálený přístup tento blok nezískají.
 - `settings.updateMode` je `manual` (výchozí) | `automatic`. Automatický režim stáhne ověřený balíček, ale instalaci nikdy nespustí ani aplikaci sám nenahradí.
 

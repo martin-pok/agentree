@@ -14,9 +14,11 @@ Balíček verze 0.31.4 je v Chrome Web Store. Opravená metadata jsou znovu odes
 automatickým zveřejněním po schválení. ID položky: `hocghhpigfilngdajmafkdcljdedanch`.
 Stav vydání se ověřuje v [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 
-Po zveřejnění ověřit veřejnou stránku a vydat novou verzi aplikace. Balíček aplikace 0.31.4 ještě
-neobsahuje nové ID Store, takže automatické párování instalace z obchodu začne až po aktualizaci
-aplikace; při kontrole se používá jednorázový kód uvedený v testovacích pokynech níže.
+Po zveřejnění ověřit veřejnou stránku, zapnout příznak a vydat novou verzi aplikace, která obchod
+nabídne. Balíček aplikace 0.31.4 instalaci z obchodu ještě nespáruje sám (použije se jednorázový kód
+z testovacích pokynů níže). Od další verze aplikace důvěřuje ID položky v obchodě bez ohledu na
+příznak zveřejnění: příznak řídí jen to, jestli aplikace a web obchod nabízejí, ne párování. Instalace
+z obchodu se proto spáruje sama, hned jak ji Google zveřejní, i na verzi vydané před schválením.
 
 Další verze: nový ZIP nahraješ v témže záznamu (**Package → Upload new package**). Verze
 v `extension/manifest.json` musí být vyšší než zveřejněná. Zvedá se spolu s verzí aplikace –
@@ -137,6 +139,6 @@ The extension only sends conversation status and message counts to http://127.0.
 - Po instalaci z obchodu dostane rozšíření jiné ID než ruční („rozbalená“) kopie. Aplikace věří
   oběma: ID z adresy v `public/js/obchod.js` a ID odvozenému ze složky, kterou sama připravila
   (`src/platform.js#idRozbalenehoRozsireni`). Obě se proto spárují samy a každá instalace dostane
-  vlastní klíč. Dokud adresa obchodu v aplikaci není (i během kontroly), spáruje se verze z obchodu
+  vlastní klíč. Na verzi aplikace 0.31.4 a starší se verze z obchodu spáruje
   jednorázovým kódem. Kdo měl ruční kopii, po instalaci z obchodu ji v `chrome://extensions` odebere,
   ať se konverzace nehlásí dvakrát.

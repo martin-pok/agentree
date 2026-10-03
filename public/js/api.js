@@ -121,23 +121,64 @@ export const api = {
 
 const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
 
-// EventSource se po výpadku připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
+// Prodlevy před novým spojením po chybové odpovědi serveru; poslední se opakuje.
+const PRODLEVY_PROUDU = [2000, 5000, 10000, 30000];
+
+// Po síťovém výpadku se EventSource připojí sám; každé nové "hello" znamená načíst čerstvý snapshot.
+// Chybovou odpověď (503 při přetížení, restart serveru, výpadek proxy) ale prohlížeč bere jako konec
+// a proud zavře natrvalo. Pak se znovu připojuje tahle funkce, s rostoucí prodlevou, aby přetížený
+// server nezahltila. `obnov()` připojí zavřený proud hned (návrat do okna, obnovená síť).
 export function connectStream({ onHello, onEvent, onStatus }) {
   // Ukázka nemá server ani živé změny: jednou „připojeno“ a hotovo.
   if (ukazka) {
     queueMicrotask(() => { onStatus('live'); onHello({}); });
-    return { close() {} };
+    return { close() {}, obnov() {} };
   }
-  const es = new EventSource('/api/stream');
-  es.addEventListener('hello', (e) => {
-    onStatus('live');
-    onHello(JSON.parse(e.data));
-  });
-  for (const name of EVENTS) {
-    es.addEventListener(name, (e) => {
-      try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
+  let es = null;
+  let pokus = 0;
+  let casovac = null;
+  let ukonceno = false;
+
+  function pripoj() {
+    casovac = null;
+    const proud = new EventSource('/api/stream');
+    es = proud;
+    proud.addEventListener('hello', (e) => {
+      pokus = 0;
+      onStatus('live');
+      onHello(JSON.parse(e.data));
     });
+    for (const name of EVENTS) {
+      proud.addEventListener(name, (e) => {
+        try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
+      });
+    }
+    proud.onerror = () => {
+      if (proud !== es) return;
+      if (proud.readyState !== EventSource.CLOSED) return onStatus('reconnecting');
+      onStatus('offline');
+      naplanuj();
+    };
   }
-  es.onerror = () => onStatus(es.readyState === EventSource.CLOSED ? 'offline' : 'reconnecting');
-  return es;
+
+  function naplanuj() {
+    if (ukonceno || casovac) return;
+    const ms = PRODLEVY_PROUDU[Math.min(pokus++, PRODLEVY_PROUDU.length - 1)];
+    casovac = setTimeout(pripoj, ms);
+  }
+
+  pripoj();
+  return {
+    close() {
+      ukonceno = true;
+      clearTimeout(casovac);
+      casovac = null;
+      es?.close();
+    },
+    obnov() {
+      if (ukonceno || es?.readyState !== EventSource.CLOSED) return;
+      clearTimeout(casovac);
+      pripoj();
+    },
+  };
 }

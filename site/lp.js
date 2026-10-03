@@ -9,6 +9,22 @@ import { plynulePosouvani } from '/js/plynule-posouvani.js';
 
 const anglicky = document.documentElement.lang === 'en';
 
+// Lišta nahoře splývá s úvodem; jakmile stránka odjede, zúží se a oddělí linkou (site/lp.css).
+const lista = document.querySelector('.nav');
+if (lista) {
+  let cekaSnimek = false;
+  const zmerListu = () => {
+    cekaSnimek = false;
+    lista.classList.toggle('is-odjeto', window.scrollY > 8);
+  };
+  window.addEventListener('scroll', () => {
+    if (cekaSnimek) return;
+    cekaSnimek = true;
+    requestAnimationFrame(zmerListu);
+  }, { passive: true });
+  zmerListu();
+}
+
 // Adresu rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá.
 for (const pole of document.querySelectorAll('[data-kopirovat]')) {
   pole.setAttribute('role', 'button');
