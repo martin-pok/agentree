@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { csv } from './csv.js';
-import { uid, hourKey, DAY } from './util.js';
+import { uid, hourKey, hourKeyTs, localDay, DAY } from './util.js';
 import { isSafeRef } from './git.js';
 import { ui } from './texty.js';
 
@@ -323,6 +323,19 @@ export function deleteProject(data, id) {
   return true;
 }
 
+
+// Tokeny projektu za místní kalendářní měsíc – stejný měsíc jako peněžní rozpočty v Útratě
+// (src/spend.js#monthKey). Dřív se bral měsíc UTC: v Praze 1. listopadu po půlnoci tak rozpočet
+// tokenů ještě počítal říjen a upozornění neslo říjnový klíč.
+export function projectMonthTokens(sessions, projectId, now = Date.now()) {
+  const month = localDay(now).slice(0, 7);
+  let sum = 0;
+  for (const s of sessions) {
+    if (s.projectId !== projectId) continue;
+    for (const [k, v] of Object.entries(s.hourly || {})) if (v > 0 && localDay(hourKeyTs(k)).slice(0, 7) === month) sum += v;
+  }
+  return sum;
+}
 
 const localStamp = (ts) => {
   if (!ts) return '';

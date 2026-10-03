@@ -13,6 +13,7 @@ import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
 import { JE_MAC, SYSTEM } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
+import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
 
 const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
@@ -66,7 +67,7 @@ function sourceRow(c) {
 
 // Skupiny nastavení: pořadí odpovídá tomu, jak často je člověk potřebuje.
 const GROUPS = [
-  ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'custom']],
+  ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'moje', 'custom']],
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
   ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
@@ -218,8 +219,11 @@ function privacyCard() {
 
 // Karta rozšíření je `[data-region="extension"]`. Kromě skoku je potřeba ukázat, kam vedl,
 // a dát fokus na tlačítko s kódem (nebo na rozbalení instalace, když už je spárováno).
-function calloutExtension() {
-  const card = v.el?.querySelector('[data-region="extension"]');
+// Karty, na které se dá skočit odkudkoli (jump.js). Jiný cíl se ignoruje – Nastavení se jen otevře.
+const CILE_SKOKU = new Set(['extension', 'moje']);
+
+function callout(karta) {
+  const card = v.el?.querySelector(`[data-region="${karta}"]`);
   if (!card) return;
   const skupina = card.closest('.set-group');
   if (skupina?.hidden) v.ukazSkupinu?.(skupina.id);
@@ -233,13 +237,14 @@ function calloutExtension() {
   card.classList.remove('is-called-out');
   void card.offsetWidth;
   card.classList.add('is-called-out');
-  card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary')?.focus({ preventScroll: true });
+  card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn')?.focus({ preventScroll: true });
 }
 
 // Skok až po dokončení přechodu: router po vykreslení posune stránku nahoru a dá fokus nadpisu,
 // takže okamžitý skok by se hned přepsal. Časovač místo requestAnimationFrame běží i ve skrytém okně.
 function onJump() {
-  if (takeJump() === 'extension') setTimeout(calloutExtension, 80);
+  const karta = takeJump();
+  if (CILE_SKOKU.has(karta)) setTimeout(() => callout(karta), 80);
 }
 
 function mount(el) {
@@ -399,7 +404,7 @@ function mount(el) {
           window.open(a.href, '_blank', 'noopener');
         }
       } else if (a.dataset.action === 'extension-scroll') {
-        calloutExtension();
+        callout('extension');
       } else if (a.dataset.action === 'ucet-prihlasit') {
         a.disabled = true;
         try {
@@ -861,6 +866,16 @@ function update(topics) {
     ${nenalezene.length ? fold('missing', tr('Nenalezeno na {0}', tomtoPocitaci()), `<ul class="src-list">${nenalezene.map(sourceRow).join('')}</ul>`, { count: nenalezene.length }) : ''}
     ${doplnky.length ? fold('extra', tr('Doplňková data'), `<ul class="src-list">${doplnky.map(sourceRow).join('')}</ul>`, { count: doplnky.length }) : ''}`);
 
+  /* Moje nástroje: co detekce zachytila a uživatel si přidal. */
+  const moje = mojeZive();
+  const ignorovane = state.detekce?.ignorovane || [];
+  fill(el, 'moje', `
+    ${head(ICON.spark, tr('Moje nástroje'), tr('AI nástroje, které Agenteeq zachytil v činnosti na {0} a ty sis je přidal. U každého vidíš, jestli právě běží, a předplatné zapíšeš jedním klikem do Útraty.', tomtoPocitaci()))}
+    ${moje.length
+      ? `<ul class="moje-list">${moje.map(mujRadek).join('')}</ul>`
+      : `<p class="set-note">${tr('Zatím žádný. Jakmile na {0} poběží nový AI nástroj, Agenteeq ti ho nabídne přidat.', tomtoPocitaci())}</p>`}
+    ${ignorovane.length ? fold('ignorovane', tr('Nesledované'), `<ul class="moje-list">${ignorovane.map(ignorovanyRadek).join('')}</ul>`, { count: ignorovane.length }) : ''}`);
+
   /* Soukromí */
   fill(el, 'privacy', privacyCard());
 
@@ -881,6 +896,7 @@ function update(topics) {
     ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), desc: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
     ${switchRow({ key: 'limitReset', label: tr('Obnovený limit'), desc: tr('Když se obnoví 5hodinový nebo týdenní limit – víš, že můžeš zase naplno zadávat úkoly.'), checked: n.limitReset !== false })}
     ${switchRow({ key: 'budget', label: tr('Rozpočet'), desc: tr('Při 80 % a 100 % měsíčního rozpočtu útraty i tokenů projektu.'), checked: n.budget })}
+    ${switchRow({ key: 'detekce', label: tr('Nově zachycený agent'), desc: tr('Když na {0} poprvé poběží AI nástroj, který Agenteeq ještě nezná. Každý nástroj jen jednou.', tomtoPocitaci()), checked: n.detekce !== false })}
     ${switchRow({ key: 'done', label: tr('Dokončený úkol'), desc: tr('Když agent dokončí zadaný úkol.'), checked: n.done })}
     <label class="field field--row"><span>${tr('Hlásit dokončené úkoly')}</span>
       <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -945,6 +961,7 @@ function update(topics) {
       return `<div class="key-row">
         <div class="key-head">${glyph(provider)}<strong>${esc(label)} ${tr('– správcovský klíč')}</strong>${stateBadge(c.state, c.state === 'missing' ? tr('Nepřipojeno') : STATE_LABEL[c.state] || c.state)}</div>
         <p class="set-desc">${esc(c.state === 'error' ? c.detail : desc)}</p>
+        ${c.state === 'connected' && c.tokensError ? `<p class="set-note set-note--warn">${tr('Spotřebu tokenů se nepodařilo zjistit ({0}), proto ji neukazujeme. Náklady jsou načtené a platí.', esc(c.tokensError))}</p>` : ''}
         ${c.source === 'env'
           ? `<p class="small muted">${tr('Klíč je nastavený proměnnou prostředí.')}</p>`
           : `<form class="key-form" data-secret-form="${id}"><label class="sr-only" for="key-${id}">${esc(label)} ${tr('– správcovský klíč')}</label><input id="key-${id}" name="value" type="password" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}"${i.keychain ? '' : ' disabled'}>

@@ -65,7 +65,7 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
 
 - **RLS:** každý řádek čte a mění jen jeho vlastník. Souhrn jde zapsat jen k vlastnímu zařízení.
   Anonymní klíč nepřečte nic, tarif si uživatel nezmění. E-mail zůstává jen v `auth.users`.
-- **Kontrola:** `supabase/tests/rls.sql` projde 15 případů a vše vrátí zpět (výsledek je ve
+- **Kontrola:** `supabase/tests/rls.sql` projde 16 případů a vše vrátí zpět (výsledek je ve
   výjimce na konci). Naposledy spuštěno 24. 9. 2026: všech 15 `true`.
 - **Smazání účtu:** `public.smazat_muj_ucet()` smaže uživatele z `auth.users` a kaskádou všechno
   jeho. Poradce Supabase na tuhle funkci hlásí varování „security definer spustitelná
@@ -93,11 +93,17 @@ v Supabase; potom ověř `external.google: true` a spusť `test/ucet.test.mjs` i
 
 ## Dostupnost projektu na Free tarifu
 
-Projekt zůstává na tarifu Supabase Free. Workflow [`.github/workflows/supabase-keepalive.yml`](../.github/workflows/supabase-keepalive.yml) se každý den v 05:17 UTC spustí z GitHub Actions a provede jediný `GET /auth/v1/settings` s publikovatelným klíčem. Je to neosobní požadavek na API projektu; aktuální pravidla Supabase uvádějí API požadavky jako způsob, jak na Free tarifu udržet aktivitu.
+Projekt zůstává na tarifu Supabase Free. Ten se uspí, když týden nemá „dostatečnou uživatelskou
+aktivitu v databázi“ ([pravidla Supabase](https://supabase.com/docs/guides/platform/free-project-pausing)).
+Workflow [`.github/workflows/supabase-keepalive.yml`](../.github/workflows/supabase-keepalive.yml) se proto každý den v 05:17 UTC spustí z GitHub Actions a zavolá
+`POST /rest/v1/rpc/udrzet_aktivitu` s publikovatelným klíčem. Funkce z migrace
+`20261003100000_udrzeni_aktivity.sql` je `select 1`: skutečný dotaz v Postgresu, který nečte ani
+nezapisuje žádnou tabulku. Do 3. 10. 2026 se volal `GET /auth/v1/settings`, ten ale databázi
+nečte (nastavení Auth jde z konfigurace), takže projekt před uspáním nechránil.
 
-- Workflow odpověď vůbec nečte ani nevypisuje. Nezapisuje žádné řádky, nepoužívá uživatelský token a neposílá žádná uživatelská data.
-- Kontroluje se pouze HTTP stav. Když Supabase není dostupný, běh v Actions selže viditelně místo toho, aby aplikace ukazovala nepravdivý stav.
-- Běh lze kdykoli ručně spustit v **Actions → Udržet aktivní Supabase**. Pro jistotu běží denně; pravidlo Supabase uvádí API požadavky jako podporovanou cestu k udržení aktivity.
+- Nepoužívá uživatelský token a neposílá ani nevypisuje žádná uživatelská data.
+- Úspěch je jen odpověď `1` z databáze. Chybějící funkce (404), výpadek nebo jiná odpověď běh v Actions viditelně shodí.
+- **Nasazení migrace:** Supabase → projekt `agenteeq` → SQL Editor → vložit obsah migrace → Run. Potom ručně spustit **Actions → Udržet aktivní Supabase**; má skončit zeleně.
 - Jedinou smluvní garanci proti uspání dává placený Pro tarif. Aplikace ale i bez cloudového účtu zůstává plně lokálně funkční.
 
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
@@ -108,7 +114,7 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
 | Tabulka | Co odchází | Odkud |
 |---|---|---|
 | `devices` | jméno Macu (hostname), systém, verze aplikace, čas posledního spojení | `os.hostname()` |
-| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po dnech (UTC) a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
+| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po **místních kalendářních dnech Macu** a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
 | `spend_monthly` | součty útraty po měsících, službách a druzích v měně aplikace | zapsané výdaje a zjištěná předplatná – bez poznámek |
 | `limits` | procento, dosažení, obnova a čas měření oken limitů | limity – bez hlášek a popisků |
 | `agent_status` | počty agentů: pracuje, potřebuje tě, čeká, selhal | stav konverzací |
@@ -116,6 +122,12 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
 
 - **Seznam povolených polí (`POVOLENA`)** – každý řádek jím projde těsně před odesláním. Test
   pošle konverzaci s názvem, cestou, zadáním a poznámkou k výdaji a ověří, že nic z toho neodešlo.
+- **`usage_daily.day` je místní den zařízení**, stejný „dnes“, jaký ukazuje aplikace. Hodinové přihrádky
+  jsou v UTC; každá hodina patří ke dni podle místního času svého začátku (v časových pásmech
+  s půlhodinovým posunem tedy celá hodina k jednomu dni). Web účtu staví osu z místních dnů
+  prohlížeče a nic nepřepočítává do UTC. Schéma databáze se neměnilo, změnil se jen význam sloupce
+  (do 3. 10. 2026 to byl den UTC); řádky posledních 35 dní se při další synchronizaci přepíšou novým
+  významem, starší řádky mohou mít den UTC.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
 - **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`).

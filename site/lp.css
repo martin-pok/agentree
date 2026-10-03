@@ -81,7 +81,7 @@ code, kbd { font-family: var(--f-mono); font-size: .92em; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal-ink); flex: none; }
 
 /* ---------- jednotky ---------- */
-section[id] { scroll-margin-top: 56px; }
+section[id] { scroll-margin-top: 72px; }
 .unit { padding-block: var(--unit-y); }
 .unit--tint { background: var(--paper-2); }
 .unit--dark { background: var(--backdrop); color: var(--on-stage); }
@@ -120,11 +120,16 @@ section[id] { scroll-margin-top: 56px; }
 /* ---------- hlavička ---------- */
 /* Hlavička patří ke scéně: stránka začíná tmavou jednotkou v obou režimech. Nad světlými
    jednotkami zůstává tmavá jako lišta. */
-.nav { position: sticky; top: 0; z-index: 50; background: rgba(12, 11, 16, .84); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid rgba(244, 243, 247, .07); color: var(--on-stage); }
-.nav-in { display: flex; align-items: center; gap: 28px; min-height: 56px; }
+/* Nahoře je lišta plnou barvou scény a plynule přechází do úvodu – bez šedého pruhu, který
+   vznikal průsvitnou lištou nad světlým pozadím stránky. Po odjetí (`is-odjeto`, site/lp.js)
+   dostane jemný průhled a linku, aby se oddělila od obsahu pod sebou. Výška se nemění: změna
+   výšky lepivé lišty posouvá obsah a přerušila by plynulý dojezd kolečka. */
+.nav { position: sticky; top: 0; z-index: 50; background: var(--backdrop); border-bottom: 1px solid transparent; color: var(--on-stage); transition: background-color 240ms var(--ease), border-color 240ms var(--ease); }
+.nav.is-odjeto { background: rgba(12, 11, 16, .9); -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%); border-bottom-color: rgba(244, 243, 247, .08); }
+.nav-in { display: flex; align-items: center; gap: 32px; min-height: 72px; }
 /* Odsazení nese logo, ne menu: na mobilu je menu skryté a tlačítko musí zůstat vpravo i tak. */
 .brand { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; font-family: var(--f-display); font-size: 18px; font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
-.brand img { width: 26px; height: 26px; }
+.brand img { width: 28px; height: 28px; }
 .nav-links { display: flex; gap: 28px; font-size: 14px; }
 .nav-links a { color: var(--on-stage-mute); text-decoration: none; transition: color 180ms var(--ease); }
 .nav-links a:hover { color: var(--on-stage); }
@@ -274,7 +279,8 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 @media (max-width: 620px) {
   .wrap { width: calc(100% - 32px); }
   .nav-links { display: none; }
-  .nav-in { gap: 10px; }
+  .nav-in { gap: 10px; min-height: 64px; }
+  section[id] { scroll-margin-top: 64px; }
   .brand { font-size: 17px; }
   .btn--lg { padding: 8px 26px; font-size: 16px; }
   /* Telefon: dlaždice pod sebou, výřezy z telefonního rozvržení v přirozené velikosti. */

@@ -2,6 +2,8 @@
 
 // Přístup z telefonu má dvě nezávislé cesty (domácí síť a Tailscale). Starší server nebo odpověď
 // bez tohoto bloku nesmí shodit Nastavení, takže výchozí tvar vzniká vždycky znovu a čerstvý.
+// Detekce agentů (src/detekce.js); starší server ji neposílá vůbec.
+const prazdnaDetekce = () => ({ nove: [], moje: [], ignorovane: [], videne: [] });
 const prazdnyLan = () => ({ enabled: false, addresses: [], devices: [], tailscale: { enabled: false, available: false, listening: false, addresses: [], name: '', url: '', error: '' } });
 
 export const state = {
@@ -15,6 +17,7 @@ export const state = {
   runtimes: [],
   customAgents: [],
   localAgents: [],
+  detekce: prazdnaDetekce(),
   lan: prazdnyLan(),
   tunnels: { at: 0, list: [], advice: null },
   limits: [],
@@ -75,6 +78,7 @@ export function applySnapshot(s) {
     runtimes: s.runtimes,
     customAgents: s.customAgents || [],
     localAgents: s.localAgents || [],
+    detekce: s.detekce || prazdnaDetekce(),
     lan: s.lan ? { ...prazdnyLan(), ...s.lan, tailscale: { ...prazdnyLan().tailscale, ...(s.lan.tailscale || {}) } } : prazdnyLan(),
     tunnels: s.tunnels || { at: 0, list: [], advice: null },
     limits: s.limits,
@@ -136,6 +140,10 @@ export function applyEvent(name, data) {
       state.customAgents = data;
       emit('runtimes');
       break;
+    case 'detekce':
+      state.detekce = data || prazdnaDetekce();
+      emit('detekce');
+      return null;
     case 'localAgents':
       state.localAgents = data;
       emit('runtimes');

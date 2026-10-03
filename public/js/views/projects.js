@@ -1,6 +1,6 @@
 import { state, setProjects, agentsList } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, DAY, jeAbsolutniCesta } from '../format.js';
+import { esc, fmtTok, rel, norm, plural, shortPath, hourTs, startOfDay, dayStart, jeAbsolutniCesta } from '../format.js';
 import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
@@ -15,12 +15,13 @@ const prettify = (seg) => seg.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
 // Aktivita po dnech za 14 dní – z hodinových součtů tokenů.
 function dailyActivity(sessions, now = Date.now()) {
   const days = 14;
-  const start = startOfDay(now) - (days - 1) * DAY;
+  // Index podle místního kalendářního dne, ne dělením 24 h – při změně času má den 23 nebo 25 h.
+  const index = new Map(Array.from({ length: days }, (_, i) => [dayStart(now, i - (days - 1)), i]));
   const out = new Array(days).fill(0);
   for (const s of sessions) {
     for (const [k, val] of Object.entries(s.hourly || {})) {
-      const i = Math.floor((hourTs(k) - start) / DAY);
-      if (i >= 0 && i < days) out[i] += val;
+      const i = index.get(startOfDay(hourTs(k)));
+      if (i !== undefined) out[i] += val;
     }
   }
   return out;

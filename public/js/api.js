@@ -12,9 +12,12 @@ function ukazkaOdpoved(method, path) {
   return prelozData(structuredClone(ukazka[path]));
 }
 
-export async function request(method, path, body) {
+// `keepalive`: požadavek doběhne, i když se stránka právě zavírá nebo obnovuje – jinak ho prohlížeč
+// zruší (a WebKit to navíc zapíše do konzole jako chybu přístupu: „due to access control checks“).
+export async function request(method, path, body, { keepalive = false } = {}) {
   if (ukazka) return ukazkaOdpoved(method, path);
   const init = { method, headers: {}, ...(method === 'GET' ? { cache: 'no-store' } : {}) };
+  if (keepalive) init.keepalive = true;
   if (method !== 'GET') {
     init.headers['X-Agenteeq'] = '1';
     init.headers['Content-Type'] = 'application/json';
@@ -67,6 +70,8 @@ export const api = {
   detectRemote: () => request('POST', '/api/remote/detect', {}),
   lanForget: (id) => request('DELETE', `/api/lan/devices/${encodeURIComponent(id)}`),
   pairDevice: (pin, label) => request('POST', '/api/lan/pair', { pin, label }),
+  nastroj: (id, akce) => request('POST', `/api/nastroje/${encodeURIComponent(id)}/${akce}`, {}),
+  pritomnost: (videt) => request('POST', '/api/ui/pritomnost', { videt }, { keepalive: true }),
   focusRuntime: (id) => request('POST', `/api/runtimes/${encodeURIComponent(id)}/focus`, {}),
   customAgents: () => request('GET', '/api/custom-agents'),
   addCustomAgent: (body) => request('POST', '/api/custom-agents', body),
@@ -119,7 +124,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'detekce', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
 
 // Prodlevy před novým spojením po chybové odpovědi serveru; poslední se opakuje.
 const PRODLEVY_PROUDU = [2000, 5000, 10000, 30000];

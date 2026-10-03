@@ -3,6 +3,7 @@ import { ICON, glyph } from './icons.js';
 import { currentLimits, limitState, limitObnova } from './ui.js';
 import { tokensSince } from './data.js';
 import { tr, tomtoPocitaci } from './i18n.js';
+import { nastrojeBezDat, kdeKdy } from './nastroje.js';
 
 // Rozbalovací přehled „Všechny nástroje“. Nahoře zůstávají jen změřená okna limitů; tady je
 // každý sledovaný nástroj včetně těch, jejichž limit se z místních dat zjistit nedá. U takového
@@ -57,8 +58,21 @@ export function allToolLimits(state, now = Date.now()) {
   return rows;
 }
 
+// Zachycené nástroje, o jejichž limitech ani tokenech Agenteeq nic neví: řádek říká, že běží
+// a jak dlouho, a narovinu, že víc zatím nevidíme.
+function radekBezDat(n, now) {
+  return `<li class="ltool">
+      <span class="lwin-logo">${glyph({ runtime: n.id, provider: n.provider })}</span>
+      <span class="ltool-main">
+        <span class="ltool-top"><b>${esc(n.name)}</b></span>
+        <span class="ltool-note">${esc(kdeKdy(n, now))}. ${tr('Limity ani tokeny z něj Agenteeq zatím nečte.')}</span>
+      </span>
+    </li>`;
+}
+
 export function limitsAll(state, now = Date.now()) {
   const rows = allToolLimits(state, now);
+  const bezDat = nastrojeBezDat(state, new Set(TOOLS.flatMap((t) => t.connectors)), now);
   const items = rows.map(({ t, spojene, okna, tok }) => {
     const stari = okna.length ? Math.max(...okna.map((l) => l.at || 0)) : 0;
     const nota = poznamka(t, spojene, state);
@@ -71,9 +85,10 @@ export function limitsAll(state, now = Date.now()) {
       </span>
     </li>`;
   });
+  items.push(...bezDat.map((n) => radekBezDat(n, now)));
   const merene = rows.filter((r) => r.okna.length).length;
   return `<details class="lim-all" data-lim-all${otevreno ? ' open' : ''}>
-    <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${tr('z {0} s měřeným limitem', rows.length)}</span>${ICON.chev}</summary>
+    <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${tr('z {0} s měřeným limitem', rows.length + bezDat.length)}</span>${ICON.chev}</summary>
     <ul class="ltool-list">${items.join('')}</ul>
   </details>`;
 }

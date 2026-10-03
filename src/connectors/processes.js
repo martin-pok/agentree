@@ -75,23 +75,76 @@ export const program = (...jmena) => {
 export const aplikace = (bundle, exe = bundle) =>
   new RegExp(`[\\\\/]${utec(bundle)}\\.app[\\\\/]Contents[\\\\/]MacOS[\\\\/]|[\\\\/]${utec(exe)}${EXE.replace('?', '')}(\\s|$)`);
 
+// Webové aplikace Chromu (a Edge, Brave) nainstalované jako samostatné okno: na macOS běží jako
+// `…/Chrome Apps.localized/<Název>.app/Contents/MacOS/app_mode_loader` – název je přímo v cestě.
+// Ověřeno na skutečném Macu (Google AI Studio, Replit, Stitch). Musí být v seznamu PŘED desktopovými
+// aplikacemi: webová aplikace „ChatGPT“ má v cestě `ChatGPT.app/Contents/MacOS/` stejně jako
+// desktopová a první shoda vyhrává.
+const webovaAplikace = (nazev) => new RegExp(`[\\\\/](Chrome|Microsoft Edge|Brave Browser) Apps\\.localized[\\\\/]${utec(nazev)}\\.app[\\\\/]`);
+const WEBOVE_AI = [
+  ['pwa-google-ai-studio', 'Google AI Studio', 'google', true, ui('Vývojářské prostředí Googlu pro modely Gemini')],
+  ['pwa-gemini', 'Gemini', 'google', false, ui('Chat s Gemini od Googlu')],
+  ['pwa-notebooklm', 'NotebookLM', 'google', false, ui('Poznámky a zdroje s AI od Googlu')],
+  ['pwa-stitch', 'Stitch', 'google', true, ui('Návrhy rozhraní s AI od Googlu')],
+  ['pwa-chatgpt', 'ChatGPT', 'openai', false, ui('Chat s AI od OpenAI')],
+  ['pwa-claude', 'Claude', 'anthropic', false, ui('Chat s Claude od Anthropicu')],
+  ['pwa-perplexity', 'Perplexity', 'perplexity', false, ui('Vyhledávání s odpověďmi od AI')],
+  ['pwa-grok', 'Grok', 'xai', false, ui('Chat s AI od xAI')],
+  ['pwa-copilot', 'Microsoft Copilot', 'microsoft', false, ui('Chat s AI od Microsoftu')],
+  ['pwa-deepseek', 'DeepSeek', 'deepseek', false, ui('Chat s modely DeepSeek')],
+  ['pwa-replit', 'Replit', 'replit', true, ui('Vývoj a nasazení aplikací s AI agentem')],
+  ['pwa-lovable', 'Lovable', 'lovable', false, ui('Tvorba webových aplikací s AI')],
+  ['pwa-v0', 'v0', 'vercel', false, ui('Tvorba rozhraní a aplikací s AI od Vercelu')],
+  ['pwa-bolt', 'Bolt', 'stackblitz', false, ui('Tvorba webových aplikací s AI od StackBlitz')],
+].map(([id, name, provider, overeno, popis]) => ({
+  id, name: `${name} (web)`, provider, druh: 'webova-aplikace', overeno, popis,
+  test: (a) => webovaAplikace(name).test(a),
+}));
+
+// `druh` říká, kde nástroj pracuje (pro rychlou informaci v oznámení), `popis` co to je,
+// `konektory` odkud Agenteeq čte data právě tohohle nástroje – když některý z nich má data, nástroj
+// už sledujeme a oznámení o „novém agentovi“ by byl šum. Rozšíření pro Chrome (`web`) sem nepatří:
+// čte webovou verzi služby v záložce, ne konverzace z desktopové aplikace téže služby. `vidim` je
+// přesná věta, co Agenteeq o sledovaném nástroji vidí, když obecná („konverzace a tokeny“) neplatí. `overeno: false` = rozpoznávání podle názvu
+// balíčku nebo příkazu, které zatím nikdo nepotvrdil na skutečném stroji (docs/CONNECTORS.md, 🧪).
 export const RUNTIMES = [
-  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', test: (a) => aplikace('Claude').test(a) },
-  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', test: (a) => program('claude').test(a) && !/disclaimer|chrome-native-host/.test(a) },
-  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', test: (a) => aplikace('ChatGPT').test(a) },
+  ...WEBOVE_AI,
+  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', druh: 'aplikace', overeno: true, konektory: ['claude-code', 'claude-desktop-usage'], vidim: ui('Práci v záložce Code a limity předplatného už čtu. Běžné chaty z aplikace ne.'), popis: ui('Claude od Anthropicu – chat a Claude Code v záložce Code'), test: (a) => aplikace('Claude').test(a) },
+  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => program('claude').test(a) && !/disclaimer|chrome-native-host/.test(a) },
+  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', druh: 'aplikace', overeno: true, konektory: ['codex'], vidim: ui('Práci Codexu a limity tvého plánu už čtu. Běžné chaty z aplikace ne.'), popis: ui('ChatGPT od OpenAI – chat, agent a Codex'), test: (a) => aplikace('ChatGPT').test(a) },
   // Aplikace ChatGPT si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
-  { id: 'codex', name: 'Codex', provider: 'openai', test: (a) => program('codex').test(a) && !/[\\/]ChatGPT\.app[\\/]/.test(a) },
-  { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', test: (a) => program('copilot').test(a) && !/\.app[\\/]/.test(a) },
-  { id: 'vscode', name: 'VS Code', provider: 'github', test: (a) => aplikace('Visual Studio Code', 'Code').test(a) || aplikace('Visual Studio Code - Insiders', 'Code - Insiders').test(a) },
-  { id: 'cursor', name: 'Cursor', provider: 'cursor', test: (a) => aplikace('Cursor').test(a) },
-  { id: 'ms-copilot', name: 'Microsoft Copilot', provider: 'microsoft', test: (a) => aplikace('Copilot').test(a) || aplikace('Microsoft Copilot', 'Microsoft.Copilot').test(a) },
-  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', test: (a) => program('gemini').test(a) },
-  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', test: (a) => program('qwen').test(a) },
-  { id: 'perplexity', name: 'Perplexity', provider: 'perplexity', test: (a) => aplikace('Perplexity').test(a) },
-  { id: 'grok', name: 'Grok', provider: 'xai', test: (a) => aplikace('Grok').test(a) },
-  { id: 'ollama', name: 'Ollama', provider: 'local', test: (a) => program('ollama').test(a) || aplikace('Ollama').test(a) },
-  { id: 'lmstudio', name: 'LM Studio', provider: 'local', test: (a) => aplikace('LM Studio').test(a) || program('lms').test(a) },
+  { id: 'codex', name: 'Codex', provider: 'openai', druh: 'terminal', overeno: true, konektory: ['codex'], popis: ui('Programovací agent od OpenAI'), test: (a) => program('codex').test(a) && !/[\\/]ChatGPT\.app[\\/]/.test(a) },
+  { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', druh: 'terminal', overeno: false, konektory: ['copilot-cli'], popis: ui('Programovací agent GitHub Copilot'), test: (a) => program('copilot').test(a) && !/\.app[\\/]/.test(a) },
+  { id: 'vscode', name: 'VS Code', provider: 'github', druh: 'editor', overeno: false, konektory: ['vscode-copilot'], popis: ui('Editor od Microsoftu s GitHub Copilotem'), test: (a) => aplikace('Visual Studio Code', 'Code').test(a) || aplikace('Visual Studio Code - Insiders', 'Code - Insiders').test(a) },
+  { id: 'cursor', name: 'Cursor', provider: 'cursor', druh: 'editor', overeno: true, konektory: ['cursor'], popis: ui('Editor s vestavěným programovacím agentem'), test: (a) => aplikace('Cursor').test(a) },
+  { id: 'cursor-agent', name: 'Cursor Agent', provider: 'cursor', druh: 'terminal', overeno: false, popis: ui('Programovací agent Cursoru'), test: (a) => program('cursor-agent').test(a) },
+  { id: 'windsurf', name: 'Windsurf', provider: 'windsurf', druh: 'editor', overeno: false, popis: ui('Editor s agentem Cascade'), test: (a) => aplikace('Windsurf').test(a) },
+  { id: 'antigravity', name: 'Antigravity', provider: 'google', druh: 'editor', overeno: false, popis: ui('Agentní vývojové prostředí od Googlu'), test: (a) => aplikace('Antigravity').test(a) },
+  { id: 'kiro', name: 'Kiro', provider: 'amazon', druh: 'editor', overeno: false, popis: ui('Agentní editor od Amazonu'), test: (a) => aplikace('Kiro').test(a) },
+  { id: 'trae', name: 'Trae', provider: 'bytedance', druh: 'editor', overeno: false, popis: ui('Editor s AI agentem od ByteDance'), test: (a) => aplikace('Trae').test(a) },
+  { id: 'zed', name: 'Zed', provider: 'zed', druh: 'editor', overeno: false, popis: ui('Editor s AI asistentem'), test: (a) => aplikace('Zed').test(a) },
+  { id: 'warp', name: 'Warp', provider: 'warp', druh: 'terminal-aplikace', overeno: true, popis: ui('Terminál Warp s vestavěným agentem pro příkazy a kód'), test: (a) => aplikace('Warp').test(a) },
+  { id: 'ms-copilot', name: 'Microsoft Copilot', provider: 'microsoft', druh: 'aplikace', overeno: false, popis: ui('Chat s AI od Microsoftu'), test: (a) => aplikace('Copilot').test(a) || aplikace('Microsoft Copilot', 'Microsoft.Copilot').test(a) },
+  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', druh: 'terminal', overeno: false, konektory: ['gemini-cli'], popis: ui('Programovací agent od Googlu'), test: (a) => program('gemini').test(a) },
+  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', druh: 'terminal', overeno: false, konektory: ['qwen-code'], popis: ui('Programovací agent od Alibaby'), test: (a) => program('qwen').test(a) },
+  { id: 'aider', name: 'Aider', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený programovací agent pro práci s gitem'), test: (a) => program('aider').test(a) || /(^|\s)-m\s+aider(\s|$)/.test(a) },
+  { id: 'goose', name: 'Goose', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený agent od Blocku'), test: (a) => program('goose').test(a) },
+  { id: 'opencode', name: 'OpenCode', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený programovací agent'), test: (a) => program('opencode').test(a) },
+  { id: 'amp', name: 'Amp', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Programovací agent od Sourcegraphu'), test: (a) => program('amp').test(a) },
+  { id: 'crush', name: 'Crush', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Programovací agent od Charmu'), test: (a) => program('crush').test(a) },
+  { id: 'droid', name: 'Droid', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Programovací agent od Factory'), test: (a) => program('droid').test(a) },
+  { id: 'auggie', name: 'Auggie', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Programovací agent Augment Code'), test: (a) => program('auggie').test(a) },
+  { id: 'perplexity', name: 'Perplexity', provider: 'perplexity', druh: 'aplikace', overeno: false, popis: ui('Vyhledávání s odpověďmi od AI'), test: (a) => aplikace('Perplexity').test(a) },
+  { id: 'comet', name: 'Comet', provider: 'perplexity', druh: 'prohlizec', overeno: false, popis: ui('Prohlížeč Comet od Perplexity'), test: (a) => aplikace('Comet').test(a) },
+  { id: 'chatgpt-atlas', name: 'ChatGPT Atlas', provider: 'openai', druh: 'prohlizec', overeno: false, popis: ui('Prohlížeč ChatGPT Atlas od OpenAI'), test: (a) => aplikace('ChatGPT Atlas').test(a) },
+  { id: 'dia', name: 'Dia', provider: 'other', druh: 'prohlizec', overeno: false, popis: ui('Prohlížeč Dia od The Browser Company'), test: (a) => aplikace('Dia').test(a) },
+  { id: 'grok', name: 'Grok', provider: 'xai', druh: 'aplikace', overeno: false, popis: ui('Chat s AI od xAI'), test: (a) => aplikace('Grok').test(a) },
+  { id: 'ollama', name: 'Ollama', provider: 'local', druh: 'lokalni-model', overeno: true, popis: ui('Spouští jazykové modely přímo na {0}', POCITAC.tomto), test: (a) => program('ollama').test(a) || aplikace('Ollama').test(a) },
+  { id: 'lmstudio', name: 'LM Studio', provider: 'local', druh: 'lokalni-model', overeno: false, popis: ui('Aplikace pro jazykové modely na {0}', POCITAC.tomto), test: (a) => aplikace('LM Studio').test(a) || program('lms').test(a) },
 ];
+
+// Nástroj, ke kterému patří řádek výpisu procesů – jedno místo pro všechny detektory.
+export const rozpoznejNastroj = (args) => RUNTIMES.find((r) => r.test(args)) || null;
 
 export function etimeToSec(t) {
   const [d, rest] = t.includes('-') ? t.split('-') : ['0', t];
@@ -111,7 +164,7 @@ function radkyPs(out) {
 }
 
 export function parsePs(out) {
-  const runtimes = RUNTIMES.map((r) => ({ id: r.id, name: r.name, provider: r.provider, running: false, processes: 0, cpu: 0, memMB: 0, uptimeSec: 0, detail: '' }));
+  const runtimes = RUNTIMES.map((r) => ({ id: r.id, name: r.name, provider: r.provider, druh: r.druh, popis: r.popis, konektory: r.konektory || [], overeno: Boolean(r.overeno), running: false, processes: 0, cpu: 0, memMB: 0, uptimeSec: 0, detail: '' }));
   for (const p of radkyPs(out)) {
     const idx = RUNTIMES.findIndex((r) => r.test(p.args));
     if (idx === -1) continue;

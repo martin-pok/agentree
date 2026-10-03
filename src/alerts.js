@@ -197,17 +197,19 @@ export class AlertEngine {
     }
   }
 
-  raise({ alsoKeys, ...a }, now = this.now()) {
+  // `bezNativniho`: upozornění jde do aplikace, systémové oznámení si volající pošle sám
+  // (detekce agentů posílá jedno souhrnné za celou dávku, ne jedno za každý nástroj).
+  raise({ alsoKeys, bezNativniho, ...a }, now = this.now()) {
     const keys = this.datastore.data.alertKeys;
     if (keys[a.key]) return undefined;
     keys[a.key] = now;
     for (const [k, at] of Object.entries(keys)) if (now - at > KEY_TTL) delete keys[k];
     const alert = { id: uid(), at: now, read: false, ...a };
-    const muted = this.ztlumit(alert, now);
+    const muted = this.ztlumit(alert, now, bezNativniho);
     if (muted) alert.muted = muted;
     this.datastore.pushAlert(alert);
     this.store.emit('alert', alert);
-    if (!muted && this.settings.native) {
+    if (!muted && this.settings.native && !bezNativniho) {
       // Uložené upozornění zůstává česky (rozhraní si ho přeloží samo); do systému jde v jazyce
       // z Nastavení. Souhrn už v něm je a slovník ho nezná, takže projde beze změny.
       const t = prekladac(this.datastore.data.settings.language);
@@ -219,12 +221,14 @@ export class AlertEngine {
   }
 
   // Smí upozornění vyrušit? Zkušební upozornění se nepočítá do nárazu (člověk ho vyvolal sám),
-  // ticho ale dodrží – jinak by se nedalo ověřit, že ticho funguje.
-  ztlumit(alert, now) {
+  // ticho ale dodrží – jinak by se nedalo ověřit, že ticho funguje. Upozornění bez vlastního
+  // oznámení (`bezNativniho`, detekce agentů) místo v minutě nezabírá: oznámení za něj posílá
+  // volající jedno souhrnné.
+  ztlumit(alert, now, bezNativniho = false) {
     this.ukazane = this.ukazane.filter((t) => now - t < NARAZ.oknoMs);
     if (alert.kind === 'digest') { this.ukazane.push(now); return null; }
     if (jeNocniTicho(this.settings, now)) return 'quiet';
-    if (alert.kind === 'test') return null;
+    if (alert.kind === 'test' || bezNativniho) return null;
     if (this.odlozene('burst').length || this.ukazane.length >= NARAZ.max) return 'burst';
     this.ukazane.push(now);
     return null;

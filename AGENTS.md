@@ -24,7 +24,7 @@ npm run pack      # dist/agenteeq-<verze>.tgz
 
 npm run build:extension   # dist/agenteeq-extension-<verze>.zip (rozšíření pro Chrome)
 npm run build:site        # dist/web – landing page v kořeni, rozhraní aplikace na /app
-npm run release:mac       # celé vydání: testy → smoke → rozšíření → web → .app (--install vymění i /Applications)
+npm run release:mac       # celé vydání: testy → smoke → rozšíření → web → .app (--install vymění i /Applications, předchozí verzi dá do Koše)
 ```
 
 Proměnné pro vývoj a testy: `PORT`, `AGENTEEQ_HOME` (data aplikace), `AGENTEEQ_SOURCE_HOME` (odkud číst zdroje – v testech vždy dočasná složka), `AGENTEEQ_OPEN=dry` (otevírání a spouštění agentů jen vrátí plán – **povinné v testech a při ručním QA na cizích datech**), `AGENTEEQ_OLLAMA_URL`, `AGENTEEQ_PROCESSES=0`, `AGENTEEQ_NATIVE_NOTIFY=0`, `AGENTEEQ_KEYCHAIN=0`, `AGENTEEQ_CLOUD=0`, `AGENTEEQ_QUIET=1`. Viz `src/config.js`.

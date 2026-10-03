@@ -60,6 +60,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
 | POST | `/api/remote/detect` | `{ tunnels: { at, list: Tunnel[], advice } }`; jen z `127.0.0.1` (403) |
+| POST | `/api/nastroje/:id/(pridat\|ignorovat\|rozumim\|odebrat)` | Rozhodnutí o zachyceném nástroji (`src/detekce.js`) → `Detekce`; 404 neznámý nástroj nebo akce. Jen z tohoto počítače (`src/remote-scope.js`), telefon smí jen číst |
+| POST | `/api/ui/pritomnost` | `{ videt: boolean }` → `{ ok }`. Okno rozhraní hlásí, že je vidět; detekce pak neposílá oznámení systému. Platí 45 s. Jen z tohoto počítače |
 | GET | `/api/projects` | `{ projects: ProjectsPayload }` |
 | POST | `/api/projects` | `{ name, description?, color?, folders?: string[] }` → 201 `{ project, projects }`; 422 s `errors`; 402 `upgrade` při limitu verze Zdarma (jen je-li zapnutý) |
 | PATCH | `/api/projects/:id` | Částečná změna (`name`, `description`, `color`, `folders`, `notes`, `archived`) → `{ project, projects }`; 404, 422 |
@@ -93,6 +95,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `session:remove` | `{ id }` |
 | `transcript` | `{ id, reset: boolean, entries: TranscriptEntry[] }` – nové **nebo aktualizované** položky (upsert podle `seq`) |
 | `runtimes` | `Runtime[]` |
+| `detekce` | `Detekce` – po novém nálezu nebo rozhodnutí |
 | `limits` | `Limit[]` |
 | `credits` | `CreditRecord[]` |
 | `alert` | `{ alert: Alert, unread }` |
@@ -139,6 +142,17 @@ Mac“ a ⌘, nebo „tento počítač“ a Ctrl (`public/js/system.js`).
 - `asset` je jen `{ name, url, size, sha256 }` pro přesnou kombinaci verze, systému a architektury. `url` musí být oficiální GitHub release download URL, `sha256` je otisk, který GitHub u přílohy zveřejňuje (`digest: "sha256:…"`). Příloha bez otisku se nenabízí (stav `unsupported`); stažený obsah s jiným otiskem se odmítne a na disk se neuloží.
 - `downloaded` je jen lokální metadata vlastního souboru. Účty, telefony ani vzdálený přístup tento blok nezískají.
 - `settings.updateMode` je `manual` (výchozí) | `automatic`. Automatický režim stáhne ověřený balíček, ale instalaci nikdy nespustí ani aplikaci sám nenahradí.
+
+### Detekce (`state.detekce`, událost `detekce`)
+
+`{ nove: Nastroj[], moje: Nastroj[], ignorovane: Nastroj[], videne: string[] }`. `Nastroj` =
+`{ id, name, provider, druh, popis, vidim, umiCist, overeno, sledovano, bezi, beziOd, poprve, naposledy, stav }`.
+`id` je z katalogu `src/connectors/processes.js#RUNTIMES`; `druh` je `aplikace` | `terminal` |
+`terminal-aplikace` | `editor` | `prohlizec` | `webova-aplikace` | `lokalni-model`. `beziOd` je čas startu
+procesu (ms, 0 = neběží), `stav` je `novy` | `pridany` | `ignorovany` | `znamy`. `videne` = id všech
+nástrojů, které tu kdy běžely. V `data.json` (`nastroje`) leží jen `{ poprve, naposledy, stav, pridano? }`
+pod id z katalogu – žádné cesty, příkazy ani obsah. `Runtime` nese navíc `druh`, `popis`, `konektory`,
+`overeno` z katalogu.
 
 ### UcetStatus (`state.ucet`, událost `ucet`)
 
@@ -191,13 +205,14 @@ interface CreditRecord { id: string; provider: Provider; app: string; label: str
 
 interface Alert {
   id: string; key: string; at: number; read: boolean; level: 'action' | 'critical' | 'warning' | 'info';
-  kind: 'needs_input' | 'failed' | 'limit' | 'limit_near' | 'limit_reset' | 'budget' | 'done' | 'test' | 'system' | 'digest';
+  kind: 'needs_input' | 'failed' | 'limit' | 'limit_near' | 'limit_reset' | 'budget' | 'done' | 'test' | 'system' | 'digest' | 'novy-nastroj';
   title: string; body: string; sessionId?: string;
   limitId?: string;                  // upozornění na limit účtu (ne konverzace) – souhrn podle něj pozná, jestli pořád platí
   muted?: 'quiet' | 'burst';         // uloženo a počítá se do nepřečtených, ale oznámení ani bublina nepřišly (noční ticho / náraz)
   digested?: true;                   // ztlumené upozornění už prošlo souhrnem
   digest?: 'quiet' | 'burst';        // jen kind 'digest': souhrn po nočním tichu, nebo po nárazu
   count?: number;                    // jen kind 'digest': kolik věcí souhrn nese
+  nastroj?: string;                  // jen kind 'novy-nastroj': id z katalogu; oznámení systému posílá detekce souhrnně za dávku
   route?: string;                    // jen kind 'digest': kam vede klik („#/agent/…“, „#/agenti?stav=needs_input“, „#/utrata“, „#/prehled“, „#/upozorneni“)
 }
 // Pravidla souhrnu (src/alerts.js): do souhrnu patří jen ztlumené upozornění, které pořád platí –
@@ -207,13 +222,17 @@ interface Alert {
 interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'extra' | 'credits' | 'api'; amount: number; currency: 'CZK' | 'USD' | 'EUR'; date: string; recurring: 'monthly' | null; endDate: string | null; note: string; account: string /* volitelný název účtu/licence, jen subscription */; createdAt: number }
 
 interface SpendPayload {
-  currency: string; monthKey: string;               // "2026-09"
-  month: { key: string; total: number; services: Record<string, number>; kinds: Record<string, number> };
+  currency: string; monthKey: string;               // "2026-09" – místní kalendářní měsíc
+  month: { key: string; total: number; auto: number /* část total z Admin API */; services: Record<string, number>; kinds: Record<string, number> };
   months: typeof month[];                            // posledních 6 měsíců
   recurring: number; forecast: number;
   budgets: { scope: string; label: string; spent: number; budget: number; pct: number }[];
   ledger: LedgerEntry[]; budgetsConfig: { total: number; services: Record<string, number> };
   rates: Record<string, number>;                     // Kč za 1 jednotku měny
+  rateInfo: { source: 'cnb' | 'manual' | 'default'; date: string | null /* RRRR-MM-DD lístku ČNB */; live: object | null };
+  // Automatické položky Admin API sečtené po měsíci a službě (jen měsíce z `months`), seřazené od
+  // nejnovějšího. Dny jsou UTC dny dodavatele. Součet `converted` za měsíc = `month.auto`.
+  automatic: Array<{ month: string; service: string; kind: 'api'; currency: string; amount: number; converted: number /* v `currency` aplikace */; days: number; from: string; to: string }>;
   subscriptions: Array<{
     service: string; plan: string | null; label: string | null; detected: boolean;
     free: boolean; since: string | null; observedAt: number | null; evidence: string;
@@ -229,6 +248,11 @@ interface SpendPayload {
 // ChatGPT pochází z poslední rate-limit události Codexu; údaj starší než 24 hodin nebo s časem
 // v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Do součtů
 // vstupují jen skutečné payments z ledgeru a ověřené API položky z Admin API.
+// Obrazovka Útrata ukazuje obojí: ruční řádky z `ledger` a skupinu jen ke čtení z `automatic`;
+// `month.total - month.auto` je ručně zapsaná část. Převod všech měsíců jde aktuálním kurzem
+// (`rateInfo`), historické kurzy aplikace nemá. `default` = orientační výchozí kurz.
+// integrations.cloud[id] = { state, detail, at, source, tokens: Record<den, …> | null, tokensError: string | null }
+// – `tokens: null` znamená „spotřebu se nepodařilo zjistit“ (důvod v `tokensError`), nikdy „nula“.
 
 interface Notifications {
   needsInput: boolean; limits: boolean; limitReset: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean;

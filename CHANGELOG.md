@@ -3,13 +3,48 @@
 ## Nezveřejněno
 
 - **Instalace jedním příkazem na Macu.** `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash` stáhne poslední vydání pro procesor Macu, ověří velikost a otisk SHA-256 proti GitHubu i podpis aplikace, starou verzi přesune do Koše a novou otevře. Soubor stažený v Terminálu nedostane příznak karantény, takže odpadá potvrzení v Nastavení systému; bez otisku od GitHubu nebo při neshodě se nic nenainstaluje. Web ji nabízí v sekci Stažení vedle stažení v prohlížeči. Distribuci a prodej to nenahrazuje – na to je dál potřeba Developer ID a notarizace.
+- **Útrata jde složit z viditelných řádků.** Součet měsíce obsahoval i náklady z Admin API, tabulka Výdaje ale ukazovala jen ruční zápisy. Teď má tabulka druhou skupinu „Automaticky z Admin API · OpenAI / Anthropic“ (jen ke čtení, jeden řádek za službu a měsíc, převod do hlavní měny pod částkou) a nad tabulkou rozpad „Tento měsíc = zapsáno ručně + automaticky z Admin API“. Rozpočty a prognóza počítají stejně jako dřív.
+- **Kurz říká, odkud je.** Pod Výdaji je zdroj kurzu (ČNB s datem lístku, vlastní z Rozpočtů) a že se minulé měsíce přepočítávají stejným kurzem. Výchozí kurz 23 Kč / 25 Kč je výrazně označený jako orientační.
+- **OpenAI Admin API: nejnovější den už nechybí.** Náklady i spotřeba tokenů se dočítají po stránkách (`has_more` / `next_page`, strop 12 stránek). Jeden dotaz s limitem 180 vynechal dnešek a dotaz na spotřebu byl s tímto limitem mimo specifikaci OpenAI (max 31).
+- **Nezjištěná spotřeba tokenů se netváří jako nulová.** Když náklady projdou a spotřeba selže, Nastavení u klíče řekne proč; data mají `tokens: null` a `tokensError` místo prázdného objektu.
+- **Kalendářní dny jsou všude místní.** Rozpočet tokenů projektu počítá místní měsíc (dřív UTC, takže 1. 11. po půlnoci ještě říjen). „Průměr 7 dní“, mapa aktivity, „včera“ a aktivita projektu se počítají po kalendářních dnech, ne po násobcích 24 h, takže kolem změny času nepřeskočí den. Synchronizace do účtu posílá tokeny po místních dnech Macu a web účtu je už nepřepočítává do UTC.
+- **Oprava útraty z Anthropic Admin API:** `cost_report` posílá částky v centech (podle dokumentace „123.45“ = 1,23 $), aplikace je ale četla jako dolary, takže API útrata Anthropicu vycházela stokrát vyšší v Útratě, rozpočtech i prognóze. OpenAI posílá dolary a zůstává beze změny.
 - **Živé spojení se po chybě serveru obnoví samo.** Když server na živý proud jednou odpověděl chybou (přetížení, restart, výpadek proxy), prohlížeč spojení zavřel natrvalo a okno pak donekonečna ukazovalo „Agenteeq neběží“ bez živých změn, i když server dávno běžel (ověřeno v Chromiu i WebKitu). Aplikace se teď připojí znovu sama, s prodlevou 2, 5, 10 a pak 30 s, a po návratu do okna nebo obnovení sítě hned.
 - **Rozšíření z Chrome Web Store se spáruje samo hned po schválení.** Aplikace důvěřuje ID položky v obchodě nezávisle na příznaku zveřejnění, takže tahle verze nebude po schválení Googlem potřebovat další vydání kvůli párování. Nabídka obchodu v aplikaci a na webu dál čeká na ověření veřejné stránky.
 - **Aktualizace ověřuje otisk balíčku.** Stažený balíček se porovná s otiskem SHA-256, který GitHub u přílohy vydání zveřejňuje; dřív se kontrolovala jen velikost. Na pomalé síti má stažení 15 minut místo 90 s, které na 38 MB často nestačily.
 - Nastavení → Aktualizace říká pravdu i ve stavech „vydání bez balíčku pro tento Mac“ a „kontrola vypnutá“; dřív obojí trvale hlásilo „Kontroluji aktualizace“. Na mobilu se volba Ručně / Automaticky skládá pod sebe a tlačítka se zalomí, místo aby přetékala z karty.
 
 - Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
-- Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.
+- Free projekt Supabase udržuje denní dotaz do databáze z GitHub Actions (`public.udrzet_aktivitu()`, tedy `select 1`). Dřívější požadavek na nastavení Auth databázi nečetl, takže by uspání podle pravidel Supabase nezabránil. Dotaz nečte ani nezapisuje žádnou tabulku a nepoužívá uživatelský token. Dokud migrace v databázi není, běh v Actions viditelně selže.
+
+## 0.32.0 – 2026-10-03 · zachycení agentů v činnosti
+
+- **Agenteeq pozná, co na počítači právě běží, i bez nastavování.** Když poprvé spustíš AI nástroj,
+  o kterém zatím nic neví (Warp, Windsurf, Google AI Studio jako aplikace z Chromu…), ukáže kartu
+  „Zachytil jsem agenta“: co to je, kde pracuje, od kdy běží a co z něj Agenteeq uvidí. Jedním
+  klikem ho přidáš do Mých nástrojů, nebo zvolíš „Nesledovat“ a už se neozve. Se zavřeným oknem
+  přijde jedno souhrnné oznámení systému, v jazyce z Nastavení a nikdy během nočního ticha.
+- **Katalog rozpoznaných nástrojů má 45 položek** (dřív 14): editory s agenty, agenti v terminálu,
+  prohlížeče s AI, lokální modely a webové aplikace nainstalované z Chromu. Nepotvrzené na skutečném
+  stroji jsou v docs/CONNECTORS.md označené 🧪. Rozšíření pro Chrome se už nevydává za zdroj
+  konverzací desktopových aplikací ChatGPT, Claude, Copilot, Perplexity a Grok.
+- **Moje nástroje** v Nastavení → Propojení: u každého je vidět, jestli právě běží, předplatné
+  zapíšeš jedním klikem do Útraty a rozhodnutí jde vzít zpět. Přepínač „Nově zachycený agent“
+  v Upozorněních se ukládá jako ostatní.
+- **Přehled ukazuje jen nástroje, které opravdu používáš** – co běží, co sis přidal a co tu už
+  někdy běželo. Přehled limitů ukáže i nástroje bez dat s poznámkou, že limity ani tokeny z nich
+  zatím nečte. Pravidlo z 0.29.3 (živý přehled jen s měřeními mladšími 30 minut) platí dál.
+- **Gemini CLI a Qwen Code se čtou ze skutečného formátu.** Obě aplikace dnes ukládají JSONL
+  (`~/.gemini/tmp/…/chats/*.jsonl`, `~/.qwen/projects/…/chats/*.jsonl`); Agenteeq četl jen starý
+  jednosouborový formát, takže moderní verze neukázaly nic. Tokeny: vstup bez mezipaměti + nástroje,
+  výstup + přemýšlení; větev relace v Qwen Code nepočítá práci rodiče podruhé.
+- Okno rozhraní hlásí serveru, že je vidět, s `keepalive`. Bez něj WebKit při přechodu mezi
+  stránkami rušil požadavek a zapisoval do konzole chybu přístupu (`qa:desktop` ve WebKitu: 11 chyb).
+  Přerušený požadavek se na serveru už nezapisuje jako chyba 500.
+- Nový test ověřuje každý pojmenovaný import v kódu rozhraní: chybějící export dřív prošel všemi
+  kontrolami a ukázal se až jako prázdná aplikace v prohlížeči.
+- `npm run release:mac -- --install` nechá na Macu jen aktuální verzi: předchozí přesune do Koše
+  místo do `~/.agenteeq/zalohy` (na macOS bez příkazu `trash` se odkládá jako dřív).
 
 ## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu
 

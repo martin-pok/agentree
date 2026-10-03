@@ -2,11 +2,14 @@
 // Cíl se předá přes sessionStorage, protože Nastavení se vykreslí až po změně adresy.
 const KEY = 'agenteeq.jump';
 
-export function goToExtension() {
-  try { sessionStorage.setItem(KEY, 'extension'); } catch { /* bez úložiště jen otevře Nastavení */ }
+// `karta` je data-region karty v Nastavení (extension, moje…).
+export function goToSettings(karta) {
+  try { sessionStorage.setItem(KEY, karta); } catch { /* bez úložiště jen otevře Nastavení */ }
   if (location.hash.startsWith('#/nastaveni')) window.dispatchEvent(new Event('agenteeq-jump'));
   else location.hash = '#/nastaveni';
 }
+
+export const goToExtension = () => goToSettings('extension');
 
 export function takeJump() {
   try {

@@ -121,14 +121,22 @@ if (install) {
 
   const uz = await fs.stat(APLIKACE).then(() => true, () => false);
   if (uz) {
-    // Stará verze se nemaže, jen odkládá. Návrat zpátky je pak jeden přesun ve Finderu.
-    const zalohy = path.join(os.homedir(), '.agenteeq', 'zalohy');
-    await fs.mkdir(zalohy, { recursive: true });
+    // Na Macu má zůstat jen jedna, aktuální verze. Předchozí proto jde do Koše, ne do zálohy
+    // vedle: nikdy se nemaže natrvalo a z Koše se vrátí přes „Vrátit zpět“. Kde systémový příkaz
+    // `trash` není (macOS starší než 14), odloží se jako dřív do ~/.agenteeq/zalohy.
     const stara = tise('defaults', ['read', `${APLIKACE}/Contents/Info`, 'CFBundleShortVersionString']) || 'neznama';
-    const kam = path.join(zalohy, `Agenteeq-${stara}-${new Date().toISOString().replace(/[:.]/g, '-')}.app`);
-    run('ditto', [APLIKACE, kam]);
-    console.log(`Předchozí verze (${stara}) odložena do ${kam}`);
-    await fs.rm(APLIKACE, { recursive: true, force: true });
+    const kos = await fs.stat('/usr/bin/trash').then(() => true, () => false);
+    if (kos) {
+      run('/usr/bin/trash', [APLIKACE]);
+      console.log(`Předchozí verze (${stara}) je v Koši – vrátíš ji přes „Vrátit zpět“.`);
+    } else {
+      const zalohy = path.join(os.homedir(), '.agenteeq', 'zalohy');
+      await fs.mkdir(zalohy, { recursive: true });
+      const kam = path.join(zalohy, `Agenteeq-${stara}-${new Date().toISOString().replace(/[:.]/g, '-')}.app`);
+      run('ditto', [APLIKACE, kam]);
+      console.log(`Předchozí verze (${stara}) odložena do ${kam}`);
+      await fs.rm(APLIKACE, { recursive: true, force: true });
+    }
   }
 
   const rozbaleno = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-install-'));
@@ -141,7 +149,7 @@ if (install) {
 } else {
   krok(6, `Instalace do ${path.dirname(APLIKACE)} přeskočena`);
   console.log('Spusť `npm run release:mac -- --install`, pokud chceš vyměnit i aplikaci na tomhle Macu.');
-  console.log('Stará verze se přitom nemaže, jen odloží do ~/.agenteeq/zalohy.');
+  console.log('Stará verze se přitom nemaže natrvalo, jen přesune do Koše.');
 }
 
 console.log('\nHotovo. Výstupy v dist/:');

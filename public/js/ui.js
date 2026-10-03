@@ -351,6 +351,7 @@ export function alertIcon(a) {
   if (a.kind === 'budget') return ICON.wallet;
   if (a.kind === 'done') return ICON.check;
   if (a.kind === 'digest' && a.digest === 'quiet') return ICON.moon;
+  if (a.kind === 'novy-nastroj') return ICON.spark;
   return ICON.bell;
 }
 

@@ -3,7 +3,7 @@
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
-import { etimeToSec, program, aplikace, createStabilniStart } from './processes.js';
+import { etimeToSec, program, aplikace, createStabilniStart, rozpoznejNastroj } from './processes.js';
 import { clip } from '../util.js';
 import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
 import { ui } from '../texty.js';
@@ -114,9 +114,12 @@ export function detectLocalAgents(psOutput, { ports = [], now = Date.now() } = {
       const row = parseRow(line);
       if (!row || isExcluded(row.args)) continue;
       const port = portByPid.get(row.pid);
+      const known = KNOWN_LOCAL.find((k) => matchesKnown(k, row.args));
+      // Nástroj z katalogu známých aplikací (Aider, Warp, Claude Code…) není „neznámý model“, i když
+      // má v argumentech `--model`: je rozpoznaný jinde a tady by vznikl falešný druhý záznam.
+      if (!known && rozpoznejNastroj(row.args)) continue;
 
       let key, base;
-      const known = KNOWN_LOCAL.find((k) => matchesKnown(k, row.args));
       if (known) {
         key = known.id;
         base = { id: known.id, name: known.name, kind: known.kind, source: 'known', confidence: 'vysoká', note: '' };

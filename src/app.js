@@ -8,8 +8,9 @@ import { DataStore, EXTENSION_ORIGIN, EXTENSION_INSTALLATION_ID, EXTENSION_INSTA
 import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
+import { createDetekce } from './detekce.js';
 import { createSecrets } from './secrets.js';
-import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert } from './spend.js';
+import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, subscriptionPortfolio } from './subscriptions.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
@@ -45,7 +46,7 @@ import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProces
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
-import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
+import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, projectMonthTokens as mesicniTokenyProjektu, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
@@ -245,7 +246,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createCopilotCliConnector(ctx),
     createVsCodeCopilotConnector(ctx),
     createGeminiFamilyConnector(ctx, { id: 'gemini-cli', name: 'Gemini CLI', dir: '.gemini', provider: 'google', app: 'Gemini CLI', bin: 'gemini' }),
-    createGeminiFamilyConnector(ctx, { id: 'qwen-code', name: 'Qwen Code', dir: '.qwen', provider: 'alibaba', app: 'Qwen Code', bin: 'qwen' }),
+    createGeminiFamilyConnector(ctx, { id: 'qwen-code', name: 'Qwen Code', dir: '.qwen', provider: 'alibaba', app: 'Qwen Code', bin: 'qwen', format: 'qwen' }),
     createWebConnector(ctx),
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
@@ -277,6 +278,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Počet u konektorů se sessions = sessions viditelné v okně sledování (ne počet souborů na disku).
   const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
+
+  // Detekce agentů v činnosti: oznámí nástroj, o kterém Agenteeq zatím nic neví (src/detekce.js).
+  // `connectorList` je deklarace funkce, takže tady už existuje.
+  const detekce = createDetekce({
+    store, datastore, alerts, notifier,
+    pripojene: () => new Set(connectorList().filter((c) => c.state === 'connected').map((c) => c.id)),
+  });
 
   function connectorList() {
     const visible = store.list();
@@ -629,20 +637,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return { ok: true, merged: Boolean(r.merged), nothing: Boolean(r.nothing) };
   }
 
-  // Měsíční rozpočet tokenů projektu: upozornění při 80 % a 100 %.
+  // Měsíční rozpočet tokenů projektu: upozornění při 80 % a 100 %, měsíc je místní (src/projects.js).
   function projectMonthTokens(pid, now = Date.now()) {
-    const month = new Date(now).toISOString().slice(0, 7);
-    let sum = 0;
-    for (const s of store.list(now)) {
-      if (s.projectId !== pid) continue;
-      for (const [k, v] of Object.entries(s.hourly || {})) if (k.startsWith(month)) sum += v;
-    }
-    return sum;
+    return mesicniTokenyProjektu(store.list(now), pid, now);
   }
 
   function checkProjectBudgets(now = Date.now()) {
     if (!datastore.data.settings.notifications.budget) return;
-    const month = new Date(now).toISOString().slice(0, 7);
+    const month = monthKey(now);
     for (const p of projects().items) {
       const budget = p.settings.tokenBudget;
       if (!budget || p.archived) continue;
@@ -1277,6 +1279,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       usage: datastore.data.usage,
       customAgents: customAgentsPayload(),
       localAgents: store.localAgents,
+      detekce: detekce.payload(),
       lan: local ? lan.status() : { ...lan.status(), pin: null, devices: [] },
       tunnels: local ? tunnelsPayload() : { at: 0, list: [], advice: null },
     };
@@ -1306,6 +1309,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Ověření uloženého přihlášení jde po síti – start aplikace na něj nečeká.
     ucet.start().then(() => cloudSync.nactiVolbu()).then(() => cloudSync.synchronizuj()).catch(() => {});
     cloudSync.start();
+    // Až po úvodním načtení konektorů – jinak by se Claude Code oznámil jako nový jen proto, že se
+    // jeho přepisy ještě načítají.
+    detekce.start();
     alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
@@ -1380,7 +1386,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   return {
-    config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat,
+    config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,

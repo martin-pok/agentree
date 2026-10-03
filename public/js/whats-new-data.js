@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.32.0',
+    date: '2026-10-03',
+    title: 'Agenteeq sám pozná, co na počítači běží',
+    items: [
+      'Když poprvé spustíš AI nástroj, o kterém Agenteeq zatím neví, ukáže se karta: co to je, kde pracuje, od kdy běží a co z něj Agenteeq uvidí. Přidáš ho jedním klikem, nebo zvolíš „Nesledovat“ a už se neozve.',
+      'Moje nástroje najdeš v Nastavení → Propojení. U každého vidíš, jestli právě běží, a předplatné zapíšeš rovnou do Útraty.',
+      'Přehled ukazuje jen nástroje, které opravdu používáš, ne dlouhý seznam „neběží“.',
+      'Gemini CLI a Qwen Code se objeví i v nejnovějších verzích, včetně tokenů.',
+    ],
+    en: {
+      title: 'Agenteeq spots what’s running on your computer',
+      items: [
+        'The first time you run an AI tool Agenteeq doesn’t know yet, a card appears: what it is, where it works, how long it’s been running and what Agenteeq can see. Add it in one click, or choose “Don’t track” and it won’t come up again.',
+        'You’ll find My tools in Settings → Connections. For each one you see whether it’s running right now, and you can log its subscription straight in Spend.',
+        'Overview shows only the tools you actually use, not a long list of “not running”.',
+        'Gemini CLI and Qwen Code now show up in their latest versions too, tokens included.',
+      ],
+    },
+  },
+  {
     version: '0.31.4',
     date: '2026-10-02',
     title: 'Spolehlivé čtení dlouhých relací',

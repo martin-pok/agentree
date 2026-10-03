@@ -116,7 +116,17 @@ const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
 
 /* ---------- Aplikace ---------- */
 console.log('Aplikace');
-const app = await startTestServer();
+// Podstrčený výpis procesů místo skutečného `ps`: měří se i karta „Zachytil jsem agenta“ a Moje
+// nástroje v Nastavení. PID nad maximem macOS i Linuxu – nic se nečte ze skutečných procesů.
+const PS = [
+  '  9000201 00:20:00  2.0 300000 /Applications/Warp.app/Contents/MacOS/stable',
+  '  9000202 00:05:00  1.0 150000 /Users/qa/Applications/Chrome Apps.localized/Google AI Studio.app/Contents/MacOS/app_mode_loader',
+  '  9000203 00:02:00  1.0 150000 /Applications/Perplexity.app/Contents/MacOS/Perplexity',
+].join('\n');
+const app = await startTestServer(
+  { AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '500' },
+  { vypisProcesu: async () => ({ ok: true, stdout: PS }) },
+);
 // Trocha obsahu, aby se měřily i stavy s daty, ne jen prázdné obrazovky.
 app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-kontrast', provider: 'openai', app: 'Codex' }), { title: 'QA kontrast', status: 'needs_input', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
 for (let i = 0; i < 3; i++) {
@@ -131,6 +141,8 @@ for (const [rootDir, name] of [['.claude', 'Claude'], ['.codex', 'Codex']]) {
 }
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
 await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true });
+for (let i = 0; i < 100 && !((await api(app.url).send('GET', '/api/state')).body.detekce?.nove?.length >= 3); i++) await new Promise((r) => setTimeout(r, 100));
+if ((await api(app.url).send('POST', '/api/nastroje/warp/pridat', {})).status !== 200) throw new Error('Detekce v QA nezachytila Warp – karta by se neměřila.');
 
 for (const rezim of ['light', 'dark']) {
   await api(app.url).send('PUT', '/api/settings', { appearance: rezim });

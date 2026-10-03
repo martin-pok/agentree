@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
     browser: false,
     // Noční ticho (src/nocni-ticho.js): výchozí vypnuto, časy podle místního času počítače.
     ...VYCHOZI_TICHO,
+    detekce: true, // oznámení o nově zachyceném agentovi (src/detekce.js)
   },
   disabledConnectors: [],
   lanAccess: false, // přístup z telefonu v domácí síti; výchozí stav je vypnuto
@@ -74,6 +75,22 @@ function normalizeCloud(c) {
     if (UUID.test(u) && UUID.test(String(dev))) devices[u] = String(dev);
   }
   return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, devices };
+}
+
+// Nástroje, které detekce na tomto Macu kdy zachytila. Ukládá se jen identifikátor z katalogu,
+// časy a rozhodnutí uživatele – žádné cesty, příkazy ani obsah, tedy nic osobního.
+export const STAVY_NASTROJE = ['novy', 'pridany', 'ignorovany', 'znamy'];
+export function normalizeNastroje(input) {
+  const out = {};
+  if (!input || typeof input !== 'object') return out;
+  for (const [id, z] of Object.entries(input).slice(0, 200)) {
+    if (!/^[\w-]{1,40}$/.test(id) || !z || typeof z !== 'object') continue;
+    if (!STAVY_NASTROJE.includes(z.stav)) continue;
+    const poprve = Number(z.poprve) > 0 ? Number(z.poprve) : 0;
+    if (!poprve) continue;
+    out[id] = { poprve, naposledy: Number(z.naposledy) > 0 ? Number(z.naposledy) : poprve, stav: z.stav, ...(Number(z.pridano) > 0 ? { pridano: Number(z.pridano) } : {}) };
+  }
+  return out;
 }
 
 export function normalizeData(raw) {
@@ -134,6 +151,7 @@ export function normalizeData(raw) {
     alerts: Array.isArray(d.alerts) ? d.alerts.slice(-ALERTS_MAX) : [],
     alertKeys: d.alertKeys && typeof d.alertKeys === 'object' ? d.alertKeys : {},
     credits: d.credits && typeof d.credits === 'object' ? d.credits : {},
+    nastroje: normalizeNastroje(d.nastroje),
     // Spárované telefony: v datech leží jen hash tokenu, nikdy použitelný token.
     lanDevices: Array.isArray(d.lanDevices)
       ? d.lanDevices

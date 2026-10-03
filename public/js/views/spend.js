@@ -1,11 +1,11 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtMoney, fmtNum, localDate, dateLong, rel, MONTHS, MONTHS_SHORT } from '../format.js';
+import { esc, fmtMoney, fmtNum, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut, timeLine } from '../charts.js';
 import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, creditAgeHtml } from '../ui.js';
-import { tr, LOCALE } from '../i18n.js';
+import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 
 const v = { el: null, onClick: null };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
@@ -36,9 +36,23 @@ function entryForm(sp, pre = {}) {
     <label class="field"><span>${tr('Měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === (pre.currency || sp.currency) ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="field"><span>${tr('Datum platby')}</span><input type="date" name="date" value="${localDate()}" required></label>
     <label class="field"><span>${tr('Účet / licence (volitelné)')}</span><input name="account" maxlength="80" autocomplete="off" value="${esc(pre.account || '')}" placeholder="${tr('Osobní, studio nebo klient')}"></label>
-    <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}"></label>
+    <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}" value="${esc(pre.note || '')}"></label>
     <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"${pre.recurring ? ' checked' : ''}> ${tr('Opakuje se každý měsíc (předplatné)')}</label>
   </div>`;
+}
+
+// Odkaz „Zapsat předplatné“ z Mých nástrojů: #/utrata?pridat=1&sluzba=cursor&poznamka=Warp.
+// Neznámou službu formulář nepřijme, takže se bere jen z nabídky; poznámka je obyčejný text.
+function predvyplneni(q) {
+  const sluzba = q?.get('sluzba');
+  if (!sluzba) return {};
+  return {
+    service: state.spend?.services?.[sluzba] ? sluzba : 'other',
+    kind: 'subscription',
+    recurring: true,
+    note: String(q.get('poznamka') || '').slice(0, 140),
+    title: tr('Zapsat předplatné'),
+  };
 }
 
 export function openAddEntry(pre = {}) {
@@ -181,7 +195,7 @@ function mount(el, _params, query) {
     }
   };
   el.addEventListener('click', v.onClick);
-  if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry());
+  if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry(predvyplneni(query)));
 }
 
 function update() {
@@ -277,23 +291,79 @@ function update() {
     }).join('')}</section>`
     : '');
 
+  fill(el, 'ledger', ledgerHtml(sp));
+}
+
+// Převedená částka pod cizí měnou: z tabulky pak jde poskládat měsíční součet v hlavní měně.
+const converted = (sp, amount, currency) => (currency === sp.currency ? '' : `<small class="ledger-conv">≈ ${esc(money(amount))}</small>`);
+const toApp = (sp, amount, currency) => {
+  const rate = (c) => (c === 'CZK' ? 1 : Number(sp.rates?.[c]) || 0);
+  const to = rate(sp.currency || 'CZK');
+  return to > 0 ? (Number(amount) || 0) * rate(currency) / to : 0;
+};
+const shortDay = (s) => new Date(dateOnlyTs(s)).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' });
+
+// Výdaje = ručně zapsané řádky + automatické řádky z Admin API. Dřív tabulka ukazovala jen ruční
+// zápisy, zatímco součet měsíce nahoře obsahoval i Admin API – čísla nešlo z viditelných řádků
+// složit. Automatické řádky jsou jen ke čtení: mění je dodavatel, ne člověk.
+export function ledgerHtml(sp) {
   const rows = [...sp.ledger].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  fill(el, 'ledger', rows.length
-    ? `<div class="table-wrap"><table class="ledger">
-        <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>
-        <tbody>${rows.map((e) => {
-          const svc = sp.services[e.service];
-          const running = e.recurring === 'monthly' && !e.endDate;
-          return `<tr>
-            <td>${dateLong(Date.parse(e.date))}</td>
+  const auto = sp.automatic || [];
+  if (!rows.length && !auto.length) {
+    return emptyState({ title: tr('Zatím žádné výdaje'), text: tr('Zapiš předplatné nebo dokoupené extra usage a uvidíš, kolik tě AI stojí.'), action: `<button class="btn btn--primary" type="button" data-action="add">${ICON.plus}${tr('Přidat výdaj')}</button>` });
+  }
+  const vendors = [...new Set(auto.map((r) => String(sp.services[r.service]?.label || r.service).replace(/ API$/, '')))];
+  const groupRow = (title, extra = '') => `<tr class="ledger-group"><th scope="rowgroup" colspan="6"><div class="ledger-group-head"><span class="ledger-group-title">${title}</span>${extra}</div></th></tr>`;
+  const manualRows = rows.map((e) => {
+    const svc = sp.services[e.service];
+    const running = e.recurring === 'monthly' && !e.endDate;
+    return `<tr>
+            <td>${dateLong(dateOnlyTs(e.date))}</td>
             <td><span class="svc">${glyph(svc?.provider)}${esc(svc?.label || e.service)}</span></td>
-            <td>${esc(sp.kinds[e.kind] || e.kind)}${e.recurring === 'monthly' ? ` <span class="badge">${e.endDate ? tr('do {0}', dateLong(Date.parse(e.endDate))) : tr('měsíčně')}</span>` : ''}</td>
+            <td>${esc(sp.kinds[e.kind] || e.kind)}${e.recurring === 'monthly' ? ` <span class="badge">${e.endDate ? tr('do {0}', dateLong(dateOnlyTs(e.endDate))) : tr('měsíčně')}</span>` : ''}</td>
             <td class="muted">${esc(e.note || '')}</td>
-            <td class="num">${fmtMoney(e.amount, e.currency)}</td>
+            <td class="num">${fmtMoney(e.amount, e.currency)}${converted(sp, toApp(sp, e.amount, e.currency), e.currency)}</td>
             <td class="actions">${running ? `<button class="btn btn--sm" type="button" data-action="end" data-id="${esc(e.id)}">${tr('Ukončit')}</button>` : ''}<button class="icon-btn" type="button" data-action="delete" data-id="${esc(e.id)}" aria-label="${tr('Smazat výdaj')} ${esc(svc?.label || '')} ${esc(e.date)}">${ICON.trash}</button></td>
           </tr>`;
-        }).join('')}</tbody></table></div>`
-    : emptyState({ title: tr('Zatím žádné výdaje'), text: tr('Zapiš předplatné nebo dokoupené extra usage a uvidíš, kolik tě AI stojí.'), action: `<button class="btn btn--primary" type="button" data-action="add">${ICON.plus}${tr('Přidat výdaj')}</button>` }));
+  }).join('');
+  const autoRows = auto.map((r) => {
+    const svc = sp.services[r.service];
+    const days = `${r.days} ${plural(r.days, 'den', 'dny', 'dní')}`;
+    return `<tr class="ledger-auto">
+            <td>${esc(monthLabel(r.month))}</td>
+            <td><span class="svc">${glyph(svc?.provider)}${esc(svc?.label || r.service)}</span></td>
+            <td>${esc(sp.kinds[r.kind] || r.kind)}</td>
+            <td class="muted">${esc(days)} · ${esc(r.from === r.to ? shortDay(r.from) : `${shortDay(r.from)}–${shortDay(r.to)}`)}</td>
+            <td class="num">${fmtMoney(r.amount, r.currency)}${converted(sp, r.converted, r.currency)}</td>
+            <td class="actions"><span class="sr-only">${tr('jen ke čtení')}</span></td>
+          </tr>`;
+  }).join('');
+  const autoMonth = sp.month.auto || 0;
+  const split = autoMonth > 0
+    // Každý díl součtu začíná na novém místě a částka se nikdy neodtrhne od posledního slova
+    // popisku; na úzkém okně se zalomí uvnitř dílu, ne mezi „ručně“ a částkou.
+    ? `<p class="ledger-sum"><span>${tr('Tento měsíc')}&nbsp;<b class="ledger-castka">${esc(money(sp.month.total))}</b></span><span>= ${tr('zapsáno ručně')}&nbsp;<span class="ledger-castka">${esc(money(Math.max(0, sp.month.total - autoMonth)))}</span></span><span>+ ${tr('automaticky z Admin API')}&nbsp;<span class="ledger-castka">${esc(money(autoMonth))}</span></span></p>`
+    : '';
+  return `${split}<div class="table-wrap"><table class="ledger">
+        <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>
+        ${rows.length ? `<tbody>${auto.length ? groupRow(tr('Zapsané ručně')) : ''}${manualRows}</tbody>` : ''}
+        ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note" title="${esc(tr('Admin API sčítá náklady po dnech v UTC. Na přelomu měsíce proto může den spadnout do jiného měsíce než podle místního kalendáře.'))}">${tr('dny podle UTC, jak je počítá dodavatel')}</span>`)}${autoRows}</tbody>` : ''}
+      </table></div>${rateNote(sp, rows, auto)}`;
+}
+
+// Odkud je kurz. Převádí se dnešním kurzem i za minulé měsíce – historické kurzy aplikace nemá,
+// tak to aspoň říká nahlas. Výchozí kurz je jen orientační a je tak označený.
+export function rateNote(sp, rows, auto) {
+  const app = sp.currency || 'CZK';
+  if (!auto.length && app === 'CZK' && rows.every((e) => e.currency === app)) return '';
+  const info = sp.rateInfo || { source: 'default' };
+  const n = (x) => Number(x).toLocaleString(LOCALE, { maximumFractionDigits: 3 });
+  const rates = tr('1 $ = {0} Kč, 1 € = {1} Kč', n(sp.rates?.USD), n(sp.rates?.EUR));
+  if (info.source === 'default') {
+    return `<p class="spend-foot spend-foot--warn"><b>${tr('Orientační kurz')}</b> ${esc(rates)}. ${tr('Kurz ČNB se zatím nepodařilo načíst. Přesný kurz zadáš v Rozpočtech.')}</p>`;
+  }
+  const source = info.source === 'cnb' && info.date ? tr('Kurz ČNB z {0}', esc(dateLong(dateOnlyTs(info.date)))) : tr('Vlastní kurz z Rozpočtů');
+  return `<p class="spend-foot">${source}: ${esc(rates)}. ${tr('Minulé měsíce se přepočítávají stejným kurzem, ne kurzem ze dne platby.')}</p>`;
 }
 
 // Export do CSV: posledních 12 měsíců, měsíční předplatné v každém měsíci, převod podle kurzů
@@ -309,7 +379,7 @@ export default {
   mount,
   update,
   query(q) {
-    if (q?.get('pridat')) openAddEntry();
+    if (q?.get('pridat')) openAddEntry(predvyplneni(q));
   },
   unmount: () => {
     if (v.el && v.onClick) v.el.removeEventListener('click', v.onClick);

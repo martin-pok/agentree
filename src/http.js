@@ -223,6 +223,7 @@ export function createHttpServer(app, existingServer = null) {
     transcript: (t) => broadcast('transcript', t),
     runtimes: (l) => broadcast('runtimes', l),
     localAgents: (l) => broadcast('localAgents', l),
+    detekce: (d) => broadcast('detekce', d),
     customAgents: (l) => broadcast('customAgents', l),
     limits: (l) => broadcast('limits', l),
     credits: (l) => broadcast('credits', l),
@@ -267,10 +268,17 @@ export function createHttpServer(app, existingServer = null) {
   async function readBody(req) {
     const chunks = [];
     let size = 0;
-    for await (const chunk of req) {
-      size += chunk.length;
-      if (size > 1_000_000) throw new HttpError(413, ui('Příliš velký požadavek.'));
-      chunks.push(chunk);
+    try {
+      for await (const chunk of req) {
+        size += chunk.length;
+        if (size > 1_000_000) throw new HttpError(413, ui('Příliš velký požadavek.'));
+        chunks.push(chunk);
+      }
+    } catch (err) {
+      // Prohlížeč požadavek zrušil uprostřed těla (obnovení nebo zavření okna během hlášení
+      // přítomnosti). To je chyba klienta, ne serveru – nesmí se zapsat jako 500.
+      if (err instanceof HttpError) throw err;
+      throw new HttpError(400, ui('Požadavek se přerušil dřív, než dorazil celý.'));
     }
     const raw = Buffer.concat(chunks).toString('utf8');
     if (!raw.trim()) return {};
@@ -369,6 +377,15 @@ export function createHttpServer(app, existingServer = null) {
       return { raw: true, headers, body: skill.text };
     }],
     ['POST', /^\/api\/alerts\/clear$/, () => ({ cleared: alerts.clear(), unread: alerts.unread(), items: [] })],
+
+    /* ---------- Detekce agentů ---------- */
+    // Rozhodnutí o nově zachyceném nástroji. Jen z tohoto Macu – telefon smí pouze číst (remote-scope).
+    ['POST', /^\/api\/nastroje\/([\w-]{1,40})\/(pridat|ignorovat|rozumim|odebrat)$/, (_req, m) => unwrap(app.detekce.rozhodni(m[1], m[2]))],
+    // Rozhraní hlásí, že je vidět – systémové oznámení macOS pak detekce neposílá.
+    ['POST', /^\/api\/ui\/pritomnost$/, async (req) => {
+      const body = await readBody(req);
+      return app.detekce.pritomnost(body?.videt === true);
+    }],
 
     /* ---------- Přístup z telefonu ---------- */
     ['POST', /^\/api\/remote\/detect$/, async (req) => {
@@ -657,7 +674,7 @@ export function createHttpServer(app, existingServer = null) {
         }
         datastore.data.settings.layout = normalizeLayout(merged);
       }
-      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser', 'quietHours']) if (typeof n[k] === 'boolean') cur[k] = n[k];
+      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser', 'quietHours', 'detekce']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       for (const k of ['quietFrom', 'quietTo']) if (n[k] !== undefined) cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);
