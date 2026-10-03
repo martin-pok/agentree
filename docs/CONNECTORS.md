@@ -266,7 +266,7 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Náklady z Admin API – `src/connectors/cloud-billing.js` 🧪
 
-- OpenAI: `GET /v1/organization/costs?start_time&bucket_width=1d` (Bearer admin klíč). Anthropic: `GET /v1/organizations/cost_report?starting_at&ending_at` (`x-api-key`, `anthropic-version: 2023-06-01`). Tolerantní čtení částky (`amount` číslo / řetězec / `{value}`), měna USD, obnova 1 h.
+- OpenAI: `GET /v1/organization/costs?start_time&bucket_width=1d` (Bearer admin klíč). Anthropic: `GET /v1/organizations/cost_report?starting_at&ending_at` (`x-api-key`, `anthropic-version: 2023-06-01`). Tolerantní čtení částky (`amount` číslo / řetězec / `{value}`), měna USD, obnova každých 10 min. **Jednotky se liší:** OpenAI posílá dolary, Anthropic nejmenší jednotky měny jako desetinný řetězec (`"123.45"` = 1,2345 $, podle dokumentace endpointu); parser Anthropicu proto dělí stem. Do 3. 10. 2026 se Anthropic četl jako dolary a API útrata vycházela stokrát vyšší.
 - **Neověřeno proti skutečným klíčům.** Při prvním připojení zkontroluj tvar odpovědi a uprav `parse*Costs` + test.
 
 ### Vzdálený přístup přes Tailscale – `src/tunnel.js` + `src/lan.js` 🧪

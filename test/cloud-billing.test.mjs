@@ -111,7 +111,7 @@ test('parseAnthropicUsage: bucket bez starting_at se přeskočí, chybějící c
 test('parseOpenAICosts a parseAnthropicCosts: beze změny (regresní test)', () => {
   const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: { value: 1.5 } }, { amount: '0.5' }] }] });
   assert.equal(openai['2026-01-01'], 2);
-  const anthropic = parseAnthropicCosts({ data: [{ starting_at: '2026-01-01', results: [{ amount: 3 }] }] });
+  const anthropic = parseAnthropicCosts({ data: [{ starting_at: '2026-01-01', results: [{ amount: 300 }] }] });
   assert.equal(anthropic['2026-01-01'], 3);
 });
 
@@ -149,7 +149,7 @@ test('Konektor: AGENTEEQ_CLOUD=0 (config.cloudFetch=false) nikdy nezavolá síť
 test('Konektor: úspěšné napojení natáhne náklady i spotřebu tokenů odděleně (žádné sčítání metrik)', async () => {
   const openaiCosts = { data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: 2.5 }] }] };
   const openaiUsage = { data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ input_tokens: 100, output_tokens: 50, input_cached_tokens: 0, num_model_requests: 1 }] }] };
-  const anthropicCosts = { data: [{ starting_at: '2026-01-01', results: [{ amount: 1.25 }] }] };
+  const anthropicCosts = { data: [{ starting_at: '2026-01-01', results: [{ amount: 125 }] }] };
   const anthropicUsage = { data: [{ starting_at: '2026-01-01T00:00:00Z', results: [{ uncached_input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 0, cache_creation: { ephemeral_1h_input_tokens: 0, ephemeral_5m_input_tokens: 0 } }] }] };
 
   const seenOpts = [];
@@ -189,9 +189,9 @@ test('Konektor: Anthropic dočte denní report ze všech stránek, posílá ISO 
     ['api.anthropic.com/v1/organizations/cost_report', (href, opts) => {
       const url = new URL(href); pages.push({ path: 'cost', url, opts });
       return okJson(url.searchParams.get('page') ? {
-        data: [{ starting_at: '2026-01-02T00:00:00Z', results: [{ amount: 2 }] }], has_more: false,
+        data: [{ starting_at: '2026-01-02T00:00:00Z', results: [{ amount: 200 }] }], has_more: false,
       } : {
-        data: [{ starting_at: '2026-01-01T00:00:00Z', results: [{ amount: 1 }] }], has_more: true, next_page: 'cost-next',
+        data: [{ starting_at: '2026-01-01T00:00:00Z', results: [{ amount: 100 }] }], has_more: true, next_page: 'cost-next',
       });
     }],
     ['api.anthropic.com/v1/organizations/usage_report/messages', (href, opts) => {
@@ -329,4 +329,12 @@ test('Konektor: příliš velká odpověď spotřeby tokenů se odmítne (strop 
   // Náklady i tak zůstávají v pořádku, tokeny se u příliš velké odpovědi jen nedoplní.
   assert.equal(providers['openai-admin'].state, 'connected');
   assert.deepEqual(providers['openai-admin'].tokens, {});
+});
+
+test('Anthropic cost_report: částka je v centech (příklad z dokumentace "123.45" = 1,2345 $)', () => {
+  const den = parseAnthropicCosts({ data: [{ starting_at: '2026-10-01T00:00:00Z', results: [{ amount: '123.45', currency: 'USD' }, { amount: '76.55', currency: 'USD' }] }] });
+  assert.ok(Math.abs(den['2026-10-01'] - 2) < 1e-9, `čekáme 2 $, ne ${den['2026-10-01']}`);
+  // OpenAI posílá dolary – jeho částka se nedělí.
+  const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000), results: [{ amount: { value: 2, currency: 'usd' } }] }] });
+  assert.equal(openai['2026-10-01'], 2);
 });
