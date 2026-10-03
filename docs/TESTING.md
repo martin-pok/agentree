@@ -125,6 +125,28 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
+## Protokol ověření – 0.32.0 (3. 10. 2026, macOS 26.6, Node 24.18, Playwright 1.63)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 712 testů, 710 prošlo, 2 přeskočeny s důvodem (podmínka systému), 0 selhalo. V jednom z dvou plných běhů překročil starší test latence (`detekce-agentu`: první konverzace do 2 s) limit o 60 ms při souběhu všech testů; samostatně 3× prošel |
+| `npm run check` | 248 souborů bez syntaktické chyby |
+| `qa:tvary` | aplikace (s kartou „Zachytil jsem agenta“ a Mými nástroji z podstrčených procesů), web i okno rozšíření podle pravidla tvarů |
+| `qa:contrast` | WCAG 2.2 AA v aplikaci (včetně karty detekce a Mých nástrojů), na webu i v okně rozšíření, světlý i tmavý režim |
+| `qa:desktop` | Chromium i WebKit: všechny případy prošly, žádná chyba JS. Bez `keepalive` u hlášení přítomnosti WebKit zapsal 11 chyb „due to access control checks“ |
+| Snímky detekce | 112 snímků: Chromium a WebKit × 1440/375 px × světlý/tmavý × čeština/angličtina – karta, Přehled s používanými nástroji, limity bez dat, přepínač v Upozorněních, Moje nástroje. Konzole čistá, bez vodorovného rolování |
+
+Procesy v testech a QA jsou podstrčené (`vypisProcesu`) s PID nad maximem macOS i Linuxu – detaily
+procesu se nikdy nečtou ze skutečného procesu na stroji, kde test běží.
+
+**Neověřeno na Macu** (cloud ani prohlížeč to nenahradí):
+
+- [ ] Sestavená `.app` (WKWebView): karta „Zachytil jsem agenta“ při spuštění nástroje, který Agenteeq ještě nezná (třeba Warp); Přidat → Nastavení → Moje nástroje a Přehled; Nesledovat → neozve se ani po restartu.
+- [ ] Nativní oznámení macOS se zavřeným oknem: nový nástroj → jedno souhrnné oznámení; při otevřeném okně žádné; v nočním tichu žádné; v angličtině anglicky.
+- [ ] Konzole sestavené `.app` při obnovení a zavření okna (keepalive ve WKWebView).
+- [ ] `npm run release:mac -- --install`: předchozí verze v Koši, z Koše jde vrátit.
+- [ ] Rozpoznání 🧪 nástrojů z katalogu na skutečném stroji (docs/CONNECTORS.md).
+
 ## Protokol ověření – obnova spojení, párování z obchodu, otisk aktualizace (3. 10. 2026, macOS, Node 24.18)
 
 | Kontrola | Výsledek |

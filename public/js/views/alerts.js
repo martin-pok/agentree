@@ -4,6 +4,7 @@ import { esc, timeHM, startOfDay, DAY, dateLong } from '../format.js';
 import { ICON } from '../icons.js';
 import { fill, alertIcon, alertHref, emptyState, toast, agentHref } from '../ui.js';
 import { tr } from '../i18n.js';
+import { goToSettings } from '../jump.js';
 
 const v = { el: null, filter: 'all' };
 // Odkaz u souhrnu, který nevede do jedné konverzace (src/alerts.js#souhrn).
@@ -54,6 +55,7 @@ function mount(el) {
     if (e.target.closest('[data-read-all-view]')) { markRead('all'); return; }
     const r = e.target.closest('[data-read]');
     if (r) markRead([r.dataset.read]);
+    if (e.target.closest('[data-moje-nastroje]')) goToSettings('moje');
   });
 }
 
@@ -81,6 +83,7 @@ function update() {
         <div class="alert-top"><strong>${esc(a.title)}</strong><time datetime="${new Date(a.at).toISOString()}">${timeHM(a.at)}</time></div>
         ${a.body ? `<p>${esc(a.body)}</p>` : ''}
         ${a.sessionId ? `<a class="link-inline" href="${agentHref(a.sessionId)}" data-read="${esc(a.id)}">${tr('Otevřít agenta')} ${ICON.arrow}</a>`
+          : a.kind === 'novy-nastroj' ? `<button class="link-inline" type="button" data-moje-nastroje data-read="${esc(a.id)}">${tr('Moje nástroje')} ${ICON.arrow}</button>`
           : alertHref(a) !== '#/upozorneni' ? `<a class="link-inline" href="${esc(alertHref(a))}" data-read="${esc(a.id)}">${CIL[alertHref(a)] || tr('Otevřít')} ${ICON.arrow}</a>` : ''}
       </div>
       ${a.read ? '' : `<button class="icon-btn" type="button" data-read="${esc(a.id)}" aria-label="${tr('Označit jako přečtené')}">${ICON.check}</button>`}

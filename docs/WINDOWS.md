@@ -47,7 +47,7 @@ Konektory, které čtou z domovské složky, mají na Windows tutéž cestu – 
 | Claude Code | `~/.claude/projects` |
 | Codex | `~/.codex/sessions` |
 | Copilot CLI | `~/.copilot/session-state` |
-| Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/tmp` |
+| Gemini CLI, Qwen Code | `~/.gemini/tmp`, `~/.qwen/projects` |
 | Webové aplikace | rozšíření pro Chrome → HTTP, na systému nezávislé |
 | Náklady z Admin API | HTTPS, na systému nezávislé |
 

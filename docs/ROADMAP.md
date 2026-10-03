@@ -1,10 +1,10 @@
 # Roadmapa
 
 Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
-Stav je prověřený proti kódu (naposledy 2. 10. 2026, s vydáním 0.31.4). Hotové položky zůstávají
+Stav je prověřený proti kódu (naposledy 3. 10. 2026, s vydáním 0.32.0). Hotové položky zůstávají
 přeškrtnuté s odkazem, kde to je, aby bylo vidět, co se rozhodlo jinak, než stálo v plánu.
 
-## Teď – po 0.31.4
+## Teď – po 0.32.0
 
 Pořadí podle toho, co brzdí ostrý provoz. U položek „vlastník“ je potřeba účet nebo rozhodnutí,
 které kód za nikoho neudělá.
@@ -14,8 +14,10 @@ Od 0.25.0 vyšlo mimo plán: ověření stránky v okně rozšíření (0.26.0),
 rozšíření bez kódu, nové okno rozšíření se seznamem otevřených konverzací a přepnutím do karty,
 rozšíření v angličtině, napojení Claude Code a Codexu bez Terminálu a jednotný systém tvarů
 a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Verze 0.31.0 přidala více licencí
-jedné služby a 0.31.1 dokončila anglické exporty, kalendář a návrat z Google přihlášení. Podrobnosti
-jsou v `CHANGELOG.md`.
+jedné služby a 0.31.1 dokončila anglické exporty, kalendář a návrat z Google přihlášení. Verze 0.32.0
+sama zachytí AI nástroje v činnosti (karta „Zachytil jsem agenta“, Moje nástroje) a čte moderní
+Gemini CLI a Qwen Code. Rozpoznání 🧪 nástrojů z katalogu čeká na potvrzení na skutečném stroji
+([CONNECTORS.md](CONNECTORS.md)). Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Kdo | Akceptační kritéria |
 |---|---|---|---|
