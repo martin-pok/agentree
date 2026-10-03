@@ -4,7 +4,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { buildSite } from './build-site.mjs';
 
-const TYPY = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.xml': 'application/xml', '.txt': 'text/plain', '.ico': 'image/x-icon' };
+const TYPY = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.xml': 'application/xml', '.txt': 'text/plain', '.sh': 'text/plain', '.ico': 'image/x-icon' };
 const { out } = await buildSite();
 const koren = path.resolve(out);
 

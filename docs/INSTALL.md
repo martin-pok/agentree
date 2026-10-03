@@ -14,6 +14,18 @@ První spuštění zobrazí šestikrokový průvodce. Vrátíš se k němu v Nas
 
 Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
 
+### Instalace jedním příkazem (Terminál)
+
+```bash
+curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash
+```
+
+Skript (`site/install.sh`, na webu `/install.sh`) stáhne z posledního vydání na GitHubu balíček pro procesor tohoto Macu (`Agenteeq-<verze>-macOS-arm64.zip`, na Intelu `-x64`), porovná velikost a otisk SHA-256 s hodnotou, kterou GitHub u přílohy zveřejňuje, rozbalí ho a ověří podpis (`codesign --verify --deep --strict`). Teprve potom ukončí běžící Agenteeq (jako ⌘Q, nejvýš 10 s), starou verzi přesune do Koše a novou dá do `/Applications` – nebo tam, kde už Agenteeq je; když `/Applications` nejde zapsat, do `~/Applications`. Nakonec aplikaci otevře.
+
+Proč odpadne krok v Nastavení: soubor stažený curlem v Terminálu nedostane příznak `com.apple.quarantine`, takže se Gatekeeper neptá. Razítko Applu tu nahrazuje otisk z GitHubu: příloha bez otisku se nestáhne (stejné pravidlo jako aktualizace v `src/updates.js`) a při jakékoli neshodě skript skončí dřív, než sáhne na nainstalovanou aplikaci. Nepoužívá `sudo`, aplikaci nikdy nemaže (když Koš nejde použít, nechá ji vedle jako `Agenteeq-<verze>.backup.app`), nic neodesílá a mluví jen s `api.github.com` a `github.com`. Opakované spuštění se stejnou verzí nic nestahuje.
+
+Poctivá hranice: tohle je cesta pro lidi, kteří Terminálu a tomuto webu důvěřují – ověřuje, že balíček je ten zveřejněný na GitHubu, ne kdo ho vydal. Pro běžnou distribuci a prodej je dál potřeba Developer ID a notarizace ([ROADMAP](ROADMAP.md) „Teď“ #3). Chování hlídá `test/instalace.test.mjs` (podvržený `curl`, skutečné `ditto`, `codesign` a `osascript`).
+
 **Kde balíček vzít.** V desktopové aplikaci Nastavení → Aplikace na tomto Macu → *Instalace pro další lidi* ukáže, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje – s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
 
 ```bash

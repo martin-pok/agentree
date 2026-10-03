@@ -201,6 +201,25 @@ section[id] { scroll-margin-top: 56px; }
 .steps p { color: var(--ink-2); font-size: 16px; }
 .steps p b { font-size: inherit; }
 .steps + .wrap { margin-top: 16px; }
+/* Instalace jedním příkazem: kousek tmavé scény uprostřed světlé jednotky – Terminál je tmavý
+   a příkaz se tak pozná na první pohled. Barvy scény jsou stejné ve světlém i tmavém režimu. */
+.unit-head .text-link { margin-top: 4px; font-size: 15px; }
+.prikaz { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-bottom: 16px; padding: 36px 32px; border-radius: var(--r-tile); background: var(--stage); border: 1px solid var(--stage-line); color: var(--on-stage); scroll-margin-top: 80px; }
+.prikaz h3 { color: var(--on-stage); font-size: 22px; }
+.prikaz p { max-width: 72ch; color: var(--on-stage-mute); }
+.prikaz a { color: var(--on-stage); }
+.prikaz :focus-visible { outline-color: #76E6CD; }
+.prikaz-radek { display: flex; gap: 8px; margin-block: 6px 2px; }
+/* Pole drží jeden řádek: delší příkaz se v něm posune do strany, stránka nikdy. Pravý okraj
+   se do pole prolne, takže na telefonu je vidět, že příkaz pokračuje. */
+.prikaz-pole { flex: 1; min-width: 0; display: flex; align-items: center; min-height: 48px; overflow: hidden; border-radius: var(--r-full); background: var(--stage-2); border: 1px solid var(--stage-line); }
+.prikaz-posun { flex: 1; min-width: 0; padding: 0 24px; line-height: 46px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; white-space: pre; border-radius: var(--r-full); color: var(--on-stage); font-size: 15px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+.prikaz-posun::-webkit-scrollbar { display: none; }
+.prikaz-posun:focus-visible { outline-offset: -4px; }
+.prikaz-vyzva { color: #43D1B1; user-select: none; -webkit-user-select: none; }
+.prikaz-kopie { flex: none; min-width: 128px; background: var(--on-stage); color: var(--backdrop); }
+.prikaz-kopie:hover { background: #D9D5E0; }
+.bez-zlomu { white-space: nowrap; }
 .gatekeeper { display: grid; gap: 10px; padding: 32px; border-radius: var(--r-tile); background: var(--card); }
 .gatekeeper p { color: var(--ink-2); }
 .gatekeeper b { color: var(--ink); }
@@ -268,7 +287,10 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .specs { font-size: 13px; gap: 6px 8px; }
   .specs span { gap: 8px; }
   .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .source-group, .facts article, .steps li, .gatekeeper { padding: 28px 22px 32px; border-radius: var(--r-lg); }
+  .source-group, .facts article, .steps li, .gatekeeper, .prikaz { padding: 28px 22px 32px; border-radius: var(--r-lg); }
+  /* Na telefonu má příkaz celou šířku a tlačítko jde pod něj, kde se na něj pohodlně trefí palec. */
+  .prikaz-radek { flex-direction: column; }
+  .prikaz-posun { padding-inline: 20px; font-size: 14px; }
   summary { font-size: 17px; padding: 20px 2px; }
 }
 @media (max-width: 420px) {

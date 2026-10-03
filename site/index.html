@@ -167,6 +167,7 @@
     <p class="lead">Žádný účet, žádný instalátor s deseti kroky. Stáhne se jedna složka s aplikací.</p>
     <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
     <p class="specs">Apple Silicon · macOS 14 a novější · nejnovější vydání · 38 MB</p>
+    <a class="text-link" href="#jednim-prikazem">Pracuješ v Terminálu? Nainstaluj jedním příkazem</a>
   </div>
 
   <ol class="wrap steps">
@@ -176,6 +177,16 @@
   </ol>
 
   <div class="wrap">
+    <div class="prikaz" id="jednim-prikazem">
+      <h3>Instalace jedním příkazem</h3>
+      <p>Pro ty, kdo pracují v Terminálu. Příkaz stáhne poslední vydání, ověří ho, nainstaluje do Aplikací a otevře – krok 3 odpadne.</p>
+      <div class="prikaz-radek">
+        <div class="prikaz-pole"><code class="prikaz-posun" tabindex="0"><span class="prikaz-vyzva" aria-hidden="true">$ </span>curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash</code></div>
+        <button class="btn prikaz-kopie" type="button" data-kopirovat="curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash">Zkopírovat</button>
+      </div>
+      <p class="small">Soubor stažený v Terminálu nedostane od macOS příznak karantény, takže se Gatekeeper neptá; razítko Applu místo toho nahradí otisk <span class="bez-zlomu">SHA-256</span>, který skript porovná s GitHubem, a při neshodě nic nenainstaluje. Starou verzi přesune do Koše. <a href="/install.sh">Přečíst skript</a></p>
+    </div>
+
     <div class="gatekeeper">
       <p><b>Proč to chce ten jeden krok navíc?</b> Vývojářský podpis u Applu stojí ročně peníze a beta ho zatím nemá. Bez něj macOS aplikaci nespustí sám a ukáže, že ji nedokáže ověřit — není to nález škodlivého kódu, jen chybějící razítko. Potvrzení v Nastavení je jednorázové; příště se Agenteeq otevře dvojklikem jako každá jiná aplikace. Až podpis doplníme, tenhle krok zmizí.</p>
       <p class="small muted">Na macOS 14 funguje i starší zkratka: klik pravým tlačítkem a <b>Otevřít</b>. Na macOS 15 a novějším ji Apple zrušil, proto výše vede cesta přes Nastavení — ta platí všude.</p>

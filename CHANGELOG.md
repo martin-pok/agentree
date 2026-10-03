@@ -2,6 +2,7 @@
 
 ## Nezveřejněno
 
+- **Instalace jedním příkazem na Macu.** `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash` stáhne poslední vydání pro procesor Macu, ověří velikost a otisk SHA-256 proti GitHubu i podpis aplikace, starou verzi přesune do Koše a novou otevře. Soubor stažený v Terminálu nedostane příznak karantény, takže odpadá potvrzení v Nastavení systému; bez otisku od GitHubu nebo při neshodě se nic nenainstaluje. Web ji nabízí v sekci Stažení vedle stažení v prohlížeči. Distribuci a prodej to nenahrazuje – na to je dál potřeba Developer ID a notarizace.
 - **Živé spojení se po chybě serveru obnoví samo.** Když server na živý proud jednou odpověděl chybou (přetížení, restart, výpadek proxy), prohlížeč spojení zavřel natrvalo a okno pak donekonečna ukazovalo „Agenteeq neběží“ bez živých změn, i když server dávno běžel (ověřeno v Chromiu i WebKitu). Aplikace se teď připojí znovu sama, s prodlevou 2, 5, 10 a pak 30 s, a po návratu do okna nebo obnovení sítě hned.
 - **Rozšíření z Chrome Web Store se spáruje samo hned po schválení.** Aplikace důvěřuje ID položky v obchodě nezávisle na příznaku zveřejnění, takže tahle verze nebude po schválení Googlem potřebovat další vydání kvůli párování. Nabídka obchodu v aplikaci a na webu dál čeká na ověření veřejné stránky.
 - **Aktualizace ověřuje otisk balíčku.** Stažený balíček se porovná s otiskem SHA-256, který GitHub u přílohy vydání zveřejňuje; dřív se kontrolovala jen velikost. Na pomalé síti má stažení 15 minut místo 90 s, které na 38 MB často nestačily.

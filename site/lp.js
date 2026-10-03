@@ -9,21 +9,30 @@ import { plynulePosouvani } from '/js/plynule-posouvani.js';
 
 const anglicky = document.documentElement.lang === 'en';
 
-// Adresu rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá.
+// Adresu rozšíření v Chromu nejde otevřít odkazem, ale zkopírovat se dá. Stejně se kopíruje
+// instalační příkaz – tam je to skutečné tlačítko, takže klávesnici a roli už má.
 for (const pole of document.querySelectorAll('[data-kopirovat]')) {
-  pole.setAttribute('role', 'button');
-  pole.setAttribute('tabindex', '0');
-  pole.setAttribute('title', anglicky ? 'Click to copy' : 'Kliknutím zkopíruješ');
+  const tlacitko = pole.tagName === 'BUTTON';
+  if (!tlacitko) {
+    pole.setAttribute('role', 'button');
+    pole.setAttribute('tabindex', '0');
+    pole.setAttribute('title', anglicky ? 'Click to copy' : 'Kliknutím zkopíruješ');
+  }
+  pole.setAttribute('aria-live', 'polite');
+  const puvodni = pole.textContent;
+  // Popisek tlačítka začíná velkým písmenem („Zkopírovat“ → „Zkopírováno“), kód ve větě malým.
+  const hotovo = anglicky ? (tlacitko ? 'Copied' : 'copied') : (tlacitko ? 'Zkopírováno' : 'zkopírováno');
+  let casovac = 0;
   const kopiruj = async () => {
     try {
       await navigator.clipboard.writeText(pole.dataset.kopirovat);
-      const puvodni = pole.textContent;
-      pole.textContent = anglicky ? 'copied' : 'zkopírováno';
-      setTimeout(() => { pole.textContent = puvodni; }, 1200);
+      pole.textContent = hotovo;
+      clearTimeout(casovac);
+      casovac = setTimeout(() => { pole.textContent = puvodni; }, 1600);
     } catch { /* prohlížeč bez schránky – text zůstane k ručnímu označení */ }
   };
   pole.addEventListener('click', kopiruj);
-  pole.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); kopiruj(); } });
+  if (!tlacitko) pole.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); kopiruj(); } });
 }
 
 const odkryjRozsireni = () => { if (location.hash === '#rozsireni') document.getElementById('rozsireni').open = true; };
