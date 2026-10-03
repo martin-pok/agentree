@@ -8,7 +8,7 @@
 - Nastavení → Aktualizace říká pravdu i ve stavech „vydání bez balíčku pro tento Mac“ a „kontrola vypnutá“; dřív obojí trvale hlásilo „Kontroluji aktualizace“. Na mobilu se volba Ručně / Automaticky skládá pod sebe a tlačítka se zalomí, místo aby přetékala z karty.
 
 - Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
-- Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.
+- Free projekt Supabase udržuje denní dotaz do databáze z GitHub Actions (`public.udrzet_aktivitu()`, tedy `select 1`). Dřívější požadavek na nastavení Auth databázi nečetl, takže by uspání podle pravidel Supabase nezabránil. Dotaz nečte ani nezapisuje žádnou tabulku a nepoužívá uživatelský token. Dokud migrace v databázi není, běh v Actions viditelně selže.
 
 ## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu
 

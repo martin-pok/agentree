@@ -75,6 +75,9 @@ begin
     vysledky := vysledky || 'anon smazal účet: CHYBA'::text;
   exception when others then vysledky := vysledky || ('anon nesmaže účet: true (' || sqlstate || ')');
   end;
+  -- Udržení aktivity (migrace 20261003100000): anon smí jen `select 1`, data dál nepřečte.
+  select public.udrzet_aktivitu() into n;
+  vysledky := vysledky || ('anon udrží aktivitu bez dat: ' || (n = 1));
   execute 'reset role';
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
