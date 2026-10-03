@@ -3,6 +3,10 @@
 ## Nezveřejněno
 
 - **Oprava útraty z Anthropic Admin API:** `cost_report` posílá částky v centech (podle dokumentace „123.45“ = 1,23 $), aplikace je ale četla jako dolary, takže API útrata Anthropicu vycházela stokrát vyšší v Útratě, rozpočtech i prognóze. OpenAI posílá dolary a zůstává beze změny.
+- **Živé spojení se po chybě serveru obnoví samo.** Když server na živý proud jednou odpověděl chybou (přetížení, restart, výpadek proxy), prohlížeč spojení zavřel natrvalo a okno pak donekonečna ukazovalo „Agenteeq neběží“ bez živých změn, i když server dávno běžel (ověřeno v Chromiu i WebKitu). Aplikace se teď připojí znovu sama, s prodlevou 2, 5, 10 a pak 30 s, a po návratu do okna nebo obnovení sítě hned.
+- **Rozšíření z Chrome Web Store se spáruje samo hned po schválení.** Aplikace důvěřuje ID položky v obchodě nezávisle na příznaku zveřejnění, takže tahle verze nebude po schválení Googlem potřebovat další vydání kvůli párování. Nabídka obchodu v aplikaci a na webu dál čeká na ověření veřejné stránky.
+- **Aktualizace ověřuje otisk balíčku.** Stažený balíček se porovná s otiskem SHA-256, který GitHub u přílohy vydání zveřejňuje; dřív se kontrolovala jen velikost. Na pomalé síti má stažení 15 minut místo 90 s, které na 38 MB často nestačily.
+- Nastavení → Aktualizace říká pravdu i ve stavech „vydání bez balíčku pro tento Mac“ a „kontrola vypnutá“; dřív obojí trvale hlásilo „Kontroluji aktualizace“. Na mobilu se volba Ručně / Automaticky skládá pod sebe a tlačítka se zalomí, místo aby přetékala z karty.
 
 - Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
 - Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.

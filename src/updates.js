@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ui } from './texty.js';
@@ -8,6 +9,10 @@ import { ARCHITECTURE, PLATFORM } from './platform.js';
 export const RELEASE_URL = 'https://api.github.com/repos/martin-pok/agentree/releases/latest';
 const SEMVER = /^(?:v)?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const MAX_PACKAGE_BYTES = 500 * 1024 * 1024;
+// GitHub u každé přílohy vydání zveřejňuje otisk obsahu. Balíček bez něj se nestahuje.
+const DIGEST = /^sha256:([0-9a-f]{64})$/;
+// Balíček má desítky MB. Na pomalé síti (mobilní připojení, hotel) trvá stažení minuty.
+const DOWNLOAD_TIMEOUT_MS = 15 * 60_000;
 
 export function parseVersion(value) {
   const match = typeof value === 'string' ? value.match(SEMVER) : null;
@@ -45,15 +50,19 @@ function validRelease(payload, version, target) {
   if (!asset) return { latestVersion, asset: null };
   const size = Number(asset.size);
   if (!Number.isSafeInteger(size) || size < 1 || size > MAX_PACKAGE_BYTES) return { latestVersion, asset: null };
-  return { latestVersion, asset: { name: wanted, url: asset.browser_download_url, size } };
+  const sha256 = typeof asset.digest === 'string' ? asset.digest.match(DIGEST)?.[1] : null;
+  if (!sha256) return { latestVersion, asset: null };
+  return { latestVersion, asset: { name: wanted, url: asset.browser_download_url, size, sha256 } };
 }
 
-async function responseBytes(response, expectedSize) {
+async function responseBytes(response, expected) {
   const length = Number(response.headers.get('content-length'));
   if (Number.isFinite(length) && (length < 1 || length > MAX_PACKAGE_BYTES)) throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
-  if (Number.isFinite(length) && length !== expectedSize) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  if (Number.isFinite(length) && length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
   const body = Buffer.from(await response.arrayBuffer());
-  if (!body.length || body.length > MAX_PACKAGE_BYTES || body.length !== expectedSize) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  if (!body.length || body.length > MAX_PACKAGE_BYTES || body.length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  const otisk = crypto.createHash('sha256').update(body).digest('hex');
+  if (!expected.sha256 || otisk !== expected.sha256) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
   return body;
 }
 
@@ -113,9 +122,9 @@ export class UpdateService {
     if (this.value.status !== 'available' || !this.value.asset) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
     const asset = this.value.asset;
     try {
-      const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(90_000), redirect: 'follow' });
+      const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS), redirect: 'follow' });
       if (!response.ok) throw new Error(ui('Aktualizační balíček se nepodařilo stáhnout.'));
-      const body = await responseBytes(response, asset.size);
+      const body = await responseBytes(response, asset);
       const dir = path.join(this.dataDir, 'updates');
       const file = path.join(dir, asset.name);
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });

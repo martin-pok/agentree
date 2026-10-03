@@ -125,6 +125,19 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
+## Protokol ověření – obnova spojení, párování z obchodu, otisk aktualizace (3. 10. 2026, macOS, Node 24.18)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 673 testů, 670 prošlo, 2 přeskočeny s důvodem (jen Linux, jen Windows); kontrola počtu testů v dokumentaci prošla po zápisu tohoto protokolu |
+| `npm run check` | 240 souborů bez syntaktické chyby |
+| Regresní testy | `test/obnova-spojeni.test.mjs` (5), nový test v `test/parovani-bez-kodu.test.mjs` a `test/updates.test.mjs`: na kódu z `main` 0.31.4 padají, s opravou projdou |
+| Živé spojení v prohlížeči | Server odpoví na `/api/stream` 503 a spojení spadne: dřív v Chromiu i WebKitu „Agenteeq neběží“ ještě 40 s po obnovení serveru, teď se okno připojí samo a pruh zmizí; konzole bez chyb |
+| Aktualizace proti GitHubu | `UpdateService` nad skutečným vydáním v0.31.4: stav `available`, otisk z pole `digest`, stažení 37 932 302 B ověřené SHA-256 za 1,8 s |
+| Karta Aktualizace | 48 snímků: stavy `available` / `unsupported` / `disabled`, česky i anglicky, Chromium i WebKit, 1440 a 375 px, světlý i tmavý režim; konzole bez chyb, bez vodorovného rolování. Nalezeno a opraveno: na 375 px přetékalo „Automaticky“ z dlaždice a „Zkontrolovat nyní“ z karty |
+| `qa:tvary`, `qa:contrast`, `qa:desktop` | prošly (aplikace, web, rozšíření; Chromium i WebKit) |
+| Neověřeno | spárování skutečné instalace z Chrome Web Store (položka čeká na schválení Googlem); WKWebView v sestavené aplikaci pro Mac |
+
 ## Protokol ověření – 0.29.2, podnabídka Nastavení (28. 9. 2026, macOS)
 
 | Kontrola | Výsledek |
