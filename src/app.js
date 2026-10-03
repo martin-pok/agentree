@@ -43,7 +43,7 @@ import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { spustPrihlaseni } from './prihlaseni.js';
-import { adresaObchodu } from '../public/js/obchod.js';
+import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
@@ -1199,9 +1199,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // se proto spáruje hned a bez kódu. Jakékoli jiné dostane odpověď „kód“: spárovat ho jde jen
   // jednorázovým kódem, který člověk vytvoří na Macu. Schvalovací tlačítko pro cizí rozšíření tu
   // záměrně není – jiné rozšíření by mohlo svou žádost podstrčit těsně před kliknutím.
+  // ID položky v obchodě přiděluje Google a známe ho už během kontroly. Důvěra v něj proto nečeká
+  // na příznak zveřejnění (ten řídí jen to, jestli aplikace a web obchod nabízejí): verze aplikace
+  // vydaná před schválením spáruje instalaci z obchodu sama, hned jak ji Google zveřejní.
   function duveryhodnaRozsireni() {
     const puvody = new Set();
-    const obchod = adresaObchodu().match(/([a-p]{32})$/)?.[1];
+    const obchod = adresaObchodu(CHROME_WEB_STORE_URL).match(/([a-p]{32})$/)?.[1];
     if (obchod) puvody.add(`chrome-extension://${obchod}`);
     const rozbalene = idRozbalenehoRozsireni(extensionPath);
     if (rozbalene) puvody.add(`chrome-extension://${rozbalene}`);

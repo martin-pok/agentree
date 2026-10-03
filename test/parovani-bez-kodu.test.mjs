@@ -71,3 +71,19 @@ test('párování bez kódu: naše rozšíření dostane token, cizí jen odkaz 
     await srv.close();
   }
 });
+
+test('párování bez kódu: rozšíření z Chrome Web Store se spáruje samo i před přepnutím příznaku zveřejnění', async () => {
+  const { CHROME_WEB_STORE_URL, CHROME_WEB_STORE_PUBLISHED } = await import('../public/js/obchod.js');
+  const id = CHROME_WEB_STORE_URL.match(/([a-p]{32})$/)[1];
+  const srv = await startTestServer();
+  try {
+    const r = await post(`${srv.url}/api/extension/pripojit`, { Origin: `chrome-extension://${id}`, 'X-Agenteeq-Installation-Id': 'profil-obchod' });
+    assert.equal(r.status, 200, `ID z obchodu je důvěryhodné bez ohledu na příznak (teď ${CHROME_WEB_STORE_PUBLISHED})`);
+    assert.ok((await r.json()).token);
+    // Příznak dál řídí jen nabídku obchodu – aplikace neveřejnou stránku nenabízí.
+    const st = await (await fetch(`${srv.url}/api/state`, { headers: { 'X-Agenteeq': '1' } })).json();
+    assert.equal(Boolean(st.integrations.extension.obchod), CHROME_WEB_STORE_PUBLISHED);
+  } finally {
+    await srv.close();
+  }
+});
