@@ -396,7 +396,7 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 /* Obsah nové obrazovky začíná naskakovat hned v prvním snímku po kliknutí. Dřív první blok čekal
    60 ms a bloky Přehledu 120 ms – mezi kliknutím a prvním obsahem tak byla prázdná plocha déle,
    než oko vnímá jako okamžitou odezvu (100 ms). Pořadí zůstává, jen kroky jsou kratší. */
-.view.is-entering [data-enter] { animation: rise 480ms var(--ease-settle) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.view.is-entering [data-enter] { animation: rise 480ms var(--ease-settle) both; animation-delay: calc(max(var(--i, 0) - 1, 0) * 40ms); }
 /* O rozmístění bloků Přehledu rozhoduje sazba, ne pořadí v kódu – postupné naskakování by proto
    vypadalo náhodně a během něj by bloky chvíli neseděly v řadě. Naskočí tedy naráz. */
 .view.is-entering .ov [data-enter] { animation-delay: 40ms; }

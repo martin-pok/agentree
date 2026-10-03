@@ -129,6 +129,6 @@ test('Agenti vykreslí nejdřív první obrazovku řádků a zbytek po dávkách
 
 test('nástup obrazovky začíná v prvním snímku a dotyková obrazovka nenechá viset zvednutí', async () => {
   const css = await zdroj('public/styles.css');
-  assert.match(css, /\.view\.is-entering \[data-enter\] \{ animation: rise 480ms var\(--ease-settle\) both; animation-delay: calc\(var\(--i, 0\) \* 40ms\); \}/);
+  assert.match(css, /\.view\.is-entering \[data-enter\] \{ animation: rise 480ms var\(--ease-settle\) both; animation-delay: calc\(max\(var\(--i, 0\) - 1, 0\) \* 40ms\); \}/);
   assert.match(css, /@media \(hover: none\) \{\s*\.skill:hover, \.appearance-option:hover, \.avatar-pick:hover, \.pcard:hover/);
 });

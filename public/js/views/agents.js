@@ -17,7 +17,7 @@ const PRVNI_DAVKA = 32;
 const DAVKA = 36;
 // Během nástupu má tabulka vlastní vrstvu. Doplnit do ní řádky uprostřed animace a po jejím konci
 // celou přemalovat stálo ve WebKitu tři snímky přes 50 ms. První dávka proto přijde až po nástupu
-// (styles.css: rise 480 ms se zpožděním 4 × 40 ms = 640 ms), nebo hned, jakmile se stránka pohne.
+// (styles.css: rise 480 ms se zpožděním 3 × 40 ms = 600 ms), nebo hned, jakmile se stránka pohne.
 const DOPLNIT_PO_NASTUPU_MS = 700;
 
 function naplanujDavku(el) {
