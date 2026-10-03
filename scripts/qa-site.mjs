@@ -168,8 +168,8 @@ try {
         await kontext.close();
       }
 
-      // Nástup výřezů řídí posouvání. Po dojetí do okna musí být výřez celý vidět – `overflow:
-      // hidden` na sekci jednou udělal ze sekce posuvný kontejner a výřez zůstal napůl průhledný.
+      // Výřez nesmí nastoupit na samém spodním okraji; po vstupu do čitelné části
+      // se musí plně ukázat v obou jádrech.
       {
         const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
         await jenMistni(p, []);
@@ -177,27 +177,28 @@ try {
         const pruhlednost = [];
         const dlazdic = await p.locator('.tile').count();
         assert.ok(dlazdic >= 5, `${engine}: dlaždic je ${dlazdic}`);
+        const vjizdi = await p.evaluate(async () => {
+          const el = document.querySelector('.tile:last-child');
+          scrollTo({ top: 0, behavior: 'instant' });
+          const r = el.getBoundingClientRect();
+          scrollTo({ top: r.top - innerHeight + 24, behavior: 'instant' });
+          await new Promise((h) => requestAnimationFrame(() => requestAnimationFrame(h)));
+          return { pending: el.classList.contains('motion-pending'), opacity: Number(getComputedStyle(el).opacity) };
+        });
+        assert.equal(vjizdi.pending, true, `${engine}: dlaždice na spodním okraji se ukázala příliš brzy`);
+        assert.ok(vjizdi.opacity < .5, `${engine}: dlaždice na spodním okraji má průhlednost ${vjizdi.opacity}`);
         for (let i = 0; i < dlazdic; i++) {
           const sel = `.tile:nth-child(${i + 1})`;
           await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); scrollTo({ top: scrollY + r.top + r.height / 2 - innerHeight / 2, behavior: 'instant' }); }, sel);
-          await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-          await p.waitForTimeout(150);
+          await p.waitForFunction((sel) => !document.querySelector(sel).classList.contains('motion-pending'), sel);
+          await p.waitForTimeout(950);
           pruhlednost.push([sel, await p.evaluate((sel) => getComputedStyle(document.querySelector(sel)).opacity, sel)]);
         }
         for (const [sel, o] of pruhlednost) assert.equal(o, '1', `${engine}: ${sel} po dojetí do okna má průhlednost ${o}`);
-        // A nástup je opravdu napojený na okno: výřez, který právě vyjel zespodu, je ještě
-        // průhledný. Kdyby animace měřila vůči sekci (posuvný kontejner), byl by rovnou celý.
-        if (await p.evaluate(() => CSS.supports('animation-timeline: view()'))) {
-          const vjizdi = await p.evaluate(async () => {
-            const el = document.querySelector('.tile:last-child');
-            scrollTo({ top: 0, behavior: 'instant' });
-            const r = el.getBoundingClientRect();
-            scrollTo({ top: r.top - innerHeight + 24, behavior: 'instant' });
-            await new Promise((h) => requestAnimationFrame(() => requestAnimationFrame(h)));
-            return Number(getComputedStyle(el).opacity);
-          });
-          assert.ok(vjizdi < 0.5, `${engine}: výřez na spodním okraji okna má průhlednost ${vjizdi} – nástup podle posouvání neběží`);
-        }
+        await p.evaluate(() => document.querySelector('.prikaz')?.scrollIntoView({ block: 'center', behavior: 'instant' }));
+        await p.waitForFunction(() => !document.querySelector('.prikaz')?.classList.contains('motion-pending'));
+        await p.waitForTimeout(900);
+        assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector('.prikaz')).opacity), '1', `${engine}: instalační blok není vidět`);
         await p.close();
       }
 
@@ -239,6 +240,7 @@ try {
         await ustal();
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
         assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
+        await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
         assert.deepEqual(chyby, [], `${engine}: chyby při plynulém posouvání`);
         await p.close();
         for (const [popis, volby] of [['dotyk', { hasTouch: true, isMobile: engine === 'chromium' }], ['omezit pohyb', { reducedMotion: 'reduce' }]]) {
@@ -261,6 +263,13 @@ try {
       await staticPage.locator('#rozsireni summary').click();
       assert.ok(await staticPage.locator('#rozsireni ol').isVisible());
       await staticPage.close();
+      const bezPozorovatele = await browser.newPage({ reducedMotion: 'no-preference' });
+      await jenMistni(bezPozorovatele, []);
+      await bezPozorovatele.addInitScript(() => { delete window.IntersectionObserver; });
+      await bezPozorovatele.goto(url);
+      assert.equal(await bezPozorovatele.locator('.motion-pending').count(), 0);
+      assert.match(await bezPozorovatele.locator('.step-n').first().innerText(), /^1$/);
+      await bezPozorovatele.close();
       const motionPage = await browser.newPage({ reducedMotion: 'no-preference' });
       await jenMistni(motionPage, []);
       // Tlačítko Stáhnout je skutečný odkaz ven. Tady zkoušíme jeho odezvu na stisk, ne stahování,
@@ -294,7 +303,7 @@ try {
       });
       await motionPage.mouse.up();
       await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
-      await motionPage.waitForTimeout(900);
+      await motionPage.waitForFunction(`(${podleHodin})().length === 0`, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(`(${podleHodin})().length`), 0, 'No perpetual decorative animation');
       await motionPage.close();
     } finally { await browser.close(); }

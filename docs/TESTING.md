@@ -1,5 +1,16 @@
 # Testování a ověření
 
+## Protokol ověření – motion LP, načítání a tokeny (3. 10. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 742 testů: 740 prošlo, 2 přeskočeny s důvodem |
+| `npm run check` | 252 souborů bez syntaktické chyby |
+| `qa:site` | Chromium a WebKit, česká a anglická LP, světlý/tmavý režim, 360–1440 px; nástup až v čitelné části okna, dotykové i myší posouvání |
+| `qa:loader` | Chromium a WebKit, světlý/tmavý režim a 375/1440 px; snímky v `dist/qa-loader` |
+| `qa:contrast`, `qa:tvary`, `qa:desktop` | Kontrast WCAG AA, tvary a desktopová regrese prošly |
+| Skutečné zdroje | `audit:data`: 12/12 shodných hodnot na neměnném snapshotu; přepisy se nikam neposílají |
+
 ## Protokol ověření – produkční Google SSO (1. 10. 2026, macOS)
 
 | Kontrola | Výsledek |
@@ -19,6 +30,7 @@ npm run smoke     # balíček: pack → instalace do dočasného prefixu → sta
 npm run qa:contrast  # WCAG 2.2 AA nad vykreslenou plochou (aplikace, web, okno rozšíření)
 npm run qa:tvary     # tvar (zaoblení) každého ovládacího prvku na vykreslené ploše: aplikace, web, okno rozšíření; pravidla v docs/DESIGN.md
 npm run qa:site      # prohlídka webu: Chromium/WebKit, light/dark, 360–1440 px, klávesnice a omezení pohybu
+npm run qa:loader    # načítací scéna: Chromium/WebKit, light/dark, 375/1440 px
 npm run qa:extension # párování, výpadek, odebrání oprávnění a služby v popupu
 npm run qa:native    # macOS/Windows: rozbalí archiv z dist/, spustí aplikaci na vlastním volném portu, počká na server a vykreslené rozhraní v okně, nafotí ho a ověří, že po ukončení server skončil (CI: aplikace pro Mac, plášť pro Windows)
 npm run showcase    # prohlídka skutečného UI se smyšlenými daty a izolovaným serverem

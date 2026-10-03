@@ -16,19 +16,62 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
   width: 100%;
-  max-width: 320px;
+  max-width: 420px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 64px 16px;
   text-align: center;
   box-sizing: border-box;
 }
 
+.loader-scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 360px);
+  height: 192px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--ivory) 12%, transparent);
+  border-radius: var(--r-lg);
+  background: var(--backdrop);
+  color: var(--ivory);
+}
+.loader-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 46% 62% at 50% 66%, color-mix(in srgb, var(--teal) 18%, transparent), transparent 90%);
+  pointer-events: none;
+}
+.loader-stage-line {
+  position: absolute;
+  bottom: 30px;
+  left: 14%;
+  right: 14%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ivory) 18%, transparent) 20%, color-mix(in srgb, var(--ivory) 18%, transparent) 80%, transparent);
+}
+.loader-orbit {
+  position: absolute;
+  top: 78px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--teal) 65%, transparent);
+  opacity: .35;
+  animation: lm-orbit 2.2s ease-in-out infinite;
+}
+.loader-orbit--left { left: 18%; }
+.loader-orbit--right { right: 18%; animation-delay: .32s; }
+@keyframes lm-orbit { 45% { opacity: 1; transform: scale(1.45); } }
+
 .loader-mark {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
   flex: none;
   transform-origin: 50% 50%;
   animation: lm-breathe 2.2s ease-in-out infinite;
@@ -52,7 +95,7 @@
   height: 100%;
   display: block;
   overflow: visible;
-  color: var(--ink);
+  color: var(--ivory);
 }
 
 .lm-root { fill: var(--brass); }
@@ -72,10 +115,7 @@
 .lm-node-b { animation: lm-node-b 2.2s ease-in-out infinite; }
 .lm-node-c { animation: lm-node-c 2.2s ease-in-out infinite; }
 
-.loader-text {
-  color: var(--mute);
-  font: 400 14px/1.5 var(--f-body, system-ui, sans-serif);
-}
+.loader-text { color: var(--ink-2); font: 500 14px/1.5 var(--f-body, system-ui, sans-serif); }
 
 /* Kmen (0–56 %) → levá větev (do ~74 %) → pravá větev (do 100 % úseku růstu);
    v 74–90 % se dokreslená značka zároveň stírá a vytrácí (dissolve), takže
@@ -164,6 +204,7 @@
   .lm-node-b,
   .lm-node-c,
   .loader-halo,
+  .loader-orbit,
   .skel-row::after {
     animation: none !important;
   }
