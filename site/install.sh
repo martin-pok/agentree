@@ -118,7 +118,8 @@ main() {
   if [ "$machine" = "x86_64" ] && [ "$(sysctl -in sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then machine="arm64"; fi
   case "$machine" in
     arm64) arch="arm64" ;;
-    x86_64) arch="x64" ;;
+    x86_64) fail "Agenteeq běží jen na Macích s čipem Apple (M1 a novější). Tenhle Mac má procesor Intel." \
+                 "Agenteeq runs only on Macs with Apple silicon (M1 or later). This Mac has an Intel processor." ;;
     *) fail "Neznámý procesor „${machine}“. Stáhni balíček ručně z https://github.com/${REPO}/releases/latest." \
             "Unknown processor \"${machine}\". Download the package manually from https://github.com/${REPO}/releases/latest." ;;
   esac

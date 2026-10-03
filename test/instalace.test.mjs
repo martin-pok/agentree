@@ -103,7 +103,7 @@ async function aplikace(dir, { verze, znacka }) {
 
 async function vydani(root, { verze = '9.9.9', digest = (sha) => `sha256:${sha}`, velikost = (n) => n } = {}) {
   const prilohy = [];
-  for (const arch of ['arm64', 'x64']) {
+  for (const arch of ['arm64']) {
     const src = path.join(root, `src-${arch}`);
     await fs.mkdir(src, { recursive: true });
     const app = await aplikace(src, { verze, znacka: arch });
@@ -142,6 +142,9 @@ exit 22
 `, { mode: 0o755 });
   await fs.writeFile(path.join(bin, 'uname'), `#!/bin/bash
 case "$1" in -s) echo "\${FAKE_OS:-Darwin}" ;; -m) echo "\${FAKE_ARCH:-arm64}" ;; *) /usr/bin/uname "$@" ;; esac
+`, { mode: 0o755 });
+  await fs.writeFile(path.join(bin, 'sysctl'), `#!/bin/bash
+case "$*" in *proc_translated*) echo "\${FAKE_TRANSLATED:-0}" ;; *) /usr/sbin/sysctl "$@" ;; esac
 `, { mode: 0o755 });
   for (const d of ['apps', 'kos', 'home', 'tmp']) await fs.mkdir(path.join(root, d));
   const spust = (env = {}) => spawnSync('bash', [SKRIPT], {
@@ -188,13 +191,14 @@ test('instalace: vybere balíček podle procesoru, ověří ho a nainstaluje', {
   assert.equal((await p.log()).length, 3, 'druhé spuštění se zeptalo jen na vydání');
   assert.deepEqual(await p.obsah('kos'), []);
 
-  // Intel: x86_64 → příloha x64. Stará verze (jiná, ale platná) jde do Koše, ne do smazání.
+  // Přeložený Terminál (Rosetta) hlásí x86_64 na čipu Apple – správný je arm64 balíček. Stará verze
+  // (jiná, ale platná) jde do Koše, ne do smazání.
   await fs.rm(path.join(p.root, 'apps', 'Agenteeq.app'), { recursive: true });
   await aplikace(path.join(p.root, 'apps'), { verze: '1.0.0', znacka: 'stara' });
-  const intel = p.spust({ FAKE_ARCH: 'x86_64' });
-  assert.equal(intel.status, 0, intel.stderr + intel.stdout);
-  assert.equal(await p.znacka(), 'x64');
-  assert.equal((await p.log()).at(-1), `${STAZENI}v9.9.9/Agenteeq-9.9.9-macOS-x64.zip`);
+  const rosetta = p.spust({ FAKE_ARCH: 'x86_64', FAKE_TRANSLATED: '1' });
+  assert.equal(rosetta.status, 0, rosetta.stderr + rosetta.stdout);
+  assert.equal(await p.znacka(), 'arm64');
+  assert.equal((await p.log()).at(-1), `${STAZENI}v9.9.9/Agenteeq-9.9.9-macOS-arm64.zip`);
   const kos = await p.obsah('kos');
   assert.equal(kos.length, 1);
   assert.match(kos[0], /^Agenteeq 1\.0\.0 .*\.app$/);
@@ -245,4 +249,16 @@ test('instalace: mimo Mac skončí srozumitelnou hláškou a nic nestáhne', { s
   assert.match(r.stderr, /Chyba: Agenteeq se tímto příkazem instaluje jen na Mac/);
   assert.match(r.stderr, /Error: This command installs Agenteeq on a Mac only/);
   assert.deepEqual(await p.log(), []);
+});
+
+test('instalace: Mac s procesorem Intel dostane srozumitelnou zprávu a nic se nestáhne ani nezmění', { skip: JEN_MAC }, async () => {
+  const p = await prostredi();
+  await aplikace(path.join(p.root, 'apps'), { verze: '1.0.0', znacka: 'stara' });
+  const intel = p.spust({ FAKE_ARCH: 'x86_64' });
+  assert.notEqual(intel.status, 0);
+  assert.match(intel.stderr + intel.stdout, /Apple \(M1 a novější\)/);
+  assert.match(intel.stderr + intel.stdout, /Apple silicon \(M1 or later\)/);
+  assert.deepEqual(await p.log(), [], 'bez čipu Apple se nic nestahuje');
+  assert.equal(await p.znacka(), 'stara', 'nainstalovaná aplikace zůstala');
+  assert.deepEqual(await p.obsah('kos'), []);
 });

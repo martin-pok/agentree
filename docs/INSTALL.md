@@ -6,7 +6,7 @@ Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně – tvo
 
 ### Desktopový balíček pro Mac
 
-`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Mac s čipem Apple (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel zatím podporovaný není. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
+`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Mac s čipem Apple (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel nepodporujeme: Apple podporu Intelu ukončuje a Agenteeq se vyvíjí jen pro Apple Silicon. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agenteeq → Ukončit Agenteeq** ukončí i lokální službu a agenty spuštěné z Agenteeq na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 
@@ -20,7 +20,7 @@ Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel 
 curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash
 ```
 
-Skript (`site/install.sh`, na webu `/install.sh`) stáhne z posledního vydání na GitHubu balíček pro procesor tohoto Macu (`Agenteeq-<verze>-macOS-arm64.zip`, na Intelu `-x64`), porovná velikost a otisk SHA-256 s hodnotou, kterou GitHub u přílohy zveřejňuje, rozbalí ho a ověří podpis (`codesign --verify --deep --strict`). Teprve potom ukončí běžící Agenteeq (jako ⌘Q, nejvýš 10 s), starou verzi přesune do Koše a novou dá do `/Applications` – nebo tam, kde už Agenteeq je; když `/Applications` nejde zapsat, do `~/Applications`. Nakonec aplikaci otevře.
+Skript (`site/install.sh`, na webu `/install.sh`) stáhne z posledního vydání na GitHubu balíček `Agenteeq-<verze>-macOS-arm64.zip`, porovná velikost a otisk SHA-256 s hodnotou, kterou GitHub u přílohy zveřejňuje, rozbalí ho a ověří podpis (`codesign --verify --deep --strict`). Teprve potom ukončí běžící Agenteeq (jako ⌘Q, nejvýš 10 s), starou verzi přesune do Koše a novou dá do `/Applications` – nebo tam, kde už Agenteeq je; když `/Applications` nejde zapsat, do `~/Applications`. Nakonec aplikaci otevře.
 
 Proč odpadne krok v Nastavení: soubor stažený curlem v Terminálu nedostane příznak `com.apple.quarantine`, takže se Gatekeeper neptá. Razítko Applu tu nahrazuje otisk z GitHubu: příloha bez otisku se nestáhne (stejné pravidlo jako aktualizace v `src/updates.js`) a při jakékoli neshodě skript skončí dřív, než sáhne na nainstalovanou aplikaci. Nepoužívá `sudo`, aplikaci nikdy nemaže (když Koš nejde použít, nechá ji vedle jako `Agenteeq-<verze>.backup.app`), nic neodesílá a mluví jen s `api.github.com` a `github.com`. Opakované spuštění se stejnou verzí nic nestahuje.
 
