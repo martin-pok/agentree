@@ -1,26 +1,22 @@
 # Rozšíření v Chrome Web Store
 
-Stav k 26. 9. 2026: **připraveno k odeslání, zatím neodesláno.** Dokud v obchodě není, aplikace
-i web ukazují ruční instalaci („Načíst rozbalené“). Po schválení stačí vložit adresu do
-`public/js/obchod.js` a aplikace i web přepnou na „Přidat do Chromu“ (hlídá
-`test/chrome-web-store.test.mjs`).
+Stav k 3. 10. 2026: **odesláno ke kontrole, čeká na Google.** První zamítnutí se týkalo výčtu
+názvů služeb v anglickém popisu; popis jsme zjednodušili a znovu odeslali. Po schválení se položka
+automaticky zveřejní. Její stálá adresa a ID už jsou v `public/js/obchod.js`; příznak
+`CHROME_WEB_STORE_PUBLISHED` zůstává do ověření veřejné stránky vypnutý. Potom se zapne a vydá se
+nová verze aplikace, která nabídne instalaci jedním kliknutím a automatické spárování.
 
-## Co musí udělat vlastník (jednou, asi 20 minut)
+## Stav účtu vydavatele
 
-Registrace vývojáře stojí **jednorázově 5 USD** (ne ročně) a zaplatit ji může jen majitel účtu
-Google, pod kterým bude rozšíření vedené.
+Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.
 
-1. Otevři [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole),
-   přihlas se účtem Google, který má zapnuté **dvoufázové ověření** (bez něj obchod nic nezveřejní),
-   přijmi podmínky a zaplať 5 USD kartou.
-2. V účtu vyplň **kontaktní e-mail** a ověř ho. U otázky na obchodníka (trader) zvol, že nejsi
-   obchodník – rozšíření je zdarma a nic neprodává. (Kdyby se to změnilo, obchod chce adresu a telefon.)
-3. `npm run build:extension` → nahraj `dist/agenteeq-extension-<verze>.zip` přes **Add new item**.
-4. Vyplň kartu podle sekcí níže (texty jsou hotové, jen je zkopíruj) a klikni na
-   **Submit for review**. Kontrola obvykle trvá pár dní.
-5. Po schválení zkopíruj adresu stránky rozšíření
-   (`https://chromewebstore.google.com/detail/agenteeq/<ID>`) do `public/js/obchod.js`
-   a vydej novou verzi. ID pošli i sem, ať ho doplníme do dokumentace.
+Balíček verze 0.31.4 je v Chrome Web Store. Opravená metadata jsou znovu odeslaná ke kontrole s
+automatickým zveřejněním po schválení. ID položky: `hocghhpigfilngdajmafkdcljdedanch`.
+Stav vydání se ověřuje v [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+
+Po zveřejnění ověřit veřejnou stránku a vydat novou verzi aplikace. Balíček aplikace 0.31.4 ještě
+neobsahuje nové ID Store, takže automatické párování instalace z obchodu začne až po aktualizaci
+aplikace; při kontrole se používá jednorázový kód uvedený v testovacích pokynech níže.
 
 Další verze: nový ZIP nahraješ v témže záznamu (**Package → Upload new package**). Verze
 v `extension/manifest.json` musí být vyšší než zveřejněná. Zvedá se spolu s verzí aplikace –
@@ -73,21 +69,20 @@ Zásady ochrany soukromí: https://agentree-fawn.vercel.app/soukromi
 Okno rozšíření mluví anglicky v každém Chromu, který není český (`extension/i18n.js`, `extension/_locales/en`).
 
 ```
-Agenteeq shows all your AI agents in one place: Claude Code, Codex or Cursor on your computer and, with this extension, web chats too – ChatGPT, Claude.ai, Gemini, Perplexity, Microsoft Copilot, Grok, Qwen and GitHub Copilot.
+Agenteeq is a local dashboard for the status of AI work on your Mac. The extension connects supported web chats with the companion app so you can see what needs attention without opening every tab.
 
-What the extension does
-• Detects whether a service is replying or has finished, and for how long it has been replying.
-• Counts the messages in a conversation and picks up limit notices.
-• Shows all your open AI conversations in the extension window; click one to switch to its tab.
-• Sends this to the Agenteeq app, where you see who is working and who is waiting for you.
-• Pastes a prompt from the app (“Start an agent”) straight into the service’s window.
+What it does
+• Detects whether a supported conversation is replying, waiting or finished.
+• Shows how long a reply has been in progress and counts messages in the active conversation.
+• Lists the open conversations that the extension can see; click one to switch to its tab.
+• Brings the current status into Agenteeq and can paste a prompt from the app into that chat.
 
 Privacy
-• Never sends the text of your messages or replies, conversation titles or browsing history.
-• Data goes only to the Agenteeq app on the same computer (127.0.0.1), never to the internet.
-• You can turn off any service in the extension window.
+• It never sends the text of messages, responses, titles or browsing history.
+• All data stays on your computer and reaches only the local Agenteeq app at 127.0.0.1.
+• You can turn off individual services in the extension window.
 
-The extension needs the Agenteeq app for Mac (free at https://agentree-fawn.vercel.app/en). It pairs with the app automatically – no codes to copy.
+Requires the free Agenteeq app for Mac: https://agentree-fawn.vercel.app/en
 
 Privacy policy: https://agentree-fawn.vercel.app/en/privacy
 ```

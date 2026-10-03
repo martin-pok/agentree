@@ -2,6 +2,7 @@
 
 ## Nezveřejněno
 
+- Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
 - Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.
 
 ## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu

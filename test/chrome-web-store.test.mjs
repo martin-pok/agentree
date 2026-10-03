@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
+import { adresaObchodu, CHROME_WEB_STORE_PUBLISHED, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { rozsireniNaWebu } from '../scripts/build-site.mjs';
 import { startTestServer, api } from './helpers.mjs';
 
@@ -74,6 +74,10 @@ test('Chrome Web Store: zásady ochrany soukromí jsou na webu v obou jazycích 
 });
 
 test('Chrome Web Store: jedna adresa přepne web z ruční instalace na „Přidat do Chromu“', async () => {
+  assert.equal(CHROME_WEB_STORE_URL, 'https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch');
+  assert.equal(CHROME_WEB_STORE_PUBLISHED, false, 'během kontroly zůstane živý web u ověřené instalační cesty');
+  assert.equal(adresaObchodu(), '');
+  assert.equal(adresaObchodu(CHROME_WEB_STORE_URL), CHROME_WEB_STORE_URL);
   assert.equal(adresaObchodu('https://evil.example/detail/abcdefghijklmnopabcdefghijklmnop'), '');
   assert.equal(adresaObchodu('https://chromewebstore.google.com/detail/agenteeq/abcdefghijklmnopabcdefghijklmnop'), 'https://chromewebstore.google.com/detail/agenteeq/abcdefghijklmnopabcdefghijklmnop');
   assert.equal(adresaObchodu('https://chromewebstore.google.com/detail/agenteeq/ABC'), '', 'ID rozšíření je 32 písmen a–p');
@@ -96,11 +100,11 @@ test('Chrome Web Store: aplikace zná adresu obchodu a otevírá ho jen z tohoto
   try {
     const klient = api(srv.url);
     const st = await klient.get('/api/state');
-    assert.equal(st.body.integrations.extension.obchod, adresaObchodu(CHROME_WEB_STORE_URL));
+    assert.equal(st.body.integrations.extension.obchod, adresaObchodu());
     const zTelefonu = await fetch(`${srv.url}/api/extension/obchod`, { method: 'POST', headers: { 'X-Forwarded-For': '100.64.0.9' } });
     assert.equal(zTelefonu.status, 403);
     const r = await klient.send('POST', '/api/extension/obchod', {});
-    if (CHROME_WEB_STORE_URL) assert.equal(r.status, 200);
+    if (CHROME_WEB_STORE_PUBLISHED) assert.equal(r.status, 200);
     else assert.equal(r.status, 409, 'dokud rozšíření v obchodě není, nic se nepředstírá');
   } finally {
     await srv.close();
