@@ -84,6 +84,9 @@ function usageHistoryHtml() {
     ${charts.join('')}</div>`;
 }
 
+// Čísla a pruhy se při živé události slučují (ui.js#sloucit), nepřepisují.
+const zivy = (el, name, html) => fill(el, name, html, { sloucit: true });
+
 function update() {
   const el = v.el;
   if (!el) return;
@@ -98,7 +101,7 @@ function update() {
   const tokens = ser.series.reduce((a, s) => a + s.values.reduce((x, y) => x + y, 0), 0);
   const hours = activeHours(all, since);
   const prompts = active.reduce((a, s) => a + (s.turns || 0), 0);
-  fill(el, 'kpis', [
+  zivy(el, 'kpis', [
     [tr('Zaznamenané tokeny'), tween(`st-tok-${v.period}`, tokens, 'tok'), tr('vstup + výstup')],
     [tr('Aktivní konverzace'), tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} ${plural(new Set(active.map((s) => s.app)).size, 'aplikace', 'aplikace', 'aplikací')}`],
     [tr('Hodiny s aktivitou'), tween(`st-h-${v.period}`, hours), tr('hodiny, kdy aspoň jeden agent pracoval')],
@@ -115,17 +118,17 @@ function update() {
   fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
 
   const apps = groupTotals(all, since, (s) => s.app).slice(0, 8);
-  fill(el, 'apps', apps.length
+  zivy(el, 'apps', apps.length
     ? hbars(apps.map((a) => ({ label: a.key, sub: `${tokens ? Math.round((a.value / tokens) * 100) : 0} %`, value: a.value, color: chartColor(a.provider), icon: glyph(a.provider) })))
     : `<p class="muted">${tr('Bez dat.')}</p>`);
 
   const projects = groupTotals(all, since, (s) => s.project).slice(0, 8);
-  fill(el, 'projects', projects.length
+  zivy(el, 'projects', projects.length
     ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: chartColor(p.provider), icon: glyph(p.provider) })))
     : `<p class="muted">${tr('Bez dat.')}</p>`);
 
   const models = groupTotals(all, since, (s) => s.model).slice(0, 8);
-  fill(el, 'models', models.length
+  zivy(el, 'models', models.length
     ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) })))
     : `<p class="muted">${tr('Bez dat.')}</p>`);
 
@@ -142,7 +145,7 @@ function update() {
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: tr('Doplněno') })}</div>`;
     });
   fill(el, 'usage-history', usageHistoryHtml());
-  fill(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${limitsAll(state, now)}`);
+  zivy(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${limitsAll(state, now)}`);
 }
 
 export default { id: 'statistiky', title: tr('Statistiky'), mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };

@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.33.0',
+    date: '2026-10-03',
+    title: 'Plynulé živé seznamy',
+    items: [
+      'Když agent začne pracovat, seznam se už nepřekresluje celý: změní se jen to, co se opravdu změnilo, a aplikace přitom nezaškobrtne.',
+      'Řádek, který právě čteš, zůstane na místě, i když se seznam nad ním přeskládá.',
+      'Agent, který se posune nahoru, do nového místa plynule dojede.',
+      'Agenti se otevírají rychleji a opakované návštěvy Projektů už nezatěžují paměť.',
+      'Všechny pohyby v aplikaci mají jednotné tempo a změna vzhledu proběhne naráz.',
+    ],
+    en: {
+      title: 'Smooth live lists',
+      items: [
+        'When an agent starts working, the list is no longer redrawn from scratch: only what actually changed is updated, without stutter.',
+        'The row you are reading stays in place even when the list above it reorders.',
+        'An agent that moves up glides smoothly into its new place.',
+        'Agents opens faster and repeated visits to Projects no longer build up memory.',
+        'All motion in the app shares one tempo, and switching appearance happens in a single step.',
+      ],
+    },
+  },
+  {
     version: '0.32.2',
     date: '2026-10-03',
     title: 'Plynulejší web a přesnější tokeny',

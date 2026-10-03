@@ -133,7 +133,15 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
   box.addEventListener('pointerup', (e) => { if (st && e.pointerId === st.id) finish(true); });
   box.addEventListener('pointercancel', (e) => { if (st && e.pointerId === st.id) finish(true); });
   box.addEventListener('contextmenu', (e) => { if (dragging) e.preventDefault(); });
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dragging) { finish(false); onCommit(null); } }, true);
+  // Posluchač na window přežije obrazovku. Dřív se nikdy neodebral a držel celou starou mřížku:
+  // každá návštěva Projektů nechala v paměti ~500 uzlů a 11 posluchačů navíc. Obrazovka ho
+  // proto při odchodu ruší přes zrus(); kdyby na to zapomněla, odebere se sám při prvním stisku
+  // klávesy po odpojení mřížky.
+  const konec = new AbortController();
+  window.addEventListener('keydown', (e) => {
+    if (!box.isConnected) { konec.abort(); return; }
+    if (e.key === 'Escape' && dragging) { finish(false); onCommit(null); }
+  }, { capture: true, signal: konec.signal });
 
   // Klávesnice: Alt + šipky posouvá zaostřenou kartu.
   box.addEventListener('keydown', (e) => {
@@ -154,5 +162,5 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     onCommit(items().map(idOf).filter(Boolean));
   });
 
-  return { isDragging: () => dragging };
+  return { isDragging: () => dragging, zrus: () => konec.abort() };
 }

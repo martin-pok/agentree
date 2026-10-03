@@ -197,4 +197,4 @@ function update() {
     : '');
 }
 
-export default { id: 'projekty', title: tr('Projekty'), mount, update, unmount: () => { v.el = null; v.reorder = null; } };
+export default { id: 'projekty', title: tr('Projekty'), mount, update, unmount: () => { v.reorder?.zrus(); v.el = null; v.reorder = null; } };

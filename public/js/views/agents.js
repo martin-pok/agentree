@@ -9,7 +9,38 @@ import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
-const v = { el: null, visible: [] };
+const v = { el: null, visible: [], limit: Infinity, ceka: false, doplnuje: false };
+// Po otevření obrazovky se vykreslí jen tolik řádků, kolik zaplní i vysoké okno (32 řádků je přes
+// dvě okna); zbytek se doplní sloučením po dávkách, jedna dávka na snímek. Celý seznam naráz
+// (140 řádků ≈ 3 500 uzlů) držel ve WebKitu první snímek po kliknutí přes 50 ms.
+const PRVNI_DAVKA = 32;
+const DAVKA = 36;
+// Během nástupu má tabulka vlastní vrstvu. Doplnit do ní řádky uprostřed animace a po jejím konci
+// celou přemalovat stálo ve WebKitu tři snímky přes 50 ms. První dávka proto přijde až po nástupu
+// (styles.css: rise 480 ms se zpožděním 3 × 40 ms = 600 ms), nebo hned, jakmile se stránka pohne.
+const DOPLNIT_PO_NASTUPU_MS = 700;
+
+function naplanujDavku(el) {
+  v.ceka = true;
+  const konec = new AbortController();
+  const krok = () => {
+    konec.abort();
+    if (v.el !== el || !v.ceka) return;
+    v.ceka = false;
+    v.limit += DAVKA;
+    v.doplnuje = true;
+    try { update(); } finally { v.doplnuje = false; }
+  };
+  if (v.limit === PRVNI_DAVKA && el.classList.contains('is-entering')) {
+    setTimeout(krok, DOPLNIT_PO_NASTUPU_MS);
+    addEventListener('scroll', krok, { once: true, passive: true, signal: konec.signal });
+    return;
+  }
+  // Další dávka po vykresleném snímku (rAF + úkol). Skryté okno rAF nevolá – pojistka časovačem;
+  // krok se provede jen jednou.
+  requestAnimationFrame(() => setTimeout(krok, 0));
+  setTimeout(krok, 150);
+}
 
 const SEGMENTS = [
   ['all', tr('Vše')],
@@ -135,18 +166,20 @@ function rowHtml(s) {
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;
   if (f.selecting && !s.proces) {
     const checked = f.selected.has(s.id);
-    return `<label class="row row--select${checked ? ' is-selected' : ''}" draggable="true" data-session-drag="${esc(s.id)}">
+    return `<label class="row row--select${checked ? ' is-selected' : ''}" draggable="true" data-session-drag="${esc(s.id)}" data-key="${esc(s.id)}">
       <span class="icon-tile icon-tile--check"><input type="checkbox" data-select-session value="${esc(s.id)}"${checked ? ' checked' : ''} aria-label="${tr('Vybrat')} ${esc(s.title)}"></span>${cells}<span></span>
     </label>`;
   }
   const env = envOf(s);
-  return `<a class="row" href="${agentHref(s.id)}" data-session-drag="${esc(s.id)}">
+  return `<a class="row" href="${agentHref(s.id)}" data-session-drag="${esc(s.id)}" data-key="${esc(s.id)}">
     <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i><span class="env-badge">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
   </a>`;
 }
 
 function mount(el, _params, query) {
   v.el = el;
+  v.limit = PRVNI_DAVKA;
+  v.ceka = false;
   applyQuery(query);
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
@@ -230,6 +263,11 @@ function mount(el, _params, query) {
   });
 }
 
+// Seznam agentů se při živé události slučuje, nepřepisuje (ui.js#sloucit): řádky drží najetí,
+// kotvu posouvání i obrázky a mění se jen to, co se opravdu změnilo.
+// Dávka doplněných řádků pod oknem se neměří pro dojezd – nic z ní se v okně nepohnulo.
+const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'table' && !v.doplnuje });
+
 function update() {
   const el = v.el;
   if (!el) return;
@@ -244,52 +282,54 @@ function update() {
   const scoped = all.filter(matchFacets);
   const base = scoped.filter(matchProject);
 
-  fill(el, 'seg', SEGMENTS.map(([k, label]) => {
+  zivy(el, 'seg', SEGMENTS.map(([k, label]) => {
     const count = base.filter((s) => matchStatus(s, k)).length;
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
-  fill(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
+  zivy(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
     .map(([k, label, icon]) => `<button type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
   const present = Object.keys(PROVIDERS).filter((p) => all.some((s) => pkey(s.provider) === p));
-  fill(el, 'chips', present
+  zivy(el, 'chips', present
     .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join(''));
 
   const projects = state.projects.items.filter((p) => !p.archived || p.id === f.project);
   const countIn = (pid) => scoped.filter((s) => s.projectId === pid).length;
   const noneCount = scoped.filter((s) => !s.projectId).length;
-  fill(el, 'projects', projects.length
+  zivy(el, 'projects', projects.length
     ? `<span class="chips-label">${tr('Projekt')}</span>
       <button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
       ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
       <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>
       <span class="chips-hint muted small">${tr('Konverzaci přetáhni na projekt')}</span>`
     : `<span class="chips-label">${tr('Projekt')}</span><a class="chip" href="#/projekty">${ICON.plus}${tr('Založ první projekt a třiď konverzace podle klientů')}</a>`);
-  fill(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
+  zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
   v.visible = list;
   for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
   if (!all.length) {
-    fill(el, 'table', emptyState({
+    zivy(el, 'table', emptyState({
       title: tr('Zatím tu nejsou žádní agenti'),
       text: tr('Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.'),
       action: `<a class="btn" href="#/nastaveni">${tr('Zkontrolovat zdroje dat')}</a>`,
     }));
   } else if (!list.length) {
-    fill(el, 'table', emptyState({
+    zivy(el, 'table', emptyState({
       title: tr('Tomuto filtru neodpovídá žádný agent'),
       text: tr('Zkus jiný stav, zdroj, poskytovatele nebo projekt.'),
       action: `<button class="btn" type="button" data-clear>${tr('Zrušit filtry')}</button>`,
     }));
   } else {
-    fill(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>${tr('Agent')}</span><span>${tr('Aplikace a model')}</span><span>${tr('Stav')}</span><span class="cell-num">${tr('Tokeny')}</span><span class="cell-time">${tr('Aktivita')}</span><span></span></div>
-      ${list.map(rowHtml).join('')}`);
+    zivy(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>${tr('Agent')}</span><span>${tr('Aplikace a model')}</span><span>${tr('Stav')}</span><span class="cell-num">${tr('Tokeny')}</span><span class="cell-time">${tr('Aktivita')}</span><span></span></div>
+      ${list.slice(0, v.limit).map(rowHtml).join('')}`);
+    if (list.length > v.limit && !v.ceka) naplanujDavku(el);
+    else if (list.length <= v.limit) v.limit = Infinity;
   }
 
-  fill(el, 'runtimes', bezPrepisuHtml(all));
+  zivy(el, 'runtimes', bezPrepisuHtml(all));
 
   const n = f.selected.size;
-  fill(el, 'selbar', f.selecting
+  zivy(el, 'selbar', f.selecting
     ? `<div class="selbar-inner"><span><b>${n}</b> ${plural(n, 'vybraná', 'vybrané', 'vybraných')}</span>
         <button class="btn btn--sm btn--on-dark" type="button" data-bulk="all">${tr('Vybrat vše ({0})', list.length)}</button>
         ${n ? `<button class="btn btn--sm btn--on-dark" type="button" data-bulk="none">${tr('Zrušit výběr')}</button>` : ''}
@@ -308,6 +348,8 @@ export default {
   },
   unmount: () => {
     v.el = null;
+    v.limit = Infinity;
+    v.ceka = false;
     f.selecting = false;
     f.selected.clear();
   },

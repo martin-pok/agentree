@@ -400,6 +400,7 @@ export default {
   unmount() {
     state.transcripts.delete(v.id);
     if (v.onDocPointer) document.removeEventListener('pointerdown', v.onDocPointer, true);
-    Object.assign(v, { id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null });
+    v.sideDrag?.zrus();
+    Object.assign(v, { sideDrag: null, id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null });
   },
 };
