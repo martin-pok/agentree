@@ -158,6 +158,42 @@ async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
   }
 }
 
+// Počítadla v nástupu obrazovky: každá číslice má písmo svého čísla po celou dobu animace.
+// Dřív obecné „.pb-stat span“ zmenšilo číslice v Přehledu na 12 px a až po animaci naskočily
+// na 26 px. Měří se ve chvíli, kdy počítadlo ještě jede (pohyb povolený), na každé obrazovce.
+async function zkontrolujPocitadla(browser, engine) {
+  const server = await startTestServer();
+  const ses = server.app.store.ensure({ connector: 'codex', localId: 'qa-odo', provider: 'openai', app: 'Codex' });
+  Object.assign(ses, { title: 'QA – počítadla', lastAt: Date.now(), startedAt: Date.now() - 60000 });
+  addTokens(ses, Date.now(), { input: 1234567, output: 89012 });
+  server.app.store.commit(ses);
+  const chyby = [];
+  let mereni = 0;
+  try {
+    for (const sirka of [1440, 375]) {
+      const ctx = await browser.newContext({ viewport: { width: sirka, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+      const p = await ctx.newPage();
+      for (const trasa of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'nastaveni']) {
+        await p.goto(`${server.url}/#/${trasa}`);
+        await p.waitForSelector('.odo-cislo', { timeout: 3000 }).catch(() => {});
+        const vys = await p.evaluate(() => [...document.querySelectorAll('.odo-cislo')].map((c) => {
+          const hf = getComputedStyle(c.parentElement).fontSize;
+          const zle = [c, ...c.querySelectorAll('.odo, .odo span')].filter((s) => getComputedStyle(s).fontSize !== hf).map((s) => getComputedStyle(s).fontSize);
+          return { kde: c.parentElement.parentElement?.className || c.parentElement.tagName, hf, zle: [...new Set(zle)] };
+        }));
+        mereni += vys.length;
+        for (const v of vys) if (v.zle.length) chyby.push(`${sirka}px /${trasa} ${v.kde}: číslo ${v.hf}, číslice ${v.zle.join(', ')}`);
+      }
+      await ctx.close();
+    }
+  } finally {
+    await server.close();
+  }
+  assert.ok(mereni > 0, `${engine}: žádné počítadlo v nástupu se nenašlo`);
+  assert.deepEqual(chyby, [], `${engine}: číslice počítadla mají během nástupu jinou velikost než číslo\n${chyby.join('\n')}`);
+  results.push({ engine, check: 'počítadla v nástupu mají písmo svého čísla', mereni });
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -171,6 +207,7 @@ for (const engine of engines) {
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
+  await zkontrolujPocitadla(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
