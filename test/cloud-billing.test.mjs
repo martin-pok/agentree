@@ -282,7 +282,7 @@ test('Konektor: dřívější útrata po selhání dalšího dotazu nezůstane j
   assert.equal(connector.autoEntries().some((x) => x.service === 'openai-api'), false);
 });
 
-test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) – stav zůstává "connected", tokeny prázdné', async () => {
+test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) – náklady platí, spotřeba je „nezjištěno“, ne nula', async () => {
   const openaiCosts = { data: [{ start_time: Math.floor(Date.UTC(2026, 0, 1) / 1000), results: [{ amount: 1 }] }] };
   const fetchImpl = routedFetch([
     ['api.openai.com/v1/organization/costs', () => okJson(openaiCosts)],
@@ -294,8 +294,15 @@ test('Konektor: náklady projdou, ale spotřeba tokenů selže (403) – stav z�
   await connector.scan();
   const providers = connector.providers();
   assert.equal(providers['openai-admin'].state, 'connected');
-  assert.deepEqual(providers['openai-admin'].tokens, {});
-  assert.equal(providers['openai-admin'].detail.includes('403'), false);
+  assert.equal(connector.autoEntries().some((x) => x.service === 'openai-api'), true, 'náklady zůstávají');
+  // Dřív tu byl prázdný objekt – na pohled „žádná spotřeba“. Nezjištěná hodnota je null s důvodem.
+  assert.equal(providers['openai-admin'].tokens, null);
+  assert.match(providers['openai-admin'].tokensError, /403/);
+  assert.match(providers['openai-admin'].detail, /nepodařilo zjistit/);
+  assert.equal(connector.tokenUsage()['openai-admin'], null);
+  assert.match(connector.status().detail, /nepodařilo zjistit/);
+  assert.equal(connector.status().state, 'connected');
+  assertNoSecret(providers, OPENAI_KEY, ANTHROPIC_KEY);
 });
 
 test('Konektor: přesměrování od endpointu spotřeby se nenásleduje a bere se jako chyba dané dílčí volání', async () => {
@@ -310,7 +317,8 @@ test('Konektor: přesměrování od endpointu spotřeby se nenásleduje a bere s
   await connector.scan();
   const providers = connector.providers();
   assert.equal(providers['openai-admin'].state, 'connected');
-  assert.deepEqual(providers['openai-admin'].tokens, {});
+  assert.equal(providers['openai-admin'].tokens, null);
+  assert.match(providers['openai-admin'].tokensError, /302/);
 });
 
 test('Konektor: příliš velká odpověď spotřeby tokenů se odmítne (strop na velikost) a nespadne', async () => {
@@ -326,9 +334,10 @@ test('Konektor: příliš velká odpověď spotřeby tokenů se odmítne (strop 
   const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY, 'anthropic-admin': ANTHROPIC_KEY }), { fetchImpl });
   await connector.scan();
   const providers = connector.providers();
-  // Náklady i tak zůstávají v pořádku, tokeny se u příliš velké odpovědi jen nedoplní.
+  // Náklady i tak zůstávají v pořádku, tokeny se u příliš velké odpovědi nedoplní a je to vidět.
   assert.equal(providers['openai-admin'].state, 'connected');
-  assert.deepEqual(providers['openai-admin'].tokens, {});
+  assert.equal(providers['openai-admin'].tokens, null);
+  assert.match(providers['openai-admin'].tokensError, /příliš velkou/);
 });
 
 test('Anthropic cost_report: částka je v centech (příklad z dokumentace "123.45" = 1,2345 $)', () => {
@@ -337,4 +346,58 @@ test('Anthropic cost_report: částka je v centech (příklad z dokumentace "123
   // OpenAI posílá dolary – jeho částka se nedělí.
   const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000), results: [{ amount: { value: 2, currency: 'usd' } }] }] });
   assert.equal(openai['2026-10-01'], 2);
+});
+
+test('OpenAI costs i usage dočtou další stránku (has_more/next_page) – nejnovější den nezmizí', async () => {
+  const den = (d) => Math.floor(Date.UTC(2026, 9, d) / 1000);
+  const volani = [];
+  const fetchImpl = routedFetch([
+    ['api.openai.com/v1/organization/costs', (href, opts) => {
+      const url = new URL(href); volani.push({ cesta: 'costs', url, opts });
+      return okJson(url.searchParams.get('page') === 'costs-2'
+        ? { object: 'page', data: [{ start_time: den(3), results: [{ amount: { value: 7, currency: 'usd' } }] }], has_more: false, next_page: null }
+        : { object: 'page', data: [{ start_time: den(1), results: [{ amount: { value: 1, currency: 'usd' } }] }], has_more: true, next_page: 'costs-2' });
+    }],
+    ['api.openai.com/v1/organization/usage/completions', (href, opts) => {
+      const url = new URL(href); volani.push({ cesta: 'usage', url, opts });
+      return okJson(url.searchParams.get('page') === 'usage-2'
+        ? { object: 'page', data: [{ start_time: den(3), results: [{ input_tokens: 30, output_tokens: 3 }] }], has_more: false, next_page: null }
+        : { object: 'page', data: [{ start_time: den(1), results: [{ input_tokens: 10, output_tokens: 1 }] }], has_more: true, next_page: 'usage-2' });
+    }],
+  ]);
+  const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }), { fetchImpl });
+  await connector.scan();
+  const p = connector.providers()['openai-admin'];
+  assert.equal(p.state, 'connected');
+  assert.deepEqual(connector.autoEntries().map((x) => [x.date, x.amount]), [['2026-10-01', 1], ['2026-10-03', 7]]);
+  assert.equal(p.tokens['2026-10-03'].input, 30, 'druhá stránka spotřeby se musí dočíst');
+  assert.equal(volani.filter((v) => v.cesta === 'costs').length, 2);
+  assert.equal(volani.filter((v) => v.cesta === 'usage').length, 2);
+  for (const { cesta, url, opts } of volani) {
+    // Stropy podle specifikace OpenAI: costs 1–180, usage při 1d nejvýš 31.
+    assert.equal(url.searchParams.get('limit'), cesta === 'costs' ? '180' : '31');
+    assert.equal(url.searchParams.get('bucket_width'), '1d');
+    assert.equal(opts.redirect, cesta === 'costs' ? 'error' : 'manual');
+  }
+  assertNoSecret(connector.providers(), OPENAI_KEY);
+});
+
+test('OpenAI: chybějící next_page u has_more nebo nekonečné stránkování je chyba, ne částečná data', async () => {
+  const neuplne = routedFetch([
+    ['api.openai.com/v1/organization/costs', () => okJson({ data: [{ start_time: 1, results: [{ amount: 1 }] }], has_more: true, next_page: null })],
+  ]);
+  const a = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }), { fetchImpl: neuplne });
+  await a.scan();
+  assert.equal(a.providers()['openai-admin'].state, 'error');
+  assert.match(a.providers()['openai-admin'].detail, /neúplné stránkování/);
+  assert.equal(a.autoEntries().length, 0);
+
+  let pocet = 0;
+  const donekonecna = routedFetch([
+    ['api.openai.com/v1/organization/costs', () => { pocet++; return okJson({ data: [], has_more: true, next_page: 'dalsi' }); }],
+  ]);
+  const b = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }), { fetchImpl: donekonecna });
+  await b.scan();
+  assert.equal(b.providers()['openai-admin'].state, 'error');
+  assert.ok(pocet <= 12, `strop stránek, bylo ${pocet}`);
 });

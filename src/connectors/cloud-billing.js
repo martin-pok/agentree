@@ -27,44 +27,94 @@ async function readBoundedJson(res, maxBytes) {
 }
 
 const ANTHROPIC_DAILY_BUCKETS = 31;
-const ANTHROPIC_MAX_PAGES = 12;
+const MAX_PAGES = 12;
 // Anthropic průběžně dopočítává denní report (obvykle do pěti minut). Deset minut drží data čerstvá,
 // aniž by aplikace zbytečně zatěžovala administrační API při každém vykreslení obrazovky.
 const CLOUD_REFRESH_MS = 10 * 60 * 1000;
 
 // Anthropic vrací při denním rozlišení nejvýš 31 košů na stránku. Původní jeden dotaz za 180 dní
-// proto mohl skončit chybou nebo vrátit jen část období. Vždy dočteme všechny navazující stránky,
-// ale máme pevný strop, aby po chybném cursoru nevznikla nekonečná smyčka ani neomezený přenos.
+// proto mohl skončit chybou nebo vrátit jen část období. Stránky dočítá `fetchPages` níže.
 async function fetchAnthropicPages(fetchImpl, pathname, key, redirect) {
   const start = new Date(Date.now() - 180 * DAY).toISOString();
   const end = new Date().toISOString();
+  return fetchPages(fetchImpl, {
+    vendor: 'Anthropic',
+    redirect,
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'User-Agent': `Agenteeq/${VERSION} (https://agenteeq.app)`,
+    },
+    url(page) {
+      const url = new URL(`https://api.anthropic.com${pathname}`);
+      url.searchParams.set('starting_at', start);
+      url.searchParams.set('ending_at', end);
+      url.searchParams.set('bucket_width', '1d');
+      url.searchParams.set('limit', String(ANTHROPIC_DAILY_BUCKETS));
+      if (page) url.searchParams.set('page', page);
+      return url;
+    },
+  });
+}
+
+// OpenAI má stejné stránkování (`has_more` + `next_page` → parametr `page`), jen jiné stropy:
+// /organization/costs vrací nejvýš 180 denních košů na stránku, /organization/usage/* jen 31.
+// 180 dní zpět od teď zasáhne 181 kalendářních dní (začátek je uprostřed dne), takže jediný
+// dotaz s limitem 180 tiše vynechal nejnovější den – právě ten, který člověk v Útratě hledá.
+// Usage s limitem 180 je navíc mimo specifikaci (max 31) a vracel chybu.
+export const OPENAI_LIMIT = { costs: 180, usage: 31 };
+
+async function fetchOpenAIPages(fetchImpl, pathname, key, redirect, limit) {
+  const start = String(Math.floor((Date.now() - 180 * DAY) / 1000));
+  return fetchPages(fetchImpl, {
+    vendor: 'OpenAI',
+    redirect,
+    headers: { Authorization: `Bearer ${key}` },
+    url(page) {
+      const url = new URL(`https://api.openai.com${pathname}`);
+      url.searchParams.set('start_time', start);
+      url.searchParams.set('bucket_width', '1d');
+      url.searchParams.set('limit', String(limit));
+      if (page) url.searchParams.set('page', page);
+      return url;
+    },
+  });
+}
+
+// Společné čtení stránkovaného reportu: dočte všechny navazující stránky, ale s pevným stropem,
+// aby po chybném kurzoru nevznikla nekonečná smyčka ani neomezený přenos. Částečný výsledek se
+// nikdy nevydává za celé období – neúplné stránkování je chyba.
+// Hlášky jsou vypsané celé pro každého dodavatele, aby šly přeložit (src/texty.js).
+const CHYBY = {
+  OpenAI: {
+    status: (n) => ui('OpenAI odpověděla {0}', n),
+    spatna: () => ui('OpenAI vrátila neočekávanou nebo příliš velkou odpověď.'),
+    neuplna: () => ui('OpenAI vrátila neúplné stránkování.'),
+    mnoho: () => ui('OpenAI vrátila příliš mnoho stránek.'),
+  },
+  Anthropic: {
+    status: (n) => ui('Anthropic odpověděla {0}', n),
+    spatna: () => ui('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.'),
+    neuplna: () => ui('Anthropic vrátila neúplné stránkování.'),
+    mnoho: () => ui('Anthropic vrátila příliš mnoho stránek.'),
+  },
+};
+
+async function fetchPages(fetchImpl, { vendor, redirect, headers, url }) {
+  const chyba = CHYBY[vendor];
   const data = [];
   let page = null;
-  for (let pages = 0; pages < ANTHROPIC_MAX_PAGES; pages++) {
-    const url = new URL(`https://api.anthropic.com${pathname}`);
-    url.searchParams.set('starting_at', start);
-    url.searchParams.set('ending_at', end);
-    url.searchParams.set('bucket_width', '1d');
-    url.searchParams.set('limit', String(ANTHROPIC_DAILY_BUCKETS));
-    if (page) url.searchParams.set('page', page);
-    const res = await fetchImpl(url, {
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'User-Agent': `Agenteeq/${VERSION} (https://agenteeq.app)`,
-      },
-      redirect,
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) throw new Error(ui('Anthropic odpověděla {0}', res.status));
+  for (let pages = 0; pages < MAX_PAGES; pages++) {
+    const res = await fetchImpl(url(page), { headers, redirect, signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(chyba.status(res.status));
     const json = await readBoundedJson(res, 5_000_000);
-    if (json === null || !Array.isArray(json.data)) throw new Error(ui('Anthropic vrátila neočekávanou nebo příliš velkou odpověď.'));
+    if (json === null || !Array.isArray(json.data)) throw new Error(chyba.spatna());
     data.push(...json.data);
     if (!json.has_more) return { data };
-    if (typeof json.next_page !== 'string' || !json.next_page) throw new Error(ui('Anthropic vrátila neúplné stránkování.'));
+    if (typeof json.next_page !== 'string' || !json.next_page) throw new Error(chyba.neuplna());
     page = json.next_page;
   }
-  throw new Error(ui('Anthropic vrátila příliš mnoho stránek.'));
+  throw new Error(chyba.mnoho());
 }
 
 export function parseOpenAICosts(json) {
@@ -127,19 +177,13 @@ export function parseAnthropicUsage(json) {
 export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch } = {}) {
   const { config, secrets } = ctx;
   const state = {
-    'openai-admin': { state: 'missing', detail: ui('Přidej OpenAI Admin API klíč.'), daily: {}, usage: {}, at: 0 },
-    'anthropic-admin': { state: 'missing', detail: ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, at: 0 },
+    'openai-admin': { state: 'missing', detail: ui('Přidej OpenAI Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 },
+    'anthropic-admin': { state: 'missing', detail: ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 },
   };
   let timer = null;
 
   async function fetchOpenAI(key) {
-    const url = new URL('https://api.openai.com/v1/organization/costs');
-    url.searchParams.set('start_time', String(Math.floor((Date.now() - 180 * DAY) / 1000)));
-    url.searchParams.set('bucket_width', '1d');
-    url.searchParams.set('limit', '180');
-    const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(ui('OpenAI odpověděla {0}', res.status));
-    return parseOpenAICosts(await res.json());
+    return parseOpenAICosts(await fetchOpenAIPages(fetchImpl, '/v1/organization/costs', key, 'error', OPENAI_LIMIT.costs));
   }
 
   async function fetchAnthropic(key) {
@@ -149,15 +193,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
   // Spotřeba tokenů OpenAI (Admin klíč, stejný jako pro náklady). Nenásleduje přesměrování a
   // odpověď se čte jen do stropu 5 MB – chyba se vždy vrátí jako Error, nikdy nepropadne dál.
   async function fetchOpenAIUsage(key) {
-    const url = new URL('https://api.openai.com/v1/organization/usage/completions');
-    url.searchParams.set('start_time', String(Math.floor((Date.now() - 180 * DAY) / 1000)));
-    url.searchParams.set('bucket_width', '1d');
-    url.searchParams.set('limit', '180');
-    const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${key}` }, redirect: 'manual', signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(ui('OpenAI odpověděla {0}', res.status));
-    const json = await readBoundedJson(res, 5_000_000);
-    if (json === null) throw new Error(ui('OpenAI vrátila neočekávanou nebo příliš velkou odpověď.'));
-    return parseOpenAIUsage(json);
+    return parseOpenAIUsage(await fetchOpenAIPages(fetchImpl, '/v1/organization/usage/completions', key, 'manual', OPENAI_LIMIT.usage));
   }
 
   // Spotřeba tokenů Anthropic (stejný Admin klíč jako pro cost_report).
@@ -173,22 +209,31 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const key = await secrets.get(id);
       const st = state[id];
       if (!key) {
-        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, at: 0 });
+        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 });
         continue;
       }
       try {
         st.daily = await fetcher(key);
-        // Spotřeba tokenů je vedlejší – chybu nebo výpadek jen zaznamenáme do detailu, náklady zůstávají platné.
+        // Spotřeba tokenů je vedlejší: když selže, náklady zůstávají platné. Selhání se ale nesmí
+        // tvářit jako „žádná spotřeba“ – `usage` je pak null (nezjištěno, ne nula) a důvod je
+        // v `usageError` i v detailu, který Nastavení ukazuje u klíče.
+        let usageError = null;
         try {
           st.usage = await USAGE_FETCHERS[id](key);
-        } catch {
-          st.usage = {};
+        } catch (err) {
+          st.usage = null;
+          usageError = String(err?.message || err).slice(0, 160);
         }
-        Object.assign(st, { state: 'connected', detail: ui('Denní náklady a spotřeba tokenů organizace za 180 dní.'), at: Date.now() });
+        Object.assign(st, {
+          state: 'connected',
+          usageError,
+          detail: usageError ? ui('Náklady načteny. Spotřebu tokenů se nepodařilo zjistit: {0}', usageError) : ui('Denní náklady a spotřeba tokenů organizace za 180 dní.'),
+          at: Date.now(),
+        });
       } catch (err) {
         // Po selhání nesmí graf ani rozpočet dál používat poslední úspěšná data. Nevíme, zda se
         // od nich stav u poskytovatele nezměnil, proto je vyřadíme až do další ověřené odpovědi.
-        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160), daily: {}, usage: {}, at: 0 });
+        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160), daily: {}, usage: {}, usageError: null, at: 0 });
       }
     }
     ctx.onSpendChanged?.();
@@ -223,6 +268,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       return out;
     },
     // Denní spotřeba tokenů organizace podle poskytovatele – samostatná metrika, nikdy nesčítat s útratou.
+    // null = spotřebu se nepodařilo zjistit (není to „žádná spotřeba“).
     tokenUsage() {
       return Object.fromEntries(Object.entries(state).map(([k, v]) => [k, v.usage]));
     },
@@ -230,16 +276,17 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       return Object.fromEntries(
         Object.entries(state).map(([k, v]) => [
           k,
-          { state: v.state, detail: v.detail, at: v.at, source: v.state === 'missing' ? null : secrets.source(k), tokens: v.usage },
+          { state: v.state, detail: v.detail, at: v.at, source: v.state === 'missing' ? null : secrets.source(k), tokens: v.usage, tokensError: v.usageError || null },
         ])
       );
     },
     status() {
       const connected = Object.values(state).filter((v) => v.state === 'connected').length;
       const errors = Object.values(state).filter((v) => v.state === 'error');
+      const partial = Object.values(state).find((v) => v.state === 'connected' && v.usageError);
       return {
         state: errors.length ? 'error' : connected ? 'connected' : 'missing',
-        detail: errors.length ? errors[0].detail : connected ? ui('Připojeno {0} z 2 API.', connected) : ui('Žádný API klíč. Útratu můžeš zapisovat ručně.'),
+        detail: errors.length ? errors[0].detail : partial ? partial.detail : connected ? ui('Připojeno {0} z 2 API.', connected) : ui('Žádný API klíč. Útratu můžeš zapisovat ručně.'),
         count: connected,
         watching: Boolean(timer),
         lastEventAt: Math.max(...Object.values(state).map((v) => v.at)),

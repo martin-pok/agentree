@@ -118,8 +118,10 @@ export function validateBudgets(input, current) {
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: next };
 }
 
+// `auto` je část součtu z automatických položek Admin API. Obrazovka Útrata ji ukazuje zvlášť,
+// aby šel součet měsíce složit z viditelných řádků: ručně zapsané + automaticky z Admin API.
 export function monthlyTotals(spend, months, autoEntries = []) {
-  const rows = months.map((key) => ({ key, total: 0, services: {}, kinds: {} }));
+  const rows = months.map((key) => ({ key, total: 0, auto: 0, services: {}, kinds: {} }));
   const index = new Map(months.map((k, i) => [k, i]));
   const add = (key, e) => {
     const i = index.get(key);
@@ -127,6 +129,7 @@ export function monthlyTotals(spend, months, autoEntries = []) {
     const v = convert(e.amount, e.currency, spend);
     const row = rows[i];
     row.total += v;
+    if (e.auto) row.auto += v;
     row.services[e.service] = (row.services[e.service] || 0) + v;
     row.kinds[e.kind] = (row.kinds[e.kind] || 0) + v;
   };
@@ -142,10 +145,33 @@ export function monthlyTotals(spend, months, autoEntries = []) {
   }
   for (const row of rows) {
     row.total = round2(row.total);
+    row.auto = round2(row.auto);
     for (const k of Object.keys(row.services)) row.services[k] = round2(row.services[k]);
     for (const k of Object.keys(row.kinds)) row.kinds[k] = round2(row.kinds[k]);
   }
   return rows;
+}
+
+// Automatické položky Admin API sečtené po měsících a službách pro tabulku Výdaje. Denní položek
+// je za půl roku stovky, proto se ukazují jako jeden řádek za službu a měsíc – stejné seskupení,
+// jakým vstupují do měsíčního součtu, takže řádky jdou s ním porovnat. Dny jsou dny dodavatele (UTC).
+export function autoMonthly(autoEntries, months, spend) {
+  const map = new Map();
+  for (const e of autoEntries) {
+    if (typeof e?.date !== 'string') continue;
+    const month = e.date.slice(0, 7);
+    if (!months.includes(month)) continue;
+    const key = `${month}|${e.service}|${e.currency}`;
+    const r = map.get(key) || map.set(key, { month, service: e.service, kind: e.kind, currency: e.currency, amount: 0, converted: 0, days: 0, from: e.date, to: e.date }).get(key);
+    r.amount += Number(e.amount) || 0;
+    r.converted += convert(e.amount, e.currency, spend);
+    r.days += 1;
+    if (e.date < r.from) r.from = e.date;
+    if (e.date > r.to) r.to = e.date;
+  }
+  return [...map.values()]
+    .map((r) => ({ ...r, amount: round2(r.amount), converted: round2(r.converted) }))
+    .sort((a, b) => b.month.localeCompare(a.month) || a.service.localeCompare(b.service));
 }
 
 export function spendSummary(spend, now = Date.now(), autoEntries = []) {
@@ -182,6 +208,7 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
     recurring: round2(recurring),
     forecast: round2(forecast),
     budgets,
+    automatic: autoMonthly(autoEntries, months, spend),
   };
 }
 

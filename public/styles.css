@@ -1259,6 +1259,22 @@ html.is-cloud body { background: var(--paper); }
 .ledger .actions { text-align: right; white-space: nowrap; }
 .ledger .actions > * { display: inline-flex; vertical-align: middle; }
 .svc { display: inline-flex; align-items: center; gap: 8px; }
+/* Výdaje: ručně zapsané a automatické řádky z Admin API jsou dvě skupiny jedné tabulky, aby
+   sloupce lícovaly. Převod do hlavní měny je pod částkou, menší a tlumený. */
+.ledger-sum { margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.ledger-sum b { color: var(--ink); }
+.ledger .ledger-group th { padding: 24px 12px 8px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 14px; }
+.ledger tbody:first-of-type .ledger-group th { padding-top: 16px; }
+.ledger-group-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+/* Na úzkém displeji tabulka roluje do strany. Nadpis skupiny zůstává přilepený vlevo a zalomí se do
+   viditelné šířky, aby štítek „jen ke čtení“ a poznámka o UTC nezmizely mimo obrazovku. */
+@media (max-width: 720px) { .ledger-group-head { position: sticky; left: 12px; width: min(100%, calc(100vw - 96px)); } }
+.ledger-group-title { font-weight: 500; }
+.ledger-group-note { color: var(--mute); font-size: 12px; font-weight: 400; }
+.ledger-conv { display: block; margin-top: 4px; font-size: 12px; color: var(--mute); }
+.spend-foot { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--mute); }
+.spend-foot--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
+.spend-foot--warn b { color: var(--brass-ink); }
 
 /* ---------- Upozornění ---------- */
 .alert-list { list-style: none; margin: 0; padding: 8px 16px 16px; }
