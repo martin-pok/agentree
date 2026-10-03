@@ -2,6 +2,8 @@
 
 ## Nezveřejněno
 
+- **Oprava útraty z Anthropic Admin API:** `cost_report` posílá částky v centech (podle dokumentace „123.45“ = 1,23 $), aplikace je ale četla jako dolary, takže API útrata Anthropicu vycházela stokrát vyšší v Útratě, rozpočtech i prognóze. OpenAI posílá dolary a zůstává beze změny.
+
 - Chrome Web Store: po zamítnutí výčtu značek byl anglický popis zjednodušen a znovu odeslán. Zdroj pravdy obsahuje Store ID; veřejný web a aplikace se na instalaci z obchodu přepnou až po ověření schválení.
 - Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.
 

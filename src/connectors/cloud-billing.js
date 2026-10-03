@@ -76,13 +76,16 @@ export function parseOpenAICosts(json) {
   return daily;
 }
 
+// Anthropic vrací částku v nejmenších jednotkách měny jako desetinný řetězec: "123.45" v USD
+// znamená 1,2345 $ (GET /v1/organizations/cost_report, pole `amount`). Čtené jako dolary by
+// útrata vyšla stokrát vyšší. OpenAI naopak posílá dolary (`amount.value`).
 export function parseAnthropicCosts(json) {
   const daily = {};
   for (const bucket of json?.data || []) {
     const day = String(bucket.starting_at || bucket.start_time || '').slice(0, 10);
     if (!day) continue;
     const results = Array.isArray(bucket.results) ? bucket.results : [bucket];
-    for (const r of results) daily[day] = (daily[day] || 0) + amountOf(r);
+    for (const r of results) daily[day] = (daily[day] || 0) + amountOf(r) / 100;
   }
   return daily;
 }
