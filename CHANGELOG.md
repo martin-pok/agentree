@@ -2,6 +2,7 @@
 
 ## Nezveřejněno
 
+- **Instalace jedním příkazem na Macu.** `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash` stáhne poslední vydání pro procesor Macu, ověří velikost a otisk SHA-256 proti GitHubu i podpis aplikace, starou verzi přesune do Koše a novou otevře. Soubor stažený v Terminálu nedostane příznak karantény, takže odpadá potvrzení v Nastavení systému; bez otisku od GitHubu nebo při neshodě se nic nenainstaluje. Web ji nabízí v sekci Stažení vedle stažení v prohlížeči. Distribuci a prodej to nenahrazuje – na to je dál potřeba Developer ID a notarizace.
 - **Útrata jde složit z viditelných řádků.** Součet měsíce obsahoval i náklady z Admin API, tabulka Výdaje ale ukazovala jen ruční zápisy. Teď má tabulka druhou skupinu „Automaticky z Admin API · OpenAI / Anthropic“ (jen ke čtení, jeden řádek za službu a měsíc, převod do hlavní měny pod částkou) a nad tabulkou rozpad „Tento měsíc = zapsáno ručně + automaticky z Admin API“. Rozpočty a prognóza počítají stejně jako dřív.
 - **Kurz říká, odkud je.** Pod Výdaji je zdroj kurzu (ČNB s datem lístku, vlastní z Rozpočtů) a že se minulé měsíce přepočítávají stejným kurzem. Výchozí kurz 23 Kč / 25 Kč je výrazně označený jako orientační.
 - **OpenAI Admin API: nejnovější den už nechybí.** Náklady i spotřeba tokenů se dočítají po stránkách (`has_more` / `next_page`, strop 12 stránek). Jeden dotaz s limitem 180 vynechal dnešek a dotaz na spotřebu byl s tímto limitem mimo specifikaci OpenAI (max 31).
