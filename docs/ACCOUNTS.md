@@ -91,6 +91,15 @@ Při změně domény nebo OAuth klienta se musí současně změnit callback v G
 v Supabase; potom ověř `external.google: true` a spusť `test/ucet.test.mjs` i
 `test/ucet-web.test.mjs`.
 
+## Dostupnost projektu na Free tarifu
+
+Projekt zůstává na tarifu Supabase Free. Workflow [`.github/workflows/supabase-keepalive.yml`](../.github/workflows/supabase-keepalive.yml) se každý den v 05:17 UTC spustí z GitHub Actions a provede jediný `GET /auth/v1/settings` s publikovatelným klíčem. Je to neosobní požadavek na API projektu; aktuální pravidla Supabase uvádějí API požadavky jako způsob, jak na Free tarifu udržet aktivitu.
+
+- Workflow odpověď vůbec nečte ani nevypisuje. Nezapisuje žádné řádky, nepoužívá uživatelský token a neposílá žádná uživatelská data.
+- Kontroluje se pouze HTTP stav. Když Supabase není dostupný, běh v Actions selže viditelně místo toho, aby aplikace ukazovala nepravdivý stav.
+- Běh lze kdykoli ručně spustit v **Actions → Udržet aktivní Supabase**. Pro jistotu běží denně; pravidlo Supabase uvádí API požadavky jako podporovanou cestu k udržení aktivity.
+- Jedinou smluvní garanci proti uspání dává placený Pro tarif. Aplikace ale i bez cloudového účtu zůstává plně lokálně funkční.
+
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
 
 Nastavení → Účet a vzhled → **Synchronizovat souhrny do účtu**. Vypnuto, dokud ho člověk sám

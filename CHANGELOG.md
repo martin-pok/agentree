@@ -2,6 +2,8 @@
 
 ## Nezveřejněno
 
+- Free projekt Supabase udržuje denní neosobní požadavek na Auth API z GitHub Actions. Požadavek přes veřejný klíč nečte ani nezapisuje uživatelská data a v běhu se nelogují žádné odpovědi. Selhání je vidět přímo v Actions.
+
 ## 0.31.4 – 2026-10-02 · stabilní čtení dlouhých relací Codexu
 
 - Dlouhé JSONL relace Codexu se čtou po blocích místo jednoho velkého řetězce. Aplikace se tak nezastaví na limitu paměti Node a denní tokenový součet neztratí právě běžící relaci.
