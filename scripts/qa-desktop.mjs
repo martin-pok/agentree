@@ -793,7 +793,9 @@ for (const engine of engines) {
           `${engine} ${sirka}: nadpis Nastavení vyjel z ${vychozi.nadpis} na ${po.nadpis} px`);
         assert.ok(po.posledni < vyska, `${engine} ${sirka}: poslední položka podmenu je mimo okno`);
         if (sirka > 1180) {
-          assert.equal(await page.locator('.topbar-actions').isVisible(), false, `${engine} ${sirka}: horní akce při posunu překrývají karty`);
+          // Skrytí se uplatní až v dalším vykreslení; na vytíženém CI runneru WebKitu ne vždy hned.
+          const skryte = await page.waitForFunction(() => getComputedStyle(document.querySelector('.topbar-actions')).visibility === 'hidden', null, { timeout: 1500 }).then(() => true, () => false);
+          assert.equal(skryte, true, `${engine} ${sirka}: horní akce při posunu překrývají karty`);
           const pruchozi = await page.evaluate(() => {
             const bar = document.querySelector('.topbar');
             const rect = bar.getBoundingClientRect();
