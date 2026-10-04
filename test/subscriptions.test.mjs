@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { startTestServer, tempDir } from './helpers.mjs';
+import { startTestServer, tempDir, waitFor } from './helpers.mjs';
 import { parseCnb, applyLiveRates, createRateFeed } from '../src/rates.js';
 import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionPortfolio } from '../src/subscriptions.js';
 import { spendSummary, DEFAULT_SPEND, validateEntry } from '../src/spend.js';
@@ -143,6 +143,7 @@ test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho 
   });
   try {
     await t.app.refreshSubscriptions();
+    assert.equal((await t.app.integrations()).claudeAuth.loggedIn, true);
     const sp = t.app.spendPayload();
     const claude = sp.subscriptions.find((x) => x.service === 'claude');
     assert.equal(claude.plan, 'pro');
@@ -163,8 +164,33 @@ test('starý účtový soubor Claude se po odhlášení nevydává za aktivní p
     napojeniRun: async () => ({ ok: true, stdout: JSON.stringify({ loggedIn: false }), stderr: '' }),
   });
   try {
+    await t.app.refreshSubscriptions();
+    assert.equal((await t.app.integrations()).claudeAuth.loggedIn, false);
     const sp = t.app.spendPayload();
     assert.equal(sp.subscriptions.some((x) => x.service === 'claude'), false);
+  } finally {
+    await t.close();
+  }
+});
+
+test('změna přihlášení Claude se bez reloadu propíše do živého stavu', async () => {
+  let loggedIn = false;
+  const t = await startTestServer({}, {
+    napojeniRun: async () => ({ ok: true, stdout: JSON.stringify({ loggedIn }), stderr: '' }),
+  });
+  try {
+    const events = [];
+    t.app.store.on('integrations', (value) => events.push(value.claudeAuth.loggedIn));
+    loggedIn = true;
+    await t.app.refreshSubscriptions();
+    await waitFor(() => events.includes(true));
+    loggedIn = false;
+    await t.app.refreshSubscriptions();
+    await waitFor(() => events.at(-1) === false);
+    loggedIn = null;
+    await t.app.refreshSubscriptions();
+    await waitFor(() => events.at(-1) === null);
+    assert.deepEqual(events.filter((value, index) => index === 0 || value !== events[index - 1]), [true, false, null]);
   } finally {
     await t.close();
   }

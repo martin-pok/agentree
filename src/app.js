@@ -326,6 +326,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   // Předplatné zjištěné z tohoto Macu (Claude z účtu Claude Code, ChatGPT z plánu, který hlásí Codex).
   let claudeAccount = null;
+  let claudeAuth = { loggedIn: null, checkedAt: 0 };
   let subscriptionWatcher = null;
   let subscriptionJson = '';
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
@@ -333,6 +334,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Samotný starý ~/.claude.json nestačí: po odhlášení může na disku zůstat. Plán přijmeme
     // pouze když vlastní `claude auth status --json` právě potvrdí aktivní přihlášení.
     const auth = await napojeni.stav('claude-code').catch(() => ({ napojeno: null }));
+    const loggedIn = typeof auth.napojeno === 'boolean' ? auth.napojeno : null;
+    const authChanged = claudeAuth.loggedIn !== loggedIn;
+    claudeAuth = { loggedIn, checkedAt: Date.now() };
     const acc = auth.napojeno === true ? await readClaudeAccount(config.sourceHome) : null;
     const before = JSON.stringify(claudeAccount);
     claudeAccount = acc ? claudePlanFromAccount(acc) : null;
@@ -340,6 +344,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       subscriptionJson = JSON.stringify(subscriptions());
       spendChanged();
     }
+    if (authChanged && store.ready) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
   }
   function subscriptions(now = Date.now()) {
     const found = [claudeAccount, chatgptPlanFromLimits(store.limitList(), now)].filter(Boolean);
@@ -723,7 +728,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
     prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
-    emit: (u) => store.emit('napojeni', u),
+    emit: (u) => {
+      store.emit('napojeni', u);
+      if (u.id === 'claude-code' && u.udalost === 'napojeno') refreshSubscriptions().catch(() => {});
+    },
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
       if (id === 'claude-code') {
@@ -900,6 +908,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function integrations() {
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
+      claudeAuth,
       extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
@@ -1376,7 +1385,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     }, { retryMs: 1000 });
     // Časem může zestárnout poslední pozorování plánu Codexu i bez nového souboru.
     every(() => subscriptionsChanged(), 60_000);
-    every(() => refreshSubscriptions(), 10 * 60e3);
+    every(() => refreshSubscriptions(), 2 * 60e3);
     every(() => checkForUpdates(), 6 * HOUR);
     rateFeed.start();
     // Selhání zápisu na pozadí (upozornění, projekty, výdaje) dřív skončilo jen v logu.

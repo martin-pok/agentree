@@ -1825,6 +1825,14 @@ html.is-cloud body { background: var(--paper); }
 .lwin-row[data-tone='low'] .lwin-bar i { background: var(--brass); }
 .lwin-row[data-tone='out'] .lwin-bar i { background: var(--velvet-ink); }
 .lwin-row[data-tone='out'] .lwin-pct { color: var(--velvet-ink); }
+.lwin-missing { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-top: 10px; padding: 12px 14px 12px 10px; border-radius: var(--r-full); background: var(--card); box-shadow: var(--shadow-sm); color: var(--ink); text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.lwin-missing:hover, .lwin-missing:focus-visible { background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink); }
+.lwin-missing-main { display: grid; gap: 3px; min-width: 0; font-size: 14px; }
+.lwin-missing-main b { font-weight: 500; }
+.lwin-missing-main span { color: var(--ink-2); }
+.lwin-missing-action { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+.lwin-missing-action svg { width: 14px; height: 14px; }
+@media (max-width: 520px) { .lwin-missing { grid-template-columns: 36px minmax(0, 1fr); } .lwin-missing-action { grid-column: 2; } }
 .lwin-sub { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
 .lwin-reset { color: var(--ink-2); }
 .lwin-reset.is-unknown { color: var(--mute); }

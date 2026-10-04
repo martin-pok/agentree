@@ -851,7 +851,7 @@ function update(topics) {
   /* Propojení s Claude Code */
   const h = i.claudeHooks;
   const outdated = !h.error && (h.installed || h.partial) && !h.current;
-  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? ['connected', tr('Zapnuto')] : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
+  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? ['connected', tr('Hooky zapnuté')] : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
   // Kdo Claude Code nemá, tuhle kartu vidět nepotřebuje – Agenteeq na něm nestojí.
   const maClaude = state.connectors.some((c) => c.id === 'claude-code' && c.state !== 'missing') || h.installed || h.partial;
   fill(el, 'claude', !maClaude ? '' : `

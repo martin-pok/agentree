@@ -40,7 +40,26 @@ function chips(rows, now) {
 // Claude bez čerstvého měření: říct proč a kde se měření vezme. Claude Code v aplikaci Claude
 // stavový řádek nespouští a historie Claude Desktopu přibývá jen tehdy, když si Desktop vytížení načte.
 // Cestu přes Desktop nabízíme jen tam, kde Desktop je; stavový řádek jen s propojenými hooky.
-function poznamkaClaude(state) {
+function claudeOdhlaseny(state, now) {
+  const auth = state.integrations?.claudeAuth;
+  return auth?.loggedIn === false && Number.isFinite(auth.checkedAt) && auth.checkedAt > 0 && now - auth.checkedAt >= 0 && now - auth.checkedAt <= 5 * 60e3;
+}
+
+export function claudeLimitStatus(state, now = Date.now()) {
+  const dostupny = (state.connectors || []).some((c) => ['claude-code', 'claude-desktop-usage'].includes(c.id) && c.state !== 'missing');
+  const zmereny = currentLimits(state.limits || [], now).some((l) => l.provider === 'anthropic' && (typeof l.usedPercent === 'number' || l.reached));
+  if (!dostupny || zmereny) return '';
+  const odhlaseny = claudeOdhlaseny(state, now);
+  const stav = odhlaseny ? tr('Claude Code je odhlášený') : tr('Čeká na čerstvá data');
+  return `<a class="lwin-missing" href="#/nastaveni" aria-label="${esc(tr('Claude: {0}. Otevřít Nastavení', stav))}">
+    <span class="lwin-logo">${glyph('anthropic')}</span>
+    <span class="lwin-missing-main"><b>Claude</b><span>${esc(stav)}</span></span>
+    <span class="lwin-missing-action">${odhlaseny ? tr('Přihlásit') : tr('Zkontrolovat')}${ICON.arrow}</span>
+  </a>`;
+}
+
+function poznamkaClaude(state, now) {
+  if (claudeOdhlaseny(state, now)) return tr('Claude Code je odhlášený. Napoj ho v Nastavení.');
   const desktop = (state.connectors || []).find((c) => c.id === 'claude-desktop-usage');
   const maDesktop = desktop && desktop.state !== 'missing';
   const propojeno = state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current;
@@ -52,12 +71,12 @@ function poznamkaClaude(state) {
     : tr('Žádné čerstvé měření – {0}.', terminal);
 }
 
-function poznamka(t, spojene, state) {
+function poznamka(t, spojene, state, now) {
   const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene[0];
   if (!stav) return tr('Bez údajů o limitu');
   if (t.web) return tr('Limity nejsou dostupné');
   if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
-  if (t.id === 'claude') return poznamkaClaude(state);
+  if (t.id === 'claude') return poznamkaClaude(state, now);
   return tr('Bez údajů o limitu');
 }
 
@@ -90,7 +109,7 @@ export function limitsAll(state, now = Date.now()) {
   const bezDat = nastrojeBezDat(state, new Set(TOOLS.flatMap((t) => t.connectors)), now);
   const items = rows.map(({ t, spojene, okna, tok }) => {
     const stari = okna.length ? Math.max(...okna.map((l) => l.at || 0)) : 0;
-    const nota = poznamka(t, spojene, state);
+    const nota = poznamka(t, spojene, state, now);
     const chybi = !okna.length && spojene.every((c) => c.state === 'missing');
     return `<li class="ltool${chybi ? ' is-off' : ''}">
       <span class="lwin-logo">${glyph(t.logo)}</span>
