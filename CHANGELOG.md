@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení
+
+- Přehled ukazuje Claude i bez čerstvého měření, pokud je na Macu dostupný. Při ověřeném odhlášení nabídne přihlášení; při neznámém nebo starém stavu čeká na data. Nikdy nedoplní procento ani čas obnovy odhadem.
+- Stav přihlášení Claude Code se čte zvlášť od nainstalovaných hooků. Jejich štítek v Nastavení výslovně říká „Hooky zapnuté“. Změny přihlášení se propíší živě a kontrolují se každé 2 minuty.
+
 ## 0.36.2 – 2026-10-04 · srovnané filtry na Agentech, načítací scéna i na Windows
 
 - **Filtry na Agentech v jedné mřížce.** Řádky filtrů měly každý jinou výšku a nedržely svislou ani vodorovnou osu: hledání viselo samo na vlastním řádku, zdroj vypadal jinak než poskytovatelé, řádek projektů se lámal do dvou výšek, „Vybrat“ stálo svisle jinde než čipy a nápověda „Konverzaci přetáhni na projekt“ visela pod nimi. Teď je nahoře jen hlavní filtr (stav) přes celou šířku a pod ním karta s řádky Zdroj, Služba a Projekt. Popisky mají vlastní sloupec, takže čipy všech řádků začínají na jedné svislé ose. Každý řádek má přesně 56 px a nic se v něm nezalamuje; co se nevejde, roluje s dozněním u okraje. Hledání a „Vybrat“ jsou v pravém sloupci zarovnané k témuž okraji. Všechny filtry mají jeden styl čipu. Nápověda k přetažení je u čipů projektů, na které se táhne. Na telefonu jde popisek nad řádek a hledání nahoru do karty. Stejný jazyk má karta filtrů na Dovednostech.

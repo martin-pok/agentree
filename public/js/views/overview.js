@@ -4,7 +4,7 @@ import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, H, MIN } from '../
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
-import { limitsAll } from '../limits-ui.js';
+import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
@@ -280,6 +280,7 @@ function update(topics = new Set(['all'])) {
     const credits = state.credits.filter((c) => Number.isFinite(c.balance));
     zivy(el, 'limits', `<div class="sec-head"><h2>${tr('Okna limitů')}</h2><a class="link" href="#/statistiky#limity">${tr('Detail')}</a></div>
        ${windows}
+       ${claudeLimitStatus(state, now)}
        ${credits.map((c) => `<a class="credit-chip" href="#/utrata">${glyph(c.id === 'codex' ? { connector: 'codex' } : c.provider)}<span>${esc(c.label)}</span><b>${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}</b>${creditAge(c)?.stary ? `<small class="je-stare">${esc(creditAge(c).kratce)}</small>` : ''}</a>`).join('')}
        ${limitsAll(state, now)}`);
   }

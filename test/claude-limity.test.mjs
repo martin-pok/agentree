@@ -7,7 +7,7 @@ import { createSession, deriveStatus } from '../src/model.js';
 import { applyClaudeLine, newFileState, quotaLimit, createClaudeCodeConnector } from '../src/connectors/claude-code.js';
 import { applyPlanUsageSample } from '../src/connectors/claude-desktop-usage.js';
 import { currentLimits, limitWindows, limitGauges, limitObnova } from '../public/js/ui.js';
-import { limitsAll } from '../public/js/limits-ui.js';
+import { claudeLimitStatus, limitsAll } from '../public/js/limits-ui.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
 
 // Claude Code v aplikaci Claude stavový řádek nespouští, takže přesná okna limitů Claude chyběla.
@@ -235,4 +235,19 @@ test('Všechny nástroje: Claude bez čerstvého měření řekne proč a co ud�
   const sDaty = limitsAll({ ...base, limits: [quotaLimit(odmitnuti(T0 - MIN), T0 - MIN)], connectors: [{ id: 'claude-code', state: 'connected' }] }, now);
   assert.doesNotMatch(sDaty, /Žádné čerstvé měření/);
   assert.match(sDaty, /Limit 5 h<\/span><b>Vyčerpáno/);
+});
+
+test('Přehled: chybějící Claude limit ukáže stav účtu bez vymyšleného procenta', () => {
+  const now = T0;
+  const connectors = [{ id: 'claude-code', state: 'connected' }];
+  const base = { connectors, limits: [], integrations: { claudeAuth: { loggedIn: false, checkedAt: now - MIN } } };
+  const odhlaseny = claudeLimitStatus(base, now);
+  assert.match(odhlaseny, /Claude Code je odhlášený/);
+  assert.match(odhlaseny, /href="#\/nastaveni"/);
+  assert.doesNotMatch(odhlaseny, /progressbar|\d+ %|obnova/);
+  assert.match(limitsAll({ ...base, sessions: new Map() }, now), /Claude Code je odhlášený\. Napoj ho v Nastavení\./);
+  assert.match(claudeLimitStatus({ ...base, integrations: { claudeAuth: { loggedIn: false, checkedAt: now - 6 * MIN } } }, now), /Čeká na čerstvá data/, 'staré ověření nepředstírá odhlášení');
+  assert.match(claudeLimitStatus({ ...base, integrations: { claudeAuth: { loggedIn: null, checkedAt: now } } }, now), /Čeká na čerstvá data/, 'chyba dotazu není odhlášení');
+  assert.equal(claudeLimitStatus({ ...base, limits: [quotaLimit(odmitnuti(now - MIN), now - MIN)] }, now), '', 's čerstvým limitem nemá pomocný řádek co dělat');
+  assert.equal(claudeLimitStatus({ ...base, connectors: [{ id: 'claude-code', state: 'missing' }] }, now), '', 'nenalezený Claude nepřidává prázdnou kartu');
 });

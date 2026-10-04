@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.36.3',
+    date: '2026-10-04',
+    title: 'Claude v Přehledu limitů',
+    items: [
+      'Claude je v Přehledu vidět i bez čerstvého měření. Pokud Claude Code potvrdí odhlášení, karta vede k přihlášení; jinak počká na skutečná data. Procenta ani obnovu si nedomýšlí.',
+      'Nastavení teď rozlišuje zapnuté hooky Claude Code od přihlášeného účtu. Změna přihlášení se propíše bez opětovného načtení aplikace.',
+    ],
+    en: {
+      title: 'Claude in the limits overview',
+      items: [
+        'Claude remains visible in Overview without a fresh measurement. If Claude Code confirms you are signed out, the card leads to sign-in; otherwise it waits for real data. It never guesses percentages or reset times.',
+        'Settings now distinguishes enabled Claude Code hooks from a signed-in account. Sign-in changes appear without reloading the app.',
+      ],
+    },
+  },
+  {
     version: '0.36.2',
     date: '2026-10-04',
     title: 'Srovnané filtry na Agentech',

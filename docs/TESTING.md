@@ -1,5 +1,17 @@
 # Testování a ověření
 
+## Protokol ověření – 0.36.3, pravdivý stav limitů Claude (4. 10. 2026, macOS, Node 24.18)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check`, `npm run smoke` | 797 testů, 795 prošlo, 2 přeskočené jen pro Windows, 0 selhalo; 256 souborů bez syntaktické chyby; balíček 0.36.3 se v izolované instalaci spustil |
+| `qa:desktop`, `qa:contrast`, `qa:tvary` | Chromium i WebKit prošly; AA kontrast a tvary v aplikaci, webu i rozšíření prošly |
+| Nová karta Claude bez měření | V Chromiu i WebKitu na 1440 a 375 px ve světlém i tmavém režimu: obsah bez přetečení, akce alespoň 12 px, odkaz do Nastavení funguje. Testy pokrývají odhlášení, neznámý/starý stav, čerstvý limit a chybějící konektor. |
+| `build:extension`, `qa:extension` | Archiv 0.36.3 sestaven, 33 scénářů okna prošlo; živé selektory webových služeb nejsou součástí této kontroly. |
+| `build:mac`, `qa:native` | Archiv 0.36.3 se rozbalil, podpis platí, nativní okno spustilo přibalený Node a vykreslilo rozhraní; 10/10 kontrol. Podpis je ad-hoc, ne Developer ID/notarizace. |
+
+Na tomto Macu `claude auth status --json` v době ověření hlásil `loggedIn: false` a poslední vzorek vytížení Claude Desktopu byl starší než 30 minut. Skutečné osobní procento Claude proto nebylo k dispozici a aplikace ho správně nesmí doplnit odhadem. Ověření vizuálního stavu využilo umělá data; přihlášení skutečného účtu vyžaduje dokončení u Anthropicu.
+
 ## Protokol ověření – 0.36.2, filtry na Agentech v jedné mřížce (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |
