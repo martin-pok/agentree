@@ -111,7 +111,6 @@ export async function prilohy(slozka) {
 // Řadit podle abecedy by postavilo „Windows“ před „macOS“ (velké W je před malým m).
 const POPIS_PRILOHY = [
   [/macOS-arm64\.zip$/, 'aplikace pro Mac s čipem Apple (M1 a novější)'],
-  [/macOS-x64\.zip$/, 'aplikace pro Mac s procesorem Intel'],
   [/Windows-x64\.zip$/, 'aplikace pro Windows 10 a 11 (64bit)'],
   // Z obchodu se rozšíření instaluje jedním klikem a aktualizuje samo; ZIP pak zůstává jen pro ruční instalaci.
   [/extension-.*\.zip$/, adresaObchodu()

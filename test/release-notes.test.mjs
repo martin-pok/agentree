@@ -182,9 +182,10 @@ test('workflow zakládá vydání jako koncept, nepublikuje ho', async () => {
   assert.match(yml, /gh release create "\$TAG"[\s\S]{0,120}--draft/, 'nové vydání musí vznikat jako koncept');
   assert.match(yml, /node scripts\/release-notes\.mjs/, 'popis se skládá skriptem, ne ručně');
   assert.match(yml, /permissions:\s*\n\s*contents: write/, 'bez práva zápisu vydání nevznikne');
-  // Intel větev smí odpadnout, hlavní build ne.
   assert.match(yml, /needs\.mac\.result == 'success'/);
-  assert.doesNotMatch(yml, /needs\.mac-intel\.result == 'success'/);
+  // Jen Apple Silicon (rozhodnutí vlastníka, 0.34.0): žádná úloha ani příloha pro Mac s Intelem.
+  assert.doesNotMatch(yml, /mac-intel|macos-15-intel|mac-x64/);
+  assert.match(yml, /needs: \[mac, windows, rozsireni\]/);
 });
 
 // Zveřejnění je krok ven ke stažení: jen na ruční spuštění z main, jen koncept (zveřejněné
@@ -211,7 +212,7 @@ test('ruční spuštění založí tag jen z main a jen pro verzi z package.json
   assert.match(znacka, /\$GITHUB_REF" != "refs\/heads\/main"/, 'nový tag jen z main');
   assert.match(znacka, /"v\$VERZE" != "\$TAG"/, 'tag musí sedět s verzí v package.json');
   assert.match(znacka, /git ls-remote --exit-code --tags origin/, 'existující tag se jen použije, nepřepíše');
-  for (const uloha of ['mac', 'mac-intel', 'windows', 'rozsireni']) {
+  for (const uloha of ['mac', 'windows', 'rozsireni']) {
     assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: znacka\\n`), `${uloha} čeká na tag`);
   }
 });

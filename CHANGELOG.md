@@ -2,6 +2,13 @@
 
 ## Nezveřejněno
 
+## 0.34.0 – 2026-10-04 · útrata za API po modelech
+
+- **Rozpad Admin API po modelech.** Náklady i spotřeba tokenů se stahují seskupené (OpenAI `group_by=line_item` a `group_by=model`, Anthropic `group_by[]=description` a `group_by[]=model`; ověřeno proti referenci API). Denní součet se počítá ze stejných seskupených řádků, takže rozpad a útrata se nerozejdou – hlídá regresní test. Stránkování, stropy stránek i chování při chybě zůstávají: selhání spotřeby = tokeny „nezjištěno“ (null), selhání nákladů vymaže i rozpad.
+- **Útrata:** řádek skupiny „Automaticky z Admin API“ jde rozbalit tlačítkem **Modely** (klávesnice, `aria-expanded`, stálá šířka, rozbalení přežije živou aktualizaci). Ukáže model, tokeny z Admin API (vstup, výstup, mezipaměť) a částku v původní měně i přepočtenou; náklady bez modelu mají vlastní řádek. Na telefonu jako karta pod řádkem.
+- **Statistiky:** pod grafem tokenů z konverzací samostatný řádek „Organizace přes API“ s tokeny z Admin API za 7/14/30 UTC dnů. Do grafu ani KPI se nepřičítá (různé metriky). Po obnově Admin API se Nastavení i Statistiky hned aktualizují (nově přichází i událost `integrations`).
+- **Mac jen pro Apple Silicon (M1 a novější).** Vydání už nestaví aplikaci pro Mac s Intelem (úloha `mac-intel` odstraněna z `release.yml`, popis vydání ji nezná) a kontrola aktualizací na Macu s Intelem nic nestahuje. Windows x64 beze změny.
+
 ## 0.33.1 – 2026-10-03 · nadpisy na telefonu celé
 
 - Na telefonu se nadpis obrazovky zkracoval na „Stat…“ nebo „Ag…“, protože lišta ukazovala i pilulku „Připojeno“, která při funkčním spojení nic neříká. Teď se pilulka na úzké obrazovce ukáže jen tehdy, když se něco děje (obnovování, bez spojení). `qa:desktop` hlídá všech 8 nadpisů česky i anglicky na 375 i 360 px v Chromiu i WebKitu.

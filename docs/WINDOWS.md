@@ -148,9 +148,10 @@ konkurence to skoro jistě neřeší.
 
 Dvě různé otázky, dvě různé odpovědi.
 
-**macOS: Intel vs. Apple silicon – nerozdělovat.** Univerzální balíček (Universal 2) obsahuje
-obojí a systém si vezme, co potřebuje. Uživatel nic nevybírá, protože nemá jak se splést.
-Jediná cena je velikost souboru, a ta za to stojí.
+**macOS: jen Apple Silicon (M1 a novější).** Rozhodnutí vlastníka produktu od 0.34.0: vydání
+obsahuje jediný balíček `macOS-arm64`, Mac s procesorem Intel nepodporujeme (Apple jeho podporu
+ukončuje). Uživatel nic nevybírá, takže se nemá jak splést; instalační skript na Intelu skončí
+srozumitelnou zprávou a aktualizace se tam hlásí jako nepodporovaná.
 
 **Windows: podle verze systému – taky nerozdělovat.** Jeden build x64 pokrývá Windows 10
 i 11 a na ARM verzi Windows běží v emulaci. Nabídnout víc souborů znamená, že si někdo

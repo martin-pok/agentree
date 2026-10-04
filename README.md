@@ -4,9 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.33.1 – desktopová verze pro macOS.** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.34.0 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
-Pro Mac jedním příkazem v Terminálu (stáhne poslední vydání, ověří otisk SHA-256 z GitHubu a nainstaluje bez kroku v Nastavení): `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash`. Nebo stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
+Pro Mac jedním příkazem v Terminálu (stáhne poslední vydání, ověří otisk SHA-256 z GitHubu a nainstaluje bez kroku v Nastavení): `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash`. Nebo stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Aplikace pro Mac je jen pro Apple Silicon (M1 a novější), Mac s procesorem Intel nepodporujeme. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
 
 ## Rychlý start
 

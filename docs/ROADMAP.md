@@ -17,7 +17,9 @@ a tlačítek ([DESIGN.md](DESIGN.md), kontrola `npm run qa:tvary`). Verze 0.31.0
 jedné služby a 0.31.1 dokončila anglické exporty, kalendář a návrat z Google přihlášení. Verze 0.32.0
 sama zachytí AI nástroje v činnosti (karta „Zachytil jsem agenta“, Moje nástroje) a čte moderní
 Gemini CLI a Qwen Code. Rozpoznání 🧪 nástrojů z katalogu čeká na potvrzení na skutečném stroji
-([CONNECTORS.md](CONNECTORS.md)). Podrobnosti jsou v `CHANGELOG.md`.
+([CONNECTORS.md](CONNECTORS.md)). Verze 0.34.0 rozkládá útratu z Admin API po modelech (náklady
+i tokeny organizace) a aplikace pro Mac vychází jen pro Apple Silicon (M1 a novější) – build pro
+Mac s Intelem skončil na rozhodnutí vlastníka. Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Kdo | Akceptační kritéria |
 |---|---|---|---|

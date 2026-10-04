@@ -232,7 +232,15 @@ interface SpendPayload {
   rateInfo: { source: 'cnb' | 'manual' | 'default'; date: string | null /* RRRR-MM-DD lístku ČNB */; live: object | null };
   // Automatické položky Admin API sečtené po měsíci a službě (jen měsíce z `months`), seřazené od
   // nejnovějšího. Dny jsou UTC dny dodavatele. Součet `converted` za měsíc = `month.auto`.
-  automatic: Array<{ month: string; service: string; kind: 'api'; currency: string; amount: number; converted: number /* v `currency` aplikace */; days: number; from: string; to: string }>;
+  automatic: Array<{ month: string; service: string; kind: 'api'; currency: string; amount: number; converted: number /* v `currency` aplikace */; days: number; from: string; to: string;
+    // Od 0.34.0: rozpad téhož měsíce a služby po modelech (Admin API seskupené podle modelu/popisu).
+    // Nejdražší první, `model: null` (náklad bez modelu – nástroje, úložiště) vždy poslední; prázdné
+    // pole, když rozpad není. Součet `amount` = `amount` řádku (± zaokrouhlení na centy).
+    // `tokens` jsou tokeny CELÉ ORGANIZACE z Admin API, ne tokeny z přepisů – nikdy je nesčítej se
+    // `sessions[].tokens` ani s částkou. `tokens: null` = spotřebu se nepodařilo zjistit (ne nula).
+    // OpenAI `input` zahrnuje cached vstup; Anthropic `input` je nekešovaný a `cached` = čtení + zápis mezipaměti.
+    models: Array<{ model: string | null; amount: number; converted: number; tokens: { input: number; output: number; cached: number } | null }>;
+  }>;
   subscriptions: Array<{
     service: string; plan: string | null; label: string | null; detected: boolean;
     free: boolean; since: string | null; observedAt: number | null; evidence: string;
@@ -253,6 +261,9 @@ interface SpendPayload {
 // (`rateInfo`), historické kurzy aplikace nemá. `default` = orientační výchozí kurz.
 // integrations.cloud[id] = { state, detail, at, source, tokens: Record<den, …> | null, tokensError: string | null }
 // – `tokens: null` znamená „spotřebu se nepodařilo zjistit“ (důvod v `tokensError`), nikdy „nula“.
+// Po každé obnově Admin API přijdou události `spend` i `integrations` (od 0.34.0). Statistiky z
+// `integrations.cloud[id].tokens` ukazují pod grafem samostatný řádek „Organizace přes API“ (7/14/30
+// UTC dnů, jen připojení dodavatelé) – nikdy ho nepřičítají do grafu ani KPI tokenů z přepisů.
 
 interface Notifications {
   needsInput: boolean; limits: boolean; limitReset: boolean; budget: boolean; done: boolean; doneMinSeconds: number; native: boolean; browser: boolean;

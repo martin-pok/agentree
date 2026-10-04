@@ -89,3 +89,62 @@ test('jen koruny bez Admin API: poznámka o kurzu se neukazuje (nic se nepřevá
   assert.doesNotMatch(html, /kurz/i);
   assert.doesNotMatch(html, /Admin API/);
 });
+
+// 0.34.0: automatický řádek jde rozbalit na rozpad po modelech. Tokeny jsou z Admin API, mají vlastní
+// popisek a nikdy se nesčítají s částkou ani s tokeny z přepisů.
+const modelEntries = [
+  { service: 'openai-api', date: '2026-10-01', model: 'gpt-6-astra', amount: 1.0, currency: 'USD', tokens: { input: 900, output: 100, cached: 0 } },
+  { service: 'openai-api', date: '2026-10-01', model: 'gpt-6-mini', amount: 0.5, currency: 'USD', tokens: { input: 50, output: 5, cached: 0 } },
+  { service: 'openai-api', date: '2026-10-11', model: 'gpt-6-astra', amount: 2.25, currency: 'USD', tokens: { input: 2000, output: 300, cached: 100 } },
+  { service: 'anthropic-api', date: '2026-10-02', model: 'claude-opus-5', amount: 3.5, currency: 'USD', tokens: null },
+  { service: 'anthropic-api', date: '2026-10-02', model: null, amount: 0.5, currency: 'USD', tokens: null },
+];
+
+test('rozpad po modelech: měsíční součet modelů = částka řádku, tokeny jen z Admin API', () => {
+  const spend = { ...structuredClone(DEFAULT_SPEND), ledger };
+  const sp = { ...spendSummary(spend, NOW, auto, modelEntries), ledger: spend.ledger, rates: spend.rates, rateInfo: rateInfo(spend), services: SERVICES, kinds: KINDS };
+  const openai = sp.automatic.find((r) => r.month === '2026-10' && r.service === 'openai-api');
+  assert.deepEqual(openai.models.map((m) => m.model), ['gpt-6-astra', 'gpt-6-mini'], 'nejdražší první');
+  assert.equal(openai.models.reduce((a, m) => a + m.amount, 0), openai.amount);
+  assert.deepEqual(openai.models[0].tokens, { input: 2900, output: 400, cached: 100 });
+  const anth = sp.automatic.find((r) => r.month === '2026-10' && r.service === 'anthropic-api');
+  assert.equal(anth.models.at(-1).model, null, 'položka bez modelu je poslední');
+  assert.ok(anth.models.every((m) => m.tokens === null), 'nezjištěné tokeny zůstávají null');
+  // Září Anthropic nemá rozpad → prázdné pole, bez tlačítka.
+  assert.deepEqual(sp.automatic.find((r) => r.month === '2026-09').models, []);
+
+  const zavreno = ledgerHtml(sp, new Set());
+  assert.match(zavreno, /data-models="2026-10\|openai-api\|USD"[^>]*aria-expanded="false"/);
+  assert.match(zavreno, /<tr class="ledger-models" id="lm-2026-10-openai-api-USD" hidden>/);
+  assert.equal((zavreno.match(/data-models=/g) || []).length, 2, 'září bez rozpadu tlačítko nemá');
+  const autoRows = zavreno.split('<tr class="ledger-auto">').slice(1).map((r) => r.split('</tr>')[0]);
+  for (const r of autoRows) assert.doesNotMatch(r, /data-action=/, 'rozbalení nic nemaže ani neukončuje');
+
+  const otevreno = ledgerHtml(sp, new Set(['2026-10|openai-api|USD']));
+  assert.match(otevreno, /aria-expanded="true" aria-controls="lm-2026-10-openai-api-USD"/);
+  assert.match(otevreno, /<tr class="ledger-models" id="lm-2026-10-openai-api-USD"><td colspan="5">/);
+  assert.match(otevreno, /Tokeny z Admin API/);
+  assert.match(otevreno, /Nejsou to tokeny z konverzací ve Statistikách/);
+  assert.match(otevreno, /gpt-6-astra[\s\S]*2,9 tis\. vstup[\s\S]*400 výstup[\s\S]*100 mezipaměť/);
+  const anthOpen = ledgerHtml(sp, new Set(['2026-10|anthropic-api|USD']));
+  assert.match(anthOpen, /nezjištěno/);
+  assert.match(anthOpen, /Bez modelu \(nástroje, úložiště\)/);
+  assert.match(anthOpen, /Spotřebu tokenů se od dodavatele nepodařilo zjistit/);
+});
+
+test('Statistiky: tokeny organizace z Admin API stojí zvlášť a jen pro období po dnech', async () => {
+  const { apiTokensHtml } = await import('../public/js/views/stats.js');
+  const now = Date.UTC(2026, 9, 12, 12);
+  const cloud = {
+    'anthropic-admin': { state: 'connected', tokens: { '2026-10-12': { input: 1000, output: 10 }, '2026-10-06': { input: 500, output: 5 }, '2026-10-01': { input: 99999, output: 9 } } },
+    'openai-admin': { state: 'connected', tokens: null },
+  };
+  assert.equal(apiTokensHtml('today', now, cloud), '', 'den Admin API neodpovídá „Dnes“ ani „24 hodin“');
+  assert.equal(apiTokensHtml('day', now, cloud), '');
+  const tyden = apiTokensHtml('week', now, cloud);
+  assert.match(tyden, /Organizace přes API/);
+  assert.match(tyden, /nejsou v grafu ani v součtu/);
+  assert.match(tyden, /1,5 tis\. vstup · 15 výstup/, 'jen posledních 7 dní (UTC)');
+  assert.match(tyden, /nezjištěno/, 'selhaná spotřeba není nula');
+  assert.equal(apiTokensHtml('week', now, { 'anthropic-admin': { state: 'missing', tokens: {} } }), '');
+});

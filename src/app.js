@@ -238,7 +238,16 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     bin: (name) => (launchDetected ? Boolean(launchEnv.bins?.[name]) : null),
     app: (names) => (config.openMode === 'exec' ? appInstalled(names, config.sourceHome) : null),
   };
-  const ctx = { config, store, datastore, secrets, installed, onSpendChanged: () => spendChanged(), extensionRecord: () => datastore.data.extension };
+  const ctx = {
+    config, store, datastore, secrets, installed,
+    // Admin API po obnově mění útratu i spotřebu tokenů organizace (integrations.cloud), proto se
+    // pošlou obě – jinak by Nastavení a Statistiky ukazovaly tokeny z předchozího načtení.
+    onSpendChanged: () => {
+      spendChanged();
+      if (store.ready) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
+    },
+    extensionRecord: () => datastore.data.extension,
+  };
   const list = [
     createClaudeCodeConnector(ctx),
     createCodexConnector(ctx),
@@ -333,7 +342,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function spend() {
     const now = Date.now();
-    return spendSummary(datastore.data.spend, now, automatickeVydaje(now));
+    return spendSummary(datastore.data.spend, now, automatickeVydaje(now), connectors['cloud-billing'].modelEntries());
   }
 
   // Útrata → Export CSV: tytéž záznamy jako souhrn na obrazovce, včetně automatických.

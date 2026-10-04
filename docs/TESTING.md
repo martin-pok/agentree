@@ -1,5 +1,20 @@
 # Testování a ověření
 
+## Protokol ověření – 0.34.0, útrata za API po modelech (4. 10. 2026, macOS 27.0.1, Node 24.18, Playwright 1.62.1)
+
+Parametry seskupení ověřeny proti referenci API 4. 10. 2026: Anthropic `cost_report` `group_by[]` ∈ {`description`, `workspace_id`} (řádky nesou `model`, `token_type`, `cost_type`, částka v centech jako řetězec), `usage_report/messages` `group_by[]=model`; OpenAI `costs` `group_by` ∈ {…, `line_item`, …}, `usage/completions` `group_by=model` (OpenAPI specifikace OpenAI).
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 760 testů: 758 prošlo, 2 přeskočeny s důvodem (jen Windows). Nové: denní součet = součet seskupených řádků (Anthropic i OpenAI), rozpad tokenů = denní součet, seskupené dotazy (`group_by`), selhání spotřeby → `tokens: null` u modelů, selhání nákladů vymaže rozpad, měsíční rozpad v `automatic[].models`, rozbalovací řádek (`aria-expanded`, `hidden`, stav přežije překreslení), řádek „Organizace přes API“ ve Statistikách (jen 7/14/30 dní), `assetName` pro Mac s Intelem = `''`, `release.yml` bez `mac-intel` |
+| `npm run check` | 253 souborů bez syntaktické chyby |
+| `qa:desktop` | Chromium i WebKit prošly (všechny obrazovky, 375–1440 px, nula chyb JS) |
+| `qa:contrast` | Prošel; nově měří i rozbalený rozpad po modelech v Útratě a řádek „Organizace přes API“ ve Statistikách (světlý/tmavý, 1440/375 px) |
+| `qa:tvary` | Prošel |
+| Screenshoty (atrapa: 2 dodavatelé × 2 měsíce × 3 modely + ruční předplatné) | Chromium i WebKit × CZ/EN × světlý/tmavý × 1440/375 px = 16 snímků Útraty + 8 Statistik, prohlédnuto. Rozbalení klávesou Enter: fokus zůstává na tlačítku, tlačítko se neposune (0 px), bez vodorovného rolování, bez chyb v konzoli. Nalezeno a opraveno: částky modelů nelícovaly se sloupcem Částka (panel přes 6 sloupců → přes 5), na telefonu samotná pomlčka u řádku bez modelu. |
+
+Neověřeno: skutečné Admin klíče (tvar odpovědi podle reference API, shoda jmen modelů mezi náklady a spotřebou je předpoklad), skutečné okno aplikace pro Mac.
+
 ## Protokol ověření – plynulost 0.33.0 (3. 10. 2026, macOS)
 
 Měřeno harnessem nad ukázkovou scénou + 140 konverzacemi, okno 1440 × 900, Playwright 1.62.1

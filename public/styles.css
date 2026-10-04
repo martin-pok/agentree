@@ -741,6 +741,14 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
 .chart-plot.is-hover .vline, .chart-plot.is-hover .hover-dot, .chart-plot.is-hover .tip { opacity: 1; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 14px; padding-left: 60px; }
+/* Statistiky: tokeny organizace z Admin API pod grafem tokenů z přepisů – oddělené linkou a vlastním
+   popiskem, aby se dvě různé metriky nikdy nečetly jako jedna. */
+.api-tok { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); font-size: 13px; }
+.api-tok-head { margin: 0 0 8px; line-height: 1.5; }
+.api-tok-title { font-weight: 500; color: var(--ink); }
+.api-tok-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 32px; }
+.api-tok-list li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
+.api-tok-val { font-family: var(--f-mono); color: var(--ink-2); white-space: nowrap; }
 .legend-item { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--ink-2); }
 .legend-item .swatch { width: 16px; height: 3px; border-radius: 2px; }
 .legend-item .swatch--box { width: 10px; height: 10px; border-radius: 3px; }
@@ -1299,6 +1307,29 @@ html.is-cloud body { background: var(--paper); }
 .ledger-group-title { font-weight: 500; }
 .ledger-group-note { color: var(--mute); font-size: 12px; font-weight: 400; }
 .ledger-conv { display: block; margin-top: 4px; font-size: 12px; color: var(--mute); }
+/* Rozpad automatického řádku po modelech. Tlačítko má stálý popisek i šířku, šipka se jen otočí –
+   rozbalení nic v řádku neposune. Rozpad je vnořený panel pod řádkem, sloupce lícují s částkou. */
+.ledger tr[hidden] { display: none; }
+.ledger-toggle svg { width: 16px; height: 16px; transition: transform var(--motion-response) var(--ease); }
+.ledger-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
+.ledger tr.ledger-auto:has(+ tr.ledger-models:not([hidden])) td { border-bottom-color: transparent; }
+.ledger .ledger-models > td { padding: 0 0 16px 12px; }
+/* Panel končí na pravém okraji sloupce Částka, aby částky modelů lícovaly s částkou řádku. */
+.lm { padding: 8px 12px 12px 16px; border-radius: var(--r-md); background: var(--paper); box-shadow: var(--shadow-sm); }
+.lm-head, .lm-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr) minmax(112px, auto); column-gap: 24px; align-items: baseline; }
+.lm-head { padding: 4px 0 8px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--mute); }
+.lm-head span:last-child, .lm-cost { text-align: right; }
+.lm-list { list-style: none; margin: 0; padding: 0; }
+.lm-row { padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 14px; }
+.lm-row:last-child { border-bottom: 0; }
+.lm-name { font-family: var(--f-mono); font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.lm-other { font-family: var(--f-body); font-size: 14px; color: var(--ink-2); }
+.lm-tok { display: flex; flex-wrap: wrap; column-gap: 12px; row-gap: 2px; color: var(--ink-2); font-size: 13px; }
+.lm-part { white-space: nowrap; }
+.lm-unknown { color: var(--mute); }
+.lm-cost { font-family: var(--f-mono); white-space: nowrap; color: var(--ink); }
+.lm-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
+@media (prefers-reduced-motion: reduce) { .ledger-toggle svg { transition: none; } }
 /* Telefon: místo tabulky, která rolovala do strany a schovávala částku, je každý výdaj karta –
    služba a částka nahoře, typ a datum pod nimi, poznámka přes celou šířku. Hlavička sloupců
    zůstává pro čtečky obrazovky. */
@@ -1319,6 +1350,20 @@ html.is-cloud body { background: var(--paper); }
   .ledger tr.ledger-group, .ledger tr.ledger-group th { display: block; }
   .ledger .ledger-group th { padding: 24px 4px 8px; }
   .ledger-group-head { position: static; width: auto; }
+  /* Rozpad po modelech na telefonu: karta pod kartou řádku, model nahoře, tokeny a částka pod ním. */
+  .ledger tr.ledger-models { display: block; padding: 0 0 16px; border-bottom: 1px solid var(--line-2); }
+  .ledger tr.ledger-models[hidden] { display: none; }
+  .ledger tr.ledger-auto:has(+ tr.ledger-models:not([hidden])) { border-bottom-color: transparent; padding-bottom: 8px; }
+  .ledger .ledger-models > td { padding: 0; }
+  .ledger .ledger-models > td.lm-spacer { display: none; }
+  .lm { padding: 4px 16px 12px; }
+  .lm-head { display: block; }
+  .lm-head span:not(:nth-child(2)) { display: none; }
+  .lm-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name cost' 'tok cost'; row-gap: 4px; column-gap: 16px; }
+  .lm-name { grid-area: name; }
+  .lm-tok { grid-area: tok; font-size: 12px; }
+  .lm-tok--none { display: none; }
+  .lm-cost { grid-area: cost; }
 }
 .spend-foot { margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--mute); }
 .spend-foot--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }

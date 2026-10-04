@@ -31,7 +31,10 @@ export function compareVersions(left, right) {
 
 export function assetName(version, { platform = PLATFORM, arch = ARCHITECTURE } = {}) {
   const os = platform === 'darwin' ? 'macOS' : platform === 'win32' ? 'Windows' : '';
-  if (!os || !['arm64', 'x64'].includes(arch) || !parseVersion(version)) return '';
+  // Mac jen Apple Silicon (rozhodnutí vlastníka produktu od 0.34.0): Mac s Intelem žádnou přílohu
+  // nemá, aktualizace se pro něj hlásí jako nepodporovaná místo stahování cizí architektury.
+  const archs = os === 'macOS' ? ['arm64'] : ['arm64', 'x64'];
+  if (!os || !archs.includes(arch) || !parseVersion(version)) return '';
   return `Agenteeq-${version}-${os}-${arch}.zip`;
 }
 
