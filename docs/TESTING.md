@@ -1,5 +1,18 @@
 # Testování a ověření
 
+## Protokol ověření – 0.36.0, eura, okamžitá detekce agentů a účet (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 791 testů, 781 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo; syntaxe 255 souborů čistá |
+| `npm run smoke`, `build:extension`, `build:site` | Instalační balíček 0.36.0 se v izolovaném prostředí spustil; rozšíření 0.36.0 (30 souborů, 192 kB) a web se sestavily |
+| `qa:contrast`, `qa:tvary` | WCAG 2.2 AA a tvary ovládání prošly pro aplikaci, web i rozšíření |
+| `qa:desktop`, `qa:site`, `qa:extension` | Prošly v Chromiu (`QA_ENGINE=chromium`); 19 scénářů okna rozšíření |
+| Detekce agentů end-to-end | 13 nástrojů spuštěných naráz, všechny v Přehledu za 0,15–1,26 s; v ustáleném stavu 0 změn DOM za 15 s |
+| Rozšíření ve skutečném Chromiu | Service worker běží, bez aplikace „Agenteeq isn't running“, spárování jednorázovým kódem → „Connected“ |
+
+Neověřeno v tomto běhu: WebKit (na stroji s ověřením není nainstalovaný) a sestavení .app pro macOS, které dělá workflow Vydání na runneru s macOS.
+
 ## Protokol ověření – 0.35.0, limity Claude z přepisů a čerstvé historie Desktopu (4. 10. 2026, macOS 27.0.1, Node 24.18, Playwright 1.62.1)
 
 | Kontrola | Výsledek |
