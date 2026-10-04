@@ -268,7 +268,9 @@ function updateChrome() {
   const agents = agentsList();
   const working = agents.filter((s) => s.status === 'working').length;
   const needs = agents.filter(needsYou).length;
-  const name = state.host?.fullName || state.host?.user || '';
+  // Přihlášený účet Google dává jméno i fotku; bez něj jméno uživatele na tomto počítači.
+  const ucet = ['prihlaseno', 'nedostupne', 'overuji'].includes(state.ucet?.stav) ? state.ucet : null;
+  const name = ucet?.jmeno || state.host?.fullName || state.host?.user || '';
 
   renderProfile(name, working, all);
 
@@ -352,9 +354,12 @@ function renderProfile(name, working, all) {
   }
   const slot = profileEl.querySelector('[data-p-avatar]');
   const art = hasAvatar(state.settings?.avatar);
+  // Fotka z účtu Google (uložená na tomto Macu, src/ucet.js) má přednost před iniciálami; obrázek
+  // zvolený klepnutím před ní. Klepnutí pak střídá fotku a náhodný obrázek (avatars.js#cycleAvatar).
+  const foto = !art && ['prihlaseno', 'nedostupne', 'overuji'].includes(state.ucet?.stav) ? state.ucet.foto : '';
   const hadFocus = Boolean(document.activeElement?.closest?.('[data-avatar-cycle]'));
   setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="${tr('Změnit profilový obrázek')}" title="${tr('Změnit profilový obrázek')}">
-    <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agenteeq'))}</span></span>
+    <span class="avatar${art ? ' avatar--art' : foto ? ' avatar--photo' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : foto ? `f${esc(foto)}` : 'i'}">${art ? avatarSvg(state.settings.avatar) : foto ? `<img src="/api/ucet/foto?v=${esc(foto)}" alt="" decoding="async">` : esc(initials(name || 'Agenteeq'))}</span></span>
     <span class="avatar-change" aria-hidden="true">${ICON.refresh}</span>
   </button>`);
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
@@ -791,7 +796,7 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na {0}.', tomtoPocitaci())}</p></div>`,
+        <p>${tr('Souhrny – tokeny, útrata, limity a počty agentů – se teď synchronizují do tvého účtu a uvidíš je i na webu. Konverzace a kód dál zůstávají jen na {0}. Synchronizaci vypneš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {

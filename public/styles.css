@@ -1016,6 +1016,65 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .model-done span { color: var(--ink-2); font-size: 14px; }
 .model-done p { margin: 8px 0 0; color: var(--ink-2); font-size: 14px; max-width: 38ch; }
 .account-preview { margin: 8px 0 0; max-height: 320px; overflow: auto; padding: 12px 16px; border-radius: var(--r-sm); background: var(--paper); font: 400 12px/1.5 var(--f-mono); color: var(--ink-2); white-space: pre; }
+/* ---------- Účet Agenteeq v Nastavení ----------
+   Nahoře identita (fotka z Googlu, jméno, e-mail, stav), pod ní synchronizace jako samostatná
+   plocha (common region): přepínač, kdy naposledy odešla, odkaz na web a náhled toho, co odchází.
+   Dole oddělené akce s účtem. Texty pod ikonou synchronizace i výhody pod hlavičkou začínají na
+   téže svislé ose jako nadpis (40 px ikona + 16 px mezera). */
+.acct-id { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 16px; }
+.acct-photo { width: 56px; height: 56px; overflow: hidden; border-radius: 50%; display: grid; place-items: center; background: var(--ink-surface); color: var(--on-ink); font: 400 20px/1 var(--f-display); letter-spacing: .02em; box-shadow: 0 0 0 1px var(--line-2); }
+.acct-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.acct-name { display: grid; gap: 2px; min-width: 0; }
+.acct-eyebrow { font-size: 12px; line-height: 16px; color: var(--mute); }
+.acct-name h3 { margin: 0; font: 500 17px/24px var(--f-body); overflow-wrap: anywhere; }
+.acct-email { font-size: 14px; line-height: 20px; color: var(--ink-2); overflow-wrap: anywhere; }
+.acct-sync { margin-top: 24px; padding: 20px; border-radius: var(--r-md); background: var(--paper); }
+.acct-sync-head { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 16px; }
+.acct-sync-icon { width: 40px; height: 40px; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--teal-tint); color: var(--teal-ink); }
+.acct-sync-text { display: grid; gap: 2px; min-width: 0; }
+.acct-sync-state { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 20px; color: var(--mute); }
+.acct-sync-state .nowrap { white-space: nowrap; }
+.acct-sync-state.is-ok { color: var(--teal-ink); }
+.acct-sync-state.is-ok i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.acct-sync-state.is-error { color: var(--velvet-ink); }
+.acct-sync .form-error { margin: 12px 0 0 56px; }
+.acct-sync-desc { margin: 12px 0 0 56px; max-width: 64ch; font-size: 13px; line-height: 20px; color: var(--ink-2); }
+.acct-sync-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0 56px; }
+.acct-sync .acct-fold { margin: 16px 0 0 56px; }
+.acct-preview-list { display: grid; margin: 0 0 8px; padding: 0; list-style: none; }
+.acct-preview-list li:last-child { border-bottom: 0; }
+.acct-preview-list li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line-2); font-size: 13px; line-height: 20px; color: var(--ink-2); }
+.acct-preview-list b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.acct-json .account-preview { max-height: 240px; background: var(--card); }
+.acct-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+.acct-foot .account-privacy { flex: 1 1 320px; margin: 0; }
+.acct-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.acct-benefits { display: grid; gap: 12px; margin: 0 0 0 56px; padding: 0; list-style: none; }
+.acct-benefits li { display: flex; align-items: center; gap: 12px; font-size: 14px; line-height: 20px; color: var(--ink); }
+.acct-benefits .icon { width: 18px; height: 18px; color: var(--teal-ink); }
+.acct-signin { display: grid; justify-items: start; gap: 12px; margin: 24px 0 0 56px; }
+.btn--google { gap: 12px; padding: 0 20px 0 16px; box-shadow: var(--shadow-sm); }
+.btn--google:hover { border-color: var(--ink-2); }
+.icon--google { width: 18px; height: 18px; flex: none; stroke: none; }
+.acct-fineprint { margin: 0; max-width: 64ch; font-size: 12px; line-height: 18px; color: var(--mute); }
+.acct-wait { display: flex; align-items: center; gap: 12px; margin: 0 0 0 56px; padding: 12px 16px; border-radius: var(--r-md); background: var(--paper); font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.acct-wait-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--teal); animation: acct-pulse 1.4s var(--ease) infinite; }
+@keyframes acct-pulse { 50% { opacity: .3; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .acct-wait-dot { animation: none; } }
+@media (max-width: 560px) {
+  .acct-id { grid-template-columns: 56px minmax(0, 1fr); }
+  .acct-id > .state { grid-column: 2; justify-self: start; }
+  .acct-sync { padding: 16px; }
+  /* Na telefonu by ikona a přepínač zúžily nadpis na dva řádky – ikona ustoupí. */
+  .acct-sync-head { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .acct-sync-icon { display: none; }
+  /* Stav pod nadpisem přes celou šířku – vedle přepínače by se „před 2 min“ zalomilo. */
+  .acct-sync-text { display: contents; }
+  .acct-sync-head .set-label { grid-row: 1; grid-column: 1; }
+  .acct-sync-head .switch { grid-row: 1; grid-column: 2; }
+  .acct-sync-head .acct-sync-state { grid-row: 2; grid-column: 1 / -1; margin-top: -8px; }
+  .acct-sync-desc, .acct-sync-links, .acct-sync .acct-fold, .acct-sync .form-error, .acct-benefits, .acct-signin, .acct-wait { margin-left: 0; }
+}
 .account-welcome { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 8px 0 4px; }
 .account-welcome .account-avatar { width: 64px; height: 64px; font-size: 22px; margin-bottom: 8px; }
 .account-welcome b { font-weight: 500; font-size: 18px; }
@@ -1122,7 +1181,8 @@ html.is-cloud body { background: var(--paper); }
 .cloud-brand img { width: 28px; height: 28px; }
 .cloud-who { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; }
 .cloud-who > span:not(.account-avatar) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28ch; }
-.cloud-who .account-avatar { width: 32px; height: 32px; font-size: 13px; }
+.cloud-who .account-avatar { width: 32px; height: 32px; font-size: 13px; overflow: hidden; }
+.cloud-who .account-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .cloud { max-width: 1120px; margin: 0 auto; padding: 32px 16px 48px; }
 .cloud-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .cloud-head h1 { margin: 0; font: 400 clamp(28px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: -.02em; }
@@ -1975,6 +2035,8 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .avatar-btn:focus-visible { outline-offset: 6px; border-radius: 50%; }
 .avatar-face { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; overflow: hidden; animation: avatar-in .45s var(--ease) both; }
 .avatar-face svg { width: 100%; height: 100%; display: block; }
+.avatar-face img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.avatar--photo { box-shadow: 0 0 0 1px var(--line-2); }
 .avatar--art { background: var(--paper); box-shadow: 0 0 0 1px rgba(22, 20, 29, .08); }
 .avatar-change { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: rgba(18, 16, 25, .5); color: #fff; opacity: 0; transform: scale(.96); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); pointer-events: none; }
 .avatar-change .icon { width: 24px; height: 24px; }

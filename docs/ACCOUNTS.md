@@ -1,8 +1,8 @@
 # Účty Agenteeq
 
-Stav k 1. 10. 2026: přihlášení přes Google je v produkci zapnuté pro aplikaci na Macu i web,
-databáze v cloudu má RLS, synchronizace souhrnů je opt-in a přehled souhrnů je na webu
-(`/app?ucet`).
+Stav k 4. 10. 2026: přihlášení přes Google je v produkci zapnuté pro aplikaci na Macu i web,
+databáze v cloudu má RLS, synchronizaci souhrnů zapíná přihlášení (vypnout jde jedním přepínačem)
+a přehled souhrnů je na webu (`/app?ucet`).
 
 ## Rozhodnutí vlastníka produktu (23. 9. 2026)
 
@@ -12,6 +12,15 @@ databáze v cloudu má RLS, synchronizace souhrnů je opt-in a přehled souhrnů
 - **Databáze:** Supabase, projekt `agenteeq` (`quxfenxxdcafcuptucnn`), region `eu-central-1`
   (Frankfurt). Postgres s řádkovým zabezpečením (RLS).
 - **Účet nic nezamyká.** Bez přihlášení funguje Agenteeq celý, stejně jako dřív.
+
+## Rozhodnutí vlastníka produktu (4. 10. 2026)
+
+- **Přihlášení zapíná synchronizaci souhrnů.** Kdo se přihlásí přes Google, chce mít data pod
+  svým účtem. Tlačítko přihlášení proto předem říká, že se synchronizace zapne a co posílá;
+  vypnout ji jde kdykoli jedním přepínačem (vypnutím se souhrny z účtu smažou). Kdo ji vypne, má
+  ji vypnutou až do dalšího přihlášení. Nahrazuje opt-in z 23. 9.
+- **Profilová fotka z Googlu** se ukazuje v kartě účtu i v profilu v postranním panelu. Mac si
+  ji stáhne a uloží jen k sobě; do cloudu se neposílá a rozhraní nic nenačítá z cizího serveru.
 
 ## Jak přihlášení funguje
 
@@ -46,8 +55,32 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
 - **Výpadek sítě není odhlášení.** Když server účtů neodpovídá, stav je „nedostupné“, token
   zůstává a obnova se zkouší každých 5 minut. Odhlášení je jen odmítnutý token nebo akce
   uživatele.
-- **Do rozhraní** jdou jen `stav`, `jmeno`, `email`, `chyba`, `ceka`, `trvale` – nikdy tokeny.
-  Spárovaný telefon vidí jen `stav`.
+- **Výběr účtu:** adresa přihlášení nese `prompt=select_account`, takže Google vždy nabídne
+  výběr účtu a člověk s více účty se nepřihlásí omylem tím, který je v prohlížeči zrovna aktivní.
+- **Do rozhraní** jdou jen `stav`, `jmeno`, `email`, `foto` (otisk), `chyba`, `ceka`, `trvale` –
+  nikdy tokeny. Spárovaný telefon vidí jen `stav`.
+- **Profilová fotka:** adresu bere z `user_metadata.avatar_url` (nebo `picture`), ale jen https na
+  `*.googleusercontent.com` – metadata jsou nedůvěryhodná a server na Macu nic odjinud nestáhne.
+  Žádá 192 px (Retina). Přijme jen skutečný obrázek (JPEG, PNG, WebP podle prvních bajtů) do
+  300 kB a uloží ho do složky dat (`ucet-foto`, práva 0600). Rozhraní ho čte z `/api/ucet/foto`
+  jen z tohoto Macu. Odhlášení a smazání účtu fotku i profil z disku smažou.
+- **Profil na disku:** jméno, e-mail a adresa fotky (bez tokenů) jsou v `ucet-profil.json`, aby
+  karta účtu po startu bez sítě neukazovala prázdné místo.
+
+## Spolehlivost přihlášení
+
+Odhlásit smí jen skutečně odmítnutý token nebo člověk. Všechno ostatní je „nepodařilo se ověřit“
+(`nedostupne`): přihlášení i uložený token zůstanou a ověření se zopakuje samo.
+
+| Situace | Co se stane |
+|---|---|
+| Výpadek sítě, server účtů 5xx, přetížení 429, timeout 408 | `nedostupne`, další pokus za 30 s, pak 1, 2, 4 a nejvýš 5 minut |
+| Zamčená Klíčenka po startu (LaunchAgent běží dřív, než se odemkne), dotaz systému na heslo | `nedostupne`, ne „nepřihlášeno“; čtení čeká až 30 s a zopakuje se. `secrets.get(id, { prisne: true })` rozliší chybějící položku (pomocník 2, `security` 44) od chyby |
+| Server odmítne obnovovací token jako použitý, ale v Klíčence je novější (ztracená odpověď při obnově, druhá instance Agenteeq) | zkusí se ten novější; teprve když i ten neprojde, je to odhlášení |
+| Neúplná odpověď serveru | přechodná chyba, ne odhlášení |
+| Posunuté hodiny Macu | platnost tokenu se počítá z `expires_in` od místních hodin, ne z `expires_at` serveru |
+| Synchronizace dostane 401 dřív, než token podle Macu vyprší | token se jednou obnoví a odeslání se zopakuje (upsert je idempotentní) |
+| Přihlášení jiným účtem Google | jméno ani fotka předchozího účtu se u nového neukážou |
 - Obnovovací token nejde zapsat ani smazat přes `PUT/DELETE /api/secrets/:id`. Ta cesta je jen
   pro ručně zadávané API klíče.
 
@@ -108,8 +141,11 @@ nečte (nastavení Auth jde z konfigurace), takže projekt před uspáním nechr
 
 ## Synchronizace souhrnů (`src/cloud-sync.js`)
 
-Nastavení → Účet a vzhled → **Synchronizovat souhrny do účtu**. Vypnuto, dokud ho člověk sám
-nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech jeho zařízeních.
+Nastavení → Účet a vzhled → **Synchronizace souhrnů**. Zapne ji přihlášení přes Google (rozhodnutí
+z 4. 10. 2026; tlačítko přihlášení to říká předem), vypnout jde jedním přepínačem. Volba je v účtu
+(`profiles.sync_enabled`), takže platí na všech jeho zařízeních. Když účet při přihlášení
+neodpovídá, platí zapnutí hned na Macu (`cloud.volbaCeka`) a do účtu se dopíše s příští
+synchronizací; do té doby ho načtení volby z účtu nepřepíše.
 
 | Tabulka | Co odchází | Odkud |
 |---|---|---|
@@ -130,10 +166,11 @@ nezapne; volba je v účtu (`profiles.sync_enabled`), takže platí na všech je
   významem, starší řádky mohou mít den UTC.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
-- **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`).
+- **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):
+  nahoře počet řádků v každé tabulce, pod tím celý JSON.
 - **Vypnutí souhrny z účtu smaže** (všechny tabulky souhrnů, jen vlastní řádky – RLS). Zařízení
   zůstanou. Smazání účtu smaže i je.
-- Posílá se hned po zapnutí, po přihlášení a pak každých 5 minut upsertem
+- Posílá se hned po zapnutí, po přihlášení, tlačítkem „Synchronizovat teď“ a pak každých 5 minut upsertem
   (`Prefer: resolution=merge-duplicates`). Výpadek sítě ukáže chybu, volbu nezmění a zkusí se znovu.
 - Ověřeno proti databázi 24. 9. 2026 (transakce vrácená zpět): upsert přepíše řádek, rozpad je
   `null`, druh `extra` projde, vypnutí smaže vlastní souhrny.
@@ -147,6 +184,14 @@ rovnou i z `/app`.
 - **Přihlášení:** PKCE v prohlížeči bez knihoven (Web Crypto). Ověřovač je v `sessionStorage` jen
   do návratu, relace (přístupový a obnovovací token, jméno, e-mail) v `localStorage` tohoto
   prohlížeče. Odhlášení ji smaže a zneplatní i na serveru. Chyba z Googlu přijde za `#` a ukáže se.
+- **Spolehlivost na webu:** stejná pravidla jako na Macu. Síť, 5xx, 429 ani 408 relaci nesmažou.
+  Obnova jednorázového tokenu běží pod zámkem prohlížeče (Web Locks, `agenteeq-ucet-obnova`)
+  a po jeho získání se relace přečte znovu, takže dvě záložky se o token nepřetahují; když server
+  token odmítne jako použitý a v úložišti už je novější (obnovila ho jiná záložka), použije se ten.
+  Odpověď 401 při načítání souhrnů nejdřív jednou vynutí obnovu, teprve pak odhlásí. Platnost se
+  počítá z `expires_in` od hodin prohlížeče. Přihlášení nabídne výběr účtu (`prompt=select_account`).
+- **Fotka na webu** se načítá přímo od Googlu (stejné ověření adresy jako na Macu, bez
+  `Referer`); na Macu se nic z cizího serveru nenačítá.
 - **Jen čtení:** GET na `profiles`, `devices`, `agent_status`, `usage_daily` (30 dní),
   `spend_monthly` (tento měsíc), `limits` s tokenem přihlášeného; RLS vydá jen jeho řádky.
   Do souhrnů web nezapisuje (hlídá `test/ucet-web.test.mjs`).

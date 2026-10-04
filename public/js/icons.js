@@ -113,6 +113,9 @@ export const ICON = {
   mac: svg('<rect x="4.5" y="6" width="15" height="10" rx="2"/><path d="M3.5 19h17"/>'),
   // Štít se zámkem: privátní síť, kam se nedostane nikdo zvenčí (karta Tailscale).
   shield: svg('<path d="M12 3l7 3v5.5c0 4.3-2.9 7.6-7 8.5-4.1-.9-7-4.2-7-8.5V6z"/><path d="M10.5 12.5h3M12 12.5v3"/>'),
+  // Logo Google pro tlačítko přihlášení (pravidla značky Google pro „Sign in with Google“: barevné G
+  // na světlé ploše). Barvy jsou součást loga, ne tokeny aplikace.
+  google: '<svg class="icon icon--google" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M23.04 12.26c0-.82-.07-1.6-.21-2.36H12v4.46h6.19a5.3 5.3 0 0 1-2.3 3.48v2.89h3.72c2.18-2 3.43-4.96 3.43-8.47z"/><path fill="#34A853" d="M12 23.5c3.1 0 5.7-1.03 7.61-2.79l-3.72-2.89c-1.03.69-2.35 1.1-3.89 1.1-2.99 0-5.52-2.02-6.43-4.73H1.73v2.98A11.5 11.5 0 0 0 12 23.5z"/><path fill="#FBBC05" d="M5.57 14.19a6.9 6.9 0 0 1 0-4.38V6.83H1.73a11.5 11.5 0 0 0 0 10.34z"/><path fill="#EA4335" d="M12 5.08c1.69 0 3.2.58 4.39 1.72l3.3-3.3A11.06 11.06 0 0 0 12 .5 11.5 11.5 0 0 0 1.73 6.83l3.84 2.98C6.48 7.1 9.01 5.08 12 5.08z"/></svg>',
   globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
 };
 

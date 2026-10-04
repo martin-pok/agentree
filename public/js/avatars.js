@@ -57,6 +57,8 @@ export function setAvatar(value) {
 
 export function cycleAvatar() {
   const cur = state.settings?.avatar;
+  // S fotkou z účtu Google se klepnutím střídá fotka a obrázek, aby se k fotce dalo vrátit.
+  if (state.ucet?.foto && Number.isInteger(cur)) { setAvatar(null); return; }
   let next = Math.floor(Math.random() * AVATARS.length);
   if (next === cur) next = (next + 1 + Math.floor(Math.random() * (AVATARS.length - 1))) % AVATARS.length;
   setAvatar(next);
