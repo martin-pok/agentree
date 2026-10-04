@@ -63,7 +63,7 @@ function update() {
   const el = v.el;
   if (!el) return;
   const items = state.alerts.items;
-  fill(el, 'filters', FILTERS.map(([k, l, pred]) => `<button type="button" data-filter="${k}" aria-pressed="${v.filter === k}">${l}<span class="count">${items.filter(pred).length}</span></button>`).join(''));
+  fill(el, 'filters', FILTERS.map(([k, l, pred]) => `<button type="button" data-filter="${k}" aria-pressed="${v.filter === k}">${l}<span class="count">${items.filter(pred).length}</span></button>`).join(''), { sloucit: true });
   const pred = FILTERS.find(([k]) => k === v.filter)[2];
   const list = items.filter(pred);
   if (!list.length) {

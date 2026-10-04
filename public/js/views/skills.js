@@ -216,7 +216,7 @@ function update() {
 
   fill(el, 'sources', [['all', tr('Vše')], ...sources.map((s) => [s, s])]
     .map(([k, label]) => `<button type="button" data-source-filter="${esc(k)}" aria-pressed="${v.source === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.source === k).length}</span></button>`).join(''));
-  fill(el, 'sort', RAZENI.map(([k, label]) => `<button type="button" data-sort="${k}" aria-pressed="${v.sort === k}">${esc(label)}</button>`).join(''));
+  fill(el, 'sort', RAZENI.map(([k, label]) => `<button type="button" data-sort="${k}" aria-pressed="${v.sort === k}">${esc(label)}</button>`).join(''), { sloucit: true });
   // Ukazujeme jen původy, které se mezi dovednostmi opravdu vyskytují – prázdné tlačítko nemá smysl.
   fill(el, 'origins', [['all', tr('Vše')], ...pritomne]
     .map(([k, label]) => `<button type="button" data-origin-filter="${esc(k)}" aria-pressed="${v.origin === k}">${esc(label)}<span class="count">${k === 'all' ? v.items.length : v.items.filter((s) => s.origin === k).length}</span></button>`).join(''));

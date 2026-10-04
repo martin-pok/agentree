@@ -16,6 +16,7 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
   if (slouceni && el.firstChild) {
     sloucit(el, html, { presun });
     el._html = html;
+    dorovnejCisla(el);
     oznacRolovani();
     return true;
   }
@@ -36,8 +37,16 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
   }
   el._html = html;
   if (fokus) vratFokus(el, fokus);
+  dorovnejCisla(el);
   oznacRolovani();
   return true;
+}
+
+// Animovaná čísla se dorovnají hned při každém vyplnění oblasti, ne až při příští živé události.
+// Dřív přepnutí období ve Statistikách změnilo jen cíl čísla (data-value) a text zůstal starý,
+// dokud nepřišla další událost ze serveru – čísla tak ukazovala jiné období než tlačítko.
+function dorovnejCisla(el) {
+  if (typeof window !== 'undefined' && el.querySelector('[data-tween]')) tweenAll(el);
 }
 
 /* ---------- Sloučení živé oblasti s novým HTML ---------- */
@@ -281,17 +290,23 @@ export function tweenAll(root) {
     el._tweenTo = to;
     const key = el.dataset.tween;
     const fmt = formatter(el.dataset.fmt);
-    const from = tweenMemory.has(key) ? tweenMemory.get(key) : 0;
+    // Číslo dojíždí z toho, co je právě vidět (i z rozjeté animace), ne z paměti jiného klíče –
+    // jinak by po přepnutí období spadlo na nulu a znovu napočítávalo.
+    const from = Number.isFinite(el._ukazano) ? el._ukazano : tweenMemory.has(key) ? tweenMemory.get(key) : 0;
     tweenMemory.set(key, to);
     if (reduce || from === to) {
+      el._ukazano = to;
       nastavText(el, fmt(to));
       continue;
     }
     const t0 = performance.now();
-    const d = from === 0 ? 900 : 600;
+    const d = from === 0 ? 900 : 240;
     const step = (t) => {
+      // Novější cíl (rychlé přepínání) má přednost: stará animace se zastaví a nic nepřepíše.
+      if (el._tweenTo !== to) return;
       const p = Math.min(1, (t - t0) / d);
-      nastavText(el, fmt(from + (to - from) * (1 - (1 - p) ** 3)));
+      el._ukazano = from + (to - from) * (1 - (1 - p) ** 3);
+      nastavText(el, fmt(p < 1 ? el._ukazano : to));
       if (p < 1 && el.isConnected) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);

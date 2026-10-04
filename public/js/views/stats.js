@@ -122,7 +122,7 @@ function update() {
   const ser = providerSeries(all, v.period, now, v.hidden);
   const since = ser.since;
 
-  fill(el, 'period', PERIODS.map(([k, l]) => `<button type="button" data-period="${k}" aria-pressed="${v.period === k}">${l}</button>`).join(''));
+  fill(el, 'period', PERIODS.map(([k, l]) => `<button type="button" data-period="${k}" aria-pressed="${v.period === k}">${l}</button>`).join(''), { sloucit: true });
 
   const active = agentsList().filter((s) => isActiveSince(s, since));
   const tokens = ser.series.reduce((a, s) => a + s.values.reduce((x, y) => x + y, 0), 0);
