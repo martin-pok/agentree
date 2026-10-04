@@ -466,3 +466,19 @@ test('Načítání: souvislá animace značky bez teček a bez kostry obrazovky 
   assert.match(app, /source-version p-skel/);
   assert.match(styles, /\.source-version\.p-skel \{ display: block; \}/);
 });
+
+test('karta projektu má pevnou výšku, ať v ní data přicházejí jakkoli', async () => {
+  const css = await zdroj('public/styles.css');
+  const view = await zdroj('public/js/views/projects.js');
+  const pravidlo = (sel) => css.match(new RegExp(`^${sel.replace(/[.]/g, '\\.')} \\{([^}]*)\\}`, 'm'))?.[1] || '';
+  // Čísla v patičce se nikdy nezalomí do druhého řádku a patička i poslední řádek mají pevnou výšku.
+  assert.doesNotMatch(pravidlo('.pcard-foot'), /flex-wrap:\s*wrap/);
+  assert.match(pravidlo('.pcard-foot'), /height: 32px/);
+  assert.match(pravidlo('.pcard-time'), /height: 30px/);
+  assert.match(pravidlo('.pcard-stat'), /white-space: nowrap/);
+  assert.match(pravidlo('.pcard-spark'), /height: 40px/);
+  assert.match(pravidlo('.pcard-desc'), /-webkit-line-clamp: 2;[^}]*min-height: 42px/);
+  // Loga služeb (přibývají s daty) jsou v řádku s časem, ne mezi čísly, kde by vynutila zalomení.
+  assert.match(view, /<span class="pcard-time">[^\n]*logoStack\(st\.services, 4\)/);
+  assert.doesNotMatch(view, /<span class="pcard-foot">[\s\S]*?logoStack[\s\S]*?<\/span>\s*<span class="pcard-time">/);
+});

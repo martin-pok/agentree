@@ -1,11 +1,12 @@
 # Testování a ověření
 
-## Protokol ověření – 0.36.1, načítací scéna v aplikaci pro Mac (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+## Protokol ověření – 0.36.1, načítací scéna v aplikaci pro Mac a stálé karty projektů (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |
 |---|---|
-| `npm test`, `npm run check` | 792 testů, 782 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo; syntaxe 256 souborů čistá |
+| `npm test`, `npm run check` | 793 testů, 783 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo; syntaxe 256 souborů čistá |
 | `qa:contrast`, `qa:tvary` | WCAG 2.2 AA a tvary ovládání prošly pro aplikaci, web i rozšíření |
+| Karty projektů v Chromiu (ukázková data) | Výška karty stejná bez dat, s daty i s extrémními hodnotami na 360, 375, 860, 1100 a 1440 px; dřív se patička měnila mezi 31, 39 a 77 px |
 | `public/nacitani.html` v Chromiu | 1380 × 920 a 900 × 620 px (výchozí a nejmenší okno), stav načítání i chyby s tlačítkem, konzole bez chyb, bez vodorovného posunu |
 
 Neověřeno v tomto běhu: WebKit a sestavení .app (stroj nemá Xcode); plášť překládá workflow na runneru s macOS.

@@ -90,9 +90,8 @@ function cardHtml(p, now) {
     <span class="pcard-foot">
       <span class="pcard-stat"><b data-odo>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
       <span class="pcard-stat"><b data-odo>${st.tokens ? fmtTok(st.tokens) : '–'}</b> ${tr('tokenů / 30 dní')}</span>
-      ${st.services.length ? logoStack(st.services, 4) : ''}
     </span>
-    <span class="pcard-time">${st.lastAt ? `${tr('Aktivita')} <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('Zatím bez aktivity')}</span>
+    <span class="pcard-time"><span class="pcard-ago">${st.lastAt ? `${tr('Aktivita')} <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('Zatím bez aktivity')}</span>${st.services.length ? logoStack(st.services, 4) : ''}</span>
   </a>`;
 }
 
