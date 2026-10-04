@@ -1,4 +1,4 @@
-// Načítací scéna pláště pro Mac (public/nacitani.html). Klasický skript, protože stránka se
+// Načítací scéna pláště pro Mac i Windows (public/nacitani.html). Klasický skript, protože stránka se
 // otevírá ze souboru a moduly by WebKit ze souboru nenačetl.
 //
 // Plášť mění jen text stavu a tlačítko: window.agenteeqNacitani({ text, znovu }). Text se vkládá
@@ -14,6 +14,8 @@
   };
   znovu.addEventListener('click', () => {
     znovu.hidden = true;
-    window.webkit?.messageHandlers?.nacitani?.postMessage({ type: 'znovu' });
+    // Na macOS má pohled scény vlastní kanál „nacitani“, na Windows vede most pláště přes „agenteeq“.
+    const kanal = window.webkit?.messageHandlers?.nacitani || window.webkit?.messageHandlers?.agenteeq;
+    kanal?.postMessage({ type: 'znovu' });
   });
 })();
