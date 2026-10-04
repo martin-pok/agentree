@@ -27,8 +27,10 @@ export const KINDS = {
 export const CURRENCIES = ['CZK', 'USD', 'EUR'];
 
 // Kurzy jsou "kolik CZK za 1 jednotku". Výchozí hodnoty jsou orientační – uživatel je upravuje v nastavení.
+// Výchozí měna je euro (rozhodnutí vlastníka 4. 10. 2026). Dřívější výchozí koruna se u dat, kde
+// ji nikdo ručně nezvolil, jednou převede na euro i s rozpočty (src/datastore.js#meneNaEuro).
 export const DEFAULT_SPEND = {
-  currency: 'CZK',
+  currency: 'EUR',
   rates: { CZK: 1, USD: 23, EUR: 25 },
   budgets: { total: 0, services: {} },
   ledger: [],

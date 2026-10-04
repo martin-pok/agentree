@@ -1,7 +1,7 @@
 import { tr, tomtoPocitaci } from './i18n.js';
 import { adresaSouboru } from './verze.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
-// Loga: @lobehub/icons-static-svg 1.95.0 (MIT), uložená v public/logos/. Slouží jen k označení napojených služeb.
+// Loga: @lobehub/icons-static-svg 1.95.0 (MIT) a Simple Icons 16.34.0 (CC0), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
   anthropic: { label: 'Anthropic', color: '#D97757', ink: '#A6522F', on: '#FFFFFF' },
   openai: { label: 'OpenAI', color: '#16141D', ink: '#16141D', on: '#FFFFFF' },
@@ -31,11 +31,20 @@ const LOGOS = {
   cursor: { label: 'Cursor', mono: true },
   ollama: { label: 'Ollama', mono: true },
   lmstudio: { label: 'LM Studio', mono: true },
+  // Warp: Simple Icons 16.34.0 (CC0), zdroj warp.dev, barva značky #01A4FF (public/logos/README.md).
+  warp: { label: 'Warp' },
+  windsurf: { label: 'Windsurf', mono: true },
+  kiro: { label: 'Kiro' },
+  // Zed: Simple Icons 16.34.0 (CC0), zdroj github.com/zed-industries/zed (public/logos/README.md).
+  zed: { label: 'Zed', mono: true },
+  goose: { label: 'Goose', mono: true },
+  opencode: { label: 'OpenCode', mono: true },
+  antigravity: { label: 'Antigravity' },
 };
 
-const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama' };
+const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama', warp: 'warp' };
 const CONNECTOR_LOGO = { 'claude-code': 'claude', codex: 'codex', cursor: 'cursor', 'copilot-cli': 'githubcopilot', 'vscode-copilot': 'githubcopilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen' };
-const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio' };
+const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio', warp: 'warp', windsurf: 'windsurf', kiro: 'kiro', zed: 'zed', goose: 'goose', opencode: 'opencode', antigravity: 'antigravity' };
 const WEB_APP_LOGO = [[/chatgpt/i, 'openai'], [/claude/i, 'claude'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot/i, 'githubcopilot'], [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen']];
 
 // Přijímá klíč poskytovatele ("openai"), session ({connector, app}), konektor ({id}) nebo běhové prostředí ({runtime}).

@@ -93,7 +93,29 @@ export function normalizeNastroje(input) {
   return out;
 }
 
+// Dřívější výchozí koruna → euro, jen u dat, kde měnu nikdo ručně nezvolil. Rozpočty se přepočtou
+// kurzem, aby „6 000 Kč“ nezačalo znamenat „6 000 €“. Proběhne jednou: pak je měna EUR.
+export function meneNaEuro(spend) {
+  if (spend.currencySource === 'user' || spend.currency !== 'CZK') return spend;
+  const eur = Number(spend.rates?.EUR) || DEFAULT_SPEND.rates.EUR;
+  const naEura = (v) => Math.round((Number(v) || 0) / eur * 100) / 100;
+  return {
+    ...spend,
+    currency: 'EUR',
+    budgets: {
+      total: naEura(spend.budgets.total),
+      services: Object.fromEntries(Object.entries(spend.budgets.services || {}).map(([k, v]) => [k, naEura(v)])),
+    },
+  };
+}
+
 export function normalizeData(raw) {
+  const data = normalizeDataInner(raw);
+  data.spend = meneNaEuro(data.spend);
+  return data;
+}
+
+function normalizeDataInner(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
   const s = d.settings && typeof d.settings === 'object' ? d.settings : {};
   const sp = d.spend && typeof d.spend === 'object' ? d.spend : {};
@@ -135,6 +157,8 @@ export function normalizeData(raw) {
     cloud: normalizeCloud(d.cloud),
     spend: {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
+      // Kdo měnu zvolil: 'user' = ručně v Rozpočtech (nikdy se nepřepíše), 'default' = výchozí.
+      currencySource: sp.currencySource === 'user' ? 'user' : 'default',
       rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },
       // Odkud kurz je: ČNB (automaticky), ručně zadaný, nebo orientační výchozí. Dřívější ruční úpravu
       // (kurz jiný než výchozí bez záznamu o původu) poznáme a nepřepíšeme.

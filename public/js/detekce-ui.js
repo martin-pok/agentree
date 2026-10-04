@@ -51,6 +51,11 @@ function radek(n) {
 // Nově zachycené nástroje jako karta v Přehledu (views/overview.js) – žádné plovoucí okno.
 // Vykresluje se přes fill(), který mění DOM jen při změně textu: řádek „běží od 11:20“ je
 // stálý, takže živé události karta nepřekreslí a nic nebliká.
+// Víc nových nástrojů naráz (první spuštění) by kartou odsunulo celý Přehled: vidět jsou čtyři,
+// zbytek po rozbalení. Rozbalení přežije živé překreslení.
+const NAHLED = 4;
+let rozbaleno = false;
+
 export function noveNastrojeHtml() {
   const nove = viditelneNove();
   if (!nove.length || state.settings?.notifications?.detekce === false) return '';
@@ -60,7 +65,8 @@ export function noveNastrojeHtml() {
       <button class="icon-btn" type="button" data-nastroj-pozdeji aria-label="${tr('Skrýt do příštího spuštění')}" title="${tr('Skrýt do příštího spuštění')}">${ICON.close}</button>
     </div>
     ${naMacu() ? '' : `<p class="nt-uvod">${esc(tr('Do Mých nástrojů je přidáš v Agenteeq na {0}.', tomtoPocitaci()))}</p>`}
-    <ul class="nt-list">${nove.map((n) => radek(zivy(n))).join('')}</ul>
+    <ul class="nt-list">${nove.slice(0, rozbaleno ? nove.length : NAHLED).map((n) => radek(zivy(n))).join('')}</ul>
+    ${nove.length > NAHLED ? `<button class="link nt-dalsi" type="button" data-nastroje-rozbalit aria-expanded="${rozbaleno}">${rozbaleno ? tr('Zobrazit méně') : tr('Zobrazit další ({0})', nove.length - NAHLED)}</button>` : ''}
   </section>`;
 }
 
@@ -97,6 +103,7 @@ export function mountDetekce() {
     const btn = e.target.closest?.('[data-nastroj-akce]');
     if (btn) { e.preventDefault(); rozhodni(btn); return; }
     if (e.target.closest?.('[data-jit-rozsireni]')) { goToExtension(); return; }
+    if (e.target.closest?.('[data-nastroje-rozbalit]')) { rozbaleno = !rozbaleno; emit('detekce'); return; }
     if (e.target.closest?.('[data-nastroj-pozdeji]')) {
       for (const n of state.detekce?.nove || []) zavrene.add(n.id);
       emit('detekce');

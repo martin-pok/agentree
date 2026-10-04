@@ -129,7 +129,7 @@ ve složce, o které Agenteeq neví. Proto:
 - **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
   „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se, po prvním zápisu do přepisu se
   spáruje, cizí proces s jiným `CLAUDE_CONFIG_DIR` test nevidí a druhý, nespárovaný proces po skončení
-  zmizí. Sdílený výpis procesů není starší než jeden průchod (výchozí platnost 4 s při průchodu po 5 s).
+  zmizí. Sdílený výpis procesů není starší než jeden průchod (průchod po 1,5 s na Macu a Linuxu, po 5 s na Windows – `src/platform.js#INTERVAL_PROCESU_MS`; platnost výpisu je polovina intervalu). Nově spuštěný nástroj se v Přehledu objeví do 2 s: změřeno 0,15–1,26 s při 13 nástrojích spuštěných naráz.
 
 ## Konektory v detailu
 

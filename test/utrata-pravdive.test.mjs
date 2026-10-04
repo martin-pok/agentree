@@ -36,7 +36,7 @@ test('karta plánů vzniká jen z ověřeného zdroje a nenabízí ruční licen
 });
 
 test('součet měsíce tvoří jen ověřené řádky Admin API, starší ruční platby jsou mimo něj', () => {
-  const spend = { ...structuredClone(DEFAULT_SPEND), ledger };
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger };
   const sp = payload(spend);
   const jenRucne = monthlyTotals(spend, [sp.monthKey], [])[0].total;
   const automaticky = sp.automatic.filter((r) => r.month === sp.monthKey).reduce((a, r) => a + r.converted, 0);
@@ -51,7 +51,7 @@ test('součet měsíce tvoří jen ověřené řádky Admin API, starší ručn�
 });
 
 test('tabulka Výdaje ukazuje i automatické řádky Admin API jako skupinu jen ke čtení', () => {
-  const spend = { ...structuredClone(DEFAULT_SPEND), ledger };
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger };
   const html = ledgerHtml(payload(spend));
   assert.match(html, /Automaticky z Admin API · Anthropic \/ OpenAI|Automaticky z Admin API · OpenAI \/ Anthropic/);
   assert.match(html, /jen ke čtení/);
@@ -66,30 +66,30 @@ test('tabulka Výdaje ukazuje i automatické řádky Admin API jako skupinu jen 
 });
 
 test('jen automatické řádky (bez ručních) už neukazují prázdný stav „Zatím žádné výdaje“', () => {
-  const spend = { ...structuredClone(DEFAULT_SPEND), ledger: [] };
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger: [] };
   const html = ledgerHtml(payload(spend));
   assert.doesNotMatch(html, /Zatím žádné výdaje/);
   assert.match(html, /Automaticky z Admin API/);
 });
 
 test('kurz: výchozí je označený jako orientační, ČNB s datem, vlastní jako vlastní', () => {
-  const vychozi = ledgerHtml(payload({ ...structuredClone(DEFAULT_SPEND), ledger }));
+  const vychozi = ledgerHtml(payload({ ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger }));
   assert.match(vychozi, /spend-foot--warn/);
   assert.match(vychozi, /Orientační kurz/);
   assert.match(vychozi, /1 \$ = 23 Kč, 1 € = 25 Kč/);
 
-  const cnb = { ...structuredClone(DEFAULT_SPEND), ledger, rates: { CZK: 1, USD: 21.5, EUR: 24.3 }, ratesSource: 'cnb', liveRates: { date: '2026-10-09', USD: 21.5, EUR: 24.3 } };
+  const cnb = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger, rates: { CZK: 1, USD: 21.5, EUR: 24.3 }, ratesSource: 'cnb', liveRates: { date: '2026-10-09', USD: 21.5, EUR: 24.3 } };
   const html = ledgerHtml(payload(cnb));
   assert.doesNotMatch(html, /Orientační kurz/);
   assert.match(html, /Kurz ČNB z 9\. ?10\. ?2026/);
   assert.match(html, /Minulé měsíce se přepočítávají stejným kurzem/);
 
-  const rucne = ledgerHtml(payload({ ...structuredClone(DEFAULT_SPEND), ledger, ratesSource: 'manual', rates: { CZK: 1, USD: 22, EUR: 25 } }));
+  const rucne = ledgerHtml(payload({ ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger, ratesSource: 'manual', rates: { CZK: 1, USD: 22, EUR: 25 } }));
   assert.match(rucne, /Vlastní kurz z Rozpočtů/);
 });
 
 test('jen koruny bez Admin API: poznámka o kurzu se neukazuje (nic se nepřevádí)', () => {
-  const spend = { ...structuredClone(DEFAULT_SPEND), ledger: [ledger[0]] };
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger: [ledger[0]] };
   const sp = { ...spendSummary(spend, NOW, []), ledger: spend.ledger, rates: spend.rates, rateInfo: rateInfo(spend), services: SERVICES, kinds: KINDS };
   const html = ledgerHtml(sp);
   assert.doesNotMatch(html, /kurz/i);
@@ -107,7 +107,7 @@ const modelEntries = [
 ];
 
 test('rozpad po modelech: měsíční součet modelů = částka řádku, tokeny jen z Admin API', () => {
-  const spend = { ...structuredClone(DEFAULT_SPEND), ledger };
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger };
   const sp = { ...spendSummary(spend, NOW, auto, modelEntries), ledger: spend.ledger, rates: spend.rates, rateInfo: rateInfo(spend), services: SERVICES, kinds: KINDS };
   const openai = sp.automatic.find((r) => r.month === '2026-10' && r.service === 'openai-api');
   assert.deepEqual(openai.models.map((m) => m.model), ['gpt-6-astra', 'gpt-6-mini'], 'nejdražší první');

@@ -1920,6 +1920,7 @@ html.is-cloud body { background: var(--paper); }
 .nt-main b { font-weight: 500; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 .nt-meta { font-size: 13px; line-height: 20px; color: var(--ink-2); }
 .nt-akce { display: flex; gap: 8px; }
+.nt-dalsi { margin: 4px 0 16px; }
 .pill[data-tone="ok"] { background: var(--teal-tint); color: var(--teal-ink); }
 .pill--link { height: 32px; border: 0; cursor: pointer; background: var(--brass-tint); color: var(--ink); font: inherit; font-size: 13px; }
 .pill--link:hover { background: var(--line); }

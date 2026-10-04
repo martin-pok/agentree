@@ -1,7 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { openCommand } from './platform.js';
+import { openCommand, INTERVAL_PROCESU_MS } from './platform.js';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -74,7 +74,7 @@ export function loadConfig(env = process.env) {
     ...otevirani(env),
     ollamaUrl: env.AGENTEEQ_OLLAMA_URL || 'http://127.0.0.1:11434',
     scanIntervalMs: Number(env.AGENTEEQ_SCAN_MS) || 10000,
-    processIntervalMs: Number(env.AGENTEEQ_PROCESS_MS) || 5000,
+    processIntervalMs: Number(env.AGENTEEQ_PROCESS_MS) || INTERVAL_PROCESU_MS,
     quiet: env.AGENTEEQ_QUIET === '1',
   };
 }

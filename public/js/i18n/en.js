@@ -1382,6 +1382,9 @@ export default {
     " a ": " and ",
     "Zjištěno z účtu Claude Code": "Detected from your Claude Code account",
     "Zjištěno z limitů Codexu": "Detected from Codex limits",
+    "ceník {0}": "list price {0}",
+    "Zobrazit méně": "Show less",
+    "Zobrazit další ({0})": "Show {0} more",
   },
   mnozne: {
     "řádek|řádky|řádků": ["row", "rows"],

@@ -10,7 +10,7 @@ import { loadConfig } from '../src/config.js';
 import { plistXml } from '../src/launch-agent.js';
 import { tempDir, fakeDatastore } from './helpers.mjs';
 
-const spend = (over = {}) => ({ ...structuredClone(DEFAULT_SPEND), ...over });
+const spend = (over = {}) => ({ ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ...over });
 
 test('validace výdaje', () => {
   const bad = validateEntry({ service: 'x', kind: 'extra', amount: '-1', currency: 'CZK', date: '2026-13-01' });
@@ -208,4 +208,17 @@ test('neplatný token neprojde ani do jednoho tvaru příkazu', () => {
     assert.throws(() => hookCommand(4620, 'krátký', { windows }), /token/i);
     assert.throws(() => statuslineCommand(4620, '; rm -rf /', { windows }), /token/i);
   }
+});
+
+test('výchozí měna je euro; dřívější výchozí koruna se jednou převede i s rozpočty, ruční volba zůstane', async () => {
+  const { normalizeData } = await import('../src/datastore.js');
+  assert.equal(DEFAULT_SPEND.currency, 'EUR');
+  assert.equal(normalizeData({}).spend.currency, 'EUR', 'nová instalace');
+  const stara = normalizeData({ spend: { currency: 'CZK', rates: { CZK: 1, USD: 23, EUR: 25 }, budgets: { total: 5000, services: { claude: 2500 } } } }).spend;
+  assert.equal(stara.currency, 'EUR');
+  assert.deepEqual(stara.budgets, { total: 200, services: { claude: 100 } }, 'rozpočty přepočtené kurzem, ne jen přejmenované');
+  assert.equal(normalizeData({ spend: stara }).spend.budgets.total, 200, 'migrace proběhne jen jednou');
+  const zvolena = normalizeData({ spend: { currency: 'CZK', currencySource: 'user', budgets: { total: 5000 } } }).spend;
+  assert.equal(zvolena.currency, 'CZK', 'ručně zvolená koruna se nepřepíše');
+  assert.equal(zvolena.budgets.total, 5000);
 });

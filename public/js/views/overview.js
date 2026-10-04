@@ -348,7 +348,9 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'runtimes', 'detekce', 'connectors')) {
     // Vlastní agenti patří mezi běžící aplikace – jinak by na Přehledu chyběli.
     const custom = (state.customAgents || []).map((a) => ({ id: `custom:${a.id}`, name: a.name, provider: 'local', running: a.running, processes: 0, cpu: 0, memMB: 0, detail: a.detail }));
-    const rts = [...pouzivaneNastroje(state), ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu || a.name.localeCompare(b.name, LOCALE)).slice(0, 8);
+    // Běžící nástroje jsou vidět vždy všechny – limit osmi platí jen pro ty, které teď neběží.
+    const serazene = [...pouzivaneNastroje(state), ...custom].sort((a, b) => Number(b.running) - Number(a.running) || b.cpu - a.cpu || a.name.localeCompare(b.name, LOCALE));
+    const rts = serazene.filter((r, i) => r.running || i < 8);
     // Konverzace v prohlížeči vidí Agenteeq jen přes rozšíření. Dokud nikdy nic neposlalo, patří
     // sem dlaždice, která to řekne – jinak uživatel otevře Gemini na webu a aplikace mlčí.
     const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
