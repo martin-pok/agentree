@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.35.0',
+    date: '2026-10-04',
+    title: 'Limity Claude i z aplikace Claude',
+    items: [
+      'Když Claude narazí na limit, Okna limitů ukážou vyčerpané okno s přesným odpočtem do obnovy – i u Claude Code v aplikaci Claude, kde stavový řádek neběží.',
+      'Čerstvé měření z Claude Desktopu (nejvýš 30 minut staré) je vidět jako živé okno 5 h a týdne s poznámkou, že čas obnovy neznáme.',
+      'Když o limitu Claude nic čerstvého nevíme, přehled všech nástrojů řekne proč a kde měření získat.',
+    ],
+    en: {
+      title: 'Claude limits from the Claude app too',
+      items: [
+        'When Claude hits a limit, Limit windows show the exhausted window with an exact countdown to reset – also for Claude Code in the Claude app, where the status line doesn’t run.',
+        'A fresh Claude Desktop measurement (at most 30 minutes old) appears as a live 5-hour and weekly window, noting that the reset time is unknown.',
+        'When there’s no fresh Claude limit data, the all-tools overview says why and where to get a measurement.',
+      ],
+    },
+  },
+  {
     version: '0.34.3',
     date: '2026-10-04',
     title: 'Sjednocené ovládací prvky',

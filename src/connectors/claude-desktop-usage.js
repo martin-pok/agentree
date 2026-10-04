@@ -8,9 +8,10 @@ import { POCITAC } from '../platform.js';
 
 // Claude Desktop (macOS) si sám pro sebe ukládá historii vytížení limitů – nejde o veřejně
 // zdokumentovaný formát, jen soubor, který jsme na disku našli a ověřili proti skutečným datům
-// (viz docs/CONNECTORS.md). Slouží jako záložní zdroj: přesná data ze stavového řádku Claude Code
-// (`ingestStatusline` v claude-code.js) jsou jediná spolehlivá živá okna; tato historie slouží
-// jen pro graf v čase. Její procenta a časy se nesmí vydávat za aktuální stav předplatného.
+// (viz docs/CONNECTORS.md). Slouží jako záložní zdroj: přesná data (stavový řádek Claude Code,
+// odmítnutí 429 s `quotaLimits` v přepisu) mají vždy přednost. Vzorek nejvýš 30 minut starý se
+// v živém přehledu ukáže s výslovným „obnova neznámá · podle Claude Desktopu“ (public/js/ui.js#currentLimits);
+// starší vzorky zůstávají jen v grafu. Čas obnovy se z historie nikdy nedopočítává.
 const FILE_NAME = 'plan-usage-history.json';
 
 // Poslední vzorek pole `samples`: { t: <ms epoch>, org, u: { fh, sd, xu? } }.

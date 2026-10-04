@@ -95,6 +95,8 @@ export default {
 
   // src/connectors/claude-code.js
   "Limit 5 h": "5-hour limit",
+  "Týdenní limit · Opus": "Weekly limit · Opus",
+  "Týdenní limit · Sonnet": "Weekly limit · Sonnet",
   "Týdenní limit": "Weekly limit",
   "Extra usage": "Extra usage",
   "Spouští příkaz": "Running a command",
