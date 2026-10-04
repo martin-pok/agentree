@@ -358,6 +358,57 @@ async function zkontrolujNadpisy(browser, engine) {
   results.push({ engine, check: 'nadpisy obrazovek se na telefonu nezkracují' });
 }
 
+// Přepínače období ve Statistikách: čísla odpovídají vybranému tlačítku hned po kliknutí (do 500 ms),
+// i při rychlém přepínání. Dřív se změnil jen cíl animovaného čísla a text zůstal ze starého období,
+// dokud nepřišla další živá událost; při rychlém klikání stará animace přepsala novou hodnotu.
+async function zkontrolujObdobi(browser, engine) {
+  const server = await startTestServer();
+  const H = 3600e3, ted = Date.now();
+  for (let i = 0; i < 60; i++) {
+    const s = server.app.store.ensure({ connector: 'codex', localId: `qa-obdobi-${i}`, provider: i % 3 ? 'openai' : 'anthropic', app: i % 3 ? 'Codex' : 'Claude Code' });
+    const vek = (i % 30) * 24 * H + (i % 24) * H;
+    Object.assign(s, { title: `QA období ${i}`, lastAt: ted - vek, startedAt: ted - vek - H, turns: 2 + (i % 5) });
+    for (let h = 0; h < 6; h++) addTokens(s, ted - vek - h * H, { input: 1000 * (i + 1), output: 300 * (i + 1) });
+    server.app.store.commit(s);
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  try {
+    await p.goto(`${server.url}/#/statistiky`);
+    // Průvodce prvního spuštění zavřít a počkat, až po sobě uklidí (odchod na Přehled).
+    await p.locator('.welcome-dialog[open]').waitFor({ timeout: 3000 }).then(() => p.keyboard.press('Escape'), () => {});
+    await p.waitForFunction(() => !document.querySelector('.welcome-dialog[open]'), null, { timeout: 3000 });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { location.hash = '#/statistiky'; });
+    await p.waitForFunction(() => location.hash === '#/statistiky' && document.querySelector('[data-period]') && !document.querySelector('dialog[open]'), null, { timeout: 5000 });
+    await p.waitForTimeout(800);
+    const kpi = () => p.evaluate(() => [...document.querySelectorAll('[data-region="kpis"] .val')].map((x) => x.textContent.trim()).join(' | '));
+    const obdobi = await p.$$eval('[data-period]', (b) => b.map((x) => x.dataset.period));
+    const cil = {};
+    for (const k of obdobi) { await p.click(`[data-period="${k}"]`); await p.waitForTimeout(1200); cil[k] = await kpi(); }
+    assert.ok(new Set(Object.values(cil)).size >= 3, `${engine}: období se v číslech neliší: ${JSON.stringify(cil)}`);
+    for (const k of [...obdobi].reverse()) {
+      const t0 = Date.now();
+      await p.click(`[data-period="${k}"]`);
+      await p.waitForFunction((c) => [...document.querySelectorAll('[data-region="kpis"] .val')].map((x) => x.textContent.trim()).join(' | ') === c, cil[k], { timeout: 500 })
+        .catch(() => { throw new Error(`${engine}: po přepnutí na ${k} čísla do 500 ms neodpovídají `); });
+      results.push({ engine, check: `období ${k} do ${Date.now() - t0} ms` });
+    }
+    for (let kolo = 0; kolo < 6; kolo++) {
+      const poradi = kolo % 2 ? obdobi : [...obdobi].reverse();
+      for (const k of poradi) await p.click(`[data-period="${k}"]`, { delay: 0 });
+      const posledni = poradi.at(-1);
+      await p.waitForTimeout(600);
+      const stisknute = await p.getAttribute('[data-period][aria-pressed="true"]', 'data-period');
+      assert.equal(stisknute, posledni, `${engine}: po rychlém přepínání je vybrané ${stisknute}, ne ${posledni}`);
+      assert.equal(await kpi(), cil[posledni], `${engine}: po rychlém přepínání čísla neodpovídají období ${posledni}`);
+    }
+  } finally {
+    await ctx.close();
+    await server.close();
+  }
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -373,6 +424,7 @@ for (const engine of engines) {
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   await zkontrolujPocitadla(browser, engine);
   await zkontrolujNadpisy(browser, engine);
+  await zkontrolujObdobi(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();

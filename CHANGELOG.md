@@ -2,6 +2,11 @@
 
 ## Nezveřejněno
 
+## 0.34.1 – 2026-10-04 · přepínače reagují hned
+
+- **Statistiky: přepnutí období ukáže čísla hned.** Po kliknutí na Dnes / 24 hodin / 7 / 14 / 30 dní se dřív změnil jen cíl animovaného čísla a karty ukazovaly staré období, dokud nepřišla další živá událost; při rychlém klikání stará animace přepsala novou hodnotu. Čísla se teď přepočítají v tom samém snímku a do 240 ms dojedou, starší animace se při novém cíli zastaví. Platí pro všechna animovaná čísla v aplikaci.
+- Přepínače (období ve Statistikách, filtry Upozornění a projektu, řazení Dovedností) se při změně neskládají znovu, jen se jim přepne stav – kliknutí nikdy nedopadne na tlačítko, které mezitím zmizelo. `qa:desktop` měří odezvu všech období (do 500 ms) a 6 kol rychlého přepínání v Chromiu i WebKitu.
+
 ## 0.34.0 – 2026-10-04 · útrata za API po modelech
 
 - **Rozpad Admin API po modelech.** Náklady i spotřeba tokenů se stahují seskupené (OpenAI `group_by=line_item` a `group_by=model`, Anthropic `group_by[]=description` a `group_by[]=model`; ověřeno proti referenci API). Denní součet se počítá ze stejných seskupených řádků, takže rozpad a útrata se nerozejdou – hlídá regresní test. Stránkování, stropy stránek i chování při chybě zůstávají: selhání spotřeby = tokeny „nezjištěno“ (null), selhání nákladů vymaže i rozpad.

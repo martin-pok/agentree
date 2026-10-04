@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.34.1',
+    date: '2026-10-04',
+    title: 'Přepínače reagují hned',
+    items: [
+      'Ve Statistikách se po přepnutí období čísla změní okamžitě, i když klikáš rychle po sobě.',
+    ],
+    en: {
+      title: 'Controls respond instantly',
+      items: [
+        'In Statistics, numbers change the moment you switch the period, even when you click quickly.',
+      ],
+    },
+  },
+  {
     version: '0.34.0',
     date: '2026-10-04',
     title: 'Útrata za API po modelech',

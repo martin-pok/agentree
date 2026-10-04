@@ -249,7 +249,7 @@ function update() {
     working: st.working,
     older: st.older.length,
   };
-  fill(el, 'seg', SEGMENTS.filter(([k]) => k === 'all' || counts[k]).map(([k, label]) => `<button type="button" data-filter="${k}" aria-pressed="${v.filter === k}">${label}<span class="count">${counts[k]}</span></button>`).join(''));
+  fill(el, 'seg', SEGMENTS.filter(([k]) => k === 'all' || counts[k]).map(([k, label]) => `<button type="button" data-filter="${k}" aria-pressed="${v.filter === k}">${label}<span class="count">${counts[k]}</span></button>`).join(''), { sloucit: true });
   if (v.filter !== 'all' && !counts[v.filter]) v.filter = 'all';
 
   const rows = v.filter === 'older' ? st.older
