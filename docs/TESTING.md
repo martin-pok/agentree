@@ -1,5 +1,15 @@
 # Testování a ověření
 
+## Protokol ověření – 0.36.2, filtry na Agentech v jedné mřížce (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 795 testů, 785 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo; syntaxe 256 souborů čistá |
+| `qa:desktop` (`QA_ENGINE=chromium`), `qa:contrast`, `qa:tvary` | Prošly; Agenti světle i tmavě na 1440 a 375 px v AA |
+| Rozvržení filtrů (ukázková data) | 1440 / 1100 / 375 px: řádky karty po 57 px (56 + čára), čipy všech řádků od jedné svislé osy, hledání a „Vybrat“ na společném pravém okraji, horní řádek stavu 40 px |
+
+Neověřeno v tomto běhu: WebKit (na stroji není); běží v CI.
+
 ## Protokol ověření – 0.36.1, načítací scéna v aplikaci pro Mac a stálé karty projektů (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |

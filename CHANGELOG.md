@@ -1,7 +1,8 @@
 # Changelog
 
-## Nezveřejněno
+## 0.36.2 – 2026-10-04 · srovnané filtry na Agentech, načítací scéna i na Windows
 
+- **Filtry na Agentech v jedné mřížce.** Řádky filtrů měly každý jinou výšku a nedržely svislou ani vodorovnou osu: hledání viselo samo na vlastním řádku, zdroj vypadal jinak než poskytovatelé, řádek projektů se lámal do dvou výšek, „Vybrat“ stálo svisle jinde než čipy a nápověda „Konverzaci přetáhni na projekt“ visela pod nimi. Teď je nahoře jen hlavní filtr (stav) přes celou šířku a pod ním karta s řádky Zdroj, Služba a Projekt. Popisky mají vlastní sloupec, takže čipy všech řádků začínají na jedné svislé ose. Každý řádek má přesně 56 px a nic se v něm nezalamuje; co se nevejde, roluje s dozněním u okraje. Hledání a „Vybrat“ jsou v pravém sloupci zarovnané k témuž okraji. Všechny filtry mají jeden styl čipu. Nápověda k přetažení je u čipů projektů, na které se táhne. Na telefonu jde popisek nad řádek a hledání nahoru do karty. Stejný jazyk má karta filtrů na Dovednostech.
 - **Plášť pro Windows ukazuje stejnou načítací scénu jako Mac.** Místo nápisu „Agenteeq“ systémovým písmem a hranatého tlačítka otevře okno hned po spuštění scénu `public/nacitani.html` ze souboru v balíčku (adresu skládá `UrlCreateFromPathW`, takže projde i složka s mezerou nebo „&“). Hlášky o obnově spojení, chyby i „Zkusit znovu“ mění jen text ve scéně, animace běží dál. Jakmile server běží, vystřídá ji rozhraní se stejnou animací. Okno smí ze souborů otevřít jen tuhle stránku. Když v balíčku chybí, zůstává prostá stránka pláště, nově s tlačítkem jako kapslí.
 - Neověřeno: vzhled v samotném okně pro Windows (stroj s ověřením nemá Windows); plášť překládá CI a stránku scény jsme ověřili v Chromiu.
 
