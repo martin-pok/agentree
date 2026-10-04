@@ -197,9 +197,12 @@ interface SessionSummary {
 
 interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error' }
 
-interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; reached: boolean; plan: string | null; text: string; at: number; source?: 'statusline' | 'desktop-usage' | 'plan-history' | string }
-// resetsAt = přesný čas obnovy od zdroje. Živý přehled neukazuje interní historické vzorky
-// Claude Desktopu ani měření starší než 30 minut. Bez resetsAt čas obnovy nevypočítává.
+interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; reached: boolean; plan: string | null; text: string; at: number; source?: 'statusline' | 'desktop-usage' | 'transcript-quota' | 'plan-history' | string; overage?: 'on' | 'off' | null }
+// resetsAt = přesný čas obnovy od zdroje. Živý přehled neukazuje měření starší než 30 minut
+// (výjimka: 'transcript-quota' – odmítnutí 429 z přepisu Claude Code platí do svého resetsAt).
+// 'plan-history' (historie Claude Desktopu) je živá jen do 30 minut a jen bez čerstvého přesného
+// měření téhož okna; resetsAt je vždy null a nedopočítává se. overage = dokupované využití podle
+// `quotaLimits` (jen když ho pole výslovně uvádí).
 
 interface CreditRecord { id: string; provider: Provider; app: string; label: string; balance: number; unlimited: boolean; at: number; history: { at: number; balance: number }[] }
 

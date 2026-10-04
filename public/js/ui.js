@@ -561,21 +561,35 @@ export function untilLabel(ts, now = Date.now()) {
 // Vyčerpání dokoupeného extra usage není okno předplatného – patří na Útratu, ne mezi limity plánu.
 export const isSpendLimit = (l) => l.kind === 'spend';
 
-// Živá okna Claude (5 h a týden) chodí ze stavového řádku Claude Code nebo z cache Usage
-// v Claude Desktopu. Historie bez přesného resetu patří pouze do grafu. Na každé okno
-// je jeden řádek: nejnovější měření. Když samo čas obnovy nenese, převezme ho od přesného
+// Živá okna Claude (5 h a týden) mají tři zdroje v tomto pořadí přednosti:
+// 1. přesná měření od serveru – stavový řádek Claude Code, uložená stránka Usage v Claude Desktopu
+//    a odmítnutí 429 s `quotaLimits` z přepisu (vyčerpáno, přesný čas obnovy);
+// 2. čerstvý vzorek historie Claude Desktopu (procenta bez času obnovy, nejvýš 30 minut starý).
+// Mezi přesnými vyhrává nejnovější měření (při shodě v pořadí výše). Historie se ukáže jen tehdy,
+// když okno žádné čerstvé přesné měření nemá – pozdější vzorek historie přesné měření nepřepíše.
+// Na každé okno je jeden řádek. Když vybrané měření samo čas obnovy nenese, převezme ho od přesného
 // zdroje jen ve stejném okně; jinak by se připojil konec starého okna.
 const OKNO_CLAUDE = /^claude:(five_hour|seven_day)(?::|$)/;
-const PRESNE = new Set(['statusline', 'desktop-usage']);
+const PORADI_PRESNYCH = ['statusline', 'desktop-usage', 'transcript-quota'];
+const PRESNE = new Set(PORADI_PRESNYCH);
 const LIMIT_FRESH_MS = 30 * 60e3;
+const poradi = (l) => {
+  const i = PORADI_PRESNYCH.indexOf(l.source);
+  return i < 0 ? PORADI_PRESNYCH.length : i;
+};
+
+// Je měření pořád živé? Obecně jen 30 minut: staré procento už nemůže tvrdit, jaký je stav právě teď.
+// Výjimka je odmítnutí od serveru s přesným časem obnovy – okno je vyčerpané až do té chvíle,
+// i když od hlášky uběhla hodina (Claude Desktop během čekání nic nového nezapíše).
+function zive(l, now) {
+  if (isSpendLimit(l) || !Number.isFinite(l.at) || now - l.at < -60e3) return false;
+  if (Number(l.resetsAt) > 0 && l.resetsAt <= now) return false;
+  if (l.source === 'transcript-quota' && l.reached && Number(l.resetsAt) > now) return true;
+  return now - l.at <= LIMIT_FRESH_MS;
+}
 
 export function currentLimits(limits, now = Date.now()) {
-  // Interní historie Desktopu nemá přesný reset a na skutečných datech se může rozcházet s plánem.
-  // Patří do historického grafu, nikoli mezi aktuální okna. Ostatní měření po 30 minutách
-  // zmizí z živého přehledu: staré procento už nemůže tvrdit, jaký je stav právě teď.
-  const fresh = limits.filter((l) => !isSpendLimit(l) && l.source !== 'plan-history'
-    && Number.isFinite(l.at) && now - l.at >= -60e3 && now - l.at <= LIMIT_FRESH_MS
-    && !(Number(l.resetsAt) > 0 && l.resetsAt <= now));
+  const fresh = limits.filter((l) => zive(l, now));
   const claudePresne = fresh.some((l) => l.provider === 'anthropic' && PRESNE.has(l.source));
   const okna = new Map();
   const ostatni = [];
@@ -585,10 +599,11 @@ export function currentLimits(limits, now = Date.now()) {
     else okna.set(klic, [...(okna.get(klic) || []), l]);
   }
   const slozena = [...okna.values()].map((zaznamy) => {
-    // Při shodném čase měření má přednost přesný zdroj.
-    const nejnovejsi = zaznamy.reduce((a, b) => (b.at > a.at || (b.at === a.at && PRESNE.has(b.source) && !PRESNE.has(a.source)) ? b : a));
-    if (nejnovejsi.resetsAt) return nejnovejsi;
-    const presny = zaznamy
+    const presne = zaznamy.filter((l) => PRESNE.has(l.source));
+    const kandidati = presne.length ? presne : zaznamy;
+    const nejnovejsi = kandidati.reduce((a, b) => (b.at > a.at || (b.at === a.at && poradi(b) < poradi(a)) ? b : a));
+    if (nejnovejsi.resetsAt || !PRESNE.has(nejnovejsi.source)) return nejnovejsi;
+    const presny = presne
       .filter((l) => l.resetsAt && l.resetsAt > nejnovejsi.at)
       .reduce((a, b) => (!a || b.at > a.at ? b : a), null);
     return presny ? { ...nejnovejsi, resetsAt: presny.resetsAt } : nejnovejsi;
@@ -602,7 +617,16 @@ export function limitObnova(l, now = Date.now()) {
   const presne = Number(l.resetsAt) > 0 ? Number(l.resetsAt) : 0;
   if (presne && presne > now) return { kdy: presne, presne: true, probehla: false, text: tr('obnova {0}', resetsLabel(presne, now)) };
   if (presne) return { kdy: presne, presne: true, probehla: true, text: tr('obnoveno {0}', resetsLabel(presne, now)) };
+  // Historie Claude Desktopu čas obnovy nenese. Říkáme to i s tím, odkud procento je – nedopočítává se.
+  if (l.source === 'plan-history') return { kdy: 0, presne: false, probehla: false, text: tr('obnova neznámá · podle Claude Desktopu') };
   return { kdy: 0, presne: false, probehla: false, text: tr('čas obnovy zdroj neuvádí') };
+}
+
+// Poznámka k dokupovanému využití – jen když ji zdroj výslovně poslal (`quotaLimits`).
+export function limitPoznamka(l) {
+  if (l?.overage === 'on') return tr('dokupované využití zapnuté');
+  if (l?.overage === 'off') return tr('dokupované využití vypnuté');
+  return '';
 }
 
 // Stav jednoho okna limitu. Jedno místo pro všechna tři zobrazení (Přehled, Statistiky,
@@ -667,7 +691,7 @@ export function limitWindows(limits, now = Date.now()) {
       <span class="lwin-main">
         <span class="lwin-top"><b>${esc(l.app)} · ${esc(l.label)}</b><span class="lwin-pct${/\d/.test(label) ? '' : ' lwin-pct--text'}">${esc(label)}</span></span>
         <span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>
-        <span class="lwin-sub"><span>${esc(advice)}</span>${obnovaHtml(l, now)}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
+        <span class="lwin-sub"><span>${esc([advice, limitPoznamka(l)].filter(Boolean).join(' · '))}</span>${obnovaHtml(l, now)}${limitAge(l, now) ? `<span class="lwin-age">${esc(limitAge(l, now))}</span>` : ''}</span>
       </span>
     </li>`;
   }).join('')}</ul>`;
@@ -686,7 +710,7 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
       const sub = limitObnova(l, now).text;
       // Stáří na vlastním řádku; po šesti hodinách zvýrazněné, protože limity se mění rychle.
       const age = limitAge(l, now);
-      return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, age, stare: now - l.at > 6 * 3600e3, size, reached: s.reached }) };
+      return { at: l.at, html: gauge({ pct: s.pct, color, value: s.label, label: `${l.app} · ${l.label}`, sub, note: limitPoznamka(l), age, stare: now - l.at > 6 * 3600e3, size, reached: s.reached }) };
     })
     .filter(Boolean)
     .sort((a, b) => b.at - a.at)

@@ -1,5 +1,17 @@
 # Testování a ověření
 
+## Protokol ověření – 0.35.0, limity Claude z přepisů a čerstvé historie Desktopu (4. 10. 2026, macOS 27.0.1, Node 24.18, Playwright 1.62.1)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 772 testů, 770 prošlo, 2 přeskočeny, 0 selhalo; syntaxe 254 souborů čistá |
+| `test/claude-limity.test.mjs` (umělá data) | `quotaLimits` five_hour / seven_day / Opus / overage, neznámý a chybějící druh, poškozené záznamy, dokupované využití zapnuté/vypnuté/neznámé, přesný `resetsAt`, platnost do obnovy, úspěch před obnovou okno neuvolní, přednost zdrojů, hranice historie 29/30/31 min, Přehled + Statistiky + rozbalovací seznam. Všech 7 testů chování na kódu z `origin/main` selže. |
+| `qa:desktop` | Chromium i WebKit prošly beze změny skriptu. |
+| `qa:contrast`, `qa:tvary` | WCAG 2.2 AA a tvary ovládání prošly pro aplikaci, web i rozšíření. |
+| Snímky karet limitů | Okna limitů (Přehled) a Limity a kredity (Statistiky) s Codexem a Claude (vyčerpaný 5 h s přesnou obnovou z umělého odmítnutí 429, týden 41 % z čerstvé historie): 1440 a 375 px, světlý i tmavý režim, čeština i angličtina, Chromium i WebKit – 64 snímků, konzole bez chyb, bez vodorovného rolování. Zvlášť stav Claude bez čerstvého měření (poznámka v rozbalovacím přehledu). |
+
+Neověřeno: odmítnutí `seven_day` a dalších druhů na skutečném účtu (na tomto Macu jen `five_hour`).
+
 ## Protokol ověření – automaticky zjištěné plány 0.34.2 (4. 10. 2026, macOS)
 
 | Kontrola | Výsledek |

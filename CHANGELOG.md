@@ -2,6 +2,13 @@
 
 ## Nezveřejněno
 
+## 0.35.0 – 2026-10-04 · limity Claude i z aplikace Claude
+
+- **Vyčerpaný limit Claude s přesnou obnovou i bez stavového řádku.** Claude Code v aplikaci Claude (Claude Desktop → Code) stavový řádek nespouští, takže Okna limitů ukazovala jen Codex. Při odmítnutí 429 zapisuje Claude Code do přepisu strukturovaný záznam `quotaLimits` s druhem okna a časem obnovy od serveru. Agenteeq z něj teď ukáže „Claude · Limit 5 h – Vyčerpáno“ s přesným odpočtem do obnovy, v Terminálu i v aplikaci Claude. Okno platí do obnovy, pak zmizí. Týdenní a další druhy se pojmenují (Týdenní limit, · Opus, · Sonnet), neznámý druh je obecný „Limit využití“ bez domýšlení. Pokud záznam říká, jestli běží dokupované využití, stojí to u okna („dokupované využití vypnuté“). Stejná hláška už nevytváří druhý řádek odhadnutý z textu.
+- **Čerstvá historie Claude Desktopu je živé okno.** Vzorek vytížení nejvýš 30 minut starý ukáže Claude 5 h a týden s procenty, stářím měření a výslovným „obnova neznámá · podle Claude Desktopu“. Změna pravidla z 0.29.3: tehdy se historie vydávala za aktuální stav i hodiny po měření a připojoval se k ní dopočtený čas obnovy. Teď jde jen o čerstvé měření, čas obnovy se nikdy nedopočítává a starší vzorky zůstávají jen v grafu. Přednost má vždy přesné měření: stavový řádek, uložená stránka Usage a odmítnutí 429 (z nich nejnovější), teprve potom historie.
+- **Claude bez čerstvého měření řekne proč.** V rozbalovacím přehledu „Všechny nástroje a služby“ stojí u Claude místo obecného „Bez údajů o limitu“, odkud se měření vezme: v Claude Desktopu otevřít Nastavení → Využití, nebo spustit Claude Code v Terminálu se stavovým řádkem (nebo ho nejdřív propojit). Cestu přes Desktop nabízí, jen když je Desktop na počítači.
+- Neověřeno: odmítnutí `seven_day` (a `seven_day_opus` / `_sonnet` / `overage`) jsme na skutečném účtu zatím neviděli; názvy jsou podle typu v Claude Agent SDK.
+
 ## 0.34.3 – 2026-10-04 · stejná výška ovládacích prvků v řádku
 
 - Přepínač zdroje na Agentech (Všechny zdroje / Na tomto Macu / Cloud) měl 32 px vedle čipů poskytovatelů se 40 px a působil jako jiný, menší prvek. V řádku s čipy má teď stejnou výšku i odsazení; stejně tlačítko Vybrat vedle čipů projektů a ikona smazání vedle „Ukončit“ ve Výdajích. `qa:desktop` kontroluje na všech obrazovkách (1440 i 375 px, Chromium i WebKit), že prvky ve stejném řádku mají stejnou výšku.

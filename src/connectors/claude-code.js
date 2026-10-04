@@ -111,6 +111,57 @@ export function limitKind(text) {
   return { id: 'claude:usage', label: ui('Limit využití') };
 }
 
+// Strukturovaná hláška o vyčerpaném limitu (`quotaLimits`), kterou Claude Code zapisuje k chybě API 429
+// do přepisu – v Terminálu i v Claude Desktopu → Code, kde stavový řádek nikdy neběží. Na rozdíl od
+// textu hlášky nese přesný čas obnovy od serveru (epoch v sekundách) a druh okna. Ověřeno na skutečných
+// přepisech (2026-10-04): `five_hour` se `status: "rejected"`. Ostatní druhy jsou pojmenované podle
+// typu `rateLimitType` v Claude Agent SDK; na skutečném účtu zatím neviděné. Neznámý druh se nehádá.
+export const QUOTA_WINDOWS = {
+  five_hour: { id: 'claude:five_hour', label: ui('Limit 5 h'), minutes: 300 },
+  seven_day: { id: 'claude:seven_day', label: ui('Týdenní limit'), minutes: 10080 },
+  seven_day_opus: { id: 'claude:seven_day_opus', label: ui('Týdenní limit · Opus'), minutes: 10080 },
+  seven_day_sonnet: { id: 'claude:seven_day_sonnet', label: ui('Týdenní limit · Sonnet'), minutes: 10080 },
+  overage: { id: 'claude:overage', label: ui('Extra usage'), minutes: null, kind: 'spend' },
+};
+
+// Jen to, co pole výslovně říkají: běží dokupované využití → zapnuté; je uveden důvod vypnutí → vypnuté.
+// Cokoli jiného (chybějící pole, neznámá hodnota) = nevíme, a proto žádná poznámka.
+export function quotaOverage(q) {
+  if (q?.isUsingOverage === true) return 'on';
+  if (q?.isUsingOverage === false && typeof q.overageDisabledReason === 'string' && q.overageDisabledReason) return 'off';
+  return null;
+}
+
+export function quotaLimit(o, ts) {
+  const q = o?.quotaLimits;
+  if (!o?.isApiErrorMessage || !q || typeof q !== 'object' || Array.isArray(q)) return null;
+  // Vyčerpané je jen okno, které server odmítl. Varování („allowed_warning“) není vyčerpání.
+  if (q.status !== 'rejected') return null;
+  if (!Number.isFinite(ts) || ts <= 0) return null;
+  const typ = typeof q.rateLimitType === 'string' && /^[a-z0-9_]{1,40}$/.test(q.rateLimitType) ? q.rateLimitType : '';
+  const def = Object.hasOwn(QUOTA_WINDOWS, typ) ? QUOTA_WINDOWS[typ] : null;
+  // Epoch v sekundách (ověřený tvar). Jiný tvar = čas obnovy neznámý, nic se nepřepočítává.
+  const r = Number(q.resetsAt);
+  const resetsAt = typeof q.resetsAt === 'number' && Number.isInteger(r) && r > 1e9 && r < 1e11 ? r * 1000 : null;
+  return {
+    id: `${def ? def.id : typ ? `claude:quota:${typ}` : 'claude:quota'}:quota`,
+    provider: 'anthropic',
+    app: 'Claude',
+    label: def ? def.label : ui('Limit využití'),
+    usedPercent: 100,
+    windowMinutes: def ? def.minutes : null,
+    resetsAt,
+    reached: true,
+    plan: null,
+    text: clip(textOf(o.message?.content), 240),
+    at: ts,
+    model: null,
+    source: 'transcript-quota',
+    kind: def?.kind || 'window',
+    overage: quotaOverage(q),
+  };
+}
+
 export const newFileState = (subagentFile = false) => ({
   msgs: new Map(),
   pendingTools: new Map(),
@@ -197,7 +248,7 @@ function onUser(st, s, o, ts) {
   markRunning(s, ts);
 }
 
-function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
+function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
   const m = o.message;
   if (!m) return;
   meta(s, o);
@@ -208,6 +259,14 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess }) {
     pushEntry(s, { at: ts, role: 'error', text });
     s.running = false;
     s.activity = '';
+    const quota = quotaLimit(o, ts);
+    if (quota) {
+      // Přesný záznam od serveru má přednost před čtením textu: stejná hláška by jinak v přehledu
+      // svítila dvakrát („Limit relace · model“ odhadem z textu a „Limit 5 h“ s přesnou obnovou).
+      s.limit = { reached: true, text, at: ts, resetsAt: quota.resetsAt ?? parseResets(text, ts), model: null };
+      onQuota?.(quota);
+      return;
+    }
     if (LIMIT_RE.test(text)) {
       const kind = limitKind(text);
       const resetsAt = parseResets(text, ts);
@@ -359,11 +418,16 @@ export function createClaudeCodeConnector(ctx) {
         : Math.max(0, ...posledniUspech.values());
       store.setLimit(uspech > limit.at ? { ...limit, reached: false, text: '', at: uspech } : limit);
     },
+    // Odmítnutí od serveru platí do přesného času obnovy; po něm ho živý přehled sám skryje
+    // (public/js/ui.js#currentLimits). Úspěšná odpověď před obnovou ho nesmaže: může přijít
+    // z jiného účtu nebo z dokupovaného využití – okno předplatného je pořád vyčerpané.
+    onQuota: (limit) => store.setLimit(limit),
     onSuccess: (ts, model) => {
       const klic = model || '';
       if ((posledniUspech.get(klic) || 0) < ts) posledniUspech.set(klic, ts);
       for (const l of store.limits.values()) {
         if (l.provider !== 'anthropic' || !l.reached || l.at >= ts) continue;
+        if (l.source === 'transcript-quota') continue;
         // Úspěch jiného modelu nic neříká o limitu toho, který narazil. Dřív ho shodil kdokoli:
         // Opus zablokovaný do 23:20 svítil jako volný 84 sekund po vyčerpání, jen proto, že
         // v téže relaci odpověděl jiný model.

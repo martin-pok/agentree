@@ -37,12 +37,27 @@ function chips(rows, now) {
     .join('');
 }
 
+// Claude bez čerstvého měření: říct proč a kde se měření vezme. Claude Code v aplikaci Claude
+// stavový řádek nespouští a historie Claude Desktopu přibývá jen tehdy, když si Desktop vytížení načte.
+// Cestu přes Desktop nabízíme jen tam, kde Desktop je; stavový řádek jen s propojenými hooky.
+function poznamkaClaude(state) {
+  const desktop = (state.connectors || []).find((c) => c.id === 'claude-desktop-usage');
+  const maDesktop = desktop && desktop.state !== 'missing';
+  const propojeno = state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current;
+  const terminal = propojeno
+    ? tr('spusť Claude Code v Terminálu se stavovým řádkem')
+    : tr('propoj Claude Code v Nastavení a spusť ho v Terminálu');
+  return maDesktop
+    ? tr('Žádné čerstvé měření – v Claude Desktopu otevři Nastavení → Využití, nebo {0}.', terminal)
+    : tr('Žádné čerstvé měření – {0}.', terminal);
+}
+
 function poznamka(t, spojene, state) {
   const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene[0];
   if (!stav) return tr('Bez údajů o limitu');
   if (t.web) return tr('Limity nejsou dostupné');
   if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
-  if (t.id === 'claude' && !(state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current)) return tr('Propoj Claude Code v Nastavení');
+  if (t.id === 'claude') return poznamkaClaude(state);
   return tr('Bez údajů o limitu');
 }
 

@@ -11,7 +11,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 
 | Služba | Zdroj | Registrace spuštění | Živý přepis | Průběh úlohy | Potřebuje rozhodnutí | Limity | Útrata |
 |---|---|---|---|---|---|---|---|
-| **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | cena předplatného nedostupná |
+| **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ vyčerpané okno s přesnou obnovou z odmítnutí 429 (`quotaLimits`, i v Claude Desktopu → Code); ✅ % a obnova ze stavového řádku; 🧪 čerstvá historie Claude Desktopu (≤ 30 min, obnova neznámá) | cena předplatného nedostupná |
 | **Claude Desktop → vzdálený Code** | místní IndexedDB cache 🧪 | do 2 s od změny cache, ne od události v cloudu | dostupná část | uložené nástroje | poslední hlášený stav | jen uložená hláška, jinak důvod neznámý | neúplné tokeny, žádný odhad |
 | **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | cena předplatného nedostupná |
 | **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | cena předplatného nedostupná |
@@ -138,7 +138,13 @@ ve složce, o které Agenteeq neví. Proto:
 - **Zdroj:** `<kořen>/<projekt>/<session-id>.jsonl` (hloubka 1), kořeny viz „Pojistka“ výše – výchozí `~/.claude/projects`. Claude Desktop → Code zapisuje stejný formát s `entrypoint: "claude-desktop"`.
 - **Použitá pole:** `type` (`user`, `assistant`, `custom-title`, `ai-title`, `summary`), `timestamp`, `cwd` (první = projekt), `gitBranch`, `message.model`, `message.content[]` (`text`, `tool_use`, `tool_result`), `message.stop_reason` (`end_turn`/`stop_sequence` = konec tahu, `tool_use` = pokračuje), `message.usage` (deduplikace podle `message.id`, poslední záznam vyhrává), `isApiErrorMessage` (limity), `isSidechain` (subagenti), `isMeta`.
 - **Potřebuje rozhodnutí:** `AskUserQuestion` bez výsledku, `ExitPlanMode` bez výsledku; s hooky `Notification` typu `permission_prompt` / `elicitation_dialog`.
-- **Limity:** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“, u vzdálenější obnovy i s dnem („resets Oct 9, 5pm“) a ze starší podoby s časem za svislítkem (místní časová zóna; nerozpoznaný tvar = bez času obnovy, `parseResets`).
+- **Limity – odmítnutí od serveru (`quotaLimits`, od 0.35.0):** chyba API 429 (`isApiErrorMessage: true`, `apiErrorStatus: 429`, `error: "rate_limit"`) nese v přepisu objekt `quotaLimits` `{ status, resetsAt, rateLimitType, overageStatus, overageDisabledReason, isUsingOverage, unifiedRateLimitFallbackAvailable, upgradePaths[] }`. Zapisuje ho Claude Code v Terminálu i v Claude Desktopu → Code (`entrypoint: "claude-desktop"`), kde stavový řádek nikdy neběží – proto je to pro Desktop jediný přesný zdroj okna. Ověřeno na skutečných přepisech (4. 10. 2026, jen metadata): 47 záznamů, všechny `rateLimitType: "five_hour"`, `status: "rejected"`, `resetsAt` v epoch sekundách, `isUsingOverage: false`, `overageDisabledReason: "org_level_disabled"`.
+  - `quotaLimit()` z něj udělá okno `claude:<druh>:quota`, `source: 'transcript-quota'`, vyčerpáno (100 %), `resetsAt` = přesně `resetsAt × 1000`, `at` = čas záznamu. Jen `status: "rejected"`; jiný stav (varování) se nezapisuje. `resetsAt` jiného tvaru než celé číslo v sekundách = čas obnovy neznámý.
+  - Druhy: `five_hour` → „Limit 5 h“, `seven_day` → „Týdenní limit“ (✅ ověřené jen `five_hour`; 🧪 `seven_day`, `seven_day_opus`, `seven_day_sonnet`, `overage` podle typu `rateLimitType` v Claude Agent SDK, na skutečném účtu zatím neviděné). Neznámý druh = obecný „Limit využití“ bez délky okna, nic se nedomýšlí. `overage` je vyčerpané extra usage → druh `spend`, ne okno plánu.
+  - Dokupované využití: `isUsingOverage: true` → poznámka „dokupované využití zapnuté“; `isUsingOverage: false` s neprázdným `overageDisabledReason` → „vypnuté“; jinak žádná poznámka.
+  - Platnost: okno je vyčerpané až do `resetsAt` (výjimka z 30minutového pravidla, protože server uvedl přesný konec); po něm z živého přehledu zmizí. Úspěšná odpověď před obnovou ho **neuvolní** – může jít o jiný účet nebo dokupované využití a okno předplatného je pořád vyčerpané. Záznam se stejnou hláškou už nevytváří druhý řádek z textu (`LIMIT_RE`).
+- **Limity – text hlášky (starší Claude Code bez `quotaLimits`):** text chyby API odpovídající `LIMIT_RE`, čas obnovy z „resets 1am“, u vzdálenější obnovy i s dnem („resets Oct 9, 5pm“) a ze starší podoby s časem za svislítkem (místní časová zóna; nerozpoznaný tvar = bez času obnovy, `parseResets`).
+- **Přednost zdrojů jednoho okna Claude (`public/js/ui.js#currentLimits`):** přesná měření (stavový řádek, uložená stránka Usage, odmítnutí `quotaLimits`) – z nich nejnovější, při shodném čase v tomto pořadí; teprve bez nich čerstvý vzorek historie Claude Desktopu. Odhad z textu hlášky se skryje, jakmile je k dispozici přesné měření.
 - **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s – nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agenteeq-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
 
@@ -184,9 +190,11 @@ ve složce, o které Agenteeq neví. Proto:
   hledá **podle tvaru odpovědi**, ne podle jména klíče (nezdokumentované); čas z budoucnosti se
   zahodí; nic dalšího z odpovědi (ani z jiných dotazů) se nečte. Že Desktop tuto odpověď do trvalé
   cache opravdu ukládá, jsme na Macu zatím neověřili – když ji tam nenajde, nic se nezmění.
-- **Živá okna (`public/js/ui.js#currentLimits`):** zobrazují jen měření z posledních 30 minut.
-  Interní historie Claude Desktopu je dostupná v historickém grafu, ale nevydává se za živý limit.
-  Čas obnovy se ukáže jen ze zdroje, který ho přímo poslal; po resetu staré měření z přehledu zmizí.
+- **Živá okna (`public/js/ui.js#currentLimits`):** zobrazují jen měření z posledních 30 minut
+  (výjimka: odmítnutí `quotaLimits` platí do svého přesného času obnovy). Čerstvý vzorek historie
+  Claude Desktopu se od 0.35.0 ukáže jako živé okno s „obnova neznámá · podle Claude Desktopu“,
+  starší jen v grafu. Čas obnovy se ukáže jen ze zdroje, který ho přímo poslal; po resetu staré
+  měření z přehledu zmizí.
 - **Bezpečnost a zotavení:** pouze čtení běžných souborů; žádný LOCK, žádné změny databáze,
   žádná autentizace ani odchozí dotazy. Zpracují se jen dva uvedené druhy klíčů; profily účtu
   v query cache nevstupují do modelu; z uložené stránky Usage jen dvě procenta a dva časy obnovy. Živé SST soubory určuje manifest, WAL přebírá novější
@@ -203,15 +211,16 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Claude Desktop – historie limitů – `src/connectors/claude-desktop-usage.js` 🧪
 
-- **Proč existuje:** Claude Desktop ukládá historii čerpání plánu. Konektor z ní kreslí historické grafy, ale bez přesného resetu ji nepovažuje za živý stav limitu.
+- **Proč existuje:** Claude Desktop ukládá historii čerpání plánu. Konektor z ní kreslí historické grafy a čerstvý vzorek (≤ 30 min) ukáže i v živém přehledu – Claude Code v Claude Desktopu stavový řádek nespouští, takže bez toho okna Claude chyběla úplně.
 - **Zdroj:** `~/Library/Application Support/Claude/plan-usage-history.json`. Formát **není nikde oficiálně zdokumentovaný** – jde o interní soubor aplikace Claude Desktop, který se může s libovolnou verzí aplikace změnit nebo zmizet.
 - **Struktura (ověřeno osobně, 476 vzorků od 13. 8. 2026):** `{ version: 2, samples: [ { t: <ms epoch>, org: "<id organizace>", u: { fh: <0–100>, sd: <0–100>, xu?: <číslo> } } ] }`. `fh` = vytížení 5hodinového okna v %, `sd` = vytížení týdenního okna v %. Nové vzorky přibývají zhruba po 15 minutách i bez otevřené konverzace.
 - **`xu` (extra usage):** soubor neuvádí jednotku ani význam čísla. Historická řada zůstává v diagnostickém API, ale konektor ji nezapisuje jako živý limit a aplikace ji nevydává za procenta nebo útratu.
-- **Čas obnovy:** soubor ho nenese. Agenteeq ho z této historie nedopočítává a její procenta neukazuje mezi živými okny. Graf ve Statistikách nadále ukazuje jednotlivá historická měření s časem.
-- **Použití:** čte se poslední vzorek pole `samples` a celá řada pro historický graf. Záznamy se značkou `source: 'plan-history'` nejsou zdrojem živých limitů v `public/js/ui.js#currentLimits`; přesná data přicházejí ze stavového řádku Claude Code nebo z uložené odpovědi Usage, pokud ji Desktop skutečně má.
+- **Čas obnovy:** soubor ho nenese. Agenteeq ho z této historie nikdy nedopočítává ani neextrapoluje; u okna stojí výslovně „obnova neznámá · podle Claude Desktopu“. Graf ve Statistikách nadále ukazuje jednotlivá historická měření s časem.
+- **Použití (změna pravidla v 0.35.0):** čte se poslední vzorek pole `samples` a celá řada pro historický graf. Vzorek se značkou `source: 'plan-history'` je v `public/js/ui.js#currentLimits` živým oknem jen tehdy, když je **nejvýš 30 minut starý** (stejné pravidlo jako u ostatních živých limitů, viz 0.29.3; 29 min ano, 31 min ne) a okno nemá čerstvé přesné měření (stavový řádek, uložená stránka Usage, odmítnutí `quotaLimits`). Pozdější vzorek historie přesné měření nepřepíše a nepůjčí si jeho čas obnovy.
+- **Proč je to pravdivé:** 0.29.3 historii z živého přehledu vyřadilo, protože se vydávala za aktuální stav i hodiny po měření a připojoval se k ní dopočtený čas obnovy. Teď se ukáže jen měření Claude Desktopu staré nejvýš 30 minut (ten si vytížení načítá zhruba po 15 minutách), s uvedeným stářím („změřeno před 12 min“), zdrojem a výslovně neznámou obnovou. Nic se nedopočítává; starší vzorek zůstává v grafu.
 - **Sledování:** změna souboru (mtime) přes `watchTree` na nadřazené složce `~/Library/Application Support/Claude` (reaguje jen na `plan-usage-history.json`) + pravidelný plný průchod v intervalu `config.scanIntervalMs`, stejně jako u ostatních souborových konektorů.
 - **Ověření:** cesta k souboru a tvar `{ t, org, u: { fh, sd, xu } }` ověřeny osobně na reálných datech (poslední 5 h = 99 %, týden = 41 %). **Beta**, protože jde o neveřejný interní formát bez záruky stability mezi verzemi.
-- **Známá omezení:** bez `resetsAt`; vyžaduje nainstalovanou a alespoň jednou spuštěnou aplikaci Claude Desktop, aby soubor vůbec vznikl a dál se aktualizoval.
+- **Známá omezení:** bez `resetsAt`; bez čerstvého vzorku (Desktop zavřený, nebo si vytížení nenačítá) Claude v přehledu limitů okno nemá a rozbalovací seznam nástrojů řekne proč; vyžaduje nainstalovanou a alespoň jednou spuštěnou aplikaci Claude Desktop, aby soubor vůbec vznikl a dál se aktualizoval.
 
 ### Codex – `src/connectors/codex.js` ✅
 
