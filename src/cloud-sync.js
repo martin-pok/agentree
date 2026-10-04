@@ -129,6 +129,9 @@ export function napojeniProCloud(konektory) {
 export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchImpl = (...a) => fetch(...a), now = Date.now, emit = () => {} }) {
   const cfg = config.ucet;
   let zapnuto = datastore.data.cloud?.syncEnabled === true;
+  // Volba změněná na Macu, kterou se ještě nepodařilo zapsat do účtu (výpadek sítě při přihlášení).
+  // Dokud ji účet nemá, načtení z účtu ji nepřepíše a zapíše se s příští synchronizací.
+  let volbaCeka = datastore.data.cloud?.volbaCeka === true;
   let posledni = datastore.data.cloud?.syncAt || 0;
   let chyba = '';
   let odeslano = null;
@@ -138,7 +141,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
   const status = () => ({ zapnuto, posledni, chyba, odeslano });
   const ohlas = () => emit(status());
   const ulozMistne = () => {
-    datastore.data.cloud = { ...(datastore.data.cloud || {}), syncEnabled: zapnuto, syncAt: posledni };
+    datastore.data.cloud = { ...(datastore.data.cloud || {}), syncEnabled: zapnuto, syncAt: posledni, volbaCeka };
     datastore.save();
   };
 
@@ -195,27 +198,54 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     if (bezi) return bezi;
     bezi = (async () => {
       if (!cfg || !zapnuto) return status();
-      const token = await ucet.pristup();
       const uzivatel = ucet.uzivatelId();
-      if (!token || !uzivatel) return status();
-      try {
-        const deviceId = await zarizeni(token, uzivatel);
-        const balik = data(deviceId);
-        for (const [tabulka, radky] of Object.entries(balik)) {
-          if (!radky.length) continue;
-          await volej(`/rest/v1/${tabulka}?on_conflict=${KONFLIKT[tabulka]}`, { method: 'POST', token, body: radky, prefer: 'resolution=merge-duplicates,return=minimal' });
+      if (!uzivatel) return status();
+      // Server může token odmítnout dřív, než podle hodin Macu vyprší (401) – pak se jednou obnoví
+      // a celé odeslání zopakuje. Upsert je idempotentní, opakování nic nezdvojí.
+      for (let pokus = 0; pokus < 2; pokus += 1) {
+        const token = await ucet.pristup({ vynutit: pokus > 0 });
+        if (!token) break;
+        try {
+          if (volbaCeka) await zapisVolbu(token, uzivatel);
+          const deviceId = await zarizeni(token, uzivatel);
+          const balik = data(deviceId);
+          for (const [tabulka, radky] of Object.entries(balik)) {
+            if (!radky.length) continue;
+            await volej(`/rest/v1/${tabulka}?on_conflict=${KONFLIKT[tabulka]}`, { method: 'POST', token, body: radky, prefer: 'resolution=merge-duplicates,return=minimal' });
+          }
+          posledni = now();
+          chyba = '';
+          odeslano = Object.fromEntries(Object.entries(balik).map(([t, r]) => [t, r.length]));
+          ulozMistne();
+          break;
+        } catch (err) {
+          chyba = err.message;
+          if (err.status !== 401) break;
         }
-        posledni = now();
-        chyba = '';
-        odeslano = Object.fromEntries(Object.entries(balik).map(([t, r]) => [t, r.length]));
-        ulozMistne();
-      } catch (err) {
-        chyba = err.message;
       }
       ohlas();
       return status();
     })().finally(() => { bezi = null; });
     return bezi;
+  }
+
+  async function zapisVolbu(token, uzivatel) {
+    await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: zapnuto }, prefer: 'return=minimal' });
+    volbaCeka = false;
+    ulozMistne();
+  }
+
+  // Přihlášení přes Google synchronizaci zapne (rozhodnutí vlastníka 4. 10. 2026; docs/ACCOUNTS.md).
+  // Platí hned na tomto Macu, i když účet zrovna neodpovídá – volba se do účtu dopíše při příští
+  // synchronizaci. Kdo ji pak vypne, má ji vypnutou až do dalšího přihlášení.
+  async function zapnoutPoPrihlaseni() {
+    if (!cfg) return status();
+    zapnuto = true;
+    volbaCeka = true;
+    chyba = '';
+    ulozMistne();
+    ohlas();
+    return synchronizuj();
   }
 
   // Zapnutí a vypnutí je volba v účtu (profiles.sync_enabled), aby platila na všech zařízeních.
@@ -233,6 +263,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
       odeslano = null;
     }
     zapnuto = Boolean(hodnota);
+    volbaCeka = false;
     chyba = '';
     ulozMistne();
     ohlas();
@@ -245,6 +276,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     const token = await ucet.pristup();
     const uzivatel = ucet.uzivatelId();
     if (!token || !uzivatel) return;
+    if (volbaCeka) return;
     try {
       const [p] = await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}&select=sync_enabled`, { token });
       if (p && typeof p.sync_enabled === 'boolean' && p.sync_enabled !== zapnuto) {
@@ -270,5 +302,5 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     return data(ui('(id {0} v účtu)', POCITAC.tohoto));
   }
 
-  return { status, start, stop, synchronizuj, nastav, nactiVolbu, nahled };
+  return { status, start, stop, synchronizuj, nastav, nactiVolbu, zapnoutPoPrihlaseni, nahled };
 }

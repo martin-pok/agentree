@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { startTestServer, api, openStream, waitFor } from './helpers.mjs';
-import { createUcet, pkcePar, uzivatelZOdpovedi } from '../src/ucet.js';
+import { createUcet, pkcePar, uzivatelZOdpovedi, fotoZMetadat } from '../src/ucet.js';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { strankaNavratu, SKRIPT_NAVRATU } from '../src/ucet-stranka.js';
 
 // Účet Agenteeq (src/ucet.js): přihlášení přes Google proti atrapě Supabase Auth. Skutečný server
@@ -122,9 +125,10 @@ test('PKCE: výzva je SHA-256 ověřovače v base64url a ověřovač má 64 znak
   assert.notEqual(pkcePar().verifier, verifier, 'každé přihlášení má jiný ověřovač');
 });
 
-test('z účtu Google se bere jen jméno, e-mail a id – nic dalšího', () => {
+test('z účtu Google se bere jen jméno, e-mail, id a adresa fotky – nic dalšího', () => {
   const u = uzivatelZOdpovedi({ ...UZIVATEL, phone: '+420123', app_metadata: { provider: 'google' }, user_metadata: { ...UZIVATEL.user_metadata, full_name: `  ${'x'.repeat(300)}  ` } });
-  assert.deepEqual(Object.keys(u).sort(), ['email', 'id', 'jmeno']);
+  assert.deepEqual(Object.keys(u).sort(), ['email', 'fotoUrl', 'id', 'jmeno']);
+  assert.equal(u.fotoUrl, '', 'fotka odjinud než z obrázkového serveru Googlu se nestahuje');
   assert.equal(u.jmeno.length, 120);
   assert.equal(uzivatelZOdpovedi({ email: 'bez.jmena@example.com' }).jmeno, 'bez.jmena', 'bez jména z Googlu poslouží začátek e-mailu');
   assert.equal(uzivatelZOdpovedi(null), null);
@@ -172,6 +176,14 @@ test('přihlášení přes Google: odkaz s PKCE, návrat na tento Mac, výměna 
       assert.equal(udalost.data.jmeno, 'Eva Nováková');
       assert.equal(JSON.stringify(udalost.data).includes('pristup-'), false, 'tokeny do rozhraní nechodí');
       assert.equal(JSON.stringify(stav).includes('obnova-'), false);
+
+      // Přihlášení zapnulo synchronizaci souhrnů (rozhodnutí vlastníka 4. 10. 2026).
+      assert.equal((await waitFor(async () => ((await klient.get('/api/state')).body.ucet.sync.zapnuto ? true : null))), true);
+      // Účet v atrapě má fotku mimo Google – nestáhla se a cesta fotky vrací 404.
+      assert.equal(stav.foto, '');
+      assert.equal((await klient.get('/api/ucet/foto')).status, 404);
+      // Přes proxy (telefon přes Tailscale) se fotka nevydá – z účtu vidí jen stav.
+      assert.equal((await fetch(`${srv.url}/api/ucet/foto`, { headers: { 'X-Forwarded-For': '100.64.0.2' } })).status, 403);
 
       // Tentýž návrat podruhé (třeba obnovení stránky) už nic nepřihlásí.
       const znovu = await navrat(`${zpet.href}?code=${kod}`);
@@ -345,4 +357,154 @@ test('souběžné žádosti o token obnovují přihlášení jen jednou (token j
   assert.equal(a, 'a2');
   assert.equal(b, 'a2');
   assert.equal(c, 'a2');
+});
+
+
+/* ---------- Spolehlivost přihlášení a fotka z Googlu (4. 10. 2026) ---------- */
+
+const FOTO_URL = 'https://lh3.googleusercontent.com/a/ACg8ocK-test=s96-c';
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
+const SE_FOTKOU = { ...UZIVATEL, user_metadata: { full_name: 'Eva Nováková', avatar_url: FOTO_URL } };
+const obrazek = (buf, status = 200) => ({ ok: status < 400, status, arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length), json: async () => null });
+
+test('fotka: jen https z obrázkového serveru Googlu, v rozlišení pro Retinu', () => {
+  assert.equal(fotoZMetadat({ avatar_url: FOTO_URL }), 'https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c');
+  assert.equal(fotoZMetadat({ picture: 'https://lh5.googleusercontent.com/x/photo.jpg' }), 'https://lh5.googleusercontent.com/x/photo.jpg');
+  for (const spatna of ['http://lh3.googleusercontent.com/a/x', 'https://googleusercontent.com.evil.example/a', 'https://evil.example/a.png', 'https://user:pw@lh3.googleusercontent.com/a', 'https://lh3.googleusercontent.com:8443/a', 'javascript:alert(1)', 42, null]) {
+    assert.equal(fotoZMetadat({ avatar_url: spatna }), '', String(spatna));
+  }
+});
+
+test('po přihlášení si Mac fotku stáhne, uloží k sobě a ukáže ji i po startu bez sítě', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-ucet-'));
+  try {
+    const tajemstvi = falesneTajemstvi('obnova-1');
+    const stazeno = [];
+    const ucet = createUcet({
+      config: { ...config, dataDir }, secrets: tajemstvi,
+      fetchImpl: async (url) => {
+        if (url.startsWith('https://lh3.')) { stazeno.push(url); return obrazek(JPEG); }
+        return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      },
+    });
+    await ucet.start();
+    ucet.stop();
+    await waitFor(() => ucet.status().foto);
+    assert.deepEqual(stazeno, ['https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c']);
+    assert.deepEqual(ucet.fotka().body, JPEG);
+    assert.equal(ucet.fotka().typ, 'image/jpeg');
+    // Nový start bez sítě: jméno i fotka jsou z disku, přihlášení zůstává, stav říká „nedostupné“.
+    const offline = createUcet({ config: { ...config, dataDir }, secrets: tajemstvi, fetchImpl: async () => { throw new TypeError('fetch failed'); } });
+    await offline.start();
+    offline.stop();
+    assert.equal(offline.status().stav, 'nedostupne');
+    assert.equal(offline.status().jmeno, 'Eva Nováková');
+    assert.equal(offline.status().foto, ucet.status().foto);
+    assert.equal(tajemstvi.hodnota, 'obnova-2');
+    // Odhlášení smaže profil i fotku z disku.
+    await offline.odhlasit();
+    assert.deepEqual((await fs.readdir(dataDir)).filter((f) => f.startsWith('ucet-')), []);
+  } finally {
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('fotka přesměrovaná mimo Google se nepřijme', async () => {
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url) => (url.startsWith('https://lh3.') ? { ...obrazek(JPEG), url: 'https://evil.example/x.jpg' } : odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU })),
+  });
+  await ucet.start();
+  ucet.stop();
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(ucet.status().foto, '');
+});
+
+test('fotka, která není obrázek (nebo je moc velká), se nepřijme – zůstanou iniciály', async () => {
+  for (const telo of [Buffer.from('<html>chyba</html>'), Buffer.concat([JPEG, Buffer.alloc(400_000)])]) {
+    const ucet = createUcet({
+      config, secrets: falesneTajemstvi('obnova-1'),
+      fetchImpl: async (url) => (url.startsWith('https://lh3.') ? obrazek(telo) : odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU })),
+    });
+    await ucet.start();
+    ucet.stop();
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(ucet.status().foto, '');
+    assert.equal(ucet.fotka(), null);
+  }
+});
+
+test('přetížený server (429) ani jeho výpadek (503) přihlášení nesmažou', async () => {
+  for (const [status, text] of [[429, /přetížený/], [503, /potíže/]]) {
+    const tajemstvi = falesneTajemstvi('obnova-1');
+    const ucet = createUcet({ config, secrets: tajemstvi, fetchImpl: async () => odpoved(status, { message: 'zkus později' }) });
+    await ucet.start();
+    ucet.stop();
+    assert.equal(ucet.status().stav, 'nedostupne', String(status));
+    assert.match(ucet.status().chyba, text);
+    assert.equal(tajemstvi.hodnota, 'obnova-1');
+  }
+});
+
+test('zamčená Klíčenka po startu není odhlášení: ověří se znovu, až bude dostupná', async () => {
+  let cas = 1_000_000;
+  let zamceno = true;
+  const tajemstvi = falesneTajemstvi('obnova-1');
+  tajemstvi.get = async (_id, volby) => { if (zamceno && volby?.prisne) throw new Error('Klíčenka zamčená'); return tajemstvi.hodnota; };
+  const ucet = createUcet({ config, secrets: tajemstvi, now: () => cas, fetchImpl: async () => odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: UZIVATEL }) });
+  await ucet.start();
+  ucet.stop();
+  assert.equal(ucet.status().stav, 'nedostupne');
+  assert.match(ucet.status().chyba, /Klíčenka/);
+  assert.equal(tajemstvi.hodnota, 'obnova-1', 'nic se nesmazalo');
+  assert.equal(await ucet.pristup(), null, 'před dalším pokusem se server nezahlcuje');
+  zamceno = false;
+  cas += 31_000;
+  assert.equal(await ucet.pristup(), 'a1');
+  assert.equal(ucet.status().stav, 'prihlaseno');
+});
+
+test('ztracená odpověď při obnově: novější token z Klíčenky přihlášení zachrání', async () => {
+  // Jiná instance Agenteeq (nebo obnova, jejíž odpověď se ztratila) už token vyměnila: server
+  // starý odmítne jako použitý, v Klíčence ale leží nový.
+  const tajemstvi = falesneTajemstvi('obnova-stara');
+  const poslane = [];
+  const ucet = createUcet({
+    config, secrets: tajemstvi,
+    fetchImpl: async (_url, init) => {
+      const { refresh_token: t } = JSON.parse(init.body);
+      poslane.push(t);
+      if (t === 'obnova-stara') {
+        tajemstvi.hodnota = 'obnova-nova';
+        return odpoved(400, { error_code: 'refresh_token_already_used', msg: 'Invalid Refresh Token: Already Used' });
+      }
+      return odpoved(200, { access_token: 'a2', refresh_token: 'obnova-3', expires_in: 3600, user: UZIVATEL });
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  assert.deepEqual(poslane, ['obnova-stara', 'obnova-nova']);
+  assert.equal(ucet.status().stav, 'prihlaseno');
+  assert.equal(tajemstvi.hodnota, 'obnova-3');
+});
+
+test('platnost tokenu se počítá od hodin Macu, ne z času serveru (posunuté hodiny)', async () => {
+  const cas = Date.UTC(2026, 9, 4, 12);
+  let obnov = 0;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'), now: () => cas,
+    // Server si myslí, že je o dvě hodiny víc: expires_at by token na Macu označil za dávno prošlý.
+    fetchImpl: async () => { obnov += 1; return odpoved(200, { access_token: `a${obnov}`, refresh_token: `obnova-${obnov + 1}`, expires_in: 3600, expires_at: Math.floor(cas / 1000) - 3600, user: UZIVATEL }); },
+  });
+  await ucet.start();
+  ucet.stop();
+  assert.equal(await ucet.pristup(), 'a1');
+  assert.equal(obnov, 1, 'platný token se neobnovuje při každém volání');
+});
+
+test('přihlášení nabídne výběr účtu Google (prompt=select_account)', async () => {
+  await sAtrapou(async ({ klient }) => {
+    const r = await klient.send('POST', '/api/ucet/prihlaseni', {});
+    assert.equal(new URL(r.body.url).searchParams.get('prompt'), 'select_account');
+  });
 });

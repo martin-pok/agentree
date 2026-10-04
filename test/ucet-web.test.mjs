@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 // Přehled účtu na webu (public/js/ucet-web.js): PKCE v prohlížeči, souhrny z Maců a to, že web
 // umí jen číst. Prohlížečové API se tu nahradí jen tím, co moduly při načtení potřebují.
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
-const { pkcePar, souhrnAgentu, tokenyZaDny, utrataMesice, popisOkna, navratovaAdresa, SLUZBY } = await import('../public/js/ucet-web.js');
+const { pkcePar, souhrnAgentu, tokenyZaDny, utrataMesice, popisOkna, navratovaAdresa, SLUZBY, platnaRelace, fotoZMetadat } = await import('../public/js/ucet-web.js');
 const { SERVICES } = await import('../src/spend.js');
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -56,4 +56,74 @@ test('web jen čte: žádný zápis do tabulek souhrnů, všechno přes escapov�
   assert.match(boot, /else if \(!ucet\) pripojovaciObrazovka\(\);/, 'bez účtu zůstává rozcestník na Mac');
   const config = await zdroj('src/config.js');
   assert.match(config, /import \{ UCET_VYCHOZI \} from '\.\.\/public\/js\/ucet-config\.js'/, 'adresa účtů má jediný zdroj');
+});
+
+
+/* ---------- Spolehlivost přihlášení na webu (4. 10. 2026) ---------- */
+
+// Relaci sdílí všechny záložky v localStorage. Atrapa úložiště a serveru účtů.
+function prostredi(odpoved) {
+  const data = new Map();
+  globalThis.localStorage = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)), removeItem: (k) => data.delete(k) };
+  const poslane = [];
+  globalThis.fetch = async (url, init) => {
+    const t = JSON.parse(init.body || '{}').refresh_token;
+    poslane.push(t);
+    const [status, json] = await odpoved(t);
+    return { ok: status < 400, status, json: async () => json };
+  };
+  const uloz = (r) => data.set('agenteeq-ucet-web', JSON.stringify(r));
+  const nacti = () => JSON.parse(data.get('agenteeq-ucet-web') || 'null');
+  return { poslane, uloz, nacti };
+}
+const PROSLA = (refresh) => ({ access: 'a0', refresh, expiresAt: Date.now() - 1000, id: 'u', email: 'eva@example.com', jmeno: 'Eva' });
+const VYDANA = (n) => [200, { access_token: `a${n}`, refresh_token: `r${n}`, expires_in: 3600, user: { id: 'u', email: 'eva@example.com', user_metadata: { full_name: 'Eva', avatar_url: 'https://lh3.googleusercontent.com/a/x=s96-c' } } }];
+
+test('web: přetížený server ani výpadek přihlášení nesmaže', async () => {
+  for (const status of [429, 500, 503]) {
+    const p = prostredi(async () => [status, { message: 'později' }]);
+    p.uloz(PROSLA('r1'));
+    const r = await platnaRelace();
+    assert.equal(r.refresh, 'r1', String(status));
+    assert.equal(p.nacti().refresh, 'r1', 'relace zůstala uložená');
+  }
+});
+
+test('web: když token mezitím obnovila jiná záložka, přihlášení zůstane', async () => {
+  let p;
+  p = prostredi(async (t) => {
+    if (t === 'r1') {
+      // Druhá záložka byla rychlejší: token r1 už vyměnila a uložila r2.
+      p.uloz({ ...PROSLA('r2'), access: 'a2', expiresAt: Date.now() + 3600e3 });
+      return [400, { error_code: 'refresh_token_already_used' }];
+    }
+    return VYDANA(9);
+  });
+  p.uloz(PROSLA('r1'));
+  const r = await platnaRelace();
+  assert.equal(r.refresh, 'r2');
+  assert.equal(p.nacti().refresh, 'r2');
+});
+
+test('web: odmítnutý token odhlásí; vynucená obnova (401) vydá nový a fotku jen z Googlu', async () => {
+  const zamitnuto = prostredi(async () => [400, { error_code: 'refresh_token_not_found' }]);
+  zamitnuto.uloz(PROSLA('r1'));
+  assert.equal(await platnaRelace(), null);
+  assert.equal(zamitnuto.nacti(), null);
+
+  const p = prostredi(async () => VYDANA(5));
+  p.uloz({ ...PROSLA('r1'), expiresAt: Date.now() + 3600e3 });
+  assert.equal((await platnaRelace()).refresh, 'r1', 'platný token se neobnovuje');
+  assert.deepEqual(p.poslane, []);
+  const r = await platnaRelace({ vynutit: true });
+  assert.equal(r.refresh, 'r5');
+  assert.equal(r.foto, 'https://lh3.googleusercontent.com/a/x=s192-c');
+  assert.equal(fotoZMetadat({ avatar_url: 'https://evil.example/x.png' }), '');
+});
+
+test('web: přihlášení nabídne výběr účtu a obnova běží pod zámkem pro všechny záložky', async () => {
+  const src = await zdroj('public/js/ucet-web.js');
+  assert.match(src, /prompt: 'select_account'/);
+  assert.match(src, /locks\?\.request|zamky\.request\('agenteeq-ucet-obnova'/);
+  assert.match(src, /referrerpolicy="no-referrer"/);
 });

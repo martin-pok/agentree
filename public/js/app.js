@@ -224,6 +224,9 @@ function zacniNastup() {
 function refresh(topics) {
   if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
   updateChrome();
+  // Do načtení je na obrazovce jen načítací scéna: kostra obrazovky (prázdné pruhy a karty, které
+  // mount už vložil) se schová, aby načítání nepůsobilo jako rozpracovaná stránka (styles.css).
+  viewEl.classList.toggle('is-loading', !state.loaded);
   if (!state.loaded) {
     if (!viewEl.querySelector(':scope > .loader-wrap')) viewEl.insertAdjacentHTML('afterbegin', loaderHtml(tr('Načítám agenty z {0}…', tohotoPocitace())));
     return;
@@ -265,7 +268,9 @@ function updateChrome() {
   const agents = agentsList();
   const working = agents.filter((s) => s.status === 'working').length;
   const needs = agents.filter(needsYou).length;
-  const name = state.host?.fullName || state.host?.user || '';
+  // Přihlášený účet Google dává jméno i fotku; bez něj jméno uživatele na tomto počítači.
+  const ucet = ['prihlaseno', 'nedostupne', 'overuji'].includes(state.ucet?.stav) ? state.ucet : null;
+  const name = ucet?.jmeno || state.host?.fullName || state.host?.user || '';
 
   renderProfile(name, working, all);
 
@@ -301,13 +306,16 @@ function updateChrome() {
   // nic neříká. Každý stav má proto i krátkou variantu; přepíná se v CSS, ne v JavaScriptu.
   const STAVY = {
     live: ['dot--live', tr('Připojeno'), tr('Připojeno')],
-    connecting: ['dot', tr('Připojuji…'), tr('Připojuji…')],
+    connecting: ['dot--connecting', tr('Připojuji…'), tr('Připojuji…')],
     down: ['dot--down', tr('Obnovuji spojení…'), tr('Bez spojení')],
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
   setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
   renderUpdate();
+  // Do načtení drží patička místo řádků počítače a verze, jinak by nabídka (stojí uprostřed mezi
+  // profilem a patičkou) po načtení poskočila nahoru.
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
+    ${!state.loaded ? '<span class="source-host" aria-hidden="true"><span class="skel-text skel-text--host"></span></span><span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
     ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
     ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
 
@@ -331,8 +339,13 @@ function renderUpdate() {
 
 // Profil: avatar má vlastní oblast, aby se při každé změně čísel nepřekresloval (a neblikal pod kurzorem).
 function renderProfile(name, working, all) {
+  // Do načtení stojí na místě profilu jeho tvar: kruh avataru a pruhy jména a čísla ve stejné
+  // podobě (sloupec, řádek…), jakou pak vyplní skutečná data – nic neposkočí a nezeje prázdné místo.
   if (!state.loaded) {
-    setHtml(profileEl, '<div class="avatar is-loading" aria-hidden="true"></div>');
+    setHtml(profileEl, `<div class="p-skel" aria-hidden="true"><span class="avatar is-loading"></span></div>
+      <div class="p-skel" aria-hidden="true"><p class="welcome"><span class="skel-text skel-text--greet"></span><b><span class="skel-text skel-text--name"></span></b></p>
+      <div class="budget"><div class="budget-num"><span class="skel-text skel-text--num"></span></div><div class="budget-label"><span class="skel-text skel-text--label"></span></div>
+      <div class="budget-src"><span><span class="skel-text skel-text--src"></span></span><span><span class="skel-text skel-text--src"></span></span></div></div></div>`);
     return;
   }
   if (!profileEl.querySelector('[data-p-avatar]')) {
@@ -341,9 +354,12 @@ function renderProfile(name, working, all) {
   }
   const slot = profileEl.querySelector('[data-p-avatar]');
   const art = hasAvatar(state.settings?.avatar);
+  // Fotka z účtu Google (uložená na tomto Macu, src/ucet.js) má přednost před iniciálami; obrázek
+  // zvolený klepnutím před ní. Klepnutí pak střídá fotku a náhodný obrázek (avatars.js#cycleAvatar).
+  const foto = !art && ['prihlaseno', 'nedostupne', 'overuji'].includes(state.ucet?.stav) ? state.ucet.foto : '';
   const hadFocus = Boolean(document.activeElement?.closest?.('[data-avatar-cycle]'));
   setHtml(slot, `<button class="avatar-btn" type="button" data-avatar-cycle aria-label="${tr('Změnit profilový obrázek')}" title="${tr('Změnit profilový obrázek')}">
-    <span class="avatar${art ? ' avatar--art' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : 'i'}">${art ? avatarSvg(state.settings.avatar) : esc(initials(name || 'Agenteeq'))}</span></span>
+    <span class="avatar${art ? ' avatar--art' : foto ? ' avatar--photo' : ''}"><span class="avatar-face" data-face="${art ? state.settings.avatar : foto ? `f${esc(foto)}` : 'i'}">${art ? avatarSvg(state.settings.avatar) : foto ? `<img src="/api/ucet/foto?v=${esc(foto)}" alt="" decoding="async">` : esc(initials(name || 'Agenteeq'))}</span></span>
     <span class="avatar-change" aria-hidden="true">${ICON.refresh}</span>
   </button>`);
   slot.querySelector('.avatar')?.classList.toggle('is-live', working > 0);
@@ -780,7 +796,7 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Agenteeq teď ví, že jsi to ty. Konverzace a kód dál zůstávají jen na {0}.', tomtoPocitaci())}</p></div>`,
+        <p>${tr('Souhrny – tokeny, útrata, limity a počty agentů – se teď synchronizují do tvého účtu a uvidíš je i na webu. Konverzace a kód dál zůstávají jen na {0}. Synchronizaci vypneš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {

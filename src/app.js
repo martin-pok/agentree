@@ -113,12 +113,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     secrets,
     emit: (stav) => {
       store.emit('ucet', { ...stav, sync: cloudSync.status() });
-      // Po přihlášení se načte volba synchronizace z účtu (mohla být zapnutá na jiném Macu).
-      if (stav.udalost === 'prihlaseno') cloudSync.nactiVolbu().then(() => cloudSync.synchronizuj()).catch(() => {});
+      // Přihlášení přes Google synchronizaci souhrnů zapne – to, co se posílá, stojí u tlačítka
+      // přihlášení (docs/ACCOUNTS.md). Vypnout ji jde jedním přepínačem v kartě účtu.
+      if (stav.udalost === 'prihlaseno') {
+        cloudSync.zapnoutPoPrihlaseni().catch(() => {});
+        // Přihlášením si člověk vybral svou identitu z Googlu: profil v panelu ukáže jeho fotku
+        // místo dříve vylosovaného obrázku (klepnutím se k obrázku vrátí).
+        if (datastore.data.settings.avatar != null) {
+          datastore.data.settings.avatar = null;
+          datastore.save();
+          store.emit('settings', datastore.data.settings);
+        }
+      }
     },
     open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
   });
-  // Synchronizace souhrnů do účtu (src/cloud-sync.js): jen čísla, jen na výslovné zapnutí.
+  // Synchronizace souhrnů do účtu (src/cloud-sync.js): jen čísla; zapíná ji přihlášení.
   const cloudSync = createCloudSync({
     config,
     ucet,

@@ -59,31 +59,64 @@ async function volej(cesta, { method = 'GET', body, token } = {}) {
   return json;
 }
 
+// Po těchhle chybách má smysl to zkusit znovu – přihlášení se kvůli nim nemaže (docs/ACCOUNTS.md).
+const prechodna = (err) => err.sit || err.status >= 500 || err.status === 429 || err.status === 408;
+
+// Profilová fotka z Googlu – jen https z obrázkového serveru Googlu (stejné pravidlo jako
+// src/ucet.js#fotoZMetadat); metadata jsou nedůvěryhodná.
+export function fotoZMetadat(meta) {
+  const raw = meta?.avatar_url || meta?.picture;
+  if (typeof raw !== 'string' || raw.length > 2048) return '';
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:' || !/(^|\.)googleusercontent\.com$/.test(u.hostname) || u.username || u.password || u.port) return '';
+    u.pathname = u.pathname.replace(/=s\d+(-[a-z]+)*$/, '=s192-c');
+    return u.href;
+  } catch {
+    return '';
+  }
+}
+
 function relaceZOdpovedi(o) {
   const meta = o.user?.user_metadata || {};
   return {
     access: o.access_token,
     refresh: o.refresh_token,
-    expiresAt: o.expires_at ? o.expires_at * 1000 : Date.now() + (Number(o.expires_in) || 3600) * 1000,
+    // Od hodin prohlížeče (expires_in), ne z času serveru – posunuté hodiny by obnovu rozbily.
+    expiresAt: Number(o.expires_in) > 0 ? Date.now() + Number(o.expires_in) * 1000 : o.expires_at ? o.expires_at * 1000 : Date.now() + 3600 * 1000,
     id: o.user?.id || '',
     email: o.user?.email || '',
     jmeno: String(meta.full_name || meta.name || '').slice(0, 120) || String(o.user?.email || '').split('@')[0],
+    foto: fotoZMetadat(meta),
   };
 }
 
-async function platnaRelace() {
+// Platná relace, v případě potřeby obnovená. `vynutit`: server token odmítl (401) dřív, než měl
+// vypršet. Obnovovací token je jednorázový a relaci sdílí všechny záložky, proto obnova běží pod
+// zámkem prohlížeče (Web Locks) a po jeho získání se relace přečte znovu – jiná záložka ji mohla
+// mezitím obnovit. Odhlásí jen skutečně odmítnutý token; síť, přetížení ani výpadek serveru ne.
+export async function platnaRelace({ vynutit = false } = {}) {
   const r = nactiRelaci();
   if (!r?.refresh) return null;
-  if (r.expiresAt - Date.now() > OBNOVIT_PRED_KONCEM_MS) return r;
-  try {
-    const nova = relaceZOdpovedi(await volej('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: r.refresh } }));
-    ulozRelaci(nova);
-    return nova;
-  } catch (err) {
-    if (err.sit) return r; // bez sítě se nic nemaže – zkusí se to znovu
-    ulozRelaci(null);
-    return null;
-  }
+  if (!vynutit && r.expiresAt - Date.now() > OBNOVIT_PRED_KONCEM_MS) return r;
+  const obnov = async () => {
+    const aktualni = nactiRelaci();
+    if (!aktualni?.refresh) return null;
+    if (aktualni.refresh !== r.refresh && aktualni.expiresAt - Date.now() > OBNOVIT_PRED_KONCEM_MS) return aktualni;
+    try {
+      const nova = relaceZOdpovedi(await volej('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: aktualni.refresh } }));
+      ulozRelaci(nova);
+      return nova;
+    } catch (err) {
+      if (prechodna(err)) return aktualni;
+      const ted = nactiRelaci();
+      if (ted?.refresh && ted.refresh !== aktualni.refresh) return ted;
+      ulozRelaci(null);
+      return null;
+    }
+  };
+  const zamky = globalThis.navigator?.locks;
+  return zamky?.request ? zamky.request('agenteeq-ucet-obnova', obnov) : obnov();
 }
 
 export function navratovaAdresa(loc = location) {
@@ -95,7 +128,7 @@ async function zacniPrihlaseni() {
   if (!nastaveni?.external?.google) throw new Error(tr('Přihlášení přes Google se ještě nastavuje. Zkus to prosím později.'));
   const { verifier, challenge } = await pkcePar();
   try { uloziste('sessionStorage')?.setItem(KLIC_OVEROVAC, verifier); } catch { /* bez úložiště přihlášení nedokončíme */ }
-  const q = new URLSearchParams({ provider: 'google', redirect_to: navratovaAdresa(), code_challenge: challenge, code_challenge_method: 's256' });
+  const q = new URLSearchParams({ provider: 'google', redirect_to: navratovaAdresa(), code_challenge: challenge, code_challenge_method: 's256', prompt: 'select_account' });
   location.assign(`${U.url}/auth/v1/authorize?${q}`);
 }
 
@@ -178,7 +211,7 @@ export function utrataMesice(radky) {
 function hlavicka(r) {
   return `<header class="cloud-top">
     <a class="cloud-brand" href="/"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" alt="" width="28" height="28">Agenteeq</a>
-    ${r ? `<div class="cloud-who"><span class="account-avatar" aria-hidden="true">${esc(initials(r.jmeno || r.email))}</span><span>${esc(r.jmeno || r.email)}</span>
+    ${r ? `<div class="cloud-who"><span class="account-avatar" aria-hidden="true">${r.foto ? `<img src="${esc(r.foto)}" alt="" width="32" height="32" referrerpolicy="no-referrer" decoding="async">` : esc(initials(r.jmeno || r.email))}</span><span>${esc(r.jmeno || r.email)}</span>
       <button class="btn btn--sm" type="button" data-odhlasit>${tr('Odhlásit se')}</button></div>` : ''}
   </header>`;
 }
@@ -297,9 +330,22 @@ async function nacti(r, { tichy = true } = {}) {
     if (!platna) return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
     vykresliPrehled(platna, await nactiData(platna));
   } catch (err) {
+    // Server token odmítl dřív, než měl vypršet: jednou ho obnovit a načíst znovu. Odhlásit až
+    // tehdy, když neprojde ani obnova.
     if (err.status === 401) {
-      ulozRelaci(null);
-      return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
+      const znovu = await platnaRelace({ vynutit: true }).catch(() => null);
+      if (znovu) {
+        try {
+          vykresliPrehled(znovu, await nactiData(znovu));
+          return undefined;
+        } catch (err2) {
+          if (err2.status !== 401) err = err2;
+        }
+      }
+      if (err.status === 401) {
+        ulozRelaci(null);
+        return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
+      }
     }
     if (!tichy || !document.querySelector('.cloud')) {
       document.body.innerHTML = `${hlavicka(r)}<main class="pair"><div class="pair-box"><h1>${tr('Souhrny se nenačetly')}</h1><p class="pair-error" role="alert">${esc(err.message)}</p><button class="btn btn--primary" type="button" data-znovu>${tr('Zkusit znovu')}</button></div></main>`;

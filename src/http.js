@@ -853,6 +853,13 @@ export function createHttpServer(app, existingServer = null) {
       await app.cloudSync.synchronizuj();
       return { ucet: app.ucetStav() };
     }],
+    // Profilová fotka z Googlu, uložená na tomto Macu (src/ucet.js). Telefon vidí z účtu jen stav.
+    ['GET', /^\/api\/ucet\/foto$/, (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Fotka účtu je vidět jen {0}.', POCITAC.naHostiteli));
+      const f = app.ucet.fotka();
+      if (!f) throw new HttpError(404, ui('Účet nemá fotku.'));
+      return { raw: true, headers: { 'Content-Type': f.typ, 'Cache-Control': 'private, max-age=31536000, immutable', ETag: `"${f.hash}"`, 'Content-Security-Policy': "default-src 'none'; img-src 'self'; sandbox" }, body: f.body };
+    }],
     ['GET', /^\/api\/ucet\/nahled$/, (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Náhled je jen {0}.', POCITAC.naHostiteli));
       return { nahled: app.cloudSync.nahled() };

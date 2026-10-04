@@ -43,6 +43,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/ucet/zruseni` \| `odhlaseni` \| `smazani` | Jen z tohoto Macu → `{ ucet: UcetStatus }`. `smazani` smaže účet i data v cloudu, na Macu nic; 401 bez přihlášení |
 | POST | `/api/ucet/synchronizace` | Jen z tohoto Macu, `{ zapnuto: boolean }` → `{ ucet }`. Zapnutí hned pošle souhrny, vypnutí je z účtu smaže; 401 bez přihlášení, 422 bez volby |
 | POST | `/api/ucet/synchronizovat` | Jen z tohoto Macu → `{ ucet }`; pošle souhrny hned (když je synchronizace zapnutá) |
+| GET | `/api/ucet/foto` | Jen z tohoto Macu → profilová fotka z Googlu (JPEG/PNG/WebP z disku Macu, `Cache-Control: private, immutable`, adresa nese `?v=<foto>`); 404 bez fotky, 403 mimo tento Mac |
 | GET | `/api/ucet/nahled` | Jen z tohoto Macu → `{ nahled: { usage_daily, spend_monthly, limits, agent_status, connections } }` – přesně to, co by odešlo |
 | GET | `/api/napojeni` | Jen z tohoto Macu → `{ napojeni: Napojeni[] }` (`{ id, druh: 'agent' \| 'web', label, provider, logo, nainstalovano: true \| false \| null, napojeno: true \| false \| null, plan?, ceka, posledni?, oknoDni? }`). Spouští `claude auth status` a `codex login status` |
 | POST | `/api/napojeni/:id` \| `/api/napojeni/:id/zrusit` | Jen z tohoto Macu. `claude-code`, `codex`, `web:chatgpt` \| `web:claude` \| `web:gemini` \| `web:perplexity` → `{ ok, ceka?, uz?, plan?, dry? }`; přihlášení Claude Code a Codexu běží na pozadí bez Terminálu (`src/prihlaseni.js`). 422 nepodařilo se zjistit nebo najít program, přihlášení nešlo spustit nebo se neotevřel prohlížeč; 409 bez rozšíření (`rozsireni: true`), 404 neznámé |
@@ -156,7 +157,7 @@ pod id z katalogu – žádné cesty, příkazy ani obsah. `Runtime` nese navíc
 
 ### UcetStatus (`state.ucet`, událost `ucet`)
 
-`{ stav: 'nenastaveno' | 'odhlaseno' | 'overuji' | 'prihlaseno' | 'nedostupne', ceka: boolean, jmeno, email, chyba, trvale: boolean, sync: { zapnuto, posledni, chyba, odeslano } }`. Tokeny nikdy. Mimo tento Mac jen `{ stav }`. `nedostupne` = uložené přihlášení se nepodařilo ověřit (síť), ne odhlášení. `trvale` = obnovovací token je v Klíčence.
+`{ stav: 'nenastaveno' | 'odhlaseno' | 'overuji' | 'prihlaseno' | 'nedostupne', ceka: boolean, jmeno, email, foto: string, chyba, trvale: boolean, sync: { zapnuto, posledni, chyba, odeslano } }`. Tokeny nikdy. Mimo tento Mac jen `{ stav }`. `nedostupne` = uložené přihlášení se nepodařilo ověřit (síť, přetížený server, zamčená Klíčenka), ne odhlášení; jméno, e-mail a fotka jsou i v tomto stavu (uložené na Macu). `foto` = otisk profilové fotky (16 hex znaků) nebo `''`; obrázek je na `/api/ucet/foto?v=<foto>`. `trvale` = obnovovací token je v Klíčence.
 
 ```ts
 type Status = 'needs_input' | 'limited' | 'working' | 'waiting' | 'idle' | 'archived';

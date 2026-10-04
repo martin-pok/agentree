@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { WEB_AGENTEEQ } from '../obchod.js';
 import { api } from '../api.js';
-import { esc, rel, initials, dateLong } from '../format.js';
+import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON, BULB } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
@@ -279,7 +279,7 @@ function mount(el) {
     const key = e.target?.dataset?.fold;
     if (key) v.folds[key] = e.target.open;
     // Náhled toho, co odchází do účtu, se načte až při otevření – je to přesně tentýž balík.
-    if (key === 'nahled' && e.target.open) api.ucetNahled().then((r) => { v.nahled = JSON.stringify(r.nahled, null, 2); update(); }).catch((err) => { v.nahled = err.message; update(); });
+    if (key === 'nahled' && e.target.open) api.ucetNahled().then((r) => { v.nahled = r.nahled && typeof r.nahled === 'object' ? r.nahled : ''; update(); }).catch((err) => { v.nahled = err.message; update(); });
   }, true);
 
   const nav = el.querySelector('.set-nav');
@@ -412,6 +412,16 @@ function mount(el) {
           v.ucetUrl = r.url;
           // Prohlížeč otevírá server. Když to nešlo (třeba bez grafického prostředí), nabídneme odkaz.
           if (!r.otevreno) toast(tr('Přihlášení se neotevřelo samo. Otevři ho odkazem v kartě Účet.'), { tone: 'info' });
+        } finally { a.disabled = false; }
+        update();
+      } else if (a.dataset.action === 'ucet-sync-ted') {
+        a.disabled = true;
+        try {
+          state.ucet = (await api.ucetSynchronizovat()).ucet;
+          if (state.ucet.sync?.chyba) toast(state.ucet.sync.chyba, { tone: 'err' });
+          else toast(tr('Souhrny jsou v účtu aktuální.'));
+        } catch (err) {
+          toast(err.message, { tone: 'err' });
         } finally { a.disabled = false; }
         update();
       } else if (a.dataset.action === 'ucet-zrusit') {
@@ -610,6 +620,7 @@ async function toggleSetting(sw) {
     try {
       state.ucet = (await api.ucetSynchronizace(next)).ucet;
       v.nahled = '';
+      if (v.folds.nahled) api.ucetNahled().then((r) => { v.nahled = r.nahled || ''; update(); }).catch(() => {});
       toast(next ? tr('Souhrny se synchronizují do účtu.') : tr('Synchronizace je vypnutá a souhrny jsou z účtu smazané.'));
     } catch (err) {
       sw.setAttribute('aria-checked', String(!next));
@@ -688,50 +699,101 @@ async function connectClaude() {
 }
 
 // Účet Agenteeq (src/ucet.js). Co se do účtu dostane, stojí přímo u tlačítka – ne až v zásadách.
-const UCET_SOUKROMI = tr('Z Googlu si Agenteeq vezme jen jméno a e-mail. Konverzace, kód ani názvy složek {0} neopustí.', tentoPocitac());
+// Přihlášení zapíná synchronizaci souhrnů (rozhodnutí vlastníka 4. 10. 2026, docs/ACCOUNTS.md),
+// proto to tlačítko říká dřív, než na něj člověk klepne.
+const UCET_SOUKROMI = tr('Z Googlu Agenteeq dostane jen jméno, e-mail a profilovou fotku. Konverzace, kód ani názvy složek {0} neopustí.', tentoPocitac());
 const ZASADY_SOUKROMI = `${WEB_AGENTEEQ}${jazyk() === 'en' ? 'en/privacy' : 'soukromi'}`;
+const UCET_NA_WEBU = `${WEB_AGENTEEQ}app?ucet`;
 const odkazSoukromi = () => `<a class="link-inline" href="${ZASADY_SOUKROMI}" target="_blank" rel="noopener">${tr('Zásady ochrany soukromí')}</a>`;
-// Synchronizace souhrnů (src/cloud-sync.js): přepínač, kdy naposledy odešla a přesně co odchází.
+// Co synchronizace posílá – jeden seznam pro tlačítko přihlášení, přepínač i náhled.
+const SOUHRNY = [
+  ['usage_daily', tr('Tokeny po dnech')],
+  ['spend_monthly', tr('Útrata po měsících')],
+  ['limits', tr('Limity a jejich obnova')],
+  ['agent_status', tr('Počty agentů podle stavu')],
+  ['connections', tr('Napojené zdroje')],
+];
+
+// Fotka z Googlu je uložená na tomto Macu; bez ní iniciály. `foto` je otisk – změní se s fotkou.
+function accountPhoto(u, cls = 'acct-photo') {
+  return `<span class="${cls}" aria-hidden="true">${u.foto ? `<img src="/api/ucet/foto?v=${esc(u.foto)}" alt="" width="56" height="56" decoding="async">` : esc(initials(u.jmeno || u.email || '?'))}</span>`;
+}
+
+// Synchronizace souhrnů (src/cloud-sync.js): přepínač, stav posledního odeslání a co přesně odchází.
 function syncBlock(u) {
   const s = u.sync || { zapnuto: false };
-  const stav = s.zapnuto
-    ? `<p class="set-desc">${s.posledni ? `${tr('Naposledy odesláno')} <span data-ago="${s.posledni}">${rel(s.posledni)}</span>.` : tr('Zatím nic neodešlo.')}</p>
-      ${s.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(s.chyba)}</p>` : ''}`
-    : '';
-  return `<div class="set-divider"></div>
-    ${switchRow({ key: 'cloudSync', label: tr('Synchronizovat souhrny do účtu'), desc: tr('Tokeny po dnech, útrata po měsících, limity a počty agentů – uvidíš je i na webu. Text zpráv, názvy konverzací ani složek se neposílají nikdy. Vypnutím se z účtu smažou.'), checked: s.zapnuto, disabled: u.stav !== 'prihlaseno' })}
-    ${stav}
-    ${fold('nahled', tr('Co přesně posíláme'), `<pre class="account-preview">${esc(v.nahled || tr('Načítám…'))}</pre>`)}`;
+  const prihlaseno = u.stav === 'prihlaseno';
+  // Jeden řádek stavu. Když účet zrovna nejde ověřit, říká to poznámka nad kartou – tady jen
+  // klidně „pozastaveno“, ne potřetí táž chyba.
+  const stav = !s.zapnuto ? `<span class="acct-sync-state">${tr('Vypnutá – nic se neposílá.')}</span>`
+    : !prihlaseno ? `<span class="acct-sync-state">${tr('Pozastaveno do obnovení spojení.')}</span>`
+    : s.chyba ? `<span class="acct-sync-state is-error">${esc(s.chyba)}</span>`
+    : s.posledni ? `<span class="acct-sync-state is-ok"><i aria-hidden="true"></i><span>${tr('Synchronizováno')} <span class="nowrap" data-ago="${s.posledni}">${rel(s.posledni)}</span></span></span>`
+    : `<span class="acct-sync-state">${tr('Odesílám první souhrny…')}</span>`;
+  const nahled = v.nahled && typeof v.nahled === 'object'
+    ? `<ul class="acct-preview-list">${SOUHRNY.map(([k, l]) => `<li><span>${l}</span><b>${(v.nahled[k] || []).length} ${plural((v.nahled[k] || []).length, 'řádek', 'řádky', 'řádků')}</b></li>`).join('')}</ul>
+      ${fold('nahled-json', tr('Technický náhled (JSON)'), `<pre class="account-preview">${esc(JSON.stringify(v.nahled, null, 2))}</pre>`, { cls: 'acct-json' })}`
+    : `<p class="set-desc">${esc(typeof v.nahled === 'string' && v.nahled ? v.nahled : tr('Načítám…'))}</p>`;
+  return `<section class="acct-sync" aria-labelledby="lbl-cloudSync">
+      <div class="acct-sync-head">
+        <span class="acct-sync-icon">${ICON.cloud}</span>
+        <div class="acct-sync-text"><span class="set-label" id="lbl-cloudSync">${tr('Synchronizace souhrnů')}</span>${stav}</div>
+        <button class="switch" type="button" role="switch" aria-checked="${Boolean(s.zapnuto)}" aria-labelledby="lbl-cloudSync" data-setting="cloudSync"${prihlaseno ? '' : ' disabled'}></button>
+      </div>
+      <p class="acct-sync-desc">${tr('Souhrny ze všech tvých počítačů uvidíš pohromadě i na webu. Text zpráv, názvy konverzací ani složek se neposílají nikdy. Vypnutím se z účtu smažou.')}</p>
+      <div class="acct-sync-links">
+        <a class="btn btn--sm" href="${UCET_NA_WEBU}" target="_blank" rel="noopener">${ICON.globe}${tr('Otevřít přehled na webu')}</a>
+        ${s.zapnuto && prihlaseno ? `<button class="btn btn--sm" type="button" data-action="ucet-sync-ted">${ICON.refresh}${tr('Synchronizovat teď')}</button>` : ''}
+      </div>
+      ${fold('nahled', tr('Co přesně posíláme'), nahled, { cls: 'acct-fold' })}
+    </section>`;
 }
 
 function accountCard() {
   const u = state.ucet;
   const chyba = u.chyba ? `<p class="form-error form-error--inline" role="alert">${esc(u.chyba)}</p>` : '';
-  if (u.stav === 'prihlaseno' || u.stav === 'nedostupne') {
-    const nedostupne = u.stav === 'nedostupne';
-    return `${head(ICON.cloud, tr('Účet Agenteeq'), nedostupne ? tr('Přihlášení teď nejde ověřit – server účtů neodpovídá. Zkusíme to znovu za pár minut, nic se neztratí.') : tr('Přihlášení je aktivní. Agenteeq funguje stejně jako bez účtu, jen ví, že jsi to ty.'),
-      stateBadge(nedostupne ? 'unavailable' : 'connected', nedostupne ? tr('Nedostupné') : tr('Přihlášeno')))}
-      <div class="account-who"><span class="account-avatar" aria-hidden="true">${esc(initials(u.jmeno || u.email || '?'))}</span>
-        <div><b>${esc(u.jmeno || u.email)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}</div></div>
-      ${u.trvale ? '' : `<p class="set-note">${JE_MAC ? tr('Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.') : tr('Přihlášení vydrží do zavření Agenteeq – na tomto systému ho nemáme kam bezpečně uložit.')}</p>`}
-      <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
+  const znamy = u.jmeno || u.email;
+  // Přihlášený účet – i když se zrovna ověřuje nebo server neodpovídá: jméno a fotka jsou uložené
+  // na Macu, takže karta neskáče mezi prázdným a plným stavem.
+  if (u.stav === 'prihlaseno' || u.stav === 'nedostupne' || (u.stav === 'overuji' && znamy)) {
+    const badge = u.stav === 'prihlaseno' ? stateBadge('connected', tr('Přihlášeno'))
+      : u.stav === 'overuji' ? stateBadge('idle', tr('Ověřuji'))
+      : stateBadge('unavailable', tr('Nelze ověřit'));
+    return `<div class="acct-id">
+        ${accountPhoto(u)}
+        <div class="acct-name"><span class="acct-eyebrow">${tr('Účet Agenteeq · Google')}</span><h3>${esc(u.jmeno || u.email || tr('Přihlášený účet'))}</h3>${u.jmeno && u.email ? `<span class="acct-email">${esc(u.email)}</span>` : ''}</div>
+        ${badge}
+      </div>
+      ${u.stav === 'nedostupne' ? `<p class="set-note">${esc(u.chyba || tr('Server účtů teď neodpovídá.'))} ${tr('Přihlášení zůstává, zkusíme to znovu samo.')}</p>` : ''}
+      ${u.trvale || u.stav !== 'prihlaseno' ? '' : `<p class="set-note">${JE_MAC ? tr('Přihlášení vydrží do zavření Agenteeq – mimo desktopovou aplikaci na Macu ho nemáme kam bezpečně uložit.') : tr('Přihlášení vydrží do zavření Agenteeq – na tomto systému ho nemáme kam bezpečně uložit.')}</p>`}
       ${syncBlock(u)}
-      <div class="set-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
-        <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">${tr('Smazat účet')}</button></div>`;
+      <div class="acct-foot">
+        <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
+        <div class="acct-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
+          <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">${tr('Smazat účet')}</button></div>
+      </div>`;
   }
   if (u.stav === 'overuji') {
     return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Ověřuji uložené přihlášení…'), stateBadge('idle', tr('Ověřuji')))}`;
   }
   if (u.ceka) {
-    return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Dokonči přihlášení v prohlížeči. Jakmile se přihlásíš, Agenteeq tě přivítá.'), stateBadge('idle', tr('Čeká na přihlášení')))}
+    return `${head(ICON.cloud, tr('Účet Agenteeq'), '', stateBadge('idle', tr('Čeká na prohlížeč')))}
       ${chyba}
+      <div class="acct-wait" role="status"><span class="acct-wait-dot" aria-hidden="true"></span>${tr('Vyber účet Google v okně prohlížeče. Agenteeq se přihlásí sám, jakmile to potvrdíš.')}</div>
       <div class="set-actions">${v.ucetUrl ? `<a class="btn btn--sm" href="${esc(v.ucetUrl)}" target="_blank" rel="noopener">${ICON.external}${tr('Otevřít přihlášení znovu')}</a>` : ''}
         <button class="btn btn--sm" type="button" data-action="ucet-zrusit">${tr('Zrušit')}</button></div>`;
   }
-  return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Přihlas se, ať tě Agenteeq pozná na každém zařízení. Bez účtu funguje všechno dál.'), stateBadge('missing', tr('Nepřihlášeno')))}
+  return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Tokeny, útrata a limity ze všech tvých počítačů pohromadě – v aplikaci i na webu. Bez účtu funguje všechno dál.'), stateBadge('missing', tr('Nepřihlášeno')))}
     ${chyba}
-    <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
-    <div class="set-actions"><button class="btn btn--primary" type="button" data-action="ucet-prihlasit">${tr('Přihlásit se přes Google')}</button></div>`;
+    <ul class="acct-benefits">
+      <li>${ICON.mac}<span>${tr('Souhrny ze všech tvých počítačů na jednom místě')}</span></li>
+      <li>${ICON.globe}<span>${tr('Přehled i na webu, třeba z telefonu')}</span></li>
+      <li>${ICON.shield}<span>${tr('Konverzace, kód a názvy složek zůstávají na {0}', tomtoPocitaci())}</span></li>
+    </ul>
+    <div class="acct-signin">
+      <button class="btn btn--google" type="button" data-action="ucet-prihlasit">${ICON.google}<span>${tr('Pokračovat přes Google')}</span></button>
+      <p class="acct-fineprint">${tr('Přihlášením zapneš synchronizaci souhrnů – tokenů, útraty, limitů a počtů agentů. Vypnout ji jde kdykoli jedním přepínačem. Z Googlu dostaneme jen jméno, e-mail a profilovou fotku.')} ${odkazSoukromi()}</p>
+    </div>`;
 }
 
 // Napojené modely (public/js/napojeni-ui.js). Seznam se ptá nástrojů dodavatelů, proto se načítá

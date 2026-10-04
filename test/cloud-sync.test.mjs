@@ -169,3 +169,58 @@ test('HTTP: synchronizace chce přihlášení, náhled i volba jen z tohoto Macu
     await srv.close();
   }
 });
+
+test('přihlášení synchronizaci zapne – i když účet zrovna neodpovídá, volba se dopíše později', async () => {
+  let site = false;
+  const volani = [];
+  const datastore = { data: { cloud: { syncEnabled: false, syncAt: 0, devices: {} } }, save() {} };
+  const s = createCloudSync({
+    config: { ucet: { url: 'https://ucty.example', klic: 'pk' } },
+    ucet: { pristup: async () => 'pristup-1', uzivatelId: () => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' },
+    datastore, verze: '0.36.0', now: () => NYNI,
+    fetchImpl: async (url, init) => {
+      if (!site) throw new TypeError('fetch failed');
+      const u = new URL(url);
+      volani.push({ method: init.method, cesta: u.pathname, body: init.body ? JSON.parse(init.body) : null });
+      if (u.pathname === '/rest/v1/devices') return { ok: true, status: 201, json: async () => [{ id: '11111111-2222-4333-8444-555555555555' }] };
+      if (u.pathname === '/rest/v1/profiles' && init.method === 'GET') return { ok: true, status: 200, json: async () => [{ sync_enabled: false }] };
+      return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
+    },
+    zdroje: { sessions: () => relace, utrata: () => [], limity: () => [], konektory: () => [] },
+  });
+  const st = await s.zapnoutPoPrihlaseni();
+  assert.equal(st.zapnuto, true, 'na tomto Macu platí hned');
+  assert.match(st.chyba, /neodpovídá/);
+  assert.equal(datastore.data.cloud.volbaCeka, true);
+  // Účet ještě má starou volbu (false) – načtení ji nesmí přepsat, dokud se nová nezapíše.
+  site = true;
+  await s.nactiVolbu();
+  assert.equal(s.status().zapnuto, true);
+  await s.synchronizuj();
+  assert.deepEqual(volani[0], { method: 'PATCH', cesta: '/rest/v1/profiles', body: { sync_enabled: true } });
+  assert.ok(volani.some((v) => v.cesta === '/rest/v1/usage_daily'));
+  assert.equal(datastore.data.cloud.volbaCeka, false);
+  assert.equal(s.status().chyba, '');
+});
+
+test('odmítnutý token (401) se jednou obnoví a odeslání se zopakuje', async () => {
+  const tokeny = [];
+  let odmitnout = true;
+  const s = createCloudSync({
+    config: { ucet: { url: 'https://ucty.example', klic: 'pk' } },
+    ucet: { pristup: async ({ vynutit } = {}) => { tokeny.push(vynutit ? 'vynuceny' : 'bezny'); return vynutit ? 'pristup-2' : 'pristup-1'; }, uzivatelId: () => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' },
+    datastore: { data: { cloud: { syncEnabled: true, syncAt: 0, devices: {} } }, save() {} },
+    now: () => NYNI,
+    fetchImpl: async (url, init) => {
+      if (init.headers.Authorization === 'Bearer pristup-1' && odmitnout) return { ok: false, status: 401, json: async () => ({ message: 'JWT expired' }) };
+      if (new URL(url).pathname === '/rest/v1/devices') return { ok: true, status: 201, json: async () => [{ id: '11111111-2222-4333-8444-555555555555' }] };
+      return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
+    },
+    zdroje: { sessions: () => relace, utrata: () => [], limity: () => [], konektory: () => [] },
+  });
+  const st = await s.synchronizuj();
+  assert.deepEqual(tokeny, ['bezny', 'vynuceny']);
+  assert.equal(st.chyba, '');
+  assert.equal(st.posledni, NYNI);
+  odmitnout = false;
+});

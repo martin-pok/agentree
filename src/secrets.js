@@ -17,13 +17,20 @@ export function createSecrets({ keychain }, { runImpl = run, helper = path.join(
   const native = existsSync(helper);
   return {
     available: keychain,
-    async get(id) {
+    // `prisne`: chybějící položka je null, ale nedostupná Klíčenka (zamčená, systém se ptá na heslo,
+    // pomocník spadl) je výjimka – volající pak neplete „nepodařilo se zjistit“ s „není uloženo“.
+    // Čekání je delší, protože macOS může nechat uživatele potvrdit přístup v dialogu.
+    async get(id, { prisne = false } = {}) {
       const def = SECRET_IDS[id];
       if (!def) return null;
       if (process.env[def.env]) return process.env[def.env];
       if (!keychain) return null;
-      const r = native ? await runImpl(helper, ['get', id]) : await runImpl('/usr/bin/security', ['find-generic-password', '-a', 'agenteeq', '-s', service(id), '-w']);
-      return r.ok ? r.stdout.trim() || null : null;
+      const volby = prisne ? { timeout: 30000 } : undefined;
+      const r = native ? await runImpl(helper, ['get', id], volby) : await runImpl('/usr/bin/security', ['find-generic-password', '-a', 'agenteeq', '-s', service(id), '-w'], volby);
+      if (r.ok) return r.stdout.trim() || null;
+      // Pomocník Agenteeq vrací 2 a `security` 44, když položka v Klíčence není.
+      if (!prisne || r.code === (native ? 2 : 44)) return null;
+      throw Object.assign(new Error(ui('Klíčenka není dostupná.')), { status: 503 });
     },
     async set(id, value) {
       const def = SECRET_IDS[id];
