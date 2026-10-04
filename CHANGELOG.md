@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.1 – 2026-10-04 · nová načítací obrazovka i v aplikaci pro Mac
+
+- **Aplikace pro Mac ukazovala starou načítací obrazovku.** Nová animace značky z 0.36.0 žila jen ve webovém rozhraní. Okno pro Mac ji zakrývalo vlastním nativním překryvem (nápis „Agenteeq“ systémovým písmem a „Připravujeme tvůj pracovní prostor…“) a ten zmizel až s načtenými daty, takže animaci nikdo neviděl. Překryv teď ukazuje stejnou scénu (`public/nacitani.html`, značka shodná s `loaderHtml()`, hlídá test) ze souboru v balíčku – od prvního snímku okna, ještě před startem serveru, souvisle bez střihu až do načtení dat. Pak se scéna za 0,32 s rozplyne do Přehledu, při omezeném pohybu zmizí naráz. Hlášky „Obnovujeme spojení…“, chyby i tlačítko „Zkusit znovu“ (kapsle) jsou ve stejné scéně. Kdyby stránka v balíčku chyběla, zůstává původní prostý text jako záloha.
+- Neověřeno: sestavení a vzhled v samotném okně pro Mac (stroj s ověřením nemá Xcode); stránka scény je ověřená v Chromiu a plášť přeloží workflow na runneru s macOS. Plášť pro Windows má dál vlastní jednoduchou stránku.
+
 ## 0.36.0 – 2026-10-04 · eura, okamžitá detekce agentů a přehledný účet
 
 - **Částky v eurech.** Výchozí měna aplikace je euro. Dřívější výchozí koruna se u dat, kde ji nikdo ručně nezvolil, jednou převede na euro i s rozpočty (přepočtenými kurzem, ne jen přejmenovanými); ručně zvolená měna se nepřepíše. Ceny zjištěných plánů jsou hlavně v měně aplikace („172 €“) s ceníkovou cenou poskytovatele pod ní („ceník 200 $“).
