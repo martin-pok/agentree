@@ -677,7 +677,13 @@ for (const engine of engines) {
     server.app.store.setLimit({ id: 'openai:five_hour', provider: 'openai', app: 'Codex', kind: 'time', label: '5 h', plan: 'plus', at: observedAt, resetsAt: observedAt + 3600e3, usedPercent: 10 });
     await page.locator('.plans .plan-row').waitFor();
     assert.match(await page.locator('.plans').textContent(), /ChatGPT Plus/);
-    assert.doesNotMatch(await page.locator('.plans').textContent(), /Další licence|Přidat licenci|Kč|\$|€/);
+    // Cena je jen ceník poskytovatele (src/cenik.js, rozhodnutí vlastníka 4. 10. 2026): vždy
+    // s označením, odkazem na zdroj a datem ověření – nikdy jako platba ani ruční licence.
+    const planyText = await page.locator('.plans').textContent();
+    assert.doesNotMatch(planyText, /Další licence|Přidat licenci/);
+    assert.match(planyText, /20\s?\$/, `${engine} ChatGPT Plus má cenu z ceníku`);
+    assert.match(planyText, /veřejného ceníku/, `${engine} cena je označená jako ceník`);
+    assert.equal(await page.locator('.plans .plan-foot a[href="https://chatgpt.com/pricing"]').count(), 1, `${engine} u ceny je odkaz na ceník`);
     await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });
     const budgetsButton = page.locator('button[data-action="budgets"]').first();
     await budgetsButton.click();

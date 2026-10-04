@@ -417,7 +417,8 @@ test('Útrata: automaticky rozpoznaný plán nenutí ruční cenu ani nezobrazuj
   assert.doesNotMatch(src, /data-action="(?:add|license-add|plan-edit)"|openAddEntry/,
     'Útrata nesmí nabízet ruční zápis ani další licenci');
   assert.doesNotMatch(src, /Cena nezjištěna/, 'neznámá částka se nemá tvářit jako údaj k doplnění');
-  assert.match(src, /Zjištěno automaticky/);
+  assert.match(src, /Zjištěno z účtu Claude Code/, 'u plánu je vidět, odkud je zjištěný');
+  assert.match(src, /title="\$\{esc\(p\.evidence\)\}"/, 'přesný kód poskytovatele jde ověřit v nápovědě');
   assert.doesNotMatch(src, /Předplatné a dokoupené extra usage[^\n]*zapisuj ručně/,
     'sekce nesmí končit plošnou výzvou k ručnímu opisování');
 });

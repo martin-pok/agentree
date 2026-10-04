@@ -12,6 +12,7 @@ import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
 import { pouzivaneNastroje } from '../nastroje.js';
+import { noveNastrojeHtml } from '../detekce-ui.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -89,6 +90,7 @@ function mount(el) {
   <section class="pulse-bar" data-enter style="--i:0" aria-label="${tr('Stav agentů')}" data-region="hero"></section>
   <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
+  <div data-region="newtools"></div>
   <div class="ov">
     <div class="ov-col bal-col">
       <section data-enter style="--i:2" aria-labelledby="dec-h">
@@ -187,6 +189,8 @@ function update(topics = new Set(['all'])) {
   if (!el) return;
   if (changed(topics, 'launch', 'projects', 'runs', 'usage')) v.launcher?.update();
   if (changed(topics, 'sessions', 'connectors', 'integrations', 'projects', 'settings', 'usage')) fill(el, 'onboard', onboardingHtml());
+  // Nově zachycené AI nástroje (detekce-ui.js). fill() mění DOM jen při změně textu – nebliká.
+  if (changed(topics, 'detekce', 'runtimes', 'settings', 'connectors')) fill(el, 'newtools', noveNastrojeHtml());
   const now = Date.now();
   const everything = sessionsList();
   const all = agentsList();

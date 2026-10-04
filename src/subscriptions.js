@@ -2,6 +2,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { ui } from './texty.js';
 import { DAY } from './util.js';
+import { cenaPlanu } from './cenik.js';
 
 // Plán z rate-limit události je pouze poslední pozorování poskytovatele. Po jednom dni bez
 // nové události už ho nevydáváme za aktuální plán; přihlášení zůstává vidět samostatně v Nastavení.
@@ -9,8 +10,9 @@ export const PLAN_OBSERVATION_MAX_AGE_MS = DAY;
 
 // Předplatné se zjišťuje z toho, co nástroje samy zapisují na tomto Macu. Z účtu Claude
 // se čte jen typ organizace a úroveň limitů (ne e-mail, jméno ani token). Názvy plánů jsou
-// pouze překlad přesných kódů poskytovatele. Cena se nikdy neodvozuje z veřejného ceníku:
-// skutečná platba může mít jinou měnu, DPH, roční období nebo pocházet z App Storu.
+// pouze překlad přesných kódů poskytovatele. Cena je z veřejného ceníku poskytovatele (src/cenik.js)
+// a rozhraní ji tak i označuje – skutečná platba může mít jinou měnu, DPH, roční období nebo jít
+// přes App Store, proto se nikdy nesčítá s ověřenou útratou.
 export const CLAUDE_PLAN_LABELS = {
   free: 'Claude Free',
   pro: 'Claude Pro',
@@ -21,14 +23,26 @@ export const CLAUDE_PLAN_LABELS = {
   enterprise: 'Claude Enterprise',
 };
 
+// Kódy plánu, které hlásí Codex (`plan_type`), a jejich názvy stejně jako v Codexu
+// (codex-rs/tui/src/subscription.rs, 4. 10. 2026). `business` je v Codexu Enterprise.
 export const CHATGPT_PLAN_LABELS = {
   free: 'ChatGPT Free',
   go: 'ChatGPT Go',
   plus: 'ChatGPT Plus',
-  pro: 'ChatGPT Pro',
+  prolite: 'ChatGPT Pro 100',
+  pro: 'ChatGPT Pro 200',
+  promax: 'ChatGPT Pro 500',
   team: 'ChatGPT Business',
-  business: 'ChatGPT Business',
+  self_serve_business_usage_based: 'ChatGPT Business',
+  self_serve_business_prolite: 'ChatGPT Business Premium',
+  business: 'ChatGPT Enterprise',
+  ent26: 'ChatGPT Enterprise',
   enterprise: 'ChatGPT Enterprise',
+  enterprise_cbp_automation: 'ChatGPT Enterprise (Automation)',
+  enterprise_cbp_usage_based: 'ChatGPT Enterprise',
+  edu: 'ChatGPT Edu',
+  edu_plus: 'ChatGPT Edu Plus',
+  edu_pro: 'ChatGPT Edu Pro',
 };
 
 const ymd = (ts) => {
@@ -100,6 +114,7 @@ export function describePlan(found) {
     since: found.since,
     observedAt: found.observedAt || null,
     evidence: found.evidence,
+    cena: cenaPlanu(found.service, found.plan),
     detected: true,
   };
 }

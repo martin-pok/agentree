@@ -72,9 +72,9 @@ test('víc nových nástrojů naráz: upozornění pro každý, v macOS jedno so
   p.d.start();
   assert.equal(p.upozorneni.length, 3);
   assert.equal(p.nativni.length, 1);
-  assert.equal(p.nativni[0].title, 'Zachytil jsem 3 agenty v činnosti');
+  assert.equal(p.nativni[0].title, '3 nové AI nástroje');
   assert.match(p.nativni[0].body, /Warp.*Google AI Studio.*Replit/);
-  assert.equal(titulekSouhrnu(5), 'Zachytil jsem 5 agentů v činnosti');
+  assert.equal(titulekSouhrnu(5), '5 nových AI nástrojů');
 });
 
 test('noční ticho: zachycený agent je v aplikaci, oznámení macOS počká', () => {
@@ -88,11 +88,11 @@ test('noční ticho: zachycený agent je v aplikaci, oznámení macOS počká', 
 test('oznámení macOS jde v jazyce z Nastavení', () => {
   const jeden = prostredi({ bezi: ['warp'], language: 'en' });
   jeden.d.start();
-  assert.equal(jeden.nativni[0].title, 'Caught an agent at work: Warp');
+  assert.equal(jeden.nativni[0].title, 'New AI tool: Warp');
   assert.doesNotMatch(jeden.nativni[0].body, /[áčďéěíňóřšťúůýž]/, 'popis nástroje taky anglicky');
   const vic = prostredi({ bezi: ['warp', 'kiro'], language: 'en' });
   vic.d.start();
-  assert.equal(vic.nativni[0].title, 'Caught 2 agents at work');
+  assert.equal(vic.nativni[0].title, '2 new AI tools');
 });
 
 test('když je okno Agenteeq vidět, do macOS se nic neposílá', () => {
