@@ -1,6 +1,6 @@
 # Changelog
 
-## Nezveřejněno
+## 0.36.0 – 2026-10-04 · eura, okamžitá detekce agentů a přehledný účet
 
 - **Částky v eurech.** Výchozí měna aplikace je euro. Dřívější výchozí koruna se u dat, kde ji nikdo ručně nezvolil, jednou převede na euro i s rozpočty (přepočtenými kurzem, ne jen přejmenovanými); ručně zvolená měna se nepřepíše. Ceny zjištěných plánů jsou hlavně v měně aplikace („172 €“) s ceníkovou cenou poskytovatele pod ní („ceník 200 $“).
 - **Každý spuštěný agent hned a vidět.** Procesy se zjišťují po 1,5 s místo 5 s (Windows dál 5 s), takže nový nástroj je v Přehledu do 2 s – změřeno 0,15–1,26 s při 13 nástrojích spuštěných naráz. Mřížka běžících nástrojů už neschová ty nad osmý: běžící jsou vidět vždy všechny. Karta nových nástrojů ukáže čtyři a zbytek po „Zobrazit další“.

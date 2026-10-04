@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.36.0',
+    date: '2026-10-04',
+    title: 'Eura, okamžitá detekce agentů a přehledný účet',
+    items: [
+      'Částky jsou ve výchozím stavu v eurech. Dřívější koruny se jednou převedou kurzem i s rozpočty; ručně zvolenou měnu aplikace nemění.',
+      'Spuštěný AI nástroj je v Přehledu do 2 sekund a běžící nástroje jsou vidět vždy všechny. Nově zachycené nástroje ukáže karta nahoře v Přehledu místo plovoucího okna.',
+      'Zjištěný plán Claude nebo ChatGPT má přesnou úroveň a cenu z veřejného ceníku s odkazem a datem ověření.',
+      'Účet Agenteeq má přehlednou kartu s fotkou z Googlu. Přihlášení zapne synchronizaci souhrnů a výpadek sítě ani serveru už neodhlásí.',
+      'Oficiální loga Warpu, Windsurfu, Kira, Zedu, Goose, OpenCode a Antigravity, klidnější načítací obrazovka a upozornění zarovnaná do jedné osy.',
+    ],
+    en: {
+      title: 'Euros, instant agent detection and a clearer account',
+      items: [
+        'Amounts are in euros by default. Earlier koruna amounts are converted once at the exchange rate, budgets included; a currency you picked yourself stays as it is.',
+        'A launched AI tool shows up in Overview within 2 seconds and all running tools are always visible. Newly found tools appear in a card at the top of Overview instead of a floating window.',
+        'A detected Claude or ChatGPT plan shows its exact tier and the price from the public price list, with a link and the date it was checked.',
+        'The Agenteeq account has a clear card with your Google photo. Signing in turns on summary sync, and a network or server outage no longer signs you out.',
+        'Official Warp, Windsurf, Kiro, Zed, Goose, OpenCode and Antigravity logos, a calmer loading screen and alerts aligned on one axis.',
+      ],
+    },
+  },
+  {
     version: '0.35.0',
     date: '2026-10-04',
     title: 'Limity Claude i z aplikace Claude',
