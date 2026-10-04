@@ -80,13 +80,14 @@ function update() {
     return `${head}<li class="alert-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}">
       <span class="alert-icon">${alertIcon(a)}</span>
       <div class="alert-main">
-        <div class="alert-top"><strong>${esc(a.title)}</strong><time datetime="${new Date(a.at).toISOString()}">${timeHM(a.at)}</time></div>
+        <strong class="alert-title">${esc(a.title)}</strong>
         ${a.body ? `<p>${esc(a.body)}</p>` : ''}
         ${a.sessionId ? `<a class="link-inline" href="${agentHref(a.sessionId)}" data-read="${esc(a.id)}">${tr('Otevřít agenta')} ${ICON.arrow}</a>`
           : a.kind === 'novy-nastroj' ? `<button class="link-inline" type="button" data-moje-nastroje data-read="${esc(a.id)}">${tr('Moje nástroje')} ${ICON.arrow}</button>`
           : alertHref(a) !== '#/upozorneni' ? `<a class="link-inline" href="${esc(alertHref(a))}" data-read="${esc(a.id)}">${CIL[alertHref(a)] || tr('Otevřít')} ${ICON.arrow}</a>` : ''}
       </div>
-      ${a.read ? '' : `<button class="icon-btn" type="button" data-read="${esc(a.id)}" aria-label="${tr('Označit jako přečtené')}">${ICON.check}</button>`}
+      <time class="alert-time" datetime="${new Date(a.at).toISOString()}">${timeHM(a.at)}</time>
+      <span class="alert-act">${a.read ? '' : `<button class="icon-btn" type="button" data-read="${esc(a.id)}" aria-label="${tr('Označit jako přečtené')}">${ICON.check}</button>`}</span>
     </li>`;
   }).join('')}</ul>`);
 }

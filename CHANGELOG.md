@@ -2,6 +2,8 @@
 
 ## Nezveřejněno
 
+- **Upozornění v jedné rovině.** Ikona, čas a tlačítko „Označit jako přečtené“ jsou svisle na středu karty, ne přilepené nahoře u titulku. Čas má vlastní sloupec, který zůstává i u přečtených položek, takže už neuskakuje doprava. Titulek, popis a odkaz mají pevný rytmus a karta bez odkazu nemá dole prázdné místo. Na telefonu dostane text celou šířku a čas je drobný popisek pod ním.
+
 ## 0.35.0 – 2026-10-04 · limity Claude i z aplikace Claude
 
 - **Vyčerpaný limit Claude s přesnou obnovou i bez stavového řádku.** Claude Code v aplikaci Claude (Claude Desktop → Code) stavový řádek nespouští, takže Okna limitů ukazovala jen Codex. Při odmítnutí 429 zapisuje Claude Code do přepisu strukturovaný záznam `quotaLimits` s druhem okna a časem obnovy od serveru. Agenteeq z něj teď ukáže „Claude · Limit 5 h – Vyčerpáno“ s přesným odpočtem do obnovy, v Terminálu i v aplikaci Claude. Okno platí do obnovy, pak zmizí. Týdenní a další druhy se pojmenují (Týdenní limit, · Opus, · Sonnet), neznámý druh je obecný „Limit využití“ bez domýšlení. Pokud záznam říká, jestli běží dokupované využití, stojí to u okna („dokupované využití vypnuté“). Stejná hláška už nevytváří druhý řádek odhadnutý z textu.
