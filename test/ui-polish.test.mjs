@@ -421,3 +421,17 @@ test('Útrata: automaticky rozpoznaný plán nenutí ruční cenu ani nezobrazuj
   assert.doesNotMatch(src, /Předplatné a dokoupené extra usage[^\n]*zapisuj ručně/,
     'sekce nesmí končit plošnou výzvou k ručnímu opisování');
 });
+
+test('Upozornění: ikona, čas a „přečteno“ leží na jedné ose a čas neuskakuje', async () => {
+  const src = await zdroj('public/js/views/alerts.js');
+  // Čas není součást řádku s titulkem (dřív seděl nahoře a skákal podle délky textu).
+  assert.doesNotMatch(src, /alert-top/);
+  assert.match(src, /<time class="alert-time"/);
+  // Sloupec tlačítka zůstává i u přečtené položky, jinak se čas posune doprava.
+  assert.match(src, /<span class="alert-act">\$\{a\.read \? '' :/);
+  const css = await zdroj('public/styles.css');
+  const radek = css.match(/^\.alert-item \{ display: grid;[^}]*\}/m)?.[0] || '';
+  assert.match(radek, /grid-template-columns: 40px minmax\(0, 1fr\) auto 40px/);
+  assert.match(radek, /align-items: center/, 'ikona, čas i tlačítko jsou svisle na středu karty');
+  assert.match(css, /\.alert-act \{[^}]*width: 40px; height: 40px;/);
+});
