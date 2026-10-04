@@ -2,6 +2,10 @@
 
 ## Nezveřejněno
 
+## 0.34.3 – 2026-10-04 · stejná výška ovládacích prvků v řádku
+
+- Přepínač zdroje na Agentech (Všechny zdroje / Na tomto Macu / Cloud) měl 32 px vedle čipů poskytovatelů se 40 px a působil jako jiný, menší prvek. V řádku s čipy má teď stejnou výšku i odsazení; stejně tlačítko Vybrat vedle čipů projektů a ikona smazání vedle „Ukončit“ ve Výdajích. `qa:desktop` kontroluje na všech obrazovkách (1440 i 375 px, Chromium i WebKit), že prvky ve stejném řádku mají stejnou výšku.
+
 ## 0.34.2 – 2026-10-04 · ověřené plány bez ruční evidence
 
 - Útrata ukazuje jen plány z aktuálně pozorovaného účtu Claude Code nebo z limitů Codexu. Ruční přidávání licencí a plateb z rozhraní zmizelo; bez zdroje plán nevznikne a cena předplatného se neodhaduje.
