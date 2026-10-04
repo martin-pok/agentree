@@ -40,7 +40,7 @@ test('stav běhu se bere z živého seznamu procesů, ne ze zapamatovaného záz
   assert.match(kdeKdy(n, T), /naposledy běžel/);
   const b = zivy(radek('warp'), [rt('warp', true)], T);
   assert.equal(b.beziOd, T - 600e3);
-  assert.match(kdeKdy(b, T), /^Agent v terminálu · běží od \d{2}:\d{2}$/);
+  assert.match(kdeKdy(b, T), /^Agent v terminálu · běží od\u00a0\d{2}:\d{2}$/, "čas se od předložky neodtrhne");
   assert.equal(zivy(zaznam, [], T), zaznam, 'bez údaje o procesech se nic nepředstírá');
   assert.equal(kdeKdy({ druh: 'neznamy' }, T), 'AI nástroj', 'neznámý druh ani čas nevymýšlí');
 });

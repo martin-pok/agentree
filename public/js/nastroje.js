@@ -29,7 +29,8 @@ export function zivy(n, runtimes) {
 // Kde a od kdy – jedna věta, pravdivá i pro nástroj, který už neběží.
 export function kdeKdy(n, now = Date.now()) {
   const druh = druhNazev(n);
-  if (n.bezi && n.beziOd) return `${druh} · ${tr('běží od {0}', timeHM(n.beziOd))}`;
+  // Čas se od předložky na konci řádku neodtrhne („běží od“ / „11:37“) – nezlomitelná mezera.
+  if (n.bezi && n.beziOd) return `${druh} · ${tr('běží od {0}', timeHM(n.beziOd)).replace(/ (?=\S+$)/, '\u00a0')}`;
   if (n.bezi) return `${druh} · ${tr('běží')}`;
   if (n.naposledy) return `${druh} · ${tr('naposledy běžel {0}', rel(n.naposledy, now))}`;
   return druh;

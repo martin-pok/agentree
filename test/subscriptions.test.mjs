@@ -72,7 +72,7 @@ test('plán ChatGPT se bere přesně z nejnovějšího limitu Codexu bez domněl
   assert.equal(chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now - 24 * 60 * 60 * 1000 - 1 }], now), null, 'staré pozorování se nevydává za aktuální plán');
   assert.equal(chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now + 60_001 }], now), null, 'čas z budoucnosti se odmítne');
   const pro = describePlan({ service: 'chatgpt', plan: 'pro', evidence: 'x' });
-  assert.equal(pro.label, 'ChatGPT Pro');
+  assert.equal(pro.label, 'ChatGPT Pro 200', 'kód „pro“ je v Codexu Pro 200 (codex-rs/tui/src/subscription.rs)');
   assert.equal('payment' in pro, false);
   const plus = describePlan({ service: 'chatgpt', plan: 'plus', evidence: 'x' });
   assert.equal(plus.label, 'ChatGPT Plus');
@@ -98,7 +98,9 @@ test('další ruční licence nejsou vydávány za automaticky zjištěné účt
   const plans = subscriptionPortfolio([{ service: 'claude', plan: 'pro', evidence: 'Claude Code' }], ledger);
   assert.deepEqual(plans.map((p) => p.service), ['claude']);
   assert.equal(plans[0].detected, true);
-  assert.doesNotMatch(JSON.stringify(plans), /Studio|Výzkum|612\.4|20/);
+  // Ceník (veřejná cena plánu, src/cenik.js) se ověřuje zvlášť; z ručních zápisů nesmí projít nic.
+  assert.doesNotMatch(JSON.stringify(plans.map(({ cena, ...p }) => p)), /Studio|Výzkum|612\.4|20/);
+  assert.equal(plans[0].cena.mesicne, 20, 'cena je z ceníku Anthropic, ne z ručního zápisu 25 USD');
 });
 
 test('název licence se ukládá jen k předplatnému a je omezený', () => {
@@ -180,4 +182,40 @@ test('nový plán z limitů Codexu se propíše do Útraty okamžitě', async ()
   } finally {
     await t.close();
   }
+});
+
+
+test('ceník zjištěných plánů: úroveň a cena podle oficiálního ceníku, bez ceny se nic nedohaduje', async () => {
+  const { cenaPlanu, CENIK_OVERENO } = await import('../src/cenik.js');
+  const c = (service, plan) => describePlan({ service, plan, evidence: 'x' });
+  const ocekavane = [
+    ['claude', 'pro', 'Claude Pro', 20, 17],
+    ['claude', 'max5x', 'Claude Max 5×', 100, null],
+    ['claude', 'max20x', 'Claude Max 20×', 200, null],
+    ['chatgpt', 'go', 'ChatGPT Go', 8, null],
+    ['chatgpt', 'plus', 'ChatGPT Plus', 20, null],
+    ['chatgpt', 'prolite', 'ChatGPT Pro 100', 100, null],
+    ['chatgpt', 'pro', 'ChatGPT Pro 200', 200, null],
+    ['chatgpt', 'promax', 'ChatGPT Pro 500', 500, null],
+    ['chatgpt', 'team', 'ChatGPT Business', 25, 20],
+    ['chatgpt', 'self_serve_business_prolite', 'ChatGPT Business Premium', 125, 100],
+  ];
+  for (const [service, plan, label, mesicne, rocne] of ocekavane) {
+    const p = c(service, plan);
+    assert.equal(p.label, label, plan);
+    assert.equal(p.cena.mesicne, mesicne, plan);
+    assert.equal(p.cena.rocne, rocne, plan);
+    assert.equal(p.cena.mena, 'USD');
+    assert.match(p.cena.url, /^https:\/\/(claude|chatgpt)\.com\/pricing$/);
+    assert.equal(p.cena.overeno, CENIK_OVERENO);
+  }
+  assert.equal(c('chatgpt', 'team').cena.zaMisto, true);
+  assert.equal(c('chatgpt', 'go').cena.jenUsa, true, 'Go má v každé zemi jinou cenu');
+  assert.equal(c('claude', 'max').cena.od, true, 'Max bez známé úrovně má jen dolní mez');
+  // Firemní plány bez veřejné ceny a neznámé kódy cenu nemají – nic se nedohaduje.
+  assert.equal(c('chatgpt', 'business').label, 'ChatGPT Enterprise', 'kód „business“ je v Codexu Enterprise');
+  for (const [service, plan] of [['chatgpt', 'business'], ['chatgpt', 'enterprise'], ['chatgpt', 'edu'], ['chatgpt', 'neznamy'], ['claude', 'neznamy']]) {
+    assert.equal(cenaPlanu(service, plan), null, `${service} ${plan}`);
+  }
+  assert.equal(c('claude', 'free').cena.mesicne, 0);
 });

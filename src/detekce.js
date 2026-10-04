@@ -21,7 +21,7 @@ const ROZHODNUTI = { pridat: 'pridany', ignorovat: 'ignorovany', rozumim: 'znamy
 
 // Titulek souhrnného oznámení. Každý tvar podle počtu je celý text rozhraní (src/texty.js).
 export function titulekSouhrnu(n) {
-  return n >= 2 && n <= 4 ? ui('Zachytil jsem {0} agenty v činnosti', n) : ui('Zachytil jsem {0} agentů v činnosti', n);
+  return n >= 2 && n <= 4 ? ui('{0} nové AI nástroje', n) : ui('{0} nových AI nástrojů', n);
 }
 
 export function createDetekce({ store, datastore, alerts, notifier, pripojene = () => new Set(), now = () => Date.now() }) {
@@ -75,7 +75,7 @@ export function createDetekce({ store, datastore, alerts, notifier, pripojene = 
         key: `novy-nastroj:${r.id}`,
         level: 'info',
         kind: 'novy-nastroj',
-        title: ui('Zachytil jsem agenta: {0}', r.name),
+        title: ui('Nový AI nástroj: {0}', r.name),
         body: r.popis || '',
         nastroj: r.id,
         route: '#/nastaveni',
@@ -88,7 +88,7 @@ export function createDetekce({ store, datastore, alerts, notifier, pripojene = 
       const jeden = nove.length === 1;
       const t = prekladac(datastore.data.settings?.language);
       notifier?.native({
-        title: t(jeden ? ui('Zachytil jsem agenta: {0}', nove[0].name) : titulekSouhrnu(nove.length)),
+        title: t(jeden ? ui('Nový AI nástroj: {0}', nove[0].name) : titulekSouhrnu(nove.length)),
         body: jeden ? t(nove[0].popis || '') : nove.map((r) => r.name).join(', '),
         subtitle: 'Agenteeq',
         sound: false,

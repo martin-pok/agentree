@@ -63,6 +63,30 @@ function openBudgets(opener = null) {
   });
 }
 
+// Cena zjištěného plánu podle veřejného ceníku poskytovatele (src/cenik.js): hlavní částka
+// v měně ceníku, pod ní období a přepočet do měny aplikace. Ceník není platba – nesčítá se.
+// Ceník v dolarech jako „200 $“ (ne „200 US$“), stejně jako zbytek aplikace.
+const usd = (v) => new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', maximumFractionDigits: 0 }).format(v);
+const cenikovaCastka = (v, mena) => (mena === 'USD' ? usd(v) : fmtMoney(v, mena));
+// Odkud plán je – krátce; přesný kód poskytovatele je v nápovědě pro ověření.
+const PUVOD = { claude: () => tr('Zjištěno z účtu Claude Code'), chatgpt: () => tr('Zjištěno z limitů Codexu') };
+
+function cenaHtml(sp, c) {
+  if (!c) return `<span class="plan-cena"><b>${tr('Podle smlouvy')}</b><small>${tr('bez veřejné ceny')}</small></span>`;
+  if (c.mesicne === 0 && !c.od) return `<span class="plan-cena"><b>${tr('Zdarma')}</b></span>`;
+  const castka = `${c.od ? `${tr('od')} ` : ''}${cenikovaCastka(c.mesicne, c.mena)}`;
+  const obdobi = [
+    c.zaMisto ? tr('za uživatele měsíčně') : tr('měsíčně'),
+    c.sVyuzitim ? tr('+ využití') : '',
+  ].filter(Boolean).join(' ');
+  const dalsi = [
+    c.rocne != null ? tr('ročně {0} měsíčně', cenikovaCastka(c.rocne, c.mena)) : '',
+    c.jenUsa ? tr('cena v USA') : '',
+    sp.currency && sp.currency !== c.mena ? `≈ ${money(toApp(sp, c.mesicne, c.mena))}` : '',
+  ].filter(Boolean).join(' · ');
+  return `<span class="plan-cena"><b>${esc(castka)}</b><small>${esc(obdobi)}</small>${dalsi ? `<small>${esc(dalsi)}</small>` : ''}</span>`;
+}
+
 // Zobrazí se jen plány z čerstvého stavu připojených nástrojů. Bez ověřeného
 // zdroje není karta ani tlačítko pro ruční doplňování licencí.
 export function plansHtml(sp) {
@@ -73,14 +97,22 @@ export function plansHtml(sp) {
     const label = p.label || svc?.label || p.service;
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
-      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b>${p.free ? `<span class="plan-price"><b>${tr('Bezplatný plán')}</b></span>` : ''}</span>
-        <span class="plan-sub"><span class="plan-kind">${tr('Zjištěno automaticky')}</span> ${esc(p.evidence)}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>
+      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b></span>
+        <span class="plan-sub" title="${esc(p.evidence)}">${(PUVOD[p.service] || (() => tr('Zjištěno automaticky')))()}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>
       </span>
+      ${cenaHtml(sp, p.cena)}
     </li>`;
   }).join('');
+  // Odkud ceny jsou – jedna věta pod seznamem, se zdrojem a datem ověření ceníku.
+  const zdroje = [...new Map(plans.filter((p) => p.cena?.url).map((p) => [p.cena.url, p.cena])).values()];
+  const overeno = zdroje[0]?.overeno;
+  const pata = zdroje.length
+    ? `<p class="plan-foot">${tr('Ceny z veřejného ceníku {0} k {1}, bez DPH. Skutečná platba se může lišit (měna, daň, App Store) a do útraty se nepočítá.', zdroje.map((z) => `<a class="link-inline" href="${esc(z.url)}" target="_blank" rel="noopener">${esc(z.zdroj)}</a>`).join(tr(' a ')), esc(dateLong(dateOnlyTs(overeno))))}</p>`
+    : '';
   return `<section class="card pad plans" aria-labelledby="plans-h">
     <div class="sec-head"><h2 id="plans-h">${tr('Zjištěné plány')}</h2></div>
     <ul class="plan-list">${rows}</ul>
+    ${pata}
   </section>`;
 }
 
