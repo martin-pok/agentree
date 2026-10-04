@@ -115,7 +115,7 @@ test('účet odkazuje na zásady soukromí ve zvoleném jazyce', async () => {
 });
 
 // Nabídka nebo kalendář mimo modální okno (aria-modal) zmizí ze stromu přístupnosti – čtečka
-// obrazovky by v „Přidat výdaj“ nepřečetla ani jednu službu. Ve skutečném prohlížeči to hlídá qa:desktop.
+// obrazovky by v dialogu nepřečetla ani jednu službu. Ve skutečném prohlížeči to hlídá qa:desktop.
 test('nabídky a kalendář v modálním okně jsou uvnitř něj a ve vrchní vrstvě', async () => {
   const sel = await zdroj('public/js/selects.js');
   assert.match(sel, /\(button\.closest\('\[aria-modal="true"\]'\) \|\| document\.body\)\.append\(panel\)/);
@@ -413,11 +413,11 @@ test('plynulé posouvání je jeden modul pro web i aplikaci a během posouván�
 
 test('Útrata: automaticky rozpoznaný plán nenutí ruční cenu ani nezobrazuje domněnku', async () => {
   const src = await zdroj('public/js/views/spend.js');
-  assert.match(src, /p\.detected && !payments\.length \? '' :/,
-    'rozpoznaný plán bez platby nesmí dostat výzvu k ručnímu zápisu');
+  assert.match(src, /filter\(\(p\) => p\.detected\)/);
+  assert.doesNotMatch(src, /data-action="(?:add|license-add|plan-edit)"|openAddEntry/,
+    'Útrata nesmí nabízet ruční zápis ani další licenci');
   assert.doesNotMatch(src, /Cena nezjištěna/, 'neznámá částka se nemá tvářit jako údaj k doplnění');
   assert.match(src, /Zjištěno automaticky/);
-  assert.match(src, /Napoj Claude Code nebo Codex v Nastavení a Agenteeq plán zjistí automaticky\./);
   assert.doesNotMatch(src, /Předplatné a dokoupené extra usage[^\n]*zapisuj ručně/,
     'sekce nesmí končit plošnou výzvou k ručnímu opisování');
 });

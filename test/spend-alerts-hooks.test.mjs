@@ -40,21 +40,25 @@ test('měsíční součty: opakované předplatné, ukončení a převod měn', 
 test('rozpočty, prognóza a upozornění jen na nejvyšší práh', () => {
   const now = new Date(2026, 8, 15, 12).getTime();
   const sp = spend({
-    budgets: { total: 1000, services: { claude: 400 } },
+    budgets: { total: 1000, services: { 'anthropic-api': 400 } },
     ledger: [
       { id: 'a', service: 'claude', kind: 'extra', amount: 450, currency: 'CZK', date: '2026-09-10' },
       { id: 'b', service: 'chatgpt', kind: 'subscription', amount: 400, currency: 'CZK', date: '2026-09-01', recurring: 'monthly' },
     ],
   });
-  const sum = spendSummary(sp, now);
+  const auto = [
+    { id: 'auto:anthropic-admin:2026-09-10', service: 'anthropic-api', kind: 'api', amount: 450, currency: 'CZK', date: '2026-09-10', auto: true },
+    { id: 'auto:openai-admin:2026-09-11', service: 'openai-api', kind: 'api', amount: 400, currency: 'CZK', date: '2026-09-11', auto: true },
+  ];
+  const sum = spendSummary(sp, now, auto);
   assert.equal(sum.month.total, 850);
-  assert.equal(sum.recurring, 400);
-  assert.equal(sum.forecast, 400 + (450 / 15) * 30);
+  assert.equal(sum.recurring, 0, 'ruční předplatné není součást ověřených nákladů');
+  assert.equal(sum.forecast, (850 / 15) * 30);
   const alerts = budgetAlertCandidates(sum);
   assert.equal(alerts.length, 2);
-  const claude = alerts.find((a) => a.key.includes(':claude:'));
+  const claude = alerts.find((a) => a.key.includes(':anthropic-api:'));
   assert.equal(claude.level, 'critical');
-  assert.deepEqual(claude.alsoKeys, ['budget:2026-09:claude:80']);
+  assert.deepEqual(claude.alsoKeys, ['budget:2026-09:anthropic-api:80']);
   const total = alerts.find((a) => a.key.includes(':total:'));
   assert.equal(total.key, 'budget:2026-09:total:80');
 });

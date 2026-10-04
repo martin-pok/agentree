@@ -20,7 +20,7 @@ export const MA_PREPIS = new Set([
 // si který nástroj ukládá data, tu nic nestojí, dokud to někdo neověří na skutečném stroji.
 const NECTE_ZATIM = tr('Agenteeq zatím neumí číst konverzace tohoto nástroje. Vidí jen, že běží a jak dlouho.');
 const WEB_OKNO = tr('Běží jako samostatné okno webové aplikace. Stav webových chatů hlásí rozšíření Agenteeq jen z běžné záložky Chromu, takže tady je vidět jen, že je okno otevřené a jak dlouho.');
-const MOJE_RADA = tr('Přidej ho do Mých nástrojů: uvidíš, kdy běží, a jedním klikem mu zapíšeš předplatné do Útraty.');
+const MOJE_RADA = tr('Přidej ho do Mých nástrojů a uvidíš, kdy běží.');
 const MOJE_ODKAZ = { href: '#/nastaveni', text: tr('Moje nástroje') };
 
 // Aplikace, které na tento Mac konverzace neukládají. U každé je důvod – ověřený, ne odhadnutý –

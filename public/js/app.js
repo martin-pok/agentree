@@ -509,7 +509,6 @@ const palette = createPalette(
     const actions = [
       { group: tr('Akce'), label: tr('Spustit agenta'), run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
       { group: tr('Akce'), label: tr('Nový projekt'), run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
-      { group: tr('Akce'), label: tr('Přidat výdaj'), href: '#/utrata?pridat=1', icon: ICON.plus },
       { group: tr('Akce'), label: tr('Označit upozornění jako přečtená'), run: () => markRead('all'), icon: ICON.check },
       { group: tr('Akce'), label: tr('Zapnout propojení s Claude Code'), href: '#/nastaveni', icon: ICON.bell },
     ].filter((a) => !nq || norm(a.label).includes(nq));

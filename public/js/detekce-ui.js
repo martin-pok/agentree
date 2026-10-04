@@ -5,7 +5,7 @@ import { api } from './api.js';
 import { state, subscribe, emit } from './state.js';
 import { esc } from './format.js';
 import { tr, tomtoPocitaci } from './i18n.js';
-import { druhNazev, predplatneHref, zivy as zivyZ, kdeKdy, coVidim } from './nastroje.js';
+import { druhNazev, zivy as zivyZ, kdeKdy, coVidim } from './nastroje.js';
 import { ICON, glyph } from './icons.js';
 import { toast } from './ui.js';
 import { goToExtension } from './jump.js';
@@ -58,8 +58,7 @@ export function detekceHtml() {
   if (!nove.length || state.settings?.notifications?.detekce === false) return '';
   const nadpis = nove.length === 1 ? tr('Zachytil jsem agenta v činnosti')
     : nove.length <= 4 ? tr('Zachytil jsem {0} agenty v činnosti', nove.length) : tr('Zachytil jsem {0} agentů v činnosti', nove.length);
-  const uvod = !naMacu() ? tr('Do Mých nástrojů je přidáš v Agenteeq na {0}.', tomtoPocitaci())
-    : nove.every((n) => n.sledovano) ? '' : tr('Přidané uvidíš v Mých nástrojích a předplatné zapíšeš jedním klikem.');
+  const uvod = !naMacu() ? tr('Do Mých nástrojů je přidáš v Agenteeq na {0}.', tomtoPocitaci()) : '';
   return `<div class="det-panel" role="region" aria-labelledby="det-h">
     <div class="det-head">
       <span class="det-pulse" aria-hidden="true"></span>
@@ -135,7 +134,6 @@ export function mujRadek(n) {
       <span class="moje-stav${n.bezi ? ' is-running' : ''}">${n.bezi ? '<i class="moje-dot" aria-hidden="true"></i>' : ''}${esc(kdeKdy(n))}</span>
     </div>
     ${naMacu() ? `<div class="moje-akce">
-      <a class="btn btn--sm" href="${esc(predplatneHref(n))}">${tr('Zapsat předplatné')}</a>
       <button class="btn btn--sm" type="button" data-nastroj-akce="odebrat" data-id="${esc(n.id)}" aria-label="${esc(tr('Odebrat {0} z Mých nástrojů', n.name))}">${tr('Odebrat')}</button>
     </div>` : ''}
   </li>`;
@@ -150,4 +148,3 @@ export function ignorovanyRadek(n) {
 }
 
 export const mojeZive = () => (state.detekce?.moje || []).map((n) => zivy(n));
-

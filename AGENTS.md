@@ -117,7 +117,7 @@ Ověřeno na skutečných datech (macOS, Node 24): Claude Code / Claude Desktop 
 
 Beta (formát podle dokumentace nebo odvozený, bez dat na vývojovém Macu): Cursor (formát ověřen, ale bez aktivních agentů), GitHub Copilot CLI, Copilot ve VS Code, Gemini CLI, Qwen Code, rozšíření prohlížeče (selektory neověřené proti živým webům), Admin API náklady.
 
-Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, útrata za předplatné a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (nemají veřejné API → ruční zápis), schválení akce agenta na dálku z Agenteeq.
+Nemožné bez podpory dodavatele: čtení konverzací z desktopové aplikace Microsoft Copilot, skutečně účtované částky za spotřebitelská předplatná a extra usage u ChatGPT/Claude/Gemini/Perplexity/Grok/Qwen (podporované rozhraní je neposkytuje; aplikace je proto nedohaduje), schválení akce agenta na dálku z Agenteeq.
 
 Další práce: [docs/ROADMAP.md](docs/ROADMAP.md).
 

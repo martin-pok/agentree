@@ -132,7 +132,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       utrata: () => {
         const sp = datastore.data.spend;
         const mesice = spend().months.map((m) => m.key);
-        const zaznamy = [...(sp.ledger || []), ...connectors['cloud-billing'].autoEntries()];
+        const zaznamy = connectors['cloud-billing'].autoEntries();
         return utrataPoMesicich(zaznamy, { mesice, prevod: (e) => convert(e.amount, e.currency, sp), mena: sp.currency || 'CZK' });
       },
     },
@@ -333,11 +333,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   function subscriptions(now = Date.now()) {
     const found = [claudeAccount, chatgptPlanFromLimits(store.limitList(), now)].filter(Boolean);
-    return subscriptionPortfolio(found, datastore.data.spend.ledger, now);
+    return subscriptionPortfolio(found);
   }
 
-  // Automatické záznamy útraty pocházejí jen z ověřeného Admin API. Spotřebitelská
-  // předplatná nemají podporované billing API a do útraty vstupují pouze z ledgeru.
+  // Aktivní útrata pochází jen z Admin API. Staré ruční zápisy jsou exportovatelné,
+  // ale nezvyšují ověřený součet ani nepředstírají cenu předplatného.
   const automatickeVydaje = () => connectors['cloud-billing'].autoEntries();
 
   function spend() {
@@ -345,14 +345,16 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return spendSummary(datastore.data.spend, now, automatickeVydaje(now), connectors['cloud-billing'].modelEntries());
   }
 
-  // Útrata → Export CSV: tytéž záznamy jako souhrn na obrazovce, včetně automatických.
+  // Export zahrnuje vedle ověřených API nákladů i starší ruční záznamy se zdrojem v CSV.
   function exportSpend(mesicu, now = Date.now()) {
     return spendCsv(datastore.data.spend, now, automatickeVydaje(now), mesicu, datastore.data.settings.language);
   }
 
   function spendPayload() {
     const sp = datastore.data.spend;
-    return { ...spend(), ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    const sources = connectors['cloud-billing'].providers();
+    const connected = Object.values(sources).filter((source) => source.state === 'connected');
+    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {

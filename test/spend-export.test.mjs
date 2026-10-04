@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spendCsv, monthlyTotals, addMonths, DEFAULT_SPEND } from '../src/spend.js';
+import { spendCsv, monthlyTotals, spendSummary, addMonths, DEFAULT_SPEND } from '../src/spend.js';
 import { startTestServer, api } from './helpers.mjs';
 
 // Export útraty do CSV pro účetnictví: jeden řádek za platbu v každém měsíci. Hlídá se, že
@@ -66,7 +66,7 @@ test('export útraty: řádek za platbu v každém měsíci, převod a zdroj zá
   assert.equal(radky.find((r) => r[1] === '2026-08-12')[5], 'jednorázově');
 });
 
-test('export útraty: součty po měsících sedí s obrazovkou Útrata', () => {
+test('export zachová starší ruční záznamy, ale aktivní souhrn počítá jen Admin API', () => {
   const mesice = Array.from({ length: 6 }, (_, i) => addMonths('2026-09', i - 5));
   const obrazovka = monthlyTotals(spend, mesice, automaticke);
   const [, ...radky] = precti(spendCsv(spend, now, automaticke, 6));
@@ -74,6 +74,8 @@ test('export útraty: součty po měsících sedí s obrazovkou Útrata', () => 
     const soucet = radky.filter((r) => r[0] === key).reduce((s, r) => s + cislo(r[10]), 0);
     assert.ok(Math.abs(soucet - total) < 0.01, `${key}: export ${soucet} × obrazovka ${total}`);
   }
+  assert.equal(spendSummary(spend, now, automaticke).month.total, 34.5);
+  assert.ok(obrazovka.at(-1).total > 34.5, 'historické ruční platby zůstaly v CSV, ne v aktivním souhrnu');
 });
 
 test('export útraty: poznámka nespustí vzorec a středník nerozbije sloupce', () => {
@@ -133,5 +135,5 @@ test('tlačítko exportu vede na export a v živé prohlídce na webu chybí', a
   const view = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
   assert.match(view, /function exportTlacitko\(\) \{\s*if \(document\.documentElement\.hasAttribute\('data-ukazka'\)\) return '';/, 'ukázka nemá server, stažení by skončilo chybou');
   assert.match(view, /href="\/api\/spend\/export" download/);
-  assert.match(view, /<h2 id="led-h">\$\{tr\('Výdaje'\)\}<\/h2>\$\{exportTlacitko\(\)\}/);
+  assert.match(view, /<h2 id="led-h">\$\{tr\('Záznamy nákladů'\)\}<\/h2>\$\{exportTlacitko\(\)\}/);
 });

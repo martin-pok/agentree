@@ -626,25 +626,18 @@ for (const engine of engines) {
     await page.keyboard.press('Escape');
     await page.locator('.palette').waitFor({ state: 'hidden' });
     await page.goto(`${server.url}/#/utrata`);
-    // Nabídka a kalendář v modálním okně (aria-modal) musí být uvnitř něj – co je mimo, prohlížeč
-    // vyřadí ze stromu přístupnosti a čtečka obrazovky položky nepřečte. getByRole to vidí stejně.
-    await page.locator('.toolbar button[data-action="add"]').click();
-    await page.locator('.modal-scrim').waitFor();
-    await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').click();
-    assert.ok(await page.getByRole('option').count() >= 10, `${engine} položky nabídky v okně jsou dostupné čtečce`);
-    await page.getByRole('option', { name: 'Claude', exact: true }).click();
-    assert.equal(await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').getAttribute('aria-label'), 'Služba: Claude');
-    // Vybraná položka se jmenuje jen „Claude“ – fajfka z CSS do názvu pro čtečku nepatří.
-    await page.locator('.modal button.picker-trigger[aria-label^="Služba"]').click();
-    assert.equal(await page.getByRole('option', { name: 'Claude', exact: true, selected: true }).count(), 1, `${engine} vybraná položka nemá v názvu fajfku`);
-    await page.keyboard.press('Escape');
-    await page.locator('.modal button.dd-date').click();
-    assert.equal(await page.evaluate(() => Boolean(document.querySelector('.dd-cal')?.closest('.modal'))), true, `${engine} kalendář je uvnitř okna`);
-    await page.keyboard.press('Escape');
-    assert.equal(await page.locator('.dd-cal').count(), 0, `${engine} Esc zavře kalendář`);
-    assert.equal(await page.locator('.modal-scrim').count(), 1, `${engine} Esc v kalendáři nezavře celé okno`);
-    await page.keyboard.press('Escape');
-    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
+    await page.locator('.toolbar').waitFor();
+    assert.match(await page.locator('.spend-hero').textContent(), /Náklady za API nejsou připojené/);
+    assert.doesNotMatch(await page.locator('.spend-hero').textContent(), /0 Kč/, `${engine} bez billing zdroje nesmí tvrdit nulovou útratu`);
+    assert.equal(await page.locator('[data-action="add"], [data-action="license-add"], [data-action="plan-edit"]').count(), 0, `${engine} Útrata nesmí chtít ruční zápis`);
+    assert.equal(await page.locator('.plans').count(), 0, `${engine} bez potvrzeného plánu se karta nenačítá`);
+    assert.equal(await page.locator('[data-region="ledger-section"]').isHidden(), true, `${engine} bez API a záznamů nesmí zůstat prázdná karta`);
+    const observedAt = Date.now();
+    server.app.store.setLimit({ id: 'openai:five_hour', provider: 'openai', app: 'Codex', kind: 'time', label: '5 h', plan: 'plus', at: observedAt, resetsAt: observedAt + 3600e3, usedPercent: 10 });
+    await page.locator('.plans .plan-row').waitFor();
+    assert.match(await page.locator('.plans').textContent(), /ChatGPT Plus/);
+    assert.doesNotMatch(await page.locator('.plans').textContent(), /Další licence|Přidat licenci|Kč|\$|€/);
+    await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });
     const budgetsButton = page.locator('button[data-action="budgets"]').first();
     await budgetsButton.click();
     await page.locator('.modal-scrim').waitFor();
@@ -724,6 +717,10 @@ for (const engine of engines) {
         assert.equal(await page.locator('.nav a[aria-current="page"]').evaluate((el) => getComputedStyle(el).backgroundColor), tmavaSirka, `${engine} tmavý režim na výšku mění vzhled aktivní položky`);
         await page.screenshot({ path: `dist/qa/${engine}-dark-portrait-rest.png` });
         await page.setViewportSize({ width: 1440, height: 1000 });
+        await page.goto(`${server.url}/#/utrata`);
+        await page.locator('.spend-hero').waitFor();
+        assert.equal(await page.locator('.plans [data-action]').count(), 0, `${engine} tmavá Útrata nenabízí ruční licenci`);
+        await page.screenshot({ path: `dist/qa/${engine}-dark-automatic-plans.png` });
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.click('.set-nav [data-jump="set-ucet"]');

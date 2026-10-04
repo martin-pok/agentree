@@ -66,5 +66,5 @@ test('Útrata: graf za posledních 6 měsíců bez dat nekreslí vymyšlenou osu
     'rozhodnutí „je co ukázat" musí zůstat vázané na skutečná data');
   const usek = kod.slice(kod.indexOf('const jeCoUkazat'), kod.indexOf("fill(el, 'mlegend'"));
   assert.match(usek, /jeCoUkazat \? columnChart\(\{/, 'graf se kreslí jen když jsou data');
-  assert.match(usek, /: emptyState\(\{ title: tr\('Zatím žádná útrata'\)/, 'jinak prázdný stav');
+  assert.match(usek, /: emptyState\(\{ title: tr\('Zatím žádné ověřené náklady'\)/, 'jinak prázdný stav');
 });

@@ -87,29 +87,11 @@ export async function readClaudeAccount(sourceHome, { read = fsp.readFile } = {}
   }
 }
 
-function aktivniPlatby(ledger, service, month) {
-  return (ledger || [])
-    .filter((e) => e.service === service && e.kind === 'subscription' && e.recurring === 'monthly'
-      && String(e.date).slice(0, 7) <= month && (!e.endDate || String(e.endDate).slice(0, 7) >= month))
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || Number(a.createdAt || 0) - Number(b.createdAt || 0))
-    .map((payment) => ({
-      id: payment.id,
-      amount: payment.amount,
-      currency: payment.currency,
-      date: payment.date,
-      recurring: payment.recurring,
-      account: typeof payment.account === 'string' ? payment.account.slice(0, 80) : '',
-      note: typeof payment.note === 'string' ? payment.note.slice(0, 140) : '',
-    }));
-}
-
-// Jedno předplatné pro UI. Identita plánu je fakt od poskytovatele; částka je jen přesný
-// uživatelský záznam. Tyto dvě úrovně se nesmějí sloučit do domnělé „zjištěné ceny“.
-export function describePlan(found, ledger = [], now = Date.now()) {
+// Plán ukazujeme pouze tehdy, když ho oznámil připojený nástroj. Ručně zapsanou
+// platbu nelze bez identifikátoru účtu bezpečně přiřadit ke konkrétní licenci.
+export function describePlan(found) {
   const table = found.service === 'claude' ? CLAUDE_PLAN_LABELS : CHATGPT_PLAN_LABELS;
   const label = table[found.plan] || `${found.service === 'claude' ? 'Claude' : 'ChatGPT'} (${found.plan})`;
-  const month = ymd(now).slice(0, 7);
-  const payments = aktivniPlatby(ledger, found.service, month);
   return {
     service: found.service,
     plan: found.plan,
@@ -119,33 +101,9 @@ export function describePlan(found, ledger = [], now = Date.now()) {
     observedAt: found.observedAt || null,
     evidence: found.evidence,
     detected: true,
-    payments,
-    payment: payments.length === 1 ? payments[0] : null,
   };
 }
 
-// Sestaví jedno portfolio ze zjištěných plánů a všech aktivních ručně evidovaných licencí.
-// Ruční záznamy jiné služby zůstávají viditelné, ale nikdy se nevydávají za rozpoznaný plán.
-export function subscriptionPortfolio(foundPlans, ledger = [], now = Date.now()) {
-  const month = ymd(now).slice(0, 7);
-  const detected = (foundPlans || []).filter(Boolean).map((found) => describePlan(found, ledger, now));
-  const services = new Set(detected.map((plan) => plan.service));
-  for (const entry of ledger || []) {
-    if (!entry || entry.kind !== 'subscription' || entry.recurring !== 'monthly' || !entry.service) continue;
-    if (String(entry.date).slice(0, 7) > month || (entry.endDate && String(entry.endDate).slice(0, 7) < month)) continue;
-    services.add(entry.service);
-  }
-  const byService = new Map(detected.map((plan) => [plan.service, plan]));
-  return [...services].map((service) => byService.get(service) || {
-    service,
-    plan: null,
-    label: null,
-    free: false,
-    since: null,
-    observedAt: null,
-    evidence: '',
-    detected: false,
-    payments: aktivniPlatby(ledger, service, month),
-    payment: null,
-  });
+export function subscriptionPortfolio(foundPlans) {
+  return (foundPlans || []).filter(Boolean).map(describePlan);
 }

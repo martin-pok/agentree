@@ -28,10 +28,10 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/extension/pripojit` | Párování bez kódu. Jen z tohoto Macu, hlavička `Origin: chrome-extension://…` a volitelně `X-Agenteeq-Installation-Id` → `{ token, version }`, když ID rozšíření odpovídá Chrome Web Store nebo složce, kterou připravila aplikace; jinak 409 (spárovat jednorázovým kódem) |
 | POST | `/api/extension/pair-code` | Vytvoří `{ code, expiresAt }` (16 znaků, platí 10 minut); jen z tohoto Macu (403), vyžaduje lokální mutační ochranu |
 | POST | `/api/extension/pair` | Hlavičky `Origin: chrome-extension://…`, `X-Agenteeq-Pair-Code` a volitelně `X-Agenteeq-Installation-Id` (`[A-Za-z0-9-]{8,64}`) → jednorázově `{ token, version }`. Token je nový pro každé spárování, platí jen z tohoto `Origin` a nové spárování téže instalace ten starý zneplatní |
-| POST | `/api/spend/ledger` | Nový výdaj → 201 `{ entry, spend }`; 422 s `errors` |
+| POST | `/api/spend/ledger` | Kompatibilita se staršími klienty: nový ruční výdaj → 201 `{ entry, spend }`; 422 s `errors`. Aktuální UI ruční zadávání nenabízí. |
 | PATCH | `/api/spend/ledger/:id` | `{ endDate: "RRRR-MM-DD" \| null }` – ukončení předplatného |
 | DELETE | `/api/spend/ledger/:id` | `{ spend }` |
-| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Řádek za platbu v každém měsíci posledních `mesicu` měsíců (1–36, výchozí 12, jinak 422): měsíc, datum platby, služba, typ, účet/licence, opakování, poznámka, částka, měna, kurz a částka v měně aplikace, zdroj (Ručně / Admin API). Rozpoznaný spotřebitelský plán bez skutečné platby není výdaj ani řádek exportu. Součty po měsících = `monthlyTotals` |
+| GET | `/api/spend/export?mesicu=12` | `text/csv` (UTF-8 s BOM, středníky, desetinná čárka), `Content-Disposition: attachment; filename="agenteeq-utrata-RRRR-MM-DD.csv"`. Obsahuje ověřené API náklady i starší ruční záznamy, vždy se sloupcem Zdroj (Ručně / Admin API). Ruční řádky exportu nejsou součástí aktivního souhrnu Útraty. |
 | PUT | `/api/spend/budgets` | `{ total?, currency?, rates?: {USD, EUR}, services?: {služba: částka \| ""} }` → `{ spend }` |
 | GET | `/api/alerts` | `{ unread, items }` (max 300, nejnovější první) |
 | POST | `/api/alerts/read` | `{ ids: string[] \| "all" }` → `{ unread }` |
@@ -223,11 +223,13 @@ interface LedgerEntry { id: string; service: string; kind: 'subscription' | 'ext
 
 interface SpendPayload {
   currency: string; monthKey: string;               // "2026-09" – místní kalendářní měsíc
-  month: { key: string; total: number; auto: number /* část total z Admin API */; services: Record<string, number>; kinds: Record<string, number> };
+  month: { key: string; total: number /* pouze Admin API */; auto: number /* shodné s total */; services: Record<string, number>; kinds: Record<string, number> };
   months: typeof month[];                            // posledních 6 měsíců
   recurring: number; forecast: number;
   budgets: { scope: string; label: string; spent: number; budget: number; pct: number }[];
-  ledger: LedgerEntry[]; budgetsConfig: { total: number; services: Record<string, number> };
+  ledger: LedgerEntry[];               // starší ruční záznamy, pouze historie a CSV
+  billing: { connected: boolean; at: number | null }; // alespoň jeden úspěšně načtený Admin API zdroj
+  budgetsConfig: { total: number; services: Record<string, number> };
   rates: Record<string, number>;                     // Kč za 1 jednotku měny
   rateInfo: { source: 'cnb' | 'manual' | 'default'; date: string | null /* RRRR-MM-DD lístku ČNB */; live: object | null };
   // Automatické položky Admin API sečtené po měsíci a službě (jen měsíce z `months`), seřazené od
@@ -242,10 +244,8 @@ interface SpendPayload {
     models: Array<{ model: string | null; amount: number; converted: number; tokens: { input: number; output: number; cached: number } | null }>;
   }>;
   subscriptions: Array<{
-    service: string; plan: string | null; label: string | null; detected: boolean;
+    service: string; plan: string; label: string; detected: true;
     free: boolean; since: string | null; observedAt: number | null; evidence: string;
-    payments: Array<{ id: string; amount: number; currency: string; date: string; recurring: 'monthly'; account: string; note: string }>;
-    payment: null | object;                          // kompatibilita: jen když existuje právě jedna platba
   }>;
   services: Record<string, { label: string; provider: Provider }>; kinds: Record<string, string>; currencies: string[];
 }
@@ -254,10 +254,12 @@ interface SpendPayload {
 // Claude musí nejprve projít aktuálním `claude auth status --json`; pak se znovu načte při změně
 // přesně souboru ~/.claude.json a pojistně po 10 minutách. Starý soubor po odhlášení plán nevytvoří.
 // ChatGPT pochází z poslední rate-limit události Codexu; údaj starší než 24 hodin nebo s časem
-// v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Do součtů
-// vstupují jen skutečné payments z ledgeru a ověřené API položky z Admin API.
-// Obrazovka Útrata ukazuje obojí: ruční řádky z `ledger` a skupinu jen ke čtení z `automatic`;
-// `month.total - month.auto` je ručně zapsaná část. Převod všech měsíců jde aktuálním kurzem
+// v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Ruční
+// zápisy z ledgeru nikdy nevytvoří položku v subscriptions ani cenu u rozpoznaného plánu.
+// Do aktivních součtů, grafů, prognózy, rozpočtů a týmové synchronizace vstupují pouze
+// ověřené API položky. Starší ruční řádky z `ledger` zůstávají odděleně v historii a CSV.
+// Když `billing.connected` není true, UI nulu nevydává za ověřené náklady.
+// Převod všech měsíců jde aktuálním kurzem
 // (`rateInfo`), historické kurzy aplikace nemá. `default` = orientační výchozí kurz.
 // integrations.cloud[id] = { state, detail, at, source, tokens: Record<den, …> | null, tokensError: string | null }
 // – `tokens: null` znamená „spotřebu se nepodařilo zjistit“ (důvod v `tokensError`), nikdy „nula“.

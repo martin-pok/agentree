@@ -170,7 +170,7 @@ export default {
   "Náklady za API": "API costs",
   "Automaticky doplní útratu a spotřebu tokenů za API do grafů a rozpočtů.": "Automatically adds API spend and token usage to charts and budgets.",
   "Připojeno {0} z 2 API.": "{0} of 2 APIs connected.",
-  "Žádný API klíč. Útratu můžeš zapisovat ručně.": "No API key. You can enter spending manually.",
+  "Žádný API klíč. Náklady zatím nelze ověřit.": "No API key. Costs cannot be verified yet.",
 
   // src/connectors/codex.js
   "Pomocný agent {0}": "Helper agent {0}",

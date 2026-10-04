@@ -73,39 +73,32 @@ test('plán ChatGPT se bere přesně z nejnovějšího limitu Codexu bez domněl
   assert.equal(chatgptPlanFromLimits([{ provider: 'openai', plan: 'plus', at: now + 60_001 }], now), null, 'čas z budoucnosti se odmítne');
   const pro = describePlan({ service: 'chatgpt', plan: 'pro', evidence: 'x' });
   assert.equal(pro.label, 'ChatGPT Pro');
-  assert.equal(pro.payment, null);
+  assert.equal('payment' in pro, false);
   const plus = describePlan({ service: 'chatgpt', plan: 'plus', evidence: 'x' });
   assert.equal(plus.label, 'ChatGPT Plus');
-  assert.equal(plus.payment, null, 'veřejný ceník není skutečná platba uživatele');
+  assert.equal('payments' in plus, false, 'veřejný ceník není skutečná platba uživatele');
 });
 
-test('rozpoznaný plán ukáže jen aktivní skutečnou platbu zapsanou uživatelem', () => {
-  const now = Date.parse('2026-09-20');
+test('ruční zápisy nikdy nevytvoří plán ani licenci v portfoliu', () => {
   const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 612.4, currency: 'CZK', recurring: 'monthly', date: '2026-03-01', endDate: null, account: 'Osobní', note: 'Claude Pro' }];
-  const p = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, ledger, now);
-  assert.deepEqual(p.payment, { id: 'real', amount: 612.4, currency: 'CZK', date: '2026-03-01', recurring: 'monthly', account: 'Osobní', note: 'Claude Pro' });
-  assert.equal(p.payments.length, 1);
-  const ended = describePlan({ service: 'claude', plan: 'pro', evidence: 'x' }, [{ ...ledger[0], endDate: '2026-06-30' }], now);
-  assert.equal(ended.payment, null, 'ukončený zápis už není aktuální platba');
+  assert.deepEqual(subscriptionPortfolio([], ledger), []);
+  const p = subscriptionPortfolio([{ service: 'claude', plan: 'pro', evidence: 'Claude Code' }], ledger)[0];
+  assert.equal(p.label, 'Claude Pro');
+  assert.equal('payments' in p, false);
+  assert.equal('payment' in p, false);
 });
 
-test('portfolio oddělí více licencí od rozpoznaného účtu a zachová ručně evidovanou službu', () => {
-  const now = Date.parse('2026-09-20');
+test('další ruční licence nejsou vydávány za automaticky zjištěné účty', () => {
   const ledger = [
     { id: 'c1', service: 'claude', kind: 'subscription', amount: 20, currency: 'USD', recurring: 'monthly', date: '2026-01-01', endDate: null, account: 'Osobní', note: '' },
     { id: 'c2', service: 'claude', kind: 'subscription', amount: 25, currency: 'USD', recurring: 'monthly', date: '2026-02-01', endDate: null, account: 'Studio', note: '' },
     { id: 'p1', service: 'perplexity', kind: 'subscription', amount: 20, currency: 'USD', recurring: 'monthly', date: '2026-03-01', endDate: null, account: 'Výzkum', note: '' },
     { id: 'old', service: 'claude', kind: 'subscription', amount: 10, currency: 'USD', recurring: 'monthly', date: '2026-01-01', endDate: '2026-08-31', account: 'Ukončená', note: '' },
   ];
-  const plans = subscriptionPortfolio([{ service: 'claude', plan: 'pro', evidence: 'Claude Code' }], ledger, now);
-  const claude = plans.find((p) => p.service === 'claude');
-  assert.equal(claude.detected, true);
-  assert.equal(claude.payments.length, 2);
-  assert.equal(claude.payment, null, 'u více licencí se žádná nevydává za platbu rozpoznaného účtu');
-  assert.deepEqual(claude.payments.map((p) => p.account), ['Osobní', 'Studio']);
-  const perplexity = plans.find((p) => p.service === 'perplexity');
-  assert.equal(perplexity.detected, false);
-  assert.equal(perplexity.payments[0].account, 'Výzkum');
+  const plans = subscriptionPortfolio([{ service: 'claude', plan: 'pro', evidence: 'Claude Code' }], ledger);
+  assert.deepEqual(plans.map((p) => p.service), ['claude']);
+  assert.equal(plans[0].detected, true);
+  assert.doesNotMatch(JSON.stringify(plans), /Studio|Výzkum|612\.4|20/);
 });
 
 test('název licence se ukládá jen k předplatnému a je omezený', () => {
@@ -116,18 +109,18 @@ test('název licence se ukládá jen k předplatnému a je omezený', () => {
   assert.equal(extra.value.account, '');
 });
 
-test('rozpoznaný plán bez billing dat nevytváří výdaj; ruční platba se počítá jednou', () => {
+test('rozpoznaný plán bez billing dat nevytváří výdaj a ruční platba nezvyšuje ověřený součet', () => {
   const now = Date.parse('2026-09-20T12:00:00');
   const detected = describePlan({ service: 'claude', plan: 'pro', since: '2026-08-05', evidence: 'x' }, [], now);
-  assert.equal(detected.payment, null);
+  assert.equal('payment' in detected, false);
   const empty = spendSummary({ ...DEFAULT_SPEND, ledger: [], rates: { CZK: 1, USD: 21, EUR: 24 } }, now, []);
   assert.equal(empty.month.total, 0);
   const ledger = [{ id: 'real', service: 'claude', kind: 'subscription', amount: 20, currency: 'USD', date: '2026-08-05', recurring: 'monthly', endDate: null }];
   const s = spendSummary({ ...DEFAULT_SPEND, ledger, rates: { CZK: 1, USD: 21, EUR: 24 } }, now, []);
-  assert.equal(s.month.total, 420);
-  assert.equal(s.recurring, 420);
-  assert.equal(s.forecast, 420);
-  assert.equal(s.months.find((m) => m.key === '2026-08').total, 420);
+  assert.equal(s.month.total, 0);
+  assert.equal(s.recurring, 0);
+  assert.equal(s.forecast, 0);
+  assert.equal(s.months.find((m) => m.key === '2026-08').total, 0);
   assert.equal(s.months.find((m) => m.key === '2026-07').total, 0, 'před začátkem předplatného se nic nepočítá');
 });
 
@@ -152,7 +145,7 @@ test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho 
     const claude = sp.subscriptions.find((x) => x.service === 'claude');
     assert.equal(claude.plan, 'pro');
     assert.equal(claude.label, 'Claude Pro');
-    assert.equal(claude.payment, null);
+    assert.equal('payment' in claude, false);
     assert.equal(sp.month.total, 0);
     assert.doesNotMatch(JSON.stringify(sp), /tajne@example\.com/);
     assert.equal(sp.rateInfo.source, 'default');

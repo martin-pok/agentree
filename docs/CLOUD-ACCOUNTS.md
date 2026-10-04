@@ -15,7 +15,7 @@ Legenda buněk:
 účet** s administrátorským API klíčem (Admin/Management key), který dává agregovaná data za celou organizaci,
 a (B) **běžné spotřebitelské předplatné** (ChatGPT Plus/Pro, Claude Pro/Max, Gemini Advanced, Perplexity Pro,
 Grok, le Chat Pro, Copilot Individual), které **nemá žádné veřejné API** – ani na útratu, ani na limity, ani na
-historii chatů. Tohle rozlišení určuje, komu Agenteeq může nabídnout automatické napojení a komu jen ruční zápis.
+historii chatů. Tohle rozlišení určuje, kde Agenteeq může nabídnout automatické napojení; nepřístupné částky předplatného za uživatele nedohaduje ani po něm nechce ruční zápis.
 
 ---
 
