@@ -31,6 +31,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var output: Pipe?
     var statusItem: NSStatusItem!
     var loading: NSView!
+    // Načítací scéna (public/nacitani.html) ve vlastním webovém pohledu nad rozhraním. Běží od
+    // prvního snímku okna až do načtení dat, takže animace značky jede souvisle bez střihu.
+    var loaderWeb: WKWebView!
+    var loaderURL: URL?
+    var loaderText = "Připravujeme tvůj pracovní prostor…"
+    var loaderRetry = false
+    // Záloha, kdyby stránka scény v balíčku chyběla: prostý text a tlačítko v AppKitu.
+    var fallback: NSStackView!
     var statusLabel: NSTextField!
     var retryButton: NSButton!
     var baseURL: URL?
@@ -42,7 +50,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var buffer = ""
     var failedMessage: String?
     var lockFD: Int32 = -1
-    let ink = NSColor(srgbRed: 22/255, green: 20/255, blue: 29/255, alpha: 1)
     let paper = NSColor(srgbRed: 244/255, green: 243/255, blue: 247/255, alpha: 1)
     // --backdrop ze stylů aplikace: „stůl“, na kterém karty leží.
     let backdrop = NSColor(srgbRed: 12/255, green: 11/255, blue: 16/255, alpha: 1)
@@ -168,19 +175,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
 
     func buildLoading() {
-        loading = NSView(); loading.wantsLayer = true; loading.layer?.backgroundColor = ink.cgColor
+        loading = NSView(); loading.wantsLayer = true; loading.layer?.backgroundColor = backdrop.cgColor
         loading.translatesAutoresizingMaskIntoConstraints = false; web.addSubview(loading)
         NSLayoutConstraint.activate([loading.leadingAnchor.constraint(equalTo: web.leadingAnchor), loading.trailingAnchor.constraint(equalTo: web.trailingAnchor), loading.topAnchor.constraint(equalTo: web.topAnchor), loading.bottomAnchor.constraint(equalTo: web.bottomAnchor)])
+
+        let config = WKWebViewConfiguration()
+        config.userContentController.add(self, name: "nacitani")
+        loaderWeb = WKWebView(frame: .zero, configuration: config)
+        loaderWeb.navigationDelegate = self
+        loaderWeb.setValue(false, forKey: "drawsBackground")
+        loaderWeb.translatesAutoresizingMaskIntoConstraints = false; loading.addSubview(loaderWeb)
+        NSLayoutConstraint.activate([loaderWeb.leadingAnchor.constraint(equalTo: loading.leadingAnchor), loaderWeb.trailingAnchor.constraint(equalTo: loading.trailingAnchor), loaderWeb.topAnchor.constraint(equalTo: loading.topAnchor), loaderWeb.bottomAnchor.constraint(equalTo: loading.bottomAnchor)])
+
         let title = NSTextField(labelWithString: "Agenteeq")
         title.font = NSFont.systemFont(ofSize: 42, weight: .light); title.textColor = .white
-        statusLabel = NSTextField(wrappingLabelWithString: "Připravujeme tvůj pracovní prostor…")
+        statusLabel = NSTextField(wrappingLabelWithString: loaderText)
         statusLabel.font = .systemFont(ofSize: 15); statusLabel.textColor = NSColor(white: 0.75, alpha: 1); statusLabel.alignment = .center
         statusLabel.preferredMaxLayoutWidth = 420
         retryButton = NSButton(title: "Zkusit znovu", target: self, action: #selector(retry))
         retryButton.bezelStyle = .rounded; retryButton.isHidden = true
-        let stack = NSStackView(views: [title, statusLabel, retryButton]); stack.orientation = .vertical; stack.spacing = 24
-        stack.translatesAutoresizingMaskIntoConstraints = false; loading.addSubview(stack)
-        NSLayoutConstraint.activate([stack.centerXAnchor.constraint(equalTo: loading.centerXAnchor), stack.centerYAnchor.constraint(equalTo: loading.centerYAnchor), stack.widthAnchor.constraint(lessThanOrEqualToConstant: 460)])
+        fallback = NSStackView(views: [title, statusLabel, retryButton]); fallback.orientation = .vertical; fallback.spacing = 24
+        fallback.translatesAutoresizingMaskIntoConstraints = false; loading.addSubview(fallback)
+        NSLayoutConstraint.activate([fallback.centerXAnchor.constraint(equalTo: loading.centerXAnchor), fallback.centerYAnchor.constraint(equalTo: loading.centerYAnchor), fallback.widthAnchor.constraint(lessThanOrEqualToConstant: 460)])
+
+        let page = Bundle.main.resourceURL!.appendingPathComponent("app/public/nacitani.html")
+        if FileManager.default.fileExists(atPath: page.path) {
+            loaderURL = page
+            fallback.isHidden = true
+            loaderWeb.loadFileURL(page, allowingReadAccessTo: page.deletingLastPathComponent())
+        } else {
+            loaderWeb.isHidden = true
+        }
+    }
+
+    // Jediné místo, které mění text a tlačítko načítací scény – ve stránce i v záloze.
+    func setLoading(_ text: String, retry: Bool = false) {
+        loaderText = text; loaderRetry = retry
+        statusLabel.stringValue = text; retryButton.isHidden = !retry
+        applyLoaderState()
+    }
+    func applyLoaderState() {
+        guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: ["text": loaderText, "znovu": loaderRetry]), let json = String(data: data, encoding: .utf8) else { return }
+        loaderWeb.evaluateJavaScript("window.agenteeqNacitani && window.agenteeqNacitani(\(json))")
+    }
+    func showLoading() {
+        loading.layer?.removeAllAnimations()
+        loading.alphaValue = 1; loading.isHidden = false
+    }
+    // Scéna se rozplyne do hotového rozhraní; při omezeném pohybu zmizí naráz.
+    func hideLoading() {
+        guard !loading.isHidden else { return }
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion { loading.isHidden = true; return }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.32
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0, 0, 1)
+            loading.animator().alphaValue = 0
+        }, completionHandler: { [weak self] in
+            guard let self, self.loading.alphaValue == 0 else { return }
+            self.loading.isHidden = true; self.loading.alphaValue = 1
+        })
     }
 
     @objc func showWindow() { window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
@@ -193,8 +246,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard !quitting, child?.isRunning != true else { return }
         generation += 1
         let currentGeneration = generation
-        loading.isHidden = false; retryButton.isHidden = true
-        statusLabel.stringValue = retries == 0 ? "Připravujeme tvůj pracovní prostor…" : "Obnovujeme spojení s tvými agenty…"
+        showLoading()
+        setLoading(retries == 0 ? "Připravujeme tvůj pracovní prostor…" : "Obnovujeme spojení s tvými agenty…")
         failedMessage = nil; buffer = ""; baseURL = nil
         let resources = Bundle.main.resourceURL!
         let process = Process(); process.executableURL = resources.appendingPathComponent("node")
@@ -243,18 +296,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             DispatchQueue.main.async {
                 guard let self, !self.quitting, self.generation == currentGeneration else { return }
                 self.input = nil; self.output = nil; self.child = nil
-                self.loading.isHidden = false
+                self.showLoading()
                 if self.failedMessage == nil && self.retries < 3 {
                     self.retries += 1
                     DispatchQueue.main.asyncAfter(deadline: .now() + Double(self.retries)) { self.startServer() }
                 } else {
-                    self.statusLabel.stringValue = self.failedMessage ?? "Spojení se nepodařilo obnovit. Zkus aplikaci spustit znovu."
-                    self.retryButton.isHidden = false
+                    self.setLoading(self.failedMessage ?? "Spojení se nepodařilo obnovit. Zkus aplikaci spustit znovu.", retry: true)
                 }
             }
         }
         do { try process.run() } catch {
-            child = nil; statusLabel.stringValue = "Aplikaci se nepodařilo spustit. Rozbal celý balíček Agenteeq a zkus to znovu."; retryButton.isHidden = false
+            child = nil; setLoading("Aplikaci se nepodařilo spustit. Rozbal celý balíček Agenteeq a zkus to znovu.", retry: true)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
             guard let self, self.generation == currentGeneration, self.baseURL == nil, self.child?.isRunning == true else { return }
@@ -268,6 +320,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         return url.scheme == "http" && url.host == "127.0.0.1" && url.port == baseURL.port
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        // Pohled scény smí jen na svůj jediný soubor; nic jiného neotevře ani odkazem.
+        if webView === loaderWeb {
+            decisionHandler(action.request.url?.standardizedFileURL == loaderURL?.standardizedFileURL ? .allow : .cancel); return
+        }
         if local(action.request.url) { decisionHandler(action.shouldPerformDownload ? .download : .allow); return }
         if let url = action.request.url, ["https", "mailto"].contains(url.scheme ?? ""), action.navigationType == .linkActivated { NSWorkspace.shared.open(url) }
         decisionHandler(.cancel)
@@ -281,10 +337,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         else if let url = action.request.url, ["https", "mailto"].contains(url.scheme ?? "") { NSWorkspace.shared.open(url) }
         return nil
     }
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { loading.isHidden = false; webView.reload() }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        if webView === loaderWeb { webView.reload(); return }
+        showLoading(); webView.reload()
+    }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if webView === loaderWeb { applyLoaderState() }
+    }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
-        loading.isHidden = false; statusLabel.stringValue = "Obnovujeme zobrazení Agenteeq…"
+        if webView === loaderWeb { loaderURL = nil; loaderWeb.isHidden = true; fallback.isHidden = false; return }
+        showLoading(); setLoading("Obnovujeme zobrazení Agenteeq…")
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             if let url = self?.baseURL, !self!.quitting { self?.web.load(URLRequest(url: url)) }
         }
@@ -300,8 +363,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         panel.beginSheetModal(for: window) { result in completionHandler(result == .OK ? panel.urls : nil) }
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "nacitani" {
+            if message.webView === loaderWeb, message.frameInfo.isMainFrame, (message.body as? [String: Any])?["type"] as? String == "znovu" { retry() }
+            return
+        }
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
-        if type == "ready" { loading.isHidden = true; if qaReport != nil { web.evaluateJavaScript(qaProbe) } }
+        if type == "ready" { hideLoading(); if qaReport != nil { web.evaluateJavaScript(qaProbe) } }
         if type == "qa-sonda", qaReport != nil { qaWrite(["udalost": "nacteno", "zprava": data]) }
         if type == "appearance", let theme = data["theme"] as? String {
             let dark = theme == "dark"

@@ -267,3 +267,29 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ---------- Načítací scéna pláště pro Mac (public/nacitani.html) ----------
+   Okno ji ukáže hned po spuštění a drží ji, dokud rozhraní nenačte data. Leží přímo na „stole“
+   (--backdrop s jemným světlem z body::before), proto je text stavu světlý v obou režimech.
+   Rámeček scény by na stejně tmavém podkladu jen kreslil linku navíc. */
+.nacitani-stranka, .nacitani-stranka body { height: 100%; overflow: hidden; }
+.nacitani {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+  /* Scéna není obsah ke kopírování: tažení myší přes ni nic neoznačuje. */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+.nacitani .loader-wrap { padding: 0; }
+.nacitani .loader-scene { overflow: visible; border-color: transparent; background: transparent; }
+/* Světlo pod značkou dobíhá do ztracena: na volné ploše by oříznutý přechod kreslil obdélník. */
+.nacitani .loader-scene::before { inset: -48px -24px; background: radial-gradient(closest-side at 50% 60%, color-mix(in srgb, var(--teal) 16%, transparent), transparent); }
+.nacitani .loader-text { color: color-mix(in srgb, var(--ivory) 76%, transparent); max-width: 420px; }
+.nacitani .btn[hidden] { display: none; }

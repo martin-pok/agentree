@@ -71,3 +71,27 @@ test('okno O aplikaci si verzi bere z balíčku, ne z natvrdo psaného čísla',
   assert.ok(swift.includes('CFBundleShortVersionString'), 'verze se čte z Info.plist');
   assert.doesNotMatch(swift, /applicationVersion:\s*"\d/, 'žádná verze natvrdo ve zdrojáku');
 });
+
+test('plášť pro Mac ukazuje od spuštění značkovou načítací scénu, ne prostý text', async () => {
+  const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
+  const stranka = await fs.readFile(new URL('../public/nacitani.html', import.meta.url), 'utf8');
+  const skript = await fs.readFile(new URL('../public/js/nacitani.js', import.meta.url), 'utf8');
+  const { loaderHtml } = await import('../public/js/loader.js');
+
+  // Okno načte scénu ze souboru v balíčku hned při stavbě, ještě před startem serveru.
+  assert.match(swift, /appendingPathComponent\("app\/public\/nacitani\.html"\)/);
+  assert.match(swift, /loaderWeb\.loadFileURL\(page, allowingReadAccessTo:/);
+  // Scéna zmizí až s hotovým rozhraním (zpráva ready), pohled scény nesmí jinam než na svůj soubor.
+  assert.match(swift, /type == "ready" \{ hideLoading\(\)/);
+  assert.match(swift, /if webView === loaderWeb \{\s*decisionHandler\(action\.request\.url\?\.standardizedFileURL == loaderURL\?\.standardizedFileURL \? \.allow : \.cancel\)/);
+  // Texty stavu jdou jen přes setLoading, aby stránka i záloha říkaly totéž.
+  assert.doesNotMatch(swift, /statusLabel\.stringValue = (?!text)/);
+
+  // Animace je stejná jako v rozhraní: scéna ve stránce se shoduje s loaderHtml().
+  const scena = (html) => html.match(/<div class="loader-scene"[\s\S]*?<span class="loader-stage-line"><\/span>/)[0].replace(/\s+</g, '<').replace(/>\s+/g, '>');
+  assert.equal(scena(stranka), scena(loaderHtml('x')));
+  // Stránka ze souboru nic nenačítá ze sítě a hlášku vkládá jako text.
+  assert.doesNotMatch(stranka, /(src|href)="(https?:)?\/\//);
+  assert.match(skript, /text\.textContent = stav\.text/);
+  assert.doesNotMatch(skript, /innerHTML/);
+});

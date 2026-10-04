@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.36.1',
+    date: '2026-10-04',
+    title: 'Nová načítací obrazovka v aplikaci pro Mac a klidné karty projektů',
+    items: [
+      'Aplikace pro Mac ukazuje od prvního okamžiku animovanou značku Agenteeq místo prostého nápisu a drží ji, dokud se nenačtou data. Pak se plynule rozplyne do Přehledu.',
+      'Karty projektů mají stálou velikost: když se do nich načítají čísla, graf nebo loga služeb, nic neposkočí.',
+    ],
+    en: {
+      title: 'The new loading screen in the Mac app and steady project cards',
+      items: [
+        'The Mac app shows the animated Agenteeq mark from the very first moment instead of a plain caption, keeps it until your data is loaded and then fades smoothly into Overview.',
+        'Project cards keep a steady size: nothing jumps while numbers, the chart or service logos load into them.',
+      ],
+    },
+  },
+  {
     version: '0.36.0',
     date: '2026-10-04',
     title: 'Eura, okamžitá detekce agentů a přehledný účet',
