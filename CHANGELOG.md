@@ -4,6 +4,7 @@
 
 - Přehled ukazuje Claude i bez čerstvého měření, pokud je na Macu dostupný. Při ověřeném odhlášení nabídne přihlášení; při neznámém nebo starém stavu čeká na data. Nikdy nedoplní procento ani čas obnovy odhadem.
 - Stav přihlášení Claude Code se čte zvlášť od nainstalovaných hooků. Jejich štítek v Nastavení výslovně říká „Hooky zapnuté“. Změny přihlášení se propíší živě a kontrolují se každé 2 minuty.
+- Test souběžných nástrojů používá budoucí čas obnovy z epochy místo pevné hodiny 23:00, takže po 23. hodině správně ověřuje ještě aktivní limit.
 
 ## 0.36.2 – 2026-10-04 · srovnané filtry na Agentech, načítací scéna i na Windows
 

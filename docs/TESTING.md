@@ -12,6 +12,8 @@
 
 Na tomto Macu `claude auth status --json` v době ověření hlásil `loggedIn: false` a poslední vzorek vytížení Claude Desktopu byl starší než 30 minut. Skutečné osobní procento Claude proto nebylo k dispozici a aplikace ho správně nesmí doplnit odhadem. Ověření vizuálního stavu využilo umělá data; přihlášení skutečného účtu vyžaduje dokončení u Anthropicu.
 
+Při opakovaném vydávacím běhu po 23:00 selhal pouze test `simulace-nastroju`: jeho umělá hláška měla pevnou obnovu v 23:00, takže skutečná logika limit správně označila jako ukončený. Fixture nyní obsahuje epochu dvě hodiny po startu testu. Cílený test i celá sada poté znovu prošly (795/797, dvě přeskočené jen pro Windows).
+
 ## Protokol ověření – 0.36.2, filtry na Agentech v jedné mřížce (4. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |

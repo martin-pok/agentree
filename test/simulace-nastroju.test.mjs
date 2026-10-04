@@ -71,7 +71,9 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
     { type: 'user', timestamp: iso(t1), cwd: '/Users/x/web', message: { role: 'user', content: 'Pokracuj v testech' } },
     {
       type: 'assistant', timestamp: iso(t1 + 1000), isApiErrorMessage: true,
-      message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: "You've hit your session limit · resets 11pm (Europe/Prague)" }] },
+      // Pevná hodina 23:00 po 23. hodině už není aktivní limit. Starší formát s epochou
+      // dává skutečný budoucí reset a test běží stejně správně ráno i přes půlnoc.
+      message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: `Session limit reached|${Math.floor((now + 2 * H) / 1000)}` }] },
     },
   ]);
 
