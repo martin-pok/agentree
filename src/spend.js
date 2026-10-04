@@ -118,8 +118,8 @@ export function validateBudgets(input, current) {
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: next };
 }
 
-// `auto` je část součtu z automatických položek Admin API. Obrazovka Útrata ji ukazuje zvlášť,
-// aby šel součet měsíce složit z viditelných řádků: ručně zapsané + automaticky z Admin API.
+// `monthlyTotals` umí sečíst i archivní ruční položky pro CSV; aktivní souhrn jí
+// však předává ledger prázdný, takže metriky zůstávají jen z Admin API.
 export function monthlyTotals(spend, months, autoEntries = []) {
   const rows = months.map((key) => ({ key, total: 0, auto: 0, services: {}, kinds: {} }));
   const index = new Map(months.map((k, i) => [k, i]));
@@ -203,14 +203,16 @@ export function autoMonthly(autoEntries, months, spend, modelEntries = []) {
 export function spendSummary(spend, now = Date.now(), autoEntries = [], modelEntries = []) {
   const current = monthKey(now);
   const months = Array.from({ length: 6 }, (_, i) => addMonths(current, i - 5));
-  const rows = monthlyTotals(spend, months, autoEntries);
+  // Aktivní metriky jsou výhradně z ověřených Admin API. Starší ruční záznamy
+  // zůstávají v archivu/CSV, ale nejsou důkazem současných nákladů ani licence.
+  const rows = monthlyTotals({ ...spend, ledger: [] }, months, autoEntries);
   const month = rows[rows.length - 1];
 
   const d = new Date(now);
   const day = d.getDate();
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   let recurring = 0;
-  for (const e of [...(spend.ledger || []), ...autoEntries]) {
+  for (const e of autoEntries) {
     if (e.recurring !== 'monthly' || typeof e.date !== 'string') continue;
     if (e.date.slice(0, 7) <= current && (!e.endDate || e.endDate.slice(0, 7) >= current)) recurring += convert(e.amount, e.currency, spend);
   }
@@ -239,8 +241,8 @@ export function spendSummary(spend, now = Date.now(), autoEntries = [], modelEnt
 }
 
 // Export útraty pro účetnictví nebo vlastní tabulku: jeden řádek za platbu v každém měsíci.
-// Měsíční předplatné má řádek v každém měsíci, kdy běželo, takže součet sloupce „Částka v …“
-// za měsíc odpovídá měsíčnímu součtu na obrazovce Útrata (stejná pravidla jako monthlyTotals).
+// Starší měsíční předplatné má řádek v každém měsíci, kdy běželo. Export je archiv,
+// jeho součet se proto může lišit od aktivního souhrnu ověřených API nákladů.
 // Převod jde přes kurzy nastavené v aplikaci – kurz je v řádku, aby šel převod zkontrolovat.
 export const EXPORT_MESICU = { vychozi: 12, max: 36 };
 

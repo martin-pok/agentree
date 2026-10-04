@@ -387,7 +387,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const partial = Object.values(state).find((v) => v.state === 'connected' && v.usageError);
       return {
         state: errors.length ? 'error' : connected ? 'connected' : 'missing',
-        detail: errors.length ? errors[0].detail : partial ? partial.detail : connected ? ui('Připojeno {0} z 2 API.', connected) : ui('Žádný API klíč. Útratu můžeš zapisovat ručně.'),
+        detail: errors.length ? errors[0].detail : partial ? partial.detail : connected ? ui('Připojeno {0} z 2 API.', connected) : ui('Žádný API klíč. Náklady zatím nelze ověřit.'),
         count: connected,
         watching: Boolean(timer),
         lastEventAt: Math.max(...Object.values(state).map((v) => v.at)),

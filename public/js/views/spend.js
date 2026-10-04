@@ -29,59 +29,6 @@ function applySpend(r) {
   }
 }
 
-function entryForm(sp, pre = {}) {
-  const opt = (obj, sel) => Object.entries(obj).map(([k, x]) => `<option value="${esc(k)}"${k === sel ? ' selected' : ''}>${esc(typeof x === 'string' ? x : x.label)}</option>`).join('');
-  return `<div class="form-grid">
-    <label class="field"><span>${tr('Služba')}</span><select name="service" required>${opt(sp.services, pre.service || 'chatgpt')}</select></label>
-    <label class="field"><span>${tr('Typ platby')}</span><select name="kind">${opt(sp.kinds, pre.kind || 'extra')}</select></label>
-    <label class="field"><span>${tr('Částka')}</span><input name="amount" inputmode="decimal" autocomplete="off" required placeholder="0" value="${pre.amount ?? ''}"></label>
-    <label class="field"><span>${tr('Měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === (pre.currency || sp.currency) ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
-    <label class="field"><span>${tr('Datum platby')}</span><input type="date" name="date" value="${localDate()}" required></label>
-    <label class="field"><span>${tr('Účet / licence (volitelné)')}</span><input name="account" maxlength="80" autocomplete="off" value="${esc(pre.account || '')}" placeholder="${tr('Osobní, studio nebo klient')}"></label>
-    <label class="field field--wide"><span>${tr('Poznámka')}</span><input name="note" maxlength="140" placeholder="${tr('Např. dokoupené extra usage na víkendový sprint')}" value="${esc(pre.note || '')}"></label>
-    <label class="check field--wide"><input type="checkbox" name="recurring" value="monthly"${pre.recurring ? ' checked' : ''}> ${tr('Opakuje se každý měsíc (předplatné)')}</label>
-  </div>`;
-}
-
-// Odkaz „Zapsat předplatné“ z Mých nástrojů: #/utrata?pridat=1&sluzba=cursor&poznamka=Warp.
-// Neznámou službu formulář nepřijme, takže se bere jen z nabídky; poznámka je obyčejný text.
-function predvyplneni(q) {
-  const sluzba = q?.get('sluzba');
-  if (!sluzba) return {};
-  return {
-    service: state.spend?.services?.[sluzba] ? sluzba : 'other',
-    kind: 'subscription',
-    recurring: true,
-    note: String(q.get('poznamka') || '').slice(0, 140),
-    title: tr('Zapsat předplatné'),
-  };
-}
-
-export function openAddEntry(pre = {}) {
-  const sp = state.spend;
-  if (!sp) return;
-  modal({
-    title: pre.title || tr('Přidat výdaj'),
-    body: entryForm(sp, pre),
-    submitLabel: pre.submitLabel || tr('Přidat výdaj'),
-    onSubmit: async (form) => {
-      const d = new FormData(form);
-      const r = await api.addLedger({
-        service: d.get('service'),
-        kind: d.get('kind'),
-        amount: d.get('amount'),
-        currency: d.get('currency'),
-        date: d.get('date'),
-        account: d.get('account'),
-        note: d.get('note'),
-        recurring: d.get('recurring') ? 'monthly' : null,
-      });
-      applySpend(r);
-      toast(pre.kind === 'subscription' ? tr('Licence přidána') : tr('Výdaj přidán'));
-    },
-  });
-}
-
 function openBudgets(opener = null) {
   const sp = state.spend;
   const cfg = sp.budgetsConfig;
@@ -116,57 +63,46 @@ function openBudgets(opener = null) {
   });
 }
 
-// Nástroj umí přímo potvrdit identitu plánu, ne skutečně strženou částku. Částka se proto
-// zobrazuje a počítá jen tehdy, když ji uživatel doložil záznamem ve Výdajích.
-function plansHtml(sp) {
-  const rows = (sp.subscriptions || []).map((p) => {
+// Zobrazí se jen plány z čerstvého stavu připojených nástrojů. Bez ověřeného
+// zdroje není karta ani tlačítko pro ruční doplňování licencí.
+export function plansHtml(sp) {
+  const plans = (sp.subscriptions || []).filter((p) => p.detected);
+  if (!plans.length) return '';
+  const rows = plans.map((p) => {
     const svc = sp.services[p.service];
-    const payments = Array.isArray(p.payments) ? p.payments : p.payment ? [p.payment] : [];
     const label = p.label || svc?.label || p.service;
-    const price = payments.length
-      ? `<span class="plan-price"><b>${payments.length === 1 ? tr('1 licence') : payments.length < 5 ? tr('{0} licence', payments.length) : tr('{0} licencí', payments.length)}</b></span>`
-      : p.free ? `<span class="plan-price"><b>${tr('Bezplatný plán')}</b></span>` : '';
-    const licenses = payments.length ? `<div class="license-list" aria-label="${esc(tr('Evidované licence'))}">${payments.map((payment, index) => `
-      <div class="license-row">
-        <span class="license-copy"><b>${esc(payment.account || tr('Licence {0}', index + 1))}</b><small>${esc(payment.note || tr('platba od {0}', dateLong(Date.parse(payment.date))))}</small></span>
-        <span class="license-amount">${esc(fmtMoney(payment.amount, payment.currency))}<small>${tr('/ měsíc')}</small></span>
-        <button class="btn btn--sm" type="button" data-action="end" data-id="${esc(payment.id)}">${tr('Ukončit')}</button>
-      </div>`).join('')}</div>` : '';
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
-      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b>${price}</span>
-        ${p.detected ? `<span class="plan-sub"><span class="plan-kind">${tr('Zjištěno automaticky')}</span> ${esc(p.evidence)}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>` : `<span class="plan-sub">${tr('Další licence')}</span>`}
-        ${licenses}
-        ${p.detected && !payments.length ? '' : `<span class="plan-actions"><button class="btn btn--sm" type="button" data-action="plan-edit" data-service="${esc(p.service)}">${tr('Přidat další licenci')}</button></span>`}
+      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b>${p.free ? `<span class="plan-price"><b>${tr('Bezplatný plán')}</b></span>` : ''}</span>
+        <span class="plan-sub"><span class="plan-kind">${tr('Zjištěno automaticky')}</span> ${esc(p.evidence)}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>
       </span>
     </li>`;
   }).join('');
   return `<section class="card pad plans" aria-labelledby="plans-h">
-    <div class="sec-head"><h2 id="plans-h">${tr('Plány a licence')}</h2><button class="btn btn--sm" type="button" data-action="license-add">${ICON.plus}${tr('Další licence')}</button></div>
-    ${rows ? `<ul class="plan-list">${rows}</ul>` : `<p class="muted">${tr('Napoj Claude Code nebo Codex v Nastavení a Agenteeq plán zjistí automaticky.')}</p>`}
+    <div class="sec-head"><h2 id="plans-h">${tr('Zjištěné plány')}</h2></div>
+    <ul class="plan-list">${rows}</ul>
   </section>`;
 }
 
-function mount(el, _params, query) {
+function mount(el) {
   v.el = el;
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <span class="toolbar-title" data-region="month"></span>
       <div class="toolbar-actions">
         <button class="btn" type="button" data-action="budgets">${ICON.sliders}${tr('Rozpočty')}</button>
-        <button class="btn btn--primary" type="button" data-action="add">${ICON.plus}${tr('Přidat výdaj')}</button>
       </div>
     </div>
     <div class="spend-hero card" data-enter style="--i:2" data-region="hero"></div>
     <div data-enter style="--i:3" data-region="plans"></div>
     <div data-enter style="--i:3" data-region="credits"></div>
     <div data-enter style="--i:4" data-region="budgets"></div>
-    <div class="grid-2 grid-2--wide" data-enter style="--i:5">
+    <div class="grid-2 grid-2--wide" data-region="analytics" data-enter style="--i:5">
       <section class="card pad" aria-labelledby="mo-h"><div class="sec-head"><h2 id="mo-h">${tr('Posledních 6 měsíců')}</h2></div><div data-region="months"></div><div class="legend legend--static" data-region="mlegend"></div></section>
-      <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">${tr('Za co platíš')}</h2><span class="muted small">${tr('tento měsíc')}</span></div><div data-region="kinds"></div></section>
+      <section class="card pad" aria-labelledby="kind-h"><div class="sec-head"><h2 id="kind-h">${tr('Rozložení nákladů')}</h2><span class="muted small">${tr('tento měsíc')}</span></div><div data-region="kinds"></div></section>
     </div>
-    <section class="card pad" data-enter style="--i:6" aria-labelledby="led-h">
-      <div class="sec-head"><h2 id="led-h">${tr('Výdaje')}</h2>${exportTlacitko()}</div>
+    <section class="card pad" data-enter style="--i:6" data-region="ledger-section" aria-labelledby="led-h">
+      <div class="sec-head"><h2 id="led-h">${tr('Záznamy nákladů')}</h2>${exportTlacitko()}</div>
       <div data-region="ledger"></div>
     </section>`;
   // `el` je trvalý uzel #view, který router mezi navigacemi jen vyprazdňuje (innerHTML = ''),
@@ -187,12 +123,7 @@ function mount(el, _params, query) {
     if (!a) return;
     const id = a.dataset.id;
     try {
-      if (a.dataset.action === 'add') openAddEntry();
-      else if (a.dataset.action === 'license-add') openAddEntry({ title: tr('Přidat licenci'), submitLabel: tr('Přidat licenci'), kind: 'subscription', recurring: true });
-      else if (a.dataset.action === 'plan-edit') {
-        const p = state.spend.subscriptions.find((x) => x.service === a.dataset.service);
-        if (p) openAddEntry({ title: `${tr('Přidat licenci:')} ${p.label || state.spend.services[p.service]?.label || p.service}`, submitLabel: tr('Přidat licenci'), service: p.service, kind: 'subscription', recurring: true });
-      } else if (a.dataset.action === 'budgets') openBudgets(a);
+      if (a.dataset.action === 'budgets') openBudgets(a);
       else if (a.dataset.action === 'end') {
         const ok = await confirmDialog({ title: tr('Ukončit předplatné'), message: tr('Od příštího měsíce se platba přestane započítávat. Historie zůstane.'), confirmLabel: tr('Ukončit předplatné') });
         if (ok) { applySpend(await api.endLedger(id, localDate())); toast(tr('Předplatné ukončeno')); }
@@ -205,18 +136,22 @@ function mount(el, _params, query) {
     }
   };
   el.addEventListener('click', v.onClick);
-  if (query?.get('pridat')) requestAnimationFrame(() => openAddEntry(predvyplneni(query)));
 }
 
 function update() {
   const el = v.el;
   const sp = state.spend;
   if (!el || !sp) return;
+  const billingConnected = sp.billing?.connected !== false;
   const total = sp.budgetsConfig?.total || 0;
   const pct = total ? (sp.month.total / total) * 100 : 0;
   fill(el, 'month', esc(monthLabel(sp.monthKey)));
+  el.querySelector('[data-region="hero"]').classList.toggle('is-unavailable', !billingConnected);
+  el.querySelector('[data-region="budgets"]').hidden = !billingConnected;
+  el.querySelector('[data-region="analytics"]').hidden = !billingConnected;
+  el.querySelector('[data-region="ledger-section"]').hidden = !billingConnected && !sp.ledger?.length && !sp.automatic?.length;
 
-  fill(el, 'hero', `
+  fill(el, 'hero', billingConnected ? `
     <div class="spend-ring">${gauge({
       pct: total ? pct : 0,
       color: pct >= 100 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)',
@@ -226,12 +161,12 @@ function update() {
       reached: pct >= 100,
     })}</div>
     <div class="spend-stats">
-      <div><span class="eyebrow">${tr('Utraceno tento měsíc')}</span><span class="val">${tween('sp-month', sp.month.total, `money:${sp.currency}`)}</span></div>
+      <div><span class="eyebrow">${tr('Náklady z API tento měsíc')}</span><span class="val">${tween('sp-month', sp.month.total, `money:${sp.currency}`)}</span></div>
       <div><span class="eyebrow">${tr('Prognóza do konce měsíce')}</span><span class="val val--soft" data-odo>${money(sp.forecast)}</span></div>
-      <div><span class="eyebrow">${tr('Pravidelné platby')}</span><span class="val val--soft" data-odo>${money(sp.recurring)}</span></div>
+      <div><span class="eyebrow">${tr('Aktualizováno')}</span><span class="val val--soft">${sp.billing?.at ? `<span data-ago="${sp.billing.at}">${esc(rel(sp.billing.at))}</span>` : '–'}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
-    </div>`);
+    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
 
@@ -266,7 +201,7 @@ function update() {
     format: money,
     axisFormat: (x) => fmtMoney(x, sp.currency, { compact: true }),
     label: tr('Útrata za posledních 6 měsíců'),
-  }) : emptyState({ title: tr('Zatím žádná útrata'), text: tr('Jakmile zapíšeš první výdaj, uvidíš tu vývoj po měsících.') }));
+  }) : emptyState({ title: tr('Zatím žádné ověřené náklady'), text: tr('Vývoj uvidíš, až připojené API vrátí první náklady.') }));
   fill(el, 'mlegend', jeCoUkazat ? used.map((k) => `<span class="legend-item"><i class="swatch" style="background:${serviceColor(sp, k)}"></i>${esc(sp.services[k]?.label || k)}</span>`).join('') : '');
 
   const kinds = Object.entries(sp.month.kinds).filter(([, x]) => x > 0);
@@ -320,7 +255,9 @@ export function ledgerHtml(sp, openSet = v.otevrene) {
   const rows = [...sp.ledger].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const auto = sp.automatic || [];
   if (!rows.length && !auto.length) {
-    return emptyState({ title: tr('Zatím žádné výdaje'), text: tr('Zapiš předplatné nebo dokoupené extra usage a uvidíš, kolik tě AI stojí.'), action: `<button class="btn btn--primary" type="button" data-action="add">${ICON.plus}${tr('Přidat výdaj')}</button>` });
+    return sp.billing?.connected
+      ? emptyState({ title: tr('Zatím žádné API náklady') })
+      : emptyState({ title: tr('Zatím žádné ověřené náklady') });
   }
   const vendors = [...new Set(auto.map((r) => String(sp.services[r.service]?.label || r.service).replace(/ API$/, '')))];
   const groupRow = (title, extra = '') => `<tr class="ledger-group"><th scope="rowgroup" colspan="6"><div class="ledger-group-head"><span class="ledger-group-title">${title}</span>${extra}</div></th></tr>`;
@@ -356,15 +293,9 @@ export function ledgerHtml(sp, openSet = v.otevrene) {
             <td class="actions">${toggle}<span class="sr-only">${tr('jen ke čtení')}</span></td>
           </tr>${models.length ? `<tr class="ledger-models" id="${esc(slug)}"${open ? '' : ' hidden'}><td colspan="5">${modelsHtml(sp, r, models, label)}</td><td class="lm-spacer"></td></tr>` : ''}`;
   }).join('');
-  const autoMonth = sp.month.auto || 0;
-  const split = autoMonth > 0
-    // Každý díl součtu začíná na novém místě a částka se nikdy neodtrhne od posledního slova
-    // popisku; na úzkém okně se zalomí uvnitř dílu, ne mezi „ručně“ a částkou.
-    ? `<p class="ledger-sum"><span>${tr('Tento měsíc')}&nbsp;<b class="ledger-castka">${esc(money(sp.month.total))}</b></span><span>= ${tr('zapsáno ručně')}&nbsp;<span class="ledger-castka">${esc(money(Math.max(0, sp.month.total - autoMonth)))}</span></span><span>+ ${tr('automaticky z Admin API')}&nbsp;<span class="ledger-castka">${esc(money(autoMonth))}</span></span></p>`
-    : '';
-  return `${split}<div class="table-wrap"><table class="ledger">
+  return `<div class="table-wrap"><table class="ledger">
         <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>
-        ${rows.length ? `<tbody>${auto.length ? groupRow(tr('Zapsané ručně')) : ''}${manualRows}</tbody>` : ''}
+        ${rows.length ? `<tbody>${groupRow(tr('Starší ruční záznamy'))}${manualRows}</tbody>` : ''}
         ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note" title="${esc(tr('Admin API sčítá náklady po dnech v UTC. Na přelomu měsíce proto může den spadnout do jiného měsíce než podle místního kalendáře.'))}">${tr('dny podle UTC, jak je počítá dodavatel')}</span>`)}${autoRows}</tbody>` : ''}
       </table></div>${rateNote(sp, rows, auto)}`;
 }
@@ -422,9 +353,6 @@ export default {
   title: tr('Útrata'),
   mount,
   update,
-  query(q) {
-    if (q?.get('pridat')) openAddEntry(predvyplneni(q));
-  },
   unmount: () => {
     if (v.el && v.onClick) v.el.removeEventListener('click', v.onClick);
     v.el = null;

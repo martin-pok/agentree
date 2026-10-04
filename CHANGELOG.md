@@ -2,6 +2,12 @@
 
 ## Nezveřejněno
 
+## 0.34.2 – 2026-10-04 · ověřené plány bez ruční evidence
+
+- Útrata ukazuje jen plány z aktuálně pozorovaného účtu Claude Code nebo z limitů Codexu. Ruční přidávání licencí a plateb z rozhraní zmizelo; bez zdroje plán nevznikne a cena předplatného se neodhaduje.
+- Peněžní souhrny, grafy, rozpočty a synchronizované souhrny počítají pouze ověřené náklady z připojených Admin API. Bez připojeného API se nezobrazuje falešná nula ani prázdná analytika. Dřívější ruční záznamy zůstávají v samostatně označené historii a CSV, bez vlivu na aktivní čísla.
+- Přehled i Útrata jasně rozlišují náklady za API od předplatného. Prázdná karta historie se bez dat nenačítá. Zachovaný je rozpad nákladů Admin API po modelech z verze 0.34.0.
+
 ## 0.34.1 – 2026-10-04 · přepínače reagují hned
 
 - **Statistiky: přepnutí období ukáže čísla hned.** Po kliknutí na Dnes / 24 hodin / 7 / 14 / 30 dní se dřív změnil jen cíl animovaného čísla a karty ukazovaly staré období, dokud nepřišla další živá událost; při rychlém klikání stará animace přepsala novou hodnotu. Čísla se teď přepočítají v tom samém snímku a do 240 ms dojedou, starší animace se při novém cíli zastaví. Platí pro všechna animovaná čísla v aplikaci.

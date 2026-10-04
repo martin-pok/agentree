@@ -8,7 +8,7 @@ Agenteeq je lokální macOS pracovní velín pro člověka, který souběžně p
 
 1. **Pozornost:** ukáže, že agent čeká na člověka, dřív než se práce zbytečně zastaví.
 2. **Kontext:** spojí vlákna, složky a projekty napříč nástroji, bez ručního hledání v chatových aplikacích.
-3. **Kontrola:** oddělí měřené tokeny, limity, ruční výdaje a ověřené API náklady; nic z toho nevydává za jinou metriku.
+3. **Kontrola:** oddělí měřené tokeny, limity, historické ruční záznamy a ověřené API náklady; nic z toho nevydává za jinou metriku.
 
 Primární uživatel je jednotlivec nebo malé studio na macOS. Produkt je local-first: bez účtu a bez cloudového přenosu přepisů funguje základní pracovní přehled. Týmová synchronizace, mobilní notifikace a SSO jsou budoucí samostatné produkty, ne skrytý předpoklad současné verze.
 
@@ -18,7 +18,7 @@ Primární uživatel je jednotlivec nebo malé studio na macOS. Produkt je local
 |---|---|---|
 | Aktivita agentů | Stav odvozený z lokálního přepisu, procesu, hooku nebo párovaného rozšíření | Že agent skutečně pracuje, pokud je k dispozici jen staré datum souboru |
 | Tokeny | Lokálně zpracované tokeny z podporovaných přepisů | Cena, vyčerpaný kredit nebo limit předplatného, pokud zdroj neposkytl přesnou hodnotu |
-| Výdaje | Ručně vložené položky a hodnoty z úspěšného Admin API | Útrata ChatGPT, Claude, Gemini, Perplexity či Groku v předplatném bez jejich oficiálního zdroje |
+| Výdaje | Ověřené hodnoty z Admin API; starší ruční zápisy zůstávají v historii odděleně | Útrata ChatGPT, Claude, Gemini, Perplexity či Groku v předplatném bez jejich oficiálního zdroje |
 | Webové aplikace | Podpora párování Chrome rozšíření a stav „neověřeno / data nepřichází“ | Připojení, autorizaci nebo čtení chatu před skutečným párováním a otevřením služby |
 | Bezpečnost | Lokální bind, CSRF/origin ochrana, tokenové párování a Klíčenka v desktopu | Absolutní ochrana proti malwaru nebo jinému programu pod stejným macOS účtem |
 
@@ -148,5 +148,5 @@ Před předáním:
 ## 9. Co zatím nepatří do slibu produkční verze
 
 - Neexistuje univerzální SSO, které by bezpečně přihlásilo uživatele do ChatGPT, Claude, Perplexity, Groku a dalších nezávislých dodavatelů. Agenteeq může usnadnit autorizaci přes jejich vlastní login nebo oficiální API klíče, nesmí fungovat jako sběrač hesel.
-- Přesná cena a předplatné napříč dodavateli nejsou odvoditelné z tokenů. Kde není důvěryhodné API, musí zůstat ruční položka nebo jasně popsaná absence dat.
+- Přesná cena a předplatné napříč dodavateli nejsou odvoditelné z tokenů. Kde není důvěryhodný zdroj, plán ani cena se nevydávají za zjištěné; aplikace po uživateli nechce ruční evidenci dalších licencí.
 - Ad-hoc podepsaný lokální build není veřejně distribuovatelný release. Před konferencí, klientskou distribucí nebo Mac App Store je nutný samostatný release proces z `docs/SECURITY.md`.

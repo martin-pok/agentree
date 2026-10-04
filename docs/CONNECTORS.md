@@ -7,22 +7,22 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 - ⚠️ heuristika (odvozeno, může se mýlit),
 - ❌ nelze bez podpory dodavatele.
 
-## Matice podpory (v0.2.0)
+## Matice podpory
 
 | Služba | Zdroj | Registrace spuštění | Živý přepis | Průběh úlohy | Potřebuje rozhodnutí | Limity | Útrata |
 |---|---|---|---|---|---|---|---|
-| **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | ruční zápis |
+| **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ z hlášky „hit your … limit“; 🧪 záloha z historie Claude Desktop, když zrovna neběží žádná konverzace | cena předplatného nedostupná |
 | **Claude Desktop → vzdálený Code** | místní IndexedDB cache 🧪 | do 2 s od změny cache, ne od události v cloudu | dostupná část | uložené nástroje | poslední hlášený stav | jen uložená hláška, jinak důvod neznámý | neúplné tokeny, žádný odhad |
-| **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | ruční zápis |
-| **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | ruční zápis |
-| **Claude.ai** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 | ruční zápis |
-| **GitHub Copilot** | VS Code chaty 🧪, Copilot CLI 🧪, github.com/copilot 🧪 | 🧪 | 🧪 | ⚠️ | ❌ (VS Code), ❌ CLI | ❌ | ruční zápis |
-| **Microsoft Copilot** | web přes rozšíření 🧪; desktopová aplikace jen jako proces ✅ | 🧪 web | 🧪 web, ❌ aplikace | ⚠️ web | ❌ | 🧪 web | ruční zápis |
-| **Gemini** | web 🧪, Gemini CLI 🧪 | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 web | ruční zápis |
-| **Perplexity** | web přes rozšíření | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 | ruční zápis |
-| **Grok** | web přes rozšíření | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 | ruční zápis |
-| **Qwen** | Qwen Chat web 🧪, Qwen Code CLI 🧪 | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 web | ruční zápis |
-| **Cursor** | SQLite `state.vscdb` | 🧪 (formát ✅, bez aktivních agentů) | 🧪 | ✅ plán úkolů z `todos` 🧪 | 🧪 `hasBlockingPendingActions` | ❌ | ruční zápis |
+| **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | cena předplatného nedostupná |
+| **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | cena předplatného nedostupná |
+| **Claude.ai** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 | cena předplatného nedostupná |
+| **GitHub Copilot** | VS Code chaty 🧪, Copilot CLI 🧪, github.com/copilot 🧪 | 🧪 | 🧪 | ⚠️ | ❌ (VS Code), ❌ CLI | ❌ | cena osobního plánu nedostupná |
+| **Microsoft Copilot** | web přes rozšíření 🧪; desktopová aplikace jen jako proces ✅ | 🧪 web | 🧪 web, ❌ aplikace | ⚠️ web | ❌ | 🧪 web | cena předplatného nedostupná |
+| **Gemini** | web 🧪, Gemini CLI 🧪 | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 web | cena předplatného nedostupná |
+| **Perplexity** | web přes rozšíření | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 | cena předplatného nedostupná |
+| **Grok** | web přes rozšíření | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 | cena předplatného nedostupná |
+| **Qwen** | Qwen Chat web 🧪, Qwen Code CLI 🧪 | 🧪 | 🧪 | ⚠️ | ❌ | 🧪 web | cena předplatného nedostupná |
+| **Cursor** | SQLite `state.vscdb` | 🧪 (formát ✅, bez aktivních agentů) | 🧪 | ✅ plán úkolů z `todos` 🧪 | 🧪 `hasBlockingPendingActions` | ❌ | cena předplatného nedostupná |
 | **OpenAI / Anthropic API** | Admin API | – | – | – | – | – | 🧪 automaticky |
 | AI aplikace na Macu | `ps`, Ollama API | ✅ procesy | – | – | – | – | – |
 
@@ -59,7 +59,7 @@ nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěn
 
 ### Proč některé věci nejdou
 
-- **Spotřebitelská předplatná a extra usage:** podporovaná rozhraní ChatGPT a Claude nezpřístupňují skutečně strženou částku osobního předplatného. Agenteeq automaticky přečte ověřený typ plánu z přihlášeného nástroje, ale cenu z veřejného ceníku za uživatelovu platbu nevydává. Ruční platba je jen volitelná evidence dalších licencí nebo částky, kterou poskytovatel nikde programově nesdílí. Firemní API útrata je jiný zdroj a načítá se automaticky přes Admin API.
+- **Spotřebitelská předplatná a extra usage:** podporovaná rozhraní ChatGPT a Claude nezpřístupňují skutečně strženou částku osobního předplatného. Agenteeq automaticky přečte typ plánu z přihlášeného nástroje, pokud ho nástroj poskytne, ale cenu z veřejného ceníku za uživatelovu platbu nevydává. Další licence bez ověřitelného účtu ani ručně nevytváří; dřívější ruční záznamy zachová pouze v oddělené historii a CSV. Firemní API náklady jsou jiný zdroj a načítají se automaticky přes Admin API.
 - **Schválení akce na dálku**: Agenteeq umí upozornit a otevřít konverzaci nebo zkopírovat příkaz, ale nástroje nemají bezpečné API pro vzdálené schválení. Nepoužíváme simulaci kláves.
 - **Desktopová aplikace Microsoft Copilot a ChatGPT (chat)**: obsah konverzací není dostupný v čitelném lokálním formátu. Web s rozšířením ano.
 - **Kredity Codexu a dokoupení** (`src/credits.js`): zůstatek hlásí každá session zvlášť v `rate_limits.credits.balance`; paralelní session posílají zastaralé hodnoty, proto se z pouhého nárůstu nedá usuzovat na nákup. `detectTopUps` bere nárůst jako dokoupení jen tehdy, když se udrží (medián odečtů v následujících 30 min zůstane nad původní úrovní), a dva nárůsty do 15 min slučuje. Počítá se ze všech odečtů v paměti, ne ze zkrácené uložené historie. Starší soubory než sledované okno se jednorázově projdou jen kvůli řádkům s kredity (`scanCreditHistory`, ~1,2 s na 449 MB). Ověřeno proti ručnímu přepočtu: 7 dokoupení od 12. 7. 2026, zůstatek 5,314314.
@@ -343,8 +343,8 @@ Co není ověřené na skutečných datech, je **Beta**.
 |---|---|---|
 | Plán Claude | `claude auth status --json` musí právě potvrdit přihlášení; teprve potom se čte `~/.claude.json` → `oauthAccount.organizationType`, `userRateLimitTier` / `organizationRateLimitTier`, `subscriptionCreatedAt` (e-mail, jméno ani token se nečtou dál). Soubor se sleduje a změna se propíše přes SSE. | ✅ `claude_pro` ověřeno na skutečném účtu; starý soubor po odhlášení se odmítne. 🧪 `claude_max` (+ `default_claude_max_5x` / `_20x`), `claude_team`, `claude_enterprise` podle pojmenování v souboru, **neověřeno na účtu s tímto plánem**. Neznámý typ se netvrdí. |
 | Plán ChatGPT | Nejnovější `rate_limits.plan_type` v přepisech Codexu (`limit.plan`) včetně času měření. Pozorování starší než 24 hodin se už jako aktuální plán nezobrazuje; nová událost se propíše přes SSE okamžitě. | ✅ `plus` ověřeno; neznámý kód se zobrazí jako kód poskytovatele a nepřekládá se na jiný plán |
-| Skutečná cena spotřebitelského předplatného | Claude a ChatGPT ji zpřístupňují ve vlastním billing portálu nebo v App Store / Google Play; podporované spotřebitelské API s individuálně strženou částkou Agenteeq nemá. Volitelná platba ve Výdajích je proto jen doplněk pro další licence, ne podmínka rozpoznání plánu. | ✅ bez ověřené platby se částka nezobrazuje ani nevstupuje do útraty; veřejný ceník se za platbu uživatele nevydává |
-| Více licencí stejné služby | Každá aktivní měsíční platba je samostatná licence s volitelným uživatelským názvem účtu. Rozpoznaný plán tohoto Macu a ručně evidované licence jsou v UI oddělené; bez identifikátoru od poskytovatele se navzájem automaticky nepřiřazují | ✅ více licencí se sčítá v Útratě a zobrazuje jednotlivě, ukončená licence zůstává v historii |
+| Skutečná cena spotřebitelského předplatného | Claude a ChatGPT ji zpřístupňují ve vlastním billing portálu nebo v App Store / Google Play; podporované spotřebitelské API s individuálně strženou částkou Agenteeq nemá. | ✅ zjištěný plán nemá odhadovanou cenu; dřívější ruční platby jsou vidět jen v historii a CSV, nevstupují do aktivních grafů a součtů |
+| Více licencí stejné služby | Bez účtového identifikátoru od poskytovatele nelze další licence automaticky odhalit ani přiřadit. | ✅ karta ukazuje jen plán účtu právě připojeného nástroje; ruční přidávání licencí není v UI nabízeno |
 | Kurz USD/EUR | ČNB `denni_kurz.txt`, GET bez údajů o uživateli, nejvýš jednou za 6 h, poslední kurz se ukládá; vypíná se `AGENTEEQ_CLOUD=0`. Ručně zadaný kurz se nikdy nepřepíše | ✅ formát ověřen na skutečném lístku 2026-09-18 |
 
 ### Audit podporovaných rozhraní pro plány a náklady

@@ -1,5 +1,16 @@
 # Testování a ověření
 
+## Protokol ověření – automaticky zjištěné plány 0.34.2 (4. 10. 2026, macOS)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 758 testů prošlo, 2 přeskočeny; syntaxe 253 souborů čistá |
+| `npm run smoke`, `npm run build:extension` | Instalační balíček 0.34.2 se v izolovaném prostředí spustil; rozšíření 0.34.2 se sestavilo |
+| `qa:desktop` | Chromium a WebKit: bez API žádná falešná nula ani prázdná karta nákladů, žádný vstup pro ruční licenci, nový plán Codexu se propíše živě; 375/900/1180/1440 px, bez chyb skriptu. Snímky světlé i tmavé Útraty v `dist/qa/*-automatic-plans.png`. |
+| `qa:contrast`, `qa:tvary` | Kontrast textů WCAG 2.2 AA a tvary ovládání prošly pro aplikaci, web i rozšíření. |
+
+Admin API nebyla ověřena proti skutečným administrátorským klíčům poskytovatelů; integrační testy používají jejich dokumentovaný tvar odpovědí. Proto je konektor nadále Beta a typ osobního plánu se nevykládá jako účtovaná cena.
+
 ## Protokol ověření – 0.34.0, útrata za API po modelech (4. 10. 2026, macOS 27.0.1, Node 24.18, Playwright 1.62.1)
 
 Parametry seskupení ověřeny proti referenci API 4. 10. 2026: Anthropic `cost_report` `group_by[]` ∈ {`description`, `workspace_id`} (řádky nesou `model`, `token_type`, `cost_type`, částka v centech jako řetězec), `usage_report/messages` `group_by[]=model`; OpenAI `costs` `group_by` ∈ {…, `line_item`, …}, `usage/completions` `group_by=model` (OpenAPI specifikace OpenAI).

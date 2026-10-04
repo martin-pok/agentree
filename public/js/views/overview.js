@@ -115,7 +115,7 @@ function mount(el) {
       </section>
       <section data-enter style="--i:4" data-region="limits" aria-label="${tr('Limity předplatných')}"></section>
       <section data-enter style="--i:4" aria-labelledby="sp-h" data-float>
-        <div class="sec-head"><h2 id="sp-h">${tr('Útrata tento měsíc')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
+        <div class="sec-head"><h2 id="sp-h">${tr('Náklady z API')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
         <div class="card spend-mini" data-region="spend"></div>
       </section>
       <section data-enter style="--i:5" aria-labelledby="act-h" data-float>
@@ -320,6 +320,9 @@ function update(topics = new Set(['all'])) {
 
   const sp = state.spend;
   if (sp && changed(topics, 'spend')) {
+    if (sp.billing?.connected === false) {
+      zivy(el, 'spend', `<div class="spend-mini-num"><strong>${tr('Náklady za API nejsou připojené')}</strong><a class="link-inline" href="#/nastaveni">${tr('Propojit API')}</a></div>`);
+    } else {
     const total = sp.budgetsConfig?.total || 0;
     const bp = total ? (sp.month.total / total) * 100 : 0;
     const top = Object.entries(sp.month.services).sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -334,7 +337,8 @@ function update(topics = new Set(['all'])) {
       </div>
       ${top.length
         ? hbars(top.map(([k, val]) => ({ label: sp.services[k]?.label || k, value: val, color: PROVIDERS[pkey(sp.services[k]?.provider)].color })), { format: (x) => fmtMoney(x, sp.currency) })
-        : `<p class="muted small">${tr('Zatím žádné výdaje.')} <a class="link-inline" href="#/utrata?pridat=1">${tr('Zapsat první')}</a></p>`}`);
+        : `<p class="muted small">${tr('Zatím žádné API náklady.')}</p>`}`);
+    }
   }
 
   if (changed(topics, 'runtimes', 'detekce', 'connectors')) {

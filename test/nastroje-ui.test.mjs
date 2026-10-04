@@ -2,10 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { pouzivaneNastroje, nastrojeBezDat, zivy, kdeKdy, coVidim, sluzbaUtraty, predplatneHref } from '../public/js/nastroje.js';
+import { pouzivaneNastroje, nastrojeBezDat, zivy, kdeKdy, coVidim } from '../public/js/nastroje.js';
 import { limitsAll } from '../public/js/limits-ui.js';
 import { RUNTIMES } from '../src/connectors/processes.js';
-import { SERVICES } from '../src/spend.js';
 import { startTestServer, api, tempDir } from './helpers.mjs';
 
 // Jak se zachycené nástroje ukazují v rozhraní: Přehled, přehled limitů, Moje nástroje.
@@ -70,14 +69,6 @@ test('katalog: rozšíření pro Chrome se nevydává za zdroj dat desktopové a
     const obecne = nastroje.filter((r) => !r.vidim).map((r) => r.id);
     assert.ok(obecne.length <= 1, `zdroj ${k}: ${obecne.join(', ')} by tvrdily totéž`);
   }
-});
-
-test('předplatné z Mých nástrojů míří na existující službu Útraty', () => {
-  for (const r of RUNTIMES) assert.ok(SERVICES[sluzbaUtraty(r.id)], `${r.id} → ${sluzbaUtraty(r.id)}`);
-  assert.equal(sluzbaUtraty('warp'), 'other');
-  const q = new URLSearchParams(predplatneHref({ id: 'warp', name: 'Warp & spol.' }).split('?')[1]);
-  assert.equal(q.get('sluzba'), 'other');
-  assert.equal(q.get('poznamka'), 'Warp & spol.', 'název se v adrese nerozbije');
 });
 
 test('přehled limitů ukáže i přidaný nástroj bez dat, poctivě a bez zdvojení', () => {

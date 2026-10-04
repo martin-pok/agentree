@@ -1,13 +1,12 @@
-// Útrata musí jít složit z toho, co je vidět: součet měsíce = ručně zapsané řádky + automatické
-// řádky z Admin API, a převod měn říká, odkud je kurz. Dřív tabulka Výdaje ukazovala jen ruční
-// zápisy, zatímco součet obsahoval i Admin API, a výchozí kurz 23 Kč za dolar se tvářil jako přesný.
+// Aktivní útrata pochází jen z Admin API. Starší ruční zápisy zůstávají v exportu
+// a v historii, ale nesmějí zvýšit graf, rozpočet ani souhrn.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
 const { spendSummary, monthlyTotals, SERVICES, KINDS, CURRENCIES, DEFAULT_SPEND } = await import('../src/spend.js');
 const { rateInfo } = await import('../src/rates.js');
-const { ledgerHtml } = await import('../public/js/views/spend.js');
+const { ledgerHtml, plansHtml } = await import('../public/js/views/spend.js');
 
 const NOW = new Date(2026, 9, 12, 10).getTime(); // 12. 10. 2026
 const ledger = [
@@ -25,13 +24,26 @@ function payload(spend) {
   return { ...spendSummary(spend, NOW, auto), ledger: spend.ledger, budgetsConfig: spend.budgets, rates: spend.rates, rateInfo: rateInfo(spend), subscriptions: [], services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
 }
 
-test('součet měsíce = ručně zapsané + automatické řádky Admin API (rozpočet a prognóza beze změny významu)', () => {
+test('karta plánů vzniká jen z ověřeného zdroje a nenabízí ruční licence', () => {
+  const sp = { services: SERVICES, subscriptions: [] };
+  assert.equal(plansHtml(sp), '');
+  sp.subscriptions = [{ service: 'perplexity', detected: false, label: 'Perplexity Pro', payments: [{ amount: 20, currency: 'USD' }] }];
+  assert.equal(plansHtml(sp), '', 'starší ruční záznam neotevře kartu plánu');
+  sp.subscriptions.push({ service: 'chatgpt', detected: true, label: 'ChatGPT Plus', evidence: 'Codex', observedAt: NOW, payments: [{ amount: 500, currency: 'CZK', account: 'Studio' }] });
+  const html = plansHtml(sp);
+  assert.match(html, /ChatGPT Plus/);
+  assert.doesNotMatch(html, /Perplexity Pro|500|Studio|Další licence|Přidat licenci|data-action=/);
+});
+
+test('součet měsíce tvoří jen ověřené řádky Admin API, starší ruční platby jsou mimo něj', () => {
   const spend = { ...structuredClone(DEFAULT_SPEND), ledger };
   const sp = payload(spend);
   const jenRucne = monthlyTotals(spend, [sp.monthKey], [])[0].total;
   const automaticky = sp.automatic.filter((r) => r.month === sp.monthKey).reduce((a, r) => a + r.converted, 0);
+  assert.ok(jenRucne > 0);
   assert.equal(sp.month.auto, Math.round(automaticky * 100) / 100);
-  assert.ok(Math.abs(sp.month.total - (jenRucne + automaticky)) < 0.011, `${sp.month.total} ≠ ${jenRucne} + ${automaticky}`);
+  assert.ok(Math.abs(sp.month.total - automaticky) < 0.011, `${sp.month.total} ≠ ${automaticky}`);
+  assert.equal(sp.month.services.chatgpt, undefined);
   // Jeden řádek za službu a měsíc, dny a období odpovídají denním položkám.
   const openai = sp.automatic.find((r) => r.month === '2026-10' && r.service === 'openai-api');
   assert.deepEqual({ amount: openai.amount, days: openai.days, from: openai.from, to: openai.to, currency: openai.currency }, { amount: 3.75, days: 2, from: '2026-10-01', to: '2026-10-11', currency: 'USD' });
@@ -44,14 +56,8 @@ test('tabulka Výdaje ukazuje i automatické řádky Admin API jako skupinu jen 
   assert.match(html, /Automaticky z Admin API · Anthropic \/ OpenAI|Automaticky z Admin API · OpenAI \/ Anthropic/);
   assert.match(html, /jen ke čtení/);
   assert.match(html, /dny podle UTC/);
-  // Součet: celek = ručně + automaticky; částka se nikdy neodtrhne od popisku (nedělitelná mezera).
-  const soucet = html.match(/<p class="ledger-sum">([\s\S]*?)<\/p>/)?.[1] || '';
-  assert.match(soucet, /Tento měsíc&nbsp;<b class="ledger-castka">/);
-  assert.match(soucet, /= zapsáno ručně&nbsp;<span class="ledger-castka">/);
-  assert.match(soucet, /\+ automaticky z Admin API&nbsp;<span class="ledger-castka">/);
-  const castky = [...soucet.matchAll(/class="ledger-castka">([^<]+)</g)].map((m) => Number(m[1].replace(/[^\d]/g, '')));
-  assert.equal(castky.length, 3);
-  assert.equal(castky[0], castky[1] + castky[2], 'celek se skládá z obou dílů');
+  assert.match(html, /Starší ruční záznamy/);
+  assert.doesNotMatch(html, /class="ledger-sum"/, 'historie se nesčítá s ověřenými náklady');
   const autoRows = html.split('<tr class="ledger-auto">').slice(1).map((r) => r.split('</tr>')[0]);
   assert.equal(autoRows.length, 3, 'říjen OpenAI, říjen Anthropic, září Anthropic');
   for (const r of autoRows) assert.doesNotMatch(r, /data-action=/, 'automatický řádek nejde smazat ani ukončit');

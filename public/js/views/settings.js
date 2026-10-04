@@ -870,7 +870,7 @@ function update(topics) {
   const moje = mojeZive();
   const ignorovane = state.detekce?.ignorovane || [];
   fill(el, 'moje', `
-    ${head(ICON.spark, tr('Moje nástroje'), tr('AI nástroje, které Agenteeq zachytil v činnosti na {0} a ty sis je přidal. U každého vidíš, jestli právě běží, a předplatné zapíšeš jedním klikem do Útraty.', tomtoPocitaci()))}
+    ${head(ICON.spark, tr('Moje nástroje'), tr('AI nástroje zachycené na {0}. U každého vidíš, jestli právě běží.', tomtoPocitaci()))}
     ${moje.length
       ? `<ul class="moje-list">${moje.map(mujRadek).join('')}</ul>`
       : `<p class="set-note">${tr('Zatím žádný. Jakmile na {0} poběží nový AI nástroj, Agenteeq ti ho nabídne přidat.', tomtoPocitaci())}</p>`}

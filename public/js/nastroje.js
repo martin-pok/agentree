@@ -18,25 +18,6 @@ const DRUH = {
 
 export const druhNazev = (n) => (DRUH[n?.druh] || (() => tr('AI nástroj')))();
 
-// Služba v Útratě, pod kterou se předplatné zapíše. Co v nabídce není, jde pod „Ostatní“ s názvem v poznámce.
-const SLUZBA = {
-  chatgpt: 'chatgpt', 'pwa-chatgpt': 'chatgpt', 'chatgpt-atlas': 'chatgpt', codex: 'chatgpt',
-  'claude-desktop': 'claude', 'claude-code': 'claude', 'pwa-claude': 'claude',
-  cursor: 'cursor', 'cursor-agent': 'cursor',
-  'pwa-gemini': 'gemini', 'pwa-google-ai-studio': 'gemini', 'gemini-cli': 'gemini',
-  perplexity: 'perplexity', 'pwa-perplexity': 'perplexity', comet: 'perplexity',
-  grok: 'grok', 'pwa-grok': 'grok',
-  'copilot-cli': 'copilot', vscode: 'copilot', 'ms-copilot': 'mscopilot', 'pwa-copilot': 'mscopilot',
-  'qwen-code': 'qwen',
-};
-
-export const sluzbaUtraty = (id) => SLUZBA[id] || 'other';
-
-export function predplatneHref(n) {
-  const q = new URLSearchParams({ pridat: '1', sluzba: sluzbaUtraty(n.id), poznamka: n.name });
-  return `#/utrata?${q}`;
-}
-
 // Záznam detekce se na serveru mění jen při rozhodnutí nebo novém nálezu. Jestli nástroj právě
 // běží, se proto bere z živého seznamu procesů (událost `runtimes`), ne ze zapamatovaného záznamu.
 export function zivy(n, runtimes) {

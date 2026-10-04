@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.34.2',
+    date: '2026-10-04',
+    title: 'Plány bez ručního zapisování',
+    items: [
+      'Plány se ukazují jen tehdy, když je Agenteeq zjistí z připojeného Claude Code nebo Codexu. Ruční přidávání licencí a cen zmizelo.',
+      'Útrata a rozpočty používají jen ověřené náklady z Admin API. Když zdroj chybí, aplikace neukazuje falešnou nulu; starší záznamy zůstávají v oddělené historii a exportu.',
+    ],
+    en: {
+      title: 'Plans without manual tracking',
+      items: [
+        'Plans appear only when Agenteeq detects them from connected Claude Code or Codex. Manual license and price entry is gone.',
+        'Spending and budgets use only verified Admin API costs. Without a source, the app does not show a false zero; older records remain in a separate history and export.',
+      ],
+    },
+  },
+  {
     version: '0.34.1',
     date: '2026-10-04',
     title: 'Přepínače reagují hned',
