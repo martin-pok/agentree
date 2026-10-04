@@ -30,6 +30,9 @@ test('aktualizace: přijímá jen platné semver a přesný balíček platformy'
   assert.equal(compareVersions('1.2.4', '1.2.3'), 1);
   assert.equal(assetName('0.30.0', { platform: 'darwin', arch: 'arm64' }), 'Agenteeq-0.30.0-macOS-arm64.zip');
   assert.equal(assetName('0.30.0', { platform: 'linux', arch: 'arm64' }), '');
+  // Mac s Intelem: žádná příloha (jen Apple Silicon), Windows x64 beze změny.
+  assert.equal(assetName('0.34.0', { platform: 'darwin', arch: 'x64' }), '');
+  assert.equal(assetName('0.34.0', { platform: 'win32', arch: 'x64' }), 'Agenteeq-0.34.0-Windows-x64.zip');
 
   const service = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-'), fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
   const available = await service.check();

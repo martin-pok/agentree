@@ -77,7 +77,8 @@ jobs:
         with: { node-version: '22' }
 
       # Vydává se jen to, co prošlo. Testy tu nejsou formalita: na Macu běží i ty, které se
-      # na Linuxu přeskakují. Stačí jednou — Intel build níž překládá tentýž kód.
+      # na Linuxu přeskakují. Aplikace pro Mac je jen pro Apple Silicon (M1 a novější) –
+      # rozhodnutí vlastníka produktu; Mac s procesorem Intel nepodporujeme.
       - name: Kontrola a testy
         run: npm run check && npm test
 
@@ -93,34 +94,6 @@ jobs:
           path: |
             dist/Agenteeq-*-macOS-*.zip
             dist/latest-build.json
-          if-no-files-found: error
-
-  # Starší Macy s Intelem. Aplikace v sobě nese binárku Node, a ta je vázaná na architekturu,
-  # takže jeden archiv obě nezvládne.
-  #
-  # Vlastní úloha, ne další větev matice: `vydani` níž na ni čeká, ale nevyžaduje její úspěch.
-  # Kdyby Intel build selhal, vydání vznikne bez aplikace pro Intel a popis ji
-  # nebude zmiňovat — `scripts/release-notes.mjs` píše jen o souborech, které opravdu jsou.
-  mac-intel:
-    name: aplikace pro Mac (Intel)
-    needs: znacka
-    runs-on: macos-15-intel
-    timeout-minutes: 25
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-        with: { ref: '${{ inputs.tag || github.ref }}' }
-      - uses: actions/setup-node@v5
-        with: { node-version: '22' }
-      - name: Sestavit aplikaci
-        env:
-          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
-          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
-        run: npm run build:mac
-      - uses: actions/upload-artifact@v6
-        with:
-          name: mac-x64
-          path: dist/Agenteeq-*-macOS-*.zip
           if-no-files-found: error
 
   windows:
@@ -163,9 +136,7 @@ jobs:
 
   vydani:
     name: koncept vydání
-    # `mac-intel` je v seznamu schválně: čeká se, až doběhne, aby se nezačalo vydávat dřív,
-    # než nahraje přílohu. Podmínka níž pak na jejím výsledku netrvá — na rozdíl od ostatních.
-    needs: [mac, mac-intel, windows, rozsireni]
+    needs: [mac, windows, rozsireni]
     if: >-
       always()
       && needs.mac.result == 'success'

@@ -139,6 +139,18 @@ for (const [rootDir, name] of [['.claude', 'Claude'], ['.codex', 'Codex']]) {
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: ${name} dovednost\ndescription: Kontrola filtru zdroje\n---\nText.\n`);
 }
+// Útrata z Admin API s rozpadem po modelech (jinak by se rozbalený panel a řádek „Organizace přes
+// API“ ve Statistikách neměřily). Atrapa konektoru – síť se v QA nikdy nevolá.
+{
+  const den = new Date().toISOString().slice(0, 10);
+  const cb = app.app.connectors['cloud-billing'];
+  cb.autoEntries = () => [{ id: `auto:anthropic-admin:${den}`, service: 'anthropic-api', kind: 'api', amount: 12.5, currency: 'USD', date: den, recurring: null, note: 'Admin API', auto: true }];
+  cb.modelEntries = () => [
+    { service: 'anthropic-api', date: den, model: 'claude-opus-5', amount: 10, currency: 'USD', tokens: { input: 1200000, output: 300000, cached: 5000000 } },
+    { service: 'anthropic-api', date: den, model: null, amount: 2.5, currency: 'USD', tokens: null },
+  ];
+  cb.providers = () => ({ 'anthropic-admin': { state: 'connected', detail: '', at: Date.now(), source: 'env', tokens: { [den]: { input: 1200000, output: 300000 } }, tokensError: null }, 'openai-admin': { state: 'connected', detail: '', at: Date.now(), source: 'env', tokens: null, tokensError: 'OpenAI odpověděla 403' } });
+}
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
 await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true });
 for (let i = 0; i < 100 && !((await api(app.url).send('GET', '/api/state')).body.detekce?.nove?.length >= 3); i++) await new Promise((r) => setTimeout(r, 100));
@@ -156,6 +168,12 @@ for (const rezim of ['light', 'dark']) {
       await page.keyboard.press('Escape'); // „Co je nového“ po aktualizaci
       await page.waitForTimeout(500);
       vypis(`${rezim} ${sirka}px /${trasa}`, await page.evaluate(zmer, PRECHODY));
+      if (trasa === 'utrata') {
+        // Plovoucí karta detekce může tlačítko překrývat – klik se proto pošle přímo prvku.
+        await page.evaluate(() => { for (let i = 0, b; i < 20 && (b = document.querySelector('[data-models][aria-expanded="false"]')); i++) b.click(); });
+        await page.waitForSelector('tr.ledger-models:not([hidden])');
+        vypis(`${rezim} ${sirka}px /${trasa} › rozpad po modelech`, await page.evaluate(zmer, PRECHODY));
+      }
       // Nastavení ukazují vždy jen jednu skupinu – měří se každá zvlášť, ať nic nezůstane neměřené.
       if (trasa === 'nastaveni') {
         const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));

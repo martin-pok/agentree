@@ -34,7 +34,7 @@ const CLOUD_REFRESH_MS = 10 * 60 * 1000;
 
 // Anthropic vrací při denním rozlišení nejvýš 31 košů na stránku. Původní jeden dotaz za 180 dní
 // proto mohl skončit chybou nebo vrátit jen část období. Stránky dočítá `fetchPages` níže.
-async function fetchAnthropicPages(fetchImpl, pathname, key, redirect) {
+async function fetchAnthropicPages(fetchImpl, pathname, key, redirect, groupBy) {
   const start = new Date(Date.now() - 180 * DAY).toISOString();
   const end = new Date().toISOString();
   return fetchPages(fetchImpl, {
@@ -51,6 +51,7 @@ async function fetchAnthropicPages(fetchImpl, pathname, key, redirect) {
       url.searchParams.set('ending_at', end);
       url.searchParams.set('bucket_width', '1d');
       url.searchParams.set('limit', String(ANTHROPIC_DAILY_BUCKETS));
+      if (groupBy) url.searchParams.append('group_by[]', groupBy);
       if (page) url.searchParams.set('page', page);
       return url;
     },
@@ -64,7 +65,7 @@ async function fetchAnthropicPages(fetchImpl, pathname, key, redirect) {
 // Usage s limitem 180 je navíc mimo specifikaci (max 31) a vracel chybu.
 export const OPENAI_LIMIT = { costs: 180, usage: 31 };
 
-async function fetchOpenAIPages(fetchImpl, pathname, key, redirect, limit) {
+async function fetchOpenAIPages(fetchImpl, pathname, key, redirect, limit, groupBy) {
   const start = String(Math.floor((Date.now() - 180 * DAY) / 1000));
   return fetchPages(fetchImpl, {
     vendor: 'OpenAI',
@@ -75,6 +76,7 @@ async function fetchOpenAIPages(fetchImpl, pathname, key, redirect, limit) {
       url.searchParams.set('start_time', start);
       url.searchParams.set('bucket_width', '1d');
       url.searchParams.set('limit', String(limit));
+      if (groupBy) url.searchParams.append('group_by', groupBy);
       if (page) url.searchParams.set('page', page);
       return url;
     },
@@ -117,27 +119,61 @@ async function fetchPages(fetchImpl, { vendor, redirect, headers, url }) {
   throw new Error(chyba.mnoho());
 }
 
-export function parseOpenAICosts(json) {
-  const daily = {};
+// Rozpad po modelech. Náklady i spotřeba se stahují seskupené (OpenAI `group_by=line_item` a
+// `group_by=model`, Anthropic `group_by[]=description` a `group_by[]=model`). Denní součet se pak
+// počítá ze stejných seskupených řádků, takže se rozpad a součet dne nikdy nerozejdou.
+// `OSTATNI` = položka bez modelu (nástroje, úložiště, nebo report bez seskupení).
+export const OSTATNI = '';
+
+// OpenAI line_item má tvar „<model>, <druh>“ (např. „gpt-6-astra, input_tokens“, viz parametr
+// `line_items` v API). Položky bez čárky (nástroje, úložiště) zůstávají pod svým jménem.
+export function openAILineItemModel(lineItem) {
+  if (typeof lineItem !== 'string') return OSTATNI;
+  return lineItem.split(',')[0].trim().slice(0, 120);
+}
+
+const dayOfUnix = (bucket) => new Date((bucket.start_time || 0) * 1000).toISOString().slice(0, 10);
+const sumValues = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+const totalsOf = (models) => Object.fromEntries(Object.entries(models).map(([day, m]) => [day, sumValues(m)]));
+
+export function parseOpenAICostModels(json) {
+  const out = {};
   for (const bucket of json?.data || []) {
-    const day = new Date((bucket.start_time || 0) * 1000).toISOString().slice(0, 10);
-    for (const r of bucket.results || []) daily[day] = (daily[day] || 0) + amountOf(r);
+    const acc = (out[dayOfUnix(bucket)] ||= {});
+    for (const r of bucket.results || []) {
+      const model = openAILineItemModel(r?.line_item);
+      acc[model] = (acc[model] || 0) + amountOf(r);
+    }
   }
-  return daily;
+  return out;
+}
+
+export function parseOpenAICosts(json) {
+  return totalsOf(parseOpenAICostModels(json));
 }
 
 // Anthropic vrací částku v nejmenších jednotkách měny jako desetinný řetězec: "123.45" v USD
 // znamená 1,2345 $ (GET /v1/organizations/cost_report, pole `amount`). Čtené jako dolary by
 // útrata vyšla stokrát vyšší. OpenAI naopak posílá dolary (`amount.value`).
-export function parseAnthropicCosts(json) {
-  const daily = {};
+// Při `group_by[]=description` nese každý řádek `model` (null u nákladů mimo tokeny – web search,
+// spouštění kódu), `token_type` a `cost_type`; částka zůstává v centech.
+export function parseAnthropicCostModels(json) {
+  const out = {};
   for (const bucket of json?.data || []) {
     const day = String(bucket.starting_at || bucket.start_time || '').slice(0, 10);
     if (!day) continue;
+    const acc = (out[day] ||= {});
     const results = Array.isArray(bucket.results) ? bucket.results : [bucket];
-    for (const r of results) daily[day] = (daily[day] || 0) + amountOf(r) / 100;
+    for (const r of results) {
+      const model = typeof r?.model === 'string' && r.model ? r.model.slice(0, 120) : OSTATNI;
+      acc[model] = (acc[model] || 0) + amountOf(r) / 100;
+    }
   }
-  return daily;
+  return out;
+}
+
+export function parseAnthropicCosts(json) {
+  return totalsOf(parseAnthropicCostModels(json));
 }
 
 // Denní spotřeba tokenů organizace u OpenAI – GET /v1/organization/usage/completions (Admin klíč).
@@ -155,6 +191,41 @@ export function parseOpenAIUsage(json) {
     }
   }
   return daily;
+}
+
+// Tokeny po modelech: input/output/cached se stejným významem jako v denním součtu daného
+// dodavatele (OpenAI input zahrnuje i cached, Anthropic input je jen nekešovaný vstup a cached =
+// čtení + zápis mezipaměti). Model chybí, když API neseskupilo → OSTATNI.
+const modelOf = (r) => (typeof r?.model === 'string' && r.model ? r.model.slice(0, 120) : OSTATNI);
+
+export function parseOpenAIUsageModels(json) {
+  const out = {};
+  for (const bucket of json?.data || []) {
+    const acc = (out[dayOfUnix(bucket)] ||= {});
+    for (const r of bucket.results || []) {
+      const m = (acc[modelOf(r)] ||= { input: 0, output: 0, cached: 0 });
+      m.input += numOf(r?.input_tokens);
+      m.output += numOf(r?.output_tokens);
+      m.cached += numOf(r?.input_cached_tokens);
+    }
+  }
+  return out;
+}
+
+export function parseAnthropicUsageModels(json) {
+  const out = {};
+  for (const bucket of json?.data || []) {
+    const day = String(bucket.starting_at || '').slice(0, 10);
+    if (!day) continue;
+    const acc = (out[day] ||= {});
+    for (const r of bucket.results || []) {
+      const m = (acc[modelOf(r)] ||= { input: 0, output: 0, cached: 0 });
+      m.input += numOf(r?.uncached_input_tokens);
+      m.output += numOf(r?.output_tokens);
+      m.cached += numOf(r?.cache_read_input_tokens) + numOf(r?.cache_creation?.ephemeral_1h_input_tokens) + numOf(r?.cache_creation?.ephemeral_5m_input_tokens);
+    }
+  }
+  return out;
 }
 
 // Denní spotřeba tokenů organizace u Anthropic – GET /v1/organizations/usage_report/messages (Admin klíč).
@@ -177,28 +248,33 @@ export function parseAnthropicUsage(json) {
 export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch } = {}) {
   const { config, secrets } = ctx;
   const state = {
-    'openai-admin': { state: 'missing', detail: ui('Přidej OpenAI Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 },
-    'anthropic-admin': { state: 'missing', detail: ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 },
+    'openai-admin': { state: 'missing', detail: ui('Přidej OpenAI Admin API klíč.'), daily: {}, costModels: {}, usage: {}, usageModels: {}, usageError: null, at: 0 },
+    'anthropic-admin': { state: 'missing', detail: ui('Přidej Anthropic Admin API klíč.'), daily: {}, costModels: {}, usage: {}, usageModels: {}, usageError: null, at: 0 },
   };
   let timer = null;
 
+  // Každý fetcher vrací { daily, models }: denní součet a rozpad po modelech ze stejné odpovědi.
   async function fetchOpenAI(key) {
-    return parseOpenAICosts(await fetchOpenAIPages(fetchImpl, '/v1/organization/costs', key, 'error', OPENAI_LIMIT.costs));
+    const json = await fetchOpenAIPages(fetchImpl, '/v1/organization/costs', key, 'error', OPENAI_LIMIT.costs, 'line_item');
+    return { daily: parseOpenAICosts(json), models: parseOpenAICostModels(json) };
   }
 
   async function fetchAnthropic(key) {
-    return parseAnthropicCosts(await fetchAnthropicPages(fetchImpl, '/v1/organizations/cost_report', key, 'error'));
+    const json = await fetchAnthropicPages(fetchImpl, '/v1/organizations/cost_report', key, 'error', 'description');
+    return { daily: parseAnthropicCosts(json), models: parseAnthropicCostModels(json) };
   }
 
   // Spotřeba tokenů OpenAI (Admin klíč, stejný jako pro náklady). Nenásleduje přesměrování a
   // odpověď se čte jen do stropu 5 MB – chyba se vždy vrátí jako Error, nikdy nepropadne dál.
   async function fetchOpenAIUsage(key) {
-    return parseOpenAIUsage(await fetchOpenAIPages(fetchImpl, '/v1/organization/usage/completions', key, 'manual', OPENAI_LIMIT.usage));
+    const json = await fetchOpenAIPages(fetchImpl, '/v1/organization/usage/completions', key, 'manual', OPENAI_LIMIT.usage, 'model');
+    return { daily: parseOpenAIUsage(json), models: parseOpenAIUsageModels(json) };
   }
 
   // Spotřeba tokenů Anthropic (stejný Admin klíč jako pro cost_report).
   async function fetchAnthropicUsage(key) {
-    return parseAnthropicUsage(await fetchAnthropicPages(fetchImpl, '/v1/organizations/usage_report/messages', key, 'manual'));
+    const json = await fetchAnthropicPages(fetchImpl, '/v1/organizations/usage_report/messages', key, 'manual', 'model');
+    return { daily: parseAnthropicUsage(json), models: parseAnthropicUsageModels(json) };
   }
 
   const USAGE_FETCHERS = { 'openai-admin': fetchOpenAIUsage, 'anthropic-admin': fetchAnthropicUsage };
@@ -209,19 +285,24 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       const key = await secrets.get(id);
       const st = state[id];
       if (!key) {
-        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, usage: {}, usageError: null, at: 0 });
+        Object.assign(st, { state: 'missing', detail: id === 'openai-admin' ? ui('Přidej OpenAI Admin API klíč.') : ui('Přidej Anthropic Admin API klíč.'), daily: {}, costModels: {}, usage: {}, usageModels: {}, usageError: null, at: 0 });
         continue;
       }
       try {
-        st.daily = await fetcher(key);
+        const costs = await fetcher(key);
+        st.daily = costs.daily;
+        st.costModels = costs.models;
         // Spotřeba tokenů je vedlejší: když selže, náklady zůstávají platné. Selhání se ale nesmí
         // tvářit jako „žádná spotřeba“ – `usage` je pak null (nezjištěno, ne nula) a důvod je
         // v `usageError` i v detailu, který Nastavení ukazuje u klíče.
         let usageError = null;
         try {
-          st.usage = await USAGE_FETCHERS[id](key);
+          const usage = await USAGE_FETCHERS[id](key);
+          st.usage = usage.daily;
+          st.usageModels = usage.models;
         } catch (err) {
           st.usage = null;
+          st.usageModels = null;
           usageError = String(err?.message || err).slice(0, 160);
         }
         Object.assign(st, {
@@ -233,7 +314,7 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       } catch (err) {
         // Po selhání nesmí graf ani rozpočet dál používat poslední úspěšná data. Nevíme, zda se
         // od nich stav u poskytovatele nezměnil, proto je vyřadíme až do další ověřené odpovědi.
-        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160), daily: {}, usage: {}, usageError: null, at: 0 });
+        Object.assign(st, { state: 'error', detail: String(err.message).slice(0, 160), daily: {}, costModels: {}, usage: {}, usageModels: {}, usageError: null, at: 0 });
       }
     }
     ctx.onSpendChanged?.();
@@ -263,6 +344,26 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
       for (const [id, service] of [['openai-admin', 'openai-api'], ['anthropic-admin', 'anthropic-api']]) {
         for (const [date, amount] of Object.entries(state[id].daily)) {
           if (amount > 0) out.push({ id: `auto:${id}:${date}`, service, kind: 'api', amount: round2(amount), currency: 'USD', date, recurring: null, note: 'Admin API', auto: true });
+        }
+      }
+      return out;
+    },
+    // Rozpad útraty a tokenů po modelech: jeden záznam za službu, den (UTC) a model. Částka v USD
+    // nezaokrouhlená (součet za den = denní součet nákladů), tokens = null, když spotřebu tokenů
+    // nešlo zjistit – nikdy nula místo „nezjištěno“. Jen dny s kladným denním nákladem, stejně jako
+    // autoEntries(), aby rozpad seděl s řádky Útraty. model = null: náklad bez modelu.
+    modelEntries() {
+      const out = [];
+      for (const [id, service] of [['openai-admin', 'openai-api'], ['anthropic-admin', 'anthropic-api']]) {
+        const st = state[id];
+        for (const [date, total] of Object.entries(st.daily)) {
+          if (!(total > 0)) continue;
+          const costs = st.costModels[date] || {};
+          const usage = st.usageModels === null ? null : st.usageModels[date] || {};
+          for (const model of new Set([...Object.keys(costs), ...Object.keys(usage || {})])) {
+            const t = usage ? usage[model] || { input: 0, output: 0, cached: 0 } : null;
+            out.push({ service, date, model: model || null, amount: costs[model] || 0, currency: 'USD', tokens: t && { ...t } });
+          }
         }
       }
       return out;

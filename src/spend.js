@@ -155,7 +155,11 @@ export function monthlyTotals(spend, months, autoEntries = []) {
 // Automatické položky Admin API sečtené po měsících a službách pro tabulku Výdaje. Denní položek
 // je za půl roku stovky, proto se ukazují jako jeden řádek za službu a měsíc – stejné seskupení,
 // jakým vstupují do měsíčního součtu, takže řádky jdou s ním porovnat. Dny jsou dny dodavatele (UTC).
-export function autoMonthly(autoEntries, months, spend) {
+//
+// `modelEntries` (cloud-billing#modelEntries) doplní ke každému řádku `models`: rozpad útraty a tokenů
+// organizace po modelech za stejný měsíc a službu. Tokeny jsou samostatná metrika z Admin API (ne
+// tokeny z přepisů na tomto počítači) a nikdy se nesčítají s částkou. `tokens: null` = nezjištěno.
+export function autoMonthly(autoEntries, months, spend, modelEntries = []) {
   const map = new Map();
   for (const e of autoEntries) {
     if (typeof e?.date !== 'string') continue;
@@ -169,12 +173,34 @@ export function autoMonthly(autoEntries, months, spend) {
     if (e.date < r.from) r.from = e.date;
     if (e.date > r.to) r.to = e.date;
   }
-  return [...map.values()]
-    .map((r) => ({ ...r, amount: round2(r.amount), converted: round2(r.converted) }))
+  const models = new Map();
+  for (const m of modelEntries) {
+    if (typeof m?.date !== 'string') continue;
+    const key = `${m.date.slice(0, 7)}|${m.service}|${m.currency}`;
+    if (!map.has(key)) continue;
+    const group = models.get(key) || models.set(key, new Map()).get(key);
+    const name = typeof m.model === 'string' && m.model ? m.model : null;
+    const r = group.get(name) || group.set(name, { model: name, amount: 0, converted: 0, tokens: { input: 0, output: 0, cached: 0 } }).get(name);
+    r.amount += Number(m.amount) || 0;
+    r.converted += convert(m.amount, m.currency, spend);
+    if (!m.tokens || !r.tokens) r.tokens = null;
+    else for (const k of ['input', 'output', 'cached']) r.tokens[k] += Number(m.tokens[k]) || 0;
+  }
+  const objem = (x) => (x.tokens ? x.tokens.input + x.tokens.output : 0);
+  return [...map.entries()]
+    .map(([key, r]) => ({
+      ...r,
+      amount: round2(r.amount),
+      converted: round2(r.converted),
+      // Nejdražší model první, položka bez modelu vždy na konci.
+      models: [...(models.get(key)?.values() || [])]
+        .map((x) => ({ ...x, amount: round2(x.amount), converted: round2(x.converted) }))
+        .sort((a, b) => (a.model === null) - (b.model === null) || b.amount - a.amount || objem(b) - objem(a) || String(a.model).localeCompare(String(b.model))),
+    }))
     .sort((a, b) => b.month.localeCompare(a.month) || a.service.localeCompare(b.service));
 }
 
-export function spendSummary(spend, now = Date.now(), autoEntries = []) {
+export function spendSummary(spend, now = Date.now(), autoEntries = [], modelEntries = []) {
   const current = monthKey(now);
   const months = Array.from({ length: 6 }, (_, i) => addMonths(current, i - 5));
   const rows = monthlyTotals(spend, months, autoEntries);
@@ -208,7 +234,7 @@ export function spendSummary(spend, now = Date.now(), autoEntries = []) {
     recurring: round2(recurring),
     forecast: round2(forecast),
     budgets,
-    automatic: autoMonthly(autoEntries, months, spend),
+    automatic: autoMonthly(autoEntries, months, spend, modelEntries),
   };
 }
 

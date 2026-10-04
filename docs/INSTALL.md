@@ -6,7 +6,7 @@ Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně – tvo
 
 ### Desktopový balíček pro Mac
 
-`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Mac s čipem Apple (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel nepodporujeme: Apple podporu Intelu ukončuje a Agenteeq se vyvíjí jen pro Apple Silicon. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
+`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Apple Silicon (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel nepodporujeme: Apple podporu Intelu ukončuje a Agenteeq se vyvíjí jen pro Apple Silicon – vydání od 0.34.0 balíček pro Intel neobsahuje. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agenteeq → Ukončit Agenteeq** ukončí i lokální službu a agenty spuštěné z Agenteeq na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 

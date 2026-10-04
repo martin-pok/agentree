@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.34.0',
+    date: '2026-10-04',
+    title: 'Útrata za API po modelech',
+    items: [
+      'V Útratě rozbalíš měsíc automatické útraty z Admin API a uvidíš, kolik stál který model a kolik tokenů na něm organizace spotřebovala.',
+      'Statistiky ukazují pod grafem zvlášť tokeny organizace z Admin API, odděleně od tokenů z tvých konverzací.',
+      'Aplikace pro Mac je jen pro Apple Silicon (M1 a novější).',
+    ],
+    en: {
+      title: 'API spend by model',
+      items: [
+        'In Spend, expand a month of automatic Admin API spend to see what each model cost and how many tokens your organization used on it.',
+        'Statistics shows your organization’s Admin API tokens separately below the chart, apart from the tokens from your conversations.',
+        'The Mac app is for Apple Silicon only (M1 or later).',
+      ],
+    },
+  },
+  {
     version: '0.33.1',
     date: '2026-10-03',
     title: 'Nadpisy na telefonu celé',

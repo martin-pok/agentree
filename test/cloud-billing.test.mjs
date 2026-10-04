@@ -5,6 +5,11 @@ import {
   parseAnthropicCosts,
   parseOpenAIUsage,
   parseAnthropicUsage,
+  parseOpenAICostModels,
+  parseAnthropicCostModels,
+  parseOpenAIUsageModels,
+  parseAnthropicUsageModels,
+  openAILineItemModel,
   createCloudBillingConnector,
 } from '../src/connectors/cloud-billing.js';
 
@@ -408,4 +413,126 @@ test('Anthropic cost_report: částka je v centech (příklad z dokumentace "123
   // OpenAI posílá dolary – jeho částka se nedělí.
   const openai = parseOpenAICosts({ data: [{ start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000), results: [{ amount: { value: 2, currency: 'usd' } }] }] });
   assert.equal(openai['2026-10-01'], 2);
+});
+
+// ---------- 0.34.0: rozpad po modelech ----------
+
+test('Rozpad po modelech: denní součet nákladů je přesně součet seskupených řádků (regrese)', () => {
+  const anth = {
+    data: [{
+      starting_at: '2026-10-01T00:00:00Z',
+      results: [
+        { amount: '123.45', currency: 'USD', model: 'claude-opus-5', cost_type: 'tokens', token_type: 'uncached_input_tokens' },
+        { amount: '76.55', currency: 'USD', model: 'claude-opus-5', cost_type: 'tokens', token_type: 'output_tokens' },
+        { amount: '10.10', currency: 'USD', model: 'claude-sonnet-5', cost_type: 'tokens', token_type: 'output_tokens' },
+        { amount: '5', currency: 'USD', model: null, cost_type: 'web_search', token_type: null },
+      ],
+    }],
+  };
+  const models = parseAnthropicCostModels(anth)['2026-10-01'];
+  const daily = parseAnthropicCosts(anth)['2026-10-01'];
+  assert.equal(daily, Object.values(models).reduce((a, b) => a + b, 0));
+  assert.ok(Math.abs(daily - 2.151) < 1e-9, 'součet všech řádků v centech / 100');
+  assert.ok(Math.abs(models['claude-opus-5'] - 2) < 1e-9);
+  assert.ok(Math.abs(models[''] - 0.05) < 1e-9, 'náklad bez modelu se neztratí');
+
+  const oa = {
+    data: [{
+      start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000),
+      results: [
+        { amount: { value: 1.25, currency: 'usd' }, line_item: 'gpt-6-astra, input_tokens' },
+        { amount: { value: 0.75, currency: 'usd' }, line_item: 'gpt-6-astra, output_tokens' },
+        { amount: { value: 0.3, currency: 'usd' }, line_item: 'gpt-6-mini, input_tokens' },
+        { amount: { value: 0.1, currency: 'usd' }, line_item: null },
+      ],
+    }],
+  };
+  const om = parseOpenAICostModels(oa)['2026-10-01'];
+  assert.equal(parseOpenAICosts(oa)['2026-10-01'], Object.values(om).reduce((a, b) => a + b, 0));
+  assert.deepEqual(Object.keys(om).sort(), ['', 'gpt-6-astra', 'gpt-6-mini']);
+  assert.equal(om['gpt-6-astra'], 2);
+  assert.equal(openAILineItemModel('web search tool calls'), 'web search tool calls');
+  assert.equal(openAILineItemModel(undefined), '');
+});
+
+test('Rozpad tokenů po modelech: součet modelů = denní součet stejné odpovědi', () => {
+  const oa = { data: [{ start_time: Math.floor(Date.UTC(2026, 9, 1) / 1000), results: [
+    { model: 'gpt-6-astra', input_tokens: 1000, output_tokens: 200, input_cached_tokens: 400, num_model_requests: 3 },
+    { model: 'gpt-6-mini', input_tokens: 50, output_tokens: 5, input_cached_tokens: 0, num_model_requests: 1 },
+  ] }] };
+  const m = parseOpenAIUsageModels(oa)['2026-10-01'];
+  const d = parseOpenAIUsage(oa)['2026-10-01'];
+  assert.equal(m['gpt-6-astra'].input + m['gpt-6-mini'].input, d.input);
+  assert.equal(m['gpt-6-astra'].output + m['gpt-6-mini'].output, d.output);
+  assert.deepEqual(m['gpt-6-astra'], { input: 1000, output: 200, cached: 400 });
+
+  const an = { data: [{ starting_at: '2026-10-01T00:00:00Z', results: [
+    { model: 'claude-opus-5', uncached_input_tokens: 1500, output_tokens: 500, cache_read_input_tokens: 200, cache_creation: { ephemeral_1h_input_tokens: 10, ephemeral_5m_input_tokens: 20 } },
+    { model: 'claude-sonnet-5', uncached_input_tokens: 100, output_tokens: 50 },
+  ] }] };
+  const am = parseAnthropicUsageModels(an)['2026-10-01'];
+  const ad = parseAnthropicUsage(an)['2026-10-01'];
+  assert.equal(am['claude-opus-5'].input + am['claude-sonnet-5'].input, ad.input);
+  assert.equal(am['claude-opus-5'].cached, ad.cacheRead + ad.cacheWrite);
+});
+
+function groupedRoutes(seen, { usageFails = false } = {}) {
+  const den = Math.floor(Date.UTC(2026, 9, 1) / 1000);
+  return routedFetch([
+    ['api.openai.com/v1/organization/costs', (href) => { seen.push(new URL(href)); return okJson({ data: [{ start_time: den, results: [
+      { amount: { value: 3, currency: 'usd' }, line_item: 'gpt-6-astra, output_tokens' },
+      { amount: { value: 1, currency: 'usd' }, line_item: 'gpt-6-mini, input_tokens' },
+    ] }] }); }],
+    ['api.openai.com/v1/organization/usage/completions', (href) => { seen.push(new URL(href)); return usageFails ? errStatus(403) : okJson({ data: [{ start_time: den, results: [
+      { model: 'gpt-6-astra', input_tokens: 900, output_tokens: 100 },
+      { model: 'gpt-6-nano', input_tokens: 10, output_tokens: 1 },
+    ] }] }); }],
+    ['api.anthropic.com/v1/organizations/cost_report', (href) => { seen.push(new URL(href)); return okJson({ data: [{ starting_at: '2026-10-01T00:00:00Z', results: [
+      { amount: '250', currency: 'USD', model: 'claude-opus-5' },
+    ] }] }); }],
+    ['api.anthropic.com/v1/organizations/usage_report/messages', (href) => { seen.push(new URL(href)); return okJson({ data: [{ starting_at: '2026-10-01T00:00:00Z', results: [
+      { model: 'claude-opus-5', uncached_input_tokens: 70, output_tokens: 30 },
+    ] }] }); }],
+  ]);
+}
+
+test('Konektor: dotazy jsou seskupené podle modelu/popisu a rozpad sedí s denní útratou', async () => {
+  const seen = [];
+  const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY, 'anthropic-admin': ANTHROPIC_KEY }), { fetchImpl: groupedRoutes(seen) });
+  await connector.scan();
+  const by = (part) => seen.find((u) => u.pathname.endsWith(part));
+  assert.deepEqual(by('/organization/costs').searchParams.getAll('group_by'), ['line_item']);
+  assert.deepEqual(by('/usage/completions').searchParams.getAll('group_by'), ['model']);
+  assert.deepEqual(by('/cost_report').searchParams.getAll('group_by[]'), ['description']);
+  assert.deepEqual(by('/usage_report/messages').searchParams.getAll('group_by[]'), ['model']);
+
+  const entries = connector.modelEntries();
+  for (const svc of ['openai-api', 'anthropic-api']) {
+    const daily = connector.autoEntries().find((e) => e.service === svc).amount;
+    const sum = entries.filter((e) => e.service === svc).reduce((a, e) => a + e.amount, 0);
+    assert.equal(Math.round(sum * 100) / 100, daily, `${svc}: součet modelů = denní částka`);
+  }
+  const nano = entries.find((e) => e.model === 'gpt-6-nano');
+  assert.deepEqual({ amount: nano.amount, tokens: nano.tokens }, { amount: 0, tokens: { input: 10, output: 1, cached: 0 } }, 'model jen ve spotřebě má nulový náklad, ne vymyšlený');
+  assert.deepEqual(entries.find((e) => e.model === 'gpt-6-mini').tokens, { input: 0, output: 0, cached: 0 });
+  assert.deepEqual(entries.find((e) => e.model === 'claude-opus-5'), { service: 'anthropic-api', date: '2026-10-01', model: 'claude-opus-5', amount: 2.5, currency: 'USD', tokens: { input: 70, output: 30, cached: 0 } });
+  assertNoSecret(entries, OPENAI_KEY, ANTHROPIC_KEY);
+});
+
+test('Konektor: selhání spotřeby = tokens null u modelů (náklady zůstávají); selhání nákladů rozpad vymaže', async () => {
+  const connector = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }), { fetchImpl: groupedRoutes([], { usageFails: true }) });
+  await connector.scan();
+  const entries = connector.modelEntries();
+  assert.equal(entries.length, 2);
+  assert.ok(entries.every((e) => e.tokens === null));
+  assert.equal(entries.reduce((a, e) => a + e.amount, 0), 4);
+
+  let fail = false;
+  const ok = groupedRoutes([]);
+  const c2 = createCloudBillingConnector(fakeCtx({ 'openai-admin': OPENAI_KEY }), { fetchImpl: async (u, o) => (fail ? errStatus(500) : ok(u, o)) });
+  await c2.scan();
+  assert.ok(c2.modelEntries().length > 0);
+  fail = true;
+  await c2.scan();
+  assert.deepEqual(c2.modelEntries(), [], 'staré modely nesmí po chybě zůstat jako aktuální');
 });

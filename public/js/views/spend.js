@@ -1,13 +1,15 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtMoney, fmtNum, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
+import { esc, fmtMoney, fmtNum, fmtTok, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut, timeLine } from '../charts.js';
 import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, creditAgeHtml } from '../ui.js';
 import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 
-const v = { el: null, onClick: null };
+// `otevrene` = rozbalené rozpady po modelech (klíč měsíc|služba). Drží se mimo DOM, aby živá
+// aktualizace útraty rozbalený řádek nezavřela.
+const v = { el: null, onClick: null, otevrene: new Set() };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
 // Dokoupení kreditů rozpoznává server ze všech odečtů zůstatku (src/credits.js) – v prohlížeči
@@ -173,6 +175,14 @@ function mount(el, _params, query) {
   // protože se hned pod zavřeným objeví další identický).
   if (v.onClick) el.removeEventListener('click', v.onClick);
   v.onClick = async (e) => {
+    const m = e.target.closest('[data-models]');
+    if (m) {
+      const k = m.dataset.models;
+      if (v.otevrene.has(k)) v.otevrene.delete(k);
+      else v.otevrene.add(k);
+      update();
+      return;
+    }
     const a = e.target.closest('[data-action]');
     if (!a) return;
     const id = a.dataset.id;
@@ -306,7 +316,7 @@ const shortDay = (s) => new Date(dateOnlyTs(s)).toLocaleDateString(LOCALE, { day
 // Výdaje = ručně zapsané řádky + automatické řádky z Admin API. Dřív tabulka ukazovala jen ruční
 // zápisy, zatímco součet měsíce nahoře obsahoval i Admin API – čísla nešlo z viditelných řádků
 // složit. Automatické řádky jsou jen ke čtení: mění je dodavatel, ne člověk.
-export function ledgerHtml(sp) {
+export function ledgerHtml(sp, openSet = v.otevrene) {
   const rows = [...sp.ledger].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const auto = sp.automatic || [];
   if (!rows.length && !auto.length) {
@@ -329,14 +339,22 @@ export function ledgerHtml(sp) {
   const autoRows = auto.map((r) => {
     const svc = sp.services[r.service];
     const days = `${r.days} ${plural(r.days, 'den', 'dny', 'dní')}`;
+    const models = Array.isArray(r.models) ? r.models : [];
+    const key = `${r.month}|${r.service}|${r.currency}`;
+    const slug = `lm-${r.month}-${String(r.service).replace(/[^a-z0-9-]/gi, '')}-${String(r.currency).replace(/[^a-z]/gi, '')}`;
+    const open = models.length > 0 && openSet.has(key);
+    const label = `${svc?.label || r.service}, ${monthLabel(r.month)}`;
+    const toggle = models.length
+      ? `<button class="btn btn--sm ledger-toggle" type="button" id="${esc(slug)}-btn" data-models="${esc(key)}" aria-expanded="${open}" aria-controls="${esc(slug)}">${tr('Modely')}<span class="sr-only"> · ${esc(label)}</span>${ICON.chev}</button>`
+      : '';
     return `<tr class="ledger-auto">
             <td>${esc(monthLabel(r.month))}</td>
             <td><span class="svc">${glyph(svc?.provider)}${esc(svc?.label || r.service)}</span></td>
             <td>${esc(sp.kinds[r.kind] || r.kind)}</td>
             <td class="muted">${esc(days)} · ${esc(r.from === r.to ? shortDay(r.from) : `${shortDay(r.from)}–${shortDay(r.to)}`)}</td>
             <td class="num">${fmtMoney(r.amount, r.currency)}${converted(sp, r.converted, r.currency)}</td>
-            <td class="actions"><span class="sr-only">${tr('jen ke čtení')}</span></td>
-          </tr>`;
+            <td class="actions">${toggle}<span class="sr-only">${tr('jen ke čtení')}</span></td>
+          </tr>${models.length ? `<tr class="ledger-models" id="${esc(slug)}"${open ? '' : ' hidden'}><td colspan="5">${modelsHtml(sp, r, models, label)}</td><td class="lm-spacer"></td></tr>` : ''}`;
   }).join('');
   const autoMonth = sp.month.auto || 0;
   const split = autoMonth > 0
@@ -349,6 +367,32 @@ export function ledgerHtml(sp) {
         ${rows.length ? `<tbody>${auto.length ? groupRow(tr('Zapsané ručně')) : ''}${manualRows}</tbody>` : ''}
         ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note" title="${esc(tr('Admin API sčítá náklady po dnech v UTC. Na přelomu měsíce proto může den spadnout do jiného měsíce než podle místního kalendáře.'))}">${tr('dny podle UTC, jak je počítá dodavatel')}</span>`)}${autoRows}</tbody>` : ''}
       </table></div>${rateNote(sp, rows, auto)}`;
+}
+
+// Tokeny z Admin API: vstup a výstup v podobě, jakou posílá dodavatel. Mezipaměť zvlášť, protože
+// ji OpenAI počítá uvnitř vstupu a Anthropic mimo něj – sečíst je by u jednoho z nich zkreslilo.
+function tokensHtml(t) {
+  if (!t) return `<span class="lm-unknown">${tr('nezjištěno')}</span>`;
+  const parts = [`${esc(fmtTok(t.input))} ${tr('vstup')}`, `${esc(fmtTok(t.output))} ${tr('výstup')}`];
+  if (t.cached > 0) parts.push(`${esc(fmtTok(t.cached))} ${tr('mezipaměť')}`);
+  return parts.map((p) => `<span class="lm-part">${p}</span>`).join('');
+}
+
+// Rozpad automatického řádku po modelech: kolik který model stál a kolik tokenů organizace přes API
+// spotřebovala. Tokeny jsou z Admin API, ne z konverzací na tomto počítači – proto vlastní popisek
+// a nikdy se nesčítají s tokeny ve Statistikách.
+export function modelsHtml(sp, r, models, label) {
+  const unknown = models.some((m) => !m.tokens);
+  const items = models.map((m) => `<li class="lm-row">
+      <span class="lm-name">${m.model ? esc(m.model) : `<span class="lm-other">${tr('Bez modelu (nástroje, úložiště)')}</span>`}</span>
+      ${m.model || m.tokens?.input || m.tokens?.output ? `<span class="lm-tok">${tokensHtml(m.tokens)}</span>` : '<span class="lm-tok lm-tok--none"><span class="lm-unknown">–</span></span>'}
+      <span class="lm-cost">${esc(fmtMoney(m.amount, r.currency))}${converted(sp, m.converted, r.currency)}</span>
+    </li>`).join('');
+  return `<div class="lm" role="group" aria-label="${esc(tr('Rozpad podle modelů: {0}', label))}">
+    <div class="lm-head" aria-hidden="true"><span>${tr('Model')}</span><span>${tr('Tokeny z Admin API')}</span><span>${tr('Částka')}</span></div>
+    <ul class="lm-list">${items}</ul>
+    <p class="lm-note">${unknown ? `${tr('Spotřebu tokenů se od dodavatele nepodařilo zjistit, náklady platí.')} ` : ''}${tr('Tokeny celé organizace podle Admin API. Nejsou to tokeny z konverzací ve Statistikách a nesčítají se s nimi.')}</p>
+  </div>`;
 }
 
 // Odkud je kurz. Převádí se dnešním kurzem i za minulé měsíce – historické kurzy aplikace nemá,

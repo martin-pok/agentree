@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { state, sessionsList, agentsList } from '../state.js';
-import { esc, fmtNum, plural } from '../format.js';
+import { esc, fmtNum, fmtTok, plural } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
@@ -28,6 +28,7 @@ function mount(el) {
       <div class="sec-head"><h2 id="st-chart-h">${tr('Tokeny podle poskytovatele')}</h2></div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
+      <div data-region="api-tokens"></div>
     </section>
     <div class="grid-2 st-cards" data-enter style="--i:4">
       <div class="bal-col">
@@ -87,6 +88,32 @@ function usageHistoryHtml() {
 // Čísla a pruhy se při živé události slučují (ui.js#sloucit), nepřepisují.
 const zivy = (el, name, html) => fill(el, name, html, { sloucit: true });
 
+// Tokeny organizace z Admin API (Anthropic, OpenAI) jsou jiná metrika než tokeny z přepisů v grafu:
+// celá organizace, po dnech v UTC. Proto stojí pod grafem zvlášť, s vlastním popiskem, a nikdy se
+// nepřičítají do grafu ani do KPI. Admin API počítá po dnech – pro „Dnes“ a „24 hodin“ by součet
+// nesouhlasil s obdobím, a tak se tam neukazují.
+const API_DNY = { week: 7, fortnight: 14, month: 30 };
+const API_ZDROJE = [['anthropic-admin', 'anthropic', 'Anthropic'], ['openai-admin', 'openai', 'OpenAI']];
+export function apiTokensHtml(period, now = Date.now(), cloud = state.integrations?.cloud) {
+  const dny = API_DNY[period];
+  if (!dny || !cloud) return '';
+  const od = new Date(now - (dny - 1) * 86400e3).toISOString().slice(0, 10);
+  const radky = API_ZDROJE.filter(([id]) => cloud[id]?.state === 'connected').map(([id, provider, label]) => {
+    const daily = cloud[id].tokens;
+    let hodnota;
+    if (!daily) hodnota = `<span class="muted">${tr('nezjištěno')}</span>`;
+    else {
+      let input = 0;
+      let output = 0;
+      for (const [den, t] of Object.entries(daily)) if (den >= od) { input += Number(t?.input) || 0; output += Number(t?.output) || 0; }
+      hodnota = `<span class="api-tok-val">${esc(fmtTok(input))} ${tr('vstup')} · ${esc(fmtTok(output))} ${tr('výstup')}</span>`;
+    }
+    return `<li><span class="svc">${glyph(provider)}${esc(label)}</span>${hodnota}</li>`;
+  });
+  if (!radky.length) return '';
+  return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title">${tr('Organizace přes API')}</span> <span class="muted">${tr('Tokeny z Admin API za posledních {0} dní (dny UTC). Celá organizace, nejsou v grafu ani v součtu výše.', dny)}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
+}
+
 function update() {
   const el = v.el;
   if (!el) return;
@@ -114,6 +141,7 @@ function update() {
   if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
   v.drawn = true;
   fill(el, 'legend', legendHtml(ser.series, { box: true }));
+  fill(el, 'api-tokens', apiTokensHtml(v.period, now));
 
   fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
 
