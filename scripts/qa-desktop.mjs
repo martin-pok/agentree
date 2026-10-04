@@ -409,6 +409,46 @@ async function zkontrolujObdobi(browser, engine) {
   }
 }
 
+// Ovládací prvky ve stejném řádku mají stejnou výšku (přepínač zdroje 32 px vedle čipů 40 px
+// působil jako jiný, menší prvek). Kontroluje se každá obrazovka na 1440 i 375 px.
+async function zkontrolujVyskyRadku(browser, engine) {
+  // Ukázková scéna má poskytovatele, projekty i výdaje – bez dat by řádky čipů vůbec nevznikly.
+  const { pripravUkazku } = await import('./demo-fixture.mjs');
+  const server = await pripravUkazku();
+  const nalezy = new Set();
+  try {
+    for (const sirka of [1440, 375]) {
+      const ctx = await browser.newContext({ viewport: { width: sirka, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+      const p = await ctx.newPage();
+      for (const trasa of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'dovednosti', 'nastaveni']) {
+        await p.goto(`${server.url}/#/${trasa}`);
+        await p.waitForTimeout(500);
+        const vys = await p.evaluate(() => {
+          // Tlačítka uvnitř segmentového přepínače s obalem měří jako celek (obal má 40 px).
+          const ctrl = [...new Set([...document.querySelectorAll('#view button, #view .chip, #view a.btn, #view select, #view .picker-trigger')].map((x) => x.closest('.seg:not(.seg--light)') || x))]
+            .filter((x) => { const r = x.getBoundingClientRect(); return r.width && r.height && getComputedStyle(x).visibility !== 'hidden' && !x.closest('dialog, .welcome-dialog'); });
+          const skupiny = new Map();
+          // Řádek = lišta nebo skupina akcí; přepínač a čipy mají každý svůj obal, ale stojí v jedné liště.
+          for (const c of ctrl) { const k = c.closest('.toolbar, .set-actions, .sec-head, .actions, .project-list-bar, .head-actions') || c.parentElement; if (!skupiny.has(k)) skupiny.set(k, []); skupiny.get(k).push(c); }
+          const out = [];
+          for (const [rodic, cs] of skupiny) {
+            const linky = [];
+            for (const c of cs) { const r = c.getBoundingClientRect(); const stred = r.top + r.height / 2; let l = linky.find((x) => Math.abs(x.stred - stred) < 6); if (!l) linky.push(l = { stred, v: new Set(), n: [] }); l.v.add(Math.round(r.height)); l.n.push((c.textContent || c.getAttribute('aria-label') || '').trim().slice(0, 16)); }
+            for (const l of linky) if (l.v.size > 1) out.push(`${rodic.className || rodic.tagName}: ${[...l.v].join('/')} px (${l.n.join(', ')})`);
+          }
+          return out;
+        });
+        for (const v of vys) nalezy.add(`${sirka}px /${trasa} ${v}`);
+      }
+      await ctx.close();
+    }
+  } finally {
+    await server.close();
+  }
+  assert.deepEqual([...nalezy], [], `${engine}: prvky ve stejném řádku mají různou výšku\n${[...nalezy].join('\n')}`);
+  results.push({ engine, check: 'ovládací prvky v jednom řádku mají stejnou výšku' });
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   const server = await startTestServer();
@@ -425,6 +465,7 @@ for (const engine of engines) {
   await zkontrolujPocitadla(browser, engine);
   await zkontrolujNadpisy(browser, engine);
   await zkontrolujObdobi(browser, engine);
+  await zkontrolujVyskyRadku(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();

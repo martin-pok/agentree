@@ -815,6 +815,10 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .seg--light { box-shadow: none; background: transparent; padding: 0; gap: 4px; }
 .seg--light button[aria-pressed='true'] { background: var(--action); color: var(--on-action); box-shadow: none; }
 .seg--light button:hover:not([aria-pressed='true']) { background: var(--line-2); }
+/* Přepínač zdroje stojí v jednom řádku s čipy poskytovatelů (40 px). Ve 32 px vedle nich
+   působil jako jiný, menší prvek – v řádku s čipy má proto stejnou výšku i vnitřní odsazení. */
+.toolbar--sub > .seg--light button { height: 40px; padding: 0 16px; }
+.toolbar--projects > .btn--sm { height: 40px; padding: 0 16px; font-size: 14px; }
 /* Rolovatelný přepínač: doznění na straně, kam se dá ještě posunout (značky nastavuje ui.js).
    Bez něj se poslední popisek usekne uprostřed slova a vypadá to jako chyba sazby. */
 .seg.je-vpravo { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
@@ -1295,6 +1299,8 @@ html.is-cloud body { background: var(--paper); }
 .ledger .num { text-align: right; font-family: var(--f-mono); white-space: nowrap; }
 .ledger .actions { text-align: right; white-space: nowrap; }
 .ledger .actions > * { display: inline-flex; vertical-align: middle; }
+/* Ikona smazání stojí vedle „Ukončit“ (32 px) – v řádku tabulky mají obě stejnou výšku. */
+.ledger .actions .icon-btn { width: 32px; height: 32px; }
 .svc { display: inline-flex; align-items: center; gap: 8px; }
 /* Výdaje: ručně zapsané a automatické řádky z Admin API jsou dvě skupiny jedné tabulky, aby
    sloupce lícovaly. Převod do hlavní měny je pod částkou, menší a tlumený. */

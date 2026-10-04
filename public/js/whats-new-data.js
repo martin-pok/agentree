@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.34.3',
+    date: '2026-10-04',
+    title: 'Sjednocené ovládací prvky',
+    items: [
+      'Přepínač zdroje na Agentech má stejnou výšku jako čipy vedle něj; stejně i další tlačítka, která stojí v jednom řádku.',
+    ],
+    en: {
+      title: 'Consistent controls',
+      items: [
+        'The source switch in Agents now matches the height of the chips next to it, as do other buttons that share a row.',
+      ],
+    },
+  },
+  {
     version: '0.34.2',
     date: '2026-10-04',
     title: 'Plány bez ručního zapisování',
