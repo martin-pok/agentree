@@ -1,5 +1,10 @@
 # Changelog
 
+## Nezveřejněno
+
+- **Plášť pro Windows ukazuje stejnou načítací scénu jako Mac.** Místo nápisu „Agenteeq“ systémovým písmem a hranatého tlačítka otevře okno hned po spuštění scénu `public/nacitani.html` ze souboru v balíčku (adresu skládá `UrlCreateFromPathW`, takže projde i složka s mezerou nebo „&“). Hlášky o obnově spojení, chyby i „Zkusit znovu“ mění jen text ve scéně, animace běží dál. Jakmile server běží, vystřídá ji rozhraní se stejnou animací. Okno smí ze souborů otevřít jen tuhle stránku. Když v balíčku chybí, zůstává prostá stránka pláště, nově s tlačítkem jako kapslí.
+- Neověřeno: vzhled v samotném okně pro Windows (stroj s ověřením nemá Windows); plášť překládá CI a stránku scény jsme ověřili v Chromiu.
+
 ## 0.36.1 – 2026-10-04 · nová načítací obrazovka i v aplikaci pro Mac, karty projektů bez poskakování
 
 - **Aplikace pro Mac ukazovala starou načítací obrazovku.** Nová animace značky z 0.36.0 žila jen ve webovém rozhraní. Okno pro Mac ji zakrývalo vlastním nativním překryvem (nápis „Agenteeq“ systémovým písmem a „Připravujeme tvůj pracovní prostor…“) a ten zmizel až s načtenými daty, takže animaci nikdo neviděl. Překryv teď ukazuje stejnou scénu (`public/nacitani.html`, značka shodná s `loaderHtml()`, hlídá test) ze souboru v balíčku – od prvního snímku okna, ještě před startem serveru, souvisle bez střihu až do načtení dat. Pak se scéna za 0,32 s rozplyne do Přehledu, při omezeném pohybu zmizí naráz. Hlášky „Obnovujeme spojení…“, chyby i tlačítko „Zkusit znovu“ (kapsle) jsou ve stejné scéně. Kdyby stránka v balíčku chyběla, zůstává původní prostý text jako záloha.

@@ -95,3 +95,21 @@ test('plášť pro Mac ukazuje od spuštění značkovou načítací scénu, ne 
   assert.match(skript, /text\.textContent = stav\.text/);
   assert.doesNotMatch(skript, /innerHTML/);
 });
+
+test('plášť pro Windows ukazuje stejnou načítací scénu jako Mac', async () => {
+  const cpp = await fs.readFile(new URL('../desktop/windows/Agenteeq.cpp', import.meta.url), 'utf8');
+  const skript = await fs.readFile(new URL('../public/js/nacitani.js', import.meta.url), 'utf8');
+  // Scéna ze souboru v balíčku; adresu skládá UrlCreateFromPathW, aby prošla i „Design & Web“.
+  assert.match(cpp, /slozkaAplikace\(\) \+ L"\\\\app\\\\public\\\\nacitani\.html"/);
+  assert.match(cpp, /UrlCreateFromPathW\(scena\.c_str\(\)/);
+  // Okno smí otevřít jen tenhle soubor, zprávy z něj přijímá a „Zkusit znovu“ spustí server.
+  assert.match(cpp, /if \(!nacitani_\.empty\(\) && jeNacitaciScena\(adresa\)\) return S_OK;/);
+  assert.match(cpp, /\|\| jeNacitaciScena\(odkud\);/);
+  assert.match(cpp, /druh == L"retry" \|\| druh == L"znovu"/);
+  // Text jde do stránky jako řetězec JS (escapovaný), stránka ho vloží jako textContent.
+  assert.match(cpp, /window\.agenteeqNacitani\(\{text:'" \+ escapujProJs\(stavText_\)/);
+  assert.match(skript, /messageHandlers\?\.nacitani \|\| window\.webkit\?\.messageHandlers\?\.agenteeq/);
+  // Záložní prostá stránka má tlačítko jako kapsli, ne s natvrdo zaoblenými rohy.
+  assert.match(cpp, /border-radius: 9999px;/);
+  assert.doesNotMatch(cpp, /border-radius: 8px;/);
+});

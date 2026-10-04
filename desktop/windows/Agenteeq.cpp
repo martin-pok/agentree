@@ -25,6 +25,7 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <shellapi.h>
+#include <shlwapi.h>
 #include <dwmapi.h>
 #include <wrl.h>
 #include <algorithm>
@@ -274,6 +275,21 @@ static std::wstring escapujProJs(const std::wstring& s) {
   return out;
 }
 
+static bool konciNa(const std::wstring& s, const std::wstring& konec) {
+  if (s.size() < konec.size()) return false;
+  for (size_t i = 0; i < konec.size(); i++) {
+    if (std::towlower(s[s.size() - konec.size() + i]) != std::towlower(konec[i])) return false;
+  }
+  return true;
+}
+
+// Jediná stránka ze souboru, kterou okno smí otevřít: načítací scéna z balíčku. Adresu skládá
+// UrlCreateFromPathW (mezery, „&“ i diakritika ve složce se zakódují), WebView2 ji pak může
+// hlásit v normalizované podobě – proto se porovnává schéma a konec cesty, ne celý řetězec.
+static bool jeNacitaciScena(const std::wstring& adresa) {
+  return adresa.rfind(L"file:", 0) == 0 && konciNa(adresa, L"/public/nacitani.html");
+}
+
 // ── Stránky, které ukazuje sám plášť ─────────────────────────────────────────
 //
 // Načítání i chyba jsou HTML, ne kreslené GDI. Důvod je praktický: typografie, barvy
@@ -296,8 +312,8 @@ static std::wstring strankaPlaste(const std::wstring& zprava, bool sTlacitkem) {
       L"  p { font-size: 15px; font-weight: 400; line-height: 1.6; margin: 0;"
       L"    color: rgba(244, 243, 247, 0.75); }"
       L"  button { margin-top: 24px; font: inherit; font-size: 14px; font-weight: 500;"
-      L"    color: #16141D; background: #F4F3F7; border: 0; border-radius: 8px;"
-      L"    padding: 10px 20px; cursor: pointer; }"
+      L"    color: #16141D; background: #F4F3F7; border: 0; border-radius: 9999px;"
+      L"    height: 40px; padding: 0 20px; cursor: pointer; }"
       L"  button:hover { background: #fff; }"
       L"  button:focus-visible { outline: 2px solid #C99A3E; outline-offset: 2px; }"
       L"</style></head><body><div class=\"kryt\">"
@@ -410,6 +426,12 @@ class Aplikace {
   int odznak_ = 0;
   HICON ikonaOdznaku_ = nullptr;
   std::wstring cestaOznameni_;     // kam skočit po kliknutí na oznámení
+  // Načítací scéna z balíčku (app\public\nacitani.html) jako file:// adresa; prázdná, když
+  // soubor chybí – pak plášť ukáže vlastní prostou stránku. Text a tlačítko scény drží
+  // stavText_/stavZnovu_ a do stránky se posílají, kdykoli je načtená.
+  std::wstring nacitani_;
+  std::wstring stavText_;
+  bool stavZnovu_ = false;
 
   static LRESULT CALLBACK Obsluha(HWND, UINT, WPARAM, LPARAM);
   LRESULT Zprava(HWND, UINT, WPARAM, LPARAM);
@@ -419,6 +441,7 @@ class Aplikace {
   void PoVytvoreniWebView();
   void ZmenVelikost();
   void UkazStranku(const std::wstring& zprava, bool sTlacitkem);
+  void PosliStavNacitani();
 
   void SpustServer();
   void UkonciServer(bool pockej);
@@ -599,9 +622,30 @@ void Aplikace::Naviguj(const std::wstring& hash) {
   web_->ExecuteScript(skript.c_str(), nullptr);
 }
 
+// Načítání a chyby ukazuje značková scéna (public/nacitani.html, stejná jako na macOS). Když už
+// v okně je, změní se jen text a tlačítko – animace běží dál bez střihu. Jinak se otevře a stav
+// do ní pošle NavigationCompleted. Bez souboru zůstává prostá stránka pláště.
 void Aplikace::UkazStranku(const std::wstring& zprava, bool sTlacitkem) {
   if (!web_) return;
-  web_->NavigateToString(strankaPlaste(zprava, sTlacitkem).c_str());
+  stavText_ = zprava;
+  stavZnovu_ = sTlacitkem;
+  if (nacitani_.empty()) {
+    web_->NavigateToString(strankaPlaste(zprava, sTlacitkem).c_str());
+    return;
+  }
+  CoRetezec zdroj;
+  if (SUCCEEDED(web_->get_Source(&zdroj)) && zdroj && jeNacitaciScena(zdroj.get())) {
+    PosliStavNacitani();
+    return;
+  }
+  web_->Navigate(nacitani_.c_str());
+}
+
+void Aplikace::PosliStavNacitani() {
+  if (!web_) return;
+  std::wstring skript = L"window.agenteeqNacitani && window.agenteeqNacitani({text:'" + escapujProJs(stavText_) +
+                        L"',znovu:" + (stavZnovu_ ? L"true" : L"false") + L"});";
+  web_->ExecuteScript(skript.c_str(), nullptr);
 }
 
 // ── Ikona v oznamovací oblasti a odznak ──────────────────────────────────────
@@ -977,6 +1021,7 @@ void Aplikace::PoVytvoreniWebView() {
             if (FAILED(args->get_Uri(&url)) || !url) return S_OK;
             const std::wstring adresa(url.get());
             if (adresa.rfind(L"about:", 0) == 0 || adresa.rfind(L"data:", 0) == 0) return S_OK;
+            if (!nacitani_.empty() && jeNacitaciScena(adresa)) return S_OK;
             if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) return S_OK;
             args->put_Cancel(TRUE);
             if (adresa.rfind(L"https://", 0) == 0 || adresa.rfind(L"mailto:", 0) == 0) {
@@ -1012,7 +1057,7 @@ void Aplikace::PoVytvoreniWebView() {
             if (SUCCEEDED(args->get_Source(&zdroj)) && zdroj) {
               const std::wstring odkud(zdroj.get());
               const bool zAplikace = !adresa_.empty() && odkud.rfind(adresa_, 0) == 0;
-              const bool zPlaste = odkud.rfind(L"about:", 0) == 0 || odkud.rfind(L"data:", 0) == 0;
+              const bool zPlaste = odkud.rfind(L"about:", 0) == 0 || odkud.rfind(L"data:", 0) == 0 || jeNacitaciScena(odkud);
               if (!zAplikace && !zPlaste) {
                 if (!qaZprava_.empty()) ZapisQa(L"{\"udalost\":\"zprava-odmitnuta\",\"zdroj\":\"" + jsonText(odkud) + L"\"}");
                 return S_OK;
@@ -1025,11 +1070,22 @@ void Aplikace::PoVytvoreniWebView() {
             if (!ctecka.cti(zprava) || zprava.druh != json::Hodnota::Objekt) return S_OK;
             const std::wstring druh = zprava.textPod(L"type");
             if (!qaZprava_.empty() && druh != L"qa-sonda") ZapisQa(L"{\"udalost\":\"zprava\",\"typ\":\"" + jsonText(druh) + L"\"}");
-            if (druh == L"retry" && !dite_.hProcess) { pokusy_ = 0; SpustServer(); }
+            if ((druh == L"retry" || druh == L"znovu") && !dite_.hProcess) { pokusy_ = 0; SpustServer(); }
             if (!qaZprava_.empty() && druh == L"ready") web_->ExecuteScript(QA_SONDA, nullptr);
             if (!qaZprava_.empty() && druh == L"qa-sonda") {
               ZapisQa(L"{\"udalost\":\"nacteno\",\"zprava\":" + std::wstring(telo.get()) + L"}");
             }
+            return S_OK;
+          })
+          .Get(),
+      &token);
+
+  // Načítací scéna dostane aktuální text a tlačítko, jakmile se načte.
+  web_->add_NavigationCompleted(
+      Callback<ICoreWebView2NavigationCompletedEventHandler>(
+          [this](ICoreWebView2* odesilatel, ICoreWebView2NavigationCompletedEventArgs*) -> HRESULT {
+            CoRetezec zdroj;
+            if (SUCCEEDED(odesilatel->get_Source(&zdroj)) && zdroj && jeNacitaciScena(zdroj.get())) PosliStavNacitani();
             return S_OK;
           })
           .Get(),
@@ -1065,6 +1121,13 @@ void Aplikace::PoVytvoreniWebView() {
           })
           .Get(),
       &token);
+
+  const std::wstring scena = slozkaAplikace() + L"\\app\\public\\nacitani.html";
+  if (GetFileAttributesW(scena.c_str()) != INVALID_FILE_ATTRIBUTES) {
+    wchar_t url[MAX_PATH * 4] = {};
+    DWORD delka = _countof(url);
+    if (SUCCEEDED(UrlCreateFromPathW(scena.c_str(), url, &delka, 0))) nacitani_ = url;
+  }
 
   ZmenVelikost();
   UkazStranku(L"Připravujeme tvůj pracovní prostor…", false);
