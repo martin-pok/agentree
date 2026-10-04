@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.36.2',
+    date: '2026-10-04',
+    title: 'Srovnané filtry na Agentech',
+    items: [
+      'Filtry na Agentech drží jednu mřížku: stav nahoře, pod ním karta s řádky Zdroj, Služba a Projekt. Čipy začínají na jedné svislé ose, každý řádek má stejnou výšku a hledání s tlačítkem Vybrat stojí vpravo na společném okraji.',
+      'Aplikace pro Windows ukazuje při spuštění stejnou načítací animaci jako Mac.',
+    ],
+    en: {
+      title: 'Tidy filters on Agents',
+      items: [
+        'The filters on Agents follow one grid: status on top, then a card with Source, Service and Project rows. Chips start on one vertical line, every row has the same height, and search and Select sit on a shared right edge.',
+        'The Windows app shows the same loading animation as the Mac at startup.',
+      ],
+    },
+  },
+  {
     version: '0.36.1',
     date: '2026-10-04',
     title: 'Nová načítací obrazovka v aplikaci pro Mac a klidné karty projektů',

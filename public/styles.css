@@ -836,15 +836,11 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .seg--light { box-shadow: none; background: transparent; padding: 0; gap: 4px; }
 .seg--light button[aria-pressed='true'] { background: var(--action); color: var(--on-action); box-shadow: none; }
 .seg--light button:hover:not([aria-pressed='true']) { background: var(--line-2); }
-/* Přepínač zdroje stojí v jednom řádku s čipy poskytovatelů (40 px). Ve 32 px vedle nich
-   působil jako jiný, menší prvek – v řádku s čipy má proto stejnou výšku i vnitřní odsazení. */
-.toolbar--sub > .seg--light button { height: 40px; padding: 0 16px; }
-.toolbar--projects > .btn--sm { height: 40px; padding: 0 16px; font-size: 14px; }
 /* Rolovatelný přepínač: doznění na straně, kam se dá ještě posunout (značky nastavuje ui.js).
    Bez něj se poslední popisek usekne uprostřed slova a vypadá to jako chyba sazby. */
-.seg.je-vpravo { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
-.seg.je-vlevo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px); mask-image: linear-gradient(90deg, transparent, #000 32px); }
-.seg.je-vlevo.je-vpravo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+.seg.je-vpravo, .chips--rada.je-vpravo { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
+.seg.je-vlevo, .chips--rada.je-vlevo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px); mask-image: linear-gradient(90deg, transparent, #000 32px); }
+.seg.je-vlevo.je-vpravo, .chips--rada.je-vlevo.je-vpravo { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { height: 40px; padding: 0 16px 0 12px; border-radius: var(--r-full); border: 1px solid var(--line); background: transparent; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--ink-2); transition: color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .chip:hover { border-color: var(--ink); }
@@ -2252,10 +2248,29 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .pick input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
 
 /* Agenti: projekty, výběr, přetažení */
-.toolbar--projects { gap: 12px; }
-.chips--projects { flex: 1; min-width: 0; align-items: center; }
-.chips-label { font-size: 12px; color: var(--mute); margin-right: 4px; }
-.chips-hint { margin-left: 4px; }
+/* ---------- Filtry na obrazovce Agenti ----------
+   Nahoře hlavní filtr – stav – přes celou šířku. Pod ním karta s řádky Zdroj, Služba a Projekt
+   na jedné mřížce: popisky mají vlastní sloupec, takže čipy obou řádků začínají na jedné svislé
+   ose, a pravý sloupec nese hledání a „Vybrat“ zarovnané k témuž pravému okraji. Každý řádek
+   má přesně 56 px (8 + 40 + 8) a nic se v něm nezalamuje – co se nevejde, roluje vodorovně
+   s dozněním u okraje. Dřív se řádek projektů lámal do dvou výšek, „Vybrat“ stálo svisle jinde
+   než čipy a hledání viselo samo na vlastním řádku. Stejný jazyk má karta na Dovednostech. */
+.toolbar--filtry { margin-bottom: 16px; }
+.filtry { margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+/* Vpravo 8 px: hledání i „Vybrat“ pak sedí v kartě se stejným odstupem nad, pod i vpravo. */
+.filtry-rada { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; min-height: 56px; padding: 0 8px 0 24px; }
+.filtry-rada + .filtry-rada { border-top: 1px solid var(--line-2); }
+.filtry-popis { font: 500 12px/1 var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.filtry-rada > .btn, .filtry-rada > .search-field { grid-column: 3; justify-self: end; margin: 0; }
+.filtry-rada > .search-field input { width: 240px; }
+.chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
+.chips--rada::-webkit-scrollbar { display: none; }
+.chips--rada .chip { flex: none; }
+/* Řádek služeb bez jediné služby (čerstvá instalace) se nekreslí, nezůstane po něm prázdný pruh. */
+.filtry-rada:has(> .chips--rada:empty) { display: none; }
+.chip > .icon { width: 16px; height: 16px; flex: none; }
+/* Rolovatelný řádek ořízne obrys zaostření vně čipu; uvnitř kopíruje tvar kapsle (jako v .seg). */
+.chips--rada :focus-visible { outline-offset: -3px; }
 .chip .count { font: 500 12px/1 var(--f-mono); color: var(--mute); }
 .chip .pdot { width: 8px; height: 8px; box-shadow: none; }
 .row--select { cursor: pointer; }
@@ -2329,7 +2344,14 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .prow.is-snapshot { grid-template-columns: 40px minmax(0, 1fr) auto; }
   .prow.is-snapshot .prow-meta { display: none; }
   .project-list-bar { padding: 12px 16px; }
-  .chips-hint { display: none; }
+  /* Na úzké obrazovce jde popisek nad řádek a čipy dostanou celou šířku; „Vybrat“ zůstává
+     na konci řádku projektů. Výška řádku je pořád pevná. */
+  .filtry-rada { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 8px 0 16px; }
+  .filtry-popis { grid-column: 1 / -1; }
+  .filtry-rada > .btn { grid-column: 2; }
+  /* Hledání jde na telefonu nahoru do karty, nad popisek „Zdroj“, přes celou šířku. */
+  .filtry-rada > .search-field { grid-column: 1 / -1; justify-self: stretch; order: -1; margin-bottom: 16px; }
+  .filtry-rada > .search-field input { width: 100%; }
   .selbar:not(:empty) { bottom: 96px; }
   .handoff { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .moje-item { grid-template-columns: 36px minmax(0, 1fr); }

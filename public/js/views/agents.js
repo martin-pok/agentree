@@ -182,20 +182,27 @@ function mount(el, _params, query) {
   v.ceka = false;
   applyQuery(query);
   el.innerHTML = `
-    <div class="toolbar" data-enter style="--i:1">
+    <div class="toolbar toolbar--filtry" data-enter style="--i:1">
       <div class="seg" role="group" aria-label="${tr('Filtrovat podle stavu')}" data-region="seg"></div>
-      <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Název, projekt, model, aplikace…')}" autocomplete="off"></label>
     </div>
-    <div class="toolbar toolbar--sub" data-enter style="--i:2">
-      <div class="seg seg--light" role="group" aria-label="${tr('Filtrovat podle zdroje')}" data-region="source"></div>
-      <div class="chips" role="group" aria-label="${tr('Filtrovat podle poskytovatele')}" data-region="chips"></div>
+    <div class="filtry card" data-enter style="--i:2">
+      <div class="filtry-rada">
+        <span class="filtry-popis" id="ag-f-zdroj">${tr('Zdroj')}</span>
+        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-zdroj" data-region="source"></div>
+        <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Název, projekt, model, aplikace…')}" autocomplete="off"></label>
+      </div>
+      <div class="filtry-rada" data-region="sluzby-rada">
+        <span class="filtry-popis" id="ag-f-sluzba">${tr('Služba')}</span>
+        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-sluzba" data-region="chips"></div>
+      </div>
+      <div class="filtry-rada">
+        <span class="filtry-popis" id="ag-f-projekt">${tr('Projekt')}</span>
+        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-projekt" data-region="projects"></div>
+        <button class="btn" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">${tr('Vybrat')}</span></button>
+      </div>
     </div>
-    <div class="toolbar toolbar--sub toolbar--projects" data-enter style="--i:3">
-      <div class="chips chips--projects" role="group" aria-label="${tr('Filtrovat podle projektu')}" data-region="projects"></div>
-      <button class="btn btn--sm" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">${tr('Vybrat')}</span></button>
-    </div>
-    <div class="card table" data-enter style="--i:4" data-region="table"></div>
-    <div data-enter style="--i:5" data-region="runtimes"></div>
+    <div class="card table" data-enter style="--i:3" data-region="table"></div>
+    <div data-enter style="--i:4" data-region="runtimes"></div>
     <div class="selbar" data-region="selbar" role="region" aria-label="${tr('Hromadné akce')}"></div>`;
   const input = el.querySelector('[data-q]');
   input.value = f.q;
@@ -287,7 +294,7 @@ function update() {
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
   zivy(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
-    .map(([k, label, icon]) => `<button type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
+    .map(([k, label, icon]) => `<button class="chip" type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
   const present = Object.keys(PROVIDERS).filter((p) => all.some((s) => pkey(s.provider) === p));
   zivy(el, 'chips', present
     .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join(''));
@@ -295,13 +302,14 @@ function update() {
   const projects = state.projects.items.filter((p) => !p.archived || p.id === f.project);
   const countIn = (pid) => scoped.filter((s) => s.projectId === pid).length;
   const noneCount = scoped.filter((s) => !s.projectId).length;
+  // Nápověda k přetažení je u čipů, na které se táhne (title), ne jako volný text na konci řádku:
+  // ten se na užším okně zalamoval pod čipy a rozbíjel řádek filtrů na dvě výšky.
+  const tahni = esc(tr('Konverzaci přetáhni na projekt'));
   zivy(el, 'projects', projects.length
-    ? `<span class="chips-label">${tr('Projekt')}</span>
-      <button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
-      ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
-      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>
-      <span class="chips-hint muted small">${tr('Konverzaci přetáhni na projekt')}</span>`
-    : `<span class="chips-label">${tr('Projekt')}</span><a class="chip" href="#/projekty">${ICON.plus}${tr('Založ první projekt a třiď konverzace podle klientů')}</a>`);
+    ? `<button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
+      ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" title="${tahni}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
+      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" title="${tahni}" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>`
+    : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Založ první projekt a třiď konverzace podle klientů')}</a>`);
   zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);

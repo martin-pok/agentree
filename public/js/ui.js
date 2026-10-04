@@ -254,7 +254,7 @@ export function oznacRolovani() {
   // Po vložení HTML ještě neproběhlo rozvržení; měřit hned by dalo scrollWidth starého obsahu.
   requestAnimationFrame(() => {
     naplanovano = false;
-    for (const el of document.querySelectorAll('.seg')) {
+    for (const el of document.querySelectorAll('.seg, .chips--rada')) {
       if (!el._rolovani) {
         el._rolovani = true;
         el.addEventListener('scroll', () => znacky(el), { passive: true });

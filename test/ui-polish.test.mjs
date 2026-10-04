@@ -482,3 +482,24 @@ test('karta projektu má pevnou výšku, ať v ní data přicházejí jakkoli', 
   assert.match(view, /<span class="pcard-time">[^\n]*logoStack\(st\.services, 4\)/);
   assert.doesNotMatch(view, /<span class="pcard-foot">[\s\S]*?logoStack[\s\S]*?<\/span>\s*<span class="pcard-time">/);
 });
+
+test('filtry na Agentech drží jednu mřížku: popisky ve sloupci, řádky 56 px, nic se nezalamuje', async () => {
+  const css = await zdroj('public/styles.css');
+  const view = await zdroj('public/js/views/agents.js');
+  const pravidlo = (sel) => css.match(new RegExp(`^${sel.replace(/[.]/g, '\\.')} \\{([^}]*)\\}`, 'm'))?.[1] || '';
+  // Řádky karty: stejná mřížka (popisek | čipy | akce vpravo) a pevná výška.
+  assert.match(pravidlo('.filtry-rada'), /grid-template-columns: 72px minmax\(0, 1fr\) auto;[^}]*min-height: 56px/);
+  // Čipy v řádku se nezalamují (roluje se), takže řádek nemá dvě výšky.
+  assert.match(pravidlo('.chips--rada'), /flex-wrap: nowrap;[^}]*overflow-x: auto/);
+  // Každý řádek má viditelný popisek, který skupinu i pojmenuje pro čtečku.
+  for (const id of ['ag-f-zdroj', 'ag-f-sluzba', 'ag-f-projekt']) {
+    assert.match(view, new RegExp(`<span class="filtry-popis" id="${id}">`));
+    assert.match(view, new RegExp(`aria-labelledby="${id}"`));
+  }
+  // Hledání i „Vybrat“ jsou v pravém sloupci karty, ne volně ve vlastním řádku.
+  assert.match(view, /<div class="filtry-rada">[\s\S]*?<label class="search-field">/);
+  assert.match(pravidlo('.filtry-rada > .btn, .filtry-rada > .search-field'), /grid-column: 3; justify-self: end/);
+  // Nápověda k přetažení už nevisí jako text za čipy (zalamovala se pod ně).
+  assert.doesNotMatch(view, /chips-hint/);
+  assert.match(view, /data-project-drop="\$\{esc\(p\.id\)\}" title="\$\{tahni\}"/);
+});
