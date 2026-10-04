@@ -76,6 +76,11 @@ Get-CimInstance Win32_Process | ForEach-Object {
  * Seznam běžících procesů v jednotném tvaru. Když ho systém neumí dát, vrátí
  * `{ ok: false }` – volající pak drží poslední známý stav a nic si nedomýšlí.
  */
+// Jak často se zjišťuje, které AI nástroje běží. Nový agent se má v rozhraní objevit do 2 s
+// (AGENTS.md: realtime), i v nejhorším případě: interval + výpis + vykreslení. `ps` na Macu trvá
+// desítky ms; výpis přes PowerShell na Windows stovky, proto tam 5 s.
+export const INTERVAL_PROCESU_MS = JE_WINDOWS ? 5000 : 1500;
+
 export async function processList(runImpl = run) {
   if (JE_WINDOWS) {
     return runImpl('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', PS_WINDOWS], { timeout: 8000 });

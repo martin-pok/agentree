@@ -598,6 +598,7 @@ export function createHttpServer(app, existingServer = null) {
       const r = validateBudgets(body, { currency: sp.currency, rates: sp.rates, budgets: sp.budgets });
       if (!r.ok) throw new HttpError(422, ui('Zkontroluj zvýrazněná pole.'), { errors: r.errors });
       const changedRate = ['USD', 'EUR'].some((c) => Number(r.value.rates[c]) !== Number(sp.rates[c]));
+      if (body?.currency !== undefined && r.value.currency !== sp.currency) sp.currencySource = 'user';
       Object.assign(sp, { currency: r.value.currency, rates: r.value.rates, budgets: r.value.budgets });
       if (changedRate) sp.ratesSource = 'manual';
       // „Použít kurz ČNB“: vrátí automatický kurz, pokud ho už někdy stáhl.

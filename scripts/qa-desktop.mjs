@@ -682,6 +682,7 @@ for (const engine of engines) {
     const planyText = await page.locator('.plans').textContent();
     assert.doesNotMatch(planyText, /Další licence|Přidat licenci/);
     assert.match(planyText, /20\s?\$/, `${engine} ChatGPT Plus má cenu z ceníku`);
+    assert.match(planyText, /\d\s?€/, `${engine} hlavní částka je v měně aplikace (výchozí euro)`);
     assert.match(planyText, /veřejného ceníku/, `${engine} cena je označená jako ceník`);
     assert.equal(await page.locator('.plans .plan-foot a[href="https://chatgpt.com/pricing"]').count(), 1, `${engine} u ceny je odkaz na ceník`);
     await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });

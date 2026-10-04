@@ -74,15 +74,19 @@ const PUVOD = { claude: () => tr('Zjištěno z účtu Claude Code'), chatgpt: ()
 function cenaHtml(sp, c) {
   if (!c) return `<span class="plan-cena"><b>${tr('Podle smlouvy')}</b><small>${tr('bez veřejné ceny')}</small></span>`;
   if (c.mesicne === 0 && !c.od) return `<span class="plan-cena"><b>${tr('Zdarma')}</b></span>`;
-  const castka = `${c.od ? `${tr('od')} ` : ''}${cenikovaCastka(c.mesicne, c.mena)}`;
+  // Hlavní částka je v měně aplikace (výchozí euro), přepočtená kurzem ČNB; pod ní ceníková cena
+  // v měně poskytovatele, aby bylo vidět, z čeho se počítá.
+  const vlastni = sp.currency && sp.currency !== c.mena;
+  const hlavni = vlastni ? fmtMoney(Math.round(toApp(sp, c.mesicne, c.mena)), sp.currency) : cenikovaCastka(c.mesicne, c.mena);
+  const castka = `${c.od ? `${tr('od')} ` : ''}${hlavni}`;
   const obdobi = [
     c.zaMisto ? tr('za uživatele měsíčně') : tr('měsíčně'),
     c.sVyuzitim ? tr('+ využití') : '',
   ].filter(Boolean).join(' ');
   const dalsi = [
-    c.rocne != null ? tr('ročně {0} měsíčně', cenikovaCastka(c.rocne, c.mena)) : '',
+    vlastni ? tr('ceník {0}', cenikovaCastka(c.mesicne, c.mena)) : '',
+    c.rocne != null ? tr('ročně {0} měsíčně', vlastni ? fmtMoney(Math.round(toApp(sp, c.rocne, c.mena)), sp.currency) : cenikovaCastka(c.rocne, c.mena)) : '',
     c.jenUsa ? tr('cena v USA') : '',
-    sp.currency && sp.currency !== c.mena ? `≈ ${money(toApp(sp, c.mesicne, c.mena))}` : '',
   ].filter(Boolean).join(' · ');
   return `<span class="plan-cena"><b>${esc(castka)}</b><small>${esc(obdobi)}</small>${dalsi ? `<small>${esc(dalsi)}</small>` : ''}</span>`;
 }

@@ -37,6 +37,7 @@ const cislo = (s) => Number(String(s).replace(',', '.'));
 const now = new Date(2026, 8, 15, 12).getTime(); // 15. 9. 2026
 const spend = {
   ...DEFAULT_SPEND,
+  currency: 'CZK', // výpočty v testu jsou v korunách; výchozí měna aplikace je euro
   rates: { CZK: 1, USD: 23, EUR: 25 },
   ledger: [
     { id: 'a', service: 'chatgpt', kind: 'subscription', amount: 20, currency: 'USD', date: '2026-07-05', recurring: 'monthly', endDate: '2026-08-31', account: 'Studio', note: 'Plus' },

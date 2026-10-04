@@ -70,7 +70,7 @@ flowchart LR
 1. `createApp()` načte `data.json` (vytvoří token pro hooky; rozšíření dostane vlastní token až při spárování).
 2. `start()` spustí všechny konektory paralelně (`Promise.allSettled` – chyba jednoho neblokuje ostatní).
 3. Po úvodním skenu: `store.reevaluate()`, `store.ready = true`, `alerts.start()` si zapamatuje výchozí stavy (staré události tak nevyvolají notifikace), kontrola rozpočtů.
-4. Časovače: přehodnocení stavů 5 s (klidné konverzace starší než den jednou za minutu), průchod souborů 10 s jako pojistka proti ztraceným událostem watcheru – nové a hodinu psané soubory pokaždé, starší při každém šestém průchodu; nezměněný soubor se znovu nesouhrnuje. Seznam konektorů 5 s, rozpočty 1 h. Výpis procesů (`ps`) sdílejí konektory procesů a lokálních agentů; do okna jde čas startu procesu, ne tikající doba běhu. Chyba pravidelné úlohy se jednou zapíše do logu.
+4. Časovače: přehodnocení stavů 5 s (klidné konverzace starší než den jednou za minutu), průchod souborů 10 s jako pojistka proti ztraceným událostem watcheru – nové a hodinu psané soubory pokaždé, starší při každém šestém průchodu; nezměněný soubor se znovu nesouhrnuje. Seznam konektorů 5 s, rozpočty 1 h. Výpis procesů (`ps`) běží po 1,5 s (Windows 5 s, `src/platform.js#INTERVAL_PROCESU_MS`) a sdílejí ho konektory procesů a lokálních agentů; do okna jde čas startu procesu, ne tikající doba běhu. Chyba pravidelné úlohy se jednou zapíše do logu.
 5. Teprve potom server začne poslouchat. Hooky během startu tiše selžou (curl `-m 2 || true`), Claude Code nezdržují.
 
 ### Realtime cesta a latence

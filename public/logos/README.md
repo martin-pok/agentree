@@ -16,6 +16,13 @@ Soubory `*.svg` pocházejí z balíčku [`@lobehub/icons-static-svg`](https://gi
 | cursor.svg | icons/cursor.svg |
 | ollama.svg | icons/ollama.svg |
 | lmstudio.svg | icons/lmstudio.svg |
+| windsurf.svg | icons/windsurf.svg (přidáno 4. 10. 2026 přes npm) |
+| kiro.svg | icons/kiro-color.svg (přidáno 4. 10. 2026 přes npm) |
+| goose.svg | icons/goose.svg (přidáno 4. 10. 2026 přes npm) |
+| opencode.svg | icons/opencode.svg (přidáno 4. 10. 2026 přes npm) |
+| antigravity.svg | icons/antigravity-color.svg (přidáno 4. 10. 2026 přes npm) |
+
+`warp.svg` v balíčku LobeHub není. Je ze [Simple Icons](https://simpleicons.org) verze **16.34.0** (licence CC0 1.0, `icons/warp.svg`, zdroj loga podle Simple Icons: https://warp.dev), staženo přes npm 4. 10. 2026, doplněna barva značky `#01A4FF` z téhož záznamu. Ze stejné verze Simple Icons je `zed.svg` (`icons/zedindustries.svg`, zdroj podle Simple Icons: oficiální `assets/icons/logo_96.svg` v repozitáři zed-industries/zed). Aider vlastní logo v žádném z obou balíčků nemá, proto má obecnou ikonu.
 
 Loga jsou ochranné známky svých vlastníků. Agenteeq je používá výhradně k označení služeb, se kterými se propojuje, a nenaznačuje spolupráci ani podporu ze strany těchto společností. Před veřejnou distribucí zkontroluj pravidla používání značek jednotlivých společností.
 
