@@ -220,6 +220,23 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .profile-in { padding: 14px 0 6px; text-align: center; }
 .avatar { position: relative; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); display: grid; place-items: center; font: 400 28px/1 var(--f-display); letter-spacing: .02em; }
 .avatar.is-loading { background: var(--line-2); }
+/* Tvar profilu do načtení: pruhy mají výšku písma řádku, který zastupují, takže každá podoba
+   profilu (sloupec, řádek, jeden řádek) má před načtením i po něm stejné rozměry. */
+.skel-text { display: inline-block; max-width: 100%; height: .72em; border-radius: var(--r-full); background: var(--line-2); vertical-align: middle; }
+.skel-text--greet { width: 64px; }
+.skel-text--name { width: 112px; }
+.skel-text--num { width: 88px; height: .64em; }
+.skel-text--label { width: 120px; }
+.skel-text--host { width: 136px; }
+.skel-text--ver { width: 104px; }
+.skel-text--src { width: 96px; height: .64em; }
+/* Flex bez textu nemá výšku řádku – zástupce verze je proto blok, aby měl přesně výšku tlačítka. */
+.source-version.p-skel { display: block; }
+.side-foot .skel-text { animation: skel-pulse 1.6s var(--ease) infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .side-foot .skel-text { animation: none; } }
+.p-skel .avatar, .p-skel .skel-text { animation: skel-pulse 1.6s var(--ease) infinite alternate; }
+@keyframes skel-pulse { from { opacity: 1; } to { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .p-skel .avatar, .p-skel .skel-text { animation: none; } }
 .avatar::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--teal); opacity: 0; }
 .avatar.is-live::after { animation: ring 2.4s var(--ease) infinite; }
 @keyframes ring { 0% { transform: scale(.94); opacity: .9; } 100% { transform: scale(1.14); opacity: 0; } }
@@ -398,6 +415,10 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 
 /* ---------- Obecné ---------- */
 .view { outline: none; }
+/* Načítání: jen scéna, uprostřed plochy pod lištou (na telefonu nad spodní nabídkou). Kostru
+   obrazovky, kterou mount už vložil, nechává až do načtení skrytou (app.js#refresh). */
+.view.is-loading > :not(.loader-wrap) { display: none !important; }
+.view.is-loading > .loader-wrap { min-height: max(360px, calc(100dvh - 280px)); padding-block: 32px; }
 /* Obsah nové obrazovky začíná naskakovat hned v prvním snímku po kliknutí. Dřív první blok čekal
    60 ms a bloky Přehledu 120 ms – mezi kliknutím a prvním obsahem tak byla prázdná plocha déle,
    než oko vnímá jako okamžitou odezvu (100 ms). Pořadí zůstává, jen kroky jsou kratší. */
@@ -1696,6 +1717,8 @@ html.is-cloud body { background: var(--paper); }
   /* Žije-li spojení, pilulka nic nového neříká a na 327 px lišty ukrajovala nadpis na „Stat…“.
      Ukáže se, až když se něco děje (obnovování, bez spojení) – tehdy je to informace, ne ozdoba. */
   .conn-pill:has(.dot--live) { display: none; }
+  /* Při prvním připojení totéž říká načítací scéna; pilulka by jen ukrojila nadpis na „Přeh…“. */
+  .conn-pill:has(.dot--connecting) { display: none; }
   .topbar { gap: 10px; flex-wrap: nowrap; }
   /* Lišta má na telefonu 327 px. Delší stav spojení („Bez spojení“) by ji zalomil a tlačítka by
      odskočila pod nadpis. Přednost ustoupit má proto nadpis – zkrátí se třemi tečkami, zatímco

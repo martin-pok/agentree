@@ -435,3 +435,33 @@ test('Upozornění: ikona, čas a „přečteno“ leží na jedné ose a čas n
   assert.match(radek, /align-items: center/, 'ikona, čas i tlačítko jsou svisle na středu karty');
   assert.match(css, /\.alert-act \{[^}]*width: 40px; height: 40px;/);
 });
+
+test('Načítání: souvislá animace značky bez teček a bez kostry obrazovky pod scénou', async () => {
+  const { loaderHtml } = await import('../public/js/loader.js');
+  const html = loaderHtml('Načítám…');
+  // Kmen a dvě větve jsou samostatné tahy, aby uzly naskočily přesně, když k nim tah doroste.
+  assert.equal((html.match(/class="lm-stroke /g) || []).length, 3);
+  assert.equal((html.match(/class="lm-node /g) || []).length, 3);
+  const css = await zdroj('public/loader.css');
+  // Při mezeře 100 začíná další úsek na konci tahu a kulaté zakončení tam nakreslí tečku.
+  const [, carka, mezera] = css.match(/\.lm-stroke \{[^}]*stroke-dasharray: (\d+) (\d+)/);
+  assert.ok(Number(mezera) > Number(carka), 'mezera čárkování musí být delší než tah');
+  assert.match(css, /\.lm-stroke \{[^}]*opacity: 0;/, 'složený tah je skrytý, jinak ukáže tečku nulové délky');
+  // Uzly naskakují měřítkem, ne poloprůhledně (šedé skvrny).
+  assert.match(css, /\.lm-node \{[^}]*transform: scale\(0\);[^}]*transform-box: fill-box;/);
+  const omezeny = css.slice(css.indexOf('prefers-reduced-motion'));
+  for (const s of ['.lm-root', '.lm-stroke', '.loader-orbit']) assert.ok(omezeny.includes(s), `${s} se při omezeném pohybu nezastaví`);
+
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /viewEl\.classList\.toggle\('is-loading', !state\.loaded\)/);
+  const styles = await zdroj('public/styles.css');
+  assert.match(styles, /\.view\.is-loading > :not\(\.loader-wrap\) \{ display: none !important; \}/);
+  // Na telefonu by „Připojuji…“ ukrojilo nadpis na „Přeh…“; totéž už říká scéna.
+  assert.match(app, /connecting: \['dot--connecting'/);
+  assert.match(styles, /\.conn-pill:has\(\.dot--connecting\) \{ display: none; \}/);
+  // Profil a patička drží do načtení svůj tvar, aby nabídka po načtení neposkočila.
+  assert.match(app, /class="p-skel"[^`]*class="avatar is-loading"/);
+  assert.match(app, /budget-src"><span><span class="skel-text/);
+  assert.match(app, /source-version p-skel/);
+  assert.match(styles, /\.source-version\.p-skel \{ display: block; \}/);
+});

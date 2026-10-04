@@ -27,8 +27,11 @@ export function loaderHtml(text = tr('Načítám data z {0}…', tvehoPocitace()
           '<div class="loader-halo"></div>' +
           '<svg class="loader-svg" viewBox="0 0 40 40" fill="none" focusable="false">' +
           '<circle class="lm-root" cx="20" cy="8.5" r="4.2"></circle>' +
-          '<path class="lm-branches" d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" ' +
-            'pathLength="100" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>' +
+          // Kmen a dvě větve jsou samostatné tahy: větve vyrůstají souměrně z místa, kde je kmen
+          // právě míjí, a každý uzel naskočí přesně ve chvíli, kdy k němu jeho tah doroste.
+          '<path class="lm-stroke lm-stem" d="M20 13V29" pathLength="100"></path>' +
+          '<path class="lm-stroke lm-branch" d="M20 18.5C20 23.5 10.5 22.5 10.5 29" pathLength="100"></path>' +
+          '<path class="lm-stroke lm-branch" d="M20 18.5C20 23.5 29.5 22.5 29.5 29" pathLength="100"></path>' +
           '<circle class="lm-node lm-node-a" cx="10.5" cy="31" r="3.4"></circle>' +
           '<circle class="lm-node lm-node-b" cx="20" cy="31" r="3.4"></circle>' +
           '<circle class="lm-node lm-node-c" cx="29.5" cy="31" r="3.4"></circle>' +

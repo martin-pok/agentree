@@ -2,6 +2,9 @@
 
 ## Nezveřejněno
 
+- **Načítací obrazovka jako jeden klidný celek.** Animace značky je souvislý příběh ve smyčce 3,2 s: mosazný kořen dá impulz, kmen vyroste, obě větve z něj vyrazí souměrně, každý uzel naskočí s jemným dopružením přesně ve chvíli, kdy k němu tah doroste, halo rozkvete a vše se plynule stáhne zpět do kořene. Zmizely šedé poloprůhledné uzly, osamělé tečky na koncích větví i pod kořenem a střih na konci smyčky. Pod scénou už není vidět kostra obrazovky (prázdný pruh a karta „Spustit agenta“); scéna stojí uprostřed volné plochy.
+- **Na telefonu se nadpis při načítání nezkracuje.** Pilulka „Připojuji…“ ukrajovala nadpis na „Přeh…“; při prvním připojení se na úzké obrazovce neukazuje, totéž říká načítací scéna. „Bez spojení“ zůstává.
+- **Panel při načítání drží tvar.** Místo prázdného kruhu a mezery stojí v profilu tvar avataru, jména, čísla a zdrojů ve stejné podobě, jakou pak vyplní data, a patička drží místo řádků počítače a verze. Nabídka se po načtení neposune ani o pixel (změřeno na 1024–1440 px).
 - **Upozornění v jedné rovině.** Ikona, čas a tlačítko „Označit jako přečtené“ jsou svisle na středu karty, ne přilepené nahoře u titulku. Čas má vlastní sloupec, který zůstává i u přečtených položek, takže už neuskakuje doprava. Titulek, popis a odkaz mají pevný rytmus a karta bez odkazu nemá dole prázdné místo. Na telefonu dostane text celou šířku a čas je drobný popisek pod ním.
 
 ## 0.35.0 – 2026-10-04 · limity Claude i z aplikace Claude
