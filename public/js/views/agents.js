@@ -57,7 +57,7 @@ const SEGMENTS = [
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
 
 // Aplikace, které Agenteeq umí přepnout do popředí (server má pevný seznam v src/openers.js).
-const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
+const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
 // vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,

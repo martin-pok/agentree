@@ -44,7 +44,7 @@ const LOGOS = {
 
 const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama', warp: 'warp' };
 const CONNECTOR_LOGO = { 'claude-code': 'claude', codex: 'codex', cursor: 'cursor', 'copilot-cli': 'githubcopilot', 'vscode-copilot': 'githubcopilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen' };
-const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio', warp: 'warp', windsurf: 'windsurf', kiro: 'kiro', zed: 'zed', goose: 'goose', opencode: 'opencode', antigravity: 'antigravity' };
+const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'codex-app': 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio', warp: 'warp', windsurf: 'windsurf', kiro: 'kiro', zed: 'zed', goose: 'goose', opencode: 'opencode', antigravity: 'antigravity' };
 const WEB_APP_LOGO = [[/chatgpt/i, 'openai'], [/claude/i, 'claude'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot/i, 'githubcopilot'], [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen']];
 
 // Přijímá klíč poskytovatele ("openai"), session ({connector, app}), konektor ({id}) nebo běhové prostředí ({runtime}).

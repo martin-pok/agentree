@@ -59,6 +59,12 @@ export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU, domov = 
       }
     },
     sleduje: () => sleduje && [...koreny.values()].some((w) => w?.active),
+    // Kořeny, které se zatím sledovat nepodařilo (složka chyběla i s rodičem, takže strážce nemohl
+    // hlídat), se zkusí hned. Bez toho by přepis nově nainstalovaného nástroje čekal na opakování po 5 s.
+    zkusChybejici() {
+      if (!sleduje) return;
+      for (const w of koreny.values()) if (w && !w.active) w.zkus();
+    },
   };
 }
 

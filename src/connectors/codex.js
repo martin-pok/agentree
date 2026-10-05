@@ -103,7 +103,10 @@ export function subagentOf(meta) {
 }
 
 export function codexAppName(originator = '') {
-  if (/desktop/i.test(originator)) return 'Codex · ChatGPT app';
+  // „Codex Desktop“ zapisuje desktopová aplikace Codex – podle zdroje příkazu `codex app` (openai/codex,
+  // codex-rs/cli/src/desktop_app/mac.rs) jde o tentýž balíček `com.openai.codex`, ať se jmenuje
+  // Codex.app, nebo ChatGPT.app. Z přepisu se nedá poznat, který z nich to byl, proto obecně „aplikace“.
+  if (/desktop/i.test(originator)) return ui('Codex · aplikace');
   if (/vscode/i.test(originator)) return 'Codex · VS Code';
   if (/exec/i.test(originator)) return ui('Codex · na pozadí');
   return 'Codex CLI';
@@ -507,7 +510,7 @@ export function createCodexConnector(ctx) {
 
   return {
     id: 'codex',
-    name: ui('Codex · ChatGPT app, CLI a VS Code'),
+    name: ui('Codex · aplikace, CLI a VS Code'),
     provider: 'openai',
     kind: 'local',
     verified: true,
@@ -522,6 +525,7 @@ export function createCodexConnector(ctx) {
     scan,
     scanCreditHistory,
     pridejDomov,
+    zkusKoreny: () => koreny.zkusChybejici(),
     domovy: () => [...domovy],
     stop() {
       koreny.stop();

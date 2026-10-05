@@ -1239,6 +1239,8 @@ export default {
     "naposledy běžel {0}": "last ran {0}",
     "Moje nástroje": "My tools",
     "Nepodařilo se zjistit, co na {0} běží.": "Couldn’t find out what’s running on {0}.",
+    "Nepodařilo se zjistit, co na {0} teď běží. Vidíš poslední známý stav.": "Couldn’t find out what’s running on {0} right now. Showing the last known state.",
+    "nepodařilo se zjistit, co běží": "couldn’t find out what’s running",
     "Teď na {0} neběží žádný AI nástroj.": "No AI tool is running on {0} right now.",
     "Zatím žádný. Jakmile na {0} poběží nový AI nástroj, Agenteeq ti ho nabídne přidat.": "None yet. As soon as a new AI tool runs on {0}, Agenteeq will offer to add it.",
     "Nesledované": "Not tracked",

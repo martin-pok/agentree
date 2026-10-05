@@ -16,12 +16,12 @@ function spust(odpoved) {
   let posluchac = null;
   const cekajici = [];
   const odeslano = [];
-  const stranka = { generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
+  const stranka = { id: 'konverzace-1', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
   const adapter = {
     id: 'chatgpt',
     messages: () => stranka.zpravy,
     generating: () => stranka.generuje,
-    conversationId: () => 'konverzace-1',
+    conversationId: () => stranka.id,
     model: () => 'gpt',
     limit: () => null,
     composer: () => null,
@@ -104,4 +104,34 @@ test('ruční obnova vynutí nové hlášení i beze změny a počká na jeho v�
   assert.equal(vysledek.ok, true);
   assert.equal(r.odeslano.length, 2);
   assert.equal(r.odeslano.at(-1).counts.assistant, 1);
+});
+
+// Nová konverzace nemá v adrese ID – rozšíření ji hlásí pod zástupným ID karty (extension/sites.js#tabId).
+// Jakmile služba ID přidělí, první hlášení pod skutečným ID řekne, co nahrazuje, a server ze dvou
+// záznamů udělá jeden. Dřív zůstal v přehledu vedle skutečné konverzace „duch“ nové konverzace.
+test('rozšíření: konverzace, která dostala ID, nahlásí zástupné ID karty, které nahrazuje', async () => {
+  let odpoved = { ok: false };
+  const r = spust(() => odpoved);
+  r.stranka.id = 'tab-k3j9x2';
+  r.stranka.zpravy = [{ role: 'user', text: 'a' }];
+  r.stranka.generuje = true;
+  odpoved = { ok: true };
+  await r.pruchod(0);
+  assert.equal(r.odeslano.at(-1).conversationId, 'tab-k3j9x2');
+  assert.equal(r.odeslano.at(-1).nahrazuje, undefined);
+  r.stranka.id = '68e2-aa11';
+  odpoved = { ok: false };
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, 'tab-k3j9x2');
+  odpoved = { ok: true };
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, 'tab-k3j9x2', 'nepovedené odeslání se zopakuje i s údajem, co nahrazuje');
+  r.stranka.zpravy.push({ role: 'assistant', text: 'b' });
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, undefined, 'po potvrzení už se neposílá');
+  // Přechod mezi dvěma skutečnými konverzacemi nic nenahrazuje – obě jsou skutečné.
+  r.stranka.id = 'jina-konverzace';
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).conversationId, 'jina-konverzace');
+  assert.equal(r.odeslano.at(-1).nahrazuje, undefined);
 });

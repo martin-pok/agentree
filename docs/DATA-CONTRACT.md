@@ -167,7 +167,7 @@ interface SessionSummary {
   id: string;                 // "<connector>:<localId>"
   connector: string;          // claude-code | codex | cursor | copilot-cli | vscode-copilot | gemini-cli | qwen-code | web
   provider: Provider;
-  app: string;                // lidský název aplikace, např. "Codex · ChatGPT app"
+  app: string;                // lidský název aplikace, např. "Codex · aplikace"
   source: 'local' | 'web' | 'desktop-cache';
   parentId: string | null;    // pomocné vlákno (automatická kontrola, pomocný agent) → ID rodičovské konverzace; mimo seznamy a počty agentů, tokeny se počítají
   subagent: { kind: 'review' | 'agent' | 'other'; label: string } | null;
@@ -333,9 +333,14 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
   "counts": { "user": 3, "assistant": 3 },
   "model": "volitelné",
   "needsInput": "volitelný text",
-  "limit": "volitelný text hlášky o limitu"
+  "limit": "volitelný text hlášky o limitu",
+  "nahrazuje": "volitelné zástupné ID karty tab-[a-z0-9]{1,16}, které tato konverzace nahrazuje"
 }
 ```
+
+`nahrazuje` posílá rozšíření v prvním hlášení konverzace, která právě dostala ID (předtím se hlásila
+pod zástupným ID karty). Server záznam `web:<site>:<nahrazuje>` převede na skutečné ID a odebere
+(`session:remove`). Jiný tvar nebo totéž ID se ignoruje.
 
 Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
 Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text

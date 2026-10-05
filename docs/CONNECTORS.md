@@ -113,7 +113,10 @@ ve složce, o které Agenteeq neví. Proto:
   (symlink) se čte jen jednou. Kořen, který ještě neexistuje (Claude Code zakládá `projects/` až
   s první zprávou), převezme sledování hned po vzniku: přímého rodiče hlídá nerekurzivní strážce,
   který reaguje jen na položku se jménem kořene (`src/watch.js#watchTree`, `hlidatVznik`). Nic
-  širšího než rodič a nikdy domov; když chybí i rodič, platí opakování po 5 s jako dřív.
+  širšího než rodič a nikdy domov; když chybí i rodič, platí opakování po 5 s – a navíc se
+  sledování zkusí hned při každém průchodu procesů, dokud běží agent bez přepisu
+  (`createKorenyPrepisu#zkusChybejici`). První spuštění nástroje, které založí `~/.claude` i `projects/`
+  najednou, se tak ukáže do 2 s (persona „lehký uživatel“ v `test/persony.test.mjs`).
 - **Proces bez konverzace se ukáže sám.** Každý proces agenta v příkazové řádce (claude, codex,
   gemini, qwen, copilot – bez pomocných procesů a podpříkazů bez konverzace, seznam z Claude Code
   2.1.283) se páruje s konverzací téhož nástroje. Procesem agenta je jen běžící program: spustitelný
@@ -122,15 +125,38 @@ ve složce, o které Agenteeq neví. Proto:
   s cestou agentem nejsou – skutečný program je ve výpisu jako vlastní proces
   (`src/connectors/processes.js#program`). Páruje se s konverzací, která od jeho startu žila
   a běží ve stejné složce (macOS `lsof`, Linux `/proc/<pid>/cwd`; Windows složku neumí, páruje se
-  jen podle času). Starší
+  jen podle času). **Jeden běh = jeden záznam:** proces, jehož přímý rodič je agentní proces téhož
+  nástroje, patří k rodičovu běhu (výpis procesů nese PID rodiče: `ps -o ppid`, Windows
+  `ParentProcessId`). Ověřeno ve zdroji npm balíčků (5. 10. 2026): `@openai/codex` 0.160.0
+  `bin/codex.js` spouští nativní `vendor/<cíl>/bin/codex` jako dítě se stejnými argumenty,
+  `@google/gemini-cli` 0.62.0 se spustí znovu jako vlastní dítě s `--max-old-space-size`
+  (`GEMINI_CLI_NO_RELAUNCH`), `@qwen-code/qwen-code` 0.25.0 na Windows spouští `cli.js`
+  z `cli-entry.js`. Agent spuštěný jiným agentem přes shell (rodič je `sh`) zůstává samostatný.
+  Skript npm balíčku spuštěný přímo pod Node (Windows `<jméno>.cmd`, `npx`) se pozná podle cesty
+  v balíčku (`bin` z package.json): `@openai/codex/bin/codex.js`, `@google/gemini-cli/bundle/gemini.js`
+  (dřív `dist/index.js`), `@qwen-code/qwen-code/cli-entry.js` / `cli.js` (dřív `dist/index.js`),
+  `@anthropic-ai/claude-code/cli.js` (1.x). 🧪 Windows tvar neověřený na skutečném stroji. Starší
   proces bere starší konverzaci, spárování mezi průchody nepřeskakuje. Nespárovaný proces je agent
   „běží od 14:02, zatím bez přepisu“ se stavem `waiting` – co přesně dělá, z procesu nevyčteme,
   a tak se to netvrdí. Zmizí, jakmile se přepis najde nebo proces skončí; nepovedený výpis
   procesů nic nepřidá ani neubere.
+- **Nepovedený výpis procesů ≠ nic neběží.** Chyba nebo časový limit `ps` / PowerShellu přepne
+  zdroje „Aplikace na tomto Macu“ i „Neznámí a lokální agenti“ hned do stavu `error` (událost
+  `connectors` bez čekání na pětisekundové porovnání), ponechá poslední známý stav a Přehled to
+  řekne („Nepodařilo se zjistit, co na tomto Macu teď běží. Ukazuji poslední známý stav.“, v souhrnu
+  „nepodařilo se zjistit, co běží“ místo „0 aplikací běží“). Prázdný seznam po chybě se nikdy
+  neukáže jako „Sledování procesů je vypnuté“ ani „neběží žádný AI nástroj“.
 - **Testy:** `test/detekce-agentu.test.mjs` včetně skutečného živého procesu `claude` ve složce
   „Design & Web“ s `CLAUDE_CONFIG_DIR` (Linux): zaregistruje se, po prvním zápisu do přepisu se
   spáruje, cizí proces s jiným `CLAUDE_CONFIG_DIR` test nevidí a druhý, nespárovaný proces po skončení
   zmizí. Sdílený výpis procesů není starší než jeden průchod (průchod po 1,5 s na Macu a Linuxu, po 5 s na Windows – `src/platform.js#INTERVAL_PROCESU_MS`; platnost výpisu je polovina intervalu). Nově spuštěný nástroj se v Přehledu objeví do 2 s: změřeno 0,15–1,26 s při 13 nástrojích spuštěných naráz.
+  Časy po cestách (`test/zachyceni-agentu.test.mjs` a `test/persony.test.mjs`, Linux, skutečné
+  procesy, výchozí interval, měřeno do události v SSE streamu 5. 10. 2026): CLI v Terminálu
+  (Claude Code, npm Codex, Gemini CLI) 1,48–1,50 s – určuje to interval výpisu procesů; agent
+  spuštěný z Agenteeq: záznam běhu do 10 ms, agent v přehledu 1,27 s; přepis Claude Code / Codexu
+  10–70 ms; Cursor 8–950 ms; webová konverzace přes rozšíření 3–40 ms; desktopová aplikace
+  z výpisu procesů 1,26–1,28 s. Persony (lehký uživatel, dva účty Claude + dva profily Codexu, 12
+  souběžných agentů) hlídají, že každý agent je v přehledu právě jednou, se správným názvem a stavem.
 
 ## Konektory v detailu
 
@@ -242,7 +268,7 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Cursor – `src/connectors/cursor.js` 🧪
 
-- **Zdroj:** `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (SQLite, pouze čtení přes `node:sqlite`, Node ≥ 22.13), dotaz každé 3 s jen při změně souboru/WAL.
+- **Zdroj:** `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (SQLite, pouze čtení přes `node:sqlite`, Node ≥ 22.13). Dotaz běží při změně `state.vscdb` nebo `state.vscdb-wal` (sledování souboru, `watchExactFile`) a jako pojistka každou 1 s, jen když se podpis souboru/WAL změnil. Průchody jdou za sebou, nikdy souběžně. Dřív jen kontrola po 3 s – nový agent se ukázal až za ~3 s, teď v řádu desítek až stovek ms.
 - **Použitá data:** tabulka `composerHeaders` (`composerId`, `workspaceId`, `lastUpdatedAt`, `isSubagent`, `value.hasBlockingPendingActions`), `cursorDiskKV` klíče `composerData:<id>` (`generatingBubbleIds`, `status`, `todos`, `modelConfig.modelName`, `fullConversationHeadersOnly`) a `bubbleId:<composer>:<bubble>` (`type` 1 = uživatel, 2 = agent, `text`, `toolFormerData.name/status`, `tokenCount`). Složka projektu z `workspaceStorage/<workspaceId>/workspace.json`.
 - **Ověření:** struktura potvrzena na vývojovém Macu (verze Cursoru z dubna 2026), ale bez agentů v posledních 30 dnech.
 
@@ -284,6 +310,7 @@ ne odhadnutý. Hlídá ho `test/gemini-qwen.test.mjs`.
 - **Napojení tlačítkem:** Nastavení → Napojené modely → Napojit u webového chatu otevře službu v prohlížeči; první stav z ní napojení potvrdí.
 - **Párování (od 0.29.0 bez kódu):** rozšíření o spárování požádá samo (`POST /api/extension/pripojit`). Server mu vydá token jen tehdy, když jeho původ `chrome-extension://<ID>` odpovídá ID z Chrome Web Store (`public/js/obchod.js`) nebo ID složky, kterou připravila aplikace (`src/platform.js#idRozbalenehoRozsireni`). Jiná kopie dostane 409 a spáruje se postaru: Nastavení vytvoří jednorázový 16znakový kód platný 10 minut, uživatel ho vloží do okna rozšíření a `POST /api/extension/pair` ho jednou vymění za token této instalace. Token není v `/api/state`, URL ani argumentech procesu.
 - **Adaptéry:** ChatGPT a Codex na webu (`chatgpt.com/codex`; oba `[data-message-author-role]`, `stop-button`), Claude.ai (`[data-testid="user-message"]`, `[data-is-streaming]`), Gemini (`user-query`, `model-response`); ostatní generický adaptér podle atributů/tříd a tlačítka Stop.
+- **Nová konverzace bez ID:** dokud služba nepřidělí ID v adrese, rozšíření posílá konverzaci pod zástupným ID karty (`tab-…`, `extension/sites.js#tabId`). První hlášení pod skutečným ID nese `nahrazuje: "tab-…"`; server záznam převede (začátek, probíhající tah, počty) a zástupný odebere – v přehledu je jedna konverzace, ne „duch“ vedle skutečné. `nahrazuje` přijme jen tvar zástupného ID a jen u téže služby, takže jím nejde smazat skutečnou konverzaci. Údaj se posílá, dokud server nepotvrdí příjem.
 - **Neověřeno proti živým webům.** Služby DOM často mění. Postup ověření je v `docs/TESTING.md`.
 - **Omezení:** port 4620 je v manifestu napevno; u stránek s virtualizovaným seznamem zpráv jsou počty jen z vykreslených zpráv.
 
@@ -344,6 +371,16 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   ChatGPT, Claude, Perplexity, Grok, Copilot, DeepSeek, Lovable, v0, Bolt) jsou podle názvu balíčku
   nebo příkazu, zatím nepotvrzené na skutečném stroji. Zrádné případy (Adobe Express, `code` jako
   složka, Codex uvnitř ChatGPT.app) hlídá `test/detekce.test.mjs`.
+- **Aplikace Codex (`codex-app`) 🧪:** podle zdrojového kódu příkazu `codex app` (openai/codex,
+  `codex-rs/cli/src/desktop_app/mac.rs` a `windows.rs`, větev main 5. 10. 2026) se desktopová
+  aplikace na macOS instaluje jako `/Applications/Codex.app` nebo `~/Applications/Codex.app`
+  s bundle ID `com.openai.codex` (tentýž bundle se smí jmenovat i `ChatGPT.app` – pak ho Agenteeq
+  vidí jako ChatGPT) a na Windows jako balíček Microsoft Store `OpenAI.Codex_…`. Rozpoznává se proto
+  každý proces z `…/Codex.app/Contents/…` a z `…\WindowsApps\OpenAI.Codex_…\…`, včetně vnitřního
+  `codex app-server`, který se nikdy nepočítá jako Codex CLI. Jméno spustitelného souboru ani cesta
+  vnitřního `codex` zdroj neuvádí – **neověřeno na skutečném stroji**. Vlákna aplikace čte konektor
+  Codexu z `~/.codex/sessions` (`originator: "Codex Desktop"`); session se jmenuje „Codex · aplikace“,
+  protože z přepisu nejde poznat, jestli šlo o Codex.app, nebo ChatGPT.app.
 ## Předplatné a kurz koruny (Útrata)
 
 Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.
