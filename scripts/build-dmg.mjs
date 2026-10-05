@@ -31,14 +31,15 @@ export const jmenoZip = (verze, arch = 'arm64') => `Agenteeq-${verze}-macOS-${ar
  * do řetězce, který by se rozebíral podruhé). Funkce nic nespouští, takže jde testovat kdekoli.
  */
 export function planDmg({ verze, arch = 'arm64', dist, docasna, identita = '-', notarProfil = '' }) {
-  const zip = path.join(dist, jmenoZip(verze, arch));
-  const dmg = path.join(dist, jmenoDmg(verze, arch));
-  const obsah = path.join(docasna, 'obsah');
+  // Plán běží jen na macOS, takže cesty se skládají vždy s lomítkem (test ho počítá i na Windows).
+  const zip = path.posix.join(dist, jmenoZip(verze, arch));
+  const dmg = path.posix.join(dist, jmenoDmg(verze, arch));
+  const obsah = path.posix.join(docasna, 'obsah');
   const kroky = [
     // Rozbalit hotový archiv. ditto zachová podpis i rozšířené atributy aplikace.
     ['ditto', ['-x', '-k', zip, obsah]],
     // Zástupce složky Aplikace vedle aplikace: přetažení na něj je celá instalace.
-    ['ln', ['-s', '/Applications', path.join(obsah, 'Applications')]],
+    ['ln', ['-s', '/Applications', path.posix.join(obsah, 'Applications')]],
     // Komprimovaný obraz jen pro čtení (UDZO) s HFS+, který otevře každá podporovaná verze macOS.
     ['hdiutil', ['create', '-volname', SVAZEK, '-srcfolder', obsah, '-fs', 'HFS+', '-format', 'UDZO', '-ov', dmg]],
     // Kontrolní součet obrazu: poškozený soubor se nesmí dostat do vydání.

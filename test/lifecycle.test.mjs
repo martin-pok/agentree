@@ -83,7 +83,11 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
   const { dir, env } = await fixture();
   const legacyRoot = path.join(dir, 'legacy');
   // Kopie má tvar skutečné instalace: src/ načítá i sdílené soubory z public/js (adresa účtů).
-  for (const sub of ['src', 'bin', 'public']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
+  for (const sub of ['src', 'public']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
+  // Vstupní bod je auditovaná verze 0.5 CLI (otisk LEGACY_CLI_SHA v desktop/lifecycle.mjs), ne dnešní
+  // bin/agenteeq.mjs – jinak by každá změna CLI rozbila test převzetí, ne převzetí samo.
+  await fs.mkdir(path.join(legacyRoot, 'bin'), { recursive: true });
+  await fs.copyFile(path.join(root, 'test/fixtures/legacy-cli/agenteeq.mjs'), path.join(legacyRoot, 'bin/agenteeq.mjs'));
   await fs.writeFile(path.join(legacyRoot, 'package.json'), '{"name":"agenteeq","version":"0.5.0","type":"module"}');
   // Verze 0.5.0 klíč okna neznala; kopie dnešního CLI by si ho jinak vyrobila (src/klic-okna.js).
   const old = start({ ...env, AGENTEEQ_LOCAL_KEY: '0' }, path.join(legacyRoot, 'bin/agenteeq.mjs'));
@@ -104,4 +108,15 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
     // Verze se bere ze skutečného package.json – jinak by test padal po každém vydání.
     assert.equal(state.body.version, VERSION);
   } finally { next.child.stdin.end(); await next.exit; if (old.child.exitCode === null) old.child.kill(); }
+});
+
+// Test převzetí výš běží jen na macOS. Že jeho vstupní bod je opravdu auditovaná verze 0.5 CLI,
+// hlídá tenhle test všude – jinak by se rozdíl ukázal až na runneru s macOS.
+test('lifecycle: fixture staré CLI má otisk, který převzetí přijme', async () => {
+  const { createHash } = await import('node:crypto');
+  const fixture = await fs.readFile(path.join(root, 'test/fixtures/legacy-cli/agenteeq.mjs'));
+  const zdroj = await fs.readFile(path.join(root, 'desktop/lifecycle.mjs'), 'utf8');
+  const ocekavany = zdroj.match(/LEGACY_CLI_SHA = '([0-9a-f]{64})'/)?.[1];
+  assert.ok(ocekavany, 'LEGACY_CLI_SHA v desktop/lifecycle.mjs');
+  assert.equal(createHash('sha256').update(fixture).digest('hex'), ocekavany);
 });

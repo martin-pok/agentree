@@ -56,10 +56,11 @@ test('CLI: bez klíče nic, odkaz s klíčem nastaví cookie HttpOnly; SameSite=
   // Hooky a rozšíření mají vlastní tajemství – klíč okna se jich netýká (dostanou 401 za token, ne 403 za klíč).
   assert.equal((await fetch(`${url}/api/hooks/claude-code`, { method: 'POST', body: '{}' })).status, 401);
 
-  // Ukončení klíč z disku uklidí.
+  // Řádné ukončení klíč z disku uklidí. Windows signál pro řádné ukončení nemá (kill proces zabije
+  // natvrdo), tam soubor zůstane – klíč ale patří jen k ukončenému běhu a další start ho přepíše.
   child.kill('SIGTERM');
   await konec;
-  assert.equal(await nactiKlic(dir), '');
+  if (process.platform !== 'win32') assert.equal(await nactiKlic(dir), '');
 });
 
 test('plášť pro Windows: vlastní klíč okna, předaný serveru i oknu, nikdy do hlášení QA', async () => {

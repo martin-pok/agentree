@@ -314,10 +314,14 @@ test('čas do přehledu: přepisy, Cursor, prohlížeč a desktopová aplikace',
   });
   const stream = await openStream(srv.url);
   const casy = {};
+  const { INTERVAL_PROCESU_MS } = await import('../src/platform.js');
+  // Výpis procesů běží v intervalu platformy (Mac a Linux 1,5 s, Windows 5 s – tasklist je drahý),
+  // desktopová aplikace se proto ukáže do jednoho intervalu. Ostatní cesty mají limit 2 s všude.
+  const limit = (nazev) => (nazev.includes('výpis procesů') ? Math.max(2000, INTERVAL_PROCESU_MS + 500) : 2000);
   const zmer = async (nazev, akce, najdi) => {
     const t0 = Date.now();
     await akce();
-    const e = await waitFor(() => stream.events.find((x) => x.at >= t0 && najdi(x)), 2000);
+    const e = await waitFor(() => stream.events.find((x) => x.at >= t0 && najdi(x)), limit(nazev));
     casy[nazev] = e.at - t0;
     return e;
   };
@@ -362,7 +366,7 @@ test('čas do přehledu: přepisy, Cursor, prohlížeč a desktopová aplikace',
 
     for (const [k, v] of Object.entries(casy)) {
       t.diagnostic(`${k}: ${v} ms`);
-      assert.ok(v < 2000, `${k}: ${v} ms`);
+      assert.ok(v < limit(k), `${k}: ${v} ms`);
     }
     // Cursor má sledování souboru: nový agent se ukáže v řádu stovek ms, ne až po 3 s jako dřív.
     if (DatabaseSync) assert.ok(casy['Cursor (SQLite)'] < 1500, `Cursor ${casy['Cursor (SQLite)']} ms`);
