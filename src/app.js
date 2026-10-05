@@ -283,15 +283,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (p.runtime === 'codex') await connectors.codex?.pridejDomov(domov);
     }
     bezici.upravit(procesy);
+    // Běží agent, ke kterému se nenašel přepis: jeho kořen možná právě vznikl (první spuštění nástroje
+    // založí ~/.claude i projects/ najednou a strážce nad neexistujícím rodičem hlídat nemohl).
+    // Sledování se zkusí hned, ne až za 5 s – jinak by agent do té doby visel jen jako proces.
+    if (bezici.pocet()) for (const id of ['claude-code', 'codex']) connectors[id]?.zkusKoreny?.();
   }
   if (config.processes) {
     // `vypisProcesu` podstrkují jen testy: omezí skutečný výpis na své procesy (test/helpers.mjs#jenProcesy).
     // Sdílený výpis nesmí být starší než jeden průchod – jinak by kratší AGENTEEQ_PROCESS_MS nic neznamenal
     // a skončený agent by visel až 4 s. Výchozích 5 s průchodu platnost 4 s nemění.
     const vypis = sdilenyVypis(vypisProcesu, config.processIntervalMs < 4000 ? config.processIntervalMs / 2 : 4000);
-    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
+    // Když se výpis procesů změní z „zjištěno“ na „nepodařilo se“ (nebo zpět), přepočtou se hned i lokální
+    // agenti, kteří jinak procházejí po 10 s – ať ani jejich seznam mezitím nehlásí „nic neběží“.
+    const zmenaVypisu = () => { ohlasKonektory(); connectors['local-agents']?.scan().catch(() => {}); };
+    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}), onStav: zmenaVypisu }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
-    list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
+    list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found), onStav: () => ohlasKonektory() }));
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
@@ -1317,6 +1324,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   const timers = [];
   let connectorsJson = '';
+  // Okamžité ohlášení změny stavu zdroje (např. výpis procesů přestal fungovat) – jinak by ji
+  // rozhraní uvidělo až při pravidelném porovnání po 5 s.
+  function ohlasKonektory() {
+    if (!store.ready) return;
+    const next = JSON.stringify(connectorList());
+    if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
+  }
 
   async function start() {
     const t0 = Date.now();

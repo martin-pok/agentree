@@ -185,7 +185,8 @@ export default {
   "Starší část konverzace byla shrnuta": "The earlier part of the conversation was summarised",
   "Limit plánu {0} je vyčerpaný": "The {0} plan limit is used up",
   "Limit plánu je vyčerpaný": "The plan limit is used up",
-  "Codex · ChatGPT app, CLI a VS Code": "Codex · ChatGPT app, CLI and VS Code",
+  "Codex · aplikace, CLI a VS Code": "Codex · desktop app, CLI and VS Code",
+  "Codex · aplikace": "Codex · desktop app",
   "Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.": "Real-time transcript, task status, tokens, plan limits and credit balance.",
   "Sleduji {0} konverzací za posledních {1} dní.": "Tracking {0} conversations from the last {1} days.",
   "Složka existuje, zatím bez konverzací.": "The folder exists, no conversations yet.",
@@ -251,6 +252,10 @@ export default {
   "Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.": "Detects which AI apps and CLIs are running, their load and the models loaded in Ollama.",
   "Seznam běžících aplikací se na tomto systému nepodařilo získat, Ollama ale odpovídá: {0} modelů.": "Couldn’t get the list of running apps on this system, but Ollama is responding: {0} models.",
   "Seznam běžících aplikací se na tomto systému nepodařilo získat.": "Couldn’t get the list of running apps on this system.",
+  "Seznam běžících aplikací se teď nepodařilo zjistit. Údaje jsou z posledního úspěšného zjištění.": "Couldn’t get the list of running apps right now. The data is from the last successful check.",
+  "Běžící procesy se teď nepodařilo zjistit. Seznam lokálních agentů je z posledního úspěšného zjištění.": "Couldn’t get the running processes right now. The list of local agents is from the last successful check.",
+  "Práci Codexu a limity tvého plánu čtu z přepisů, které aplikace ukládá na {0}.": "I read Codex’s work and your plan limits from the transcripts the app saves on {0}.",
+  "Desktopová aplikace Codex od OpenAI": "The Codex desktop app from OpenAI",
 
   // src/connectors/web.js
   "Chybí data.": "Data missing.",

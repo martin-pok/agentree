@@ -38,6 +38,7 @@ export const ALL_APPS = { codex: true, claude: true, cursor: true, vscode: true,
 export const RUNTIME_APPS = {
   'claude-desktop': { app: 'Claude', label: 'Claude' },
   chatgpt: { app: 'ChatGPT', label: 'ChatGPT' },
+  'codex-app': { app: 'Codex', label: 'Codex' },
   cursor: { app: 'Cursor', label: 'Cursor' },
   vscode: { app: 'Visual Studio Code', label: 'VS Code' },
   'ms-copilot': { app: 'Microsoft Copilot', label: 'Microsoft Copilot' },

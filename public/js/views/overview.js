@@ -21,7 +21,7 @@ const CHART_UPDATE_MS = 500;
 const v = { period: 'week', aktivit: AKTIVIT_MIN, doplnRaf: 0, aktivnichCelkem: 0, hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
 
 // Aplikace, které server umí přepnout do popředí (pevný seznam v src/openers.js).
-const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
+const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 const changed = (topics, ...names) => topics.has('all') || names.some((name) => topics.has(name));
 
@@ -201,6 +201,9 @@ function update(topics = new Set(['all'])) {
   const today = startOfDay(now);
   const todayCount = all.filter((s) => s.lastAt >= today).length;
   const running = state.runtimes.filter((r) => r.running).length;
+  // Výpis procesů selhal: o běžících aplikacích víme jen to, co platilo naposledy. „0 aplikací
+  // běží“ by tu byla nepravda – uživatel musí poznat, že se to nepodařilo zjistit.
+  const procesyNevim = (state.connectors || []).find((c) => c.id === 'processes')?.state === 'error';
 
   // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti. Proces bez přepisu není
   // „čekání na zadání“, proto se drží mimo tento součet a má vlastní jasný popisek v pruhu.
@@ -212,14 +215,14 @@ function update(topics = new Set(['all'])) {
   const observed = all.filter((s) => s.status === 'observed');
   const live = [...needs, ...failed, ...limited, ...working, ...observed, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
   const STRIP_MAX = 12;
-  if (changed(topics, 'sessions', 'runtimes')) {
+  if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);
     zivy(el, 'hero', `
     <div class="pb-main">
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
       <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
-        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
+        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${procesyNevim ? ` · ${tr('nepodařilo se zjistit, co běží')}` : state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
       <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${tr('potřebuje tebe')}</span></a>
@@ -356,7 +359,7 @@ function update(topics = new Set(['all'])) {
     // sem dlaždice, která to řekne – jinak uživatel otevře Gemini na webu a aplikace mlčí.
     const webChybi = (state.connectors || []).find((c) => c.id === 'web')?.state === 'missing';
     zivy(el, 'runtimes', rts.length
-    ? rts.map((r) => {
+    ? (procesyNevim ? `<p class="rt-warn" role="status">${tr('Nepodařilo se zjistit, co na {0} teď běží. Ukazuji poslední známý stav.', tomtoPocitaci())}</p>` : '') + rts.map((r) => {
       // U běžící aplikace, kterou umíme přepnout do popředí, je dlaždice tlačítko – hlavní
       // úspora času: uživatel nemusí mezi okny hledat, kde mu který agent běží.
       const prepnout = r.running && PREPNUTELNE.has(r.id);
@@ -382,8 +385,9 @@ function update(topics = new Set(['all'])) {
           <span class="rt-flag">${tr('bez rozšíření')}</span>
         </a>`
       : '')
-      : `<div class="empty-inline">${!state.runtimes.length ? tr('Sledování procesů je vypnuté.')
-        : (state.connectors || []).find((c) => c.id === 'processes')?.state === 'error' ? tr('Nepodařilo se zjistit, co na {0} běží.', tomtoPocitaci())
+      // Selhání zjišťování má přednost: prázdný seznam po chybě není „vypnuto“ ani „nic neběží“.
+      : `<div class="empty-inline">${procesyNevim ? tr('Nepodařilo se zjistit, co na {0} běží.', tomtoPocitaci())
+        : !state.runtimes.length ? tr('Sledování procesů je vypnuté.')
           : tr('Teď na {0} neběží žádný AI nástroj.', tomtoPocitaci())}</div>`);
   }
   v.aktivnichCelkem = all.length;

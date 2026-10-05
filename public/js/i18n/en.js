@@ -1308,6 +1308,8 @@ export default {
     "Agenteeq zatím neumí číst konverzace v tomto prohlížeči. Vidí jen, že běží a jak dlouho.": "Agenteeq can’t read conversations in this browser yet. It only sees that it’s running and for how long.",
     "Otevři službu v běžné záložce Chromu se zapnutým rozšířením Agenteeq. Tam uvidíš, kdy pracuje a kdy čeká.": "Open the service in a regular Chrome tab with the Agenteeq extension turned on. There you’ll see when it’s working and when it’s waiting.",
     "Nepodařilo se zjistit, co na {0} běží.": "Couldn’t find out what’s running on {0}.",
+    "Nepodařilo se zjistit, co na {0} teď běží. Ukazuji poslední známý stav.": "Couldn’t find out what’s running on {0} right now. Showing the last known state.",
+    "nepodařilo se zjistit, co běží": "couldn’t find out what’s running",
     "Teď na {0} neběží žádný AI nástroj.": "No AI tool is running on {0} right now.",
     "Zatím žádný. Jakmile na {0} poběží nový AI nástroj, Agenteeq ti ho nabídne přidat.": "None yet. As soon as a new AI tool runs on {0}, Agenteeq will offer to add it.",
     "Nesledované": "Not tracked",

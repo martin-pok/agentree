@@ -9,6 +9,11 @@
   let timer = null;
   let dead = false;
 
+  // Nová konverzace nemá v adrese ID: dokud ho služba nepřidělí, posílá se pod zástupným ID karty
+  // („tab-…“, AgenteeqSites). Jakmile adresa ID dostane, server se dozví, které zástupné ID tahle
+  // konverzace nahrazuje, a ze dvou záznamů udělá jeden – jinak by po první zprávě v přehledu zůstal
+  // „duch“ nové konverzace vedle skutečné.
+  let zastupne = '';
   // Délka poslední zprávy slouží jen tady k poznání, že se odpověď ještě píše. Neodesílá se.
   let posledniDelka = 0;
   // Pro ověření v okně rozšíření: viděli jsme na téhle stránce, že agent pracoval a pak skončil?
@@ -31,6 +36,8 @@
     };
   }
 
+  const jeZastupne = (id) => /^tab-/.test(id);
+
   function tick(force = false) {
     timer = null;
     if (dead) return Promise.resolve({ ok: false });
@@ -48,10 +55,18 @@
     if (!force && sig === lastSig && now - lastSentAt < (payload.generating ? 10000 : 60000)) return Promise.resolve({ ok: true, unchanged: true });
     lastSig = sig;
     lastSentAt = now;
+    if (jeZastupne(payload.conversationId)) zastupne = payload.conversationId;
+    else if (zastupne) payload.nahrazuje = zastupne;
+    const odeslaneZastupne = payload.nahrazuje || '';
     try {
       // Nepovedené odeslání (aplikace zrovna neběží) se zopakuje při dalším průchodu, ne až při změně.
       return Promise.resolve(chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }))
-        .then((r) => { if (!r?.ok) lastSig = ''; return r; })
+        .then((r) => {
+          if (!r?.ok) lastSig = '';
+          // Server sloučení potvrdil – zástupné ID už nic nenahrazuje.
+          else if (odeslaneZastupne && zastupne === odeslaneZastupne) zastupne = '';
+          return r;
+        })
         .catch(() => { lastSig = ''; return { ok: false }; });
     } catch {
       dead = true; // rozšíření bylo znovu načteno – tento skript už nemá spojení

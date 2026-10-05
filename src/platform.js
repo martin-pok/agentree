@@ -40,13 +40,18 @@ export function appSupportDir(sourceHome) {
 //
 // Sjednocený tvar řádku, ať přijde odkudkoli:
 //
-//   <pid> <běží[dd-]hh:mm:ss> <%cpu> <rss v kB> <celý příkaz s argumenty>
+//   <pid> <ppid> <běží[dd-]hh:mm:ss> <%cpu> <rss v kB> <celý příkaz s argumenty>
+//
+// PID rodiče je potřeba, aby jeden běh agenta byl jeden záznam: npm balíčky Codexu a Gemini CLI
+// spouští pod obalem v Node vlastní dceřiný proces se stejnými argumenty (viz
+// src/connectors/processes.js#agentniProcesy). Starší tvar bez PID rodiče (fixtury, výpis
+// z dřívějška) se čte dál – `radkyProcesu` pozná oba, protože doba běhu vždy obsahuje dvojtečku.
 //
 // `ps -axo %cpu` na macOS udává průměr za celý život procesu, ne okamžitou zátěž.
 // Windowsový výpočet níž dělá totéž (součet času v jádře i v uživatelském režimu
 // děleno dobou běhu), takže obě čísla znamenají opravdu tutéž veličinu.
 
-const PS_ARGS = ['-axo', 'pid=,etime=,%cpu=,rss=,args='];
+const PS_ARGS = ['-axo', 'pid=,ppid=,etime=,%cpu=,rss=,args='];
 
 // PowerShell je na Windows 10 i 11 součástí systému, takže nepřibývá závislost.
 // Win32_Process je jediný zdroj, který dá zároveň PID, celou příkazovou řádku,
@@ -68,9 +73,30 @@ Get-CimInstance Win32_Process | ForEach-Object {
   $radek = $_.CommandLine
   if (-not $radek) { $radek = $_.ExecutablePath }
   if (-not $radek) { $radek = $_.Name }
-  '{0} {1} {2} {3} {4}' -f $_.ProcessId, $doba, $cpu, $rss, ($radek -replace '[\\r\\n]+', ' ')
+  '{0} {1} {2} {3} {4} {5}' -f $_.ProcessId, $_.ParentProcessId, $doba, $cpu, $rss, ($radek -replace '[\\r\\n]+', ' ')
 }
 `.trim();
+
+/** Doba běhu z výpisu procesů („[dd-]hh:mm:ss“, „mm:ss“) v sekundách. */
+export function etimeToSec(t) {
+  const [d, rest] = t.includes('-') ? t.split('-') : ['0', t];
+  const parts = rest.split(':').map(Number);
+  while (parts.length < 3) parts.unshift(0);
+  return Number(d) * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2];
+}
+
+/**
+ * Řádky výpisu procesů v jednotném tvaru: [{ pid, ppid, uptimeSec, cpu, rssKB, args }].
+ * `ppid` je 0, když ho výpis nenese (starší tvar bez PID rodiče).
+ */
+export function radkyProcesu(out) {
+  const radky = [];
+  for (const line of String(out || '').split('\n')) {
+    const m = line.trim().match(/^(\d+)\s+(?:(\d+)\s+)?((?:\d+-)?\d+(?::\d+)+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
+    if (m) radky.push({ pid: Number(m[1]), ppid: Number(m[2]) || 0, uptimeSec: etimeToSec(m[3]), cpu: Number(m[4]), rssKB: Number(m[5]), args: m[6] });
+  }
+  return radky;
+}
 
 /**
  * Seznam běžících procesů v jednotném tvaru. Když ho systém neumí dát, vrátí

@@ -184,7 +184,7 @@ test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () 
   const s = store.get(`codex:${id}`);
   assert.ok(s, 'session existuje');
   assert.equal(s.title, 'BRIEF GENERATOR', 'název vlákna z indexu, platí nejnovější');
-  assert.equal(s.app, 'Codex · ChatGPT app');
+  assert.equal(s.app, 'Codex · aplikace');
   assert.equal(s.model, 'gpt-5.6-terra');
   assert.deepEqual(s.transcript.map((e) => e.role), ['user', 'tool'], 'po item_completed se starý formát zahodí');
   assert.equal(s.firstPrompt, 'Přidej dark mode');

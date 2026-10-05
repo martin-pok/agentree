@@ -71,7 +71,7 @@ test('projekty: ruční přiřazení má přednost, složka automaticky (nejdel�
 test('projekty: CSV export pro vyúčtování (BOM, středníky, uvozovky, ochrana proti vzorcům)', () => {
   const now = Date.parse('2026-09-11T12:00:00Z');
   const csv = projectCsv([
-    { title: '=HYPERLINK("x")', app: 'Codex · ChatGPT app', model: 'gpt-5.6', status: 'working', startedAt: now - 3600e3, lastAt: now, turns: 3, tokens: { input: 10, output: 20, cacheWrite: 5 }, hourly: { '2026-09-11T10': 5, '2026-09-11T11': 30, '2026-07-01T10': 9 }, cwd: '/Users/x/web; klient', url: '' },
+    { title: '=HYPERLINK("x")', app: 'Codex · aplikace', model: 'gpt-5.6', status: 'working', startedAt: now - 3600e3, lastAt: now, turns: 3, tokens: { input: 10, output: 20, cacheWrite: 5 }, hourly: { '2026-09-11T10': 5, '2026-09-11T11': 30, '2026-07-01T10': 9 }, cwd: '/Users/x/web; klient', url: '' },
   ], now);
   assert.ok(csv.startsWith('﻿Konverzace;Aplikace'));
   const line = csv.split('\r\n')[1];

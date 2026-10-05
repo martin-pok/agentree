@@ -244,7 +244,7 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
     });
     assert.ok(stav, 'Codex konverzace se načetla');
     const s = stav.sessions.find((x) => x.id === `codex:${codexId}`);
-    assert.equal(s.app, 'Codex · ChatGPT app');
+    assert.equal(s.app, 'Codex · aplikace');
     assert.equal(s.provider, 'openai');
     assert.equal(s.tokens.input, 2500, '4000 vstupních tokenů mínus 1500 z mezipaměti');
     assert.equal(s.tokens.output, 600);

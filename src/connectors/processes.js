@@ -1,4 +1,4 @@
-import { processList, detailyProcesu, JE_WINDOWS, POCITAC } from '../platform.js';
+import { processList, detailyProcesu, radkyProcesu, etimeToSec, JE_WINDOWS, POCITAC } from '../platform.js';
 import { ui } from '../texty.js';
 
 // ── Jak se pozná program v příkazové řádce ───────────────────────────────────
@@ -67,6 +67,25 @@ export const program = (...jmena) => {
   return { test: (args) => spusteny(args, vzor) };
 };
 
+// Skript npm balíčku spuštěný přímo pod Node: tak běží nástroj, když ho nespustí obal z `bin/`
+// pod svým jménem – na Windows ho npm volá přes `<jméno>.cmd` vždy takhle („node.exe C:\…\npm\
+// node_modules\@openai\codex\bin\codex.js“), jinde přes `npx` nebo přímou cestu. Cesty v balíčcích
+// jsou z pole `bin` v package.json (npm registry, ověřeno 5. 10. 2026): @openai/codex `bin/codex.js`,
+// @google/gemini-cli `bundle/gemini.js` (dřív `dist/index.js`), @qwen-code/qwen-code `cli-entry.js`
+// (dřív `dist/index.js`; na Windows cli-entry.js spouští `cli.js` jako dceřiný proces),
+// @anthropic-ai/claude-code `cli.js` (verze 1.x; 2.x má nativní `bin/claude.exe`).
+const S = '[\\\\/]';
+const NPM_SKRIPTY = {
+  'claude-code': [`@anthropic-ai${S}claude-code${S}cli\\.js`],
+  codex: [`@openai${S}codex${S}bin${S}codex\\.js`],
+  'gemini-cli': [`@google${S}gemini-cli${S}(?:bundle${S}gemini|dist${S}index)\\.js`],
+  'qwen-code': [`@qwen-code${S}qwen-code${S}(?:cli-entry|cli|dist${S}index)\\.js`],
+};
+const npmSkript = (runtime) => {
+  const vzor = new RegExp(`(${S})(?:${NPM_SKRIPTY[runtime].join('|')})(\\s|$)`);
+  return { test: (args) => spusteny(args, vzor) };
+};
+
 /**
  * Desktopová aplikace – na macOS balíček `.app`, na Windows spustitelný soubor.
  * Windows jména jsou zvyklost, ne ověřený údaj: viz docs/CONNECTORS.md, kde jsou
@@ -80,6 +99,8 @@ export const aplikace = (bundle, exe = bundle) =>
 // Ověřeno na skutečném Macu (Google AI Studio, Replit, Stitch). Musí být v seznamu PŘED desktopovými
 // aplikacemi: webová aplikace „ChatGPT“ má v cestě `ChatGPT.app/Contents/MacOS/` stejně jako
 // desktopová a první shoda vyhrává.
+// Desktopová aplikace Codex: viz záznam `codex-app` v RUNTIMES.
+const APLIKACE_CODEX = /[\\/]Codex\.app[\\/]Contents[\\/]|[\\/]WindowsApps[\\/]OpenAI\.Codex_[^\\/]*[\\/]/;
 const webovaAplikace = (nazev) => new RegExp(`[\\\\/](Chrome|Microsoft Edge|Brave Browser) Apps\\.localized[\\\\/]${utec(nazev)}\\.app[\\\\/]`);
 const WEBOVE_AI = [
   ['pwa-google-ai-studio', 'Google AI Studio', 'google', true, ui('Vývojářské prostředí Googlu pro modely Gemini')],
@@ -110,10 +131,17 @@ const WEBOVE_AI = [
 export const RUNTIMES = [
   ...WEBOVE_AI,
   { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', druh: 'aplikace', overeno: true, konektory: ['claude-code', 'claude-desktop-usage'], vidim: ui('Práci v záložce Code a limity předplatného už čtu. Běžné chaty z aplikace ne.'), popis: ui('Claude od Anthropicu – chat a Claude Code v záložce Code'), test: (a) => aplikace('Claude').test(a) },
-  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => program('claude').test(a) && !/disclaimer|chrome-native-host/.test(a) },
+  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => (program('claude').test(a) || npmSkript('claude-code').test(a)) && !/disclaimer|chrome-native-host/.test(a) },
   { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', druh: 'aplikace', overeno: true, konektory: ['codex'], vidim: ui('Práci Codexu a limity tvého plánu už čtu. Běžné chaty z aplikace ne.'), popis: ui('ChatGPT od OpenAI – chat, agent a Codex'), test: (a) => aplikace('ChatGPT').test(a) },
-  // Aplikace ChatGPT si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
-  { id: 'codex', name: 'Codex', provider: 'openai', druh: 'terminal', overeno: true, konektory: ['codex'], popis: ui('Programovací agent od OpenAI'), test: (a) => program('codex').test(a) && !/[\\/]ChatGPT\.app[\\/]/.test(a) },
+  // Desktopová aplikace Codex (bundle `com.openai.codex`). Podle zdrojového kódu `codex app`
+  // (openai/codex, codex-rs/cli/src/desktop_app/mac.rs a windows.rs, 5. 10. 2026) se na macOS instaluje
+  // jako `Codex.app` – stejný bundle může nést i jméno `ChatGPT.app`, ten pak poznáme jako ChatGPT – a na
+  // Windows jako balíček Microsoft Store `OpenAI.Codex_…`. Patří k ní každý proces z balíčku, i vnitřní
+  // `codex app-server` v `Contents/Resources`. Jméno spustitelného souboru zdroj neuvádí, proto se
+  // nerozpoznává podle něj. Na skutečném stroji zatím neověřeno (🧪, docs/CONNECTORS.md).
+  { id: 'codex-app', name: 'Codex app', provider: 'openai', druh: 'aplikace', overeno: false, konektory: ['codex'], vidim: ui('Práci Codexu a limity tvého plánu čtu z přepisů, které aplikace ukládá na {0}.', POCITAC.tento), popis: ui('Desktopová aplikace Codex od OpenAI'), test: (a) => APLIKACE_CODEX.test(a) },
+  // Aplikace ChatGPT a Codex si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
+  { id: 'codex', name: 'Codex', provider: 'openai', druh: 'terminal', overeno: true, konektory: ['codex'], popis: ui('Programovací agent od OpenAI'), test: (a) => (program('codex').test(a) || npmSkript('codex').test(a)) && !/[\\/](ChatGPT|Codex)\.app[\\/]/.test(a) && !APLIKACE_CODEX.test(a) },
   { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', druh: 'terminal', overeno: false, konektory: ['copilot-cli'], popis: ui('Programovací agent GitHub Copilot'), test: (a) => program('copilot').test(a) && !/\.app[\\/]/.test(a) },
   { id: 'vscode', name: 'VS Code', provider: 'github', druh: 'editor', overeno: false, konektory: ['vscode-copilot'], popis: ui('Editor od Microsoftu s GitHub Copilotem'), test: (a) => aplikace('Visual Studio Code', 'Code').test(a) || aplikace('Visual Studio Code - Insiders', 'Code - Insiders').test(a) },
   { id: 'cursor', name: 'Cursor', provider: 'cursor', druh: 'editor', overeno: true, konektory: ['cursor'], popis: ui('Editor s vestavěným programovacím agentem'), test: (a) => aplikace('Cursor').test(a) },
@@ -125,8 +153,8 @@ export const RUNTIMES = [
   { id: 'zed', name: 'Zed', provider: 'zed', druh: 'editor', overeno: false, popis: ui('Editor s AI asistentem'), test: (a) => aplikace('Zed').test(a) },
   { id: 'warp', name: 'Warp', provider: 'warp', druh: 'terminal-aplikace', overeno: true, popis: ui('Terminál Warp s vestavěným agentem pro příkazy a kód'), test: (a) => aplikace('Warp').test(a) },
   { id: 'ms-copilot', name: 'Microsoft Copilot', provider: 'microsoft', druh: 'aplikace', overeno: false, popis: ui('Chat s AI od Microsoftu'), test: (a) => aplikace('Copilot').test(a) || aplikace('Microsoft Copilot', 'Microsoft.Copilot').test(a) },
-  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', druh: 'terminal', overeno: false, konektory: ['gemini-cli'], popis: ui('Programovací agent od Googlu'), test: (a) => program('gemini').test(a) },
-  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', druh: 'terminal', overeno: false, konektory: ['qwen-code'], popis: ui('Programovací agent od Alibaby'), test: (a) => program('qwen').test(a) },
+  { id: 'gemini-cli', name: 'Gemini CLI', provider: 'google', druh: 'terminal', overeno: false, konektory: ['gemini-cli'], popis: ui('Programovací agent od Googlu'), test: (a) => program('gemini').test(a) || npmSkript('gemini-cli').test(a) },
+  { id: 'qwen-code', name: 'Qwen Code', provider: 'alibaba', druh: 'terminal', overeno: false, konektory: ['qwen-code'], popis: ui('Programovací agent od Alibaby'), test: (a) => program('qwen').test(a) || npmSkript('qwen-code').test(a) },
   { id: 'aider', name: 'Aider', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený programovací agent pro práci s gitem'), test: (a) => program('aider').test(a) || /(^|\s)-m\s+aider(\s|$)/.test(a) },
   { id: 'goose', name: 'Goose', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený agent od Blocku'), test: (a) => program('goose').test(a) },
   { id: 'opencode', name: 'OpenCode', provider: 'other', druh: 'terminal', overeno: false, popis: ui('Otevřený programovací agent'), test: (a) => program('opencode').test(a) },
@@ -146,22 +174,10 @@ export const RUNTIMES = [
 // Nástroj, ke kterému patří řádek výpisu procesů – jedno místo pro všechny detektory.
 export const rozpoznejNastroj = (args) => RUNTIMES.find((r) => r.test(args)) || null;
 
-export function etimeToSec(t) {
-  const [d, rest] = t.includes('-') ? t.split('-') : ['0', t];
-  const parts = rest.split(':').map(Number);
-  while (parts.length < 3) parts.unshift(0);
-  return Number(d) * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2];
-}
+export { etimeToSec };
 
-// Řádek výpisu procesů v jednotném tvaru (src/platform.js#processList).
-function radkyPs(out) {
-  const radky = [];
-  for (const line of String(out || '').split('\n')) {
-    const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
-    if (m) radky.push({ pid: Number(m[1]), uptimeSec: etimeToSec(m[2]), cpu: Number(m[3]), rssKB: Number(m[4]), args: m[5] });
-  }
-  return radky;
-}
+// Řádek výpisu procesů v jednotném tvaru (src/platform.js#processList, #radkyProcesu).
+const radkyPs = radkyProcesu;
 
 export function parsePs(out) {
   const runtimes = RUNTIMES.map((r) => ({ id: r.id, name: r.name, provider: r.provider, druh: r.druh, popis: r.popis, konektory: r.konektory || [], overeno: Boolean(r.overeno), running: false, processes: 0, cpu: 0, memMB: 0, uptimeSec: 0, detail: '' }));
@@ -202,11 +218,14 @@ const BEZ_KONVERZACE = {
   'copilot-cli': { podprikazy: ['help', 'login', 'logout'], prepinace: ['--version', '-v', '--help', '-h'] },
 };
 
-// Argumenty za jménem programu. Program z npm běží jako „node /…/bin/claude …“ – to „node“ se přeskočí.
+// Argumenty za jménem programu. Program z npm běží jako „node /…/bin/claude …“ nebo „node /…/@openai/
+// codex/bin/codex.js …“ – to „node“ i cesta ke skriptu se přeskočí.
+const JMENA_CLI = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot' };
 function argumentyProgramu(args, runtime) {
-  const jmeno = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot' }[runtime];
   const slova = args.split(/\s+/);
-  const i = slova.findIndex((w) => program(jmeno).test(w));
+  const jmeno = program(JMENA_CLI[runtime]);
+  const skript = NPM_SKRIPTY[runtime] ? npmSkript(runtime) : null;
+  const i = slova.findIndex((w) => jmeno.test(w) || Boolean(skript?.test(w)));
   return i === -1 ? [] : slova.slice(i + 1);
 }
 
@@ -221,16 +240,29 @@ export function vedeKonverzaci(args, runtime) {
   return !pravidla.podprikazy.includes(argv[i]);
 }
 
-/** Procesy agentů v příkazové řádce, každý zvlášť: { pid, runtime, uptimeSec }. */
+/**
+ * Procesy agentů v příkazové řádce, jeden záznam za jeden běh: { pid, runtime, uptimeSec }.
+ *
+ * Jeden běh nástroje může být víc procesů se stejnými argumenty. npm balíček Codexu spouští pod
+ * obalem v Node nativní program jako dceřiný proces (`bin/codex.js` → `vendor/<cíl>/bin/codex`),
+ * Gemini CLI se po startu spustí znovu jako vlastní dítě s větší pamětí (`GEMINI_CLI_NO_RELAUNCH`),
+ * Qwen Code na Windows spouští `cli.js` z `cli-entry.js` (zdroj balíčků z npm, 5. 10. 2026). Proces,
+ * jehož přímý rodič je agentní proces téhož nástroje, je proto součástí rodičova běhu a vlastní
+ * záznam nedostane – jinak by v přehledu jeden agent visel dvakrát. Proces spuštěný agentem přes
+ * shell (rodič je `sh`, ne nástroj) zůstává samostatným agentem.
+ */
 export function agentniProcesy(out) {
   const cli = Object.keys(BEZ_KONVERZACE);
-  const procesy = [];
+  const kandidati = [];
   for (const p of radkyPs(out)) {
     const r = RUNTIMES.find((x) => x.test(p.args));
     if (!r || !cli.includes(r.id) || !vedeKonverzaci(p.args, r.id)) continue;
-    procesy.push({ pid: p.pid, runtime: r.id, uptimeSec: p.uptimeSec });
+    kandidati.push({ pid: p.pid, ppid: p.ppid, runtime: r.id, uptimeSec: p.uptimeSec });
   }
-  return procesy;
+  const podlePid = new Map(kandidati.map((p) => [p.pid, p]));
+  return kandidati
+    .filter((p) => !(p.ppid && p.ppid !== p.pid && podlePid.get(p.ppid)?.runtime === p.runtime))
+    .map(({ ppid, ...p }) => p);
 }
 
 // Výpis procesů sdílený konektory (tento a src/connectors/local-agents.js). Kdo se zeptá do pár
@@ -276,10 +308,13 @@ const adresaOllamy = (klient) => {
 export function createProcessesConnector(ctx) {
   // Ollama jde přes sdíleného klienta z src/ollama.js, tedy na adresu z AGENTEEQ_OLLAMA_URL. Bez klienta
   // se na Ollamu neptá vůbec – nikdy natvrdo na 127.0.0.1:11434.
-  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
+  const { store, config, onAgenti = () => {}, onStav = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
   let timer = null;
   let ollama = { ok: false, models: [] };
   let lastOk = 0;
+  // Povedl se poslední výpis? Selhání (chyba, časový limit) po dřívějším úspěchu neznamená, že nic
+  // neběží – údaje o běžících aplikacích jsou pak jen poslední známé a rozhraní to musí říct.
+  let posledniOk = null;
   // Složka a prostředí se u procesu nemění – zjišťují se jednou za jeho život (klíč pid + start).
   const znamy = new Map();
 
@@ -301,7 +336,13 @@ export function createProcessesConnector(ctx) {
   const starty = createStabilniStart();
 
   async function poll() {
-    const res = await procesy();
+    let res;
+    try {
+      res = await procesy();
+    } catch {
+      res = { ok: false };
+    }
+    if (!res?.ok) res = { ok: false };
     const runtimes = res.ok ? parsePs(res.stdout).map(({ uptimeSec, ...r }) => ({ ...r, od: r.running ? starty.od(r.id, uptimeSec) : 0 })) : store.runtimes;
     if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
     // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
@@ -313,7 +354,12 @@ export function createProcessesConnector(ctx) {
       o.detail = ollama.models.length ? ui('Načteno: {0}', ollama.models.join(', ')) : ui('Žádný model v paměti');
     }
     if (res.ok) lastOk = Date.now();
+    const zmena = posledniOk !== res.ok;
+    posledniOk = res.ok;
     store.setRuntimes(runtimes);
+    // Přechod mezi „zjištěno“ a „nepodařilo se zjistit“ musí být v rozhraní hned, ne až při dalším
+    // pravidelném porovnání seznamu zdrojů (5 s).
+    if (zmena) onStav(res.ok);
   }
 
   return {
@@ -338,6 +384,15 @@ export function createProcessesConnector(ctx) {
       const running = store.runtimes.filter((r) => r.running).length;
       // Dokud se výpis procesů ani jednou nepovedl, nevíme nic – a „0 aplikací běží“
       // by byla lež, ne údaj. Ollamu poznáme i tak, ta jde přes HTTP.
+      if (lastOk && posledniOk === false) {
+        return {
+          state: 'error',
+          detail: ui('Seznam běžících aplikací se teď nepodařilo zjistit. Údaje jsou z posledního úspěšného zjištění.'),
+          count: running,
+          watching: Boolean(timer),
+          lastEventAt: Math.floor(lastOk / 60e3) * 60e3,
+        };
+      }
       return {
         state: lastOk ? 'connected' : 'error',
         detail: lastOk

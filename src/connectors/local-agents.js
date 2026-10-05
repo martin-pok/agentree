@@ -3,9 +3,9 @@
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
-import { etimeToSec, program, aplikace, createStabilniStart, rozpoznejNastroj } from './processes.js';
+import { program, aplikace, createStabilniStart, rozpoznejNastroj } from './processes.js';
 import { clip } from '../util.js';
-import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
+import { processList, listeningPorts, radkyProcesu, JE_WINDOWS } from '../platform.js';
 import { ui } from '../texty.js';
 
 // Katalog známých lokálních běhových prostředí. `match` dostane celý řetězec argumentů
@@ -88,16 +88,16 @@ function commandBase(args) {
   return first.split('/').pop() || 'proces';
 }
 
+// Řádek výpisu procesů v jednotném tvaru (src/platform.js#radkyProcesu – s PID rodiče i bez něj).
 function parseRow(line) {
-  const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
-  if (!m) return null;
-  return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
+  const r = radkyProcesu(line)[0];
+  return r ? { pid: r.pid, cpu: r.cpu, memMB: r.rssKB / 1024, uptimeSec: r.uptimeSec, args: r.args } : null;
 }
 
 const HEURISTIC_NOTE = ui('Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.');
 
 /**
- * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde
+ * Projde výpis `ps` (stejný tvar jako v processes.js: pid [ppid] etime %cpu rss args) a najde
  * všechny lokální AI běhy – známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
  * na síť a nevyhodí výjimku; na nesmyslném vstupu vrátí [].
  */
@@ -179,19 +179,28 @@ export function parseListeningPorts(lsofOutput) {
 }
 
 export function createLocalAgentsConnector(ctx) {
-  const { onDetect, procesy = processList } = ctx || {};
+  const { onDetect, onStav = () => {}, procesy = processList } = ctx || {};
   let timer = null;
   let list = [];
   let lastOk = 0;
+  // Povedl se poslední výpis? Po selhání zůstává poslední známý seznam a stav hlásí chybu –
+  // prázdný výpis z neúspěchu by vypadal jako „nic neběží“.
+  let posledniOk = null;
   const starty = createStabilniStart();
 
   async function poll() {
-    const [psRes, lsofRes] = await Promise.all([procesy(), listeningPorts()]);
-    const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
-    list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports }).map(({ uptimeSec, ...a }) => ({ ...a, od: starty.od(a.id, uptimeSec) }));
-    starty.ponech(new Set(list.map((a) => a.id)));
-    if (psRes.ok) lastOk = Date.now();
-    onDetect?.(list);
+    const [psRes, lsofRes] = await Promise.all([Promise.resolve().then(procesy).catch(() => ({ ok: false })), listeningPorts()]);
+    const ok = Boolean(psRes?.ok);
+    const zmena = posledniOk !== ok;
+    posledniOk = ok;
+    if (ok) {
+      const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
+      list = detectLocalAgents(psRes.stdout, { ports }).map(({ uptimeSec, ...a }) => ({ ...a, od: starty.od(a.id, uptimeSec) }));
+      starty.ponech(new Set(list.map((a) => a.id)));
+      lastOk = Date.now();
+      onDetect?.(list);
+    }
+    if (zmena) onStav(ok);
   }
 
   return {
@@ -218,6 +227,9 @@ export function createLocalAgentsConnector(ctx) {
       // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
       if (!lastOk) {
         return { state: 'error', detail: ui('Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.'), count: 0 };
+      }
+      if (posledniOk === false) {
+        return { state: 'error', detail: ui('Běžící procesy se teď nepodařilo zjistit. Seznam lokálních agentů je z posledního úspěšného zjištění.'), count: list.length };
       }
       return {
         state: list.length ? 'connected' : 'idle',
