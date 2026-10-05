@@ -7,6 +7,7 @@
 //   3. rozšíření pro Chrome            dist/agenteeq-extension-<verze>.zip
 //   4. web (landing page + rozhraní)   dist/web
 //   5. npm run build:mac               .app, podpis, volitelně notarizace, dist/…zip
+//      npm run build:dmg               instalátor s přetažením do Aplikací, dist/…dmg
 //   6. --install                       výměna aplikace tam, kde na tomhle Macu je (jen na výslovné přání)
 //
 // Krok 6 je jediný, který sahá na už nainstalovanou aplikaci, a proto se nikdy nespustí sám:
@@ -60,7 +61,7 @@ console.log(`Agenteeq ${version} – vydání pro macOS (${process.arch})`);
 // tedy po testech a smoke – po pěti minutách čekání na chybu, která byla vidět od začátku.
 krok(0, 'Kontrola nástrojů');
 const chybi = [];
-for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which']]) {
+for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which'], ['hdiutil', 'which']]) {
   const nalezeno = kde === 'xcrun' ? tise('xcrun', ['--find', nastroj]) : tise('which', [nastroj]);
   if (!nalezeno) chybi.push(nastroj);
 }
@@ -105,6 +106,7 @@ if (!process.env.AGENTEEQ_SIGN_IDENTITY) {
   console.log('a AGENTEEQ_NOTARY_PROFILE (viz docs/LICENSING.md).');
 }
 run('npm', ['run', 'build:mac']);
+run('npm', ['run', 'build:dmg']);
 
 if (install) {
   krok(6, `Výměna aplikace v ${path.dirname(APLIKACE)}`);

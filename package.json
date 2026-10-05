@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "build:mac": "mkdir -p dist && node scripts/build-macos.mjs",
+    "build:dmg": "node scripts/build-dmg.mjs",
     "build:extension": "node scripts/build-extension.mjs",
     "build:windows": "node scripts/build-windows.mjs",
     "icon:windows": "node scripts/make-ico.mjs",

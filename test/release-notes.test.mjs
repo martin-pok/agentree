@@ -30,16 +30,51 @@ test('popis vydání bere změny z CHANGELOG.md, ne z paměti', () => {
   assert.throws(() => sekceZmen('# Changelog\n\n## 0.1.0 – x\n\n## 0.0.9 – y\n\n- a\n', '0.1.0'), /prázdná/);
 });
 
-// Ad-hoc podepsanou aplikaci macOS po stažení odmítne hláškou „je poškozená“. Poškozená není,
-// ale uživatel to neví. Kdyby to v popisu nestálo, vypadalo by vydání jako vadné.
-test('popis říká pravdu o podpisu, i když je nepříjemná', () => {
+// Ad-hoc podepsanou aplikaci macOS po stažení napoprvé zablokuje. Kdyby v popisu nestálo, jak ji
+// jednou povolit, vypadalo by vydání jako vadné. Hlavní cesta je bez Terminálu – stejná jako na
+// webu a v docs/INSTALL.md (nápověda Applu mh40616 pro macOS 15 a 26); Terminál je jen alternativa.
+test('popis říká pravdu o podpisu a vede cestou bez Terminálu', () => {
   const adhoc = napovedaProMac('ad-hoc');
   assert.match(adhoc, /není podepsaný Developer ID/);
-  assert.match(adhoc, /xattr -dr com\.apple\.quarantine/, 'bez příkazu je varování k ničemu');
+  assert.match(adhoc, /Nastavení systému → Soukromí a zabezpečení/);
+  assert.match(adhoc, /Přesto otevřít/);
+  assert.match(adhoc, /heslo/, 'macOS si o heslo řekne – popis to má říct dopředu');
+  assert.doesNotMatch(adhoc, /xattr/, 'příkaz v Terminálu už není hlavní cesta');
+  assert.match(adhoc, /install\.sh/, 'Terminál zůstává jako alternativa pro pokročilé');
+  assert.ok(adhoc.indexOf('Přesto otevřít') < adhoc.indexOf('install.sh'), 'Nastavení je první, Terminál až alternativa');
+  assert.match(adhoc, /\/instalace\)/, 'odkaz na stránku s postupem');
+  assert.match(adhoc, /Rozbal archiv/, 'bez DMG se popisuje ZIP');
+  assert.match(napovedaProMac('ad-hoc', { dmg: true }), /Agenteeq-macOS-arm64\.dmg[\s\S]*přetáhni \*\*Agenteeq\*\* na složku\n\*\*Aplikace\*\*/);
 
   const podepsano = napovedaProMac('Developer ID');
-  assert.match(podepsano, /notarizovaná/);
-  assert.doesNotMatch(podepsano, /xattr/, 'u podepsaného buildu by návod na karanténu jen strašil');
+  assert.match(podepsano, /Developer ID a notarizovaná/, 'publish.yml podle téhle věty pozná podepsaný build');
+  assert.doesNotMatch(podepsano, /xattr|Přesto otevřít/, 'u podepsaného buildu by návod na blokaci jen strašil');
+});
+
+// Obraz disku je pro běžného uživatele hlavní soubor, ZIP pro aktualizace a Terminál.
+test('popis vydání vede s DMG a řadí ho před ZIP', () => {
+  const text = poznamky({
+    changelog: CHANGELOG,
+    verze: '0.13.0',
+    soubory: [
+      { jmeno: 'Agenteeq-0.13.0-macOS-arm64.zip', bajtu: 34_000_000 },
+      { jmeno: 'Agenteeq-0.13.0-macOS-arm64.dmg', bajtu: 35_000_000 },
+      { jmeno: 'Agenteeq-0.13.0-Windows-x64.zip', bajtu: 32_500_000 },
+    ],
+  });
+  assert.ok(text.indexOf('macOS-arm64.dmg') < text.indexOf('macOS-arm64.zip'), 'DMG je první');
+  assert.match(text, /\*\*Agenteeq-0\.13\.0-macOS-arm64\.dmg\*\* \(33\.4 MB\) – instalátor pro Mac/);
+  assert.match(text, /Otevři \*\*Agenteeq-macOS-arm64\.dmg\*\*/, 's DMG návod začíná obrazem disku');
+});
+
+test('skript popisu bere k přílohám i DMG', async () => {
+  const { prilohy } = await import('../scripts/release-notes.mjs');
+  const slozka = await fs.mkdtemp((await import('node:path')).join((await import('node:os')).tmpdir(), 'prilohy-'));
+  for (const jmeno of ['Agenteeq-1.0.0-macOS-arm64.dmg', 'Agenteeq-1.0.0-macOS-arm64.zip', 'latest-build.json', 'poznamky.md']) {
+    await fs.writeFile(`${slozka}/${jmeno}`, 'x');
+  }
+  assert.deepEqual((await prilohy(slozka)).map((p) => p.jmeno), ['Agenteeq-1.0.0-macOS-arm64.dmg', 'Agenteeq-1.0.0-macOS-arm64.zip']);
+  await fs.rm(slozka, { recursive: true, force: true });
 });
 
 test('popis slibuje jen soubory, které opravdu jsou', () => {
@@ -197,9 +232,14 @@ test('zveřejnění: jen ručně z main, jen koncept a s přílohou pro tlačít
   assert.match(yml, /\$GITHUB_REF" != "refs\/heads\/main"/);
   assert.match(yml, /\^v\[0-9\]\+/, 'tag se ověří dřív, než se s ním cokoli dělá');
   assert.match(yml, /if \(!v\.isDraft\)[^\n]*process\.exit\(1\)/, 'zveřejněné vydání se nepřepisuje');
-  assert.match(yml, /a\.name === "Agenteeq-macOS-arm64\.zip"/, 'bez stálé přílohy by tlačítko Stáhnout vedlo do prázdna');
+  for (const stala of ['Agenteeq-macOS-arm64.zip', 'Agenteeq-macOS-arm64.dmg', 'Agenteeq-Windows-x64.zip']) {
+    assert.ok(yml.includes(`"${stala}"`), `bez stálé přílohy ${stala} by tlačítko na webu vedlo do prázdna`);
+    assert.match(yml, new RegExp(`for SOUBOR in [^\\n]*${stala.replace(/\./g, '\\.')}`), `po zveřejnění se ověří odkaz na ${stala}`);
+  }
+  assert.match(yml, /a\.name === stala/);
+  assert.match(yml, /\/releases\/download\/\$TAG\/\$SOUBOR/, 'odkaz musí vést na přílohu právě zveřejněného vydání');
+  assert.match(yml, /\\\.\(zip\|dmg\)\$/, 'přegenerovaný popis zná i DMG');
   assert.match(yml, /node scripts\/release-notes\.mjs/, 'popis skládá skript, ne ruka');
-  assert.match(yml, /\/releases\/download\/\$TAG\/Agenteeq-macOS-arm64\.zip/, 'po zveřejnění se ověří odkaz ke stažení');
 });
 
 // Vydání jde spustit i bez terminálu (Actions → Run workflow). Chybějící tag pak založí CI –

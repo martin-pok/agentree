@@ -248,7 +248,7 @@ await app.close();
 console.log('Web');
 const { out } = await buildSite();
 const web = await staticServer(out);
-for (const stranka of ['/', '/en', '/soukromi', '/en/privacy', '/app/']) {
+for (const stranka of ['/', '/en', '/instalace', '/en/install', '/soukromi', '/en/privacy', '/app/']) {
   for (const sirka of SIRKY) {
     const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, reducedMotion: 'reduce' });
     await page.goto(web.url + stranka, { waitUntil: 'load' });

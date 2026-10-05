@@ -160,10 +160,25 @@ vybere špatný, a první zkušenost s produktem je chybová hláška.
 **Na webu tedy dvě tlačítka, ne šest:** „Stáhnout pro Mac“ a „Stáhnout pro Windows“. Který
 build je ten správný, je starost naše, ne uživatelova.
 
-## Co ještě chybí, než půjde Windows komunikovat na webu
+## Tlačítko „Stáhnout pro Windows“ na webu – jako beta
 
-Podle pravidla v `CLAUDE.md` („Nevymýšlej data. Neověřené = Beta.“) se tlačítko
-**„Stáhnout pro Windows“ na web nedává, dokud tohle neproběhne:**
+Rozhodnutí vlastníka produktu (5. 10. 2026): aplikace se má dát poslat dál a vyzkoušet i na
+Windows, takže tlačítko **Stáhnout pro Windows** je na webu (úvodní stránka, stránka Instalace
+`site/instalace`, `site/en/install`) i v README. Podle pravidla v `CLAUDE.md` („Nevymýšlej data.
+Neověřené = Beta.“) je všude označené jako **beta** s větou, že verzi zatím nikdo nevyzkoušel na
+skutečném počítači, a stránka Instalace vyjmenuje, co na Windows nefunguje.
+
+Odkaz vede na stálou přílohu `Agenteeq-Windows-x64.zip` (workflow Vydání ji přikládá od příštího
+vydání a publish.yml ji před zveřejněním vyžaduje). Dokud ji poslední zveřejněné vydání nemá,
+vede tlačítko na stránku posledního vydání (`/releases/latest`) a postup na webu uvádí jméno
+souboru, který si tam stáhnout. Přepnutí řídí seznam `V_POSLEDNIM_VYDANI` v `scripts/build-site.mjs`.
+
+Postup na webu: rozbalit ZIP (Extrahovat vše), spustit `Agenteeq.exe`, ve varování SmartScreen
+zvolit Další informace → Přesto spustit. Varování SmartScreen u nepodepsaného souboru popisuje
+[dokumentace Microsoftu](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation);
+české popisky tlačítek jsou podle české lokalizace Windows, na skutečném stroji neověřené.
+
+## Co ještě chybí, než půjde Windows nabízet bez štítku beta
 
 1. **Spustit Agenteeq na skutečném Windows a projít rozhraní očima.** Balíček je ke stažení
    u každého běhu CI (artefakt „Agenteeq-Windows“). Tohle je jediný zbývající krok, který

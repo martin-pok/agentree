@@ -29,6 +29,13 @@ export const JAZYKY = [
   { kod: 'en', adresa: '/en', soubor: path.join('en', 'index.html') },
 ];
 
+// Stránka Instalace (postup pro Mac a Windows, rozšíření) v obou jazycích. Má stejné tlačítka
+// ke stažení i značky rozšíření jako úvodní stránka, takže se sestavuje stejnými funkcemi.
+export const INSTALACE = [
+  { kod: 'cs', adresa: '/instalace', soubor: path.join('instalace', 'index.html') },
+  { kod: 'en', adresa: '/en/install', soubor: path.join('en', 'install', 'index.html') },
+];
+
 // Přepíše softwareVersion ve strukturovaných datech stránky. Když ji tam nenajde, spadne: tichá
 // změna tvaru stránky by jinak vrátila zastaralou verzi a nikdo by si nevšiml.
 export function verzeVDatechStranky(html, verze) {
@@ -39,13 +46,54 @@ export function verzeVDatechStranky(html, verze) {
 
 // Odkaz na stažení míří na přílohu se stálým jménem v posledním vydání. Adresa s číslem verze
 // by po každém vydání ukazovala do prázdna, dokud by někdo nepřestavěl web — a přesně tak vypadá
-// rozbité tlačítko Stáhnout. Stálou kopii přikládá k vydání workflow (.github/workflows/release.yml).
+// rozbité tlačítko Stáhnout. Stálé kopie přikládá k vydání workflow (.github/workflows/release.yml).
 export const REPO = 'https://github.com/martin-pok/agentree';
 export const BALICEK_MAC = 'Agenteeq-macOS-arm64.zip';
-export function odkazNaStazeni(html) {
-  const vzor = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
-  if (!vzor.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
-  return html.replace(vzor, `$1${REPO}/releases/latest/download/${BALICEK_MAC}$2`);
+export const INSTALATOR_MAC = 'Agenteeq-macOS-arm64.dmg';
+export const BALICEK_WINDOWS = 'Agenteeq-Windows-x64.zip';
+
+// Stálé přílohy, které POSLEDNÍ ZVEŘEJNĚNÉ vydání opravdu má. Jediné místo, které se po vydání
+// mění: web nesmí odkazovat na soubor, který na GitHubu ještě není (tlačítko by vedlo na 404).
+// Ověřeno 5. 10. 2026 proti v0.36.3: má jen Agenteeq-macOS-arm64.zip. DMG a stálý ZIP pro
+// Windows přikládá workflow od příštího vydání – po jeho zveřejnění (publish.yml ověří, že
+// odkazy vedou na jeho přílohy) se sem doplní INSTALATOR_MAC a BALICEK_WINDOWS a web se přestaví.
+// Do té doby: Mac stahuje ZIP (a stránka popisuje rozbalení), Windows vede na stránku vydání.
+export const V_POSLEDNIM_VYDANI = Object.freeze([BALICEK_MAC]);
+
+export const prilohaVydani = (jmeno) => `${REPO}/releases/latest/download/${jmeno}`;
+
+// Kam vedou tlačítka ke stažení podle toho, co poslední vydání má.
+export function cileStazeni(vydano = V_POSLEDNIM_VYDANI) {
+  return {
+    dmg: vydano.includes(INSTALATOR_MAC),
+    mac: prilohaVydani(vydano.includes(INSTALATOR_MAC) ? INSTALATOR_MAC : BALICEK_MAC),
+    windows: vydano.includes(BALICEK_WINDOWS) ? prilohaVydani(BALICEK_WINDOWS) : `${REPO}/releases/latest`,
+  };
+}
+
+// Značky v HTML: <!-- nazev -->…<!-- /nazev -->. Sestavení nechá jen platný blok.
+const blokZnacky = (nazev) => new RegExp(`\\n[ \\t]*<!-- ${nazev} -->([\\s\\S]*?)[ \\t]*<!-- /${nazev} -->`);
+function nechejBlok(html, nechat, zahodit) {
+  return html.replace(blokZnacky(zahodit), '').replace(blokZnacky(nechat), (_, obsah) => obsah.replace(/\n$/, ''));
+}
+
+// Tlačítko pro Mac (data-stahnout="mac-arm64") stránka mít musí; pro Windows (data-stahnout=
+// "windows-x64") jen tam, kde je. Postup pro Mac stojí na stránce dvakrát – mezi značkami
+// <!-- mac:dmg --> a <!-- mac:zip --> – a zůstane ten, který sedí na stahovaný soubor.
+export function odkazNaStazeni(html, vydano = V_POSLEDNIM_VYDANI) {
+  const mac = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
+  if (!mac.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
+  const cile = cileStazeni(vydano);
+  let out = html
+    .replace(mac, `$1${cile.mac}$2`)
+    .replace(/(data-stahnout="windows-x64" href=")[^"]*(")/g, `$1${cile.windows}$2`);
+  const dmgBlok = blokZnacky('mac:dmg').test(out), zipBlok = blokZnacky('mac:zip').test(out);
+  if (dmgBlok !== zipBlok) throw new Error('Stránka webu má jen jednu ze značek mac:dmg a mac:zip — uprav scripts/build-site.mjs.');
+  // Značky se zpracují opakovaně: postup pro Mac smí na stránce stát víckrát (kroky i poznámka).
+  while (blokZnacky('mac:dmg').test(out) || blokZnacky('mac:zip').test(out)) {
+    out = cile.dmg ? nechejBlok(out, 'mac:dmg', 'mac:zip') : nechejBlok(out, 'mac:zip', 'mac:dmg');
+  }
+  return out;
 }
 
 // Instalace rozšíření na webu: stránka nese obě cesty mezi značkami <!-- rozsireni:obchod --> a
@@ -137,6 +185,10 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
     await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))));
+  }
+  for (const jazyk of INSTALACE) {
+    const stranka = path.join(out, jazyk.soubor);
+    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))));
   }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
