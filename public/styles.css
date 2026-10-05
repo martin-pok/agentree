@@ -503,6 +503,7 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .empty strong { color: var(--ink); font-size: 17px; }
 .empty p { margin: 0; max-width: 52ch; }
 .empty .btn { margin-top: 8px; }
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .empty-mark { display: flex; gap: 6px; margin-bottom: 8px; }
 .empty-mark i { width: 16px; height: 16px; background: var(--brass); }
 .empty-mark i:nth-child(1) { border-radius: 50%; background: var(--velvet); }
@@ -903,6 +904,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .banner--limit > .icon { color: var(--brass-ink); }
 .banner--info { background: var(--teal-tint); box-shadow: inset 4px 0 0 var(--teal-ink); }
 .banner--info > .icon { color: var(--teal-ink); }
+.banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .live-strip { display: flex; align-items: center; gap: 16px; margin-top: 24px; padding: 16px 24px; border-radius: var(--r-lg); background: var(--ink-surface); color: var(--on-ink); }
 .live-strip.is-static { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .pulse { position: relative; width: 12px; height: 12px; border-radius: 50%; background: var(--teal); flex: none; }
@@ -1955,7 +1957,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 /* ---------- Spuštění agenta ---------- */
 .launch { position: relative; margin-bottom: 40px; padding: 24px 28px 20px; overflow: hidden; }
 .launch::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--brass), rgba(201, 154, 62, 0) 70%); }
-.launch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.launch-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .launch-head h2 { margin: 0 0 2px; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
 .launch-head p { margin: 0; }
 .launch-head .link .icon { width: 14px; height: 14px; }
@@ -2296,7 +2298,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .reply textarea { min-height: 64px; background: var(--paper); border-color: transparent; }
 .reply-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .reply-actions .muted { margin-right: auto; display: inline-flex; gap: 4px; align-items: center; }
-.reply-note { margin: 0; padding: 12px 24px 16px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--mute); }
+.reply-note { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0; padding: 12px 24px 16px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--mute); }
 
 /* Nastavení: licence */
 .key-form--stack { margin-top: 16px; flex-wrap: wrap; }
@@ -2332,6 +2334,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .launch-chips::-webkit-scrollbar { display: none; }
   .launch-foot { flex-wrap: wrap; padding-left: 8px; }
   .launch-note { flex-basis: 100%; order: -1; }
+  .launch-note:empty { display: none; }
   .launch-kbd { display: none; }
   .launch-go { margin-left: auto; }
   .run { grid-template-columns: 36px minmax(0, 1fr) auto; row-gap: 8px; }

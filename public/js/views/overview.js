@@ -66,8 +66,8 @@ function onboardingHtml() {
   // Propojení s Claude Code nabízet jen tomu, kdo Claude Code na Macu má.
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   const steps = [
-    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni">${tr('Zdroje dat')}</a>` },
-    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' }] : []),
+    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="connectors">${tr('Zdroje dat')}</a>` },
+    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zapnout')}</a>` }] : []),
     { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
     { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
     { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
@@ -127,7 +127,7 @@ function mount(el) {
     </div>
   </div>
   <section class="ov-wide" data-enter style="--i:5" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}', tomtoPocitaci())}</h2><a class="link" href="#/nastaveni">${tr('Zdroje dat')}</a></div>
+    <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}', tomtoPocitaci())}</h2><a class="link" href="#/nastaveni" data-karta="moje">${tr('Zdroje dat')}</a></div>
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
 `;
@@ -141,7 +141,7 @@ function mount(el) {
   });
   v.launcher = createLauncher(el.querySelector('[data-launch]'));
   el.addEventListener('click', async (e) => {
-    if (e.target.closest('[data-go-extension]')) { goToExtension(); return; }
+    if (e.target.closest('[data-go-extension]')) { e.preventDefault(); goToExtension(); return; }
     const prepnout = e.target.closest('[data-focus-runtime]');
     if (prepnout) {
       prepnout.disabled = true;
@@ -165,7 +165,7 @@ function mount(el) {
       try {
         state.settings = (await api.saveSettings({ onboardingDismissed: true })).settings;
         emit('settings');
-        toast(tr('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.'), { tone: 'info' });
+        toast(tr('Průvodce skrytý'), { tone: 'info' });
       } catch (err) {
         toast(err.message, { tone: 'err' });
       }
@@ -242,7 +242,7 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', needs.length
     ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${tr('A dalších {0}', needs.length - 4)}</a>` : ''}`
     : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Nikdo teď nečeká na tvé rozhodnutí')}</strong>
-        ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
+        ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni" data-karta="claude">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
 
   if (changed(topics, 'sessions', 'tick')) {
     const todayTok = tokensSince(everything, today);
@@ -272,7 +272,7 @@ function update(topics = new Set(['all'])) {
       .slice(0, 5);
     zivy(el, 'today-apps', polozky.length
       ? hbars(polozky)
-      : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny. Jakmile agent začne pracovat, uvidíš tady, kam jdou.')}</p>`);
+      : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny.')}</p>`);
   }
 
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick', 'detekce')) {
@@ -285,7 +285,7 @@ function update(topics = new Set(['all'])) {
        ${limitsAll(state, now)}`);
   }
 
-  if (changed(topics, 'sessions', 'dopln')) zivy(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita. Spusť agenta a objeví se tady.')}</li>`);
+  if (changed(topics, 'sessions', 'dopln')) zivy(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita.')}</li>`);
 
   if (changed(topics, 'sessions', 'tick')) {
     const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;
@@ -326,7 +326,7 @@ function update(topics = new Set(['all'])) {
   const sp = state.spend;
   if (sp && changed(topics, 'spend')) {
     if (sp.billing?.connected === false) {
-      zivy(el, 'spend', `<div class="spend-mini-num"><strong>${tr('Náklady za API nejsou připojené')}</strong><a class="link-inline" href="#/nastaveni">${tr('Propojit API')}</a></div>`);
+      zivy(el, 'spend', `<div class="spend-mini-num"><strong>${tr('Náklady za API nejsou připojené')}</strong><a class="link-inline" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a></div>`);
     } else {
     const total = sp.budgetsConfig?.total || 0;
     const bp = total ? (sp.month.total / total) * 100 : 0;
@@ -336,7 +336,7 @@ function update(topics = new Set(['all'])) {
         ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: tr('rozpočtu'), size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
           <span class="big">${tween('ov-spend', sp.month.total, `money:${sp.currency}`)}</span>
-          <span class="muted small">${total ? tr('z {0}', fmtMoney(total, sp.currency)) : tr('Rozpočet zatím nemáš nastavený')}</span>
+          <span class="muted small">${total ? tr('z {0}', fmtMoney(total, sp.currency)) : `<a class="link-inline" href="#/utrata?rozpocty=1">${tr('Nastavit rozpočet')}</a>`}</span>
           <span class="muted small">${tr('Prognóza do konce měsíce')} ${fmtMoney(sp.forecast, sp.currency)}</span>
         </div>
       </div>
@@ -375,7 +375,7 @@ function update(topics = new Set(['all'])) {
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="${tr('Přepnout do {0} –', esc(r.name))} ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
     }).join('') + (webChybi
-      ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome.')}">
+      ? `<a class="rt-item rt-item--note" href="#/nastaveni" data-go-extension title="${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu sleduje rozšíření pro Chrome.')}">
           <span class="rt-disc">${ICON.cloud}</span>
           <span class="rt-name">${tr('Web')}</span>
           <span class="rt-meta">${tr('nesleduje se')}</span>

@@ -116,6 +116,7 @@ function setHero({ tone, pill, headline, sub, pocet = null }) {
   $('hero-num').textContent = pocet === null ? '' : String(pocet);
   $('headline').textContent = sazba(headline);
   $('sub').textContent = sazba(sub);
+  $('sub').hidden = !sub;
 }
 
 // ── Sledované služby ────────────────────────────────────────────────────────
@@ -413,7 +414,7 @@ async function render() {
     $('feats').hidden = false;
     $('app-link').href = WEB;
     $('app-link-text').textContent = tr('Stáhnout Agenteeq');
-    setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci. Rozšíření se k ní připojí samo, nic nenastavuješ.') });
+    setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
     return;
   }
 
@@ -426,7 +427,7 @@ async function render() {
       tone: 'warn',
       pill: 'Nespárováno',
       headline: tr(r?.revoked ? 'Spáruj rozšíření znovu' : 'Spáruj rozšíření kódem'),
-      sub: tr(r?.revoked ? 'Předchozí spárování už neplatí. Stačí nový jednorázový kód.' : 'Tohle rozšíření se s Agenteeq nespárovalo samo. Stačí jednorázový kód.'),
+      sub: r?.revoked ? tr('Předchozí spárování už neplatí.') : '',
     });
     return;
   }

@@ -248,7 +248,7 @@ function renderTranscript(el, t) {
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
   const session = state.sessions.get(v.id);
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Text zpráv z webových chatů se nečte.')}</p>${session.open?.length ? `<div class="set-actions">${openButtons(session, { small: true, max: 1 })}</div>` : ''}` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
@@ -288,11 +288,11 @@ function update() {
     </div>`);
 
   fill(el, 'banner', s.status === 'needs_input'
-    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p><p class="small muted">${esc(howToAnswer(s))}</p></div></div>`
+    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true, max: 2 })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
-        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">${s.observation ? tr('Stav hlásí Claude Desktop. Přesný důvod najdeš v původní konverzaci.') : tr('Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.')}</p></div></div>`
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true, max: 1 })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.proces
           ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
           : '');
@@ -339,7 +339,7 @@ function update() {
     slot.querySelector('[data-chat-stop]').hidden = !working;
     slot.querySelector('[type="submit"]').disabled = working;
   } else if (s.connector === 'local-chat') {
-    const note = `<p class="reply-note">${tr('Tahle lokální konverzace skončila restartem Agenteeq. Novou začneš v Přehledu přes Spustit agenta → Ollama.')}</p>`;
+    const note = `<p class="reply-note">${tr('Konverzace skončila restartem Agenteeq.')} <button class="btn btn--sm" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></p>`;
     if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }
   } else if (slot.innerHTML) {
     slot.innerHTML = '';

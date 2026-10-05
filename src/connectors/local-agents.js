@@ -217,7 +217,7 @@ export function createLocalAgentsConnector(ctx) {
       // Bez úspěšného výpisu procesů se neví nic. Hlásit „nic neběží“ by znamenalo
       // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
       if (!lastOk) {
-        return { state: 'error', detail: ui('Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.'), count: 0 };
+        return { state: 'error', detail: ui('Běžící procesy se na tomto systému nepodařilo zjistit.'), count: 0 };
       }
       return {
         state: list.length ? 'connected' : 'idle',

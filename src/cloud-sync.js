@@ -297,7 +297,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     clearInterval(casovac);
   }
 
-  // Náhled přesně toho, co by odešlo – rozhraní ho ukazuje v „Co přesně posíláme“.
+  // Náhled přesně toho, co by odešlo – rozhraní ho ukazuje v „Co přesně se posílá“.
   function nahled() {
     return data(ui('(id {0} v účtu)', POCITAC.tohoto));
   }

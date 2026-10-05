@@ -56,7 +56,7 @@
   <div class="wrap unit-head">
     <p class="kicker">Mac</p>
     <h2 id="mac-heading"><span class="radek"><span>Čtyři kroky, jednou.</span></span></h2>
-    <p class="lead">Beta zatím nemá podpis od Applu, proto ji macOS napoprvé zablokuje. Povolíš ji jednou v Nastavení systému a dál se otevírá dvojklikem.</p>
+    <p class="lead">Napoprvé ji povolíš v Nastavení systému, dál se otevírá dvojklikem.</p>
   </div>
 
   <ol class="wrap steps steps--ctyri">
@@ -73,10 +73,7 @@
   </ol>
 
   <div class="wrap instalace-dalsi">
-    <div class="gatekeeper">
-      <p><b>Proč ten krok v Nastavení?</b> Vývojářský podpis u Applu stojí ročně peníze a beta ho zatím nemá. Bez něj macOS aplikaci sám nespustí a řekne, že ji nedokáže ověřit — není to nález škodlivého kódu, jen chybějící razítko. Povolení je jednorázové; až podpis doplníme, tenhle krok zmizí.</p>
-      <p class="small muted">Postup odpovídá <a href="https://support.apple.com/guide/mac-help/mh40616/mac">nápovědě Applu k otevření aplikace od neznámého vývojáře</a> pro macOS 15 a 26. Tlačítko <b>Přesto otevřít</b> je v Nastavení asi hodinu po pokusu o otevření.</p>
-    </div>
+    <p class="small muted">Tlačítko <b>Přesto otevřít</b> je v Nastavení asi hodinu po pokusu o otevření. Podle <a href="https://support.apple.com/guide/mac-help/mh40616/mac">nápovědy Applu</a>.</p>
 
     <div class="prikaz" id="jednim-prikazem">
       <h3>Pro pokročilé: instalace jedním příkazem</h3>
@@ -85,7 +82,7 @@
         <div class="prikaz-pole"><code class="prikaz-posun" tabindex="0"><span class="prikaz-vyzva" aria-hidden="true">$ </span>curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash</code></div>
         <button class="btn prikaz-kopie" type="button" data-kopirovat="curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash">Zkopírovat</button>
       </div>
-      <p class="small">Soubor stažený v Terminálu nedostane od macOS příznak karantény, takže se Gatekeeper neptá; razítko Applu místo toho nahradí otisk <span class="bez-zlomu">SHA-256</span>, který skript porovná s GitHubem, a při neshodě nic nenainstaluje. Starou verzi přesune do Koše. <a href="/install.sh">Přečíst skript</a></p>
+      <p class="small">Skript porovná otisk <span class="bez-zlomu">SHA-256</span> s GitHubem a při neshodě nic nenainstaluje. Starou verzi přesune do Koše. <a href="/install.sh">Přečíst skript</a></p>
     </div>
   </div>
 </section>
@@ -94,7 +91,7 @@
   <div class="wrap unit-head">
     <p class="kicker">Windows 10 a 11 · beta</p>
     <h2 id="windows-heading"><span class="radek"><span>Zkušební verze pro Windows.</span></span></h2>
-    <p class="lead">Sestavuje se s každým vydáním, ale na skutečném počítači jsme ji zatím nevyzkoušeli. Budeme rádi, když nám dáš vědět, jak dopadla.</p>
+    <p class="lead">Tři kroky, jednou.</p>
     <a class="btn btn--lg" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Windows</a>
   </div>
 
@@ -106,7 +103,7 @@
 
   <div class="wrap instalace-dalsi">
     <div class="gatekeeper">
-      <p><b>Co na Windows zatím chybí.</b> Jádro aplikace – přehled agentů, projekty, statistiky a útrata – prochází na Windows automatickými testy. Neumí ale uložit klíče do systémového úložiště hesel, otevřít konverzaci přímo v aplikaci, pokračovat v terminálu ani se spouštět po přihlášení.</p>
+      <p><b>Co na Windows zatím chybí.</b> Aplikace zatím neumí uložit klíče do systémového úložiště hesel, otevřít konverzaci přímo v aplikaci, pokračovat v terminálu ani se spouštět po přihlášení.</p>
       <p class="small muted">Okno potřebuje běhovou součást WebView2, kterou Windows 11 mají a na Windows 10 ji přináší Edge. Varování SmartScreen popisuje <a href="https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation">dokumentace Microsoftu</a>.</p>
     </div>
   </div>
@@ -133,9 +130,7 @@
         <li>Klikni na <b>Načíst rozbalené</b> a vyber zkopírovanou složku (na Macu v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> a cestu vlož).</li>
         <li>Hotovo. Rozšíření se s aplikací spáruje samo.</li>
       </ol>
-      <p class="small muted">Rozšíření zatím čeká na schválení v Chrome Web Store, proto ta ruční cesta. Až ho Google zveřejní, nahradí ji jedno kliknutí.</p>
       <!-- /rozsireni:rucne -->
-      <p class="small muted">Aplikaci na tvém počítači hlásí jen to, jestli agent pracuje, kolik má konverzace zpráv a který model odpovídá. Text zpráv ani názvy konverzací nikam neposílá.</p>
     </div>
   </div>
 </section>

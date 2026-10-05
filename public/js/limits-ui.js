@@ -51,7 +51,7 @@ export function claudeLimitStatus(state, now = Date.now()) {
   if (!dostupny || zmereny) return '';
   const odhlaseny = claudeOdhlaseny(state, now);
   const stav = odhlaseny ? tr('Claude Code je odhlášený') : tr('Čeká na čerstvá data');
-  return `<a class="lwin-missing" href="#/nastaveni" aria-label="${esc(tr('Claude: {0}. Otevřít Nastavení', stav))}">
+  return `<a class="lwin-missing" href="#/nastaveni" data-karta="${odhlaseny ? 'models' : 'claude'}" aria-label="${esc(tr('Claude: {0}. Otevřít Nastavení', stav))}">
     <span class="lwin-logo">${glyph('anthropic')}</span>
     <span class="lwin-missing-main"><b>Claude</b><span>${esc(stav)}</span></span>
     <span class="lwin-missing-action">${odhlaseny ? tr('Přihlásit') : tr('Zkontrolovat')}${ICON.arrow}</span>

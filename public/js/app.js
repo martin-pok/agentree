@@ -497,7 +497,7 @@ async function openSession(btn) {
   btn.classList.add('is-busy');
   try {
     const r = await api.openSession(btn.dataset.sessionId, btn.dataset.openTarget);
-    toast(`${tr('Otevírám')} ${r.label}`);
+    toast(`${tr('Otevírá se')} ${r.label}`);
   } catch (err) {
     toast(err.message, { tone: 'err', timeout: 9000 });
   } finally {
@@ -568,6 +568,13 @@ document.addEventListener('click', async (e) => {
   if (opener) {
     e.preventDefault();
     openSession(opener);
+    return;
+  }
+  // Odkaz do Nastavení rovnou na kartu, kde se věc nastavuje (Nastavení ukazuje jen jednu skupinu).
+  const karta = e.target.closest('a[data-karta]');
+  if (karta) {
+    e.preventDefault();
+    goToSettings(karta.dataset.karta);
     return;
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
@@ -668,7 +675,7 @@ function renderOffline(show) {
   // Adresu bereme z okna, ne natvrdo: na telefonu je 127.0.0.1 sám telefon, ne Mac.
   const naMacu = window.agenteeqDesktop || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
   const rada = window.agenteeqDesktop
-    ? tr('Aplikace automaticky obnovuje místní službu. Tvé uložené projekty a nastavení zůstávají zachované.')
+    ? tr('Aplikace automaticky obnovuje místní službu.')
     : naMacu
       ? tr('Agenteeq se připojí sám, jakmile aplikace zase poběží. Otevři ji ze složky Aplikace nebo z Docku.')
       : tr('Agenteeq se připojí sám, jakmile bude {0} zase dostupný. Zkontroluj, že je zapnutý, nespí a Agenteeq na něm běží.', tvujPocitac());
@@ -895,7 +902,6 @@ function parovaciObrazovka(zprava = '') {
       <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
       <button class="btn btn--primary" type="submit">${tr('Spárovat')}</button>
-      <small>${tr('Data zůstávají na {0}. Telefon si je nikam neukládá a bez tohohle kódu se k nim nedostane.', tvemPocitaci())}</small>
     </form>
   </main>`;
   const form = document.querySelector('.pair-box');

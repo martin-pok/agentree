@@ -56,7 +56,7 @@
   <div class="wrap unit-head">
     <p class="kicker">Mac</p>
     <h2 id="mac-heading"><span class="radek"><span>Four steps, once.</span></span></h2>
-    <p class="lead">The beta isn’t signed by Apple yet, so macOS blocks it the first time. You allow it once in System Settings, and from then on it opens with a double-click.</p>
+    <p class="lead">You allow it once in System Settings; from then on it opens with a double-click.</p>
   </div>
 
   <ol class="wrap steps steps--ctyri">
@@ -73,10 +73,7 @@
   </ol>
 
   <div class="wrap instalace-dalsi">
-    <div class="gatekeeper">
-      <p><b>Why the step in Settings?</b> An Apple developer signature costs money every year and the beta doesn’t have one yet. Without it, macOS won’t open the app on its own and says it can’t verify it — that’s not a malware finding, just a missing stamp. You allow it once; when we add the signature, this step goes away.</p>
-      <p class="small muted">These steps follow <a href="https://support.apple.com/guide/mac-help/mh40616/mac">Apple’s help article “Open a Mac app from an unknown developer”</a> for macOS 15 and 26. The <b>Open Anyway</b> button stays in Settings for about an hour after you try to open the app.</p>
-    </div>
+    <p class="small muted">The <b>Open Anyway</b> button stays in Settings for about an hour after you try to open the app. Per <a href="https://support.apple.com/guide/mac-help/mh40616/mac">Apple’s help</a>.</p>
 
     <div class="prikaz" id="jednim-prikazem">
       <h3>For advanced users: install with one command</h3>
@@ -85,7 +82,7 @@
         <div class="prikaz-pole"><code class="prikaz-posun" tabindex="0"><span class="prikaz-vyzva" aria-hidden="true">$ </span>curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash</code></div>
         <button class="btn prikaz-kopie" type="button" data-kopirovat="curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash">Copy</button>
       </div>
-      <p class="small">Files downloaded in Terminal don’t get the macOS quarantine flag, so Gatekeeper doesn’t ask; instead of Apple’s stamp, the script checks the package’s <span class="bez-zlomu">SHA-256</span> digest against GitHub and installs nothing if they differ. It moves the old version to the Trash. <a href="/install.sh">Read the script</a></p>
+      <p class="small">The script checks the package’s <span class="bez-zlomu">SHA-256</span> digest against GitHub and installs nothing if they differ. It moves the old version to the Trash. <a href="/install.sh">Read the script</a></p>
     </div>
   </div>
 </section>
@@ -94,7 +91,7 @@
   <div class="wrap unit-head">
     <p class="kicker">Windows 10 and 11 · beta</p>
     <h2 id="windows-heading"><span class="radek"><span>A trial version for Windows.</span></span></h2>
-    <p class="lead">It’s built with every release, but we haven’t tried it on a real PC yet. We’d love to hear how it went.</p>
+    <p class="lead">Three steps, once.</p>
     <a class="btn btn--lg" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
   </div>
 
@@ -106,7 +103,7 @@
 
   <div class="wrap instalace-dalsi">
     <div class="gatekeeper">
-      <p><b>What Windows doesn’t have yet.</b> The core of the app – agent overview, projects, statistics and spend – passes the automated tests on Windows. It can’t yet store keys in the system password store, open a conversation directly in its app, continue in a terminal or start at sign-in.</p>
+      <p><b>What Windows doesn’t have yet.</b> The app can’t yet store keys in the system password store, open a conversation directly in its app, continue in a terminal or start at sign-in.</p>
       <p class="small muted">The window needs the WebView2 runtime, which Windows 11 includes and Edge brings to Windows 10. The SmartScreen warning is described in <a href="https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation">Microsoft’s documentation</a>.</p>
     </div>
   </div>
@@ -133,9 +130,7 @@
         <li>Click <b>Load unpacked</b> and choose the copied folder (on a Mac, press <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> in the dialog and paste the path).</li>
         <li>That’s it. The extension pairs with the app on its own.</li>
       </ol>
-      <p class="small muted">The extension is still waiting for approval in the Chrome Web Store, hence the manual route. Once Google publishes it, a single click will replace it.</p>
       <!-- /rozsireni:rucne -->
-      <p class="small muted">It tells the app on your computer only whether an agent is working, how many messages a conversation has and which model is answering. It never sends message text or conversation titles.</p>
     </div>
   </div>
 </section>

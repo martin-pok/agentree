@@ -9,7 +9,8 @@ import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 
 // `otevrene` = rozbalené rozpady po modelech (klíč měsíc|služba). Drží se mimo DOM, aby živá
 // aktualizace útraty rozbalený řádek nezavřela.
-const v = { el: null, onClick: null, otevrene: new Set() };
+// `rozpocty` = otevřít dialog rozpočtů hned po vstupu (odkaz „Nastavit rozpočet“ z Přehledu).
+const v = { el: null, onClick: null, otevrene: new Set(), rozpocty: false };
 const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A3E', api: '#22A38C' };
 
 // Dokoupení kreditů rozpoznává server ze všech odečtů zůstatku (src/credits.js) – v prohlížeči
@@ -120,8 +121,9 @@ export function plansHtml(sp) {
   </section>`;
 }
 
-function mount(el) {
+function mount(el, _params, query) {
   v.el = el;
+  v.rozpocty = query?.get('rozpocty') === '1';
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <span class="toolbar-title" data-region="month"></span>
@@ -202,9 +204,16 @@ function update() {
       <div><span class="eyebrow">${tr('Aktualizováno')}</span><span class="val val--soft">${sp.billing?.at ? `<span data-ago="${sp.billing.at}">${esc(rel(sp.billing.at))}</span>` : '–'}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
-    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni">${tr('Propojit API')}</a>`);
+    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
+
+  if (v.rozpocty && billingConnected) {
+    v.rozpocty = false;
+    // Adresa se vrátí na čistou Útratu, aby návrat zpět nebo obnovení stránky dialog neotevřely znovu.
+    history.replaceState(null, '', '#/utrata');
+    openBudgets(el.querySelector('.toolbar [data-action="budgets"]'));
+  }
 
   fill(el, 'budgets', sp.budgets.length
     ? `<div class="budget-cards">${sp.budgets.map((b) => {
@@ -389,6 +398,10 @@ export default {
   title: tr('Útrata'),
   mount,
   update,
+  query(q) {
+    v.rozpocty = q?.get('rozpocty') === '1';
+    update();
+  },
   unmount: () => {
     if (v.el && v.onClick) v.el.removeEventListener('click', v.onClick);
     v.el = null;
