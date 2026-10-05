@@ -503,3 +503,16 @@ test('filtry na Agentech drží jednu mřížku: popisky ve sloupci, řádky 56 
   assert.doesNotMatch(view, /chips-hint/);
   assert.match(view, /data-project-drop="\$\{esc\(p\.id\)\}" title="\$\{tahni\}"/);
 });
+
+// Uživatel po kliknutí na obnovu viděl šedé kolečko s přeškrtnutím (kurzor zakázaného tlačítka)
+// a tlačítko poskočilo. Obnova se má ukázat jen klidnou otáčkou ikony.
+test('ruční obnova netlumí tlačítko a ikona se plynule dotočí', async () => {
+  const app = await zdroj('public/js/app.js');
+  assert.doesNotMatch(app, /getElementById\('refresh-app'\)[\s\S]{0,120}\.disabled = true/, 'tlačítko obnovy se nevypíná');
+  assert.match(app, /setAttribute\('aria-busy', 'true'\)/, 'průběh nese aria-busy');
+  assert.match(app, /OBNOVA_MIN_MS/, 'krátká obnova neproblikne');
+  assert.match(app, /animationiteration/, 'otáčka se dotočí do klidu');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.icon-btn\.is-refreshing \.icon \{ animation: obnova-otacka/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\.icon-btn\.is-refreshing \.icon \{ animation: none; opacity: \.45; \}/);
+});

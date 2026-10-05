@@ -538,6 +538,36 @@ const palette = createPalette(
   },
 );
 
+/* ---------- Ruční obnova ---------- */
+
+// Tlačítko se během obnovy nevypíná: `disabled` by ukázal kurzor zákazu a tlačítko by poskočilo
+// (hover posun platí jen pro povolená tlačítka). Místo toho nese aria-busy a ikona se plynule točí.
+// Krátká obnova se točí aspoň jednu otáčku, aby jen neproblikla, a na konci otáčku dotočí do klidu.
+const OBNOVA_MIN_MS = 700;
+async function rucniObnova(button) {
+  if (!button || button.getAttribute('aria-busy') === 'true') return;
+  button.setAttribute('aria-busy', 'true');
+  button.classList.add('is-refreshing');
+  const zacatek = performance.now();
+  try {
+    await api.rescan();
+    // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
+    // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
+    await obnovStav(tr('ruční obnova'), { force: true });
+  } catch (err) {
+    toast(err.message, { tone: 'err' });
+  } finally {
+    setTimeout(() => dotocObnovu(button), Math.max(0, OBNOVA_MIN_MS - (performance.now() - zacatek)));
+  }
+}
+function dotocObnovu(button) {
+  const hotovo = () => { button.classList.remove('is-refreshing'); button.removeAttribute('aria-busy'); };
+  const ikona = button.querySelector('.icon');
+  if (!ikona?.getAnimations?.().length) { hotovo(); return; }
+  ikona.addEventListener('animationiteration', hotovo, { once: true });
+  setTimeout(hotovo, 1200);
+}
+
 /* ---------- Události ---------- */
 
 document.addEventListener('click', async (e) => {
@@ -555,19 +585,7 @@ document.addEventListener('click', async (e) => {
   }
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
   if (e.target.closest('#refresh-app')) {
-    const button = document.getElementById('refresh-app');
-    if (button.disabled) return;
-    button.disabled = true;
-    try {
-      await api.rescan();
-      // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
-      // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
-      await obnovStav(tr('ruční obnova'), { force: true });
-    } catch (err) {
-      toast(err.message, { tone: 'err' });
-    } finally {
-      button.disabled = false;
-    }
+    void rucniObnova(document.getElementById('refresh-app'));
     return;
   }
   const updateAction = e.target.closest('[data-update-action]');
