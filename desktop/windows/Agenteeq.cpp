@@ -382,6 +382,31 @@ static const wchar_t* QA_STAV_OKNA = AGENTEEQ_QA_STAV L"('navigace')";
 static const UINT_PTR CASOVAC_QA_STAV = 4;
 
 // Text do JSON řetězce pro hlášení kontroly.
+// Klíč okna – protějšek `localKey` ve Swift verzi (desktop/Agenteeq.swift). Server ho dostane
+// v AGENTEEQ_LOCAL_KEY a bez něj nevydá rozhraní ani data nikomu jinému na tomhle počítači
+// (jinému účtu Windows, programu v sandboxu). Okno ho předá jednou v adrese (/?k=…), server ho
+// vymění za cookie HttpOnly; SameSite=Strict a z adresy ho smaže (src/http.js#localKeyGate).
+// Dvakrát GUID verze 4 z CoCreateGuid = 244 náhodných bitů ze systémového generátoru, 64 znaků hex.
+static std::wstring NovyKlicOkna() {
+  std::wstring klic;
+  for (int i = 0; i < 2; ++i) {
+    GUID g = {};
+    if (FAILED(CoCreateGuid(&g))) return L"";
+    wchar_t cast[33] = {};
+    swprintf_s(cast, L"%08lx%04hx%04hx%02x%02x%02x%02x%02x%02x%02x%02x",
+               g.Data1, g.Data2, g.Data3, g.Data4[0], g.Data4[1], g.Data4[2], g.Data4[3],
+               g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
+    klic += cast;
+  }
+  return klic;
+}
+
+// Adresa bez klíče okna – do hlášení kontroly (QA) se klíč nikdy nezapíše.
+static std::wstring bezKlice(const std::wstring& adresa) {
+  const size_t k = adresa.find(L"?k=");
+  return k == std::wstring::npos ? adresa : adresa.substr(0, k);
+}
+
 static std::wstring jsonText(const std::wstring& s) {
   std::wstring out;
   for (wchar_t c : s) {
@@ -417,6 +442,7 @@ class Aplikace {
   std::wstring zbytek_;            // nedočtený konec řádku mezi dvěma čteními
   std::wstring chyba_;             // poslední hlášená chyba serveru
   std::wstring adresa_;            // http://127.0.0.1:<port>
+  std::wstring klicOkna_;          // klíč okna pro celý běh pláště (i přes restart serveru)
   int port_ = 0;
   int pokusy_ = 0;
   int generace_ = 0;
@@ -820,6 +846,14 @@ void Aplikace::SpustServer() {
     return;
   }
 
+  // Bez klíče okna server nespouštíme: rozhraní by bylo otevřené každému programu na počítači.
+  if (klicOkna_.empty()) klicOkna_ = NovyKlicOkna();
+  if (klicOkna_.empty()) {
+    chyba_ = L"Aplikaci se nepodařilo bezpečně spustit (klíč okna). Zkus to znovu.";
+    UkazStranku(chyba_, true);
+    return;
+  }
+
   SECURITY_ATTRIBUTES sa = {sizeof(sa), nullptr, TRUE};
   HANDLE vystupZapis = nullptr, vstupCteni = nullptr;
   if (!CreatePipe(&vystupDitete_, &vystupZapis, &sa, 0) ||
@@ -836,7 +870,7 @@ void Aplikace::SpustServer() {
   std::wstring prostredi;
   {
     wchar_t* puvodni = GetEnvironmentStringsW();
-    const wchar_t* nase[] = {L"AGENTEEQ_NATIVE_NOTIFY=", L"AGENTEEQ_QUIET=", L"AGENTEEQ_DESKTOP=", L"AGENTEEQ_PARENT_PID="};
+    const wchar_t* nase[] = {L"AGENTEEQ_NATIVE_NOTIFY=", L"AGENTEEQ_QUIET=", L"AGENTEEQ_DESKTOP=", L"AGENTEEQ_PARENT_PID=", L"AGENTEEQ_LOCAL_KEY="};
     for (wchar_t* p = puvodni; p && *p; p += wcslen(p) + 1) {
       bool prepsat = false;
       for (const wchar_t* klic : nase) if (_wcsnicmp(p, klic, wcslen(klic)) == 0) prepsat = true;
@@ -850,6 +884,7 @@ void Aplikace::SpustServer() {
     prostredi += L"AGENTEEQ_QUIET=1"; prostredi.push_back(L'\0');
     prostredi += L"AGENTEEQ_DESKTOP=1"; prostredi.push_back(L'\0');
     prostredi += std::wstring(L"AGENTEEQ_PARENT_PID=") + pid; prostredi.push_back(L'\0');
+    prostredi += std::wstring(L"AGENTEEQ_LOCAL_KEY=") + klicOkna_; prostredi.push_back(L'\0');
     prostredi.push_back(L'\0');
   }
 
@@ -939,7 +974,8 @@ void Aplikace::ZpracujRadek(const std::wstring& radek) {
     port_ = zprava.cisloPod(L"port");
     if (port_ > 0 && web_) {
       adresa_ = L"http://127.0.0.1:" + std::to_wstring(port_);
-      web_->Navigate(adresa_.c_str());
+      // Klíč okna jde do adresy jen při prvním načtení; server ho vymění za cookie.
+      web_->Navigate((adresa_ + L"/?k=" + klicOkna_).c_str());
       ZapisQa(L"{\"udalost\":\"server\",\"port\":" + std::to_wstring(port_) + L"}");
       KillTimer(okno_, 2);
       // Když server vydrží minutu, počítadlo restartů se vynuluje – jinak by
@@ -1104,7 +1140,7 @@ void Aplikace::PoVytvoreniWebView() {
               std::wstring adresa;
               if (SUCCEEDED(odesilatel->get_Source(&zdroj)) && zdroj) adresa = zdroj.get();
               ZapisQa(L"{\"udalost\":\"navigace\",\"ok\":" + std::wstring(uspech ? L"true" : L"false") +
-                      L",\"stav\":" + std::to_wstring(static_cast<int>(stav)) + L",\"adresa\":\"" + jsonText(adresa.substr(0, 80)) + L"\"}");
+                      L",\"stav\":" + std::to_wstring(static_cast<int>(stav)) + L",\"adresa\":\"" + jsonText(bezKlice(adresa).substr(0, 80)) + L"\"}");
               if (!adresa_.empty() && adresa.rfind(adresa_, 0) == 0) SetTimer(okno_, CASOVAC_QA_STAV, 5000, nullptr);
               return S_OK;
             })

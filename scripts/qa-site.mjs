@@ -3,10 +3,11 @@ import path from 'node:path';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { buildSite } from './build-site.mjs';
+import { buildSite, hlavickyWebu } from './build-site.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { out } = await buildSite();
+const hlavickyPro = await hlavickyWebu();
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webp': 'image/webp', '.xml': 'application/xml', '.txt': 'text/plain' };
 const server = http.createServer(async (req, res) => {
   const rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/+/, '') || 'index.html';
@@ -15,7 +16,8 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(path.resolve(out) + path.sep)) break;
     try {
       const body = await fs.readFile(file);
-      res.writeHead(200, { 'Content-Type': `${types[path.extname(file)] || 'application/octet-stream'}; charset=utf-8` }).end(body);
+      // Stejné hlavičky jako na hostingu (vercel.json): CSP a spol. se zkouší na skutečných stránkách.
+      res.writeHead(200, { 'Content-Type': `${types[path.extname(file)] || 'application/octet-stream'}; charset=utf-8`, ...hlavickyPro(new URL(req.url, 'http://localhost').pathname) }).end(body);
       return;
     } catch { /* Try directory index before sending headers. */ }
   }
@@ -48,6 +50,7 @@ try {
           const cizi = [];
           await jenMistni(page, cizi);
           page.on('pageerror', e => errors.push(e.message));
+          page.on('console', m => { if (m.type() === 'error' || /Content.Security.Policy|Permissions.Policy/i.test(m.text())) errors.push(m.text()); });
           page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
           await page.goto(url + (stranka === '/' ? '' : stranka));
           await page.evaluate(() => document.fonts.ready);
@@ -253,6 +256,25 @@ try {
         }
       }
 
+      // Bezpečnostní hlavičky webu (vercel.json) nic nerozbijí: zásady soukromí, rozhraní na /app,
+      // přehled účtu i ukázka se vykreslí bez porušení CSP a bez chyb, a hlavičky opravdu přišly.
+      for (const cesta of ['/soukromi', '/en/privacy', '/app', '/app?ucet', '/app?ukazka']) {
+        const p = await browser.newPage({ viewport: { width: 375, height: 900 } });
+        const chyby = [];
+        await jenMistni(p, []);
+        p.on('pageerror', (e) => chyby.push(e.message));
+        p.on('console', (m) => { if (/Content.Security.Policy|Refused to|Permissions.Policy/i.test(m.text())) chyby.push(m.text()); });
+        const odpoved = await p.goto(url + cesta);
+        const h = odpoved.headers();
+        assert.match(h['content-security-policy'] || '', /frame-ancestors 'none'/, `${engine} ${cesta}: chybí CSP`);
+        assert.equal(h['x-content-type-options'], 'nosniff', `${engine} ${cesta}: chybí nosniff`);
+        assert.match(h['strict-transport-security'] || '', /max-age=\d+/, `${engine} ${cesta}: chybí HSTS`);
+        await p.waitForSelector('main, .cloud, .pair, .sidebar, h1');
+        await p.waitForTimeout(400);
+        assert.deepEqual(chyby, [], `${engine} ${cesta}: porušení CSP nebo chyba stránky`);
+        await p.close();
+      }
+
       const staticPage = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 375, height: 900 } });
       await jenMistni(staticPage, []);
       await staticPage.goto(url);
@@ -283,11 +305,13 @@ try {
       assert.deepEqual(await motionPage.evaluate(() => document.getAnimations().filter(a => a.effect?.getTiming?.().iterations === Infinity).map(a => a.animationName || a.transitionProperty)), [], 'Nekonečná animace');
       // Animace řízené posouváním (ViewTimeline) neběží samy – stojí, dokud se stránka nehne –, takže
       // se do „nic nesmí běžet“ nepočítají. Hlídá se jen to, co běží podle hodin.
-      const podleHodin = () => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline));
+      // Funkce, ne řetězec: web má CSP bez 'unsafe-eval' (vercel.json), takže výraz zapsaný řetězcem
+      // by prohlížeč odmítl vyhodnotit – stejně jako by odmítl jakýkoli eval na produkci.
+      const podleHodin = () => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length;
       // Nástupní animace musí dojet, než začneme klikat. Pod zátěží se Playwrightu
       // prvek jeví ustálený i uprostřed animace (dva snímky se stejným rámečkem),
       // takže bez tohoto čekání test chytal doběh nástupu místo skutečné smyčky.
-      await motionPage.waitForFunction(`(${podleHodin})().length === 0`, null, { timeout: 5000 });
+      await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 5000 });
       const button = motionPage.locator('.hero .btn');
       await button.hover();
       // Najetí zvedá, stisk stlačuje. Dvě rozlišitelné odezvy, ne jedna pro obojí.
@@ -303,8 +327,8 @@ try {
       });
       await motionPage.mouse.up();
       await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
-      await motionPage.waitForFunction(`(${podleHodin})().length === 0`, null, { timeout: 4000 });
-      assert.equal(await motionPage.evaluate(`(${podleHodin})().length`), 0, 'No perpetual decorative animation');
+      await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
+      assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
     } finally { await browser.close(); }
   }

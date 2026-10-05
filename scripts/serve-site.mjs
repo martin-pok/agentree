@@ -2,11 +2,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
-import { buildSite } from './build-site.mjs';
+import { buildSite, hlavickyWebu } from './build-site.mjs';
 
 const TYPY = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.xml': 'application/xml', '.txt': 'text/plain', '.sh': 'text/plain', '.ico': 'image/x-icon' };
 const { out } = await buildSite();
 const koren = path.resolve(out);
+// Stejné hlavičky jako na hostingu (vercel.json), aby náhled odhalil i porušení CSP.
+const hlavickyPro = await hlavickyWebu();
 
 const server = http.createServer(async (req, res) => {
   const cesta = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/+/, '') || 'index.html';
@@ -15,7 +17,7 @@ const server = http.createServer(async (req, res) => {
     if (soubor !== koren && !soubor.startsWith(koren + path.sep)) break;
     try {
       const telo = await fs.readFile(soubor);
-      res.writeHead(200, { 'Content-Type': `${TYPY[path.extname(soubor)] || 'application/octet-stream'}; charset=utf-8`, 'Cache-Control': 'no-store' }).end(telo);
+      res.writeHead(200, { 'Content-Type': `${TYPY[path.extname(soubor)] || 'application/octet-stream'}; charset=utf-8`, 'Cache-Control': 'no-store', ...hlavickyPro(new URL(req.url, 'http://localhost').pathname) }).end(telo);
       return;
     } catch { /* Zkus ještě adresářový index, než pošleš hlavičky. */ }
   }

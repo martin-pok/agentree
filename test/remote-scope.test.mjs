@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { remoteScope } from '../src/remote-scope.js';
 import { POCITAC } from '../src/platform.js';
 
-test('telefon smí číst stav a přepisy', () => {
-  for (const p of ['/api/state', '/api/sessions/abc', '/api/sessions/abc/transcript', '/api/alerts', '/api/projects', '/api/stream', '/api/skills']) {
+test('telefon smí číst stav a souhrny (celý přepis ne – test/vzdaleny-prepis.test.mjs)', () => {
+  for (const p of ['/api/state', '/api/sessions/abc', '/api/alerts', '/api/projects', '/api/stream', '/api/skills']) {
     assert.equal(remoteScope('GET', p).ok, true, p);
   }
   assert.equal(remoteScope('GET', '/app.js').ok, true, 'statické soubory');

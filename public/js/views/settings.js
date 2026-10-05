@@ -417,9 +417,9 @@ function mount(el) {
       } else if (a.dataset.action === 'ucet-sync-ted') {
         a.disabled = true;
         try {
+          // Server vrací úspěch jen tehdy, když souhrny opravdu odešly; jinak chybu s důvodem.
           state.ucet = (await api.ucetSynchronizovat()).ucet;
-          if (state.ucet.sync?.chyba) toast(state.ucet.sync.chyba, { tone: 'err' });
-          else toast(tr('Souhrny jsou v účtu aktuální.'));
+          toast(tr('Souhrny jsou v účtu aktuální.'));
         } catch (err) {
           toast(err.message, { tone: 'err' });
         } finally { a.disabled = false; }
@@ -621,7 +621,9 @@ async function toggleSetting(sw) {
       state.ucet = (await api.ucetSynchronizace(next)).ucet;
       v.nahled = '';
       if (v.folds.nahled) api.ucetNahled().then((r) => { v.nahled = r.nahled || ''; update(); }).catch(() => {});
-      toast(next ? tr('Souhrny se synchronizují do účtu.') : tr('Synchronizace je vypnutá a souhrny jsou z účtu smazané.'));
+      // Zapnuto je, ale první odeslání se nepovedlo: říct to hned, ne hlásit úspěch.
+      if (next && state.ucet.sync?.chyba) toast(state.ucet.sync.chyba, { tone: 'err' });
+      else toast(next ? tr('Souhrny se synchronizují do účtu.') : tr('Synchronizace je vypnutá a souhrny jsou z účtu smazané.'));
     } catch (err) {
       sw.setAttribute('aria-checked', String(!next));
       toast(err.message, { tone: 'err' });
@@ -727,7 +729,7 @@ function syncBlock(u) {
   // klidně „pozastaveno“, ne potřetí táž chyba.
   const stav = !s.zapnuto ? `<span class="acct-sync-state">${tr('Vypnutá – nic se neposílá.')}</span>`
     : !prihlaseno ? `<span class="acct-sync-state">${tr('Pozastaveno do obnovení spojení.')}</span>`
-    : s.chyba ? `<span class="acct-sync-state is-error">${esc(s.chyba)}</span>`
+    : s.chyba ? `<span class="acct-sync-state is-error"><span>${esc(s.chyba)}${s.posledni ? ` ${tr('Naposledy odesláno')} <span class="nowrap" data-ago="${s.posledni}">${rel(s.posledni)}</span>.` : ''}</span></span>`
     : s.posledni ? `<span class="acct-sync-state is-ok"><i aria-hidden="true"></i><span>${tr('Synchronizováno')} <span class="nowrap" data-ago="${s.posledni}">${rel(s.posledni)}</span></span></span>`
     : `<span class="acct-sync-state">${tr('Odesílám první souhrny…')}</span>`;
   const nahled = v.nahled && typeof v.nahled === 'object'

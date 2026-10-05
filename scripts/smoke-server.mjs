@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const kroky = [];
@@ -22,6 +23,7 @@ const data = path.join(domov, 'data');
 console.log(`Agenteeq – smoke na ${process.platform} (${process.arch}), Node ${process.versions.node}`);
 console.log(`Dočasný domov: ${domov}`);
 
+const KLIC = crypto.randomBytes(32).toString('base64url');
 const dite = spawn(process.execPath, [path.join(root, 'bin', 'agenteeq.mjs')], {
   cwd: root,
   env: {
@@ -30,6 +32,8 @@ const dite = spawn(process.execPath, [path.join(root, 'bin', 'agenteeq.mjs')], {
     AGENTEEQ_SOURCE_HOME: domov,
     AGENTEEQ_HOME: data,
     AGENTEEQ_CLOUD: '0',
+    // Klíč okna (src/klic-okna.js): známý předem, aby se dal ověřit vstup s ním i bez něj.
+    AGENTEEQ_LOCAL_KEY: KLIC,
     // Ollama na portu 9 (discard) – nikdy nesahat na skutečnou instanci na tomhle počítači.
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
   },
@@ -72,7 +76,7 @@ try {
 }
 
 const ziskej = async (cesta, { hlavicky = {} } = {}) => {
-  const r = await fetch(url + cesta, { headers: hlavicky, signal: AbortSignal.timeout(10000) });
+  const r = await fetch(url + cesta, { headers: { 'X-Agenteeq-Key': KLIC, ...hlavicky }, signal: AbortSignal.timeout(10000) });
   const text = await r.text();
   let telo = null;
   try { telo = JSON.parse(text); } catch { /* HTML nebo něco jiného */ }
@@ -82,6 +86,14 @@ const ziskej = async (cesta, { hlavicky = {} } = {}) => {
 try {
   const zdravi = await ziskej('/api/health');
   zapis(zdravi.status === 200 && zdravi.telo?.ok === true, `/api/health odpovídá (verze ${zdravi.telo?.version ?? '?'})`);
+
+  // Bez klíče okna nic: ani rozhraní, ani data. Adresa s klíčem ho vymění za cookie HttpOnly.
+  const bezKlice = await fetch(`${url}/api/state`, { signal: AbortSignal.timeout(10000) });
+  const stranaBezKlice = await fetch(`${url}/`, { signal: AbortSignal.timeout(10000) });
+  zapis(bezKlice.status === 403 && stranaBezKlice.status === 403, 'bez klíče okna server data ani rozhraní nevydá');
+  const sKlicem = await fetch(`${url}/?k=${KLIC}`, { redirect: 'manual', signal: AbortSignal.timeout(10000) });
+  const cookie = sKlicem.headers.get('set-cookie') || '';
+  zapis(sKlicem.status === 302 && /HttpOnly/.test(cookie) && /SameSite=Strict/.test(cookie) && sKlicem.headers.get('location') === '/', 'odkaz s klíčem nastaví cookie HttpOnly; SameSite=Strict a klíč z adresy zmizí');
 
   const rozhrani = await ziskej('/');
   zapis(rozhrani.status === 200 && rozhrani.text.includes('<aside class="sidebar">'), 'rozhraní se vydá na /');
@@ -105,7 +117,7 @@ try {
   zapis(uteceni.status !== 200 || !uteceni.text.includes('"name"'), 'cesta ven z public/ je zamítnutá');
 
   // Změna bez hlavičky X-Agenteeq neprojde (ochrana proti CSRF).
-  const bezHlavicky = await fetch(`${url}/api/alerts/clear`, { method: 'POST', signal: AbortSignal.timeout(5000) });
+  const bezHlavicky = await fetch(`${url}/api/alerts/clear`, { method: 'POST', headers: { 'X-Agenteeq-Key': KLIC }, signal: AbortSignal.timeout(5000) });
   zapis(bezHlavicky.status === 403, 'změna bez hlavičky X-Agenteeq je zamítnutá');
 } catch (err) {
   zapis(false, `dotaz selhal – ${err.message}`);

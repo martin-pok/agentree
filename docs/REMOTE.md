@@ -107,6 +107,11 @@ to, jak se **tvůj vlastní telefon** dostane na **tvůj vlastní Mac**. Cloudfl
 zašifrovaný HTTPS provoz procházet jejich sítí (ne jeho obsah, pokud HTTPS funguje správně –
 ale vidí, že provoz existuje a kdy), Tailscale nevidí ani to.
 
+I vlastní telefon dostane jen **souhrny**: stav agentů, názvy, poslední zadání, aktivitu, tokeny,
+limity a útratu. Celý přepis konverzace a výstup agentů spuštěných na pozadí zůstávají jen na
+hostiteli (od 5. 10. 2026, `src/remote-scope.js`) – ztracený nebo ukradený spárovaný telefon
+tak obsah práce nevyzradí.
+
 ## Co chybí do instalovatelné PWA venku
 
 I s tunelem funguje aplikace v prohlížeči normálně. Instalace jako PWA (ikona na ploše,

@@ -9,7 +9,7 @@ import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
-import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
+import { tr, LOCALE, tomtoPocitaci, tvemPocitaci } from '../i18n.js';
 import { modifikator, MOD } from '../system.js';
 
 const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
@@ -85,6 +85,8 @@ async function load() {
     const r = await api.session(id);
     if (v.id !== id) return;
     t.entries = new Map(r.transcript.map((e) => [e.seq, e]));
+    // Spárovaný telefon dostane jen souhrn; celý přepis zůstává na hostiteli (src/remote-scope.js).
+    t.jenNaHostiteli = r.prepisJenNaHostiteli === true;
     t.loaded = true;
     t.error = '';
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
@@ -248,7 +250,7 @@ function renderTranscript(el, t) {
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
   const session = state.sessions.get(v.id);
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : t.jenNaHostiteli ? `<p class="muted">${tr('Celý přepis je kvůli soukromí vidět jen na {0}. Tady máš souhrn: stav, poslední zadání a aktivitu.', tvemPocitaci())}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;

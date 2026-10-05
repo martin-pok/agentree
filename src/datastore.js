@@ -74,7 +74,9 @@ function normalizeCloud(c) {
   for (const [u, dev] of Object.entries(c?.devices && typeof c.devices === 'object' ? c.devices : {}).slice(0, 10)) {
     if (UUID.test(u) && UUID.test(String(dev))) devices[u] = String(dev);
   }
-  return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, devices };
+  // volbaCeka: zapnutí z tohoto Macu, které účet ještě nemá (src/cloud-sync.js). Musí přežít restart –
+  // jinak by po něm načtení volby z účtu (kde je pořád „vypnuto“) synchronizaci potichu vypnulo.
+  return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, volbaCeka: c?.volbaCeka === true, devices };
 }
 
 // Nástroje, které detekce na tomto Macu kdy zachytila. Ukládá se jen identifikátor z katalogu,

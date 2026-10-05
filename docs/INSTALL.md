@@ -57,7 +57,10 @@ Pak Agenteeq spusť a otevři:
 agenteeq --open
 ```
 
-Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede napojením.
+Dashboard běží na <http://127.0.0.1:4620>. Je chráněný klíčem, který vzniká při každém spuštění: otevírej ho
+přes `agenteeq --open` (i když už Agenteeq běží) nebo odkazem, který se po startu vypíše do Terminálu.
+Adresa bez klíče jen řekne, že Agenteeq běží (`docs/SECURITY.md` → „Klíč okna“). Průvodce v Přehledu tě
+provede napojením.
 
 ## Napojení agentů
 

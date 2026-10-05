@@ -92,6 +92,9 @@ export default {
   "Chyba {0}": "Error {0}",
   "Pro synchronizaci se nejdřív přihlas.": "Sign in first to sync.",
   "(id {0} v účtu)": "(ID of {0} in the account)",
+  "Server účtů nevrátil id zařízení.": "The account server didn’t return a device ID.",
+  "{0} se nepodařilo přidat do účtu: {1}": "{0} couldn’t be added to the account: {1}",
+  "Přihlášení k účtu se teď nepodařilo ověřit. Souhrny se pošlou, až bude spojení.": "Your account sign-in couldn’t be verified right now. Summaries will be sent once there’s a connection.",
 
   // src/connectors/claude-code.js
   "Limit 5 h": "5-hour limit",
@@ -334,6 +337,9 @@ export default {
   "Aktualizační balíček se nepodařilo stáhnout.": "Could not download the update package.",
 
   // src/http.js
+  "Synchronizace je vypnutá – nic se neposlalo.": "Sync is off – nothing was sent.",
+  "Nejsi přihlášený k účtu – nic se neposlalo.": "You’re not signed in to your account – nothing was sent.",
+  "Souhrny se nepodařilo odeslat.": "Summaries couldn’t be sent.",
   "Chybí klíč okna aplikace.": "The app window key is missing.",
   "Přístup přes Tailscale je vypnutý.": "Access via Tailscale is turned off.",
   "Přístup z telefonu je vypnutý.": "Phone access is turned off.",
@@ -568,6 +574,8 @@ export default {
   "Neplatný výběr konverzací.": "Invalid conversation selection.",
 
   // src/remote-scope.js
+  "Celý přepis konverzace je vidět jen {0}. Telefon ukazuje souhrn.": "The full conversation transcript is only visible {0}. Your phone shows the summary.",
+  "Výstup agenta je vidět jen {0}. Telefon ukazuje souhrn.": "The agent’s output is only visible {0}. Your phone shows the summary.",
   "Procházet disk lze jen {0}.": "The disk can only be browsed {0}.",
   "Tuhle akci lze provést jen {0}. Telefon slouží ke čtení stavu.": "This action is only possible {0}. The phone is for reading status.",
 
