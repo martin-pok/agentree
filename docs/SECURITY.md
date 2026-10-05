@@ -64,14 +64,54 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 6 | nízká–střední | záloha nastavení Claude Code s právy 0644 | **opraveno** (0600, dřívější zúženy) |
 | 7 | nízká–střední | `/api/extension/pair-code` vytvoří i telefon nebo proxy; rozšíření sdílí token s hooky a ten se neotáčí | **opraveno** (kód jen z Macu; od 0.25.0 vlastní token pro každou instalaci, vázaný na její `Origin`, otočí se novým spárováním). Zůstává: token hooků se neotáčí a samostatné „odpojit rozšíření“ zatím není – odpojí ho nové spárování nebo 5 novějších instalací |
 | 1 | **vysoká** | spárovaný telefon smí i spouštět agenty s libovolnou složkou, instalovat hooky, měnit klíče a číst přepisy; LAN je prostý HTTP a cookie nemá `Secure` | **opraveno v 0.18.0** (rozsah jen pro čtení, `src/remote-scope.js`). Zůstává: LAN je prostý HTTP – přístup z telefonu nezapínej v cizí síti a používej Tailscale |
-| 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **opraveno v 0.18.0 pro okno aplikace** (klíč pro každé spuštění). Spuštění z terminálu (`agenteeq`) klíč zatím nepoužívá – tam platí původní ochrana (Host, Origin, X-Agenteeq) |
+| 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **opraveno v 0.18.0 pro okno aplikace na Macu, 5. 10. 2026 i pro plášť ve Windows a spuštění z Terminálu** (klíč okna – viz „Klíč okna“ níž) |
 | 8 | nízká | ingest token je v argumentech `curl` v hooku | otevřené (čitelný jen pro téhož uživatele) |
 | 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | **opraveno v 0.18.1** (přebití voleb na příkazové řádce, test předvádí útok) |
 | 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | otevřené, řeší se spolu se získáním Developer ID |
-| 12–14, 16–18 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline`, kontrola odesílatele zpráv v rozšíření, hlavičky webu | otevřené |
+| 12–14, 16–17 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline` (styly), kontrola odesílatele zpráv v rozšíření | otevřené |
+| 18 | info | hlavičky webu | **opraveno 5. 10. 2026** (`vercel.json`, viz „Hlavičky webu“) |
 | 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |
 
 Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF, kontrola `Origin`/`Host`, tokenové cesty s `timingSafeEqual`, limity těla a SSE, procházení statických souborů, XSS (75 zkušebních řetězců v 8 vstupech: všude jen text), oprávnění datových souborů, WKWebView jen na 127.0.0.1, převzetí portu jen po ověření podpisu skriptu.
+
+## Klíč okna (desktop na Macu i ve Windows, spuštění z Terminálu)
+
+Server poslouchá na `127.0.0.1`, jenže smyčku sdílí všechny programy a všechny účty počítače.
+Bez tajemství by si přehled, přepisy i akce mohl vzít jiný účet na tomtéž počítači nebo program
+v sandboxu, který smí na síť, ale ne do souborů uživatele. Proto server s klíčem okna
+(`config.localKey`, `AGENTEEQ_LOCAL_KEY`) bez něj vydá jen `/api/health` a cesty s vlastním
+tajemstvím (hooky, rozšíření – ty klíč nepotřebují a fungují beze změny).
+
+| Kdo spouští server | Odkud klíč | Jak se dostane do prohlížeče |
+|---|---|---|
+| Aplikace na Macu (`desktop/Agenteeq.swift`) | náhodný pro každé spuštění | okno načte `/?k=…` |
+| Aplikace ve Windows (`desktop/windows/Agenteeq.cpp`) | 2× `CoCreateGuid` pro každé spuštění pláště | okno načte `/?k=…`; do hlášení QA se adresa zapisuje bez klíče |
+| Terminál, `npm start`, LaunchAgent (`bin/agenteeq.mjs`, `src/klic-okna.js`) | 32 náhodných bajtů pro každé spuštění | `agenteeq --open`, nebo odkaz vypsaný do Terminálu (jen do terminálu, ne do logu) |
+
+Server klíč z adresy jednou vymění za cookie `HttpOnly; SameSite=Strict` a přesměruje na čistou
+adresu (`src/http.js#localKeyGate`). Aby `agenteeq --open` otevřel přehled i u serveru, který už
+běží (LaunchAgent, jiný Terminál), leží klíč po dobu běhu v datové složce (`klic-okna`, práva 0600,
+složka 0700) a při ukončení se smaže. Přečte ho jen týž uživatel – tedy ten, kdo k datům Agenteeq
+smí i bez něj. `AGENTEEQ_LOCAL_KEY=0` ochranu vypne (jen pro vývoj). Hlídá `test/klic-okna.test.mjs`
+a `npm run smoke:server`.
+
+## Hlavičky webu (`vercel.json`)
+
+Web (landing page, `/app`, přehled účtu `/app?ucet`) posílá na všech adresách:
+
+- `Content-Security-Policy`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https://*.googleusercontent.com; font-src 'self';
+  connect-src 'self' https://quxfenxxdcafcuptucnn.supabase.co; manifest-src 'self'; worker-src 'self';
+  object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`. Odpovídá tomu,
+  co web opravdu načítá: vlastní skripty a písma, fotku účtu od Googlu, API účtů v Supabase.
+  `unsafe-inline` jen pro styly (atributy `style` s proměnnými CSS), skripty žádné vložené nejsou.
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: no-referrer`, `Permissions-Policy` (kamera, mikrofon, poloha, platby, USB vypnuté),
+  `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`.
+
+`npm run qa:site` posílá tytéž hlavičky (`scripts/build-site.mjs#hlavickyWebu`) a ověřuje, že
+landing page, zásady soukromí, `/app`, `/app?ucet` a `/app?ukazka` se vykreslí bez porušení CSP.
+Při změně domény účtů (Supabase) se musí změnit i `connect-src`.
 
 ## Soukromí
 
@@ -101,6 +141,7 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
 - Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash – ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
+- Z telefonu nejde číst celý přepis konverzace ani výstup agentů na pozadí (od 5. 10. 2026): `/api/sessions/:id` vrátí jen souhrn (stav, název, poslední zadání, aktivita, tokeny), `/api/sessions/:id/transcript` a `/api/runs/:id/log` odpoví 403 a událost SSE `transcript` se telefonu neposílá (`src/remote-scope.js`, `test/vzdaleny-prepis.test.mjs`).
 - Vypnutí zavře listener a smaže všechna zařízení – pokud zároveň není zapnutá druhá cesta (Tailscale).
 - Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 

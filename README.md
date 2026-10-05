@@ -30,7 +30,7 @@ cd ~/agenteeq
 npm start
 ```
 
-Otevři <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede napojením (hooky Claude Code, rozšíření pro Chrome, první projekt, první spuštění agenta). Automatické spouštění po přihlášení zapneš v **Nastavení → Spouštění a data**.
+Otevři odkaz `Přehled: http://127.0.0.1:4620/?k=…`, který se vypíše do Terminálu (nebo spusť `npm start -- --open`); adresa bez klíče přehled neukáže. Průvodce v Přehledu tě provede napojením (hooky Claude Code, rozšíření pro Chrome, první projekt, první spuštění agenta). Automatické spouštění po přihlášení zapneš v **Nastavení → Spouštění a data**.
 
 Instalace pro zákazníka nebo kolegu: `npm run pack` a návod [docs/INSTALL.md](docs/INSTALL.md). Licence a prodej: [docs/LICENSING.md](docs/LICENSING.md).
 

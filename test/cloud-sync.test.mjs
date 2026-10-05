@@ -100,7 +100,9 @@ test('bez zapnutí se nic neposílá; po zapnutí se založí zařízení a odej
   assert.equal(volani.length, 0, 'synchronizace je opt-in');
 
   await s.nastav(true);
-  assert.deepEqual(volani[0], { method: 'PATCH', cesta: '/rest/v1/profiles', query: { id: 'eq.aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }, body: { sync_enabled: true }, prefer: 'return=minimal', auth: 'Bearer pristup-1' });
+  // Nejdřív tento počítač v účtu, teprve potom volba „zapnuto“ (jinak hrozí „0 zařízení“).
+  assert.deepEqual([volani[0].method, volani[0].cesta], ['POST', '/rest/v1/devices']);
+  assert.deepEqual(volani[1], { method: 'PATCH', cesta: '/rest/v1/profiles', query: { id: 'eq.aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }, body: { sync_enabled: true }, prefer: 'return=minimal', auth: 'Bearer pristup-1' });
   const zarizeni = volani.find((v) => v.cesta === '/rest/v1/devices');
   assert.deepEqual(Object.keys(zarizeni.body).sort(), ['app_version', 'last_seen_at', 'name', 'platform']);
   const zapisy = volani.filter((v) => v.method === 'POST' && v.cesta !== '/rest/v1/devices');
@@ -197,7 +199,9 @@ test('přihlášení synchronizaci zapne – i když účet zrovna neodpovídá,
   await s.nactiVolbu();
   assert.equal(s.status().zapnuto, true);
   await s.synchronizuj();
-  assert.deepEqual(volani[0], { method: 'PATCH', cesta: '/rest/v1/profiles', body: { sync_enabled: true } });
+  // Zařízení vzniklo dřív, než se do účtu zapsalo „zapnuto“.
+  assert.deepEqual(volani[0], { method: 'POST', cesta: '/rest/v1/devices', body: volani[0].body });
+  assert.deepEqual(volani[1], { method: 'PATCH', cesta: '/rest/v1/profiles', body: { sync_enabled: true } });
   assert.ok(volani.some((v) => v.cesta === '/rest/v1/usage_daily'));
   assert.equal(datastore.data.cloud.volbaCeka, false);
   assert.equal(s.status().chyba, '');

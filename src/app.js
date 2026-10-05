@@ -108,11 +108,19 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // z konverzací – přes plán „open“, v testech jen nanečisto.
   // Stav účtu nese i stav synchronizace souhrnů – rozhraní je ukazuje v jedné kartě.
   const ucetStav = () => ({ ...ucet.status(), sync: cloudSync.status() });
+  let posledniStavUctu = '';
   const ucet = createUcet({
     config,
     secrets,
     emit: (stav) => {
       store.emit('ucet', { ...stav, sync: cloudSync.status() });
+      // Ověření přihlášení se po výpadku (síť, zamčená Klíčenka po startu) samo vrátilo: souhrny se
+      // pošlou hned, ne až s dalším pětiminutovým kolem – web jinak zbytečně ukazuje stará čísla.
+      const predtim = posledniStavUctu;
+      posledniStavUctu = stav.stav;
+      if (stav.stav === 'prihlaseno' && predtim === 'nedostupne' && stav.udalost !== 'prihlaseno') {
+        cloudSync.nactiVolbu().then(() => cloudSync.synchronizuj()).catch(() => {});
+      }
       // Přihlášení přes Google synchronizaci souhrnů zapne – to, co se posílá, stojí u tlačítka
       // přihlášení (docs/ACCOUNTS.md). Vypnout ji jde jedním přepínačem v kartě účtu.
       if (stav.udalost === 'prihlaseno') {
@@ -139,6 +147,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       sessions: () => store.list(),
       limity: () => store.limitList(),
       konektory: () => connectorList(),
+      // Měsíce, které útrata počítá – synchronizace v nich z účtu uklidí řádky, které by už neposlala.
+      mesiceUtraty: () => spend().months.map((m) => m.key),
       utrata: () => {
         const sp = datastore.data.spend;
         const mesice = spend().months.map((m) => m.key);

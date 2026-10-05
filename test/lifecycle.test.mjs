@@ -85,7 +85,8 @@ test('lifecycle: verified 0.5 CLI is gracefully upgraded, project survives takeo
   // Kopie má tvar skutečné instalace: src/ načítá i sdílené soubory z public/js (adresa účtů).
   for (const sub of ['src', 'bin', 'public']) await fs.cp(path.join(root, sub), path.join(legacyRoot, sub), { recursive: true });
   await fs.writeFile(path.join(legacyRoot, 'package.json'), '{"name":"agenteeq","version":"0.5.0","type":"module"}');
-  const old = start(env, path.join(legacyRoot, 'bin/agenteeq.mjs'));
+  // Verze 0.5.0 klíč okna neznala; kopie dnešního CLI by si ho jinak vyrobila (src/klic-okna.js).
+  const old = start({ ...env, AGENTEEQ_LOCAL_KEY: '0' }, path.join(legacyRoot, 'bin/agenteeq.mjs'));
   t.after(() => { if (old.child.exitCode === null) old.child.kill(); });
   let oldOutput = '';
   old.child.stdout.on('data', (s) => { oldOutput += s; });

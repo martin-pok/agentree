@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Ověří balíček pro zákazníky: npm pack → instalace do dočasného prefixu → spuštění nainstalovaného `agenteeq`
 // s dočasnými složkami (nikdy nesahá na skutečné ~/.claude, ~/.codex ani ~/.agenteeq) → kontrola API a UI.
+import crypto from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -63,6 +64,8 @@ try {
 
   step('spuštění nainstalované aplikace');
   const port = await freePort();
+  const KLIC = crypto.randomBytes(32).toString('base64url');
+  const sKlicem = { 'X-Agenteeq-Key': KLIC };
   const env = {
     ...process.env,
     PORT: String(port),
@@ -74,6 +77,8 @@ try {
     AGENTEEQ_KEYCHAIN: '0',
     AGENTEEQ_CLOUD: '0',
     AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9',
+    // Klíč okna (src/klic-okna.js): bez něj nainstalovaná aplikace nic nevydá – ověří se obojí.
+    AGENTEEQ_LOCAL_KEY: KLIC,
   };
   fs.mkdirSync(env.AGENTEEQ_SOURCE_HOME, { recursive: true });
   child = spawn(bin, [], { env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -89,14 +94,15 @@ try {
     if (!health) await new Promise((r) => setTimeout(r, 200));
   }
   if (!health?.ok) await fail(`Server nenaběhl.\n${output}`);
-  const html = await fetch(url).then((r) => r.text());
-  if (!html.includes('Agenteeq')) await fail('Dashboard nevrací HTML Agenteeq.');
-  const st = await fetch(`${url}/api/state`).then((r) => r.json());
+  if ((await fetch(`${url}/api/state`)).status !== 403) await fail('Bez klíče okna server vydal data.');
+  const html = await fetch(url, { headers: sKlicem }).then((r) => r.text());
+  if (!html.includes('<aside class="sidebar">')) await fail('Dashboard nevrací HTML Agenteeq.');
+  const st = await fetch(`${url}/api/state`, { headers: sKlicem }).then((r) => r.json());
   if (!Array.isArray(st.projects?.items) || !st.launch || st.license?.plan !== 'free') await fail('Stav neobsahuje projekty, spouštění nebo licenci.');
-  const proj = await fetch(`${url}/api/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agenteeq': '1' }, body: JSON.stringify({ name: 'Smoke test' }) });
+  const proj = await fetch(`${url}/api/projects`, { method: 'POST', headers: { ...sKlicem, 'Content-Type': 'application/json', 'X-Agenteeq': '1' }, body: JSON.stringify({ name: 'Smoke test' }) });
   if (proj.status !== 201) await fail(`Vytvoření projektu vrátilo ${proj.status}`);
   for (const asset of ['/js/views/projects.js', '/js/launcher-ui.js', '/styles.css', '/brand/agenteeq-mark-dark.svg']) {
-    const r = await fetch(url + asset);
+    const r = await fetch(url + asset, { headers: sKlicem });
     if (r.status !== 200) await fail(`${asset} vrací ${r.status}`);
   }
   console.log(`✓ Balíček ${packed.filename} se nainstaluje a běží (verze ${health.version}).`);

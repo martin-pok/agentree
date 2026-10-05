@@ -13,16 +13,25 @@ const POVOLENE_ZMENY = [
   ['POST', /^\/api\/alerts\/read$/],
 ];
 
-// Čtení, které telefonu nepatří ani tak: procházení složek disku.
-const ZAKAZANE_CTENI = [/^\/api\/fs\//];
+// Čtení, které telefonu nepatří ani tak: procházení složek disku a celé přepisy konverzací i výstup
+// agentů spuštěných na pozadí. Přepis je nejcitlivější obsah (kód, klientská data, prompty) a zůstává
+// jen na hostiteli; telefon vidí souhrn konverzace (stav, název, poslední zadání, aktivitu, tokeny).
+// Detail konverzace /api/sessions/:id telefonu vrátí souhrn bez přepisu (src/http.js).
+const ZAKAZANE_CTENI = [
+  [/^\/api\/fs\//, () => ui('Procházet disk lze jen {0}.', POCITAC.naHostiteli)],
+  [/^\/api\/sessions\/[^/]+\/transcript$/, () => ui('Celý přepis konverzace je vidět jen {0}. Telefon ukazuje souhrn.', POCITAC.naHostiteli)],
+  [/^\/api\/runs\/[\w-]+\/log$/, () => ui('Výstup agenta je vidět jen {0}. Telefon ukazuje souhrn.', POCITAC.naHostiteli)],
+];
+
+// Událost SSE, která nese text přepisu – telefonu se neposílá.
+export const JEN_NA_HOSTITELI_UDALOSTI = new Set(['transcript']);
 
 export function remoteScope(method, pathname) {
   if (!pathname.startsWith('/api/')) return { ok: true };
   const m = String(method || 'GET').toUpperCase();
   if (m === 'GET' || m === 'HEAD') {
-    return ZAKAZANE_CTENI.some((re) => re.test(pathname))
-      ? { ok: false, error: ui('Procházet disk lze jen {0}.', POCITAC.naHostiteli) }
-      : { ok: true };
+    const zakaz = ZAKAZANE_CTENI.find(([re]) => re.test(pathname));
+    return zakaz ? { ok: false, error: zakaz[1]() } : { ok: true };
   }
   if (POVOLENE_ZMENY.some(([mm, re]) => mm === m && re.test(pathname))) return { ok: true };
   return { ok: false, error: ui('Tuhle akci lze provést jen {0}. Telefon slouží ke čtení stavu.', POCITAC.naHostiteli) };

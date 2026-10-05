@@ -1034,7 +1034,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .acct-sync-state .nowrap { white-space: nowrap; }
 .acct-sync-state.is-ok { color: var(--teal-ink); }
 .acct-sync-state.is-ok i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
-.acct-sync-state.is-error { color: var(--velvet-ink); }
+.acct-sync-state.is-error { color: var(--velvet-ink); overflow-wrap: anywhere; }
 .acct-sync .form-error { margin: 12px 0 0 56px; }
 .acct-sync-desc { margin: 12px 0 0 56px; max-width: 64ch; font-size: 13px; line-height: 20px; color: var(--ink-2); }
 .acct-sync-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0 56px; }
@@ -1216,6 +1216,14 @@ html.is-cloud body { background: var(--paper); }
 .cloud-empty h2 { margin: 0; font: 400 22px/1.2 var(--f-display); }
 .cloud-empty p { margin: 0; color: var(--ink-2); }
 .cloud-foot { margin-top: 24px; }
+/* Stáří dat na webu: z kdy čísla jsou, a výrazně, když jsou stará nebo se obnova nepovedla. */
+.cloud-sync-age { margin: -16px 0 16px; font-size: 13px; color: var(--ink-2); }
+.cloud-sync-age:empty { display: none; }
+.cloud-stale { margin: 0 0 16px; padding: 12px 16px; border-radius: var(--r-md); background: var(--brass-tint); box-shadow: inset 4px 0 0 var(--brass); color: var(--ink); font-size: 14px; }
+.cloud-stale strong { font-weight: 500; }
+.cloud-stage-stale { margin: 0; font-size: 14px; color: rgb(255 255 255 / .8); }
+.cloud-stage-stats + .cloud-stage-stale { margin-top: 16px; }
+.cloud-list b.is-stale { color: var(--mute); font-weight: 400; }
 @media (prefers-reduced-motion: no-preference) { .cloud [data-enter] { animation: rise .6s var(--ease-settle) both; animation-delay: calc(var(--i, 0) * 70ms); } }
 @media (max-width: 900px) { .cloud-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 620px) {

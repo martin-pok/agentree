@@ -129,8 +129,9 @@ export function napojeniProCloud(konektory) {
 export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchImpl = (...a) => fetch(...a), now = Date.now, emit = () => {} }) {
   const cfg = config.ucet;
   let zapnuto = datastore.data.cloud?.syncEnabled === true;
-  // Volba změněná na Macu, kterou se ještě nepodařilo zapsat do účtu (výpadek sítě při přihlášení).
-  // Dokud ji účet nemá, načtení z účtu ji nepřepíše a zapíše se s příští synchronizací.
+  // Volba změněná na Macu, kterou se ještě nepodařilo zapsat do účtu (výpadek sítě při přihlášení,
+  // nebo se tento počítač ještě nepodařilo v účtu založit). Dokud ji účet nemá, načtení z účtu ji
+  // nepřepíše a zapíše se s příští synchronizací. Pamatuje se i přes restart (src/datastore.js).
   let volbaCeka = datastore.data.cloud?.volbaCeka === true;
   let posledni = datastore.data.cloud?.syncAt || 0;
   let chyba = '';
@@ -138,7 +139,13 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
   let bezi = null;
   let casovac = null;
 
-  const status = () => ({ zapnuto, posledni, chyba, odeslano });
+  // Je tento počítač v účtu přihlášeného uživatele založený? Bez zařízení se do účtu nic nezapíše
+  // a web by ukázal „0 zařízení“ – rozhraní proto říká obojí zvlášť.
+  const mojeZarizeni = () => {
+    const u = ucet.uzivatelId?.();
+    return u ? datastore.data.cloud?.devices?.[u] || null : null;
+  };
+  const status = () => ({ zapnuto, posledni, chyba, odeslano, zarizeni: Boolean(mojeZarizeni()), volbaCeka });
   const ohlas = () => emit(status());
   const ulozMistne = () => {
     datastore.data.cloud = { ...(datastore.data.cloud || {}), syncEnabled: zapnuto, syncAt: posledni, volbaCeka };
@@ -168,18 +175,27 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     return json;
   }
 
-  // Zařízení se v účtu založí jednou; jeho id patří k uživateli, ne k Macu obecně.
+  // Zařízení se v účtu založí jednou; jeho id patří k uživateli, ne k Macu obecně. Selhání se hlásí
+  // vlastní větou – „synchronizace zapnutá, ale 0 zařízení“ je přesně stav, který nesmí zůstat
+  // neviditelný. Výpadek sítě zůstává výpadkem sítě (zkusí se znovu), ne „nepodařilo se přidat“.
   async function zarizeni(token, uzivatel) {
     const ulozene = datastore.data.cloud?.devices?.[uzivatel];
     const popis = { name: (os.hostname().replace(/\.local$/, '') || 'Mac').slice(0, 80), platform: SYSTEM_UCTU, app_version: verze, last_seen_at: new Date(now()).toISOString() };
-    if (ulozene) {
-      const r = await volej(`/rest/v1/devices?id=eq.${encodeURIComponent(ulozene)}`, { method: 'PATCH', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
-      if (Array.isArray(r) && r.length) return ulozene;
+    try {
+      if (ulozene) {
+        const r = await volej(`/rest/v1/devices?id=eq.${encodeURIComponent(ulozene)}`, { method: 'PATCH', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
+        if (Array.isArray(r) && r.length) return ulozene;
+      }
+      const odpoved = await volej('/rest/v1/devices', { method: 'POST', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
+      const novy = Array.isArray(odpoved) ? odpoved[0] : null;
+      if (!novy?.id) throw Object.assign(new Error(ui('Server účtů nevrátil id zařízení.')), { status: 502 });
+      datastore.data.cloud = { ...(datastore.data.cloud || {}), devices: { ...(datastore.data.cloud?.devices || {}), [uzivatel]: novy.id } };
+      datastore.save();
+      return novy.id;
+    } catch (err) {
+      if (err.sit || err.status === 401) throw err;
+      throw Object.assign(new Error(ui('{0} se nepodařilo přidat do účtu: {1}', POCITAC.Tento, err.message)), { status: err.status || 502, zarizeni: true });
     }
-    const [novy] = await volej('/rest/v1/devices', { method: 'POST', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
-    datastore.data.cloud = { ...(datastore.data.cloud || {}), devices: { ...(datastore.data.cloud?.devices || {}), [uzivatel]: novy.id } };
-    datastore.save();
-    return novy.id;
   }
 
   function data(deviceId) {
@@ -194,29 +210,65 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     };
   }
 
+  // Řádky, které tento počítač v účtu má, ale teď už by je neposlal: útrata ve staré měně (po změně
+  // měny aplikace by web sečetl obě), služba s odebraným klíčem, limit, který zdroj přestal hlásit,
+  // zdroj, který už není napojený. Upsert řádky jen přepisuje, nemaže – bez úklidu by na webu zůstala
+  // stará čísla, jako by platila. Tokeny po dnech se neuklízejí: den, který Mac už nevidí, je pořád
+  // pravdivá historie. Útrata se uklízí jen v měsících, které Mac počítá (zdroje.mesiceUtraty).
+  async function uklid(token, deviceId, balik) {
+    const mesice = (zdroje.mesiceUtraty?.() || []).map((m) => `${m}-01`).sort();
+    const tabulky = {
+      spend_monthly: { klice: ['month', 'service', 'kind', 'currency'], filtr: mesice.length ? `&month=gte.${mesice[0]}` : null },
+      limits: { klice: ['provider', 'window_key'], filtr: '' },
+      connections: { klice: ['provider'], filtr: '' },
+    };
+    for (const [tabulka, { klice, filtr }] of Object.entries(tabulky)) {
+      if (filtr === null) continue;
+      const klic = (r) => klice.map((k) => String(r[k])).join('|');
+      const ted = new Set(balik[tabulka].map(klic));
+      const vUctu = await volej(`/rest/v1/${tabulka}?device_id=eq.${encodeURIComponent(deviceId)}&select=${klice.join(',')}${filtr}`, { token });
+      for (const r of Array.isArray(vUctu) ? vUctu : []) {
+        if (ted.has(klic(r))) continue;
+        const podminka = klice.map((k) => `&${k}=eq.${encodeURIComponent(String(r[k]))}`).join('');
+        await volej(`/rest/v1/${tabulka}?device_id=eq.${encodeURIComponent(deviceId)}${podminka}`, { method: 'DELETE', token, prefer: 'return=minimal' });
+      }
+    }
+  }
+
+  // Výsledek nese `ok`: rozhraní ani tlačítko „Synchronizovat teď“ nesmí ohlásit úspěch, když se nic
+  // neposlalo. `duvod` rozliší „vypnuto“ a „nepřihlášeno“ (nic se neposílá schválně) od chyby.
   function synchronizuj() {
     if (bezi) return bezi;
     bezi = (async () => {
-      if (!cfg || !zapnuto) return status();
+      if (!cfg) return { ...status(), ok: false, duvod: 'nenastaveno' };
+      if (!zapnuto) return { ...status(), ok: false, duvod: 'vypnuto' };
       const uzivatel = ucet.uzivatelId();
-      if (!uzivatel) return status();
+      if (!uzivatel) return { ...status(), ok: false, duvod: 'neprihlaseno' };
+      let ok = false;
       // Server může token odmítnout dřív, než podle hodin Macu vyprší (401) – pak se jednou obnoví
       // a celé odeslání zopakuje. Upsert je idempotentní, opakování nic nezdvojí.
       for (let pokus = 0; pokus < 2; pokus += 1) {
         const token = await ucet.pristup({ vynutit: pokus > 0 });
-        if (!token) break;
+        if (!token) {
+          chyba = ui('Přihlášení k účtu se teď nepodařilo ověřit. Souhrny se pošlou, až bude spojení.');
+          break;
+        }
         try {
-          if (volbaCeka) await zapisVolbu(token, uzivatel);
+          // Pořadí je podstatné: nejdřív tento počítač v účtu, teprve potom volba „zapnuto“.
+          // Obráceně zůstal účet při chybě zařízení zapnutý s nulou zařízení.
           const deviceId = await zarizeni(token, uzivatel);
+          if (volbaCeka) await zapisVolbu(token, uzivatel);
           const balik = data(deviceId);
           for (const [tabulka, radky] of Object.entries(balik)) {
             if (!radky.length) continue;
             await volej(`/rest/v1/${tabulka}?on_conflict=${KONFLIKT[tabulka]}`, { method: 'POST', token, body: radky, prefer: 'resolution=merge-duplicates,return=minimal' });
           }
+          await uklid(token, deviceId, balik);
           posledni = now();
           chyba = '';
           odeslano = Object.fromEntries(Object.entries(balik).map(([t, r]) => [t, r.length]));
           ulozMistne();
+          ok = true;
           break;
         } catch (err) {
           chyba = err.message;
@@ -224,7 +276,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
         }
       }
       ohlas();
-      return status();
+      return { ...status(), ok };
     })().finally(() => { bezi = null; });
     return bezi;
   }
@@ -237,7 +289,8 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
 
   // Přihlášení přes Google synchronizaci zapne (rozhodnutí vlastníka 4. 10. 2026; docs/ACCOUNTS.md).
   // Platí hned na tomto Macu, i když účet zrovna neodpovídá – volba se do účtu dopíše při příští
-  // synchronizaci. Kdo ji pak vypne, má ji vypnutou až do dalšího přihlášení.
+  // synchronizaci, ale až po založení tohoto počítače v účtu. Kdo ji pak vypne, má ji vypnutou až
+  // do dalšího přihlášení.
   async function zapnoutPoPrihlaseni() {
     if (!cfg) return status();
     zapnuto = true;
@@ -253,21 +306,30 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     const token = await ucet.pristup();
     const uzivatel = ucet.uzivatelId();
     if (!token || !uzivatel) throw Object.assign(new Error(ui('Pro synchronizaci se nejdřív přihlas.')), { status: 401 });
-    await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: Boolean(hodnota) }, prefer: 'return=minimal' });
-    // Vypnutí souhrny z účtu smaže (všech zařízení – volba platí pro celý účet). Zařízení zůstanou.
-    if (!hodnota) {
-      for (const tabulka of Object.keys(KONFLIKT)) {
-        await volej(`/rest/v1/${tabulka}?user_id=eq.${encodeURIComponent(uzivatel)}`, { method: 'DELETE', token, prefer: 'return=minimal' });
-      }
-      posledni = 0;
-      odeslano = null;
+    if (hodnota) {
+      // Nejdřív tento počítač v účtu. Když se ho založit nepodaří, volba se nezapne – chyba se vrátí
+      // a přepínač zůstane vypnutý, místo aby web ukázal zapnutou synchronizaci s nulou zařízení.
+      await zarizeni(token, uzivatel);
+      await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: true }, prefer: 'return=minimal' });
+      zapnuto = true;
+      volbaCeka = false;
+      chyba = '';
+      ulozMistne();
+      ohlas();
+      return synchronizuj();
     }
-    zapnuto = Boolean(hodnota);
+    await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: false }, prefer: 'return=minimal' });
+    // Vypnutí souhrny z účtu smaže (všech zařízení – volba platí pro celý účet). Zařízení zůstanou.
+    for (const tabulka of Object.keys(KONFLIKT)) {
+      await volej(`/rest/v1/${tabulka}?user_id=eq.${encodeURIComponent(uzivatel)}`, { method: 'DELETE', token, prefer: 'return=minimal' });
+    }
+    posledni = 0;
+    odeslano = null;
+    zapnuto = false;
     volbaCeka = false;
     chyba = '';
     ulozMistne();
     ohlas();
-    if (zapnuto) await synchronizuj();
     return status();
   }
 

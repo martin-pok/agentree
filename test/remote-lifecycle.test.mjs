@@ -27,8 +27,9 @@ test('remote stream: revocation closes only revoked device; local and other pair
   const local = await openStream(s.url); t.after(local.close);
   await s.app.lan.revoke(first.device.id);
   await waitFor(() => a.closed);
-  s.app.store.emit('transcript', { id: 'fixture', text: 'after-revocation' });
-  await waitFor(() => b.text.includes('after-revocation') && local.events.some((e) => e.event === 'transcript'));
+  // Souhrn konverzace (session) jde i spárovanému telefonu; přepis (transcript) jen hostiteli.
+  s.app.store.emit('session', { id: 'fixture', title: 'after-revocation' });
+  await waitFor(() => b.text.includes('after-revocation') && local.events.some((e) => e.event === 'session'));
   assert.equal(a.text.includes('after-revocation'), false);
 });
 
@@ -51,7 +52,7 @@ test('remote stream: expired token cannot receive another event', async (t) => {
   const pair = await s.app.lan.pair(s.app.lan.newPin().code, 'phone');
   const a = await remoteStream(s, pair.token); t.after(a.close);
   s.app.datastore.data.lanDevices[0].at = 0;
-  s.app.store.emit('transcript', { text: 'after-expiry' });
+  s.app.store.emit('session', { id: 'fixture', title: 'after-expiry' });
   await waitFor(() => a.closed);
   assert.equal(a.text.includes('after-expiry'), false);
 });

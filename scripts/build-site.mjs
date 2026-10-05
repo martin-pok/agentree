@@ -213,6 +213,20 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   return { out, files: soubory.sort() };
 }
 
+// Hlavičky, které hosting (vercel.json → headers) pošle k dané cestě. Náhled webu i kontrola
+// `npm run qa:site` je posílají taky, aby se bezpečnostní politika (CSP a spol.) zkoušela na
+// skutečných stránkách dřív, než se nasadí – rozbitou stránku by jinak ukázala až produkce.
+// Zdroj pravidla je výraz ve tvaru, jaký vercel.json používá („/(.*)\\.(js|css)“, „/install.sh“).
+export async function hlavickyWebu() {
+  const vercel = JSON.parse(await fs.readFile(path.join(root, 'vercel.json'), 'utf8'));
+  const pravidla = (vercel.headers || []).map((h) => ({ vzor: new RegExp(`^${h.source}$`), hlavicky: h.headers }));
+  return (cesta) => {
+    const out = {};
+    for (const { vzor, hlavicky } of pravidla) if (vzor.test(cesta)) for (const { key, value } of hlavicky) out[key] = value;
+    return out;
+  };
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const r = await buildSite();
   console.log(`Web sestaven: ${r.files.length} souborů v ${path.relative(root, r.out)}`);
