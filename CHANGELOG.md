@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.37.0 – 2026-10-05 · každý agent hned, poctivá synchronizace, instalace bez Terminálu
+
+- **Každý spuštěný agent jednou a hned.** Codex, Gemini CLI a Qwen Code z npm se už neukazují dvakrát (spouštějí sami sebe jako dceřiný proces; výpis procesů nově nese rodiče a sloučí je). Rozpoznají se i skripty npm spuštěné přímo nebo přes `npx`. Nová konverzace z prohlížeče už nenechá druhý „duch“ záznam: rozšíření řekne, který zástupný záznam skutečná konverzace nahrazuje. Cursor se ukáže do 1 s místo 3 s (sledování databáze místo pravidelné kontroly). Nově se rozpoznává aplikace Codex pro Mac a Windows (🧪 podle zdrojového kódu `codex app`, neověřeno na stroji). Při prvním spuštění Claude Code se přepis načte hned, ne za 5 s. Změřeno bez obnovení stránky: CLI 1,5 s, aplikace 1,3 s, prohlížeč do 40 ms, přepisy do 70 ms.
+- **Selhání zjišťování není „nic neběží“.** Když výpis procesů selže, Přehled to řekne a nechá poslední známý stav; dřív ukázal prázdno nebo „Sledování procesů je vypnuté“.
+- **Synchronizace účtu bez „0 zařízení“.** Mac se do účtu nejdřív přidá a teprve pak se zapne synchronizace; když přidání selže, karta účtu řekne proč a další běh to dožene. Volba přežije restart. „Synchronizovat teď“ hlásí úspěch jen při úspěchu. Přehled na webu ukazuje čas poslední synchronizace, stará data označí a nepočítá je jako živá, útrata z Admin API se už nesčítá dvakrát a obnovuje se sám každou minutu i po návratu do karty.
+- **Bezpečnost.** Web posílá bezpečnostní hlavičky (CSP, HSTS, zákaz vložení do rámu). Aplikace spuštěná z Terminálu a na Windows chrání rozhraní klíčem okna jako aplikace pro Mac: adresa bez klíče ukáže jen „Agenteeq běží“, `agenteeq --open` otevře přehled s klíčem. Spárovaný telefon vidí jen souhrn konverzace, ne celý přepis.
+- **Instalace bez Terminálu.** Jeden postup všude (web, popis vydání, README, Nastavení): otevřít, v Nastavení systému → Soukromí a zabezpečení kliknout na Přesto otevřít. Nová stránka Instalace (`/instalace`, `/en/install`) s tlačítky pro Mac i Windows; karta „Instalace pro další lidi“ v Nastavení posílá odkaz na ni. Vydání nově obsahuje instalátor DMG s přetažením do Aplikací (ověří až běh workflow na macOS). Instalace rozšíření jedním klikem z Chrome Web Store je připravená za přepínačem a zapne se po schválení Googlem.
+- **Bez omluv a vysvětlivek.** Z aplikace, webu i rozšíření zmizely ujišťování, texty v první osobě a návody „otevři tlačítkem výše“. Místo nich jsou akce: Nastavit rozpočet, Otevřít Claude / v Codexu přímo u čekajícího agenta, Spustit agenta v prázdném seznamu, odkazy rovnou na správnou kartu Nastavení.
+- **Obnova dat bez problikávání.** Tlačítko obnovy se už nevypíná (kurzor „zakázáno“ a poskočení o pixel); ikona se plynule otočí a doběhne do klidové polohy, při omezeném pohybu se jen ztlumí.
+- Neověřeno: aplikace Codex a výpis procesů s rodičem na skutečném Windows; DMG až v CI na macOS; hlavičky webu až po nasazení na Vercel.
+
 ## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení
 
 - Přehled ukazuje Claude i bez čerstvého měření, pokud je na Macu dostupný. Při ověřeném odhlášení nabídne přihlášení; při neznámém nebo starém stavu čeká na data. Nikdy nedoplní procento ani čas obnovy odhadem.

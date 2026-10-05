@@ -1,5 +1,19 @@
 # Testování a ověření
 
+## Protokol ověření – 0.37.0, detekce agentů, synchronizace, bezpečnost, instalace a texty (5. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 839 testů, 829 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo; syntaxe 265 souborů čistá |
+| Nové testy | `zachyceni-agentu` (jeden běh = jeden záznam pro npm Codex/Gemini/Qwen, duch webové konverzace, selhání výpisu), `persony` (lehký uživatel, víc licencí, 12 souběžných agentů – každý jednou, správně pojmenovaný, do 2 s), `synchronizace-uctu`, `ucet-web`, `klic-okna`, `vzdaleny-prepis`, `akce-misto-vysvetleni`, `dmg` |
+| Časy detekce bez obnovení | CLI 1,48–1,50 s, agent spuštěný z Agenteeq 1,27 s, desktopové aplikace 1,26–1,28 s, Cursor 8–950 ms, prohlížeč 3–40 ms, přepisy 10–70 ms, selhání výpisu viditelné za ~125 ms |
+| `smoke`, `smoke:server`, `build:extension`, `build:site` | prošly; přístup s klíčem okna i bez něj |
+| `qa:contrast`, `qa:tvary` | WCAG 2.2 AA a tvary ovládání prošly pro aplikaci, web (včetně `/instalace`, `/en/install`) i rozšíření |
+| `qa:desktop`, `qa:site`, `qa:extension` | prošly v Chromiu; `qa:site` posílá hlavičky z `vercel.json` a hlídá porušení CSP |
+| Snímky | Přehled, Agenti, Nastavení: 1440 a 375 px, světlý i tmavý režim, konzole bez chyb, bez vodorovného rolování |
+
+Neověřeno: WebKit (na stroji s ověřením chybí, pustí ho CI), aplikace Codex a výpis procesů s rodičem na skutečném Windows, DMG (vznikne až na runneru s macOS), hlavičky webu na produkci (po nasazení na Vercel), příčina „0 zařízení“ na produkční databázi.
+
 ## Protokol ověření – 0.36.3, pravdivý stav limitů Claude (4. 10. 2026, macOS, Node 24.18)
 
 | Kontrola | Výsledek |
