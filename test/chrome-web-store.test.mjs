@@ -92,6 +92,17 @@ test('Chrome Web Store: jedna adresa přepne web z ruční instalace na „Přid
     assert.doesNotMatch(obchod, /chrome:\/\/extensions|Načíst rozbalené|Load unpacked|rozsireni:|data-rozsireni-doba/);
     assert.match(obchod, /<span class="detail-tag">2 (minuty|minutes)<\/span>/);
   }
+  // Stránka Instalace se přepíná týmž příznakem. Neschválený stav se nevydává za hotový: dokud
+  // příznak není zapnutý, stránka ukazuje jen ruční instalaci a odkaz do obchodu nemá.
+  for (const soubor of ['site/instalace/index.html', 'site/en/install/index.html']) {
+    const html = await cti(soubor);
+    const rucne = rozsireniNaWebu(html, '');
+    assert.match(rucne, /chrome:\/\/extensions/);
+    assert.doesNotMatch(rucne, /data-obchod-chrome|chromewebstore|rozsireni:/);
+    const obchod = rozsireniNaWebu(html, url);
+    assert.ok(obchod.includes(`data-obchod-chrome href="${url}" target="_blank" rel="noopener"`));
+    assert.doesNotMatch(obchod, /chrome:\/\/extensions|Load unpacked|Načíst rozbalené|čeká na schválení|waiting for approval|rozsireni:/);
+  }
   assert.throws(() => rozsireniNaWebu('<p>bez značek</p>', ''), /značky/);
 });
 

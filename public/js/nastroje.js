@@ -37,11 +37,11 @@ export function kdeKdy(n, now = Date.now()) {
 }
 
 // Co o něm Agenteeq uvidí – jedna krátká věta. Tvrdí se jen to, co platí o Agenteeq, ne domněnky
-// o cizím nástroji. Tři různé situace: čteme, umíme číst (jen tu zatím nic není), neumíme číst.
+// o cizím nástroji. Tři různé situace: čte se, číst se dá (jen tu zatím nic není), nečte se.
 export function coVidim(n) {
-  if (n.sledovano) return n.vidim || tr('Konverzace a tokeny, které zapisuje na {0}, už čtu.', tentoPocitac());
-  if (n.umiCist) return tr('Konverzace přečtu, jakmile je uloží na {0}.', tentoPocitac());
-  return tr('Uvidím, kdy běží. Konverzace a tokeny číst neumím.');
+  if (n.sledovano) return n.vidim || tr('Čtou se konverzace a tokeny, které zapisuje na {0}.', tentoPocitac());
+  if (n.umiCist) return tr('Konverzace se začnou číst, jakmile je uloží na {0}.', tentoPocitac());
+  return tr('Sleduje se jen běh. Konverzace a tokeny se nečtou.');
 }
 
 // Které nástroje z katalogu patří na Přehled: co právě běží, co si uživatel přidal do Mých nástrojů

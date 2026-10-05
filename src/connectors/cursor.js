@@ -5,6 +5,7 @@ import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
 import { todosProgress } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 import { noDataState } from './install-state.js';
+import { watchExactFile } from '../watch.js';
 import { ui } from '../texty.js';
 
 // Cesta k datům Cursoru se liší jen základem složky; zbytek struktury je všude stejný.
@@ -76,6 +77,7 @@ export function createCursorConnector(ctx) {
   const seen = new Map();
   const folders = new Map();
   let timer = null;
+  let hlidace = [];
   let signature = '';
   let exists = false;
   let error = '';
@@ -95,7 +97,23 @@ export function createCursorConnector(ctx) {
     return folder;
   }
 
-  async function poll() {
+  // Průchody jdou za sebou, nikdy souběžně: změna souboru a pravidelná kontrola se mohou potkat.
+  // Přijde-li změna během průchodu, proběhne ještě jeden – nic se neztratí ani nezpracuje dvakrát.
+  let bezi = null;
+  let znovu = false;
+  function naplanuj() {
+    if (bezi) { znovu = true; return bezi; }
+    bezi = (async () => {
+      try {
+        do { znovu = false; await prochod(); } while (znovu);
+      } finally {
+        bezi = null;
+      }
+    })();
+    return bezi;
+  }
+
+  async function prochod() {
     const stat = await statSafe(dbPath);
     exists = Boolean(stat);
     if (!stat) return;
@@ -160,13 +178,21 @@ export function createCursorConnector(ctx) {
     source: CURSOR_ZDROJ,
     description: ui('Agenti v Cursoru: přepis, nástroje, plán úkolů, generování a čekání na schválení.'),
     async start() {
-      await poll();
-      timer = setInterval(() => poll().catch(() => {}), 3000);
+      await naplanuj();
+      // Cursor zapisuje do SQLite s WAL: změnu ohlásí zápis do `state.vscdb-wal` (nebo do databáze při
+      // checkpointu). Sledování složky přinese nového agenta do zlomku sekundy; dřívější kontrola
+      // po 3 s ho ukazovala až za 3 s. Kontrola po 1 s zůstává jako pojistka, kdyby událost nepřišla
+      // (síťový disk, watcher po probuzení) – beze změny souboru stojí jen dva stat().
+      const zmena = () => { naplanuj().catch(() => {}); };
+      hlidace = [watchExactFile(dbPath, zmena, { retryMs: 5000 }), watchExactFile(`${dbPath}-wal`, zmena, { retryMs: 5000 })];
+      timer = setInterval(zmena, 1000);
       timer.unref?.();
     },
-    scan: poll,
+    scan: naplanuj,
     stop() {
       clearInterval(timer);
+      for (const h of hlidace) h.close();
+      hlidace = [];
     },
     idle: async () => {},
     status() {

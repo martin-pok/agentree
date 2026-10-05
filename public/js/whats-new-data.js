@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.37.0',
+    date: '2026-10-05',
+    title: 'Každý agent hned a jednou',
+    items: [
+      'Každý spuštěný agent se ukáže jednou a bez obnovení stránky: Codex a Gemini z npm už nejsou dvakrát, nová konverzace v prohlížeči nenechá druhý záznam a Cursor je vidět do vteřiny. Nově se rozpoznává aplikace Codex.',
+      'Když se nepodaří zjistit, co běží, Přehled to řekne a ukáže poslední známý stav místo prázdna.',
+      'Synchronizace s účtem přidá Mac do účtu dřív, než se zapne, a když něco selže, karta účtu řekne proč. Přehled na webu ukazuje, jak čerstvá data jsou, a obnovuje se sám.',
+      'Agenteeq jde nainstalovat bez Terminálu: stránka Instalace s tlačítky pro Mac i Windows a jedním postupem pro první otevření.',
+      'Místo vysvětlivek tlačítka, která věc rovnou udělají, a plynulá animace obnovy dat.',
+    ],
+    en: {
+      title: 'Every agent, once and right away',
+      items: [
+        'Every running agent shows up once and without reloading: Codex and Gemini from npm no longer appear twice, a new browser conversation leaves no second entry and Cursor appears within a second. The Codex app is now recognised.',
+        'When Agenteeq can’t find out what’s running, Overview says so and keeps the last known state instead of showing nothing.',
+        'Account sync adds your Mac to the account before it turns on, and the account card says why if something fails. The web overview shows how fresh the data is and refreshes on its own.',
+        'Agenteeq installs without Terminal: an Install page with Mac and Windows buttons and one set of steps for the first launch.',
+        'Buttons that do the job instead of explanations, and a smooth refresh animation.',
+      ],
+    },
+  },
+  {
     version: '0.36.4',
     date: '2026-10-05',
     title: 'Oddělené účty Codexu a Claude',

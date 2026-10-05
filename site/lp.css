@@ -107,6 +107,12 @@ section[id] { scroll-margin-top: 72px; }
 .btn--lg { min-height: 56px; padding: 8px 30px; font-size: 17px; }
 .nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
 .nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
+/* Vedlejší výzva vedle hlavní (Stáhnout pro Windows vedle Stáhnout pro Mac): stejný tvar a výška,
+   plochu nese jen linka. Linka má kontrast aspoň 3 : 1 vůči ploše pod ní (WCAG 1.4.11). */
+.btn--vedlejsi { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--mute); }
+.btn--vedlejsi:hover { background: var(--paper-2); }
+.unit--dark .btn--vedlejsi { background: transparent; color: var(--on-stage); box-shadow: inset 0 0 0 1px var(--on-stage-mute); }
+.unit--dark .btn--vedlejsi:hover { background: var(--stage-2); }
 .text-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); text-decoration: underline; text-decoration-thickness: 1px; }
 .text-link:hover { color: var(--ink); }
 .unit--dark .text-link { color: var(--on-stage-mute); }
@@ -209,6 +215,8 @@ section[id] { scroll-margin-top: 72px; }
 .steps p { color: var(--ink-2); font-size: 16px; }
 .steps p b { font-size: inherit; }
 .steps + .wrap { margin-top: 16px; }
+/* Čtyři kroky (instalace na Macu) stojí dva a dva: ve čtyřech sloupcích by text kroků byl úzký. */
+.steps--ctyri { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* Instalace jedním příkazem: kousek tmavé scény uprostřed světlé jednotky – Terminál je tmavý
    a příkaz se tak pozná na první pohled. Barvy scény jsou stejné ve světlém i tmavém režimu. */
 .unit-head .text-link { margin-top: 4px; font-size: 15px; }
@@ -250,6 +258,15 @@ details[open] > summary::after { transform: rotate(45deg); }
 kbd { display: inline-block; padding: 1px 6px; border-radius: var(--r-full); background: var(--paper-2); border: 1px solid var(--line); }
 .kopirovat { padding: 2px 8px; border-radius: var(--r-full); background: var(--paper-2); border: 1px solid var(--line); cursor: pointer; }
 .kopirovat:hover { border-color: var(--mute); }
+
+/* ---------- stránka Instalace ----------
+   Stejné jednotky jako úvodní stránka. Pod nadpisem platformy stojí odkaz zpět na výzvu
+   ke stažení; poznámky pod kroky jsou plochy jako `.gatekeeper`. */
+.unit-head .cta-row .btn { margin-top: 0; }
+.instalace-dalsi { display: grid; gap: 16px; }
+.instalace-dalsi .gatekeeper a { color: var(--ink); }
+.rozsireni-kroky { display: grid; gap: 10px; margin: 0; padding-left: 20px; color: var(--ink-2); }
+.rozsireni-kroky li { padding-left: 4px; }
 
 /* ---------- patička ---------- */
 /* ---------- textové stránky (zásady ochrany soukromí) ----------

@@ -700,6 +700,7 @@ export function createClaudeCodeConnector(ctx) {
     scan,
     pridejKoren,
     koreny: () => koreny.seznam(),
+    zkusKoreny: () => koreny.zkusChybejici(),
     stop() {
       koreny.stop();
       queue.clear();

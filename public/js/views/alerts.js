@@ -44,7 +44,7 @@ function mount(el) {
     <div class="toolbar" data-enter style="--i:1">
       <div class="seg" role="group" aria-label="${tr('Filtrovat upozornění')}" data-region="filters"></div>
       <div class="toolbar-actions">
-        <a class="btn" href="#/nastaveni">${ICON.sliders}${tr('Nastavit upozornění')}</a>
+        <a class="btn" href="#/nastaveni" data-karta="notifications">${ICON.sliders}${tr('Nastavit upozornění')}</a>
         <button class="btn" type="button" data-read-all-view>${ICON.check}${tr('Označit vše jako přečtené')}</button>
       </div>
     </div>
@@ -69,7 +69,6 @@ function update() {
   if (!list.length) {
     fill(el, 'list', emptyState({
       title: v.filter === 'all' ? tr('Zatím žádná upozornění') : tr('Nic k zobrazení'),
-      text: tr('Upozorníme tě, když agent bude potřebovat rozhodnutí, narazí na limit, dokončí dlouhou úlohu nebo když překročíš rozpočet.'),
     }));
     return;
   }

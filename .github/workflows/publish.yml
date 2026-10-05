@@ -5,8 +5,9 @@
 #
 # Před zveřejněním se popis přegeneruje aktuálním scripts/release-notes.mjs z `main`. Oprava
 # textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
-# nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má přílohu
-# se stálým jménem, na kterou vede tlačítko Stáhnout na webu.
+# nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
+# přílohy se stálým jménem, na které vedou tlačítka ke stažení na webu (ZIP a DMG pro Mac,
+# ZIP pro Windows).
 name: Zveřejnit vydání
 
 on:
@@ -46,9 +47,11 @@ jobs:
           node -e '
             const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
             if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
-            if (!v.assets.some((a) => a.name === "Agenteeq-macOS-arm64.zip")) {
-              console.log("::error::Chybí příloha Agenteeq-macOS-arm64.zip – tlačítko Stáhnout na webu by vedlo do prázdna.");
-              process.exit(1);
+            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip"]) {
+              if (!v.assets.some((a) => a.name === stala)) {
+                console.log(`::error::Chybí příloha ${stala} – tlačítko ke stažení na webu by vedlo do prázdna.`);
+                process.exit(1);
+              }
             }
             console.log(v.assets.map((a) => `${a.name} ${a.size}`).join("\n"));
           '
@@ -64,7 +67,7 @@ jobs:
           node -e '
             const fs = require("fs");
             const v = JSON.parse(fs.readFileSync("vydani.json", "utf8"));
-            for (const a of v.assets.filter((x) => x.name.endsWith(".zip"))) {
+            for (const a of v.assets.filter((x) => /\.(zip|dmg)$/.test(x.name))) {
               fs.writeFileSync(`prilohy/${a.name}`, "");
               fs.truncateSync(`prilohy/${a.name}`, a.size);
             }
@@ -81,19 +84,24 @@ jobs:
           gh release edit "$TAG" --notes-file poznamky.md --draft=false --latest
           gh release view "$TAG" --json isDraft,url,publishedAt
 
-      # Tlačítko Stáhnout na webu vede na /releases/latest/download/…; ověří se, že opravdu vede
-      # na přílohu tohoto vydání.
-      - name: Ověřit odkaz ke stažení
+      # Tlačítka ke stažení na webu vedou na /releases/latest/download/…; ověří se, že každé
+      # opravdu vede na přílohu tohoto vydání.
+      - name: Ověřit odkazy ke stažení
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          for pokus in 1 2 3 4 5 6; do
-            CIL=$(curl -sI "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/Agenteeq-macOS-arm64.zip" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}')
-            echo "Stáhnout vede na: $CIL"
-            case "$CIL" in
-              *"/releases/download/$TAG/Agenteeq-macOS-arm64.zip") exit 0 ;;
-            esac
-            sleep 10
+          for SOUBOR in Agenteeq-macOS-arm64.zip Agenteeq-macOS-arm64.dmg Agenteeq-Windows-x64.zip; do
+            OK=
+            for pokus in 1 2 3 4 5 6; do
+              CIL=$(curl -sI "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/$SOUBOR" | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}')
+              echo "$SOUBOR vede na: $CIL"
+              case "$CIL" in
+                *"/releases/download/$TAG/$SOUBOR") OK=1; break ;;
+              esac
+              sleep 10
+            done
+            if [ -z "$OK" ]; then
+              echo "::error::Odkaz ke stažení $SOUBOR nevede na přílohu $TAG."
+              exit 1
+            fi
           done
-          echo "::error::Odkaz ke stažení nevede na přílohu $TAG."
-          exit 1

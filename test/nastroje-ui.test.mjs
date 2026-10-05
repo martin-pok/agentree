@@ -46,10 +46,10 @@ test('stav běhu se bere z živého seznamu procesů, ne ze zapamatovaného záz
 });
 
 test('co Agenteeq vidí: přesná věta u sdílených zdrojů, poctivá u nesledovaných', () => {
-  assert.match(coVidim({ sledovano: false }), /číst neumím/);
+  assert.match(coVidim({ sledovano: false }), /se nečtou/);
   // Claude Code bez záznamů na disku: Agenteeq ho číst umí, jen zatím nemá co.
-  assert.doesNotMatch(coVidim({ sledovano: false, umiCist: true }), /neumím/);
-  assert.match(coVidim({ sledovano: true }), /už čtu/);
+  assert.doesNotMatch(coVidim({ sledovano: false, umiCist: true }), /nečtou/);
+  assert.match(coVidim({ sledovano: true }), /^Čtou se/);
   const chatgpt = RUNTIMES.find((r) => r.id === 'chatgpt');
   assert.match(coVidim({ sledovano: true, vidim: chatgpt.vidim }), /Běžné chaty z aplikace ne/);
   const desktop = RUNTIMES.find((r) => r.id === 'claude-desktop');
@@ -62,7 +62,7 @@ test('katalog: rozšíření pro Chrome se nevydává za zdroj dat desktopové a
     assert.ok(!(r.konektory || []).includes('web'), `${r.id}: rozšíření čte webovou záložku, ne aplikaci`);
   }
   // Sdílený zdroj (záložka Code v Claude Desktop čte Claude Code, Codex v ChatGPT čte Codex):
-  // obecnou větu „konverzace a tokeny už čtu“ smí mít nanejvýš jeden z nástrojů, ostatní říkají přesně co.
+  // obecnou větu „čtou se konverzace a tokeny“ smí mít nanejvýš jeden z nástrojů, ostatní říkají přesně co.
   const podleZdroje = new Map();
   for (const r of RUNTIMES) for (const k of r.konektory || []) podleZdroje.set(k, [...(podleZdroje.get(k) || []), r]);
   for (const [k, nastroje] of podleZdroje) {

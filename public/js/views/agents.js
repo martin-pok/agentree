@@ -57,7 +57,7 @@ const SEGMENTS = [
 const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
 
 // Aplikace, které Agenteeq umí přepnout do popředí (server má pevný seznam v src/openers.js).
-const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
+const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
 
 // Aplikace, které na tomto Macu běží, ale svoje konverzace nikam neukládají. Dřív se v seznamu
 // vůbec neobjevily, takže to vypadalo, že Agenteeq agenta „nezaregistroval". Teď je vidět, že běží,
@@ -75,8 +75,8 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome. Bez něj se ke stránce otevřené v prohlížeči nedostane.')}</p>
-      <a class="link-inline" href="#/nastaveni">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
+      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu sleduje rozšíření pro Chrome.')}</p>
+      <a class="link-inline" href="#/nastaveni" data-karta="extension">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
   </li>`;
 }
@@ -103,7 +103,7 @@ function bezPrepisuHtml(sessions) {
         </div>
         <div class="runtime-actions">
           ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}${tr('Přepnout do aplikace')}</button>` : ''}
-          <a class="btn btn--sm" href="${esc(i.odkaz.href)}">${esc(i.odkaz.text)}</a>
+          <a class="btn btn--sm" href="${esc(i.odkaz.href)}"${i.odkaz.karta ? ` data-karta="${esc(i.odkaz.karta)}"` : ''}>${esc(i.odkaz.text)}</a>
         </div>
       </li>`;
   }).join('')}${lokalni.map(lokalniHtml).join('')}</ul>
@@ -127,7 +127,7 @@ function lokalniHtml(a) {
       ${detaily ? `<span class="muted small">${esc(detaily)}</span>` : ''}
       ${a.note ? `<p class="small muted">${esc(a.note)}</p>` : ''}
     </div>
-    ${a.port ? `<a class="btn btn--sm" href="#/nastaveni">${tr('Přidat jako agenta')}</a>` : '<span></span>'}
+    ${a.port ? `<a class="btn btn--sm" href="#/nastaveni" data-karta="custom">${tr('Přidat jako agenta')}</a>` : '<span></span>'}
   </li>`;
 }
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
@@ -318,8 +318,7 @@ function update() {
   if (!all.length) {
     zivy(el, 'table', emptyState({
       title: tr('Zatím tu nejsou žádní agenti'),
-      text: tr('Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.'),
-      action: `<a class="btn" href="#/nastaveni">${tr('Zkontrolovat zdroje dat')}</a>`,
+      action: `<div class="empty-actions"><button class="btn btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button><a class="btn" href="#/nastaveni" data-karta="connectors">${tr('Zkontrolovat zdroje dat')}</a></div>`,
     }));
   } else if (!list.length) {
     zivy(el, 'table', emptyState({

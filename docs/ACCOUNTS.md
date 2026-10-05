@@ -166,12 +166,23 @@ synchronizací; do té doby ho načtení volby z účtu nepřepíše.
   významem, starší řádky mohou mít den UTC.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
-- **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):
+- **„Co přesně se posílá“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):
   nahoře počet řádků v každé tabulce, pod tím celý JSON.
 - **Vypnutí souhrny z účtu smaže** (všechny tabulky souhrnů, jen vlastní řádky – RLS). Zařízení
   zůstanou. Smazání účtu smaže i je.
-- Posílá se hned po zapnutí, po přihlášení, tlačítkem „Synchronizovat teď“ a pak každých 5 minut upsertem
-  (`Prefer: resolution=merge-duplicates`). Výpadek sítě ukáže chybu, volbu nezmění a zkusí se znovu.
+- Posílá se hned po zapnutí, po přihlášení, po obnově ověřeného přihlášení (síť, Klíčenka), tlačítkem
+  „Synchronizovat teď“ a pak každých 5 minut upsertem (`Prefer: resolution=merge-duplicates`). Výpadek
+  sítě ukáže chybu, volbu nezmění a zkusí se znovu. „Synchronizovat teď“ hlásí úspěch jen tehdy, když
+  souhrny opravdu odešly; jinak řekne proč (vypnuto, nepřihlášeno, chyba serveru).
+- **Pořadí (5. 10. 2026):** nejdřív se v účtu založí tento počítač (`devices`), teprve potom se do
+  `profiles.sync_enabled` zapíše „zapnuto“. Dřív to bylo obráceně: když založení zařízení selhalo,
+  zůstal účet zapnutý s nulou zařízení a web ukazoval „0 zařízení“. Chyba založení se teď ukáže
+  v kartě účtu („Tento Mac se nepodařilo přidat do účtu: …“), volba počká (`volbaCeka`, přežije
+  restart) a každý další běh registraci dožene. Přepínač v Nastavení bez založeného zařízení
+  synchronizaci nezapne vůbec.
+- **Úklid:** po každém odeslání tento počítač smaže ze svých řádků v účtu ty, které by už neposlal –
+  útratu ve staré měně nebo ze služby bez klíče (v měsících, které aplikace počítá), limity, které
+  zdroj přestal hlásit, a zdroje, které už nejsou napojené. Tokeny po dnech zůstávají (historie).
 - Ověřeno proti databázi 24. 9. 2026 (transakce vrácená zpět): upsert přepíše řádek, rozpad je
   `null`, druh `extra` projde, vypnutí smaže vlastní souhrny.
 
@@ -197,7 +208,18 @@ rovnou i z `/app`.
   Do souhrnů web nezapisuje (hlídá `test/ucet-web.test.mjs`).
 - **Obsah:** agenti teď ze všech Maců dohromady, tokeny za 30 dní po dnech a poskytovatelích,
   útrata tohoto měsíce po službách, limity s obnovou a zařízení s posledním spojením. Obnovuje se
-  každou minutu, když je stránka vidět. Vypnutá synchronizace = vysvětlení, kde ji zapnout.
+  každou minutu, když je stránka vidět, a hned po návratu do karty a po obnovení sítě. Vypnutá
+  synchronizace = vysvětlení, kde ji zapnout; zapnutá bez jediného zařízení = vysvětlení, kde
+  v aplikaci hledat chybu.
+- **Stáří dat:** nad kartami stojí „Poslední synchronizace před …“ (nejnovější `devices.last_seen_at`).
+  Když se žádný počítač neozval přes 15 minut (tři zmeškaná kola), přehled to řekne nahlas („Data
+  jsou stará“) a „Agenti teď“ místo čísel vysvětlí, že stav teď neznáme. Agenti z počítače, který
+  se neozval přes 15 minut, se do „teď“ nepočítají. Nepovedená obnova nechá poslední data vidět,
+  ale s upozorněním, z kdy jsou.
+- **Bez dvojího počítání:** útrata na Macu jsou náklady z Admin API – patří organizaci, ne počítači.
+  Dva Macy se stejným klíčem (nebo staré zařízení po přeinstalaci) by tentýž náklad poslaly dvakrát,
+  proto web pro každou službu, druh a měnu bere jen nejčerstvěji synchronizovaný řádek. Různé měny
+  se nesčítají. Stejně se jednou ukáže okno limitu hlášené více počítači (nejnovější měření).
 - **Vzhled** podle systému; styly aplikace (`public/styles.css`, „Přehled účtu na webu“).
 - Adresa projektu a publikovatelný klíč mají jediný zdroj `public/js/ucet-config.js`, který čte
   i server na Macu (`src/config.js`).

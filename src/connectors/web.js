@@ -15,6 +15,7 @@ export const WEB_SITES = {
   'github-copilot': { name: 'GitHub Copilot', provider: 'github' },
 };
 
+const ZASTUPNE_ID = /^tab-[a-z0-9]{1,16}$|^tab-unknown$/;
 const MAX_POCET = 100000;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
 
@@ -41,6 +42,9 @@ export function validateWebPayload(p) {
       model: clip(typeof p.model === 'string' ? p.model : '', 60),
       needsInput: typeof p.needsInput === 'string' ? clip(p.needsInput, 200) : null,
       limit: typeof p.limit === 'string' ? clip(p.limit, 200) : null,
+      // Zástupné ID karty (extension/sites.js#tabId), pod kterým rozšíření posílalo tutéž konverzaci,
+      // dokud jí služba nepřidělila ID. Jiné hodnoty se ignorují – nesmí jít smazat cizí konverzaci.
+      nahrazuje: typeof p.nahrazuje === 'string' && ZASTUPNE_ID.test(p.nahrazuje) && p.nahrazuje !== p.conversationId ? p.nahrazuje : null,
     },
   };
 }
@@ -95,7 +99,20 @@ export function createWebConnector(ctx) {
       if (!res.ok) return res;
       const v = res.value;
       const site = WEB_SITES[v.site];
+      const id = `web:${v.site}:${v.conversationId}`;
+      // Nová konverzace dostala ID: záznam pod zástupným ID karty se převede na skutečné ID, ať je
+      // v přehledu jedna konverzace, ne dvě. Začátek konverzace a probíhající tah zůstanou.
+      const predtim = v.nahrazuje ? store.get(`web:${v.site}:${v.nahrazuje}`) : null;
+      const nova = !store.get(id);
       const s = store.ensure({ connector: 'web', localId: `${v.site}:${v.conversationId}`, provider: site.provider, app: site.name, source: 'web' });
+      if (predtim) {
+        if (nova) {
+          for (const k of ['startedAt', 'lastAt', 'running', 'runningAt', 'turnStartedAt', 'turnSteps', 'pending', 'limit', 'model']) s[k] = predtim[k];
+          s.web = predtim.web ? { counts: { ...predtim.web.counts } } : s.web;
+          for (const m of predtim.minutes) s.minutes.add(m);
+        }
+        store.remove(predtim.id);
+      }
       applyWebPayload(s, v, now);
       lastSeen.set(v.site, now);
       store.commit(s, now);

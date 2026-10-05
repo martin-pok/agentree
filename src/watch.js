@@ -103,6 +103,13 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
     get active() {
       return Boolean(watcher);
     },
+    /**
+     * Zkusit sledování hned, ne až při dalším opakování. Volá se, když je jiný důvod čekat, že složka
+     * už vznikla – běží agent, ke kterému se nenašel přepis. Pokus je levný: jedno fs.watch.
+     */
+    zkus() {
+      if (!closed && !watcher) arm();
+    },
     /** Složka, kterou právě hlídá strážce ('' = žádná). */
     get strazi() {
       return strazeno;

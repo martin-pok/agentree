@@ -6,7 +6,7 @@ import { PUBLIC_DIR, VERSION } from './config.js';
 import { validateEntry, validateBudgets, EXPORT_MESICU } from './spend.js';
 import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { CAS_TICHA } from './nocni-ticho.js';
-import { remoteScope } from './remote-scope.js';
+import { remoteScope, JEN_NA_HOSTITELI_UDALOSTI } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
 import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
@@ -122,7 +122,7 @@ export function createHttpServer(app, existingServer = null) {
     }
     if (keyMatches(cookieValue(req.headers.cookie, 'agenteeq_local')) || keyMatches(req.headers['x-agenteeq-key'])) { keyUsed++; return false; }
     if (url.pathname.startsWith('/api/')) throw new HttpError(403, ui('Chybí klíč okna aplikace.'));
-    res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>Agenteeq běží</h1><p>Přehled se otevírá z okna aplikace Agenteeq. Tahle adresa bez klíče nic nezobrazí.</p>');
+    res.writeHead(403, { ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><meta charset="utf-8"><title>Agenteeq</title><body style="font:16px system-ui;padding:48px;max-width:560px"><h1>Agenteeq běží</h1><p>Přehled se otevírá z okna aplikace Agenteeq, nebo z Terminálu příkazem <code>agenteeq --open</code>. Tahle adresa bez klíče nic nezobrazí.</p>');
     return true;
   }
 
@@ -209,8 +209,10 @@ export function createHttpServer(app, existingServer = null) {
   function broadcast(event, data) {
     if (!clients.size) return;
     const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    const jenHostitel = JEN_NA_HOSTITELI_UDALOSTI.has(event);
     for (const [res, req] of clients) {
       if (!authorizedStream(res, req)) continue;
+      if (jenHostitel && !zTohotoMacu(req)) continue;
       // A stalled browser must not grow an unbounded transcript buffer.
       if (res.writableLength > 1_000_000) { clients.delete(res); res.destroy(); }
       else res.write(msg);
@@ -465,10 +467,12 @@ export function createHttpServer(app, existingServer = null) {
       ...(zTohotoMacu(req) ? { keyed: Boolean(config.localKey), keyUsed, runsActive: app.runsPayload().filter((r) => ['running', 'stopping'].includes(r.status)).length, install: instalace(), } : {}),
     })],
     ['GET', /^\/api\/state$/, (req) => app.state({ local: zTohotoMacu(req) })],
-    ['GET', /^\/api\/sessions\/([^/]+)$/, (_req, m) => {
+    ['GET', /^\/api\/sessions\/([^/]+)$/, (req, m) => {
       const id = decodeURIComponent(m[1]);
       const session = store.summary(id);
       if (!session) throw new HttpError(jeProcesovyId(id) ? 410 : 404, jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.'));
+      // Spárovaný telefon dostane jen souhrn – celý přepis zůstává na hostiteli (src/remote-scope.js).
+      if (!zTohotoMacu(req)) return { session, transcript: [], prepisJenNaHostiteli: true };
       return { session, transcript: store.transcript(id) };
     }],
     ['GET', /^\/api\/sessions\/([^/]+)\/transcript$/, (_req, m, url) => {
@@ -851,7 +855,15 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['POST', /^\/api\/ucet\/synchronizovat$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Synchronizovat lze jen {0}.', POCITAC.naHostiteli));
-      await app.cloudSync.synchronizuj();
+      // Úspěch jen tehdy, když souhrny opravdu odešly. Jinak chyba s důvodem – tlačítko „Synchronizovat
+      // teď“ nesmí hlásit „aktuální“, když se nic neposlalo.
+      const r = await app.cloudSync.synchronizuj();
+      if (!r.ok) {
+        const [status, zprava] = r.duvod === 'vypnuto' ? [409, ui('Synchronizace je vypnutá – nic se neposlalo.')]
+          : r.duvod === 'neprihlaseno' || r.duvod === 'nenastaveno' ? [401, ui('Nejsi přihlášený k účtu – nic se neposlalo.')]
+          : [503, r.chyba || ui('Souhrny se nepodařilo odeslat.')];
+        throw new HttpError(status, zprava, { ucet: app.ucetStav() });
+      }
       return { ucet: app.ucetStav() };
     }],
     // Profilová fotka z Googlu, uložená na tomto Macu (src/ucet.js). Telefon vidí z účtu jen stav.

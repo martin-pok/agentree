@@ -26,15 +26,13 @@ test('Dovednosti: ovládání se ukáže jen tam, kde má co ovládat', () => {
     { hledani: true, zdroje: true, popis: true, razeni: true, puvod: true });
 });
 
-// Nápověda k režimu a poznámka cíle se v rozhraní skládají za sebe do jednoho odstavce.
-// Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy –
-// u webových služeb dokonce s rozporem („v prohlížeči" vs. „otevře aplikaci").
-test('spuštění agenta: nápověda režimu a poznámka cíle si neříkají totéž', async () => {
+// Pod zadáním stojí jen poznámka cíle, a to jen tam, kde říká něco, co jinde není (schránka,
+// chybějící model). Obecná nápověda režimu („Otevře aplikaci…“, „Běží na tvých předplatných…“)
+// opakovala to, co už říká přepínač režimu, a uživatel ji četl u každého spuštění znovu.
+test('spuštění agenta: žádná obecná nápověda režimu, poznámka cíle se neopakuje', async () => {
   const kod = await zdroj('public/js/launcher-ui.js');
-  const blok = kod.match(/const MODE_HINT = \{([\s\S]*?)\n\};/)?.[1];
-  assert.ok(blok, 'MODE_HINT se v launcher-ui.js nenašel – uprav test spolu s ním');
-  const hint = Object.fromEntries([...blok.matchAll(/(\w+):\s*tr\('([^']*)'\)/g)].map((m) => [m[1], m[2]]));
-  assert.ok(Object.keys(hint).length >= 5, `čekali jsme nápovědu ke všem režimům, máme ${Object.keys(hint).length}`);
+  assert.doesNotMatch(kod, /MODE_HINT/, 'nápověda režimu se vrátila do launcher-ui.js');
+  assert.match(kod, /fill\(root, 'note', esc\(t\.note \|\| ''\)\)/, 'pod zadáním smí stát jen poznámka cíle');
 
   const env = {
     bins: { claude: '/opt/bin/claude', codex: '/opt/bin/codex', gemini: '/opt/bin/gemini', qwen: '/opt/bin/qwen' },
@@ -42,20 +40,17 @@ test('spuštění agenta: nápověda režimu a poznámka cíle si neříkají to
     claudeApp: true,
     ollama: { ok: true, models: [{ name: 'llama3.2:3b' }] },
   };
-  const fraze = [/ve schránce/gi, /⌘V/g, /prohlížeč/gi, /na tvém Macu/gi, /zdarma/gi, /Otevře/g];
-  for (const t of launchTargets(env)) {
-    for (const mode of t.modes) {
-      assert.ok(hint[mode], `režim ${mode} nemá nápovědu`);
-      const veta = `${hint[mode]} ${t.note || ''}`;
-      for (const f of fraze) {
-        const kolik = (veta.match(f) || []).length;
-        assert.ok(kolik <= 1, `${t.id}/${mode} opakuje ${f}: „${veta}"`);
-      }
+  const fraze = [/ve schránce/gi, /⌘V/g, /prohlížeč/gi, /na tvém Macu/gi, /zdarma/gi, /předplatn/gi];
+  const cile = [...launchTargets(env), ...launchTargets({ ...env, ollama: { ok: true, models: [] } })];
+  for (const t of cile) {
+    for (const f of fraze) {
+      const kolik = (t.note || '').match(f)?.length || 0;
+      assert.ok(kolik <= 1, `${t.id} opakuje ${f}: „${t.note}"`);
     }
+    assert.doesNotMatch(t.note || '', /předplatn/i, `${t.id}: poznámka nemá ujišťovat o předplatném`);
   }
-  // Ollama bez staženého modelu má jinou poznámku – projít musí i ta.
-  const bezModelu = launchTargets({ ...env, ollama: { ok: true, models: [] } }).find((t) => t.id === 'ollama');
-  assert.ok(!/na tvém Macu.*na tvém Macu/s.test(`${hint.local} ${bezModelu.note}`));
+  const bezModelu = cile.filter((t) => t.id === 'ollama').at(-1);
+  assert.match(bezModelu.note, /model/, 'Ollama bez modelu musí říct, co chybí');
 });
 
 // Osa grafu je tvrzení o řádu čísel. Nad prázdnými daty by `niceMax` vrátil 4 a graf by

@@ -71,7 +71,6 @@ export function pripojovaciObrazovka(zprava = '') {
     <form class="pair-box" novalidate>
       <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Připoj se ke svému Macu')}</h1>
-      <p>${tr('Agenti, limity i útrata zůstávají na tvém Macu, tohle je jen okno k nim.')}</p>
       <p class="pair-navod">${tr('Na telefonu nejsnáz: v Agenteeq na Macu otevři')} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a namiř na QR kód foťák. Telefon se otevře už spárovaný.')}</p>
       <a class="btn btn--primary" href="?ukazka">${tr('Prohlédnout ukázku bez instalace')}</a>
       <details class="pair-rucne"${rucne ? ' open' : ''}>

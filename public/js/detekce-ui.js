@@ -80,7 +80,7 @@ async function rozhodni(btn) {
     // Přehled, Nastavení i karta se překreslí přes stejné téma jako při změně ze serveru.
     emit('detekce');
     if (akce === 'pridat') toast(tr('{0} je v Mých nástrojích', nazev), { tone: 'ok' });
-    if (akce === 'ignorovat') toast(tr('{0} už hlásit nebudu', nazev), { tone: 'info' });
+    if (akce === 'ignorovat') toast(tr('{0} se už hlásit nebude', nazev), { tone: 'info' });
     if (akce === 'odebrat') toast(tr('{0} je odebraný z Mých nástrojů', nazev), { tone: 'info' });
   } catch (err) {
     btn.disabled = false;

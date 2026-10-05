@@ -51,6 +51,7 @@ src/launcher.js             rychlé spouštění agentů: detekce, plán (argv, 
 src/runs.js                 běhy agentů na pozadí: proces, log, stav, zastavení
 src/ollama.js, local-chat.js  lokální modely v Ollamě jako běžná session s živým přepisem
 src/license.js, plans.js    offline licence (Ed25519) a placené funkce; klíč vydavatele NIKDY v repozitáři
+src/klic-okna.js            klíč okna pro spuštění z Terminálu (CLI); desktop ho dostává od pláště
 src/ucet.js, ucet-stranka.js  účet Agenteeq: přihlášení přes Google (PKCE), tokeny v Klíčence – viz docs/ACCOUNTS.md
 supabase/                   cloudová databáze: migrace s RLS a kontrola oprávnění (tests/rls.sql)
 scripts/license.mjs         vydávání licencí (viz docs/LICENSING.md)

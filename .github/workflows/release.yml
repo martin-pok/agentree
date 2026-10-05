@@ -13,7 +13,8 @@
 # spuštěným workflow Zveřejnit vydání (publish.yml), který před tím přegeneruje popis.
 #
 # Podpis: build použije Developer ID, jen když je v proměnných prostředí. Bez něj podepíše
-# ad-hoc a `scripts/release-notes.mjs` to napíše do popisu i s příkazem na sundání karantény.
+# ad-hoc a `scripts/release-notes.mjs` to napíše do popisu i s postupem, jak aplikaci napoprvé
+# povolit v Nastavení systému (Soukromí a zabezpečení → Přesto otevřít).
 # Nic se nepředstírá — popis vydání odpovídá tomu, co se opravdu sestavilo.
 name: Vydání
 
@@ -88,11 +89,20 @@ jobs:
           AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
         run: npm run build:mac
 
+      # Instalátor s přetažením do Aplikací. Obsah bere z právě sestaveného ZIPu, takže je
+      # v něm tatáž (a stejně podepsaná) aplikace. Jen nástroje macOS: ditto, ln, hdiutil.
+      - name: Sestavit obraz disku (DMG)
+        env:
+          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
+          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
+        run: npm run build:dmg
+
       - uses: actions/upload-artifact@v6
         with:
           name: mac-arm64
           path: |
             dist/Agenteeq-*-macOS-*.zip
+            dist/Agenteeq-*-macOS-*.dmg
             dist/latest-build.json
           if-no-files-found: error
 
@@ -157,14 +167,26 @@ jobs:
       - name: Srovnat přílohy
         run: |
           mkdir -p prilohy
-          find stazeno -name '*.zip' -exec cp {} prilohy/ \;
+          find stazeno \( -name '*.zip' -o -name '*.dmg' \) -exec cp {} prilohy/ \;
           # latest-build.json zapisuje build a je v něm pravda o podpisu. Bereme ten
           # z Apple Silicon, protože to je hlavní build; když není, popis bude opatrnější.
           cp stazeno/mac-arm64/latest-build.json prilohy/ 2>/dev/null || true
           # Kopie se stálým jménem. Web na ni odkazuje přes /releases/latest/download/, takže
           # tlačítko Stáhnout přežije každé vydání bez zásahu do stránky. Bez tohohle souboru
           # by odkaz po dalším vydání ukazoval do prázdna.
-          for f in prilohy/Agenteeq-*-macOS-arm64.zip; do [ -e "$f" ] && cp "$f" prilohy/Agenteeq-macOS-arm64.zip && break; done
+          # Stejně se jmenují stálé kopie instalátoru pro Mac (DMG) a balíčku pro Windows, na které
+          # vedou tlačítka na stránce Instalace. Chybějící soubor zastaví vydání: tlačítko bez
+          # přílohy je horší než žádné vydání.
+          zkopiruj() {
+            for f in prilohy/$1; do
+              if [ -e "$f" ]; then cp "$f" "prilohy/$2"; return 0; fi
+            done
+            echo "::error::K vydání chybí $1 – stálá příloha $2 by vedla do prázdna."
+            return 1
+          }
+          zkopiruj 'Agenteeq-*-macOS-arm64.zip' Agenteeq-macOS-arm64.zip
+          zkopiruj 'Agenteeq-*-macOS-arm64.dmg' Agenteeq-macOS-arm64.dmg
+          zkopiruj 'Agenteeq-*-Windows-x64.zip' Agenteeq-Windows-x64.zip
           ls -l prilohy
 
       - name: Popis vydání
@@ -184,10 +206,10 @@ jobs:
         run: |
           TAG="${{ inputs.tag || github.ref_name }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" prilohy/*.zip --clobber
+            gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg --clobber
             gh release edit "$TAG" --notes-file poznamky.md
           else
-            gh release create "$TAG" prilohy/*.zip \
+            gh release create "$TAG" prilohy/*.zip prilohy/*.dmg \
               --draft \
               --title "Agenteeq ${{ steps.popis.outputs.verze }}" \
               --notes-file poznamky.md

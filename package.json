@@ -1,6 +1,6 @@
 {
   "name": "agenteeq",
-  "version": "0.36.4",
+  "version": "0.37.0",
   "private": true,
   "description": "Agenteeq – všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
   "type": "module",
@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "build:mac": "mkdir -p dist && node scripts/build-macos.mjs",
+    "build:dmg": "node scripts/build-dmg.mjs",
     "build:extension": "node scripts/build-extension.mjs",
     "build:windows": "node scripts/build-windows.mjs",
     "icon:windows": "node scripts/make-ico.mjs",

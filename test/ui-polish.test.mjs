@@ -51,7 +51,7 @@ test('heatDetails spočítá dny, podíl nástroje a možné dny okna', async ()
   const k1 = key(14, 9); // v okně, dvakrát ve stejné hodině stejného týdne v týdnu
   const k2 = key(7, 9);
   const sessions = [
-    { app: 'Codex · ChatGPT app', hourly: { [k1]: 300, [k2]: 100 } },
+    { app: 'Codex · aplikace', hourly: { [k1]: 300, [k2]: 100 } },
     { app: 'Claude Code', hourly: { [k1]: 100 } },
   ];
   const d = heatDetails(sessions, now, 30);

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
-import { processList } from '../src/platform.js';
+import { processList, radkyProcesu } from '../src/platform.js';
 
 export async function tempDir(prefix = 'agenteeq-test-') {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -47,12 +47,20 @@ export function fakeDatastore(settings = {}) {
 // viděl celý počítač – agenty jiných běhů i uživatele – a z jejich CLAUDE_CONFIG_DIR a CODEX_HOME by
 // četl cizí přepisy (CLAUDE.md: v testech nikdy data mimo dočasnou složku). `pidy` je Set, do kterého
 // test smí přidávat. Výpis je skutečný (ps, /proc), jen se z něj vezmou řádky povolených procesů.
+//
+// Patří sem i potomci povolených procesů (podle PID rodiče ve výpisu): npm obal Codexu nebo Gemini CLI
+// si spouští vlastní dceřiný proces, jehož PID test předem nezná – a je to pořád proces testu.
 export function jenProcesy(pidy) {
   return async () => {
     const r = await processList();
     if (!r?.ok) return r;
-    const radky = String(r.stdout).split('\n').filter((l) => pidy.has(Number(l.trim().split(/\s+/)[0])));
-    return { ...r, stdout: radky.join('\n') };
+    const radky = String(r.stdout).split('\n');
+    const rodic = new Map(radkyProcesu(r.stdout).map((x) => [x.pid, x.ppid]));
+    const povolen = (pid) => {
+      for (let p = pid, i = 0; p && i < 64; p = rodic.get(p), i++) if (pidy.has(p)) return true;
+      return false;
+    };
+    return { ...r, stdout: radky.filter((l) => povolen(Number(l.trim().split(/\s+/)[0]))).join('\n') };
   };
 }
 
