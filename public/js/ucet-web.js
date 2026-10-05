@@ -290,7 +290,7 @@ function kartaAgentu(a, now) {
     <div class="cloud-stage-head"><span class="cloud-dot${cerstve && a.working ? ' is-live' : ''}" aria-hidden="true"></span><h2>${tr('Agenti teď')}</h2>
       <span class="cloud-age">${vek}</span></div>
     ${a.aktualizovano && !cerstve
-      ? `<p class="cloud-stage-stale">${tr('Žádný počítač se neozval přes 15 minut, takže nevíme, co agenti dělají teď. Otevři Agenteeq na Macu a čísla se obnoví sama.')}</p>`
+      ? `<p class="cloud-stage-stale">${tr('Stav agentů není známý: žádný počítač se neozval přes 15 minut.')}</p>`
       : `<div class="cloud-stage-stats">${pole.map(([k, label, cls]) => `<div class="cloud-stat${a[k] ? ` ${cls}` : ''}"><b>${a[k]}</b><span>${label}</span></div>`).join('')}</div>
     ${a.zastarale ? `<p class="cloud-stage-stale">${tr('Počítače, které se neozvaly přes 15 minut, se nepočítají ({0}).', a.zastarale)}</p>` : ''}`}
   </section>`;
@@ -363,10 +363,10 @@ async function nactiData(r) {
 function pruhStari(data, now, chybaObnovy) {
   const posledni = posledniSynchronizace(data.zarizeni);
   const zprava = chybaObnovy
-    ? `<strong>${tr('Obnova se nepovedla.')}</strong> ${esc(chybaObnovy)} ${tr('Ukazuji data načtená {0}.', esc(rel(data.nacteno, now)))}`
+    ? `<strong>${tr('Obnova se nepovedla.')}</strong> ${esc(chybaObnovy)} ${tr('Data z {0}.', esc(rel(data.nacteno, now)))}`
     : !posledni ? ''
       : now - posledni > CERSTVE_MS
-        ? `<strong>${tr('Data jsou stará.')}</strong> ${tr('Počítače poslaly souhrny naposledy {0}. Čísla níž nejsou živá – obnoví se, až Agenteeq na Macu poběží a bude mít síť.', esc(rel(posledni, now)))}`
+        ? `<strong>${tr('Data jsou stará.')}</strong> ${tr('Poslední souhrn {0}. Čísla níž nejsou živá.', esc(rel(posledni, now)))}`
         : '';
   const radek = posledni ? `${tr('Poslední synchronizace')} ${esc(rel(posledni, now))}` : '';
   return `<p class="cloud-sync-age" data-enter style="--i:0">${radek}</p>
@@ -385,7 +385,7 @@ function vykresliPrehled(r, data, { chybaObnovy = '' } = {}) {
       <button class="btn btn--sm" type="button" data-obnovit>${tr('Obnovit')}</button></div>
     ${zapnuto && !bezZarizeni ? pruhStari(data, now, chybaObnovy) : chybaObnovy ? `<div class="cloud-stale" role="status"><strong>${tr('Obnova se nepovedla.')}</strong> ${esc(chybaObnovy)}</div>` : ''}
     ${bezZarizeni ? `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>${tr('Zatím sem žádný počítač nic neposlal')}</h2>
-        <p>${tr('Synchronizace je v účtu zapnutá, ale žádný počítač se v něm zatím nezaložil. Otevři Agenteeq na Macu a podívej se do Nastavení → Účet a vzhled: když se odeslání nepovedlo, stojí tam proč. Agenteeq to sám zkouší znovu každých 5 minut.')}</p></section>`
+        <p>${tr('Žádný počítač se k účtu zatím nepřipojil. Důvod ukáže Agenteeq na Macu v Nastavení → Účet a vzhled.')}</p></section>`
     : zapnuto ? `<div class="cloud-grid">
         ${kartaAgentu(souhrnAgentu(data.agenti, now), now)}
         ${kartaTokenu(tokenyZaDny(data.tokeny, now))}
