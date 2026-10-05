@@ -540,6 +540,32 @@ const palette = createPalette(
 
 /* ---------- Události ---------- */
 
+// Obnova může doběhnout dřív, než by uživatel zaregistroval změnu. Ikona proto dokončí jednu
+// celou otáčku a teprve potom se vrátí do klidového stavu. Samotné tlačítko se nevypíná: neztratí
+// hover ani rozměr a stav aria-busy zároveň zabrání druhému souběžnému požadavku.
+function spustObnovu(button) {
+  button.setAttribute('aria-busy', 'true');
+  button.classList.add('is-refreshing');
+  let uklizeno = false;
+  let pojistka = 0;
+  const uklid = () => {
+    if (uklizeno) return;
+    uklizeno = true;
+    clearTimeout(pojistka);
+    button.classList.remove('is-refreshing');
+    button.removeAttribute('aria-busy');
+  };
+  return () => {
+    const ikona = button.querySelector('.icon');
+    const bezi = ikona?.getAnimations?.().some((animace) => animace.playState === 'running');
+    // Při omezeném pohybu CSS animaci správně vypne; v tom případě se stav vrátí hned.
+    if (!bezi) { uklid(); return; }
+    ikona.addEventListener('animationiteration', uklid, { once: true });
+    // Skrytý panel může CSS animace pozastavit, proto je zde hranice jedné otočky.
+    pojistka = setTimeout(uklid, 760);
+  };
+}
+
 document.addEventListener('click', async (e) => {
   const c = e.target.closest('[data-copy]');
   if (c) {
@@ -556,8 +582,8 @@ document.addEventListener('click', async (e) => {
   if (e.target.closest('[data-action="palette"]')) { palette.open(); return; }
   if (e.target.closest('#refresh-app')) {
     const button = document.getElementById('refresh-app');
-    if (button.disabled) return;
-    button.disabled = true;
+    if (!button || button.getAttribute('aria-busy') === 'true') return;
+    const dokonciObnovu = spustObnovu(button);
     try {
       await api.rescan();
       // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
@@ -566,7 +592,7 @@ document.addEventListener('click', async (e) => {
     } catch (err) {
       toast(err.message, { tone: 'err' });
     } finally {
-      button.disabled = false;
+      dokonciObnovu();
     }
     return;
   }

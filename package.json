@@ -35,6 +35,7 @@
     "smoke:server": "node scripts/smoke-server.mjs",
     "license": "node scripts/license.mjs",
     "qa:desktop": "node scripts/qa-desktop.mjs",
+    "qa:refresh": "node scripts/qa-refresh-motion.mjs",
     "qa:contrast": "node scripts/qa-contrast.mjs",
     "qa:tvary": "node scripts/qa-tvary.mjs",
     "qa:site": "node scripts/qa-site.mjs",
