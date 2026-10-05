@@ -4,11 +4,24 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.36.3 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Lokální build je ad-hoc podepsaný; veřejná distribuce vyžaduje Developer ID a notarizaci. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.36.3 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
-Pro Mac jedním příkazem v Terminálu (stáhne poslední vydání, ověří otisk SHA-256 z GitHubu a nainstaluje bez kroku v Nastavení): `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash`. Nebo stáhni [poslední vydání](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip) (nebo rozbal `dist/Agenteeq-macOS-arm64.zip` z vlastního sestavení) a přesuň Agenteeq.app do Aplikací. Aplikace pro Mac je jen pro Apple Silicon (M1 a novější), Mac s procesorem Intel nepodporujeme. Sestavení ze zdrojů: `npm run build:mac` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
+## Instalace
 
-## Rychlý start
+**[Stáhnout pro Mac](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip)** · **[Stáhnout pro Windows (beta)](https://github.com/martin-pok/agentree/releases/latest)** · [postup na webu](https://agentree-fawn.vercel.app/instalace)
+
+Mac (Apple Silicon, M1 a novější, macOS 14+; Mac s procesorem Intel nepodporujeme), bez Terminálu:
+
+1. Stáhni a rozbal ZIP.
+2. Přetáhni Agenteeq do složky Aplikace.
+3. Otevři Agenteeq. macOS ohlásí, že aplikaci nemůže ověřit – dialog zavři.
+4. Nastavení systému → Soukromí a zabezpečení → v části Zabezpečení klikni na **Přesto otevřít** a potvrď heslem. Příště se Agenteeq otevře dvojklikem.
+
+Windows 10 a 11 jsou beta: balíček se sestavuje s každým vydáním (na stránce vydání soubor `Agenteeq-<verze>-Windows-x64.zip`), ale na skutečném počítači ho zatím nikdo nevyzkoušel – viz [docs/WINDOWS.md](docs/WINDOWS.md).
+
+Pro pokročilé: instalace jedním příkazem v Terminálu (stáhne poslední vydání, ověří otisk SHA-256 z GitHubu a nainstaluje bez kroku v Nastavení): `curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash`. Sestavení ze zdrojů: `npm run build:mac` a `npm run build:dmg` (macOS 14+, Xcode tools). Podrobnosti: [Instalace](docs/INSTALL.md).
+
+## Rychlý start ze zdrojů
 
 Potřebuješ macOS a Node.js 22.13 nebo novější. Žádné závislosti, žádný build.
 
@@ -40,7 +53,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 797 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření
+npm test          # 805 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/

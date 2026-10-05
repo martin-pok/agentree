@@ -194,7 +194,7 @@ console.log('Landing page');
 const { out } = await buildSite();
 const web = await staticServer(out);
 // /app = rozcestník statické kopie rozhraní (bez serveru). Tam se jednou ztratil text hlavního tlačítka.
-for (const stranka of ['/', '/en', '/app/']) {
+for (const stranka of ['/', '/en', '/instalace', '/en/install', '/app/']) {
   for (const rezim of ['light', 'dark']) {
     for (const sirka of SIRKY) {
       const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, colorScheme: rezim, reducedMotion: 'reduce' });

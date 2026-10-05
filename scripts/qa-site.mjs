@@ -110,6 +110,58 @@ try {
           results.push({ engine, theme, width, stranka, passed: true, height: await page.evaluate(() => document.documentElement.scrollHeight) });
           await page.close();
         }
+        // Stránka Instalace: stejná lišta a okraje jako úvod, tlačítka ke stažení vedou na
+        // vydání na GitHubu, žádné vodorovné posouvání ani rozbitá kotva, čistá konzole.
+        for (const width of [360, 375, 768, 900, 1440]) for (const stranka of ['/instalace', '/en/install']) {
+          const page = await browser.newPage({ viewport: { width, height: 1000 }, colorScheme: theme, reducedMotion: 'reduce' });
+          const errors = [];
+          const cizi = [];
+          await jenMistni(page, cizi);
+          page.on('pageerror', e => errors.push(e.message));
+          page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+          page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
+          await page.goto(url + stranka);
+          await page.evaluate(() => document.fonts.ready);
+          const kde = `${engine} ${theme} ${width} ${stranka}`;
+          assert.equal(await page.locator('h1').count(), 1, kde);
+          const cekanyJazyk = stranka.startsWith('/en') ? 'en' : 'cs';
+          assert.equal(await page.evaluate(() => document.querySelector('.lang [aria-current="page"]')?.getAttribute('lang')), cekanyJazyk, kde);
+          const lista = await page.evaluate(() => {
+            const box = (s) => document.querySelector(s)?.getBoundingClientRect();
+            const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
+            const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && cta && cta.right <= innerWidth), prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)) };
+          });
+          assert.deepEqual(lista, { videt: true, prekryv: false }, `${kde}: lišta`);
+          const okraje = await page.evaluate(() => {
+            const vzor = document.querySelector('.nav > .wrap').getBoundingClientRect();
+            return [...document.querySelectorAll('.unit > .wrap, footer > .wrap')].map(el => {
+              const r = el.getBoundingClientRect();
+              return { sekce: el.closest('section')?.id || 'footer', rozdil: Math.max(Math.abs(r.left - vzor.left), Math.abs(r.right - vzor.right)) };
+            }).filter(x => x.rozdil > 1);
+          });
+          assert.deepEqual(okraje, [], `${kde}: různé boční okraje obsahu`);
+          // Tlačítka ke stažení: Mac i Windows jsou vidět a vedou na vydání na GitHubu.
+          const stazeni = await page.evaluate(() => [...document.querySelectorAll('[data-stahnout]')].map(a => ({ kam: a.dataset.stahnout, href: a.href, videt: a.getBoundingClientRect().width > 0 })));
+          assert.ok(stazeni.some(s => s.kam === 'mac-arm64' && s.videt) && stazeni.some(s => s.kam === 'windows-x64' && s.videt), `${kde}: tlačítka ke stažení`);
+          for (const s of stazeni) assert.match(s.href, /^https:\/\/github\.com\/martin-pok\/agentree\/releases\/latest(\/download\/Agenteeq-(macOS-arm64\.(zip|dmg)|Windows-x64\.zip))?$/, kde);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${kde}: overflow`);
+          assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, `${kde}: reduced motion`);
+          const brokenAnchors = await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].map(a => a.getAttribute('href')).filter(h => h.length > 1 && !document.getElementById(h.slice(1))));
+          assert.deepEqual(brokenAnchors, [], kde);
+          const smallText = await page.evaluate(() => [...document.querySelectorAll('p, span, a, button, summary, li')].filter(e => e.getBoundingClientRect().height && parseFloat(getComputedStyle(e).fontSize) < 12).map(e => e.textContent.slice(0, 30)));
+          assert.deepEqual(smallText, [], kde);
+          // Rozbalovací řádek potíží jde otevřít klávesnicí.
+          await page.locator('#potize summary').first().focus();
+          await page.keyboard.press('Enter');
+          assert.equal(await page.locator('#potize details').first().getAttribute('open'), '', kde);
+          await page.evaluate(() => scrollTo(0, 0));
+          if ([375, 1440].includes(width)) await page.screenshot({ path: `${output}/${engine}-${theme}-${width}-${cekanyJazyk === 'en' ? 'install-en' : 'instalace'}.png`, fullPage: true });
+          assert.deepEqual(errors, [], kde);
+          assert.deepEqual(cizi, [], `${kde}: stránka sáhla mimo vlastní server`);
+          results.push({ engine, theme, width, stranka, passed: true, height: await page.evaluate(() => document.documentElement.scrollHeight) });
+          await page.close();
+        }
       }
       // Posouvání přes výřezy. Kolečko v obou jádrech, tah prstem v Chromiu (WebKit v Playwrightu
       // dotykové posouvání neumí). Kontrolní tah na volné ploše musí stránku posunout, jinak by

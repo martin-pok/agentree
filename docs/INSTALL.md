@@ -6,15 +6,60 @@ Agenteeq je dashboard všech AI agentů na tvém Macu. Běží lokálně – tvo
 
 ### Desktopový balíček pro Mac
 
-`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Apple Silicon (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel nepodporujeme: Apple podporu Intelu ukončuje a Agenteeq se vyvíjí jen pro Apple Silicon – vydání od 0.34.0 balíček pro Intel neobsahuje. Rozbal a přesuň Agenteeq.app do Aplikací. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
+`Agenteeq-<verze>-macOS-arm64.zip` (asi 38 MB) je samostatná aplikace pro Apple Silicon (M1 a novější) a macOS 14 Sonoma nebo novější. Mac s procesorem Intel nepodporujeme: Apple podporu Intelu ukončuje a Agenteeq se vyvíjí jen pro Apple Silicon – vydání od 0.34.0 balíček pro Intel neobsahuje. Node ani Terminál nejsou pro používání potřeba. Původní projekty z `~/.agenteeq` zůstanou zachované.
+
+Ke stažení: tlačítko **Stáhnout pro Mac** na webu (<https://agentree-fawn.vercel.app/instalace>, anglicky `/en/install`) nebo stálý odkaz `https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip`.
+
+#### Instalace bez Terminálu (hlavní cesta)
+
+Tentýž postup stojí na webu (`site/instalace`, `site/en/install`, sekce Stažení na úvodní stránce),
+v popisu vydání (`scripts/release-notes.mjs`) a v Nastavení aplikace (Aplikace na tomto Macu →
+*Instalace pro další lidi*). Při změně je potřeba upravit všechna místa; hlídají to
+`test/site.test.mjs` a `test/release-notes.test.mjs`.
+
+1. **Stáhni a rozbal** ZIP (dvojklik ve Stahování). Z obrazu disku (DMG, viz níže): otevři ho.
+2. **Přetáhni Agenteeq do složky Aplikace.**
+3. **Otevři Agenteeq.** Build zatím není podepsaný Developer ID ani notarizovaný, takže macOS
+   ohlásí, že aplikaci nemůže ověřit. Dialog zavři, do Koše aplikaci nepřesouvej.
+4. **Povol ho v Nastavení:** Nastavení systému → **Soukromí a zabezpečení** → sjeď dolů k části
+   Zabezpečení → **Přesto otevřít**. Zadej heslo k Macu a potvrď **Otevřít**. Tlačítko je tam asi
+   hodinu po pokusu o otevření. Aplikace se uloží jako výjimka a příště se otevře dvojklikem.
+
+Zdroj postupu (ověřeno 5. 10. 2026): nápověda Applu *Open a Mac app from an unknown developer*
+pro [macOS 15](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/15.0/mac/15.0)
+a [macOS 26](https://support.apple.com/en-gb/guide/mac-help/mh40616/26/mac/26), a
+[Safely open apps on your Mac](https://support.apple.com/en-us/102445). České popisky tlačítek
+(„Přesto otevřít“, „Soukromí a zabezpečení“) odpovídají české lokalizaci macOS; českou verzi
+nápovědy se z vývojového prostředí ověřit nepodařilo.
+
+Plošné vypínání Gatekeeperu ani příkazy na sundání karantény jako hlavní cestu neradíme. Až bude
+Developer ID a notarizace ([ROADMAP](ROADMAP.md) „Teď“ #3), kroky 3–4 odpadnou samy: popis vydání
+podle `dist/latest-build.json` pozná podepsaný build a návod na povolení vynechá.
+
+#### Instalátor DMG (od příštího vydání)
+
+Workflow Vydání (`.github/workflows/release.yml`, úloha `mac`) po `npm run build:mac` spustí
+`npm run build:dmg` (`scripts/build-dmg.mjs`): rozbalí hotový ZIP, přidá zástupce složky Aplikace
+a nástrojem `hdiutil` vytvoří komprimovaný obraz `Agenteeq-<verze>-macOS-arm64.dmg`
+(svazek „Agenteeq“, HFS+, UDZO) a ověří ho (`hdiutil verify`). S Developer ID ho podepíše
+a s notarizačním profilem i notarizuje. K vydání se přikládá i stálá kopie
+`Agenteeq-macOS-arm64.dmg`. Jen nástroje macOS, žádná závislost.
+
+**Neověřeno:** skutečný obraz vznikne a otevře se až při běhu workflow na runneru s macOS – na
+Linuxu `hdiutil` není. `test/dmg.test.mjs` hlídá tvar příkazů a workflow, ne výsledný soubor.
+Web proto na DMG zatím neodkazuje: tlačítka ke stažení se řídí seznamem
+`V_POSLEDNIM_VYDANI` v `scripts/build-site.mjs`, který uvádí jen přílohy, které poslední
+zveřejněné vydání opravdu má. Po zveřejnění prvního vydání s DMG (publish.yml ověří, že stálé
+odkazy vedou na jeho přílohy) se tam doplní `INSTALATOR_MAC` a `BALICEK_WINDOWS` a web sám přepne
+tlačítko na DMG a postup na „otevři a přetáhni“.
 
 Červené zavření okna ponechá dohled nad agenty běžet; kliknutí v Docku nebo horní liště okno obnoví. **⌘Q / Agenteeq → Ukončit Agenteeq** ukončí i lokální službu a agenty spuštěné z Agenteeq na pozadí. Ostatních agentů v samostatných aplikacích se ukončení netýká.
 
 První spuštění zobrazí šestikrokový průvodce. Vrátíš se k němu v Nastavení tlačítkem **Prohlédnout průvodce**. Co se změnilo v nové verzi, ukáže aplikace po aktualizaci sama; znovu to otevřeš kliknutím na verzi dole v postranním panelu. Oznámení podléhají povolení macOS. Start po přihlášení nastavíš v Nastavení systému → Obecné → Přihlašovací položky.
 
-Lokální build je ad-hoc podepsaný. Před distribucí zákazníkům vydavatel musí zajistit Developer ID podpis a notarizaci; nepoužívat plošné vypínání Gatekeeperu.
+### Pro pokročilé: instalace jedním příkazem (Terminál)
 
-### Instalace jedním příkazem (Terminál)
+Alternativa ke krokům 1–4 pro lidi, kteří pracují v Terminálu. Na webu stojí až pod hlavním postupem.
 
 ```bash
 curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash
@@ -26,7 +71,9 @@ Proč odpadne krok v Nastavení: soubor stažený curlem v Terminálu nedostane 
 
 Poctivá hranice: tohle je cesta pro lidi, kteří Terminálu a tomuto webu důvěřují – ověřuje, že balíček je ten zveřejněný na GitHubu, ne kdo ho vydal. Pro běžnou distribuci a prodej je dál potřeba Developer ID a notarizace ([ROADMAP](ROADMAP.md) „Teď“ #3). Chování hlídá `test/instalace.test.mjs` (podvržený `curl`, skutečné `ditto`, `codesign` a `osascript`).
 
-**Kde balíček vzít.** V desktopové aplikaci Nastavení → Aplikace na tomto Macu → *Instalace pro další lidi* ukáže, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje – s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
+**Poslat Agenteeq dál.** V aplikaci pro Mac je v Nastavení → Aplikace na tomto Macu karta *Instalace pro další lidi* s odkazem na stránku Instalace (zkopíruješ ho jedním tlačítkem) a s upozorněním, že příjemce aplikaci napoprvé povolí v Nastavení systému. Stejná karta umí ukázat ve Finderu samotnou aplikaci k zabalení.
+
+**Kde balíček vzít (vydavatel).** Tatáž karta ukáže, jestli `dist/Agenteeq-<verze>-macOS-<architektura>.zip` z posledního buildu na tomto Macu existuje – s velikostí, datem vzniku a tlačítkem **Ukázat ve Finderu** (a zkopírováním cesty). Pokud balíček chybí, karta ukáže příkaz, kterým ho vytvoříš:
 
 ```bash
 npm run build:mac
@@ -38,8 +85,12 @@ Balíček se uloží do `dist/` spolu s `dist/latest-build.json` (verze, archite
 
 - macOS – plná podpora
 - Windows – aplikace i s vlastním oknem existuje (`npm run build:windows`, CI ji překládá
-  a přikládá k běhu), ale zatím ji nikdo nespustil na skutečném stroji. Otevírání aplikací,
-  Klíčenka a automatický start na Windows nefungují. Podrobně: [WINDOWS.md](WINDOWS.md)
+  a přikládá k vydání), ale zatím ji nikdo nespustil na skutečném stroji. Otevírání aplikací,
+  Klíčenka a automatický start na Windows nefungují. Na webu je ke stažení jako **beta**
+  s tímto upozorněním; postup: rozbal ZIP (pravým tlačítkem → Extrahovat vše), spusť
+  `Agenteeq.exe` a ve varování SmartScreen zvol Další informace → Přesto spustit (build není
+  podepsaný; [dokumentace Microsoftu](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)).
+  Podrobně: [WINDOWS.md](WINDOWS.md)
 - Linux – server, rozhraní, projekty a statistiky fungují; desktopová aplikace není
 - [Node.js](https://nodejs.org) 22.13 nebo novější (`node --version`)
 
@@ -73,8 +124,10 @@ Dashboard běží na <http://127.0.0.1:4620>. Průvodce v Přehledu tě provede 
 Bez rozšíření Agenteeq nevidí agenty, se kterými pracuješ v prohlížeči, a zadání se do webových služeb nevkládá samo (jen se zkopíruje do schránky). Rozšíření posílá data jen do Agenteeq na tomto Macu (`127.0.0.1`), nic neodchází na internet. Funguje v Chromu, Brave, Arcu i Edge.
 
 Až bude rozšíření v Chrome Web Store (`docs/CHROME-WEB-STORE.md`), karta nabídne tlačítko
-**Otevřít Chrome Web Store** – tam stačí kliknout na **Přidat do Chromu**. Do té doby platí ruční
-instalace:
+**Otevřít Chrome Web Store** – tam stačí kliknout na **Přidat do Chromu**. Zapíná se to na jednom
+místě, příznakem `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js`: podle něj se přepne karta
+v aplikaci, web (úvodní stránka i stránka Instalace) i popis vydání. Dokud Google položku
+neschválí, je příznak vypnutý a všude platí ruční instalace:
 
 1. V Agenteeq otevři **Nastavení → Propojení → Rozšíření pro Chrome**.
 2. V Chromu otevři `chrome://extensions` a vpravo nahoře zapni **Režim pro vývojáře**.
@@ -147,5 +200,7 @@ Nastavení → Účet a vzhled → Licence → vlož klíč začínající `AGT1
 - **Port 4620 je obsazený** – Agenteeq už běží (otevři odkaz výše), nebo spusť `PORT=4621 agenteeq --open`.
 - **Otevření v Terminálu nefunguje** – povol ovládání Terminálu: Nastavení systému → Soukromí a zabezpečení → Automatizace.
 - **Agent se nezobrazuje** – Nastavení → Propojení → Zdroje dat → **Načíst znovu**. Sledují se konverzace za posledních 30 dní. Webové služby (ChatGPT, Gemini…) potřebují rozšíření pro Chrome.
-- **„Agenteeq nelze otevřít, protože vývojář nemůže být ověřen“** – build není notarizovaný. Veřejné vydání musí být podepsané a notarizované vydavatelem; plošné vypínání Gatekeeperu nepoužívej.
+- **macOS hlásí, že Agenteeq nemůže ověřit** – build zatím není notarizovaný. Povol ho jednou podle kroků 3–4 výše (Nastavení systému → Soukromí a zabezpečení → Přesto otevřít). Plošné vypínání Gatekeeperu nepoužívej.
+- **V Nastavení není Přesto otevřít** – tlačítko se objeví až po pokusu o otevření a zůstane asi hodinu. Otevři Agenteeq znovu a vrať se do Nastavení.
+- **macOS píše, že je aplikace poškozená** – přesuň staženou kopii do Koše, stáhni ji znovu a postup zopakuj. Když hláška zůstane a Přesto otevřít se neobjeví, použij instalaci jedním příkazem (soubor stažený v Terminálu karanténu nedostane) a nahlas to na GitHubu. Kdy přesně macOS tuhle hlášku u ad-hoc podepsaného buildu ukazuje, ověřeno není.
 - **Rozšíření ukazuje „Neozývá se“** – Chrome je zavřený nebo je rozšíření vypnuté v `chrome://extensions`. Po otevření Chromu se do minuty ozve samo.

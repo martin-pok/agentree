@@ -6,6 +6,13 @@ automaticky zveřejní. Její stálá adresa a ID už jsou v `public/js/obchod.j
 `CHROME_WEB_STORE_PUBLISHED` zůstává do ověření veřejné stránky vypnutý. Potom se zapne a vydá se
 nová verze aplikace, která nabídne instalaci jedním kliknutím a automatické spárování.
 
+Příznak je jediné místo, které instalaci z obchodu zapíná všude najednou: kartu v aplikaci
+(Nastavení → Propojení → Rozšíření pro Chrome, tlačítko **Otevřít Chrome Web Store**), web
+(úvodní stránka a stránka Instalace `site/instalace`, `site/en/install` – sestavení
+`scripts/build-site.mjs#rozsireniNaWebu` nechá jen blok `rozsireni:obchod`) a popis vydání.
+Dokud je vypnutý, ukazuje se všude ruční instalace a web výslovně píše, že rozšíření na schválení
+čeká. Po zapnutí je potřeba web přestavět (`npm run build:site`, na hostingu se to stane samo).
+
 ## Stav účtu vydavatele
 
 Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.

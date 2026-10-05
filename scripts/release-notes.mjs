@@ -3,14 +3,14 @@
 //
 // Proč vlastní skript a ne `--notes-from-tag`: popis musí říct, jak se aplikace na Macu
 // spustí. A to se liší podle toho, jestli se build podepsal Developer ID, nebo jen ad-hoc.
-// Ad-hoc podepsanou aplikaci stažený Mac odmítne s hláškou „je poškozená“, i když není –
-// jenom má karanténní příznak. Kdyby to v popisu nestálo, vypadá to jako rozbité vydání.
+// Ad-hoc podepsanou aplikaci stažený Mac napoprvé zablokuje, protože ji Apple neověřil. Kdyby
+// v popisu nestálo, jak ji jednou povolit v Nastavení systému, vypadá to jako rozbité vydání.
 //
 // Spuštění:  node scripts/release-notes.mjs <verze> [složka s přílohami] > poznamky.md
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { adresaObchodu } from '../public/js/obchod.js';
+import { adresaObchodu, WEB_AGENTEEQ } from '../public/js/obchod.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,26 +37,40 @@ export function sekceZmen(changelog, verze) {
 
 /**
  * Jak se aplikace na Macu otevře. Odpověď závisí na podpisu, takže se neopisuje z paměti,
- * ale z `dist/latest-build.json`, který zapsal build.
+ * ale z `dist/latest-build.json`, který zapsal build. `dmg` říká, jestli je u vydání obraz
+ * disku (instalace přetažením); bez něj se popisuje jen ZIP.
+ *
+ * Postup pro ad-hoc build je týž jako na webu (site/instalace, site/en/install) a v
+ * docs/INSTALL.md a odpovídá nápovědě Applu pro macOS 15 a 26 „Open a Mac app from an unknown
+ * developer“ (support.apple.com/guide/mac-help/mh40616): Nastavení systému → Soukromí
+ * a zabezpečení → Zabezpečení → Přesto otevřít, heslo, potvrdit. Bez Terminálu.
  */
-export function napovedaProMac(podpis) {
+export function napovedaProMac(podpis, { dmg = false } = {}) {
+  const prenos = dmg
+    ? 'Otevři **Agenteeq-macOS-arm64.dmg** a v okně, které se ukáže, přetáhni **Agenteeq** na složku\n**Aplikace**. (Kdo chce ZIP: rozbal ho a přetáhni Agenteeq.app do Aplikací.)'
+    : 'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace.';
   if (podpis === 'Developer ID') {
-    return 'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace. Aplikace je podepsaná\nDeveloper ID a notarizovaná, takže se otevře běžným dvojklikem.';
+    return `${prenos}\n\nAplikace je podepsaná Developer ID a notarizovaná, takže se otevře běžným dvojklikem.`;
   }
-  // Ad-hoc podpis je pravda, kterou nemá smysl zamlčet: uživatel by narazil na hlášku,
-  // která vypadá jako poškozený soubor, a vydání by považoval za vadné.
+  // Ad-hoc podpis je pravda, kterou nemá smysl zamlčet: uživatel by narazil na blokaci
+  // a vydání by považoval za vadné. Postup je jednorázový a bez Terminálu.
   return [
-    'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace.',
+    prenos,
     '',
-    'Tento build **není podepsaný Developer ID ani notarizovaný**, takže ho macOS po stažení',
-    'zavře do karantény a při prvním spuštění ohlásí, že je aplikace poškozená. Poškozená není,',
-    'jen nemá podpis. Karanténní příznak sundáš jedním příkazem v Terminálu:',
+    'Tento build **zatím není podepsaný Developer ID ani notarizovaný**, takže ho macOS při prvním',
+    'otevření zablokuje. Je to jednorázový krok:',
     '',
-    '```',
-    'xattr -dr com.apple.quarantine /Applications/Agenteeq.app',
-    '```',
+    '1. Otevři Agenteeq ze složky Aplikace. macOS ohlásí, že aplikaci nemůže ověřit – dialog zavři',
+    '   (do Koše ji nepřesouvej).',
+    '2. Otevři **Nastavení systému → Soukromí a zabezpečení**, sjeď dolů k části **Zabezpečení**',
+    '   a u hlášky o Agenteeq klikni na **Přesto otevřít**. Tlačítko tam je asi hodinu po pokusu',
+    '   o otevření.',
+    '3. Zadej heslo k Macu a v dalším dotazu potvrď **Otevřít**.',
     '',
-    'Potom se aplikace otevře normálně.',
+    'Příště se Agenteeq otevře dvojklikem. Celý postup je na',
+    `[stránce Instalace](${WEB_AGENTEEQ}instalace). Kdo pracuje v Terminálu, může místo toho`,
+    `použít instalaci jedním příkazem (\`curl -fsSL ${WEB_AGENTEEQ}install.sh | bash\`), která`,
+    'ověří otisk balíčku z GitHubu a krok v Nastavení nepotřebuje.',
   ].join('\n');
 }
 
@@ -100,7 +114,7 @@ export async function prilohy(slozka) {
   const jmena = await fs.readdir(slozka).catch(() => []);
   const out = [];
   for (const jmeno of jmena.sort()) {
-    if (!jmeno.endsWith('.zip')) continue;
+    if (!/\.(zip|dmg)$/.test(jmeno)) continue;
     const st = await fs.stat(path.join(slozka, jmeno)).catch(() => null);
     if (st?.isFile()) out.push({ jmeno, bajtu: st.size });
   }
@@ -110,8 +124,9 @@ export async function prilohy(slozka) {
 // Pořadí je zároveň pořadím v popisu vydání: první je to, co si stáhne nejvíc lidí.
 // Řadit podle abecedy by postavilo „Windows“ před „macOS“ (velké W je před malým m).
 const POPIS_PRILOHY = [
-  [/macOS-arm64\.zip$/, 'aplikace pro Mac s čipem Apple (M1 a novější)'],
-  [/Windows-x64\.zip$/, 'aplikace pro Windows 10 a 11 (64bit)'],
+  [/macOS-arm64\.dmg$/, 'instalátor pro Mac s čipem Apple (M1 a novější) – otevřeš a přetáhneš do Aplikací'],
+  [/macOS-arm64\.zip$/, 'aplikace pro Mac s čipem Apple (M1 a novější) jako ZIP; používá ho i instalace z Terminálu a aktualizace'],
+  [/Windows-x64\.zip$/, 'aplikace pro Windows 10 a 11 (64bit), zatím neověřená na skutečném počítači'],
   // Z obchodu se rozšíření instaluje jedním klikem a aktualizuje samo; ZIP pak zůstává jen pro ruční instalaci.
   [/extension-.*\.zip$/, adresaObchodu()
     ? `rozšíření pro Chrome k ruční instalaci; jednodušší je [Chrome Web Store](${adresaObchodu()})`
@@ -140,7 +155,8 @@ export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' 
     casti.push('');
   }
 
-  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac), '');
+  const maDmg = soubory.some((s) => /macOS-.*\.dmg$/.test(s.jmeno));
+  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac, { dmg: maDmg }), '');
 
   // Požadavky se píšou jen k tomu, co je opravdu přiložené. Věta o macOS u vydání bez
   // aplikace pro Mac (nebo naopak) je slib, který přílohy nekryjí.

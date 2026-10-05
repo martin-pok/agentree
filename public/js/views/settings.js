@@ -704,6 +704,9 @@ async function connectClaude() {
 const UCET_SOUKROMI = tr('Z Googlu Agenteeq dostane jen jméno, e-mail a profilovou fotku. Konverzace, kód ani názvy složek {0} neopustí.', tentoPocitac());
 const ZASADY_SOUKROMI = `${WEB_AGENTEEQ}${jazyk() === 'en' ? 'en/privacy' : 'soukromi'}`;
 const UCET_NA_WEBU = `${WEB_AGENTEEQ}app?ucet`;
+// Stránka Instalace na webu (site/instalace, site/en/install): stažení pro Mac i Windows a postup
+// bez Terminálu. Na ni vede Nastavení, když chce někdo Agenteeq poslat dál.
+const STRANKA_INSTALACE = `${WEB_AGENTEEQ}${jazyk() === 'en' ? 'en/install' : 'instalace'}`;
 const odkazSoukromi = () => `<a class="link-inline" href="${ZASADY_SOUKROMI}" target="_blank" rel="noopener">${tr('Zásady ochrany soukromí')}</a>`;
 // Co synchronizace posílá – jeden seznam pro tlačítko přihlášení, přepínač i náhled.
 const SOUHRNY = [
@@ -1085,12 +1088,14 @@ function update(topics) {
   const packCmd = 'npm run pack';
   const installCmd = `npm install -g ./agenteeq-${state.version}.tgz`;
   const pkg = inst.package;
-  // Nástroj pro vydavatele: ukáže instalační balíček vzniklý buildem na TOMTO Macu. Zákazník žádný
-  // balíček nemá a `npm pack` s cestami ve složce vývojáře by mu nic neříkaly – karta se tam nezobrazí.
-  fill(el, 'share', !pkg ? '' : `
+  // Karta ukáže odkaz na stránku Instalace každému v aplikaci pro Mac (Agenteeq jde poslat kolegovi
+  // nebo kamarádovi) a vydavateli i instalační balíček vzniklý buildem na TOMTO Macu. V příkazové
+  // řádce bez balíčku by `npm pack` s cestami ve složce vývojáře nic neřekl – karta se tam nezobrazí.
+  fill(el, 'share', !pkg && !(i.desktop && JE_MAC) ? '' : `
     ${head(ICON.external, tr('Instalace pro další lidi'), tr('Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná. Data nikam neodcházejí a nejsou svázaná s tvým účtem.'))}
-    <p class="set-desc">${tr('Nejjednodušší je poslat odkaz na web, kde si Agenteeq stáhnou:')}</p>
-    <div class="code-line"><code>${esc(WEB_AGENTEEQ)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(WEB_AGENTEEQ)}" data-copy-message="${tr('Odkaz zkopírován')}">${ICON.copy}${tr('Kopírovat odkaz')}</button></div>
+    <p class="set-desc">${tr('Nejjednodušší je poslat odkaz na stránku Instalace. Je tam stažení pro Mac i Windows a postup bez Terminálu:')}</p>
+    <div class="code-line"><code>${esc(STRANKA_INSTALACE)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(STRANKA_INSTALACE)}" data-copy-message="${tr('Odkaz zkopírován')}">${ICON.copy}${tr('Kopírovat odkaz')}</button></div>
+    <p class="small muted">${tr('Aplikace pro Mac zatím není notarizovaná, takže ji macOS příjemci při prvním otevření zablokuje. Povolí ji jednou v Nastavení systému → Soukromí a zabezpečení tlačítkem Přesto otevřít a potvrdí heslem.')}</p>
     ${fold('share-primo', i.desktop ? tr('Poslat aplikaci přímo') : tr('Poslat instalační balíček'), `
     ${i.desktop ? (pkg ? `
       <p class="set-desc">${tr('Předej příjemci tento instalační ZIP Agenteeq pro Mac. Rozbalí ho a přesune Agenteeq do Aplikací, nic dalšího instalovat nemusí.')}</p>

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, odkazNaStazeni, REPO, BALICEK_MAC, APP_PATH, JAZYKY } from '../scripts/build-site.mjs';
+import { buildSite, manifestProWeb, serviceWorkerProWeb, znackaStatickeKopie, odkazNaStazeni, cileStazeni, REPO, BALICEK_MAC, INSTALATOR_MAC, BALICEK_WINDOWS, V_POSLEDNIM_VYDANI, APP_PATH, JAZYKY, INSTALACE } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -61,7 +61,7 @@ test('web: každý odkaz na vlastní soubor v landing page opravdu existuje', as
   const r = await buildSite({ out });
   const css = await fs.readFile(path.join(out, 'lp.css'), 'utf8');
   const cesty = new Set();
-  for (const jazyk of JAZYKY) {
+  for (const jazyk of [...JAZYKY, ...INSTALACE]) {
     const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
     for (const m of html.matchAll(/(?:href|src|srcset)="(\/[^"#?\s]*)"/g)) cesty.add(m[1]);
   }
@@ -272,10 +272,104 @@ test('web: odkaz na stažení míří na stálou přílohu posledního vydání'
     const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
     const odkazy = [...html.matchAll(/data-stahnout="mac-arm64" href="([^"]+)"/g)].map((m) => m[1]);
     assert.ok(odkazy.length >= 2, `${jazyk.kod}: tlačítko patří do úvodu i do sekce Stažení`);
-    for (const odkaz of odkazy) assert.equal(odkaz, `${REPO}/releases/latest/download/${BALICEK_MAC}`, jazyk.kod);
+    for (const odkaz of odkazy) assert.equal(odkaz, cileStazeni().mac, jazyk.kod);
   }
   assert.throws(() => odkazNaStazeni('<a href="x">bez značky</a>'), /data-stahnout/);
   // Stálou kopii k vydání přikládá workflow. Bez ní by odkaz po dalším vydání přestal fungovat.
   const workflow = await fs.readFile(path.join(ROOT, '.github/workflows/release.yml'), 'utf8');
   assert.ok(workflow.includes(BALICEK_MAC), `release.yml musí k vydání přiložit ${BALICEK_MAC}`);
+});
+
+// Stránka Instalace: jeden postup bez Terminálu pro Mac, beta pro Windows a rozšíření. Postup pro
+// Mac je stejný na webu, v popisu vydání (scripts/release-notes.mjs) i v docs/INSTALL.md
+// a odpovídá nápovědě Applu pro macOS 15 a 26 (support.apple.com/guide/mac-help/mh40616).
+test('web: stránka Instalace v obou jazycích, stejná stavba a odkaz z úvodní stránky', async () => {
+  const cs = await fs.readFile(path.join(ROOT, 'site/instalace/index.html'), 'utf8');
+  const en = await fs.readFile(path.join(ROOT, 'site/en/install/index.html'), 'utf8');
+  assert.deepEqual(stavba(en), stavba(cs), 'site/en/install se stavbou rozešel se site/instalace');
+  assert.match(cs, /<html lang="cs">/);
+  assert.match(en, /<html lang="en">/);
+  assert.match(cs, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/instalace"/);
+  assert.match(en, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/en\/install"/);
+  for (const html of [cs, en]) {
+    assert.match(html, /<link rel="alternate" hreflang="cs" href="https:\/\/agentree-fawn.vercel.app\/instalace">/);
+    assert.match(html, /<link rel="alternate" hreflang="en" href="https:\/\/agentree-fawn.vercel.app\/en\/install">/);
+    assert.match(html, /<meta name="description" content="[^"]{80,}"/);
+    assert.match(html, /data-stahnout="mac-arm64"/);
+    assert.match(html, /data-stahnout="windows-x64"/);
+    assert.match(html, /id="mac"[\s\S]*id="windows"[\s\S]*id="rozsireni"/);
+    assert.match(html, /<!-- rozsireni:obchod -->[\s\S]*<!-- rozsireni:rucne -->/, 'rozšíření řídí příznak v public/js/obchod.js');
+    assert.match(html, /support\.apple\.com\/guide\/mac-help\/mh40616/, 'postup odkazuje na nápovědu Applu');
+    assert.doesNotMatch(html, /xattr/, 'hlavní cesta je bez Terminálu');
+    for (const m of html.matchAll(/<img (?![^>]*alt=)[^>]*>/g)) assert.fail(`obrázek bez alt: ${m[0]}`);
+  }
+  // Pořadí na stránce: Nastavení je hlavní cesta, Terminál až alternativa pro pokročilé.
+  assert.ok(cs.indexOf('Přesto otevřít') < cs.indexOf('install.sh'));
+  assert.ok(en.indexOf('Open Anyway') < en.indexOf('install.sh'));
+  assert.match(cs, /Soukromí a zabezpečení/);
+  assert.match(cs, /heslo k Macu/);
+  assert.match(cs, /Pro pokročilé/);
+  assert.match(en, /For advanced users/);
+  // Windows je beta a stránka to říká, nevydává ho za ověřený.
+  assert.match(cs, /beta/);
+  assert.match(cs, /nevyzkoušeli/);
+  assert.match(en, /haven’t tried it on a real PC/);
+  const text = en.replace(/<script[\s\S]*?<\/script>/g, '').replace(/aria-label="Čeština"/, '');
+  assert.deepEqual(text.match(/[^<>"]*[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][^<>"]*/g) || [], [], 'v anglické stránce zůstala čeština');
+
+  // Z úvodní stránky vede na Instalaci lišta, sekce Stažení i patička; obě úvodní stránky
+  // mají i tlačítko pro Windows.
+  const uvodCs = await fs.readFile(path.join(ROOT, 'site/index.html'), 'utf8');
+  const uvodEn = await fs.readFile(path.join(ROOT, 'site/en/index.html'), 'utf8');
+  assert.ok((uvodCs.match(/href="\/instalace"/g) || []).length >= 3, 'odkaz na Instalaci z úvodní stránky');
+  assert.ok((uvodEn.match(/href="\/en\/install"/g) || []).length >= 3);
+  for (const uvod of [uvodCs, uvodEn]) assert.match(uvod, /data-stahnout="windows-x64"/);
+
+  const mapa = await fs.readFile(path.join(ROOT, 'site/sitemap.xml'), 'utf8');
+  assert.match(mapa, /<loc>https:\/\/agentree-fawn.vercel.app\/instalace<\/loc>/);
+  assert.match(mapa, /<loc>https:\/\/agentree-fawn.vercel.app\/en\/install<\/loc>/);
+});
+
+// Tlačítka ke stažení nesmí vést na soubor, který poslední vydání nemá. Seznam stálých příloh
+// v posledním vydání je jediné místo, které se po vydání mění; podle něj se volí soubor i postup.
+test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vydání má', async () => {
+  assert.ok(V_POSLEDNIM_VYDANI.includes(BALICEK_MAC), 'ZIP pro Mac má každé vydání');
+  const dnes = cileStazeni();
+  assert.equal(dnes.mac, `${REPO}/releases/latest/download/${V_POSLEDNIM_VYDANI.includes(INSTALATOR_MAC) ? INSTALATOR_MAC : BALICEK_MAC}`);
+
+  // Bez DMG a stálého ZIPu pro Windows: Mac stahuje ZIP s postupem rozbalení, Windows vede na stránku vydání.
+  const stranka = await fs.readFile(path.join(ROOT, 'site/instalace/index.html'), 'utf8');
+  const bezDmg = odkazNaStazeni(stranka, [BALICEK_MAC]);
+  assert.ok(bezDmg.includes(`data-stahnout="mac-arm64" href="${REPO}/releases/latest/download/${BALICEK_MAC}"`));
+  assert.ok(bezDmg.includes(`data-stahnout="windows-x64" href="${REPO}/releases/latest"`));
+  assert.match(bezDmg, /Stáhni a rozbal/);
+  assert.doesNotMatch(bezDmg, /Stáhni a otevři|mac:dmg|mac:zip/);
+
+  // Po vydání s DMG a stálým ZIPem pro Windows: přímé odkazy a postup s obrazem disku.
+  const sDmg = odkazNaStazeni(stranka, [BALICEK_MAC, INSTALATOR_MAC, BALICEK_WINDOWS]);
+  assert.ok(sDmg.includes(`data-stahnout="mac-arm64" href="${REPO}/releases/latest/download/${INSTALATOR_MAC}"`));
+  assert.ok(sDmg.includes(`data-stahnout="windows-x64" href="${REPO}/releases/latest/download/${BALICEK_WINDOWS}"`));
+  assert.match(sDmg, /Stáhni a otevři/);
+  assert.doesNotMatch(sDmg, /Stáhni a rozbal|mac:dmg|mac:zip/);
+  const kroky = (html) => (html.match(/<li><span class="step-n"/g) || []).length;
+  assert.equal(kroky(sDmg), kroky(bezDmg), 'počet kroků se nemění');
+
+  assert.throws(() => odkazNaStazeni('<a data-stahnout="mac-arm64" href="x">a</a>\n<!-- mac:dmg -->x<!-- /mac:dmg -->'), /mac:dmg a mac:zip/);
+
+  // Všechny stálé přílohy, na které web umí vést, přikládá workflow a publish je před zveřejněním vyžaduje.
+  const vydani = await fs.readFile(path.join(ROOT, '.github/workflows/release.yml'), 'utf8');
+  const zverejneni = await fs.readFile(path.join(ROOT, '.github/workflows/publish.yml'), 'utf8');
+  for (const soubor of [BALICEK_MAC, INSTALATOR_MAC, BALICEK_WINDOWS]) {
+    assert.ok(vydani.includes(soubor), `release.yml musí přiložit ${soubor}`);
+    assert.ok(zverejneni.includes(`"${soubor}"`), `publish.yml musí ${soubor} vyžadovat`);
+  }
+
+  // Sestavený web: žádná značka ani druhý postup nezůstane.
+  const out = await tempDir('web-instalace-');
+  await buildSite({ out });
+  for (const jazyk of [...JAZYKY, ...INSTALACE]) {
+    const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
+    assert.doesNotMatch(html, /<!-- \/?(?:mac|rozsireni):/, `${jazyk.soubor}: zbyla značka`);
+    for (const [, odkaz] of html.matchAll(/data-stahnout="windows-x64" href="([^"]+)"/g)) assert.equal(odkaz, dnes.windows, jazyk.soubor);
+  }
 });
