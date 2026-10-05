@@ -2610,3 +2610,12 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .palette-list li[role='option']:hover { transform: none; }
   .link[href]:hover::after { translate: none; }
 }
+
+/* Obnova aktuálních dat: pohybuje se pouze znak uvnitř kruhového tlačítka. Tvar, poloha i hover
+   zůstávají beze změny, takže rychlá odezva nepůsobí jako zakázaný nebo poskakující ovladač. */
+#refresh-app[aria-busy='true'] { cursor: progress; }
+#refresh-app.is-refreshing .icon { animation: refresh-rotation 700ms cubic-bezier(.45, .05, .35, 1) infinite; transform-origin: 50% 50%; }
+@keyframes refresh-rotation { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) {
+  #refresh-app.is-refreshing .icon { animation: none; opacity: .58; }
+}

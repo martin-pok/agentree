@@ -539,11 +539,21 @@ for (const engine of engines) {
       return { zachovany, zmeneny };
     });
     assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila dekódované logo nebo ponechala staré`);
+    // Odpověď podržíme jeden snímek, aby se ověřil i mezistav: tlačítko neztratí rozměr ani
+    // hover přes disabled, ale druhá obnova se během prvního požadavku nespustí.
+    await page.route('**/api/connectors/rescan', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      await route.continue();
+    });
     const obnova = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
     const adresaPredObnovou = page.url();
     await page.locator('#refresh-app').click();
+    await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
+    assert.equal(await page.locator('#refresh-app').isDisabled(), false, `${engine}: obnova nesmí změnit tlačítko na zakázaný prvek`);
+    assert.equal(await page.locator('#refresh-app').evaluate((el) => el.classList.contains('is-refreshing')), true, `${engine}: obnova nemá viditelný stav`);
     assert.equal((await obnova).status(), 200, `${engine}: tlačítko obnovy nespustilo nové načtení konektorů`);
-    await page.waitForFunction(() => !document.querySelector('#refresh-app')?.disabled);
+    await page.unroute('**/api/connectors/rescan');
+    await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
