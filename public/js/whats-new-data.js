@@ -22,6 +22,10 @@ export const RELEASES = [
         'Account sync adds your Mac to the account before it turns on, and the account card says why if something fails. The web overview shows how fresh the data is and refreshes on its own.',
         'Agenteeq installs without Terminal: an Install page with Mac and Windows buttons and one set of steps for the first launch.',
         'Buttons that do the job instead of explanations, and a smooth refresh animation.',
+      ],
+    },
+  },
+  {
     version: '0.36.4',
     date: '2026-10-05',
     title: 'Oddělené účty Codexu a Claude',
