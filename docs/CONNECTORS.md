@@ -330,7 +330,7 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   (`data.json → nastroje`, `normalizeNastroje`). Žádné cesty, argumenty ani názvy souborů.
 - **Kdy oznámení nepřijde:** nástroj, jehož data Agenteeq už čte (`konektory` s daty), je rovnou
   „známý“. Výjimka je úplně nová instalace, kde uživatel zatím nic nevidí.
-- **Co karta tvrdí:** „Konverzace a tokeny už čtu“ jen u sledovaného nástroje; kde zdroj sdílí víc
+- **Co karta tvrdí:** „Čtou se konverzace a tokeny“ jen u sledovaného nástroje; kde zdroj sdílí víc
   nástrojů (záložka Code v Claude Desktop, Codex v ChatGPT), platí přesná věta `vidim`. Rozšíření
   pro Chrome není zdroj desktopové aplikace téže služby. Hlídá `test/nastroje-ui.test.mjs`.
 - **Přehled:** dlaždice ukazují, co běží, co je v Mých nástrojích a co tu Agenteeq už někdy viděl

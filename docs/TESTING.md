@@ -386,7 +386,7 @@ Klíčenka se tu ověřit nedají – testy běží proti atrapám a na Macu je 
 - [ ] Na Macu: Nastavení → Účet a vzhled → Přihlásit se přes Google → okno Agenteeq se vrátí a potvrdí přihlášení; po restartu aplikace zůstane přihlášení (Klíčenka).
 - [ ] Na Macu: Napojené modely → Napojit u Claude Code i Codexu → Terminál, prohlížeč dodavatele, potvrzení s plánem.
 - [ ] Web: `/app?ucet` → Přihlásit se přes Google → přehled s daty z Maců; Odhlásit se → zpět na přihlášení; bez synchronizace vysvětlení, kde ji zapnout.
-- [ ] Synchronizace souhrnů: zapnout, „Co přesně posíláme“ odpovídá tomu, co je v tabulkách Supabase; vypnout → souhrny z účtu zmizí.
+- [ ] Synchronizace souhrnů: zapnout, „Co přesně se posílá“ odpovídá tomu, co je v tabulkách Supabase; vypnout → souhrny z účtu zmizí.
 
 ## Protokol ověření – 0.12.0 (15. 9. 2026, Linux kontejner, Node 22.22)
 

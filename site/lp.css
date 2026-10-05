@@ -228,9 +228,6 @@ section[id] { scroll-margin-top: 72px; }
 .prikaz-kopie { flex: none; min-width: 128px; background: var(--on-stage); color: var(--backdrop); }
 .prikaz-kopie:hover { background: #D9D5E0; }
 .bez-zlomu { white-space: nowrap; }
-.gatekeeper { display: grid; gap: 10px; padding: 32px; border-radius: var(--r-tile); background: var(--card); }
-.gatekeeper p { color: var(--ink-2); }
-.gatekeeper b { color: var(--ink); }
 
 /* ---------- rozbalovací řádky ---------- */
 /* Řádky oddělené linkou, ne krabice: jako seznam, ne jako formulář. */
@@ -296,7 +293,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .specs { font-size: 13px; gap: 6px 8px; }
   .specs span { gap: 8px; }
   .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .source-group, .facts article, .steps li, .gatekeeper, .prikaz { padding: 28px 22px 32px; border-radius: var(--r-lg); }
+  .source-group, .facts article, .steps li, .prikaz { padding: 28px 22px 32px; border-radius: var(--r-lg); }
   /* Na telefonu má příkaz celou šířku a tlačítko jde pod něj, kde se na něj pohodlně trefí palec. */
   .prikaz-radek { flex-direction: column; }
   .prikaz-posun { padding-inline: 20px; font-size: 14px; }

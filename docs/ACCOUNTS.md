@@ -166,7 +166,7 @@ synchronizací; do té doby ho načtení volby z účtu nepřepíše.
   významem, starší řádky mohou mít den UTC.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
-- **„Co přesně posíláme“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):
+- **„Co přesně se posílá“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):
   nahoře počet řádků v každé tabulce, pod tím celý JSON.
 - **Vypnutí souhrny z účtu smaže** (všechny tabulky souhrnů, jen vlastní řádky – RLS). Zařízení
   zůstanou. Smazání účtu smaže i je.

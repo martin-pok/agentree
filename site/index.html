@@ -115,7 +115,7 @@
       </figure>
     </article>
   </div>
-  <div class="wrap"><p class="detail-note">Skutečné rozhraní Agenteeq se smyšlenými daty. Nic se nepřipojuje k tvým účtům.</p></div>
+  <div class="wrap"><p class="detail-note">Skutečné rozhraní Agenteeq se smyšlenými daty.</p></div>
 </section>
 
 <section class="unit" id="propojeni" aria-labelledby="connections-heading">
@@ -144,7 +144,7 @@
       </ul>
     </div>
   </div>
-  <p class="wrap note">Také Microsoft Copilot, Grok a Qwen. Podpora závisí na formátu konkrétní služby; stav ověření najdeš přímo v aplikaci.</p>
+  <p class="wrap note">Také Microsoft Copilot, Grok a Qwen.</p>
 </section>
 
 <section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
@@ -172,8 +172,8 @@
 
   <ol class="wrap steps">
     <li><span class="step-n" aria-hidden="true">1</span><b>Rozbal stažený soubor</b><p>Ve Stahování se objeví Agenteeq. Dvojklikem se rozbalí.</p></li>
-    <li><span class="step-n" aria-hidden="true">2</span><b>Přetáhni ho do Aplikací</b><p>Tím je nainstalováno. Nic dalšího se nikam nezapisuje.</p></li>
-    <li><span class="step-n" aria-hidden="true">3</span><b>Napoprvé ji povol v Nastavení</b><p>macOS betu zatím neověří sám. Otevři <b>Nastavení systému → Soukromí a zabezpečení</b>, sjeď dolů k hlášce o Agenteeq a klikni na <b>Přesto otevřít</b>.</p></li>
+    <li><span class="step-n" aria-hidden="true">2</span><b>Přetáhni ho do Aplikací</b><p>Tím je nainstalováno.</p></li>
+    <li><span class="step-n" aria-hidden="true">3</span><b>Napoprvé ji povol v Nastavení</b><p>Otevři <b>Nastavení systému → Soukromí a zabezpečení</b>, sjeď dolů k hlášce o Agenteeq a klikni na <b>Přesto otevřít</b>.</p></li>
   </ol>
 
   <div class="wrap">
@@ -184,13 +184,9 @@
         <div class="prikaz-pole"><code class="prikaz-posun" tabindex="0"><span class="prikaz-vyzva" aria-hidden="true">$ </span>curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash</code></div>
         <button class="btn prikaz-kopie" type="button" data-kopirovat="curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash">Zkopírovat</button>
       </div>
-      <p class="small">Soubor stažený v Terminálu nedostane od macOS příznak karantény, takže se Gatekeeper neptá; razítko Applu místo toho nahradí otisk <span class="bez-zlomu">SHA-256</span>, který skript porovná s GitHubem, a při neshodě nic nenainstaluje. Starou verzi přesune do Koše. <a href="/install.sh">Přečíst skript</a></p>
+      <p class="small">Skript porovná otisk <span class="bez-zlomu">SHA-256</span> s GitHubem a při neshodě nic nenainstaluje. Starou verzi přesune do Koše. <a href="/install.sh">Přečíst skript</a></p>
     </div>
 
-    <div class="gatekeeper">
-      <p><b>Proč to chce ten jeden krok navíc?</b> Vývojářský podpis u Applu stojí ročně peníze a beta ho zatím nemá. Bez něj macOS aplikaci nespustí sám a ukáže, že ji nedokáže ověřit — není to nález škodlivého kódu, jen chybějící razítko. Potvrzení v Nastavení je jednorázové; příště se Agenteeq otevře dvojklikem jako každá jiná aplikace. Až podpis doplníme, tenhle krok zmizí.</p>
-      <p class="small muted">Na macOS 14 funguje i starší zkratka: klik pravým tlačítkem a <b>Otevřít</b>. Na macOS 15 a novějším ji Apple zrušil, proto výše vede cesta přes Nastavení — ta platí všude.</p>
-    </div>
 
     <div class="rows">
       <details id="rozsireni"><summary>Přidat webové chaty přes rozšíření pro Chrome <span class="detail-tag" data-rozsireni-doba="2 minuty">10 minut</span></summary><div class="detail-body">
@@ -208,7 +204,7 @@
           <li>Klikni na <b>Načíst rozbalené</b>, v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>, vlož zkopírovanou cestu a potvrď.</li>
           <li>Hotovo. Rozšíření se s aplikací spáruje samo.</li>
         </ol>
-        <p class="small muted">Rozšíření zatím není v Chrome Web Store, proto ta ruční cesta. Aplikaci na tvém počítači hlásí jen to, jestli agent pracuje, kolik má konverzace zpráv a který model odpovídá. Text zpráv ani názvy konverzací nikam neposílá. Jednotlivé služby můžeš kdykoli vypnout.</p>
+        <p class="small muted">Aplikaci na tvém počítači hlásí jen to, jestli agent pracuje, kolik má konverzace zpráv a který model odpovídá. Text zpráv ani názvy konverzací nikam neposílá. Jednotlivé služby můžeš kdykoli vypnout.</p>
         <!-- /rozsireni:rucne -->
       </div></details>
 
@@ -229,10 +225,10 @@
     <h2 id="faq-heading"><span class="radek"><span>Ještě než začneš.</span></span></h2>
   </div>
   <div class="wrap rows">
-    <details><summary>Kolik to stojí?</summary><p>Beta je zdarma a má odemčené všechny funkce. Až z bety vyjdeme, část funkcí zůstane zdarma; co bude placené, řekneme dopředu a nikoho nepřekvapíme účtem.</p></details>
+    <details><summary>Kolik to stojí?</summary><p>Beta je zdarma a má odemčené všechny funkce. Část funkcí zůstane zdarma i po betě a placené funkce budou oznámené předem.</p></details>
     <details><summary>Ukáže přesnou útratu za všechna předplatná?</summary><p>Tokeny, limity a peníze jsou tři různé údaje. Předplatné a dokoupené kredity zadáváš ručně, podporované Admin API umí doplnit ověřené náklady. Agenteeq nepřevádí tokeny na domnělou cenu.</p></details>
     <details><summary>Musím připojit všechny služby?</summary><p>Ne. Začni nástrojem, který používáš nejvíc. Rozšíření, hooky i další zdroje jsou volitelné a dostupnost každého konektoru vidíš v Nastavení.</p></details>
-    <details><summary>A co Windows?</summary><p>Verze pro Windows je rozpracovaná. Zkušební balíček je u každého vydání na GitHubu, ale dokud ji neotestujeme na skutečných počítačích, stahování tady vede jen na verzi pro Mac.</p></details>
+    <details><summary>A co Windows?</summary><p>Verze pro Windows je rozpracovaná. Zkušební balíček je u každého vydání <a href="https://github.com/martin-pok/agentree/releases">na GitHubu</a>.</p></details>
   </div>
 </section>
 

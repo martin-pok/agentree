@@ -197,7 +197,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       return { ok: true, ceka: true, dry: Boolean(r.dry) };
     }
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;
-    if (!web) return { status: 404, error: ui('Tohle napojit neumíme.') };
+    if (!web) return { status: 404, error: ui('Tuhle službu napojit nejde.') };
     if (extension().state === 'missing') return { status: 409, error: ui('Webové chaty se napojují přes rozšíření pro Chrome. Nejdřív ho přidej a spáruj.'), rozsireni: true };
     const r = await open(web.url);
     if (!r.ok) return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
@@ -223,7 +223,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
   // až chvíli po startu, proto se na něj krátce počká.
   async function odkaz(id) {
     const a = AGENTI[id];
-    if (!a) return { status: 404, error: ui('Tohle napojit neumíme.') };
+    if (!a) return { status: 404, error: ui('Tuhle službu napojit nejde.') };
     const konec = now() + odkazMs;
     let url = null;
     while (ceka.get(id)?.proces && !(url = ceka.get(id).proces.odkaz?.()) && now() < konec) {
@@ -240,7 +240,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
 
   function kod(id, hodnota) {
     const a = AGENTI[id];
-    if (!a) return { status: 404, error: ui('Tohle napojit neumíme.') };
+    if (!a) return { status: 404, error: ui('Tuhle službu napojit nejde.') };
     const text = typeof hodnota === 'string' ? hodnota.trim() : '';
     if (!KOD.test(text)) return { status: 422, error: ui('Tohle nevypadá jako kód z přihlašovací stránky. Zkopíruj ho celý.') };
     const proces = ceka.get(id)?.proces;

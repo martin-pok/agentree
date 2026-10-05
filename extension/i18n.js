@@ -69,8 +69,7 @@
       // Spárování
       'Spáruj rozšíření kódem': 'Pair the extension with a code',
       'Spáruj rozšíření znovu': 'Pair the extension again',
-      'Tohle rozšíření se s Agenteeq nespárovalo samo. Stačí jednorázový kód.': 'This extension didn’t pair with Agenteeq on its own. A one-time code is all it takes.',
-      'Předchozí spárování už neplatí. Stačí nový jednorázový kód.': 'The previous pairing no longer works. A new one-time code is all it takes.',
+      'Předchozí spárování už neplatí.': 'The previous pairing no longer works.',
       'Spárování jednorázovým kódem': 'Pairing with a one-time code',
       'V Agenteeq otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b>.': 'In Agenteeq, open <b>Settings → Connections → Chrome extension</b>.',
       'Klikni na <b>Vytvořit jednorázový kód</b> a vlož ho sem.': 'Click <b>Create one-time code</b> and paste it here.',
@@ -83,14 +82,13 @@
       'Spárováno.': 'Paired.',
       // Aplikace neběží
       'Agenteeq na tomto počítači neběží': 'Agenteeq isn’t running on this computer',
-      'Spusť aplikaci. Rozšíření se k ní připojí samo, nic nenastavuješ.': 'Open the app. The extension connects to it on its own, nothing to set up.',
+      'Spusť aplikaci, rozšíření se k ní připojí samo.': 'Open the app and the extension connects to it on its own.',
       'Co rozšíření dělá': 'What the extension does',
       'Zkusit znovu': 'Try again',
-      'Uvidíš, jestli agent v ChatGPT, Claude.ai nebo Gemini pracuje a kolik má konverzace zpráv. Text zpráv rozšíření nikam neposílá.': 'See whether the agent in ChatGPT, Claude.ai or Gemini is working and how many messages the conversation has. The extension never sends message text anywhere.',
+      'Uvidíš, jestli agent v ChatGPT, Claude.ai nebo Gemini pracuje a kolik má konverzace zpráv.': 'See whether the agent in ChatGPT, Claude.ai or Gemini is working and how many messages the conversation has.',
       'Spustíš službu z Agenteeq a zadání už čeká v poli zprávy. Odešleš ho sám.': 'Start a service from Agenteeq and your prompt is already waiting in the message box. You send it yourself.',
       'Stáhnout Agenteeq': 'Get Agenteeq',
       // Patička
-      'Nic neodchází na internet.': 'Nothing leaves your computer.',
       'Otevřít Agenteeq': 'Open Agenteeq',
     },
     // Tvary podle počtu: klíč jsou tři české tvary, hodnota anglické [jednotné, množné].

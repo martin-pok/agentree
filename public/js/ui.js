@@ -455,8 +455,8 @@ export function kindLabel(kind) {
 
 export function howToAnswer(s) {
   if (s.source === 'web') return tr('Odpověz přímo v konverzaci v prohlížeči.');
-  if (s.connector === 'claude-code') return tr('Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde konverzace běží.');
-  if (s.connector === 'codex') return tr('Otevři vlákno v Codexu tlačítkem výše a odpověz tam.');
+  if (s.connector === 'claude-code') return tr('Odpověz v okně, kde konverzace běží.');
+  if (s.connector === 'codex') return tr('Odpověz ve vlákně v Codexu.');
   if (s.connector === 'cursor') return tr('Potvrď akci v Cursoru.');
   if (s.connector === 'vscode-copilot') return tr('Potvrď akci v panelu Copilotu ve VS Code.');
   return tr('Odpověz v aplikaci, kde agent běží.');

@@ -138,8 +138,8 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     try { json = await res.json(); } catch { /* prázdná odpověď */ }
     if (!res.ok) {
       const kod = String(json?.error_code || json?.error || json?.code || '');
-      const zprava = res.status === 429 ? ui('Server účtů je teď přetížený. Zkusíme to znovu za chvíli.')
-        : res.status >= 500 ? ui('Server účtů Agenteeq má potíže. Zkusíme to znovu za chvíli.')
+      const zprava = res.status === 429 ? ui('Server účtů je teď přetížený. Další pokus proběhne za chvíli.')
+        : res.status >= 500 ? ui('Server účtů Agenteeq má potíže. Další pokus proběhne za chvíli.')
         : String(json?.error_description || json?.msg || json?.message || ui('Chyba {0}', res.status));
       throw new UcetChyba(zprava, { status: res.status, kod });
     }
@@ -260,7 +260,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     try {
       return await secrets.get('ucet', { prisne: true });
     } catch {
-      throw new UcetChyba(ui('Klíčenka je teď nedostupná. Přihlášení zkusíme ověřit znovu za chvíli.'), { docasne: true });
+      throw new UcetChyba(ui('Klíčenka je teď nedostupná. Přihlášení se ověří znovu za chvíli.'), { docasne: true });
     }
   }
 

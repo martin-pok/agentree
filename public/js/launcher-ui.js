@@ -7,19 +7,10 @@ import { pickFolder, recentFolders, pdot } from './projects-ui.js';
 import { tr, LOCALE, tomtoPocitaci } from './i18n.js';
 import { modifikator, zkratka, MOD, JE_MAC } from './system.js';
 import { spustNapojeni } from './napojeni-ui.js';
+import { goToExtension } from './jump.js';
 
 const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
-// Nápověda k režimu se skládá s poznámkou cíle (`t.note`) do jedné věty za druhou. Každá
-// proto říká něco jiného: režim to, kde se agent otevře, poznámka to, co je na daném cíli
-// zvláštní. Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy.
-const MODE_HINT = {
-  terminal: tr('Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.'),
-  background: tr('Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.'),
-  app: tr('Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.'),
-  web: tr('Otevře službu v prohlížeči.'),
-  local: tr('Agent odpovídá přímo tady v Agenteeq.'),
-};
 
 function load() {
   try {
@@ -48,7 +39,7 @@ export function runProblem(r) {
   }
   if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: tr('Vyčerpaný limit předplatného'), hint: tr('Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.'), raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} ${tr('se nepodařilo spustit')}`, hint: tr('Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.'), raw };
-  return { title: `${r.label} ${tr('skončil chybou')}`, hint: tr('Celé znění chyby najdeš níže v části Původní chyba.'), raw };
+  return { title: `${r.label} ${tr('skončil chybou')}`, hint: '', raw };
 }
 
 // Řádek běhu: stav má v každém řádku stejné místo; barvu nese jen ikona a název stavu.
@@ -74,7 +65,7 @@ function runHtml(r, now) {
     </span>
     ${problem ? `<div class="run-problem">
       <strong>${esc(problem.title)}</strong>
-      <p>${esc(problem.hint)}</p>
+      ${problem.hint ? `<p>${esc(problem.hint)}</p>` : ''}
       <div class="run-problem-actions">
         ${problem.napojit ? `<button class="btn btn--sm btn--primary" type="button" data-run-napojit="${esc(problem.napojit.id)}">${tr('Přihlásit znovu')}</button>` : ''}
         <details class="run-raw"><summary>${tr('Původní chyba')}</summary><pre>${esc(problem.raw)}</pre></details>
@@ -97,20 +88,17 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
       : handoff === 'confirm-or-paste'
         ? [tr('Zadání by mělo být předvyplněné.'), tr('Pokud není, vlož ho {0} – je ve schránce.', zkratka('V'))]
         : [tr('Zadání máš ve schránce.'), tr('V {0} ho vlož {1} a odešli Enterem.', label, zkratka('V'))];
-  const foot = mode !== 'web'
-    ? tr('Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.')
-    : autofill
-      ? tr('Konverzaci uvidíš i tady v Agenteeq.')
-      : tr('S rozšířením pro Chrome (Nastavení) se zadání vloží samo a konverzaci uvidíš i tady.');
+  // Bez rozšíření se zadání do webové služby samo nevloží – místo vysvětlování rovnou cesta k němu.
+  const bezRozsireni = mode === 'web' && !autofill;
   const el = document.createElement('div');
   el.className = 'handoff';
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');
   el.innerHTML = `<div class="handoff-card">
     <span class="handoff-logo">${glyph(target)}</span>
-    <div class="handoff-text"><strong>${tr('Otevírám')} ${esc(label)}</strong>
+    <div class="handoff-text"><strong>${tr('Otevírá se')} ${esc(label)}</strong>
       <ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-      <p>${esc(foot)}</p></div>
+      ${bezRozsireni ? `<p><button class="link-inline" type="button" data-handoff-ext>${tr('Nastavit rozšíření pro Chrome')}</button></p>` : ''}</div>
     <div class="handoff-actions">
       <button class="btn btn--sm" type="button" data-handoff-copy>${ICON.copy}${tr('Kopírovat zadání')}</button>
       <button class="icon-btn" type="button" data-handoff-close aria-label="${tr('Zavřít')}">${ICON.close}</button>
@@ -125,6 +113,7 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   const arm = () => { handoffTimer = setTimeout(close, 12000); };
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-handoff-close]')) close();
+    else if (e.target.closest('[data-handoff-ext]')) { close(); goToExtension(); }
     else if (e.target.closest('[data-handoff-copy]')) {
       try { await navigator.clipboard.writeText(prompt); toast(tr('Zadání zkopírováno')); } catch { toast(tr('Schránka není dostupná.'), { tone: 'err' }); }
     }
@@ -141,7 +130,7 @@ export function createLauncher(root) {
 
   root.innerHTML = `
     <div class="launch-head">
-      <div><h2 id="launch-h">${tr('Spustit agenta')}</h2><p class="muted small">${tr('Běží na tvých předplatných a limitech. Zdarma: lokální modely v Ollamě.')}</p></div>
+      <h2 id="launch-h">${tr('Spustit agenta')}</h2>
       <button class="link" type="button" data-l="refresh" aria-label="${tr('Obnovit nabídku agentů')}">${ICON.refresh}<span>${tr('Obnovit nabídku')}</span></button>
     </div>
     <div class="launch-agents" role="radiogroup" aria-label="${tr('Agent')}" data-region="agents"></div>
@@ -214,7 +203,7 @@ export function createLauncher(root) {
       ${t.id === 'ollama' && t.models.length ? `<label class="lselect"><span class="sr-only">${tr('Model')}</span><select data-l-pref="model">${t.models.map((m) => `<option value="${esc(m)}"${m === prefs.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>` : ''}
       ${p?.notes?.trim() ? `<label class="check-inline"><input type="checkbox" data-l-brief${prefs.brief ? ' checked' : ''}> ${tr('Připojit podklady projektu')}</label>` : ''}`);
 
-    fill(root, 'note', `${esc(MODE_HINT[mode] || '')} ${esc(t.note || '')}`);
+    fill(root, 'note', esc(t.note || ''));
     renderRuns();
   }
 
