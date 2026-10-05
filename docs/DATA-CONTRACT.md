@@ -248,17 +248,29 @@ interface SpendPayload {
     models: Array<{ model: string | null; amount: number; converted: number; tokens: { input: number; output: number; cached: number } | null }>;
   }>;
   subscriptions: Array<{
-    service: string; plan: string; label: string; detected: true;
+    service: string; plan: string; label: string; detected: true; accountId: string | null;
     free: boolean; since: string | null; observedAt: number | null; evidence: string;
   }>;
+  // Účty zjištěné z přihlášených lokálních nástrojů. id je SHA-256 otisk ID dodavatele
+  // zkrácený na 16 hex znaků; e-mail, jméno, původní ID ani token nejsou součástí payloadu.
+  // active=false je jen historie posledního pozorování, bez aktuálních čísel.
+  providerAccounts: Array<{ id: string | null; provider: 'anthropic' | 'openai'; service: string;
+    plan: string | null; planLabel: string | null; active: boolean; state?: 'signed_out' | 'unavailable';
+    observedAt: number | null; limits: Array<{ key: string; label: string;
+      primary: { usedPercent: number; windowMinutes: number | null; resetsAt: number | null } | null;
+      secondary: { usedPercent: number; windowMinutes: number | null; resetsAt: number | null } | null }>;
+    credits: number | null }>;
   services: Record<string, { label: string; provider: Provider }>; kinds: Record<string, string>; currencies: string[];
 }
 
 // subscriptions[].observedAt = čas posledního ověření zdroje plánu.
-// Claude musí nejprve projít aktuálním `claude auth status --json`; pak se znovu načte při změně
-// přesně souboru ~/.claude.json a pojistně po 10 minutách. Starý soubor po odhlášení plán nevytvoří.
-// ChatGPT pochází z poslední rate-limit události Codexu; údaj starší než 24 hodin nebo s časem
-// v budoucnosti se do payloadu nedostane. plan/label nikdy neurčují zaplacenou částku. Ruční
+// Claude musí nejprve projít aktuálním `claude auth status --json` pro každý nalezený profil;
+// účtový soubor se znovu načte při změně a pojistně každé 2 minuty. Starý soubor po odhlášení plán nevytvoří.
+// ChatGPT na Útratě pochází z jediné aktuální odpovědi `account/rateLimits/read` oficiálního
+// Codex app-serveru: ID účtu, plán, limity a kredity se neskládají ze starých přepisů. Když
+// dotaz selže nebo vrátí odpověď bez accountId, aktuální profil ani plán se netvrdí. Claude
+// vyžaduje aktuální `claude auth status --json` v každém nalezeném CLAUDE_CONFIG_DIR.
+// plan/label nikdy neurčují zaplacenou částku. Ruční
 // zápisy z ledgeru nikdy nevytvoří položku v subscriptions ani cenu u rozpoznaného plánu.
 // Do aktivních součtů, grafů, prognózy, rozpočtů a týmové synchronizace vstupují pouze
 // ověřené API položky. Starší ruční řádky z `ledger` zůstávají odděleně v historii a CSV.
@@ -348,6 +360,6 @@ svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
 
 `integrations.claudeAuth` je `{ loggedIn: true | false | null, checkedAt: Unix ms }` z posledního `claude auth status --json`. `null` znamená, že se stav nepodařilo ověřit (nikdy neznamená odhlášení). Stav se znovu čte při startu, po napojení a každé 2 minuty; při změně přijde událost `integrations`. Rozhraní ukazuje výslovně odhlášení jen do 5 minut od úspěšného dotazu. `claudeHooks` popisuje nainstalované lokální hooky a stavový řádek, nikoli přihlášení k účtu. Ani přihlášení samo o sobě nedává čerstvé limity: čísla vyžadují aktuální měření z podporovaného zdroje.
 
-`{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, extension: { pairedAt, seenAt, version }, extensionInstallations: [{ id, origin, tokenHash /* sha256, nikdy token */, pairedAt }] /* max 5 */, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` – zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
+`{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, extension: { pairedAt, seenAt, version }, extensionInstallations: [{ id, origin, tokenHash /* sha256, nikdy token */, pairedAt }] /* max 5 */, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, providerAccounts: [{ id, provider, service, plan, seenAt }] /* max 24; bez osobních údajů a tokenů */, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` – zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
 
 Další soubory: `~/.agenteeq/prompts/<uuid>.txt` (zadání pro Terminál, 0600, mazání po 24 h), `~/.agenteeq/runs/<id>.log` (výstup běhů na pozadí, 0600).

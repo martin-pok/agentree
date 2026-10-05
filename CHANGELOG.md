@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.4 – 2026-10-05 · účty nástrojů bez směšování licencí
+
+- Útrata čte aktuální účet, plán, limity a kredit Codexu z jediné odpovědi oficiálního lokálního app-serveru. Účty z více `CODEX_HOME` odlišuje anonymním otiskem ID; přepis bez ID už nevytváří aktuální předplatné.
+- Claude Code se ověřuje pro výchozí i nalezené izolované profily `CLAUDE_CONFIG_DIR`. Přihlášené účty jsou oddělené; odhlášený profil neukazuje starý plán jako aktuální.
+- Nová karta Účty nástrojů rozlišuje aktivní a dříve rozpoznané licence. Po přepnutí zůstanou starší účty v přehledu, ale jejich limity a kredity se nevydávají za živé. Historický graf kreditů Codexu bez ID účtu se nezobrazuje, protože mohl spojovat více licencí.
+
 ## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení
 
 - Přehled ukazuje Claude i bez čerstvého měření, pokud je na Macu dostupný. Při ověřeném odhlášení nabídne přihlášení; při neznámém nebo starém stavu čeká na data. Nikdy nedoplní procento ani čas obnovy odhadem.

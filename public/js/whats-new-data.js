@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.36.4',
+    date: '2026-10-05',
+    title: 'Oddělené účty Codexu a Claude',
+    items: [
+      'Útrata načítá účet, plán, limity a kredity Codexu společně z aktuální odpovědi Codexu. Starý přepis už nemůže vytvořit falešný aktuální plán.',
+      'Při přepnutí licence zůstane předchozí účet jen jako rozpoznaný. Jeho limity a kredity se nikdy nevydávají za živá data. Claude Code ověřuje každý nalezený izolovaný profil zvlášť.',
+    ],
+    en: {
+      title: 'Separate Codex and Claude accounts',
+      items: [
+        'Spend reads the current Codex account, plan, limits and credits together from Codex. An older transcript can no longer create a false current plan.',
+        'When you switch licences, the previous account remains only as recognised. Its limits and credits are never shown as live data. Claude Code verifies every discovered isolated profile separately.',
+      ],
+    },
+  },
+  {
     version: '0.36.3',
     date: '2026-10-04',
     title: 'Claude v Přehledu limitů',

@@ -19,6 +19,7 @@ export default {
   "Můžeš zase naplno zadávat úkoly.": "You can give it full tasks again.",
 
   // src/app.js
+  "aktuální účet Codexu": "current Codex account",
   "prohlížeč": "browser",
   "Skončilo s kódem {0}": "Exited with code {0}",
   "{0} Přihlas se znovu tlačítkem Napojit v Nastavení → Propojení (otevře se v prohlížeči).": "{0} Sign in again with the Connect button in Settings → Connections (it opens in your browser).",

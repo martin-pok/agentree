@@ -108,6 +108,7 @@ export function describePlan(found) {
   const label = table[found.plan] || `${found.service === 'claude' ? 'Claude' : 'ChatGPT'} (${found.plan})`;
   return {
     service: found.service,
+    accountId: found.accountId || null,
     plan: found.plan,
     label,
     free: found.plan === 'free',
