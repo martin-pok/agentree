@@ -7,6 +7,7 @@ import { parseCnb, applyLiveRates, createRateFeed } from '../src/rates.js';
 import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionPortfolio } from '../src/subscriptions.js';
 import { spendSummary, DEFAULT_SPEND, validateEntry } from '../src/spend.js';
 import { normalizeData } from '../src/datastore.js';
+import { claudeIdentity, normalizeCodexAccount, observeAccount } from '../src/provider-accounts.js';
 
 const CNB = `18.09.2026 #181
 země|měna|množství|kód|kurz
@@ -196,18 +197,93 @@ test('změna přihlášení Claude se bez reloadu propíše do živého stavu', 
   }
 });
 
-test('nový plán z limitů Codexu se propíše do Útraty okamžitě', async () => {
+test('historický limit Codexu bez identity účtu nevytvoří aktuální předplatné', async () => {
   const t = await startTestServer();
   try {
-    let pushed = null;
-    t.app.store.once('spend', (value) => { pushed = value; });
     const now = Date.now();
     t.app.store.setLimit({ id: 'openai:five_hour', provider: 'openai', app: 'Codex', kind: 'time', label: '5 h', plan: 'plus', at: now, resetsAt: now + 3600e3, usedPercent: 10 });
-    assert.equal(pushed?.subscriptions.find((p) => p.service === 'chatgpt')?.plan, 'plus');
-    assert.equal(pushed?.subscriptions.find((p) => p.service === 'chatgpt')?.observedAt, now);
+    assert.equal(t.app.spendPayload().subscriptions.some((p) => p.service === 'chatgpt'), false);
   } finally {
     await t.close();
   }
+});
+
+test('účet, plán a limity Codexu pocházejí z jednoho odečtu app-serveru bez osobních údajů', () => {
+  const snap = normalizeCodexAccount(
+    { accountId: 'acct-abcdefgh12345678', rateLimitsByLimitId: { codex: { primary: { usedPercent: 25, windowDurationMins: 300, resetsAt: 1800000000 }, secondary: { usedPercent: 15, windowDurationMins: 10080 } } }, rateLimits: { planType: 'plus', credits: { balance: '12.5' } } }, 1234);
+  assert.equal(snap.plan, 'plus');
+  assert.equal(snap.limits[0].primary.usedPercent, 25);
+  assert.equal(snap.credits, 12.5);
+  assert.doesNotMatch(JSON.stringify(snap), /tajne@example\.com|acct-abcdefgh/);
+  assert.equal(normalizeCodexAccount({ rateLimits: { planType: 'plus' } }), null, 'bez identity se plán nepřiřadí');
+});
+
+test('přepnutí dvou účtů zachová historii, ale čísla patří jen aktuálnímu účtu', async () => {
+  let account = normalizeCodexAccount(
+    { accountId: 'account-alpha-1234', rateLimitsByLimitId: { codex: { primary: { usedPercent: 80 } } }, rateLimits: { planType: 'plus', credits: { balance: '7' } } });
+  const t = await startTestServer({}, { codexAccountReader: async () => account });
+  try {
+    await t.app.refreshSubscriptions();
+    const first = t.app.spendPayload();
+    assert.equal(first.providerAccounts.find((x) => x.active).credits, 7);
+    account = normalizeCodexAccount(
+      { accountId: 'account-bravo-1234', rateLimitsByLimitId: { codex: { primary: { usedPercent: 12 } } }, rateLimits: { planType: 'pro', credits: { balance: '3' } } });
+    await t.app.refreshSubscriptions();
+    const second = t.app.spendPayload();
+    assert.equal(second.providerAccounts.filter((x) => x.provider === 'openai').length, 2);
+    assert.equal(second.providerAccounts.find((x) => x.active).credits, 3);
+    assert.equal(second.providerAccounts.find((x) => !x.active && x.provider === 'openai').credits, null);
+    assert.equal(second.subscriptions.find((x) => x.service === 'chatgpt').plan, 'pro');
+    account = null;
+    await t.app.refreshSubscriptions();
+    assert.equal(t.app.spendPayload().providerAccounts.some((x) => x.active && x.provider === 'openai'), false);
+    assert.equal(t.app.spendPayload().subscriptions.some((x) => x.service === 'chatgpt'), false);
+  } finally { await t.close(); }
+});
+
+test('Claude identity rozlišuje účty bez přenosu UUID nebo e-mailu', () => {
+  const a = claudeIdentity({ accountUuid: '11111111-1111-4111-8111-111111111111' });
+  const b = claudeIdentity({ accountUuid: '22222222-2222-4222-8222-222222222222' });
+  assert.notEqual(a, b);
+  const history = observeAccount(observeAccount([], { id: a, provider: 'anthropic', service: 'claude', plan: 'pro', observedAt: 1 }),
+    { id: b, provider: 'anthropic', service: 'claude', plan: 'max', observedAt: 2 });
+  assert.equal(history.length, 2);
+  assert.doesNotMatch(JSON.stringify(history), /11111111|22222222/);
+});
+
+test('druhý izolovaný profil Claude je aktivní i při odhlášení výchozího profilu', async () => {
+  const src = await tempDir('agenteeq-src-claude-');
+  const alt = await tempDir('agenteeq-alt-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { accountUuid: '11111111-1111-4111-8111-111111111111', organizationType: 'claude_pro' } }));
+  await fs.writeFile(path.join(alt, '.claude.json'), JSON.stringify({ oauthAccount: { accountUuid: '22222222-2222-4222-8222-222222222222', organizationType: 'claude_max', userRateLimitTier: 'default_claude_max_5x' } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src, AGENTEEQ_CLAUDE_CONFIG_DIR: alt }, {
+    napojeniRun: async (_bin, _args, options) => ({ ok: true, stdout: JSON.stringify({ loggedIn: options?.env?.CLAUDE_CONFIG_DIR === alt }), stderr: '' }),
+  });
+  try {
+    await t.app.refreshSubscriptions();
+    const sp = t.app.spendPayload();
+    assert.equal(sp.subscriptions.filter((p) => p.service === 'claude').length, 1);
+    assert.equal(sp.subscriptions.find((p) => p.service === 'claude').plan, 'max5x');
+    assert.equal(sp.providerAccounts.find((x) => x.provider === 'anthropic' && x.active).plan, 'max5x');
+    assert.doesNotMatch(JSON.stringify(sp), /11111111|22222222/);
+  } finally { await t.close(); }
+});
+
+test('dva současné domovy Codexu dávají dvě oddělené licence', async () => {
+  const src = await tempDir('agenteeq-src-codex-');
+  const alt = await tempDir('agenteeq-alt-codex-');
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src, AGENTEEQ_CODEX_HOME: alt }, {
+    codexAccountReader: async (_bin, { home }) => normalizeCodexAccount({
+      accountId: home === alt ? 'account-bravo-1234' : 'account-alpha-1234',
+      rateLimits: { planType: home === alt ? 'pro' : 'plus', credits: { balance: home === alt ? '9' : '2' } },
+    }),
+  });
+  try {
+    await t.app.refreshSubscriptions();
+    const sp = t.app.spendPayload();
+    assert.equal(sp.subscriptions.filter((p) => p.service === 'chatgpt').length, 2);
+    assert.deepEqual(sp.providerAccounts.filter((x) => x.provider === 'openai' && x.active).map((x) => x.credits).sort(), [2, 9]);
+  } finally { await t.close(); }
 });
 
 

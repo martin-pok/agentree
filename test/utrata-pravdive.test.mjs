@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
 const { spendSummary, monthlyTotals, SERVICES, KINDS, CURRENCIES, DEFAULT_SPEND } = await import('../src/spend.js');
 const { rateInfo } = await import('../src/rates.js');
-const { ledgerHtml, plansHtml } = await import('../public/js/views/spend.js');
+const { ledgerHtml, plansHtml, providerAccountsHtml } = await import('../public/js/views/spend.js');
 
 const NOW = new Date(2026, 9, 12, 10).getTime(); // 12. 10. 2026
 const ledger = [
@@ -33,6 +33,18 @@ test('karta plánů vzniká jen z ověřeného zdroje a nenabízí ruční licen
   const html = plansHtml(sp);
   assert.match(html, /ChatGPT Plus/);
   assert.doesNotMatch(html, /Perplexity Pro|500|Studio|Další licence|Přidat licenci|data-action=/);
+});
+
+test('přehled účtů oddělí aktuální čísla od dříve zjištěného účtu a escapuje názvy limitů', () => {
+  const html = providerAccountsHtml({ providerAccounts: [
+    { id: 'codex:1234567890abcdef', provider: 'openai', active: false, planLabel: 'ChatGPT Plus', observedAt: NOW - 3600000, limits: [], credits: null },
+    { id: 'codex:abcdef1234567890', provider: 'openai', active: true, planLabel: 'ChatGPT Pro', observedAt: NOW, limits: [{ label: '<script>', primary: { usedPercent: 20, windowMinutes: 300 } }], credits: 9 },
+    { id: null, provider: 'anthropic', active: false, state: 'signed_out', limits: [], credits: null },
+  ] });
+  assert.match(html, /ChatGPT Pro|ChatGPT Plus|Kredity Codexu|Odhlášeno/);
+  assert.equal((html.match(/Kredity Codexu/g) || []).length, 1);
+  assert.doesNotMatch(html, /<script>/);
+  assert.match(html, /&lt;script&gt;/);
 });
 
 test('součet měsíce tvoří jen ověřené řádky Admin API, starší ruční platby jsou mimo něj', () => {

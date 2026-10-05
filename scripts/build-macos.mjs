@@ -23,7 +23,16 @@ for (const file of ['package.json', 'README.md', 'CHANGELOG.md']) await fs.copyF
 await fs.writeFile(path.join(app, 'Contents/Info.plist'), stampVersion(await fs.readFile(path.join(root, 'desktop/Info.plist'), 'utf8'), version));
 const node = process.env.AGENTEEQ_NODE_BINARY || process.execPath;
 await fs.copyFile(node, path.join(resources, 'node')); await fs.chmod(path.join(resources, 'node'), 0o755);
-await fs.copyFile(path.resolve(node, '../../LICENSE'), path.join(resources, 'NODE-LICENSE.txt'));
+// Node z běžné instalace má licenci dvě úrovně nad bin/node. Při opakovaném vydání ale
+// záměrně používáme přibalený Node ze stávající .app, kde je licence vedle binárky.
+// V obou případech musí být licence v novém balíčku; bez ní build nesmí pokračovat potichu.
+const licenceCandidates = [path.resolve(node, '../../LICENSE'), path.join(path.dirname(node), 'NODE-LICENSE.txt')];
+let licenceNode = null;
+for (const candidate of licenceCandidates) {
+  try { await fs.access(candidate); licenceNode = candidate; break; } catch { /* další známé umístění */ }
+}
+if (!licenceNode) throw new Error(`Chybí licence přibaleného Node: ${licenceCandidates.join(', ')}`);
+await fs.copyFile(licenceNode, path.join(resources, 'NODE-LICENSE.txt'));
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'UserNotifications', 'desktop/Agenteeq.swift', '-o', path.join(binary, 'Agenteeq')]);
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'Security', 'desktop/Keychain.swift', '-o', path.join(resources, 'agenteeq-keychain')]);
 // Keep the reviewed macOS icon as a source asset. Recent macOS releases can

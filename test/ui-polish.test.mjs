@@ -503,3 +503,15 @@ test('filtry na Agentech drží jednu mřížku: popisky ve sloupci, řádky 56 
   assert.doesNotMatch(view, /chips-hint/);
   assert.match(view, /data-project-drop="\$\{esc\(p\.id\)\}" title="\$\{tahni\}"/);
 });
+
+test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje omezený pohyb', async () => {
+  const app = await zdroj('public/js/app.js');
+  const css = await zdroj('public/styles.css');
+  assert.match(app, /function spustObnovu\(button\)/);
+  assert.match(app, /button\.setAttribute\('aria-busy', 'true'\)/);
+  assert.match(app, /button\.classList\.add\('is-refreshing'\)/);
+  assert.match(app, /button\.getAttribute\('aria-busy'\) === 'true'/, 'druhý refresh se nesmí spustit souběžně');
+  assert.doesNotMatch(app.slice(app.indexOf("data-action === 'rescan'"), app.indexOf("data-action === 'rescan'") + 900), /button\.disabled\s*=/, 'stav obnovy nesmí změnit geometrii ani fokus tlačítka');
+  assert.match(css, /#refresh-app\.is-refreshing \.icon \{ animation: refresh-rotation/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#refresh-app\.is-refreshing \.icon \{ animation: none/);
+});

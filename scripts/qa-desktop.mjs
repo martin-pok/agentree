@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { startTestServer, api } from '../test/helpers.mjs';
 import { addTokens } from '../src/model.js';
+import { normalizeCodexAccount } from '../src/provider-accounts.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const out = process.env.QA_OUTPUT_DIR || 'dist/qa';
@@ -451,7 +452,8 @@ async function zkontrolujVyskyRadku(browser, engine) {
 
 for (const engine of engines) {
   console.log(`QA ${engine}`);
-  const server = await startTestServer();
+  let accountSnapshot = null;
+  const server = await startTestServer({}, { codexAccountReader: async () => accountSnapshot });
   const sample = server.app.store.ensure({ connector: 'codex', localId: 'qa-layout', provider: 'openai', app: 'Codex' });
   Object.assign(sample, { title: 'QA – kontrola rozložení', lastAt: Date.now(), startedAt: Date.now() - 60000 });
   addTokens(sample, Date.now(), { input: 1200000, output: 300000 });
@@ -537,11 +539,21 @@ for (const engine of engines) {
       return { zachovany, zmeneny };
     });
     assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila dekódované logo nebo ponechala staré`);
+    // Odpověď podržíme jeden snímek, aby se ověřil i mezistav: tlačítko neztratí rozměr ani
+    // hover přes disabled, ale druhá obnova se během prvního požadavku nespustí.
+    await page.route('**/api/connectors/rescan', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      await route.continue();
+    });
     const obnova = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
     const adresaPredObnovou = page.url();
     await page.locator('#refresh-app').click();
+    await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
+    assert.equal(await page.locator('#refresh-app').isDisabled(), false, `${engine}: obnova nesmí změnit tlačítko na zakázaný prvek`);
+    assert.equal(await page.locator('#refresh-app').evaluate((el) => el.classList.contains('is-refreshing')), true, `${engine}: obnova nemá viditelný stav`);
     assert.equal((await obnova).status(), 200, `${engine}: tlačítko obnovy nespustilo nové načtení konektorů`);
-    await page.waitForFunction(() => !document.querySelector('#refresh-app')?.disabled);
+    await page.unroute('**/api/connectors/rescan');
+    await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
@@ -675,7 +687,11 @@ for (const engine of engines) {
     assert.equal(await page.locator('[data-region="ledger-section"]').isHidden(), true, `${engine} bez API a záznamů nesmí zůstat prázdná karta`);
     const observedAt = Date.now();
     server.app.store.setLimit({ id: 'openai:five_hour', provider: 'openai', app: 'Codex', kind: 'time', label: '5 h', plan: 'plus', at: observedAt, resetsAt: observedAt + 3600e3, usedPercent: 10 });
+    accountSnapshot = normalizeCodexAccount({ accountId: 'qa-codex-account-001', rateLimits: { planType: 'plus', credits: { balance: '12' } },
+      rateLimitsByLimitId: { codex: { primary: { usedPercent: 10, windowDurationMins: 300, resetsAt: Math.floor((observedAt + 3600e3) / 1000) } } } });
+    await server.app.refreshSubscriptions();
     await page.locator('.plans .plan-row').waitFor();
+    assert.match(await page.locator('.provider-accounts').textContent(), /Claude Code|Codex/);
     assert.match(await page.locator('.plans').textContent(), /ChatGPT Plus/);
     // Cena je jen ceník poskytovatele (src/cenik.js, rozhodnutí vlastníka 4. 10. 2026): vždy
     // s označením, odkazem na zdroj a datem ověření – nikdy jako platba ani ruční licence.
@@ -686,6 +702,12 @@ for (const engine of engines) {
     assert.match(planyText, /veřejného ceníku/, `${engine} cena je označená jako ceník`);
     assert.equal(await page.locator('.plans .plan-foot a[href="https://chatgpt.com/pricing"]').count(), 1, `${engine} u ceny je odkaz na ceník`);
     await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });
+    await page.setViewportSize({ width: 375, height: 812 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `${engine} účty na telefonu nepřetékají`);
+    assert.equal(await page.locator('.provider-accounts').evaluate((root) => [...root.querySelectorAll('*')].every((el) =>
+      !el.getClientRects().length || Number.parseFloat(getComputedStyle(el).fontSize) >= 12)), true, `${engine} účty nemají text pod 12 px`);
+    await page.screenshot({ path: `dist/qa/${engine}-provider-accounts-mobile.png`, fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
     const budgetsButton = page.locator('button[data-action="budgets"]').first();
     await budgetsButton.click();
     await page.locator('.modal-scrim').waitFor();

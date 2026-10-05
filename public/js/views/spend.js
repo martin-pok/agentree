@@ -2,9 +2,8 @@ import { state } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtMoney, fmtNum, fmtTok, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
-import { gauge, columnChart, donut, timeLine } from '../charts.js';
-import { chartColor } from '../data.js';
-import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, creditAgeHtml } from '../ui.js';
+import { gauge, columnChart, donut } from '../charts.js';
+import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge } from '../ui.js';
 import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 
 // `otevrene` = rozbalené rozpady po modelech (klíč měsíc|služba). Drží se mimo DOM, aby živá
@@ -70,7 +69,7 @@ function openBudgets(opener = null) {
 const usd = (v) => new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', maximumFractionDigits: 0 }).format(v);
 const cenikovaCastka = (v, mena) => (mena === 'USD' ? usd(v) : fmtMoney(v, mena));
 // Odkud plán je – krátce; přesný kód poskytovatele je v nápovědě pro ověření.
-const PUVOD = { claude: () => tr('Zjištěno z účtu Claude Code'), chatgpt: () => tr('Zjištěno z limitů Codexu') };
+const PUVOD = { claude: () => tr('Zjištěno z účtu Claude Code'), chatgpt: () => tr('Zjištěno přímo z Codexu') };
 
 function cenaHtml(sp, c) {
   if (!c) return `<span class="plan-cena"><b>${tr('Podle smlouvy')}</b><small>${tr('bez veřejné ceny')}</small></span>`;
@@ -102,7 +101,7 @@ export function plansHtml(sp) {
     const label = p.label || svc?.label || p.service;
     return `<li class="plan-row">
       <span class="lwin-logo">${glyph(svc?.provider || 'other')}</span>
-      <span class="plan-main"><span class="plan-title"><b>${esc(label)}</b></span>
+      <span class="plan-main"><span class="plan-title"><b>${esc(label)}${p.accountId ? ` <span class="provider-account-id">${tr('účet')} ${esc(p.accountId.slice(-4))}</span>` : ''}</b></span>
         <span class="plan-sub" title="${esc(p.evidence)}">${(PUVOD[p.service] || (() => tr('Zjištěno automaticky')))()}${p.observedAt ? ` · ${tr('ověřeno')} <span data-ago="${p.observedAt}">${esc(rel(p.observedAt))}</span>` : ''}</span>
       </span>
       ${cenaHtml(sp, p.cena)}
@@ -121,6 +120,38 @@ export function plansHtml(sp) {
   </section>`;
 }
 
+export function providerAccountsHtml(sp) {
+  const accounts = sp.providerAccounts || [];
+  if (!accounts.length) return '';
+  const rows = accounts.map((account) => {
+    const name = account.provider === 'anthropic' ? 'Claude Code' : 'Codex';
+    const known = Boolean(account.id);
+    const tag = known ? `${tr('účet')} ${esc(account.id.slice(-4))}` : '';
+    const status = account.active ? tr('Aktivní') : known ? tr('Dříve rozpoznaný')
+      : account.state === 'signed_out' ? tr('Odhlášeno') : tr('Nelze ověřit');
+    const description = account.active && account.planLabel
+      ? account.planLabel
+      : known && account.planLabel ? tr('Naposledy {0}', account.planLabel) : tr('Plán není dostupný');
+    const windowLabel = (minutes) => minutes === 300 ? tr('limit 5 h')
+      : minutes === 10080 ? tr('týdenní limit')
+        : minutes ? tr('okno {0} min', minutes) : tr('limit');
+    const limits = account.active ? (account.limits || []).flatMap((bucket) => [
+      bucket.primary ? { ...bucket.primary, label: `${bucket.label} · ${windowLabel(bucket.primary.windowMinutes)}` } : null,
+      bucket.secondary ? { ...bucket.secondary, label: `${bucket.label} · ${windowLabel(bucket.secondary.windowMinutes)}` } : null,
+    ].filter(Boolean)) : [];
+    return `<li class="provider-account${account.active ? ' is-active' : ''}">
+      <span class="lwin-logo">${glyph(account.provider)}</span>
+      <div class="provider-account-main">
+        <div class="provider-account-top"><strong>${name}${tag ? ` <span class="provider-account-id">${tag}</span>` : ''}</strong><span class="provider-account-state">${status}</span></div>
+        <span class="plan-sub">${esc(description)}${account.observedAt ? ` · <span data-ago="${account.observedAt}">${esc(rel(account.observedAt))}</span>` : ''}</span>
+        ${limits.map((limit) => `<div class="provider-account-limit"><span>${esc(limit.label)}${limit.resetsAt ? ` · ${tr('obnova {0}', esc(dateLong(limit.resetsAt)))}` : ''}</span><strong>${Math.round(limit.usedPercent)} %</strong><span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(limit.usedPercent)}" aria-label="${esc(`${name} ${limit.label}`)}"><i style="width:${limit.usedPercent}%"></i></span></div>`).join('')}
+        ${account.active && account.credits !== null ? `<div class="provider-account-credit">${tr('Kredity Codexu')} <strong>${esc(fmtNum(account.credits))}</strong></div>` : ''}
+      </div>
+    </li>`;
+  }).join('');
+  return `<section class="card pad provider-accounts" aria-labelledby="provider-accounts-h"><div class="sec-head"><h2 id="provider-accounts-h">${tr('Účty nástrojů')}</h2></div><ul class="provider-account-list">${rows}</ul></section>`;
+}
+
 function mount(el, _params, query) {
   v.el = el;
   v.rozpocty = query?.get('rozpocty') === '1';
@@ -133,6 +164,7 @@ function mount(el, _params, query) {
     </div>
     <div class="spend-hero card" data-enter style="--i:2" data-region="hero"></div>
     <div data-enter style="--i:3" data-region="plans"></div>
+    <div data-enter style="--i:3" data-region="provider-accounts"></div>
     <div data-enter style="--i:3" data-region="credits"></div>
     <div data-enter style="--i:4" data-region="budgets"></div>
     <div class="grid-2 grid-2--wide" data-region="analytics" data-enter style="--i:5">
@@ -207,6 +239,7 @@ function update() {
     </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
+  fill(el, 'provider-accounts', providerAccountsHtml(sp));
 
   if (v.rozpocty && billingConnected) {
     v.rozpocty = false;
@@ -254,7 +287,8 @@ function update() {
     ? donut({ segments: kinds.map(([k, x]) => ({ label: sp.kinds[k] || k, value: x, color: KIND_COLORS[k] || '#8A8594' })), center: fmtMoney(sp.month.total, sp.currency, { compact: true }), sub: tr('tento měsíc'), format: money, label: tr('Útrata podle typu platby') })
     : `<p class="muted">${tr('Tento měsíc zatím žádné výdaje.')}</p>`);
 
-  const credits = state.credits.filter((c) => c.history?.length >= 2);
+  // Staré odečty z přepisů Codexu nemají ID účtu. Graf by při přepínání licencí
+  // spojoval různé zůstatky do jedné křivky. Aktuální zůstatek je v kartě účtu výše.
   const now = Date.now();
   const spendLimits = state.limits.filter((l) => l.kind === 'spend' && l.source !== 'plan-history'
     && now - l.at <= 30 * 60 * 1000 && l.at - now <= 60 * 1000
@@ -269,16 +303,11 @@ function update() {
     const bar = pct === null ? '' : `<span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${esc(`${l.app} ${l.label}`)}"><i style="width:${pct}%"></i></span>`;
     return `<div class="spend-limit"><div class="credit-head">${glyph(l.provider)}<strong>${esc(l.app)} – ${esc(l.label)}</strong><span class="muted small">${meta}${l.resetsAt ? ` · ${tr('obnova {0}', dateLong(l.resetsAt))}` : ''}</span></div>${bar}</div>`;
   };
-  fill(el, 'credits', credits.length || spendLimits.length
+  fill(el, 'credits', spendLimits.length
     ? `<section class="card pad" aria-labelledby="cr-h"><div class="sec-head"><h2 id="cr-h">${tr('Kredity a čerpání')}</h2></div>
+      <p class="muted small">${tr('Tato měření nemají ověřený účet.')}</p>
       ${spendLimits.map(spendRow).join('')}
-      ${credits.map((c) => {
-      const ups = c.topUps || [];
-      const recent = ups.slice(-6).reverse();
-      return `<div class="credit-chart"><div class="credit-head">${glyph(c.provider)}<strong>${esc(c.label)}</strong><span class="muted small">${num(c.balance)} ${tr('zbývá')}${creditAgeHtml(c) ? ` · ${creditAgeHtml(c)}` : ''}${ups.length ? ` ${tr('· {0}× doplněno', ups.length)}` : ''}</span></div>
-        ${timeLine({ id: `sp-credits-${c.id}`, points: c.history.slice(-60).map((p) => ({ at: p.at, value: p.balance })), height: 150, color: chartColor(c.provider), format: num, axisFormat: fmtNum, label: c.label, riseLabel: tr('Doplněno') })}
-        ${recent.length ? `<ul class="topups">${recent.map((u) => `<li><span>${dateLong(u.at)}</span><b>+${num(u.amount)}</b></li>`).join('')}</ul>` : ''}</div>`;
-    }).join('')}</section>`
+    </section>`
     : '');
 
   fill(el, 'ledger', ledgerHtml(sp));

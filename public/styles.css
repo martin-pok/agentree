@@ -2481,6 +2481,21 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .plan-price b { font: 500 15px/1 var(--f-mono); }
 .plan-price em { font-style: normal; font-size: 13px; color: var(--ink-2); }
 .plan-sub { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.provider-accounts { margin-bottom: 24px; }
+.provider-account-list { display: grid; gap: 0; list-style: none; margin: 0; padding: 0; }
+.provider-account { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 16px; align-items: start; padding: 16px 4px; border-top: 1px solid var(--line-2); }
+.provider-account:first-child { border-top: 0; }
+.provider-account-main { display: grid; gap: 6px; min-width: 0; }
+.provider-account-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.provider-account-top strong { color: var(--ink); font-weight: 500; }
+.provider-account-id { color: var(--ink-2); font-size: 13px; font-weight: 400; }
+.provider-account-state { color: var(--ink-2); font-size: 13px; }
+.provider-account.is-active .provider-account-state { color: var(--teal-ink); }
+.provider-account-limit { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 12px; margin-top: 7px; color: var(--ink-2); font-size: 13px; }
+.provider-account-limit strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.provider-account-limit .lwin-bar { grid-column: 1 / -1; }
+.provider-account-credit { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-2); font-size: 13px; }
+.provider-account-credit strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .plan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .plan-kind { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; margin-right: 4px; border-radius: var(--r-pill); background: var(--teal-tint); color: var(--teal-ink); font-size: 12px; line-height: 1; }
 .license-list { display: grid; gap: 8px; margin-top: 10px; }
@@ -2608,10 +2623,11 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .link[href]:hover::after { translate: none; }
 }
 
-/* Obnova dat v horní liště: ikona se otáčí, tlačítko zůstává klidné (bez disabled a kurzoru „zakázáno“). */
+/* Obnova aktuálních dat: pohybuje se pouze znak uvnitř kruhového tlačítka. Tvar, poloha i hover
+   zůstávají beze změny, takže rychlá odezva nepůsobí jako zakázaný nebo poskakující ovladač. */
 #refresh-app[aria-busy='true'] { cursor: progress; }
-#refresh-app.is-spinning .icon { animation: obnova-otocka 700ms cubic-bezier(.45, .05, .35, 1) infinite; transform-origin: 50% 50%; }
-@keyframes obnova-otocka { to { rotate: 360deg; } }
+#refresh-app.is-refreshing .icon { animation: refresh-rotation 700ms cubic-bezier(.45, .05, .35, 1) infinite; transform-origin: 50% 50%; }
+@keyframes refresh-rotation { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) {
-  #refresh-app.is-spinning .icon { animation: none; opacity: .5; }
+  #refresh-app.is-refreshing .icon { animation: none; opacity: .58; }
 }

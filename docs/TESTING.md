@@ -13,6 +13,17 @@
 | Snímky | Přehled, Agenti, Nastavení: 1440 a 375 px, světlý i tmavý režim, konzole bez chyb, bez vodorovného rolování |
 
 Neověřeno: WebKit (na stroji s ověřením chybí, pustí ho CI), aplikace Codex a výpis procesů s rodičem na skutečném Windows, DMG (vznikne až na runneru s macOS), hlavičky webu na produkci (po nasazení na Vercel), příčina „0 zařízení“ na produkční databázi.
+## Protokol ověření – 0.36.4, oddělené účty nástrojů (5. 10. 2026, macOS, Node 24.18)
+
+| Kontrola | Výsledek |
+|---|---|
+| Regrese a syntaxe | 803 testů: 801 prošlo, 2 přeskočeny jen pro Windows. Cílené scénáře více profilů, kontrola syntaxe a `git diff --check` prošly. |
+| Účty a čerstvost | Skutečný lokální Codex app-server potvrdil dostupný účet, plán, jedno okno limitu a kredit. Identifikátor účtu ani přihlašovací údaje se neukládají ani nevypisují. Testy pokrývají přepnutí účtu, dva současné domovy Codexu, odhlášený základní Claude profil a přihlášený izolovaný Claude profil. |
+| Vykreslení | Chromium i WebKit: desktop 1440 px a mobil 375 px, světle i tmavě; nová karta účtů bez vodorovného posunu, bez chyb konzole. V Chromiu vyfotografováno a prohlédnuto. |
+| Přístupnost | `qa:contrast` měřeně prošlo pro aplikaci, web i rozšíření ve všech trasách; `qa:tvary` prošlo. Nová karta nemá viditelný text pod 12 px. |
+| Balíčky | Isolovaný npm balíček 0.36.4 se nainstaloval a spustil; rozšíření má 33 scénářů v pořádku. Rozbalený macOS archiv prošel 10/10: podpis, přibalený Node, start serveru, vykreslení okna, navigace, desktopové styly i ukončení serveru s aplikací. |
+
+Claude Code nebyl v době živé kontroly přihlášený. Aplikace proto správně nezobrazuje aktuální plán ani čísla Claude; skutečné procento/čas obnovy Claude neumí z neověřeného souboru nebo přepisu nahradit odhadem.
 
 ## Protokol ověření – 0.36.3, pravdivý stav limitů Claude (4. 10. 2026, macOS, Node 24.18)
 

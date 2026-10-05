@@ -10,6 +10,11 @@
 - **Bez omluv a vysvětlivek.** Z aplikace, webu i rozšíření zmizely ujišťování, texty v první osobě a návody „otevři tlačítkem výše“. Místo nich jsou akce: Nastavit rozpočet, Otevřít Claude / v Codexu přímo u čekajícího agenta, Spustit agenta v prázdném seznamu, odkazy rovnou na správnou kartu Nastavení.
 - **Obnova dat bez problikávání.** Tlačítko obnovy se už nevypíná (kurzor „zakázáno“ a poskočení o pixel); ikona se plynule otočí a doběhne do klidové polohy, při omezeném pohybu se jen ztlumí.
 - Neověřeno: aplikace Codex a výpis procesů s rodičem na skutečném Windows; DMG až v CI na macOS; hlavičky webu až po nasazení na Vercel.
+## 0.36.4 – 2026-10-05 · účty nástrojů bez směšování licencí
+
+- Útrata čte aktuální účet, plán, limity a kredit Codexu z jediné odpovědi oficiálního lokálního app-serveru. Účty z více `CODEX_HOME` odlišuje anonymním otiskem ID; přepis bez ID už nevytváří aktuální předplatné.
+- Claude Code se ověřuje pro výchozí i nalezené izolované profily `CLAUDE_CONFIG_DIR`. Přihlášené účty jsou oddělené; odhlášený profil neukazuje starý plán jako aktuální.
+- Nová karta Účty nástrojů rozlišuje aktivní a dříve rozpoznané licence. Po přepnutí zůstanou starší účty v přehledu, ale jejich limity a kredity se nevydávají za živé. Historický graf kreditů Codexu bez ID účtu se nezobrazuje, protože mohl spojovat více licencí.
 
 ## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení
 

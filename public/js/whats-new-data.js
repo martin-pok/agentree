@@ -22,6 +22,18 @@ export const RELEASES = [
         'Account sync adds your Mac to the account before it turns on, and the account card says why if something fails. The web overview shows how fresh the data is and refreshes on its own.',
         'Agenteeq installs without Terminal: an Install page with Mac and Windows buttons and one set of steps for the first launch.',
         'Buttons that do the job instead of explanations, and a smooth refresh animation.',
+    version: '0.36.4',
+    date: '2026-10-05',
+    title: 'Oddělené účty Codexu a Claude',
+    items: [
+      'Útrata načítá účet, plán, limity a kredity Codexu společně z aktuální odpovědi Codexu. Starý přepis už nemůže vytvořit falešný aktuální plán.',
+      'Při přepnutí licence zůstane předchozí účet jen jako rozpoznaný. Jeho limity a kredity se nikdy nevydávají za živá data. Claude Code ověřuje každý nalezený izolovaný profil zvlášť.',
+    ],
+    en: {
+      title: 'Separate Codex and Claude accounts',
+      items: [
+        'Spend reads the current Codex account, plan, limits and credits together from Codex. An older transcript can no longer create a false current plan.',
+        'When you switch licences, the previous account remains only as recognised. Its limits and credits are never shown as live data. Claude Code verifies every discovered isolated profile separately.',
       ],
     },
   },
