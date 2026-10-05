@@ -12,7 +12,8 @@ import { createDetekce } from './detekce.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
-import { readClaudeAccount, claudePlanFromAccount, chatgptPlanFromLimits, subscriptionPortfolio } from './subscriptions.js';
+import { readClaudeAccount, claudePlanFromAccount, describePlan, subscriptionPortfolio } from './subscriptions.js';
+import { claudeIdentity, observeAccount, readCodexAccount } from './provider-accounts.js';
 import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
@@ -77,7 +78,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu, updateService, updateFetch } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu, updateService, updateFetch, codexAccountReader = readCodexAccount } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -325,30 +326,90 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Předplatné zjištěné z tohoto Macu (Claude z účtu Claude Code, ChatGPT z plánu, který hlásí Codex).
-  let claudeAccount = null;
+  let claudeAccounts = [];
+  let codexAccounts = [];
   let claudeAuth = { loggedIn: null, checkedAt: 0 };
-  let subscriptionWatcher = null;
+  const claudeAccountWatchers = new Map();
+  const codexAccountWatchers = new Map();
   let subscriptionJson = '';
+  let subscriptionRefreshGeneration = 0;
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
   async function refreshSubscriptions() {
+    const generation = ++subscriptionRefreshGeneration;
     // Samotný starý ~/.claude.json nestačí: po odhlášení může na disku zůstat. Plán přijmeme
     // pouze když vlastní `claude auth status --json` právě potvrdí aktivní přihlášení.
-    const auth = await napojeni.stav('claude-code').catch(() => ({ napojeno: null }));
+    const codexHomes = [...new Set([config.codexHome || path.join(config.sourceHome, '.codex'), ...connectors.codex.domovy()])].slice(0, 8);
+    for (const home of codexHomes) if (!codexAccountWatchers.has(home)) {
+      codexAccountWatchers.set(home, watchExactFile(path.join(home, 'auth.json'), () => refreshSubscriptions().catch(() => {}), { retryMs: 1000 }));
+    }
+    const claudeHomes = [...new Set([config.sourceHome, ...connectors['claude-code'].koreny()
+      .filter((root) => path.basename(root) === 'projects').map((root) => path.dirname(root))])].slice(0, 8);
+    for (const home of claudeHomes) if (!claudeAccountWatchers.has(home)) {
+      claudeAccountWatchers.set(home, watchExactFile(path.join(home, '.claude.json'), () => refreshSubscriptions().catch(() => {}), { retryMs: 1000 }));
+    }
+    const [auth, codexResults] = await Promise.all([
+      napojeni.stav('claude-code').catch(() => ({ napojeno: null })),
+      (launchEnv.bins?.codex || codexAccountReader !== readCodexAccount
+        ? Promise.all(codexHomes.map((home) => codexAccountReader(launchEnv.bins?.codex, { home }).catch(() => null)))
+        : Promise.resolve([])),
+    ]);
+    if (generation !== subscriptionRefreshGeneration) return;
     const loggedIn = typeof auth.napojeno === 'boolean' ? auth.napojeno : null;
     const authChanged = claudeAuth.loggedIn !== loggedIn;
     claudeAuth = { loggedIn, checkedAt: Date.now() };
-    const acc = auth.napojeno === true ? await readClaudeAccount(config.sourceHome) : null;
-    const before = JSON.stringify(claudeAccount);
-    claudeAccount = acc ? claudePlanFromAccount(acc) : null;
-    if (JSON.stringify(claudeAccount) !== before) {
+    const extraClaude = await Promise.all(claudeHomes.filter((home) => home !== config.sourceHome).map(async (home) => {
+      if (!launchEnv.bins?.claude) return null;
+      try { await fsp.access(path.join(home, '.claude.json')); } catch { return null; }
+      const result = await (napojeniRun || run)(launchEnv.bins.claude, ['auth', 'status', '--json'],
+        { timeout: 10000, env: { ...process.env, CLAUDE_CONFIG_DIR: home } });
+      let status;
+      try { status = JSON.parse(result.stdout); } catch { return null; }
+      return status.loggedIn === true ? { home, account: await readClaudeAccount(home) } : null;
+    }));
+    const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
+    if (generation !== subscriptionRefreshGeneration) return;
+    const before = JSON.stringify([claudeAccounts, codexAccounts]);
+    claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
+      .map(({ account }, index) => {
+        const plan = claudePlanFromAccount(account);
+        const id = claudeIdentity(account);
+        return [id || `unknown:${index}`, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
+          observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
+      })).values()];
+    codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
+    let history = datastore.data.providerAccounts;
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
+    for (const codexAccount of codexAccounts) history = observeAccount(history, codexAccount);
+    if (JSON.stringify(history) !== JSON.stringify(datastore.data.providerAccounts)) {
+      datastore.data.providerAccounts = history;
+      datastore.save();
+    }
+    if (JSON.stringify([claudeAccounts, codexAccounts]) !== before) {
       subscriptionJson = JSON.stringify(subscriptions());
       spendChanged();
     }
     if (authChanged && store.ready) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
   }
   function subscriptions(now = Date.now()) {
-    const found = [claudeAccount, chatgptPlanFromLimits(store.limitList(), now)].filter(Boolean);
+    // Historický přepis Codexu nemá identitu účtu. Po přepnutí licence by mohl patřit jinému
+    // účtu; Útrata proto přijímá jen plán z aktuálního odečtu oficiálního app-serveru.
+    const found = [...claudeAccounts.filter((account) => account.plan).map((account) => ({ service: 'claude', plan: account.plan,
+      accountId: account.id, observedAt: account.observedAt, evidence: account.evidence, since: account.since })),
+    ...codexAccounts.filter((account) => account.plan).map((account) => ({ service: 'chatgpt', plan: account.plan,
+      accountId: account.id, observedAt: account.observedAt, evidence: ui('aktuální účet Codexu') }))].filter(Boolean);
     return subscriptionPortfolio(found);
+  }
+
+  function providerAccounts() {
+    const current = new Map();
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) current.set(claudeAccount.id, { plan: claudeAccount.plan, limits: [], credits: null, observedAt: claudeAccount.observedAt });
+    for (const codexAccount of codexAccounts) current.set(codexAccount.id, { plan: codexAccount.plan, limits: codexAccount.limits, credits: codexAccount.credits, observedAt: codexAccount.observedAt });
+    const rows = datastore.data.providerAccounts.map((item) => ({ ...item, active: current.has(item.id),
+      ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
+    if (!rows.some((x) => x.provider === 'anthropic' && x.active)) rows.push({ provider: 'anthropic', service: 'claude', id: null, plan: null, active: false, state: claudeAuth.loggedIn === false ? 'signed_out' : 'unavailable', limits: [], credits: null, observedAt: null });
+    if (!rows.some((x) => x.provider === 'openai' && x.active)) rows.push({ provider: 'openai', service: 'chatgpt', id: null, plan: null, active: false, state: 'unavailable', limits: [], credits: null, observedAt: null });
+    return rows.map((row) => ({ ...row, planLabel: row.plan ? describePlan(row).label : null }))
+      .sort((a, b) => Number(b.active) - Number(a.active) || (b.observedAt || 0) - (a.observedAt || 0));
   }
 
   // Aktivní útrata pochází jen z Admin API. Staré ruční zápisy jsou exportovatelné,
@@ -369,7 +430,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const sp = datastore.data.spend;
     const sources = connectors['cloud-billing'].providers();
     const connected = Object.values(sources).filter((source) => source.state === 'connected');
-    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {
@@ -735,11 +796,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
       if (id === 'claude-code') {
-        const found = claudePlanFromAccount(await readClaudeAccount(config.sourceHome));
-        return found ? describePlan(found).label : '';
+        const found = claudeAccounts.filter((account) => account.plan);
+        return found.length === 1 ? describePlan(found[0]).label : '';
       }
-      const found = chatgptPlanFromLimits(store.limitList());
-      return found ? describePlan(found).label : '';
+      const found = codexAccounts.filter((account) => account.plan);
+      return found.length === 1 ? describePlan(found[0]).label : '';
     },
   });
 
@@ -1380,9 +1441,6 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     every(() => spendChanged(), HOUR);
     await refreshSubscriptions().catch(() => {});
     subscriptionJson = JSON.stringify(subscriptions());
-    subscriptionWatcher = watchExactFile(path.join(config.sourceHome, '.claude.json'), () => {
-      refreshSubscriptions().catch(() => {});
-    }, { retryMs: 1000 });
     // Časem může zestárnout poslední pozorování plánu Codexu i bez nového souboru.
     every(() => subscriptionsChanged(), 60_000);
     every(() => refreshSubscriptions(), 2 * 60e3);
@@ -1401,8 +1459,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     stoppingRemote = true;
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
-    subscriptionWatcher?.close();
-    subscriptionWatcher = null;
+    for (const watcher of claudeAccountWatchers.values()) watcher.close();
+    claudeAccountWatchers.clear();
+    for (const watcher of codexAccountWatchers.values()) watcher.close();
+    codexAccountWatchers.clear();
     ucet.stop();
     cloudSync.stop();
     napojeni.stop();

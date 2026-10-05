@@ -5,6 +5,7 @@ import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
 import { ui } from './texty.js';
 import { VYCHOZI_TICHO, normalizujTicho } from './nocni-ticho.js';
+import { normalizeObservedAccounts } from './provider-accounts.js';
 
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
@@ -175,6 +176,7 @@ function normalizeDataInner(raw) {
     alerts: Array.isArray(d.alerts) ? d.alerts.slice(-ALERTS_MAX) : [],
     alertKeys: d.alertKeys && typeof d.alertKeys === 'object' ? d.alertKeys : {},
     credits: d.credits && typeof d.credits === 'object' ? d.credits : {},
+    providerAccounts: normalizeObservedAccounts(d.providerAccounts),
     nastroje: normalizeNastroje(d.nastroje),
     // Spárované telefony: v datech leží jen hash tokenu, nikdy použitelný token.
     lanDevices: Array.isArray(d.lanDevices)
