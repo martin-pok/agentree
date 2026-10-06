@@ -328,8 +328,12 @@ test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou',
     'modal před zamknutím stránky uloží její pozici');
   assert.match(modal, /opener\.focus\(\{ preventScroll: true \}\)/,
     'návrat fokusu na trigger nesmí scrollnout stránku');
-  assert.match(modal, /requestAnimationFrame\(\(\) => \{[\s\S]{0,450}window\.scrollTo\(scrollAtOpen\.x, scrollAtOpen\.y\)/,
+  assert.match(modal, /function restorePageScroll\(\) \{[\s\S]{0,450}window\.scrollTo\(scrollAtOpen\.x, scrollAtOpen\.y\)/,
     'pokud WebKit pozici přesto změní, modal ji po odemčení stránky obnoví');
+  assert.match(modal, /setTimeout\(\(\) => \{\s*scrim\.remove\(\);[\s\S]{0,180}?requestAnimationFrame\(restorePageScroll\);\s*\}, 180\)/,
+    'WebKit může posunout stránku až při odstranění zavíracího překryvu, proto se pozice ověří i potom');
+  assert.match(modal, /location\.href !== locationAtOpen/,
+    'po navigaci se nesmí vracet scroll z předchozí obrazovky');
   const paleta = ui.slice(ui.indexOf('export function createPalette'));
   assert.match(paleta, /root\.hidden = false;[\s\S]{0,400}?document\.body\.classList\.add\('has-modal'\)/, 'otevření vyhledávání musí zamknout stránku');
   assert.match(paleta, /root\.hidden = true;[\s\S]{0,300}?document\.body\.classList\.remove\('has-modal'\)/, 'zavření ji musí odemknout');

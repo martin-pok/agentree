@@ -752,6 +752,7 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
   return new Promise((resolve) => {
     const opener = openerOverride || document.activeElement;
     const scrollAtOpen = { x: window.scrollX, y: window.scrollY };
+    const locationAtOpen = location.href;
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
     const scrim = document.createElement('div');
     scrim.className = 'modal-scrim';
@@ -774,19 +775,25 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
       closed = true;
       document.removeEventListener('keydown', onKey, true);
       scrim.classList.add('is-closing');
-      setTimeout(() => scrim.remove(), 180);
+      setTimeout(() => {
+        scrim.remove();
+        // WebKit may apply a second scroll adjustment when the closing overlay leaves layout.
+        requestAnimationFrame(restorePageScroll);
+      }, 180);
       document.body.classList.remove('has-modal');
       if (opener?.isConnected) opener.focus({ preventScroll: true });
-      // WebKit can move the document as overflow is restored despite preventScroll on focus.
-      // Correct only an actual move so ordinary modal closes remain free of extra scrolling work.
-      requestAnimationFrame(() => {
+      // WebKit can move the document after overflow is restored, even after focus({preventScroll}).
+      // Recheck after unlock and once the closing overlay is removed; skip navigation changes.
+      function restorePageScroll() {
+        if (location.href !== locationAtOpen) return;
         if (window.scrollX === scrollAtOpen.x && window.scrollY === scrollAtOpen.y) return;
         const root = document.documentElement;
         const behavior = root.style.scrollBehavior;
         root.style.scrollBehavior = 'auto';
         window.scrollTo(scrollAtOpen.x, scrollAtOpen.y);
         root.style.scrollBehavior = behavior;
-      });
+      }
+      requestAnimationFrame(restorePageScroll);
       resolve(result);
     };
     const onKey = (e) => {
