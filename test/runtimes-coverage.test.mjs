@@ -28,10 +28,9 @@ test('seznamy neobsahují aplikace, které už neexistují', () => {
   assert.deepEqual(Object.keys(BEZ_PREPISU).filter((id) => !zname.has(id)), [], 'BEZ_PREPISU zná aplikaci, která není v RUNTIMES.');
 });
 
-test('každé vysvětlení je k něčemu: má důvod, radu i odkaz', () => {
+test('každé vysvětlení je k něčemu: má důvod i odkaz', () => {
   for (const [id, i] of Object.entries(BEZ_PREPISU)) {
     assert.ok(i.duvod && i.duvod.length > 30, `${id}: důvod chybí nebo je příliš stručný na to, aby něco vysvětlil`);
-    assert.ok(i.rada && i.rada.length > 10, `${id}: chybí rada, co s tím uživatel může udělat`);
     assert.ok(i.odkaz?.href && i.odkaz?.text, `${id}: chybí odkaz, kam se má uživatel vydat`);
     assert.doesNotMatch(i.duvod, /asi |patrně|možná|nejspíš/i, `${id}: důvod má být ověřený fakt, ne odhad`);
   }

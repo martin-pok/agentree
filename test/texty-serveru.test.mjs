@@ -45,7 +45,7 @@ test('překlad: neznámý text zůstane beze změny a nic se nevymýšlí', () =
 test('překlad dat: obsah uživatele a kódy se nemění, texty rozhraní ano', () => {
   const data = prelozData({
     sessions: [{ id: 'x', status: 'working', title: 'Oprav přihlášení', lastPrompt: 'Pracuje', cwd: '/Users/me/Na pozadí', activity: 'Čte soubor: app.js', reason: 'Pracuje' }],
-    launch: { modes: { ...MODES }, targets: [{ id: 'claude-code', label: 'Claude Code', note: ui('Běží na tvém předplatném Claude.') }] },
+    launch: { modes: { ...MODES }, targets: [{ id: 'claude-code', label: 'Claude Code', permissions: { plan: ui('Jen plán, bez změn') } }] },
     entries: [{ role: 'user', text: 'Pracuje' }, { role: 'system', text: 'Přerušeno uživatelem' }, { role: 'tool', tool: 'Úprava souborů', text: 'a.js' }],
     settings: { profile: 'Na pozadí' },
   });
@@ -56,7 +56,7 @@ test('překlad dat: obsah uživatele a kódy se nemění, texty rozhraní ano', 
   assert.equal(data.sessions[0].activity, 'Reading a file: app.js');
   assert.equal(data.sessions[0].reason, 'Working');
   assert.deepEqual(data.launch.modes, { terminal: 'In Terminal', background: 'In the background', app: 'In the app', web: 'On the web', local: 'Locally' });
-  assert.equal(data.launch.targets[0].note, 'Runs on your Claude subscription.');
+  assert.equal(data.launch.targets[0].permissions.plan, 'Plan only, no changes');
   assert.deepEqual(data.entries.map((e) => e.text), ['Pracuje', 'Interrupted by the user', 'a.js']);
   assert.equal(data.entries[2].tool, 'File changes');
   assert.equal(data.settings.profile, 'Na pozadí');

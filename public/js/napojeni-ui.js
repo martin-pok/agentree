@@ -8,7 +8,6 @@ import { modal, toast, stateBadge } from './ui.js';
 import { tr, tomtoPocitaci } from './i18n.js';
 
 const DODAVATEL = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', perplexity: 'Perplexity' };
-const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Potom už jen ověřuje, že napojení platí. Z webových chatů se dozví jen stav konverzace, text zpráv ne.');
 
 let cekajici = null; // { id, label, scrim, close }
 // Žádosti o napojení na cestě. Zpráva „napojeno“ může přijít dřív než odpověď na samotnou žádost
@@ -112,7 +111,7 @@ function obsahHotovo(u) {
   return `<div class="model-done"><span class="model-done-check" aria-hidden="true">${ICON.check}</span>
     <b>${esc(u.uz ? `${u.label} ${tr('už je napojený')}` : tr('Napojení {0} proběhlo v pořádku', u.label))}</b>
     ${u.plan ? `<span>${esc(u.plan)}</span>` : ''}
-    <p>${tr('Agenteeq teď ukazuje jeho práci, limity a spotřebu. Konverzace zůstávají jen na {0}.', tomtoPocitaci())}</p></div>`;
+    <p>${tr('Agenteeq teď ukazuje jeho práci, limity a spotřebu.')}</p></div>`;
 }
 
 function ukazHotovo(u) {
@@ -153,7 +152,6 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
         <p>${textCekani(n)}</p>
         <p class="model-wait-state"><span class="model-wait-dot" aria-hidden="true"></span>${tr('Čekám na přihlášení…')}</p>
         ${n.druh === 'agent' ? `<div class="model-wait-fallback"><button type="button" class="btn btn--sm" data-otevrit-znovu>${tr('Prohlížeč se neotevřel?')}</button></div>` : ''}
-        <p class="account-privacy">${ICON.shield}<span>${esc(SOUKROMI)}</span></p>
       </div>`,
     footer: `<button type="button" class="btn" data-close>${tr('Zrušit')}</button>`,
     onOpen: (scrim, close) => {

@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
+import { fill, statusPill, kindLabel, limitGauges, openButtons, toast } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -248,7 +248,7 @@ function renderTranscript(el, t) {
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
   const session = state.sessions.get(v.id);
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Z webových chatů se Agenteeq dozví jen to, jestli agent pracuje, nebo čeká. Text zpráv k němu nejde. Konverzaci otevřeš tlačítkem nahoře.')}</p>` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : !t.loaded ? `<div class="loading"><span class="loader"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? '' : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;
@@ -276,25 +276,29 @@ function update() {
     return;
   }
   if (t) renderTranscript(el, t);
+  // Webové chaty text zpráv neposílají – prázdná karta Přepisu by jen zabírala místo.
+  const bezPrepisu = s.connector === 'web' && !t?.entries?.size;
+  el.querySelector('.transcript').hidden = bezPrepisu;
+  el.querySelector('.session-grid').classList.toggle('is-bez-prepisu', bezPrepisu);
 
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile">${glyph(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
-    ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
+    ${s.observation ? `<p class="metric-note">${tr('Částečný přepis z cache Claude Desktopu.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     <div class="session-actions">
       ${s.proces ? '' : openButtons(s)}
       ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" title="${tr('Kopírovat příkaz pro pokračování')}">${ICON.copy}</button>` : ''}
     </div>`);
 
   fill(el, 'banner', s.status === 'needs_input'
-    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p><p class="small muted">${esc(howToAnswer(s))}</p></div></div>`
+    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true, max: 1 })}</div>` : ''}</div></div>`
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
-        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p><p class="small muted">${s.observation ? tr('Stav hlásí Claude Desktop. Přesný důvod najdeš v původní konverzaci.') : tr('Agenteeq ukazuje přesnou chybu z výstupu agenta. Po vyřešení spusť úlohu znovu.')}</p></div></div>`
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p></div></div>`
         : s.proces
-          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
+          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Přepis zatím není.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
           : '');
 
   fill(el, 'live', s.status === 'working'
@@ -354,13 +358,12 @@ function update() {
           <div><dt>PID</dt><dd class="mono-sm">${s.proces.pid}</dd></div>
           <div><dt>${tr('Spuštěno')}</dt><dd>${dateTime(s.proces.od)}</dd></div>
           <div class="wide"><dt>${tr('Pracovní složka')}</dt><dd class="mono-sm">${esc(shortPath(s.cwd) || '–')}</dd></div>
-          <div class="wide"><dt>${tr('Rozlišení')}</dt><dd>${tr('Bez přepisu nelze ověřit hlavního ani pomocného agenta.')}</dd></div>
         </dl>
       </section>`
     : `<section class="card side-card" data-card="project" aria-labelledby="proj-h">${GRIP}<div class="side-head"><h3 id="proj-h">${tr('Projekt')}</h3><button class="link" type="button" data-action="assign">${proj ? tr('Změnit') : tr('Zařadit do projektu')}</button></div>
         ${proj
-          ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a><p class="small muted side-note">${s.projectSource === 'folder' ? tr('Zařazeno automaticky podle složky.') : tr('Zařazeno ručně.')}</p>`
-          : `<p class="small muted side-note">${s.projectSource === 'none' ? tr('Záměrně mimo projekty.') : tr('Zatím v žádném projektu.')}</p>`}
+          ? `<a class="pchip" href="${projectHref(proj.id)}">${pdot(proj, 'pdot--lg')}<span>${esc(proj.name)}</span>${ICON.chev}</a>`
+          : ''}
       </section>
       <section class="card side-card" data-card="details" aria-labelledby="facts-h">${GRIP}<h3 id="facts-h">${tr('Detaily')}</h3>
         <dl class="facts">

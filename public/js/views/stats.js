@@ -81,7 +81,7 @@ function usageHistoryHtml() {
     .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? tr('vytížení okna v %') : tr('hodnota bez jednotky'))}</span></div>
       ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString(LOCALE, { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
   if (!charts.length) return '';
-  return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} ${tr('za 30 dní ze souboru aplikace Claude Desktop')}</span></div>
+  return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} · ${tr('30 dní · Claude Desktop')}</span></div>
     ${charts.join('')}</div>`;
 }
 
@@ -111,7 +111,7 @@ export function apiTokensHtml(period, now = Date.now(), cloud = state.integratio
     return `<li><span class="svc">${glyph(provider)}${esc(label)}</span>${hodnota}</li>`;
   });
   if (!radky.length) return '';
-  return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title">${tr('Organizace přes API')}</span> <span class="muted">${tr('Tokeny z Admin API za posledních {0} dní (dny UTC). Celá organizace, nejsou v grafu ani v součtu výše.', dny)}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
+  return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title">${tr('Organizace přes API')}</span> <span class="muted">${tr('{0} dní · celá organizace', dny)}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
 }
 
 function update() {

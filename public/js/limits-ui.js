@@ -60,15 +60,7 @@ export function claudeLimitStatus(state, now = Date.now()) {
 
 function poznamkaClaude(state, now) {
   if (claudeOdhlaseny(state, now)) return tr('Claude Code je odhlášený. Napoj ho v Nastavení.');
-  const desktop = (state.connectors || []).find((c) => c.id === 'claude-desktop-usage');
-  const maDesktop = desktop && desktop.state !== 'missing';
-  const propojeno = state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current;
-  const terminal = propojeno
-    ? tr('spusť Claude Code v Terminálu se stavovým řádkem')
-    : tr('propoj Claude Code v Nastavení a spusť ho v Terminálu');
-  return maDesktop
-    ? tr('Žádné čerstvé měření – v Claude Desktopu otevři Nastavení → Využití, nebo {0}.', terminal)
-    : tr('Žádné čerstvé měření – {0}.', terminal);
+  return tr('Bez čerstvého měření');
 }
 
 function poznamka(t, spojene, state, now) {
@@ -99,7 +91,7 @@ function radekBezDat(n, now) {
       <span class="lwin-logo">${glyph({ runtime: n.id, provider: n.provider })}</span>
       <span class="ltool-main">
         <span class="ltool-top"><b>${esc(n.name)}</b></span>
-        <span class="ltool-note">${esc(kdeKdy(n, now))}. ${tr('Limity ani tokeny z něj Agenteeq zatím nečte.')}</span>
+        <span class="ltool-note">${esc(kdeKdy(n, now))} · ${tr('Bez údajů o limitu')}</span>
       </span>
     </li>`;
 }

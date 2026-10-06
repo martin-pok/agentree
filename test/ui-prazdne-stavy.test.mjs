@@ -11,7 +11,7 @@ const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
 test('Dovednosti: ovládání se ukáže jen tam, kde má co ovládat', () => {
   const prazdno = ovladani({ pocet: 0, zdroju: 0, puvodu: 0 });
-  assert.deepEqual(prazdno, { hledani: false, zdroje: false, popis: false, razeni: false, puvod: false },
+  assert.deepEqual(prazdno, { hledani: false, zdroje: false, razeni: false, puvod: false },
     'nad prázdným seznamem nemá smysl hledat, řadit ani filtrovat');
 
   // Jeden zdroj znamená, že „Vše" i ten zdroj vrátí tentýž seznam – přepínač mezi nimi je past.
@@ -23,39 +23,26 @@ test('Dovednosti: ovládání se ukáže jen tam, kde má co ovládat', () => {
 
   assert.equal(ovladani({ pocet: 1, zdroju: 1, puvodu: 1 }).razeni, false, 'jednu položku není podle čeho seřadit');
   assert.deepEqual(ovladani({ pocet: 9, zdroju: 3, puvodu: 2 }),
-    { hledani: true, zdroje: true, popis: true, razeni: true, puvod: true });
+    { hledani: true, zdroje: true, razeni: true, puvod: true });
 });
 
-// Nápověda k režimu a poznámka cíle se v rozhraní skládají za sebe do jednoho odstavce.
-// Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy –
-// u webových služeb dokonce s rozporem („v prohlížeči" vs. „otevře aplikaci").
-test('spuštění agenta: nápověda režimu a poznámka cíle si neříkají totéž', async () => {
+// Karta „Spustit agenta" nemá pod zadáním vysvětlivky (rozhodnutí vlastníka produktu: žádné
+// uklidňující a vysvětlující texty). Ollama bez staženého modelu nemá čím odpovědět, a tak se
+// vůbec nenabízí – jinak by uživatel vybral cíl, který jen vrátí chybu.
+test('spuštění agenta: cíle bez vysvětlivek a Ollama jen se staženým modelem', async () => {
   const kod = await zdroj('public/js/launcher-ui.js');
-  const blok = kod.match(/const MODE_HINT = \{([\s\S]*?)\n\};/)?.[1];
-  assert.ok(blok, 'MODE_HINT se v launcher-ui.js nenašel – uprav test spolu s ním');
-  const hint = Object.fromEntries([...blok.matchAll(/(\w+):\s*tr\('([^']*)'\)/g)].map((m) => [m[1], m[2]]));
-  assert.ok(Object.keys(hint).length >= 5, `čekali jsme nápovědu ke všem režimům, máme ${Object.keys(hint).length}`);
-
+  assert.doesNotMatch(kod, /MODE_HINT|launch-note/);
   const env = {
     bins: { claude: '/opt/bin/claude', codex: '/opt/bin/codex', gemini: '/opt/bin/gemini', qwen: '/opt/bin/qwen' },
     chatgptApp: true,
     claudeApp: true,
     ollama: { ok: true, models: [{ name: 'llama3.2:3b' }] },
   };
-  const fraze = [/ve schránce/gi, /⌘V/g, /prohlížeč/gi, /na tvém Macu/gi, /zdarma/gi, /Otevře/g];
-  for (const t of launchTargets(env)) {
-    for (const mode of t.modes) {
-      assert.ok(hint[mode], `režim ${mode} nemá nápovědu`);
-      const veta = `${hint[mode]} ${t.note || ''}`;
-      for (const f of fraze) {
-        const kolik = (veta.match(f) || []).length;
-        assert.ok(kolik <= 1, `${t.id}/${mode} opakuje ${f}: „${veta}"`);
-      }
-    }
-  }
-  // Ollama bez staženého modelu má jinou poznámku – projít musí i ta.
-  const bezModelu = launchTargets({ ...env, ollama: { ok: true, models: [] } }).find((t) => t.id === 'ollama');
-  assert.ok(!/na tvém Macu.*na tvém Macu/s.test(`${hint.local} ${bezModelu.note}`));
+  const cile = launchTargets(env);
+  assert.ok(cile.some((t) => t.id === 'ollama'));
+  for (const t of cile) assert.equal(t.note, undefined, t.id);
+  const bezModelu = launchTargets({ ...env, ollama: { ok: true, models: [] } });
+  assert.ok(!bezModelu.some((t) => t.id === 'ollama'), 'Ollama bez modelu se nenabízí');
 });
 
 // Osa grafu je tvrzení o řádu čísel. Nad prázdnými daty by `niceMax` vrátil 4 a graf by

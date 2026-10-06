@@ -94,7 +94,7 @@ function parseRow(line) {
   return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
 }
 
-const HEURISTIC_NOTE = ui('Rozpoznáno podle argumentů procesu – vlastní nebo neznámý model, Agenteeq u něj neumí číst konverzace ani limity.');
+const HEURISTIC_NOTE = ui('Odhad podle běžícího procesu.');
 
 /**
  * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde

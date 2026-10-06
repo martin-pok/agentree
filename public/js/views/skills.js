@@ -27,7 +27,6 @@ export function ovladani({ pocet, zdroju, puvodu }) {
   return {
     hledani: pocet > 0,
     zdroje: zdroju > 1,
-    popis: pocet > 0,
     razeni: pocet > 1,
     puvod: puvodu > 1,
   };
@@ -155,7 +154,6 @@ function mount(el) {
       <div class="sk-filtr" data-blok="zdroje"><span class="sk-filtr-popis" id="sk-z">${tr('Zdroj')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-z" data-region="sources"></div></div>
       <div class="sk-filtr" data-blok="puvod"><span class="sk-filtr-popis" id="sk-p">${tr('Původ')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-p" data-region="origins"></div></div>
     </section>
-    <p class="note sk-note" data-enter style="--i:2" data-blok="popis">${tr('Dovednosti jsou soubory')} <code>SKILL.md</code> ${tr('na {0} – ze sdílené složky, od Claude, jeho pluginů a Codexu. Agenteeq je jen čte a nikam neodesílá.', tomtoPocitaci())}</p>
     <div data-enter style="--i:3" data-region="list"></div>`;
   el.querySelector('[data-q]').addEventListener('input', (e) => { v.q = e.target.value; update(); });
   el.addEventListener('click', async (e) => {

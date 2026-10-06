@@ -69,7 +69,6 @@ function update() {
   if (!list.length) {
     fill(el, 'list', emptyState({
       title: v.filter === 'all' ? tr('Zatím žádná upozornění') : tr('Nic k zobrazení'),
-      text: tr('Upozorníme tě, když agent bude potřebovat rozhodnutí, narazí na limit, dokončí dlouhou úlohu nebo když překročíš rozpočet.'),
     }));
     return;
   }

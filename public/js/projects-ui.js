@@ -202,7 +202,6 @@ export function projectForm(existing = null) {
         </div>`).join('')}
       </div>
       <p class="form-sub">${tr('Složky projektu')}</p>
-      <p class="modal-text">${tr('Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.')}</p>
       <ul class="folder-list" id="${id}-list"></ul>
       <input type="hidden" name="folders">
       <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}${tr('Přidat složku')}</button>
@@ -274,7 +273,7 @@ export function projectForm(existing = null) {
   const render = () => {
     listEl.innerHTML = folders.length
       ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="${tr('Odebrat složku')} ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
-      : `<li class="folder-empty">${tr('Zatím žádná složka – projekt bude jen pro ručně zařazené konverzace.')}</li>`;
+      : `<li class="folder-empty">${tr('Zatím žádná složka')}</li>`;
   };
   listEl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove]');

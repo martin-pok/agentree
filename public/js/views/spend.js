@@ -40,8 +40,7 @@ function openBudgets(opener = null) {
     wide: true,
     opener,
     submitLabel: tr('Uložit rozpočty'),
-    body: `<p class="modal-text">${tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.')}</p>
-      <div class="form-grid">
+    body: `<div class="form-grid">
         <label class="field"><span>${tr('Celkový měsíční rozpočet')}</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="${tr('bez limitu')}" value="${cfg.total || ''}"></label>
         <label class="field"><span>${tr('Hlavní měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
         <label class="field"><span>${tr('Kurz USD (Kč za 1 $)')}</span><input name="rate_USD" inputmode="decimal" value="${sp.rates.USD}"></label>
@@ -111,7 +110,7 @@ export function plansHtml(sp) {
   const zdroje = [...new Map(plans.filter((p) => p.cena?.url).map((p) => [p.cena.url, p.cena])).values()];
   const overeno = zdroje[0]?.overeno;
   const pata = zdroje.length
-    ? `<p class="plan-foot">${tr('Ceny z veřejného ceníku {0} k {1}, bez DPH. Skutečná platba se může lišit (měna, daň, App Store) a do útraty se nepočítá.', zdroje.map((z) => `<a class="link-inline" href="${esc(z.url)}" target="_blank" rel="noopener">${esc(z.zdroj)}</a>`).join(tr(' a ')), esc(dateLong(dateOnlyTs(overeno))))}</p>`
+    ? `<p class="plan-foot">${tr('Ceník {0} k {1}, bez DPH.', zdroje.map((z) => `<a class="link-inline" href="${esc(z.url)}" target="_blank" rel="noopener">${esc(z.zdroj)}</a>`).join(tr(' a ')), esc(dateLong(dateOnlyTs(overeno))))}</p>`
     : '';
   return `<section class="card pad plans" aria-labelledby="plans-h">
     <div class="sec-head"><h2 id="plans-h">${tr('Zjištěné plány')}</h2></div>
@@ -217,7 +216,7 @@ function update() {
         <span class="muted small">${tr('{0} z {1}', money(b.spent), money(b.budget))}</span>
       </div>`;
     }).join('')}</div>`
-    : `<div class="cta-card card">${ICON.wallet}<div><strong>${tr('Nastav si měsíční rozpočet')}</strong><p class="muted small">${tr('Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.')}</p></div><button class="btn" type="button" data-action="budgets">${tr('Nastavit rozpočet')}</button></div>`);
+    : `<div class="cta-card card">${ICON.wallet}<div><strong>${tr('Nastav si měsíční rozpočet')}</strong><p class="muted small">${tr('Upozornění při 80 % a 100 %.')}</p></div><button class="btn" type="button" data-action="budgets">${tr('Nastavit rozpočet')}</button></div>`);
 
   const used = [...new Set(sp.months.flatMap((m) => Object.keys(m.services)))];
   // Osa je tvrzení o řádu čísel. Když se za půl roku nic nezapsalo, nakreslil by graf
@@ -237,7 +236,7 @@ function update() {
     format: money,
     axisFormat: (x) => fmtMoney(x, sp.currency, { compact: true }),
     label: tr('Útrata za posledních 6 měsíců'),
-  }) : emptyState({ title: tr('Zatím žádné ověřené náklady'), text: tr('Vývoj uvidíš, až připojené API vrátí první náklady.') }));
+  }) : emptyState({ title: tr('Zatím žádné ověřené náklady') }));
   fill(el, 'mlegend', jeCoUkazat ? used.map((k) => `<span class="legend-item"><i class="swatch" style="background:${serviceColor(sp, k)}"></i>${esc(sp.services[k]?.label || k)}</span>`).join('') : '');
 
   const kinds = Object.entries(sp.month.kinds).filter(([, x]) => x > 0);
@@ -332,7 +331,7 @@ export function ledgerHtml(sp, openSet = v.otevrene) {
   return `<div class="table-wrap"><table class="ledger">
         <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>
         ${rows.length ? `<tbody>${groupRow(tr('Starší ruční záznamy'))}${manualRows}</tbody>` : ''}
-        ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note" title="${esc(tr('Admin API sčítá náklady po dnech v UTC. Na přelomu měsíce proto může den spadnout do jiného měsíce než podle místního kalendáře.'))}">${tr('dny podle UTC, jak je počítá dodavatel')}</span>`)}${autoRows}</tbody>` : ''}
+        ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note">${tr('dny v UTC')}</span>`)}${autoRows}</tbody>` : ''}
       </table></div>${rateNote(sp, rows, auto)}`;
 }
 
@@ -358,7 +357,7 @@ export function modelsHtml(sp, r, models, label) {
   return `<div class="lm" role="group" aria-label="${esc(tr('Rozpad podle modelů: {0}', label))}">
     <div class="lm-head" aria-hidden="true"><span>${tr('Model')}</span><span>${tr('Tokeny z Admin API')}</span><span>${tr('Částka')}</span></div>
     <ul class="lm-list">${items}</ul>
-    <p class="lm-note">${unknown ? `${tr('Spotřebu tokenů se od dodavatele nepodařilo zjistit, náklady platí.')} ` : ''}${tr('Tokeny celé organizace podle Admin API. Nejsou to tokeny z konverzací ve Statistikách a nesčítají se s nimi.')}</p>
+    ${unknown ? `<p class="lm-note">${tr('Spotřebu tokenů se od dodavatele nepodařilo zjistit, náklady platí.')}</p>` : ''}
   </div>`;
 }
 

@@ -289,7 +289,7 @@ interface Project { id: string; name: string; color: string; description: string
 interface ProjectSnapshot { id: string; projectId: string; title: string; app: string; provider: Provider; connector: string; source: string; model: string; cwd: string; url: string; resume: string; startedAt: number; lastAt: number; turns: number; tokens: { input: number; output: number; cacheWrite: number } }
 interface ProjectsPayload { items: Project[]; assignments: Record<string, string>; snapshots: Record<string, ProjectSnapshot>; colors: string[]; limits: { name: number; description: number; notes: number; folders: number; assign: number } }
 
-interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; note: string; beta?: boolean; prefill?: boolean }
+interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; beta?: boolean; prefill?: boolean }
 type LaunchMode = 'terminal' | 'background' | 'app' | 'web' | 'local';
 interface LaunchPayload { targets: LaunchTarget[]; modes: Record<LaunchMode, string>; openMode: 'exec' | 'dry' | 'off' }
 interface LanStatus {

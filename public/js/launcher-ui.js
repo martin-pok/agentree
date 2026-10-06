@@ -10,16 +10,6 @@ import { spustNapojeni } from './napojeni-ui.js';
 
 const STORE_KEY = 'agenteeq.launch';
 const PROMPT_MAX = 20000;
-// Nápověda k režimu se skládá s poznámkou cíle (`t.note`) do jedné věty za druhou. Každá
-// proto říká něco jiného: režim to, kde se agent otevře, poznámka to, co je na daném cíli
-// zvláštní. Když obojí popisovalo totéž, četl uživatel dvakrát tutéž informaci jinými slovy.
-const MODE_HINT = {
-  terminal: tr('Otevře se nové okno Terminálu, kde s agentem můžeš dál mluvit.'),
-  background: tr('Agent pracuje bez okna a sám skončí. Průběh uvidíš tady a v přepisu.'),
-  app: tr('Otevře aplikaci s předvyplněným zadáním – v ní ho jen potvrdíš.'),
-  web: tr('Otevře službu v prohlížeči.'),
-  local: tr('Agent odpovídá přímo tady v Agenteeq.'),
-};
 
 function load() {
   try {
@@ -48,7 +38,7 @@ export function runProblem(r) {
   }
   if (/rate.?limit|quota|usage limit|limit reached/i.test(raw)) return { title: tr('Vyčerpaný limit předplatného'), hint: tr('Počkej na obnovení limitu – Agenteeq tě upozorní, až se obnoví.'), raw };
   if (/ENOENT|not found|No such file/i.test(raw)) return { title: `${r.label} ${tr('se nepodařilo spustit')}`, hint: tr('Program agenta nebyl nalezen. Klikni na Obnovit nabídku nebo agenta přeinstaluj.'), raw };
-  return { title: `${r.label} ${tr('skončil chybou')}`, hint: tr('Celé znění chyby najdeš níže v části Původní chyba.'), raw };
+  return { title: `${r.label} ${tr('skončil chybou')}`, raw };
 }
 
 // Řádek běhu: stav má v každém řádku stejné místo; barvu nese jen ikona a název stavu.
@@ -74,7 +64,7 @@ function runHtml(r, now) {
     </span>
     ${problem ? `<div class="run-problem">
       <strong>${esc(problem.title)}</strong>
-      <p>${esc(problem.hint)}</p>
+      ${problem.hint ? `<p>${esc(problem.hint)}</p>` : ''}
       <div class="run-problem-actions">
         ${problem.napojit ? `<button class="btn btn--sm btn--primary" type="button" data-run-napojit="${esc(problem.napojit.id)}">${tr('Přihlásit znovu')}</button>` : ''}
         <details class="run-raw"><summary>${tr('Původní chyba')}</summary><pre>${esc(problem.raw)}</pre></details>
@@ -86,22 +76,17 @@ function runHtml(r, now) {
 // Předání do aplikace nebo webu: přesně řekne, co udělat, zadání má po ruce a sama zmizí.
 let handoffTimer = null;
 
-function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
+function showHandoff({ target, label, handoff, prompt, autofill }) {
   document.querySelector('.handoff')?.remove();
   clearTimeout(handoffTimer);
   // S rozšířením se zadání do webové služby vloží samo; bez něj zůstává schránka.
   const steps = autofill
-    ? [tr('Zadání se do okna vloží samo.'), tr('Zkontroluj ho a odešli Enterem. Kdyby se nevložilo, je ve schránce ({0}).', zkratka('V'))]
+    ? [tr('Zadání se do okna vloží samo.'), tr('Odešli Enterem.')]
     : handoff === 'confirm'
       ? [tr('Zadání je v aplikaci předvyplněné.'), tr('Zkontroluj ho a potvrď klávesou Enter.')]
       : handoff === 'confirm-or-paste'
         ? [tr('Zadání by mělo být předvyplněné.'), tr('Pokud není, vlož ho {0} – je ve schránce.', zkratka('V'))]
         : [tr('Zadání máš ve schránce.'), tr('V {0} ho vlož {1} a odešli Enterem.', label, zkratka('V'))];
-  const foot = mode !== 'web'
-    ? tr('Jakmile agent začne pracovat, uvidíš ho tady v Přehledu.')
-    : autofill
-      ? tr('Konverzaci uvidíš i tady v Agenteeq.')
-      : tr('S rozšířením pro Chrome (Nastavení) se zadání vloží samo a konverzaci uvidíš i tady.');
   const el = document.createElement('div');
   el.className = 'handoff';
   el.setAttribute('role', 'status');
@@ -109,8 +94,7 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
   el.innerHTML = `<div class="handoff-card">
     <span class="handoff-logo">${glyph(target)}</span>
     <div class="handoff-text"><strong>${tr('Otevírám')} ${esc(label)}</strong>
-      <ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-      <p>${esc(foot)}</p></div>
+      <ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol></div>
     <div class="handoff-actions">
       <button class="btn btn--sm" type="button" data-handoff-copy>${ICON.copy}${tr('Kopírovat zadání')}</button>
       <button class="icon-btn" type="button" data-handoff-close aria-label="${tr('Zavřít')}">${ICON.close}</button>
@@ -141,7 +125,7 @@ export function createLauncher(root) {
 
   root.innerHTML = `
     <div class="launch-head">
-      <div><h2 id="launch-h">${tr('Spustit agenta')}</h2><p class="muted small">${tr('Běží na tvých předplatných a limitech. Zdarma: lokální modely v Ollamě.')}</p></div>
+      <h2 id="launch-h">${tr('Spustit agenta')}</h2>
       <button class="link" type="button" data-l="refresh" aria-label="${tr('Obnovit nabídku agentů')}">${ICON.refresh}<span>${tr('Obnovit nabídku')}</span></button>
     </div>
     <div class="launch-agents" role="radiogroup" aria-label="${tr('Agent')}" data-region="agents"></div>
@@ -150,7 +134,6 @@ export function createLauncher(root) {
       <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt placeholder="${tr('Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“')}"></textarea>
       <div class="launch-controls" data-region="controls"></div>
       <div class="launch-foot">
-        <p class="launch-note" data-region="note"></p>
         <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami {0} a Enter', JE_MAC ? 'Command' : 'Ctrl')}"><span>${tr('Spustit')}</span><kbd>${MOD}</kbd><kbd>↵</kbd></span>
         <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}${tr('Spustit')}</button>
       </div>
@@ -192,7 +175,6 @@ export function createLauncher(root) {
 
     if (!t) {
       fill(root, 'controls', '');
-      fill(root, 'note', '');
       goBtn.disabled = true;
       return;
     }
@@ -214,7 +196,6 @@ export function createLauncher(root) {
       ${t.id === 'ollama' && t.models.length ? `<label class="lselect"><span class="sr-only">${tr('Model')}</span><select data-l-pref="model">${t.models.map((m) => `<option value="${esc(m)}"${m === prefs.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></label>` : ''}
       ${p?.notes?.trim() ? `<label class="check-inline"><input type="checkbox" data-l-brief${prefs.brief ? ' checked' : ''}> ${tr('Připojit podklady projektu')}</label>` : ''}`);
 
-    fill(root, 'note', `${esc(MODE_HINT[mode] || '')} ${esc(t.note || '')}`);
     renderRuns();
   }
 
@@ -277,7 +258,7 @@ export function createLauncher(root) {
       else if (r.kind === 'local') location.hash = agentHref(r.sessionId);
       else if (r.kind === 'background') toast(`${r.label} ${tr('pracuje na pozadí')}`, detail);
       else if (r.kind === 'terminal') toast(`${r.label} ${tr('běží v Terminálu')}`, detail);
-      else showHandoff({ target: t, label: r.label, mode, handoff: r.handoff || 'paste', prompt: withBrief, autofill: Boolean(r.autofill) });
+      else showHandoff({ target: t, label: r.label, handoff: r.handoff || 'paste', prompt: withBrief, autofill: Boolean(r.autofill) });
     } catch (err) {
       if (err.status === 402) toast(err.message, { tone: 'err', timeout: 10000, action: { label: tr('Licence'), href: '#/nastaveni' } });
       else toast(err.message, { tone: 'err', timeout: 9000 });

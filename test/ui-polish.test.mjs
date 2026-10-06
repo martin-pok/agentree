@@ -226,7 +226,7 @@ test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
   const src = await zdroj('public/js/views/overview.js');
   assert.match(src, /const TIMELINE_MAX = 7;/);
   assert.match(src, /const skryto = vybrane\.length - rows\.length;/);
-  assert.match(src, /tr\('Dalších \{0\} je', skryto\)/, 'počet skrytých agentů je vidět');
+  assert.match(src, /tr\('\+\{0\} dalších', skryto\)/, 'počet skrytých agentů je vidět');
   assert.match(src, /class="tl-more" href="#\/agenti"/, 'a vede na seznam, kde jsou všichni');
   assert.doesNotMatch(src, /\.slice\(0, 7\)/, 'napevno zapsaná sedmička bez vysvětlení');
 });
@@ -337,15 +337,13 @@ test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou',
 });
 
 // Tlačítko na průvodce bylo obrysové na prázdném řádku a splývalo s pozadím. Banner ho udrží vidět
-// a jeho popis musí souhlasit s počtem kroků, jinak slibuje něco jiného, než co uživatel dostane.
+// a nic nesliboval – popis pod názvem je pryč (rozhodnutí vlastníka: žádné vysvětlivky).
 test('banner průvodce sedí s obsahem průvodce', async () => {
   const settings = await zdroj('public/js/views/settings.js');
   const welcome = await zdroj('public/js/welcome.js');
   assert.match(settings, /class="guide-banner"/);
+  assert.doesNotMatch(settings, /obrazovek o tom, co Agenteeq umí/);
   assert.match(settings, /<button class="btn btn--primary" type="button" data-welcome>/, 'výzva má být plné tlačítko, ne obrys');
-  const kroku = (welcome.match(/^\s*\{ tag: tr\('/gm) || []).length;
-  const cislovky = { 4: 'Čtyři', 5: 'Pět', 6: 'Šest', 7: 'Sedm' };
-  assert.match(settings, new RegExp(`<p>\\$\\{tr\\('${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
   // Průvodce musí mluvit o tom, co aplikace umí teď.
   for (const [co, kde] of [['limits', 'ukázka limitů'], ['ověřené API náklady', 'ověřené náklady'], ['logo klienta', 'obrázky projektů'], ['data jen čte', 'zabezpečení spárovaného telefonu']]) {
     assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);

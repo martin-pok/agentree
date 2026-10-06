@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { run, shellQuote } from './util.js';
-import { kandidatiProgramu, POCITAC, ZKRATKA_VLOZIT } from './platform.js';
+import { kandidatiProgramu } from './platform.js';
 import { ui } from './texty.js';
 
 // Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů – klient nikdy neposílá příkaz.
@@ -82,19 +82,20 @@ export function launchTargets(env) {
   // Pořadí režimů = doporučení: nejdřív aplikace, pak práce na pozadí, Terminál až nakonec.
   const claudeModes = [...(claudeApp ? ['app'] : []), ...(bins.claude ? ['background', 'terminal'] : [])];
   if (claudeModes.length) {
-    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: claudeModes, projectModes: ['background', 'terminal'], optionalFolderModes: ['app'], permissions: CLAUDE_PERMISSIONS, note: ui('Běží na tvém předplatném Claude.') });
+    out.push({ id: 'claude-code', label: 'Claude Code', logo: 'claude', provider: 'anthropic', group: 'agent', modes: claudeModes, projectModes: ['background', 'terminal'], optionalFolderModes: ['app'], permissions: CLAUDE_PERMISSIONS });
   }
   const codexModes = [...(chatgptApp ? ['app'] : []), ...(bins.codex ? ['background', 'terminal'] : [])];
   if (codexModes.length) {
-    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['background', 'terminal'], sandboxes: CODEX_SANDBOXES, note: ui('Běží na tvém předplatném ChatGPT.') });
+    out.push({ id: 'codex', label: 'Codex', logo: 'codex', provider: 'openai', group: 'agent', modes: codexModes, projectModes: ['background', 'terminal'], sandboxes: CODEX_SANDBOXES });
   }
-  if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: ui('S osobním Google účtem má bezplatný denní limit.') });
-  if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true, note: ui('Podle nastavení Qwen Code.') });
-  if (ollama.ok) {
-    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name), note: ollama.models.length ? ui('Lokální model na {0} – zdarma, data nikam neodcházejí.', POCITAC.tvem) : ui('Ollama běží, ale zatím nemá stažený žádný model. Stáhneš ho v aplikaci Ollama.') });
+  if (bins.gemini) out.push({ id: 'gemini-cli', label: 'Gemini CLI', logo: 'gemini', provider: 'google', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true });
+  if (bins.qwen) out.push({ id: 'qwen-code', label: 'Qwen Code', logo: 'qwen', provider: 'alibaba', group: 'agent', modes: ['terminal'], projectModes: ['terminal'], beta: true });
+  // Ollama bez staženého modelu nemá čím odpovědět – nabízet ji by byla slepá ulička.
+  if (ollama.ok && ollama.models?.length) {
+    out.push({ id: 'ollama', label: 'Ollama', logo: 'ollama', provider: 'local', group: 'local', modes: ['local'], projectModes: [], models: ollama.models.map((m) => m.name) });
   }
   for (const [id, w] of Object.entries(WEB)) {
-    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url), note: w.url ? ui('Zadání se předvyplní do nové konverzace; zůstane i ve schránce ({0}).', ZKRATKA_VLOZIT) : ui('Zadání čeká ve schránce ({0}) – vložíš ho do pole zprávy.', ZKRATKA_VLOZIT) });
+    out.push({ id, label: w.label, logo: w.logo, provider: w.provider, group: 'web', modes: ['web'], projectModes: [], prefill: Boolean(w.url) });
   }
   return out;
 }

@@ -7,6 +7,7 @@ import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
+import { goToExtension } from '../jump.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
 const v = { el: null, visible: [], limit: Infinity, ceka: false, doplnuje: false };
@@ -75,9 +76,8 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome. Bez něj se ke stránce otevřené v prohlížeči nedostane.')}</p>
-      <a class="link-inline" href="#/nastaveni">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
+    <div class="runtime-actions"><button class="btn btn--sm btn--primary" type="button" data-go-extension>${tr('Nainstalovat rozšíření')}</button></div>
   </li>`;
 }
 
@@ -93,13 +93,11 @@ function bezPrepisuHtml(sessions) {
     <ul class="runtime-list">${web}${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
-    return `<li>
+    return `<li title="${esc(i.duvod)}">
         <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
         <div class="runtime-main">
-          <b>${esc(r.name)}</b>
+          <div class="custom-agent-head"><b>${esc(r.name)}</b><span class="pill">${tr('Jen stav běhu')}</span></div>
           <span class="muted small">${tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
-          <p class="small">${esc(i.duvod)}</p>
-          <p class="small muted">${esc(i.rada)}</p>
         </div>
         <div class="runtime-actions">
           ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}${tr('Přepnout do aplikace')}</button>` : ''}
@@ -218,6 +216,7 @@ function mount(el, _params, query) {
     update();
   });
   el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-go-extension]')) { goToExtension(); return; }
     const focus = e.target.closest('[data-focus-runtime]');
     if (focus) {
       focus.disabled = true;
@@ -309,7 +308,7 @@ function update() {
     ? `<button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
       ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" title="${tahni}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
       <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" title="${tahni}" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>`
-    : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Založ první projekt a třiď konverzace podle klientů')}</a>`);
+    : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Nový projekt')}</a>`);
   zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
@@ -318,7 +317,6 @@ function update() {
   if (!all.length) {
     zivy(el, 'table', emptyState({
       title: tr('Zatím tu nejsou žádní agenti'),
-      text: tr('Spusť Claude Code, Codex, Cursor nebo otevři ChatGPT s rozšířením. Agent se tu objeví během vteřiny.'),
       action: `<a class="btn" href="#/nastaveni">${tr('Zkontrolovat zdroje dat')}</a>`,
     }));
   } else if (!list.length) {

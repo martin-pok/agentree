@@ -83,7 +83,7 @@ test('přehled limitů ukáže i přidaný nástroj bez dat, poctivě a bez zdvo
   assert.deepEqual(bez.map((n) => n.id), ['warp'], 'Claude Code má vlastní řádek');
   const html = limitsAll(state, T);
   assert.match(html, /<b>Warp<\/b>/);
-  assert.match(html, /Limity ani tokeny z něj Agenteeq zatím nečte/);
+  assert.match(html, /Bez údajů o limitu/);
   assert.match(html, /0 z 8 s měřeným limitem/, '7 sledovaných nástrojů + Warp');
   assert.equal(html.match(/<b>Claude<\/b>/g).length, 1);
 });

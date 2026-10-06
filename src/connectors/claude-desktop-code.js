@@ -125,9 +125,9 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   const category = metadata.post_turn_summary?.status_category;
   if (['failed', 'error'].includes(metadata.status_bucket) || category === 'failed') {
     s.running = false;
-    s.failure = { at: updated, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
+    s.failure = { at: updated, text: ui('Vzdálený agent skončil chybou.') };
   } else if (fresh && (metadata.session_status === 'needs_input' || category === 'needs_action')) {
-    s.pending = { kind: 'question', at: s.runningAt, text: ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
+    s.pending = { kind: 'question', at: s.runningAt, text: ui('Vzdálený agent potřebuje rozhodnutí.'), source: 'desktop-cache' };
   }
 }
 export function createClaudeDesktopCodeConnector({ config, store }) {

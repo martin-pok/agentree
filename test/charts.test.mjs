@@ -84,7 +84,7 @@ test('limity: každé okno Claude má jeden řádek – nejnovější měření,
   // Od 0.35.0: čerstvý vzorek historie (≤ 30 min) je živé měření, jen bez času obnovy – a říká to.
   const tyden = merice.find((h) => hodnota(h) === '62 %');
   assert.ok(tyden, 'čerstvá historie týdne se ukáže, když týden nemá přesné měření');
-  assert.match(tyden, /obnova neznámá · podle Claude Desktopu/);
+  assert.match(tyden, /obnova neznámá/);
   assert.equal(merice.some((h) => hodnota(h) === '80 %'), true, 'Codex zůstává, jeho limit je samostatný');
   assert.equal(currentLimits(limity, now).some((l) => l.id === 'claude:weekly'), false, 'odhad z hlášky přesná okna nahrazují');
 
@@ -106,11 +106,11 @@ test('limity: čas obnovy jen z přesného zdroje, interní historie se nevydáv
   const H = 3600e3;
   assert.equal(limitObnova({ resetsAt: now + 2 * H + 13 * 60e3, at: now }, now).text, 'obnova dnes v\u00a014:13');
   assert.equal(limitObnova({ resetsAt: now - H, at: now - 3 * H }, now).text, 'obnoveno dnes v\u00a011:00');
-  assert.equal(limitObnova({ resetsBy: now + 3 * H, windowMinutes: 300, at: now - H, usedPercent: 30 }, now).text, 'čas obnovy zdroj neuvádí');
-  assert.equal(limitObnova({ windowMinutes: 300, at: now - 2 * H, usedPercent: 30 }, now).text, 'čas obnovy zdroj neuvádí');
+  assert.equal(limitObnova({ resetsBy: now + 3 * H, windowMinutes: 300, at: now - H, usedPercent: 30 }, now).text, 'obnova neznámá');
+  assert.equal(limitObnova({ windowMinutes: 300, at: now - 2 * H, usedPercent: 30 }, now).text, 'obnova neznámá');
   assert.equal(limitObnova({ windowMinutes: 10080, at: now - 8 * 24 * H, usedPercent: 30 }, now).probehla, false);
-  assert.equal(limitObnova({ usedPercent: 0, at: now }, now).text, 'čas obnovy zdroj neuvádí');
-  assert.equal(limitObnova({ reached: true, at: now, text: 'limit' }, now).text, 'čas obnovy zdroj neuvádí');
+  assert.equal(limitObnova({ usedPercent: 0, at: now }, now).text, 'obnova neznámá');
+  assert.equal(limitObnova({ reached: true, at: now, text: 'limit' }, now).text, 'obnova neznámá');
   // Přehled: zůstane jen přesný čerstvý řádek.
   const html = limitWindows([
     { id: 'codex:codex:primary', app: 'Codex', label: 'Limit 5 h', provider: 'openai', usedPercent: 34, windowMinutes: 300, resetsAt: now + H, at: now },
@@ -118,7 +118,7 @@ test('limity: čas obnovy jen z přesného zdroje, interní historie se nevydáv
   ], now);
   assert.equal((html.match(/class="lwin-reset/g) || []).length, 2);
   assert.equal((html.match(/data-until=/g) || []).length, 1, 'odpočet jen u přesného času');
-  assert.match(html, /Claude · Limit 5 h[\s\S]*obnova neznámá · podle Claude Desktopu/, 'čerstvá historie je vidět i s tím, že obnovu nezná');
+  assert.match(html, /Claude · Limit 5 h[\s\S]*obnova neznámá/, 'čerstvá historie je vidět i s tím, že obnovu nezná');
   assert.doesNotMatch(html, /nejpozději/, 'obnova se z historie nedopočítává');
 });
 

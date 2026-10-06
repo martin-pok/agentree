@@ -66,11 +66,11 @@ function onboardingHtml() {
   // Propojení s Claude Code nabízet jen tomu, kdo Claude Code na Macu má.
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   const steps = [
-    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni">${tr('Zdroje dat')}</a>` },
-    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' }] : []),
-    { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
-    { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
-    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
+    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), cta: `<a class="btn btn--sm" href="#/nastaveni">${tr('Zdroje dat')}</a>` },
+    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), cta: '<a class="btn btn--sm" href="#/nastaveni">Zapnout</a>' }] : []),
+    { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
+    { done: state.projects.items.length > 0, label: tr('První projekt'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
+    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
   ];
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return '';
@@ -79,7 +79,7 @@ function onboardingHtml() {
       <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="${tr('Průvodce nastavením')}"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
       <button class="link" type="button" data-onboard-dismiss>${tr('Skrýt průvodce')}</button></div>
     <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
-      <span class="onboard-text"><span>${s.label}</span><small>${s.sub}</small></span>${s.done ? `<span class="sr-only">${tr('hotovo')}</span>` : s.cta}</li>`).join('')}</ol>
+      <span class="onboard-text"><span>${s.label}</span></span>${s.done ? `<span class="sr-only">${tr('hotovo')}</span>` : s.cta}</li>`).join('')}</ol>
   </section>`;
 }
 
@@ -165,7 +165,7 @@ function mount(el) {
       try {
         state.settings = (await api.saveSettings({ onboardingDismissed: true })).settings;
         emit('settings');
-        toast(tr('Průvodce skrytý. Nastavení najdeš kdykoli v sekci Nastavení.'), { tone: 'info' });
+        toast(tr('Průvodce skrytý'), { tone: 'info' });
       } catch (err) {
         toast(err.message, { tone: 'err' });
       }
@@ -249,7 +249,7 @@ function update(topics = new Set(['all'])) {
     const avg = Math.max(0, tokensSince(everything, dayStart(now, -7)) - todayTok) / 7;
     const pct = avg > 0 ? Math.min(100, (todayTok / avg) * 100) : todayTok > 0 ? 100 : 0;
     zivy(el, 'meter', `
-    <div class="meter-row"><span>${tr('Zaznamenané tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')} <span title="${tr('Průměr z posledních 7 dokončených dní, bez dneška')}">${tr('(předchozích 7 dní)')}</span></span></span></div>
+    <div class="meter-row"><span>${tr('Zaznamenané tokeny dnes')}</span><span class="num">${tween('ov-today', todayTok, 'tok')}<span class="of"> / ⌀ ${fmtTok(avg)} ${tr('za den')}</span></span></div>
     <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="${tr('Dnešní zpracované tokeny vůči průměru za 7 dní')}"><i style="width:${pct.toFixed(1)}%"></i></div>`);
   }
 
@@ -272,7 +272,7 @@ function update(topics = new Set(['all'])) {
       .slice(0, 5);
     zivy(el, 'today-apps', polozky.length
       ? hbars(polozky)
-      : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny. Jakmile agent začne pracovat, uvidíš tady, kam jdou.')}</p>`);
+      : `<p class="empty-inline">${tr('Dnes zatím žádné tokeny.')}</p>`);
   }
 
   if (changed(topics, 'sessions', 'limits', 'credits', 'integrations', 'tick', 'detekce')) {
@@ -285,7 +285,7 @@ function update(topics = new Set(['all'])) {
        ${limitsAll(state, now)}`);
   }
 
-  if (changed(topics, 'sessions', 'dopln')) zivy(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita. Spusť agenta a objeví se tady.')}</li>`);
+  if (changed(topics, 'sessions', 'dopln')) zivy(el, 'activity', all.length ? all.slice(0, v.aktivit).map(activityItem).join('') : `<li class="empty-inline">${tr('Zatím žádná aktivita.')}</li>`);
 
   if (changed(topics, 'sessions', 'tick')) {
     const timelineNow = changed(topics, 'all', 'tick') ? now : v.timelineNow || now;
@@ -304,7 +304,7 @@ function update(topics = new Set(['all'])) {
     const skryto = vybrane.length - rows.length;
     zivy(el, 'timeline', rows.length
       ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
-        ? `<a class="tl-more" href="#/agenti">${tr('Na ose je {0} nejdůležitějších agentů. {1} v sekci Agenti', TIMELINE_MAX, skryto === 1 ? tr('Další je') : tr('Dalších {0} je', skryto))}${ICON.arrow}</a>` : ''}`
+        ? `<a class="tl-more" href="#/agenti">${tr('+{0} dalších', skryto)}${ICON.arrow}</a>` : ''}`
       : `<div class="empty-inline">${tr('Za posledních 12 hodin žádná aktivita agentů.')}</div>`);
   }
 
@@ -336,7 +336,7 @@ function update(topics = new Set(['all'])) {
         ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: tr('rozpočtu'), size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
           <span class="big">${tween('ov-spend', sp.month.total, `money:${sp.currency}`)}</span>
-          <span class="muted small">${total ? tr('z {0}', fmtMoney(total, sp.currency)) : tr('Rozpočet zatím nemáš nastavený')}</span>
+          ${total ? `<span class="muted small">${tr('z {0}', fmtMoney(total, sp.currency))}</span>` : `<a class="link-inline" href="#/utrata">${tr('Nastavit rozpočet')}</a>`}
           <span class="muted small">${tr('Prognóza do konce měsíce')} ${fmtMoney(sp.forecast, sp.currency)}</span>
         </div>
       </div>
@@ -375,7 +375,7 @@ function update(topics = new Set(['all'])) {
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="${tr('Přepnout do {0} –', esc(r.name))} ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
     }).join('') + (webChybi
-      ? `<a class="rt-item rt-item--note" href="#/nastaveni" title="${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu uvidí Agenteeq jen přes rozšíření pro Chrome.')}">
+      ? `<a class="rt-item rt-item--note" href="#/nastaveni">
           <span class="rt-disc">${ICON.cloud}</span>
           <span class="rt-name">${tr('Web')}</span>
           <span class="rt-meta">${tr('nesleduje se')}</span>

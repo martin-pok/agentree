@@ -55,7 +55,7 @@ test('tabulka Výdaje ukazuje i automatické řádky Admin API jako skupinu jen 
   const html = ledgerHtml(payload(spend));
   assert.match(html, /Automaticky z Admin API · Anthropic \/ OpenAI|Automaticky z Admin API · OpenAI \/ Anthropic/);
   assert.match(html, /jen ke čtení/);
-  assert.match(html, /dny podle UTC/);
+  assert.match(html, /dny v UTC/);
   assert.match(html, /Starší ruční záznamy/);
   assert.doesNotMatch(html, /class="ledger-sum"/, 'historie se nesčítá s ověřenými náklady');
   const autoRows = html.split('<tr class="ledger-auto">').slice(1).map((r) => r.split('</tr>')[0]);
@@ -130,7 +130,6 @@ test('rozpad po modelech: měsíční součet modelů = částka řádku, tokeny
   assert.match(otevreno, /aria-expanded="true" aria-controls="lm-2026-10-openai-api-USD"/);
   assert.match(otevreno, /<tr class="ledger-models" id="lm-2026-10-openai-api-USD"><td colspan="5">/);
   assert.match(otevreno, /Tokeny z Admin API/);
-  assert.match(otevreno, /Nejsou to tokeny z konverzací ve Statistikách/);
   assert.match(otevreno, /gpt-6-astra[\s\S]*2,9 tis\. vstup[\s\S]*400 výstup[\s\S]*100 mezipaměť/);
   const anthOpen = ledgerHtml(sp, new Set(['2026-10|anthropic-api|USD']));
   assert.match(anthOpen, /nezjištěno/);
@@ -149,7 +148,7 @@ test('Statistiky: tokeny organizace z Admin API stojí zvlášť a jen pro obdob
   assert.equal(apiTokensHtml('day', now, cloud), '');
   const tyden = apiTokensHtml('week', now, cloud);
   assert.match(tyden, /Organizace přes API/);
-  assert.match(tyden, /nejsou v grafu ani v součtu/);
+  assert.match(tyden, /7 dní · celá organizace/, 'blok říká, že jde o celou organizaci, ne o tento počítač');
   assert.match(tyden, /1,5 tis\. vstup · 15 výstup/, 'jen posledních 7 dní (UTC)');
   assert.match(tyden, /nezjištěno/, 'selhaná spotřeba není nula');
   assert.equal(apiTokensHtml('week', now, { 'anthropic-admin': { state: 'missing', tokens: {} } }), '');

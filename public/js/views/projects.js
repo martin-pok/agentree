@@ -139,7 +139,7 @@ function mount(el) {
       try {
         const r = await api.createProject({ name: sug.dataset.name, folders: [sug.dataset.suggest] });
         setProjects(r.projects);
-        toast(tr('Projekt {0} vytvořen – konverzace ze složky se zařadily samy', r.project.name), { action: { label: tr('Otevřít'), href: projectHref(r.project.id) } });
+        toast(tr('Projekt {0} vytvořen', r.project.name), { action: { label: tr('Otevřít'), href: projectHref(r.project.id) } });
         update();
       } catch (err) {
         sug.disabled = false;
@@ -174,8 +174,6 @@ function update() {
       <div class="pintro-text">
         <span class="eyebrow">${tr('Projekty')}</span>
         <h2>${tr('Práce agentů seřazená podle klientů a zakázek')}</h2>
-        <p>${tr('Založ projekt a Agenteeq do něj sám zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.')}</p>
-        <ul class="checklist"><li>${tr('Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt')}</li><li>${tr('Podklady projektu po ruce, když spouštíš dalšího agenta')}</li><li>${tr('Export do CSV jako podklad k vyúčtování klientovi')}</li></ul>
         <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Vytvořit první projekt')}</button>
       </div>
       <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#F2B824"></span></div>

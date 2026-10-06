@@ -198,7 +198,7 @@ test('historie Claude Desktopu: 29 minut stará je živá, 31 minut jen v grafu'
   const ted = currentLimits(limity, T0 + 29 * MIN);
   assert.deepEqual(ted.map((l) => l.usedPercent).sort((a, b) => a - b), [23, 64]);
   assert.ok(ted.every((l) => l.resetsAt === null), 'čas obnovy se z historie nedopočítává');
-  assert.equal(limitObnova(ted[0], T0 + 29 * MIN).text, 'obnova neznámá · podle Claude Desktopu');
+  assert.equal(limitObnova(ted[0], T0 + 29 * MIN).text, 'obnova neznámá');
   assert.equal(currentLimits(limity, T0 + 31 * MIN).length, 0, 'starší vzorek není aktuální stav');
   assert.equal(currentLimits(limity, T0 + 30 * MIN).length, 2, 'hranice 30 minut včetně');
 });
@@ -213,7 +213,7 @@ test('Přehled a Statistiky: Claude vedle Codexu, s logem, obnovou a poznámkou 
   const html = limitWindows(limity, now);
   assert.equal((html.match(/class="lwin-row"/g) || []).length, 3);
   assert.match(html, /Claude · Limit 5 h[\s\S]*Vyčerpáno[\s\S]*dokupované využití vypnuté[\s\S]*data-until="\d+"/);
-  assert.match(html, /Claude · Týdenní limit[\s\S]*41 %[\s\S]*obnova neznámá · podle Claude Desktopu/);
+  assert.match(html, /Claude · Týdenní limit[\s\S]*41 %[\s\S]*obnova neznámá/);
   assert.match(html, /Codex · Limit 5 h/);
   assert.equal((html.match(/lwin-logo/g) || []).length, 3, 'každý řádek má logo poskytovatele');
   const gauges = limitGauges(limity, now).join('');
@@ -223,17 +223,17 @@ test('Přehled a Statistiky: Claude vedle Codexu, s logem, obnovou a poznámkou 
   assert.doesNotMatch(html + gauges, /undefined|NaN/);
 });
 
-test('Všechny nástroje: Claude bez čerstvého měření řekne proč a co udělat', () => {
+test('Všechny nástroje: Claude bez čerstvého měření to řekne, procento si nevymyslí', () => {
   const now = T0;
   const base = { limits: [], sessions: new Map(), integrations: {} };
   const sDesktopem = limitsAll({ ...base, connectors: [{ id: 'claude-code', state: 'connected' }, { id: 'claude-desktop-usage', state: 'connected' }] }, now);
-  assert.match(sDesktopem, /Žádné čerstvé měření – v Claude Desktopu otevři Nastavení → Využití, nebo propoj Claude Code v Nastavení a spusť ho v Terminálu\./);
+  assert.match(sDesktopem, /Bez čerstvého měření/);
+  assert.doesNotMatch(sDesktopem, /<b>Claude<\/b>[\s\S]*?\d+ %/, 'bez měření žádné procento');
   const bezDesktopu = limitsAll({ ...base, integrations: { claudeHooks: { installed: true, current: true } }, connectors: [{ id: 'claude-code', state: 'connected' }, { id: 'claude-desktop-usage', state: 'missing' }] }, now);
-  assert.match(bezDesktopu, /Žádné čerstvé měření – spusť Claude Code v Terminálu se stavovým řádkem\./);
-  assert.doesNotMatch(bezDesktopu, /Claude Desktopu otevři/, 'cestu přes Desktop nenabízí, když Desktop na počítači není');
+  assert.match(bezDesktopu, /Bez čerstvého měření/);
   // S čerstvým měřením poznámka zmizí a řádek ukáže okno.
   const sDaty = limitsAll({ ...base, limits: [quotaLimit(odmitnuti(T0 - MIN), T0 - MIN)], connectors: [{ id: 'claude-code', state: 'connected' }] }, now);
-  assert.doesNotMatch(sDaty, /Žádné čerstvé měření/);
+  assert.doesNotMatch(sDaty, /Bez čerstvého měření/);
   assert.match(sDaty, /Limit 5 h<\/span><b>Vyčerpáno/);
 });
 

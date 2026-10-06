@@ -453,15 +453,6 @@ export function kindLabel(kind) {
   return tr('Potřebuje tvé rozhodnutí');
 }
 
-export function howToAnswer(s) {
-  if (s.source === 'web') return tr('Odpověz přímo v konverzaci v prohlížeči.');
-  if (s.connector === 'claude-code') return tr('Otevři Claude nebo Terminál tlačítkem výše a odpověz v okně, kde konverzace běží.');
-  if (s.connector === 'codex') return tr('Otevři vlákno v Codexu tlačítkem výše a odpověz tam.');
-  if (s.connector === 'cursor') return tr('Potvrď akci v Cursoru.');
-  if (s.connector === 'vscode-copilot') return tr('Potvrď akci v panelu Copilotu ve VS Code.');
-  return tr('Odpověz v aplikaci, kde agent běží.');
-}
-
 export const agentHref = (id) => `#/agent/${encodeURIComponent(id)}`;
 // Kam vede klik na upozornění. Souhrn nese vlastní cíl (seznam agentů, Útrata…), ostatní vedou
 // do konverzace nebo na seznam upozornění. Cíl přijde ze serveru, ale bere se jen tvar „#/…“.
@@ -617,9 +608,8 @@ export function limitObnova(l, now = Date.now()) {
   const presne = Number(l.resetsAt) > 0 ? Number(l.resetsAt) : 0;
   if (presne && presne > now) return { kdy: presne, presne: true, probehla: false, text: tr('obnova {0}', resetsLabel(presne, now)) };
   if (presne) return { kdy: presne, presne: true, probehla: true, text: tr('obnoveno {0}', resetsLabel(presne, now)) };
-  // Historie Claude Desktopu čas obnovy nenese. Říkáme to i s tím, odkud procento je – nedopočítává se.
-  if (l.source === 'plan-history') return { kdy: 0, presne: false, probehla: false, text: tr('obnova neznámá · podle Claude Desktopu') };
-  return { kdy: 0, presne: false, probehla: false, text: tr('čas obnovy zdroj neuvádí') };
+  // Bez přesného času od zdroje (např. historie Claude Desktopu) se obnova nedopočítává.
+  return { kdy: 0, presne: false, probehla: false, text: tr('obnova neznámá') };
 }
 
 // Poznámka k dokupovanému využití – jen když ji zdroj výslovně poslal (`quotaLimits`).
@@ -664,10 +654,7 @@ export function limitState(l, now = Date.now()) {
     label: renewed ? tr('Obnoveno') : reached ? tr('Vyčerpáno') : `${pct} %`,
     tone: renewed ? 'free' : pct >= 95 ? 'out' : pct >= 80 ? 'low' : 'free',
     // Po obnově nikdo nové vytížení nezměřil – „plná kapacita“ ani „právě“ by nebyla pravda.
-    advice: renewed ? tr('Limit se od posledního měření obnovil, nový stav zatím nepřišel')
-      : reached || pct >= 100 ? tr('Vyčerpáno, počkej na obnovu')
-        : pct >= 80 ? tr('Šetři na důležité úlohy')
-          : pct >= 50 ? tr('V pohodě pro běžnou práci') : tr('Dobrý čas na velké úlohy'),
+    advice: renewed ? tr('Obnoveno, čeká na měření') : reached || pct >= 100 ? tr('Vyčerpáno') : '',
   };
 }
 

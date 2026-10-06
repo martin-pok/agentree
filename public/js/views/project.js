@@ -123,7 +123,7 @@ function mount(el, [id]) {
         <section class="card side-card" data-card="brief" aria-labelledby="brief-h">${GRIP}
           <div class="side-head"><h3 id="brief-h">${tr('Podklady a poznámky')}</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
           <label class="sr-only" for="brief-${esc(id)}">${tr('Podklady projektu')}</label>
-          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="${tr('Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání.')}"></textarea>
+          <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="${tr('Cíl, tón, značka, kontakty, rozhodnutí…')}"></textarea>
           <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}${tr('Kopírovat podklady')}</button></div>
         </section>
         <section class="card side-card" data-card="folders" aria-label="${tr('Složky projektu')}">${GRIP}<div data-region="folders"></div></section>
@@ -258,13 +258,12 @@ function update() {
         : [...st.live, ...st.older];
   fill(el, 'rows', rows.length
     ? rows.map((s) => rowHtml(s, now)).join('')
-    : `<li>${emptyState({ title: tr('Projekt je zatím prázdný'), text: p.folders.length ? tr('Jakmile agent začne pracovat ve složce projektu, objeví se tady. Nebo přidej existující konverzace.') : tr('Přidej konverzace z libovolné služby, nebo projektu nastav složku pro automatické zařazení.'), action: `<button class="btn btn--primary" type="button" data-action="add">${tr('Přidat konverzace')}</button>` })}</li>`);
+    : `<li>${emptyState({ title: tr('Projekt je zatím prázdný'), action: `<button class="btn btn--primary" type="button" data-action="add">${tr('Přidat konverzace')}</button>` })}</li>`);
 
   fill(el, 'folders', `<div class="side-head"><h3>${tr('Složky projektu')}</h3><button class="link" type="button" data-action="edit">${tr('Upravit')}</button></div>
     ${p.folders.length
-      ? `<ul class="folder-list folder-list--plain">${p.folders.map((f) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button class="icon-btn" type="button" data-copy="${esc(f)}" data-copy-message="${tr('Cesta zkopírována')}" aria-label="${tr('Kopírovat cestu')}">${ICON.copy}</button></li>`).join('')}</ul>
-         <p class="small muted">${tr('Agenti spuštění v těchto složkách se zařadí automaticky.')}</p>`
-      : `<p class="small muted">${tr('Bez složky – do projektu patří jen ručně zařazené konverzace.')}</p>`}`);
+      ? `<ul class="folder-list folder-list--plain">${p.folders.map((f) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button class="icon-btn" type="button" data-copy="${esc(f)}" data-copy-message="${tr('Cesta zkopírována')}" aria-label="${tr('Kopírovat cestu')}">${ICON.copy}</button></li>`).join('')}</ul>`
+      : `<p class="small muted">${tr('Bez složky')}</p>`}`);
 
   const byApp = new Map();
   for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
