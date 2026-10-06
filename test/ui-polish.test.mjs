@@ -151,7 +151,7 @@ test('volby v přepínačích mají stálý řez písma a tlačítko na tmavém 
   assert.match(css, /\.seg button \{[^}]*font-weight: 500/);
   assert.doesNotMatch(css, /\.seg button\[aria-pressed='true'\] \{[^}]*font-weight/);
   assert.doesNotMatch(css, /\.lchip\[aria-checked='true'\] \{[^}]*font-weight/);
-  assert.match(css, /\.pulse-bar \.pb-all \{[^}]*color: #F4F3F7/, 'bílé tlačítko se světlým textem se nesmí vrátit');
+  assert.match(css, /\.pulse-bar \.pb-all \{[^}]*color: var\(--pb-ink\)/, 'tlačítko v pruhu má barvu textu pruhu, ne světlý text na světlé ploše');
   assert.match(css, /\.budget-cards \{[^}]*auto-fit/, 'jediná karta rozpočtu vyplní celou šířku');
   const sk = await zdroj('public/js/views/skills.js');
   assert.match(sk, /class="sk-filtr" data-blok="zdroje"[\s\S]*class="sk-filtr" data-blok="puvod"/, 'filtry jsou popsané řádky pod sebou');
@@ -159,7 +159,7 @@ test('volby v přepínačích mají stálý řez písma a tlačítko na tmavém 
 
 test('zelená plocha s textem používá bílé písmo na tmavší zelené', async () => {
   const css = await zdroj('public/styles.css');
-  assert.match(css, /\.nav-badge \{[^}]*background: var\(--teal-solid\); color: #fff/, 'odznak nesmí mít černé písmo na světlé zelené');
+  assert.match(css, /\.nav-badge \{[^}]*background: var\(--action\); color: var\(--on-action\)/, 'odznak je plná plocha akce s kontrastním písmem');
   assert.match(css, /\.appearance-icon \{ background: var\(--teal-solid\); color: #fff/);
   assert.doesNotMatch(css, /\.nav-badge \{[^}]*background: var\(--teal\);/);
 });
@@ -175,7 +175,7 @@ test('logo projektu vyplní celý rámeček a karty se dají přetahovat i ovlá
 
 test('ovládací prvky mají v tmavém režimu světlou plochu s tmavým písmem', async () => {
   const css = await zdroj('public/styles.css');
-  assert.match(css, /html\[data-theme='dark'\] \{[^}]*--action: #F5F2F8;[^}]*--on-action: #16141D/s);
+  assert.match(css, /html\[data-theme='dark'\] \{[^}]*--action: #EEF1F7;[^}]*--on-action: #0E1220/s);
   for (const sel of ['\\.btn--primary', "\\.seg button\\[aria-pressed='true'\\]", "\\.switch\\[aria-checked='true'\\]"]) {
     assert.match(css, new RegExp(`${sel} \\{[^}]*background: var\\(--action\\)`), `${sel} musí používat --action`);
   }

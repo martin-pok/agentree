@@ -44,7 +44,7 @@ Nastavení nejprve řekne, zda je zdroj lokálně nalezený, v betě nebo skute�
 
 ## 4. Designový systém a vzhled
 
-Identita je „koncertní sál“: temná scéna v horní vrstvě, mlžná pracovní plocha, samet pro rozhodnutí, smaragd pro aktivní práci a mosaz pro orientační akcent. Všechny hodnoty leží v tokenech `public/styles.css`; komponenta nesmí zavádět vlastní odstín, radius, stín nebo easing bez aktualizace tokenového systému.
+Identita je „Den a Noc“ (od 0.37.0): průsvitné sklo nad tichou atmosférou, Den s mlhou a inkoustem, Noc jako jejich zrcadlo. Tlumené pigmenty nesou význam – šalvěj práce, okr čekání na zadání, růže rozhodnutí – a hlavní pruh s živými agenty je jediná plocha s barevným nádechem. Panely barvu pozadí propouštějí bez rozmazání; rozmazání má jen plovoucí lišta na telefonu. Všechny hodnoty leží v tokenech `public/styles.css`; komponenta nesmí zavádět vlastní odstín, radius, stín nebo easing bez aktualizace tokenového systému.
 
 ### Vzhledové režimy
 

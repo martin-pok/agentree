@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 96)) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 48)) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -557,8 +557,9 @@ for (const engine of engines) {
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
+    // Karty Přehledu jsou světlé sklo Dne (--glass), ne barevná výplň.
     for (const selector of ['.token-card', '.calm']) {
-      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
     }
     assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
@@ -742,7 +743,7 @@ for (const engine of engines) {
       await page.waitForTimeout(100);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
-      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
       if (route === 'nastaveni') {
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
         const choices = await page.locator('[data-avatar-pick]').evaluateAll((nodes) => nodes.map((el) => ({ value: el.dataset.avatarPick, name: el.getAttribute('aria-label') || el.title || el.textContent.trim() })));
@@ -801,7 +802,7 @@ for (const engine of engines) {
         await page.locator('button[data-appearance="light"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
         await page.setViewportSize({ width: 2528, height: 1390 });
-        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '200px');
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '224px');
         const settingsCenter = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
           return Math.abs(box.left + box.width / 2 - innerWidth / 2);
@@ -960,10 +961,16 @@ for (const engine of engines) {
         const v = [];
         let posouva = false;
         const t0 = performance.now();
+        // Vzorkuje se, dokud se poloha 300 ms nezmění (nejvýš 3 s): na pomalém stroji CI trvá
+        // stejný dojezd déle a pevné okno 1,5 s ho uťalo uprostřed. Cíl i plynulost se ověřují stejně.
+        let posledniZmena = t0;
         (function f() {
+          const ted = performance.now();
+          if (!v.length || scrollY !== v.at(-1)) posledniZmena = ted;
           v.push(scrollY);
           if (document.documentElement.classList.contains('is-scrolling')) posouva = true;
-          if (performance.now() - t0 < 1500) requestAnimationFrame(f); else hotovo({ v, posouva });
+          const ustaleno = ted - t0 > 400 && ted - posledniZmena > 300;
+          if (!ustaleno && ted - t0 < 3000) requestAnimationFrame(f); else hotovo({ v, posouva });
         })();
       }));
       await p.mouse.wheel(0, 400);

@@ -53,7 +53,7 @@ test('rozšíření: okno používá tokeny aplikace a nekreslí těžší písm
   const popup = await fs.readFile(path.join(ROOT, 'extension/popup.html'), 'utf8');
   const styles = await fs.readFile(path.join(ROOT, 'public/styles.css'), 'utf8');
   // Klíčové barvy identity „koncertní sál“ musí být shodné s :root aplikace, ne přibližné.
-  for (const token of ['--stage: #121019', '--paper: #F4F3F7', '--ink: #16141D', '--brass: #C99A3E']) {
+  for (const token of ['--stage: #16203A', '--paper: #F3F5F8', '--ink: #16203A', '--brass: #B07D2C']) {
     assert.ok(popup.includes(token), `okno rozšíření nemá token ${token}`);
     assert.ok(styles.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
