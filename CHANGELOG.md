@@ -1,11 +1,16 @@
 # Changelog
 
-## Nevydáno – 0.37.0 · nový vzhled Den a Noc
+## 0.37.0 – 2026-10-06 · nový vzhled Den a Noc, instalace bez Terminálu, synchronizace bez „0 zařízení“
 
 - **Nový vzhled celé aplikace.** Den je světlé sklo nad tichou oblohou (mlha #F3F5F8, inkoust #16203A), Noc je jeho zrcadlo na půlnoční modré. Tmavý rám okna a tmavý pás nahoře zmizely; postranní panel, karty a lišta jsou průsvitné sklo s bílou hranou. Hlavní pruh s živými agenty je jediná plocha s jemným modro‑šalvějovým nádechem. Barvy jsou tlumené pigmenty se stálým významem: šalvěj = pracuje, okr = čeká na zadání, růže = potřebuje tebe. Grafy mají novou kategoriální paletu s kontrastem ≥ 3 : 1 v obou režimech.
 - **Pryč s ozdobami.** Zlatý proužek u aktivní položky menu, zlatá linka nad kartou Spustit agenta a barevné odznaky nahradila čistá plocha; odznaky jsou v barvě textu.
 - **Čísla bez přeškrtnuté nuly.** Čísla, štítky a odznaky sází Onest s tabulkovými číslicemi; neproporcionální písmo zůstalo jen kódu.
 - **Obnova dat bez kurzoru zákazu.** Tlačítko obnovy se během obnovy nevypíná (šedé přeškrtnuté kolečko a poskočení zmizely); ikona se klidně otočí aspoň jednou a dotočí do klidu.
+- **Bez vysvětlivek a omluv.** Z rozhraní zmizely odstavce, které vysvětlovaly, proč něco nejde. Kde za nimi byla skutečná chyba, je opravená; kde šlo jen o šum, zůstal jeden věcný řádek.
+- **Rozpoznání agentů bez duchů a zdvojení.** Procesy se čtou i s rodičem, takže pomocné podprocesy Electronu (`--type=…`) a potomci téhož nástroje se už nehlásí jako další agent. Aplikace Codex má vlastní záznam a úlohy s limity čte ze sdílené složky Codexu. Na Windows se procesy čtou přes PowerShell i s rodičem. Když zjišťování selže, aplikace to řekne a nehlásí „nic neběží“. Záložka v prohlížeči, která před načtením služby dostala dočasné ID, se po rozpoznání sloučí do jedné konverzace místo dvou.
+- **Synchronizace účtu bez „0 zařízení“.** Mac nejdřív založí zařízení a teprve pak zapíše volbu do profilu, takže web už neukazuje „0 zařízení“ u zapnuté synchronizace. Volba se čte z účtu při každé synchronizaci, po změně limitů nebo konverzací se odešle do minuty a po chybě se opakuje (30 s, 1, 2, 5 min). Řádky, které Mac přestal hlásit, se z účtu smažou. Přehled na webu nepočítá zařízení neaktivní přes 15 minut jako živá a útratu jedné služby nezapočítá dvakrát. Verze s příponou (beta) už nebrání založení zařízení.
+- **Bezpečnostní hlavičky webu.** Web posílá Content-Security-Policy bez vložených skriptů, `nosniff`, HSTS, Referrer-Policy, Permissions-Policy a zákaz vložení do cizího rámu; test hlídá, že stránky nemají vložený skript.
+- **Instalace bez Terminálu.** Pro Mac se stahuje obraz disku (DMG) s přetažením do Aplikací. Web podle systému nabídne tlačítko pro Mac, nebo Windows (beta); na Linuxu a telefonu ukáže obě. Nová stránka „Jak aplikaci poprvé otevřít“ (CZ i EN) vede krok za krokem přes Nastavení systému → Soukromí a zabezpečení → Přesto otevřít a přes SmartScreen na Windows. Odkazy vedou přímo na soubor nejnovějšího vydání.
 - Web a okno rozšíření převzaly nové základní barvy (shodu hlídají testy). Kontrola kontrastu počítá hlavní pruh zvlášť pro Den a Noc.
 
 ## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení

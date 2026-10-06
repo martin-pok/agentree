@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.37.0',
+    date: '2026-10-06',
+    title: 'Nový vzhled Den a Noc',
+    items: [
+      'Celá aplikace má nový vzhled: Den je světlé sklo nad tichou oblohou, Noc jeho zrcadlo v půlnoční modré. Barvy mají stálý význam – zelená pracuje, okrová čeká, růžová potřebuje tebe.',
+      'Obnova dat se klidně otočí a dotočí do klidu, tlačítko se už nevypíná. Z rozhraní zmizely zbytečné vysvětlivky.',
+      'Spuštěné agenty aplikace pozná bez zdvojení a duchů. Když zjišťování selže, řekne to, místo aby tvrdila, že nic neběží.',
+      'Synchronizace s účtem zakládá zařízení správně, takže web už neukazuje „0 zařízení“, a změny odešle sama do minuty.',
+      'Aplikaci pro Mac stáhneš jako obraz disku a přetáhneš do Aplikací, bez Terminálu. Web nabídne i Windows (beta) a návod na první spuštění.',
+    ],
+    en: {
+      title: 'New Day and Night look',
+      items: [
+        'The whole app has a new look: Day is light glass over a quiet sky, Night is its mirror in midnight blue. Colours keep one meaning – green is working, ochre is waiting, rose needs you.',
+        'Refreshing data now turns the icon calmly and settles, and the button no longer disables itself. Needless explanations are gone from the interface.',
+        'Running agents are recognised without duplicates or ghosts. If detection fails, the app says so instead of claiming nothing is running.',
+        'Account sync registers the device first, so the web no longer shows “0 devices”, and changes are sent on their own within a minute.',
+        'The Mac app downloads as a disk image you drag to Applications, no Terminal needed. The website also offers Windows (beta) and a first-launch guide.',
+      ],
+    },
+  },
+  {
     version: '0.36.3',
     date: '2026-10-04',
     title: 'Claude v Přehledu limitů',
