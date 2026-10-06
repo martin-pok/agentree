@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenteeq – an overview of your AI agents on your Mac</title>
-<meta name="description" content="Claude Code, Codex, Cursor and web AI chats in one place. Agenteeq shows who is working, who is waiting for you and how much of your limits is left. A local Mac app, no account needed.">
+<meta name="description" content="Claude Code, Codex, Cursor and web AI chats in one overview. Agenteeq shows who is working, who is waiting for your decision, how much of your limits is left and what AI costs you. A Mac app that keeps your conversations with you.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0C0B10" media="(prefers-color-scheme: dark)">
@@ -18,7 +18,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Agenteeq">
 <meta property="og:title" content="Agenteeq – an overview of your AI agents on your Mac">
-<meta property="og:description" content="Less window switching. More room for work. A local control room for your AI agents.">
+<meta property="og:description" content="All your AI agents in one overview. Who is working, who is waiting for you and how much of your limits is left.">
 <meta property="og:url" content="https://agentree-fawn.vercel.app/en">
 <meta property="og:image" content="https://agentree-fawn.vercel.app/icons/icon-512.png">
 <meta property="og:image:alt" content="The Agenteeq mark">
@@ -26,7 +26,7 @@
 <link rel="preload" href="/fonts/urbanist-500.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/lp.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://agentree-fawn.vercel.app/en#website","url":"https://agentree-fawn.vercel.app/en","name":"Agenteeq","inLanguage":"en","about":{"@id":"https://agentree-fawn.vercel.app/#software"}},{"@type":"SoftwareApplication","@id":"https://agentree-fawn.vercel.app/#software","name":"Agenteeq","applicationCategory":"ProductivityApplication","operatingSystem":"macOS 14 or later","url":"https://agentree-fawn.vercel.app/","description":"A local overview of AI agent activity, projects and decisions, with an optional Chrome extension.","softwareVersion":"0.12.0","isAccessibleForFree":true}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://agentree-fawn.vercel.app/en#website","url":"https://agentree-fawn.vercel.app/en","name":"Agenteeq","inLanguage":"en","about":{"@id":"https://agentree-fawn.vercel.app/#software"}},{"@type":"SoftwareApplication","@id":"https://agentree-fawn.vercel.app/#software","name":"Agenteeq","applicationCategory":"ProductivityApplication","operatingSystem":"macOS 14 or later","url":"https://agentree-fawn.vercel.app/","description":"An overview of AI agents on your Mac: status, decisions, limits, projects and costs. An optional Chrome extension adds web chats.","softwareVersion":"0.12.0","isAccessibleForFree":true}]}</script>
 <script type="module" src="/lp.js"></script>
 </head>
 <body>
@@ -45,7 +45,7 @@
   <div class="wrap unit-head">
     <p class="kicker">Agenteeq for Mac</p>
     <h1 id="hero-title"><span class="radek"><span>Every agent has a task.</span></span> <span class="radek radek--tichy"><span>You have the overview.</span></span></h1>
-    <p class="lead">Who is working, who is waiting for you and where that conversation went. Claude Code, Codex, Cursor and web chats in one calm overview on your Mac.</p>
+    <p class="lead">Claude Code, Codex, Cursor and web chats in one overview. See at once who is working, who is waiting for your decision and how much of your limits is left.</p>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Download for Mac</a>
       <a class="text-link" href="#prohlidka">Take a look inside <span aria-hidden="true">↓</span></a>
@@ -57,19 +57,18 @@
       <source media="(max-width: 620px)" srcset="/detail/stav-mobil-en.webp" width="342" height="170">
       <img src="/detail/stav-en.webp" width="1072" height="174" alt="The Agenteeq status bar: two agents are working, one needs your decision, none failed and one is waiting for a task. Below, four active agents and what each is doing right now." fetchpriority="high">
     </picture>
-    <figcaption class="detail-note">The real Agenteeq interface, with sample data.</figcaption>
   </figure>
 </section>
 
 <section class="unit unit--dark tiles-unit" id="prohlidka" aria-labelledby="tour-heading">
   <div class="wrap unit-head">
     <h2 id="tour-heading"><span class="radek"><span>All your work.</span></span> <span class="radek"><span>At a glance.</span></span></h2>
-    <p class="lead">Agenteeq keeps an eye on your agents and speaks up when your decision is needed.</p>
+    <p class="lead">Agenteeq watches your agents for you and speaks up the moment something depends on you.</p>
   </div>
   <div class="wrap tiles">
     <article class="tile tile--wide tile--crop" aria-labelledby="t-vcas">
       <h3 id="t-vcas">Notice in time.</h3>
-      <p>Alerts for decisions, finished work and limits that are running low. No more clicking between windows to check whether something got stuck.</p>
+      <p>You get a notification when an agent needs approval, finishes its work or runs low on its limit. No more checking windows one by one.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 900px)" srcset="/detail/agenti-mobil-en.webp" width="342" height="418">
@@ -79,7 +78,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-ceka">
       <h3 id="t-ceka">Waiting for you.</h3>
-      <p>You see right away which agent is waiting for your decision, so it never sits idle for nothing.</p>
+      <p>An agent that needs your decision sits at the top, with a button that takes you straight back to the conversation.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/rozhodnuti-mobil-en.webp" width="342" height="142">
@@ -89,7 +88,7 @@
     </article>
     <article class="tile tile--fit" aria-labelledby="t-limit">
       <h3 id="t-limit">Limits under control.</h3>
-      <p>How much you have left before work stops, and when the limit resets.</p>
+      <p>How much is left of your five-hour and weekly limits, and when they reset. No surprises halfway through a task.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/limit-mobil-en.webp" width="342" height="81">
@@ -99,7 +98,7 @@
     </article>
     <article class="tile tile--crop" aria-labelledby="t-kontext">
       <h3 id="t-kontext">Pick up where you left off.</h3>
-      <p>Projects group conversations across tools by working folder. In the morning you know where you stopped yesterday.</p>
+      <p>Projects bring conversations from every tool together by working folder. In the morning you know where you stopped yesterday.</p>
       <figure class="tile-shot detail">
         <picture>
           <source media="(max-width: 620px)" srcset="/detail/projekt-lumen-mobil-en.webp" width="342" height="378">
@@ -108,21 +107,20 @@
       </figure>
     </article>
     <article class="tile tile--crop" aria-labelledby="t-data">
-      <h3 id="t-data">Read real data.</h3>
-      <p>Tokens are not a price and a limit percentage is not spend. Agenteeq keeps them apart and admits when data is missing.</p>
+      <h3 id="t-data">Know what AI costs you.</h3>
+      <p>API costs broken down by model, subscriptions with their tier and price, and a budget that keeps watch on its own.</p>
       <figure class="tile-shot detail">
         <img src="/detail/utrata-mobil-en.webp" width="342" height="366" alt="Spend in Agenteeq: 70 % of the monthly budget, 4,209 CZK spent." loading="lazy">
       </figure>
     </article>
   </div>
-  <div class="wrap"><p class="detail-note">The real Agenteeq interface with sample data.</p></div>
 </section>
 
 <section class="unit" id="propojeni" aria-labelledby="connections-heading">
   <div class="wrap unit-head">
     <h2 id="connections-heading"><span class="radek"><span>From disk and browser.</span></span> <span class="radek"><span>Into one overview.</span></span></h2>
-    <p class="lead">Agenteeq finds local transcripts on your Mac by itself. A paired Chrome extension adds your web conversations.</p>
-    <a class="text-link" href="#rozsireni">How to try the extension <span aria-hidden="true">↓</span></a>
+    <p class="lead">Agenteeq finds the tools on your Mac as soon as you start them. The Chrome extension adds your web chats.</p>
+    <a class="text-link" href="#rozsireni">Add the extension <span aria-hidden="true">↓</span></a>
   </div>
   <div class="wrap sources">
     <div class="source-group">
@@ -144,19 +142,19 @@
       </ul>
     </div>
   </div>
-  <p class="wrap note">Also Microsoft Copilot, Grok and Qwen.</p>
+  <p class="wrap note">Plus Claude Desktop, Gemini CLI, Qwen Code, Windsurf, Zed, Warp and more on your Mac. On the web, also Microsoft Copilot, GitHub Copilot, Grok and Qwen.</p>
 </section>
 
 <section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
   <div class="wrap unit-head">
-    <p class="kicker">Private from the ground up</p>
+    <p class="kicker">Privacy</p>
     <h2 id="privacy-heading"><span class="radek"><span>Your work</span></span> <span class="radek"><span>should stay yours.</span></span></h2>
-    <p class="lead">Agenteeq has no cloud account for your transcripts, because it doesn’t need one. Everything is processed on your Mac, and the extension sends data only to the local app.</p>
+    <p class="lead">Your conversation text, code and project names never leave your Mac. Agenteeq reads them only there.</p>
   </div>
   <div class="wrap facts">
-    <article><h3>No sign-up, no tracking</h3><p>The app works without an account and measures nothing. Fonts and the interface ship with it, so nothing is fetched from third-party servers. Paid APIs and other services are connected only by you, if you want.</p></article>
-    <article><h3>On your phone when you’re away</h3><p>Turn on access on the same Wi-Fi or through your own Tailscale network and point your phone’s camera at the QR code in the app. No typing addresses or numbers.</p></article>
-    <article><h3>Data only from a running Mac</h3><p>Your Mac must be on, awake and running Agenteeq. A closed window is fine; a quit app or a Mac that is off can’t provide data.</p></article>
+    <article><h3>An account only if you want one</h3><p>Agenteeq works without signing up. With a Google account you also see tokens, spend and limits on the web, always as summary numbers, never conversation content.</p></article>
+    <article><h3>Your overview on your phone</h3><p>On the same Wi-Fi or over Tailscale, scan the QR code in the app and your phone is paired. It sees your agents’ status; transcripts stay on your Mac.</p></article>
+    <article><h3>No tracking</h3><p>No analytics and no ad trackers. Fonts and the interface ship with the app, nothing is loaded from third-party servers.</p></article>
   </div>
 </section>
 
@@ -164,13 +162,13 @@
   <div class="wrap unit-head">
     <p class="kicker">Download</p>
     <h2 id="start-heading"><span class="radek"><span>Download, move, run.</span></span></h2>
-    <p class="lead">No account and no ten-step installer. Download, drag to Applications and allow it once.</p>
+    <p class="lead">Download, drag to Applications and allow it once on first launch. Right after that you see your agents.</p>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Download for Mac</a>
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
     </div>
-    <p class="specs">Mac: Apple Silicon · macOS 14 or later · 38 MB. Windows 10 and 11: beta, not yet tried on a real PC.</p>
-    <a class="text-link" href="/en/install">Full installation guide, step by step</a>
+    <p class="specs">Mac with Apple silicon · macOS 14 or later. Windows 10 and 11 · beta.</p>
+    <a class="text-link" href="/en/install">Installation, step by step</a>
   </div>
 
   <ol class="wrap steps">
@@ -187,7 +185,7 @@
   <div class="wrap">
     <div class="prikaz" id="jednim-prikazem">
       <h3>Install with one command</h3>
-      <p>For people who live in Terminal. The command downloads the latest release, verifies it, installs it in Applications and opens it – no step 3.</p>
+      <p>For people who live in Terminal. It downloads the latest release, verifies it, installs it in Applications and opens it. No step 3.</p>
       <div class="prikaz-radek">
         <div class="prikaz-pole"><code class="prikaz-posun" tabindex="0"><span class="prikaz-vyzva" aria-hidden="true">$ </span>curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash</code></div>
         <button class="btn prikaz-kopie" type="button" data-kopirovat="curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash">Copy</button>
@@ -200,7 +198,7 @@
       <details id="rozsireni"><summary>Add web chats with the Chrome extension <span class="detail-tag" data-rozsireni-doba="2 minutes">10 minutes</span></summary><div class="detail-body">
         <!-- rozsireni:obchod -->
         <p class="rozsireni-akce"><a class="btn btn--sm" data-obchod-chrome href="#">Add to Chrome</a></p>
-        <p>The extension pairs with the app on its own while Agenteeq is running. Also works in Brave, Arc and Edge.</p>
+        <p>The extension pairs with the app on its own. Also works in Brave, Arc and Edge.</p>
         <!-- /rozsireni:obchod -->
         <!-- rozsireni:rucne -->
         <ol>
@@ -214,11 +212,10 @@
 
       <details><summary>Watch your agents from your phone <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
         <ol>
-          <li>Keep your Mac awake and Agenteeq running. You can close the window.</li>
+          <li>Keep Agenteeq running on your Mac. You can close the window.</li>
           <li>In <b>Settings → Open on phone</b>, turn on access for your home network or for Tailscale.</li>
-          <li>Click <b>Create code for phone</b> and point your camera at the QR code. Your phone opens already paired.</li>
+          <li>Click <b>Create code for phone</b> and scan the QR code with your camera. Your phone opens already paired.</li>
         </ol>
-        <p class="small muted">If you’d rather not scan, there’s also a six-digit number under the code. The phone sees the overview but can’t change anything, and this website can’t replace the connection to a Mac that is off.</p>
       </div></details>
     </div>
   </div>
@@ -229,10 +226,11 @@
     <h2 id="faq-heading"><span class="radek"><span>Before you start.</span></span></h2>
   </div>
   <div class="wrap rows">
-    <details><summary>How much does it cost?</summary><p>The beta is free with every feature unlocked. Some features will stay free after the beta, and paid features will be announced in advance.</p></details>
-    <details><summary>Does it show exact spend across all subscriptions?</summary><p>Tokens, limits and money are three different things. You enter subscriptions and purchased credits by hand; supported Admin APIs can add verified costs. Agenteeq doesn’t turn tokens into an imagined price.</p></details>
-    <details><summary>Do I have to connect every service?</summary><p>No. Start with the tool you use most. The extension, hooks and other sources are optional, and you can see each connector’s availability in Settings.</p></details>
-    <details><summary>What about Windows?</summary><p>The Windows version is a beta and still misses some Mac features. You can download it above; the <a href="/en/install#windows">install page</a> says what it does.</p></details>
+    <details><summary>How much does it cost?</summary><p>During the beta, Agenteeq is free with every feature. We will publish pricing for the paid version before the beta ends.</p></details>
+    <details><summary>Does it show what I spend on AI?</summary><p>Yes. It recognises your Claude and ChatGPT plan on its own, with the tier and its list price. It loads API costs from the Anthropic and OpenAI Admin APIs, broken down by model. It never converts tokens into money, it shows only verified amounts.</p></details>
+    <details><summary>Do I have to set anything up?</summary><p>No. Agenteeq finds the tools on your Mac as soon as you start them. Add the extension for web chats, API costs or an account whenever you want them.</p></details>
+    <details><summary>Can anyone else see my conversations?</summary><p>No. Agenteeq reads transcripts only on your Mac and sends them nowhere. Account sync carries summary numbers only.</p></details>
+    <details><summary>What about Windows?</summary><p>The Windows version is in beta. Download it above; the <a href="/en/install#windows">install page</a> lists how it differs from the Mac.</p></details>
   </div>
 </section>
 
@@ -242,7 +240,7 @@
   <a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
   <p>More focus. Less switching.</p>
   <a class="text-link" href="#obsah">Back to top ↑</a>
-  <p class="foot-note">A development beta for macOS, with a trial build for Windows. Screenshots show the real app with sample data. Service logos belong to their owners; Agenteeq is not affiliated with or endorsed by them. <a href="/en/install">Install</a> · <a href="/en/privacy">Privacy policy</a></p>
+  <p class="foot-note">Service names and logos belong to their owners. <a href="/en/install">Install</a> · <a href="/en/privacy">Privacy policy</a></p>
 </div></footer>
 </body>
 </html>

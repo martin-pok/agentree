@@ -136,7 +136,27 @@ export async function writeFileAtomic(file, content, mode) {
   await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
   const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
   await fs.writeFile(tmp, content, mode ? { mode } : undefined);
-  await fs.rename(tmp, file);
+  try {
+    await renameRetry(tmp, file);
+  } catch (err) {
+    await fs.unlink(tmp).catch(() => {});
+    throw err;
+  }
+}
+
+// Na Windows přejmenování na soubor, který má právě otevřený jiný proces (antivir, indexování,
+// zálohovací nástroj, čtenář dat), skončí EPERM/EACCES/EBUSY. Zámek trvá milisekundy, takže se
+// zkouší znovu s rostoucí pauzou – jinak by se zápis tiše ztratil až do další změny dat.
+const PRECHODNE = new Set(['EPERM', 'EACCES', 'EBUSY']);
+async function renameRetry(from, to, pokusy = 8) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fs.rename(from, to);
+    } catch (err) {
+      if (i >= pokusy || !PRECHODNE.has(err.code)) throw err;
+      await new Promise((r) => setTimeout(r, 20 * 2 ** Math.min(i, 5)));
+    }
+  }
 }
 
 export const writeJsonAtomic = (file, data, mode = 0o600) => writeFileAtomic(file, `${JSON.stringify(data, null, 2)}\n`, mode);

@@ -93,19 +93,18 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
   assert.match(css, /:focus-visible/, 'viditelný fokus');
 });
 
-// Poctivost nad efektem platí i na webu: výřezy vypadají jako snímky aplikace, takže každá
-// sekce, která je ukazuje, musí říct, že jde o smyšlená data. Bez toho by stránka vydávala
-// vymyšlený obsah za skutečná data uživatele.
-test('web: každá ukázka rozhraní je jako ukázka popsaná', async () => {
-  for (const [soubor, ukazka] of [['site/index.html', /smyšlen/], ['site/en/index.html', /sample data/]]) {
+// Výřezy rozhraní nesou smysl v alt textu: čtečka obrazovky musí říct, co je na snímku, a ne
+// jen „obrázek“. Stránka zároveň nemá zbytečné výhrady pod snímky ani zastaralé údaje o testování.
+test('web: výřezy rozhraní mají popisný alt a stránka je bez zbytečných výhrad', async () => {
+  for (const soubor of ['site/index.html', 'site/en/index.html']) {
     const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
-    const sekce = html.split('<section').slice(1).filter((s) => /class="(?:[^"]*\s)?detail(?:\s[^"]*)?"/.test(s));
-    assert.ok(sekce.length >= 2, `${soubor}: výřezy rozhraní na stránce jsou (hero a kapitoly)`);
-    for (const s of sekce) {
-      const popisek = s.match(/class="detail-note"[^>]*>([^<]+)/);
-      assert.ok(popisek, `${soubor}: sekce s výřezy bez popisku: ${s.slice(0, 80)}`);
-      assert.match(popisek[1], ukazka, soubor);
+    const vyrezy = [...html.matchAll(/<img src="\/detail\/[^"]+"[^>]*>/g)].map((m) => m[0]);
+    assert.ok(vyrezy.length >= 5, `${soubor}: výřezy rozhraní na stránce jsou`);
+    for (const img of vyrezy) {
+      const alt = img.match(/alt="([^"]*)"/);
+      assert.ok(alt && alt[1].length >= 30, `${soubor}: výřez bez popisného alt textu: ${img.slice(0, 80)}`);
     }
+    assert.doesNotMatch(html, /detail-note|smyšlen|sample data|nevyzkoušen|not yet tried/i, soubor);
   }
 });
 
@@ -157,7 +156,7 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
   assert.ok(html.includes('href="#vyzkouset"'), 'výzva vede na dostupný instalační postup');
   assert.match(html, /data-stahnout="mac-arm64"/, 'stránka musí mít tlačítko ke stažení');
   assert.match(html, /chrome:\/\/extensions/);
-  assert.match(html, /Mac musí být zapnutý/);
+  assert.match(html, /tvůj Mac neopustí/, 'soukromí: obsah konverzací zůstává na Macu');
   const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
   assert.equal(graph[0].about['@id'], graph[1]['@id']);
   assert.match(html, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/"/);
