@@ -649,10 +649,10 @@ export function createHttpServer(app, existingServer = null) {
         if (typeof body.lastSeenVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(body.lastSeenVersion)) throw new HttpError(422, ui('Neplatná verze.'));
         datastore.data.settings.lastSeenVersion = body.lastSeenVersion;
       }
-      if (body.appearance !== undefined) {
-        if (!['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, ui('Vzhled musí být světlý, tmavý nebo podle systému.'));
-        datastore.data.settings.appearance = body.appearance;
-      }
+      if (body.appearance !== undefined && !['light', 'dark', 'system'].includes(body.appearance)) throw new HttpError(422, ui('Vzhled musí být světlý, tmavý nebo podle systému.'));
+      if (body.look !== undefined && !['obloha', 'koncert'].includes(body.look)) throw new HttpError(422, ui('Neznámý vzhled.'));
+      if (body.appearance !== undefined) datastore.data.settings.appearance = body.appearance;
+      if (body.look !== undefined) datastore.data.settings.look = body.look;
       if (body.language !== undefined) {
         if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, ui('Jazyk musí být čeština nebo angličtina.'));
         datastore.data.settings.language = body.language;

@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS = {
   welcomeCompleted: false,
   lastSeenVersion: '',
   appearance: 'light',
+  // Rodina vzhledu: Obloha (Úsvit a Půlnoc) nebo Koncert (Slonovina a Eben), public/js/appearance.js.
+  look: 'obloha',
   language: 'cs',
   // Stahování se nikdy nezapíná samo. Po výslovném přepnutí na automatické režim stáhne pouze
   // přesně ověřený balíček z oficiálního GitHub releasu; instalaci pořád potvrzuje uživatel ve Finderu.
@@ -149,6 +151,7 @@ function normalizeDataInner(raw) {
       welcomeCompleted: s.welcomeCompleted === true,
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
+      look: s.look === 'koncert' ? 'koncert' : 'obloha',
       language: s.language === 'en' ? 'en' : 'cs',
       updateMode: s.updateMode === 'automatic' ? 'automatic' : 'manual',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,

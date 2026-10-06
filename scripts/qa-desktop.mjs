@@ -751,11 +751,20 @@ for (const engine of engines) {
         assert.equal(new Set(choices.map((choice) => choice.value)).size, choices.length, `${engine} každá volba má vlastní stabilní hodnotu`);
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
         await page.click('.set-nav [data-jump="set-ucet"]'); // vzhled je ve skupině Účet a vzhled
-        await page.locator('button[data-appearance="dark"]').click();
-        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
-        // Theme paints optimistically; the selected button updates after saveSettings resolves.
-        await page.waitForFunction(() => document.querySelector('button[data-appearance="dark"]')?.getAttribute('aria-pressed') === 'true');
-        assert.equal(await page.locator('button[data-appearance="dark"]').getAttribute('aria-pressed'), 'true');
+        // Půlnoc = tmavá podoba Oblohy. Vzhled se překreslí hned, uložení na server ho jen potvrdí.
+        // Měří se v rozhraní samotném – od klepnutí do změny atributu na <html> – ne čas
+        // Playwrightu na klik a čekání, který na pomalém runneru přidá stovky ms.
+        await page.evaluate(() => {
+          window.__vzhled = {};
+          document.addEventListener('click', () => { window.__vzhled.klik ??= performance.now(); }, { capture: true, once: true });
+          new MutationObserver((_, o) => { if (document.documentElement.dataset.theme === 'dark') { window.__vzhled.zmena = performance.now(); o.disconnect(); } }).observe(document.documentElement, { attributes: true });
+        });
+        await page.locator('button[data-theme-pick="pulnoc"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.look === 'obloha');
+        const prodleva = await page.evaluate(() => window.__vzhled.zmena - window.__vzhled.klik);
+        assert.ok(prodleva < 100, `${engine}: vzhled se po klepnutí přepnul za ${Math.round(prodleva)} ms`);
+        await page.waitForFunction(() => document.querySelector('button[data-theme-pick="pulnoc"]')?.getAttribute('aria-checked') === 'true');
+        assert.equal(await page.locator('.theme-pick[aria-checked="true"]').count(), 1, `${engine}: vybraný je právě jeden vzhled`);
         const ratios = await page.evaluate(() => {
           const hex = (value) => {
             const match = value.trim().match(/^#([0-9a-f]{6})$/i);
@@ -795,12 +804,26 @@ for (const engine of engines) {
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.click('.set-nav [data-jump="set-ucet"]');
-        await page.locator('button[data-appearance="system"]').click();
+        // Střídání podle systému: pár Úsvit/Půlnoc sleduje systém, vypnutí nechá to, co je vidět.
+        await page.locator('[data-setting="appearanceSystem"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.appearance === 'system');
+        await page.waitForFunction(() => document.querySelector('.theme-pick.is-pair[data-theme-pick="usvit"]'));
         await page.emulateMedia({ colorScheme: 'light' });
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
-        await page.locator('button[data-appearance="light"]').click();
-        await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
+        await page.waitForFunction(() => document.querySelector('button[data-theme-pick="usvit"]')?.getAttribute('aria-checked') === 'true');
+        // Klepnutí na Eben při střídání přepne celý pár na Koncert – ve dne je vidět Slonovina se scénou.
+        await page.locator('button[data-theme-pick="eben"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.look === 'koncert' && document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'system');
+        assert.equal(await page.locator('.stage').evaluate((el) => getComputedStyle(el).display), 'block', `${engine}: Koncert má tmavou scénu nahoře`);
+        await page.screenshot({ path: `dist/qa/${engine}-koncert-settings.png` });
+        await page.locator('[data-setting="appearanceSystem"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.appearance === 'light' && document.documentElement.dataset.theme === 'light');
+        await page.locator('button[data-theme-pick="usvit"]').click();
+        await page.waitForFunction(() => document.documentElement.dataset.look === 'obloha' && document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
+        assert.equal(await page.locator('.stage').evaluate((el) => getComputedStyle(el).display), 'none', `${engine}: Obloha scénu nemá`);
+        await page.reload();
+        await page.waitForFunction(() => document.documentElement.dataset.look === 'obloha' && document.documentElement.dataset.theme === 'light');
+        await page.locator('.set-main').waitFor();
         await page.setViewportSize({ width: 2528, height: 1390 });
         await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '224px');
         const settingsCenter = await page.locator('.set-main').evaluate((el) => {

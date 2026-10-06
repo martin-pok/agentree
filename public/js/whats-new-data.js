@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.38.0',
+    date: '2026-10-06',
+    title: 'Čtyři vzhledy',
+    items: [
+      'Vyber si ze čtyř vzhledů v Nastavení → Účet a vzhled: Úsvit a Půlnoc, nebo Slonovina a Eben s tmavou scénou nahoře. Přepínač Střídat podle systému střídá světlý a tmavý vzhled vybraného páru.',
+      'Karta účtu ukazuje fotku, jméno a ověřený e-mail z Googlu a kdy ses naposledy přihlásil. Fotka, která se nenačte hned, se načte znovu sama.',
+      'Nastavení má kartu Nápověda a zkratky a karta Soukromí přesně říká, co a kdy odchází z tohoto Macu.',
+    ],
+    en: {
+      title: 'Four looks',
+      items: [
+        'Choose from four looks in Settings → Account and appearance: Dawn and Midnight, or Ivory and Ebony with a dark stage at the top. Switch with the system alternates the light and dark look of the chosen pair.',
+        'The account card shows your Google photo, name and verified email, and when you last signed in. A photo that doesn’t load right away loads again on its own.',
+        'Settings has a Help and shortcuts card, and the Privacy card says exactly what leaves this Mac and when.',
+      ],
+    },
+  },
+  {
     version: '0.37.1',
     date: '2026-10-06',
     title: 'Čitelnost nového vzhledu',

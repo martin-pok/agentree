@@ -384,6 +384,7 @@ export default {
   "Noční ticho musí začínat a končit v jiný čas.": "Quiet hours must start and end at different times.",
   "Neplatná verze.": "Invalid version.",
   "Vzhled musí být světlý, tmavý nebo podle systému.": "Appearance must be light, dark or system.",
+  "Neznámý vzhled.": "Unknown theme.",
   "Jazyk musí být čeština nebo angličtina.": "The language must be Czech or English.",
   "Neplatný profilový obrázek.": "Invalid profile picture.",
   "Neplatné rozložení.": "Invalid layout.",
