@@ -335,7 +335,10 @@ try {
       assert.ok(await staticPage.locator('.hero-shot img').isVisible(), 'výřez produktu bez JS');
       assert.ok(await staticPage.locator('[data-stahnout="mac-arm64"]').first().isVisible(), 'stažení bez JS');
       await staticPage.locator('#rozsireni summary').click();
-      assert.ok(await staticPage.locator('#rozsireni ol').isVisible());
+      // Rozšíření je v Chrome Web Store: rozbalená sekce nabízí tlačítko do obchodu (bez JS stejně jako s ním).
+      const doObchodu = staticPage.locator('#rozsireni a[data-obchod-chrome]');
+      assert.ok(await doObchodu.isVisible(), 'tlačítko Přidat do Chromu bez JS');
+      assert.match(await doObchodu.getAttribute('href'), /^https:\/\/chromewebstore\.google\.com\/detail\//);
       await staticPage.close();
       const bezPozorovatele = await browser.newPage({ reducedMotion: 'no-preference' });
       await jenMistni(bezPozorovatele, []);

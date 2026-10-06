@@ -1,5 +1,14 @@
 # Testování a ověření
 
+## Protokol ověření – 0.37.1, čitelnost nového vzhledu (6. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 849 testů, 839 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo |
+| `npm run check` | syntaxe čistá |
+| `qa:contrast`, `qa:tvary`, `qa:refresh`, `qa:site`, `qa:desktop`, `qa:extension` | prošly v Chromiu; WebKit prošel v CI |
+| Pixelový audit kontrastu | Ukázka `/app?ukazka`, Den i Noc, 1440 a 375 px, 8 obrazovek a detail konverzace: kontrast každého textu proti nejhoršímu pixelu pod ním (atmosféra je pevná vrstva, kterou výpočet ze stylů nevidí). Po úpravě `--mute` bez skutečného nálezu; zbylé záznamy jsou text pod spodní lištou na telefonu a obdélník textu zkráceného třemi tečkami. |
+
 ## Protokol ověření – 0.37.0, detekce agentů, synchronizace, bezpečnost, instalace a texty (5. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |

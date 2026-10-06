@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.37.1 – 2026-10-06 · čitelnost nového vzhledu
+
+- **Doplňkový text čitelný i nad atmosférou.** Šedý text, který leží přímo na barevné obloze Dne (popisky filtrů, metadata sekcí), měl nad nejsytějším místem jen 3,8:1. Barva je o kousek tmavší a drží 4,5:1 všude (WCAG 2.2 AA); Noc už měla aspoň 6,3:1. Kontrast se tentokrát měřil i ze skutečných pixelů, protože výpočet ze stylů pevnou vrstvu atmosféry nevidí; test hlídá všechny vrstvy atmosféry obou vzhledů.
+- **Útrata bez API na telefonu.** Ikona, text a tlačítko „Propojit API“ drží jednu osu; text už nevisí uprostřed karty.
+- **Rozšíření z Chrome Web Store jedním kliknutím.** Rozšíření je v obchodě zveřejněné: web (úvodní stránka i Instalace) a Nastavení → Rozšíření pro Chrome nabízejí rovnou tlačítko **Přidat do Chromu** místo ruční instalace přes Režim pro vývojáře. Ruční cesta zůstává sbalená pro prohlížeče bez obchodu. Pryč je i vysvětlování, co rozšíření posílá.
+- Kód v drobném textu (např. `SKILL.md` v Dovednostech) má aspoň 12 px.
+- Instalátor DMG se při vydání 0.37.0 sestavil a prošel `hdiutil verify` na runneru s macOS.
+
 ## 0.37.0 – 2026-10-05 · nový vzhled Den a Noc, každý agent hned, poctivá synchronizace, instalace bez Terminálu
 
 - **Nový vzhled Den a Noc.** Den je světlé sklo nad tichou oblohou (mlha #F3F5F8, inkoust #16203A), Noc je jeho zrcadlo na půlnoční modré. Tmavý rám okna a tmavý pás nahoře zmizely; postranní panel, karty a lišta jsou průsvitné sklo s bílou hranou. Hlavní pruh s živými agenty je jediná plocha s jemným modro‑šalvějovým nádechem. Barvy jsou tlumené pigmenty se stálým významem: šalvěj = pracuje, okr = čeká na zadání, růže = potřebuje tebe. Grafy mají novou kategoriální paletu s kontrastem ≥ 3 : 1 v obou režimech.

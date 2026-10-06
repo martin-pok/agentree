@@ -899,16 +899,14 @@ function update(topics) {
   // S rozšířením v Chrome Web Store: jedno kliknutí na „Přidat do Chromu“, spárování proběhne samo.
   // Ruční cesta zůstává sbalená pro prohlížeče bez obchodu a pro vývoj.
   const installSteps = ext.obchod
-    ? `<ol class="steps">
-      <li>${tr('Přidej Agenteeq do Chromu z Chrome Web Store – stačí kliknout na')} <b>${tr('Přidat do Chromu')}</b>.
-        <div class="set-actions"><a class="btn btn--primary" href="${esc(ext.obchod)}" target="_blank" rel="noopener" data-action="extension-store">${ICON.external}${tr('Otevřít Chrome Web Store')}</a></div></li>
-      ${pairStep}
-    </ol>
+    ? `<div class="set-actions"><a class="btn btn--primary" href="${esc(ext.obchod)}" target="_blank" rel="noopener" data-action="extension-store">${ICON.external}${tr('Přidat do Chromu')}</a></div>
+    <p class="small muted">${tr('Rozšíření se s Agenteeq spáruje samo.')}</p>
+    ${fold('ext-kod', tr('Nespárovalo se samo? Použij jednorázový kód'), kod, { open: Boolean(v.pairCode) })}
     ${fold('ext-manual', tr('Ruční instalace bez obchodu'), manualSteps)}`
     : manualSteps;
   fill(el, 'extension', `
     ${head(ICON.spark, tr('Rozšíření pro Chrome'),
-      tr('Chaty z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem a počtem zpráv a zadání ze „Spustit agenta“ se vloží rovnou do okna služby. Data jdou jen do Agenteeq na {0}, nic neodchází na internet.', tomtoPocitaci()),
+      tr('Chaty z prohlížeče (ChatGPT, Gemini, Claude.ai a další) se objeví v přehledu se stavem a počtem zpráv a zadání ze „Spustit agenta“ se vloží rovnou do okna služby.'),
       stateBadge(...badge))}
     <ul class="site-chips" aria-label="${tr('Podporované webové služby')}">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
     ${ext.repair ? `<p class="set-note set-note--warn">${tr('Předchozí spárování přestalo platit. Rozšíření se spáruje znovu samo, jakmile se v Chromu ozve. Kdyby se to nestalo, použij jednorázový kód níž.')}</p>` : ''}

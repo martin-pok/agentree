@@ -4,8 +4,8 @@
 // v Chromu) i sestavení webu (scripts/build-site.mjs). Adresu známe už během kontroly, zveřejnění
 // ale řídí příznak níže, aby web ani aplikace nenabízely neveřejnou stránku.
 export const CHROME_WEB_STORE_URL = 'https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch';
-// Veřejný listing ještě čeká na kontrolu. Po schválení přepnout na true a vydat aplikaci.
-export const CHROME_WEB_STORE_PUBLISHED = false;
+// Veřejný listing je zveřejněný (potvrdil vlastník 6. 10. 2026): web i aplikace vedou rovnou do obchodu.
+export const CHROME_WEB_STORE_PUBLISHED = true;
 
 // Web Agenteeq se stažením aplikace pro Mac – co aplikace posílá dál, když ji chceš doporučit.
 // Stejná adresa je v <link rel="canonical"> na webu (site/index.html).
