@@ -120,3 +120,32 @@ test('aktualizace: balíček se stáhne jen s otiskem z GitHubu a jen když mu o
   assert.equal(podvrh.state().status, 'available');
   await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')), 'podvržený balíček se na disk neuloží');
 });
+
+// Aktualizace jedním klepnutím: server pošle oknu aplikace pro Mac cestu k ověřenému balíčku a verzi,
+// výměnu a restart udělá okno (desktop/Agenteeq.swift). Bez okna, které to umí, nic neposílá a řekne proč.
+test('HTTP aktualizace: instalace jen se staženým balíčkem a jen přes okno aplikace pro Mac', async () => {
+  const dataHome = await tempDir('agenteeq-updates-install-');
+  const updateService = new UpdateService({ version: '0.30.0', dataDir: dataHome, fetchImpl: fetchForUpdate(release('0.31.0')), platform: 'darwin', arch: 'arm64' });
+  const s = await startTestServer({ AGENTEEQ_CLOUD: '1', AGENTEEQ_HOME: dataHome, AGENTEEQ_SELF_INSTALL: '1' }, { updateService });
+  try {
+    const client = api(s.url);
+    assert.equal((await client.get('/api/state')).body.integrations.selfInstall, true);
+    const udalosti = [];
+    assert.equal((await client.send('POST', '/api/updates/install', {})).status, 422, 'bez okna aplikace se nic neinstaluje');
+    s.app.nastavDesktop((u) => udalosti.push(u));
+    await client.send('POST', '/api/updates/check', {});
+    assert.equal((await client.send('POST', '/api/updates/install', {})).status, 404, 'nestažený balíček se neinstaluje');
+    await client.send('POST', '/api/updates/download', {});
+    const r = await client.send('POST', '/api/updates/install', {});
+    assert.equal(r.status, 200);
+    assert.equal(r.body.restarting, true);
+    assert.equal(udalosti.length, 1);
+    assert.equal(udalosti[0].type, 'install-update');
+    assert.equal(udalosti[0].version, '0.31.0');
+    assert.equal(path.dirname(udalosti[0].zip), path.join(dataHome, 'updates'));
+    assert.match(udalosti[0].zip, /Agenteeq-0\.31\.0-macOS-arm64\.zip$/);
+    const cizi = await fetch(`${s.url}/api/updates/install`, { method: 'POST', headers: { 'X-Forwarded-For': '100.64.0.2', 'Content-Type': 'application/json' }, body: '{}' });
+    assert.equal(cizi.status, 403, 'instalovat jde jen z tohoto Macu');
+    assert.equal(udalosti.length, 1);
+  } finally { await s.close(); }
+});

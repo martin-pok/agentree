@@ -897,6 +897,10 @@ export function createHttpServer(app, existingServer = null) {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizaci lze stáhnout jen {0}.', POCITAC.naHostiteli));
       return unwrap(await app.downloadUpdate());
     }],
+    ['POST', /^\/api\/updates\/install$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizaci lze nainstalovat jen {0}.', POCITAC.naHostiteli));
+      return unwrap(await app.installUpdate());
+    }],
     ['POST', /^\/api\/updates\/reveal$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aktualizaci lze otevřít jen {0}.', POCITAC.naHostiteli));
       return unwrap(await app.revealUpdate());

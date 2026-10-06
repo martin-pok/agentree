@@ -378,12 +378,85 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             window.backgroundColor = backdrop
         }
     }
+    // Aktualizace jedním klepnutím. Balíček stáhl a otiskem SHA-256 ověřil server (src/updates.js).
+    // Tady se rozbalí, zkontroluje (identifikátor, verze, podpis) a připraví vedle současné aplikace,
+    // zatímco Agenteeq ještě běží. Pak se aplikace ukončí jako po ⌘Q a malý pomocník počká, až
+    // skončí, vymění balíčky (stará verze jde do Koše) a spustí novou verzi. Když cokoli selže
+    // před ukončením, nic se nemění a rozhraní dostane chybu. Stejný postup jako site/install.sh.
+    var installing = false
+    @discardableResult
+    func runTool(_ path: String, _ args: [String]) -> Int32 {
+        let p = Process(); p.executableURL = URL(fileURLWithPath: path); p.arguments = args
+        p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return -1 }
+        p.waitUntilExit(); return p.terminationStatus
+    }
+    func reportUpdateError(_ message: String) {
+        installing = false
+        guard let data = try? JSONSerialization.data(withJSONObject: [message]), let json = String(data: data, encoding: .utf8) else { return }
+        web.evaluateJavaScript("window.agenteeqAktualizaceSelhala && window.agenteeqAktualizaceSelhala(\(json)[0])")
+    }
+    func installUpdate(zip: String, version: String) {
+        guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else { return }
+        installing = true
+        let current = Bundle.main.bundleURL.standardizedFileURL
+        let dest = current.deletingLastPathComponent()
+        let bundleID = Bundle.main.bundleIdentifier ?? "cz.agenteeq.desktop"
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            let fm = FileManager.default
+            let fail = { (message: String) in DispatchQueue.main.async { self.reportUpdateError(message) } }
+            guard fm.isWritableFile(atPath: dest.path) else { fail("Do složky \(dest.path) nejde zapisovat. Spusť aktualizaci příkazem z Terminálu."); return }
+            let work = fm.temporaryDirectory.appendingPathComponent("agenteeq-update-\(UUID().uuidString)", isDirectory: true)
+            guard (try? fm.createDirectory(at: work, withIntermediateDirectories: true)) != nil, self.runTool("/usr/bin/ditto", ["-x", "-k", zip, work.path]) == 0 else { fail("Balíček aktualizace nejde rozbalit. Nic se nezměnilo."); return }
+            let fresh = work.appendingPathComponent("Agenteeq.app")
+            let info = NSDictionary(contentsOf: fresh.appendingPathComponent("Contents/Info.plist"))
+            guard info?["CFBundleIdentifier"] as? String == bundleID, info?["CFBundleShortVersionString"] as? String == version else { fail("V balíčku není Agenteeq \(version). Nic se nezměnilo."); return }
+            guard self.runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path]) == 0 else { fail("Podpis nové verze neprošel kontrolou. Nic se nezměnilo."); return }
+            // Kopie vedle cíle (stejný disk): výměna po ukončení je jen přejmenování.
+            let stage = dest.appendingPathComponent(".agenteeq-update-\(UUID().uuidString).app")
+            guard self.runTool("/usr/bin/ditto", [fresh.path, stage.path]) == 0 else { fail("Novou verzi se nepodařilo připravit (místo na disku?). Nic se nezměnilo."); return }
+            self.runTool("/usr/bin/xattr", ["-dr", "com.apple.quarantine", stage.path])
+            try? fm.removeItem(at: work)
+            let backup = dest.appendingPathComponent(".agenteeq-previous-\(UUID().uuidString).app")
+            let trash = fm.urls(for: .trashDirectory, in: .userDomainMask).first?.appendingPathComponent("Agenteeq \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") \(Int(Date().timeIntervalSince1970)).app")
+            // Pomocník: počká na konec tohoto procesu (nejvýš 60 s), vymění balíčky, při chybě vrátí
+            // původní aplikaci a v každém případě Agenteeq znovu otevře.
+            let script = """
+            pid="$1"; current="$2"; stage="$3"; backup="$4"; trash="$5"
+            n=0; while kill -0 "$pid" 2>/dev/null && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n+1)); done
+            if mv "$current" "$backup"; then
+              if mv "$stage" "$current"; then
+                xattr -dr com.apple.quarantine "$current" 2>/dev/null
+                [ -n "$trash" ] && mv "$backup" "$trash" 2>/dev/null
+              else
+                mv "$backup" "$current"; rm -rf "$stage"
+              fi
+            else
+              rm -rf "$stage"
+            fi
+            open "$current"
+            """
+            let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
+            helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, stage.path, backup.path, trash?.path ?? ""]
+            helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
+            do { try helper.run() } catch { try? fm.removeItem(at: stage); fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
+            DispatchQueue.main.async {
+                self.showLoading(); self.setLoading("Instalujeme Agenteeq \(version)…")
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
     // Status/notifications come from our child process, not a throttled hidden webview.
     func handleDesktopEvent(_ data: [String: Any]) {
         guard let type = data["type"] as? String else { return }
         if type == "badge", let count = data["count"] as? Int {
             NSApp.dockTile.badgeLabel = count > 0 ? String(min(count, 999)) : nil
             statusItem.button?.title = count > 0 ? " \(min(count, 999))" : ""
+        }
+        if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
+            installUpdate(zip: zip, version: version)
         }
         if type == "notification", !qa, let title = data["title"] as? String {
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
@@ -401,7 +474,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         }
         completionHandler()
     }
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { showWindow(); return true }
+    // Aplikaci někdo v Aplikacích nahradil novou verzí (přetažením z DMG nebo ZIP), zatímco tahle
+    // pořád běží na pozadí. Klepnutí na ikonu by jinak ukázalo starou verzi. Při návratu do popředí
+    // se proto porovná verze na disku s běžící; když se liší, aplikace se restartuje do nové.
+    let runningVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+    func relaunchIfReplaced() {
+        guard !qa, !installing, !quitting else { return }
+        let bundle = Bundle.main.bundleURL.standardizedFileURL
+        guard let disk = NSDictionary(contentsOf: bundle.appendingPathComponent("Contents/Info.plist"))?["CFBundleShortVersionString"] as? String,
+              !disk.isEmpty, disk != runningVersion else { return }
+        installing = true
+        let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
+        helper.arguments = ["-c", "n=0; while kill -0 \"$1\" 2>/dev/null && [ \"$n\" -lt 300 ]; do sleep 0.2; n=$((n+1)); done; open \"$2\"", "agenteeq-relaunch", String(ProcessInfo.processInfo.processIdentifier), bundle.path]
+        helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
+        do { try helper.run() } catch { installing = false; return }
+        showLoading(); setLoading("Spouštíme Agenteeq \(disk)…")
+        NSApp.terminate(nil)
+    }
+    func applicationDidBecomeActive(_ notification: Notification) { relaunchIfReplaced() }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { relaunchIfReplaced(); showWindow(); return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard child?.isRunning == true else { return .terminateNow }

@@ -385,6 +385,8 @@ export default {
   "Neplatná verze.": "Invalid version.",
   "Vzhled musí být světlý, tmavý nebo podle systému.": "Appearance must be light, dark or system.",
   "Neznámý vzhled.": "Unknown theme.",
+  "Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.": "Only the Mac app can install the update here. Open the package and replace the app by hand.",
+  "Aktualizaci lze nainstalovat jen {0}.": "The update can only be installed {0}.",
   "Jazyk musí být čeština nebo angličtina.": "The language must be Czech or English.",
   "Neplatný profilový obrázek.": "Invalid profile picture.",
   "Neplatné rozložení.": "Invalid layout.",

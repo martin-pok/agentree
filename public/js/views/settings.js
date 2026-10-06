@@ -14,6 +14,7 @@ import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace,
 import { JE_MAC, SYSTEM, zkratka } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
 import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
+import { umiInstalovat, nainstalujAktualizaci } from '../aktualizace.js';
 
 const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
@@ -505,6 +506,9 @@ function mount(el) {
         if (r.update) state.updates = r.update;
         toast(tr('Aktualizace je stažená a připravená ve Finderu.'));
         update();
+      } else if (a.dataset.action === 'install-update') {
+        a.disabled = true;
+        await nainstalujAktualizaci();
       } else if (a.dataset.action === 'reveal-update') {
         const r = await api.revealUpdate();
         toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Aktualizace je vidět ve Finderu'));
@@ -1142,7 +1146,8 @@ function update(topics) {
           : upd.status === 'unsupported' ? tr('Verze {0} zatím bez balíčku', upd.latestVersion)
             : upd.status === 'disabled' ? tr('Kontrola aktualizací je vypnutá')
               : tr('Probíhá kontrola aktualizací');
-  const updDesc = upd.status === 'available' ? tr('Balíček odpovídá tomuto Macu a můžeš ho stáhnout hned.')
+  const updDesc = ['available', 'downloaded'].includes(upd.status) && umiInstalovat() ? tr('Jedno klepnutí ověřený balíček stáhne, nainstaluje a Agenteeq restartuje.')
+    : upd.status === 'available' ? tr('Balíček odpovídá tomuto Macu a můžeš ho stáhnout hned.')
     : upd.status === 'downloaded' ? tr('Otevři balíček ve Finderu a nahraď aplikaci v Aplikacích.')
       : upd.status === 'error' ? esc(upd.error || tr('Zkus kontrolu znovu.'))
         : upd.status === 'unsupported' ? tr('Nové vydání nemá ověřený balíček pro {0}.', tentoPocitac())
@@ -1153,11 +1158,12 @@ function update(topics) {
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
     <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
       ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
-      ${updateOption('automatic', tr('Automaticky'), tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+      ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
     </div>
     <div class="set-actions">
-      ${upd.status === 'available' ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
-      ${upd.status === 'downloaded' ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
+      ${['available', 'downloaded'].includes(upd.status) && umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="install-update">${ICON.down}${tr('Aktualizovat na {0} a restartovat', upd.latestVersion)}</button>` : ''}
+      ${upd.status === 'available' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
+      ${upd.status === 'downloaded' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
       ${upd.status === 'disabled' ? '' : `<button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>`}
     </div>`);
 

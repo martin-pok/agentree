@@ -51,6 +51,10 @@ export function loadConfig(env = process.env) {
     port: env.PORT !== undefined && env.PORT !== '' ? Number(env.PORT) : 4620,
     host: '127.0.0.1',
     desktop: env.AGENTEEQ_DESKTOP === '1',
+    // Aplikace pro Mac umí stažený a ověřený balíček nainstalovat sama a restartovat se do nové verze
+    // (desktop/Agenteeq.swift, událost install-update). Plášť pro Windows to zatím neumí.
+    // AGENTEEQ_SELF_INSTALL=1 zapne cestu serveru i v testech mimo Mac (okno tam nic nevymění).
+    selfInstall: env.AGENTEEQ_SELF_INSTALL === '1' || (env.AGENTEEQ_DESKTOP === '1' && process.platform === 'darwin'),
     // Tajemství pro každé spuštění od okna aplikace (Swift ho vygeneruje a předá přes prostředí). Když je
     // nastavené, projde požadavek z tohoto Macu jen s ním – ostatní procesy (jiný uživatel Macu, cizí
     // program) mají otevřený port na 127.0.0.1, ale bez klíče jim server nic nevydá.
