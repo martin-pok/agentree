@@ -113,3 +113,38 @@ test('plášť pro Windows ukazuje stejnou načítací scénu jako Mac', async (
   assert.match(cpp, /border-radius: 9999px;/);
   assert.doesNotMatch(cpp, /border-radius: 8px;/);
 });
+
+// Čtyři vzhledy jsou dvě volby: rodina (Obloha, nebo Koncert) a režim. Výchozí je Obloha (Úsvit),
+// neplatná rodina se odmítne celá – režim poslaný spolu s ní se nesmí uložit napůl.
+test('vzhled: rodina Obloha/Koncert se ukládá s režimem a neplatná se odmítne celá', async () => {
+  assert.equal(normalizeData({ settings: {} }).settings.look, 'obloha');
+  assert.equal(normalizeData({ settings: { look: 'neon' } }).settings.look, 'obloha');
+  assert.equal(normalizeData({ settings: { look: 'koncert' } }).settings.look, 'koncert');
+  const s = await startTestServer();
+  try {
+    const client = api(s.url);
+    assert.equal((await client.get('/api/state')).body.settings.look, 'obloha');
+    const r = (await client.send('PUT', '/api/settings', { look: 'koncert', appearance: 'dark' })).body.settings;
+    assert.deepEqual([r.look, r.appearance], ['koncert', 'dark']);
+    assert.equal((await client.send('PUT', '/api/settings', { look: 'neon', appearance: 'light' })).status, 422);
+    const po = (await client.get('/api/state')).body.settings;
+    assert.deepEqual([po.look, po.appearance], ['koncert', 'dark'], 'odmítnutý požadavek nic nezměnil');
+    await s.app.datastore.flush();
+    assert.equal(JSON.parse(await fs.readFile(s.app.datastore.file, 'utf8')).settings.look, 'koncert');
+  } finally {
+    await s.close();
+  }
+});
+
+// Koncert stojí na stejných třídách jako Obloha: každé jeho pravidlo musí být v rozsahu
+// html[data-look='koncert'] a nesmí zvyšovat specifičnost (:where), jinak by přebíjelo stavová
+// pravidla ze styles.css a Obloha by se změnou souboru rozbila taky.
+test('vzhled Koncert: každé pravidlo je v rozsahu svého vzhledu a stránka ho načítá', async () => {
+  const css = await fs.readFile(new URL('../public/koncert.css', import.meta.url), 'utf8');
+  const bezKomentaru = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const selektory = [...bezKomentaru.matchAll(/(?:^|})\s*([^{}@]+)\{/g)].map((m) => m[1].trim()).filter(Boolean);
+  assert.ok(selektory.length > 50, 'Koncert má vlastní pravidla');
+  for (const sel of selektory) for (const cast of sel.split(/,(?![^(]*\))/)) assert.match(cast, /:where\((?:html)?\[data-look='koncert'\]\)/, cast);
+  const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.ok(html.indexOf('/styles.css') < html.indexOf('/koncert.css') && html.indexOf('/koncert.css') < html.indexOf('/desktop.css'), 'pořadí styles → koncert → desktop');
+});

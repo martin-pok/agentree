@@ -1,5 +1,16 @@
 # Testování a ověření
 
+## Protokol ověření – 0.38.0, čtyři vzhledy, účet a Nastavení (6. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 854 testů, 844 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 0 selhalo |
+| `npm run check` | syntaxe čistá |
+| `qa:contrast` | všechny texty aplikace v Úsvitu, Půlnoci, Slonovině i Ebenu (1440 a 375 px, každá skupina Nastavení), web a okno rozšíření splňují WCAG 2.2 AA |
+| `qa:tvary`, `qa:desktop` | prošly v Chromiu; `qa:desktop` klepe na karty vzhledů, střídání podle systému (tmavý → světlý systém), přepnutí páru na Koncert se scénou a návrat, a ověří volbu po obnovení stránky |
+| Nové testy | `desktop` (rodina vzhledu se ukládá s režimem, neplatná se odmítne celá; každé pravidlo `koncert.css` je v rozsahu `:where(html[data-look='koncert'])`), `ucet` (ověřený e-mail a čas přihlášení jen ze skutečných údajů; nestažená fotka se zkusí znovu za 10 minut a záznam neobsahuje její adresu), `zapis-windows` (EPERM při přejmenování se zopakuje) |
+| Neověřeno | stažení fotky z Googlu na skutečném účtu (vývojové prostředí `googleusercontent.com` nepustí); WebKit až v CI |
+
 ## Protokol ověření – 0.37.1, čitelnost nového vzhledu (6. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |

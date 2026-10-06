@@ -23,7 +23,7 @@ import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initWhatsNew } from './whats-new.js';
-import { applyAppearance, initAppearance } from './appearance.js';
+import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
@@ -222,7 +222,7 @@ function zacniNastup() {
 }
 
 function refresh(topics) {
-  if (state.settings && (topics.has('all') || topics.has('settings'))) applyAppearance(state.settings.appearance);
+  if (state.settings && (topics.has('all') || topics.has('settings'))) { applyAppearance(state.settings.appearance); applyLook(state.settings.look, { persist: true }); }
   updateChrome();
   // Do načtení je na obrazovce jen načítací scéna: kostra obrazovky (prázdné pruhy a karty, které
   // mount už vložil) se schová, aby načítání nepůsobilo jako rozpracovaná stránka (styles.css).

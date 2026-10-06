@@ -209,7 +209,7 @@ function sloucitUzel(a, b) {
 // se po uložení překreslí s novým stavem a klávesnice pak začínala znovu od začátku stránky. Prvek
 // se po překreslení najde podle stálého atributu. Výběr z nabídky (selects.js) má vlastní tlačítko,
 // které vznikne až po vložení HTML – na něj se počká do dalšího mikroúkolu.
-const KLICE_FOKUSU = ['data-setting', 'data-quiet', 'data-action', 'data-appearance', 'data-lang', 'data-done-min', 'id', 'name'];
+const KLICE_FOKUSU = ['data-setting', 'data-quiet', 'data-action', 'data-theme-pick', 'data-appearance', 'data-lang', 'data-done-min', 'id', 'name'];
 function klicFokusu(el) {
   if (typeof document === 'undefined') return null;
   let a = document.activeElement;

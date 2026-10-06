@@ -125,9 +125,13 @@ test('PKCE: výzva je SHA-256 ověřovače v base64url a ověřovač má 64 znak
   assert.notEqual(pkcePar().verifier, verifier, 'každé přihlášení má jiný ověřovač');
 });
 
-test('z účtu Google se bere jen jméno, e-mail, id a adresa fotky – nic dalšího', () => {
+test('z účtu Google se bere jen jméno, e-mail, id, adresa fotky, ověření e-mailu a čas přihlášení – nic dalšího', () => {
   const u = uzivatelZOdpovedi({ ...UZIVATEL, phone: '+420123', app_metadata: { provider: 'google' }, user_metadata: { ...UZIVATEL.user_metadata, full_name: `  ${'x'.repeat(300)}  ` } });
-  assert.deepEqual(Object.keys(u).sort(), ['email', 'fotoUrl', 'id', 'jmeno']);
+  assert.deepEqual(Object.keys(u).sort(), ['email', 'fotoUrl', 'id', 'jmeno', 'overeno', 'prihlasen']);
+  assert.equal(uzivatelZOdpovedi({ ...UZIVATEL, last_sign_in_at: '2026-10-06T08:00:00Z', user_metadata: { ...UZIVATEL.user_metadata, email_verified: true } }).prihlasen, Date.parse('2026-10-06T08:00:00Z'));
+  assert.equal(uzivatelZOdpovedi({ ...UZIVATEL, user_metadata: { ...UZIVATEL.user_metadata, email_verified: true } }).overeno, true);
+  assert.equal(uzivatelZOdpovedi({ ...UZIVATEL, last_sign_in_at: 'nesmysl', user_metadata: { email_verified: 'ano' } }).prihlasen, 0, 'neplatný čas se nevydává za přihlášení');
+  assert.equal(uzivatelZOdpovedi({ ...UZIVATEL, user_metadata: { email_verified: 'ano' } }).overeno, false);
   assert.equal(u.fotoUrl, '', 'fotka odjinud než z obrázkového serveru Googlu se nestahuje');
   assert.equal(u.jmeno.length, 120);
   assert.equal(uzivatelZOdpovedi({ email: 'bez.jmena@example.com' }).jmeno, 'bez.jmena', 'bez jména z Googlu poslouží začátek e-mailu');
@@ -406,6 +410,42 @@ test('po přihlášení si Mac fotku stáhne, uloží k sobě a ukáže ji i po 
     assert.deepEqual((await fs.readdir(dataDir)).filter((f) => f.startsWith('ucet-')), []);
   } finally {
     await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+// Fotka, která se napoprvé nestáhla (Google odpověděl chybou, síť vypadla), se nesmí ztratit až do
+// příští obnovy tokenu za hodinu: karta ví, že teprve přijde, a za 10 minut se stáhne znovu.
+test('nestažená fotka: stav „chyba“ a nový pokus za 10 minut bez obnovy tokenu', async (t) => {
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  let cas = 1_000_000;
+  let pokusu = 0;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'), now: () => cas,
+    fetchImpl: async (url) => {
+      if (!url.startsWith('https://lh3.')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      pokusu++;
+      return pokusu === 1 ? { ok: false, status: 503, url, arrayBuffer: async () => new ArrayBuffer(0) } : obrazek(JPEG);
+    },
+  });
+  const chyby = [];
+  t.mock.method(console, 'error', (m) => chyby.push(m));
+  try {
+    await ucet.start();
+    await waitFor(() => ucet.status().fotoStav === 'chyba');
+    assert.equal(ucet.status().foto, '');
+    assert.match(chyby.join('\n'), /HTTP 503/);
+    assert.doesNotMatch(chyby.join('\n'), /googleusercontent/, 'adresa fotky identifikuje účet – do záznamu nepatří');
+    cas += 5 * 60 * 1000;
+    t.mock.timers.tick(30_000);
+    await new Promise((r) => setImmediate(r));
+    assert.equal(pokusu, 1, 'dřív než za 10 minut se nezkouší');
+    cas += 6 * 60 * 1000;
+    t.mock.timers.tick(30_000);
+    await waitFor(() => ucet.status().foto);
+    assert.equal(ucet.status().fotoStav, 'ok');
+    assert.equal(pokusu, 2);
+  } finally {
+    ucet.stop();
   }
 });
 

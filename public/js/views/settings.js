@@ -5,13 +5,13 @@ import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON, BULB } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
-import { applyAppearance, normalizeAppearance } from '../appearance.js';
+import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
 import { takeJump } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
-import { JE_MAC, SYSTEM } from '../system.js';
+import { JE_MAC, SYSTEM, zkratka } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
 import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
 
@@ -71,7 +71,7 @@ const GROUPS = [
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
   ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
-  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy']],
+  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy', 'help']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -201,19 +201,46 @@ function privacyCard() {
   const alertCount = state.alerts?.items?.length || 0;
   const dataFile = `${state.integrations?.install?.dataDir || '~/.agenteeq'}/data.json`;
   const keysOn = (state.connectors || []).filter((c) => c.id === 'cloud-billing' && c.state !== 'missing').length > 0;
+  // Co skutečně odchází ven – podle toho, co je zapnuté. Vždy jen kurzy a kontrola verzí, bez dat o tobě.
+  const prihlasen = ['prihlaseno', 'nedostupne', 'overuji'].includes(state.ucet?.stav);
+  const telefon = Boolean(state.lan?.enabled || state.lan?.tailscale?.enabled);
+  const vence = [
+    tr('Denní kurzy ČNB pro převod měn a kontrola nových verzí na GitHubu – bez jakýchkoli údajů o tobě.'),
+    keysOn ? tr('Náklady za API: dotaz jde tvým klíčem přímo k výrobci.') : tr('Náklady za API, jen když přidáš klíč.'),
+    prihlasen ? (state.ucet?.sync?.zapnuto ? tr('Účet Agenteeq: synchronizuje jen souhrnná čísla.') : tr('Účet Agenteeq: přihlášený, synchronizace je vypnutá.')) : tr('Účet Agenteeq, jen když se přihlásíš.'),
+    telefon ? tr('Přístup z telefonu je zapnutý: server poslouchá i pro spárovaná zařízení.') : tr('Server poslouchá jen na 127.0.0.1, dokud nezapneš přístup z telefonu.'),
+  ];
   return `
-    ${head(ICON.key, tr('Soukromí a bezpečnost'), tr('Agenteeq běží jen na {0}. Server poslouchá výhradně na 127.0.0.1, takže se k němu z jiného počítače nikdo nepřipojí, a nikam neodesílá telemetrii.', tomtoPocitaci()))}
+    ${head(ICON.key, tr('Soukromí a bezpečnost'), tr('Konverzace, kód a názvy projektů čte Agenteeq jen na {0} a nikam je neposílá. Žádná telemetrie ani analytika.', tomtoPocitaci()))}
     <ul class="privacy-list">
       <li><b>${tr('Konverzace agentů')}</b><span>${tr('Čtou se ze souborů na disku ({0}, {1} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.', esc(`~/.claude`), esc(`~/.codex`))}</span></li>
       <li><b>${tr('Na disku v ~/.agenteeq/data.json')}</b><span>${tr('Nastavení, projekty, rozpočty a historie upozornění – soubor má práva jen pro tebe (0600) a složka 0700.')}</span></li>
       <li><b>${tr('Klíče k API')}</b><span>${keysOn ? tr('Uložené v systémové Klíčence, nikdy v souboru aplikace.') : tr('Zatím žádné. Když je přidáš, uloží se do systémové Klíčenky, ne do souboru.')}</span></li>
-      <li><b>${tr('Ven z {0}', tohotoPocitace())}</b><span>${tr('Jen když si sám zapneš náklady za API – pak se Agenteeq zeptá tvým klíčem přímo výrobce. Vlastní agenti se dotazují pouze na lokální a privátní adresy.')}</span></li>
+      <li><b>${tr('Ven z {0}', tohotoPocitace())}</b><span>${vence.join(' ')}</span></li>
     </ul>
     <div class="set-actions">
       <button class="btn btn--sm" type="button" data-action="clear-alerts"${alertCount ? '' : ' disabled'}>${tr('Smazat historii upozornění')}${alertCount ? ` (${alertCount})` : ''}</button>
     </div>
     <div class="code-line"><code>${esc(dataFile)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(dataFile)}" data-copy-message="${tr('Cesta zkopírována')}">${ICON.copy}${tr('Kopírovat cestu')}</button></div>
     <p class="set-note">${tr('Texty upozornění jsou jediná trvale ukládaná data odvozená z obsahu konverzací. Smazáním zmizí i klíče, podle kterých Agenteeq pozná, že už upozornil.')}</p>`;
+}
+
+// Nápověda: zkratky, které aplikace opravdu má (app.js, launcher-ui.js), a cesty k pomoci.
+function helpCard() {
+  const zkratky = [
+    [zkratka('K'), tr('Hledat a přejít kamkoli')],
+    ['/', tr('Hledat, když nepíšeš do pole')],
+    [zkratka('Enter'), tr('Spustit agenta ze zadání')],
+    ['Esc', tr('Zavřít dialog, nabídku nebo hledání')],
+  ];
+  return `
+    ${head(ICON.info, tr('Nápověda a zkratky'), tr('Kde najdeš novinky a pomoc, když něco nefunguje. Průvodce je nahoře na této stránce.'))}
+    <dl class="shortcuts">${zkratky.map(([k, popis]) => `<div><dt><kbd>${esc(k)}</kbd></dt><dd>${popis}</dd></div>`).join('')}</dl>
+    <div class="set-actions">
+      <button class="btn btn--sm" type="button" data-whats-new>${ICON.spark}${tr('Co je nového')}</button>
+      <a class="btn btn--sm" href="https://github.com/martin-pok/agentree/issues/new" target="_blank" rel="noopener">${ICON.external}${tr('Nahlásit chybu')}</a>
+      <a class="btn btn--sm" href="${ZASADY_SOUKROMI}" target="_blank" rel="noopener">${ICON.shield}${tr('Zásady ochrany soukromí')}</a>
+    </div>`;
 }
 
 // Karta rozšíření je `[data-region="extension"]`. Kromě skoku je potřeba ukázat, kam vedl,
@@ -335,8 +362,8 @@ function mount(el) {
     // Pozor: `data-appearance` nese i kořenové <html> (nastavuje ho appearance.js), takže holý
     // `[data-appearance]` zachytil úplně každý klik v Nastavení a spolkl ho – žádné tlačítko pak
     // nefungovalo a v tmavém režimu se navíc appka potichu přepnula do světlé.
-    const appearance = e.target.closest('button[data-appearance]');
-    if (appearance) { await setAppearance(appearance.dataset.appearance); return; }
+    const motiv = e.target.closest('button[data-theme-pick]');
+    if (motiv) { await vyberMotiv(motiv.dataset.themePick); return; }
     const lang = e.target.closest('button[data-lang]');
     if (lang) { await setLanguage(lang.dataset.lang); return; }
     const updateMode = e.target.closest('button[data-update-mode]');
@@ -607,6 +634,7 @@ function mount(el) {
 async function toggleSetting(sw) {
   const key = sw.dataset.setting;
   const next = sw.getAttribute('aria-checked') !== 'true';
+  if (key === 'appearanceSystem') { await prepniVzhledSystem(next); return; }
   if (key === 'browser' && next) {
     if (!('Notification' in window)) { toast(tr('Tento prohlížeč oznámení nepodporuje.'), { tone: 'err' }); return; }
     const perm = await Notification.requestPermission();
@@ -656,19 +684,58 @@ async function toggleSetting(sw) {
   }
 }
 
-async function setAppearance(value) {
-  const next = normalizeAppearance(value);
-  const previous = normalizeAppearance(state.settings?.appearance);
-  if (next === previous) return;
-  applyAppearance(next);
+// Vzhled jsou dvě volby: rodina (Obloha, nebo Koncert) a režim (světlý, tmavý, podle systému).
+// Rozhraní je ukazuje jako čtyři pojmenované vzhledy; klepnutí na kartu nastaví rodinu, a když se
+// vzhled neřídí systémem, i režim. Změna se projeví hned, server ji jen uloží – když uložení
+// selže, vrátí se předchozí stav a řekne to.
+const NAZVY_MOTIVU = { usvit: tr('Úsvit'), pulnoc: tr('Půlnoc'), slonovina: tr('Slonovina'), eben: tr('Eben') };
+const POPISY_MOTIVU = {
+  usvit: tr('Světlé sklo nad jemnou oblohou'),
+  pulnoc: tr('Půlnoční modrá, tichá a soustředěná'),
+  slonovina: tr('Bílé karty pod tmavou scénou'),
+  eben: tr('Hluboká tma s výraznými barvami stavů'),
+};
+const nazevMotivu = (look, mode) => NAZVY_MOTIVU[themeOf(look, mode).id];
+
+async function ulozVzhled(next) {
+  const previous = { appearance: normalizeAppearance(state.settings?.appearance), look: normalizeLook(state.settings?.look) };
+  const cil = { appearance: normalizeAppearance(next.appearance ?? previous.appearance), look: normalizeLook(next.look ?? previous.look) };
+  if (cil.appearance === previous.appearance && cil.look === previous.look) return false;
+  state.settings = { ...state.settings, ...cil };
+  applyAppearance(cil.appearance);
+  applyLook(cil.look);
+  update();
   try {
-    state.settings = (await api.saveSettings({ appearance: next })).settings;
+    state.settings = (await api.saveSettings(cil)).settings;
     applyAppearance(state.settings.appearance, { persist: true });
-    toast(next === 'system' ? tr('Vzhled se řídí nastavením {0}', podleSystemu()) : next === 'dark' ? tr('Tmavý vzhled je zapnutý') : tr('Světlý vzhled je zapnutý'));
+    applyLook(state.settings.look, { persist: true });
     update();
+    return true;
   } catch (err) {
-    applyAppearance(previous);
+    state.settings = { ...state.settings, ...previous };
+    applyAppearance(previous.appearance);
+    applyLook(previous.look);
+    update();
     toast(`${tr('Vzhled se neuložil:')} ${err.message}`, { tone: 'err' });
+    return false;
+  }
+}
+
+async function vyberMotiv(id) {
+  const t = THEMES.find((x) => x.id === id);
+  if (!t) return;
+  const system = normalizeAppearance(state.settings?.appearance) === 'system';
+  if (await ulozVzhled({ look: t.look, appearance: system ? 'system' : t.mode })) {
+    toast(system ? tr('{0} a {1} se střídají podle {2}', nazevMotivu(t.look, 'light'), nazevMotivu(t.look, 'dark'), podleSystemu()) : tr('Vzhled {0} je zapnutý', NAZVY_MOTIVU[t.id]));
+  }
+}
+
+// Vypnutí řízení systémem nechá právě viditelnou podobu – nic se nepřebarví pod rukama.
+async function prepniVzhledSystem(zapnout) {
+  const look = normalizeLook(state.settings?.look);
+  const appearance = zapnout ? 'system' : resolvedAppearance('system');
+  if (await ulozVzhled({ appearance })) {
+    toast(zapnout ? tr('{0} a {1} se střídají podle {2}', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu()) : tr('Vzhled {0} zůstává, systém ho už nepřepíná', nazevMotivu(look, resolvedAppearance(appearance))));
   }
 }
 
@@ -763,11 +830,17 @@ function accountCard() {
     const badge = u.stav === 'prihlaseno' ? stateBadge('connected', tr('Přihlášeno'))
       : u.stav === 'overuji' ? stateBadge('idle', tr('Ověřuji'))
       : stateBadge('unavailable', tr('Nelze ověřit'));
+    // Identita tak, jak ji poslal Google: fotka, jméno, e-mail (s ověřením, když ho Google potvrdil)
+    // a kdy ses přihlásil. Podle toho člověk pozná, že je tu opravdu on – nic se nedomýšlí.
+    const meta = [esc(tr('Přihlášení přes Google')), u.prihlasen ? tr('naposledy {0}', `<span class="nowrap">${esc(dateLong(u.prihlasen))}</span>`) : ''].filter(Boolean).join(' · ');
     return `<div class="acct-id">
-        ${accountPhoto(u)}
-        <div class="acct-name"><span class="acct-eyebrow">${tr('Účet Agenteeq · Google')}</span><h3>${esc(u.jmeno || u.email || tr('Přihlášený účet'))}</h3>${u.jmeno && u.email ? `<span class="acct-email">${esc(u.email)}</span>` : ''}</div>
+        <span class="acct-photo-wrap">${accountPhoto(u)}<span class="acct-provider" title="Google">${ICON.google}</span></span>
+        <div class="acct-name"><h3>${esc(u.jmeno || u.email || tr('Přihlášený účet'))}</h3>
+          ${u.email ? `<span class="acct-email">${u.jmeno ? esc(u.email) : ''}${u.overeno ? `<span class="acct-verified">${ICON.check}${tr('ověřený e-mail')}</span>` : ''}</span>` : ''}
+          <span class="acct-eyebrow">${meta}</span></div>
         ${badge}
       </div>
+      ${u.fotoStav === 'chyba' ? `<p class="set-note">${tr('Profilovou fotku z Googlu se zatím nepodařilo načíst. Zkusím to znovu za pár minut.')}</p>` : ''}
       ${u.stav === 'nedostupne' ? `<p class="set-note">${esc(u.chyba || tr('Server účtů teď neodpovídá.'))} ${tr('Přihlášení zůstává, další pokus proběhne sám.')}</p>` : ''}
       ${u.trvale || u.stav !== 'prihlaseno' ? '' : `<p class="set-note">${tr('Přihlášení vydrží do zavření Agenteeq.')}</p>`}
       ${syncBlock(u)}
@@ -828,18 +901,25 @@ function update(topics) {
   if (!el || !i || !n) return;
 
   const appearance = normalizeAppearance(state.settings.appearance);
-  const appearanceOption = (value, icon, label, desc) => `<button class="appearance-option" type="button" data-appearance="${value}" aria-pressed="${appearance === value}">
-    <span class="appearance-icon">${icon}</span><span><strong>${label}</strong><small>${desc}</small></span>
-  </button>`;
+  const look = normalizeLook(state.settings.look);
+  const system = appearance === 'system';
+  const ted = resolvedAppearance(appearance);
+  // Čtyři vzhledy jako jedna skupina voleb. Při řízení systémem patří k volbě celý pár: vybraná je
+  // podoba, která je vidět teď, a druhá z páru nese štítek, kdy naskočí.
+  const motiv = (t) => {
+    const vybrany = t.look === look && t.mode === ted;
+    const vPari = system && t.look === look && !vybrany;
+    return `<button class="theme-pick${vPari ? ' is-pair' : ''}" type="button" role="radio" aria-checked="${vybrany}" data-theme-pick="${t.id}" aria-describedby="theme-desc-${t.id}">
+      <span class="theme-preview theme-preview--${t.id}" aria-hidden="true"><i class="tp-band"></i><i class="tp-side"></i><i class="tp-bar"></i><i class="tp-card"></i><i class="tp-card tp-card--b"></i></span>
+      <span class="theme-pick-text"><span class="theme-pick-name"><strong>${NAZVY_MOTIVU[t.id]}</strong>${system && t.look === look ? `<span class="theme-pick-when">${t.mode === 'light' ? tr('Ve dne') : tr('V noci')}</span>` : ''}</span><small id="theme-desc-${t.id}">${POPISY_MOTIVU[t.id]}</small></span>
+    </button>`;
+  };
   fill(el, 'appearance', `
-    ${head(ICON.sun, tr('Vzhled aplikace'), tr('Světlý vzhled je výchozí. Volba se uloží jen na {0} a může sledovat nastavení systému.', tomtoPocitaci()))}
-    <div class="appearance-options" role="group" aria-label="${tr('Vyber vzhled aplikace')}">
-      ${appearanceOption('light', ICON.sun, tr('Světlý'), tr('Výchozí, jasný pracovní prostor'))}
-      ${appearanceOption('dark', ICON.moon, tr('Tmavý'), tr('Klidný režim na večer, pořád dobře čitelný'))}
-      ${appearanceOption('system', ICON.system, tr('Podle systému'), tr('Automaticky podle {0}', podleSystemu()))}
+    ${head(ICON.sun, tr('Vzhled'), tr('Dva páry, světlý a tmavý. Volba platí na {0}.', tomtoPocitaci()))}
+    <div class="theme-picks" role="radiogroup" aria-label="${tr('Vyber vzhled aplikace')}">
+      ${THEMES.map(motiv).join('')}
     </div>
-    <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Odkaz platí jen pro {0} a do restartu aplikace.', tentoPocitac())}</small></span>
-      <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>
+    ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', podleSystemu())), checked: system })}
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
 
@@ -942,6 +1022,7 @@ function update(topics) {
 
   /* Soukromí */
   fill(el, 'privacy', privacyCard());
+  fill(el, 'help', helpCard());
 
   /* Vlastní agenti */
   fill(el, 'phone', phoneCard());
@@ -1050,8 +1131,10 @@ function update(topics) {
       <div><dt>${tr('Verze')}</dt><dd>${esc(state.version)}</dd></div>
       <div><dt>${tr('Data aplikace')}</dt><dd>${esc((inst.dataDir || '~/.agenteeq').replace(/^\/Users\/[^/]+/, '~'))}</dd></div>
       <div><dt>${tr('Historie')}</dt><dd>${tr('posledních {0} dní', state.windowDays)}</dd></div>
-      <div><dt>${tr('Soukromí')}</dt><dd>${tr('vše zůstává na {0}', tomtoPocitaci())}</dd></div>
-    </dl>`);
+      <div><dt>${tr('Soukromí')}</dt><dd>${tr('konverzace zůstávají na {0}', tomtoPocitaci())}</dd></div>
+    </dl>
+    <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Odkaz platí jen pro {0} a do restartu aplikace.', tentoPocitac())}</small></span>
+      <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>`);
 
   /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
   const upd = state.updates || {};

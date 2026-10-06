@@ -8,6 +8,11 @@
     if (valid.has(stored)) preference = stored;
   } catch { /* soukromé okno nebo zakázané úložiště – výchozí je světlý vzhled */ }
   const dark = preference === 'dark' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  let look = 'obloha';
+  try {
+    if (localStorage.getItem('agenteeq.look') === 'koncert') look = 'koncert';
+  } catch { /* výchozí rodina je Obloha */ }
+  document.documentElement.dataset.look = look;
   document.documentElement.dataset.appearance = preference;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 })();

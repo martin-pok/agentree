@@ -3,7 +3,7 @@
 // Jméno mezipaměti sem dosadí server a sestavení webu: verze + otisk obsahu (src/verze-souboru.js). Nová verze
 // je tak pro prohlížeč nový service worker, který při aktivaci smaže všechny starší mezipaměti Agenteeq.
 const CACHE = 'agenteeq-shell';
-const PRECACHE = ['/', '/styles.css', '/js/boot.js', '/js/connect.js', '/js/app.js', '/brand/agenteeq-mark-dark.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+const PRECACHE = ['/', '/styles.css', '/koncert.css', '/js/boot.js', '/js/connect.js', '/js/app.js', '/brand/agenteeq-mark-dark.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

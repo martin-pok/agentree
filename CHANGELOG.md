@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.38.0 – 2026-10-06 · čtyři vzhledy, důvěryhodný účet a Nastavení bez mezer
+
+- **Čtyři vzhledy ve dvou párech.** Nastavení → Účet a vzhled nabízí karty s náhledem: **Úsvit** (světlé sklo nad jemnou oblohou) a **Půlnoc** (půlnoční modrá) jsou výchozí pár, **Slonovina** (bílé karty pod tmavou scénou) a **Eben** (hluboká tma s výraznými barvami stavů) vracejí původní koncertní sál z verzí do 0.36. Přepínač **Střídat podle systému** střídá světlou a tmavou podobu vybraného páru; klepnutí na kartu při střídání přepne celý pár. Změna se projeví hned, uloží se na tomto Macu (nastavení `look`: `obloha` / `koncert`) a přežije restart. Barvy Koncertu jsou v `public/koncert.css` a mají stejnou specifičnost jako protějšky ve `styles.css`; kontrast a tvary se měří ve všech čtyřech vzhledech.
+- **Účet Google, ve kterém se poznáš.** Karta účtu ukazuje fotku s logem Google, jméno, e-mail s označením **ověřený e-mail** (když ho Google potvrdil) a kdy ses naposledy přihlásil – vše tak, jak to poslal server účtů. Fotka, která se napoprvé nestáhne, se už neztratí do příští obnovy tokenu: karta řekne, že se zatím nenačetla, a za 10 minut se stáhne znovu. Důvod selhání jde do záznamu aplikace bez adresy fotky.
+- **Soukromí bez nepřesností.** Karta Soukromí a bezpečnost dřív tvrdila, že server poslouchá výhradně na 127.0.0.1 a nic neodchází ven. Teď vypisuje, co skutečně odchází podle toho, co je zapnuté: kurzy ČNB a kontrola verzí (bez údajů o tobě), náklady za API, účet a přístup z telefonu.
+- **Nápověda a zkratky.** Nová karta v Aplikace na Macu: klávesové zkratky (hledání, spuštění agenta, zavření), Co je nového, Nahlásit chybu a Zásady ochrany soukromí. „Otevřít v prohlížeči“ se přesunulo z karty Vzhled k aplikaci.
+- **Spolehlivý zápis dat na Windows.** Když má soubor s daty na okamžik otevřený jiný program (antivir, indexování, zálohování), uložení se zopakuje místo toho, aby se změna ztratila.
+
 ## 0.37.1 – 2026-10-06 · čitelnost nového vzhledu
 
 - **Doplňkový text čitelný i nad atmosférou.** Šedý text, který leží přímo na barevné obloze Dne (popisky filtrů, metadata sekcí), měl nad nejsytějším místem jen 3,8:1. Barva je o kousek tmavší a drží 4,5:1 všude (WCAG 2.2 AA); Noc už měla aspoň 6,3:1. Kontrast se tentokrát měřil i ze skutečných pixelů, protože výpočet ze stylů pevnou vrstvu atmosféry nevidí; test hlídá všechny vrstvy atmosféry obou vzhledů.

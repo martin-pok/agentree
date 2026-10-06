@@ -1,7 +1,21 @@
 const KEY = 'agenteeq.appearance';
+const KEY_LOOK = 'agenteeq.look';
 const VALID = new Set(['light', 'dark', 'system']);
 const media = window.matchMedia('(prefers-color-scheme: dark)');
 let preference = 'light';
+
+// Dvě rodiny vzhledu, každá se světlou a tmavou podobou. Obloha (Úsvit a Půlnoc) je výchozí sklo nad
+// tichou atmosférou; Koncert (Slonovina a Eben) je původní koncertní sál s tmavou scénou nahoře.
+// Barvy Koncertu nese public/koncert.css pod html[data-look='koncert'].
+export const LOOKS = ['obloha', 'koncert'];
+export const THEMES = [
+  { id: 'usvit', look: 'obloha', mode: 'light' },
+  { id: 'pulnoc', look: 'obloha', mode: 'dark' },
+  { id: 'slonovina', look: 'koncert', mode: 'light' },
+  { id: 'eben', look: 'koncert', mode: 'dark' },
+];
+export const normalizeLook = (value) => (LOOKS.includes(value) ? value : 'obloha');
+export const themeOf = (look, mode) => THEMES.find((t) => t.look === normalizeLook(look) && t.mode === mode);
 
 export function normalizeAppearance(value) {
   return VALID.has(value) ? value : 'light';
@@ -47,12 +61,24 @@ export function applyAppearance(value, { persist = false, forceNotify = false } 
   if (root.dataset.theme !== theme) zmenMotiv(root, nastav);
   else nastav();
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme === 'dark' ? 'dark light' : 'light dark');
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0c0b10' : '#121019');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', root.dataset.look === 'koncert' ? (theme === 'dark' ? '#0c0b10' : '#121019') : theme === 'dark' ? '#0b0e15' : '#f3f5f8');
   if (persist) {
     try { localStorage.setItem(KEY, preference); } catch { /* preference se dál drží na serveru */ }
   }
   if (changed || forceNotify) notifyDesktop(theme);
   return { preference, theme };
+}
+
+// Rodina vzhledu se přepíná stejně naráz jako světlý a tmavý režim (zmenMotiv).
+export function applyLook(value, { persist = false } = {}) {
+  const look = normalizeLook(value);
+  const root = document.documentElement;
+  if (root.dataset.look !== look) zmenMotiv(root, () => { root.dataset.look = look; });
+  if (persist) {
+    try { localStorage.setItem(KEY_LOOK, look); } catch { /* rodina se dál drží na serveru */ }
+  }
+  applyAppearance(preference);
+  return look;
 }
 
 export function initAppearance() {

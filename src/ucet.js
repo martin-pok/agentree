@@ -29,6 +29,7 @@ const MAX_PRODLEVA_MS = 5 * 60 * 1000;
 const TIK_MS = 30 * 1000;
 const CASOVY_LIMIT_MS = 15000;
 const FOTO_MAX = 300_000;
+const FOTO_ZNOVU_MS = 10 * 60 * 1000;
 const POKUS = /^[A-Za-z0-9_-]{43}$/;
 // Odpovědi, po kterých má smysl to zkusit znovu. Ostatní 4xx u obnovy znamenají neplatný token.
 const prechodna = (err) => err.sit || err.docasne || err.status >= 500 || err.status === 429 || err.status === 408;
@@ -48,7 +49,11 @@ export function uzivatelZOdpovedi(user) {
   const meta = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
   const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   const email = text(user.email, 254);
-  return { id: text(user.id, 64), email, jmeno: text(meta.full_name || meta.name, 120) || email.split('@')[0] || '', fotoUrl: fotoZMetadat(meta) };
+  // Kdy se člověk naposledy přihlásil a jestli Google e-mail ověřil – podle toho pozná, že je
+  // v kartě opravdu on. Obojí posílá server účtů, nic se nedopočítává.
+  const prihlasen = Date.parse(typeof user.last_sign_in_at === 'string' ? user.last_sign_in_at : '') || 0;
+  const overeno = meta.email_verified === true || (typeof user.email_confirmed_at === 'string' && Boolean(Date.parse(user.email_confirmed_at)));
+  return { id: text(user.id, 64), email, jmeno: text(meta.full_name || meta.name, 120) || email.split('@')[0] || '', fotoUrl: fotoZMetadat(meta), prihlasen, overeno };
 }
 
 // Adresa profilové fotky z Googlu. Metadata jsou nedůvěryhodná, proto projde jen https adresa
@@ -101,6 +106,8 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
   let trvale = false;
   let obnova = null;
   let stahovaniFota = null;
+  let fotoChyba = '';
+  let posledniPokusFota = 0;
   let casovac = null;
   let dalsiPokus = 0;
   let prodleva = PRVNI_PRODLEVA_MS;
@@ -111,8 +118,12 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     ceka: [...pokusy.values()].some((p) => now() - p.at < PLATNOST_POKUSU_MS),
     jmeno: uzivatel?.jmeno || '',
     email: uzivatel?.email || '',
+    overeno: Boolean(uzivatel?.overeno),
+    prihlasen: uzivatel?.prihlasen || 0,
     // Jen otisk fotky: rozhraní si ji podle něj načte z /api/ucet/foto a pozná, kdy se změnila.
     foto: mojeFoto()?.hash || '',
+    // Proč fotka chybí: Google žádnou nemá („bez“), nebo se ji nepodařilo stáhnout („chyba“, zkusí se znovu).
+    fotoStav: mojeFoto() ? 'ok' : !uzivatel ? '' : !uzivatel.fotoUrl ? 'bez' : fotoChyba ? 'chyba' : 'stahuji',
     chyba,
     trvale,
   });
@@ -152,7 +163,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     if (!PROFIL) return;
     try {
       const p = JSON.parse(await fsp.readFile(PROFIL, 'utf8'));
-      if (p && typeof p.id === 'string') uzivatel = { id: p.id.slice(0, 64), email: String(p.email || '').slice(0, 254), jmeno: String(p.jmeno || '').slice(0, 120), fotoUrl: fotoZMetadat({ avatar_url: p.fotoUrl }) };
+      if (p && typeof p.id === 'string') uzivatel = { id: p.id.slice(0, 64), email: String(p.email || '').slice(0, 254), jmeno: String(p.jmeno || '').slice(0, 120), fotoUrl: fotoZMetadat({ avatar_url: p.fotoUrl }), prihlasen: Number.isFinite(p.prihlasen) && p.prihlasen > 0 ? p.prihlasen : 0, overeno: p.overeno === true };
       if (p?.foto && p.foto.uzivatel === uzivatel?.id) {
         const body = await fsp.readFile(FOTO);
         const typ = typObrazku(body);
@@ -163,7 +174,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
 
   async function ulozProfil(f = foto) {
     if (!PROFIL || !uzivatel) return;
-    const data = { id: uzivatel.id, email: uzivatel.email, jmeno: uzivatel.jmeno, fotoUrl: uzivatel.fotoUrl, foto: f ? { uzivatel: f.uzivatel, url: f.url } : null };
+    const data = { id: uzivatel.id, email: uzivatel.email, jmeno: uzivatel.jmeno, fotoUrl: uzivatel.fotoUrl, prihlasen: uzivatel.prihlasen || 0, overeno: Boolean(uzivatel.overeno), foto: f ? { uzivatel: f.uzivatel, url: f.url } : null };
     try {
       await fsp.mkdir(path.dirname(PROFIL), { recursive: true, mode: 0o700 });
       const tmp = `${PROFIL}.${process.pid}.tmp`;
@@ -191,14 +202,26 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
       return Promise.all([ulozProfil(), FOTO ? fsp.rm(FOTO, { force: true }).catch(() => {}) : null]).then(() => ohlas());
     }
     if (foto && foto.uzivatel === u.id && foto.url === u.fotoUrl) return Promise.resolve();
+    posledniPokusFota = now();
+    // Selhání se pamatuje (rozhraní pak ví, že fotka teprve přijde) a do záznamu aplikace jde jen
+    // důvod – adresa fotky identifikuje účet, tak se nevypisuje.
+    const nepovedlo = (duvod) => {
+      if (fotoChyba !== duvod) console.error(`Agenteeq: profilovou fotku z Googlu se nepodařilo stáhnout (${duvod}), zkusím to znovu.`);
+      fotoChyba = duvod;
+      ohlas();
+    };
     stahovaniFota = (async () => {
       try {
         // Přesměrování v rámci CDN Googlu je běžné; konečná adresa ale musí zůstat u Googlu.
-        const res = await fetchImpl(u.fotoUrl, { signal: AbortSignal.timeout(CASOVY_LIMIT_MS), redirect: 'follow' });
-        if (!res.ok || (res.url && !fotoZMetadat({ avatar_url: res.url }))) return;
+        // Accept: formáty, které umíme rozpoznat – Google by jinak mohl poslat jiný.
+        const res = await fetchImpl(u.fotoUrl, { signal: AbortSignal.timeout(CASOVY_LIMIT_MS), redirect: 'follow', headers: { Accept: 'image/png,image/jpeg,image/webp;q=0.9' } });
+        if (!res.ok) return nepovedlo(`HTTP ${res.status}`);
+        if (res.url && !fotoZMetadat({ avatar_url: res.url })) return nepovedlo('redirect');
         const body = Buffer.from(await res.arrayBuffer());
         const typ = typObrazku(body);
-        if (!typ || body.length > FOTO_MAX || uzivatel?.id !== u.id) return;
+        if (uzivatel?.id !== u.id) return;
+        if (!typ) return nepovedlo('format');
+        if (body.length > FOTO_MAX) return nepovedlo('size');
         // Nejdřív na disk, pak do paměti: rozhraní ji uvidí, až přežije i restart.
         const nova = { uzivatel: u.id, url: u.fotoUrl, typ, body, hash: otisk(body) };
         if (FOTO) {
@@ -208,8 +231,12 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
         await ulozProfil(nova);
         if (uzivatel?.id !== u.id) return;
         foto = nova;
+        fotoChyba = '';
         ohlas();
-      } catch { /* bez sítě nebo blokované – zůstanou iniciály */ }
+      } catch (err) {
+        // Bez sítě nebo blokované – zůstanou iniciály a za chvíli se to zkusí znovu.
+        nepovedlo(err?.name === 'TimeoutError' ? 'timeout' : 'network');
+      }
     })().finally(() => { stahovaniFota = null; });
     return stahovaniFota;
   }
@@ -249,6 +276,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     relace = null;
     uzivatel = null;
     foto = null;
+    fotoChyba = '';
     trvale = false;
     await secrets.remove('ucet').catch(() => {});
     await smazProfil();
@@ -337,6 +365,8 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     }
     ohlas();
     casovac = setInterval(() => {
+      // Fotka, která se nestáhla, se zkusí znovu nejvýš jednou za 10 minut – bez čekání na obnovu tokenu.
+      if (stav === 'prihlaseno' && uzivatel?.fotoUrl && !mojeFoto() && now() - posledniPokusFota >= FOTO_ZNOVU_MS) obnovFoto();
       if (now() < dalsiPokus) return;
       const zmena = stav === 'nedostupne' || (relace?.access && relace.expiresAt - now() < OBNOVIT_PRED_KONCEM_MS);
       if (!zmena) return;

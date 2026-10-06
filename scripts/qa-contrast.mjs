@@ -29,7 +29,8 @@ const SIRKY = [1440, 375];
 // **nejsvětlejší zastávku** přechodu, což je pro slonovinový text nejhorší možný případ.
 // Hlavní pruh aplikace má ve Dni světlý nádech a v Noci tmavý: pro tmavý text ve Dni je nejhorší
 // nejtmavší zastávka (modrá), pro světlý text v Noci nejsvětlejší – obojí složené na podklad stránky.
-const PRECHODY = { stage: '#1A1722', 'pulse-bar': '#C8D8F2', 'pulse-bar@dark': '#1E2330', hero: '#1A1722', 'ext-win-head': '#1A1722', 'shot-frame': '#1A1722' };
+// Koncert (Slonovina a Eben, public/koncert.css) má pruh tmavý v obou režimech: nejsvětlejší zastávka.
+const PRECHODY = { stage: '#1A1722', 'pulse-bar': '#C8D8F2', 'pulse-bar@dark': '#1E2330', 'pulse-bar@koncert': '#191722', hero: '#1A1722', 'ext-win-head': '#1A1722', 'shot-frame': '#1A1722' };
 
 // Měření běží uvnitř stránky: potřebuje vidět skutečné vypočtené styly každého uzlu.
 function zmer(prechody) {
@@ -61,8 +62,9 @@ function zmer(prechody) {
     for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
       const cs = getComputedStyle(n);
       const trida = Object.keys(prechody).find((c) => !c.includes('@') && n.classList.contains(c));
+      const koncert = document.documentElement.dataset.look === 'koncert' && prechody[`${trida}@koncert`];
       const tmave = document.documentElement.dataset.theme === 'dark' && prechody[`${trida}@dark`];
-      if (cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage) && trida) { vrstvy.push(hex(tmave || prechody[trida])); break; }
+      if (cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage) && trida) { vrstvy.push(hex(koncert || tmave || prechody[trida])); break; }
       const bg = parse(cs.backgroundColor);
       if (bg && bg.a > 0) { vrstvy.push(bg); if (bg.a === 1) break; }
     }
@@ -159,8 +161,10 @@ await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboar
 for (let i = 0; i < 100 && !((await api(app.url).send('GET', '/api/state')).body.detekce?.nove?.length >= 3); i++) await new Promise((r) => setTimeout(r, 100));
 if ((await api(app.url).send('POST', '/api/nastroje/warp/pridat', {})).status !== 200) throw new Error('Detekce v QA nezachytila Warp – karta by se neměřila.');
 
-for (const rezim of ['light', 'dark']) {
-  await api(app.url).send('PUT', '/api/settings', { appearance: rezim });
+// Všechny čtyři vzhledy: Úsvit a Půlnoc (Obloha), Slonovina a Eben (Koncert).
+for (const [look, appearance] of [['obloha', 'light'], ['obloha', 'dark'], ['koncert', 'light'], ['koncert', 'dark']]) {
+  const rezim = look === 'obloha' ? appearance : `${look}-${appearance}`;
+  await api(app.url).send('PUT', '/api/settings', { appearance, look });
   for (const sirka of SIRKY) {
     const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
     for (const trasa of ROUTES) {
