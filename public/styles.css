@@ -1814,6 +1814,9 @@ html.is-cloud body { background: var(--paper); }
   .kpis { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .kpi .val { font-size: 32px; }
   .spend-hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  /* Bez připojeného API je karta řádek ikona – text – tlačítko; zarovnání na střed by text odtrhlo od obou. */
+  .spend-hero.is-unavailable { text-align: left; align-items: center; }
+  .spend-hero.is-unavailable > .btn { margin-left: 44px; }
   .spend-stats { grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100%; }
   .license-row { grid-template-columns: minmax(0, 1fr) auto; }
   .license-row .btn { grid-column: 1 / -1; justify-self: start; }
