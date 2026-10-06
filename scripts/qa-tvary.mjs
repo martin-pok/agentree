@@ -28,9 +28,9 @@ const ROUTES = ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'upozor
 const SIRKY = [1440, 375];
 // Nejvyšší jednořádkový ovládací prvek má 48 px. Vyšší prvky jsou karty a řádky seznamů.
 const MAX_JEDNORADKOVY = 48;
-// Řádky seznamů, které mají i víceřádkovou podobu. Aby všechny položky jednoho seznamu vypadaly
-// stejně, drží zaoblení řádku (--r-md) i ty, které se zrovna vejdou na jeden řádek.
-const RADKY = ['.choice', '.pick'];
+// Řádky seznamů a karty s náhledem mají více vrstev. Aby jejich tvar zůstal stejný i ve chvíli,
+// kdy se text vejde na jeden řádek, měří se jako plochy s --r-md, ne jako jednořádkové kapsle.
+const RADKY = ['.choice', '.pick', '.theme-pick'];
 // Stupnice výšek ovládacích prvků (docs/DESIGN.md, oddíl Tlačítka) a jediné povolené výjimky:
 // vnitřní kapsle malé segmentové volby (28 px v rámu 32 px; v aplikaci `.seg--sm`, na webu
 // přepínač jazyka `.lang`) a hlavní výzva webu `.btn--lg` (56 px).
