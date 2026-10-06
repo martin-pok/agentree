@@ -1,5 +1,10 @@
 # Changelog
 
+## Instalace jedním příkazem: vždy otevře novou verzi – 2026-10-06
+
+- **Žádná stará verze po instalaci.** Když už v Aplikacích ležela nejnovější verze, ale na pozadí ještě běžela starší (nahrazení ve Finderu bez ⌘Q), instalační příkaz napsal „nic se nestahuje“ a `open` probudil právě tu starou. Teď ji nejdřív ukončí stejně jako ⌘Q a otevře aplikaci z disku. Platí to i pro verze bez aktualizace jedním klepnutím (do 0.38.0).
+- **Upozornění na další kopie.** Instalátor vypíše jiné kopie Agenteeq na Macu (např. ve Stažených souborech) s jejich verzí, protože je může otevírat Dock nebo Spotlight. Nic nepřesouvá ani nemaže.
+
 ## 0.38.1 – 2026-10-06 · aktualizace jedním klepnutím
 
 - **Aktualizovat a restartovat.** V aplikaci pro Mac stačí u nové verze jedno klepnutí (v horní liště nebo v Nastavení → Aktualizace): ověřený balíček se stáhne, aplikace ho rozbalí, zkontroluje identifikátor, verzi i podpis, připraví vedle sebe a ukončí se. Malý pomocník pak vymění balíček v Aplikacích (předchozí verze jde do Koše) a spustí novou verzi. Když cokoli selže před ukončením, nic se nezmění a rozhraní řekne proč. Plášť pro Windows a příkazová řádka dál balíček jen stáhnou a ukážou.
