@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.37.1',
+    date: '2026-10-06',
+    title: 'Čitelnost nového vzhledu',
+    items: [
+      'Šedý doplňkový text je čitelný i tam, kde leží přímo na barevném pozadí vzhledu Den.',
+      'Karta Útraty bez připojeného API má na telefonu ikonu, text a tlačítko srovnané pod sebou.',
+    ],
+    en: {
+      title: 'Readability of the new look',
+      items: [
+        'Secondary grey text stays readable where it sits directly on the coloured Day background.',
+        'On a phone, the Spend card without a connected API lines up its icon, text and button.',
+      ],
+    },
+  },
+  {
     version: '0.37.0',
     date: '2026-10-05',
     title: 'Každý agent hned a jednou',
