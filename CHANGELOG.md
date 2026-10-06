@@ -1,5 +1,13 @@
 # Changelog
 
+## Nevydáno – 0.37.0 · nový vzhled Den a Noc
+
+- **Nový vzhled celé aplikace.** Den je světlé sklo nad tichou oblohou (mlha #F3F5F8, inkoust #16203A), Noc je jeho zrcadlo na půlnoční modré. Tmavý rám okna a tmavý pás nahoře zmizely; postranní panel, karty a lišta jsou průsvitné sklo s bílou hranou. Hlavní pruh s živými agenty je jediná plocha s jemným modro‑šalvějovým nádechem. Barvy jsou tlumené pigmenty se stálým významem: šalvěj = pracuje, okr = čeká na zadání, růže = potřebuje tebe. Grafy mají novou kategoriální paletu s kontrastem ≥ 3 : 1 v obou režimech.
+- **Pryč s ozdobami.** Zlatý proužek u aktivní položky menu, zlatá linka nad kartou Spustit agenta a barevné odznaky nahradila čistá plocha; odznaky jsou v barvě textu.
+- **Čísla bez přeškrtnuté nuly.** Čísla, štítky a odznaky sází Onest s tabulkovými číslicemi; neproporcionální písmo zůstalo jen kódu.
+- **Obnova dat bez kurzoru zákazu.** Tlačítko obnovy se během obnovy nevypíná (šedé přeškrtnuté kolečko a poskočení zmizely); ikona se klidně otočí aspoň jednou a dotočí do klidu.
+- Web a okno rozšíření převzaly nové základní barvy (shodu hlídají testy). Kontrola kontrastu počítá hlavní pruh zvlášť pro Den a Noc.
+
 ## 0.36.3 – 2026-10-04 · stav limitů Claude bez falešného napojení
 
 - Přehled ukazuje Claude i bez čerstvého měření, pokud je na Macu dostupný. Při ověřeném odhlášení nabídne přihlášení; při neznámém nebo starém stavu čeká na data. Nikdy nedoplní procento ani čas obnovy odhadem.

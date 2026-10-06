@@ -9,13 +9,13 @@
    ne rámečky. */
 
 :root {
-  --backdrop: #0C0B10; --stage: #121019; --stage-2: #1D1A26;
-  --paper: #F4F3F7; --paper-2: #EAE8EF; --card: #FFFFFF;
-  --ink: #16141D; --ink-2: #3A3743; --mute: #686472;
+  --backdrop: #0C0B10; --stage: #16203A; --stage-2: #1D1A26;
+  --paper: #F3F5F8; --paper-2: #EAE8EF; --card: #FFFFFF;
+  --ink: #16203A; --ink-2: #3A3743; --mute: #686472;
   --on-ink: #FFFFFF; --line: #E3E1E9; --line-2: #EFEDF3;
-  --velvet: #C2335A; --velvet-ink: #A8254A; --velvet-tint: #FBE8EE;
-  --teal: #22A38C; --teal-ink: #0D7A67; --teal-tint: #E0F3EF;
-  --brass: #C99A3E; --brass-ink: #86620F; --brass-tint: #F7EEDA;
+  --velvet: #B44A64; --velvet-ink: #A8254A; --velvet-tint: #FBE8EE;
+  --teal: #3E8A6E; --teal-ink: #0D7A67; --teal-tint: #E0F3EF;
+  --brass: #B07D2C; --brass-ink: #86620F; --brass-tint: #F7EEDA;
   --on-stage: #F4F3F7; --on-stage-mute: #A9A3B4; --stage-line: #2A2633;
   /* Dlaždice na scéně: o stupeň světlejší než scéna, bez okraje. */
   --tile: #16141D;

@@ -1,41 +1,51 @@
 /* Agenteeq – design systém (8px mřížka, max. váha písma 500, WCAG 2.2 AA) */
 :root {
-  /* Koncertní sál: eben (scéna), mlžná slonovina (plocha), samet (rozhodnutí), smaragd (práce), mosaz (akcent). */
-  --backdrop: #0C0B10;
-  --stage: #121019;
-  --stage-2: #1D1A26;
-  --paper: #F4F3F7;
+  /* Den a Noc: sklo nad tichou atmosférou. Inkoust #16203A (text Dne) a mlha #F3F5F8 (pozadí Dne)
+     si v Noci prohodí místo. Akcenty jsou tlumené pigmenty: šalvěj = práce, okr = čeká na zadání,
+     růže = potřebuje tebe. Ve Dni syté tóny, v Noci světlé. Panely jsou průsvitné sklo s bílou
+     hranou; barvu pozadí propouštějí bez rozmazání (žádný backdrop-filter na kartách). */
+  --backdrop: #F3F5F8;
+  --stage: #16203A;
+  --stage-2: #222D4A;
+  --paper: #F3F5F8;
   --card: #FFFFFF;
-  --ink: #16141D;
-  --ink-surface: #16141D;
-  --action: #16141D; /* plná plocha ovládacích prvků (primární tlačítko, vybraný přepínač) */
+  --glass: rgba(255, 255, 255, .56);
+  --glass-strong: rgba(255, 255, 255, .78);
+  --glass-rim: rgba(255, 255, 255, .88);
+  --ink: #16203A;
+  --ink-surface: #16203A;
+  --action: #16203A; /* plná plocha ovládacích prvků (primární tlačítko, vybraný přepínač) */
   --on-action: #FFFFFF;
-  --action-hover: #3A3646;
+  --action-hover: #2B3756;
   --on-ink: #FFFFFF;
-  --ink-2: #3A3743;
-  --mute: #686472;
-  --line: #E3E1E9;
-  --line-2: #EFEDF3;
+  --ink-2: #354060;
+  --mute: #59627E;
+  --line: #DCE1EB;
+  --line-2: #E9EDF3;
 
-  --velvet: #C2335A;
-  --velvet-ink: #A8254A;
-  --velvet-solid: #A8254A;
-  --velvet-tint: #FBE8EE;
-  --teal: #22A38C;
-  --teal-ink: #0D7A67;
-  --teal-tint: #E0F3EF;
-  --brass: #C99A3E;
-  --brass-ink: #86620F;
-  --brass-tint: #F7EEDA;
-  --ivory: #EFEAF2;
-  --ok: #0B6F5F;
-  --teal-solid: #0D7A67; /* plná zelená plocha s bílým textem (5,3 : 1); světlá --teal na ní bílý text neunese */
-  --toast-ok: #0B6F5F;
-  --toast-err: #A8254A;
+  --velvet: #B44A64;
+  --velvet-ink: #983A52;
+  --velvet-solid: #983A52;
+  --velvet-tint: #F6E5EA;
+  --teal: #3E8A6E;
+  --teal-ink: #2B6B53;
+  --teal-tint: #E3F1EB;
+  --brass: #B07D2C;
+  --brass-ink: #83591A;
+  --brass-tint: #F5EDDD;
+  --sky: #2E4C8C; /* tlumená ocelová modrá: „potřebuje tvé rozhodnutí“ v nadpisech a soubory ke schválení */
+  --ivory: #EEF1F7;
+  --ok: #2B6B53;
+  --teal-solid: #2B6B53; /* plná zelená plocha s bílým textem */
+  --toast-ok: #2B6B53;
+  --toast-err: #983A52;
 
   --f-display: 'Urbanist', 'Avenir Next', system-ui, sans-serif;
   --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --f-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Čísla, štítky a cesty sází Onest s tabulkovými číslicemi: nula bez přeškrtnutí a čísla pod
+     sebou drží sloupec. Neproporcionální písmo zůstává jen kódu (--f-code). */
+  --f-mono: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-code: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Tvary. Všechno, na co se klepe a má jeden řádek (tlačítko, čip, filtr, výběr, pole, položka
      menu, přepínač, štítek), je kapsle --r-full. Ikonová tlačítka a avatary jsou kruh. Plochy mají
@@ -53,9 +63,10 @@
   /* Karty leží v ploše, nevznášejí se. Místo měkkého stínu je drží vlasová linka: hrany jsou
      ostré, takže je vidět, že jsou zarovnané – a nic se nerozmazává do okolí. Skutečné vyzdvižení
      (--shadow-lg) zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy a nabídky. */
-  --shadow: 0 0 0 1px rgba(22, 20, 29, .085);
-  --shadow-sm: 0 0 0 1px rgba(22, 20, 29, .07);
-  --shadow-lg: 0 32px 80px -24px rgba(12, 11, 16, .5);
+  --shadow: inset 0 0 0 1px var(--glass-rim), 0 1px 2px rgba(22, 32, 58, .04), 0 10px 28px -16px rgba(22, 32, 58, .10);
+  --shadow-sm: inset 0 0 0 1px rgba(22, 32, 58, .09);
+  --shadow-lg: 0 32px 80px -24px rgba(22, 32, 58, .32);
+  --atmosphere: radial-gradient(1200px 900px at 88% -6%, rgba(150, 184, 236, .62), transparent 68%), radial-gradient(1100px 1100px at -8% 88%, rgba(158, 212, 206, .5), transparent 66%), radial-gradient(800px 700px at 70% 70%, rgba(190, 206, 232, .40), transparent 70%);
   --ease: cubic-bezier(.2, .8, .2, 1);
   /* Pohyb: jedna křivka a čtyři délky. Stisk odpoví do 90 ms (pod hranicí vnímání zpoždění),
      změna barvy či plochy 180 ms, přesun (přepínač, šipka, zvednutá karta) 280 ms, příjezd
@@ -68,48 +79,50 @@
   /* Nástup obrazovky: měřidla se usadí jako ručička, bez odskoku (ease-out quart). */
   --ease-settle: cubic-bezier(.25, 1, .5, 1);
   --motion-settle: 1100ms;
-  --band-h: clamp(112px, 9.4vw, 148px);
+  --band-h: 0px;
   color-scheme: light;
 }
 
-/* Noční sál: text je slonovinový, vrstvy odlišuje hloubka a ne křiklavá barva. */
+/* Noc: zrcadlo Dne. Stejná pravidla, jedna tichá modrá záře, panely bez barevných výplní. */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --backdrop: #0A0910;
-  --stage: #11101A;
-  --stage-2: #191722;
-  --paper: #181620;
-  --card: #211F2A;
-  --ink: #F5F2F8;
-  --ink-surface: #0E0D14;
-  --action: #F5F2F8; /* v tmavém režimu světlá plocha s tmavým písmem: kontrast > 15 : 1 místo tmavé na tmavé */
-  --on-action: #16141D;
+  --backdrop: #0B0E15;
+  --stage: #0B0E15;
+  --stage-2: #141925;
+  --paper: #0B0E15;
+  --card: #161B27;
+  --glass: rgba(255, 255, 255, .04);
+  --glass-strong: rgba(255, 255, 255, .07);
+  --glass-rim: rgba(255, 255, 255, .085);
+  --ink: #EEF1F7;
+  --ink-surface: #0E121C;
+  --action: #EEF1F7; /* v tmavém režimu světlá plocha s tmavým písmem */
+  --on-action: #0E1220;
   --action-hover: #FFFFFF;
   --on-ink: #FFFFFF;
-  --ink-2: #D8D3DE;
-  --mute: #B9B3C1;
-  --line: #3B3747;
-  --line-2: #2C2936;
-  --velvet: #E87498;
-  --velvet-ink: #FFB3C7;
-  --velvet-solid: #B92F58;
-  --velvet-tint: #43202E;
-  --teal: #43D1B1;
-  --teal-ink: #76E6CD;
-  --teal-tint: #153C37;
-  --brass: #E4B95F;
-  --brass-ink: #F3D38E;
-  --brass-tint: #3B2E17;
-  --ivory: #EFEAF2;
-  --ok: #76E6CD;
-  --teal-solid: #0D7A67;
-  --toast-ok: #0E5A4D;
-  --toast-err: #8E1F3F;
-  /* V tmavém režimu linku nedělá tmavší barva, ale nepatrné zesvětlení hrany. */
-  /* V tmavém režimu se karta od podkladu liší jen o 0,006 jasu, takže hranu nese výhradně linka
-     – musí být proto zřetelnější než ve světlém. */
-  --shadow: 0 0 0 1px rgba(255, 255, 255, .14);
-  --shadow-sm: 0 0 0 1px rgba(255, 255, 255, .11);
+  --ink-2: #CDD2DC;
+  --mute: #9AA1B0;
+  --line: #2A3142;
+  --line-2: #1D2331;
+  --velvet: #E28AA0;
+  --velvet-ink: #F0B3C3;
+  --velvet-solid: #A8455F;
+  --velvet-tint: #3A2230;
+  --teal: #8CC7AE;
+  --teal-ink: #A6D4C0;
+  --teal-tint: #1B3A33;
+  --brass: #D9B47A;
+  --brass-ink: #E3C597;
+  --brass-tint: #3A2F1C;
+  --sky: #B7C9EF;
+  --ivory: #EEF1F7;
+  --ok: #A6D4C0;
+  --teal-solid: #2B6B53;
+  --toast-ok: #1F5A47;
+  --toast-err: #8A3249;
+  --shadow: inset 0 0 0 1px var(--glass-rim), 0 30px 70px -50px rgba(0, 0, 0, .9);
+  --shadow-sm: inset 0 0 0 1px rgba(255, 255, 255, .10);
+  --atmosphere: radial-gradient(1100px 760px at 86% -8%, rgba(70, 100, 180, .20), transparent 68%), radial-gradient(1000px 1000px at -8% 90%, rgba(50, 110, 110, .10), transparent 66%);
   --shadow-lg: 0 32px 80px -24px rgba(0, 0, 0, .76);
 }
 
@@ -137,8 +150,8 @@ html {
    prohlížeč překreslit obě velké přechodové plochy v každém snímku rolování – při 120 Hz
    stodvacetkrát za vteřinu. Teď leží na vlastní pevné vrstvě, kterou kompozitor nakreslí jednou
    a pak už s ní jen posouvá. Vzhled je stejný. */
-body { margin: 0; background: var(--backdrop); color: var(--ink); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
-body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(1100px 520px at 18% -8%, #2A2334 0%, transparent 62%), radial-gradient(900px 480px at 100% 110%, #1B2A28 0%, transparent 60%); }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--f-body); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--atmosphere); }
 body.has-modal { overflow: hidden; }
 b, strong { font-weight: 500; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -148,7 +161,7 @@ button:disabled { cursor: not-allowed; }
 summary { border-radius: var(--r-full); }
 a { color: inherit; }
 svg { display: block; }
-code { font-family: var(--f-mono); font-size: .9em; }
+code { font-family: var(--f-code); font-size: .9em; }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
@@ -179,9 +192,9 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .eyebrow { color: var(--mute); font-size: 14px; }
 
 /* ---------- Kostra ---------- */
-.shell { position: relative; margin: 24px; min-height: calc(100dvh - 48px); background: var(--paper); border-radius: var(--r-xl); display: grid; grid-template-columns: 280px minmax(0, 1fr); isolation: isolate; overflow: clip; }
+.shell { position: relative; margin: 0; min-height: 100dvh; background: transparent; border-radius: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); isolation: isolate; overflow: clip; }
 /* Scéna – podpisový prvek. Světelné body = aktivní agenti. */
-.stage { position: absolute; inset: 0 0 auto 0; height: var(--band-h); z-index: -1; overflow: hidden; background: linear-gradient(180deg, #1A1722 0%, var(--stage) 100%); }
+.stage { display: none; position: absolute; inset: 0 0 auto 0; height: var(--band-h); z-index: -1; overflow: hidden; background: linear-gradient(180deg, #1A1722 0%, var(--stage) 100%); }
 /* Bez `mix-blend-mode`: míchání vrstev nutí prohlížeč při každém překreslení znovu načíst
    podklad. Při této průhlednosti je rozdíl ve vzhledu neznatelný, v ceně za snímek velký. */
 .stage::after { content: ''; position: absolute; inset: 0; opacity: .06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
@@ -199,7 +212,7 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    nabídka při nedostatku místa rolovala uvnitř bez náznaku a na okně 1440 × 950 schovala
    Nastavení celé. Místo teď uvolňuje profil (viz níže) a hlídá to `npm run qa:desktop` pro okna
    620–1200 px. Vodorovné odsazení nese `--sb-x`, aby se k němu dal přiložit pruh aktivní položky. */
-.sidebar { --sb-x: 24px; position: sticky; top: 24px; align-self: start; height: calc(100dvh - 96px); margin: 24px 0 24px 24px; padding: 32px var(--sb-x) 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
+.sidebar { --sb-x: 24px; position: sticky; top: 24px; align-self: start; height: calc(100dvh - 48px); margin: 24px 0 24px 24px; padding: 32px var(--sb-x) 24px; background: var(--glass); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
 .sidebar > .brand, .sidebar > .side-foot { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
 .brand-mark { width: 34px; height: 34px; flex: none; }
@@ -273,13 +286,13 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .nav .stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
 .nav .stroke.inv { stroke: var(--card); opacity: 1; }
 .nav a:hover { color: var(--ink); background: var(--line-2); }
-.nav a[aria-current='page'] { color: var(--ink); background: var(--paper); }
+.nav a[aria-current='page'] { color: var(--ink); background: var(--glass-strong); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 1px 2px rgba(22, 32, 58, .05); }
 /* Pruh leží na hraně karty – odsazení panelu se mění podle šířky okna, proto `--sb-x`. Dřív byl
    zapsaný jako −24 px a na okně do 1180 px (odsazení 16 px) ležel celý mimo kartu. */
-.nav a[aria-current='page']::before { content: ''; position: absolute; left: calc(-1 * var(--sb-x)); top: 25%; bottom: 25%; width: 3px; border-radius: var(--r-full); background: var(--brass); }
+.nav a[aria-current='page']::before { content: none; }
 .nav a[aria-current='page'] .fill, .nav a[aria-current='page'] .stroke { opacity: 1; }
-.nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-full); background: var(--teal-solid); color: #fff; font: 500 12px/24px var(--f-mono); text-align: center; }
-.nav-badge[data-tone='coral'] { background: var(--velvet-solid); color: #fff; }
+.nav-badge { margin-left: auto; min-width: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 12px/24px var(--f-body); font-variant-numeric: tabular-nums; text-align: center; }
+.nav-badge[data-tone='coral'] { background: var(--action); color: var(--on-action); }
 /* Podoby profilu podle místa, které mu v panelu zbylo. Hranice jsou výška obsahu dané podoby
    plus rezerva 12 px na rozdíly v měření písma mezi prohlížeči (vysoký 287 → 300, střední
    217 → 230, řádek 136 → 148, jeden řádek 48 → 60 px; půl pixelu proti zaokrouhlení).
@@ -354,11 +367,11 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .source-state { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; white-space: nowrap; }
 .source-host { overflow: hidden; font: 400 12px/1.4 var(--f-mono); color: var(--mute); text-overflow: ellipsis; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); flex: none; }
-.dot--live { background: var(--teal); box-shadow: 0 0 0 4px rgba(34, 163, 140, .18); }
+.dot--live { background: var(--teal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent); }
 .dot--down { background: var(--velvet-ink); }
 
 /* ---------- Horní lišta ---------- */
-.main { position: relative; min-width: 0; padding: calc(var(--band-h) + 32px) 56px 64px 64px; }
+.main { position: relative; min-width: 0; padding: calc(var(--band-h) + 40px) 56px 64px 64px; }
 .topbar { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
 /* V Nastavení zůstává nadpis ve své původní výšce spolu s podmenu. */
 .main--settings > .topbar { position: sticky; top: calc(var(--band-h) + 56px); z-index: 13; background: var(--paper); }
@@ -377,9 +390,9 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .update-chip-action { box-shadow: none; }
 @keyframes update-arrive { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
 @media (prefers-reduced-motion: reduce) { .update-chip { animation: none; } }
-.conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; }
+.conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--glass-strong); box-shadow: var(--shadow-sm); font-size: 13px; }
 .conn-pill .conn-short { display: none; }
-.search-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; transition: border-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
+.search-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border: 1px solid var(--glass-rim); border-radius: var(--r-full); background: var(--glass-strong); color: var(--mute); font-size: 14px; transition: border-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
 .search-btn:hover { border-color: var(--ink); color: var(--ink); background: var(--card); }
 kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-full); background: var(--line-2); color: var(--ink-2); }
 
@@ -391,8 +404,8 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 *::-webkit-scrollbar-thumb:hover { background: var(--mute); background-clip: padding-box; }
 .icon-btn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center; color: var(--ink-2); transition: background-color var(--motion-response) var(--ease); flex: none; }
 .icon-btn:hover { background: var(--line-2); color: var(--ink); }
-.bell { background: var(--card); box-shadow: var(--shadow-sm); }
-.bell-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-full); background: var(--velvet-solid); color: #fff; font: 500 12px/20px var(--f-mono); }
+.bell { background: var(--glass-strong); box-shadow: var(--shadow-sm); }
+.bell-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 12px/20px var(--f-body); font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--paper); }
 .bell-wrap { position: relative; }
 .notif-pop { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 32px)); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
 .pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
@@ -477,7 +490,7 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .skeleton--lg { height: 32px; width: 70%; }
 @keyframes shimmer { to { transform: translateX(100%); } }
 
-.card { background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); }
+.card { background: var(--glass); border-radius: var(--r-lg); box-shadow: var(--shadow); }
 .pad { padding: 28px 32px; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 16px; }
 .sec-head h2, .sec-head h3 { margin: 0; font: 500 17px/1.3 var(--f-body); }
@@ -586,48 +599,52 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 /* Pruh se stavem agentů leží ve stránce, nevznáší se nad ní – velké vyzdvižení (80px rozmazání)
    z něj kropilo měkký stín dolů na sloupce pod ním. Tmavá výplň na světlém podkladu ho oddělí
    sama. Vyzdvižení zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy, nabídky, paleta. */
-.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: radial-gradient(58% 150% at 88% -10%, rgba(34, 163, 140, .46), transparent 64%), radial-gradient(46% 130% at 8% 115%, rgba(201, 154, 62, .30), transparent 66%), radial-gradient(40% 110% at 52% -25%, rgba(124, 108, 240, .26), transparent 62%), linear-gradient(110deg, var(--stage-2) 0%, var(--stage) 60%); color: #F4F3F7; }
+/* Hlavní pruh: jediná plocha s barevným nádechem (modrá do šalvějové). Ve Dni světlé sklo,
+   v Noci sotva znatelný studený nádech. Barvy uvnitř nesou lokální proměnné. */
+.pulse-bar { --pb-bg: linear-gradient(120deg, rgba(214, 228, 250, .66), rgba(236, 242, 250, .52) 48%, rgba(214, 238, 236, .6)); --pb-rim: var(--glass-rim); --pb-ink: var(--ink); --pb-mute: #46506A; --pb-wait: #6E4A12; --pb-alert: #8A3149; --pb-work: #245C47; --pb-line: rgba(22, 32, 58, .09); --pb-strip: rgba(255, 255, 255, .32); --pb-chip: rgba(255, 255, 255, .62); --pb-chip-line: rgba(22, 32, 58, .08); --pb-chip-hover: rgba(255, 255, 255, .92); }
+html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--brass-ink); --pb-alert: var(--velvet-ink); --pb-work: var(--teal-ink); --pb-bg: linear-gradient(120deg, rgba(130, 160, 230, .10), rgba(130, 160, 230, .05) 50%, rgba(120, 180, 175, .08)), rgba(255, 255, 255, .03); --pb-rim: rgba(255, 255, 255, .10); --pb-line: rgba(255, 255, 255, .09); --pb-strip: rgba(0, 0, 0, .16); --pb-chip: rgba(255, 255, 255, .05); --pb-chip-line: rgba(255, 255, 255, .09); --pb-chip-hover: rgba(255, 255, 255, .10); }
+.pulse-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 32px; margin-bottom: 32px; padding: 20px 24px 0 28px; border-radius: var(--r-lg); overflow: hidden; background: var(--pb-bg); box-shadow: inset 0 0 0 1px var(--pb-rim), 0 10px 28px -16px rgba(22, 32, 58, .10); color: var(--pb-ink); }
 .pulse-bar > * { position: relative; }
 .pb-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.pb-live { position: relative; width: 12px; height: 12px; border-radius: 50%; background: rgba(244, 243, 247, .28); flex: none; }
+.pb-live { position: relative; width: 12px; height: 12px; border-radius: 50%; background: var(--pb-line); flex: none; }
 .pulse-bar.is-live .pb-live { background: var(--teal); }
 .pulse-bar.is-live .pb-live::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--teal); animation: live 1.8s var(--ease) infinite; pointer-events: none; }
 .pb-num { font: 300 56px/1 var(--f-display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .pb-label { display: grid; gap: 2px; min-width: 0; }
 .pb-label b { font: 400 20px/1.2 var(--f-display); white-space: nowrap; }
-.pb-label small { font-size: 13px; color: rgba(244, 243, 247, .78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-label small { font-size: 13px; color: var(--pb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pb-stats { display: flex; justify-content: center; min-width: 0; }
-.pb-stat { display: grid; gap: 2px; padding: 4px 24px; text-decoration: none; color: inherit; border-left: 1px solid rgba(244, 243, 247, .12); border-radius: 0; }
+.pb-stat { display: grid; gap: 2px; padding: 4px 24px; text-decoration: none; color: inherit; border-left: 1px solid var(--pb-line); border-radius: 0; }
 .pb-stat:first-child { border-left: 0; }
 .pb-stat b { font: 400 26px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.pb-stat > span { font-size: 12px; color: rgba(244, 243, 247, .78); white-space: nowrap; }
+.pb-stat > span { font-size: 12px; color: var(--pb-mute); white-space: nowrap; }
 .pb-stat:hover b { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-.pb-stat.is-alert b { color: #F59BB4; }
-.pb-stat.is-wait b { color: #E6C27A; }
-.pulse-bar .pb-all { background: rgba(244, 243, 247, .08); color: #F4F3F7; box-shadow: inset 0 0 0 1px rgba(244, 243, 247, .42); white-space: nowrap; }
-.pulse-bar .pb-all:hover { background: #F4F3F7; color: #16141D; box-shadow: none; }
+.pb-stat.is-alert b { color: var(--pb-alert); }
+.pb-stat.is-wait b { color: var(--pb-wait); }
+.pulse-bar .pb-all { background: var(--pb-chip); color: var(--pb-ink); box-shadow: inset 0 0 0 1px var(--pb-chip-line); white-space: nowrap; }
+.pulse-bar .pb-all:hover { background: var(--action); color: var(--on-action); box-shadow: none; }
 .link:has(.icon)::after { display: none; }
 /* Živý pás: každý agent, který pracuje, čeká na zadání nebo potřebuje tebe – stejná data jako sekce Agenti. */
-.pb-strip { grid-column: 1 / -1; min-width: 0; margin: 18px -24px 0 -28px; padding: 14px 24px 16px 28px; border-top: 1px solid rgba(244, 243, 247, .1); background: rgba(12, 11, 16, .18); }
+.pb-strip { grid-column: 1 / -1; min-width: 0; margin: 18px -24px 0 -28px; padding: 14px 24px 16px 28px; border-top: 1px solid var(--pb-line); background: var(--pb-strip); }
 .pb-agents { list-style: none; margin: 0 -24px 0 -28px; padding: 0 24px 0 28px; scroll-padding-inline: 28px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .pb-agents::-webkit-scrollbar { display: none; }
 .pb-agents li { flex: none; }
-.pb-agent { display: flex; align-items: center; gap: 10px; height: 48px; max-width: 280px; padding: 0 16px 0 6px; border-radius: var(--r-full); background: rgba(244, 243, 247, .06); box-shadow: inset 0 0 0 1px rgba(244, 243, 247, .1); color: inherit; text-decoration: none; transition: background-color var(--motion-response) var(--ease); }
-.pb-agent:hover { background: rgba(244, 243, 247, .12); }
-.pb-agent:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
-.pb-agent-logo { width: 36px; height: 36px; border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; }
+.pb-agent { display: flex; align-items: center; gap: 10px; height: 48px; max-width: 280px; padding: 0 16px 0 6px; border-radius: var(--r-full); background: var(--pb-chip); box-shadow: inset 0 0 0 1px var(--pb-chip-line); color: inherit; text-decoration: none; transition: background-color var(--motion-response) var(--ease); }
+.pb-agent:hover { background: var(--pb-line); }
+.pb-agent:focus-visible { outline: 2px solid var(--pb-ink); outline-offset: -2px; }
+.pb-agent-logo { width: 36px; height: 36px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(22, 32, 58, .06); display: grid; place-items: center; flex: none; }
 .pb-agent-logo .logo, .pb-agent-logo .glyph { width: 18px; height: 18px; }
 .pb-agent-text { display: grid; min-width: 0; }
 .pb-agent-text b { font-weight: 400; font-size: 13px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pb-agent-text small { display: block; font-size: 12px; line-height: 1.35; color: rgba(244, 243, 247, .66); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-agent-text small { display: block; font-size: 12px; line-height: 1.35; color: var(--pb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pb-agent-text small i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: currentColor; }
-.pb-agent[data-state='working'] small { color: #7FD8C4; }
+.pb-agent[data-state='working'] small { color: var(--pb-work); }
 .pb-agent[data-state='working'] small i { animation: blink 1.4s ease-in-out infinite; }
-.pb-agent[data-state='waiting'] small { color: #E6C27A; }
-.pb-agent[data-state='alert'] { box-shadow: inset 0 0 0 1px rgba(245, 155, 180, .5); }
-.pb-agent[data-state='alert'] small { color: #F59BB4; }
+.pb-agent[data-state='waiting'] small { color: var(--pb-wait); }
+.pb-agent[data-state='alert'] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--velvet) 55%, transparent); }
+.pb-agent[data-state='alert'] small { color: var(--pb-alert); }
 .pb-agent--more { padding: 0 16px; font: 500 13px/1 var(--f-mono); }
-.pb-empty { margin: 0; font-size: 13px; line-height: 48px; color: rgba(244, 243, 247, .66); }
+.pb-empty { margin: 0; font-size: 13px; line-height: 48px; color: var(--pb-mute); }
 .discs { display: flex; }
 .disc { width: 38px; height: 38px; border-radius: 50%; margin-left: -10px; border: 3px solid var(--card); display: grid; place-items: center; }
 .disc:first-child { margin-left: 0; }
@@ -958,7 +975,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .msg-time { margin-left: auto; font: 400 12px/1 var(--f-mono); color: var(--mute); white-space: nowrap; }
 .msg-body { font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .md code { background: rgba(30, 27, 34, .07); padding: 1px 5px; border-radius: var(--r-xs); font-size: 12.5px; }
-.md pre, .msg pre { margin: 8px 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--ink-surface); color: #F6F5F7; overflow-x: auto; font: 400 12.5px/1.55 var(--f-mono); white-space: pre; }
+.md pre, .msg pre { margin: 8px 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--ink-surface); color: #F6F5F7; overflow-x: auto; font: 400 12.5px/1.55 var(--f-code); white-space: pre; }
 .md pre code { background: none; padding: 0; font-size: inherit; }
 .md-h { display: block; font-weight: 500; font-size: 15px; margin: 6px 0 2px; }
 .md a { text-underline-offset: 3px; }
@@ -1010,7 +1027,7 @@ input:disabled, select:disabled { background: var(--line-2); color: var(--mute);
 .model-wait-code { display: grid; gap: 8px; margin-top: 16px; }
 .model-wait-code label { font-size: 13px; font-weight: 500; }
 .model-wait-code-row { display: flex; gap: 8px; }
-.model-wait-code-row input { flex: 1; min-width: 0; font-family: var(--f-mono); font-size: 13px; }
+.model-wait-code-row input { flex: 1; min-width: 0; font-family: var(--f-code); font-size: 13px; }
 .model-wait .model-wait-hint { margin: 0; font-size: 12px; color: var(--ink-2); }
 .model-done { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 8px 0 4px; }
 .model-done-check { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--teal-tint); color: var(--teal-ink); margin-bottom: 8px; }
@@ -1619,10 +1636,10 @@ html.is-cloud body { background: var(--paper); }
 .reader .md li { margin: 4px 0; }
 .reader .md li > ul, .reader .md li > ol { margin: 4px 0 0; }
 .reader .md a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--brass); }
-.reader .md code { padding: 1px 5px; border-radius: var(--r-xs); background: var(--line-2); color: var(--ink); font: 400 .88em/1.4 var(--f-mono); overflow-wrap: anywhere; }
+.reader .md code { padding: 1px 5px; border-radius: var(--r-xs); background: var(--line-2); color: var(--ink); font: 400 .88em/1.4 var(--f-code); overflow-wrap: anywhere; }
 .reader .md pre { margin: 0 0 16px; padding: 14px 16px; border-radius: var(--r-sm); background: var(--stage-2, #1E1B26); color: #F4F3F7; overflow-x: auto; }
 .reader .md pre code { padding: 0; background: none; color: inherit; font-size: 13px; line-height: 1.6; white-space: pre; }
-.reader .md pre[data-jazyk]::before { content: attr(data-jazyk); display: block; margin-bottom: 8px; font: 500 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 243, 247, .5); }
+.reader .md pre[data-jazyk]::before { content: attr(data-jazyk); display: block; margin-bottom: 8px; font: 500 12px/1 var(--f-code); letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 243, 247, .5); }
 .reader .md blockquote { margin: 0 0 16px; padding: 2px 0 2px 16px; box-shadow: inset 3px 0 0 var(--brass); color: var(--ink-2); }
 .reader .md blockquote p:last-child { margin-bottom: 0; }
 .reader .md hr { margin: 24px 0; border: 0; border-top: 1px solid var(--line); }
@@ -1690,7 +1707,7 @@ html.is-cloud body { background: var(--paper); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
   .set-group { scroll-margin-top: 72px; }
   .pulse-bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
-  .pb-stats { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding-top: 14px; border-top: 1px solid rgba(244, 243, 247, .12); }
+  .pb-stats { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding-top: 14px; border-top: 1px solid var(--pb-line); }
   .pb-stat:first-child { padding-left: 0; }
   .pb-strip { margin-top: 2px; }
   .shell { grid-template-columns: 240px minmax(0, 1fr); }
@@ -1711,7 +1728,7 @@ html.is-cloud body { background: var(--paper); }
   body { background: var(--paper); }
   body::before { display: none; }
   .shell { margin: 0; border-radius: 0; min-height: 100dvh; grid-template-columns: minmax(0, 1fr); }
-  .sidebar { position: fixed; z-index: 30; top: auto; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); height: auto; min-height: 0; margin: 0; padding: 6px; border-radius: var(--r-full); flex-direction: row; box-shadow: 0 0 0 1px rgba(22, 20, 29, .06), 0 18px 40px -12px rgba(12, 11, 16, .35); }
+  .sidebar { position: fixed; z-index: 30; top: auto; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); height: auto; min-height: 0; margin: 0; padding: 6px; border-radius: var(--r-full); flex-direction: row; background: color-mix(in srgb, var(--card) 94%, transparent); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 18px 40px -12px rgba(22, 32, 58, .30); }
   .brand, .profile, .side-foot { display: none; }
   .nav { margin: 0; width: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; gap: 2px; }
   .nav .nav-secondary { display: none; }
@@ -1719,7 +1736,7 @@ html.is-cloud body { background: var(--paper); }
   .nav a svg, .nav-more svg { width: 22px; height: 22px; }
   .nav-more[aria-current='page'], .nav-more[aria-expanded='true'] { color: var(--ink); background: var(--paper); }
   .nav-more .fill { fill: currentColor; opacity: .7; }
-  .nav a[aria-current='page']::before, .nav-more[aria-current='page']::before { content: ''; position: absolute; left: 34%; right: 34%; top: 0; bottom: auto; width: auto; height: 3px; border-radius: var(--r-full); background: var(--brass); }
+  .nav a[aria-current='page']::before, .nav-more[aria-current='page']::before { content: none; }
   .nav a span, .nav-more span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-launch { display: grid; place-items: center; justify-self: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--action); color: var(--on-action); box-shadow: 0 10px 24px -8px rgba(12, 11, 16, .55), inset 0 0 0 1px rgba(201, 154, 62, .45); transition: transform var(--motion-response) var(--ease); }
   .nav-launch svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
@@ -1961,7 +1978,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 
 /* ---------- Spuštění agenta ---------- */
 .launch { position: relative; margin-bottom: 40px; padding: 24px 28px 20px; overflow: hidden; }
-.launch::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--brass), rgba(201, 154, 62, 0) 70%); }
+.launch::before { content: none; }
 .launch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .launch-head h2 { margin: 0 0 2px; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
 .launch-head p { margin: 0; }
@@ -2035,7 +2052,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .run-raw summary::-webkit-details-marker { display: none; }
 .run-raw summary:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .run-raw[open] { flex-basis: 100%; }
-.run-raw pre { margin: 6px 0 0; padding: 10px 12px; border-radius: var(--r-sm); background: var(--paper); font: 400 12px/1.5 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); }
+.run-raw pre { margin: 6px 0 0; padding: 10px 12px; border-radius: var(--r-sm); background: var(--paper); font: 400 12px/1.5 var(--f-code); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); }
 
 /* Profilový obrázek: po najetí ikona změny, každým kliknutím jiný abstraktní avatar */
 .avatar-btn { position: relative; display: block; margin: 0 auto; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
@@ -2389,7 +2406,7 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .ext-reinstall { margin: 0 0 16px; }
 .ext-reinstall summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 8px 0; }
 .ext-reinstall[open] summary { margin-bottom: 8px; }
-.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: rgba(201, 154, 62, .14); color: var(--ink); }
+.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
 
 /* ---------- Verze v postranním panelu = vstup do „Co je nového“ ---------- */
 .source-version { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; margin: 0; padding: 4px 0; border: 0; background: none; color: var(--mute); font: 400 12px/1.4 var(--f-mono); text-align: left; white-space: nowrap; cursor: pointer; }
