@@ -128,7 +128,9 @@ jobs:
   browser-qa:
     name: rozhraní a přístupnost
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Kontrast se od 0.38.0 měří ve čtyřech vzhledech a qa:desktop klepe i na výběr vzhledu.
+    # Instalace prohlížečů (apt) sama trvá na runneru 1–11 minut, 20 minut na celek nestačilo.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
