@@ -147,7 +147,7 @@ async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
     await page.getByText('Detekovaný proces bez přepisu', { exact: true }).waitFor();
     assert.equal(await page.getByText('Čeká na zadání', { exact: true }).count(), 0, `${engine}: proces se vydává za čekající konverzaci`);
     assert.equal(await page.locator('[data-open-target], [data-action="assign"]').count(), 0, `${engine}: proces nabízí akci pro neexistující konverzaci`);
-    assert.equal(await page.getByText(/Přepis zatím není\./).count(), 1, `${engine}: detail procesu neříká, že přepis zatím není`);
+    assert.equal(await page.getByText('Bez přepisu nelze ověřit hlavního ani pomocného agenta.', { exact: true }).count(), 1, `${engine}: detail procesu nepopisuje hranici jistoty`);
     await page.screenshot({ path: `dist/qa/${engine}-detected-process.png` });
     server.app.store.remove(id);
     await page.reload();
@@ -700,7 +700,7 @@ for (const engine of engines) {
     assert.doesNotMatch(planyText, /Další licence|Přidat licenci/);
     assert.match(planyText, /20\s?\$/, `${engine} ChatGPT Plus má cenu z ceníku`);
     assert.match(planyText, /\d\s?€/, `${engine} hlavní částka je v měně aplikace (výchozí euro)`);
-    assert.match(planyText, /Ceník .* bez DPH/, `${engine} cena je označená jako ceník`);
+    assert.match(planyText, /veřejného ceníku/, `${engine} cena je označená jako ceník`);
     assert.equal(await page.locator('.plans .plan-foot a[href="https://chatgpt.com/pricing"]').count(), 1, `${engine} u ceny je odkaz na ceník`);
     await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });
     await page.setViewportSize({ width: 375, height: 812 });
