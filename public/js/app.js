@@ -10,6 +10,7 @@ import { tokensSince, needsYou } from './data.js';
 import { udalostNapojeni } from './napojeni-ui.js';
 import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
+import { umiInstalovat, nainstalujAktualizaci } from './aktualizace.js';
 import overview from './views/overview.js';
 import agents from './views/agents.js';
 import session from './views/session.js';
@@ -331,8 +332,9 @@ function renderUpdate() {
   }
   const downloaded = update.status === 'downloaded';
   const label = downloaded ? tr('Aktualizace připravena') : tr('Nová verze {0}', update.latestVersion);
-  const action = downloaded ? 'reveal' : 'download';
-  const button = downloaded ? tr('Otevřít') : tr('Stáhnout');
+  // Aplikace pro Mac aktualizaci nainstaluje sama: jedno klepnutí stáhne, vymění a restartuje.
+  const action = umiInstalovat() ? 'install' : downloaded ? 'reveal' : 'download';
+  const button = umiInstalovat() ? tr('Aktualizovat') : downloaded ? tr('Otevřít') : tr('Stáhnout');
   setHtml(updateEl, `<span class="update-chip-label">${ICON.down}<span>${label}</span></span><button class="btn btn--sm update-chip-action" type="button" data-update-action="${action}">${button}</button>`);
   updateEl.hidden = false;
 }
@@ -606,6 +608,10 @@ document.addEventListener('click', async (e) => {
     if (updateAction.disabled) return;
     updateAction.disabled = true;
     try {
+      if (updateAction.dataset.updateAction === 'install') {
+        await nainstalujAktualizaci();
+        return;
+      }
       if (updateAction.dataset.updateAction === 'download') {
         const r = await api.downloadUpdate();
         if (r.update) state.updates = r.update;

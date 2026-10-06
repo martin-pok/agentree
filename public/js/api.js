@@ -104,6 +104,7 @@ export const api = {
   checkUpdates: () => request('POST', '/api/updates/check', {}),
   downloadUpdate: () => request('POST', '/api/updates/download', {}),
   revealUpdate: () => request('POST', '/api/updates/reveal', {}),
+  installUpdate: () => request('POST', '/api/updates/install', {}),
   folders: (path = '') => request('GET', `/api/fs/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`),
   // Obrázek jde jako surové bajty (ne JSON), server ho pozná podle obsahu a ne podle přípony.
   async setProjectMedia(id, kind, blob) {

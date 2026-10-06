@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.38.1',
+    date: '2026-10-06',
+    title: 'Aktualizace jedním klepnutím',
+    items: [
+      'Novou verzi nainstaluješ jedním klepnutím na Aktualizovat: Agenteeq ji stáhne, ověří, nainstaluje a sám se restartuje.',
+      'Když aplikaci nahradíš novou verzí ručně, při dalším otevření se do ní sama restartuje místo staré kopie běžící na pozadí.',
+    ],
+    en: {
+      title: 'One-click updates',
+      items: [
+        'Install a new version with one click on Update: Agenteeq downloads it, verifies it, installs it and restarts itself.',
+        'If you replace the app with a new version by hand, it restarts into it the next time you open it instead of the old copy running in the background.',
+      ],
+    },
+  },
+  {
     version: '0.38.0',
     date: '2026-10-06',
     title: 'Čtyři vzhledy',

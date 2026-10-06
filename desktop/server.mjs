@@ -56,6 +56,8 @@ try {
     if (alert.muted || !app.datastore.data.settings.notifications.native) return;
     report({ type: 'notification', title: alert.title, body: alert.body || '', id: alert.id, route: alert.route || (alert.sessionId ? `#/agent/${encodeURIComponent(alert.sessionId)}` : '#/upozorneni') });
   });
+  // Instalaci stažené aktualizace provede okno aplikace: vymění balíček v Aplikacích a spustí novou verzi.
+  app.nastavDesktop(report);
   report({ ready: true, port: server.address().port, version: VERSION });
   badge();
 } catch (err) {

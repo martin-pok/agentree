@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.38.1 – 2026-10-06 · aktualizace jedním klepnutím
+
+- **Aktualizovat a restartovat.** V aplikaci pro Mac stačí u nové verze jedno klepnutí (v horní liště nebo v Nastavení → Aktualizace): ověřený balíček se stáhne, aplikace ho rozbalí, zkontroluje identifikátor, verzi i podpis, připraví vedle sebe a ukončí se. Malý pomocník pak vymění balíček v Aplikacích (předchozí verze jde do Koše) a spustí novou verzi. Když cokoli selže před ukončením, nic se nezmění a rozhraní řekne proč. Plášť pro Windows a příkazová řádka dál balíček jen stáhnou a ukážou.
+- **Žádná stará verze po ručním nahrazení.** Aplikace po zavření okna běží dál na pozadí. Když ji někdo v Aplikacích nahradí novou verzí (z DMG nebo ZIP), klepnutí na ikonu dřív ukázalo pořád starou běžící kopii. Teď aplikace při návratu do popředí porovná verzi na disku s běžící a restartuje se do nové.
+
 ## 0.38.0 – 2026-10-06 · čtyři vzhledy, důvěryhodný účet a Nastavení bez mezer
 
 - **Čtyři vzhledy ve dvou párech.** Nastavení → Účet a vzhled nabízí karty s náhledem: **Úsvit** (světlé sklo nad jemnou oblohou) a **Půlnoc** (půlnoční modrá) jsou výchozí pár, **Slonovina** (bílé karty pod tmavou scénou) a **Eben** (hluboká tma s výraznými barvami stavů) vracejí původní koncertní sál z verzí do 0.36. Přepínač **Střídat podle systému** střídá světlou a tmavou podobu vybraného páru; klepnutí na kartu při střídání přepne celý pár. Změna se projeví hned, uloží se na tomto Macu (nastavení `look`: `obloha` / `koncert`) a přežije restart. Barvy Koncertu jsou v `public/koncert.css` a mají stejnou specifičnost jako protějšky ve `styles.css`; kontrast a tvary se měří ve všech čtyřech vzhledech.

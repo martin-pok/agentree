@@ -992,6 +992,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,
       desktop: config.desktop,
+      selfInstall: config.selfInstall,
       autostart: {
         supported: !config.desktop && config.autostart,
         installed: await isLaunchAgentInstalled(config.sourceHome),
@@ -1036,6 +1037,24 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const result = await updates.download();
     store.emit('updates', updates.state());
     return result;
+  }
+
+  // Instalace a restart: balíček je stažený a ověřený otiskem SHA-256 z vydání (src/updates.js).
+  // Výměnu aplikace v Aplikacích a nové spuštění udělá okno aplikace pro Mac (desktop/Agenteeq.swift),
+  // protože jen ono může skončit samo a spustit novou verzi. Server mu pošle cestu k balíčku a verzi.
+  let desktopReport = null;
+  function nastavDesktop(report) { desktopReport = typeof report === 'function' ? report : null; }
+  async function installUpdate() {
+    if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
+    const target = updates.downloadedPath();
+    const updatesDir = path.resolve(config.dataDir, 'updates');
+    if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
+    try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
+    const version = updates.state().latestVersion;
+    if (!/^\d+\.\d+\.\d+$/.test(version || '')) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+    await datastore.flush?.();
+    desktopReport({ type: 'install-update', zip: path.resolve(target), version });
+    return { ok: true, restarting: true };
   }
 
   async function revealUpdate() {
@@ -1506,7 +1525,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop,
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
     lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),

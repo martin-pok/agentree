@@ -1,5 +1,13 @@
 # Testování a ověření
 
+## Protokol ověření – 0.38.1, aktualizace jedním klepnutím (6. 10. 2026, Linux, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | viz CI; nový test `updates` (instalace jen se staženým a ověřeným balíčkem, jen přes okno aplikace pro Mac, jen z tohoto Macu) |
+| Swift (`desktop/Agenteeq.swift`) | překlad ověřuje CI na macOS (job „aplikace pro Mac“) |
+| Neověřeno | skutečná výměna aplikace a restart na Macu – vývojové prostředí je Linux; postup je stejný jako u ověřeného `site/install.sh` (ditto, kontrola identifikátoru, verze a `codesign`, přesun vedle cíle, stará verze do Koše, `open`) |
+
 ## Protokol ověření – 0.38.0, čtyři vzhledy, účet a Nastavení (6. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |
