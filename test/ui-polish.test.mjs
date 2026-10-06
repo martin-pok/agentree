@@ -523,3 +523,29 @@ test('Útrata bez připojeného API: na telefonu drží ikona, text a tlačítko
   assert.match(css, /\.spend-hero\.is-unavailable \{ text-align: left; align-items: center; \}/);
   assert.match(css, /\.spend-hero\.is-unavailable > \.btn \{ margin-left: 44px; \}/);
 });
+
+test('doplňkový text drží 4,5:1 i přímo nad nejsytějším místem atmosféry (Den i Noc)', async () => {
+  const css = await zdroj('public/styles.css');
+  // Atmosféra je pevná vrstva pod stránkou: text bez karty (popisky filtrů, metadata sekcí) přes ni
+  // při posouvání přejede, včetně nejsytějšího středu kruhu. Text na skle pod ní je jen světlejší.
+  // Každý vzhled má vlastní --atmosphere; --mute a --paper se berou z téhož bloku před ní.
+  const bloky = [];
+  for (let i = css.indexOf('--atmosphere:'); i !== -1; i = css.indexOf('--atmosphere:', i + 1)) {
+    const zacatek = css.lastIndexOf('{', i);
+    bloky.push(css.slice(zacatek, css.indexOf(';', i) + 1));
+  }
+  const [den, noc] = bloky;
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const jas = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const pomer = (a, b) => { const l1 = jas(a), l2 = jas(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+  for (const [nazev, blok] of [['Den', den], ['Noc', noc]]) {
+    const mute = hex(blok.match(/--mute: (#[0-9A-Fa-f]{6})/)[1]);
+    const paper = hex(blok.match(/--paper: (#[0-9A-Fa-f]{6})/)[1]);
+    const vrstvy = [...blok.match(/--atmosphere: ([^;]+);/)[1].matchAll(/rgba\((\d+), (\d+), (\d+), ([.\d]+)\)/g)].map((m) => [m.slice(1, 4).map(Number), Number(m[4])]);
+    assert.ok(vrstvy.length >= 2, `${nazev}: atmosféra`);
+    for (const [barva, alfa] of vrstvy) {
+      const pod = barva.map((v, i) => v * alfa + paper[i] * (1 - alfa));
+      assert.ok(pomer(mute, pod) >= 4.5, `${nazev}: --mute na atmosféře ${barva} má ${pomer(mute, pod).toFixed(2)}:1`);
+    }
+  }
+});

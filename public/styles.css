@@ -19,7 +19,9 @@
   --action-hover: #2B3756;
   --on-ink: #FFFFFF;
   --ink-2: #354060;
-  --mute: #59627E;
+  /* Doplňkový text leží i přímo na atmosféře (popisky filtrů, metadata sekcí). #4E5772 drží
+     4,5:1 i nad jejím nejsytějším místem (modrý kruh vpravo nahoře), ne jen na skle a kartách. */
+  --mute: #4E5772;
   --line: #DCE1EB;
   --line-2: #E9EDF3;
 
@@ -163,7 +165,7 @@ button:disabled { cursor: not-allowed; }
 summary { border-radius: var(--r-full); }
 a { color: inherit; }
 svg { display: block; }
-code { font-family: var(--f-code); font-size: .9em; }
+code { font-family: var(--f-code); font-size: max(12px, .9em); }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
