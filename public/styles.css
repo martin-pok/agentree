@@ -151,7 +151,9 @@ html {
    stodvacetkrát za vteřinu. Teď leží na vlastní pevné vrstvě, kterou kompozitor nakreslí jednou
    a pak už s ní jen posouvá. Vzhled je stejný. */
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--f-body); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
-body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--atmosphere); }
+/* Atmosféra je vlastní složená vrstva: při posouvání se nepřekresluje (velké přechody přes celé okno
+   by jinak brzdily každý snímek, nejvíc ve WebKitu bez akcelerace). */
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--atmosphere); transform: translateZ(0); will-change: transform; }
 body.has-modal { overflow: hidden; }
 b, strong { font-weight: 500; }
 button, input, select, textarea { font: inherit; color: inherit; }

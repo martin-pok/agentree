@@ -940,10 +940,16 @@ for (const engine of engines) {
         const v = [];
         let posouva = false;
         const t0 = performance.now();
+        // Vzorkuje se, dokud se poloha 300 ms nezmění (nejvýš 3 s): na pomalém stroji CI trvá
+        // stejný dojezd déle a pevné okno 1,5 s ho uťalo uprostřed. Cíl i plynulost se ověřují stejně.
+        let posledniZmena = t0;
         (function f() {
+          const ted = performance.now();
+          if (!v.length || scrollY !== v.at(-1)) posledniZmena = ted;
           v.push(scrollY);
           if (document.documentElement.classList.contains('is-scrolling')) posouva = true;
-          if (performance.now() - t0 < 1500) requestAnimationFrame(f); else hotovo({ v, posouva });
+          const ustaleno = ted - t0 > 400 && ted - posledniZmena > 300;
+          if (!ustaleno && ted - t0 < 3000) requestAnimationFrame(f); else hotovo({ v, posouva });
         })();
       }));
       await p.mouse.wheel(0, 400);
