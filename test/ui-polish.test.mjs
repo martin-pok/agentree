@@ -515,3 +515,11 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.match(css, /#refresh-app\.is-refreshing \.icon \{ animation: refresh-rotation/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#refresh-app\.is-refreshing \.icon \{ animation: none/);
 });
+
+test('Útrata bez připojeného API: na telefonu drží ikona, text a tlačítko jednu osu', async () => {
+  const css = await zdroj('public/styles.css');
+  // Mobilní .spend-hero centruje text kvůli prstenci rozpočtu; karta bez API je ale řádek
+  // ikona – text – tlačítko a centrovaný text se od obou odtrhl.
+  assert.match(css, /\.spend-hero\.is-unavailable \{ text-align: left; align-items: center; \}/);
+  assert.match(css, /\.spend-hero\.is-unavailable > \.btn \{ margin-left: 44px; \}/);
+});
