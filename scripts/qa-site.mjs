@@ -72,7 +72,8 @@ try {
           // Hlavní obsah lícuje s navigací. FAQ ani instalační postup nemají vlastní užší sloupec.
           const okraje = await page.evaluate(() => {
             const vzor = document.querySelector('.nav > .wrap').getBoundingClientRect();
-            return [...document.querySelectorAll('.unit > .wrap:not(.note), footer > .wrap')].map(el => {
+            // Skrytý blok (třeba kroky pro jiný systém) se nevykresluje, takže okraj nemá.
+            return [...document.querySelectorAll('.unit > .wrap:not(.note), footer > .wrap')].filter(el => el.getClientRects().length).map(el => {
               const r = el.getBoundingClientRect();
               return { sekce: el.closest('section')?.id || 'footer', rozdil: Math.max(Math.abs(r.left - vzor.left), Math.abs(r.right - vzor.right)) };
             });
@@ -288,7 +289,7 @@ try {
       // prvek jeví ustálený i uprostřed animace (dva snímky se stejným rámečkem),
       // takže bez tohoto čekání test chytal doběh nástupu místo skutečné smyčky.
       await motionPage.waitForFunction(`(${podleHodin})().length === 0`, null, { timeout: 5000 });
-      const button = motionPage.locator('.hero .btn');
+      const button = motionPage.locator('.hero .btn').first();
       await button.hover();
       // Najetí zvedá, stisk stlačuje. Dvě rozlišitelné odezvy, ne jedna pro obojí.
       await motionPage.waitForFunction(() => {
