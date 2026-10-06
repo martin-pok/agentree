@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 96)) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 48)) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -147,7 +147,7 @@ async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
     await page.getByText('Detekovaný proces bez přepisu', { exact: true }).waitFor();
     assert.equal(await page.getByText('Čeká na zadání', { exact: true }).count(), 0, `${engine}: proces se vydává za čekající konverzaci`);
     assert.equal(await page.locator('[data-open-target], [data-action="assign"]').count(), 0, `${engine}: proces nabízí akci pro neexistující konverzaci`);
-    assert.equal(await page.getByText('Bez přepisu nelze ověřit hlavního ani pomocného agenta.', { exact: true }).count(), 1, `${engine}: detail procesu nepopisuje hranici jistoty`);
+    assert.equal(await page.getByText(/Přepis zatím není\./).count(), 1, `${engine}: detail procesu neříká, že přepis zatím není`);
     await page.screenshot({ path: `dist/qa/${engine}-detected-process.png` });
     server.app.store.remove(id);
     await page.reload();
@@ -557,8 +557,9 @@ for (const engine of engines) {
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
+    // Karty Přehledu jsou světlé sklo Dne (--glass), ne barevná výplň.
     for (const selector of ['.token-card', '.calm']) {
-      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
     }
     assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
@@ -699,7 +700,7 @@ for (const engine of engines) {
     assert.doesNotMatch(planyText, /Další licence|Přidat licenci/);
     assert.match(planyText, /20\s?\$/, `${engine} ChatGPT Plus má cenu z ceníku`);
     assert.match(planyText, /\d\s?€/, `${engine} hlavní částka je v měně aplikace (výchozí euro)`);
-    assert.match(planyText, /veřejného ceníku/, `${engine} cena je označená jako ceník`);
+    assert.match(planyText, /Ceník .* bez DPH/, `${engine} cena je označená jako ceník`);
     assert.equal(await page.locator('.plans .plan-foot a[href="https://chatgpt.com/pricing"]').count(), 1, `${engine} u ceny je odkaz na ceník`);
     await page.screenshot({ path: `dist/qa/${engine}-automatic-plans.png` });
     await page.setViewportSize({ width: 375, height: 812 });
@@ -742,7 +743,7 @@ for (const engine of engines) {
       await page.waitForTimeout(100);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
-      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
+      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
       if (route === 'nastaveni') {
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
         const choices = await page.locator('[data-avatar-pick]').evaluateAll((nodes) => nodes.map((el) => ({ value: el.dataset.avatarPick, name: el.getAttribute('aria-label') || el.title || el.textContent.trim() })));
@@ -801,7 +802,7 @@ for (const engine of engines) {
         await page.locator('button[data-appearance="light"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'light');
         await page.setViewportSize({ width: 2528, height: 1390 });
-        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '200px');
+        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '224px');
         const settingsCenter = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
           return Math.abs(box.left + box.width / 2 - innerWidth / 2);
