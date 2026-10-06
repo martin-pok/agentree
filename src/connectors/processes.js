@@ -1,4 +1,4 @@
-import { processList, detailyProcesu, JE_WINDOWS, POCITAC } from '../platform.js';
+import { processList, detailyProcesu, aplikaceWindows, JE_WINDOWS, POCITAC } from '../platform.js';
 import { ui } from '../texty.js';
 
 // ── Jak se pozná program v příkazové řádce ───────────────────────────────────
@@ -27,6 +27,9 @@ const PRIKAZ_TEXTEM = /^-(?:[a-z]*c[a-z]*|e|p|m)$|^--(?:eval|print|command)(?:=|
 // Začátek cesty: „/“, „~/“, „./“, „../“, „C:\“, „\\server“. Podle něj se pozná, kde cesta
 // s mezerou („Application Support“, „Jana Nováková“) začíná.
 const ZACATEK_CESTY = /^(\/|~(\/|$)|\.\.?[\\/]|[A-Za-z]:[\\/]|\\\\)/;
+// Pomocný proces Electronu (vykreslování, GPU, síť…) má vždy `--type=<druh>`. Desktopové aplikace
+// na Windows (Claude Desktop jako `claude.exe`) by se jinak počítaly jako nástroj příkazové řádky.
+const POMOCNY_PROCES = /(^|\s)--type=/;
 
 /**
  * Běží v procesu opravdu program `jmeno`? Ano, když je to samotný spustitelný soubor, nebo skript
@@ -35,6 +38,7 @@ const ZACATEK_CESTY = /^(\/|~(\/|$)|\.\.?[\\/]|[A-Za-z]:[\\/]|\\\\)/;
  */
 function spusteny(args, vzor) {
   const text = String(args || '');
+  if (POMOCNY_PROCES.test(text)) return false;
   const m = vzor.exec(text);
   if (!m) return false;
   // Kde začíná cesta, ve které jméno programu stojí: nejbližší slovo před ním, které začíná jako
@@ -101,6 +105,14 @@ const WEBOVE_AI = [
   test: (a) => webovaAplikace(name).test(a),
 }));
 
+// Claude Desktop na Windows: `claude.exe` ve složce instalace aplikace (src/platform.js#aplikaceWindows).
+const CLAUDE_DESKTOP_WINDOWS = aplikaceWindows('Claude');
+// Claude Code z npm spuštěný přímo přes vstupní skript balíčku: „node …/@anthropic-ai/claude-code/cli.js“.
+// Obvyklé „node …/bin/claude“ pozná už `program('claude')`. Platí totéž pravidlo jako u programu
+// (`spusteny`): skript pod interpretem ano, zmínka v příkazu shellu nebo argument editoru ne.
+const CLAUDE_CODE_NPM_SKRIPT = /([\\/])@anthropic-ai[\\/]claude-code[\\/]cli\.js(\s|$)/;
+const CLAUDE_CODE_NPM = { test: (args) => spusteny(args, CLAUDE_CODE_NPM_SKRIPT) };
+
 // `druh` říká, kde nástroj pracuje (pro rychlou informaci v oznámení), `popis` co to je,
 // `konektory` odkud Agenteeq čte data právě tohohle nástroje – když některý z nich má data, nástroj
 // už sledujeme a oznámení o „novém agentovi“ by byl šum. Rozšíření pro Chrome (`web`) sem nepatří:
@@ -109,11 +121,15 @@ const WEBOVE_AI = [
 // balíčku nebo příkazu, které zatím nikdo nepotvrdil na skutečném stroji (docs/CONNECTORS.md, 🧪).
 export const RUNTIMES = [
   ...WEBOVE_AI,
-  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', druh: 'aplikace', overeno: true, konektory: ['claude-code', 'claude-desktop-usage'], vidim: ui('Práci v záložce Code a limity předplatného už čtu. Běžné chaty z aplikace ne.'), popis: ui('Claude od Anthropicu – chat a Claude Code v záložce Code'), test: (a) => aplikace('Claude').test(a) },
-  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => program('claude').test(a) && !/disclaimer|chrome-native-host/.test(a) },
+  { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', druh: 'aplikace', overeno: true, konektory: ['claude-code', 'claude-desktop-usage'], vidim: ui('Práci v záložce Code a limity předplatného už čtu. Běžné chaty z aplikace ne.'), popis: ui('Claude od Anthropicu – chat a Claude Code v záložce Code'), test: (a) => aplikace('Claude').test(a) || CLAUDE_DESKTOP_WINDOWS.test(a) },
+  { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => (program('claude').test(a) || CLAUDE_CODE_NPM.test(a)) && !/disclaimer|chrome-native-host/.test(a) && !CLAUDE_DESKTOP_WINDOWS.test(a) },
   { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', druh: 'aplikace', overeno: true, konektory: ['codex'], vidim: ui('Práci Codexu a limity tvého plánu už čtu. Běžné chaty z aplikace ne.'), popis: ui('ChatGPT od OpenAI – chat, agent a Codex'), test: (a) => aplikace('ChatGPT').test(a) },
-  // Aplikace ChatGPT si spouští vlastní vnitřní `codex app-server`; jako samostatný Codex CLI se počítat nesmí.
-  { id: 'codex', name: 'Codex', provider: 'openai', druh: 'terminal', overeno: true, konektory: ['codex'], popis: ui('Programovací agent od OpenAI'), test: (a) => program('codex').test(a) && !/[\\/]ChatGPT\.app[\\/]/.test(a) },
+  // Samostatná desktopová aplikace Codex. Musí být před Codexem v terminálu: první shoda vyhrává.
+  // 🧪 Podle názvu balíčku, na skutečném Macu zatím neověřeno (docs/CONNECTORS.md).
+  { id: 'codex-app', name: 'Codex App', provider: 'openai', druh: 'aplikace', overeno: false, konektory: ['codex'], vidim: ui('Úlohy a limity Codexu čtu ze sdílené složky Codexu.'), popis: ui('Desktopová aplikace Codex od OpenAI'), test: (a) => aplikace('Codex').test(a) },
+  // Aplikace ChatGPT i aplikace Codex si spouští vlastní vnitřní `codex app-server`; jako samostatný
+  // Codex CLI se počítat nesmí.
+  { id: 'codex', name: 'Codex', provider: 'openai', druh: 'terminal', overeno: true, konektory: ['codex'], popis: ui('Programovací agent od OpenAI'), test: (a) => program('codex').test(a) && !/[\\/](ChatGPT|Codex)\.app[\\/]/.test(a) },
   { id: 'copilot-cli', name: 'Copilot CLI', provider: 'github', druh: 'terminal', overeno: false, konektory: ['copilot-cli'], popis: ui('Programovací agent GitHub Copilot'), test: (a) => program('copilot').test(a) && !/\.app[\\/]/.test(a) },
   { id: 'vscode', name: 'VS Code', provider: 'github', druh: 'editor', overeno: false, konektory: ['vscode-copilot'], popis: ui('Editor od Microsoftu s GitHub Copilotem'), test: (a) => aplikace('Visual Studio Code', 'Code').test(a) || aplikace('Visual Studio Code - Insiders', 'Code - Insiders').test(a) },
   { id: 'cursor', name: 'Cursor', provider: 'cursor', druh: 'editor', overeno: true, konektory: ['cursor'], popis: ui('Editor s vestavěným programovacím agentem'), test: (a) => aplikace('Cursor').test(a) },
@@ -153,12 +169,22 @@ export function etimeToSec(t) {
   return Number(d) * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2];
 }
 
-// Řádek výpisu procesů v jednotném tvaru (src/platform.js#processList).
+/**
+ * Jeden řádek výpisu procesů v jednotném tvaru (src/platform.js#processList):
+ * `<pid> <pid rodiče> <doba běhu> <%cpu> <rss v kB> <příkaz>`. Nesmyslný řádek = `null`.
+ * Jediný parser pro tento konektor i src/connectors/local-agents.js.
+ */
+export function radekProcesu(line) {
+  const m = String(line).trim().match(/^(\d+)\s+(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
+  if (!m) return null;
+  return { pid: Number(m[1]), ppid: Number(m[2]), uptimeSec: etimeToSec(m[3]), cpu: Number(m[4]), rssKB: Number(m[5]), args: m[6] };
+}
+
 function radkyPs(out) {
   const radky = [];
   for (const line of String(out || '').split('\n')) {
-    const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
-    if (m) radky.push({ pid: Number(m[1]), uptimeSec: etimeToSec(m[2]), cpu: Number(m[3]), rssKB: Number(m[4]), args: m[5] });
+    const r = radekProcesu(line);
+    if (r) radky.push(r);
   }
   return radky;
 }
@@ -206,7 +232,7 @@ const BEZ_KONVERZACE = {
 function argumentyProgramu(args, runtime) {
   const jmeno = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot' }[runtime];
   const slova = args.split(/\s+/);
-  const i = slova.findIndex((w) => program(jmeno).test(w));
+  const i = slova.findIndex((w) => program(jmeno).test(w) || (runtime === 'claude-code' && CLAUDE_CODE_NPM_SKRIPT.test(w)));
   return i === -1 ? [] : slova.slice(i + 1);
 }
 
@@ -221,16 +247,41 @@ export function vedeKonverzaci(args, runtime) {
   return !pravidla.podprikazy.includes(argv[i]);
 }
 
-/** Procesy agentů v příkazové řádce, každý zvlášť: { pid, runtime, uptimeSec }. */
+// Jak daleko se hledá předek téhož nástroje. Obal a jeho binárka jsou rodič a dítě (Codex z npm,
+// Gemini CLI po novém spuštění s větší pamětí); rezerva pokryje mezikrok přes shell nebo `npm exec`.
+// Strop drží průchod krátký i u nesmyslného výpisu s cyklem v rodičích.
+const HLOUBKA_PREDKU = 3;
+
+/**
+ * Procesy agentů v příkazové řádce, každý zvlášť: { pid, runtime, uptimeSec }.
+ *
+ * Proces, jehož předek (do HLOUBKA_PREDKU) je agent téhož nástroje, se nepočítá: npm obal Codexu
+ * (`node …/bin/codex`) a jeho binárka (`…/vendor/…/codex/codex`) jsou jeden agent, ne dva. Předek
+ * se počítá, jen když sám vede konverzaci – dítě pomocného procesu (`claude --bg-pty-host`) je
+ * skutečný agent a zůstává. Daň: `claude -p` spuštěný uvnitř jiné session Claude Code splyne
+ * s ní; jeho přepis se ale v přehledu ukáže jako vlastní konverzace.
+ */
 export function agentniProcesy(out) {
   const cli = Object.keys(BEZ_KONVERZACE);
-  const procesy = [];
-  for (const p of radkyPs(out)) {
+  const radky = radkyPs(out);
+  const rodic = new Map(radky.map((p) => [p.pid, p.ppid]));
+  const kandidati = [];
+  const agent = new Map();
+  for (const p of radky) {
     const r = RUNTIMES.find((x) => x.test(p.args));
     if (!r || !cli.includes(r.id) || !vedeKonverzaci(p.args, r.id)) continue;
-    procesy.push({ pid: p.pid, runtime: r.id, uptimeSec: p.uptimeSec });
+    kandidati.push({ pid: p.pid, ppid: p.ppid, runtime: r.id, uptimeSec: p.uptimeSec });
+    agent.set(p.pid, r.id);
   }
-  return procesy;
+  const potomekTehoz = (p) => {
+    let pid = p.ppid;
+    for (let i = 0; i < HLOUBKA_PREDKU && pid > 1 && pid !== p.pid; i++) {
+      if (agent.get(pid) === p.runtime) return true;
+      pid = rodic.get(pid);
+    }
+    return false;
+  };
+  return kandidati.filter((p) => !potomekTehoz(p)).map(({ pid, runtime, uptimeSec }) => ({ pid, runtime, uptimeSec }));
 }
 
 // Výpis procesů sdílený konektory (tento a src/connectors/local-agents.js). Kdo se zeptá do pár
@@ -276,10 +327,16 @@ const adresaOllamy = (klient) => {
 export function createProcessesConnector(ctx) {
   // Ollama jde přes sdíleného klienta z src/ollama.js, tedy na adresu z AGENTEEQ_OLLAMA_URL. Bez klienta
   // se na Ollamu neptá vůbec – nikdy natvrdo na 127.0.0.1:11434.
-  const { store, config, onAgenti = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
+  // `onVypis` dostane každý výpis procesů (i nepovedený) – lokální agenti (src/connectors/local-agents.js)
+  // se zjišťují z téhož průchodu, ne vlastním pomalejším časovačem.
+  const { store, config, onAgenti = () => {}, onVypis = () => {}, promenne = [], procesy = processList, detaily = detailyProcesu, ollama: ollamaKlient = null } = ctx;
   let timer = null;
   let ollama = { ok: false, models: [] };
   let lastOk = 0;
+  // Kdy se výpis naposledy nepovedl a jestli to byl poslední průchod (`selhal`). Pak je seznam běžících
+  // aplikací jen poslední známý stav, ne zjištěný – a status to musí říct.
+  let lastFailAt = 0;
+  let selhal = false;
   // Složka a prostředí se u procesu nemění – zjišťují se jednou za jeho život (klíč pid + start).
   const znamy = new Map();
 
@@ -300,20 +357,33 @@ export function createProcessesConnector(ctx) {
 
   const starty = createStabilniStart();
 
+  // Ollama jde přes HTTP, ne přes výpis procesů: běží, i když ji `ps` nevidí (jiná adresa).
+  const sOllamou = (runtimes) => runtimes.map((r) => (r.id === 'ollama' && ollama.ok
+    ? { ...r, running: true, detail: ollama.models.length ? ui('Načteno: {0}', ollama.models.join(', ')) : ui('Žádný model v paměti') }
+    : r));
+
   async function poll() {
     const res = await procesy();
     const runtimes = res.ok ? parsePs(res.stdout).map(({ uptimeSec, ...r }) => ({ ...r, od: r.running ? starty.od(r.id, uptimeSec) : 0 })) : store.runtimes;
-    if (res.ok) starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
-    // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
-    onAgenti(res.ok ? await agenti(res.stdout).catch(() => null) : null);
-    ollama = ollamaKlient ? await ollamaKlient.loaded() : { ok: false, models: [] };
-    const o = runtimes.find((r) => r.id === 'ollama');
-    if (o && ollama.ok) {
-      o.running = true;
-      o.detail = ollama.models.length ? ui('Načteno: {0}', ollama.models.join(', ')) : ui('Žádný model v paměti');
+    if (res.ok) {
+      starty.ponech(new Set(runtimes.filter((r) => r.running).map((r) => r.id)));
+      lastOk = Date.now();
+      selhal = false;
+    } else {
+      lastFailAt = Date.now();
+      selhal = true;
     }
-    if (res.ok) lastOk = Date.now();
-    store.setRuntimes(runtimes);
+    // Nový nástroj se ukáže hned po výpisu. Složka procesu (lsof) a dotaz na Ollamu trvají stovky ms
+    // a mohou viset – nesmí zdržet to hlavní. Ollama se tu bere z minulého průchodu a níž obnoví.
+    if (res.ok) store.setRuntimes(sOllamou(runtimes));
+    try { Promise.resolve(onVypis(res)).catch(() => {}); } catch { /* chyba odběratele nesmí shodit průchod */ }
+    // Nepovedený výpis = nevíme. Pojistka pak nic nepřidá ani neubere (null).
+    const [seznamAgentu] = await Promise.all([
+      res.ok ? agenti(res.stdout).catch(() => null) : null,
+      (async () => { ollama = ollamaKlient ? await ollamaKlient.loaded() : { ok: false, models: [] }; })().catch(() => { ollama = { ok: false, models: [] }; }),
+    ]);
+    store.setRuntimes(sOllamou(runtimes));
+    onAgenti(seznamAgentu);
   }
 
   return {
@@ -338,9 +408,14 @@ export function createProcessesConnector(ctx) {
       const running = store.runtimes.filter((r) => r.running).length;
       // Dokud se výpis procesů ani jednou nepovedl, nevíme nic – a „0 aplikací běží“
       // by byla lež, ne údaj. Ollamu poznáme i tak, ta jde přes HTTP.
+      // Výpis se kdysi povedl, ale poslední ne: seznam je jen poslední známý stav – „connected“
+      // s čerstvým časem by vydával starý údaj za zjištěný.
+      const zastarale = Boolean(lastOk) && selhal;
       return {
-        state: lastOk ? 'connected' : 'error',
-        detail: lastOk
+        state: lastOk && !zastarale ? 'connected' : 'error',
+        detail: zastarale
+          ? ui('Seznam běžících aplikací se teď nedaří získat. Ukazuji poslední známý stav.')
+          : lastOk
           ? aplikaciBezi(running, ollama.ok ? ollama.models.length : null)
           : ollama.ok
             ? ui('Seznam běžících aplikací se na tomto systému nepodařilo získat, Ollama ale odpovídá: {0} modelů.', ollama.models.length)
@@ -349,6 +424,7 @@ export function createProcessesConnector(ctx) {
         watching: Boolean(timer),
         // Výpis běží každých pár vteřin; na minuty zaokrouhlený čas nerozhýbe seznam zdrojů při každém průchodu.
         lastEventAt: lastOk ? Math.floor(lastOk / 60e3) * 60e3 : 0,
+        lastFailAt: zastarale ? Math.floor(lastFailAt / 60e3) * 60e3 : 0,
       };
     },
   };

@@ -16,6 +16,9 @@ export const WEB_SITES = {
 };
 
 const MAX_POCET = 100000;
+// Dočasné ID karty, pod kterým rozšíření hlásí novou konverzaci, dokud jí služba nedá vlastní adresu
+// (extension/sites.js#tabId). Přejmenovat se smí jen takové – nikdy jiná, skutečná konverzace.
+const DOCASNE_ID = /^tab-[\w.:-]{1,196}$/;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
 
 export function validateWebPayload(p) {
@@ -41,6 +44,9 @@ export function validateWebPayload(p) {
       model: clip(typeof p.model === 'string' ? p.model : '', 60),
       needsInput: typeof p.needsInput === 'string' ? clip(p.needsInput, 200) : null,
       limit: typeof p.limit === 'string' ? clip(p.limit, 200) : null,
+      // Nová konverzace dostala skutečné ID: `predchozi` je dočasné ID karty, pod kterým se hlásila
+      // dosud. Cokoli jiného se ignoruje (starší rozšíření pole neposílá).
+      predchozi: typeof p.predchozi === 'string' && DOCASNE_ID.test(p.predchozi) && p.predchozi !== p.conversationId ? p.predchozi : null,
     },
   };
 }
@@ -95,7 +101,17 @@ export function createWebConnector(ctx) {
       if (!res.ok) return res;
       const v = res.value;
       const site = WEB_SITES[v.site];
-      const s = store.ensure({ connector: 'web', localId: `${v.site}:${v.conversationId}`, provider: site.provider, app: site.name, source: 'web' });
+      const localId = `${v.site}:${v.conversationId}`;
+      // Nová konverzace se hlásí pod dočasným ID karty, dokud jí služba nedá adresu. Pak je to pořád
+      // tatáž konverzace: stav se přesune pod skutečné ID a dočasný záznam zmizí – jinak by po první
+      // odpovědi byly v přehledu dvě.
+      const stara = v.predchozi ? store.get(`web:${v.site}:${v.predchozi}`) : null;
+      if (stara && !store.get(`web:${localId}`)) {
+        const nova = store.ensure({ connector: 'web', localId, provider: site.provider, app: site.name, source: 'web' });
+        Object.assign(nova, { ...stara, id: nova.id, localId: nova.localId });
+      }
+      if (stara) store.remove(stara.id);
+      const s = store.ensure({ connector: 'web', localId, provider: site.provider, app: site.name, source: 'web' });
       applyWebPayload(s, v, now);
       lastSeen.set(v.site, now);
       store.commit(s, now);

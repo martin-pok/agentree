@@ -153,10 +153,10 @@ test('detekce v aplikaci: podstrčené procesy, existující instalace, rozhodnu
   // Podstrčený výpis procesů (místo skutečného `ps`). PID nad maximem macOS i Linuxu: detaily
   // procesu (složka, CLAUDE_CONFIG_DIR) se tak nikdy nepřečtou ze skutečného procesu na stroji.
   const PS = [
-    '  9000101 00:05:00  3.0 200000 /Users/x/.local/bin/claude',
-    '  9000102 00:10:00  2.0 300000 /Applications/Warp.app/Contents/MacOS/stable',
-    '  9000103 00:02:00  1.0 150000 /Users/x/Applications/Chrome Apps.localized/Google AI Studio.app/Contents/MacOS/app_mode_loader',
-    '  9000104 00:02:00  1.0 150000 /Users/x/Applications/Chrome Apps.localized/Adobe Express.app/Contents/MacOS/app_mode_loader',
+    '  9000101 1 00:05:00  3.0 200000 /Users/x/.local/bin/claude',
+    '  9000102 1 00:10:00  2.0 300000 /Applications/Warp.app/Contents/MacOS/stable',
+    '  9000103 1 00:02:00  1.0 150000 /Users/x/Applications/Chrome Apps.localized/Google AI Studio.app/Contents/MacOS/app_mode_loader',
+    '  9000104 1 00:02:00  1.0 150000 /Users/x/Applications/Chrome Apps.localized/Adobe Express.app/Contents/MacOS/app_mode_loader',
   ].join('\n');
   const demo = await startTestServer(
     { AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: data, AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '200' },
@@ -207,7 +207,7 @@ test('rozpoznávání nástrojů: zrádné případy', async () => {
   assert.equal(id('/Users/x/Applications/Chrome Apps.localized/Adobe Express.app/Contents/MacOS/app_mode_loader'), null, 'webová aplikace, ale ne AI');
   assert.equal(id('python3 -m aider --model gpt-5'), 'aider');
   // Aider s --model není „neznámý lokální model“ – je to známý nástroj.
-  assert.deepEqual(detectLocalAgents('  10 00:10  5.0 100000 python3 -m aider --model gpt-5'), []);
+  assert.deepEqual(detectLocalAgents('  10 1 00:10  5.0 100000 python3 -m aider --model gpt-5'), []);
 });
 
 test('rozhodnutí o nástroji a hlášení přítomnosti smí jen tento počítač, telefon jen čte', async () => {

@@ -289,9 +289,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Sdílený výpis nesmí být starší než jeden průchod – jinak by kratší AGENTEEQ_PROCESS_MS nic neznamenal
     // a skončený agent by visel až 4 s. Výchozích 5 s průchodu platnost 4 s nemění.
     const vypis = sdilenyVypis(vypisProcesu, config.processIntervalMs < 4000 ? config.processIntervalMs / 2 : 4000);
-    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
     // Detektor všeho ostatního, co na Macu běží jako AI agent – včetně vlastních a neznámých modelů.
-    list.push(createLocalAgentsConnector({ ...ctx, procesy: vypis, onDetect: (found) => store.setLocalAgents(found) }));
+    // Zjišťuje se z každého průchodu procesů (1,5 s), ne vlastním 10s časovačem: lokální model se
+    // tak ukáže stejně rychle jako známý nástroj a `ps` se nespouští dvakrát.
+    const lokalni = createLocalAgentsConnector({ ...ctx, procesy: vypis, napajeny: true, onDetect: (found) => store.setLocalAgents(found) });
+    list.push(createProcessesConnector({ ...ctx, ollama, procesy: vypis, promenne: PROMENNE_DOMOVA, onVypis: (res) => lokalni.zVypisu(res), onAgenti: (procesy) => beziciAgenti(procesy).catch(() => {}) }));
+    list.push(lokalni);
   }
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 

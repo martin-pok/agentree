@@ -7,6 +7,7 @@ import { tr, tentoPocitac } from './i18n.js';
 export const MA_PREPIS = new Set([
   'claude-code',
   'codex',
+  'codex-app',
   'copilot-cli',
   'vscode',
   'cursor',

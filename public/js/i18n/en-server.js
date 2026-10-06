@@ -232,6 +232,7 @@ export default {
   "Neznámí a lokální agenti": "Unknown and local agents",
   "Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).": "Finds local AI models and servers beyond the fixed list of known apps – by processes and open ports (Ollama, LM Studio, llama.cpp, ComfyUI and dozens more, plus a heuristic for unknown ones).",
   "Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.": "Couldn’t list running processes on this system, so we know nothing about local agents.",
+  "Běžící procesy se teď nedaří zjistit. Seznam lokálních agentů je z posledního úspěšného zjištění a nemusí platit.": "Running processes can’t be listed right now. The list of local agents is from the last successful check and may be out of date.",
   "1 lokální agent mimo známý seznam.": "1 local agent outside the known list.",
   "{0} lokální agenti mimo známý seznam.": "{0} local agents outside the known list.",
   "{0} lokálních agentů mimo známý seznam.": "{0} local agents outside the known list.",
@@ -251,6 +252,7 @@ export default {
   "Pozná, které AI aplikace a CLI právě běží, jejich zátěž a modely načtené v Ollamě.": "Detects which AI apps and CLIs are running, their load and the models loaded in Ollama.",
   "Seznam běžících aplikací se na tomto systému nepodařilo získat, Ollama ale odpovídá: {0} modelů.": "Couldn’t get the list of running apps on this system, but Ollama is responding: {0} models.",
   "Seznam běžících aplikací se na tomto systému nepodařilo získat.": "Couldn’t get the list of running apps on this system.",
+  "Seznam běžících aplikací se teď nedaří získat. Ukazuji poslední známý stav.": "The list of running apps can’t be retrieved right now. Showing the last known state.",
 
   // src/connectors/web.js
   "Chybí data.": "Data missing.",
@@ -669,6 +671,8 @@ export default {
   "Práci Codexu a limity tvého plánu už čtu. Běžné chaty z aplikace ne.": "I already read Codex work and your plan limits. Not regular chats from the app.",
   "ChatGPT od OpenAI – chat, agent a Codex": "ChatGPT from OpenAI – chat, agent and Codex",
   "Programovací agent od OpenAI": "Coding agent from OpenAI",
+  "Úlohy a limity Codexu čtu ze sdílené složky Codexu.": "I read Codex tasks and limits from the shared Codex folder.",
+  "Desktopová aplikace Codex od OpenAI": "Codex desktop app from OpenAI",
   "Programovací agent GitHub Copilot": "GitHub Copilot coding agent",
   "Editor od Microsoftu s GitHub Copilotem": "Microsoft’s editor with GitHub Copilot",
   "Editor s vestavěným programovacím agentem": "Editor with a built-in coding agent",

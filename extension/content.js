@@ -1,8 +1,14 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
 // Posílá jen stav a počty – text zpráv ani název konverzace stránku neopustí (docs/ACCOUNTS.md).
 (() => {
-  const adapter = window.AgenteeqSites?.detect(location);
+  // Adaptér se vybírá znovu při každém průchodu: jednostránkové aplikace mění adresu bez načtení
+  // (chatgpt.com ↔ chatgpt.com/codex), takže služba se může změnit, aniž by se skript spustil znovu.
+  let adapter = window.AgenteeqSites?.detect(location);
   if (!adapter) return;
+  // Nová konverzace se hlásí pod dočasným ID karty, dokud jí služba nedá adresu. Jakmile ji má,
+  // pošle se jednou i předchozí ID, aby aplikace oba záznamy spojila (src/connectors/web.js).
+  let posledniId = '';
+  let cekaPredchozi = null; // drží se, dokud ho aplikace opravdu nepřijme
 
   let lastSig = '';
   let lastSentAt = 0;
@@ -15,14 +21,20 @@
   // Jednorázový pohled do stránky to nepozná, přechod ano.
   const videl = { generovani: false, konec: false };
   function collect() {
+    adapter = window.AgenteeqSites?.detect(location) || adapter;
     const zpravy = adapter.messages(document);
     posledniDelka = zpravy.length ? zpravy[zpravy.length - 1].text.length : 0;
     const generating = adapter.generating(document);
     if (generating) videl.generovani = true;
     else if (videl.generovani) videl.konec = true;
+    const conversationId = String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-');
+    if (posledniId.startsWith('tab-') && posledniId !== conversationId) cekaPredchozi = posledniId;
+    posledniId = conversationId;
+    const predchozi = cekaPredchozi && cekaPredchozi !== conversationId ? cekaPredchozi : null;
     return {
       site: adapter.id,
-      conversationId: String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-'),
+      conversationId,
+      ...(predchozi ? { predchozi } : {}),
       url: location.href,
       generating,
       counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
@@ -51,7 +63,7 @@
     try {
       // Nepovedené odeslání (aplikace zrovna neběží) se zopakuje při dalším průchodu, ne až při změně.
       return Promise.resolve(chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }))
-        .then((r) => { if (!r?.ok) lastSig = ''; return r; })
+        .then((r) => { if (!r?.ok) lastSig = ''; else if (payload.predchozi) cekaPredchozi = null; return r; })
         .catch(() => { lastSig = ''; return { ok: false }; });
     } catch {
       dead = true; // rozšíření bylo znovu načteno – tento skript už nemá spojení

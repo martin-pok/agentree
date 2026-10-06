@@ -302,13 +302,13 @@ test('Web: z webových chatů se bere jen stav a počty – text ani název konv
 
 test('Procesy: rozpoznání AI aplikací z výpisu ps', () => {
   const out = [
-    '57811 01-22:59:09 13.6 204800 /Applications/Claude.app/Contents/MacOS/Claude',
-    '57825 01-22:59:01 23.3 102400 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper',
-    '83564 10:29 0.5 51200 /Users/m/Library/Application Support/Claude/claude-code/2.1.260/claude.app/Contents/MacOS/claude --output-format stream-json',
-    '83563 10:29 0.0 1024 /Applications/Claude.app/Contents/Helpers/disclaimer -- /Users/m/claude-code/claude',
-    '85123 00:31 0.0 2048 /Applications/ChatGPT.app/Contents/Resources/codex -c features.x app-server',
+    '57811 1 01-22:59:09 13.6 204800 /Applications/Claude.app/Contents/MacOS/Claude',
+    '57825 1 01-22:59:01 23.3 102400 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper',
+    '83564 1 10:29 0.5 51200 /Users/m/Library/Application Support/Claude/claude-code/2.1.260/claude.app/Contents/MacOS/claude --output-format stream-json',
+    '83563 1 10:29 0.0 1024 /Applications/Claude.app/Contents/Helpers/disclaimer -- /Users/m/claude-code/claude',
+    '85123 1 00:31 0.0 2048 /Applications/ChatGPT.app/Contents/Resources/codex -c features.x app-server',
   ].join('\n');
-  const r = Object.fromEntries(parsePs(`${out}\n85200 00:12 0.0 3072 /Applications/ChatGPT.app/Contents/MacOS/ChatGPT\n85301 00:05 0.0 4096 /opt/homebrew/bin/codex exec --skip-git-repo-check`).map((x) => [x.id, x]));
+  const r = Object.fromEntries(parsePs(`${out}\n85200 1 00:12 0.0 3072 /Applications/ChatGPT.app/Contents/MacOS/ChatGPT\n85301 1 00:05 0.0 4096 /opt/homebrew/bin/codex exec --skip-git-repo-check`).map((x) => [x.id, x]));
   assert.equal(r['claude-desktop'].processes, 1);
   assert.equal(r['claude-code'].processes, 1);
   assert.equal(r.chatgpt.processes, 1, 'aplikace ChatGPT se pozná ze svého hlavního procesu');

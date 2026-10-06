@@ -101,7 +101,7 @@ test('detekce: cloudflared nainstalovaný a proces běží', async () => {
     // Běžící tunel se hledá ve výpisu procesů (stejně na všech systémech), ne přes pgrep:
     // převádět regulární výraz na vzor pro pgrep je křehké a obě cesty by se rozešly.
     if (String(cmd) === 'ps' || String(cmd).includes('powershell')) {
-      return { ok: true, stdout: '4242 00:10 0.5 2048 /usr/local/bin/cloudflared tunnel --url http://127.0.0.1:4620\n', stderr: '', code: 0 };
+      return { ok: true, stdout: '4242 1 00:10 0.5 2048 /usr/local/bin/cloudflared tunnel --url http://127.0.0.1:4620\n', stderr: '', code: 0 };
     }
     return { ok: false, stdout: '', stderr: '', code: 1 };
   };

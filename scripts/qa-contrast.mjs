@@ -122,9 +122,9 @@ console.log('Aplikace');
 // Podstrčený výpis procesů místo skutečného `ps`: měří se i karta „Zachytil jsem agenta“ a Moje
 // nástroje v Nastavení. PID nad maximem macOS i Linuxu – nic se nečte ze skutečných procesů.
 const PS = [
-  '  9000201 00:20:00  2.0 300000 /Applications/Warp.app/Contents/MacOS/stable',
-  '  9000202 00:05:00  1.0 150000 /Users/qa/Applications/Chrome Apps.localized/Google AI Studio.app/Contents/MacOS/app_mode_loader',
-  '  9000203 00:02:00  1.0 150000 /Applications/Perplexity.app/Contents/MacOS/Perplexity',
+  '  9000201 1 00:20:00  2.0 300000 /Applications/Warp.app/Contents/MacOS/stable',
+  '  9000202 1 00:05:00  1.0 150000 /Users/qa/Applications/Chrome Apps.localized/Google AI Studio.app/Contents/MacOS/app_mode_loader',
+  '  9000203 1 00:02:00  1.0 150000 /Applications/Perplexity.app/Contents/MacOS/Perplexity',
 ].join('\n');
 const app = await startTestServer(
   { AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '500' },

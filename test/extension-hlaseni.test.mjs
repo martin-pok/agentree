@@ -105,3 +105,42 @@ test('ruční obnova vynutí nové hlášení i beze změny a počká na jeho v�
   assert.equal(r.odeslano.length, 2);
   assert.equal(r.odeslano.at(-1).counts.assistant, 1);
 });
+
+// Nová konverzace se hlásí pod dočasným ID karty (tab-…), dokud jí služba nedá adresu. Pak musí
+// rozšíření jednou poslat i předchozí ID, aby aplikace oba záznamy spojila – a opakovat ho, dokud ho
+// aplikace nepřijme. Jinak by po první odpovědi visel v přehledu „duch“ staré konverzace.
+test('rozšíření: nová konverzace po získání adresy pošle předchozí dočasné ID, dokud se nepřijme', async () => {
+  let ted = 1_000_000;
+  let interval = null;
+  const cekajici = [];
+  const odeslano = [];
+  let prijmout = true;
+  const stranka = { id: 'tab-abc12345' };
+  const adapter = { id: 'chatgpt', messages: () => [{ role: 'user', text: 'a' }], generating: () => false, conversationId: () => stranka.id, model: () => '', limit: () => null, composer: () => null };
+  const kontext = vm.createContext({
+    window: { AgenteeqSites: { detect: () => adapter }, addEventListener() {} },
+    location: { href: 'https://chatgpt.com/' },
+    document: { documentElement: {} },
+    MutationObserver: class { observe() {} },
+    Date: { now: () => ted },
+    setTimeout: (fn) => { cekajici.push(fn); return cekajici.length; },
+    clearTimeout: (id) => { cekajici[id - 1] = () => {}; },
+    setInterval: (fn) => { interval = fn; return 1; },
+    chrome: { runtime: { onMessage: { addListener() {} }, sendMessage: async (z) => { if (z.type !== 'agenteeq:update') return { prompt: null }; odeslano.push(z.payload); return { ok: prijmout }; } } },
+  });
+  vm.runInContext(zdroj, kontext);
+  const pruchod = async () => { ted += 5000; interval?.(); while (cekajici.length) cekajici.shift()(); for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r)); };
+  await pruchod();
+  assert.equal(odeslano.at(-1).conversationId, 'tab-abc12345');
+  assert.equal(odeslano.at(-1).predchozi, undefined);
+  stranka.id = 'konverzace-9';
+  prijmout = false;
+  await pruchod();
+  assert.equal(odeslano.at(-1).conversationId, 'konverzace-9');
+  assert.equal(odeslano.at(-1).predchozi, 'tab-abc12345', 'předchozí ID jde s první zprávou pod novým ID');
+  prijmout = true;
+  await pruchod();
+  assert.equal(odeslano.at(-1).predchozi, 'tab-abc12345', 'nepřijaté předchozí ID se pošle znovu');
+  await pruchod(); ted += 70000; await pruchod();
+  assert.equal(odeslano.at(-1).predchozi, undefined, 'po přijetí už se neposílá');
+});

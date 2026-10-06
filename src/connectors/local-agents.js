@@ -1,9 +1,9 @@
-// Konektor „Neznámí a lokální agenti“ – na rozdíl od processes.js (pevný seznam 14 aplikací)
+// Konektor „Neznámí a lokální agenti“ – na rozdíl od processes.js (pevný katalog RUNTIMES)
 // se snaží nepřehlédnout ŽÁDNÝ lokální AI běhový proces: zná desítky konkrétních nástrojů
 // (Ollama, LM Studio, llama.cpp, ComfyUI, …) a navíc heuristicky odhaduje neznámé/vlastní
 // modely podle argumentů procesu a otevřených portů. Heuristika je vždy označená jako taková
 // (source: 'heuristika', confidence: 'nízká') – nikdy se netváří jako ověřená data.
-import { etimeToSec, program, aplikace, createStabilniStart, rozpoznejNastroj } from './processes.js';
+import { program, aplikace, createStabilniStart, rozpoznejNastroj, radekProcesu } from './processes.js';
 import { clip } from '../util.js';
 import { processList, listeningPorts, JE_WINDOWS } from '../platform.js';
 import { ui } from '../texty.js';
@@ -89,15 +89,14 @@ function commandBase(args) {
 }
 
 function parseRow(line) {
-  const m = line.trim().match(/^(\d+)\s+(\S+)\s+([\d.]+)\s+(\d+)\s+(.*)$/);
-  if (!m) return null;
-  return { pid: Number(m[1]), cpu: Number(m[3]), memMB: Number(m[4]) / 1024, uptimeSec: etimeToSec(m[2]), args: m[5] };
+  const r = radekProcesu(line);
+  return r && { pid: r.pid, ppid: r.ppid, cpu: r.cpu, memMB: r.rssKB / 1024, uptimeSec: r.uptimeSec, args: r.args };
 }
 
 const HEURISTIC_NOTE = ui('Odhad podle běžícího procesu.');
 
 /**
- * Projde výpis `ps` (stejný tvar jako v processes.js: pid etime %cpu rss args) a najde
+ * Projde výpis `ps` (stejný tvar jako v processes.js: pid ppid etime %cpu rss args) a najde
  * všechny lokální AI běhy – známé i heuristicky odhadnuté. Nikdy nic nespouští, nesahá
  * na síť a nevyhodí výjimku; na nesmyslném vstupu vrátí [].
  */
@@ -178,20 +177,77 @@ export function parseListeningPorts(lsofOutput) {
   }
 }
 
+// Jak dlouho platí výpis naslouchajících portů. `lsof` je na Macu znatelně dražší než `ps` a porty se
+// mění zřídka; zjišťovat je při každém průchodu procesů (1,5 s) by stálo víc, než přinese.
+const PLATNOST_PORTU_MS = 10000;
+
+/**
+ * Lokální agenti se zjišťují z výpisu procesů. V aplikaci ho dodává konektor procesů (`zVypisu`
+ * z jeho průchodu po 1,5 s, src/app.js) – vlastní časovač po 10 s běží, jen když konektor nikdo
+ * nekrmí (`napajeny: false`).
+ */
 export function createLocalAgentsConnector(ctx) {
-  const { onDetect, procesy = processList } = ctx || {};
+  const { onDetect, procesy = processList, porty = listeningPorts, platnostPortuMs = PLATNOST_PORTU_MS, napajeny = false } = ctx || {};
   let timer = null;
   let list = [];
   let lastOk = 0;
+  // Kdy se výpis procesů naposledy nepovedl. Seznam se pak nemaže (nepovedené zjištění není „nic
+  // neběží“), ale status musí říct, že jde jen o poslední známý stav.
+  let lastFailAt = 0;
+  let selhal = false;
   const starty = createStabilniStart();
+  let portyCache = null;
+  let portyBezi = null;
+
+  function nactiPorty() {
+    if (portyCache && Date.now() - portyCache.at < platnostPortuMs) return Promise.resolve(portyCache.ports);
+    if (!portyBezi) {
+      portyBezi = Promise.resolve()
+        .then(() => porty())
+        .then((r) => {
+          // Nepovedený výpis portů neznamená „žádné porty“: drží se poslední známý.
+          if (r?.ok) portyCache = { at: Date.now(), ports: parseListeningPorts(r.stdout) };
+          return r?.ok ? portyCache.ports : portyCache?.ports || [];
+        })
+        .catch(() => portyCache?.ports || [])
+        .finally(() => { portyBezi = null; });
+    }
+    return portyBezi;
+  }
+
+  async function zpracuj(psRes) {
+    if (!psRes?.ok) {
+      lastFailAt = Date.now();
+      selhal = true;
+      return;
+    }
+    const ports = await nactiPorty();
+    list = detectLocalAgents(psRes.stdout, { ports }).map(({ uptimeSec, ...a }) => ({ ...a, od: starty.od(a.id, uptimeSec) }));
+    starty.ponech(new Set(list.map((a) => a.id)));
+    lastOk = Date.now();
+    selhal = false;
+    onDetect?.(list);
+  }
+
+  // Výpisy se zpracují po jednom a vždy ten nejnovější – starší výsledek nikdy nepřepíše novější.
+  let bezi = null;
+  let dalsi = null;
+  async function smycka() {
+    while (dalsi) {
+      const r = dalsi;
+      dalsi = null;
+      await zpracuj(r).catch(() => {});
+    }
+    bezi = null;
+  }
+  function zVypisu(psRes) {
+    dalsi = psRes || { ok: false };
+    if (!bezi) bezi = smycka();
+    return bezi;
+  }
 
   async function poll() {
-    const [psRes, lsofRes] = await Promise.all([procesy(), listeningPorts()]);
-    const ports = parseListeningPorts(lsofRes.ok ? lsofRes.stdout : '');
-    list = detectLocalAgents(psRes.ok ? psRes.stdout : '', { ports }).map(({ uptimeSec, ...a }) => ({ ...a, od: starty.od(a.id, uptimeSec) }));
-    starty.ponech(new Set(list.map((a) => a.id)));
-    if (psRes.ok) lastOk = Date.now();
-    onDetect?.(list);
+    await zVypisu(await procesy());
   }
 
   return {
@@ -204,10 +260,12 @@ export function createLocalAgentsConnector(ctx) {
     description: ui('Najde lokální AI modely a servery mimo pevný seznam známých aplikací – podle procesů a otevřených portů (Ollama, LM Studio, llama.cpp, ComfyUI a desítky dalších, plus heuristika pro neznámé).'),
     async start() {
       await poll();
+      if (napajeny) return;
       timer = setInterval(() => poll().catch(() => {}), 10000);
       timer.unref?.();
     },
     scan: poll,
+    zVypisu,
     stop() {
       clearInterval(timer);
       timer = null;
@@ -218,6 +276,9 @@ export function createLocalAgentsConnector(ctx) {
       // vydávat selhání zjišťování za zjištěný stav – přesně to, co se tu dělat nesmí.
       if (!lastOk) {
         return { state: 'error', detail: ui('Běžící procesy se na tomto systému nepodařilo zjistit, takže o lokálních agentech nic nevíme.'), count: 0 };
+      }
+      if (selhal) {
+        return { state: 'error', detail: ui('Běžící procesy se teď nedaří zjistit. Seznam lokálních agentů je z posledního úspěšného zjištění a nemusí platit.'), count: list.length, lastFailAt: Math.floor(lastFailAt / 60e3) * 60e3 };
       }
       return {
         state: list.length ? 'connected' : 'idle',

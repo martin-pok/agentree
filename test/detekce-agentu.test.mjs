@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { korenyClaudeCode, korenZPrepisu } from '../src/connectors/claude-code.js';
 import { domovyCodexu } from '../src/connectors/codex.js';
-import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs } from '../src/connectors/processes.js';
+import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs, createProcessesConnector } from '../src/connectors/processes.js';
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
 import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
@@ -130,20 +130,22 @@ test('Codex z CODEX_HOME i z domova, který prozradí proces až za běhu', asyn
 
 test('procesy: každý agent zvlášť, bez pomocných procesů a příkazů bez konverzace', () => {
   const vystup = [
-    '  101 01:02:03 0.5 20480 /Users/e/.local/bin/claude',
-    '  102 00:10 0.0 2048 claude auth status --json',
-    '  103 1-00:00:00 1.0 4096 node /usr/local/bin/codex',
-    '  104 00:05 0.0 100 /Applications/Claude.app/Contents/MacOS/Claude',
-    '  105 00:05 0.0 100 /Users/e/.local/bin/claude --bg-spare',
-    '  106 00:05 0.0 100 /opt/homebrew/bin/codex app-server',
-    '  107 00:05 0.0 100 /Applications/ChatGPT.app/Contents/Resources/codex app-server',
-    '  108 00:05 0.0 100 gemini',
-    '  109 00:05 0.0 100 claude -p "auth"',
+    '  101 1 01:02:03 0.5 20480 /Users/e/.local/bin/claude',
+    '  102 1 00:10 0.0 2048 claude auth status --json',
+    '  103 1 1-00:00:00 1.0 4096 node /usr/local/bin/codex',
+    '  104 1 00:05 0.0 100 /Applications/Claude.app/Contents/MacOS/Claude',
+    '  105 1 00:05 0.0 100 /Users/e/.local/bin/claude --bg-spare',
+    '  106 1 00:05 0.0 100 /opt/homebrew/bin/codex app-server',
+    '  107 1 00:05 0.0 100 /Applications/ChatGPT.app/Contents/Resources/codex app-server',
+    '  108 1 00:05 0.0 100 gemini',
+    '  109 1 00:05 0.0 100 claude -p "auth"',
   ].join('\n');
   assert.deepEqual(agentniProcesy(vystup).map((p) => [p.pid, p.runtime]), [[101, 'claude-code'], [103, 'codex'], [108, 'gemini-cli'], [109, 'claude-code']]);
   assert.equal(vedeKonverzaci('claude daemon run', 'claude-code'), false);
   assert.equal(vedeKonverzaci('claude --resume abc', 'claude-code'), true);
   assert.equal(vedeKonverzaci('codex exec "oprav testy"', 'codex'), true);
+  assert.equal(vedeKonverzaci('node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js mcp serve', 'claude-code'), false, 'podpříkaz se pozná i za vstupním skriptem');
+  assert.equal(vedeKonverzaci('node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js --resume abc', 'claude-code'), true);
 });
 
 // Agent je proces, který program claude opravdu běží – sám, nebo jako skript pod interpretem (node,
@@ -166,6 +168,10 @@ test('procesy: agent je jen běžící program, ne shell nebo příkaz, který h
     '/Users/m/Library/Application Support/Claude/claude-code/2.1.260/claude.app/Contents/MacOS/claude --output-format stream-json',
     'C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe -p',
     'C:\\Program Files\\nodejs\\node.exe C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe',
+    // npm balíček spuštěný přes vstupní skript, ne přes odkaz v bin/.
+    'node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js',
+    '/Users/Jana Nováková/.nvm/versions/node/v22.13.0/bin/node --no-warnings /Users/Jana Nováková/.nvm/versions/node/v22.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js --resume abc',
+    '/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/cli.js -p x',
   ];
   const neniAgent = [
     obal,
@@ -177,6 +183,9 @@ test('procesy: agent je jen běžící program, ne shell nebo příkaz, který h
     'ln -sf /opt/claude-code/bin/claude /usr/local/bin/claude',
     'tail -f /var/log/claude',
     'C:\\Windows\\System32\\cmd.exe /c C:\\Users\\jana\\AppData\\Roaming\\npm\\claude.exe -p',
+    'vim /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js',
+    '/bin/sh -c node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js',
+    'node /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js.map',
   ];
   for (const a of agent) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
   for (const a of neniAgent) assert.notEqual(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
@@ -185,9 +194,88 @@ test('procesy: agent je jen běžící program, ne shell nebo příkaz, který h
   assert.equal(RUNTIMES.find((r) => r.test('node /opt/homebrew/bin/gemini'))?.id, 'gemini-cli');
 
   // Výpis z kontejneru: obal a skutečný claude pod ním jsou jeden agent, ne dva.
-  const vystup = [`   81 55:06 0.0 3000 ${obal}`, '  103 55:04 1.0 400000 /opt/claude-code/bin/claude --output-format=stream-json --verbose'].join('\n');
+  const vystup = [`   81 1 55:06 0.0 3000 ${obal}`, '  103 1 55:04 1.0 400000 /opt/claude-code/bin/claude --output-format=stream-json --verbose'].join('\n');
   assert.deepEqual(agentniProcesy(vystup).map((p) => p.pid), [103]);
   assert.equal(parsePs(vystup).find((r) => r.id === 'claude-code').processes, 1);
+});
+
+// Některé nástroje běží ve dvou procesech: npm obal Codexu („node …/bin/codex“) pouští vlastní
+// binárku z vendor/, Gemini CLI se po startu spustí znovu s větší pamětí. Rodič a dítě jsou jeden
+// agent – jinak by vedle konverzace visel druhý „detekovaný proces“, ke kterému žádná není.
+test('procesy: obal a jeho dítě téhož nástroje jsou jeden agent', () => {
+  const codex = [
+    '  500 400 00:30 0.1 40000 node /opt/homebrew/bin/codex',
+    '  501 500 00:29 2.0 90000 /opt/homebrew/lib/node_modules/@openai/codex/vendor/aarch64-apple-darwin/codex/codex',
+  ].join('\n');
+  assert.deepEqual(agentniProcesy(codex).map((p) => [p.pid, p.runtime]), [[500, 'codex']]);
+  assert.deepEqual(agentniProcesy(codex.split('\n')[1]).map((p) => p.pid), [501], 'binárka sama je agent – vyřadil ji rodič');
+
+  const gemini = [
+    '  600 400 00:10 0.5 60000 node /opt/homebrew/bin/gemini',
+    '  601 600 00:09 3.0 300000 /opt/homebrew/Cellar/node/24.1.0/bin/node --max-old-space-size=8192 /opt/homebrew/bin/gemini',
+  ].join('\n');
+  assert.deepEqual(agentniProcesy(gemini).map((p) => [p.pid, p.runtime]), [[600, 'gemini-cli']]);
+  assert.deepEqual(agentniProcesy(gemini.split('\n')[1]).map((p) => p.pid), [601], 'nové spuštění samo je agent – vyřadil ho rodič');
+
+  // Přes mezikrok (shell) taky – ale jen do omezené hloubky a jen pod agentem téhož nástroje.
+  const pres = [
+    '  700 1 01:00 0.1 1000 /Users/e/.local/bin/claude',
+    '  701 700 00:50 0.0 1000 /bin/zsh -c x',
+    '  702 701 00:40 0.0 1000 /Users/e/.local/bin/claude -p "shrň změny"',
+    // Codex pod Claude Code je jiný nástroj = jiný agent.
+    '  703 701 00:30 0.0 1000 /opt/homebrew/bin/codex exec "oprav testy"',
+  ].join('\n');
+  assert.deepEqual(agentniProcesy(pres).map((p) => p.pid), [700, 703]);
+  const daleko = [
+    '  800 1 01:00 0.1 1000 /Users/e/.local/bin/claude',
+    '  801 800 00:50 0.0 1000 /bin/zsh',
+    '  802 801 00:50 0.0 1000 /bin/zsh',
+    '  803 802 00:50 0.0 1000 /bin/zsh',
+    '  804 803 00:40 0.0 1000 /Users/e/.local/bin/claude',
+  ].join('\n');
+  assert.deepEqual(agentniProcesy(daleko).map((p) => p.pid), [800, 804], 'hloubka hledání předka má strop');
+
+  // Pomocný proces bez konverzace (`--bg-pty-host`) není agent – jeho dítě ano.
+  const pozadi = [
+    '  900 1 01:00 0.0 1000 /Users/e/.local/bin/claude --bg-pty-host',
+    '  901 900 00:59 1.0 1000 /Users/e/.local/bin/claude --resume abc',
+  ].join('\n');
+  assert.deepEqual(agentniProcesy(pozadi).map((p) => p.pid), [901]);
+
+  // Cyklus v rodičích (nesmyslný výpis) nezacyklí průchod.
+  assert.deepEqual(agentniProcesy('  10 11 00:01 0 1 /usr/local/bin/claude\n  11 10 00:01 0 1 /bin/sh').map((p) => p.pid), [10]);
+});
+
+// Složka procesu se na Macu zjišťuje přes lsof (stovky ms, pod zátěží i vteřiny) a dotaz může viset.
+// Nový nástroj se ale má v přehledu ukázat do 2 s (AGENTS.md) – seznam běžících aplikací se proto
+// zapíše hned po výpisu procesů, dřív než se čeká na podrobnosti agentů.
+test('procesy: nový nástroj se ukáže hned, i když zjišťování složky procesu visí', async (t) => {
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: '/tmp/agenteeq-nic', AGENTEEQ_HOME: '/tmp/agenteeq-nic' });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  let vypis = { ok: true, stdout: '' };
+  let dotazu = 0;
+  const agenti = [];
+  const c = createProcessesConnector({
+    store,
+    config: { processIntervalMs: 60_000 },
+    procesy: async () => vypis,
+    detaily: () => { dotazu++; return new Promise(() => {}); },
+    onAgenti: (a) => agenti.push(a),
+  });
+  await c.start();
+  try {
+    vypis = { ok: true, stdout: '  4242 1 00:01 0.5 20480 /Users/e/.local/bin/claude' };
+    const zacatek = Date.now();
+    c.scan().catch(() => {});
+    await waitFor(() => store.runtimes.find((r) => r.id === 'claude-code')?.running, 2000);
+    const ms = Date.now() - zacatek;
+    assert.ok(ms < 2000, `${ms} ms`);
+    assert.equal(dotazu, 1, 'podrobnosti se opravdu zjišťují (a visí)');
+    assert.equal(agenti.length, 1, 'pojistka dostala jen první, prázdný průchod – na visící dotaz čeká');
+    t.diagnostic(`běžící nástroj v přehledu za ${ms} ms, zatímco lsof visí`);
+  } finally {
+    c.stop();
+  }
 });
 
 test('párování procesů s konverzacemi', () => {

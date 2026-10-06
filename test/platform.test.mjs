@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { appSupportDir, openCommand, tailscalePaths, JE_MAC, JE_WINDOWS } from '../src/platform.js';
+import { appSupportDir, openCommand, tailscalePaths, aplikaceWindows, JE_MAC, JE_WINDOWS } from '../src/platform.js';
 import { originOf } from '../src/skills.js';
 import { RUNTIMES } from '../src/connectors/processes.js';
 import { detectLocalAgents } from '../src/connectors/local-agents.js';
@@ -126,19 +126,59 @@ test('Claude Code a Claude Desktop se nespletou — rozhoduje velikost písmene'
   for (const a of cli) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
 });
 
+// Claude Desktop na Windows je `claude.exe` – stejné jméno jako Claude Code – a jeho pomocné procesy
+// Electronu běží jako `claude.exe --type=renderer`. Velikost písmen na Windows nerozhoduje; rozhoduje
+// složka instalace (src/platform.js#aplikaceWindows) a přepínač `--type=`. 🧪 Cesty podle zvyklostí
+// instalátorů, na skutečném Windows neověřené (docs/CONNECTORS.md).
+test('Claude Desktop na Windows ani pomocné procesy Electronu nejsou Claude Code', () => {
+  const desktop = [
+    'C:\\Users\\x\\AppData\\Local\\AnthropicClaude\\app-0.13.64\\claude.exe',
+    'C:\\Users\\x\\AppData\\Local\\AnthropicClaude\\app-0.13.64\\claude.exe --type=renderer --user-data-dir=C:\\Users\\x\\AppData\\Roaming\\Claude',
+    'C:\\Users\\x\\AppData\\Local\\AnthropicClaude\\app-0.13.64\\CLAUDE.EXE --type=gpu-process',
+    'C:\\Program Files\\WindowsApps\\Claude_0.13.64.0_x64__pzs8sxrjxfjjc\\app\\claude.exe',
+    'C:\\Program Files\\WindowsApps\\Claude_0.13.64.0_x64__pzs8sxrjxfjjc\\app\\claude.exe --type=utility --utility-sub-type=network.mojom.NetworkService',
+  ];
+  for (const a of desktop) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-desktop', a);
+  for (const a of desktop) assert.equal(RUNTIMES.find((r) => r.id === 'claude-code').test(a), false, a);
+  // Pomocný proces Electronu odjinud (neznámá složka) taky není nástroj příkazové řádky.
+  for (const a of [
+    'C:\\Users\\x\\AppData\\Local\\Programs\\neco\\claude.exe --type=renderer',
+    '/opt/neco/claude --type=zygote',
+    'C:\\Users\\x\\AppData\\Local\\Programs\\neco\\codex.exe --type=gpu-process',
+  ]) assert.equal(['claude-code', 'codex'].includes(RUNTIMES.find((r) => r.test(a))?.id), false, a);
+  // Claude Code zůstává Claude Code – i ten, který si Claude Desktop stáhne do %APPDATA%\Claude.
+  for (const a of [
+    'C:\\Users\\x\\AppData\\Roaming\\npm\\claude.exe -p',
+    'C:\\Users\\x\\AppData\\Roaming\\Claude\\claude-code\\2.1.260\\claude.exe --output-format stream-json',
+    'C:\\Users\\x\\.local\\bin\\claude.exe',
+  ]) assert.equal(RUNTIMES.find((r) => r.test(a))?.id, 'claude-code', a);
+  assert.equal(aplikaceWindows('Neznámá'), null, 'složku, kterou neznáme, si nevymýšlíme');
+});
+
+// Samostatná aplikace Codex (🧪 Beta) se nepočítá jako Codex v terminálu ani její vnitřní codex.
+test('aplikace Codex je vlastní nástroj, její vnitřní codex není Codex CLI', () => {
+  assert.equal(RUNTIMES.find((r) => r.test('/Applications/Codex.app/Contents/MacOS/Codex'))?.id, 'codex-app');
+  assert.equal(RUNTIMES.find((r) => r.test('/Applications/Codex.app/Contents/Resources/codex app-server --analytics-default-enabled')), undefined);
+  assert.equal(RUNTIMES.find((r) => r.test('/Applications/Codex.app/Contents/Resources/codex exec x'))?.id, undefined);
+  assert.equal(RUNTIMES.find((r) => r.test('/opt/homebrew/bin/codex'))?.id, 'codex');
+  const codexApp = RUNTIMES.find((r) => r.id === 'codex-app');
+  assert.equal(codexApp.overeno, false, 'neověřené rozpoznání je Beta');
+  assert.ok(RUNTIMES.findIndex((r) => r.id === 'codex-app') < RUNTIMES.findIndex((r) => r.id === 'codex'), 'aplikace před CLI – první shoda vyhrává');
+});
+
 test('vnitřní codex aplikace ChatGPT se nepočítá jako samostatné Codex CLI', () => {
   assert.equal(RUNTIMES.find((r) => r.test('/Applications/ChatGPT.app/Contents/Resources/codex -c x app-server')), undefined);
 });
 
 test('lokální agenti se najdou i ve windowsovém výpisu a systémové procesy ne', () => {
   const vypis = [
-    '1234 00:20 10.0 204800 C:\\Program Files\\Ollama\\ollama.exe serve',
-    '2345 00:30 15.0 307200 C:\\Python312\\python.exe C:\\Users\\jana\\ComfyUI\\main.py --listen',
-    '3456 00:05 2.0 51200 C:\\Users\\jana\\AppData\\Local\\Programs\\LM Studio\\LM Studio.exe',
-    '5678 00:12 8.0 102400 C:\\tools\\llama-server.exe -m C:\\modely\\qwen2.5-7b.gguf --port 8000',
+    '1234 1 00:20 10.0 204800 C:\\Program Files\\Ollama\\ollama.exe serve',
+    '2345 1 00:30 15.0 307200 C:\\Python312\\python.exe C:\\Users\\jana\\ComfyUI\\main.py --listen',
+    '3456 1 00:05 2.0 51200 C:\\Users\\jana\\AppData\\Local\\Programs\\LM Studio\\LM Studio.exe',
+    '5678 1 00:12 8.0 102400 C:\\tools\\llama-server.exe -m C:\\modely\\qwen2.5-7b.gguf --port 8000',
     // Systémové procesy Windows: ve System32 leží stovky procesů se slovy jako „serve“.
-    '4567 00:40 0.5 51200 C:\\Windows\\System32\\svchost.exe -k NetworkService',
-    '4568 00:40 0.5 51200 C:\\Windows\\SysWOW64\\rundll32.exe inference.dll',
+    '4567 1 00:40 0.5 51200 C:\\Windows\\System32\\svchost.exe -k NetworkService',
+    '4568 1 00:40 0.5 51200 C:\\Windows\\SysWOW64\\rundll32.exe inference.dll',
   ].join('\n');
   const nalezeni = detectLocalAgents(vypis, { ports: [] });
   assert.deepEqual(nalezeni.map((a) => a.id).sort(), ['comfyui', 'llama-cpp', 'lmstudio', 'ollama']);

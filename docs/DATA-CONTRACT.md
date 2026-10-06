@@ -333,9 +333,12 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
   "counts": { "user": 3, "assistant": 3 },
   "model": "volitelné",
   "needsInput": "volitelný text",
-  "limit": "volitelný text hlášky o limitu"
+  "limit": "volitelný text hlášky o limitu",
+  "predchozi": "volitelné dočasné ID karty tab-…, pod kterým se nová konverzace hlásila, než dostala vlastní adresu"
 }
 ```
+
+`predchozi` posílá rozšíření jen jednou po získání skutečného ID (opakuje ho, dokud ho aplikace nepřijme). Server přesune stav dočasného záznamu pod nové ID a dočasný záznam smaže, takže nová konverzace se v přehledu neobjeví dvakrát. Jinou hodnotu než `tab-…` server ignoruje.
 
 Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
 Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text

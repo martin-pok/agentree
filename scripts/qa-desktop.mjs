@@ -124,7 +124,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
 // zadání“, bez otevření aplikace a bez přiřazení k projektu. Po skončení se místo obecného 404
 // zobrazí přesný důvod. Výpis procesů je řízený, takže QA nečte data z počítače, na kterém běží.
 async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
-  const vypisProcesu = async () => ({ ok: true, stdout: ' 4242 00:01 0.0 100 /usr/local/bin/claude' });
+  const vypisProcesu = async () => ({ ok: true, stdout: ' 4242 1 00:01 0.0 100 /usr/local/bin/claude' });
   const server = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' }, { vypisProcesu });
   try {
     // Snímek má kontrolovat detail procesu, ne překrytý úvodní průvodce nového profilu.

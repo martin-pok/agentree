@@ -173,9 +173,9 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
   const ollamaPort = fakeOllama.address().port;
 
   /* ---------- 6. Běžící aplikace: podstrčený výpis procesů ---------- */
-  // Formát řádku (viz src/connectors/processes.js): pid etime %cpu rss args. PID nad maximem macOS
+  // Formát řádku (viz src/connectors/processes.js): pid ppid etime %cpu rss args. PID nad maximem macOS
   // i Linuxu – detaily procesu (složka, proměnné domova) se nikdy nečtou ze skutečného procesu.
-  const ps = (pid, etime, cpu, rssKb, args) => `${pid} ${etime} ${cpu} ${rssKb} ${args}`;
+  const ps = (pid, etime, cpu, rssKb, args) => `${pid} 1 ${etime} ${cpu} ${rssKb} ${args}`;
   const PS = [
     // Známé nástroje – processes.js#RUNTIMES.
     ps(9000100, '02:00:00', 1.0, 204800, '/Applications/Claude.app/Contents/MacOS/Claude'),

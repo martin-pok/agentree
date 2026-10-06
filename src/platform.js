@@ -40,13 +40,17 @@ export function appSupportDir(sourceHome) {
 //
 // Sjednocený tvar řádku, ať přijde odkudkoli:
 //
-//   <pid> <běží[dd-]hh:mm:ss> <%cpu> <rss v kB> <celý příkaz s argumenty>
+//   <pid> <pid rodiče> <běží[dd-]hh:mm:ss> <%cpu> <rss v kB> <celý příkaz s argumenty>
+//
+// PID rodiče je tu kvůli nástrojům, které se spouští ve dvou procesech: npm obal Codexu
+// (`node …/bin/codex`) pouští vlastní binárku (`…/vendor/…/codex/codex`), Gemini CLI se spustí
+// znovu s větší pamětí. Bez rodiče by z jednoho agenta byli dva (processes.js#agentniProcesy).
 //
 // `ps -axo %cpu` na macOS udává průměr za celý život procesu, ne okamžitou zátěž.
 // Windowsový výpočet níž dělá totéž (součet času v jádře i v uživatelském režimu
 // děleno dobou běhu), takže obě čísla znamenají opravdu tutéž veličinu.
 
-const PS_ARGS = ['-axo', 'pid=,etime=,%cpu=,rss=,args='];
+const PS_ARGS = ['-axo', 'pid=,ppid=,etime=,%cpu=,rss=,args='];
 
 // PowerShell je na Windows 10 i 11 součástí systému, takže nepřibývá závislost.
 // Win32_Process je jediný zdroj, který dá zároveň PID, celou příkazovou řádku,
@@ -68,7 +72,7 @@ Get-CimInstance Win32_Process | ForEach-Object {
   $radek = $_.CommandLine
   if (-not $radek) { $radek = $_.ExecutablePath }
   if (-not $radek) { $radek = $_.Name }
-  '{0} {1} {2} {3} {4}' -f $_.ProcessId, $doba, $cpu, $rss, ($radek -replace '[\\r\\n]+', ' ')
+  '{0} {1} {2} {3} {4} {5}' -f $_.ProcessId, $_.ParentProcessId, $doba, $cpu, $rss, ($radek -replace '[\\r\\n]+', ' ')
 }
 `.trim();
 
@@ -86,6 +90,29 @@ export async function processList(runImpl = run) {
     return runImpl('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', PS_WINDOWS], { timeout: 8000 });
   }
   return runImpl('ps', PS_ARGS);
+}
+
+// ── Desktopové aplikace na Windows ───────────────────────────────────────────
+//
+// Některé desktopové aplikace mají na Windows spustitelný soubor stejného jména jako nástroj
+// příkazové řádky: „claude.exe“ je Claude Desktop i Claude Code. Na velikost písmen se tu
+// spolehnout nedá – souborový systém ji nerozlišuje a instalátor ji držet nemusí – a pomocné procesy
+// Electronu („claude.exe --type=renderer“) by se jinak počítaly jako další agent v terminálu.
+// Rozhoduje proto složka instalace: instalátor Squirrel dává aplikaci do
+// %LOCALAPPDATA%\AnthropicClaude\…, balíček z Microsoft Store do …\WindowsApps\Claude_<verze>…\.
+// 🧪 Podle zvyklostí těchto instalátorů, na skutečném Windows neověřeno (docs/CONNECTORS.md).
+const SLOZKY_APLIKACI_WINDOWS = {
+  Claude: { slozky: ['AnthropicClaude', 'WindowsApps[\\\\/]Claude_[^\\\\/]*'], exe: 'claude' },
+};
+
+/**
+ * Vzor, který pozná desktopovou aplikaci `nazev` na Windows podle složky instalace a jména
+ * spustitelného souboru bez ohledu na velikost písmen. `null`, když pro aplikaci složku neznáme.
+ */
+export function aplikaceWindows(nazev) {
+  const a = SLOZKY_APLIKACI_WINDOWS[nazev];
+  if (!a) return null;
+  return new RegExp(`[\\\\/](?:${a.slozky.join('|')})[\\\\/](?:[^\\\\/]+[\\\\/])*${a.exe}\\.exe(\\s|$)`, 'i');
 }
 
 // ── Podrobnosti běžícího procesu ─────────────────────────────────────────────
