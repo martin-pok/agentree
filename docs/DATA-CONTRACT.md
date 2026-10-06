@@ -20,6 +20,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | GET | `/api/sessions/:id/transcript?after=<seq>` | `{ entries }`; mimo hostitele 403 (stejně `/api/runs/:id/log`). Událost SSE `transcript` se spárovaným zařízením neposílá |
 | POST | `/api/sessions/:id/open` | `{ target: "app" \| "terminal" \| "folder" }` → `{ ok, label }`; 404 neznámá session, 422 akce není k dispozici, 502 macOS akci odmítl (zpráva říká proč) |
 | GET | `/api/stream` | Server-Sent Events |
+| GET | `/api/usage/claude?days=30` | Až 90 dní místní historie vytížení plánu z Claude Desktopu: časové řady a `latestDay: { dateAt, samples, observedAt, isToday, fiveHour, sevenDay }` pro poslední místní kalendářní den se vzorky; `latestDay: null`, pokud období nemá vzorek. Jde o procenta limitů, nikdy o tokeny ani cenu. Bez identifikátoru účtu. |
 | POST | `/api/hooks/claude-code` | Vstup Claude Code hooku (token) → `{ ok, id }` |
 | POST | `/api/ingest/web` | Data z rozšíření (token instalace + její `Origin`) → `{ ok, id }`; 401 = rozšíření spárovat znovu |
 | POST | `/api/extension/handoff` | `{ site }` (token instalace + `Origin`) → `{ prompt: string \| null, prefilled? }`; zadání jen jednou a jen pro danou službu |

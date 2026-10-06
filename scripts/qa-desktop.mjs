@@ -461,7 +461,9 @@ for (const engine of engines) {
   const failed = server.app.store.ensure({ connector: 'codex', localId: 'qa-failed-no-question', provider: 'openai', app: 'Codex' });
   Object.assign(failed, { title: 'QA – limit zastavil agenta', lastAt: Date.now(), failure: { at: Date.now(), text: 'Limit vyčerpán' } });
   server.app.store.commit(failed);
-  assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' })).status, 201);
+  const qaProjectResponse = await api(server.url).send('POST', '/api/projects', { name: 'QA projekt' });
+  assert.equal(qaProjectResponse.status, 201);
+  const qaProjectId = qaProjectResponse.body.project.id;
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
   await zkontrolujPocitadla(browser, engine);
@@ -739,6 +741,16 @@ for (const engine of engines) {
     }
     await page.locator('.gauges--sm').screenshot({ path: `dist/qa/${engine}-limits-safe-zone.png` });
     for (const route of ['agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'nastaveni']) {
+      if (route === 'statistiky') {
+        await page.route('**/api/usage/claude*', (request) => request.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+          available: true,
+          samples: 3,
+          latestDay: { dateAt: Date.UTC(2026, 9, 6, 12), samples: 3, observedAt: Date.UTC(2026, 9, 6, 13, 56), isToday: false, fiveHour: 62, sevenDay: 81 },
+          fiveHour: [{ at: Date.UTC(2026, 9, 6, 12), value: 55 }, { at: Date.UTC(2026, 9, 6, 13), value: 62 }],
+          sevenDay: [{ at: Date.UTC(2026, 9, 6, 12), value: 79 }, { at: Date.UTC(2026, 9, 6, 13), value: 81 }],
+          extraUsage: [],
+        }) }));
+      }
       await page.goto(`${server.url}/#/${route}`);
       await page.waitForTimeout(100);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
@@ -833,8 +845,48 @@ for (const engine of engines) {
         assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px)`);
         await page.setViewportSize({ width: 1440, height: 1000 });
       }
+      if (route === 'upozorneni') {
+        const row = page.locator('.alert-item').first();
+        if (await row.count()) {
+          const before = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
+          await row.hover();
+          await page.waitForTimeout(60);
+          const after = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
+          assert.notEqual(after, before, `${engine}: řádek upozornění musí reagovat na hover`);
+          await page.screenshot({ path: `dist/qa/${engine}-notification-hover.png` });
+          results.push({ engine, check: 'hover upozornění mění podklad' });
+          await page.mouse.move(0, 0);
+        }
+      }
+      if (route === 'statistiky') {
+        const souhrn = page.locator('.usage-today');
+        await souhrn.waitFor();
+        assert.match(await souhrn.locator('h4').textContent(), /2026/, `${engine}: zpětná data musí nést skutečné datum`);
+        assert.match(await souhrn.textContent(), /62\s?%/);
+        assert.match(await souhrn.textContent(), /81\s?%/);
+        assert.doesNotMatch(await souhrn.textContent(), /token|Kč|\$/i, `${engine}: procenta limitů se nesmí vydávat za tokeny ani cenu`);
+        await page.screenshot({ path: `dist/qa/${engine}-claude-backfill.png`, fullPage: true });
+        results.push({ engine, check: 'zpětné limity Claude mají datum a netvrdí tokeny ani cenu' });
+        await page.unroute('**/api/usage/claude*');
+      }
       await page.screenshot({ path: `dist/qa/${engine}-${route}.png` });
     }
+    await page.goto(`${server.url}/#/projekt/${encodeURIComponent(qaProjectId)}`);
+    await page.locator('.session-actions [data-action="edit"]').waitFor();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const projectScrollBefore = await page.evaluate(() => window.scrollY);
+    assert.ok(projectScrollBefore > 0, `${engine}: projektový detail musí mít skutečný scroll pro regresní test`);
+    await page.locator('.session-actions [data-action="edit"]').click();
+    await page.locator('.modal-scrim').waitFor();
+    await page.locator('.modal [data-close]').first().click();
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
+    await page.waitForTimeout(220);
+    const projectScrollAfter = await page.evaluate(() => window.scrollY);
+    assert.ok(Math.abs(projectScrollAfter - projectScrollBefore) <= 1,
+      `${engine}: zavření projektového modalu změnilo scroll z ${projectScrollBefore} na ${projectScrollAfter}`);
+    results.push({ engine, check: 'zavření modalu projektu zachová přesnou pozici stránky' });
+    await page.goto(`${server.url}/#/nastaveni`);
+    await page.locator('[data-welcome]').waitFor();
     await page.locator('[data-welcome]').click();
     await page.locator('[data-welcome-skip]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
@@ -1142,7 +1194,7 @@ for (const engine of engines) {
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.38.2 – 2026-10-07 · historie Claude a jistější ovládání
+
+- **Zpětně načtené měření Claude ve Statistikách.** Ukazuje se poslední kalendářní den, který Claude Desktop skutečně změřil, jeho datum, počet odečtů a poslední vytížení 5hodinového a týdenního limitu. Po půlnoci se včerejší data neztratí ani nevydávají za dnešní. Tokeny ani cenu z těchto procent neodvozujeme. Webové chaty neposkytují zpětná data o tokenech.
+- **Modal projektu drží pozici stránky.** Zavření už neodskočí na tlačítko, které modal otevřelo; fokus se vrací bez posunu a pozice se obnoví, pokud ji WebKit přesto změní.
+- **Upozornění mají čitelný hover i klávesnicový fokus** ve světlém i tmavém vzhledu, s přechodem podle design tokenů.
+
 ## Instalace jedním příkazem: vždy otevře novou verzi – 2026-10-06
 
 - **Žádná stará verze po instalaci.** Když už v Aplikacích ležela nejnovější verze, ale na pozadí ještě běžela starší (nahrazení ve Finderu bez ⌘Q), instalační příkaz napsal „nic se nestahuje“ a `open` probudil právě tu starou. Teď ji nejdřív ukončí stejně jako ⌘Q a otevře aplikaci z disku. Platí to i pro verze bez aktualizace jedním klepnutím (do 0.38.0).

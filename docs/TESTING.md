@@ -1,5 +1,15 @@
 # Testování a ověření
 
+## Protokol ověření – 0.38.2, zpětné odečty Claude a opravy UI (7. 10. 2026, macOS, Node 24.18)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test`, `npm run check` | 856 testů, 850 prošlo, 6 přeskočeno s důvodem, 0 selhalo; 270 souborů bez syntaktické chyby |
+| `qa:desktop` | Chromium i WebKit: všechny obrazovky, bez chyb JavaScriptu; ověřeno zachování pozice po zavření editace projektu a hover upozornění. Chromium navíc ověřil souhrn zpětných limitů s datem 6. 10. 2026. |
+| `qa:contrast` | Aplikace ve světlém/tmavém vzhledu, web a rozšíření v 1440 i 375 px: WCAG 2.2 AA |
+| Sestavení | Web `dist/web` (138 souborů) a rozšíření 0.38.2 (30 souborů) sestaveny; npm balíček 0.38.2 se izolovaně nainstaloval a spustil (`smoke`). |
+| Dnešní zdroj Claude Desktop | Místní historie obsahovala 11 měření z 6. 10.; poslední záznam 21:56. Zdroj dává procenta oken limitů, ne tokeny ani útratu. Historický tokenový součet z Claude.ai nelze z tohoto zdroje ověřit. |
+
 ## Protokol ověření – 0.38.1, aktualizace jedním klepnutím (6. 10. 2026, Linux, Node 22.22)
 
 | Kontrola | Výsledek |

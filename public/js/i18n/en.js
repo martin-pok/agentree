@@ -752,6 +752,7 @@ export default {
     "vytížení okna v %": "window usage in %",
     "hodnota bez jednotky": "value without a unit",
     "Vytížení plánu Claude v čase": "Claude plan usage over time",
+    "poslední měření": "last reading",
     "za 30 dní ze souboru aplikace Claude Desktop": "over 30 days from the Claude Desktop app file",
     "Zaznamenané tokeny": "Recorded tokens",
     "vstup + výstup": "input + output",

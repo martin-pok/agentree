@@ -463,6 +463,23 @@ test('Historie vytížení plánu: filtruje okno, řadí, ředí body a nikdy ne
   assert.equal(JSON.stringify(out).includes('org'), false, 'identifikátor organizace ven nesmí');
 });
 
+test('Historie vytížení plánu: souhrn používá místní den a poslední skutečný vzorek', () => {
+  const now = new Date(2026, 8, 12, 12, 0, 0).getTime();
+  const rano = new Date(2026, 8, 12, 9, 0, 0).getTime();
+  const posledni = new Date(2026, 8, 12, 11, 0, 0).getTime();
+  const vcera = new Date(2026, 8, 11, 23, 59, 0).getTime();
+  const out = planUsageSeries({ samples: [
+    { t: vcera, org: 'org_tajne', u: { fh: 99, sd: 99 } },
+    { t: rano, org: 'org_tajne', u: { fh: 25, sd: 40 } },
+    { t: posledni, org: 'org_tajne', u: { fh: 32, sd: 45 } },
+  ] }, { days: 30, now });
+  assert.deepEqual(out.latestDay, { dateAt: rano, samples: 2, observedAt: posledni, isToday: true, fiveHour: 32, sevenDay: 45 });
+  const afterMidnight = new Date(2026, 8, 13, 0, 5, 0).getTime();
+  const fallback = planUsageSeries({ samples: [{ t: rano, u: { fh: 25, sd: 40 } }, { t: posledni, u: { fh: 32, sd: 45 } }] }, { days: 30, now: afterMidnight });
+  assert.deepEqual(fallback.latestDay, { dateAt: rano, samples: 2, observedAt: posledni, isToday: false, fiveHour: 32, sevenDay: 45 }, 'po půlnoci zůstane vidět poslední den s daty a jeho skutečné datum');
+  assert.equal(JSON.stringify(out).includes('org_tajne'), false, 'souhrn nevydá identifikátor účtu');
+});
+
 test('Historie vytížení plánu: hustá data se naředí a poslední bod zůstane', () => {
   const now = Date.UTC(2026, 8, 12, 12, 0, 0);
   const samples = Array.from({ length: 1000 }, (_, i) => ({ t: now - (1000 - i) * 60000, u: { fh: i % 101 } }));

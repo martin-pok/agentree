@@ -751,6 +751,7 @@ function markErrors(form, errors) {
 export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = tr('Zrušit'), danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {
   return new Promise((resolve) => {
     const opener = openerOverride || document.activeElement;
+    const scrollAtOpen = { x: window.scrollX, y: window.scrollY };
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
     const scrim = document.createElement('div');
     scrim.className = 'modal-scrim';
@@ -775,7 +776,17 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
       scrim.classList.add('is-closing');
       setTimeout(() => scrim.remove(), 180);
       document.body.classList.remove('has-modal');
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      // WebKit can move the document as overflow is restored despite preventScroll on focus.
+      // Correct only an actual move so ordinary modal closes remain free of extra scrolling work.
+      requestAnimationFrame(() => {
+        if (window.scrollX === scrollAtOpen.x && window.scrollY === scrollAtOpen.y) return;
+        const root = document.documentElement;
+        const behavior = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(scrollAtOpen.x, scrollAtOpen.y);
+        root.style.scrollBehavior = behavior;
+      });
       resolve(result);
     };
     const onKey = (e) => {
