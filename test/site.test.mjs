@@ -279,3 +279,43 @@ test('web: odkaz na stažení míří na stálou přílohu posledního vydání'
   const workflow = await fs.readFile(path.join(ROOT, '.github/workflows/release.yml'), 'utf8');
   assert.ok(workflow.includes(BALICEK_MAC), `release.yml musí k vydání přiložit ${BALICEK_MAC}`);
 });
+
+// Bezpečnostní hlavičky webu (audit 2026-09-20, nález 18). Hosting je bere z vercel.json; náhled
+// `npm run serve:site` čte tentýž soubor, takže se dají ověřit v prohlížeči (konzole bez porušení CSP).
+test('web: vercel.json posílá CSP a bezpečnostní hlavičky na každou stránku', async () => {
+  const { hlavickyHostingu, nactiVercel } = await import('../scripts/serve-site.mjs');
+  const { UCET_VYCHOZI } = await import('../public/js/ucet-config.js');
+  const vercel = nactiVercel();
+  for (const cesta of ['/', '/en', '/soukromi', '/app', '/js/app.js', '/install.sh']) {
+    const h = hlavickyHostingu(cesta, vercel);
+    assert.equal(h['X-Content-Type-Options'], 'nosniff', cesta);
+    assert.equal(h['Referrer-Policy'], 'strict-origin-when-cross-origin', cesta);
+    assert.ok(Number((h['Strict-Transport-Security'] || '').match(/^max-age=(\d+)/)?.[1]) >= 31536000, `${cesta}: HSTS aspoň rok`);
+    for (const funkce of ['camera', 'microphone', 'geolocation']) assert.match(h['Permissions-Policy'] || '', new RegExp(`${funkce}=\\(\\)`), cesta);
+    const csp = Object.fromEntries((h['Content-Security-Policy'] || '').split(';').map((d) => d.trim().split(/\s+/)).filter((d) => d[0]).map(([k, ...v]) => [k, v]));
+    assert.deepEqual(csp['frame-ancestors'], ["'self'"], `${cesta}: web nejde vložit do cizího rámu (vlastní ukázka aplikace v rámu ano)`);
+    assert.deepEqual(csp['script-src'], ["'self'"], `${cesta}: skripty jen vlastní, bez inline a eval`);
+    assert.deepEqual(csp['object-src'], ["'none'"], cesta);
+    assert.deepEqual(csp['base-uri'], ["'none'"], cesta);
+    assert.deepEqual(csp['default-src'], ["'self'"], cesta);
+    // Přehled účtu (/app?ucet) mluví jen se Supabase z jediného zdroje adresy – s ničím jiným.
+    assert.deepEqual(csp['connect-src'], ["'self'", new URL(UCET_VYCHOZI.url).origin], cesta);
+    for (const [k, v] of Object.entries(csp)) assert.ok(!v.includes('*') && !v.includes('http:') && !v.includes('https:'), `${cesta}: ${k} nesmí povolit libovolný původ`);
+  }
+  assert.equal(hlavickyHostingu('/install.sh', vercel)['Content-Type'], 'text/plain; charset=utf-8', 'instalační skript zůstává prostý text');
+});
+
+test('web: stránky nemají vložené spustitelné skripty ani obsluhy v atributech (CSP script-src self)', async () => {
+  const out = await tempDir('web-csp-');
+  const r = await buildSite({ out });
+  const stranky = r.files.filter((f) => f.endsWith('.html'));
+  assert.ok(stranky.length >= 4);
+  for (const soubor of stranky) {
+    const html = await fs.readFile(path.join(out, soubor), 'utf8');
+    for (const [, atributy] of html.matchAll(/<script\b([^>]*)>/g)) {
+      assert.ok(/\bsrc=/.test(atributy) || /type="application\/ld\+json"/.test(atributy), `${soubor}: vložený skript <script${atributy}> by CSP zastavila`);
+    }
+    assert.doesNotMatch(html, /<[^>]+\son[a-z]+\s*=\s*["']/i, `${soubor}: obsluha v atributu by CSP zastavila`);
+    assert.doesNotMatch(html, /href="javascript:/i, soubor);
+  }
+});

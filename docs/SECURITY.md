@@ -70,6 +70,9 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | otevřené, řeší se spolu se získáním Developer ID |
 | 12–14, 16–18 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline`, kontrola odesílatele zpráv v rozšíření, hlavičky webu | otevřené |
 | 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |
+| 19 | střední | web (Vercel) neposílal CSP ani bezpečnostní hlavičky, přitom přehled účtu drží relaci v `localStorage` | **opraveno v 0.37.0**: `vercel.json` posílá CSP (`script-src 'self'`, `connect-src` jen Supabase, `frame-ancestors 'self'`, `object-src`/`base-uri 'none'`), nosniff, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` a HSTS; náhled `scripts/serve-site.mjs` posílá tytéž hlavičky, test hlídá i to, že stránky nemají vložené skripty |
+| 20 | střední | aplikace pro Windows a spuštění z terminálu nemají klíč okna – jiný program téhož uživatele dosáhne na celé API | otevřené, další krok (plášť pro Windows a jednorázový odkaz pro terminál) |
+| 21 | střední | spárované zařízení (rozsah jen pro čtení) přečte i přepisy, dovednosti a logy běhů | otevřené, další krok (rozsah „jen souhrny“ jako výchozí pro sdílená zařízení) |
 
 Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF, kontrola `Origin`/`Host`, tokenové cesty s `timingSafeEqual`, limity těla a SSE, procházení statických souborů, XSS (75 zkušebních řetězců v 8 vstupech: všude jen text), oprávnění datových souborů, WKWebView jen na 127.0.0.1, převzetí portu jen po ověření podpisu skriptu.
 
