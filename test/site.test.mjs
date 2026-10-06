@@ -79,7 +79,7 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
   const css = await fs.readFile(path.join(ROOT, 'site/lp.css'), 'utf8');
   const app = await fs.readFile(path.join(ROOT, 'public/styles.css'), 'utf8');
   // Klíčové barvy identity „koncertní sál" musí sedět na aplikaci, ne být přibližné.
-  for (const token of ['--stage: #121019', '--paper: #F4F3F7', '--ink: #16141D', '--brass: #C99A3E', '--velvet: #C2335A', '--teal: #22A38C']) {
+  for (const token of ['--stage: #16203A', '--paper: #F3F5F8', '--ink: #16203A', '--brass: #B07D2C', '--velvet: #B44A64', '--teal: #3E8A6E']) {
     assert.ok(css.includes(token), `landing page nemá token ${token}`);
     assert.ok(app.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
   }

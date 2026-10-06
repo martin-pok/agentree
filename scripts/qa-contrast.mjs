@@ -27,7 +27,9 @@ const SIRKY = [1440, 375];
 
 // Prvky s přechodem na pozadí nejdou přečíst z `backgroundColor`. U vlastních ploch proto bereme
 // **nejsvětlejší zastávku** přechodu, což je pro slonovinový text nejhorší možný případ.
-const PRECHODY = { stage: '#1A1722', 'pulse-bar': '#191722', hero: '#1A1722', 'ext-win-head': '#1A1722', 'shot-frame': '#1A1722' };
+// Hlavní pruh aplikace má ve Dni světlý nádech a v Noci tmavý: pro tmavý text ve Dni je nejhorší
+// nejtmavší zastávka (modrá), pro světlý text v Noci nejsvětlejší – obojí složené na podklad stránky.
+const PRECHODY = { stage: '#1A1722', 'pulse-bar': '#C8D8F2', 'pulse-bar@dark': '#1E2330', hero: '#1A1722', 'ext-win-head': '#1A1722', 'shot-frame': '#1A1722' };
 
 // Měření běží uvnitř stránky: potřebuje vidět skutečné vypočtené styly každého uzlu.
 function zmer(prechody) {
@@ -58,8 +60,9 @@ function zmer(prechody) {
     const vrstvy = [];
     for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
       const cs = getComputedStyle(n);
-      const trida = Object.keys(prechody).find((c) => n.classList.contains(c));
-      if (cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage) && trida) { vrstvy.push(hex(prechody[trida])); break; }
+      const trida = Object.keys(prechody).find((c) => !c.includes('@') && n.classList.contains(c));
+      const tmave = document.documentElement.dataset.theme === 'dark' && prechody[`${trida}@dark`];
+      if (cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage) && trida) { vrstvy.push(hex(tmave || prechody[trida])); break; }
       const bg = parse(cs.backgroundColor);
       if (bg && bg.a > 0) { vrstvy.push(bg); if (bg.a === 1) break; }
     }

@@ -14,9 +14,10 @@ export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.work
 
 // Barvy grafů: ověřená kategoriální paleta (validátor dataviz: světlost, sytost, rozlišitelnost pro barvoslepé).
 // Barva patří poskytovateli natrvalo – nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
-export const CATEGORICAL = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+// Tlumené pigmenty (Den i Noc): každý drží grafický kontrast ≥ 3 : 1 proti kartě v obou režimech.
+export const CATEGORICAL = ['#4F74B8', '#C9693F', '#2F8A6A', '#A97A22', '#7A6FB8', '#2E8A94', '#8A5A9E', '#B5505C'];
 export const CHART_ORDER = ['google', 'anthropic', 'openai', 'microsoft', 'cursor', 'perplexity', 'github', 'xai'];
-export const CHART_OTHER = { key: 'other', label: tr('Ostatní'), color: '#8a8594' };
+export const CHART_OTHER = { key: 'other', label: tr('Ostatní'), color: '#7D8496' };
 export const chartKey = (provider) => (CHART_ORDER.includes(provider) ? provider : 'other');
 export const chartColor = (provider) => (CHART_ORDER.includes(provider) ? CATEGORICAL[CHART_ORDER.indexOf(provider)] : CHART_OTHER.color);
 

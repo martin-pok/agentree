@@ -63,7 +63,7 @@ posunulo. Totéž platí pro menu Nastavení, které je z tlačítek: Onest 500 
 
 **Položka navigace a nabídky** (postranní panel, spodní lišta na telefonu, paleta příkazů, panel
 Více) tlačítko není – je to řádek seznamu míst a má Onest 400 jako ostatní text v seznamu. I tady
-jeden řez pro všechny stavy: aktivní stránku ukazuje plocha, barva textu a mosazný pruh. Položka
+jeden řez pro všechny stavy: aktivní stránku ukazuje skleněná plocha s bílou hranou a barva textu (žádný boční proužek). Položka
 postranního panelu má výšku ze stupnice: 40 px, na nejnižším okně 32 px, na monitoru na výšku 48 px
 (dlaždice spodní lišty na telefonu má ikonu nad popiskem, není jednořádková).
 
