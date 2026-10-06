@@ -8,6 +8,7 @@ export const RELEASES = [
     date: '2026-10-05',
     title: 'Každý agent hned a jednou',
     items: [
+      'Nový vzhled Den a Noc: Den je světlé sklo nad tichou oblohou, Noc jeho zrcadlo v půlnoční modré. Barvy mají stálý význam – šalvěj pracuje, okr čeká, růže potřebuje tebe.',
       'Každý spuštěný agent se ukáže jednou a bez obnovení stránky: Codex a Gemini z npm už nejsou dvakrát, nová konverzace v prohlížeči nenechá druhý záznam a Cursor je vidět do vteřiny. Nově se rozpoznává aplikace Codex.',
       'Když se nepodaří zjistit, co běží, Přehled to řekne a ukáže poslední známý stav místo prázdna.',
       'Synchronizace s účtem přidá Mac do účtu dřív, než se zapne, a když něco selže, karta účtu řekne proč. Přehled na webu ukazuje, jak čerstvá data jsou, a obnovuje se sám.',
@@ -17,6 +18,7 @@ export const RELEASES = [
     en: {
       title: 'Every agent, once and right away',
       items: [
+        'A new Day and Night look: Day is light glass over a quiet sky, Night is its mirror in midnight blue. Colours keep one meaning – sage is working, ochre is waiting, rose needs you.',
         'Every running agent shows up once and without reloading: Codex and Gemini from npm no longer appear twice, a new browser conversation leaves no second entry and Cursor appears within a second. The Codex app is now recognised.',
         'When Agenteeq can’t find out what’s running, Overview says so and keeps the last known state instead of showing nothing.',
         'Account sync adds your Mac to the account before it turns on, and the account card says why if something fails. The web overview shows how fresh the data is and refreshes on its own.',
