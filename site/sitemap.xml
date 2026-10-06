@@ -24,4 +24,16 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/privacy"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/soukromi"/>
   </url>
+  <url>
+    <loc>https://agentree-fawn.vercel.app/instalace</loc>
+    <xhtml:link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/instalace"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/install"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/instalace"/>
+  </url>
+  <url>
+    <loc>https://agentree-fawn.vercel.app/en/install</loc>
+    <xhtml:link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/instalace"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/install"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/instalace"/>
+  </url>
 </urlset>

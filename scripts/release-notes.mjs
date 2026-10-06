@@ -3,8 +3,9 @@
 //
 // Proč vlastní skript a ne `--notes-from-tag`: popis musí říct, jak se aplikace na Macu
 // spustí. A to se liší podle toho, jestli se build podepsal Developer ID, nebo jen ad-hoc.
-// Ad-hoc podepsanou aplikaci stažený Mac odmítne s hláškou „je poškozená“, i když není –
-// jenom má karanténní příznak. Kdyby to v popisu nestálo, vypadá to jako rozbité vydání.
+// Ad-hoc podepsanou aplikaci stažený Mac napoprvé neotevře a nabídne jen „Hotovo“; spustit
+// ji jde až tlačítkem „Přesto otevřít“ v Nastavení systému. Kdyby to v popisu nestálo,
+// vypadá to jako rozbité vydání.
 //
 // Spuštění:  node scripts/release-notes.mjs <verze> [složka s přílohami] > poznamky.md
 import fs from 'node:fs/promises';
@@ -35,28 +36,50 @@ export function sekceZmen(changelog, verze) {
   return { nadpis, telo };
 }
 
+// Návod k instalaci na webu (site/instalace, site/en/install). Popis vydání na něj odkazuje,
+// kdo chce postup i pro Windows nebo řešení potíží.
+export const NAVOD_URL = 'https://agentree-fawn.vercel.app/instalace';
+const PRIKAZ_TERMINAL = 'curl -fsSL https://agentree-fawn.vercel.app/install.sh | bash';
+
 /**
- * Jak se aplikace na Macu otevře. Odpověď závisí na podpisu, takže se neopisuje z paměti,
- * ale z `dist/latest-build.json`, který zapsal build.
+ * Jak se aplikace na Macu nainstaluje a poprvé otevře. Odpověď závisí na podpisu, takže se
+ * neopisuje z paměti, ale z `dist/latest-build.json`, který zapsal build. `dmg` říká, jestli
+ * je u vydání obraz disku (pak se instaluje přetažením z jeho okna, jinak z rozbaleného ZIPu).
+ *
+ * Postup je stejný jako na webu a v docs/INSTALL.md – jedna pravda na všech místech, hlídá
+ * test/release-notes.test.mjs a test/site.test.mjs.
  */
-export function napovedaProMac(podpis) {
+export function napovedaProMac(podpis, { dmg = false } = {}) {
+  const presun = dmg
+    ? 'Otevři stažený obraz disku (**.dmg**) a v okně, které se objeví, přetáhni **Agenteeq** na složku **Aplikace**.'
+    : 'Rozbal archiv a přetáhni **Agenteeq.app** do složky **Aplikace**.';
   if (podpis === 'Developer ID') {
-    return 'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace. Aplikace je podepsaná\nDeveloper ID a notarizovaná, takže se otevře běžným dvojklikem.';
+    return `${presun} Aplikace je podepsaná\nDeveloper ID a notarizovaná, takže se otevře běžným dvojklikem.`;
   }
-  // Ad-hoc podpis je pravda, kterou nemá smysl zamlčet: uživatel by narazil na hlášku,
-  // která vypadá jako poškozený soubor, a vydání by považoval za vadné.
+  // Ad-hoc podpis je pravda, kterou nemá smysl zamlčet. S platným ad-hoc podpisem vede na
+  // macOS 15 podporovaná cesta přes Nastavení systému; Terminál k ní není potřeba.
   return [
-    'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace.',
+    presun,
     '',
-    'Tento build **není podepsaný Developer ID ani notarizovaný**, takže ho macOS po stažení',
-    'zavře do karantény a při prvním spuštění ohlásí, že je aplikace poškozená. Poškozená není,',
-    'jen nemá podpis. Karanténní příznak sundáš jedním příkazem v Terminálu:',
+    'Tento build zatím **není podepsaný Developer ID ani notarizovaný**, takže ho macOS napoprvé',
+    'neotevře sám. Stačí to potvrdit jednou, bez Terminálu:',
+    '',
+    '1. Otevři Agenteeq ze složky Aplikace. macOS ohlásí, že ho neotevřel – klikni na **Hotovo**.',
+    '2. Otevři **Nastavení systému → Soukromí a zabezpečení**, sjeď dolů k hlášce o Agenteeq',
+    '   a klikni na **Přesto otevřít**. Tlačítko se objeví až po kroku 1.',
+    '3. Potvrď heslem nebo Touch ID a v posledním okně klikni na **Otevřít**.',
+    '',
+    `Příště se Agenteeq otevře dvojklikem. Podrobný návod i s řešením potíží: ${NAVOD_URL}`,
+    '',
+    '**Pro pokročilé:** jedním příkazem v Terminálu se Agenteeq stáhne, ověří otiskem SHA-256',
+    'z GitHubu a nainstaluje bez kroku v Nastavení:',
     '',
     '```',
-    'xattr -dr com.apple.quarantine /Applications/Agenteeq.app',
+    PRIKAZ_TERMINAL,
     '```',
     '',
-    'Potom se aplikace otevře normálně.',
+    'Kdyby macOS místo toho hlásil, že je aplikace **poškozená**, pomůže jako poslední možnost',
+    'příkaz `xattr -dr com.apple.quarantine /Applications/Agenteeq.app` v Terminálu.',
   ].join('\n');
 }
 
@@ -100,7 +123,7 @@ export async function prilohy(slozka) {
   const jmena = await fs.readdir(slozka).catch(() => []);
   const out = [];
   for (const jmeno of jmena.sort()) {
-    if (!jmeno.endsWith('.zip')) continue;
+    if (!/\.(zip|dmg)$/.test(jmeno)) continue;
     const st = await fs.stat(path.join(slozka, jmeno)).catch(() => null);
     if (st?.isFile()) out.push({ jmeno, bajtu: st.size });
   }
@@ -110,6 +133,7 @@ export async function prilohy(slozka) {
 // Pořadí je zároveň pořadím v popisu vydání: první je to, co si stáhne nejvíc lidí.
 // Řadit podle abecedy by postavilo „Windows“ před „macOS“ (velké W je před malým m).
 const POPIS_PRILOHY = [
+  [/macOS-arm64\.dmg$/, 'aplikace pro Mac s čipem Apple (M1 a novější) – otevři a přetáhni do Aplikací'],
   [/macOS-arm64\.zip$/, 'aplikace pro Mac s čipem Apple (M1 a novější)'],
   [/Windows-x64\.zip$/, 'aplikace pro Windows 10 a 11 (64bit)'],
   // Z obchodu se rozšíření instaluje jedním klikem a aktualizuje samo; ZIP pak zůstává jen pro ruční instalaci.
@@ -127,7 +151,11 @@ const popisSouboru = (jmeno) => POPIS_PRILOHY.find(([vzor]) => vzor.test(jmeno))
 
 export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' }) {
   const { nadpis, telo } = sekceZmen(changelog, verze);
+  // Kopie se stálým jménem (Agenteeq-macOS-arm64.dmg…) jsou tytéž soubory pro odkazy z webu;
+  // v seznamu by stály podruhé vedle souboru s verzí, tak se vypisuje jen ten s verzí.
+  soubory = soubory.filter((s) => !/^Agenteeq-(macOS|Windows)-/.test(s.jmeno));
   const maMac = soubory.some((s) => /macOS/.test(s.jmeno));
+  const maDmg = soubory.some((s) => /macOS-.*\.dmg$/.test(s.jmeno));
   // Název je nadpis sekce změn a stojí na stejné úrovni jako „Ke stažení“ a další sekce níž.
   const casti = [`## ${nazevVydani(nadpis)}`, '', nadpisyPodNazev(telo), ''];
 
@@ -140,7 +168,7 @@ export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' 
     casti.push('');
   }
 
-  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac), '');
+  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac, { dmg: maDmg }), '');
 
   // Požadavky se píšou jen k tomu, co je opravdu přiložené. Věta o macOS u vydání bez
   // aplikace pro Mac (nebo naopak) je slib, který přílohy nekryjí.

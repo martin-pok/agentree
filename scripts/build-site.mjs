@@ -37,15 +37,30 @@ export function verzeVDatechStranky(html, verze) {
   return html.replace(vzor, `"softwareVersion":"${verze}"`);
 }
 
+// Návod k instalaci (první otevření na Macu, SmartScreen na Windows). Stejná dvojice jazyků
+// jako landing page; na návod vede odkaz vedle tlačítka Stáhnout a popis vydání.
+export const NAVOD = [
+  { kod: 'cs', adresa: '/instalace', soubor: path.join('instalace', 'index.html') },
+  { kod: 'en', adresa: '/en/install', soubor: path.join('en', 'install', 'index.html') },
+];
+
 // Odkaz na stažení míří na přílohu se stálým jménem v posledním vydání. Adresa s číslem verze
 // by po každém vydání ukazovala do prázdna, dokud by někdo nepřestavěl web — a přesně tak vypadá
-// rozbité tlačítko Stáhnout. Stálou kopii přikládá k vydání workflow (.github/workflows/release.yml).
+// rozbité tlačítko Stáhnout. Stálé kopie přikládá k vydání workflow (.github/workflows/release.yml).
+//
+// Mac stahuje DMG (otevři a přetáhni do Aplikací, scripts/dmg.mjs). ZIP pro Mac zůstává u vydání
+// pro install.sh a aktualizace v aplikaci – ty hledají přílohu s verzí ve jménu, ne tuhle.
 export const REPO = 'https://github.com/martin-pok/agentree';
-export const BALICEK_MAC = 'Agenteeq-macOS-arm64.zip';
+export const BALICEK_MAC = 'Agenteeq-macOS-arm64.dmg';
+export const BALICEK_WINDOWS = 'Agenteeq-Windows-x64.zip';
+export const STAZENI = { 'mac-arm64': BALICEK_MAC, 'windows-x64': BALICEK_WINDOWS };
 export function odkazNaStazeni(html) {
-  const vzor = /(data-stahnout="mac-arm64" href=")[^"]*(")/g;
-  if (!vzor.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
-  return html.replace(vzor, `$1${REPO}/releases/latest/download/${BALICEK_MAC}$2`);
+  if (!/data-stahnout="mac-arm64"[^>]* href="/.test(html)) throw new Error('Stránka webu nemá odkaz s data-stahnout="mac-arm64" — uprav scripts/build-site.mjs.');
+  // Atributy mezi data-stahnout a href (data-system…) se přeskočí; pořadí v HTML je pevné.
+  return html.replace(/(data-stahnout="([a-z0-9-]+)"(?: [a-z-]+="[^"]*")* href=")[^"]*(")/g, (cely, zacatek, druh, konec) => {
+    if (!STAZENI[druh]) throw new Error(`Neznámý odkaz ke stažení data-stahnout="${druh}" — doplň ho do STAZENI v scripts/build-site.mjs.`);
+    return `${zacatek}${REPO}/releases/latest/download/${STAZENI[druh]}${konec}`;
+  });
 }
 
 // Instalace rozšíření na webu: stránka nese obě cesty mezi značkami <!-- rozsireni:obchod --> a
@@ -137,6 +152,10 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
     await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))));
+  }
+  for (const navod of NAVOD) {
+    const stranka = path.join(out, navod.soubor);
+    await fs.writeFile(stranka, odkazNaStazeni(await fs.readFile(stranka, 'utf8')));
   }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.

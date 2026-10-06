@@ -212,6 +212,8 @@ section[id] { scroll-margin-top: 72px; }
 /* Instalace jedním příkazem: kousek tmavé scény uprostřed světlé jednotky – Terminál je tmavý
    a příkaz se tak pozná na první pohled. Barvy scény jsou stejné ve světlém i tmavém režimu. */
 .unit-head .text-link { margin-top: 4px; font-size: 15px; }
+/* Pod tlačítkem ke stažení: odkaz na návod k prvnímu otevření a na instalaci z Terminálu. */
+.stazeni-odkazy { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; }
 .prikaz { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-bottom: 16px; padding: 36px 32px; border-radius: var(--r-tile); background: var(--stage); border: 1px solid var(--stage-line); color: var(--on-stage); scroll-margin-top: 80px; }
 .prikaz h3 { color: var(--on-stage); font-size: 22px; }
 .prikaz p { max-width: 72ch; color: var(--on-stage-mute); }
@@ -264,6 +266,32 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: var(--r-full); bac
 .doc-body a { color: var(--ink); }
 .doc-page .lang { margin-left: auto; }
 
+/* ---------- návod k instalaci (/instalace, /en/install) ----------
+   Stejná textová stránka, jen místo odstavců kroky: číslo z kroků na úvodní stránce, nadpis
+   a jedna dvě věty. Každý systém má hlavičku s tlačítkem ke stažení, aby návod šel použít
+   i bez úvodní stránky (odkaz z popisu vydání). */
+.navod { max-width: 760px; }
+.navod h1 { font-size: clamp(40px, 5vw, 64px); margin: 12px 0 24px; }
+.navod-skok { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; }
+.navod-skok a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 20px; border-radius: var(--r-full); background: var(--paper-2); color: var(--ink); font-size: 15px; font-weight: 500; text-decoration: none; transition: background 180ms var(--ease); }
+.navod-skok a:hover { background: var(--line); }
+.navod-sekce { margin-top: clamp(64px, 8vw, 96px); scroll-margin-top: 88px; }
+.navod-hlava { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 24px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.navod-hlava h2, .navod-sekce > h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: clamp(32px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.03em; }
+.navod-hlava .specs { justify-content: flex-start; margin-top: 10px; }
+.navod-stitek { padding: 4px 12px; border-radius: var(--r-full); background: var(--brass-tint); color: var(--brass-ink); font-family: var(--f-body); font-size: 13px; line-height: 1.4; letter-spacing: 0; }
+.navod-uvod { margin-top: 24px; color: var(--ink-2); max-width: 60ch; }
+.navod-kroky { display: grid; gap: 12px; margin: 24px 0 0; padding: 0; list-style: none; }
+.navod-kroky li { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 20px; row-gap: 6px; align-items: start; padding: 28px 32px 30px; border-radius: var(--r-lg); background: var(--card); }
+.navod-kroky .step-n { grid-row: 1 / span 2; margin: 0; font-size: 40px; text-align: center; }
+.navod-kroky h3 { padding-top: 6px; font-size: 20px; }
+.navod-kroky p { color: var(--ink-2); font-size: 16px; }
+.navod-kroky b { color: var(--ink); }
+.navod-pozn { margin-top: 16px; font-size: 14px; line-height: 1.6; color: var(--mute); max-width: 64ch; }
+.navod .prikaz { margin: 16px 0 0; }
+.navod .rows { margin-top: 24px; }
+.navod .rows code { display: block; margin-top: 12px; padding: 12px 18px; border-radius: var(--r-md); background: var(--paper-2); color: var(--ink); overflow-wrap: anywhere; }
+
 footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px solid var(--line); font-size: 14px; }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
 .foot-in > p { color: var(--mute); }
@@ -297,6 +325,12 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .specs span { gap: 8px; }
   .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .source-group, .facts article, .steps li, .gatekeeper, .prikaz { padding: 28px 22px 32px; border-radius: var(--r-lg); }
+  /* Návod: číslo nad nadpisem, text přes celou šířku karty; tlačítko ke stažení přes celou šířku. */
+  .navod-kroky li { grid-template-columns: minmax(0, 1fr); padding: 24px 22px 26px; }
+  .navod-kroky .step-n { grid-row: auto; text-align: left; font-size: 36px; }
+  .navod-kroky h3 { padding-top: 4px; }
+  .navod-hlava { align-items: stretch; flex-direction: column; }
+  .navod-hlava .btn { width: 100%; }
   /* Na telefonu má příkaz celou šířku a tlačítko jde pod něj, kde se na něj pohodlně trefí palec. */
   .prikaz-radek { flex-direction: column; }
   .prikaz-posun { padding-inline: 20px; font-size: 14px; }
@@ -371,3 +405,13 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .odo-s { transform: translateY(calc(-100% + 100% / var(--n))); }
 }
+
+/* Návod k instalaci (/instalace, /en/install): kroky pod sebou, číslo vlevo, údaje zarovnané vlevo. */
+.navod .btn, .navod .btn:hover { color: var(--on-action); text-decoration: none; }
+.navod section { margin-top: 56px; }
+.navod-cta { margin: 20px 0 12px; }
+.navod .specs { justify-content: flex-start; }
+.steps--navod { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 28px; }
+.steps--navod li { grid-template-columns: 48px minmax(0, 1fr); column-gap: 20px; row-gap: 6px; padding: 24px 28px; }
+.steps--navod .step-n { grid-row: span 2; margin: 0; font-size: 32px; line-height: 1; }
+.steps--navod b, .steps--navod p { grid-column: 2; margin: 0; }

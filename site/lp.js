@@ -6,8 +6,13 @@
 // Plynulé posouvání sdílí web s aplikací: hosting nese celé rozhraní (public/ leží v kořeni webu),
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
+import { pripravStazeni } from '/stazeni.js';
 
 const anglicky = document.documentElement.lang === 'en';
+
+// Tlačítko ke stažení podle systému (site/stazeni.js). Hned na začátku, než se cokoli dalšího
+// rozhýbe; bez skriptu zůstává tlačítko pro Mac.
+pripravStazeni();
 
 // Lišta nahoře splývá s úvodem; jakmile stránka odjede, dostane průhled a oddělí se linkou (site/lp.css).
 const lista = document.querySelector('.nav');

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { stampVersion } from './plist-version.mjs';
+import { planDmg, nazevDmg } from './dmg.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.platform !== 'darwin') throw new Error('Build requires macOS and Xcode command-line tools.');
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
@@ -59,11 +60,19 @@ if (notaryProfile) {
   run('spctl', ['--assess', '--type', 'execute', '--verbose=2', app]);
   notarized = true;
 }
+// Obraz disku s Agenteeq.app a zkratkou na Aplikace (scripts/dmg.mjs): pro člověka, který
+// instaluje poprvé, je „otevři a přetáhni“ srozumitelnější než ZIP. Vzniká až z hotové aplikace,
+// tedy i s přišpendleným lístkem notarizace, když proběhla. ZIP výše zůstává – z něj instaluje
+// install.sh i aktualizace v aplikaci.
+const dmg = path.join(root, 'dist', nazevDmg(version, process.arch));
+const staging = path.join(build, 'dmg');
+await fs.mkdir(staging, { recursive: true });
+for (const [command, args] of planDmg({ app, staging, dmg, identity, notaryProfile })) run(command, args);
 const iconPreview = path.join(root, 'desktop', 'Agenteeq-icon.png');
 try {
   await fs.copyFile(iconPreview, path.join(root, 'dist/Agenteeq-icon.png'));
 } catch {
   // The app icon remains present; the PNG preview is a convenience artifact.
 }
-await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }, null, 2));
-console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }));
+await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, dmg, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }, null, 2));
+console.log(JSON.stringify({ app, archive, dmg, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }));

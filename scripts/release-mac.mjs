@@ -60,7 +60,7 @@ console.log(`Agenteeq ${version} – vydání pro macOS (${process.arch})`);
 // tedy po testech a smoke – po pěti minutách čekání na chybu, která byla vidět od začátku.
 krok(0, 'Kontrola nástrojů');
 const chybi = [];
-for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which']]) {
+for (const [nastroj, kde] of [['swiftc', 'xcrun'], ['codesign', 'which'], ['ditto', 'which'], ['xattr', 'which'], ['hdiutil', 'which']]) {
   const nalezeno = kde === 'xcrun' ? tise('xcrun', ['--find', nastroj]) : tise('which', [nastroj]);
   if (!nalezeno) chybi.push(nastroj);
 }
@@ -159,7 +159,7 @@ for (const f of (await fs.readdir(path.join(root, 'dist')).catch(() => [])).sort
 // Skript ho schválně nedělá sám: vydání je veřejná publikace a ta patří do rukou člověka.
 // Co ale udělat může, je nenechat ho hádat — ověří, že přílohy opravdu existují, a vypíše
 // přesný příkaz, který stačí zkopírovat.
-const prilohy = [archiv, path.join(root, 'dist', `agenteeq-extension-${version}.zip`)];
+const prilohy = [archiv, path.join(root, 'dist', `Agenteeq-${version}-macOS-${process.arch}.dmg`), path.join(root, 'dist', `agenteeq-extension-${version}.zip`)];
 const chybejici = [];
 for (const soubor of prilohy) {
   if (!(await fs.stat(soubor).then(() => true, () => false))) chybejici.push(path.relative(root, soubor));
