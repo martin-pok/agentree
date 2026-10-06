@@ -8,12 +8,14 @@ export const RELEASES = [
     date: '2026-10-06',
     title: 'Čitelnost nového vzhledu',
     items: [
+      'Rozšíření pro Chrome se přidá jedním kliknutím z Chrome Web Store a s aplikací se spáruje samo.',
       'Šedý doplňkový text je čitelný i tam, kde leží přímo na barevném pozadí vzhledu Den.',
       'Karta Útraty bez připojeného API má na telefonu ikonu, text a tlačítko srovnané pod sebou.',
     ],
     en: {
       title: 'Readability of the new look',
       items: [
+        'The Chrome extension installs with one click from the Chrome Web Store and pairs with the app on its own.',
         'Secondary grey text stays readable where it sits directly on the coloured Day background.',
         'On a phone, the Spend card without a connected API lines up its icon, text and button.',
       ],

@@ -75,8 +75,9 @@ test('Chrome Web Store: zásady ochrany soukromí jsou na webu v obou jazycích 
 
 test('Chrome Web Store: jedna adresa přepne web z ruční instalace na „Přidat do Chromu“', async () => {
   assert.equal(CHROME_WEB_STORE_URL, 'https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch');
-  assert.equal(CHROME_WEB_STORE_PUBLISHED, false, 'během kontroly zůstane živý web u ověřené instalační cesty');
-  assert.equal(adresaObchodu(), '');
+  assert.equal(CHROME_WEB_STORE_PUBLISHED, true, 'rozšíření je v obchodě zveřejněné – web i aplikace vedou rovnou tam');
+  assert.equal(adresaObchodu(), CHROME_WEB_STORE_URL);
+  assert.equal(adresaObchodu(''), '');
   assert.equal(adresaObchodu(CHROME_WEB_STORE_URL), CHROME_WEB_STORE_URL);
   assert.equal(adresaObchodu('https://evil.example/detail/abcdefghijklmnopabcdefghijklmnop'), '');
   assert.equal(adresaObchodu('https://chromewebstore.google.com/detail/agenteeq/abcdefghijklmnopabcdefghijklmnop'), 'https://chromewebstore.google.com/detail/agenteeq/abcdefghijklmnopabcdefghijklmnop');

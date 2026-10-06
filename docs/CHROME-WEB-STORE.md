@@ -1,17 +1,15 @@
 # Rozšíření v Chrome Web Store
 
-Stav k 3. 10. 2026: **odesláno ke kontrole, čeká na Google.** První zamítnutí se týkalo výčtu
-názvů služeb v anglickém popisu; popis jsme zjednodušili a znovu odeslali. Po schválení se položka
-automaticky zveřejní. Její stálá adresa a ID už jsou v `public/js/obchod.js`; příznak
-`CHROME_WEB_STORE_PUBLISHED` zůstává do ověření veřejné stránky vypnutý. Potom se zapne a vydá se
-nová verze aplikace, která nabídne instalaci jedním kliknutím a automatické spárování.
+Stav k 6. 10. 2026: **zveřejněno.** Vlastník potvrdil, že položka je v Chrome Web Store veřejně
+dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
+web i aplikace nabízejí instalaci jedním kliknutím (**Přidat do Chromu**) a rozšíření se spáruje samo.
+Veřejnou stránku obchodu z vývojového prostředí ověřit nejde (síť ji blokuje); ověřuje ji vlastník.
 
 Příznak je jediné místo, které instalaci z obchodu zapíná všude najednou: kartu v aplikaci
-(Nastavení → Propojení → Rozšíření pro Chrome, tlačítko **Otevřít Chrome Web Store**), web
+(Nastavení → Propojení → Rozšíření pro Chrome, tlačítko **Přidat do Chromu**), web
 (úvodní stránka a stránka Instalace `site/instalace`, `site/en/install` – sestavení
 `scripts/build-site.mjs#rozsireniNaWebu` nechá jen blok `rozsireni:obchod`) a popis vydání.
-Dokud je vypnutý, ukazuje se všude ruční instalace a web výslovně píše, že rozšíření na schválení
-čeká. Po zapnutí je potřeba web přestavět (`npm run build:site`, na hostingu se to stane samo).
+Když je vypnutý, ukazuje se všude ruční instalace. Po zapnutí je potřeba web přestavět (`npm run build:site`, na hostingu se to stane samo).
 
 ## Stav účtu vydavatele
 

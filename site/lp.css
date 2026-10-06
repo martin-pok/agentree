@@ -264,7 +264,11 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: var(--r-full); bac
    ke stažení; poznámky pod kroky jsou plochy jako `.gatekeeper`. */
 .unit-head .cta-row .btn { margin-top: 0; }
 .instalace-dalsi { display: grid; gap: 16px; }
-.instalace-dalsi .gatekeeper a { color: var(--ink); }
+/* Karta hned pod úvodem sekce má stejný odstup jako kroky (.steps), ne nulový. */
+.unit-head + .instalace-dalsi { margin-top: clamp(56px, 7vw, 80px); }
+.instalace-dalsi .gatekeeper a:not(.btn) { color: var(--ink); }
+/* Rozšíření z Chrome Web Store: jedno tlačítko do obchodu a pod ním jeden řádek. */
+.rozsireni-akce { margin: 0 0 12px; }
 .rozsireni-kroky { display: grid; gap: 10px; margin: 0; padding-left: 20px; color: var(--ink-2); }
 .rozsireni-kroky li { padding-left: 4px; }
 
