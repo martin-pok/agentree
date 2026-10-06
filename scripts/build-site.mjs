@@ -54,11 +54,9 @@ export const BALICEK_WINDOWS = 'Agenteeq-Windows-x64.zip';
 
 // Stálé přílohy, které POSLEDNÍ ZVEŘEJNĚNÉ vydání opravdu má. Jediné místo, které se po vydání
 // mění: web nesmí odkazovat na soubor, který na GitHubu ještě není (tlačítko by vedlo na 404).
-// Ověřeno 5. 10. 2026 proti v0.36.3: má jen Agenteeq-macOS-arm64.zip. DMG a stálý ZIP pro
-// Windows přikládá workflow od příštího vydání – po jeho zveřejnění (publish.yml ověří, že
-// odkazy vedou na jeho přílohy) se sem doplní INSTALATOR_MAC a BALICEK_WINDOWS a web se přestaví.
-// Do té doby: Mac stahuje ZIP (a stránka popisuje rozbalení), Windows vede na stránku vydání.
-export const V_POSLEDNIM_VYDANI = Object.freeze([BALICEK_MAC]);
+// Ověřeno 6. 10. 2026 proti zveřejněnému v0.37.1: má všechny tři stálé přílohy (ZIP a DMG pro
+// Mac, ZIP pro Windows). Mac proto stahuje DMG a Windows vede rovnou na ZIP.
+export const V_POSLEDNIM_VYDANI = Object.freeze([BALICEK_MAC, INSTALATOR_MAC, BALICEK_WINDOWS]);
 
 export const prilohaVydani = (jmeno) => `${REPO}/releases/latest/download/${jmeno}`;
 
