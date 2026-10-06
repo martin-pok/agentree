@@ -689,12 +689,6 @@ async function toggleSetting(sw) {
 // vzhled neřídí systémem, i režim. Změna se projeví hned, server ji jen uloží – když uložení
 // selže, vrátí se předchozí stav a řekne to.
 const NAZVY_MOTIVU = { usvit: tr('Úsvit'), pulnoc: tr('Půlnoc'), slonovina: tr('Slonovina'), eben: tr('Eben') };
-const POPISY_MOTIVU = {
-  usvit: tr('Světlé sklo nad jemnou oblohou'),
-  pulnoc: tr('Půlnoční modrá, tichá a soustředěná'),
-  slonovina: tr('Bílé karty pod tmavou scénou'),
-  eben: tr('Hluboká tma s výraznými barvami stavů'),
-};
 const nazevMotivu = (look, mode) => NAZVY_MOTIVU[themeOf(look, mode).id];
 
 async function ulozVzhled(next) {
@@ -909,9 +903,9 @@ function update(topics) {
   const motiv = (t) => {
     const vybrany = t.look === look && t.mode === ted;
     const vPari = system && t.look === look && !vybrany;
-    return `<button class="theme-pick${vPari ? ' is-pair' : ''}" type="button" role="radio" aria-checked="${vybrany}" data-theme-pick="${t.id}" aria-describedby="theme-desc-${t.id}">
+    return `<button class="theme-pick${vPari ? ' is-pair' : ''}" type="button" role="radio" aria-checked="${vybrany}" data-theme-pick="${t.id}">
       <span class="theme-preview theme-preview--${t.id}" aria-hidden="true"><i class="tp-band"></i><i class="tp-side"></i><i class="tp-bar"></i><i class="tp-card"></i><i class="tp-card tp-card--b"></i></span>
-      <span class="theme-pick-text"><span class="theme-pick-name"><strong>${NAZVY_MOTIVU[t.id]}</strong>${system && t.look === look ? `<span class="theme-pick-when">${t.mode === 'light' ? tr('Ve dne') : tr('V noci')}</span>` : ''}</span><small id="theme-desc-${t.id}">${POPISY_MOTIVU[t.id]}</small></span>
+      <span class="theme-pick-text"><span class="theme-pick-name"><strong>${NAZVY_MOTIVU[t.id]}</strong>${system && t.look === look ? `<span class="theme-pick-when">${t.mode === 'light' ? tr('Ve dne') : tr('V noci')}</span>` : ''}</span></span>
     </button>`;
   };
   fill(el, 'appearance', `
