@@ -11,9 +11,31 @@ import { ui } from './texty.js';
 import { hourKeyTs, localDay } from './util.js';
 
 const INTERVAL_MS = 5 * 60 * 1000;
+// Po neúspěšné synchronizaci se nečeká celý interval: 30 s → 1 → 2 → 5 min, úspěch řadu vynuluje.
+export const OPAKOVANI_MS = [30e3, 60e3, 120e3, 300e3];
+// Změna dat (stav agenta, limit) se pošle nejdřív za minutu – víc změn jde jedním odesláním.
+export const PO_ZMENE_MS = 60e3;
 const CASOVY_LIMIT_MS = 20000;
 const DNI_ZPET = 35;
 const ID = /^[a-z0-9-]{2,40}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Verze aplikace v účtu (devices.app_version). Databáze do migrace 20261005100000 bere jen
+// „1.2.3“ – předběžné verze („0.37.0-beta.1“) by založení zařízení odmítla celé. Jiný tvar proto
+// odchází jako null („neznámá“), nikdy jako vymyšlené číslo.
+const VERZE_UCTU = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+export const verzeProUcet = (v) => (typeof v === 'string' && VERZE_UCTU.test(v) ? v : null);
+
+const POZASTAVENO = () => ui('Synchronizace stojí: {0} není přihlášený k účtu. Přihlas se znovu v Nastavení → Účet a vzhled.', POCITAC.tento);
+const PROFIL_CHYBI = () => ui('V účtu chybí profil, takže volbu synchronizace nejde uložit a souhrny se neposílají. Odhlas se a přihlas znovu; když to nepomůže, dej nám vědět.');
+
+// Řádky tohoto zařízení, které Mac přestal hlásit, se z účtu mažou (src/cloud-sync.js#procisti).
+// Filtr říká, co ZŮSTANE; prázdný seznam = smazat všechny řádky zařízení v tabulce. Hodnoty jsou
+// jen [a-z0-9-] (ID, window_key), do syntaxe PostgREST tedy nic cizího nevnesou.
+const PROCISTIT = {
+  limits: (radky) => (radky.length ? `not.or=(${radky.map((r) => `and(provider.eq.${r.provider},window_key.eq.${r.window_key})`).join(',')})` : ''),
+  connections: (radky) => (radky.length ? `provider=not.in.(${radky.map((r) => r.provider).join(',')})` : ''),
+};
 
 export const POVOLENA = {
   devices: ['name', 'platform', 'app_version', 'last_seen_at'],
@@ -126,17 +148,23 @@ export function napojeniProCloud(konektory) {
     }));
 }
 
-export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchImpl = (...a) => fetch(...a), now = Date.now, emit = () => {} }) {
+// `casovace`: setTimeout/setInterval a jejich zrušení – testy podstrčí vlastní, aby nečekaly.
+export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchImpl = (...a) => fetch(...a), now = Date.now, emit = () => {}, casovace = globalThis }) {
   const cfg = config.ucet;
   let zapnuto = datastore.data.cloud?.syncEnabled === true;
-  // Volba změněná na Macu, kterou se ještě nepodařilo zapsat do účtu (výpadek sítě při přihlášení).
-  // Dokud ji účet nemá, načtení z účtu ji nepřepíše a zapíše se s příští synchronizací.
+  // Volba změněná na Macu, kterou se ještě nepodařilo zapsat do účtu (výpadek sítě při přihlášení,
+  // nezaložené zařízení). Dokud ji účet nemá, načtení z účtu ji nepřepíše a zapíše se s příští
+  // synchronizací – i po restartu aplikace (src/datastore.js#normalizeCloud ji ukládá).
   let volbaCeka = datastore.data.cloud?.volbaCeka === true;
   let posledni = datastore.data.cloud?.syncAt || 0;
   let chyba = '';
   let odeslano = null;
   let bezi = null;
   let casovac = null;
+  let spusteno = false;
+  let opakovani = null;
+  let pokusPoChybe = 0;
+  let poZmene = null;
 
   const status = () => ({ zapnuto, posledni, chyba, odeslano });
   const ohlas = () => emit(status());
@@ -171,15 +199,49 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
   // Zařízení se v účtu založí jednou; jeho id patří k uživateli, ne k Macu obecně.
   async function zarizeni(token, uzivatel) {
     const ulozene = datastore.data.cloud?.devices?.[uzivatel];
-    const popis = { name: (os.hostname().replace(/\.local$/, '') || 'Mac').slice(0, 80), platform: SYSTEM_UCTU, app_version: verze, last_seen_at: new Date(now()).toISOString() };
+    const popis = { name: (os.hostname().replace(/\.local$/, '') || 'Mac').slice(0, 80), platform: SYSTEM_UCTU, app_version: verzeProUcet(verze), last_seen_at: new Date(now()).toISOString() };
     if (ulozene) {
       const r = await volej(`/rest/v1/devices?id=eq.${encodeURIComponent(ulozene)}`, { method: 'PATCH', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
       if (Array.isArray(r) && r.length) return ulozene;
     }
-    const [novy] = await volej('/rest/v1/devices', { method: 'POST', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
+    const r = await volej('/rest/v1/devices', { method: 'POST', token, body: jenPovolena('devices', popis), prefer: 'return=representation' });
+    const novy = Array.isArray(r) ? r[0] : null;
+    if (!novy || !UUID.test(String(novy.id))) throw new Error(ui('server zařízení nepotvrdil'));
     datastore.data.cloud = { ...(datastore.data.cloud || {}), devices: { ...(datastore.data.cloud?.devices || {}), [uzivatel]: novy.id } };
     datastore.save();
     return novy.id;
+  }
+
+  // Zařízení se zakládá dřív než zápis volby i souhrnů: bez řádku v `devices` web ukazuje
+  // „0 zařízení“, i když je volba v účtu zapnutá. Selhání má proto vlastní větu.
+  async function zarizeniNeboChyba(token, uzivatel) {
+    try {
+      return await zarizeni(token, uzivatel);
+    } catch (err) {
+      if (err.status === 401) throw err;
+      throw Object.assign(new Error(ui('Do účtu se nepodařilo přidat {0} ({1}), souhrny se proto neposílají. Zkusím to znovu samo; když to nepomůže, odhlas se a přihlas znovu.', POCITAC.tento, err.message)), { status: err.status, sit: err.sit });
+    }
+  }
+
+  // Volba v účtu (profiles.sync_enabled): true/false, nebo null, když ji odpověď neobsahuje.
+  async function volbaVUctu(token, uzivatel) {
+    const r = await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}&select=sync_enabled`, { token });
+    if (Array.isArray(r) && r.length === 0) throw new Error(PROFIL_CHYBI());
+    const p = Array.isArray(r) ? r[0] : null;
+    return typeof p?.sync_enabled === 'boolean' ? p.sync_enabled : null;
+  }
+
+  // return=representation: PATCH bez odpovídajícího řádku projde se 0 řádky – bez kontroly by
+  // chybějící profil vypadal jako uložená volba.
+  async function zapisVolbuDoProfilu(token, uzivatel, hodnota) {
+    const r = await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: Boolean(hodnota) }, prefer: 'return=representation' });
+    if (!Array.isArray(r) || !r.length) throw new Error(PROFIL_CHYBI());
+  }
+
+  async function zapisVolbu(token, uzivatel) {
+    await zapisVolbuDoProfilu(token, uzivatel, zapnuto);
+    volbaCeka = false;
+    ulozMistne();
   }
 
   function data(deviceId) {
@@ -194,50 +256,97 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     };
   }
 
+  // Řádky tohoto zařízení, které Mac už nehlásí (zmizelé okno limitu, zrušené napojení), se z účtu
+  // smažou – jinak by na webu visely navždy. Jen vlastní device_id a user_id; RLS pustí jen vlastní.
+  async function procisti(token, uzivatel, deviceId, balik) {
+    for (const [tabulka, filtr] of Object.entries(PROCISTIT)) {
+      const zustava = filtr(balik[tabulka]);
+      const q = `device_id=eq.${encodeURIComponent(deviceId)}&user_id=eq.${encodeURIComponent(uzivatel)}${zustava ? `&${zustava}` : ''}`;
+      await volej(`/rest/v1/${tabulka}?${q}`, { method: 'DELETE', token, prefer: 'return=minimal' });
+    }
+  }
+
   function synchronizuj() {
     if (bezi) return bezi;
     bezi = (async () => {
       if (!cfg || !zapnuto) return status();
       const uzivatel = ucet.uzivatelId();
-      if (!uzivatel) return status();
+      if (!uzivatel) {
+        // Zapnutá synchronizace bez přihlášení nesmí vypadat jako „všechno odesláno“.
+        chyba = POZASTAVENO();
+        naplanujOpakovani();
+        ohlas();
+        return status();
+      }
       // Server může token odmítnout dřív, než podle hodin Macu vyprší (401) – pak se jednou obnoví
       // a celé odeslání zopakuje. Upsert je idempotentní, opakování nic nezdvojí.
       for (let pokus = 0; pokus < 2; pokus += 1) {
         const token = await ucet.pristup({ vynutit: pokus > 0 });
-        if (!token) break;
+        if (!token) {
+          chyba = POZASTAVENO();
+          break;
+        }
         try {
+          // Volba z účtu při každé synchronizaci: vypnutí na jiném počítači zastaví i tento.
+          // Čekající volbu tohoto Macu účet ještě nemá – ta se zapíše níž, až když zařízení existuje.
+          if (!volbaCeka && (await volbaVUctu(token, uzivatel)) === false) {
+            zapnuto = false;
+            chyba = '';
+            odeslano = null;
+            ulozMistne();
+            break;
+          }
+          const deviceId = await zarizeniNeboChyba(token, uzivatel);
           if (volbaCeka) await zapisVolbu(token, uzivatel);
-          const deviceId = await zarizeni(token, uzivatel);
           const balik = data(deviceId);
           for (const [tabulka, radky] of Object.entries(balik)) {
             if (!radky.length) continue;
             await volej(`/rest/v1/${tabulka}?on_conflict=${KONFLIKT[tabulka]}`, { method: 'POST', token, body: radky, prefer: 'resolution=merge-duplicates,return=minimal' });
           }
+          await procisti(token, uzivatel, deviceId, balik);
           posledni = now();
           chyba = '';
           odeslano = Object.fromEntries(Object.entries(balik).map(([t, r]) => [t, r.length]));
           ulozMistne();
           break;
         } catch (err) {
-          chyba = err.message;
+          chyba = err.message || ui('Souhrny se nepodařilo odeslat. Zkusím to znovu samo.');
           if (err.status !== 401) break;
         }
       }
+      if (chyba && zapnuto) naplanujOpakovani();
+      else zrusOpakovani();
       ohlas();
       return status();
     })().finally(() => { bezi = null; });
     return bezi;
   }
 
-  async function zapisVolbu(token, uzivatel) {
-    await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: zapnuto }, prefer: 'return=minimal' });
-    volbaCeka = false;
-    ulozMistne();
+  // Po neúspěchu se to zkusí dřív než za celý interval (OPAKOVANI_MS). Jen v běžící aplikaci.
+  function naplanujOpakovani() {
+    if (!spusteno || opakovani) return;
+    const za = OPAKOVANI_MS[Math.min(pokusPoChybe, OPAKOVANI_MS.length - 1)];
+    pokusPoChybe += 1;
+    opakovani = casovace.setTimeout(() => { opakovani = null; synchronizuj().catch(() => {}); }, za);
+    opakovani?.unref?.();
+  }
+  function zrusOpakovani() {
+    pokusPoChybe = 0;
+    if (opakovani) casovace.clearTimeout(opakovani);
+    opakovani = null;
+  }
+
+  // Změna dat (stav agenta, limit): odeslání nejdřív za PO_ZMENE_MS. Další změny v té době na
+  // čas nic nemění, takže ani nepřetržitá práce odeslání neodsune a server účtů se nezahltí.
+  function zmena() {
+    if (!spusteno || !zapnuto || poZmene || opakovani) return;
+    poZmene = casovace.setTimeout(() => { poZmene = null; synchronizuj().catch(() => {}); }, PO_ZMENE_MS);
+    poZmene?.unref?.();
   }
 
   // Přihlášení přes Google synchronizaci zapne (rozhodnutí vlastníka 4. 10. 2026; docs/ACCOUNTS.md).
   // Platí hned na tomto Macu, i když účet zrovna neodpovídá – volba se do účtu dopíše při příští
-  // synchronizaci. Kdo ji pak vypne, má ji vypnutou až do dalšího přihlášení.
+  // synchronizaci (až po založení zařízení). Kdo ji pak vypne, má ji vypnutou do dalšího přihlášení.
   async function zapnoutPoPrihlaseni() {
     if (!cfg) return status();
     zapnuto = true;
@@ -253,7 +362,9 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     const token = await ucet.pristup();
     const uzivatel = ucet.uzivatelId();
     if (!token || !uzivatel) throw Object.assign(new Error(ui('Pro synchronizaci se nejdřív přihlas.')), { status: 401 });
-    await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}`, { method: 'PATCH', token, body: { sync_enabled: Boolean(hodnota) }, prefer: 'return=minimal' });
+    // Zapnutí: nejdřív zařízení, pak volba – jinak by web ukázal zapnutou synchronizaci bez počítače.
+    if (hodnota) await zarizeniNeboChyba(token, uzivatel);
+    await zapisVolbuDoProfilu(token, uzivatel, hodnota);
     // Vypnutí souhrny z účtu smaže (všech zařízení – volba platí pro celý účet). Zařízení zůstanou.
     if (!hodnota) {
       for (const tabulka of Object.keys(KONFLIKT)) {
@@ -261,6 +372,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
       }
       posledni = 0;
       odeslano = null;
+      zrusOpakovani();
     }
     zapnuto = Boolean(hodnota);
     volbaCeka = false;
@@ -271,30 +383,36 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     return status();
   }
 
-  // Po přihlášení se volba načte z účtu – na jiném Macu mohla být zapnutá.
+  // Po přihlášení se volba načte z účtu – na jiném Macu mohla být zapnutá. Čekající volbu tohoto
+  // Macu (i z doby před restartem) nepřepíše: účet ji ještě nemá.
   async function nactiVolbu() {
     const token = await ucet.pristup();
     const uzivatel = ucet.uzivatelId();
     if (!token || !uzivatel) return;
     if (volbaCeka) return;
     try {
-      const [p] = await volej(`/rest/v1/profiles?id=eq.${encodeURIComponent(uzivatel)}&select=sync_enabled`, { token });
-      if (p && typeof p.sync_enabled === 'boolean' && p.sync_enabled !== zapnuto) {
-        zapnuto = p.sync_enabled;
+      const vUctu = await volbaVUctu(token, uzivatel);
+      if (typeof vUctu === 'boolean' && vUctu !== zapnuto) {
+        zapnuto = vUctu;
         ulozMistne();
         ohlas();
       }
-    } catch { /* bez spojení zůstává poslední známá volba */ }
+    } catch { /* bez spojení nebo bez profilu zůstává poslední známá volba; chybu ukáže synchronizace */ }
   }
 
   function start() {
     if (!cfg) return;
-    casovac = setInterval(() => { synchronizuj().catch(() => {}); }, INTERVAL_MS);
-    casovac.unref?.();
+    spusteno = true;
+    casovac = casovace.setInterval(() => { synchronizuj().catch(() => {}); }, INTERVAL_MS);
+    casovac?.unref?.();
   }
 
   function stop() {
-    clearInterval(casovac);
+    spusteno = false;
+    casovace.clearInterval(casovac);
+    zrusOpakovani();
+    if (poZmene) casovace.clearTimeout(poZmene);
+    poZmene = null;
   }
 
   // Náhled přesně toho, co by odešlo – rozhraní ho ukazuje v „Co přesně posíláme“.
@@ -302,5 +420,5 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     return data(ui('(id {0} v účtu)', POCITAC.tohoto));
   }
 
-  return { status, start, stop, synchronizuj, nastav, nactiVolbu, zapnoutPoPrihlaseni, nahled };
+  return { status, start, stop, synchronizuj, nastav, nactiVolbu, zapnoutPoPrihlaseni, nahled, zmena };
 }

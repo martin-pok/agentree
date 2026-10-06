@@ -19,6 +19,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   insert into public.devices (name, platform) values ('Mac B', 'macos') returning id into dev_b;
+  insert into public.limits (device_id, provider, window_key, used_pct, measured_at) values (dev_b, 'anthropic', 'claude-code-five-hour', 40, now());
   execute 'reset role';
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -56,6 +57,27 @@ begin
     vysledky := vysledky || 'A předal zařízení B: CHYBA'::text;
   exception when others then vysledky := vysledky || ('A nepřepíše vlastníka zařízení: true (' || sqlstate || ')');
   end;
+  -- Pročištění řádků, které Mac přestal hlásit (src/cloud-sync.js#procisti), smaže jen vlastní.
+  delete from public.limits where device_id = dev_b;
+  get diagnostics n = row_count;
+  vysledky := vysledky || ('A nesmaže limity zařízení B: ' || (n = 0));
+  -- Verze aplikace (migrace 20261005100000): předběžná vydání a null projdou, nesmysl ne.
+  begin
+    insert into public.devices (name, platform, app_version) values ('Mac A beta', 'macos', '0.37.0-beta.1');
+    insert into public.devices (name, platform, app_version) values ('Mac A build', 'macos', '0.37.0+build.5');
+    vysledky := vysledky || 'předběžná verze projde: true'::text;
+  exception when others then vysledky := vysledky || ('předběžná verze neprošla: CHYBA (' || sqlstate || ')');
+  end;
+  begin
+    insert into public.devices (name, platform, app_version) values ('Mac A bez verze', 'macos', null);
+    vysledky := vysledky || 'zařízení bez verze projde: true'::text;
+  exception when others then vysledky := vysledky || ('zařízení bez verze neprošlo: CHYBA (' || sqlstate || ')');
+  end;
+  begin
+    insert into public.devices (name, platform, app_version) values ('Mac A divná verze', 'macos', '0.37; drop table x');
+    vysledky := vysledky || 'nesmyslná verze prošla: CHYBA'::text;
+  exception when others then vysledky := vysledky || ('nesmyslná verze neprojde: true (' || sqlstate || ')');
+  end;
   begin
     insert into public.usage_daily (device_id, day, provider, input_tokens) values (dev_a, current_date - 2, 'anthropic', -1);
     vysledky := vysledky || 'záporné tokeny prošly: CHYBA'::text;
@@ -90,6 +112,8 @@ begin
   vysledky := vysledky || ('smazání účtu smaže zařízení: ' || (n = 0));
   select count(*) into n from public.devices where id = dev_b;
   vysledky := vysledky || ('účet B zůstal: ' || (n = 1));
+  select count(*) into n from public.limits where device_id = dev_b;
+  vysledky := vysledky || ('limity B zůstaly: ' || (n = 1));
 
   raise exception 'VYSLEDEK (vše vráceno zpět): %', array_to_string(vysledky, ' | ');
 end;

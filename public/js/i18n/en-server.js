@@ -92,6 +92,11 @@ export default {
   "Chyba {0}": "Error {0}",
   "Pro synchronizaci se nejdřív přihlas.": "Sign in first to sync.",
   "(id {0} v účtu)": "(ID of {0} in the account)",
+  "Synchronizace stojí: {0} není přihlášený k účtu. Přihlas se znovu v Nastavení → Účet a vzhled.": "Sync is paused: {0} isn’t signed in to the account. Sign in again in Settings → Account and appearance.",
+  "V účtu chybí profil, takže volbu synchronizace nejde uložit a souhrny se neposílají. Odhlas se a přihlas znovu; když to nepomůže, dej nám vědět.": "Your account has no profile, so the sync choice can’t be saved and summaries aren’t sent. Sign out and sign in again; if that doesn’t help, let us know.",
+  "server zařízení nepotvrdil": "the server didn’t confirm the device",
+  "Do účtu se nepodařilo přidat {0} ({1}), souhrny se proto neposílají. Zkusím to znovu samo; když to nepomůže, odhlas se a přihlas znovu.": "Couldn’t add {0} to the account ({1}), so summaries aren’t being sent. I’ll retry on my own; if that doesn’t help, sign out and sign in again.",
+  "Souhrny se nepodařilo odeslat. Zkusím to znovu samo.": "Couldn’t send summaries. I’ll retry on my own.",
 
   // src/connectors/claude-code.js
   "Limit 5 h": "5-hour limit",

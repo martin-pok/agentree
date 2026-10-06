@@ -21,17 +21,28 @@ test('návrat z přihlášení míří na /app?ucet té stránky, ze které člo
 });
 
 test('souhrny: agenti ze všech Maců dohromady, tokeny za 30 dní, útrata po službách', () => {
-  const a = souhrnAgentu([{ working: 2, needs_you: 1, waiting: 0, failed: 0, updated_at: '2026-09-24T10:00:00Z' }, { working: 1, needs_you: 0, waiting: 2, failed: 1, updated_at: '2026-09-24T11:00:00Z' }]);
-  assert.deepEqual(a, { working: 3, needs_you: 1, waiting: 2, failed: 1, aktualizovano: Date.parse('2026-09-24T11:00:00Z') });
   const now = Date.UTC(2026, 8, 24, 12);
+  const a = souhrnAgentu([{ working: 2, needs_you: 1, waiting: 0, failed: 0, updated_at: '2026-09-24T11:55:00Z' }, { working: 1, needs_you: 0, waiting: 2, failed: 1, updated_at: '2026-09-24T11:58:00Z' }], now);
+  assert.deepEqual(a, { working: 3, needs_you: 1, waiting: 2, failed: 1, aktualizovano: Date.parse('2026-09-24T11:58:00Z'), cerstvych: 2, starych: 0 });
+  // Mac, který se přes 15 minut neozval (vypnutý, uspaný), se do živých počtů nepočítá – jinak by
+  // web ukazoval pracujícího agenta na vypnutém počítači.
+  const stary = souhrnAgentu([{ working: 4, needs_you: 0, waiting: 0, failed: 0, updated_at: '2026-09-24T10:00:00Z' }, { working: 1, needs_you: 0, waiting: 0, failed: 0, updated_at: '2026-09-24T11:59:00Z' }], now);
+  assert.equal(stary.working, 1);
+  assert.equal(stary.starych, 1);
   const t = tokenyZaDny([{ day: '2026-09-24', provider: 'anthropic', tokens: 100 }, { day: '2026-09-24', provider: 'openai', tokens: 50 }, { day: '2026-08-01', provider: 'openai', tokens: 999 }], now);
   assert.equal(t.hodnoty.length, 30);
   assert.equal(t.hodnoty.at(-1), 150);
   assert.equal(t.celkem, 150, 'den mimo okno 30 dní se nepočítá');
   assert.deepEqual(t.podle, { anthropic: 100, openai: 50 });
-  const u = utrataMesice([{ service: 'claude', currency: 'CZK', amount: 2300 }, { service: 'cursor', currency: 'CZK', amount: 460 }, { service: 'claude', currency: 'CZK', amount: 125 }]);
-  assert.equal(u.celkem, 2885);
-  assert.deepEqual(u.podle[0], ['claude', 2425]);
+  // Náklady z Admin API patří celé organizaci: dva Macy se stejným klíčem hlásí tutéž částku
+  // a ta se počítá jednou (nejnovější údaj), ne dvakrát.
+  const u = utrataMesice([
+    { service: 'claude', kind: 'api', currency: 'CZK', amount: 2300, updated_at: '2026-09-24T10:00:00Z' },
+    { service: 'cursor', kind: 'api', currency: 'CZK', amount: 460, updated_at: '2026-09-24T10:00:00Z' },
+    { service: 'claude', kind: 'api', currency: 'CZK', amount: 2310, updated_at: '2026-09-24T11:00:00Z' },
+  ]);
+  assert.equal(u.celkem, 2770);
+  assert.deepEqual(u.podle[0], ['claude', 2310]);
 });
 
 test('okna limitů se pojmenují, neznámá zůstanou, jak přišla', () => {

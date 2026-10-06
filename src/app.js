@@ -392,6 +392,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // Nová rate-limit událost Codexu nese i plan_type. Promítnout ji do Útraty okamžitě,
   // ne až při hodinovém přepočtu. Změny procent bez změny plánu další událost nevytvoří.
   store.on('limits', () => subscriptionsChanged());
+  // Souhrny v účtu (src/cloud-sync.js): změna limitu nebo stavu agenta se do účtu pošle do minuty,
+  // ne až s pětiminutovým intervalem. Víc změn v té minutě jde jedním odesláním.
+  store.on('limits', () => cloudSync.zmena());
+  store.on('session', (value, prev) => { if (!prev || prev.status !== value.status) cloudSync.zmena(); });
+  store.on('session:remove', () => cloudSync.zmena());
 
   /* ---------- Licence ---------- */
 

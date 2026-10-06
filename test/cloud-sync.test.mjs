@@ -79,6 +79,7 @@ function atrapa({ chyba = false } = {}) {
     if (u.pathname === '/rest/v1/devices' && init.method === 'POST') return ok([{ id: '11111111-2222-4333-8444-555555555555' }], 201);
     if (u.pathname === '/rest/v1/devices' && init.method === 'PATCH') return ok([{ id: '11111111-2222-4333-8444-555555555555' }]);
     if (u.pathname === '/rest/v1/profiles' && init.method === 'GET') return ok([{ sync_enabled: true }]);
+    if (u.pathname === '/rest/v1/profiles' && init.method === 'PATCH') return ok([{ id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }]);
     return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
   };
   const datastore = { data: { cloud: { syncEnabled: false, syncAt: 0, devices: {} } }, save() {} };
@@ -100,7 +101,9 @@ test('bez zapnutí se nic neposílá; po zapnutí se založí zařízení a odej
   assert.equal(volani.length, 0, 'synchronizace je opt-in');
 
   await s.nastav(true);
-  assert.deepEqual(volani[0], { method: 'PATCH', cesta: '/rest/v1/profiles', query: { id: 'eq.aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }, body: { sync_enabled: true }, prefer: 'return=minimal', auth: 'Bearer pristup-1' });
+  // Nejdřív zařízení, teprve potom volba v profilu – jinak by web ukázal zapnutou synchronizaci bez počítače.
+  assert.equal(volani[0].cesta, '/rest/v1/devices');
+  assert.deepEqual(volani[1], { method: 'PATCH', cesta: '/rest/v1/profiles', query: { id: 'eq.aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }, body: { sync_enabled: true }, prefer: 'return=representation', auth: 'Bearer pristup-1' });
   const zarizeni = volani.find((v) => v.cesta === '/rest/v1/devices');
   assert.deepEqual(Object.keys(zarizeni.body).sort(), ['app_version', 'last_seen_at', 'name', 'platform']);
   const zapisy = volani.filter((v) => v.method === 'POST' && v.cesta !== '/rest/v1/devices');
@@ -184,6 +187,7 @@ test('přihlášení synchronizaci zapne – i když účet zrovna neodpovídá,
       volani.push({ method: init.method, cesta: u.pathname, body: init.body ? JSON.parse(init.body) : null });
       if (u.pathname === '/rest/v1/devices') return { ok: true, status: 201, json: async () => [{ id: '11111111-2222-4333-8444-555555555555' }] };
       if (u.pathname === '/rest/v1/profiles' && init.method === 'GET') return { ok: true, status: 200, json: async () => [{ sync_enabled: false }] };
+      if (u.pathname === '/rest/v1/profiles' && init.method === 'PATCH') return { ok: true, status: 200, json: async () => [{ id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' }] };
       return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
     },
     zdroje: { sessions: () => relace, utrata: () => [], limity: () => [], konektory: () => [] },
@@ -197,7 +201,10 @@ test('přihlášení synchronizaci zapne – i když účet zrovna neodpovídá,
   await s.nactiVolbu();
   assert.equal(s.status().zapnuto, true);
   await s.synchronizuj();
-  assert.deepEqual(volani[0], { method: 'PATCH', cesta: '/rest/v1/profiles', body: { sync_enabled: true } });
+  const zarizeniPoradi = volani.findIndex((v) => v.cesta === '/rest/v1/devices');
+  const volbaPoradi = volani.findIndex((v) => v.method === 'PATCH' && v.cesta === '/rest/v1/profiles');
+  assert.ok(zarizeniPoradi >= 0 && volbaPoradi > zarizeniPoradi, 'čekající volba se zapíše až po založení zařízení');
+  assert.deepEqual(volani[volbaPoradi].body, { sync_enabled: true });
   assert.ok(volani.some((v) => v.cesta === '/rest/v1/usage_daily'));
   assert.equal(datastore.data.cloud.volbaCeka, false);
   assert.equal(s.status().chyba, '');
@@ -223,4 +230,60 @@ test('odmítnutý token (401) se jednou obnoví a odeslání se zopakuje', async
   assert.equal(st.chyba, '');
   assert.equal(st.posledni, NYNI);
   odmitnout = false;
+});
+
+// „0 zařízení“: volba se dřív zapsala do účtu před založením zařízení. Když založení selhalo,
+// zůstal účet zapnutý bez počítače a chyba nebyla nikde vidět.
+const UZIV = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+function atrapaServeru(odpovedi) {
+  const volani = [];
+  const fetchImpl = async (url, init) => {
+    const u = new URL(url);
+    volani.push({ method: init.method, cesta: u.pathname, query: Object.fromEntries(u.searchParams), body: init.body ? JSON.parse(init.body) : null });
+    const r = odpovedi(u, init);
+    if (r) return r;
+    return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
+  };
+  return { volani, fetchImpl };
+}
+const ok = (json, status = 200) => ({ ok: true, status, json: async () => json });
+
+test('odmítnuté zařízení: volba se do účtu nezapíše, chyba je vidět a volba čeká na další pokus', async () => {
+  const { volani, fetchImpl } = atrapaServeru((u, init) => (u.pathname === '/rest/v1/devices' ? { ok: false, status: 400, json: async () => ({ message: 'check constraint' }) } : null));
+  const datastore = { data: { cloud: { syncEnabled: true, syncAt: 0, volbaCeka: true, devices: {} } }, save() {} };
+  const s = createCloudSync({ config: { ucet: { url: 'https://ucty.example', klic: 'pk' } }, ucet: { pristup: async () => 't', uzivatelId: () => UZIV }, datastore, verze: '0.37.0-beta.1', now: () => NYNI, fetchImpl, zdroje: { sessions: () => relace, utrata: () => [], limity: () => [], konektory: () => [] } });
+  const st = await s.synchronizuj();
+  assert.ok(st.chyba, 'chyba je vidět');
+  assert.equal(volani.some((v) => v.cesta === '/rest/v1/profiles' && v.method === 'PATCH'), false, 'bez zařízení se volba nezapisuje');
+  assert.equal(volani.some((v) => v.cesta === '/rest/v1/usage_daily'), false);
+  assert.equal(datastore.data.cloud.volbaCeka, true);
+  assert.equal(volani.find((v) => v.cesta === '/rest/v1/devices').body.app_version, null, 'předběžná verze odchází jako null');
+});
+
+test('zapnutá synchronizace bez přihlášení se hlásí jako pozastavená, ne jako hotová', async () => {
+  const { fetchImpl } = atrapaServeru(() => null);
+  const s = createCloudSync({ config: { ucet: { url: 'https://ucty.example', klic: 'pk' } }, ucet: { pristup: async () => null, uzivatelId: () => null }, datastore: { data: { cloud: { syncEnabled: true, syncAt: 7, devices: {} } }, save() {} }, now: () => NYNI, fetchImpl, zdroje: { sessions: () => [], utrata: () => [], limity: () => [], konektory: () => [] } });
+  const st = await s.synchronizuj();
+  assert.match(st.chyba, /stojí/);
+  assert.equal(st.posledni, 7);
+});
+
+test('vypnutí na jiném počítači zastaví i tento a pročištění maže jen řádky, které Mac přestal hlásit', async () => {
+  let vUctu = true;
+  const { volani, fetchImpl } = atrapaServeru((u, init) => {
+    if (u.pathname === '/rest/v1/profiles' && init.method === 'GET') return ok([{ sync_enabled: vUctu }]);
+    if (u.pathname === '/rest/v1/devices') return ok([{ id: '11111111-2222-4333-8444-555555555555' }], 201);
+    return null;
+  });
+  const s = createCloudSync({ config: { ucet: { url: 'https://ucty.example', klic: 'pk' } }, ucet: { pristup: async () => 't', uzivatelId: () => UZIV }, datastore: { data: { cloud: { syncEnabled: true, syncAt: 0, devices: {} } }, save() {} }, now: () => NYNI, fetchImpl, zdroje: { sessions: () => relace, utrata: () => [], limity: () => [], konektory: () => [{ id: 'claude-code', state: 'connected', lastEventAt: NYNI }] } });
+  await s.synchronizuj();
+  const mazani = volani.filter((v) => v.method === 'DELETE');
+  assert.deepEqual(mazani.map((v) => v.cesta).sort(), ['/rest/v1/connections', '/rest/v1/limits']);
+  for (const v of mazani) { assert.equal(v.query.device_id, 'eq.11111111-2222-4333-8444-555555555555'); assert.equal(v.query.user_id, `eq.${UZIV}`); }
+  assert.match(mazani.find((v) => v.cesta === '/rest/v1/connections').query.provider, /^not\.in\./, 'napojení, která Mac hlásí, zůstávají');
+  vUctu = false;
+  const pred = volani.length;
+  const st = await s.synchronizuj();
+  assert.equal(st.zapnuto, false);
+  assert.equal(volani.slice(pred).some((v) => v.method === 'POST'), false, 'po vypnutí v účtu se nic neposílá');
 });

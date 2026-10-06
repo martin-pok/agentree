@@ -67,14 +67,18 @@ function normalizeExtensionInstallations(value) {
 }
 
 // Účet Agenteeq (src/cloud-sync.js): jestli je zapnutá synchronizace souhrnů, kdy naposledy
-// proběhla a id tohoto zařízení v účtu – zvlášť pro každého uživatele. Žádné tokeny, ty jsou v Klíčence.
+// proběhla, jestli volba čeká na zápis do účtu, a id tohoto zařízení v účtu – zvlášť pro každého
+// uživatele. Žádné tokeny, ty jsou v Klíčence.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function normalizeCloud(c) {
   const devices = {};
   for (const [u, dev] of Object.entries(c?.devices && typeof c.devices === 'object' ? c.devices : {}).slice(0, 10)) {
     if (UUID.test(u) && UUID.test(String(dev))) devices[u] = String(dev);
   }
-  return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, devices };
+  // volbaCeka: volba z tohoto Macu, kterou účet ještě nemá (výpadek sítě, nezaložené zařízení).
+  // Musí přežít restart – jinak by ji první načtení z účtu přepsalo starou hodnotou a synchronizace
+  // by se potichu vypnula.
+  return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, volbaCeka: c?.volbaCeka === true, devices };
 }
 
 // Nástroje, které detekce na tomto Macu kdy zachytila. Ukládá se jen identifikátor z katalogu,

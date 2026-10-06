@@ -175,6 +175,16 @@ synchronizací; do té doby ho načtení volby z účtu nepřepíše.
 - Ověřeno proti databázi 24. 9. 2026 (transakce vrácená zpět): upsert přepíše řádek, rozpad je
   `null`, druh `extra` projde, vypnutí smaže vlastní souhrny.
 
+### Pořadí a spolehlivost (od 0.37.0)
+
+- **Nejdřív zařízení, potom volba.** Synchronizace i zapnutí nejdřív založí nebo obnoví řádek v `devices` a teprve potom zapíše `profiles.sync_enabled` (PATCH s `return=representation`, takže chybějící profil se pozná). Dřív se volba zapsala první a když založení zařízení selhalo, web ukazoval zapnutou synchronizaci s „0 zařízení“ a chyba nebyla nikde vidět.
+- **Verze aplikace:** jiný tvar než `1.2.3` odchází jako `null`; migrace `20261005100000_verze_s_priponou.sql` (aplikuje vlastník) dovolí i předběžné verze.
+- **Čekající volba přežije restart** (`volbaCeka` v `~/.agenteeq/data.json`), takže ji první načtení z účtu nepřepíše starou hodnotou.
+- **Volba z účtu se čte při každé synchronizaci:** vypnutí na jiném počítači zastaví i tento.
+- **Bez přihlášení** se zapnutá synchronizace hlásí jako pozastavená s návodem, ne jako hotová; „Synchronizovat teď“ hlásí úspěch jen při skutečném odeslání.
+- **Po chybě** se to zkusí za 30 s, 1, 2 a 5 min (úspěch řadu vynuluje); změna stavu agenta nebo limitu se pošle nejdřív za minutu jedním odesláním.
+- **Pročištění:** řádky limitů a napojení, které Mac přestal hlásit, se z účtu mažou (jen vlastní `device_id` a `user_id`).
+
 ## Přehled na webu (`public/js/ucet-web.js`)
 
 `https://agentree-fawn.vercel.app/app?ucet` – totéž rozhraní jako na Macu, jen místo serveru na Macu
@@ -201,6 +211,8 @@ rovnou i z `/app`.
 - **Vzhled** podle systému; styly aplikace (`public/styles.css`, „Přehled účtu na webu“).
 - Adresa projektu a publikovatelný klíč mají jediný zdroj `public/js/ucet-config.js`, který čte
   i server na Macu (`src/config.js`).
+
+Na webu se Mac, který se přes 15 minut neozval, nepočítá do živých počtů agentů (a nesvítí u něj živá tečka); u limitů se ukazuje stáří měření. Útrata z Admin API patří organizaci, takže se z více počítačů počítá jednou (nejnovější údaj za službu a druh). Když je synchronizace zapnutá a žádný počítač zatím nic neposlal, web to řekne i s tím, kde hledat chybu. Neúspěšná obnova nechá poslední údaje a ukáže jejich stáří.
 
 ## Napojení modelů tlačítkem (`src/napojeni.js`, `public/js/napojeni-ui.js`)
 

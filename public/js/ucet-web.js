@@ -16,6 +16,10 @@ const KLIC_OVEROVAC = 'agenteeq-ucet-pkce';
 const OBNOVIT_PRED_KONCEM_MS = 5 * 60 * 1000;
 const OBNOVOVAT_MS = 60 * 1000;
 const DNI = 30;
+// Stav agentů a limity jsou „teď“ jen tehdy, když je počítač nedávno poslal. Mac posílá každých
+// 5 minut (a do minuty po změně); po 15 minutách bez zprávy už číslo neříká, co se děje teď.
+export const CERSTVE_MS = 15 * 60 * 1000;
+const PREPOCET_CASU_MS = 30 * 1000;
 
 export const SLUZBY = {
   chatgpt: 'ChatGPT', claude: 'Claude', copilot: 'GitHub Copilot', mscopilot: 'Microsoft Copilot', gemini: 'Gemini',
@@ -169,11 +173,21 @@ const denMistni = (ts, posun = 0) => {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 };
 
-export function souhrnAgentu(radky) {
-  const n = { working: 0, needs_you: 0, waiting: 0, failed: 0, aktualizovano: 0 };
+export const cerstve = (ts, now = Date.now()) => ts > 0 && now - ts <= CERSTVE_MS;
+
+// Agenti teď: součet jen z počítačů, které se ozvaly za posledních 15 minut. Starší řádek by
+// ukazoval „pracuje“ i u Macu, který je dávno vypnutý – ten se jen spočítá do `starych`.
+export function souhrnAgentu(radky, now = Date.now()) {
+  const n = { working: 0, needs_you: 0, waiting: 0, failed: 0, aktualizovano: 0, cerstvych: 0, starych: 0 };
   for (const r of radky) {
+    const ts = Date.parse(r.updated_at) || 0;
+    n.aktualizovano = Math.max(n.aktualizovano, ts);
+    if (!cerstve(ts, now)) {
+      n.starych += 1;
+      continue;
+    }
+    n.cerstvych += 1;
     for (const k of ['working', 'needs_you', 'waiting', 'failed']) n[k] += Number(r[k]) || 0;
-    n.aktualizovano = Math.max(n.aktualizovano, Date.parse(r.updated_at) || 0);
   }
   return n;
 }
@@ -193,17 +207,33 @@ export function tokenyZaDny(radky, now = Date.now(), dni = DNI) {
   return { hodnoty, celkem: hodnoty.reduce((a, b) => a + b, 0), podle };
 }
 
+// Útrata v účtu jsou náklady z Admin API (src/cloud-sync.js, zdroje.utrata) – a ty patří celé
+// organizaci u dodavatele, ne jednomu počítači. Dva Macy se stejným klíčem pošlou totéž číslo;
+// sečíst je by útratu zdvojilo. Proto za službu a druh platí jen nejnověji poslaný řádek (při shodě
+// času vyšší částka). Řádky v jiné měně než ten nejnovější se do součtu nepřičítají – `jinaMena`.
 export function utrataMesice(radky) {
+  const nejnovejsi = new Map();
+  for (const r of radky) {
+    const k = `${r.service}|${r.kind || ''}`;
+    const ts = Date.parse(r.updated_at) || 0;
+    const byl = nejnovejsi.get(k);
+    if (!byl || ts > byl.ts || (ts === byl.ts && (Number(r.amount) || 0) > (Number(byl.r.amount) || 0))) nejnovejsi.set(k, { r, ts });
+  }
+  const vybrane = [...nejnovejsi.values()].sort((a, b) => b.ts - a.ts);
+  const mena = vybrane[0]?.r.currency || 'CZK';
   const podle = {};
   let celkem = 0;
-  let mena = 'CZK';
-  for (const r of radky) {
+  let jinaMena = 0;
+  for (const { r } of vybrane) {
+    if ((r.currency || mena) !== mena) {
+      jinaMena += 1;
+      continue;
+    }
     const a = Number(r.amount) || 0;
     podle[r.service] = (podle[r.service] || 0) + a;
     celkem += a;
-    mena = r.currency || mena;
   }
-  return { celkem: Math.round(celkem * 100) / 100, mena, podle: Object.entries(podle).sort((x, y) => y[1] - x[1]) };
+  return { celkem: Math.round(celkem * 100) / 100, mena, jinaMena, podle: Object.entries(podle).map(([k, v]) => [k, Math.round(v * 100) / 100]).sort((x, y) => y[1] - x[1]) };
 }
 
 /* ---------- Vykreslení ---------- */
@@ -236,12 +266,21 @@ function prihlasovaciObrazovka(zprava = '') {
   tl.focus();
 }
 
-function kartaAgentu(a) {
-  const pole = [['working', 'pracuje', 'is-work'], ['needs_you', tr('potřebuje tebe'), 'is-alert'], ['waiting', tr('čeká na zadání'), 'is-wait'], ['failed', 'selhalo', 'is-alert']];
+// Relativní čas, který se sám přepisuje (prepocitejCasy) – i když se data zrovna nedaří obnovit.
+const pred = (ts, now) => `<span data-ago="${Number(ts) || 0}">${esc(rel(ts, now))}</span>`;
+
+function kartaAgentu(a, now) {
+  const pole = [['working', tr('pracuje'), 'is-work'], ['needs_you', tr('potřebuje tebe'), 'is-alert'], ['waiting', tr('čeká na zadání'), 'is-wait'], ['failed', tr('selhalo'), 'is-alert']];
+  // Bez čerstvých dat počty neznáme: pomlčka, ne nula, a žádná svítící tečka.
+  const zname = a.cerstvych > 0;
+  const poznamka = !a.starych ? ''
+    : zname ? tr('Nezapočteno: {0} {1} bez zprávy přes 15 minut.', a.starych, plural(a.starych, 'počítač', 'počítače', 'počítačů'))
+    : tr('Žádný počítač se přes 15 minut neozval, takže teď nevíme, co agenti dělají.');
   return `<section class="cloud-stage" data-enter style="--i:0" aria-label="${tr('Agenti teď')}">
-    <div class="cloud-stage-head"><span class="cloud-dot${a.working ? ' is-live' : ''}" aria-hidden="true"></span><h2>${tr('Agenti teď')}</h2>
-      <span class="cloud-age">${a.aktualizovano ? `${tr('aktualizováno')} ${esc(rel(a.aktualizovano))}` : tr('zatím bez dat')}</span></div>
-    <div class="cloud-stage-stats">${pole.map(([k, label, cls]) => `<div class="cloud-stat${a[k] ? ` ${cls}` : ''}"><b>${a[k]}</b><span>${label}</span></div>`).join('')}</div>
+    <div class="cloud-stage-head"><span class="cloud-dot${zname && a.working ? ' is-live' : ''}" aria-hidden="true"></span><h2>${tr('Agenti teď')}</h2>
+      <span class="cloud-age">${a.aktualizovano ? `${tr('aktualizováno')} ${pred(a.aktualizovano, now)}` : tr('zatím bez dat')}</span></div>
+    <div class="cloud-stage-stats">${pole.map(([k, label, cls]) => `<div class="cloud-stat${zname && a[k] ? ` ${cls}` : ''}"><b>${zname ? a[k] : '–'}</b><span>${label}</span></div>`).join('')}</div>
+    ${poznamka ? `<p class="cloud-stage-note">${esc(poznamka)}</p>` : ''}
   </section>`;
 }
 
@@ -261,19 +300,29 @@ function kartaUtraty(u, now) {
     <h2 class="eyebrow">${tr('Útrata ·')} ${esc(mesic)}</h2>
     <p class="cloud-big">${esc(fmtMoney(u.celkem, u.mena))}</p>
     ${u.podle.length ? `<ul class="cloud-list">${u.podle.map(([s, v]) => `<li><span>${esc(SLUZBY[s] || s)}</span><b>${esc(fmtMoney(v, u.mena))}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Tento měsíc zatím bez výdajů.')}</p>`}
+    ${u.jinaMena ? `<small class="cloud-note">${tr('Část útraty je v jiné měně a do součtu se nepřičetla.')}</small>` : ''}
   </section>`;
 }
 
+// Limit je „teď“, jen když ho počítač poslal za posledních 15 minut (updated_at). Starší jde až za
+// čerstvé, ztlumený a se stářím měření místo času obnovy – obnova už mohla dávno proběhnout.
+export function serazeneLimity(limity, now = Date.now()) {
+  return limity
+    .map((l) => ({ ...l, stary: !cerstve(Date.parse(l.updated_at || l.measured_at) || 0, now) }))
+    .sort((a, b) => (a.stary - b.stary) || ((Number(b.used_pct) || 0) - (Number(a.used_pct) || 0)));
+}
+
 function kartaLimitu(limity, now) {
-  const serazene = [...limity].sort((a, b) => (Number(b.used_pct) || 0) - (Number(a.used_pct) || 0)).slice(0, 6);
+  const serazene = serazeneLimity(limity, now).slice(0, 6);
   return `<section class="card cloud-card" data-enter style="--i:3">
     <h2 class="eyebrow">${tr('Limity')}</h2>
     ${serazene.length ? `<ul class="cloud-limits">${serazene.map((l) => {
       const pct = Number.isFinite(Number(l.used_pct)) && l.used_pct !== null ? Math.round(Number(l.used_pct)) : null;
       const obnova = l.resets_at ? Date.parse(l.resets_at) : 0;
-      return `<li><div><span>${esc(popisOkna(l.provider, l.window_key))}</span><b>${pct === null ? (l.reached ? tr('vyčerpáno') : '–') : `${pct} %`}</b></div>
+      const zmereno = `${tr('změřeno')} ${pred(Date.parse(l.measured_at), now)}`;
+      return `<li${l.stary ? ' class="is-stale"' : ''}><div><span>${esc(popisOkna(l.provider, l.window_key))}</span><b>${pct === null ? (l.reached ? tr('vyčerpáno') : '–') : `${pct} %`}</b></div>
         <span class="meter-track"><i style="width:${Math.min(100, pct ?? (l.reached ? 100 : 0))}%"></i></span>
-        <small>${obnova && obnova > now ? tr('obnova {0}', esc(resetsLabel(obnova, now))) : `${tr('změřeno')} ${esc(rel(Date.parse(l.measured_at), now))}`}</small></li>`;
+        <small>${l.stary ? `${tr('starý údaj')} · ${zmereno}` : obnova && obnova > now ? tr('obnova {0}', esc(resetsLabel(obnova, now))) : zmereno}</small></li>`;
     }).join('')}</ul>` : `<p class="set-desc">${tr('Žádné limity zatím nepřišly.')}</p>`}
   </section>`;
 }
@@ -281,7 +330,7 @@ function kartaLimitu(limity, now) {
 function kartaZarizeni(zarizeni, now) {
   return `<section class="card cloud-card" data-enter style="--i:4">
     <h2 class="eyebrow">${tr('Zařízení')}</h2>
-    ${zarizeni.length ? `<ul class="cloud-list">${zarizeni.map((d) => `<li><span>${esc(d.name)}</span><b>${esc(rel(Date.parse(d.last_seen_at), now))}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Zatím žádné.')}</p>`}
+    ${zarizeni.length ? `<ul class="cloud-list">${zarizeni.map((d) => `<li><span>${esc(d.name)}</span><b>${pred(Date.parse(d.last_seen_at), now)}</b></li>`).join('')}</ul>` : `<p class="set-desc">${tr('Zatím žádné.')}</p>`}
   </section>`;
 }
 
@@ -293,23 +342,33 @@ async function nactiData(r) {
   const [profil, zarizeni, agenti, tokeny, utrata, limity] = await Promise.all([
     q(`profiles?select=display_name,sync_enabled&id=eq.${encodeURIComponent(r.id)}`),
     q('devices?select=id,name,platform,last_seen_at&order=last_seen_at.desc'),
-    q('agent_status?select=working,needs_you,waiting,failed,updated_at'),
+    q('agent_status?select=device_id,working,needs_you,waiting,failed,updated_at'),
     q(`usage_daily?select=day,provider,tokens&day=gte.${od}`),
-    q(`spend_monthly?select=service,currency,amount&month=eq.${mesic}`),
-    q('limits?select=provider,window_key,used_pct,reached,resets_at,measured_at'),
+    q(`spend_monthly?select=service,kind,currency,amount,updated_at&month=eq.${mesic}`),
+    q('limits?select=device_id,provider,window_key,used_pct,reached,resets_at,measured_at,updated_at'),
   ]);
   return { profil: profil?.[0] || null, zarizeni: zarizeni || [], agenti: agenti || [], tokeny: tokeny || [], utrata: utrata || [], limity: limity || [] };
 }
 
-function vykresliPrehled(r, data) {
+// Poslední úspěšně načtená data: když se obnovení nepovede, zůstanou vidět s poznámkou o stáří.
+let posledniData = null;
+let posledniUspech = 0;
+
+function vykresliPrehled(r, data, { neobnoveno = false } = {}) {
   const now = Date.now();
   const jmeno = data.profil?.display_name || r.jmeno || '';
   const zapnuto = data.profil?.sync_enabled === true;
+  // Volba je zapnutá, ale žádný počítač se ještě nezaložil – prázdné karty by vypadaly jako „nic
+  // se neděje“. Řekneme, co se stalo a kde to zkontrolovat.
+  const bezPocitace = zapnuto && !data.zarizeni.length;
   document.body.innerHTML = `${hlavicka(r)}<main class="cloud">
-    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? `Ahoj, ${esc(jmeno.split(' ')[0])}` : tr('Tvůj Agenteeq')}</h1>
+    <div class="cloud-head" data-enter style="--i:0"><h1>${jmeno ? tr('Ahoj, {0}', esc(jmeno.split(' ')[0])) : tr('Tvůj Agenteeq')}</h1>
       <button class="btn btn--sm" type="button" data-obnovit>${tr('Obnovit')}</button></div>
-    ${zapnuto ? `<div class="cloud-grid">
-        ${kartaAgentu(souhrnAgentu(data.agenti))}
+    ${neobnoveno ? `<p class="cloud-stale" role="status">${tr('Nepodařilo se obnovit. Údaje jsou načtené {0}, zkusím to znovu samo.', pred(posledniUspech, now))}</p>` : ''}
+    ${bezPocitace ? `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>${tr('Žádný počítač zatím nic neposlal')}</h2>
+        <p>${tr('Otevři Agenteeq → Nastavení → Účet a vzhled. U synchronizace souhrnů uvidíš, jestli odesílání hlásí chybu.')}</p></section>`
+    : zapnuto ? `<div class="cloud-grid">
+        ${kartaAgentu(souhrnAgentu(data.agenti, now), now)}
         ${kartaTokenu(tokenyZaDny(data.tokeny, now))}
         ${kartaUtraty(utrataMesice(data.utrata), now)}
         ${kartaLimitu(data.limity, now)}
@@ -324,11 +383,33 @@ function vykresliPrehled(r, data) {
   document.documentElement.classList.add('cloud-loaded');
 }
 
-async function nacti(r, { tichy = true } = {}) {
+function zobraz(r, data) {
+  posledniData = { r, data };
+  posledniUspech = Date.now();
+  vykresliPrehled(r, data);
+}
+
+// Přepíše relativní časy na místě (bez překreslení, fokus zůstane) – i když obnovení nejde.
+function prepocitejCasy() {
+  const now = Date.now();
+  for (const el of document.querySelectorAll('.cloud [data-ago]')) {
+    const t = rel(Number(el.dataset.ago), now);
+    if (el.textContent !== t) el.textContent = t;
+  }
+}
+
+let nacitani = null;
+function nacti(r, volby) {
+  // Návrat do záložky, obnovení sítě a tik časovače se můžou sejít – stačí jedno načtení.
+  nacitani ??= nactiTed(r, volby).finally(() => { nacitani = null; });
+  return nacitani;
+}
+
+async function nactiTed(r, { tichy = true } = {}) {
   try {
     const platna = await platnaRelace();
     if (!platna) return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
-    vykresliPrehled(platna, await nactiData(platna));
+    zobraz(platna, await nactiData(platna));
   } catch (err) {
     // Server token odmítl dřív, než měl vypršet: jednou ho obnovit a načíst znovu. Odhlásit až
     // tehdy, když neprojde ani obnova.
@@ -336,7 +417,7 @@ async function nacti(r, { tichy = true } = {}) {
       const znovu = await platnaRelace({ vynutit: true }).catch(() => null);
       if (znovu) {
         try {
-          vykresliPrehled(znovu, await nactiData(znovu));
+          zobraz(znovu, await nactiData(znovu));
           return undefined;
         } catch (err2) {
           if (err2.status !== 401) err = err2;
@@ -347,7 +428,11 @@ async function nacti(r, { tichy = true } = {}) {
         return prihlasovaciObrazovka(tr('Přihlášení vypršelo. Přihlas se prosím znovu.'));
       }
     }
-    if (!tichy || !document.querySelector('.cloud')) {
+    // Tiché obnovení se nepovedlo: poslední data zůstanou, s poznámkou, jak jsou stará. Čerstvost
+    // stavu agentů a limitů se přitom přepočítá – po 15 minutách už nesvítí jako „teď“.
+    if (tichy && posledniData && document.querySelector('.cloud')) {
+      vykresliPrehled(posledniData.r, posledniData.data, { neobnoveno: true });
+    } else if (!tichy || !document.querySelector('.cloud')) {
       document.body.innerHTML = `${hlavicka(r)}<main class="pair"><div class="pair-box"><h1>${tr('Souhrny se nenačetly')}</h1><p class="pair-error" role="alert">${esc(err.message)}</p><button class="btn btn--primary" type="button" data-znovu>${tr('Zkusit znovu')}</button></div></main>`;
       document.querySelector('[data-znovu]').addEventListener('click', () => nacti(r, { tichy: false }));
       document.querySelector('[data-odhlasit]')?.addEventListener('click', odhlasit);
@@ -386,7 +471,17 @@ export async function spustUcetWeb() {
     return true;
   }
   await nacti(r, { tichy: false });
-  const tik = setInterval(() => { if (!document.hidden && document.querySelector('.cloud')) nacti(r); }, OBNOVOVAT_MS);
-  addEventListener('pagehide', () => clearInterval(tik), { once: true });
+  const tichaObnova = () => { if (!document.hidden && document.querySelector('.cloud')) nacti(r); };
+  const tik = setInterval(tichaObnova, OBNOVOVAT_MS);
+  const casy = setInterval(prepocitejCasy, PREPOCET_CASU_MS);
+  // Po návratu do záložky nebo obnovení sítě hned, ne až s dalším tikem.
+  document.addEventListener('visibilitychange', tichaObnova);
+  addEventListener('online', tichaObnova);
+  addEventListener('pagehide', () => {
+    clearInterval(tik);
+    clearInterval(casy);
+    document.removeEventListener('visibilitychange', tichaObnova);
+    removeEventListener('online', tichaObnova);
+  }, { once: true });
   return true;
 }

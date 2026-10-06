@@ -413,9 +413,14 @@ function mount(el) {
       } else if (a.dataset.action === 'ucet-sync-ted') {
         a.disabled = true;
         try {
+          // Úspěch jen tehdy, když se souhrny opravdu odeslaly (posunul se čas poslední synchronizace).
+          const pred = state.ucet?.sync?.posledni || 0;
           state.ucet = (await api.ucetSynchronizovat()).ucet;
-          if (state.ucet.sync?.chyba) toast(state.ucet.sync.chyba, { tone: 'err' });
-          else toast(tr('Souhrny jsou v účtu aktuální.'));
+          const s = state.ucet.sync || {};
+          if (s.chyba) toast(s.chyba, { tone: 'err' });
+          else if (!s.zapnuto) toast(tr('Synchronizace je v účtu vypnutá, nic se neodeslalo.'), { tone: 'info' });
+          else if ((s.posledni || 0) > pred) toast(tr('Souhrny jsou v účtu aktuální.'));
+          else toast(tr('Souhrny se teď neodeslaly. Zkus to prosím za chvíli znovu.'), { tone: 'err' });
         } catch (err) {
           toast(err.message, { tone: 'err' });
         } finally { a.disabled = false; }
