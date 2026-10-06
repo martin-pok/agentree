@@ -752,10 +752,17 @@ for (const engine of engines) {
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
         await page.click('.set-nav [data-jump="set-ucet"]'); // vzhled je ve skupině Účet a vzhled
         // Půlnoc = tmavá podoba Oblohy. Vzhled se překreslí hned, uložení na server ho jen potvrdí.
-        const t0 = Date.now();
+        // Měří se v rozhraní samotném – od klepnutí do změny atributu na <html> – ne čas
+        // Playwrightu na klik a čekání, který na pomalém runneru přidá stovky ms.
+        await page.evaluate(() => {
+          window.__vzhled = {};
+          document.addEventListener('click', () => { window.__vzhled.klik ??= performance.now(); }, { capture: true, once: true });
+          new MutationObserver((_, o) => { if (document.documentElement.dataset.theme === 'dark') { window.__vzhled.zmena = performance.now(); o.disconnect(); } }).observe(document.documentElement, { attributes: true });
+        });
         await page.locator('button[data-theme-pick="pulnoc"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.look === 'obloha');
-        assert.ok(Date.now() - t0 < 1000, `${engine}: přepnutí vzhledu trvá ${Date.now() - t0} ms`);
+        const prodleva = await page.evaluate(() => window.__vzhled.zmena - window.__vzhled.klik);
+        assert.ok(prodleva < 100, `${engine}: vzhled se po klepnutí přepnul za ${Math.round(prodleva)} ms`);
         await page.waitForFunction(() => document.querySelector('button[data-theme-pick="pulnoc"]')?.getAttribute('aria-checked') === 'true');
         assert.equal(await page.locator('.theme-pick[aria-checked="true"]').count(), 1, `${engine}: vybraný je právě jeden vzhled`);
         const ratios = await page.evaluate(() => {
