@@ -7,7 +7,8 @@
 //
 // Plán je čistá funkce (seznam příkazů s argumenty, žádný shell), aby šel ověřit testem
 // i na Linuxu, kde `hdiutil` není (test/dmg.test.mjs). Spouští ho scripts/build-macos.mjs.
-import path from 'node:path';
+// Obraz disku vzniká jen na macOS, takže cesty jsou vždy unixové – i když plán ověřuje test na Windows.
+import { posix as path } from 'node:path';
 
 // Stálé jméno přílohy, na kterou vede tlačítko na webu (/releases/latest/download/…).
 // Kopii se stálým jménem přikládá k vydání workflow (.github/workflows/release.yml).
