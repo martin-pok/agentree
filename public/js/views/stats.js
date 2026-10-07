@@ -74,15 +74,25 @@ async function loadUsage() {
 function usageHistoryHtml() {
   const u = v.usage;
   if (!u) return '';
+  const latestDay = u.latestDay;
+  const observed = latestDay?.observedAt ? new Date(latestDay.observedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }) : '';
+  const dayLabel = latestDay ? (latestDay.isToday ? tr('Dnes') : new Date(latestDay.dateAt).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })) : '';
+  const latestDayHtml = latestDay ? `<div class="usage-today">
+      <div class="usage-today-head"><h4>${esc(dayLabel)}</h4><span class="muted">${fmtNum(latestDay.samples)} ${plural(latestDay.samples, 'vzorek', 'vzorky', 'vzorků')} · ${tr('poslední měření')} ${esc(observed)}</span></div>
+      <div class="usage-today-values">
+        <div><span>${tr('Limit 5 h')}</span><strong>${latestDay.fiveHour === null ? '–' : `${fmtNum(latestDay.fiveHour)} %`}</strong></div>
+        <div><span>${tr('Týdenní limit')}</span><strong>${latestDay.sevenDay === null ? '–' : `${fmtNum(latestDay.sevenDay)} %`}</strong></div>
+      </div>
+    </div>` : '';
   const charts = [
     ['fiveHour', tr('Limit 5 h'), '%'],
     ['sevenDay', tr('Týdenní limit'), '%'],
   ].filter(([key]) => (u[key] || []).length >= 2)
     .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? tr('vytížení okna v %') : tr('hodnota bez jednotky'))}</span></div>
       ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString(LOCALE, { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
-  if (!charts.length) return '';
+  if (!charts.length && !latestDayHtml) return '';
   return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} ${tr('za 30 dní ze souboru aplikace Claude Desktop')}</span></div>
-    ${charts.join('')}</div>`;
+    ${latestDayHtml}${charts.join('')}</div>`;
 }
 
 // Čísla a pruhy se při živé události slučují (ui.js#sloucit), nepřepisují.

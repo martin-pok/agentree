@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.38.2',
+    date: '2026-10-07',
+    title: 'Claude a jistější ovládání',
+    items: [
+      'Ve Statistikách uvidíš poslední skutečně naměřené vytížení limitů Claude Desktopu i s datem odečtu. Tokeny ani cenu z něj neodvozujeme.',
+      'Zavření modalu projektu už neposune stránku a upozornění mají viditelný hover i klávesnicový fokus.',
+    ],
+    en: {
+      title: 'Claude and steadier interactions',
+      items: [
+        'Statistics show the latest actual Claude Desktop limit readings with their date. They are not converted into tokens or cost.',
+        'Closing a project modal no longer moves the page, and notifications have visible hover and keyboard focus states.',
+      ],
+    },
+  },
+  {
     version: '0.38.1',
     date: '2026-10-06',
     title: 'Aktualizace jedním klepnutím',

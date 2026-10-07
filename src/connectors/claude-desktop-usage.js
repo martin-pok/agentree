@@ -54,6 +54,15 @@ export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints =
   const sevenDay = series('sd', true);
   const extraUsage = series('xu', false);
   const times = samples.map((x) => Number(x.t));
+  const dayKey = (time) => {
+    const d = new Date(time);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  };
+  const latestSample = samples.at(-1);
+  const latestDayKey = latestSample ? dayKey(Number(latestSample.t)) : '';
+  const latestDaySamples = latestDayKey ? samples.filter((x) => dayKey(Number(x.t)) === latestDayKey) : [];
+  const latestDaySample = latestDaySamples.at(-1);
+  const percent = (value) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
   return {
     days,
     samples: samples.length,
@@ -62,6 +71,16 @@ export function planUsageSeries(json, { days = 30, now = Date.now(), maxPoints =
     fiveHour,
     sevenDay,
     extraUsage,
+    // Poslední místní kalendářní den s daty (i po půlnoci), aby se nově připojená historie
+    // neztratila za filtrem „dnes“. Nejde o tokeny ani cenu; vzorek má jen vytížení oken.
+    latestDay: latestDaySample ? {
+      dateAt: Number(latestDaySamples[0].t),
+      samples: latestDaySamples.length,
+      observedAt: Number(latestDaySample.t),
+      isToday: latestDayKey === dayKey(now),
+      fiveHour: percent(latestDaySample.u?.fh),
+      sevenDay: percent(latestDaySample.u?.sd),
+    } : null,
   };
 }
 
