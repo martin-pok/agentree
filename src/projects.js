@@ -13,7 +13,7 @@ export const PROJECT_COLORS = ['#C2335A', '#E5533D', '#F08A24', '#F2B824', '#84B
   '#4A6CF7', '#8250DF', '#C25BD6', '#EE6AA7', '#D97757', '#6F8F5E', '#5B6B7F', '#16141D'];
 const LEGACY_COLORS = { '#C99A3E': '#F2B824' };
 const knownColor = (c) => (PROJECT_COLORS.includes(c) ? c : LEGACY_COLORS[c] || null);
-export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000, instructions: 4000 };
+export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000, instructions: 4000, tags: 8, tag: 24 };
 export const SNAPSHOT_MAX = 3000;
 // Abstraktní pozadí karet (CSS v public/styles.css, třída .cover--<preset>).
 export const COVER_PRESETS = ['aurora', 'dune', 'noir', 'lagoon', 'ember', 'orchid', 'graphite', 'sage'];
@@ -35,6 +35,20 @@ export const DEFAULT_PROJECT_SETTINGS = {
 };
 
 const bool = (v, d) => (typeof v === 'boolean' ? v : d);
+
+// Štítky projektu (klient, interní, marketing…): krátký text bez čárky, bez rozdílu velikosti
+// písmen jen jednou, nejvýš LIMITS.tags. Neplatné se při načtení tiše zahodí, při uložení se ohlásí.
+const cistyStitek = (t) => (typeof t === 'string' ? t.replace(/[\s,]+/g, ' ').trim() : '');
+export function normalizeTags(list) {
+  const out = [];
+  for (const raw of Array.isArray(list) ? list : []) {
+    const t = cistyStitek(raw);
+    if (!t || t.length > LIMITS.tag || out.some((x) => x.toLowerCase() === t.toLowerCase())) continue;
+    out.push(t);
+    if (out.length === LIMITS.tags) break;
+  }
+  return out;
+}
 
 export function normalizeSettings(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
@@ -122,6 +136,7 @@ export function normalizeProjects(raw) {
       description: typeof p.description === 'string' ? p.description.slice(0, LIMITS.description) : '',
       notes: typeof p.notes === 'string' ? p.notes.slice(0, LIMITS.notes) : '',
       folders: Array.isArray(p.folders) ? p.folders.filter((f) => typeof f === 'string' && path.isAbsolute(f)).slice(0, LIMITS.folders) : [],
+      tags: normalizeTags(p.tags),
       archived: p.archived === true,
       createdAt: Number(p.createdAt) || now,
       updatedAt: Number(p.updatedAt) || now,
@@ -157,7 +172,7 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
   const next = current
     ? { ...current, folders: [...current.folders], settings: { ...current.settings } }
     : {
-      id: uid(), name: '', color: nextColor(items), description: '', notes: '', folders: [], archived: false, createdAt: now, updatedAt: now,
+      id: uid(), name: '', color: nextColor(items), description: '', notes: '', folders: [], tags: [], archived: false, createdAt: now, updatedAt: now,
       cover: { preset: COVER_PRESETS[items.length % COVER_PRESETS.length] }, logo: null, settings: { ...DEFAULT_PROJECT_SETTINGS }, work: [],
     };
   if (body.cover !== undefined) {
@@ -206,6 +221,13 @@ export function validateProject(input, items, { id = null, now = Date.now() } = 
       if (!errors.folders && folders.length > LIMITS.folders) errors.folders = ui('Projekt může mít nejvýš {0} složek.', LIMITS.folders);
       if (!errors.folders) next.folders = folders;
     }
+  }
+  if (body.tags !== undefined) {
+    const vstup = Array.isArray(body.tags) ? body.tags.map(cistyStitek).filter(Boolean) : null;
+    if (!vstup) errors.tags = ui('Neplatný seznam štítků.');
+    else if (vstup.some((t) => t.length > LIMITS.tag)) errors.tags = ui('Štítek může mít nejvýš {0} znaků.', LIMITS.tag);
+    else if (normalizeTags(vstup).length < new Set(vstup.map((t) => t.toLowerCase())).size) errors.tags = ui('Projekt může mít nejvýš {0} štítků.', LIMITS.tags);
+    else next.tags = normalizeTags(vstup);
   }
   if (body.archived !== undefined) {
     if (typeof body.archived !== 'boolean') errors.archived = ui('Neplatná hodnota.');

@@ -6,6 +6,14 @@ import { modal, toast } from './ui.js';
 import { openCropper, TARGETS } from './cropper.js';
 import { sessionTotal, needsYou } from './data.js';
 import { tr } from './i18n.js';
+import { SABLONY_PROJEKTU, stitkyZTextu } from './sablony.js';
+
+/** Všechny štítky aktivních projektů, seřazené – pro našeptávání a filtr. */
+export function vsechnyStitky() {
+  const m = new Map();
+  for (const p of state.projects.items) if (!p.archived) for (const t of p.tags || []) if (!m.has(t.toLowerCase())) m.set(t.toLowerCase(), t);
+  return [...m.values()].sort((a, b) => a.localeCompare(b));
+}
 
 // Rada u ručně zadané cesty musí ukazovat tvar, který na daném systému opravdu platí.
 // Server posílá domovskou složku, takže se pozná z ní – ne z prohlížeče, ten běží
@@ -188,7 +196,11 @@ export function projectForm(existing = null) {
     body: `<div class="form-grid">
         <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
         <label class="field field--wide"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
+        <label class="field field--wide"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
       </div>
+      ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')}</p>
+      <p class="modal-text">${tr('Předvyplní podklady projektu a štítek. Všechno jde později upravit.')}</p>
+      <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}
       <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
       <p class="form-sub">${tr('Vzhled v přehledu')}</p>
@@ -214,7 +226,12 @@ export function projectForm(existing = null) {
         description: form.elements.description.value,
         color: form.elements.color.value,
         folders,
+        tags: stitkyZTextu(form.elements.tags.value),
       };
+      // Šablona nového projektu: kostra podkladů a výchozí štítek (když žádný nezadal).
+      const sablona = !existing && SABLONY_PROJEKTU().find((t) => t.id === form.elements.template?.value);
+      if (sablona?.brief) body.notes = sablona.brief;
+      if (sablona && !body.tags.length) body.tags = sablona.tags;
       const r = existing ? await api.updateProject(existing.id, body) : await api.createProject(body);
       setProjects(r.projects);
       // Projekt už je uložený. Obrázek, který selže, proto neshodí celý formulář – opakované

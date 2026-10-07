@@ -891,7 +891,13 @@ for (const engine of engines) {
     }
     await page.goto(`${server.url}/#/projekt/${encodeURIComponent(qaProjectId)}`);
     await page.locator('.session-actions [data-action="edit"]').waitFor();
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    // Posun dolů tak, aby tlačítko Upravit zůstalo vidět: kdyby bylo mimo obrazovku, Playwright by
+    // stránku před kliknutím posunul sám a test by měřil jeho posun, ne zavření modalu.
+    await page.evaluate(() => {
+      const b = document.querySelector('.session-actions [data-action="edit"]');
+      window.scrollTo(0, Math.max(1, b.getBoundingClientRect().top + window.scrollY - 120));
+    });
+    await page.waitForTimeout(120);
     const projectScrollBefore = await page.evaluate(() => window.scrollY);
     assert.ok(projectScrollBefore > 0, `${engine}: projektový detail musí mít skutečný scroll pro regresní test`);
     await page.locator('.session-actions [data-action="edit"]').click();

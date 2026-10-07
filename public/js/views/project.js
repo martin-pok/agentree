@@ -1,6 +1,7 @@
 import { state, setProjects, agentsList, projectById, projectSessions, launchIntent } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, plural, shortPath, dateLong } from '../format.js';
+import { esc, fmtTok, fmtMoney, rel, norm, plural, shortPath, dateLong } from '../format.js';
+import { odhadCenyApi, CENIK_API_OVERENO, CENIK_API_ZDROJ } from '../cenik-api.js';
 import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy } from '../ui.js';
@@ -8,6 +9,7 @@ import { sessionTotal, needsYou } from '../data.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
+import { SABLONY_PROJEKTU } from '../sablony.js';
 import { tr } from '../i18n.js';
 
 const v = { el: null, id: null, filter: 'all', saveTimer: null, saving: false, savedAt: 0 };
@@ -124,10 +126,12 @@ function mount(el, [id]) {
           <div class="side-head"><h3 id="brief-h">${tr('Podklady a poznámky')}</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
           <label class="sr-only" for="brief-${esc(id)}">${tr('Podklady projektu')}</label>
           <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="${tr('Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání.')}"></textarea>
+          <div class="tpl-inline" data-brief-tpl hidden><span class="small muted">${tr('Začít ze šablony:')}</span>${SABLONY_PROJEKTU().filter((t) => t.brief).map((t) => `<button class="btn btn--sm" type="button" data-brief-sablona="${t.id}">${esc(t.label)}</button>`).join('')}</div>
           <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}${tr('Kopírovat podklady')}</button></div>
         </section>
         <section class="card side-card" data-card="folders" aria-label="${tr('Složky projektu')}">${GRIP}<div data-region="folders"></div></section>
         <section class="card side-card" data-card="services" aria-label="${tr('Služby v projektu')}">${GRIP}<div data-region="services"></div></section>
+        <section class="card side-card" data-card="cost" aria-labelledby="cost-h">${GRIP}<div data-region="cost"></div></section>
       </aside>
     </div>
   </div>`;
@@ -143,7 +147,21 @@ function mount(el, [id]) {
   const textarea = el.querySelector('[data-notes]');
   const status = el.querySelector('[data-notes-status]');
   textarea.value = projectById(id)?.notes || '';
-  textarea.addEventListener('input', () => saveNotes(textarea, status));
+  // Prázdné podklady nabídnou kostru ze šablony (agentura, vývoj, marketing); s textem zmizí.
+  const sablonyBriefu = el.querySelector('[data-brief-tpl]');
+  const ukazSablony = () => { sablonyBriefu.hidden = Boolean(textarea.value.trim()); };
+  ukazSablony();
+  textarea.addEventListener('input', () => { ukazSablony(); saveNotes(textarea, status); });
+  sablonyBriefu.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-brief-sablona]');
+    const sablona = b && SABLONY_PROJEKTU().find((t) => t.id === b.dataset.briefSablona);
+    if (!sablona || textarea.value.trim()) return;
+    textarea.value = sablona.brief;
+    ukazSablony();
+    saveNotes(textarea, status);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.indexOf(':') + 1, textarea.value.indexOf(':') + 1);
+  });
 
   el.addEventListener('click', async (e) => {
     const p = projectById(v.id);
@@ -229,6 +247,7 @@ function update() {
     <div class="project-kicker">${projectMark(p, 'pdot--lg')}<span>${tr('Projekt')}</span>${p.archived ? `<span class="badge">${tr('Archiv')}</span>` : ''}<span class="dot-sep"></span><span>${tr('založen')} ${dateLong(p.createdAt)}</span></div>
     <h2 class="session-title">${esc(p.name)}</h2>
     ${p.description ? `<p class="project-desc">${esc(p.description)}</p>` : ''}
+    ${p.tags?.length ? `<p class="pcard-tags project-tags" aria-label="${tr('Štítky')}">${p.tags.map((t) => `<a class="ptag" href="#/projekty?stitek=${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</p>` : ''}
     <div class="session-actions">
       <button class="btn btn--primary" type="button" data-action="launch">${ICON.spark}${tr('Spustit agenta v projektu')}</button>
       <button class="btn" type="button" data-action="edit">${ICON.sliders}${tr('Upravit')}</button>
@@ -272,8 +291,29 @@ function update() {
   fill(el, 'services', `<div class="side-head"><h3>${tr('Tokeny podle služby')}</h3></div>
     ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : `<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`}`);
 
+  fill(el, 'cost', odhadHtml(st.liveAll.filter((s) => s.lastAt >= now - 30 * 864e5)));
+
   const textarea = el.querySelector('[data-notes]');
-  if (document.activeElement !== textarea && !v.saveTimer && !v.saving && textarea.value !== p.notes) textarea.value = p.notes;
+  if (document.activeElement !== textarea && !v.saveTimer && !v.saving && textarea.value !== p.notes) { textarea.value = p.notes; const t = el.querySelector('[data-brief-tpl]'); if (t) t.hidden = Boolean(p.notes.trim()); }
+}
+
+// Odhad ceny přes API (public/js/cenik-api.js): kolik by tokeny projektu stály, kdyby šly přes API.
+// Vždy s označením „odhad“ a odděleně od skutečné útraty – předplatné se platí paušálem.
+function odhadHtml(sessions) {
+  const o = odhadCenyApi(sessions);
+  const head = `<div class="side-head"><h3 id="cost-h">${tr('Cena přes API')} <span class="badge">${tr('odhad')}</span></h3></div>`;
+  if (!o.sCenou && !o.bezCeny) return `${head}<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`;
+  if (!o.sCenou) return `${head}<p class="small muted">${tr('Pro modely v tomto projektu zatím nemám ověřený ceník, a tak cenu neodhaduji.')}</p>`;
+  const sp = state.spend;
+  const kurz = (c) => (c === 'CZK' ? 1 : Number(sp?.rates?.[c]) || 0);
+  const mena = sp?.currency && kurz(sp.currency) && kurz('USD') ? sp.currency : 'USD';
+  const castka = mena === 'USD' ? o.usd : (o.usd * kurz('USD')) / kurz(mena);
+  const podil = Math.round((o.sCenou / (o.sCenou + o.bezCeny)) * 100);
+  return `${head}
+    <p class="cost-val">≈ ${esc(fmtMoney(castka, mena))}</p>
+    <p class="small muted">${tr('Kolik by tokeny projektu za posledních 30 dní stály přes API Anthropicu (vstup, výstup a cache). Předplatné Pro nebo Max se platí paušálem, ne po tokenech.')}</p>
+    ${o.bezCeny ? `<p class="small muted">${esc(tr('Odhad kryje {0} % tokenů. Bez ověřeného ceníku: {1}.', podil, o.modelyBezCeny.slice(0, 3).join(', ') || tr('neznámý model')))}</p>` : ''}
+    <p class="small"><a class="link" href="${CENIK_API_ZDROJ}" target="_blank" rel="noopener">${esc(tr('Ceník Anthropicu, ověřeno {0}', dateLong(Date.parse(`${CENIK_API_OVERENO}T12:00:00`))))}</a></p>`;
 }
 
 export default {
