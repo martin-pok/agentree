@@ -1,10 +1,10 @@
 # Roadmapa
 
 Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
-Stav je prověřený proti kódu (naposledy 3. 10. 2026, s vydáním 0.32.0). Hotové položky zůstávají
+Stav je prověřený proti kódu (naposledy 7. 10. 2026, po vydání 0.38.1). Hotové položky zůstávají
 přeškrtnuté s odkazem, kde to je, aby bylo vidět, co se rozhodlo jinak, než stálo v plánu.
 
-## Teď – po 0.32.0
+## Teď – po 0.38.1
 
 Pořadí podle toho, co brzdí ostrý provoz. U položek „vlastník“ je potřeba účet nebo rozhodnutí,
 které kód za nikoho neudělá.
@@ -19,16 +19,20 @@ sama zachytí AI nástroje v činnosti (karta „Zachytil jsem agenta“, Moje n
 Gemini CLI a Qwen Code. Rozpoznání 🧪 nástrojů z katalogu čeká na potvrzení na skutečném stroji
 ([CONNECTORS.md](CONNECTORS.md)). Verze 0.34.0 rozkládá útratu z Admin API po modelech (náklady
 i tokeny organizace) a aplikace pro Mac vychází jen pro Apple Silicon (M1 a novější) – build pro
-Mac s Intelem skončil na rozhodnutí vlastníka. Podrobnosti jsou v `CHANGELOG.md`.
+Mac s Intelem skončil na rozhodnutí vlastníka. Verze 0.35–0.36 čtou limity Claude i z aplikace Claude,
+ukazují útratu v eurech a hned zachytí nově spuštěné agenty. Verze 0.37.0 přinesla nový vzhled
+Den a Noc a instalátor DMG, 0.38.0 čtyři vzhledy (Úsvit, Půlnoc, Slonovina, Eben), důvěryhodnou kartu
+Google účtu a revizi Nastavení, 0.38.1 aktualizaci jedním klepnutím (stažení, ověření, výměna
+balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Kdo | Akceptační kritéria |
 |---|---|---|---|
 | 1 | Přihlášení přes Google naostro — **konfigurace hotová 1. 10. 2026** | vývoj + vlastník | Google OAuth aplikace je externí a zveřejněná, provider v Supabase aktivní a návraty jsou omezené na produkční web a jednorázový localhost callback. Automatická regrese prošla; poslední uživatelské ověření je přihlášení konkrétním Google účtem na Macu i na webu. Viz [ACCOUNTS.md](ACCOUNTS.md) a protokol v [TESTING.md](TESTING.md). |
 | 2 | Zásady ochrany údajů a DPA se Supabase | vlastník | Právně zkontrolované zásady (co odchází: jen souhrny, viz [ACCOUNTS.md](ACCOUNTS.md) a [DATA-CONTRACT.md](DATA-CONTRACT.md)) a DPA podepsané před prvním cizím uživatelem. **Zčásti hotovo:** zásady ochrany soukromí včetně účtu jsou na webu (`/soukromi`, `/en/privacy`, zdroj `site/soukromi/index.html`) a od 0.31.1 na ně vede jazykově správný odkaz i z Nastavení → Účet. Zbývá právní kontrola a DPA |
-| 3 | Podpis a notarizace aplikace pro Mac | vlastník | Developer ID a notarizační profil v tajemstvích GitHubu (`AGENTEEQ_SIGN_IDENTITY`, `AGENTEEQ_NOTARY_PROFILE`); popis vydání pak sám vynechá návod na povolení v Nastavení systému. **Odloženo na pokyn vlastníka** (Developer ID zatím není). **Do té doby hotovo (5. 10. 2026):** jeden postup instalace bez Terminálu na webu (stránka `/instalace`, `/en/install`, sekce Stažení), v popisu vydání, v [INSTALL.md](INSTALL.md), README i v Nastavení aplikace – otevřít → macOS zablokuje → Nastavení systému → Soukromí a zabezpečení → Přesto otevřít (podle nápovědy Applu pro macOS 15 a 26); popis vydání už neradí `xattr`. Terminál (`/install.sh`) zůstává jako alternativa pro pokročilé. Workflow Vydání nově sestaví i instalátor DMG s přetažením do Aplikací (`npm run build:dmg`, stálá příloha `Agenteeq-macOS-arm64.dmg`) – **neověřeno, dokud workflow neproběhne na macOS**; web na DMG přepne až po zveřejnění vydání, které ho má (`V_POSLEDNIM_VYDANI` v `scripts/build-site.mjs`). Zbývá: Developer ID a notarizace; CI zatím neumí importovat certifikát (nálezy 10–11 v [SECURITY.md](SECURITY.md)) |
+| 3 | Podpis a notarizace aplikace pro Mac | vlastník | Developer ID a notarizační profil v tajemstvích GitHubu (`AGENTEEQ_SIGN_IDENTITY`, `AGENTEEQ_NOTARY_PROFILE`); popis vydání pak sám vynechá návod na povolení v Nastavení systému. **Odloženo na pokyn vlastníka** (Developer ID zatím není). **Do té doby hotovo (5. 10. 2026):** jeden postup instalace bez Terminálu na webu (stránka `/instalace`, `/en/install`, sekce Stažení), v popisu vydání, v [INSTALL.md](INSTALL.md), README i v Nastavení aplikace – otevřít → macOS zablokuje → Nastavení systému → Soukromí a zabezpečení → Přesto otevřít (podle nápovědy Applu pro macOS 15 a 26); popis vydání už neradí `xattr`. Terminál (`/install.sh`) zůstává jako alternativa pro pokročilé. Workflow Vydání nově sestaví i instalátor DMG s přetažením do Aplikací (`npm run build:dmg`, stálá příloha `Agenteeq-macOS-arm64.dmg`) – od 0.37.0 se sestavuje a prochází `hdiutil verify` na runneru s macOS a od 0.37.1 na něj vede tlačítko ke stažení na webu (`V_POSLEDNIM_VYDANI` v `scripts/build-site.mjs`). Od 0.38.1 se další verze instalují v aplikaci jedním klepnutím; `/install.sh` od 6. 10. 2026 před otevřením ukončí starou běžící kopii a vypíše další kopie na disku. Zbývá: Developer ID a notarizace; CI zatím neumí importovat certifikát (nálezy 10–11 v [SECURITY.md](SECURITY.md)) |
 | 4 | Ověřit webové konektory na živých stránkách | vlastník + vývoj | Pro každý z 8 webů: ověření stránky v okně rozšíření (řádek *tato karta* → *Počty nesedí? Ověřit stránku*) projde a vzorek stránky je v `test/fixtures/web/` s testem adaptéru; teprve pak ✅ v [CONNECTORS.md](CONNECTORS.md). Zatím tam žádný vzorek není |
 | 5 | Ruční QA účtu a napojení modelů na Macu | vlastník | Od 0.29.0 spustí „Napojit“ přihlášení na pozadí bez Terminálu (`claude auth login --claudeai`, `codex login`) a prohlížeč dodavatele se otevře rovnou. Ověřit na Macu přihlášení, návrat do aplikace, potvrzení s plánem a záložní cestu „Prohlížeč se neotevřel?“ s vložením kódu; zápis do protokolu v `docs/TESTING.md` |
-| 6 | Rozšíření v Chrome Web Store | vlastník | ~~Veřejná instalace jedním klikem~~ **hotovo 6. 10. 2026:** položka je zveřejněná (potvrdil vlastník), od 0.37.1 web i aplikace vedou rovnou do obchodu tlačítkem **Přidat do Chromu**. Zbývá: nahrát do obchodu balíček aktuální verze, aby uživatelé z obchodu nedostali starší rozšíření. Viz [CHROME-WEB-STORE.md](CHROME-WEB-STORE.md). |
+| 6 | Rozšíření v Chrome Web Store | vlastník | ~~Veřejná instalace jedním klikem~~ **hotovo 6. 10. 2026:** položka je zveřejněná (potvrdil vlastník), od 0.37.1 web i aplikace vedou rovnou do obchodu tlačítkem **Přidat do Chromu**. Zbývá: nahrát do obchodu balíček aktuální verze (`agenteeq-extension-<verze>.zip` z přílohy vydání), aby uživatelé z obchodu nedostali starší rozšíření. Viz [CHROME-WEB-STORE.md](CHROME-WEB-STORE.md). |
 
 ## v0.6 – z bety k prvnímu prodeji (navazuje na 0.5.0)
 
@@ -59,9 +63,9 @@ Mac s Intelem skončil na rozhodnutí vlastníka. Podrobnosti jsou v `CHANGELOG.
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
 | 1 | Nativní aplikace s ikonou stavu | **Zčásti hotovo:** aplikace pro Mac (Swift, `desktop/`) spouští server a počet agentů, kteří čekají na tebe (rozhodnutí, limit, selhání), ukazuje v Docku i u ikony v řádku nabídek (`desktop/Agenteeq.swift#handleDesktopEvent`). Zbývá podpis s notarizací („Teď“ #3, odložené) |
-| 2 | Historie > 30 dní | Statistiky za 12 měsíců do 1 s; migrace bez ztráty dat; bez runtime závislostí |
+| 2 | Historie > 30 dní (Statistiky dnes končí na 30 dnech, `public/js/views/stats.js#PERIODS`) | Statistiky za 12 měsíců do 1 s; migrace bez ztráty dat; bez runtime závislostí |
 | 3 | ~~Export útraty (CSV)~~ **hotovo v 0.27.0** | Útrata → Výdaje → *Export CSV*: řádek za platbu v každém měsíci včetně automatických záznamů, kurz a částka v měně aplikace; součty po měsících sedí s obrazovkou (`test/spend-export.test.mjs`) |
-| 4 | ~~Pravidla upozornění~~ **hotovo, vyjde v příští verzi** | Ztlumení projektu a „jen rozhodnutí“ podle projektu; noční ticho (místní čas počítače, přes půlnoc, výchozí vypnuto) bez oznámení a zvuku, ale se stavem, zvonečkem a odznakem; na konci ticha jeden souhrn jen za to, co pořád platí; víc než 3 upozornění za minutu → zbytek v jednom souhrnu (`src/alerts.js`, testy s pevnými hodinami v `test/nocni-ticho.test.mjs`). Skutečná oznámení v aplikaci pro Mac a ve Windows čekají na ruční ověření |
+| 4 | ~~Pravidla upozornění~~ **hotovo v 0.29.1** | Ztlumení projektu a „jen rozhodnutí“ podle projektu; noční ticho (místní čas počítače, přes půlnoc, výchozí vypnuto) bez oznámení a zvuku, ale se stavem, zvonečkem a odznakem; na konci ticha jeden souhrn jen za to, co pořád platí; víc než 3 upozornění za minutu → zbytek v jednom souhrnu (`src/alerts.js`, testy s pevnými hodinami v `test/nocni-ticho.test.mjs`). Skutečná oznámení v aplikaci pro Mac a ve Windows čekají na ruční ověření |
 
 ## v1.0 – SaaS (Pro a Team)
 
@@ -76,11 +80,16 @@ Mac s Intelem skončil na rozhodnutí vlastníka. Podrobnosti jsou v `CHANGELOG.
 
 ## Známé problémy (backlog)
 
-Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 2. 10. 2026).
+Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 7. 10. 2026).
 
 - Bez hooků se žádost o povolení nepozná jistě: po 90 s čekání nástroje stav řekne „možná čeká na tvé povolení“, ale zůstává „Pracuje“ (`src/model.js#deriveStatus`).
 - Webové služby vykreslují dlouhé konverzace jen zčásti (virtualizované seznamy), takže počet zpráv z rozšíření může být u dlouhé konverzace nižší než skutečný.
 - Codex nezapisuje žádosti o schválení – nelze detekovat „potřebuje rozhodnutí“.
+- Fotka Google účtu se u vlastníka nenačetla; příčina zatím nepotvrzená. Od 0.38.0 se stahuje znovu
+  po 10 minutách a do záznamu aplikace jde jen kód důvodu (`HTTP n`, `redirect`, `format`, `size`,
+  `timeout`, `network`) – podle něj opravit (`src/ucet.js`).
+- Výměna balíčku při aktualizaci jedním klepnutím (0.38.1) je ověřená jen testy a stejným postupem
+  jako `/install.sh`; první skutečná aktualizace na Macu je zároveň její ruční QA.
 - Časová osa ukazuje max. 7 agentů; od 0.18.2 pod ní stojí, kolik jich zbývá, s odkazem na Agenty.
 - GitHub Actions: od 0.29.0 běží `actions/checkout@v5`, `actions/setup-node@v5`, `actions/upload-artifact@v6`
   a `actions/download-artifact@v7` na Node 24. Varování na zastaralý Node 20 zůstává jen u jobů pro Windows:

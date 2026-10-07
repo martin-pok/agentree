@@ -7,7 +7,7 @@ import { glyph, ICON, BULB } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
-import { takeJump } from '../jump.js';
+import { takeJump, vyvolejMisto } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
@@ -250,29 +250,25 @@ function helpCard() {
 // Jiný cíl se ignoruje – Nastavení se jen otevře.
 const CILE_SKOKU = new Set(GROUPS.flatMap(([, , regions]) => regions));
 
-function callout(karta) {
+function callout(karta, prepinac = '') {
   const card = v.el?.querySelector(`[data-region="${karta}"]`);
   if (!card) return;
   const skupina = card.closest('.set-group');
   if (skupina?.hidden) v.ukazSkupinu?.(skupina.id);
-  // Stránka má v CSS `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule –
-  // a v okně, které zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá
-  // přesně a u skrytého okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou.
-  const instant = document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 96);
-  if (instant) skocNa(top);
-  else window.scrollTo({ top, behavior: 'smooth' });
-  card.classList.remove('is-called-out');
-  void card.offsetWidth;
-  card.classList.add('is-called-out');
-  card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn')?.focus({ preventScroll: true });
+  // Konkrétní přepínač (z vyhledávání): zvýrazní se jeho řádek a fokus dostane sám přepínač.
+  const prepinacEl = prepinac ? card.querySelector(`[data-setting="${CSS.escape(prepinac)}"]`) : null;
+  if (prepinacEl) {
+    vyvolejMisto(prepinacEl.closest('.set-row') || prepinacEl, prepinacEl);
+    return;
+  }
+  vyvolejMisto(card, card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn'));
 }
 
 // Skok až po dokončení přechodu: router po vykreslení posune stránku nahoru a dá fokus nadpisu,
 // takže okamžitý skok by se hned přepsal. Časovač místo requestAnimationFrame běží i ve skrytém okně.
 function onJump() {
-  const karta = takeJump();
-  if (CILE_SKOKU.has(karta)) setTimeout(() => callout(karta), 80);
+  const cil = takeJump();
+  if (cil && CILE_SKOKU.has(cil.karta)) setTimeout(() => callout(cil.karta, cil.prepinac), 80);
 }
 
 function mount(el) {

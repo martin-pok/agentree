@@ -432,6 +432,9 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 
 /* ---------- Obecné ---------- */
 .view { outline: none; }
+/* Nadpis sekce, na kterou skočilo vyhledávání (app.js#vyridSkokNaSekci): fokus je pro čtečku a
+   klávesnici, místo ukazuje zvýraznění karty – rámeček kolem nadpisu by jen rušil. */
+h2[tabindex='-1']:focus, h3[tabindex='-1']:focus { outline: none; }
 /* Načítání: jen scéna, uprostřed plochy pod lištou (na telefonu nad spodní nabídkou). Kostru
    obrazovky, kterou mount už vložil, nechává až do načtení skrytou (app.js#refresh). */
 .view.is-loading > :not(.loader-wrap) { display: none !important; }
@@ -1713,6 +1716,19 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .palette-input .icon { width: 20px; height: 20px; color: var(--mute); }
 .palette-input input { flex: 1; border: 0; box-shadow: none; height: 40px; padding: 0; font-size: 17px; }
 .palette-input input:focus { box-shadow: none; }
+.palette-field { position: relative; flex: 1; min-width: 0; display: flex; }
+.palette-field input { position: relative; z-index: 1; width: 100%; background: transparent; }
+/* Našeptávání: napsaný text je průhledný (leží přesně pod tím v poli), zbytek názvu tlumeně. */
+.palette-ghost { position: absolute; inset: 0; display: flex; align-items: center; font-size: 17px; white-space: pre; overflow: hidden; pointer-events: none; }
+.palette-ghost-typed { color: transparent; }
+.palette-ghost-rest { color: var(--mute); }
+.palette-list mark { background: none; color: var(--ink); font-weight: 500; text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: var(--teal-ink); text-underline-offset: 3px; }
+.palette-list .pl-empty { display: grid; gap: 4px; padding: 16px 12px; cursor: default; border-radius: 0; }
+.palette-list .pl-empty span { color: var(--mute); font-size: 13px; }
+.palette-hint { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; padding: 8px 20px; border-top: 1px solid var(--line); color: var(--mute); font-size: 12px; }
+.palette-hint span { display: inline-flex; align-items: center; gap: 4px; }
+.palette-hint kbd { padding: 4px 6px; }
+@media (hover: none) { .palette-hint { display: none; } }
 /* `contain` drží posouvání uvnitř seznamu. Bez něj kolečko po dojetí na konec pokračovalo
    na stránce vzadu, což u překryvu přes celou obrazovku nedává smysl. */
 .palette-list { list-style: none; margin: 0; padding: 8px; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; scroll-padding: 8px; }
