@@ -1,7 +1,7 @@
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
-import { esc, rel, clock, norm, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
+import { esc, rel, clock, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel, kotva } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
@@ -30,7 +30,8 @@ import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPoc
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
-import { goToSettings } from './jump.js';
+import { goToSettings, goToSection, takeSectionJump, vyvolejMisto } from './jump.js';
+import { cileHledani, hledejCile, skore } from './hledani.js';
 
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
 
@@ -197,7 +198,36 @@ function navigate() {
   if (SECONDARY.has(nav)) moreBtn.setAttribute('aria-current', 'page');
   else moreBtn.removeAttribute('aria-current');
   refresh(new Set(['all']));
+  vyridSkokNaSekci();
 }
+
+// Skok na sekci stránky (vyhledávání ⌘K, public/js/jump.js#goToSection). Až po vykreslení a po
+// fokusu na nadpis, které router dělá výš – jinak by je skok hned přepsal. Sekce, která se ukazuje
+// jen s daty, může být zatím prázdná: pak se počká na další vykreslení a když ani tak nic neukazuje,
+// řekne to aplikace narovinu místo tichého nic.
+function vyridSkokNaSekci() {
+  const cil = takeSectionJump(location.hash);
+  if (!cil) return;
+  const najdi = () => {
+    const region = viewEl.querySelector(`[data-region="${CSS.escape(cil.region)}"]`);
+    return region && region.getClientRects().length && (region.children.length || region.textContent.trim()) ? region : null;
+  };
+  const proved = (pokus) => {
+    const region = najdi();
+    if (!region) {
+      if (pokus < 3) { setTimeout(() => proved(pokus + 1), 250); return; }
+      toast(tr('Tahle část se na stránce ukáže, až pro ni budou data.'));
+      return;
+    }
+    const misto = region.closest('section.card, .card') || region.closest('section') || region;
+    const nadpis = misto.querySelector('h2, h3');
+    if (nadpis && !nadpis.hasAttribute('tabindex')) nadpis.setAttribute('tabindex', '-1');
+    vyvolejMisto(misto, cil.klik ? null : nadpis);
+    if (cil.klik) viewEl.querySelector(cil.klik)?.click();
+  };
+  setTimeout(() => proved(0), 120);
+}
+window.addEventListener('agenteeq-jump-sekce', vyridSkokNaSekci);
 
 /* ---------- Vykreslení ---------- */
 
@@ -510,29 +540,86 @@ async function openSession(btn) {
 
 /* ---------- Paleta ---------- */
 
+// Vyhledávání (⌘K). Cíle uvnitř stránek a v Nastavení drží public/js/hledani.js; tady se k nim
+// přidají živá data (agenti, projekty) a akce. Bez dotazu nabídne naposledy otevřené.
+const NEDAVNE = 'agenteeq.hledani.nedavne';
+const nactiNedavne = () => {
+  try { return JSON.parse(localStorage.getItem(NEDAVNE) || '[]').filter((k) => typeof k === 'string').slice(0, 5); } catch { return []; }
+};
+const ulozNedavne = (klic) => {
+  if (!klic) return;
+  try { localStorage.setItem(NEDAVNE, JSON.stringify([klic, ...nactiNedavne().filter((k) => k !== klic)].slice(0, 5))); } catch { /* bez úložiště jen bez historie */ }
+};
+
+const IKONA_CILE = { stranka: ICON.arrow, sekce: ICON.arrow, nastaveni: ICON.sliders };
+const polozkaCile = (c, skupina) => ({
+  klic: `cil:${c.id}`,
+  group: skupina || (c.druh === 'nastaveni' ? tr('Nastavení') : tr('Stránky a sekce')),
+  label: c.label,
+  sub: c.kde,
+  icon: IKONA_CILE[c.druh],
+  run: () => {
+    if (c.karta) goToSettings(c.karta, c.prepinac);
+    else if (c.region) goToSection(c.route, c.region, c.klik);
+    else if (location.hash === c.route) navigate();
+    else location.hash = c.route;
+  },
+});
+const polozkaAgenta = (s, skupina = tr('Agenti')) => ({ klic: `agent:${s.id}`, group: skupina, label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) });
+const polozkaProjektu = (p, skupina = tr('Projekty')) => ({ klic: `projekt:${p.id}`, group: skupina, label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) });
+
 const palette = createPalette(
   (q) => {
-    const nq = norm(q.trim());
-    const agentItems = agentsList()
-      .filter((s) => !nq || norm([s.title, s.project, s.app, s.model, s.cwd].join(' ')).includes(nq))
-      .slice(0, 8)
-      .map((s) => ({ group: tr('Agenti'), label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) }));
-    const sections = [['prehled', tr('Přehled')], ['upozorneni', tr('Upozornění')], ['agenti', tr('Agenti')], ['projekty', tr('Projekty')], ['statistiky', tr('Statistiky')], ['utrata', tr('Útrata')], ['dovednosti', tr('Dovednosti')], ['nastaveni', tr('Nastavení')]]
-      .filter(([, l]) => !nq || norm(l).includes(nq))
-      .map(([k, l]) => ({ group: tr('Sekce'), label: l, href: `#/${k}`, icon: ICON.arrow }));
-    const projectItems = state.projects.items
-      .filter((p) => !p.archived && (!nq || norm([p.name, p.description, ...p.folders].join(' ')).includes(nq)))
-      .slice(0, 6)
-      .map((p) => ({ group: tr('Projekty'), label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) }));
-    const actions = [
-      { group: tr('Akce'), label: tr('Spustit agenta'), run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
-      { group: tr('Akce'), label: tr('Nový projekt'), run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
-      { group: tr('Akce'), label: tr('Označit upozornění jako přečtená'), run: () => markRead('all'), icon: ICON.check },
-      { group: tr('Akce'), label: tr('Zapnout propojení s Claude Code'), href: '#/nastaveni', icon: ICON.bell },
-    ].filter((a) => !nq || norm(a.label).includes(nq));
-    return nq ? [...agentItems, ...projectItems, ...sections, ...actions] : [...actions.slice(0, 2), ...sections, ...projectItems, ...agentItems, ...actions.slice(2)];
+    const dotaz = q.trim();
+    const cile = cileHledani();
+    const projekty = state.projects.items.filter((p) => !p.archived);
+    const agenti = agentsList();
+    const akce = [
+      { klic: 'akce:spustit', group: tr('Akce'), label: tr('Spustit agenta'), slova: 'novy start run launch', run: () => { launchIntent.focus = true; if (location.hash === '#/prehled') navigate(); else location.hash = '#/prehled'; }, icon: ICON.spark },
+      { klic: 'akce:projekt', group: tr('Akce'), label: tr('Nový projekt'), slova: 'zalozit vytvorit create', run: async () => { const p = await projectForm(); if (p) location.hash = projectHref(p.id); }, icon: ICON.folder },
+      { klic: 'akce:precteno', group: tr('Akce'), label: tr('Označit upozornění jako přečtená'), slova: 'precist vse mark read', run: () => markRead('all'), icon: ICON.check },
+      { klic: 'akce:hooky', group: tr('Akce'), label: tr('Zapnout propojení s Claude Code'), slova: 'hooky hooks', run: () => goToSettings('claude'), icon: ICON.bell },
+    ];
+    if (!dotaz) {
+      // Naposledy otevřené – jen to, co pořád existuje.
+      const nedavne = nactiNedavne().map((k) => {
+        const [druh, ...zbytek] = k.split(':');
+        const id = zbytek.join(':');
+        const skupina = tr('Naposledy otevřené');
+        if (druh === 'cil') { const c = cile.find((x) => x.id === id); return c && polozkaCile(c, skupina); }
+        if (druh === 'agent') { const a = agenti.find((x) => x.id === id); return a && polozkaAgenta(a, skupina); }
+        if (druh === 'projekt') { const p = projekty.find((x) => x.id === id); return p && polozkaProjektu(p, skupina); }
+        const a = akce.find((x) => x.klic === k);
+        return a && { ...a, group: skupina };
+      }).filter(Boolean);
+      const uz = new Set(nedavne.map((x) => x.klic));
+      return [
+        ...nedavne,
+        ...akce.slice(0, 2).filter((a) => !uz.has(a.klic)),
+        ...cile.filter((c) => c.druh === 'stranka' && !uz.has(`cil:${c.id}`)).map((c) => polozkaCile(c, tr('Stránky'))),
+        ...projekty.slice(0, 6).map((p) => polozkaProjektu(p)).filter((x) => !uz.has(x.klic)),
+        ...agenti.slice(0, 8).map((a) => polozkaAgenta(a)).filter((x) => !uz.has(x.klic)),
+      ];
+    }
+    const podle = (seznam, pole, max) => seznam
+      .map((x, i) => ({ x, i, s: skore(dotaz, pole(x)) }))
+      .filter((r) => r.s > 0)
+      .sort((a, b) => b.s - a.s || a.i - b.i)
+      .slice(0, max)
+      .map((r) => r.x);
+    const agentiNalez = podle(agenti, (a) => [[a.title, 3], [[a.project, a.app, a.model, STATUS[a.status]?.label].join(' '), 2], [a.cwd, 1]], 6).map((a) => polozkaAgenta(a));
+    const projektyNalez = podle(projekty, (p) => [[p.name, 3], [p.description, 2], [p.folders.join(' '), 1]], 5).map((p) => polozkaProjektu(p));
+    const cileNalez = hledejCile(dotaz, cile).slice(0, 10);
+    const stranky = cileNalez.filter((c) => c.druh !== 'nastaveni').map((c) => polozkaCile(c));
+    const nastaveni = cileNalez.filter((c) => c.druh === 'nastaveni').map((c) => polozkaCile(c));
+    const akceNalez = podle(akce, (a) => [[a.label, 3], [a.slova, 2]], 4);
+    // Skupina s nejlepší shodou jde nahoru: „limity“ začnou sekcemi, název agenta agentem.
+    const skupiny = [stranky, nastaveni, projektyNalez, agentiNalez, akceNalez].filter((g) => g.length);
+    const nejlepsi = (g) => Math.max(...g.map((it) => skore(dotaz, [[it.label, 3]])));
+    return skupiny.map((g, i) => ({ g, i, s: nejlepsi(g) })).sort((a, b) => b.s - a.s || a.i - b.i).flatMap((x) => x.g);
   },
   (it) => {
+    ulozNedavne(it.klic);
     if (it.href) {
       if (location.hash === it.href) navigate();
       else location.hash = it.href;

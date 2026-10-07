@@ -1,7 +1,9 @@
 # Changelog
 
-## 0.38.2 – 2026-10-07 · historie Claude a jistější ovládání
+## 0.38.2 – 2026-10-07 · hledání do hloubky, historie Claude a jistější ovládání
 
+- **Hledání najde i sekce a nastavení.** ⌘K dřív znalo jen názvy osmi stránek, takže „limity“ nenašly nic. Nový index (`public/js/hledani.js`) zná sekce uvnitř stránek (Přehled, Statistiky, Útrata, Projekty), všechny karty Nastavení a jednotlivé přepínače upozornění a vzhledu, s českými i anglickými synonymy. Výběr skočí přímo na sekci a krátce ji zvýrazní; u nastavení dostane fokus konkrétní přepínač. Hledá se bez diakritiky, po slovech, podle tvaru slova („limitů“ ~ „limity“) a s tolerancí jednoho překlepu; shoda je v názvu podtržená. Našeptávání ukáže zbytek názvu šedě v poli a Tab (nebo → na konci) ho doplní. Bez dotazu nabídne naposledy otevřené (jen v tomto prohlížeči). Když se sekce bez dat neukazuje, aplikace to řekne místo tichého nic.
+- **Po výběru z hledání zůstávala stránka zamčená.** Výběr výsledku nechal na stránce třídu překryvu, takže stránka se nedala posouvat a klávesové zkratky nereagovaly, dokud se neotevřel a nezavřel jiný dialog. Opraveno.
 - **Zpětně načtené měření Claude ve Statistikách.** Ukazuje se poslední kalendářní den, který Claude Desktop skutečně změřil, jeho datum, počet odečtů a poslední vytížení 5hodinového a týdenního limitu. Po půlnoci se včerejší data neztratí ani nevydávají za dnešní. Tokeny ani cenu z těchto procent neodvozujeme. Webové chaty neposkytují zpětná data o tokenech.
 - **Modal projektu drží pozici stránky.** Zavření už neodskočí na tlačítko, které modal otevřelo; fokus se vrací bez posunu a pozice se obnoví, pokud ji WebKit přesto změní.
 - **Upozornění mají čitelný hover i klávesnicový fokus** ve světlém i tmavém vzhledu, s přechodem podle design tokenů.

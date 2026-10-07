@@ -681,6 +681,24 @@ for (const engine of engines) {
     await page.screenshot({ path: `dist/qa/${engine}-palette-hover.png` });
     await page.keyboard.press('Escape');
     await page.locator('.palette').waitFor({ state: 'hidden' });
+    // Hledání do hloubky (public/js/hledani.js): „limity“ najdou sekci ve Statistikách, výběr na ni
+    // skočí a zvýrazní ji, stránka po výběru zůstane posouvatelná a ⌘K funguje dál.
+    await page.keyboard.press('ControlOrMeta+k');
+    await page.locator('.palette input').pressSequentially('lim');
+    assert.match(await page.locator('.palette-ghost-rest').textContent(), /^ity/, `${engine} hledání našeptává zbytek názvu`);
+    await page.locator('.palette input').pressSequentially('ity');
+    const limity = page.locator('.palette-list [role="option"]', { hasText: 'Limity a kredity' });
+    assert.equal(await limity.count(), 1, `${engine} „limity“ najdou sekci ve Statistikách`);
+    assert.equal(await limity.locator('mark').first().textContent(), 'Limity', `${engine} shoda je zvýrazněná`);
+    await limity.click();
+    await page.waitForFunction(() => location.hash === '#/statistiky' && document.querySelector('#limity')?.classList.contains('is-called-out'));
+    assert.equal(await page.evaluate(() => document.body.classList.contains('has-modal')), false, `${engine} po výběru z hledání nesmí zůstat stránka zamčená`);
+    await page.keyboard.press('ControlOrMeta+k');
+    await page.locator('.palette').waitFor({ state: 'visible' });
+    await page.locator('.palette input').pressSequentially('nocni ticho');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.activeElement?.dataset?.setting === 'quietHours');
+    assert.equal(await page.evaluate(() => document.activeElement.closest('.set-row').classList.contains('is-called-out')), true, `${engine} nastavení z hledání zvýrazní přepínač`);
     await page.goto(`${server.url}/#/utrata`);
     await page.locator('.toolbar').waitFor();
     assert.match(await page.locator('.spend-hero').textContent(), /Náklady za API nejsou připojené/);

@@ -6,14 +6,16 @@ export const RELEASES = [
   {
     version: '0.38.2',
     date: '2026-10-07',
-    title: 'Claude a jistější ovládání',
+    title: 'Hledání do hloubky, Claude a jistější ovládání',
     items: [
+      'Hledání (⌘K) najde i sekce uvnitř stránek a jednotlivá nastavení: napiš „limity“ a skočíš rovnou na limity ve Statistikách nebo na upozornění na limit. Rozumí tvarům slov i překlepům, šedě našeptává a Tab doplní; bez dotazu nabídne naposledy otevřené.',
       'Ve Statistikách uvidíš poslední skutečně naměřené vytížení limitů Claude Desktopu i s datem odečtu. Tokeny ani cenu z něj neodvozujeme.',
       'Zavření modalu projektu už neposune stránku a upozornění mají viditelný hover i klávesnicový fokus.',
     ],
     en: {
-      title: 'Claude and steadier interactions',
+      title: 'Deeper search, Claude and steadier interactions',
       items: [
+        'Search (⌘K) now finds sections inside pages and individual settings: type “limits” and jump straight to the limits in Statistics or to the limit notification. It handles word forms and typos, suggests the rest in grey and Tab completes it; with no query it offers what you opened recently.',
         'Statistics show the latest actual Claude Desktop limit readings with their date. They are not converted into tokens or cost.',
         'Closing a project modal no longer moves the page, and notifications have visible hover and keyboard focus states.',
       ],
