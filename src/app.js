@@ -9,6 +9,7 @@ import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createDetekce } from './detekce.js';
+import { createHistorie } from './historie.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
 import { createRateFeed, rateInfo } from './rates.js';
@@ -91,6 +92,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   await datastore.load();
   const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
+  const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
+  await historie.load();
   const secrets = createSecrets({ keychain: config.keychain });
   const notifier = createNotifier({ enabled: config.nativeNotify });
   const alerts = new AlertEngine({
@@ -1436,6 +1439,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     await Promise.all([whoami, launchReady]);
     store.reevaluate();
     store.ready = true;
+    historie.aktualizuj(store.list());
     syncSnapshots();
     alerts.start();
     // Výsledek aktualizace se promítne přes SSE hned po startu. Síť nesmí brzdit načtení lokálních dat.
@@ -1465,6 +1469,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       timers.push(t);
     };
     every(() => store.reevaluate(), 5000);
+    // Historie Statistik: den se mění pomalu, souhrn za posledních 28 dní stačí přepočítat jednou za pár minut.
+    every(() => historie.aktualizuj(store.list()), 5 * 60e3);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
     every(() => restoreRemoteAccess(), 30000);
     if (datastore.data.customAgents.length) probeCustomAgents().catch(() => {});
@@ -1515,6 +1521,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       try { c.stop(); } catch { /* ignorovat při ukončení */ }
     }
     persistSnapshots.cancel();
+    historie.aktualizuj(store.list());
+    await historie.flush();
     await datastore.flush();
   }
 
@@ -1526,6 +1534,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop,
+    // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
+    historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
     lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),

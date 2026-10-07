@@ -453,6 +453,7 @@ export function createHttpServer(app, existingServer = null) {
       return unwrap(await app.addCustomAgent({ name: body?.name, type: body?.type, url: body?.url }));
     }],
     ['DELETE', /^\/api\/custom-agents\/([\w-]{1,32})$/, async (_req, m) => unwrap(await app.removeCustomAgent(m[1]))],
+    ['GET', /^\/api\/historie$/, () => app.historie()],
     ['GET', /^\/api\/usage\/claude$/, async (_req, _m, url) => {
       const days = Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 30));
       const series = await app.planUsageHistory({ days });

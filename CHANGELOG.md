@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.0 – 2026-10-07 · Statistiky za 90 dní a 12 měsíců
+
+- **Statistiky za 90 dní a 12 měsíců.** Konektory čtou přepisy jen za 30 dní, takže starší čísla dřív zmizela. Agenteeq teď každý den ukládá malý souhrn (`<dataDir>/historie.json`, `src/historie.js`): tokeny (vstup + výstup) podle poskytovatele, aplikace, modelu a složky, hodiny s aktivitou a konverzace podle dne začátku. Den uvnitř 30denního okna se přepočítává z živých konverzací, den mimo okno se zmrazí. Ukládá se 400 dní, jen součty – žádné přepisy, názvy ani ID konverzací. Statistiky mají nová období **90 dní** (13 týdnů) a **12 měsíců** (kalendářní měsíce); graf, karty aplikací, modelů a složek i souhrnná čísla jdou z uložených souhrnů (`GET /api/historie`, `public/js/historie-stats.js`), mapa aktivity a limity zůstávají beze změny. Dny před začátkem ukládání se nedopočítávají ani nevydávají za nulu: pod grafem stojí, od kdy historie sahá.
+
 ## 0.38.2 – 2026-10-07 · hledání do hloubky, historie Claude a jistější ovládání
 
 - **Hledání najde i sekce a nastavení.** ⌘K dřív znalo jen názvy osmi stránek, takže „limity“ nenašly nic. Nový index (`public/js/hledani.js`) zná sekce uvnitř stránek (Přehled, Statistiky, Útrata, Projekty), všechny karty Nastavení a jednotlivé přepínače upozornění a vzhledu, s českými i anglickými synonymy. Výběr skočí přímo na sekci a krátce ji zvýrazní; u nastavení dostane fokus konkrétní přepínač. Hledá se bez diakritiky, po slovech, podle tvaru slova („limitů“ ~ „limity“) a s tolerancí jednoho překlepu; shoda je v názvu podtržená. Našeptávání ukáže zbytek názvu šedě v poli a Tab (nebo → na konci) ho doplní. Bez dotazu nabídne naposledy otevřené (jen v tomto prohlížeči). Když se sekce bez dat neukazuje, aplikace to řekne místo tichého nic.
