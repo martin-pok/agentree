@@ -79,7 +79,11 @@ export function vyvolejMisto(misto, fokus = null) {
   misto.classList.add('is-called-out');
   // Kdo mezitím píše jinde (třeba další dotaz pomocníkovi), tomu fokus neukrade: Enter by jinak
   // dopadl na zvýrazněný přepínač a přepnul ho.
-  const aktivni = document.activeElement;
-  const pise = aktivni && !misto.contains(aktivni) && (aktivni.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(aktivni.tagName));
-  if (!pise) fokus?.focus({ preventScroll: true });
+  if (!pisePrave(misto)) fokus?.focus({ preventScroll: true });
+}
+
+/** Píše teď člověk do pole mimo `oblast`? Pak mu fokus nikdo nebere (přechod stránky, zvýraznění). */
+export function pisePrave(oblast = null) {
+  const a = document.activeElement;
+  return Boolean(a && !oblast?.contains(a) && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)));
 }

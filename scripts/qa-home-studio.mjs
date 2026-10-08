@@ -101,7 +101,8 @@ try {
       // Zvýraznění v Nastavení doběhne až po načtení dat a fokus psaní nesmí ukrást (Enter by přepnul nastavení).
       await page.locator('.is-called-out').first().waitFor();
       await page.waitForTimeout(600);
-      assert.ok(await page.locator('.pm-vstup').evaluate((n) => n === document.activeElement), 'psaní v pomocníkovi drží fokus i po skoku do Nastavení');
+      const fokus = await page.evaluate(() => { const a = document.activeElement; return a === document.querySelector('.pm-vstup') ? 'ok' : `${a?.tagName}.${a?.className} ${a?.id || ''} ${a?.getAttribute?.('data-setting') || ''}`; });
+      assert.equal(fokus, 'ok', 'psaní v pomocníkovi drží fokus i po skoku do Nastavení');
       await page.unroute('**/api/**', pomalu);
       await page.keyboard.press('Enter');
       await page.locator('.pm-vysledek').first().waitFor({ timeout: 10000 }).catch(async () => {
