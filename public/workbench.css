@@ -311,3 +311,100 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .studio-choice { display: flex; flex-direction: column; align-items: center; }
 .table:has(.agent-robot-tile) .cell-sub code { font-family: var(--f-body); font-size: inherit; background: none; padding: 0; color: var(--mute); }
 .guide-label { text-transform: uppercase; }
+
+/* Pole pro zadání (0.42.0): jedna karta jako u moderních AI nástrojů – text nahoře, pod ním
+   lišta s výběrem agenta, režimem, projektem a složkou, vpravo Spustit. Agent se vybírá
+   v nabídce s hledáním přímo z lišty, ne z rozbalovacího seznamu nad polem. */
+.launch, .home-desk .launch { overflow: visible; }
+.launch .launch-compose { position: relative; margin: 0; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); transition: border-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.launch .launch-compose:focus-within { border-color: color-mix(in srgb, var(--action) 45%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--action) 12%, transparent); }
+.launch .launch-prompt { min-height: 112px; padding: 14px 16px 6px; font-size: 17px; line-height: 1.55; resize: none; background: transparent; }
+.launch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px; }
+.launch .launch-controls { flex: 1 1 auto; min-width: 0; padding: 0; gap: 8px; }
+.lpick-btn { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 10px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper); color: var(--ink); font: 500 14px/1 var(--f-body); white-space: nowrap; cursor: pointer; transition: background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease); }
+.lpick-btn:hover, .lpick-btn[aria-expanded='true'] { border-color: var(--ink-2); background: var(--line-2); }
+.lpick-btn :is(.logo, .glyph) { width: 16px; height: 16px; }
+.lpick-chev { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--mute); transition: rotate var(--motion-response) var(--ease); }
+.lpick-btn[aria-expanded='true'] .lpick-chev { rotate: 180deg; }
+.launch .launch-kbd { display: inline-flex; gap: 2px; padding: 0; background: none; box-shadow: none; color: var(--mute); }
+.launch .launch-kbd kbd { padding: 3px 6px; border-radius: var(--r-sm); background: var(--line-2); color: var(--ink-2); font-size: 12px; }
+.launch .launch-go { height: 40px; }
+.launch .launch-note { margin: 0 12px 6px; font-size: 12px; color: var(--mute); }
+.launch .launch-note:empty { display: none; }
+.lpick-pop { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: min(560px, 100%); max-height: min(440px, 62vh); overflow: auto; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); box-shadow: 0 24px 48px -16px rgb(16 16 20 / .28); animation: lpick-in var(--motion-enter) var(--ease) both; }
+.lpick-pop[hidden] { display: none; }
+@keyframes lpick-in { from { opacity: 0; transform: translateY(-4px); } }
+.lpick-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; margin-bottom: 8px; border-radius: var(--r-full); background: var(--paper); color: var(--mute); }
+.lpick-search .icon { width: 16px; height: 16px; }
+.lpick-search input { flex: 1; min-width: 0; height: 40px; padding: 0; border: 0; background: none; box-shadow: none; color: var(--ink); font-size: 14px; }
+.lpick-search input:focus { box-shadow: none; outline: none; }
+.lpick-search:focus-within { box-shadow: inset 0 0 0 1px var(--action); }
+.lpick-pop .launch-agents { display: grid; gap: 12px; }
+.lpick-pop .launch-group { display: grid; gap: 4px; }
+.lpick-pop .launch-group[hidden] { display: none; }
+.lpick-pop .launch-group-label { padding: 0 12px; font-size: 12px; color: var(--mute); }
+.lpick-pop .launch-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
+.lpick-pop .lchip { width: 100%; justify-content: flex-start; height: 40px; padding: 0 12px; border-color: transparent; background: transparent; color: var(--ink); }
+.lpick-pop .lchip[hidden] { display: none; }
+.lpick-pop .lchip:is(:hover, :focus-visible) { background: var(--line-2); border-color: transparent; }
+.lpick-pop .lchip[aria-checked='true'] { background: color-mix(in srgb, var(--action) 9%, var(--card)); color: var(--action); border-color: transparent; }
+.lpick-empty { margin: 8px 12px; font-size: 14px; color: var(--mute); }
+@media (max-width: 560px) {
+  .lpick-pop .launch-chips { grid-template-columns: 1fr; }
+  .launch .launch-kbd { display: none; }
+  .launch-bar .launch-go { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .lpick-pop { animation: none; } }
+
+/* Pozdrav na Přehledu jako panel s robotem: robot ukazuje stav všech agentů (home-studio.js). */
+.home-desk .home-intro { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; max-width: 800px; margin: 8px auto 24px; padding: 20px 28px 20px 20px; border-radius: var(--r-xl); background: color-mix(in srgb, var(--action) 5%, var(--card)); border: 1px solid color-mix(in srgb, var(--action) 12%, var(--line-2)); text-align: left; }
+.home-robot, .home-robot .robot { display: block; width: 96px; height: 100px; }
+.home-intro-text { min-width: 0; }
+.home-desk .home-intro h2 { margin: 0 0 8px; font-size: clamp(28px, 2.6vw, 40px); }
+.home-desk .home-intro p { margin: 0; max-width: 56ch; }
+@media (max-width: 560px) {
+  .home-desk .home-intro { grid-template-columns: 64px minmax(0, 1fr); gap: 16px; padding: 16px; }
+  .home-robot, .home-robot .robot { width: 64px; height: 68px; }
+  .home-desk .home-intro h2 { font-size: 26px; }
+}
+
+/* Plovoucí robot s radou (robot-guide.js): mimo tok stránky, nikdy přes obsah nadpisů. */
+.robot-guide { display: none; }
+.robot-float { position: fixed; z-index: 45; right: 24px; bottom: 24px; display: grid; justify-items: end; gap: 12px; pointer-events: none; }
+.robot-float[hidden] { display: none; }
+.robot-float > * { pointer-events: auto; }
+.robot-fab { display: grid; place-items: center; width: 64px; height: 64px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--card); box-shadow: 0 12px 28px -12px rgb(16 16 20 / .35); cursor: pointer; transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.robot-fab:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px rgb(16 16 20 / .4); }
+.robot-fab .guide-robot, .robot-fab .robot { width: 48px; height: 50px; }
+.robot-bubble { position: relative; width: min(320px, calc(100vw - 48px)); padding: 16px 16px 12px 18px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); box-shadow: 0 24px 48px -16px rgb(16 16 20 / .3); animation: lpick-in var(--motion-enter) var(--ease) both; }
+.robot-bubble[hidden] { display: none; }
+.robot-bubble::after { content: ''; position: absolute; right: 26px; bottom: -7px; width: 12px; height: 12px; background: var(--card); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); rotate: 45deg; }
+.robot-bubble strong { display: block; margin-top: 4px; font-size: 16px; font-weight: 500; line-height: 1.35; }
+.robot-bubble p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--mute); }
+.robot-bubble-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.robot-bubble-close { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--line-2); color: var(--ink-2); font-size: 18px; cursor: pointer; }
+@media (max-width: 880px) {
+  .robot-float { right: 16px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px); }
+  .robot-fab { width: 52px; height: 52px; }
+  .robot-fab .guide-robot, .robot-fab .robot { width: 38px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .robot-bubble { animation: none; } .robot-fab { transition: none; } }
+
+/* Levý panel jako plovoucí deska se zaoblenými rohy a odstupem od kraje okna (ne useknutý). */
+@media (min-width: 881px) {
+  .shell { grid-template-columns: 248px minmax(0, 1fr); }
+  .sidebar { top: 12px; height: calc(100dvh - 24px); margin: 12px 0 12px 12px; border: 1px solid var(--line-2); border-radius: var(--r-xl); }
+  html.is-desktop .sidebar { top: 44px; height: calc(100dvh - 56px); margin: 44px 0 12px 12px; }
+}
+/* Nabídka agentů: skupiny pod sebou (přebije starší dvousloupcové rozložení .launch-agents). */
+.launch .lpick-pop .launch-agents { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* Lišta: volby se zalomí uvnitř své části, Spustit zůstane vpravo na prvním řádku. */
+.launch .launch-bar { flex-wrap: nowrap; align-items: flex-start; }
+.launch .launch-controls { flex: 1 1 auto; flex-wrap: wrap; }
+.launch .launch-kbd { display: none; }
+.launch .launch-bar .launch-go { flex: none; margin-left: auto; }
+@media (max-width: 560px) { .launch .launch-bar { flex-wrap: wrap; } .launch .launch-controls { order: 3; flex-basis: 100%; } }
+/* V tmavém vzhledu by robot splýval s kartou: tělo světlejší, obrys zřetelnější. */
+html[data-theme='dark'] .robot-shell, html[data-theme='dark'] .robot-torso { fill: color-mix(in srgb, var(--persona) 42%, var(--card)); }
+html[data-theme='dark'] .robot-shell { stroke: color-mix(in srgb, var(--persona) 60%, var(--card)); }
+html[data-theme='dark'] .robot-face { fill: #101016; }

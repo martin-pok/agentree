@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.42.0 – 2026-10-08 · Pohodlnější zadávání práce, robot jen tam, kde pomáhá
+
+- **Pole pro zadání jako u moderních AI nástrojů.** Agent se vybírá tlačítkem přímo v liště pole (Claude Code ▾): nabídka s hledáním, šipkami, Enterem a Esc, rozdělená na agenty na tomto počítači a na webu. Režim, projekt a složka jsou v téže liště hned pod textem, Spustit vpravo (zkratka v popisku tlačítka). Žádné rozbalování „Možností zadání“. Ověřeno automatickým testem v Chromiu i WebKitu (`npm run qa:studio`): výběr, hledání, klávesnice, klik mimo, zachovaný koncept a skutečné odeslání zadání.
+- **Robot jen tam, kde pomáhá.** Na Přehledu sedí v panelu u pozdravu a ukazuje stav všech agentů najednou (zamává, když na tebe někdo čeká; píše, když agenti pracují) – věta pod nadpisem říká totéž slovy. Na ostatních stránkách už není pruh přes obsah: vpravo dole je malý plovoucí robot, který radu ke stránce nabídne jednou sám a pak na klepnutí nebo najetí myší. Nekoliduje s nadpisy (dřív v Nastavení zasahoval do obsahu).
+- **Levý panel se zaoblenými rohy** a odstupem od kraje okna, i v aplikaci pro Mac.
+- **Robot v tmavém vzhledu** má světlejší tělo, aby nesplýval s kartou.
+
 ## 0.41.0 – 2026-10-08 · Nový vzhled s roboty, nové logo a písmo Satoshi
 
 - **Pracovní plocha místo nástěnky.** Přehled začíná jednou otázkou „Co dnes posuneme dál?“ a polem pro zadání. Výběr agenta a podrobné volby jsou o klepnutí dál, rozhodnutí, která čekají na tebe, hned pod tím, živí agenti jako karty a statistiky dne po rozbalení „Průběh dne a spotřeba“.

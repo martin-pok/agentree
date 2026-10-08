@@ -137,7 +137,7 @@ function mount(el) {
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
   workspace.className = 'home-workspace';
-  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-eyebrow">${tr('TVŮJ PRACOVNÍ PROSTOR')}</span><h2>${tr('Co dnes posuneme dál?')}</h2><p>${tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.')}</p></header></div><aside class="home-live" aria-label="${tr('Právě teď')}"><h2>${tr('Právě teď')}</h2></aside>`;
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}"><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
   desk.append(el.querySelector('[data-launch]'), el.querySelector('[aria-labelledby="dec-h"]'));

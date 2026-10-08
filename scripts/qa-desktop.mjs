@@ -600,7 +600,6 @@ for (const engine of engines) {
     server.app.datastore.data.settings.avatar = 7;
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.waitForFunction(() => document.querySelector('[data-face]')?.dataset.face === '7');
-    await page.locator('.studio-options > summary').click();
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
