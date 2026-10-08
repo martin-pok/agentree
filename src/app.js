@@ -47,6 +47,7 @@ import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
+import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -315,7 +316,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
   // který aplikace spuštěná z Finderu jinak nevidí – přepis se pak najde a proces se spáruje.
   const bezici = createBeziciAgenti({ store });
+  // Poslední výpis procesů agentů – podle něj se pozná, že konverzace neběží v otevřeném Terminálu
+  // (odpověď z aplikace, src/odpoved.js). null = výpis zatím nebyl nebo se nepodařil.
+  let posledniProcesy = null;
   async function beziciAgenti(procesy) {
+    posledniProcesy = Array.isArray(procesy) ? procesy.map((p) => ({ runtime: p.runtime, cwd: p.cwd })) : null;
     for (const p of procesy || []) {
       const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
       if (!domov || !path.isAbsolute(domov)) continue;
@@ -926,6 +931,30 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       handoff: plan.handoff || null,
       ...(dry ? { dry: true, plan: { ...publicPlan, argv, command } } : {}),
     };
+  }
+
+  // Odpověď agentovi z aplikace (src/odpoved.js): konverzace Claude Code pokračuje na pozadí.
+  function kontextOdpovedi() {
+    const vypisOk = connectors.processes?.status?.().state !== 'error';
+    return { procesy: config.processes && vypisOk ? posledniProcesy : null, behy: runs.list(), claude: launchEnv.bins?.claude || null };
+  }
+  function muzeOdpovedet(id) {
+    return lzeOdpovedet(store.sessions.get(id), kontextOdpovedi());
+  }
+  async function odpovedet(id, input) {
+    const s = store.sessions.get(id);
+    if (!s) return { status: 404, error: ui('Konverzace nenalezena.') };
+    if (!config.launchAgents) return { status: 422, error: ui('Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.') };
+    const gate = locked('launchBackground');
+    if (gate) return gate;
+    const r = planOdpovedi(s, input, kontextOdpovedi());
+    if (!r.ok) return { status: r.status, error: r.error, field: r.field, kod: r.kod };
+    const plan = r.plan;
+    if (dry) return { ok: true, dry: true, plan: { argv: plan.argv, cwd: plan.cwd } };
+    const started = runs.start({ agent: plan.agent, label: plan.label, argv: plan.argv, cwd: plan.cwd, prompt: plan.prompt, sessionId: plan.sessionId, projectId: null });
+    if (started.status === 'failed') return { status: 502, error: ui('{0} se nepodařilo spustit: {1}', plan.label, started.error) };
+    const { logFile, ...run } = started;
+    return { ok: true, run };
   }
 
   // Kódex spuštěný na pozadí nemá předem známé ID session – spáruje se podle složky a času startu.
@@ -1563,7 +1592,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, push, pomocnik, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, push, pomocnik, odpovedet, muzeOdpovedet, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

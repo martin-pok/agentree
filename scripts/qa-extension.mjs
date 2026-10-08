@@ -36,6 +36,15 @@ try {
           window.chrome = {
             storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
+              // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují.
+              if (m.type === 'agenteeq:prehled') return ['paired', 'outdated'].includes(state) && fixture.paired ? {
+                zdravi: { stav: 'pozor', veta: 'Na tvé rozhodnutí čeká agentů: 1', pracuje: 2, cekaNaTebe: 1, selhalo: 0, limit: 0 },
+                rozhodnuti: [{ id: 'claude-code:a1', title: 'Migrace API na v2', app: 'Claude Code', reason: 'Čeká na povolení: Bash', status: 'needs_input', at: Date.now() - 60000 }],
+                pracuji: [
+                  { id: 'codex:b2', title: 'Refaktor platebního modulu', app: 'Codex', reason: 'Upravuje src/platby.js', at: Date.now() - 5000 },
+                  { id: 'claude-code:c3', title: 'Testy pro přihlášení', app: 'Claude Code', reason: 'Spouští testy', at: Date.now() - 12000 },
+                ],
+              } : null;
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
@@ -68,10 +77,10 @@ try {
         }
         if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
           // Nahoře skutečný počet pracujících agentů a otevřených konverzací z background workeru, ne výmysl.
-          const [pracuje, otevreno] = { paired: [1, 1], outdated: [1, 1], overeni: [1, 2], 'overeni-chyby': [2, 2] }[state];
+          const [pracuje, otevreno] = { paired: [3, 1], outdated: [3, 1], overeni: [1, 2], 'overeni-chyby': [2, 2] }[state];
           assert.equal(await page.locator('#hero-num').textContent(), String(pracuje), `${state}: počet pracujících agentů`);
           assert.equal(await page.locator('#headline').textContent(), pracuje === 1 ? 'agent právě pracuje' : 'agenti právě pracují');
-          assert.equal(await page.locator('#sub').textContent(), otevreno === 1 ? '1 otevřená konverzace' : '2 otevřené konverzace');
+          assert.equal(await page.locator('#sub').textContent(), ['paired', 'outdated'].includes(state) ? 'Na tvé rozhodnutí čeká agentů: 1' : otevreno === 1 ? '1 otevřená konverzace' : '2 otevřené konverzace');
           // Odpovídající agent ukazuje, jak dlouho už odpovídá.
           assert.match(await page.locator('#konverzace').innerText(), /odpovídá · 0:4\d/);
         }
@@ -151,6 +160,17 @@ try {
           assert.match(await page.locator('.radek--tato .st').textContent(), state === 'overeni' ? /sledování této služby je vypnuté/ : /odpovídá/);
         }
         if (state === 'outdated') assert.equal(await page.locator('#outdated').isVisible(), true);
+        if (state === 'paired') {
+          // Agenti z aplikace: věta o stavu, kdo čeká a kdo pracuje; číslo nahoře sčítá i chat v prohlížeči.
+          assert.equal(await page.locator('#agenti').isVisible(), true, 'přehled agentů je vidět');
+          assert.equal(await page.locator('#rozhodnuti .agent').count(), 1);
+          assert.equal(await page.locator('#pracuji .agent').count(), 2);
+          assert.match(await page.locator('#rozhodnuti .agent').getAttribute('href'), /#\/agent\/claude-code%3Aa1$/);
+          // ChatGPT test výš vypnul, nahoře tedy zůstanou jen dva agenti z aplikace.
+          assert.equal(await page.locator('#hero-num').textContent(), '2');
+          const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
+          assert.ok(vyska <= 600, `${engine} ${theme} ${state}: okno má ${Math.round(vyska)} px`);
+        }
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png`, fullPage: true });
         results.push({ engine, theme, state, passed: true }); await page.close();

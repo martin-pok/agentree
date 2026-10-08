@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.45.0 – 2026-10-08 · Odpověď agentovi z aplikace, nové rozšíření pro Chrome
+
+- **Odpověz agentovi přímo z Agenteeq.** V detailu konverzace Claude Code je pod přepisem pole „Odpovědět agentovi“. Vybereš, jestli agent smí jen plánovat, nebo i upravovat soubory, a odešleš (⌘↵). Agent pokračuje v téže konverzaci na pozadí (`claude -p --resume`) a průběh vidíš v přehledu – nemusíš otevírat Terminál ani aplikaci Claude. Odpověď jde jen z Macu, na kterém agent běží, nikdy z telefonu. Když to nejde (konverzace právě běží v Terminálu, ve stejné složce pracuje jiný Claude Code, chybí program `claude`, nepodařilo se zjistit, co na počítači běží), pole se neukáže a místo něj je věta proč a tlačítko k pokračování tam, kde agent běží. Codex a další nástroje zatím ne.
+- **Rozšíření pro Chrome jako malý Agenteeq.** Okno rozšíření má vzhled aplikace (stejné barvy, písmo a logo s hlavou robota, světlý i tmavý režim) a nově ukazuje agenty na tvém počítači, ne jen chaty v prohlížeči: nahoře kolik agentů pracuje celkem a jednou větou jejich stav, pod tím kdo čeká na tvé rozhodnutí a kdo pracuje, každý s robotem v barvě stavu (pracující mrká a kývá anténou, čekající bliká). Klepnutím se agent otevře v Agenteeq. Stav se obnovuje každých 5 s. Rozšíření dostává jen název, nástroj a krátký popis činnosti – žádný přepis ani cesty ke složkám.
+- **Přesnější hláška u konverzace, kterou nejde obnovit.** Detekovaný proces Claude Code bez přepisu už netvrdí, že „odpovídat jde jen v Claude Code“.
+
 ## 0.44.0 – 2026-10-08 · Stav agentů na první pohled, jednotný vzhled, dovednosti ve vyhledávání
 
 - **Stav agentů vedle rozhodnutí.** Řádek „Potřebuje tvé rozhodnutí“ se na širší obrazovce dělí na dva boxy. Vlevo decentní karta s tím, co čeká na tebe; vpravo nový box **Stav agentů**: jedna věta s barevnou tečkou (vše v pořádku / na rozhodnutí čeká N agentů / problém u N agentů), počty pracuje · čeká na tebe · selhalo · limit (každý vede na odpovídající filtr) a nanejvýš tři problémy s odkazem. Když se nepodaří zjistit, co na počítači běží, box to řekne – nikdy to nevydává za „nic neběží“. Oba boxy končí na stejné spodní hraně.

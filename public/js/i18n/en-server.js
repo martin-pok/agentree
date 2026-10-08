@@ -3,6 +3,20 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Agentovi jde odpovědět jen z Macu, na kterém běží.": "You can only reply to the agent from the Mac it runs on.",
+  "Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.": "Replying from Agenteeq currently works only in Claude Code conversations.",
+  "Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.": "Claude Code can’t resume this conversation. Continue it where it runs.",
+  "Na tomto počítači se nenašel program claude.": "The claude program wasn’t found on this computer.",
+  "U konverzace chybí složka, ve které běžela.": "The folder this conversation ran in is unknown.",
+  "Agent ještě pracuje na předchozím zadání z Agenteeq. Počkej, až doběhne.": "The agent is still working on the previous task from Agenteeq. Wait until it finishes.",
+  "Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.": "Couldn’t check whether the conversation is running elsewhere. Better reply in Terminal.",
+  "V této složce právě běží Claude Code. Odpověz tam, ať se konverzace nerozdvojí.": "Claude Code is running in this folder right now. Reply there so the conversation doesn’t split.",
+  "Odpověď je moc dlouhá.": "The reply is too long.",
+  "Problém u agentů: {0}": "Agents with a problem: {0}",
+  "Na tvé rozhodnutí čeká agentů: {0}": "Agents waiting for your decision: {0}",
+  "Nepodařilo se zjistit, co na počítači běží": "Couldn’t find out what is running on this computer",
+  "Vše běží v pořádku": "Everything is running fine",
+  "V pořádku, nikdo nepracuje": "All fine, nobody is working",
   // src/alerts.js
   "{0}: spuštění selhalo": "{0}: start failed",
   "{0} potřebuje tvé rozhodnutí": "{0} needs your decision",

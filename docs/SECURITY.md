@@ -234,3 +234,12 @@ operátora a rozhraní by o té adrese tvrdilo, že je „v síti Tailscale“.
 
 Bez `tailscale serve` jede aplikace po `http://` uvnitř tailnetu – v prohlížeči funguje normálně,
 jen ji telefon neuloží na plochu.
+
+## Odpověď agentovi z aplikace (od 0.45.0)
+
+`POST /api/sessions/:id/odpoved` pokračuje v konverzaci Claude Code na pozadí (`claude -p --resume <uuid> --permission-mode plan|acceptEdits -- <text>`) přes správce běhů (`src/runs.js`), stejně jako běh z pole pro zadání. Pravidla (`src/odpoved.js`):
+
+- Jen z tohoto Macu (`zTohotoMacu`), telefon ji nemá v `remote-scope`.
+- Argumenty jdou procesu jako pole, nikdy přes shell; id konverzace musí být UUID, oprávnění jen `plan` nebo `acceptEdits`.
+- Odpověď se nepošle, když ve stejné složce běží proces Claude Code (konverzace by se rozdvojila), když se výpis procesů nepodařil (nepodařilo se zjistit ≠ nic neběží), ani když v konverzaci ještě pracuje běh z Agenteeq.
+- Codex zatím ne – syntaxi `codex exec resume` jsme neověřili na skutečném nástroji.

@@ -1,3 +1,4 @@
+import { prehledProRozsireni } from './prehled-rozsireni.js';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -326,7 +327,7 @@ export function createHttpServer(app, existingServer = null) {
   function unwrap(r) {
     if (r && typeof r.status === 'number' && r.error) {
       const extra = {};
-      for (const k of ['errors', 'field', 'upgrade']) if (r[k] !== undefined) extra[k] = r[k];
+      for (const k of ['errors', 'field', 'upgrade', 'kod']) if (r[k] !== undefined) extra[k] = r[k];
       throw new HttpError(r.status, r.error, extra);
     }
     return r;
@@ -507,7 +508,7 @@ export function createHttpServer(app, existingServer = null) {
       if (!session) throw new HttpError(jeProcesovyId(id) ? 410 : 404, jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.'));
       // Spárovaný telefon dostane jen souhrn – celý přepis zůstává na hostiteli (src/remote-scope.js).
       if (!zTohotoMacu(req)) return { session, transcript: [], prepisJenNaHostiteli: true };
-      return { session, transcript: store.transcript(id) };
+      return { session, transcript: store.transcript(id), odpoved: app.muzeOdpovedet(id) };
     }],
     ['GET', /^\/api\/sessions\/([^/]+)\/transcript$/, (_req, m, url) => {
       const id = decodeURIComponent(m[1]);
@@ -549,6 +550,12 @@ export function createHttpServer(app, existingServer = null) {
       const body = await readBody(req);
       app.extensionSeen();
       return app.takeWebHandoff(body && typeof body === 'object' ? body.site : null);
+    }, { token: true }],
+    // Okno rozšíření ukazuje stav agentů na tomto počítači (src/prehled-rozsireni.js).
+    ['POST', /^\/api\/extension\/prehled$/, async (req) => {
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      app.extensionSeen();
+      return prehledProRozsireni(store.list(), { procesyNevim: app.connectors.processes?.status?.().state === 'error' });
     }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {
@@ -832,6 +839,12 @@ export function createHttpServer(app, existingServer = null) {
     ['GET', /^\/api\/runs\/([\w-]+)\/log$/, (_req, m) => {
       if (!app.runs.get(m[1])) throw new HttpError(404, ui('Běh nenalezen.'));
       return { log: app.runs.tail(m[1], 16000) };
+    }],
+    // Odpověď agentovi z aplikace (src/odpoved.js) – jen z tohoto Macu, spouští proces.
+    ['POST', /^\/api\/sessions\/([^/]+)\/odpoved$/, async (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Agentovi jde odpovědět jen z Macu, na kterém běží.'));
+      const body = await readBody(req);
+      return unwrap(await app.odpovedet(sessionParam(m), body));
     }],
     ['POST', /^\/api\/sessions\/([^/]+)\/reply$/, async (req, m) => {
       const body = await readBody(req);

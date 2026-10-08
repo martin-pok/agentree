@@ -563,3 +563,11 @@ html[data-theme] .home-live .pb-strip { margin-inline: 0; padding-inline: 0; bor
 html[data-theme] .launch::before { content: none; }
 .zdravi { container-type: inline-size; }
 @container (max-width: 440px) { .zdravi-pocty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Odpověď agentovi (detail konverzace): stejná karta jako pole pro zadání, s volbou oprávnění. */
+.reply--agent { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); }
+.reply--agent .reply-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+.reply--agent textarea { border-radius: var(--r-md); }
+.reply--agent .reply-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.reply--agent .reply-actions .btn--primary { margin-left: auto; }
+.reply--agent .reply-hint { margin: 0; }

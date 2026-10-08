@@ -95,6 +95,15 @@
       'Uvidíš, jestli agent v ChatGPT, Claude.ai nebo Gemini pracuje a kolik má konverzace zpráv.': 'See whether the agent in ChatGPT, Claude.ai or Gemini is working and how many messages the conversation has.',
       'Spustíš službu z Agenteeq a zadání už čeká v poli zprávy. Odešleš ho sám.': 'Start a service from Agenteeq and your prompt is already waiting in the message box. You send it yourself.',
       'Stáhnout Agenteeq': 'Get Agenteeq',
+      // Agenti na tomto počítači
+      'Agenti na tomto počítači': 'Agents on this computer',
+      'Čeká na tebe': 'Waiting for you',
+      'Pracují': 'Working',
+      'Chaty v prohlížeči': 'Chats in the browser',
+      'Agent': 'Agent',
+      'Pracuje': 'Working',
+      'Selhalo': 'Failed',
+      'Narazil na limit': 'Hit a limit',
       // Patička
       'Otevřít Agenteeq': 'Open Agenteeq',
     },
