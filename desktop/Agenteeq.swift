@@ -169,9 +169,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
 
     func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "point.3.connected.trianglepath.dotted", accessibilityDescription: "Agenteeq")
+        statusItem.button?.image = AppDelegate.robotIkonaListy()
         statusItem.button?.toolTip = "Agenteeq – zobrazit přehled"
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
+    }
+
+    // Ikona v horní liště: hlava robota z public/brand/agenteeq-mark.svg (mřížka 48 jednotek) jako
+    // šablona, kterou macOS sám obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
+    // Kulička antény je proti logu o kousek větší a stopka užší, aby anténa v 18 bodech nesplynula v čáru.
+    static func robotIkonaListy() -> NSImage {
+        let ikona = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
+            let s: CGFloat = 18.0 / 48.0
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: NSRect(x: 22.6 * s, y: 4.5 * s, width: 2.8 * s, height: 9 * s), xRadius: 1.4 * s, yRadius: 1.4 * s).fill()
+            NSBezierPath(ovalIn: NSRect(x: 20.2 * s, y: 0.7 * s, width: 7.6 * s, height: 7.6 * s)).fill()
+            let hlava = NSBezierPath(roundedRect: NSRect(x: 5 * s, y: 12 * s, width: 38 * s, height: 31 * s), xRadius: 12 * s, yRadius: 12 * s)
+            for x in [14.5, 28.0] as [CGFloat] {
+                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 21.5 * s, width: 5.5 * s, height: 11 * s), xRadius: 2.75 * s, yRadius: 2.75 * s))
+            }
+            hlava.windingRule = .evenOdd
+            hlava.fill()
+            return true
+        }
+        ikona.isTemplate = true
+        ikona.accessibilityDescription = "Agenteeq"
+        return ikona
     }
 
     func buildLoading() {

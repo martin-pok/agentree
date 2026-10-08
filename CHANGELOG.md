@@ -7,6 +7,8 @@
 - **Robot jen tam, kde pomáhá.** Na Přehledu sedí v panelu u pozdravu a ukazuje stav všech agentů najednou (zamává, když na tebe někdo čeká; píše, když agenti pracují) – věta pod nadpisem říká totéž slovy. Na ostatních stránkách už není pruh přes obsah: vpravo dole je malý plovoucí robot, který radu ke stránce nabídne jednou sám a pak na klepnutí nebo najetí myší. Nekoliduje s nadpisy (dřív v Nastavení zasahoval do obsahu).
 - **Levý panel se zaoblenými rohy** a odstupem od kraje okna, i v aplikaci pro Mac.
 - **Robot v tmavém vzhledu** má světlejší tělo, aby nesplýval s kartou.
+- **Ikona v horní liště Macu je hlava robota** místo starého systémového symbolu (trojúhelník s tečkami). Kreslí se jako šablona, takže ji macOS sám obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
+- **Nová načítací scéna.** Při spuštění a při načítání dat je uprostřed ztlumená hlava robota a přes ni přejíždí jemný fialový odlesk; místo starého trojzubce se žlutou tečkou. Plocha scény je stejná jako světlé rozhraní, takže přechod do aplikace je jen prolnutí. S omezeným pohybem zůstane robot v klidu.
 
 ## 0.41.0 – 2026-10-08 · Nový vzhled s roboty, nové logo a písmo Satoshi
 

@@ -1,26 +1,14 @@
 /*
- * Agenteeq – načítací animace značky.
+ * Agenteeq – načítací scéna: hlava robota (tvar z public/brand/agenteeq-mark.svg).
  *
- * Jeden souvislý příběh ve smyčce 3,2 s, beze střihu:
- *   1. Impulz – mosazný kořen (ty) se jemně nadechne.
- *   2. Růst – kmen vyroste dolů; v místě rozvětvení z něj souměrně vyrazí obě větve.
- *   3. Příjezd – každý uzel (agent) naskočí s jemným dopružením přesně ve chvíli,
- *      kdy k němu jeho tah doroste. Žádné poloprůhledné šedé mezistavy.
- *   4. Klid – smaragdové halo rozkvete (práce běží), body po stranách se rozsvítí
- *      a celá značka se sotva znatelně nadechuje.
- *   5. Návrat – uzly zhasnou, větve se stáhnou do kmene a kmen do kořene. Smyčka
- *      končí ve stejném stavu, v jakém začíná, takže nový nádech na ni navazuje.
- *
- * Animuje se jen transform, opacity a stroke-dashoffset. Kulaté zakončení tahu
- * nulové délky by v klidu nakreslilo tečku, proto je složený tah navíc skrytý
- * (opacity 0) – objeví se až s prvním pixelem růstu. Barvy jen z tokenů
- * v public/styles.css :root.
+ * Robot stojí uprostřed ztlumený a přes něj jednou za 2,4 s přejede šikmý fialový odlesk,
+ * oříznutý přesně tvarem hlavy, antény a výřezy očí. Mezi průjezdy se robot sotva znatelně
+ * nadechne. Animuje se jen transform a opacity; žádné rozmazání ani filtry, takže to běží
+ * hladce i v okně pláště hned po spuštění.
  */
 
 .loader-wrap {
-  --lm-cycle: 3.2s;
-  --lm-ease: cubic-bezier(.65, 0, .35, 1);
-  --lm-pop: cubic-bezier(.34, 1.56, .64, 1);
+  --lr-cyklus: 2.4s;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -38,179 +26,53 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: min(100%, 360px);
-  height: 192px;
-  overflow: hidden;
-  isolation: isolate;
-  border: 1px solid color-mix(in srgb, var(--ivory) 12%, transparent);
-  border-radius: var(--r-lg);
-  background: var(--backdrop);
-  color: var(--ivory);
+  width: 96px;
+  height: 96px;
+  color: var(--ink);
 }
+/* Fialové světlo pod robotem dýchá spolu s odleskem. */
 .loader-scene::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 46% 62% at 50% 66%, color-mix(in srgb, var(--teal) 18%, transparent), transparent 90%);
-  pointer-events: none;
-}
-.loader-stage-line {
-  position: absolute;
-  bottom: 32px;
-  left: 16%;
-  right: 16%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ivory) 18%, transparent) 20%, color-mix(in srgb, var(--ivory) 18%, transparent) 80%, transparent);
-}
-/* Body po stranách jsou další agenti na scéně: rozsvítí se spolu s halem, ne nezávisle. */
-.loader-orbit {
-  position: absolute;
-  top: 80px;
-  width: 6px;
-  height: 6px;
+  inset: -40px;
   border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--teal) 65%, transparent);
-  opacity: .24;
-  animation: lm-orbit var(--lm-cycle) var(--lm-ease) infinite;
-}
-.loader-orbit--left { left: 18%; }
-.loader-orbit--right { right: 18%; animation-delay: .16s; }
-
-.loader-mark {
-  position: relative;
-  width: 104px;
-  height: 104px;
-  flex: none;
-  transform-origin: 50% 50%;
-  animation: lm-breathe var(--lm-cycle) var(--lm-ease) infinite;
-}
-
-.loader-halo {
-  position: absolute;
-  inset: -20px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--teal) 60%, transparent) 0%, transparent 70%);
-  opacity: 0;
-  transform: scale(.86);
-  transform-origin: 50% 50%;
-  animation: lm-halo var(--lm-cycle) var(--lm-ease) infinite;
+  background: radial-gradient(closest-side, color-mix(in srgb, #5254d8 22%, transparent), transparent);
+  opacity: .35;
+  animation: lr-svetlo var(--lr-cyklus) cubic-bezier(.45, 0, .55, 1) infinite;
   pointer-events: none;
 }
 
-.loader-svg {
+.loader-robot {
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: 80px;
+  height: 80px;
   display: block;
   overflow: visible;
-  color: var(--ivory);
+  transform-origin: 50% 60%;
+  animation: lr-nadech var(--lr-cyklus) cubic-bezier(.45, 0, .55, 1) infinite;
 }
-
-.lm-root {
-  fill: var(--brass);
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: lm-root var(--lm-cycle) var(--lm-ease) infinite;
+.lr-zaklad { fill: currentColor; opacity: .18; }
+.lr-lesk {
+  transform: translateX(0);
+  animation: lr-lesk var(--lr-cyklus) cubic-bezier(.65, 0, .35, 1) infinite;
 }
-
-.lm-stroke {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  /* Mezera delší než tah: při 100 100 začíná další úsek přesně na konci tahu a kulaté zakončení
-     nulové délky tam nakreslí osamělou tečku (vidět na konci větví v okamžiku jejich startu). */
-  stroke-dasharray: 100 120;
-  stroke-dashoffset: 100;
-  opacity: 0;
-}
-.lm-stem { animation: lm-stem var(--lm-cycle) linear infinite; }
-.lm-branch { animation: lm-branch var(--lm-cycle) linear infinite; }
-
-.lm-node {
-  fill: currentColor;
-  opacity: 0;
-  transform: scale(0);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.lm-node-b { animation: lm-node-b var(--lm-cycle) linear infinite; }
-.lm-node-a, .lm-node-c { animation: lm-node-ac var(--lm-cycle) linear infinite; }
 
 .loader-text { color: var(--ink-2); font: 500 14px/1.5 var(--f-body, system-ui, sans-serif); }
 
-/* Časová osa (% z 3,2 s):
-   kořen 0–12 · kmen 4–20 · větve 9–26 (začnou, když je kmen míjí) · uzel kmene 19–25 ·
-   uzly větví 25–31 · halo 26–84 · návrat: uzly větví 70–75, větve 74–84, uzel kmene 80–85,
-   kmen 84–94 · 94–100 jen kořen, nádech k další smyčce. */
-@keyframes lm-root {
-  0%   { transform: scale(1); animation-timing-function: var(--lm-ease); }
-  5%   { transform: scale(1.14); animation-timing-function: var(--lm-ease); }
-  12%  { transform: scale(1); }
-  100% { transform: scale(1); }
+/* Odlesk projede za 62 % cyklu zleva doprava (pás 30 jednotek z −30 až za pravý okraj 48),
+   zbytek je klid, aby pohyb nepůsobil zběsile. */
+@keyframes lr-lesk {
+  0%   { transform: translateX(0); }
+  62%  { transform: translateX(92px); }
+  100% { transform: translateX(92px); }
 }
-
-@keyframes lm-stem {
-  0%    { stroke-dashoffset: 100; opacity: 0; }
-  3.9%  { stroke-dashoffset: 100; opacity: 0; }
-  4%    { stroke-dashoffset: 100; opacity: 1; animation-timing-function: var(--lm-ease); }
-  20%   { stroke-dashoffset: 0;   opacity: 1; }
-  84%   { stroke-dashoffset: 0;   opacity: 1; animation-timing-function: var(--lm-ease); }
-  94%   { stroke-dashoffset: 100; opacity: 1; }
-  94.1% { stroke-dashoffset: 100; opacity: 0; }
-  100%  { stroke-dashoffset: 100; opacity: 0; }
+@keyframes lr-svetlo {
+  0%, 100% { opacity: .3; }
+  36%      { opacity: .9; }
 }
-
-@keyframes lm-branch {
-  0%    { stroke-dashoffset: 100; opacity: 0; }
-  8.9%  { stroke-dashoffset: 100; opacity: 0; }
-  9%    { stroke-dashoffset: 100; opacity: 1; animation-timing-function: var(--lm-ease); }
-  26%   { stroke-dashoffset: 0;   opacity: 1; }
-  74%   { stroke-dashoffset: 0;   opacity: 1; animation-timing-function: var(--lm-ease); }
-  84%   { stroke-dashoffset: 100; opacity: 1; }
-  84.1% { stroke-dashoffset: 100; opacity: 0; }
-  100%  { stroke-dashoffset: 100; opacity: 0; }
-}
-
-@keyframes lm-node-b {
-  0%, 19% { opacity: 0; transform: scale(0); }
-  19.1%   { opacity: 1; transform: scale(.3); animation-timing-function: var(--lm-pop); }
-  25%     { opacity: 1; transform: scale(1); }
-  80%     { opacity: 1; transform: scale(1); animation-timing-function: var(--lm-ease); }
-  85%     { opacity: 1; transform: scale(0); }
-  85.1%, 100% { opacity: 0; transform: scale(0); }
-}
-
-@keyframes lm-node-ac {
-  0%, 25% { opacity: 0; transform: scale(0); }
-  25.1%   { opacity: 1; transform: scale(.3); animation-timing-function: var(--lm-pop); }
-  31%     { opacity: 1; transform: scale(1); }
-  70%     { opacity: 1; transform: scale(1); animation-timing-function: var(--lm-ease); }
-  75%     { opacity: 1; transform: scale(0); }
-  75.1%, 100% { opacity: 0; transform: scale(0); }
-}
-
-@keyframes lm-halo {
-  0%, 26% { opacity: 0;   transform: scale(.86); }
-  42%     { opacity: .5;  transform: scale(1); }
-  72%     { opacity: .2;  transform: scale(1.05); }
-  86%     { opacity: 0;   transform: scale(1.1); }
-  100%    { opacity: 0;   transform: scale(.86); }
-}
-
-@keyframes lm-orbit {
-  0%, 28% { opacity: .24; transform: scale(1); }
-  42%     { opacity: 1;   transform: scale(1.4); }
-  72%     { opacity: .5;  transform: scale(1); }
-  88%, 100% { opacity: .24; transform: scale(1); }
-}
-
-@keyframes lm-breathe {
-  0%, 26% { transform: scale(1); }
-  52%     { transform: scale(1.025); }
-  80%, 100% { transform: scale(1); }
+@keyframes lr-nadech {
+  0%, 100% { transform: scale(1); }
+  36%      { transform: scale(1.02); }
 }
 
 /* ---------- Skeleton (karty, které se dopočítávají) ---------- */
@@ -245,20 +107,14 @@
 
 /* ---------- Omezený pohyb: statická značka, jen jemné prolnutí ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .loader-mark,
-  .lm-root,
-  .lm-stroke,
-  .lm-node-a,
-  .lm-node-b,
-  .lm-node-c,
-  .loader-halo,
-  .loader-orbit,
+  .loader-scene::before,
+  .loader-robot,
+  .lr-lesk,
   .skel-row::after {
     animation: none !important;
   }
-  .lm-stroke { stroke-dashoffset: 0; opacity: 1; }
-  .lm-node-a, .lm-node-b, .lm-node-c { opacity: 1; transform: none; }
-  .loader-halo { opacity: .16; transform: scale(1); }
+  /* Bez pohybu zůstane robot klidně zobrazený s odleskem uprostřed – pořád je zřejmé, že se načítá. */
+  .lr-lesk { transform: translateX(54px); opacity: .7; }
   .skel-row::after { transform: translateX(-150%); opacity: .4; }
   .loader-wrap { animation: loader-fade-in .3s ease-out both; }
 }
@@ -268,11 +124,11 @@
   to   { opacity: 1; }
 }
 
-/* ---------- Načítací scéna pláště pro Mac (public/nacitani.html) ----------
-   Okno ji ukáže hned po spuštění a drží ji, dokud rozhraní nenačte data. Leží přímo na „stole“
-   (--backdrop s jemným světlem z body::before), proto je text stavu světlý v obou režimech.
-   Rámeček scény by na stejně tmavém podkladu jen kreslil linku navíc. */
-.nacitani-stranka, .nacitani-stranka body { height: 100%; overflow: hidden; }
+/* ---------- Načítací scéna pláště pro Mac a Windows (public/nacitani.html) ----------
+   Okno ji ukáže hned po spuštění a drží ji, dokud rozhraní nenačte data. Má stejnou plochu jako
+   světlé rozhraní (#fafafa z workbench.css), takže přechod do aplikace je jen prolnutí bez záblesku. */
+.nacitani-stranka, .nacitani-stranka body { height: 100%; overflow: hidden; background: #fafafa; }
+.nacitani-stranka body::before { display: none; }
 .nacitani {
   display: flex;
   flex-direction: column;
@@ -288,8 +144,6 @@
   cursor: default;
 }
 .nacitani .loader-wrap { padding: 0; }
-.nacitani .loader-scene { overflow: visible; border-color: transparent; background: transparent; }
-/* Světlo pod značkou dobíhá do ztracena: na volné ploše by oříznutý přechod kreslil obdélník. */
-.nacitani .loader-scene::before { inset: -48px -24px; background: radial-gradient(closest-side at 50% 60%, color-mix(in srgb, var(--teal) 16%, transparent), transparent); }
-.nacitani .loader-text { color: color-mix(in srgb, var(--ivory) 76%, transparent); max-width: 420px; }
+.nacitani .loader-scene { color: #16141d; }
+.nacitani .loader-text { color: #5d5b66; max-width: 420px; }
 .nacitani .btn[hidden] { display: none; }
