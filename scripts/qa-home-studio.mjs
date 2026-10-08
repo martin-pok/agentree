@@ -174,6 +174,18 @@ try {
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${typ} ${r} ${w}px přetéká`);
         }
         await page.goto(`${demo.url}/#/prehled`);
+        await page.locator('.home-intro').waitFor();
+        // Jednotná šířka obsahu: pozdrav, pole pro zadání i sekce Přehledu sedí přesně mezi levou
+        // hranou nadpisu stránky a pravou hranou horní lišty – stejně jako každá jiná stránka.
+        const hrany = await page.evaluate(() => {
+          const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+          const levo = r('.page-title').left, pravo = r('.topbar').right;
+          return ['.home-intro', '.launch-compose', '.home-desk > section', '.home-live']
+            .filter((s) => r(s)?.width)
+            .map((s) => [s, Math.round(r(s).left - levo), Math.round(r(s).right - pravo)])
+            .filter(([, l, p]) => Math.abs(l) > 1 || Math.abs(p) > 1);
+        });
+        assert.deepEqual(hrany, [], `${typ} ${w}px: bloky Přehledu drží šířku obsahu`);
         await page.screenshot({ path: `${out}/${typ}-prehled-${w}.png` });
       }
       assert.deepEqual(errors, [], `${typ}: chyby v konzoli`);

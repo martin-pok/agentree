@@ -11,6 +11,7 @@ export const RELEASES = [
       'Najeď na robota agenta a řekne ti ve světlé bublině, co právě dělá. Bublina si sama najde místo, kde nic nezakryje.',
       'Když na tebe agent začne čekat nebo doběhne, jeho robot se jednou sám ozve.',
       'Klepni na robota u pozdravu – zamává, poskočí nebo nakloní hlavu. A občas zacituje kultovní film.',
+      'Přehled drží stejnou šířku obsahu jako ostatní stránky – pozdrav i pole pro zadání sedí s nadpisem.',
     ],
     en: {
       title: 'The robots talk',
@@ -18,6 +19,7 @@ export const RELEASES = [
         'Hover over an agent’s robot and it tells you in a light bubble what it is doing. The bubble finds a spot where it covers nothing.',
         'When an agent starts waiting for you or finishes, its robot speaks up once on its own.',
         'Click the robot next to the greeting – it waves, hops or tilts its head. And now and then it quotes a cult film.',
+        'The Overview keeps the same content width as every other page – the greeting and task field line up with the page title.',
       ],
     },
   },
