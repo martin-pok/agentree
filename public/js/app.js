@@ -587,7 +587,13 @@ const dovednostiHledani = { items: null, at: 0, nacita: false };
 function nactiDovednostiProHledani() {
   if (dovednostiHledani.nacita || Date.now() - dovednostiHledani.at < 60_000) return;
   dovednostiHledani.nacita = true;
-  api.skills().then((r) => { dovednostiHledani.items = r.skills || []; dovednostiHledani.at = Date.now(); palette.refresh(); })
+  api.skills().then((r) => {
+    const nove = r.skills || [];
+    const zmena = (dovednostiHledani.items || []).map((d) => d.id).join() !== nove.map((d) => d.id).join() || !dovednostiHledani.items;
+    dovednostiHledani.items = nove;
+    dovednostiHledani.at = Date.now();
+    if (zmena && nove.length) palette.refresh();
+  })
     .catch(() => {})
     .finally(() => { dovednostiHledani.nacita = false; });
 }

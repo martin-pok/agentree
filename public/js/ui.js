@@ -996,7 +996,8 @@ export function createPalette(getItems, onPick) {
     close,
     // Data, která dorazí později (dovednosti ze serveru), se do otevřené palety promítnou bez
     // ztráty rozepsaného dotazu.
-    refresh() { if (!root.hidden) render(); },
+    // Jen s rozepsaným dotazem: bez něj se pozdější data nezobrazují a překreslení by jen bliklo.
+    refresh() { if (!root.hidden && input.value.trim()) render(); },
     get isOpen() { return !root.hidden; },
   };
 }
