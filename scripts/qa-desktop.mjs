@@ -868,11 +868,11 @@ for (const engine of engines) {
         await page.locator('.set-main').waitFor();
         await page.setViewportSize({ width: 2528, height: 1390 });
         await page.waitForFunction(() => innerWidth === 2528 && Math.abs(document.querySelector('.set-main').getBoundingClientRect().width - 880) < 1);
-        const settingsCenter = await page.locator('.set-main').evaluate((el) => {
+        const [settingsCenter, rozvrzeni] = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
-          return Math.abs(box.left + box.width / 2 - innerWidth / 2);
+          return [Math.abs(box.left + box.width / 2 - innerWidth / 2), `left ${box.left}, margin ${getComputedStyle(el).marginLeft}, look ${document.documentElement.dataset.look}, scrollX ${scrollX}`];
         });
-        assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px)`);
+        assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px; ${rozvrzeni})`);
         await page.setViewportSize({ width: 1440, height: 1000 });
       }
       if (route === 'upozorneni') {
