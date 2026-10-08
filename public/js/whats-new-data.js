@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.39.0',
+    date: '2026-10-07',
+    title: 'Statistiky za 90 dní a 12 měsíců',
+    items: [
+      'Statistiky ukážou i posledních 90 dní a 12 měsíců. Agenteeq si od teď každý den ukládá souhrn tokenů, aplikací, modelů a složek, takže starší čísla už po 30 dnech nezmizí. Dny před začátkem ukládání v grafu chybí a aplikace to řekne.',
+    ],
+    en: {
+      title: 'Statistics for 90 days and 12 months',
+      items: [
+        'Statistics now cover the last 90 days and 12 months. Agenteeq saves a daily summary of tokens, apps, models and folders, so older numbers no longer disappear after 30 days. Days before saving started are missing from the chart, and the app says so.',
+      ],
+    },
+  },
+  {
     version: '0.38.2',
     date: '2026-10-07',
     title: 'Hledání do hloubky, Claude a jistější ovládání',

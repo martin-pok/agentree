@@ -76,6 +76,7 @@ export const api = {
   addCustomAgent: (body) => request('POST', '/api/custom-agents', body),
   removeCustomAgent: (id) => request('DELETE', `/api/custom-agents/${encodeURIComponent(id)}`),
   planUsage: (days = 30) => request('GET', `/api/usage/claude?days=${days}`),
+  historie: () => request('GET', '/api/historie'),
   skills: () => request('GET', '/api/skills'),
   // Obsah dovednosti je čistý markdown, ne JSON – proto mimo `request()`.
   async skillText(id) {
