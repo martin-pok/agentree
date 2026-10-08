@@ -51,11 +51,12 @@ test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)'
 
 test('rozšíření: okno používá tokeny aplikace a nekreslí těžší písmo než 500', async () => {
   const popup = await fs.readFile(path.join(ROOT, 'extension/popup.html'), 'utf8');
-  const styles = await fs.readFile(path.join(ROOT, 'public/styles.css'), 'utf8');
-  // Klíčové barvy identity „koncertní sál“ musí být shodné s :root aplikace, ne přibližné.
-  for (const token of ['--stage: #16203A', '--paper: #F3F5F8', '--ink: #16203A', '--brass: #B07D2C']) {
-    assert.ok(popup.includes(token), `okno rozšíření nemá token ${token}`);
-    assert.ok(styles.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
+  const styles = await fs.readFile(path.join(ROOT, 'public/workbench.css'), 'utf8');
+  // Klíčové barvy aktuální identity (public/workbench.css) musí být shodné, ne přibližné.
+  const norm = (t) => t.toLowerCase().replace(/\s+/g, '');
+  for (const token of ['--paper: #fafafa', '--card: #ffffff', '--ink: #17171d', '--action: #5254d8']) {
+    assert.ok(norm(popup).includes(norm(token)), `okno rozšíření nemá token ${token}`);
+    assert.ok(norm(styles).includes(norm(token)), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
   assert.ok(popup.includes('fonts/fonts.css'), 'okno načítá písma aplikace');
   const vahy = [...popup.matchAll(/font-weight:\s*(\d{3})/g)].map((m) => Number(m[1]));

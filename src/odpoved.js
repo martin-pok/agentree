@@ -24,8 +24,11 @@ const stejnaSlozka = (a, b) => Boolean(a && b) && path.resolve(a) === path.resol
  * `procesy`: poslední výpis [{ runtime, cwd }] nebo null, když se výpis nepodařil.
  */
 export function lzeOdpovedet(s, { procesy, behy = [], claude = null } = {}) {
-  if (!s || s.connector !== 'claude-code' || !UUID.test(String(s.localId || ''))) {
+  if (!s || s.connector !== 'claude-code') {
     return { lze: false, kod: 'nastroj', proc: ui('Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.') };
+  }
+  if (!UUID.test(String(s.localId || ''))) {
+    return { lze: false, kod: 'id', proc: ui('Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.') };
   }
   if (!claude) return { lze: false, kod: 'program', proc: ui('Na tomto počítači se nenašel program claude.') };
   if (!s.cwd || !path.isAbsolute(s.cwd)) return { lze: false, kod: 'slozka', proc: ui('U konverzace chybí složka, ve které běžela.') };

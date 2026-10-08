@@ -1,3 +1,4 @@
+import { prehledProRozsireni } from './prehled-rozsireni.js';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -549,6 +550,12 @@ export function createHttpServer(app, existingServer = null) {
       const body = await readBody(req);
       app.extensionSeen();
       return app.takeWebHandoff(body && typeof body === 'object' ? body.site : null);
+    }, { token: true }],
+    // Okno rozšíření ukazuje stav agentů na tomto počítači (src/prehled-rozsireni.js).
+    ['POST', /^\/api\/extension\/prehled$/, async (req) => {
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      app.extensionSeen();
+      return prehledProRozsireni(store.list(), { procesyNevim: app.connectors.processes?.status?.().state === 'error' });
     }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {

@@ -121,6 +121,7 @@ function setHero({ tone, pill, headline, sub, pocet = null }) {
   $('headline').textContent = sazba(headline);
   $('sub').textContent = sazba(sub);
   $('sub').hidden = !sub;
+  delete $('sub').dataset.stav;
 }
 
 // ── Sledované služby ────────────────────────────────────────────────────────
@@ -372,6 +373,7 @@ function vykresliSeznam() {
   }
 
   box.hidden = !box.children.length;
+  $('web-nadpis').hidden = box.hidden || !prehled;
   // Čas odpovědi běží po sekundách, jen dokud nějaký agent odpovídá.
   clearInterval(seznam.casovac);
   if (bezi) seznam.casovac = setInterval(tikni, 1000);
@@ -388,11 +390,64 @@ async function obnovSeznam() {
   return seznam.konverzace;
 }
 
+// ── Agenti na tomto počítači ────────────────────────────────────────────────
+// Souhrn posílá aplikace (POST /api/extension/prehled) přes background se tokenem spárování.
+// Okno ukáže, kdo čeká na tvé rozhodnutí a kdo pracuje; klik otevře agenta přímo v Agenteeq.
+const ROBOT = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 4.5V13" stroke-width="3.5" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="4.5" r="3.2"/><rect class="hlava" x="5" y="12" width="38" height="31" rx="12"/><rect class="oko" x="15" y="22" width="5" height="10" rx="2.5"/><rect class="oko" x="28" y="22" width="5" height="10" rx="2.5"/></svg>';
+const TON_AGENTA = { working: 'work', needs_input: 'warn', failed: 'err', limited: 'err' };
+const STAV_AGENTA = { working: tr('Pracuje'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Narazil na limit') };
+let prehled = null;
+
+async function nactiPrehled() {
+  const r = await chrome.runtime.sendMessage({ type: 'agenteeq:prehled' }).catch(() => null);
+  return r && r.zdravi ? r : null;
+}
+
+function radekAgenta(a) {
+  const odkaz = el('a', 'agent');
+  odkaz.href = `${APLIKACE}#/agent/${encodeURIComponent(a.id)}`;
+  odkaz.target = '_blank';
+  odkaz.rel = 'noopener';
+  odkaz.dataset.ton = TON_AGENTA[a.status || 'working'] || 'work';
+  const bot = el('span', 'bot');
+  bot.innerHTML = ROBOT;
+  const t = el('span', 't');
+  t.append(el('b', '', a.title || a.app || tr('Agent')));
+  const st = el('span', 'st');
+  const popis = [a.app, a.reason || STAV_AGENTA[a.status] || STAV_AGENTA.working].filter(Boolean).join(' · ');
+  st.append(el('span', '', sazba(popis)));
+  if (a.at) st.title = ago(a.at);
+  t.append(st);
+  odkaz.append(bot, t);
+  odkaz.insertAdjacentHTML('beforeend', SIPKA);
+  const li = el('li');
+  li.append(odkaz);
+  return li;
+}
+
+function vykresliAgenty() {
+  const box = $('agenti');
+  if (!prehled || !seznam.pripojeno) { box.hidden = true; return; }
+  const { rozhodnuti, pracuji } = prehled;
+  $('rozhodnuti').replaceChildren(...rozhodnuti.slice(0, 3).map(radekAgenta));
+  $('pracuji').replaceChildren(...pracuji.slice(0, 3).map((a) => radekAgenta({ ...a, status: 'working' })));
+  $('sk-rozhodnuti').hidden = !rozhodnuti.length;
+  $('sk-pracuji').hidden = !pracuji.length;
+  box.hidden = false;
+  // Okno má nejvýš 600 px: když se nevejde, ubírají se nejdřív pracující, rozhodnutí zůstanou.
+  for (const id of ['pracuji', 'rozhodnuti']) {
+    const ol = $(id);
+    while (ol.children.length > 1 && document.body.getBoundingClientRect().height > MAX_VYSKA) ol.lastElementChild.remove();
+  }
+}
+
 // ── Celkový stav ────────────────────────────────────────────────────────────
 function zakladniStav() {
   seznam.pripojeno = false;
   $('outdated').hidden = true;
   $('konverzace').hidden = true;
+  $('agenti').hidden = true;
+  $('web-nadpis').hidden = true;
   $('sites-open').hidden = true;
   $('pairing').hidden = true;
   $('feats').hidden = true;
@@ -445,8 +500,7 @@ async function render() {
 
   overeni.tab = await aktivniKarta();
   overeni.diagnostika = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
-  seznam.konverzace = await nactiKonverzace();
-  seznam.off = await vypnute();
+  [seznam.konverzace, seznam.off, prehled] = await Promise.all([nactiKonverzace(), vypnute(), nactiPrehled()]);
   zakladniStav();
   $('sites-open').hidden = false;
   $('outdated').hidden = !outdated;
@@ -454,7 +508,9 @@ async function render() {
   seznam.lastStatus = lastStatus;
   seznam.zastarala = outdated;
   seznam.pripojeno = true;
+  vykresliAgenty();
   vykresliSeznam();
+  vykresliAgenty();
   hlavicka();
 }
 
@@ -471,13 +527,17 @@ function hlavicka() {
   const failed = Boolean(lastStatus && !lastStatus.ok);
   const tone = outdated || failed ? 'warn' : 'ok';
   const selhalo = tr('Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.');
-  if (!pocet) {
+  if (!pocet && !prehled) {
     setHero({ tone, pill: 'Připojeno', headline: tr('Žádná otevřená konverzace'), sub: failed ? selhalo : tr('Otevři chat s AI a objeví se tady i v Agenteeq.') });
     return;
   }
-  const popis = pracuje === 0 ? tr('agentů teď pracuje') : mnozne(pracuje, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
-  const sub = failed ? selhalo : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
-  setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: pracuje });
+  // Číslo nahoře sčítá agenty na počítači i chaty v prohlížeči, které právě odpovídají.
+  const vsech = pracuje + (prehled?.zdravi.pracuje || 0);
+  const popis = vsech === 0 ? tr('agentů teď pracuje') : mnozne(vsech, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
+  // Pod číslem stav agentů z aplikace; bez něj počet otevřených chatů v prohlížeči.
+  const sub = failed ? selhalo : prehled ? prehled.zdravi.veta : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
+  if (prehled && !failed) $('sub').dataset.stav = prehled.zdravi.stav;
 }
 
 // Konverzace se mění, i když je okno otevřené: agent dopíše, karta se zavře.
@@ -486,6 +546,14 @@ chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
   await obnovSeznam();
   hlavicka();
 });
+
+// Stav agentů se mění i při otevřeném okně: každých 5 s se souhrn načte znovu.
+setInterval(async () => {
+  if (!seznam.pripojeno || document.hidden) return;
+  prehled = await nactiPrehled();
+  vykresliAgenty();
+  hlavicka();
+}, 5000);
 
 $('retry').addEventListener('click', () => render());
 

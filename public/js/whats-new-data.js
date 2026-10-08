@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.45.0',
+    date: '2026-10-08',
+    title: 'Odpověz agentovi přímo z aplikace',
+    items: [
+      'V detailu konverzace Claude Code můžeš agentovi odpovědět – pokračuje na pozadí a ty nemusíš otevírat Terminál ani aplikaci Claude.',
+      'Zvolíš, jestli agent smí jen plánovat, nebo i upravovat soubory. Když odpověď nejde, aplikace řekne proč.',
+      'Rozšíření pro Chrome má vzhled aplikace a ukazuje i agenty na počítači: kdo čeká na tebe a kdo pracuje.',
+    ],
+    en: {
+      title: 'Reply to an agent right from the app',
+      items: [
+        'In a Claude Code conversation you can reply to the agent – it continues in the background, no Terminal or Claude app needed.',
+        'Choose whether the agent may only plan or also edit files. When replying isn’t possible, the app says why.',
+        'The Chrome extension looks like the app and shows agents on your computer too: who is waiting for you and who is working.',
+      ],
+    },
+  },
+  {
     version: '0.44.0',
     date: '2026-10-08',
     title: 'Stav agentů na první pohled',

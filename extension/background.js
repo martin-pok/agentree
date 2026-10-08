@@ -152,6 +152,18 @@ async function takeHandoff(site) {
   return { prompt: typeof body.prompt === 'string' ? body.prompt.slice(0, 20000) : null, prefilled: Boolean(body.prefilled) };
 }
 
+// Souhrn agentů pro okno rozšíření. Bez tokenu nebo při chybě vrátí null – okno pak sekci skryje.
+async function prehled() {
+  const t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t) return null;
+  try {
+    const res = await fetch(`${await zaklad()}/api/extension/prehled`, { method: 'POST', headers: { 'X-Agenteeq-Token': t }, signal: AbortSignal.timeout(3000) });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
 async function hello({ hned = false, znovu = false } = {}) {
@@ -211,6 +223,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  } else if (msg?.type === 'agenteeq:prehled') {
+    prehled().then(sendResponse, () => sendResponse(null));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
     hello({ hned: true }).then(sendResponse, () => sendResponse({ paired: false }));

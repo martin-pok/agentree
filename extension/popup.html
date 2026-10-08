@@ -12,25 +12,24 @@
        Jedna rodina písma Satoshi (záložně Urbanist a Onest), váha nejvýš 500, 8px mřížka.
        Chrome okno ukáže nejvýš 600 px vysoké. */
     :root {
-      --stage: #16203A; --stage-2: #1D1A26;
-      --paper: #F3F5F8; --card: #FFFFFF; --ink: #16203A; --ink-2: #3A3743; --mute: #686472; --line: #E3E1E9; --line-2: #EFEDF3;
-      --brass: #B07D2C; --brass-ink: #86620F; --brass-tint: #F7EEDA;
-      --teal: #0D7A67; --dot: #22A38C; --velvet: #A8254A;
-      --action: #16141D; --on-action: #FFFFFF; --action-hover: #3A3646;
-      --bg: var(--paper); --surface: var(--card); --tile-line: rgba(22, 20, 29, .09);
-      --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-xs: 6px; --r-full: 999px; --r-logo: 28%;
-      --f-display: 'Satoshi', 'Urbanist', 'Avenir Next', system-ui, sans-serif;
+      --paper: #FAFAFA; --card: #FFFFFF; --ink: #17171D; --ink-2: #44444E; --mute: #63636F; --line: #DEDEE5; --line-2: #ECECF0;
+      --brass: #B07D2C; --brass-ink: #83591A; --brass-tint: #F5EDDD;
+      --teal: #2B6B53; --dot: #2FA37F; --velvet: #B0284F; --velvet-tint: #FBEAF0;
+      --action: #5254D8; --on-action: #FFFFFF; --action-hover: #4547C3; --action-tint: #EEEEFC;
+      --bg: var(--paper); --surface: var(--card); --tile-line: rgba(23, 23, 29, .08);
+      --r-xl: 24px; --r-lg: 20px; --r-md: 12px; --r-sm: 8px; --r-xs: 6px; --r-full: 999px; --r-logo: 28%;
+      --f-display: 'Satoshi', 'Onest', system-ui, sans-serif;
       --f-body: 'Satoshi', 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
       --ease: cubic-bezier(.2, .8, .2, 1);
     }
-    /* Noční sál: plocha je scéna aplikace, vrstvy odlišuje hloubka, ne křiklavá barva. */
+    /* Tmavý režim: tytéž role jako v aplikaci, vrstvy odlišuje hloubka, ne křiklavá barva. */
     @media (prefers-color-scheme: dark) {
       :root {
-        --card: #211F2A; --ink: #F5F2F8; --ink-2: #D8D3DE; --mute: #B9B3C1; --line: #2E2A38; --line-2: #26232F;
+        --paper: #0F0F14; --card: #1A1A22; --ink: #F2F2F6; --ink-2: #D4D4DC; --mute: #A3A3B0; --line: #2C2C36; --line-2: #22222A;
         --brass: #E4B95F; --brass-ink: #F3D38E; --brass-tint: #3B2E17;
-        --teal: #76E6CD; --dot: #43D1B1; --velvet: #FFB3C7;
-        --action: #F5F2F8; --on-action: #16141D; --action-hover: #FFFFFF;
-        --bg: var(--stage); --surface: var(--stage-2); --tile-line: rgba(255, 255, 255, .08);
+        --teal: #8FD6BC; --dot: #43D1B1; --velvet: #FFB3C7; --velvet-tint: #3A1C27;
+        --action: #8E90FF; --on-action: #0F0F14; --action-hover: #A5A7FF; --action-tint: #22224A;
+        --tile-line: rgba(255, 255, 255, .08);
       }
       /* Černá loga (ChatGPT, Grok, GitHub Copilot) se na tmavé ploše obrátí do světlé. */
       .logo--mono { filter: invert(1); }
@@ -48,9 +47,11 @@
     /* ---------- Horní lišta ---------- */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px; padding: 0 16px; }
     .mark { display: inline-flex; align-items: center; gap: 8px; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; }
-    .mark path { stroke: currentColor; }
-    .mark .tecka { fill: currentColor; }
-    .mark .zlato { fill: var(--brass); }
+    .robo .ant { stroke: var(--action); }
+    .robo .ant-svetlo { fill: var(--action); }
+    .robo .hlava { fill: var(--ink); }
+    .robo .oko { fill: var(--paper); transform-box: fill-box; transform-origin: center; animation: mrk 6s infinite; }
+    @keyframes mrk { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
     .zpet { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-left: -8px; padding: 0 12px 0 6px; border: 0; border-radius: var(--r-full); background: none; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; cursor: pointer; }
     .zpet:hover { background: var(--line-2); }
     .top-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
@@ -74,6 +75,44 @@
     .sub { margin: 8px 0 0; color: var(--mute); font-size: 13px; }
     .hero--cislo .sub { margin-top: 2px; }
     .note { margin: 0 16px 16px; padding: 12px 16px; border-radius: var(--r-md); background: var(--brass-tint); color: var(--brass-ink); font-size: 12px; }
+
+    /* ---------- Agenti na tomto počítači (POST /api/extension/prehled) ---------- */
+    .agenti { display: grid; gap: 4px; padding: 0 8px 12px; }
+    /* Stav agentů jednou větou pod číslem: tečka nese barvu, věta význam. */
+    .sub[data-stav]::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--dot); vertical-align: 1px; }
+    .sub[data-stav="pozor"]::before { background: var(--brass); }
+    .sub[data-stav="problem"]::before { background: var(--velvet); }
+    .sub[data-stav="nevim"]::before { background: var(--mute); }
+    .nadpis { margin: 8px 8px 2px; color: var(--mute); font: 500 12px/20px var(--f-body); }
+    .nadpis--web { margin: 0 16px 4px; }
+    .agent-seznam { display: grid; gap: 2px; }
+    .agent { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 8px; border-radius: var(--r-md); color: inherit; text-decoration: none; }
+    .agent:hover { background: color-mix(in srgb, var(--card) 85%, transparent); box-shadow: inset 0 0 0 1px var(--line-2); }
+    .agent:focus-visible { outline-offset: -2px; }
+    .agent .t > b { font-size: 13px; }
+    .agent .st { overflow: hidden; }
+    .agent .st span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Malý robot: stejná hlava jako logo, barva podle stavu. Pracující mrká a kývá anténou. */
+    .bot { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--teal) 10%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 20%, transparent); }
+    .bot svg { width: 20px; height: 20px; }
+    .bot .hlava { fill: var(--teal); }
+    .bot .oko { fill: var(--card); transform-box: fill-box; transform-origin: center; }
+    .bot .ant { stroke: var(--teal); transform-box: view-box; transform-origin: 24px 13px; }
+    .bot .ant-svetlo { fill: var(--teal); }
+    .agent[data-ton="work"] .bot .ant, .agent[data-ton="work"] .bot .ant-svetlo { animation: kyv 2.4s var(--ease) infinite; transform-origin: 24px 13px; }
+    .agent[data-ton="work"] .bot .oko { animation: mrk 4.2s infinite; }
+    @keyframes kyv { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-10deg); } 60% { transform: rotate(8deg); } }
+    .agent[data-ton="warn"] .bot { background: var(--brass-tint); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 30%, transparent); }
+    .agent[data-ton="warn"] .bot .hlava, .agent[data-ton="warn"] .bot .ant-svetlo { fill: var(--brass-ink); }
+    .agent[data-ton="warn"] .bot .ant { stroke: var(--brass-ink); }
+    .agent[data-ton="warn"] .bot .ant-svetlo { animation: blik 1.6s ease-in-out infinite; }
+    @keyframes blik { 50% { opacity: .35; } }
+    .agent[data-ton="err"] .bot { background: var(--velvet-tint); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--velvet) 26%, transparent); }
+    .agent[data-ton="err"] .bot .hlava, .agent[data-ton="err"] .bot .ant-svetlo { fill: var(--velvet); }
+    .agent[data-ton="err"] .bot .ant { stroke: var(--velvet); }
+    .agent[data-ton="warn"] .st { color: var(--brass-ink); }
+    .agent[data-ton="err"] .st { color: var(--velvet); }
+    .agent[data-ton="work"] .st { color: var(--teal); }
 
     /* ---------- Otevřené konverzace ---------- */
     .konverzace { padding: 4px 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
@@ -185,7 +224,7 @@
     footer a { display: inline-flex; flex: none; align-items: center; gap: 4px; color: var(--ink); font-weight: 500; white-space: nowrap; text-decoration: none; border-radius: var(--r-xs); }
     footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-    .btn, .radek, .sluzby, .zpet, .overit { transition: transform 180ms var(--ease), background-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease); }
+    .btn, .radek, .sluzby, .zpet, .overit, .agent { transition: transform 180ms var(--ease), background-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease); }
     .btn:not(:disabled):active { transform: scale(.98); transition-duration: 90ms; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; transform: none !important; animation: none !important; } }
   </style>
@@ -193,7 +232,7 @@
 <body data-pohled="hlavni">
   <header class="top">
     <span class="mark" id="brand">
-      <svg width="20" height="20" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 13V29M20 18.5C20 23.5 10.5 22.5 10.5 29M20 18.5C20 23.5 29.5 22.5 29.5 29" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle class="zlato" cx="20" cy="8.5" r="4.2"/><circle class="tecka" cx="10.5" cy="31" r="3.4"/><circle class="tecka" cx="20" cy="31" r="3.4"/><circle class="tecka" cx="29.5" cy="31" r="3.4"/></svg>
+      <svg class="robo" width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 4.5V13" stroke-width="3.5" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="4.5" r="3.2"/><rect class="hlava" x="5" y="12" width="38" height="31" rx="12"/><rect class="oko" x="15" y="22" width="5" height="10" rx="2.5"/><rect class="oko" x="28" y="22" width="5" height="10" rx="2.5"/></svg>
       Agenteeq
     </span>
     <button class="zpet" id="back" type="button" hidden>
@@ -219,6 +258,19 @@
     </section>
 
     <p class="note" id="outdated" hidden></p>
+
+    <section class="agenti" id="agenti" hidden aria-label="Agenti na tomto počítači" data-i18n-attr="aria-label">
+      <div class="skupina" id="sk-rozhodnuti" hidden>
+        <h2 class="nadpis" data-i18n>Čeká na tebe</h2>
+        <ol class="agent-seznam" id="rozhodnuti"></ol>
+      </div>
+      <div class="skupina" id="sk-pracuji" hidden>
+        <h2 class="nadpis" data-i18n>Pracují</h2>
+        <ol class="agent-seznam" id="pracuji"></ol>
+      </div>
+    </section>
+
+    <h2 class="nadpis nadpis--web" id="web-nadpis" hidden data-i18n>Chaty v&nbsp;prohlížeči</h2>
 
     <ol class="konverzace" id="konverzace" aria-label="Otevřené konverzace" data-i18n-attr="aria-label" hidden></ol>
     <button class="sluzby" id="sites-open" type="button" aria-expanded="false" aria-controls="view-sluzby" hidden>

@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.44.0 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> Stav: **v0.45.0 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
 ## Instalace
 

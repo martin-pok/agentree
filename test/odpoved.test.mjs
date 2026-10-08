@@ -27,7 +27,7 @@ test('odpověď: nikdy souběžně s otevřeným Terminálem, při neznámém st
 
 test('odpověď: jen Claude Code s platným id, programem a složkou; text se ověří', () => {
   assert.equal(lzeOdpovedet({ ...s, connector: 'codex' }, ok).kod, 'nastroj');
-  assert.equal(lzeOdpovedet({ ...s, localId: 'proces-123' }, ok).kod, 'nastroj', 'detekovaný proces bez přepisu nejde obnovit');
+  assert.equal(lzeOdpovedet({ ...s, localId: 'proces-123' }, ok).kod, 'id', 'detekovaný proces bez přepisu nejde obnovit');
   assert.equal(lzeOdpovedet(s, { ...ok, claude: null }).kod, 'program');
   assert.equal(lzeOdpovedet({ ...s, cwd: 'relativni' }, ok).kod, 'slozka');
   assert.equal(planOdpovedi(s, { text: '   ' }, ok).status, 422);
