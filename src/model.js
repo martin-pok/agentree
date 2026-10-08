@@ -27,6 +27,8 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     runningAt: 0,
     stopAt: 0,
     toolWaitSince: 0,
+    toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
+    permissionMode: '',   // režim oprávnění Claude Code, když ho přepis nese
     staleMs: 5 * MIN,
     turnStartedAt: 0,
     turnSteps: 0,
@@ -122,9 +124,20 @@ export function deriveStatus(s, now) {
   // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
   if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
   if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
-    // Bez hooků nevidíme žádost o povolení; dlouho čekající nástroj proto poctivě označíme jako možnou.
-    const maybePermission = s.toolWaitSince && !s.hookAt && now - s.toolWaitSince > 90e3;
+    // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
+    // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
+    // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
+    // - úprava souboru proběhne po schválení během vteřin: přes 20 s čekání je to skoro jistě
+    //   žádost o povolení – hlásí se jako rozhodnutí, ale slovem „nejspíš“, ať je vidět, že jde o odhad;
+    // - ostatní (Bash, MCP…) umí běžet dlouho samo, a tak po 90 s jen poctivé „možná“.
+    // Režim bypassPermissions se neptá na nic, acceptEdits se neptá na úpravy.
     const activity = s.activity || ui('Pracuje');
+    const ceka = s.toolWaitSince && !s.hookAt ? now - s.toolWaitSince : 0;
+    const bezPtani = s.permissionMode === 'bypassPermissions' || (s.permissionMode === 'acceptEdits' && s.toolWaitKind === 'uprava');
+    if (ceka > 20e3 && !bezPtani && s.toolWaitKind === 'uprava') {
+      return { status: 'needs_input', reason: ui('Nejspíš čeká na tvé povolení: {0}', activity), stale: false };
+    }
+    const maybePermission = ceka > 90e3 && !bezPtani && s.toolWaitKind !== 'cteni';
     return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
   const stale = Boolean(s.running);

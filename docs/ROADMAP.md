@@ -82,7 +82,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 
 Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 7. 10. 2026).
 
-- Bez hooků se žádost o povolení nepozná jistě: po 90 s čekání nástroje stav řekne „možná čeká na tvé povolení“, ale zůstává „Pracuje“ (`src/model.js#deriveStatus`).
+- Bez hooků se žádost o povolení pozná jen odhadem (od 0.39.0 podle druhu nástroje a režimu oprávnění, `src/model.js#deriveStatus`): úprava souboru po 20 s „nejspíš čeká na tvé povolení“, Bash a MCP dál jen „možná“ po 90 s. Pole `permissionMode` v přepisu Claude Code zatím není ověřené na skutečných datech (Beta, `docs/CONNECTORS.md`); bez něj platí výchozí režim s ptaním.
 - Webové služby vykreslují dlouhé konverzace jen zčásti (virtualizované seznamy), takže počet zpráv z rozšíření může být u dlouhé konverzace nižší než skutečný.
 - Codex nezapisuje žádosti o schválení – nelze detekovat „potřebuje rozhodnutí“.
 - Fotka Google účtu se u vlastníka nenačetla; příčina zatím nepotvrzená. Od 0.38.0 se stahuje znovu

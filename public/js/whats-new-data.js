@@ -12,6 +12,7 @@ export const RELEASES = [
       'Projekty mají štítky s filtrem nad seznamem a nový projekt založíš ze šablony Agentura a klient, Vývoj nebo Marketing s předvyplněnými podklady.',
       'Detail projektu odhadne, kolik by jeho tokeny stály přes API Anthropicu. Je to jen odhad s datem ověření ceníku – předplatné se platí paušálem a modely bez ověřené ceny se nedopočítávají.',
       'Rozšíření pro Chrome najde Agenteeq i na jiném portu než 4620 – nastavíš ho v okně rozšíření.',
+      'Claude Code bez hooků: úprava souboru, která dlouho čeká, se teď ukáže jako rozhodnutí s textem „Nejspíš čeká na tvé povolení“. Čtení souborů už falešné „možná čeká“ nedostane.',
     ],
     en: {
       title: 'A year of statistics, tags and project cost estimates',
@@ -20,6 +21,7 @@ export const RELEASES = [
         'Projects have tags with a filter above the list, and you can start a new project from the Agency and client, Development or Marketing template with a prefilled brief.',
         'Project details estimate what their tokens would cost through the Anthropic API. It is only an estimate with the price list’s verification date – subscriptions are a flat fee, and models without a verified price aren’t guessed.',
         'The Chrome extension can find Agenteeq on a port other than 4620 – set it in the extension window.',
+        'Claude Code without hooks: a file edit that waits a long time now shows as a decision with “Most likely waiting for your permission”. Reading files no longer gets a false “may be waiting”.',
       ],
     },
   },

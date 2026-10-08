@@ -491,6 +491,7 @@ export default {
   "Potřebuje tvé rozhodnutí": "Needs your decision",
   "Pracuje": "Working",
   "{0} · možná čeká na tvé povolení": "{0} · may be waiting for your permission",
+  "Nejspíš čeká na tvé povolení: {0}": "Most likely waiting for your permission: {0}",
   "Konverzace ukončena": "Conversation ended",
   "Delší dobu bez aktivity": "No activity for a while",
   "Hotovo, čeká na další zadání": "Done, waiting for the next prompt",
