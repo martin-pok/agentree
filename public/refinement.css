@@ -1,0 +1,89 @@
+/* Satoshi optical hierarchy: body tracking is neutral; only large headings tighten. */
+:root {
+ --type-caption: .75rem; --type-small: .875rem; --type-body: 1rem;
+ --type-lead: 1.125rem; --type-title: 1.25rem; --type-section: 1.5rem;
+ --type-page: 2rem; --type-hero: 3rem;
+ --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+ --space-6: 24px; --space-8: 32px; --space-12: 48px;
+}
+body { font-size: var(--type-body); line-height: 1.5; letter-spacing: 0; font-kerning: normal; font-optical-sizing: auto; }
+button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0; }
+.brand > span { font-size: 18px; line-height: 1; font-weight: 500; letter-spacing: .045em; }
+.brand { gap: 8px; }
+.page-title { font-size: var(--type-page); line-height: 1.2; font-weight: 400; letter-spacing: -.025em; }
+.home-intro h2 { font-size: clamp(2rem, 3.1vw, var(--type-hero)); font-weight: 400; line-height: 1.15; letter-spacing: -.035em; margin: 16px 0; }
+.home-intro p { font-size: var(--type-body); line-height: 1.6; }
+.sec-head :is(h2,h3), .home-live > h2, .set-card-head :is(h2,h3), .pcard-name, .studio-nickname { font-size: var(--type-title); line-height: 1.35; letter-spacing: -.015em; font-weight: 400; }
+.table:has(.agent-robot-tile) .cell-title b, .decision-title { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
+:is(.small, .cell-app, .cell-sub, .guide-copy p, .studio-dialog label, .nav a, .lchip, .chip, .btn, .link, .set-nav) { font-size: var(--type-small); line-height: 1.5; letter-spacing: 0; }
+:is(.muted, .guide-copy p, .cell-sub, .cell-time) { color: var(--mute); }
+:is(.guide-label, .side-foot, .decision-kicker, .badge, .pill, .cell-time) { font-size: var(--type-caption); line-height: 1.5; }
+.guide-label { letter-spacing: .08em; }
+.guide-copy strong { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
+.guide-copy p { margin-top: 4px; max-width: 78ch; }
+.robot-guide { gap: var(--space-4); padding: 16px 24px; margin-bottom: 24px; }
+:is(.studio-dialog p, .set-card p, .decision-reason) { line-height: 1.6; }
+:is(.cell-num, .pb-num, .pb-stat b, .budget-num) { font-variant-numeric: tabular-nums lining-nums; }
+:is(.btn, .lchip, .chip, .picker-trigger) { min-height: 32px; height: auto; padding-block: 6px; }
+.launch-go { min-height: 40px; }
+.launch-prompt { line-height: 1.6; }
+.guide-controls { display: flex; align-items: center; gap: 12px; flex: none; }
+.mascot-motion-toggle { border: 0; padding: 8px; background: none; color: var(--mute); font: 400 var(--type-caption)/1.5 var(--f-body); cursor: pointer; border-radius: 24px; min-height: 32px; }
+:where(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+/* Motion replaces perpetual floating. Gaze and blink have independent transforms. */
+.robot .robot-eyes, .pb-agent[data-status='working'] .robot-body, .agent-portrait[data-state='working'] .robot-body { animation: none; }
+.robot-gaze { transform: translate(var(--gaze-x, 0px), var(--gaze-y, 0px)); transition: transform 180ms cubic-bezier(.2,.7,.3,1); }
+.robot[data-emote='blink'] .robot-eyes { animation: mascot-blink 180ms ease-in-out both; }
+@keyframes mascot-blink { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.12); } }
+.mascot-motion-off .robot-gaze { transform: none; }
+@media(prefers-reduced-motion: reduce) { .robot-gaze { transform: none; transition: none; } }
+@media(max-width: 700px) { .robot-guide { flex-wrap: wrap; padding: 16px; } .guide-copy { flex-basis: calc(100% - 110px); } .guide-controls { margin-left: auto; } }
+
+/* Stavové pohyby robotů (rozhodnutí vlastníka 8. 10. 2026): pohyb ukazuje stav agenta, nikdy ho
+   nenese sám – stav je vždy i v textu a štítku. Tělo nikde nelétá; pohybuje se jen anténa, paže
+   a oči. Pracuje: anténa jemně pulzuje a paže „píšou“. Potřebuje tebe: robot zvedne ruku a jednou
+   za pár vteřin zamává. Hotovo: spokojeně přimhouřené oči. Selhalo nebo limit: svěšená anténa
+   a ztlumené oči. Omezení pohybu (systém nebo přepínač) nechá jen klidové pózy bez animace. */
+.robot .robot-body, .robot .robot-head { animation: none; transform: none; }
+.robot :is(.robot-arm-left, .robot-arm-right, .robot-aerial, .robot-eyes) { transform-box: view-box; transition: transform 240ms var(--ease), opacity 240ms var(--ease); }
+.robot .robot-arm-left { transform-origin: 28px 75px; }
+.robot .robot-arm-right { transform-origin: 80px 75px; }
+.robot .robot-aerial { transform-origin: 54px 23px; }
+.robot .robot-eyes { transform-origin: 54px 47px; }
+:is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-aerial { animation: robot-signal 1.6s ease-in-out infinite; }
+:is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-arm-left { animation: robot-type .9s ease-in-out infinite alternate; }
+:is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-arm-right { animation: robot-type .9s ease-in-out -.45s infinite alternate; }
+:is(.agent-portrait[data-state='needs_input'], .pb-agent[data-status='needs_input']) .robot-arm-right { transform: rotate(-118deg); animation: robot-wave 5s ease-in-out infinite; }
+:is(.agent-portrait, .pb-agent):is([data-state='waiting'], [data-status='waiting'], [data-state='idle'], [data-status='idle']) .robot-eyes { transform: scaleY(.55); }
+:is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-aerial { transform: rotate(38deg); }
+:is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-eyes { opacity: .45; }
+@keyframes robot-signal { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes robot-type { from { transform: rotate(0deg); } to { transform: rotate(-14deg) translateY(-1px); } }
+@keyframes robot-wave { 0%, 70%, 100% { transform: rotate(-118deg); } 76% { transform: rotate(-96deg); } 82% { transform: rotate(-132deg); } 88% { transform: rotate(-100deg); } 94% { transform: rotate(-124deg); } }
+.mascot-motion-off .robot * { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .robot * { animation: none !important; transition: none !important; } }
+/* Standard control heights; extra text-spacing may still expand the line box. */
+.btn, .chip, .picker-trigger { height: 40px; min-height: 40px; padding-block: 0; }
+.btn--sm, .lchip { height: 32px; min-height: 32px; padding-block: 0; }
+.btn--lg { height: 48px; min-height: 48px; }
+.home-history > summary { border-radius: var(--r-full); padding-inline: 12px; }
+.guide-toggle { width: 32px; height: 32px; }
+.mascot-motion-toggle { height: 32px; min-height: 32px; padding-block: 0; }
+html[data-theme] .home-live .pb-agent { color: var(--ink); }
+html[data-theme] .home-live .pb-agent[data-state='waiting'] small { color: var(--brass-ink); }
+html[data-theme] .home-live .pb-agent[data-status='working'] small { color: var(--teal-ink); }
+html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--velvet-ink); }
+.sidebar .welcome { font-size: 12px; line-height: 1.4; }
+@media (min-width: 881px) {
+  .sidebar { padding-bottom: 24px; }
+}
+@media (min-width: 881px) and (max-height: 900px) {
+  .sidebar { padding-top: 20px; }
+  .sidebar .nav { margin-block: 16px; gap: 2px; }
+  .sidebar .nav a { min-height: 32px; height: 32px; padding-block: 0; }
+  .sidebar .profile { display: none; }
+  .sidebar .side-foot { margin-top: auto; }
+}
+@media (min-width: 2080px) {
+  .set-main { margin-left: calc(50vw - 956px); }
+}

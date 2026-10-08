@@ -21,8 +21,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { zjistitVerziPlaste } from './exe-version.mjs';
 import { powershell } from './powershell.mjs';
+import { zajistiSatoshi } from './satoshi.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Písmo Satoshi do balíčku (v repozitáři být nesmí, scripts/satoshi.mjs). Bez něj se nevydává.
+await zajistiSatoshi();
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
 
 if (process.platform !== 'win32') {

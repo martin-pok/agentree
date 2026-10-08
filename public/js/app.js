@@ -1,3 +1,5 @@
+import { initMascotMotion } from './mascot-motion.js';
+import { robotGuide } from './robot-guide.js';
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
@@ -210,6 +212,10 @@ function vyridSkokNaSekci() {
   if (!cil) return;
   const najdi = () => {
     const region = viewEl.querySelector(`[data-region="${CSS.escape(cil.region)}"]`);
+    // Search must reveal a destination nested in progressive-disclosure sections.
+    for (let parent = region?.parentElement; parent; parent = parent.parentElement) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+    }
     return region && region.getClientRects().length && (region.children.length || region.textContent.trim()) ? region : null;
   };
   const proved = (pokus) => {
@@ -266,6 +272,7 @@ function refresh(topics) {
   const drzKotvu = kotva(viewEl);
   try {
     current?.update(topics);
+    robotGuide(viewEl);
   } catch (err) {
     console.error('Agenteeq: chyba vykreslení', err);
   }
@@ -1066,6 +1073,7 @@ window.addEventListener('pageshow', (e) => { if (e.persisted) tichaObnova(tr('st
 setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 
 navigate();
+initMascotMotion();
 setInterval(tickClock, 1000);
 setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);

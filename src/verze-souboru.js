@@ -22,6 +22,7 @@ import crypto from 'node:crypto';
 // Složky, jejichž soubory se odkazují se značkou obsahu a smí pak zůstat v prohlížeči natrvalo.
 export const AKTIVA = /^\/(logos|fonts|brand|icons)\//;
 export const NATRVALO = 'max-age=31536000, immutable';
+export const SATOSHI_FACE = "@font-face { font-family: 'Satoshi'; font-style: normal; font-weight: 300 900; font-display: swap; src: url('./satoshi/Satoshi-Variable.woff2') format('woff2'); }";
 
 // Značka obsahu: stejná pro ETag i pro `?v=` v adrese.
 export const znackaObsahu = (telo) => crypto.createHash('sha1').update(telo).digest('base64url').slice(0, 20);
@@ -91,6 +92,13 @@ export function createVerzeSouboru(koren, { verze = '' } = {}) {
     return text.replace(vzor, (m, q, odkaz) => (nahrady.has(odkaz) ? `url(${q}${nahrady.get(odkaz)}${q})` : m));
   }
 
+  // Satoshi v repozitáři není (licence, scripts/satoshi.mjs). Pravidlo @font-face se přidá, jen když
+  // sestavení soubor přibalilo – jinak by prohlížeč hlásil 404 a sázelo by se záložním Onest.
+  async function fontsCss(text) {
+    const ma = await fs.stat(path.join(zaklad, 'fonts', 'satoshi', 'Satoshi-Variable.woff2')).then((s) => s.isFile(), () => false);
+    return ma ? `${text}${SATOSHI_FACE}\n` : text;
+  }
+
   async function projdi(dir) {
     let polozky;
     try { polozky = await fs.readdir(dir, { withFileTypes: true }); } catch { return []; }
@@ -140,6 +148,7 @@ export function createVerzeSouboru(koren, { verze = '' } = {}) {
     if (cesta === '/index.html') return Buffer.from(await vlozSeznam(await verzujOdkazy(telo.toString('utf8'))));
     if (cesta === '/manifest.webmanifest') return Buffer.from(await verzujOdkazy(telo.toString('utf8')));
     if (cesta === '/sw.js') return Buffer.from(await pripravSw(telo.toString('utf8')));
+    if (cesta === '/fonts/fonts.css') return Buffer.from(await verzujCss(await fontsCss(telo.toString('utf8')), cesta));
     if (AKTIVA.test(cesta) && cesta.endsWith('.css')) return Buffer.from(await verzujCss(telo.toString('utf8'), cesta));
     return telo;
   }

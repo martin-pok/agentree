@@ -15,6 +15,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ukazkoveOdpovedi } from './ukazka-data.mjs';
 import { adresaObchodu } from '../public/js/obchod.js';
+import { SATOSHI_FACE } from '../src/verze-souboru.js';
+import { zajistiSatoshi } from './satoshi.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -161,6 +163,11 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   // 1. Rozhraní aplikace: všechno kromě jeho index.html zůstane v kořeni.
   await copyDir(path.join(root, 'public'), out, { skip: (rel) => rel === path.join('public', 'index.html') });
 
+  // Satoshi: soubor přibalený do sestavení (scripts/satoshi.mjs) dostane pravidlo @font-face.
+  if (await fs.stat(path.join(out, 'fonts', 'satoshi', 'Satoshi-Variable.woff2')).then(() => true, () => false)) {
+    await fs.appendFile(path.join(out, 'fonts', 'fonts.css'), `${SATOSHI_FACE}\n`);
+  }
+
   // 2. index.html aplikace se přestěhuje na /app (čistá adresa bez přípony) a dostane značku,
   //    že je to kopie na webu. Rozhraní se pak neptá neexistujícího serveru, jestli žije –
   //    ušetří dotaz a hlavně nenechá na veřejné stránce 404 v konzoli.
@@ -226,6 +233,7 @@ export async function hlavickyWebu() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await zajistiSatoshi();
   const r = await buildSite();
   console.log(`Web sestaven: ${r.files.length} souborů v ${path.relative(root, r.out)}`);
   console.log(`  /      landing page (site/)`);

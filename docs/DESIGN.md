@@ -8,6 +8,10 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
+## Žádné částečné obrysy
+
+Výslovný požadavek vlastníka: nepoužívat jednostranné barevné okraje ani částečné obrysy kolem karet, bannerů, upozornění či aktivních položek. Platí i pro jejich imitaci pomocí inset box-shadow nebo pseudo-elementu. Stav vyjadřovat jemnou plochou, ikonou a textem; případný obrys musí být rovnoměrný po celém obvodu. Běžné oddělovače dat a viditelný obrys klávesnicového fokusu zůstávají.
+
 ## Tvary
 
 | Co | Tvar | Token |
@@ -102,3 +106,23 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
   neroluje a profil není oříznutý (smí se jen přeskládat nebo schovat). Měří se až v ustáleném
   stavu po změně velikosti okna, ne po pevném čekání.
 - `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše.
+
+## Prototyp Satoshi a maskot (nenasazeno)
+
+`public/refinement.css` sjednocuje role: 12 px pomocné údaje, 14 px kompaktní ovládání,
+16 px běžný text, 18 px zvýrazněný text, 20 px nadpis karty, 24 px sekce,
+32 px titul stránky a až 48 px úvodní nadpis. Hodnoty jsou v rem; řádkování
+1,5–1,6 u textu, 1,35–1,4 u malých nadpisů a 1,15–1,2 u velkých.
+Satoshi 400 je základ, 500 zvýraznění. Běžný text má tracking 0 a zapnutý
+kerning. Velké nadpisy −0,025 až −0,035 em; wordmark 18 px / 500 / +0,045 em.
+Číselné přehledy používají tabulární číslice. Mezery vycházejí z 4px základu.
+
+Pohyb maskota řídí `public/js/mascot-motion.js`. Schválená varianta má statické
+roboty: žádné skákání, mávání, otáčení hlavy ani gesta rukou. Kurzor sleduje
+všichni viditelní roboti, oči maximálně ±3 px vodorovně a ±2 px svisle.
+Občasné mrknutí trvá 180 ms, po 8–14 sekundách mrkne jeden viditelný robot.
+Systémové omezení pohybu má přednost, ruční vypnutí se ukládá lokálně.
+Pohyb není jediným nositelem stavu a robot nevydává zvuky.
+
+Ověření jednotlivých pravidel přístupnosti není certifikace celé aplikace:
+kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení pohybu.

@@ -1,3 +1,4 @@
+import { createHomeStudio } from '../home-studio.js';
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, H, MIN } from '../format.js';
@@ -30,6 +31,8 @@ const changed = (topics, ...names) => topics.has('all') || names.some((name) => 
 // tak se jím díra zaplní. Počítá se z naměřené výšky, ne odhadem: při jiných datech nebo jiné
 // velikosti okna vyjde jiné číslo.
 function doplnAktivitu(el, celkem) {
+  // The workbench uses a shared grid rather than two independently balanced columns.
+  if (getComputedStyle(el.querySelector('.ov')).display === 'contents') return;
   const sloupce = el.querySelectorAll('.ov > .bal-col');
   const seznam = el.querySelector('[data-region="activity"]');
   if (sloupce.length !== 2 || !seznam || !celkem) return;
@@ -131,6 +134,20 @@ function mount(el) {
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
 `;
+  // A task-first workspace; existing regions retain their live data and actions.
+  const workspace = document.createElement('div');
+  workspace.className = 'home-workspace';
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-eyebrow">${tr('TVŮJ PRACOVNÍ PROSTOR')}</span><h2>${tr('Co dnes posuneme dál?')}</h2><p>${tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.')}</p></header></div><aside class="home-live" aria-label="${tr('Právě teď')}"><h2>${tr('Právě teď')}</h2></aside>`;
+  const desk = workspace.querySelector('.home-desk');
+  const live = workspace.querySelector('.home-live');
+  desk.append(el.querySelector('[data-launch]'), el.querySelector('[aria-labelledby="dec-h"]'));
+  live.append(el.querySelector('[data-region="hero"]'), el.querySelector('[data-region="limits"]'));
+  const history = document.createElement('details');
+  history.className = 'home-history';
+  history.innerHTML = `<summary>${tr('Průběh dne a spotřeba')}<span>${tr('Aktivita, tokeny a náklady')}</span></summary>`;
+  history.append(el.querySelector('.ov'), el.querySelector('.ov-wide'));
+  history.append(live.querySelector('[data-region="limits"]'));
+  el.append(workspace, history);
   v.unwatch = watchBalance(el.querySelector('.ov'), () => doplnAktivitu(el, v.aktivnichCelkem));
   const sel = el.querySelector('[data-action="period"]');
   sel.value = v.period;
@@ -140,6 +157,7 @@ function mount(el) {
     update(new Set(['period']));
   });
   v.launcher = createLauncher(el.querySelector('[data-launch]'));
+  v.studio = createHomeStudio(el);
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-go-extension]')) { e.preventDefault(); goToExtension(); return; }
     const prepnout = e.target.closest('[data-focus-runtime]');
@@ -233,7 +251,7 @@ function update(topics = new Set(['all'])) {
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
         const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
-        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" href="${agentHref(s.id)}">
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}" href="${agentHref(s.id)}">
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
@@ -390,6 +408,7 @@ function update(topics = new Set(['all'])) {
         : !state.runtimes.length ? tr('Sledování procesů je vypnuté.')
           : tr('Teď na {0} neběží žádný AI nástroj.', tomtoPocitaci())}</div>`);
   }
+  v.studio?.refresh();
   v.aktivnichCelkem = all.length;
   // Až po vykreslení a vyvážení sloupců: teprve tehdy je vidět, kolik místa dole zbylo.
   if (!topics.has('dopln')) {
@@ -407,6 +426,7 @@ export default {
     clearTimeout(v.chartTimer);
     cancelAnimationFrame(v.doplnRaf);
     v.unwatch?.();
+    v.studio?.destroy();
     v.launcher?.destroy();
     Object.assign(v, { el: null, launcher: null, unwatch: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
   },

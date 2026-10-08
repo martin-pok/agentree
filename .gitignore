@@ -10,3 +10,7 @@ dist/
 
 # Izolované pracovní kopie subagentů Claude Code — nikdy do repozitáře
 .claude/worktrees/
+
+# Písmo Satoshi (ITF FFL 2.0) se do veřejného repozitáře nesmí – stahuje ho scripts/satoshi.mjs
+public/fonts/satoshi/*.woff2
+public/fonts/satoshi/FFL.txt
