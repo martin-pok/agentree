@@ -77,6 +77,14 @@ function progressHtml(p) {
   </div>`;
 }
 
+async function obnovOdpoved() {
+  const id = v.id;
+  try {
+    const r = await api.session(id);
+    if (v.id === id) { v.odpoved = r.odpoved || null; emit(`session:${id}`); }
+  } catch { /* stav odpovědi zůstane, jak byl */ }
+}
+
 async function load() {
   const id = v.id;
   if (!state.transcripts.has(id)) state.transcripts.set(id, { entries: new Map(), stale: false, loaded: false, error: '' });
@@ -91,6 +99,7 @@ async function load() {
     t.loaded = true;
     t.error = '';
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
+    v.odpoved = r.odpoved || null;
   } catch (err) {
     t.loaded = true;
     t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
@@ -187,7 +196,34 @@ function mount(el, [id]) {
       try { await api.stopChat(v.id); } catch (err) { toast(err.message, { tone: 'err' }); } finally { stop.disabled = false; }
     }
   });
+  el.addEventListener('click', (e) => {
+    const o = e.target.closest('[data-opravneni]');
+    if (!o) return;
+    o.parentElement.querySelectorAll('[data-opravneni]').forEach((b) => b.setAttribute('aria-pressed', String(b === o)));
+  });
   el.addEventListener('submit', async (e) => {
+    const odp = e.target.closest('[data-odpoved]');
+    if (odp) {
+      e.preventDefault();
+      const input = odp.querySelector('textarea');
+      const text = input.value.trim();
+      if (!text) { input.focus(); return; }
+      const btn = odp.querySelector('[type="submit"]');
+      btn.disabled = true;
+      try {
+        await api.odpovedet(v.id, text, odp.querySelector('[data-opravneni][aria-pressed="true"]')?.dataset.opravneni || 'plan');
+        input.value = '';
+        v.follow = true;
+        toast(tr('Agent dostal odpověď a pracuje dál.'), { tone: 'ok' });
+        obnovOdpoved();
+      } catch (err) {
+        toast(err.message, { tone: 'err', timeout: 8000 });
+        obnovOdpoved();
+      } finally {
+        btn.disabled = false;
+      }
+      return;
+    }
     const form = e.target.closest('[data-reply]');
     if (!form) return;
     e.preventDefault();
@@ -206,7 +242,7 @@ function mount(el, [id]) {
     }
   });
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && modifikator(e) && e.target.closest('[data-reply] textarea')) {
+    if (e.key === 'Enter' && modifikator(e) && e.target.closest('[data-reply] textarea, [data-odpoved] textarea')) {
       e.preventDefault();
       e.target.closest('form').requestSubmit();
     }
@@ -341,6 +377,31 @@ function update() {
     const working = s.status === 'working';
     slot.querySelector('[data-chat-stop]').hidden = !working;
     slot.querySelector('[type="submit"]').disabled = working;
+  } else if (s.connector === 'claude-code' && v.odpoved) {
+    // Odpověď agentovi přímo z Agenteeq (src/odpoved.js). Když to nejde, řekne proč a nabídne
+    // pokračování tam, kde agent běží – nikdy tiše nezmizí.
+    if (v.odpovedStav !== s.status) { v.odpovedStav = s.status; obnovOdpoved(); }
+    if (v.odpoved.lze) {
+      if (!slot.querySelector('[data-odpoved]')) {
+        slot.innerHTML = `<form class="reply reply--agent" data-odpoved>
+          <label class="reply-label" for="odpoved-in">${tr('Odpovědět agentovi')}</label>
+          <textarea id="odpoved-in" rows="2" maxlength="20000" placeholder="${tr('Napiš, co má agent udělat dál…')}"></textarea>
+          <div class="reply-actions">
+            <div class="seg seg--light seg--sm" role="group" aria-label="${tr('Co smí agent dělat')}">
+              <button type="button" data-opravneni="plan" aria-pressed="true">${tr('Jen plán')}</button>
+              <button type="button" data-opravneni="acceptEdits" aria-pressed="false">${tr('Smí upravovat')}</button>
+            </div>
+            <span class="muted small"><kbd>${MOD}</kbd><kbd>↵</kbd> ${tr('odešle')}</span>
+            <button type="submit" class="btn btn--sm btn--primary">${ICON.spark}${tr('Odeslat')}</button>
+          </div>
+          <p class="reply-hint muted small">${tr('Agent pokračuje v této konverzaci na pozadí; průběh uvidíš tady i v přehledu.')}</p>
+        </form>`;
+        slot._html = '';
+      }
+    } else {
+      const note = `<p class="reply-note">${esc(v.odpoved.proc)}${s.open?.length ? ` ${openButtons(s, { small: true, max: 1 })}` : ''}</p>`;
+      if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }
+    }
   } else if (s.connector === 'local-chat') {
     const note = `<p class="reply-note">${tr('Konverzace skončila restartem Agenteeq.')} <button class="btn btn--sm" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></p>`;
     if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }

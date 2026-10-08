@@ -97,6 +97,7 @@ export const api = {
   runLog: (id) => request('GET', `/api/runs/${encodeURIComponent(id)}/log`),
   clearRuns: () => request('POST', '/api/runs/clear', {}),
   reply: (id, text) => request('POST', `/api/sessions/${encodeURIComponent(id)}/reply`, { text }),
+  odpovedet: (id, text, permission) => request('POST', `/api/sessions/${encodeURIComponent(id)}/odpoved`, { text, permission }),
   stopChat: (id) => request('POST', `/api/sessions/${encodeURIComponent(id)}/stop`, {}),
   activateLicense: (key) => request('PUT', '/api/license', { key }),
   removeLicense: () => request('DELETE', '/api/license'),
