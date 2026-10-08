@@ -115,7 +115,7 @@ function sync(select) {
 export function initSelects() {
   const enhance = () => {
     if (active && (!active.button.isConnected || active.select.disabled)) close();
-    document.querySelectorAll('select:not([multiple])').forEach((select) => {
+    document.querySelectorAll('select:not([multiple]):not([data-native])').forEach((select) => {
       if (!controls.has(select)) {
         const button = document.createElement('button');
         button.type = 'button';

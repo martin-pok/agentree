@@ -8,6 +8,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { zajistiSatoshi, SATOSHI_SOUBOR } from './satoshi.mjs';
+import { SATOSHI_FACE } from '../src/verze-souboru.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'extension');
@@ -103,6 +105,15 @@ export async function buildExtension({ out = path.join(root, 'dist') } = {}) {
     throw new Error(`Verze rozšíření (${manifest.version}) nesouhlasí s verzí aplikace (${version}). Sjednoť extension/manifest.json.`);
   }
   const files = await collect(source);
+  // Satoshi do balíčku (licence ITF FFL: vložit do vlastní aplikace smí, do repozitáře ne). Bez souboru
+  // zůstane záložní Onest – v sestavení pro obchod ho zajistí `node scripts/build-extension.mjs`.
+  const satoshi = await fs.readFile(SATOSHI_SOUBOR).catch(() => null);
+  if (satoshi) {
+    files.push({ rel: 'fonts/satoshi/Satoshi-Variable.woff2', body: satoshi });
+    const css = files.find((f) => f.rel === 'fonts/fonts.css');
+    if (css) css.body = Buffer.from(`${css.body.toString('utf8')}${SATOSHI_FACE}\n`);
+    files.sort((a, b) => a.rel.localeCompare(b.rel));
+  }
   await fs.mkdir(out, { recursive: true });
   const file = path.join(out, `agenteeq-extension-${version}.zip`);
   await fs.writeFile(file, zip(files));
@@ -110,6 +121,7 @@ export async function buildExtension({ out = path.join(root, 'dist') } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await zajistiSatoshi();
   const r = await buildExtension();
   console.log(`Rozšíření ${r.version}: ${r.files} souborů, ${(r.bytes / 1024).toFixed(0)} kB → ${path.relative(root, r.file)}`);
   console.log('Instalace ručně: chrome://extensions → Režim pro vývojáře → Načíst rozbalené → složka extension/');

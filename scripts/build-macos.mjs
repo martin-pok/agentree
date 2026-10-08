@@ -3,8 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { stampVersion } from './plist-version.mjs';
+import { zajistiSatoshi } from './satoshi.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.platform !== 'darwin') throw new Error('Build requires macOS and Xcode command-line tools.');
+// Písmo Satoshi do balíčku (v repozitáři být nesmí, scripts/satoshi.mjs). Bez něj se nevydává.
+await zajistiSatoshi();
 const version = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
 // Build outside File Provider/iCloud folders: they re-add FinderInfo during signing.
 const build = await fs.mkdtemp('/private/tmp/agenteeq-mac-build-');

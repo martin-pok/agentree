@@ -22,8 +22,8 @@
 
   --action: var(--ink); --on-action: #FFFFFF; --action-hover: #3A3646;
 
-  --f-display: 'Urbanist', 'Avenir Next', system-ui, sans-serif;
-  --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-display: 'Satoshi', 'Urbanist', 'Avenir Next', system-ui, sans-serif;
+  --f-body: 'Satoshi', 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
 
   --r-tile: 28px; --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-xs: 6px; --r-full: 999px;

@@ -7,7 +7,7 @@ Nejdůležitější:
 - `npm test` a `npm run check` musí projít; UI změny ověř v prohlížeči (1440 px + 375 px, čistá konzole).
 - Změna vzhledu = i `npm run qa:contrast` (WCAG 2.2 AA měřené na vykreslené ploše: aplikace, web, rozšíření).
 - Tlačítka a vše, na co se klepe a má jeden řádek, jsou kapsle (`--r-full`) ve všech produktech; výšky 32/40/48 px,
-  popisek Onest 500 (`docs/DESIGN.md`). Změna vzhledu = i `npm run qa:tvary`.
+  popisek Satoshi 500 (`docs/DESIGN.md`). Změna vzhledu = i `npm run qa:tvary`.
 - Web stavíš `npm run build:site`, rozšíření `npm run build:extension`, celé vydání `npm run release:mac`.
 - Stav session se odvozuje jen v `src/model.js#deriveStatus`.
 - Rozdíl mezi systémy patří jen do `src/platform.js` (cesty, procesy, otevírání). V `src/`

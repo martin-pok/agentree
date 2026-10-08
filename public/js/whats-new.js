@@ -41,7 +41,7 @@ export async function showWhatsNew({ releases } = {}) {
   </div>`;
   const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? tr('Obnovit rozšíření') : ext?.repair ? tr('Spárovat rozšíření') : tr('Nainstalovat rozšíření')}</button>` : ''}<button type="submit" class="btn btn--primary">${tr('Rozumím')}</button>`;
   await modal({
-    title: tr('Co je nového'),
+    title: tr('Co je nového?'),
     body,
     footer,
     size: 'reader',

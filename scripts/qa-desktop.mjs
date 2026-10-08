@@ -65,7 +65,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
           schovany,
           profil: schovany ? 0 : Math.round(Math.max(0, obsah.getBoundingClientRect().bottom - pr.bottom)),
-          pres: Math.round(Math.max(0, pr.bottom - nr.top)),
+          pres: Math.round(Math.max(0, Math.min(pr.bottom, nr.bottom) - Math.max(pr.top, nr.top))),
           radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
           popisekUseknuty: !schovany && popisek.scrollWidth > popisek.clientWidth + 1,
         };
@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 48)) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - h) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -273,7 +273,7 @@ async function zkontrolujPlynulost(browser, engine) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);
       ozivit(radky[i]);
-      await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
+      await p.waitForFunction(([id, at]) => document.querySelector(`[data-key="${id}"] [data-ago]`)?.dataset.ago === String(at), [radky[i].id, radky[i].lastAt], { timeout: 3000 });
       // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
       await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
       await ustalit();
@@ -466,11 +466,13 @@ for (const engine of engines) {
   const qaProjectId = qaProjectResponse.body.project.id;
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
+  if (!process.env.QA_SKIP_PREFLIGHT) {
   await zkontrolujPocitadla(browser, engine);
   await zkontrolujNadpisy(browser, engine);
   await zkontrolujObdobi(browser, engine);
   await zkontrolujVyskyRadku(browser, engine);
   await zkontrolujPlynulost(browser, engine);
+  }
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
@@ -559,9 +561,9 @@ for (const engine of engines) {
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
-    // Karty Přehledu jsou světlé sklo Dne (--glass), ne barevná výplň.
+    // Schválený redesign používá čistou bílou plochu karet.
     for (const selector of ['.token-card', '.calm']) {
-      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
+      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
     }
     assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
@@ -586,17 +588,19 @@ for (const engine of engines) {
     assert.equal(odsazeniOdznaku, 12, `${engine}: odznak upozornění musí mít stejný pravý vizuální odstup od pilulky`);
     assert.equal(await page.locator('.metric-note, .lwin-hint, .token-card .note').count(), 0, `${engine}: Přehled znovu ukazuje dlouhé vysvětlivky`);
     assert.match(await page.locator('.budget-label').textContent(), /tokenů z přepisů dnes/);
-    await page.locator('.pb-stat').nth(1).click();
-    await page.waitForURL('**/#/agenti?stav=failed');
+    await page.locator('.nav [data-nav="agenti"]').click();
+    await page.locator('[data-status-filter="failed"]').click();
     await page.locator('[data-region="table"] .row:not(.row-head)').first().waitFor();
     assert.equal(await page.locator('[data-region="table"] .row:not(.row-head)').count(), 1, `${engine}: klik na selhání filtruje skutečně selhané agenty`);
     await page.goto(`${server.url}/#/prehled`);
+    await page.locator('.home-history > summary').click();
     await page.locator('.token-card').waitFor();
     // Změna, kterou server sám nevyslal do SSE, se po návratu nativního okna do popředí musí
     // propsat bez kliknutí na obnovu. Simulujeme ji přímo v úložišti testovacího serveru.
     server.app.datastore.data.settings.avatar = 7;
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.waitForFunction(() => document.querySelector('[data-face]')?.dataset.face === '7');
+    await page.locator('.studio-options > summary').click();
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
@@ -667,7 +671,7 @@ for (const engine of engines) {
     assert.equal(await page.evaluate(() => { const n = document.querySelector('.nav'); return n.scrollHeight > n.clientHeight + 1; }), false, `${engine} nabídka se na výšku musí vejít bez rolování`);
     await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
     await page.setViewportSize({ width: 1440, height: 1000 });
-    assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
+    assert.equal(await page.locator('.launch-kbd').isVisible(), false, `${engine}: simplified composer keeps the shortcut decoration hidden`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');
     await page.evaluate(() => {
@@ -773,7 +777,7 @@ for (const engine of engines) {
       await page.waitForTimeout(100);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} desktop overflow ${route}`);
       assert.equal(await page.locator('select:visible').count(), 0, `${engine} native select visible ${route}`);
-      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(255, 255, 255, 0.56)');
+      if (route === 'projekty') assert.equal(await page.locator('.pcard--ghost').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
       if (route === 'nastaveni') {
         for (const id of ['perplexity', 'grok']) assert.equal(await page.locator(`[data-web-source="${id}"]`).count(), 1, `${engine} ${id} je samostatný webový zdroj`);
         const choices = await page.locator('[data-avatar-pick]').evaluateAll((nodes) => nodes.map((el) => ({ value: el.dataset.avatarPick, name: el.getAttribute('aria-label') || el.title || el.textContent.trim() })));
@@ -844,7 +848,7 @@ for (const engine of engines) {
         // Klepnutí na Eben při střídání přepne celý pár na Koncert – ve dne je vidět Slonovina se scénou.
         await page.locator('button[data-theme-pick="eben"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.look === 'koncert' && document.documentElement.dataset.theme === 'light' && document.documentElement.dataset.appearance === 'system');
-        assert.equal(await page.locator('.stage').evaluate((el) => getComputedStyle(el).display), 'block', `${engine}: Koncert má tmavou scénu nahoře`);
+        assert.equal(await page.locator('.stage').evaluate((el) => getComputedStyle(el).display), 'none', `${engine}: nový vzhled ponechává čistou plochu i v motivu Koncert`);
         await page.screenshot({ path: `dist/qa/${engine}-koncert-settings.png` });
         await page.locator('[data-setting="appearanceSystem"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.appearance === 'light' && document.documentElement.dataset.theme === 'light');
@@ -855,7 +859,7 @@ for (const engine of engines) {
         await page.waitForFunction(() => document.documentElement.dataset.look === 'obloha' && document.documentElement.dataset.theme === 'light');
         await page.locator('.set-main').waitFor();
         await page.setViewportSize({ width: 2528, height: 1390 });
-        await page.waitForFunction(() => getComputedStyle(document.querySelector('.set-main')).marginLeft === '224px');
+        await page.waitForFunction(() => innerWidth === 2528 && Math.abs(document.querySelector('.set-main').getBoundingClientRect().width - 880) < 1);
         const settingsCenter = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
           return Math.abs(box.left + box.width / 2 - innerWidth / 2);
@@ -946,6 +950,7 @@ for (const engine of engines) {
         y: scrollY,
         nadpis: Math.round(document.getElementById('page-title').getBoundingClientRect().top),
         menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        menuStickyTop: parseFloat(getComputedStyle(document.querySelector('.set-nav')).top),
       }));
       const pred = await poloha();
       const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));
@@ -964,6 +969,7 @@ for (const engine of engines) {
       await page.waitForTimeout(100);
       const po = await page.evaluate(() => ({
         menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        menuStickyTop: parseFloat(getComputedStyle(document.querySelector('.set-nav')).top),
         skupina: Math.round(document.querySelector('.set-group:not([hidden])').getBoundingClientRect().top),
       }));
       assert.equal(po.menu, menuPred, `${engine} ${sirka}: posunuté menu Nastavení se po kliknutí pohnulo`);
@@ -988,6 +994,7 @@ for (const engine of engines) {
         y: scrollY,
         nadpis: Math.round(document.getElementById('page-title').getBoundingClientRect().top),
         menu: Math.round(document.querySelector('.set-nav').getBoundingClientRect().top),
+        menuStickyTop: parseFloat(getComputedStyle(document.querySelector('.set-nav')).top),
         posledni: Math.round(document.querySelector('.set-nav button:last-child').getBoundingClientRect().bottom),
         max: document.documentElement.scrollHeight - innerHeight,
       }));
@@ -1006,7 +1013,7 @@ for (const engine of engines) {
         if (sirka > 1180) await page.waitForFunction(() => document.documentElement.classList.contains('has-page-scroll'), null, { timeout: 1000 });
         const po = await merit();
         assert.ok(po.y >= 299, `${engine} ${sirka}: stránka se neposunula (${po.y} px)`);
-        assert.ok(Math.abs(po.menu - vychozi.menu) <= 1,
+        assert.ok(Math.abs(po.menu - Math.max(po.menuStickyTop, vychozi.menu - (po.y - vychozi.y))) <= 1,
           `${engine} ${sirka}: podmenu vyjelo z ${vychozi.menu} na ${po.menu} px`);
         assert.ok(Math.abs(po.nadpis - vychozi.nadpis) <= 1,
           `${engine} ${sirka}: nadpis Nastavení vyjel z ${vychozi.nadpis} na ${po.nadpis} px`);

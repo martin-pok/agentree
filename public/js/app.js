@@ -1,3 +1,5 @@
+import { initMascotMotion } from './mascot-motion.js';
+import { robotGuide } from './robot-guide.js';
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
@@ -210,6 +212,10 @@ function vyridSkokNaSekci() {
   if (!cil) return;
   const najdi = () => {
     const region = viewEl.querySelector(`[data-region="${CSS.escape(cil.region)}"]`);
+    // Search must reveal a destination nested in progressive-disclosure sections.
+    for (let parent = region?.parentElement; parent; parent = parent.parentElement) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+    }
     return region && region.getClientRects().length && (region.children.length || region.textContent.trim()) ? region : null;
   };
   const proved = (pokus) => {
@@ -266,6 +272,7 @@ function refresh(topics) {
   const drzKotvu = kotva(viewEl);
   try {
     current?.update(topics);
+    robotGuide(viewEl);
   } catch (err) {
     console.error('Agenteeq: chyba vykreslení', err);
   }
@@ -341,14 +348,17 @@ function updateChrome() {
     down: ['dot--down', tr('Obnovuji spojení…'), tr('Bez spojení')],
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
-  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  // Jméno počítače není v patičce (vlastník 8. 10. 2026: „pročistit“) – ukáže se v bublině po
+  // najetí nebo zaostření pilulky spojení, kde dává smysl: k čemu přesně je okno připojené.
+  const pocitac = state.host ? `${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}` : '';
+  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>${pocitac ? `<span class="conn-tip" role="tooltip">${esc(pocitac)}</span>` : ''}`);
+  connEl.tabIndex = pocitac ? 0 : -1;
   renderUpdate();
   // Do načtení drží patička místo řádků počítače a verze, jinak by nabídka (stojí uprostřed mezi
   // profilem a patičkou) po načtení poskočila nahoru.
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
-    ${!state.loaded ? '<span class="source-host" aria-hidden="true"><span class="skel-text skel-text--host"></span></span><span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
-    ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
-    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
+    ${!state.loaded ? '<span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
+    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového?')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
   if (!pop.hidden) renderPopover();
@@ -1066,6 +1076,7 @@ window.addEventListener('pageshow', (e) => { if (e.persisted) tichaObnova(tr('st
 setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 
 navigate();
+initMascotMotion();
 setInterval(tickClock, 1000);
 setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);

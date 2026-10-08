@@ -1,3 +1,4 @@
+import { agentRobot } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
@@ -153,7 +154,8 @@ function rowHtml(s) {
   // Tento záznam není ověřená konverzace: z procesu samého nepoznáme, jestli jde o hlavního
   // nebo pomocného agenta. Složka proto zůstává jen kontextem, nikdy názvem konverzace.
   else if (s.proces) sub = `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
-  else sub = `<code>${esc(shortPath(s.cwd) || s.url || s.app)}</code>`;
+  else if (s.cwd || s.url) sub = `<code>${esc(shortPath(s.cwd) || s.url)}</code>`;
+  else sub = '';
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';
   const total = sessionTotal(s);
   const tag = f.project === 'all' ? projectTag(s) : '';
@@ -162,7 +164,7 @@ function rowHtml(s) {
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
     <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '–'))}</small></span>
     <span class="cell-status">${statusPill(s.status)}</span>
-    <span class="cell-num">${total ? fmtTok(total) : '–'}</span>
+    <span class="cell-num">${total ? `${fmtTok(total)} <span class="cell-unit">${tr('tokenů')}</span>` : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;
   if (f.selecting && !s.proces) {
     const checked = f.selected.has(s.id);
@@ -172,7 +174,7 @@ function rowHtml(s) {
   }
   const env = envOf(s);
   return `<a class="row" href="${agentHref(s.id)}" data-session-drag="${esc(s.id)}" data-key="${esc(s.id)}">
-    <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i><span class="env-badge">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
+    <span class="icon-tile agent-robot-tile">${agentRobot(s)}<i class="status-dot status-${esc(s.status)}"></i><span class="env-badge">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
   </a>`;
 }
 
@@ -313,6 +315,15 @@ function update() {
   zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
+  // A grid cannot preserve the card under the pointer by vertical scrolling alone.
+  // Keep existing slots during live updates below the filters; explicit filter changes re-sort.
+  const filterKey = JSON.stringify([f.status, f.source, [...f.providers], f.q, f.project]);
+  const table = el.querySelector('[data-region="table"]');
+  if (v.filterKey === filterKey && table?.getBoundingClientRect().top < 0) {
+    const positions = new Map([...table.querySelectorAll('[data-key]')].map((node, i) => [node.dataset.key, i]));
+    list.sort((a, b) => (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity));
+  }
+  v.filterKey = filterKey;
   v.visible = list;
   for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
   if (!all.length) {
