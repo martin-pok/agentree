@@ -60,6 +60,7 @@ const DOBA_SAMA = 4800;
 const ROZESTUP_SAMA = 9000;
 
 const ROBOT = '.pb-agent-logo, .agent-portrait, .home-robot';
+const SAMI = '.home-robot, .home-live .pb-agent-logo';
 const vyber = (pole, posledni) => {
   const moznosti = pole.length > 1 ? pole.filter((t) => t !== posledni) : pole;
   return moznosti[Math.floor(Math.random() * moznosti.length)];
@@ -236,7 +237,9 @@ export function initRobotBubliny() {
   function zkontroluj() {
     cekani = 0;
     let rekl = false;
-    for (const robot of document.querySelectorAll(ROBOT)) {
+    // Jen Přehled (robot u pozdravu a „Právě teď“): na seznamu agentů by roboti při živých událostech
+    // štěbetali jeden přes druhého a každá bublina by měřila stovky řádků.
+    for (const robot of document.querySelectorAll(SAMI)) {
       const id = kdo(robot), stav = stavRobota(robot), byl = predchozi.get(id);
       predchozi.set(id, stav);
       if (rekl || Date.now() < klid || !byl || byl === stav || !DULEZITE.has(stav) || !smiSama() || u) continue;
@@ -248,7 +251,7 @@ export function initRobotBubliny() {
       if (stav === 'needs_input') gesto(robot, 'mavnuti');
     }
   }
-  new MutationObserver(() => { if (!cekani) cekani = requestAnimationFrame(zkontroluj); })
+  new MutationObserver(() => { if (!cekani && document.querySelector('.home-robot')) cekani = requestAnimationFrame(zkontroluj); })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'data-status'] });
   zkontroluj();
 
