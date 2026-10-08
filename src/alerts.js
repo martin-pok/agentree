@@ -61,6 +61,8 @@ export class AlertEngine {
     this.notifier = notifier;
     this.projectNotify = projectNotify;
     this.now = now;
+    // Odeslání na telefon (src/push.js); app.js ho dosadí, až existuje přístup z telefonu.
+    this.doTelefonu = null;
     this.prevStatus = new Map();
     this.turnStart = new Map();
     // Kdy odešla oznámení v poslední minutě. Jen v paměti – po restartu se počítá od nuly.
@@ -216,6 +218,13 @@ export class AlertEngine {
       this.notifier
         .native({ title: t(alert.title), body: t(alert.body || ''), subtitle: 'Agenteeq', sound: alert.level === 'action' || alert.level === 'critical' })
         .catch(() => {});
+    }
+    // Spárované telefony s odběrem (src/push.js) dostanou totéž, co jde do systému. Vlastní
+    // přepínač nemají: odběr si zapnul telefon sám, a vypne ho tam nebo v Nastavení na Macu.
+    if (!muted && !bezNativniho && this.doTelefonu) {
+      const t = prekladac(this.datastore.data.settings.language);
+      const route = alert.route || (alert.sessionId ? `#/agent/${encodeURIComponent(alert.sessionId)}` : '#/upozorneni');
+      Promise.resolve(this.doTelefonu({ title: t(alert.title), body: t(alert.body || ''), route, tag: alert.kind || 'alert', id: alert.id })).catch(() => {});
     }
     return alert;
   }

@@ -7,10 +7,12 @@
 import { POCITAC } from './platform.js';
 import { ui } from './texty.js';
 
-// Jediné změny, které telefon smí: spárovat se a označit upozornění jako přečtená.
+// Jediné změny, které telefon smí: spárovat se, označit upozornění jako přečtená a zapnout,
+// vyzkoušet nebo zrušit upozornění na sebe sama (src/push.js; cizí odběr zrušit nemůže).
 const POVOLENE_ZMENY = [
   ['POST', /^\/api\/lan\/pair$/],
   ['POST', /^\/api\/alerts\/read$/],
+  ['POST', /^\/api\/push\/(subscribe|unsubscribe|test)$/],
 ];
 
 // Čtení, které telefonu nepatří ani tak: procházení složek disku a celé přepisy konverzací i výstup

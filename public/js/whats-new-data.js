@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.40.0',
+    date: '2026-10-08',
+    title: 'Upozornění na telefon',
+    items: [
+      'Spárovaný telefon může dostávat stejná upozornění jako Mac, i se zavřenou aplikací: zapneš je v telefonu v Nastavení → Upozornění. Posílá je přímo tvůj Mac, šifrovaně, bez účtu a bez serveru Agenteeq. Potřebuje HTTPS (tailscale serve nebo tunel) a v iPhonu aplikaci uloženou na plochu.',
+    ],
+    en: {
+      title: 'Notifications on your phone',
+      items: [
+        'A paired phone can now get the same alerts as your Mac, even with the app closed: turn them on from the phone under Settings → Alerts. Your Mac sends them directly, encrypted, with no account and no Agenteeq server. It needs HTTPS (tailscale serve or a tunnel), and on iPhone the app saved to the Home Screen.',
+      ],
+    },
+  },
+  {
     version: '0.39.0',
     date: '2026-10-07',
     title: 'Statistiky za rok, štítky a odhad ceny projektů',

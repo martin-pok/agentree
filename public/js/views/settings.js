@@ -15,8 +15,9 @@ import { JE_MAC, SYSTEM, zkratka } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
 import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
 import { umiInstalovat, nainstalujAktualizaci } from '../aktualizace.js';
+import { nactiPush, zapniPush, vypniPush, zkusPush, zrusOdber } from '../push-ui.js';
 
-const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '' };
+const v = { folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pin: null, ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '', push: null, pushChyba: '', pushNacita: false };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
 const FEATURE_LABEL = { launchBackground: tr('Spouštění agentů na pozadí'), localChat: tr('Chat s lokálními modely v Ollamě'), projectsUnlimited: tr('Neomezený počet projektů'), projectExport: tr('Export projektů do CSV') };
 const DONE_OPTIONS = [[0, tr('každou')], [60, tr('delší než 1 minuta')], [120, tr('delší než 2 minuty')], [300, tr('delší než 5 minut')], [900, tr('delší než 15 minut')]];
@@ -209,6 +210,7 @@ function privacyCard() {
     tr('Denní kurzy ČNB pro převod měn a kontrola nových verzí na GitHubu – bez jakýchkoli údajů o tobě.'),
     keysOn ? tr('Náklady za API: dotaz jde tvým klíčem přímo k výrobci.') : tr('Náklady za API, jen když přidáš klíč.'),
     prihlasen ? (state.ucet?.sync?.zapnuto ? tr('Účet Agenteeq: synchronizuje jen souhrnná čísla.') : tr('Účet Agenteeq: přihlášený, synchronizace je vypnutá.')) : tr('Účet Agenteeq, jen když se přihlásíš.'),
+    ...(v.push?.odbery?.length ? [tr('Upozornění na telefon: jdou přes push službu výrobce telefonu (Apple, Google), šifrovaná tak, že je služba nepřečte.')] : []),
     telefon ? tr('Přístup z telefonu je zapnutý: server poslouchá i pro spárovaná zařízení.') : tr('Server poslouchá jen na 127.0.0.1, dokud nezapneš přístup z telefonu.'),
   ];
   return `
@@ -275,6 +277,7 @@ function mount(el) {
   v.el = el;
   window.addEventListener('agenteeq-jump', onJump);
   nactiNapojeni();
+  nactiTelefon();
   if (!v.customTypes) api.customAgents().then((r) => { v.customTypes = r.types; state.customAgents = r.agents; update(); }).catch(() => { v.customTypes = []; });
   if (!GROUPS.some(([id]) => id === v.tab)) v.tab = GROUPS[0][0];
   el.innerHTML = `
@@ -374,6 +377,7 @@ function mount(el) {
       return;
     }
     const sw = e.target.closest('[data-setting]');
+    if (sw?.dataset.setting === 'push-telefon') return prepniTelefon(sw);
     if (sw) return toggleSetting(sw);
     const nap = e.target.closest('[data-napojit]');
     if (nap) {
@@ -401,6 +405,16 @@ function mount(el) {
           toast(tr('Propojení s Claude Code je vypnuté'));
           update();
         }
+      } else if (a.dataset.action === 'push-test') {
+        a.disabled = true;
+        const r = await zkusPush().finally(() => { a.disabled = false; });
+        if (r.chyby) toast(tr('Zkušební upozornění se nepodařilo doručit. Push služba telefonu ho odmítla.'), { tone: 'err', timeout: 8000 });
+        else toast(tr('Zkušební upozornění odešlo na telefon'));
+        nactiTelefon();
+      } else if (a.dataset.action === 'push-zrusit') {
+        await zrusOdber(a.dataset.id);
+        toast(tr('Upozornění na telefon jsou vypnutá'));
+        nactiTelefon();
       } else if (a.dataset.action === 'test-alert') {
         const { alert } = await api.testAlert();
         // Ztlumené upozornění nepřijde jako oznámení ani jako bublina – bez téhle věty by klik
@@ -878,6 +892,63 @@ function nactiNapojeni() {
     .finally(() => { v.napojeniNacita = false; update(); });
 }
 
+// Upozornění na telefon (public/js/push-ui.js). Na telefonu přepínač pro tenhle telefon, na Macu
+// seznam telefonů, které je mají zapnuté.
+function nactiTelefon() {
+  if (v.pushNacita) return;
+  v.pushNacita = true;
+  nactiPush()
+    .then((r) => { v.push = r; v.pushChyba = ''; })
+    .catch((err) => { v.push = null; v.pushChyba = `${tr('Nepodařilo se zjistit stav upozornění na telefon:')} ${err.message}`; })
+    .finally(() => { v.pushNacita = false; update(); });
+}
+
+const PUSH_DUVOD = {
+  https: () => tr('Upozornění na telefon potřebují HTTPS. Otevři Agenteeq přes adresu z „tailscale serve“ nebo přes tunel, ne přes http.'),
+  plocha: () => tr('V iPhonu chodí upozornění jen do aplikace uložené na plochu: v Safari Sdílet → Přidat na plochu, pak otevři Agenteeq z plochy (iOS 16.4 a novější).'),
+  prohlizec: () => tr('Tenhle prohlížeč upozornění z webu neumí. Zkus Safari v iPhonu (z plochy) nebo Chrome v Androidu.'),
+};
+
+async function prepniTelefon(sw) {
+  const zapnout = sw.getAttribute('aria-checked') !== 'true';
+  sw.disabled = true;
+  try {
+    if (zapnout) {
+      await zapniPush(v.push.publicKey);
+      toast(tr('Upozornění na tento telefon jsou zapnutá'));
+    } else {
+      await vypniPush();
+      toast(tr('Upozornění na tento telefon jsou vypnutá'));
+    }
+  } catch (err) {
+    toast(err.kod === 'denied' ? tr('Telefon oznámení nepovolil. Povol je v nastavení telefonu a zkus to znovu.') : `${tr('Upozornění se nepodařilo zapnout:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+  } finally {
+    sw.disabled = false;
+    nactiTelefon();
+  }
+}
+
+function pushSekce() {
+  const p = v.push;
+  const nadpis = `<div class="push-head"><h4 class="push-head-title">${tr('Na telefon')}<span class="badge badge--beta" title="${tr('Zatím ověřeno jen podle specifikace, ne na skutečném telefonu.')}">${tr('Beta')}</span></h4><p class="set-desc">${tr('Stejná upozornění jako na {0}, i se zavřenou aplikací v telefonu.', tomtoPocitaci())}</p></div>`;
+  if (!p) return `${nadpis}<p class="set-note">${v.pushChyba ? esc(v.pushChyba) : tr('Zjišťuji stav upozornění na telefon…')}</p>`;
+  if (p.podpora.duvod === 'mac') {
+    const radky = p.odbery.map((o) => `<li><b>${esc(o.nazev || tr('Telefon'))}</b><span>${o.chyba ? `${tr('poslední doručení selhalo ({0})', esc(o.chyba))} · ` : o.naposledyOk ? `${tr('naposledy doručeno')} <span data-ago="${o.naposledyOk}">${rel(o.naposledyOk)}</span> · ` : `${tr('zapnuto {0}', dateLong(o.vytvoreno))} · `}<button class="link-inline" type="button" data-action="push-zrusit" data-id="${esc(o.id)}">${tr('Vypnout')}</button></span></li>`).join('');
+    return `${nadpis}
+      ${radky ? `<ul class="privacy-list">${radky}</ul>
+        <div class="set-actions"><button class="btn btn--sm" type="button" data-action="push-test">${tr('Poslat zkušební na telefon')}</button></div>`
+        : `<p class="set-note">${tr('Zatím je nemá zapnutý žádný telefon. Zapínají se v telefonu: spáruj ho (Aplikace → Otevřít na telefonu), otevři Agenteeq přes HTTPS a tady v Upozornění zapni přepínač.')}</p>`}
+      <p class="set-note">${tr('Zprávu doručí push služba výrobce telefonu (Apple, Google). Je šifrovaná pro telefon, takže ji služba nepřečte. Když je {0} vypnutý, nepřijde nic.', tentoPocitac())}</p>`;
+  }
+  if (!p.podpora.ok) return `${nadpis}<p class="set-note">${PUSH_DUVOD[p.podpora.duvod]()}</p>`;
+  const zapnuto = Boolean(p.tady);
+  const blokovano = p.povoleni === 'denied';
+  return `${nadpis}
+    ${switchRow({ key: 'push-telefon', label: tr('Upozornění na tento telefon'), desc: blokovano ? tr('Oznámení jsou pro Agenteeq v telefonu zakázaná. Povol je v nastavení telefonu a zkus to znovu.') : zapnuto ? tr('Zapnuto. Upozornění přijdou, i když je aplikace zavřená.') : tr('Telefon se zeptá, jestli smí Agenteeq posílat oznámení.'), checked: zapnuto, disabled: blokovano && !zapnuto })}
+    ${zapnuto ? `<div class="set-actions"><button class="btn btn--sm" type="button" data-action="push-test">${tr('Poslat zkušební')}</button></div>` : ''}
+    <p class="set-note">${tr('Posílá je {0}, dokud běží. Zprávu doručí push služba výrobce telefonu a je šifrovaná, takže ji služba nepřečte.', tentoPocitac())}</p>`;
+}
+
 function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
@@ -1031,6 +1102,8 @@ function update(topics) {
     ${head(ICON.bell, tr('Kdy a jak tě upozornit'), tr('Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu.'), `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`)}
     ${switchRow({ key: 'native', label: JE_MAC ? tr('Oznámení v macOS') : tr('Oznámení systému'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
     ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), desc: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
+    <div class="set-divider"></div>
+    ${pushSekce()}
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), desc: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), desc: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
