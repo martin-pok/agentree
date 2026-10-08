@@ -85,5 +85,5 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
   .sidebar .side-foot { margin-top: auto; }
 }
 @media (min-width: 2080px) {
-  .set-main { margin-left: calc(50vw - 956px); }
+  .set-main { margin-left: calc(50vw - 980px); }
 }

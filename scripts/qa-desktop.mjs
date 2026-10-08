@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - h) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 24)) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -268,7 +268,16 @@ async function zkontrolujPlynulost(browser, engine) {
       requestAnimationFrame(krok);
     }));
     await ustalit();
-    const pod = () => p.evaluate(() => { const r = document.elementFromPoint(700, 450)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; });
+    // Agenti jsou karty v mřížce: pevný bod by mohl padnout do mezery mezi kartami. Měří se
+    // ve středu karty, která je v polovině výšky okna.
+    const [mx, my] = await p.evaluate(() => {
+      const vzdal = (r) => { const b = r.getBoundingClientRect(); return Math.abs(b.top + b.height / 2 - innerHeight / 2); };
+      const k = [...document.querySelectorAll('[data-region="table"] [data-key]')].sort((a, b) => vzdal(a) - vzdal(b))[0];
+      const b = k.getBoundingClientRect();
+      return [Math.round(b.left + b.width / 2), Math.round(b.top + b.height / 2)];
+    });
+    await p.mouse.move(mx, my);
+    const pod = () => p.evaluate(([x, y]) => { const r = document.elementFromPoint(x, y)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; }, [mx, my]);
     for (const i of [120, 121]) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);

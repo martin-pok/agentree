@@ -261,6 +261,8 @@ function callout(karta, prepinac = '') {
   const prepinacEl = prepinac ? card.querySelector(`[data-setting="${CSS.escape(prepinac)}"]`) : null;
   if (prepinacEl) {
     vyvolejMisto(prepinacEl.closest('.set-row') || prepinacEl, prepinacEl);
+    // Karta se může vzápětí překreslit (dočtený stav, živá data) – zvýraznění se pak obnoví.
+    v.zvyrazneni = { karta, prepinac, do: Date.now() + 2400 };
     return;
   }
   vyvolejMisto(card, card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn'));
@@ -913,7 +915,9 @@ function nactiTelefon() {
   nactiPush()
     .then((r) => { v.push = r; v.pushChyba = ''; })
     .catch((err) => { v.push = null; v.pushChyba = `${tr('Nepodařilo se zjistit stav upozornění na telefon:')} ${err.message}`; })
-    .finally(() => { v.pushNacita = false; update(); });
+    // Jen vlastní sekce: překreslení celé karty by vzalo zvýraznění a fokus přepínače, na který
+    // zrovna skočilo hledání.
+    .finally(() => { v.pushNacita = false; const sekce = v.el?.querySelector('[data-push-sekce]'); if (sekce) { sekce.innerHTML = pushSekce(); } update(); });
 }
 
 const PUSH_DUVOD = {
@@ -1005,6 +1009,10 @@ function update(topics) {
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
+  if (v.zvyrazneni && Date.now() < v.zvyrazneni.do) {
+    const radek = el.querySelector(`[data-region="${v.zvyrazneni.karta}"] [data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row');
+    radek?.classList.add('is-called-out');
+  }
 
   const lang = jazyk();
   const langOption = (value, label) => `<button class="appearance-option" type="button" data-lang="${value}" aria-pressed="${lang === value}"><strong>${label}</strong></button>`;
@@ -1121,7 +1129,7 @@ function update(topics) {
     ${switchRow({ key: 'native', label: JE_MAC ? tr('Oznámení v macOS') : tr('Oznámení systému'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
     ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), desc: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
     <div class="set-divider"></div>
-    ${pushSekce()}
+    <div data-push-sekce>${pushSekce()}</div>
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), desc: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
     ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), desc: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
