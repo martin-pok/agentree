@@ -193,12 +193,12 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 @media (max-width: 560px) { .home-intro h2 { font-size: 36px; } .home-history > summary span { display: none; } }
 
 /* Studio: progressive disclosure, a single composer and personal agent portraits. */
-.home-workspace { display: flex; flex-direction: column; max-width: 1060px; gap: 44px; margin-top: 24px; }
-.home-intro { text-align: center; margin: 12px auto 28px; }
+.home-workspace { display: flex; flex-direction: column; gap: 44px; max-width: none; margin: 24px 0 56px; }
+.home-intro { text-align: center; margin: 12px 0 28px; }
 .home-intro h2, .home-intro p { max-width: none; }
 .home-intro h2 { font-size: clamp(32px, 3.1vw, 48px); }
 .home-intro .home-eyebrow { display: none; }
-.home-desk .launch { max-width: 800px; margin: 0 auto 30px; }
+.home-desk .launch { margin: 0 0 30px; }
 .home-desk .launch-head { display: none; }
 .studio-choice { width: fit-content; margin: 0 auto 14px; }
 .studio-choice > summary, .studio-options > summary { cursor: pointer; font-size: 14px; padding: 8px 14px; border-radius: 24px; color: var(--ink-2); }
@@ -224,7 +224,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .home-live .pb-agent-text b { font-size: 12px; color: var(--mute); margin-top: 6px; }
 .studio-nickname { font-size: 20px; font-weight: 400; }
 .studio-avatar, .home-live .pb-agent-logo.studio-avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: color-mix(in srgb, var(--persona) 12%, var(--card)); color: var(--persona); font-size: 32px; box-shadow: none; }
-.home-history { max-width: 1060px; margin: auto; }
+.home-history { margin: 0; }
 .studio-dialog { width: min(480px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--line); border-radius: 24px; background: var(--card); color: var(--ink); }
 .studio-dialog::backdrop { background: #10101466; }
 .studio-dialog header, .studio-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -357,7 +357,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .lpick-pop { animation: none; } }
 
 /* Pozdrav na Přehledu jako panel s robotem: robot ukazuje stav všech agentů (home-studio.js). */
-.home-desk .home-intro { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; max-width: 800px; margin: 8px auto 24px; padding: 20px 28px 20px 20px; border-radius: var(--r-xl); background: color-mix(in srgb, var(--action) 5%, var(--card)); border: 1px solid color-mix(in srgb, var(--action) 12%, var(--line-2)); text-align: left; }
+.home-desk .home-intro { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; margin: 0 0 24px; padding: 20px 28px 20px 20px; border-radius: var(--r-xl); background: color-mix(in srgb, var(--action) 5%, var(--card)); border: 1px solid color-mix(in srgb, var(--action) 12%, var(--line-2)); text-align: left; }
 .home-robot, .home-robot .robot { display: block; width: 96px; height: 100px; }
 .home-intro-text { min-width: 0; }
 .home-desk .home-intro h2 { margin: 0 0 8px; font-size: clamp(28px, 2.6vw, 40px); }
@@ -454,3 +454,45 @@ html[data-theme='dark'] .robot-shell, html[data-theme='dark'] .robot-torso { fil
 html[data-theme='dark'] .robot-shell { stroke: color-mix(in srgb, var(--persona) 60%, var(--card)); }
 html[data-theme='dark'] .robot-face { fill: #101016; }
 .pm-msg:has(.pm-vysledky, .pm-cile) { width: 92%; }
+
+/* Bubliny robotů (public/js/robot-bubliny.js): světlé sklo nad plochou, ocásek míří na robota.
+   Jedna bublina pro celou aplikaci, pozici počítá skript tak, aby zůstala v okně. */
+.rb { position: fixed; left: 0; top: 0; z-index: 60; max-width: min(280px, calc(100vw - 24px)); padding: 10px 14px; border-radius: 16px; pointer-events: none;
+  color: var(--ink); font: 500 13px/1.45 var(--f-body); letter-spacing: .005em; text-wrap: pretty;
+  background: color-mix(in srgb, #ffffff 74%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, #ffffff 70%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #ffffff 80%, transparent) inset, 0 8px 24px -8px rgb(22 20 29 / .18), 0 2px 6px -2px rgb(22 20 29 / .08);
+  opacity: 0; scale: .96; transition: opacity .16s ease, scale .2s cubic-bezier(.34, 1.4, .64, 1); transform-origin: var(--rb-ocasek, 50%) 100%; }
+.rb[data-strana='dole'] { transform-origin: var(--rb-ocasek, 50%) 0; }
+.rb.is-in { opacity: 1; scale: 1; }
+.rb[hidden] { display: none; }
+.rb::after { content: ''; position: absolute; left: calc(var(--rb-ocasek, 50%) - 6px); bottom: -6px; width: 12px; height: 12px; rotate: 45deg; border-radius: 0 0 3px 0;
+  background: inherit; -webkit-backdrop-filter: inherit; backdrop-filter: inherit;
+  border: inherit; border-top-color: transparent; border-left-color: transparent; }
+.rb[data-strana='dole']::after { bottom: auto; top: -6px; border-radius: 3px 0 0 0; border: 1px solid color-mix(in srgb, #ffffff 70%, transparent); border-right-color: transparent; border-bottom-color: transparent; }
+.rb[data-strana='vpravo']::after, .rb[data-strana='vlevo']::after { bottom: auto; top: calc(var(--rb-ocasek-y, 50%) - 6px); }
+.rb[data-strana='vpravo']::after { left: -6px; border-radius: 0 0 0 3px; border: 1px solid color-mix(in srgb, #ffffff 70%, transparent); border-top-color: transparent; border-right-color: transparent; }
+.rb[data-strana='vlevo']::after { left: auto; right: -6px; border-radius: 0 3px 0 0; border: 1px solid color-mix(in srgb, #ffffff 70%, transparent); border-bottom-color: transparent; border-left-color: transparent; }
+.rb[data-strana='vpravo'] { transform-origin: 0 var(--rb-ocasek-y, 50%); }
+.rb[data-strana='vlevo'] { transform-origin: 100% var(--rb-ocasek-y, 50%); }
+html[data-theme='dark'] .rb { color: #f1f1f4; background: color-mix(in srgb, #2a2a33 72%, transparent); border-color: color-mix(in srgb, #ffffff 14%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #ffffff 10%, transparent) inset, 0 10px 28px -8px rgb(0 0 0 / .5); }
+html[data-theme='dark'] .rb[data-strana='vpravo']::after, html[data-theme='dark'] .rb[data-strana='vlevo']::after { border-color: color-mix(in srgb, #ffffff 14%, transparent); }
+html[data-theme='dark'] .rb[data-strana='vpravo']::after { border-top-color: transparent; border-right-color: transparent; }
+html[data-theme='dark'] .rb[data-strana='vlevo']::after { border-bottom-color: transparent; border-left-color: transparent; }
+html[data-theme='dark'] .rb[data-strana='dole']::after { border-color: color-mix(in srgb, #ffffff 14%, transparent); border-right-color: transparent; border-bottom-color: transparent; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .rb { background: var(--card); } }
+@media (prefers-reduced-motion: reduce) { .rb { transition: opacity .12s linear; scale: 1; } }
+
+/* Gesta robotů: mávnutí, poskok, náklon hlavy, otočka (easter egg). Jen transform, 1 s. */
+.home-robot { cursor: pointer; }
+.robot[data-gesto='mavnuti'] .robot-arm-right { transform-box: fill-box; transform-origin: 0 0; animation: rb-mavat .9s ease-in-out; }
+.robot[data-gesto='poskok'] .robot-body { animation: rb-poskok .7s cubic-bezier(.34, 1.4, .64, 1); }
+.robot[data-gesto='naklon'] .robot-head { transform-origin: 54px 65px; animation: rb-naklon .9s ease-in-out; }
+.robot[data-gesto='otocka'] .robot-body { transform-box: fill-box; transform-origin: 50% 60%; animation: rb-otocka 1s cubic-bezier(.65, 0, .35, 1); }
+@keyframes rb-mavat { 0%, 100% { rotate: 0deg; } 20%, 60% { rotate: -38deg; } 40%, 80% { rotate: -14deg; } }
+@keyframes rb-poskok { 0%, 100% { translate: 0 0; } 40% { translate: 0 -10px; } 70% { translate: 0 1px; } }
+@keyframes rb-naklon { 0%, 100% { rotate: 0deg; } 35% { rotate: -10deg; } 70% { rotate: 6deg; } }
+@keyframes rb-otocka { 0% { rotate: 0deg; } 100% { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .robot[data-gesto] * { animation: none !important; } }

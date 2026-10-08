@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.43.0 – 2026-10-08 · Roboti mluví: bubliny, gesta a pár překvapení
+
+- **Bubliny robotů.** Najeď myší (nebo klávesnicí) na robota agenta a řekne krátkou větu podle svého stavu: pracuje, čeká na tvoje rozhodnutí, selhal, narazil na limit, je hotový. Bublina je světlá a skleněná (v tmavém vzhledu tmavé sklo), s ocáskem mířícím na hlavu robota. Umístění hledá samo: zkusí místo vedle robota v jeho kartě, nad ním, po stranách a pod ním a vybere to, které nezakryje tlačítko, odkaz, nadpis ani text. Česká sazba drží jednopísmenné předložky na začátku řádku.
+- **Roboti se ozvou sami, ale jen když je to důležité.** Na Přehledu: když agent začne čekat na tebe, selže, narazí na limit nebo doběhne, jeho robot se jednou ozve (a zamává, když čeká na tebe). Nejvýš jednou za 9 s, ne hned po načtení stránky, a jen když má bublina volné místo – stav vždy říká i text karty.
+- **Gesta.** Klepni na robota u pozdravu: zamává, poskočí nebo nakloní hlavu. Omezení pohybu v systému a přepínač „Ztišit pohyb“ gesta i samovolné bubliny vypnou.
+- **Pár vzácných překvapení.** Občas robot místo běžné věty zacituje kultovní film. Kdo pětkrát rychle klepne na robota u pozdravu, nebo zadá jistý slavný kód ze starých her, uvidí víc.
+- **Přehled drží jednotnou šířku obsahu.** Pozdrav s robotem a pole pro zadání byly úzký vystředěný sloupec (800 px uvnitř 1060 px) a nesedily s nadpisem stránky ani se sekcemi pod nimi. Teď celý Přehled začíná na hraně nadpisu a končí na pravé hraně horní lišty – stejně jako každá jiná stránka, na všech šířkách okna. Hlídá to test (`npm run qa:studio`).
+- **Oprava poznámek k 0.42.0:** plovoucího robota s radami na ostatních stránkách nahradil pomocník vpravo dole; rady ke stránce jsou v jeho úvodní zprávě.
+
 ## 0.42.0 – 2026-10-08 · Pomocník, pohodlnější zadávání práce, robot jen tam, kde pomáhá
 
 - **Pomocník (Beta).** Kulaté tlačítko s robotem vpravo dole otevře chat. Na „najdi chat, kde jsme před cca 3 měsíci řešili fakturaci, už nevím jaký LLM“ prohledá konverzace v přehledu i přepisy na disku tohoto počítače (Claude Code, Codex) – i starší než 30denní okno přehledu. Rozumí období („před 3 měsíci“, „minulý týden“, „v září“, „2 weeks ago“) a nástroji („v Codexu“). Výsledek ukáže s úryvkem a zvýrazněnými slovy; konverzaci z přehledu otevře, starší nabídne zkopírovat příkaz k pokračování (`claude --resume …`, `codex resume …`). Na „jak zapnu upozornění na telefon?“ ukáže volby v aplikaci a klepnutím na ně přejde. Hledání má limit (4 000 přepisů, 5 s) a když nestihne vše, řekne to – „nic jsem nenašel“ hlásí jen po skutečném prohledání. Když nic nesedí v zadaném období, nabídne shody z jiné doby a řekne to. S Ollamou může odpověď navíc zformulovat lokální model; data nikdy neopustí počítač. Telefon dostane jen to, co vidí v přehledu, nic z přepisů. Skrýt jde v Nastavení → Účet a vzhled, tam je i přepínač pohybu robotů.
