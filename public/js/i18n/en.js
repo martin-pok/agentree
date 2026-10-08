@@ -1225,6 +1225,7 @@ export default {
     "Stránky a sekce": "Pages and sections",
     "Naposledy otevřené": "Recently opened",
     "Stránky": "Pages",
+    "Agenteeq běží na portu {0}, rozšíření hledá výchozí 4620. V okně rozšíření otevři „Agenteeq běží na jiném portu?“ a zadej {0}.": "Agenteeq is running on port {0}, but the extension looks for the default 4620. In the extension window, open “Agenteeq running on a different port?” and enter {0}.",
     "Cena přes API": "Cost via API",
     "odhad": "estimate",
     "Pro modely v tomto projektu zatím nemám ověřený ceník, a tak cenu neodhaduji.": "There is no verified price list yet for the models in this project, so no cost is estimated.",

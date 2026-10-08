@@ -985,6 +985,7 @@ function update(topics) {
     <ul class="site-chips" aria-label="${tr('Podporované webové služby')}">${Object.entries(sites).map(([k, site]) => webChip(k, site, web, Date.now())).join('')}</ul>
     ${ext.repair ? `<p class="set-note set-note--warn">${tr('Předchozí spárování přestalo platit. Rozšíření se spáruje znovu samo, jakmile se v Chromu ozve. Kdyby se to nestalo, použij jednorázový kód níž.')}</p>` : ''}
     ${ext.outdated ? `<p class="set-note set-note--warn">${tr('V Chromu běží rozšíření {0}, aplikace má {1}. Otevři', esc(ext.version), esc(ext.expectedVersion))} <code>chrome://extensions</code> ${ext.obchod ? tr('a klikni na Aktualizovat.') : tr('a u Agenteeq klikni na šipku obnovení ↻.')}</p>` : ''}
+    ${ext.port && ext.port !== 4620 ? `<p class="set-note set-note--warn">${esc(tr('Agenteeq běží na portu {0}, rozšíření hledá výchozí 4620. V okně rozšíření otevři „Agenteeq běží na jiném portu?“ a zadej {0}.', ext.port))}</p>` : ''}
     ${statusLine ? `<p class="ext-status">${statusLine}</p>` : ''}
     ${paired ? fold('ext', tr('Instalace a spárování znovu'), installSteps, { cls: 'ext-reinstall' }) : installSteps}
     <p class="small muted">${tr('Funguje i v Brave, Arcu a Edge.')}</p>`);

@@ -990,7 +990,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return {
       claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
       claudeAuth,
-      extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), ...extensionStatus() },
+      extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), port: config.port, ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
       keychain: secrets.available,
       nativeNotify: config.desktop || notifier.enabled,

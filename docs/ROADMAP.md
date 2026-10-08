@@ -54,7 +54,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 | 4 | Hooky do skutečného `~/.claude/settings.json` | Ruční QA: žádost o povolení → upozornění < 1 s; odinstalace vrátí soubor do původního stavu (zatím ověřeno jen v dočasném HOME) |
 | 5 | ~~Upozornění s akcí~~ **hotovo** | Klik na upozornění otevře aplikaci na správné obrazovce (`desktop/Agenteeq.swift`, `userNotificationCenter(_:didReceive:)`) |
 | 6 | ~~Ukládání klíčů bez argv~~ **hotovo** | Hodnoty do Klíčenky jdou jen přes stdin (`test/security-hardening.test.mjs`) |
-| 7 | Konfigurovatelný port i v rozšíření | Změna portu nevyžaduje úpravu manifestu (dnes pevně `127.0.0.1:4620`) |
+| 7 | ~~Konfigurovatelný port i v rozšíření~~ **hotovo v 0.39.0** | Port se nastaví v okně rozšíření („Agenteeq běží na jiném portu?“); jiný než 4620 si vyžádá volitelné oprávnění `http://127.0.0.1/*`, manifest se nemění. Nastavení aplikace na jiném portu radí, co zadat |
 | 8 | ~~Linux a Windows cesty~~ **hotovo v 0.12.0** | Cesty řeší `appSupportDir()` v `src/platform.js`, testy s fixturami běží. Zbývá **ověřit je na skutečném Windows** a označit v `docs/CONNECTORS.md` ✅ místo 🧪 – viz [WINDOWS.md](WINDOWS.md) |
 | 9 | ~~Plášť aplikace pro Windows~~ **postavený, neověřený** | Vlastní okno nad WebView2, odznak v hlavním panelu, systémová oznámení – hotovo, CI ho překládá a přikládá k vydání. Zbývá **spustit na skutečném Windows a podívat se na to**, pak podepsat build. Viz [WINDOWS.md](WINDOWS.md) |
 
