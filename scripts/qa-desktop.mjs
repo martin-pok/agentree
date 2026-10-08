@@ -466,11 +466,13 @@ for (const engine of engines) {
   const qaProjectId = qaProjectResponse.body.project.id;
   for (const [id, label, pct] of [['five', 'Limit 5 h', 8], ['week', 'Týdenní limit', 1]]) server.app.store.setLimit({ id, label, app: 'Codex', provider: 'openai', usedPercent: pct, at: Date.now(), resetsAt: Date.now() + 86400000 });
   const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
+  if (!process.env.QA_SKIP_PREFLIGHT) {
   await zkontrolujPocitadla(browser, engine);
   await zkontrolujNadpisy(browser, engine);
   await zkontrolujObdobi(browser, engine);
   await zkontrolujVyskyRadku(browser, engine);
   await zkontrolujPlynulost(browser, engine);
+  }
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
   const errors = [];
