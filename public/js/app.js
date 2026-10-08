@@ -212,6 +212,10 @@ function vyridSkokNaSekci() {
   if (!cil) return;
   const najdi = () => {
     const region = viewEl.querySelector(`[data-region="${CSS.escape(cil.region)}"]`);
+    // Search must reveal a destination nested in progressive-disclosure sections.
+    for (let parent = region?.parentElement; parent; parent = parent.parentElement) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+    }
     return region && region.getClientRects().length && (region.children.length || region.textContent.trim()) ? region : null;
   };
   const proved = (pokus) => {

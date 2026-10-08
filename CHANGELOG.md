@@ -1,5 +1,13 @@
 # Changelog
 
+## Připravované vydání · Pracovní prostor s robotickými agenty
+
+- Zjednodušený Přehled: zadání a spuštění na první úrovni, podrobné volby a statistiky po rozbalení.
+- Samostatné karty agentů, vlastní jméno, podoba a barva uložené místně. Robot má statické tělo; pouze oči sledují kurzor a občas mrknou. Žádné mávání ani poskakování.
+- Kontextové rady lze skrýt. Omezení pohybu respektuje systém i místní přepínač.
+- Sjednocená typografie Satoshi, kompaktní logo a celé obrysy bez jednostranných barevných okrajů.
+
+
 ## 0.39.0 – 2026-10-07 · Statistiky za 90 dní a 12 měsíců, štítky a odhad ceny projektů
 
 - **Statistiky za 90 dní a 12 měsíců.** Konektory čtou přepisy jen za 30 dní, takže starší čísla dřív zmizela. Agenteeq teď každý den ukládá malý souhrn (`<dataDir>/historie.json`, `src/historie.js`): tokeny (vstup + výstup) podle poskytovatele, aplikace, modelu a složky, hodiny s aktivitou a konverzace podle dne začátku. Den uvnitř 30denního okna se přepočítává z živých konverzací, den mimo okno se zmrazí. Ukládá se 400 dní, jen součty – žádné přepisy, názvy ani ID konverzací. Statistiky mají nová období **90 dní** (13 týdnů) a **12 měsíců** (kalendářní měsíce); graf, karty aplikací, modelů a složek i souhrnná čísla jdou z uložených souhrnů (`GET /api/historie`, `public/js/historie-stats.js`), mapa aktivity a limity zůstávají beze změny. Dny před začátkem ukládání se nedopočítávají ani nevydávají za nulu: pod grafem stojí, od kdy historie sahá.

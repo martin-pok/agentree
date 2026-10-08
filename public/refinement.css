@@ -41,3 +41,14 @@ button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0;
 
 /* Approved release: bodies remain still; gaze and occasional blinking only. */
 .robot .robot-body, .robot .robot-head, .pb-agent:hover .robot-head, .pb-agent[data-state] .robot-head, .agent-portrait[data-state] .robot-head { animation: none !important; transform: none !important; transition: none !important; }
+/* Standard control heights; extra text-spacing may still expand the line box. */
+.btn, .chip, .picker-trigger { height: 40px; min-height: 40px; padding-block: 0; }
+.btn--sm, .lchip { height: 32px; min-height: 32px; padding-block: 0; }
+.btn--lg { height: 48px; min-height: 48px; }
+.home-history > summary { border-radius: var(--r-full); padding-inline: 12px; }
+.guide-toggle { width: 32px; height: 32px; }
+.mascot-motion-toggle { height: 32px; min-height: 32px; padding-block: 0; }
+html[data-theme] .home-live .pb-agent { color: var(--ink); }
+html[data-theme] .home-live .pb-agent[data-state='waiting'] small { color: var(--brass-ink); }
+html[data-theme] .home-live .pb-agent[data-state='working'] small { color: var(--teal-ink); }
+html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--velvet-ink); }

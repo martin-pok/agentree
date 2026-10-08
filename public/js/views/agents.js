@@ -314,6 +314,15 @@ function update() {
   zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
+  // A grid cannot preserve the card under the pointer by vertical scrolling alone.
+  // Keep existing slots during live updates below the filters; explicit filter changes re-sort.
+  const filterKey = JSON.stringify([f.status, f.source, [...f.providers], f.q, f.project]);
+  const table = el.querySelector('[data-region="table"]');
+  if (v.filterKey === filterKey && table?.getBoundingClientRect().top < 0) {
+    const positions = new Map([...table.querySelectorAll('[data-key]')].map((node, i) => [node.dataset.key, i]));
+    list.sort((a, b) => (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity));
+  }
+  v.filterKey = filterKey;
   v.visible = list;
   for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
   if (!all.length) {

@@ -3,12 +3,13 @@ export function initMascotMotion() {
  const media = matchMedia('(prefers-reduced-motion: reduce)');
  let paused = false;
  try { paused = localStorage.getItem('agenteeq:mascot-motion') === 'off'; } catch { /* optional */ }
- let frame = 0, gaze = null, active = null, timer = 0, nextBlink = Date.now() + 9000;
+ let frame = 0, gaze = new Set(), active = null, timer = 0, nextBlink = Date.now() + 9000;
  const allowed = () => !paused && !media.matches && !document.hidden;
  const visible = () => [...document.querySelectorAll('.robot')].filter(r => { const b = r.getBoundingClientRect(); return b.width && b.top >= 0 && b.bottom <= innerHeight && b.right > 0 && b.left < innerWidth; });
  function reset() {
   cancelAnimationFrame(frame); frame = 0;
-  gaze?.style.removeProperty('--gaze-x'); gaze?.style.removeProperty('--gaze-y'); gaze = null;
+  for (const robot of gaze) { robot.style.removeProperty('--gaze-x'); robot.style.removeProperty('--gaze-y'); }
+  gaze.clear();
   if (active) delete active.dataset.emote;
   active = null; clearTimeout(timer);
   document.documentElement.classList.toggle('mascot-motion-off', !allowed());
@@ -24,11 +25,14 @@ export function initMascotMotion() {
   const { clientX: x, clientY: y } = e;
   frame = requestAnimationFrame(() => {
    frame = 0;
-   const candidates = visible().map(r => { const b = r.getBoundingClientRect(); return { r, dx: x - (b.left + b.width / 2), dy: y - (b.top + b.height / 2) }; }).sort((a,b) => Math.hypot(a.dx,a.dy)-Math.hypot(b.dx,b.dy));
-   const nearest = candidates[0];
-   if (gaze && gaze !== nearest?.r) { gaze.style.removeProperty('--gaze-x'); gaze.style.removeProperty('--gaze-y'); }
-   gaze = nearest?.r || null;
-   if (gaze) { gaze.style.setProperty('--gaze-x', `${Math.max(-3,Math.min(3,nearest.dx / 65))}px`); gaze.style.setProperty('--gaze-y', `${Math.max(-2,Math.min(2,nearest.dy / 80))}px`); }
+   const candidates = visible();
+   for (const robot of gaze) if (!candidates.includes(robot)) { robot.style.removeProperty('--gaze-x'); robot.style.removeProperty('--gaze-y'); }
+   gaze = new Set(candidates);
+   for (const robot of candidates) {
+    const box = robot.getBoundingClientRect();
+    robot.style.setProperty('--gaze-x', `${Math.max(-3,Math.min(3,(x - box.left - box.width / 2) / 65))}px`);
+    robot.style.setProperty('--gaze-y', `${Math.max(-2,Math.min(2,(y - box.top - box.height / 2) / 80))}px`);
+   }
   });
  }, { passive: true });
  document.addEventListener('pointerout', e => { if (!e.relatedTarget) reset(); });

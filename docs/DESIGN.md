@@ -119,7 +119,7 @@ kerning. Velké nadpisy −0,025 až −0,035 em; wordmark 18 px / 500 / +0,045 
 
 Pohyb maskota řídí `public/js/mascot-motion.js`. Schválená varianta má statické
 roboty: žádné skákání, mávání, otáčení hlavy ani gesta rukou. Kurzor sleduje
-nejbližší viditelný robot, oči maximálně ±3 px vodorovně a ±2 px svisle.
+všichni viditelní roboti, oči maximálně ±3 px vodorovně a ±2 px svisle.
 Občasné mrknutí trvá 180 ms, po 8–14 sekundách mrkne jeden viditelný robot.
 Systémové omezení pohybu má přednost, ruční vypnutí se ukládá lokálně.
 Pohyb není jediným nositelem stavu a robot nevydává zvuky.

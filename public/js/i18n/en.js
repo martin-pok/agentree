@@ -7,6 +7,13 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "TVŮJ PRACOVNÍ PROSTOR": "YOUR WORKSPACE",
+    "Co dnes posuneme dál?": "What shall we move forward today?",
+    "Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.": "Describe the work. Your agents get started while you focus on what matters.",
+    "Právě teď": "Right now",
+    "Průběh dne a spotřeba": "Daily activity and usage",
+    "Aktivita, tokeny a náklady": "Activity, tokens and costs",
+
     "Účty nástrojů": "Tool accounts",
     "účet": "account",
     "Aktivní": "Active",

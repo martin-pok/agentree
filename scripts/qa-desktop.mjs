@@ -65,7 +65,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           paticka: Math.round(Math.max(0, document.querySelector('.side-foot').getBoundingClientRect().bottom - dole)),
           schovany,
           profil: schovany ? 0 : Math.round(Math.max(0, obsah.getBoundingClientRect().bottom - pr.bottom)),
-          pres: Math.round(Math.max(0, pr.bottom - nr.top)),
+          pres: Math.round(Math.max(0, Math.min(pr.bottom, nr.bottom) - Math.max(pr.top, nr.top))),
           radkyZdroju: zdroje && getComputedStyle(zdroje).display !== 'none' ? Math.round(zdroje.getBoundingClientRect().height / 16.8) : 0,
           popisekUseknuty: !schovany && popisek.scrollWidth > popisek.clientWidth + 1,
         };
@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 48)) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - h) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -273,7 +273,7 @@ async function zkontrolujPlynulost(browser, engine) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);
       ozivit(radky[i]);
-      await p.waitForFunction((t) => document.querySelector('[data-region="table"] [data-key]:nth-child(2)')?.textContent.includes(t), `QA plynulost ${i + 1}`, { timeout: 3000 });
+      await p.waitForFunction(([id, at]) => document.querySelector(`[data-key="${id}"] [data-ago]`)?.dataset.ago === String(at), [radky[i].id, radky[i].lastAt], { timeout: 3000 });
       // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
       await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
       await ustalit();
@@ -667,7 +667,7 @@ for (const engine of engines) {
     assert.equal(await page.evaluate(() => { const n = document.querySelector('.nav'); return n.scrollHeight > n.clientHeight + 1; }), false, `${engine} nabídka se na výšku musí vejít bez rolování`);
     await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
     await page.setViewportSize({ width: 1440, height: 1000 });
-    assert.equal(await page.locator('.launch-kbd kbd').evaluateAll((nodes) => nodes.length === 2 && nodes.every((el) => getComputedStyle(el).color === 'rgb(255, 255, 255)')), true, `${engine} zkratka má kontrast`);
+    assert.equal(await page.locator('.launch-kbd').isVisible(), false, `${engine}: simplified composer keeps the shortcut decoration hidden`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');
     await page.evaluate(() => {
