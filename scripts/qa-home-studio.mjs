@@ -92,7 +92,9 @@ try {
       await page.locator('.pm-cil').first().waitFor();
       await page.screenshot({ path: `${out}/${typ}-pomocnik-jak.png` });
       // Pomalý stroj: Nastavení dočte data až po chvíli, mezitím člověk píše další dotaz.
-      const pomalu = (route) => (route.request().method() === 'GET' ? new Promise((r) => setTimeout(r, 700)).then(() => route.continue()) : route.continue());
+      // Zpožděný požadavek může doběhnout až po vypnutí zpomalení – pak ho už Playwright nechá projít sám.
+      const pokracuj = (route) => route.continue().catch(() => {});
+      const pomalu = (route) => (route.request().method() === 'GET' ? new Promise((r) => setTimeout(r, 700)).then(() => pokracuj(route)) : pokracuj(route));
       await page.route('**/api/**', pomalu);
       await page.locator('.pm-cil').first().click();
       await page.waitForFunction(() => location.hash.startsWith('#/nastaveni'));
