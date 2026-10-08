@@ -84,6 +84,6 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
   .sidebar .profile { display: none; }
   .sidebar .side-foot { margin-top: auto; }
 }
-@media (min-width: 2080px) {
-  .set-main { margin-left: calc(50vw - 980px); }
-}
+/* Široké Nastavení drží sloupec ve středu okna. Bez @media: na užším okně vyjde 0, takže výsledek
+   nezávisí na tom, kdy prohlížeč po změně velikosti přepočítá podmínky šířky (v CI to bývalo pozdě). */
+.set-main { margin-left: max(0px, calc(50vw - 980px)); }
