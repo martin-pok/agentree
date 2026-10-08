@@ -179,7 +179,24 @@ function meta(s, o) {
   if (o.cwd && !s.cwd) s.cwd = o.cwd;
   if (o.gitBranch && o.gitBranch !== 'HEAD') s.branch = o.gitBranch;
   if (o.entrypoint === 'claude-desktop') s.app = 'Claude Desktop · Code';
+  // Režim oprávnění, když ho přepis nese (bypassPermissions = bez ptaní, acceptEdits = úpravy bez ptaní).
+  if (typeof o.permissionMode === 'string' && /^[A-Za-z]{1,32}$/.test(o.permissionMode)) s.permissionMode = o.permissionMode;
 }
+
+// Na co čeká nástroj, kterému chybí výsledek – bez hooků jediná stopa po žádosti o povolení.
+// 'cteni' se na povolení v Claude Code nikdy neptá (jen čte), 'uprava' proběhne po schválení
+// během vteřin (dlouhé čekání = skoro jistě žádost o povolení), ostatní ('dlouhy') umí běžet
+// dlouho i bez ptaní (Bash, MCP, stažení stránky).
+const NASTROJE_CTENI = new Set(['Read', 'Glob', 'Grep', 'LS', 'TodoWrite', 'Task', 'Agent', 'NotebookRead', 'BashOutput']);
+const NASTROJE_UPRAVY = new Set(['Edit', 'MultiEdit', 'Write', 'NotebookEdit']);
+export function druhCekani(nazvy) {
+  const list = [...nazvy];
+  if (!list.length) return '';
+  if (list.some((n) => NASTROJE_UPRAVY.has(n))) return 'uprava';
+  if (list.every((n) => NASTROJE_CTENI.has(n))) return 'cteni';
+  return 'dlouhy';
+}
+const aktualizujCekani = (st, s) => { s.toolWaitKind = druhCekani([...st.pendingTools.values()].map((t) => t.name)); };
 
 function markRunning(s, ts) {
   // Časové razítko z budoucnosti (posunuté hodiny) by drželo „pracuje“ navždy – ořízne se na teď.
@@ -221,6 +238,7 @@ function onUser(st, s, o, ts) {
       if (s.pending?.toolUseId && s.pending.toolUseId === part.tool_use_id) s.pending = null;
     }
     if (!st.pendingTools.size) s.toolWaitSince = 0;
+    aktualizujCekani(st, s);
     if (s.pending?.kind === 'permission' && ts >= s.pending.at) s.pending = null;
     markRunning(s, ts);
     return;
@@ -233,6 +251,7 @@ function onUser(st, s, o, ts) {
     s.pending = null;
     s.toolWaitSince = 0;
     st.pendingTools.clear();
+    s.toolWaitKind = '';
     pushEntry(s, { at: ts, role: 'system', text: ui('Přerušeno uživatelem') });
     return;
   }
@@ -298,6 +317,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
         // Nástroj pro spuštění pomocníka se podle verze Claude Code jmenuje Task nebo Agent.
         if ((part.name === 'Task' || part.name === 'Agent') && part.input?.description) st.taskDesc.set(part.id, String(part.input.description));
         if (!s.toolWaitSince) s.toolWaitSince = ts;
+        aktualizujCekani(st, s);
         s.turnSteps++;
         s.activity = describeTool(part.name, part.input);
         pushEntry(s, { at: ts, role: 'tool', tool: part.name, text: toolInputText(part.name, part.input) });
@@ -318,6 +338,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
     s.activity = '';
     s.toolWaitSince = 0;
     st.pendingTools.clear();
+    s.toolWaitKind = '';
   } else markRunning(s, ts);
 
   const u = m.usage;

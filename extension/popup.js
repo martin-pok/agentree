@@ -14,7 +14,11 @@ const SITES = [
 ];
 // Loga, která jsou černá a v tmavém režimu se obracejí do světlé.
 const MONO = new Set(['openai', 'grok', 'githubcopilot']);
-const APLIKACE = 'http://127.0.0.1:4620/';
+// Adresa aplikace: výchozí port 4620, jiný se nastaví níž (Agenteeq běží na jiném portu?).
+// Port mimo výchozí potřebuje volitelné oprávnění pro 127.0.0.1 (manifest, optional_host_permissions).
+const VYCHOZI_PORT = 4620;
+const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
+let APLIKACE = `http://127.0.0.1:${VYCHOZI_PORT}/`;
 const WEB = 'https://agentree-fawn.vercel.app/';
 // Background zapomene kartu, která přes 150 s mlčí (hlásí se nejpozději po minutě).
 const OTEVRENA_MS = 150e3;
@@ -399,7 +403,10 @@ function zakladniStav() {
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
 // načtení na okamžik prázdně bliklo.
 async function render() {
-  const { lastStatus } = await chrome.storage.local.get(['lastStatus']);
+  const { lastStatus, port } = await chrome.storage.local.get(['lastStatus', 'port']);
+  const aktualniPort = platnyPort(port) ? port : VYCHOZI_PORT;
+  APLIKACE = `http://127.0.0.1:${aktualniPort}/`;
+  if (document.activeElement !== $('port')) $('port').value = String(aktualniPort);
   await renderSites(lastStatus);
 
   let health = null;
@@ -481,6 +488,26 @@ chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
 });
 
 $('retry').addEventListener('click', () => render());
+
+// Agenteeq běží na jiném portu (PORT): rozšíření si ho uloží. Jiný než výchozí port
+// potřebuje oprávnění pro 127.0.0.1 na libovolném portu – Chrome se zeptá jednou, v tomhle kliknutí.
+$('port-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const zprava = $('port-msg');
+  const novy = Number($('port').value.trim());
+  zprava.removeAttribute('data-tone');
+  if (!platnyPort(novy)) { zprava.dataset.tone = 'err'; zprava.textContent = tr('Port je číslo od 1024 do 65535.'); return; }
+  if (novy !== VYCHOZI_PORT) {
+    let povoleno = false;
+    try { povoleno = await chrome.permissions.request({ origins: ['http://127.0.0.1/*'] }); } catch { povoleno = false; }
+    if (!povoleno) { zprava.dataset.tone = 'err'; zprava.textContent = tr('Bez povolení se rozšíření k jinému portu nepřipojí.'); return; }
+  }
+  await chrome.storage.local.set({ port: novy });
+  await chrome.storage.local.remove(['token', 'parovani']);
+  zprava.dataset.tone = 'ok';
+  zprava.textContent = tr('Uloženo. Hledám Agenteeq na portu {0}…', novy);
+  render();
+});
 $('refresh-popup').addEventListener('click', async () => {
   const button = $('refresh-popup');
   if (button.disabled) return;

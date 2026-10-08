@@ -2229,6 +2229,10 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .pcount--alert { background: var(--velvet-solid); color: #fff; }
 .pcount--live { background: var(--teal-tint); color: var(--teal-ink); }
 .pcard-desc { font-size: 14px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 42px; }
+.pcard-tags { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.ptag { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: var(--r-full); background: var(--line-2); color: var(--ink-2); font-size: 12px; font-weight: 500; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.tag-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.tag-filter:empty { display: none; }
 .pcard-spark { display: block; height: 40px; margin: 2px -4px 0; }
 .pcard-flat { display: block; height: 1px; margin-top: 30px; background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px); }
 /* Karta má pevný rozvrh, ať v ní data přicházejí jakkoli: popis drží dva řádky, graf 40 px,
@@ -2333,6 +2337,17 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; padding: 0; border: 0; }
 .swatches legend { padding: 0; }
+/* Šablona nového projektu: volba jako kapsle (jednořádkové, na co se klepe – docs/DESIGN.md). */
+.cost-val { margin: 4px 0 8px; font: 400 28px/1.1 var(--f-display); color: var(--ink); }
+.tpl-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
+.tpl-inline[hidden] { display: none; }
+.tpl-picks { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.tpl-pick { position: relative; display: inline-flex; }
+.tpl-pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.tpl-pick span { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: var(--r-full); border: 1px solid var(--line); color: var(--ink-2); font-size: 14px; font-weight: 500; transition: color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease); }
+.tpl-pick:hover span { border-color: var(--ink); }
+.tpl-pick input:checked + span { background: var(--action); border-color: var(--action); color: var(--on-action); }
+.tpl-pick input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 3px; }
 .swatch-opt { position: relative; width: 32px; height: 32px; border-radius: 50%; background: var(--pc); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(22, 20, 29, .08); }
 .swatch-opt input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .swatch-opt:has(input:checked) { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--pc); }

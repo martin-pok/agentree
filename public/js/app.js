@@ -608,7 +608,7 @@ const palette = createPalette(
       .slice(0, max)
       .map((r) => r.x);
     const agentiNalez = podle(agenti, (a) => [[a.title, 3], [[a.project, a.app, a.model, STATUS[a.status]?.label].join(' '), 2], [a.cwd, 1]], 6).map((a) => polozkaAgenta(a));
-    const projektyNalez = podle(projekty, (p) => [[p.name, 3], [p.description, 2], [p.folders.join(' '), 1]], 5).map((p) => polozkaProjektu(p));
+    const projektyNalez = podle(projekty, (p) => [[p.name, 3], [[p.description, ...(p.tags || [])].join(' '), 2], [p.folders.join(' '), 1]], 5).map((p) => polozkaProjektu(p));
     const cileNalez = hledejCile(dotaz, cile).slice(0, 10);
     const stranky = cileNalez.filter((c) => c.druh !== 'nastaveni').map((c) => polozkaCile(c));
     const nastaveni = cileNalez.filter((c) => c.druh === 'nastaveni').map((c) => polozkaCile(c));

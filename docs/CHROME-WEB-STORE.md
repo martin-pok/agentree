@@ -109,6 +109,7 @@ Privacy policy: https://agentree-fawn.vercel.app/en/privacy
 | `alarms` | Jednou za 30 minut ohlásí aplikaci Agenteeq na tomtéž počítači, že rozšíření běží, aby aplikace neukazovala „neozývá se“, když zrovna není otevřená žádná konverzace. |
 | Host `http://127.0.0.1:4620/*` | Jediná adresa, kam rozšíření posílá data: aplikace Agenteeq na tomtéž počítači (localhost). Na internet nic neposílá. |
 | Host chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai, github.com/copilot | Tytéž weby jako u content skriptů. Oprávnění slouží jen k vložení sledovacího skriptu do karet, které byly otevřené už před instalací nebo aktualizací (`scripting`). Z těchto webů se nic neposílá jinam než do aplikace na tomtéž počítači. |
+| Volitelné: host 127.0.0.1 (libovolný port) | Jen když uživatel v okně rozšíření nastaví jiný port aplikace Agenteeq než výchozí 4620 (aplikace spuštěná s proměnnou `PORT`). Chrome se na oprávnění zeptá v tu chvíli; bez něj rozšíření dál mluví jen s 127.0.0.1:4620. Data nikdy neodcházejí mimo tento počítač. |
 | `content_scripts` na chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai, github.com/copilot | Na stránce otevřené konverzace zjistí, jestli služba odpovídá, kolik je zpráv, název modelu a případné upozornění na limit. Text zpráv neodesílá. Na jiných webech neběží. |
 
 **Vzdálený kód (Remote code):** Ne. Veškerý kód je v balíčku.

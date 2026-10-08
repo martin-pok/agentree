@@ -6,14 +6,22 @@ export const RELEASES = [
   {
     version: '0.39.0',
     date: '2026-10-07',
-    title: 'Statistiky za 90 dní a 12 měsíců',
+    title: 'Statistiky za rok, štítky a odhad ceny projektů',
     items: [
       'Statistiky ukážou i posledních 90 dní a 12 měsíců. Agenteeq si od teď každý den ukládá souhrn tokenů, aplikací, modelů a složek, takže starší čísla už po 30 dnech nezmizí. Dny před začátkem ukládání v grafu chybí a aplikace to řekne.',
+      'Projekty mají štítky s filtrem nad seznamem a nový projekt založíš ze šablony Agentura a klient, Vývoj nebo Marketing s předvyplněnými podklady.',
+      'Detail projektu odhadne, kolik by jeho tokeny stály přes API Anthropicu. Je to jen odhad s datem ověření ceníku – předplatné se platí paušálem a modely bez ověřené ceny se nedopočítávají.',
+      'Rozšíření pro Chrome najde Agenteeq i na jiném portu než 4620 – nastavíš ho v okně rozšíření.',
+      'Claude Code bez hooků: úprava souboru, která dlouho čeká, se teď ukáže jako rozhodnutí s textem „Nejspíš čeká na tvé povolení“. Čtení souborů už falešné „možná čeká“ nedostane.',
     ],
     en: {
-      title: 'Statistics for 90 days and 12 months',
+      title: 'A year of statistics, tags and project cost estimates',
       items: [
         'Statistics now cover the last 90 days and 12 months. Agenteeq saves a daily summary of tokens, apps, models and folders, so older numbers no longer disappear after 30 days. Days before saving started are missing from the chart, and the app says so.',
+        'Projects have tags with a filter above the list, and you can start a new project from the Agency and client, Development or Marketing template with a prefilled brief.',
+        'Project details estimate what their tokens would cost through the Anthropic API. It is only an estimate with the price list’s verification date – subscriptions are a flat fee, and models without a verified price aren’t guessed.',
+        'The Chrome extension can find Agenteeq on a port other than 4620 – set it in the extension window.',
+        'Claude Code without hooks: a file edit that waits a long time now shows as a decision with “Most likely waiting for your permission”. Reading files no longer gets a false “may be waiting”.',
       ],
     },
   },

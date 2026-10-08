@@ -5,10 +5,10 @@ import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
 import { enableReorder } from '../reorder.js';
-import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark } from '../projects-ui.js';
+import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark, vsechnyStitky } from '../projects-ui.js';
 import { tr } from '../i18n.js';
 
-const v = { el: null, tab: 'active', q: '' };
+const v = { el: null, tab: 'active', q: '', tag: '' };
 
 const prettify = (seg) => seg.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());
 
@@ -86,6 +86,7 @@ function cardHtml(p, now) {
     <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="${tr('Potřebuje tvé rozhodnutí')}">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="${tr('Právě pracuje')}"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : tr('Ručně zařazené konverzace')))}</span>
+    ${p.tags?.length ? `<span class="pcard-tags">${p.tags.map((t) => `<span class="ptag">${esc(t)}</span>`).join('')}</span>` : ''}
     <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b data-odo>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
@@ -95,14 +96,17 @@ function cardHtml(p, now) {
   </a>`;
 }
 
-function mount(el) {
+function mount(el, _params, query) {
   v.el = el;
+  // Odkaz ze štítku v detailu projektu: #/projekty?stitek=klient
+  if (query?.has('stitek')) { v.tag = query.get('stitek') || ''; v.tab = 'active'; }
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1">
       <div class="seg" role="group" aria-label="${tr('Zobrazit projekty')}" data-region="tabs"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat projekt')}</span><input type="search" data-q placeholder="${tr('Hledat projekt nebo složku…')}" autocomplete="off"></label>
       <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Nový projekt')}</button>
     </div>
+    <div class="tag-filter" role="group" aria-label="${tr('Filtrovat podle štítku')}" data-region="tagfilter"></div>
     <div data-region="grid"></div>
     <section class="psuggest" data-enter style="--i:3" data-region="suggest" aria-label="${tr('Návrhy projektů')}"></section>`;
   const input = el.querySelector('[data-q]');
@@ -128,6 +132,8 @@ function mount(el) {
   el.addEventListener('click', async (e) => {
     const tab = e.target.closest('[data-tab]');
     if (tab) { v.tab = tab.dataset.tab; update(); return; }
+    const stitek = e.target.closest('[data-tag-filter]');
+    if (stitek) { v.tag = stitek.dataset.tagFilter; update(); return; }
     if (e.target.closest('[data-action="new"]')) {
       const p = await projectForm();
       if (p) { toast(tr('Projekt {0} vytvořen', p.name)); location.hash = projectHref(p.id); }
@@ -162,8 +168,18 @@ function update() {
 
   const q = norm(v.q.trim());
   // Pořadí karet určuje uživatel (tažením); pořadí v seznamu projektů je jeho pořadí.
-  const list = (v.tab === 'active' ? active : archived)
-    .filter((p) => !q || norm([p.name, p.description, ...p.folders].join(' ')).includes(q));
+  // Filtr štítku: jen štítky, které ještě nějaký projekt v záložce má (smazaný štítek se zruší sám).
+  const zalozka = v.tab === 'active' ? active : archived;
+  const stitky = vsechnyStitky().filter((t) => zalozka.some((p) => (p.tags || []).some((x) => x.toLowerCase() === t.toLowerCase())));
+  if (v.tag && !stitky.some((t) => t.toLowerCase() === v.tag.toLowerCase())) v.tag = '';
+  const maStitek = (p) => !v.tag || (p.tags || []).some((x) => x.toLowerCase() === v.tag.toLowerCase());
+  fill(el, 'tagfilter', stitky.length
+    ? [['', tr('Všechny štítky'), zalozka.length], ...stitky.map((t) => [t, t, zalozka.filter((p) => (p.tags || []).some((x) => x.toLowerCase() === t.toLowerCase())).length])]
+      .map(([k, label, n]) => `<button type="button" class="chip" data-tag-filter="${esc(k)}" aria-pressed="${v.tag.toLowerCase() === k.toLowerCase()}">${esc(label)}<span class="count">${n}</span></button>`).join('')
+    : '');
+  const list = zalozka
+    .filter(maStitek)
+    .filter((p) => !q || norm([p.name, p.description, ...(p.tags || []), ...p.folders].join(' ')).includes(q));
 
 
   const unassigned = agentsList().filter((s) => !s.projectId).length;
@@ -181,7 +197,7 @@ function update() {
       <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#F2B824"></span></div>
     </div>`);
   } else if (!list.length) {
-    fill(el, 'grid', `<div class="card">${emptyState({ title: q ? tr('Žádný projekt neodpovídá hledání') : tr('V archivu nic není'), text: q ? tr('Zkus jiný název nebo složku.') : '' })}</div>`);
+    fill(el, 'grid', `<div class="card">${emptyState({ title: q || v.tag ? tr('Žádný projekt neodpovídá hledání') : tr('V archivu nic není'), text: q || v.tag ? tr('Zkus jiný název, složku nebo štítek.') : '' })}</div>`);
   } else if (!v.reorder?.isDragging()) {
     sesadKarty(el.querySelector('[data-region="grid"]'), `<div class="pgrid">${list.map((p) => cardHtml(p, now)).join('')}
       ${v.tab === 'active' && unassigned ? `<a class="pcard pcard--ghost" href="#/agenti?projekt=bez"><span class="pcard-top"><span class="pghost-mark">${ICON.folder}</span><span class="pcard-name">${tr('Nezařazené')}</span></span>
@@ -196,4 +212,4 @@ function update() {
     : '');
 }
 
-export default { id: 'projekty', title: tr('Projekty'), mount, update, unmount: () => { v.reorder?.zrus(); v.el = null; v.reorder = null; } };
+export default { id: 'projekty', title: tr('Projekty'), mount, update, query: (q) => { if (q?.has('stitek')) { v.tag = q.get('stitek') || ''; update(); } }, unmount: () => { v.reorder?.zrus(); v.el = null; v.reorder = null; } };

@@ -1,5 +1,25 @@
 // Service worker: spárování s Agenteeq a odeslání dat na 127.0.0.1 (nikam jinam).
-const BASE = 'http://127.0.0.1:4620';
+// Port aplikace je výchozí 4620. Běží-li Agenteeq jinde (PORT), nastaví se v okně
+// rozšíření; manifest se kvůli tomu nemění (volitelné oprávnění pro 127.0.0.1, popup.js).
+const HOST = 'http://127.0.0.1';
+const VYCHOZI_PORT = 4620;
+const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
+let port = null;
+async function zaklad() {
+  if (port === null) {
+    const ulozeny = await chrome.storage.local.get(['port']);
+    port = platnyPort(ulozeny.port) ? ulozeny.port : VYCHOZI_PORT;
+  }
+  return `${HOST}:${port}`;
+}
+// Změna portu v okně rozšíření: jiná adresa může být jiná instalace Agenteeq, a tak se token
+// zapomene a spárování proběhne znovu (bez kódu, když aplikace rozšíření pozná).
+chrome.storage.onChanged?.addListener((zmeny, oblast) => {
+  if (oblast !== 'local' || !('port' in zmeny)) return;
+  port = null;
+  token = null;
+  posledniPokus = 0;
+});
 let token = null;
 
 async function getToken() {
@@ -28,7 +48,7 @@ async function pripojit({ hned = false } = {}) {
   if (!hned && Date.now() - posledniPokus < 20000) return false;
   posledniPokus = Date.now();
   try {
-    const res = await fetch(`${BASE}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
+    const res = await fetch(`${await zaklad()}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || typeof body.token !== 'string') {
       await chrome.storage.local.set({ parovani: res.status === 409 ? 'kod' : 'nedostupne' });
@@ -44,7 +64,7 @@ async function pripojit({ hned = false } = {}) {
 }
 
 async function pair(code) {
-  const res = await fetch(`${BASE}/api/extension/pair`, {
+  const res = await fetch(`${await zaklad()}/api/extension/pair`, {
     method: 'POST',
     headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': await installationId() },
   });
@@ -54,8 +74,8 @@ async function pair(code) {
   await chrome.storage.local.set({ token, parovani: 'hotovo' });
 }
 
-const post = (t, payload) =>
-  fetch(`${BASE}/api/ingest/web`, {
+const post = async (t, payload) =>
+  fetch(`${await zaklad()}/api/ingest/web`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
     body: JSON.stringify(payload),
@@ -121,7 +141,7 @@ async function send(payload, karta) {
 async function takeHandoff(site) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
   if (disabledSites.includes(site)) return { prompt: null };
-  const res = await fetch(`${BASE}/api/extension/handoff`, {
+  const res = await fetch(`${await zaklad()}/api/extension/handoff`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': await getToken() },
     body: JSON.stringify({ site }),
@@ -139,7 +159,7 @@ async function hello({ hned = false, znovu = false } = {}) {
   if (!t && (await pripojit({ hned }))) t = token;
   if (!t) return { paired: false, parovani: (await chrome.storage.local.get(['parovani'])).parovani || 'nedostupne' };
   try {
-    const res = await fetch(`${BASE}/api/extension/hello`, {
+    const res = await fetch(`${await zaklad()}/api/extension/hello`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
       body: JSON.stringify({ version: chrome.runtime.getManifest().version }),
