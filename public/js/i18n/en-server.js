@@ -720,4 +720,12 @@ export default {
   "Aplikace pro jazykové modely na {0}": "App for language models on {0}",
   "Neznámý nástroj nebo akce.": "Unknown tool or action.",
   "Požadavek se přerušil dřív, než dorazil celý.": "The request was interrupted before it arrived in full.",
+  "Upozornění na telefon se zapínají v telefonu, {0} chodí do systému.": "Phone notifications are turned on from the phone; {0} they go to the system.",
+  "Chybí, který odběr zrušit.": "Missing which subscription to remove.",
+  "Takhle tě Agenteeq upozorní na telefonu, když agent bude potřebovat tvé rozhodnutí.": "This is how Agenteeq will alert you on your phone when an agent needs your decision.",
+  "Žádný telefon nemá zapnutá upozornění.": "No phone has notifications turned on.",
+  "Upozornění na telefon si zapíná spárovaný telefon.": "Phone notifications are turned on by a paired phone.",
+  "Tahle push služba není podporovaná.": "This push service isn't supported.",
+  "Neplatný odběr upozornění.": "Invalid notification subscription.",
+  "Takový odběr upozornění není.": "There is no such notification subscription.",
 };

@@ -203,6 +203,15 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
     return devices().some((d) => d.hash.length === h.length && crypto.timingSafeEqual(Buffer.from(d.hash), Buffer.from(h)));
   }
 
+  // Které spárované zařízení token patří (upozornění na telefon váže odběr na zařízení).
+  function zarizeniTokenu(token, now = Date.now()) {
+    if (!token) return null;
+    const h = hash(token);
+    prune(now);
+    return devices().find((d) => d.hash.length === h.length && crypto.timingSafeEqual(Buffer.from(d.hash), Buffer.from(h)))?.id || null;
+  }
+  const idZarizeni = () => new Set(devices().map((d) => d.id));
+
   async function revoke(id) {
     const i = devices().findIndex((d) => d.id === id);
     if (i === -1) return { status: 404, error: ui('Takové zařízení v seznamu není.') };
@@ -275,5 +284,5 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
   const start = (requestHandler, port = config.port) => serialize(() => reconcile(requestHandler, port));
   const stop = () => serialize(closeListeners);
 
-  return { status, hosts, newPin, pair, tokenOk, revoke, start, stop, get listening() { return servers.size > 0; } };
+  return { status, hosts, newPin, pair, tokenOk, zarizeniTokenu, idZarizeni, revoke, start, stop, get listening() { return servers.size > 0; } };
 }

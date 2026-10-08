@@ -65,3 +65,36 @@ self.addEventListener('fetch', (event) => {
     })(),
   );
 });
+
+// Upozornění na telefon (src/push.js). Zprávu poslal Mac přes push službu prohlížeče; obsah je
+// šifrovaný pro tenhle telefon a prohlížeč ho předá už rozšifrovaný. Push musí vždy něco ukázat
+// (userVisibleOnly), proto i nečitelná zpráva skončí obecným oznámením.
+self.addEventListener('push', (event) => {
+  let z = {};
+  try { z = event.data ? event.data.json() : {}; } catch { z = {}; }
+  const route = typeof z.route === 'string' && z.route.startsWith('#/') ? z.route : '#/upozorneni';
+  event.waitUntil(self.registration.showNotification(String(z.title || 'Agenteeq').slice(0, 120), {
+    body: String(z.body || '').slice(0, 300),
+    tag: typeof z.id === 'string' ? z.id : undefined,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { route },
+  }));
+});
+
+// Klepnutí na oznámení: otevřené okno Agenteeq se přepne na cíl, jinak se otevře nové.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const route = event.notification.data?.route || '#/upozorneni';
+  const cil = new URL(`/${route}`, self.location.origin).href;
+  event.waitUntil((async () => {
+    const okna = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const okno = okna.find((c) => new URL(c.url).origin === self.location.origin);
+    if (okno) {
+      await okno.focus();
+      if ('navigate' in okno) return okno.navigate(cil).catch(() => okno.postMessage({ agenteeqRoute: route }));
+      return okno.postMessage({ agenteeqRoute: route });
+    }
+    return self.clients.openWindow(cil);
+  })());
+});

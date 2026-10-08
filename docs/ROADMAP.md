@@ -73,7 +73,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 |---|---|---|
 | 1 | ~~Účty a přihlášení~~ **hotovo** | Přihlášení přes Google (PKCE) místo magic linku, Supabase v EU; lokální verze funguje bez účtu. Produkční provider a návraty jsou aktivní od 1. 10. 2026. Viz [ACCOUNTS.md](ACCOUNTS.md). |
 | 2 | ~~E2E šifrovaná synchronizace přepisů~~ **nahrazeno v 0.25.0** | Rozhodnutí vlastníka: přepisy počítač neopouštějí vůbec. Synchronizují se jen souhrnná čísla (tokeny po dnech, útrata, limity, počty agentů), dobrovolně a s RLS; přehled na webu je jen čte |
-| 3 | Push upozornění na mobil | Upozornění „potřebuje rozhodnutí“ na telefonu < 3 s. Dnes je telefon jen přehled přes síť (Tailscale / LAN, [REMOTE.md](REMOTE.md)); účet by šel využít pro doručení bez otevřeného portu |
+| 3 | ~~Push upozornění na mobil~~ **hotovo v 0.40.0 (Beta)** | Web Push přímo z Macu přes push službu telefonu, šifrovaně (RFC 8291/8292), bez účtu a bez serveru Agenteeq; odběr patří spárovanému telefonu ([REMOTE.md](REMOTE.md), [SECURITY.md](SECURITY.md#upozornění-na-telefon-od-0400)). Zbývá: ověřit doručení < 3 s na skutečném iPhonu (iOS 16.4+, z plochy) a Androidu |
 | 4 | Platby (Stripe) | Předplatné Pro/Team, faktury s DPH (CZ/EU), zkušební období |
 | 5 | Týmový workspace | Sdílený přehled a rozpočty, role vlastník/člen, bez sdílení obsahu přepisů bez souhlasu |
 | 6 | Právní a compliance | Zásady ochrany údajů, DPA, podmínky, kontrola podmínek služeb pro rozšíření. Zásady ochrany soukromí jsou od 0.29.0 na webu, zatím bez právní kontroly („Teď“ #2) |

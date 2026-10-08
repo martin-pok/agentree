@@ -145,6 +145,17 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Vypnutí zavře listener a smaže všechna zařízení – pokud zároveň není zapnutá druhá cesta (Tailscale).
 - Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 
+## Upozornění na telefon (od 0.40.0)
+
+Web Push bez serveru Agenteeq (`src/webpush.js`, `src/push.js`). Výchozí stav: žádný odběr.
+
+- Odběr zapíná jen **spárovaný telefon** (`POST /api/push/subscribe` s tokenem zařízení); z Macu 409. Odběr nese id zařízení a s odpárováním zaniká. Telefon vidí, zkouší a ruší jen svůj odběr (`src/remote-scope.js` povoluje jen tyto tři zápisy).
+- **Kam smí Mac posílat:** jen `https://` bez vlastního portu na známé push služby (`*.push.apple.com`, `fcm.googleapis.com`, `android.googleapis.com`, `updates.push.services.mozilla.com`, `*.notify.windows.com`). Ukradený token tak nedokáže z Macu posílat požadavky do domácí sítě ani jinam (SSRF). Kontroluje se při přihlášení i při každém odeslání.
+- **Obsah** (titulek, text, cíl v aplikaci – totéž, co ukazuje oznámení systému) je šifrovaný pro telefon podle RFC 8291 (ECDH P-256 + AES-128-GCM); push služba vidí jen, že a kdy zpráva šla. Odesílatele prokazuje podpis VAPID (RFC 8292, ES256, platnost 12 h). Soukromý klíč VAPID leží v `data.json` (0600) – kdo ho získá, může posílat zprávy jen na odběry, které zná, a ty jsou ve stejném souboru.
+- Adresa odběru a klíče telefonu se přes API nikdy nevracejí, ani na Macu.
+- Push služba, která odběr nezná (404/410), ho zruší; jiná chyba se uloží k odběru a ukáže v Nastavení. Selhání se nehlásí jako doručení.
+- Neověřeno na skutečném zařízení (Beta, `docs/CONNECTORS.md`).
+
 ## Přístup přes Tailscale (od 15. 9. 2026)
 
 Druhá, nezávislá cesta ke stejným datům – pro situace mimo domácí síť. Výchozí stav: **vypnuto**

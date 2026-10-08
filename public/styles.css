@@ -1642,6 +1642,10 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .conn-source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 28px 0 12px; padding-top: 20px; border-top: 1px solid var(--line-2); }
 .conn-source-head span { font: 500 15px/1.3 var(--f-body); }
 .conn-source-head small { color: var(--mute); font-size: 12px; }
+/* Upozornění na telefon (Nastavení → Upozornění): podnadpis uvnitř karty, řádek nad ním má vlastní linku. */
+.push-head { margin: 20px 0 8px; }
+.push-head-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font: 500 15px/1.3 var(--f-body); }
+.push-head .set-desc { margin-top: 4px; }
 .state { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--r-sm); font-size: 12px; white-space: nowrap; flex: none; }
 .state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .state[data-state='connected'] { background: rgba(11, 111, 95, .1); color: var(--ok); }

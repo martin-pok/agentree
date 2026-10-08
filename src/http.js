@@ -144,6 +144,9 @@ export function createHttpServer(app, existingServer = null) {
     }
   }
 
+  // Které spárované zařízení posílá požadavek (podle tokenu v cookie), nebo null.
+  const zarizeniPozadavku = (req) => app.lan?.zarizeniTokenu(cookieValue(req.headers.cookie) || cookieValue(req.headers.cookie, 'agentree_device')) || null;
+
   // Chyby účtu nesou vlastní stav (503 = server účtů neodpovídá nebo přihlášení ještě neběží).
   async function ucetVolani(fn) {
     try {
@@ -445,6 +448,36 @@ export function createHttpServer(app, existingServer = null) {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Odpárovat zařízení lze jen {0}.', POCITAC.naHostiteli));
       unwrap(await app.lan.revoke(m[1]));
       return { lan: app.lan.status() };
+    }],
+    // Upozornění na telefon (src/push.js). Odběr si zapíná a ruší spárovaný telefon sám; Mac vidí
+    // všechny odběry a může je zrušit. Telefon vidí a zkouší jen ty svoje.
+    ['GET', /^\/api\/push$/, (req) => {
+      if (zTohotoMacu(req)) return app.push.stav();
+      return app.push.stav({ zarizeni: zarizeniPozadavku(req) || '-' });
+    }],
+    ['POST', /^\/api\/push\/subscribe$/, async (req) => {
+      if (zTohotoMacu(req)) throw new HttpError(409, ui('Upozornění na telefon se zapínají v telefonu, {0} chodí do systému.', POCITAC.naHostiteli));
+      const body = await readBody(req);
+      const zarizeni = zarizeniPozadavku(req);
+      const nazev = app.lan.status().devices.find((d) => d.id === zarizeni)?.label || '';
+      return unwrap(app.push.prihlas({ subscription: body?.subscription, nazev, zarizeni }));
+    }],
+    ['POST', /^\/api\/push\/unsubscribe$/, async (req) => {
+      const body = await readBody(req);
+      const z = zTohotoMacu(req) ? null : zarizeniPozadavku(req) || '-';
+      const id = typeof body?.id === 'string' ? body.id : '';
+      const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
+      if (!id && !endpoint) throw new HttpError(400, ui('Chybí, který odběr zrušit.'));
+      unwrap(app.push.odhlas({ id, endpoint, zarizeni: z }));
+      return zTohotoMacu(req) ? app.push.stav() : app.push.stav({ zarizeni: z });
+    }],
+    ['POST', /^\/api\/push\/test$/, async (req) => {
+      const z = zTohotoMacu(req) ? null : zarizeniPozadavku(req) || '-';
+      // Na telefon jde zpráva rovnou z Macu, ne přes rozhraní – proto se překládá už tady.
+      const t = prekladac(datastore.data.settings.language);
+      const r = await app.push.posliVsem({ title: t(ui('Testovací upozornění')), body: t(ui('Takhle tě Agenteeq upozorní na telefonu, když agent bude potřebovat tvé rozhodnutí.')), route: '#/upozorneni', tag: 'test' }, { zarizeni: z });
+      if (!r.odeslano && !r.chyby) throw new HttpError(409, ui('Žádný telefon nemá zapnutá upozornění.'));
+      return { ...r, ...(z ? app.push.stav({ zarizeni: z }) : app.push.stav()) };
     }],
     ['POST', /^\/api\/runtimes\/([\w-]{1,40})\/focus$/, async (_req, m) => unwrap(await app.focusRuntime(m[1]))],
     ['GET', /^\/api\/custom-agents$/, () => ({ agents: app.customAgentsPayload(), types: app.customAgentTypes() })],

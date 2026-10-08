@@ -36,6 +36,7 @@ import { createOllamaClient } from './ollama.js';
 import { RunManager } from './runs.js';
 import { createLocalChat } from './local-chat.js';
 import { createLanAccess } from './lan.js';
+import { createPush } from './push.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
 import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni, SYSTEM, POCITAC } from './platform.js';
@@ -189,6 +190,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     onAuthorizationChange: () => store.emit('remote:authorization'),
     onListen: (s) => log(`Agenteeq: přístup z telefonu je zapnutý na ${[s.enabled && s.url, s.tailscale.enabled && s.tailscale.url].filter(Boolean).join(' a ')}`),
   });
+  // Upozornění na telefon: odběry patří spárovaným zařízením, odpárováním zaniknou.
+  const push = createPush({ datastore, zarizeni: () => lan.idZarizeni() });
+  alerts.doTelefonu = (zprava) => push.posliVsem(zprava);
   const runs = new RunManager({
     dataDir: config.dataDir,
     onChange: (_list, run) => {
@@ -1537,7 +1541,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, push, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

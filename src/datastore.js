@@ -82,6 +82,32 @@ function normalizeCloud(c) {
   return { syncEnabled: c?.syncEnabled === true, syncAt: Number(c?.syncAt) > 0 ? Number(c.syncAt) : 0, volbaCeka: c?.volbaCeka === true, devices };
 }
 
+// Upozornění na telefon (src/push.js): klíč VAPID tohoto Macu a odběry spárovaných telefonů.
+// Odběr = adresa push služby (jen známé služby, src/webpush.js) a veřejné klíče telefonu pro
+// šifrování. Nic z toho nejsou data o konverzacích.
+export const PUSH_ODBERY_MAX = 10;
+export function normalizePush(p) {
+  const vapid = p?.vapid && typeof p.vapid.publicKey === 'string' && /^[\w-]{80,100}$/.test(p.vapid.publicKey)
+    && p.vapid.privateJwk && p.vapid.privateJwk.kty === 'EC' && p.vapid.privateJwk.crv === 'P-256' && typeof p.vapid.privateJwk.d === 'string'
+    ? { publicKey: p.vapid.publicKey, privateJwk: { kty: 'EC', crv: 'P-256', x: String(p.vapid.privateJwk.x), y: String(p.vapid.privateJwk.y), d: p.vapid.privateJwk.d } }
+    : null;
+  const odbery = (Array.isArray(p?.odbery) ? p.odbery : [])
+    .filter((o) => o && typeof o.id === 'string' && /^[\w-]{8,64}$/.test(o.id) && typeof o.endpoint === 'string' && o.endpoint.length <= 1000
+      && typeof o.keys?.p256dh === 'string' && /^[\w-]{80,100}$/.test(o.keys.p256dh) && typeof o.keys?.auth === 'string' && /^[\w-]{16,32}$/.test(o.keys.auth))
+    .slice(-PUSH_ODBERY_MAX)
+    .map((o) => ({
+      id: o.id,
+      endpoint: o.endpoint,
+      keys: { p256dh: o.keys.p256dh, auth: o.keys.auth },
+      nazev: typeof o.nazev === 'string' ? o.nazev.slice(0, 60) : '',
+      zarizeni: typeof o.zarizeni === 'string' ? o.zarizeni.slice(0, 64) : '',
+      vytvoreno: Number(o.vytvoreno) > 0 ? Number(o.vytvoreno) : 0,
+      naposledyOk: Number(o.naposledyOk) > 0 ? Number(o.naposledyOk) : 0,
+      chyba: typeof o.chyba === 'string' ? o.chyba.slice(0, 40) : '',
+    }));
+  return { vapid, odbery };
+}
+
 // Nástroje, které detekce na tomto Macu kdy zachytila. Ukládá se jen identifikátor z katalogu,
 // časy a rozhodnutí uživatele – žádné cesty, příkazy ani obsah, tedy nic osobního.
 export const STAVY_NASTROJE = ['novy', 'pridany', 'ignorovany', 'znamy'];
@@ -183,6 +209,7 @@ function normalizeDataInner(raw) {
     credits: d.credits && typeof d.credits === 'object' ? d.credits : {},
     providerAccounts: normalizeObservedAccounts(d.providerAccounts),
     nastroje: normalizeNastroje(d.nastroje),
+    push: normalizePush(d.push),
     // Spárované telefony: v datech leží jen hash tokenu, nikdy použitelný token.
     lanDevices: Array.isArray(d.lanDevices)
       ? d.lanDevices

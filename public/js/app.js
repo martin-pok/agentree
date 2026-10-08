@@ -809,6 +809,11 @@ offlineEl.addEventListener('click', async (e) => {
 if (!window.agenteeqDesktop && 'serviceWorker' in navigator && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('/sw.js').catch(() => { /* bez offline mezipaměti */ });
 }
+// Klepnutí na upozornění z telefonu (public/sw.js), když okno nešlo přesměrovat rovnou.
+navigator.serviceWorker?.addEventListener?.('message', (e) => {
+  const route = e.data?.agenteeqRoute;
+  if (typeof route === 'string' && route.startsWith('#/')) location.hash = route;
+});
 
 /* ---------- Přetažení konverzací do projektu ---------- */
 
