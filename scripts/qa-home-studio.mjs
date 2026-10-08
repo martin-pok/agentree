@@ -91,12 +91,28 @@ try {
       await page.keyboard.press('Enter');
       await page.locator('.pm-cil').first().waitFor();
       await page.screenshot({ path: `${out}/${typ}-pomocnik-jak.png` });
+      // Pomalý stroj: Nastavení dočte data až po chvíli, mezitím člověk píše další dotaz.
+      const pomalu = (route) => (route.request().method() === 'GET' ? new Promise((r) => setTimeout(r, 700)).then(() => route.continue()) : route.continue());
+      await page.route('**/api/**', pomalu);
       await page.locator('.pm-cil').first().click();
       await page.waitForFunction(() => location.hash.startsWith('#/nastaveni'));
       // „Najdi chat …“ → konverzace z přehledu jde otevřít.
       await page.locator('.pm-vstup').fill('najdi chat, kde jsme řešili migraci API');
+      // Zvýraznění v Nastavení doběhne až po načtení dat a fokus psaní nesmí ukrást (Enter by přepnul nastavení).
+      await page.locator('.is-called-out').first().waitFor();
+      await page.waitForTimeout(600);
+      assert.ok(await page.locator('.pm-vstup').evaluate((n) => n === document.activeElement), 'psaní v pomocníkovi drží fokus i po skoku do Nastavení');
+      await page.unroute('**/api/**', pomalu);
       await page.keyboard.press('Enter');
-      await page.locator('.pm-vysledek').first().waitFor();
+      await page.locator('.pm-vysledek').first().waitFor({ timeout: 10000 }).catch(async () => {
+        const stav = await page.evaluate(() => ({
+          hash: location.hash,
+          okno: document.querySelector('.pm-okno')?.hidden ? 'zavřené' : 'otevřené',
+          fokus: document.activeElement?.className || document.activeElement?.tagName,
+          zpravy: [...document.querySelectorAll('.pm-msg')].slice(-2).map((n) => n.innerText.slice(0, 200)),
+        }));
+        assert.fail(`${typ}: pomocník neukázal výsledek hledání – ${JSON.stringify(stav)}`);
+      });
       assert.match(await page.locator('.pm-vysledek b').first().innerText(), /migrace API/i);
       await page.screenshot({ path: `${out}/${typ}-pomocnik-hledani.png` });
       await page.locator('.pm-vysledek a').first().click();
