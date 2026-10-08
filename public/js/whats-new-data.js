@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.44.0',
+    date: '2026-10-08',
+    title: 'Stav agentů na první pohled',
+    items: [
+      'Vedle rozhodnutí je nový box Stav agentů: jedna věta, jestli je vše v pořádku, počty a případné problémy s odkazem.',
+      'Karty v „Právě teď“ mají štítek stavu – Běží, Čeká na tebe, Selhalo, Limit, Hotovo.',
+      'Vybraný filtr je vidět (kapsle v barvě značky) a vyhledávání ⌘K najde i dovednosti.',
+      'Jednotné zaoblení rohů v celé aplikaci, toast jako kapsle a Slonovina bez tmavého panelu.',
+    ],
+    en: {
+      title: 'Agent status at a glance',
+      items: [
+        'Next to decisions there is a new Agent status box: one sentence on whether all is well, counts and any problems with a link.',
+        'Cards under “Right now” have a status label – Running, Waiting for you, Failed, Limit, Done.',
+        'The selected filter is visible (a brand-coloured pill) and ⌘K search finds skills too.',
+        'Consistent corner rounding across the app, a pill-shaped toast and Ivory without the dark panel.',
+      ],
+    },
+  },
+  {
     version: '0.43.0',
     date: '2026-10-08',
     title: 'Roboti mluví',

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.44.0 – 2026-10-08 · Stav agentů na první pohled, jednotný vzhled, dovednosti ve vyhledávání
+
+- **Stav agentů vedle rozhodnutí.** Řádek „Potřebuje tvé rozhodnutí“ se na širší obrazovce dělí na dva boxy. Vlevo decentní karta s tím, co čeká na tebe; vpravo nový box **Stav agentů**: jedna věta s barevnou tečkou (vše v pořádku / na rozhodnutí čeká N agentů / problém u N agentů), počty pracuje · čeká na tebe · selhalo · limit (každý vede na odpovídající filtr) a nanejvýš tři problémy s odkazem. Když se nepodaří zjistit, co na počítači běží, box to řekne – nikdy to nevydává za „nic neběží“. Oba boxy končí na stejné spodní hraně.
+- **Karty v „Právě teď“ mají štítek stavu.** Vpravo nahoře každé karty: Běží (zelená), Čeká na tebe (zlatá), Selhalo / Limit (vínová), Hotovo, Proces. Na první pohled je vidět, co jede v pořádku a co řešit.
+- **Vybraný filtr je vidět.** V Dovednostech (a všude, kde se filtruje: Agenti, Útrata…) byl vybraný filtr bílý na bílém panelu a nešel poznat. Teď je to kapsle v barvě značky i s počtem – stejně ve všech skupinách filtrů.
+- **Dovednosti ve vyhledávání (⌘K).** Hledání najde dovednosti podle názvu, popisu, zdroje i cesty (s tolerancí překlepů jako u ostatních výsledků); výsledek rovnou otevře čtení dané dovednosti a pamatuje se mezi naposledy otevřenými. Seznam dovedností se navíc za běhu obnovuje každých 30 s a po návratu do okna – nová nebo upravená SKILL.md se ukáže sama.
+- **Jednotné zaoblení rohů v celém produktu.** Jedna stupnice pro všechny motivy (Koncert si dřív nesl vlastní 16/24/40 px): 24 px velké plochy (levý panel, pozdrav, pole pro zadání, dialogy), 20 px karty, 12 px vnitřní dlaždice, 8/6 px drobnosti, kapsle pro všechno klikací na jeden řádek. V CSS nové vrstvy nezůstala žádná pevná hodnota.
+- **Toast jako kapsle.** Upozornění dole má plně zaoblené konce, takže kulatá ikona vlevo s nimi ladí.
+- **Slonovina bez tmavého panelu.** V motivu Koncert (Slonovina/Eben) už pod „Právě teď“ neleží původní tmavá scéna s gradientem ani zlatý proužek u pole pro zadání – karty jsou na čisté ploše jako v ostatních motivech.
+- **Profilová fotka z Googlu.** Adresa fotky se hledá i v datech identity Googlu, kde ji Supabase u části účtů nese místo v metadatech uživatele. Karta účtu nově říká, proč fotka chybí (Google ji neposlal / nepodařilo se ji stáhnout / načítá se), místo tichých iniciál.
+
 ## 0.43.0 – 2026-10-08 · Roboti mluví: bubliny, gesta a pár překvapení
 
 - **Bubliny robotů.** Najeď myší (nebo klávesnicí) na robota agenta a řekne krátkou větu podle svého stavu: pracuje, čeká na tvoje rozhodnutí, selhal, narazil na limit, je hotový. Bublina je světlá a skleněná (v tmavém vzhledu tmavé sklo), s ocáskem mířícím na hlavu robota. Umístění hledá samo: zkusí místo vedle robota v jeho kartě, nad ním, po stranách a pod ním a vybere to, které nezakryje tlačítko, odkaz, nadpis ani text. Česká sazba drží jednopísmenné předložky na začátku řádku.

@@ -180,7 +180,7 @@ try {
         const hrany = await page.evaluate(() => {
           const r = (s) => document.querySelector(s)?.getBoundingClientRect();
           const levo = r('.page-title').left, pravo = r('.topbar').right;
-          return ['.home-intro', '.launch-compose', '.home-desk > section', '.home-live']
+          return ['.home-intro', '.launch-compose', '.home-dvojice', '.home-live']
             .filter((s) => r(s)?.width)
             .map((s) => [s, Math.round(r(s).left - levo), Math.round(r(s).right - pravo)])
             .filter(([, l, p]) => Math.abs(l) > 1 || Math.abs(p) > 1);

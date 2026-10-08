@@ -47,13 +47,16 @@ export function pkcePar(randomBytes = crypto.randomBytes) {
 export function uzivatelZOdpovedi(user) {
   if (!user || typeof user !== 'object') return null;
   const meta = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
+  // Fotka bývá v user_metadata, ale u části účtů ji Supabase nese jen v datech identity Googlu.
+  const identita = (Array.isArray(user.identities) ? user.identities : []).find((i) => i?.provider === 'google')?.identity_data;
+  const fotoMeta = fotoZMetadat(meta) ? meta : (identita && typeof identita === 'object' ? identita : meta);
   const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   const email = text(user.email, 254);
   // Kdy se člověk naposledy přihlásil a jestli Google e-mail ověřil – podle toho pozná, že je
   // v kartě opravdu on. Obojí posílá server účtů, nic se nedopočítává.
   const prihlasen = Date.parse(typeof user.last_sign_in_at === 'string' ? user.last_sign_in_at : '') || 0;
   const overeno = meta.email_verified === true || (typeof user.email_confirmed_at === 'string' && Boolean(Date.parse(user.email_confirmed_at)));
-  return { id: text(user.id, 64), email, jmeno: text(meta.full_name || meta.name, 120) || email.split('@')[0] || '', fotoUrl: fotoZMetadat(meta), prihlasen, overeno };
+  return { id: text(user.id, 64), email, jmeno: text(meta.full_name || meta.name, 120) || email.split('@')[0] || '', fotoUrl: fotoZMetadat(fotoMeta), prihlasen, overeno };
 }
 
 // Adresa profilové fotky z Googlu. Metadata jsou nedůvěryhodná, proto projde jen https adresa

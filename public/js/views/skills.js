@@ -189,7 +189,17 @@ function mount(el) {
   // zmizely a seznam z minulé návštěvy by o tom mlčel. Co už je načtené, se ukáže hned, aby
   // stránka neblikla; čerstvý seznam ho tiše nahradí.
   if (v.items) update();
-  load();
+  load().then(() => {
+    // Odkaz z vyhledávání (#/dovednosti?cist=<id>) rovnou otevře čtení dané dovednosti.
+    const cist = new URLSearchParams(location.hash.split('?')[1] || '').get('cist');
+    if (cist && v.items?.some((x) => x.id === cist) && v.el) openReader(cist, null);
+  });
+  // Vždy aktuální: soubory SKILL.md se mění i za běhu (nová dovednost, úprava v editoru). Seznam
+  // se tiše obnoví každých 30 s a po návratu do okna; fill() mění DOM jen při skutečné změně.
+  const obnov = () => { if (v.el && document.visibilityState === 'visible') load(); };
+  v.casovac = setInterval(obnov, 30_000);
+  v.priNavratu = obnov;
+  window.addEventListener('focus', obnov);
 }
 
 function update() {
@@ -245,5 +255,5 @@ export default {
   title: tr('Dovednosti'),
   mount,
   update,
-  unmount: () => { v.el = null; },
+  unmount: () => { v.el = null; clearInterval(v.casovac); if (v.priNavratu) window.removeEventListener('focus', v.priNavratu); },
 };

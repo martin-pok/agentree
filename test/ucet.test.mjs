@@ -548,3 +548,10 @@ test('přihlášení nabídne výběr účtu Google (prompt=select_account)', as
     assert.equal(new URL(r.body.url).searchParams.get('prompt'), 'select_account');
   });
 });
+
+test('účet: fotka z Googlu se najde i v datech identity, když v user_metadata chybí', () => {
+  const u = uzivatelZOdpovedi({ id: 'u1', email: 'a@b.cz', user_metadata: { full_name: 'A B' }, identities: [{ provider: 'google', identity_data: { picture: 'https://lh3.googleusercontent.com/a/XYZ=s96-c' } }] });
+  assert.equal(u.fotoUrl, 'https://lh3.googleusercontent.com/a/XYZ=s192-c');
+  // Cizí adresa z identity neprojde stejně jako z metadat.
+  assert.equal(uzivatelZOdpovedi({ id: 'u1', email: 'a@b.cz', identities: [{ provider: 'google', identity_data: { picture: 'https://evil.example/a.png' } }] }).fotoUrl, '');
+});
