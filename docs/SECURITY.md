@@ -145,6 +145,13 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Vypnutí zavře listener a smaže všechna zařízení – pokud zároveň není zapnutá druhá cesta (Tailscale).
 - Zápisy dál procházejí ochranou proti CSRF (`X-Agenteeq` + kontrola `Origin`, do níž se přidají jen vlastní privátní adresy).
 
+## Pomocník (od 0.42.0)
+
+- Čte přepisy Claude Code a Codexu na disku tohoto počítače jen pro odpověď na dotaz a nic z nich neukládá; historie chatu je jen v `sessionStorage` okna.
+- Z telefonu (`zTohotoMacu() === false`) přepisy neprohledává a nevrací úryvky ani příkazy k pokračování – jen konverzace, které telefon vidí v přehledu (`src/app.js#pomocnik`, `test/pomocnik.test.mjs`).
+- Formulace lokálním modelem jde jen do Ollamy na adrese z `config.ollamaUrl` (výchozí `127.0.0.1:11434`); model dostane dotaz a nalezené názvy s úryvky.
+- Prohledávání má limit souborů, velikosti a času; nedokončené hledání se hlásí jako nedokončené.
+
 ## Upozornění na telefon (od 0.40.0)
 
 Web Push bez serveru Agenteeq (`src/webpush.js`, `src/push.js`). Výchozí stav: žádný odběr.

@@ -665,6 +665,11 @@ export function createHttpServer(app, existingServer = null) {
       });
       return { alert };
     }],
+    // Pomocník: jen čte. Z telefonu bez přepisů (stejně jako /api/sessions/:id).
+    ['POST', /^\/api\/pomocnik$/, async (req) => {
+      const body = await readBody(req);
+      return unwrap(await app.pomocnik({ dotaz: body?.dotaz, smiPrepisy: zTohotoMacu(req) }));
+    }],
     ['PUT', /^\/api\/settings$/, async (req) => {
       const body = await readBody(req);
       const n = body.notifications && typeof body.notifications === 'object' ? body.notifications : {};
@@ -687,6 +692,11 @@ export function createHttpServer(app, existingServer = null) {
       if (body.look !== undefined && !['obloha', 'koncert'].includes(body.look)) throw new HttpError(422, ui('Neznámý vzhled.'));
       if (body.appearance !== undefined) datastore.data.settings.appearance = body.appearance;
       if (body.look !== undefined) datastore.data.settings.look = body.look;
+      if (body.pomocnik !== undefined) {
+        const p = body.pomocnik;
+        if (!p || typeof p !== 'object' || Array.isArray(p) || Object.values(p).some((x) => typeof x !== 'boolean')) throw new HttpError(422, ui('Neplatné nastavení pomocníka.'));
+        datastore.data.settings.pomocnik = { ...datastore.data.settings.pomocnik, ...(typeof p.zobrazit === 'boolean' ? { zobrazit: p.zobrazit } : {}), ...(typeof p.model === 'boolean' ? { model: p.model } : {}) };
+      }
       if (body.language !== undefined) {
         if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, ui('Jazyk musí být čeština nebo angličtina.'));
         datastore.data.settings.language = body.language;

@@ -133,20 +133,63 @@ export function createLauncher(root) {
       <h2 id="launch-h">${tr('Spustit agenta')}</h2>
       <button class="link" type="button" data-l="refresh" aria-label="${tr('Obnovit nabídku agentů')}">${ICON.refresh}<span>${tr('Obnovit nabídku')}</span></button>
     </div>
-    <div class="launch-agents" role="radiogroup" aria-label="${tr('Agent')}" data-region="agents"></div>
     <div class="launch-compose">
       <label class="sr-only" for="launch-prompt">${tr('Zadání pro agenta')}</label>
       <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt placeholder="${tr('Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“')}"></textarea>
-      <div class="launch-controls" data-region="controls"></div>
-      <div class="launch-foot">
-        <p class="launch-note" data-region="note"></p>
-        <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami {0} a Enter', JE_MAC ? 'Command' : 'Ctrl')}"><span>${tr('Spustit')}</span><kbd>${MOD}</kbd><kbd>↵</kbd></span>
-        <button class="btn btn--primary launch-go" type="button" data-l="go">${ICON.spark}${tr('Spustit')}</button>
+      <div class="launch-bar">
+        <div class="lpick" data-region="pick"></div>
+        <div class="launch-controls" data-region="controls"></div>
+        <span class="launch-kbd" aria-label="${tr('Spustit agenta klávesami {0} a Enter', JE_MAC ? 'Command' : 'Ctrl')}"><kbd>${MOD}</kbd><kbd>↵</kbd></span>
+        <button class="btn btn--primary launch-go" type="button" data-l="go" title="${tr('Spustit ({0})', zkratka('Enter'))}">${ICON.spark}${tr('Spustit')}</button>
+      </div>
+      <p class="launch-note" data-region="note"></p>
+      <div class="lpick-pop" id="lpick-pop" role="dialog" aria-label="${tr('Vybrat agenta')}" hidden>
+        <label class="lpick-search">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-l-hledat autocomplete="off" spellcheck="false" placeholder="${tr('Hledat agenta…')}"></label>
+        <div class="launch-agents" role="radiogroup" aria-label="${tr('Agent')}" data-region="agents"></div>
+        <p class="lpick-empty" hidden>${tr('Žádný agent tomu neodpovídá.')}</p>
       </div>
     </div>
     <div class="runs" data-region="runs"></div>`;
 
   const promptEl = root.querySelector('[data-l-prompt]');
+  const popEl = root.querySelector('.lpick-pop');
+  const hledatEl = root.querySelector('[data-l-hledat]');
+
+  // Výběr agenta: tlačítko v liště pole otevře nabídku s hledáním. Šipky procházejí agenty,
+  // Enter vybere, Esc a klik mimo zavřou a fokus se vrátí na tlačítko.
+  const viditelneVolby = () => [...popEl.querySelectorAll('.lchip:not([hidden])')];
+  function filtruj() {
+    const q = hledatEl.value.trim().toLocaleLowerCase(LOCALE).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    for (const chip of popEl.querySelectorAll('.lchip')) chip.hidden = Boolean(q) && !chip.textContent.toLocaleLowerCase(LOCALE).normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q);
+    for (const g of popEl.querySelectorAll('.launch-group')) g.hidden = !g.querySelector('.lchip:not([hidden])');
+    popEl.querySelector('.lpick-empty').hidden = viditelneVolby().length > 0;
+  }
+  function otevri() {
+    popEl.hidden = false;
+    root.querySelector('[data-l="pick"]')?.setAttribute('aria-expanded', 'true');
+    hledatEl.value = '';
+    filtruj();
+    hledatEl.focus({ preventScroll: true });
+    document.addEventListener('pointerdown', mimo, true);
+  }
+  function zavri({ fokus = true } = {}) {
+    if (popEl.hidden) return;
+    popEl.hidden = true;
+    const btn = root.querySelector('[data-l="pick"]');
+    btn?.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', mimo, true);
+    if (fokus) btn?.focus({ preventScroll: true });
+  }
+  function mimo(e) { if (!e.target.closest('.lpick-pop, [data-l="pick"]')) zavri({ fokus: false }); }
+  hledatEl.addEventListener('input', filtruj);
+  popEl.addEventListener('keydown', (e) => {
+    const volby = viditelneVolby();
+    const i = volby.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); zavri(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); volby[Math.min(i + 1, volby.length - 1)]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (i <= 0) hledatEl.focus(); else volby[i - 1].focus(); }
+    else if (e.key === 'Enter' && e.target === hledatEl) { e.preventDefault(); volby[0]?.click(); }
+  });
   const goBtn = root.querySelector('[data-l="go"]');
   promptEl.value = prefs.draft || '';
 
@@ -178,7 +221,11 @@ export function createLauncher(root) {
         return `<div class="launch-group"><span class="launch-group-label">${label}</span><div class="launch-chips">${items.map((x) => `<button type="button" class="lchip" role="radio" aria-checked="${x.id === t?.id}" data-agent="${esc(x.id)}">${glyph(x)}<span>${esc(x.label)}</span>${x.beta ? `<span class="badge">${tr('Zkušební')}</span>` : ''}</button>`).join('')}</div></div>`;
       }).join('')
       : `<p class="muted small">${tr('Načítám, co jde na {0} spustit…', tomtoPocitaci())}</p>`);
+    if (!popEl.hidden) filtruj();
 
+    fill(root, 'pick', t
+      ? `<button type="button" class="lpick-btn" data-l="pick" aria-haspopup="dialog" aria-controls="lpick-pop" aria-expanded="${!popEl.hidden}" title="${tr('Vybrat agenta')}">${glyph(t)}<span>${esc(t.label)}</span><svg class="lpick-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>`
+      : '');
     if (!t) {
       fill(root, 'controls', '');
       fill(root, 'note', '');
@@ -280,7 +327,7 @@ export function createLauncher(root) {
 
   root.addEventListener('click', async (e) => {
     const chip = e.target.closest('[data-agent]');
-    if (chip) { prefs.agent = chip.dataset.agent; persist(); render(); return; }
+    if (chip) { prefs.agent = chip.dataset.agent; persist(); zavri({ fokus: false }); render(); promptEl.focus({ preventScroll: true }); return; }
     const m = e.target.closest('[data-mode]');
     if (m) { prefs.modes[target().id] = m.dataset.mode; persist(); render(); return; }
     const stop = e.target.closest('[data-run-stop]');
@@ -308,7 +355,8 @@ export function createLauncher(root) {
     }
     const a = e.target.closest('[data-l]');
     if (!a) return;
-    if (a.dataset.l === 'go') go();
+    if (a.dataset.l === 'pick') { if (popEl.hidden) otevri(); else zavri(); }
+    else if (a.dataset.l === 'go') go();
     else if (a.dataset.l === 'folder') chooseFolder();
     else if (a.dataset.l === 'clear') api.clearRuns().catch((err) => toast(err.message, { tone: 'err' }));
     else if (a.dataset.l === 'refresh') {
@@ -369,6 +417,7 @@ export function createLauncher(root) {
       render();
     },
     destroy() {
+      document.removeEventListener('pointerdown', mimo, true);
       clearTimeout(draftTimer);
       persist();
     },

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.42.0 – 2026-10-08 · Pomocník, pohodlnější zadávání práce, robot jen tam, kde pomáhá
+
+- **Pomocník (Beta).** Kulaté tlačítko s robotem vpravo dole otevře chat. Na „najdi chat, kde jsme před cca 3 měsíci řešili fakturaci, už nevím jaký LLM“ prohledá konverzace v přehledu i přepisy na disku tohoto počítače (Claude Code, Codex) – i starší než 30denní okno přehledu. Rozumí období („před 3 měsíci“, „minulý týden“, „v září“, „2 weeks ago“) a nástroji („v Codexu“). Výsledek ukáže s úryvkem a zvýrazněnými slovy; konverzaci z přehledu otevře, starší nabídne zkopírovat příkaz k pokračování (`claude --resume …`, `codex resume …`). Na „jak zapnu upozornění na telefon?“ ukáže volby v aplikaci a klepnutím na ně přejde. Hledání má limit (4 000 přepisů, 5 s) a když nestihne vše, řekne to – „nic jsem nenašel“ hlásí jen po skutečném prohledání. Když nic nesedí v zadaném období, nabídne shody z jiné doby a řekne to. S Ollamou může odpověď navíc zformulovat lokální model; data nikdy neopustí počítač. Telefon dostane jen to, co vidí v přehledu, nic z přepisů. Skrýt jde v Nastavení → Účet a vzhled, tam je i přepínač pohybu robotů.
+- **Pole pro zadání jako u moderních AI nástrojů.** Agent se vybírá tlačítkem přímo v liště pole (Claude Code ▾): nabídka s hledáním, šipkami, Enterem a Esc, rozdělená na agenty na tomto počítači a na webu. Režim, projekt a složka jsou v téže liště hned pod textem, Spustit vpravo (zkratka v popisku tlačítka). Žádné rozbalování „Možností zadání“. Ověřeno automatickým testem v Chromiu i WebKitu (`npm run qa:studio`): výběr, hledání, klávesnice, klik mimo, zachovaný koncept a skutečné odeslání zadání.
+- **Robot jen tam, kde pomáhá.** Na Přehledu sedí v panelu u pozdravu a ukazuje stav všech agentů najednou (zamává, když na tebe někdo čeká; píše, když agenti pracují) – věta pod nadpisem říká totéž slovy. Na ostatních stránkách už není pruh přes obsah: vpravo dole je malý plovoucí robot, který radu ke stránce nabídne jednou sám a pak na klepnutí nebo najetí myší. Nekoliduje s nadpisy (dřív v Nastavení zasahoval do obsahu).
+- **Levý panel se zaoblenými rohy** a odstupem od kraje okna, i v aplikaci pro Mac.
+- **Robot v tmavém vzhledu** má světlejší tělo, aby nesplýval s kartou.
+- **Ikona v horní liště Macu je hlava robota** místo starého systémového symbolu (trojúhelník s tečkami). Kreslí se jako šablona, takže ji macOS sám obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
+- **Nová načítací scéna.** Při spuštění a při načítání dat je uprostřed ztlumená hlava robota a přes ni přejíždí jemný fialový odlesk; místo starého trojzubce se žlutou tečkou. Plocha scény je stejná jako světlé rozhraní, takže přechod do aplikace je jen prolnutí. S omezeným pohybem zůstane robot v klidu.
+
 ## 0.41.0 – 2026-10-08 · Nový vzhled s roboty, nové logo a písmo Satoshi
 
 - **Pracovní plocha místo nástěnky.** Přehled začíná jednou otázkou „Co dnes posuneme dál?“ a polem pro zadání. Výběr agenta a podrobné volby jsou o klepnutí dál, rozhodnutí, která čekají na tebe, hned pod tím, živí agenti jako karty a statistiky dne po rozbalení „Průběh dne a spotřeba“.

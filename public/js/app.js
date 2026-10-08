@@ -32,7 +32,7 @@ import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPoc
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
-import { goToSettings, goToSection, takeSectionJump, vyvolejMisto } from './jump.js';
+import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
 import { cileHledani, hledejCile, skore } from './hledani.js';
 
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
@@ -186,7 +186,8 @@ function navigate() {
     if (!reduceMotion.matches) viewEl.classList.add('is-entering');
     nastupCeka = !reduceMotion.matches;
     current.mount(viewEl, r.params, r.query);
-    if (!firstNav && !UKAZKA) titleEl.focus({ preventScroll: true });
+    // Fokus na nadpis nové stránky – kromě chvíle, kdy člověk píše do pomocníka, který zůstává otevřený.
+    if (!firstNav && !UKAZKA && !(pisePrave() && document.activeElement.closest('.pomocnik'))) titleEl.focus({ preventScroll: true });
   } else {
     current.query?.(r.query);
   }

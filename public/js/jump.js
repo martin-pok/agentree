@@ -65,7 +65,8 @@ export function takeSectionJump(route) {
  * `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule – a v okně, které
  * zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá přesně a u skrytého
  * okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou. `fokus` dostane fokus
- * bez dalšího posunu, aby čtečka obrazovky i klávesnice pokračovaly odtud.
+ * bez dalšího posunu, aby čtečka obrazovky i klávesnice pokračovaly odtud – ne však, když člověk
+ * právě píše do pole mimo cíl.
  */
 export function vyvolejMisto(misto, fokus = null) {
   if (!misto) return;
@@ -76,5 +77,13 @@ export function vyvolejMisto(misto, fokus = null) {
   misto.classList.remove('is-called-out');
   void misto.offsetWidth;
   misto.classList.add('is-called-out');
-  fokus?.focus({ preventScroll: true });
+  // Kdo mezitím píše jinde (třeba další dotaz pomocníkovi), tomu fokus neukrade: Enter by jinak
+  // dopadl na zvýrazněný přepínač a přepnul ho.
+  if (!pisePrave(misto)) fokus?.focus({ preventScroll: true });
+}
+
+/** Píše teď člověk do pole mimo `oblast`? Pak mu fokus nikdo nebere (přechod stránky, zvýraznění). */
+export function pisePrave(oblast = null) {
+  const a = document.activeElement;
+  return Boolean(a && !oblast?.contains(a) && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)));
 }

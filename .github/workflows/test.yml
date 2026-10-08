@@ -143,6 +143,7 @@ jobs:
       - run: npm run qa:extension
       - run: npm run qa:contrast
       - run: npm run qa:tvary
+      - run: npm run qa:studio
       - uses: actions/upload-artifact@v6
         if: always()
         with:

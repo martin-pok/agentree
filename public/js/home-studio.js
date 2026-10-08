@@ -13,28 +13,6 @@ export function robot(type = 'Scout') {
 export function createHomeStudio(el) {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { /* defaults */ }
-  const root = el.querySelector('[data-launch]');
-  const agents = root.querySelector('.launch-agents');
-  const choice = document.createElement('details');
-  choice.className = 'studio-choice';
-  choice.innerHTML = `<summary>${tr('Vybrat agenta')}</summary>`;
-  agents.before(choice);
-  choice.append(agents);
-  const controls = root.querySelector('.launch-controls');
-  const options = document.createElement('details');
-  options.className = 'studio-options';
-  options.innerHTML = `<summary>${tr('Možnosti zadání')}</summary>`;
-  controls.before(options);
-  options.append(controls);
-  const syncChoice = () => {
-    const selected = agents.querySelector('[aria-checked="true"]');
-    choice.querySelector('summary').textContent = selected ? tr('{0} · změnit', selected.textContent.trim()) : tr('Vybrat agenta');
-  };
-  const observer = new MutationObserver(syncChoice);
-  observer.observe(agents, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-checked'] });
-  syncChoice();
-  const choose = e => { if (e.target.closest('[data-agent]')) choice.open = false; };
-  agents.addEventListener('click', choose);
   const button = document.createElement('button');
   button.className = 'btn btn--sm studio-customize';
   button.textContent = tr('Upravit vzhled agentů');
@@ -64,7 +42,23 @@ export function createHomeStudio(el) {
   field('agent').addEventListener('change', load);
   form.addEventListener('input', preview);
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
+  // Robot u pozdravu ukazuje stav všech agentů najednou: kdo čeká na tebe, zamává; když někdo
+  // pracuje, píše; jinak odpočívá. Věta pod nadpisem říká totéž slovy.
+  const hlavni = el.querySelector('.home-robot');
+  if (hlavni) hlavni.innerHTML = robot('Orbit');
+  const pulz = el.querySelector('[data-home-pulse]');
+  const stavPlochy = () => {
+    if (!hlavni || !pulz) return;
+    const vsichni = agentsList();
+    const cekaji = vsichni.filter((a) => a.status === 'needs_input').length;
+    const pracuji = vsichni.filter((a) => a.status === 'working').length;
+    hlavni.dataset.state = cekaji ? 'needs_input' : pracuji ? 'working' : 'idle';
+    pulz.textContent = cekaji ? tr('Na tvé rozhodnutí čeká agentů: {0}. Najdeš je hned pod polem pro zadání.', cekaji)
+      : pracuji ? tr('Pracujících agentů: {0}. Mezitím můžeš zadat další úkol.', pracuji)
+        : tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.');
+  };
   const refresh = () => {
+    stavPlochy();
     el.querySelectorAll('.pb-agents li[data-key]').forEach((li, i) => {
       const p = saved[li.dataset.key] || {};
       const index = [...String(li.dataset.key)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
@@ -89,7 +83,7 @@ export function createHomeStudio(el) {
 
   };
   refresh();
-  return { refresh, destroy() { observer.disconnect(); dialog.remove(); agents.removeEventListener('click', choose); } };
+  return { refresh, destroy() { dialog.remove(); } };
 }
 
 export function agentRobot(s) {

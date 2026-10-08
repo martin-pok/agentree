@@ -454,21 +454,19 @@ test('Upozornění: ikona, čas a „přečteno“ leží na jedné ose a čas n
     'zvýraznění přechází v rytmu design systému');
 });
 
-test('Načítání: souvislá animace značky bez teček a bez kostry obrazovky pod scénou', async () => {
+test('Načítání: hlava robota s fialovým odleskem a bez kostry obrazovky pod scénou', async () => {
   const { loaderHtml } = await import('../public/js/loader.js');
   const html = loaderHtml('Načítám…');
-  // Kmen a dvě větve jsou samostatné tahy, aby uzly naskočily přesně, když k nim tah doroste.
-  assert.equal((html.match(/class="lm-stroke /g) || []).length, 3);
-  assert.equal((html.match(/class="lm-node /g) || []).length, 3);
+  // Odlesk je oříznutý stejným tvarem, jaký má ztlumený robot pod ním (oči jsou výřezy, ne skvrny).
+  const tvar = html.match(/<clipPath id="lr-tvar"><path d="([^"]+)"/)[1];
+  assert.equal(html.match(/class="lr-zaklad" d="([^"]+)"/)[1], tvar);
+  assert.match(html, /<g clip-path="url\(#lr-tvar\)"><g class="lr-lesk">/);
+  assert.match(html, /stop-color="#5254d8"/, 'odlesk má brandovou fialovou');
   const css = await zdroj('public/loader.css');
-  // Při mezeře 100 začíná další úsek na konci tahu a kulaté zakončení tam nakreslí tečku.
-  const [, carka, mezera] = css.match(/\.lm-stroke \{[^}]*stroke-dasharray: (\d+) (\d+)/);
-  assert.ok(Number(mezera) > Number(carka), 'mezera čárkování musí být delší než tah');
-  assert.match(css, /\.lm-stroke \{[^}]*opacity: 0;/, 'složený tah je skrytý, jinak ukáže tečku nulové délky');
-  // Uzly naskakují měřítkem, ne poloprůhledně (šedé skvrny).
-  assert.match(css, /\.lm-node \{[^}]*transform: scale\(0\);[^}]*transform-box: fill-box;/);
+  // Animuje se jen transform a opacity – hladké i v okně pláště hned po startu.
+  for (const k of css.match(/@keyframes lr-[\s\S]*?\n\}/g)) assert.doesNotMatch(k, /filter|width|height|left|top/, k);
   const omezeny = css.slice(css.indexOf('prefers-reduced-motion'));
-  for (const s of ['.lm-root', '.lm-stroke', '.loader-orbit']) assert.ok(omezeny.includes(s), `${s} se při omezeném pohybu nezastaví`);
+  for (const s of ['.loader-robot', '.lr-lesk', '.loader-scene::before']) assert.ok(omezeny.includes(s), `${s} se při omezeném pohybu nezastaví`);
 
   const app = await zdroj('public/js/app.js');
   assert.match(app, /viewEl\.classList\.toggle\('is-loading', !state\.loaded\)/);

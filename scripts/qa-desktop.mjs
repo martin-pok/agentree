@@ -85,7 +85,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
           for (let vyska = 620; vyska <= 1200; vyska += 30) {
             await p.setViewportSize({ width: sirka, height: vyska });
             await p.waitForFunction(([w, h]) => innerWidth === w && innerHeight === h
-              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - h) < 1, [sirka, vyska]);
+              && Math.abs(document.querySelector('.sidebar').getBoundingClientRect().height - (h - 24)) < 1, [sirka, vyska]);
             await p.evaluate(() => new Promise((hotovo) => {
               const podpis = () => ['.sidebar', '.profile', '.profile-in', '.profile-in .avatar', '.nav', '.side-foot']
                 .map((s) => { const r = document.querySelector(s)?.getBoundingClientRect(); return r ? `${r.top},${r.width},${r.height}` : '-'; }).join('|');
@@ -268,7 +268,16 @@ async function zkontrolujPlynulost(browser, engine) {
       requestAnimationFrame(krok);
     }));
     await ustalit();
-    const pod = () => p.evaluate(() => { const r = document.elementFromPoint(700, 450)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; });
+    // Agenti jsou karty v mřížce: pevný bod by mohl padnout do mezery mezi kartami. Měří se
+    // ve středu karty, která je v polovině výšky okna.
+    const [mx, my] = await p.evaluate(() => {
+      const vzdal = (r) => { const b = r.getBoundingClientRect(); return Math.abs(b.top + b.height / 2 - innerHeight / 2); };
+      const k = [...document.querySelectorAll('[data-region="table"] [data-key]')].sort((a, b) => vzdal(a) - vzdal(b))[0];
+      const b = k.getBoundingClientRect();
+      return [Math.round(b.left + b.width / 2), Math.round(b.top + b.height / 2)];
+    });
+    await p.mouse.move(mx, my);
+    const pod = () => p.evaluate(([x, y]) => { const r = document.elementFromPoint(x, y)?.closest('[data-key]'); return r ? { klic: r.dataset.key, top: Math.round(r.getBoundingClientRect().top) } : null; }, [mx, my]);
     for (const i of [120, 121]) {
       const pred = await pod();
       assert.ok(pred, `${engine}: pod kurzorem není řádek`);
@@ -600,7 +609,6 @@ for (const engine of engines) {
     server.app.datastore.data.settings.avatar = 7;
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.waitForFunction(() => document.querySelector('[data-face]')?.dataset.face === '7');
-    await page.locator('.studio-options > summary').click();
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
@@ -860,11 +868,16 @@ for (const engine of engines) {
         await page.locator('.set-main').waitFor();
         await page.setViewportSize({ width: 2528, height: 1390 });
         await page.waitForFunction(() => innerWidth === 2528 && Math.abs(document.querySelector('.set-main').getBoundingClientRect().width - 880) < 1);
-        const settingsCenter = await page.locator('.set-main').evaluate((el) => {
+        // WebKit přepočítá pravidla pro šířku okna až o snímek později než šířku sloupce – počkat na ustálení.
+        await page.waitForFunction(() => {
+          const box = document.querySelector('.set-main').getBoundingClientRect();
+          return Math.abs(box.left + box.width / 2 - innerWidth / 2) <= 2;
+        }, null, { timeout: 3000 }).catch(() => {});
+        const [settingsCenter, rozvrzeni] = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
-          return Math.abs(box.left + box.width / 2 - innerWidth / 2);
+          return [Math.abs(box.left + box.width / 2 - innerWidth / 2), `left ${box.left}, margin ${getComputedStyle(el).marginLeft}, look ${document.documentElement.dataset.look}, scrollX ${scrollX}`];
         });
-        assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px)`);
+        assert.ok(settingsCenter <= 2, `${engine} široké Nastavení je ve středu okna (odchylka ${settingsCenter}px; ${rozvrzeni})`);
         await page.setViewportSize({ width: 1440, height: 1000 });
       }
       if (route === 'upozorneni') {
