@@ -377,9 +377,10 @@ function update() {
     const working = s.status === 'working';
     slot.querySelector('[data-chat-stop]').hidden = !working;
     slot.querySelector('[type="submit"]').disabled = working;
-  } else if (s.connector === 'claude-code' && v.odpoved) {
+  } else if (s.connector === 'claude-code' && v.odpoved && !s.proces) {
     // Odpověď agentovi přímo z Agenteeq (src/odpoved.js). Když to nejde, řekne proč a nabídne
-    // pokračování tam, kde agent běží – nikdy tiše nezmizí.
+    // pokračování tam, kde agent běží – nikdy tiše nezmizí. Detekovaný proces bez přepisu
+    // konverzací není, nic k odpovědi ani otevření nenabízí (vysvětluje to jeho banner).
     if (v.odpovedStav !== s.status) { v.odpovedStav = s.status; obnovOdpoved(); }
     if (v.odpoved.lze) {
       if (!slot.querySelector('[data-odpoved]')) {
