@@ -79,6 +79,32 @@ try {
       assert.equal(await page.locator('.robot-guide').count(), 0, 'žádný pruh s robotem přes obsah');
       await page.screenshot({ path: `${out}/${typ}-prehled.png` });
 
+      // Bubliny robotů: najetí na robota agenta → věta v bublině, která nic nezakryje;
+      // klepnutí na robota u pozdravu → gesto a věta.
+      await page.mouse.move(5, 5);
+      const agentRobot = page.locator('.pb-agent-logo').first();
+      await agentRobot.scrollIntoViewIfNeeded();
+      await agentRobot.hover();
+      await page.locator('.rb.is-in').waitFor();
+      const kolize = await page.evaluate(() => {
+        const b = document.querySelector('.rb').getBoundingClientRect();
+        const robot = document.querySelector('.pb-agent-logo');
+        return [...document.querySelectorAll('.sidebar, a, button, h1, h2, h3, p, .pb-agent-text')]
+          .filter((el) => !el.contains(robot) && !robot.contains(el))
+          .filter((el) => { const o = el.getBoundingClientRect(); return o.width && Math.min(b.right, o.right) > Math.max(b.left, o.left) + 1 && Math.min(b.bottom, o.bottom) > Math.max(b.top, o.top) + 1; })
+          .map((el) => el.tagName + '.' + el.className);
+      });
+      assert.deepEqual(kolize, [], 'bublina robota nic nezakrývá');
+      assert.ok((await page.locator('.rb-text').innerText()).length > 3, 'bublina má text');
+      await page.screenshot({ path: `${out}/${typ}-bublina.png` });
+      await page.mouse.move(5, 5);
+      await page.waitForFunction(() => document.querySelector('.rb').hidden);
+      await page.evaluate(() => scrollTo(0, 0));
+      await page.locator('.home-robot').click();
+      await page.locator('.rb.is-in').waitFor();
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.querySelector('.rb').hidden);
+
       // Levý panel má zaoblené rohy.
       const rohy = await page.locator('.sidebar').evaluate((n) => parseFloat(getComputedStyle(n).borderBottomLeftRadius));
       assert.ok(rohy >= 16, `levý panel je zaoblený (${rohy}px)`);

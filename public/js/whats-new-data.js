@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.43.0',
+    date: '2026-10-08',
+    title: 'Roboti mluví',
+    items: [
+      'Najeď na robota agenta a řekne ti ve světlé bublině, co právě dělá. Bublina si sama najde místo, kde nic nezakryje.',
+      'Když na tebe agent začne čekat nebo doběhne, jeho robot se jednou sám ozve.',
+      'Klepni na robota u pozdravu – zamává, poskočí nebo nakloní hlavu. A občas zacituje kultovní film.',
+    ],
+    en: {
+      title: 'The robots talk',
+      items: [
+        'Hover over an agent’s robot and it tells you in a light bubble what it is doing. The bubble finds a spot where it covers nothing.',
+        'When an agent starts waiting for you or finishes, its robot speaks up once on its own.',
+        'Click the robot next to the greeting – it waves, hops or tilts its head. And now and then it quotes a cult film.',
+      ],
+    },
+  },
+  {
     version: '0.42.0',
     date: '2026-10-08',
     title: 'Pomocník a pohodlnější zadávání práce',

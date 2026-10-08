@@ -1,4 +1,5 @@
 import { initMascotMotion } from './mascot-motion.js';
+import { initRobotBubliny } from './robot-bubliny.js';
 import { robotGuide } from './robot-guide.js';
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
@@ -1078,6 +1079,7 @@ setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 
 navigate();
 initMascotMotion();
+initRobotBubliny();
 setInterval(tickClock, 1000);
 setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);
