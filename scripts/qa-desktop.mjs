@@ -868,6 +868,11 @@ for (const engine of engines) {
         await page.locator('.set-main').waitFor();
         await page.setViewportSize({ width: 2528, height: 1390 });
         await page.waitForFunction(() => innerWidth === 2528 && Math.abs(document.querySelector('.set-main').getBoundingClientRect().width - 880) < 1);
+        // WebKit přepočítá pravidla pro šířku okna až o snímek později než šířku sloupce – počkat na ustálení.
+        await page.waitForFunction(() => {
+          const box = document.querySelector('.set-main').getBoundingClientRect();
+          return Math.abs(box.left + box.width / 2 - innerWidth / 2) <= 2;
+        }, null, { timeout: 3000 }).catch(() => {});
         const [settingsCenter, rozvrzeni] = await page.locator('.set-main').evaluate((el) => {
           const box = el.getBoundingClientRect();
           return [Math.abs(box.left + box.width / 2 - innerWidth / 2), `left ${box.left}, margin ${getComputedStyle(el).marginLeft}, look ${document.documentElement.dataset.look}, scrollX ${scrollX}`];
