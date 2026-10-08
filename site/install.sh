@@ -54,6 +54,36 @@ app_running() {
   pgrep -f '/Agenteeq\.app/Contents/(MacOS/Agenteeq|Resources/node)' >/dev/null 2>&1
 }
 
+# Ukončí běžící Agenteeq stejně jako ⌘Q. Když do 10 s neskončí, instalace se zastaví a nic se nemění.
+quit_running() {
+  app_running || return 0
+  say "Agenteeq: ukončuji běžící aplikaci… / quitting the running app…"
+  osascript -e "tell application id \"$BUNDLE_ID\" to quit" </dev/null >/dev/null 2>&1 || true
+  local waited=0
+  while app_running && [ "$waited" -lt 20 ]; do sleep 0.5; waited=$((waited + 1)); done
+  if app_running; then
+    fail "Agenteeq se nepodařilo ukončit (možná čeká na potvrzení v okně). Ukonči ho ⌘Q a spusť příkaz znovu. Nic se nezměnilo." \
+         "Agenteeq didn't quit (it may be waiting for a confirmation). Quit it with ⌘Q and run the command again. Nothing was changed."
+  fi
+}
+
+# Starší kopie Agenteeq jinde na disku (Stažené soubory, druhá složka Aplikace). Dock nebo
+# Spotlight pak můžou otevírat tu starou. Jen se vypíšou – mazat je smí jen uživatel.
+report_other_copies() {
+  local keep="$1" copy v found=""
+  command -v mdfind >/dev/null 2>&1 || return 0
+  while IFS= read -r copy; do
+    [ -n "$copy" ] && [ "$copy" != "$keep" ] || continue
+    case "$copy" in "$HOME/.Trash/"*|*"/.agenteeq-install."*|/Volumes/*) continue ;; esac
+    v="$(plist_value "$copy" CFBundleShortVersionString)"
+    found="${found}  ${copy} (${v:-?})"$'\n'
+  done < <(mdfind "kMDItemCFBundleIdentifier == '$BUNDLE_ID'" 2>/dev/null || true)
+  [ -n "$found" ] || return 0
+  say "" "Pozor: na Macu jsou i další kopie Agenteeq. Dock nebo Spotlight může otevírat starou – přesuň je do Koše:" \
+      "Note: there are other copies of Agenteeq on this Mac. The Dock or Spotlight may open an old one – move them to the Trash:"
+  printf '%s' "$found"
+}
+
 # Výběr přílohy a kontrola tvaru odpovědi GitHubu. JSON čte JavaScript zabudovaný v macOS
 # (osascript), takže skript nepotřebuje jq ani Python.
 parse_release() {
@@ -178,7 +208,13 @@ main() {
       && codesign --verify --deep --strict "$current" >/dev/null 2>&1; then
     say "Agenteeq ${version} už v ${dest} je – nejnovější verze, nic se nestahuje." \
         "Agenteeq ${version} is already in ${dest} – the latest version, nothing to download."
-    [ -n "$test_mode" ] || open "$current" </dev/null || true
+    if [ -z "$test_mode" ]; then
+      # Po výměně aplikace ve Finderu běží na pozadí dál stará verze a `open` by probudil právě ji.
+      # Proto se běžící Agenteeq nejdřív ukončí a otevře se znovu ten z disku.
+      quit_running
+      open "$current" </dev/null || true
+      report_other_copies "$current"
+    fi
     return 0
   fi
 
@@ -230,16 +266,7 @@ main() {
   xattr -dr com.apple.quarantine "$STAGE/$APP_NAME" 2>/dev/null || true
 
   # Běžící Agenteeq se ukončí stejně jako ⌘Q. Když do 10 s neskončí, nic se nemění.
-  if [ -z "$test_mode" ] && app_running; then
-    say "Agenteeq: ukončuji běžící aplikaci… / quitting the running app…"
-    osascript -e "tell application id \"$BUNDLE_ID\" to quit" </dev/null >/dev/null 2>&1 || true
-    local waited=0
-    while app_running && [ "$waited" -lt 20 ]; do sleep 0.5; waited=$((waited + 1)); done
-    if app_running; then
-      fail "Agenteeq se nepodařilo ukončit (možná čeká na potvrzení v okně). Ukonči ho ⌘Q a spusť příkaz znovu. Nic se nezměnilo." \
-           "Agenteeq didn't quit (it may be waiting for a confirmation). Quit it with ⌘Q and run the command again. Nothing was changed."
-    fi
-  fi
+  [ -n "$test_mode" ] || quit_running
 
   local previous="" old_version=""
   if [ -e "$current" ]; then
@@ -270,6 +297,7 @@ main() {
   if [ -z "$test_mode" ]; then
     open "$current" </dev/null || true
     say "Aplikace se otevírá. Další verze nabídne sama v Nastavení." "The app is opening. It offers new versions itself in Settings."
+    report_other_copies "$current"
   fi
 }
 

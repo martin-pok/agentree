@@ -10,8 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const zdroj = await fs.readFile(fileURLToPath(new URL('../extension/background.js', import.meta.url)), 'utf8');
 
-function spust(sit) {
-  const local = {};
+function spust(sit, { ulozeno = {} } = {}) {
+  const local = { ...ulozeno };
+  let zmenaUloziste = null;
   const session = {};
   const volani = [];
   let posluchac = null;
@@ -26,13 +27,14 @@ function spust(sit) {
     crypto: { randomUUID: () => 'instalace-1234' },
     Date: { now: () => ted },
     fetch: async (url, init = {}) => {
-      volani.push({ url: String(url).replace('http://127.0.0.1:4620', ''), headers: init.headers || {} });
-      const r = await sit(String(url).replace('http://127.0.0.1:4620', ''), init);
+      const cesta = String(url).replace(/^http:\/\/127\.0\.0\.1:\d+/, '');
+      volani.push({ url: cesta, plna: String(url), headers: init.headers || {} });
+      const r = await sit(cesta, init);
       if (r instanceof Error) throw r;
       return { ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.body || {} };
     },
     chrome: {
-      storage: { local: oblast(local), session: oblast(session) },
+      storage: { local: oblast(local), session: oblast(session), onChanged: { addListener: (fn) => { zmenaUloziste = fn; } } },
       runtime: {
         getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
         onInstalled: { addListener() {} },
@@ -46,7 +48,7 @@ function spust(sit) {
   vm.runInContext(zdroj, kontext);
   const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
   const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
-  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; } };
+  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; delete local.token; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
 }
 
 test('pozadí rozšíření: aplikace neběží → „nedostupné“, bez tokenu a bez zahlcení dotazy', async () => {
@@ -141,4 +143,23 @@ test('pozadí rozšíření: otevřené konverzace pro okno – jen stav, staré
   assert.equal(vysledek.ok, true);
   assert.equal(r.volani.length, pred);
   assert.equal(r.session.otevrene['grok:d'], undefined);
+});
+
+// Konfigurovatelný port (PORT): rozšíření mluví s uloženým portem, neplatný ignoruje
+// a po změně portu zapomene token a spáruje se znovu.
+test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, změna znovu spáruje', async () => {
+  const odpoved = (url) => (url === '/api/extension/pripojit' ? { status: 200, body: { token: 'p'.repeat(43), version: '1.0.0' } }
+    : url === '/api/extension/hello' ? { status: 200, body: { expectedVersion: '1.0.0' } } : { status: 200 });
+  const r = spust(odpoved, { ulozeno: { port: 5123 } });
+  await r.zprava({ type: 'agenteeq:hello' });
+  assert.ok(r.volani.length && r.volani.every((v) => v.plna.startsWith('http://127.0.0.1:5123/')), JSON.stringify(r.volani.map((v) => v.plna)));
+  const spatny = spust(odpoved, { ulozeno: { port: 80 } });
+  await spatny.zprava({ type: 'agenteeq:hello' });
+  assert.ok(spatny.volani.every((v) => v.plna.startsWith('http://127.0.0.1:4620/')), 'port pod 1024 se nepoužije');
+  r.zmenPort(6001);
+  r.posun(21e3);
+  await r.zprava({ type: 'agenteeq:hello' });
+  const poZmene = r.volani.slice(-2);
+  assert.ok(poZmene.every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), JSON.stringify(poZmene.map((v) => v.plna)));
+  assert.ok(poZmene.some((v) => v.url === '/api/extension/pripojit'), 'nový port = nové spárování');
 });

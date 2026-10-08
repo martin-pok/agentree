@@ -112,9 +112,14 @@ test('rozšíření mluví jen s Agenteeq na tomto počítači', async () => {
   // Kromě aplikace na tomto počítači jen weby, kde rozšíření čte stav konverzace (content skripty).
   // Oprávnění k nim slouží jen k vložení skriptu do už otevřených karet po instalaci či aktualizaci.
   assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:4620/*', ...manifest.content_scripts[0].matches], 'žádná jiná adresa tam nepatří');
+  // Jiný port aplikace (PORT) jen jako volitelné oprávnění: Chrome se zeptá, až ho
+  // uživatel nastaví, a aktualizace z obchodu kvůli tomu rozšíření nevypne.
+  assert.deepEqual(manifest.optional_host_permissions, ['http://127.0.0.1/*']);
   const pozadi = await fs.readFile(path.join(ROOT, 'extension/background.js'), 'utf8');
   const adresy = [...pozadi.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((m) => m[0]);
-  assert.deepEqual([...new Set(adresy)], ['http://127.0.0.1:4620'], 'data nesmí odejít nikam jinam');
+  assert.deepEqual([...new Set(adresy)], ['http://127.0.0.1'], 'data nesmí odejít nikam jinam');
+  assert.match(pozadi, /return `\$\{HOST\}:\$\{port\}`/, 'adresa je vždy 127.0.0.1 s ověřeným portem');
+  assert.doesNotMatch(pozadi, /\bBASE\b/);
 });
 
 // Po aktualizaci rozšíření (z obchodu přichází sama) by otevřené karty do obnovení nic nehlásily

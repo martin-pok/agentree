@@ -46,6 +46,13 @@ test('instalace: skript je bezpečný už podle textu', async () => {
   const hosty = new Set([...radky.matchAll(/https?:\/\/([^/"'\s$]+)/g)].map((m) => m[1]));
   assert.deepEqual([...hosty].sort(), ['api.github.com', 'github.com']);
   assert.doesNotMatch(radky, /\bwget\b|\bnc\b|\bpython3?\b|\bjq\b/);
+  // Aktuální verze na disku, ale stará ještě běží (výměna ve Finderu bez ⌘Q): `open` by probudil
+  // starou. I cesta „nic se nestahuje“ proto běžící aplikaci nejdřív ukončí.
+  const stejna = radky.slice(radky.indexOf('nothing to download'), radky.indexOf('return 0', radky.indexOf('nothing to download')));
+  assert.ok(stejna.indexOf('quit_running') > -1 && stejna.indexOf('quit_running') < stejna.indexOf('open "$current"'), 'stejná verze: nejdřív ukončit běžící, pak otevřít');
+  // Jiné kopie se jen vypíšou, nikdy nepřesouvají ani nemažou.
+  const kopie = radky.slice(radky.indexOf('report_other_copies() {'), radky.indexOf('\n}', radky.indexOf('report_other_copies() {')));
+  assert.doesNotMatch(kopie, /\b(mv|rm|trash|ditto)\b/);
 });
 
 test('instalace: bash skript přijme bez syntaktické chyby', { skip: spawnSync('bash', ['--version']).error && 'bash na tomto systému není' }, () => {

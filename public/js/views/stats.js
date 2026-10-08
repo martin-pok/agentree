@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { state, sessionsList, agentsList } from '../state.js';
-import { esc, fmtNum, fmtTok, plural } from '../format.js';
+import { esc, fmtNum, fmtTok, plural, dateLong } from '../format.js';
 import { glyph } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
@@ -8,9 +8,10 @@ import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, legendHtml, limitGauges, emptyState, creditAgeHtml } from '../ui.js';
 import { tr, LOCALE } from '../i18n.js';
+import { dlouheObdobi, DLOUHA_OBDOBI } from '../historie-stats.js';
 
-const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined };
-const PERIODS = [['today', tr('Dnes')], ['day', tr('24 hodin')], ['week', tr('7 dní')], ['fortnight', tr('14 dní')], ['month', tr('30 dní')]];
+const v = { period: 'week', hidden: new Set(), drawn: false, el: null, usage: undefined, historie: null, historieAt: 0, historieNacita: false };
+const PERIODS = [['today', tr('Dnes')], ['day', tr('24 hodin')], ['week', tr('7 dní')], ['fortnight', tr('14 dní')], ['month', tr('30 dní')], ['quarter', tr('90 dní')], ['year', tr('12 měsíců')]];
 
 function mount(el) {
   v.el = el;
@@ -28,6 +29,7 @@ function mount(el) {
       <div class="sec-head"><h2 id="st-chart-h">${tr('Tokeny podle poskytovatele')}</h2></div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
+      <div data-region="history-note"></div>
       <div data-region="api-tokens"></div>
     </section>
     <div class="grid-2 st-cards" data-enter style="--i:4">
@@ -60,6 +62,23 @@ function mount(el) {
   });
 }
 
+// Dlouhá období (90 dní, 12 měsíců) stojí na denních souhrnech, které ukládá server
+// (src/historie.js). Načtou se při prvním výběru takového období a pak nejvýš jednou za minutu –
+// starší den se už nemění a dnešek server při každém dotazu přepočítá z živých konverzací.
+async function nactiHistorii() {
+  if (v.historieNacita || Date.now() - v.historieAt < 60e3) return;
+  v.historieNacita = true;
+  try {
+    v.historie = await api.historie();
+    v.historieAt = Date.now();
+  } catch {
+    v.historie = v.historie || { od: '', dny: {}, chyba: true };
+  } finally {
+    v.historieNacita = false;
+  }
+  if (v.el && DLOUHA_OBDOBI.has(v.period)) { v.drawn = false; update(); }
+}
+
 // Historie vytížení plánu Claude (30 dní) – čte se na vyžádání ze souboru aplikace Claude Desktop.
 async function loadUsage() {
   try {
@@ -74,15 +93,25 @@ async function loadUsage() {
 function usageHistoryHtml() {
   const u = v.usage;
   if (!u) return '';
+  const latestDay = u.latestDay;
+  const observed = latestDay?.observedAt ? new Date(latestDay.observedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }) : '';
+  const dayLabel = latestDay ? (latestDay.isToday ? tr('Dnes') : new Date(latestDay.dateAt).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })) : '';
+  const latestDayHtml = latestDay ? `<div class="usage-today">
+      <div class="usage-today-head"><h4>${esc(dayLabel)}</h4><span class="muted">${fmtNum(latestDay.samples)} ${plural(latestDay.samples, 'vzorek', 'vzorky', 'vzorků')} · ${tr('poslední měření')} ${esc(observed)}</span></div>
+      <div class="usage-today-values">
+        <div><span>${tr('Limit 5 h')}</span><strong>${latestDay.fiveHour === null ? '–' : `${fmtNum(latestDay.fiveHour)} %`}</strong></div>
+        <div><span>${tr('Týdenní limit')}</span><strong>${latestDay.sevenDay === null ? '–' : `${fmtNum(latestDay.sevenDay)} %`}</strong></div>
+      </div>
+    </div>` : '';
   const charts = [
     ['fiveHour', tr('Limit 5 h'), '%'],
     ['sevenDay', tr('Týdenní limit'), '%'],
   ].filter(([key]) => (u[key] || []).length >= 2)
     .map(([key, label, unit]) => `<div class="usage-chart"><div class="sec-head"><h3>${esc(label)}</h3><span class="muted small">${esc(unit === '%' ? tr('vytížení okna v %') : tr('hodnota bez jednotky'))}</span></div>
       ${timeLine({ id: `usage-${key}`, points: u[key], height: 160, color: chartColor('anthropic'), format: (x) => (unit === '%' ? `${Math.round(x)} %` : x.toLocaleString(LOCALE, { maximumFractionDigits: 2 })), axisFormat: (x) => (unit === '%' ? `${Math.round(x)}` : fmtNum(x)), label })}</div>`);
-  if (!charts.length) return '';
+  if (!charts.length && !latestDayHtml) return '';
   return `<div class="usage-history"><div class="sec-head"><h3>${tr('Vytížení plánu Claude v čase')}</h3><span class="muted small">${fmtNum(u.samples)} ${plural(u.samples, 'vzorek', 'vzorky', 'vzorků')} ${tr('za 30 dní ze souboru aplikace Claude Desktop')}</span></div>
-    ${charts.join('')}</div>`;
+    ${latestDayHtml}${charts.join('')}</div>`;
 }
 
 // Čísla a pruhy se při živé události slučují (ui.js#sloucit), nepřepisují.
@@ -117,6 +146,8 @@ export function apiTokensHtml(period, now = Date.now(), cloud = state.integratio
 function update() {
   const el = v.el;
   if (!el) return;
+  if (DLOUHA_OBDOBI.has(v.period)) { updateDlouhe(); return; }
+  fill(el, 'history-note', '');
   const now = Date.now();
   const all = sessionsList();
   const ser = providerSeries(all, v.period, now, v.hidden);
@@ -160,6 +191,11 @@ function update() {
     ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) })))
     : `<p class="muted">${tr('Bez dat.')}</p>`);
 
+  aktualizujLimity(el, now);
+}
+
+// Limity, kredity a historie vytížení mají vlastní období – ukazují se stejně u každého výběru.
+function aktualizujLimity(el, now) {
   const gauges = limitGauges(state.limits, now);
   const creditCharts = state.credits
     .filter((c) => c.history?.length >= 2)
@@ -174,6 +210,47 @@ function update() {
     });
   fill(el, 'usage-history', usageHistoryHtml());
   zivy(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${limitsAll(state, now)}`);
+}
+
+const hbarRadky = (radky, celkem, sPocty) => (radky.length
+  ? hbars(radky.slice(0, 8).map((r) => ({ label: r.key, sub: sPocty ? `${r.count} ${plural(r.count, 'konverzace', 'konverzace', 'konverzací')}` : `${celkem ? Math.round((r.value / celkem) * 100) : 0} %`, value: r.value, color: chartColor(r.provider), icon: glyph(r.provider) })))
+  : `<p class="muted">${tr('Bez dat.')}</p>`);
+
+// 90 dní a 12 měsíců: stejné karty jako krátká období, ale z uložených denních souhrnů. Mapa
+// aktivity, limity a kredity se nemění – mají vlastní období.
+function updateDlouhe() {
+  const el = v.el;
+  const now = Date.now();
+  nactiHistorii();
+  fill(el, 'period', PERIODS.map(([k, l]) => `<button type="button" data-period="${k}" aria-pressed="${v.period === k}">${l}</button>`).join(''), { sloucit: true });
+  if (!v.historie) {
+    fill(el, 'chart', emptyState({ title: tr('Načítám historii…') }));
+    return;
+  }
+  const d = dlouheObdobi(v.historie, v.period, now, v.hidden);
+  zivy(el, 'kpis', [
+    [tr('Zaznamenané tokeny'), tween(`st-tok-${v.period}`, d.tokeny, 'tok'), tr('vstup + výstup')],
+    [tr('Nové konverzace'), tween(`st-ses-${v.period}`, d.konverzace), `${d.pocetAplikaci} ${plural(d.pocetAplikaci, 'aplikace', 'aplikace', 'aplikací')}`],
+    [tr('Hodiny s aktivitou'), tween(`st-h-${v.period}`, d.hodiny), tr('hodiny, kdy aspoň jeden agent pracoval')],
+    [tr('Zadání'), tween(`st-p-${v.period}`, d.zadani), tr('v konverzacích začatých v tomto období')],
+  ].map(([l, val, sub]) => `<div class="card kpi"><span class="eyebrow">${l}</span><span class="val">${val}</span><small>${esc(sub)}</small></div>`).join(''));
+  const changed = fill(el, 'chart', d.series.length
+    ? stackedColumns({ id: `st-tokens-${v.period}`, labels: d.labels, tips: d.tips, series: d.series, height: 280, label: tr('Tokeny podle poskytovatele'), partialLast: true })
+    : emptyState({ title: tr('V tomto období žádné tokeny') }));
+  if (changed && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
+  v.drawn = true;
+  fill(el, 'legend', legendHtml(d.series, { box: true }));
+  // Mezera před začátkem ukládání není nula: Agenteeq ty dny neviděl, a tak to říká narovinu.
+  fill(el, 'history-note', v.historie.chyba
+    ? `<p class="set-note">${tr('Uloženou historii se nepodařilo načíst. Zkus to za chvíli znovu.')}</p>`
+    : d.chybiDo ? `<p class="set-note">${esc(tr('Historii Agenteeq ukládá od {0}. Dny před tím v grafu chybí – nejsou to nuly, Agenteeq je neviděl.', dateLong(Date.parse(`${d.chybiDo}T12:00:00`))))}</p>` : '');
+  fill(el, 'api-tokens', '');
+  zivy(el, 'apps', hbarRadky(d.aplikace, d.tokeny));
+  zivy(el, 'projects', hbarRadky(d.slozky, d.tokeny, true));
+  zivy(el, 'models', hbarRadky(d.modely, d.tokeny));
+  const all = sessionsList();
+  fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
+  aktualizujLimity(el, now);
 }
 
 export default { id: 'statistiky', title: tr('Statistiky'), mount, update, unmount: () => { v.unwatch?.(); v.unwatch = null; v.el = null; } };

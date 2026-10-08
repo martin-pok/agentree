@@ -323,6 +323,17 @@ test('období nabízejí kalendářní „Dnes“ i 14 dní a nepletou se s posl
 // stránka vzadu – kolečko patří tomu, co je navrchu, ne tomu, co je pod překryvem.
 test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou', async () => {
   const ui = await zdroj('public/js/ui.js');
+  const modal = ui.slice(ui.indexOf('export function modal('), ui.indexOf('export function createPalette'));
+  assert.match(modal, /const scrollAtOpen = \{ x: window\.scrollX, y: window\.scrollY \}/,
+    'modal před zamknutím stránky uloží její pozici');
+  assert.match(modal, /opener\.focus\(\{ preventScroll: true \}\)/,
+    'návrat fokusu na trigger nesmí scrollnout stránku');
+  assert.match(modal, /function restorePageScroll\(\) \{[\s\S]{0,450}window\.scrollTo\(scrollAtOpen\.x, scrollAtOpen\.y\)/,
+    'pokud WebKit pozici přesto změní, modal ji po odemčení stránky obnoví');
+  assert.match(modal, /setTimeout\(\(\) => \{\s*scrim\.remove\(\);[\s\S]{0,180}?requestAnimationFrame\(restorePageScroll\);\s*\}, 180\)/,
+    'WebKit může posunout stránku až při odstranění zavíracího překryvu, proto se pozice ověří i potom');
+  assert.match(modal, /location\.href !== locationAtOpen/,
+    'po navigaci se nesmí vracet scroll z předchozí obrazovky');
   const paleta = ui.slice(ui.indexOf('export function createPalette'));
   assert.match(paleta, /root\.hidden = false;[\s\S]{0,400}?document\.body\.classList\.add\('has-modal'\)/, 'otevření vyhledávání musí zamknout stránku');
   assert.match(paleta, /root\.hidden = true;[\s\S]{0,300}?document\.body\.classList\.remove\('has-modal'\)/, 'zavření ji musí odemknout');
@@ -435,6 +446,12 @@ test('Upozornění: ikona, čas a „přečteno“ leží na jedné ose a čas n
   assert.match(radek, /grid-template-columns: 40px minmax\(0, 1fr\) auto 40px/);
   assert.match(radek, /align-items: center/, 'ikona, čas i tlačítko jsou svisle na středu karty');
   assert.match(css, /\.alert-act \{[^}]*width: 40px; height: 40px;/);
+  assert.match(css, /:where\(html:not\(\.is-scrolling\)\) \.alert-item:hover,\s*\.alert-item:focus-within \{ background: var\(--line-2\); \}/,
+    'hover i klávesnicový fokus mají viditelnou plochu v obou tématech a neruší při scrollu');
+  assert.match(css, /\.alert-item \{[^}]*transition: background-color var\(--motion-response\) var\(--ease\);/,
+    'hover používá časování design systému');
+  assert.match(css, /\.alert-item \{[^}]*transition: background-color var\(--motion-response\) var\(--ease\);/,
+    'zvýraznění přechází v rytmu design systému');
 });
 
 test('Načítání: souvislá animace značky bez teček a bez kostry obrazovky pod scénou', async () => {

@@ -1,9 +1,10 @@
-import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM } from './format.js';
+import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
 import { tr, LOCALE } from './i18n.js';
 import { posunSObsahem } from './plynule-posouvani.js';
+import { useky, doplneni } from './hledani.js';
 
 // `sloucit: true` – oblast se živými daty (seznam agentů, měřidla, aktivita) se nepřepisuje celá,
 // ale sloučí se s novým HTML: shodné uzly zůstanou, změní se jen text a atributy, které se opravdu
@@ -751,6 +752,8 @@ function markErrors(form, errors) {
 export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = tr('Zrušit'), danger = false, onSubmit, wide = false, size = '', footer = null, onOpen = null, opener: openerOverride = null }) {
   return new Promise((resolve) => {
     const opener = openerOverride || document.activeElement;
+    const scrollAtOpen = { x: window.scrollX, y: window.scrollY };
+    const locationAtOpen = location.href;
     const id = `m-${Math.random().toString(36).slice(2, 8)}`;
     const scrim = document.createElement('div');
     scrim.className = 'modal-scrim';
@@ -773,9 +776,25 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
       closed = true;
       document.removeEventListener('keydown', onKey, true);
       scrim.classList.add('is-closing');
-      setTimeout(() => scrim.remove(), 180);
+      setTimeout(() => {
+        scrim.remove();
+        // WebKit may apply a second scroll adjustment when the closing overlay leaves layout.
+        requestAnimationFrame(restorePageScroll);
+      }, 180);
       document.body.classList.remove('has-modal');
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      // WebKit can move the document after overflow is restored, even after focus({preventScroll}).
+      // Recheck after unlock and once the closing overlay is removed; skip navigation changes.
+      function restorePageScroll() {
+        if (location.href !== locationAtOpen) return;
+        if (window.scrollX === scrollAtOpen.x && window.scrollY === scrollAtOpen.y) return;
+        const root = document.documentElement;
+        const behavior = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(scrollAtOpen.x, scrollAtOpen.y);
+        root.style.scrollBehavior = behavior;
+      }
+      requestAnimationFrame(restorePageScroll);
       resolve(result);
     };
     const onKey = (e) => {
@@ -828,6 +847,19 @@ export const confirmDialog = ({ title, message, confirmLabel = tr('Potvrdit'), d
 
 /* ---------- Paleta příkazů ---------- */
 
+// Shoda v názvu výsledku zvýrazněná značkou <mark>; text mimo shodu jde přes esc().
+function zvyrazneno(text, dotaz) {
+  const u = dotaz.trim() ? useky(text, dotaz) : [];
+  if (!u.length) return esc(text);
+  let out = '';
+  let od = 0;
+  for (const [a, b] of u) {
+    out += `${esc(text.slice(od, a))}<mark>${esc(text.slice(a, b))}</mark>`;
+    od = b;
+  }
+  return out + esc(text.slice(od));
+}
+
 export function createPalette(getItems, onPick) {
   const root = document.createElement('div');
   root.className = 'palette';
@@ -836,15 +868,34 @@ export function createPalette(getItems, onPick) {
   root.setAttribute('aria-modal', 'true');
   root.setAttribute('aria-label', tr('Rychlé hledání'));
   root.innerHTML = `<div class="palette-box">
-    <div class="palette-input">${ICON.search}<input type="text" placeholder="${tr('Hledat agenta, projekt nebo sekci…')}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list"><kbd>Esc</kbd></div>
-    <ul class="palette-list" id="palette-list" role="listbox"></ul>
+    <div class="palette-input">${ICON.search}<span class="palette-field"><span class="palette-ghost" aria-hidden="true"><span class="palette-ghost-typed"></span><span class="palette-ghost-rest"></span></span><input type="text" placeholder="${tr('Hledat stránku, nastavení, agenta nebo projekt…')}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="both"></span><kbd>Esc</kbd></div>
+    <ul class="palette-list" id="palette-list" role="listbox" aria-label="${tr('Výsledky hledání')}"></ul>
+    <p class="palette-hint" aria-hidden="true"><span><kbd>↑</kbd><kbd>↓</kbd> ${tr('výběr')}</span><span><kbd>↵</kbd> ${tr('otevřít')}</span><span><kbd>Tab</kbd> ${tr('doplnit')}</span></p>
+    <p class="sr-only" aria-live="polite" data-palette-pocet></p>
   </div>`;
   document.body.appendChild(root);
   const input = root.querySelector('input');
   const list = root.querySelector('ul');
+  const ghostTyped = root.querySelector('.palette-ghost-typed');
+  const ghostRest = root.querySelector('.palette-ghost-rest');
+  const pocet = root.querySelector('[data-palette-pocet]');
   let items = [];
   let index = 0;
   let opener = null;
+  let pocetCasovac = 0;
+
+  // Našeptávání: když vybraný výsledek začíná tím, co je napsané, ukáže se zbytek jeho názvu
+  // šedě přímo v poli. Tab (nebo → na konci textu) ho doplní. Kurzor uprostřed textu nic nedoplňuje.
+  const doplnek = () => {
+    const it = items[index];
+    const naKonci = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
+    return it && naKonci ? doplneni(input.value, it.label) : '';
+  };
+  const ukazNaseptavani = () => {
+    const zbytek = doplnek();
+    ghostTyped.textContent = zbytek ? input.value : '';
+    ghostRest.textContent = zbytek;
+  };
 
   const setActive = ({ scroll = true } = {}) => {
     for (const option of list.querySelectorAll('[data-i]')) {
@@ -852,19 +903,26 @@ export function createPalette(getItems, onPick) {
     }
     input.setAttribute('aria-activedescendant', items.length ? `pl-${index}` : '');
     if (scroll) list.querySelector(`#pl-${index}`)?.scrollIntoView({ block: 'nearest' });
+    ukazNaseptavani();
   };
 
   const render = () => {
-    items = getItems(input.value);
+    const dotaz = input.value;
+    items = getItems(dotaz);
     index = Math.min(index, Math.max(0, items.length - 1));
     let group = '';
     list.innerHTML = items.length
       ? items.map((it, i) => {
         const head = it.group !== group ? `<li class="pl-group" role="presentation">${esc((group = it.group))}</li>` : '';
-        return `${head}<li role="option" id="pl-${i}" data-i="${i}" aria-selected="${i === index}">${it.icon || ''}<span class="pl-text"><span>${esc(it.label)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></li>`;
+        return `${head}<li role="option" id="pl-${i}" data-i="${i}" aria-selected="${i === index}">${it.icon || ''}<span class="pl-text"><span>${zvyrazneno(it.label, dotaz)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></li>`;
       }).join('')
-      : `<li class="pl-group" role="presentation">${tr('Nic nenalezeno')}</li>`;
+      : `<li class="pl-empty" role="presentation"><b>${tr('Nic nenalezeno')}</b><span>${tr('Zkus jiné slovo – třeba „limity“, „vzhled“, „upozornění“ nebo název projektu či agenta.')}</span></li>`;
     setActive();
+    // Čtečce obrazovky stačí počet, až se psaní na chvíli zastaví.
+    clearTimeout(pocetCasovac);
+    pocetCasovac = setTimeout(() => {
+      pocet.textContent = dotaz.trim() ? (items.length ? `${items.length} ${plural(items.length, 'výsledek', 'výsledky', 'výsledků')}` : tr('Nic nenalezeno')) : '';
+    }, 400);
   };
   const close = () => {
     if (root.hidden) return;
@@ -877,10 +935,22 @@ export function createPalette(getItems, onPick) {
     const it = items[i];
     if (!it) return;
     root.hidden = true;
+    document.body.classList.remove('has-modal');
     onPick(it);
+  };
+  const doplnit = () => {
+    const zbytek = doplnek();
+    if (!zbytek) return false;
+    input.value += zbytek;
+    index = 0;
+    render();
+    return true;
   };
 
   input.addEventListener('input', () => { index = 0; render(); });
+  // Posun kurzoru (myší i šipkami) mění, jestli se dá doplnit.
+  input.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') ukazNaseptavani(); });
+  input.addEventListener('click', ukazNaseptavani);
   // Capture chrání Escape i tehdy, když je fokus v comboboxu nebo v jiném
   // vloženém ovládacím prvku palety.
   document.addEventListener('keydown', (e) => {
@@ -892,10 +962,11 @@ export function createPalette(getItems, onPick) {
   root.addEventListener('keydown', (e) => {
     const n = Math.max(1, items.length);
     if (e.key === 'Escape') { e.preventDefault(); close(); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); index = (index + 1) % n; render(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); index = (index - 1 + n) % n; render(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); index = (index + 1) % n; setActive(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); index = (index - 1 + n) % n; setActive(); }
     else if (e.key === 'Enter') { e.preventDefault(); pick(index); }
-    else if (e.key === 'Tab') { e.preventDefault(); input.focus(); }
+    else if (e.key === 'Tab') { e.preventDefault(); if (!e.shiftKey) doplnit(); input.focus(); }
+    else if (e.key === 'ArrowRight' && doplnek()) { e.preventDefault(); doplnit(); }
   });
   list.addEventListener('click', (e) => {
     const li = e.target.closest('[data-i]');
@@ -905,7 +976,7 @@ export function createPalette(getItems, onPick) {
     const li = e.target.closest('[data-i]');
     if (!li || !list.contains(li)) return;
     const next = Number(li.dataset.i);
-    if (next !== index) { index = next; setActive(); }
+    if (next !== index) { index = next; setActive({ scroll: false }); }
   });
   // Stejná ochrana jako u modalu: neodstraňuj overlay v půlce gesta.
   root.addEventListener('click', (e) => { if (e.target === root) close(); });

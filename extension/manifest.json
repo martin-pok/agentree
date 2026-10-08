@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_nazev__",
   "short_name": "__MSG_kratkyNazev__",
-  "version": "0.38.1",
+  "version": "0.39.0",
   "default_locale": "en",
   "description": "__MSG_popis__",
   "icons": {
@@ -15,6 +15,9 @@
     "storage",
     "alarms",
     "scripting"
+  ],
+  "optional_host_permissions": [
+    "http://127.0.0.1/*"
   ],
   "host_permissions": [
     "http://127.0.0.1:4620/*",
