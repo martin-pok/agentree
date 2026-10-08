@@ -580,9 +580,23 @@ const polozkaCile = (c, skupina) => ({
 const polozkaAgenta = (s, skupina = tr('Agenti')) => ({ klic: `agent:${s.id}`, group: skupina, label: s.title, sub: `${STATUS[s.status]?.label} · ${s.app}${s.project ? ` · ${s.project}` : ''}`, href: agentHref(s.id), icon: glyph(s) });
 const polozkaProjektu = (p, skupina = tr('Projekty')) => ({ klic: `projekt:${p.id}`, group: skupina, label: p.name, sub: p.description || `${p.folders.length} ${plural(p.folders.length, 'složka', 'složky', 'složek')}`, href: projectHref(p.id), icon: pdot(p) });
 
+// Dovednosti pro vyhledávání: načtou se při otevření palety (nejvýš jednou za 60 s) a otevřená
+// paleta se po načtení překreslí. Selhání načtení se nehlásí jako „žádné dovednosti“ – skupina
+// prostě chybí, dokud data nejsou.
+const dovednostiHledani = { items: null, at: 0, nacita: false };
+function nactiDovednostiProHledani() {
+  if (dovednostiHledani.nacita || Date.now() - dovednostiHledani.at < 60_000) return;
+  dovednostiHledani.nacita = true;
+  api.skills().then((r) => { dovednostiHledani.items = r.skills || []; dovednostiHledani.at = Date.now(); palette.refresh(); })
+    .catch(() => {})
+    .finally(() => { dovednostiHledani.nacita = false; });
+}
+const polozkaDovednosti = (d) => ({ klic: `dovednost:${d.id}`, group: tr('Dovednosti'), label: d.name, sub: [d.source, d.description].filter(Boolean).join(' · ').slice(0, 120), href: `#/dovednosti?cist=${encodeURIComponent(d.id)}`, icon: ICON.book || ICON.open });
+
 const palette = createPalette(
   (q) => {
     const dotaz = q.trim();
+    nactiDovednostiProHledani();
     const cile = cileHledani();
     const projekty = state.projects.items.filter((p) => !p.archived);
     const agenti = agentsList();
@@ -601,6 +615,7 @@ const palette = createPalette(
         if (druh === 'cil') { const c = cile.find((x) => x.id === id); return c && polozkaCile(c, skupina); }
         if (druh === 'agent') { const a = agenti.find((x) => x.id === id); return a && polozkaAgenta(a, skupina); }
         if (druh === 'projekt') { const p = projekty.find((x) => x.id === id); return p && polozkaProjektu(p, skupina); }
+        if (druh === 'dovednost') { const d = (dovednostiHledani.items || []).find((x) => x.id === id); return d && { ...polozkaDovednosti(d), group: skupina }; }
         const a = akce.find((x) => x.klic === k);
         return a && { ...a, group: skupina };
       }).filter(Boolean);
@@ -625,8 +640,9 @@ const palette = createPalette(
     const stranky = cileNalez.filter((c) => c.druh !== 'nastaveni').map((c) => polozkaCile(c));
     const nastaveni = cileNalez.filter((c) => c.druh === 'nastaveni').map((c) => polozkaCile(c));
     const akceNalez = podle(akce, (a) => [[a.label, 3], [a.slova, 2]], 4);
+    const dovednostiNalez = podle(dovednostiHledani.items || [], (d) => [[d.name, 3], [[d.description, d.source].join(' '), 2], [d.dir, 1]], 6).map(polozkaDovednosti);
     // Skupina s nejlepší shodou jde nahoru: „limity“ začnou sekcemi, název agenta agentem.
-    const skupiny = [stranky, nastaveni, projektyNalez, agentiNalez, akceNalez].filter((g) => g.length);
+    const skupiny = [stranky, nastaveni, projektyNalez, agentiNalez, dovednostiNalez, akceNalez].filter((g) => g.length);
     const nejlepsi = (g) => Math.max(...g.map((it) => skore(dotaz, [[it.label, 3]])));
     return skupiny.map((g, i) => ({ g, i, s: nejlepsi(g) })).sort((a, b) => b.s - a.s || a.i - b.i).flatMap((x) => x.g);
   },

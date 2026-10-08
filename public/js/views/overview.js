@@ -140,7 +140,12 @@ function mount(el) {
   workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}"><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
-  desk.append(el.querySelector('[data-launch]'), el.querySelector('[aria-labelledby="dec-h"]'));
+  // Rozhodnutí a stav agentů stojí vedle sebe: vlevo co čeká na tebe, vpravo jestli všechno běží.
+  const dvojice = document.createElement('div');
+  dvojice.className = 'home-dvojice';
+  dvojice.innerHTML = `<section class="home-zdravi" aria-labelledby="zdravi-h"><div class="sec-head"><h2 id="zdravi-h">${tr('Stav agentů')}</h2><a class="link" href="#/agenti">${tr('Agenti')}</a></div><div data-region="zdravi"></div></section>`;
+  dvojice.prepend(el.querySelector('[aria-labelledby="dec-h"]'));
+  desk.append(el.querySelector('[data-launch]'), dvojice);
   live.append(el.querySelector('[data-region="hero"]'), el.querySelector('[data-region="limits"]'));
   const history = document.createElement('details');
   history.className = 'home-history';
@@ -252,11 +257,36 @@ function update(topics = new Set(['all'])) {
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
         const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
         return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}" href="${agentHref(s.id)}">
+          <span class="pb-stav" data-ton="${s.status === 'working' ? 'ok' : needsYou(s) ? 'pozor' : s.status === 'failed' || s.status === 'limited' ? 'problem' : 'klid'}">${esc({ working: tr('Běží'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Limit'), waiting: tr('Hotovo'), observed: tr('Proces') }[s.status] || tr('Klid'))}</span>
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
       }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
       : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
+  }
+
+  // Stav agentů: jedna věta (v pořádku / pozor / problém / nepodařilo se zjistit), počty a problémy.
+  // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
+  if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
+    const problemy = [...failed, ...limited];
+    const stav = problemy.length ? 'problem' : needs.length ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
+    const veta = {
+      problem: tr('Problém u agentů: {0}', problemy.length),
+      pozor: tr('Na tvé rozhodnutí čeká agentů: {0}', needs.length),
+      nevim: tr('Nepodařilo se zjistit, co na počítači běží'),
+      ok: working.length ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje'),
+    }[stav];
+    const pocty = [
+      [working.length, tr('pracuje'), 'ok', '#/agenti?stav=working'],
+      [needs.length, tr('čeká na tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
+      [failed.length, tr('selhalo'), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
+      [limited.length, tr('limit'), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
+    ];
+    zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
+      <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>
+      <ul class="zdravi-pocty">${pocty.map(([n, popis, ton, href]) => `<li><a href="${href}" data-ton="${ton}"><b>${n}</b><span>${esc(popis)}</span></a></li>`).join('')}</ul>
+      ${problemy.length ? `<ul class="zdravi-problemy">${problemy.slice(0, 3).map((s) => `<li data-key="${esc(s.id)}"><a href="${agentHref(s.id)}"><b>${esc(s.title)}</b><small>${esc(s.status === 'limited' ? tr('Vyčerpaný limit') : s.reason || tr('Selhalo'))}</small></a></li>`).join('')}</ul>` : ''}
+    </div>`);
   }
 
   const hooks = state.integrations?.claudeHooks;

@@ -1,9 +1,13 @@
 /* Isolated rebrand prototype. All actions and data remain the real application. */
+/* Jednotná stupnice rohů pro celý produkt a všechny motivy (Koncert si dřív nesl 16/24/40 px):
+   24 velké plochy (panel, pozdrav, pole pro zadání, dialogy) · 20 karty · 12 vnitřní dlaždice ·
+   8/6 drobnosti · kapsle vše klikací na jeden řádek. Pevné px v CSS se nepoužívají. */
+:root, html[data-look] { --r-xs: 6px; --r-sm: 8px; --r-md: 12px; --r-lg: 20px; --r-xl: 24px; --r-full: 999px; }
 :root {
   --f-display: 'Satoshi', 'Onest', system-ui, sans-serif;
   --f-body: 'Satoshi', 'Onest', system-ui, sans-serif;
   --f-mono: 'Satoshi', 'Onest', system-ui, sans-serif;
-  --r-lg: 16px;
+  --r-lg: 20px;
   --r-md: 12px;
   --r-sm: 8px;
   --r-xl: 24px;
@@ -46,7 +50,12 @@ body { letter-spacing: -.012em; }
 .lchip:not([aria-checked='true']) { background: transparent; border-color: transparent; }
 .lchip:hover:not([aria-checked='true']) { background: var(--line-2); border-color: transparent; }
 .lchip .logo, .lchip .glyph { width: 17px; height: 17px; }
-.seg--light button[aria-pressed='true'], .launch-controls .seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: none; }
+.launch-controls .seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: none; }
+/* Vybraný filtr (Dovednosti, Agenti, Útrata…) je kapsle v barvě značky – na bílém panelu musí být
+   vidět na první pohled, i s počtem. */
+.seg button[aria-pressed='true']:not(.launch-controls *), .chip[aria-pressed='true'], .seg--light button[aria-pressed='true']:not(.launch-controls *) { border-color: transparent; background: color-mix(in srgb, var(--action) 12%, var(--card)); color: var(--action); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--action) 28%, transparent); font-weight: 500; }
+.seg button[aria-pressed='true']:not(.launch-controls *) .count, .chip[aria-pressed='true'] .count { color: var(--action); opacity: .8; }
+.seg--light button:not(.launch-controls *) { border-radius: var(--r-full); }
 .lselect { background: var(--card); border: 1px solid var(--line); }
 .lselect:hover { box-shadow: none; border-color: var(--mute); }
 .launch { padding: 24px; }
@@ -159,7 +168,7 @@ body { letter-spacing: -.012em; }
 .home-desk .launch-head h2 { font-size: 16px; }
 .home-desk .launch-head { margin-bottom: 18px; }
 .home-desk .launch-agents { display: flex; flex-wrap: wrap; gap: 16px 28px; }
-.home-desk .launch-compose { background: var(--card); border: 1px solid var(--line); border-radius: 20px; margin-top: 20px; }
+.home-desk .launch-compose { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-xl); margin-top: 20px; }
 .home-desk .launch-prompt { min-height: 145px; padding: 22px; font-size: 18px; line-height: 1.6; }
 .home-desk .launch-foot { padding: 14px 18px; }
 .home-desk .decision { border: 0; background: color-mix(in srgb, var(--velvet) 5%, var(--card)); padding: 24px; }
@@ -175,7 +184,7 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-live .pb-all { order: 5; align-self: flex-start; padding: 0; }
 .home-live .pb-strip { margin: 0; padding: 12px 0; border-block: 1px solid var(--line-2); }
 .home-live .pb-agents { display: grid; margin: 0; padding: 0; gap: 4px; overflow: visible; }
-.home-live .pb-agent { height: auto; min-height: 66px; border-radius: 12px; padding: 10px 6px; max-width: none; }
+.home-live .pb-agent { height: auto; min-height: 66px; border-radius: var(--r-lg); padding: 10px 6px; max-width: none; }
 .home-live .pb-agent-text b { white-space: normal; font-size: 14px; }
 .home-live .pb-agent-text small { margin-top: 5px; }
 .home-live .sec-head h2 { font-size: 16px; }
@@ -201,9 +210,9 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-desk .launch { margin: 0 0 30px; }
 .home-desk .launch-head { display: none; }
 .studio-choice { width: fit-content; margin: 0 auto 14px; }
-.studio-choice > summary, .studio-options > summary { cursor: pointer; font-size: 14px; padding: 8px 14px; border-radius: 24px; color: var(--ink-2); }
+.studio-choice > summary, .studio-options > summary { cursor: pointer; font-size: 14px; padding: 8px 14px; border-radius: var(--r-full); color: var(--ink-2); }
 .studio-choice[open] { width: 100%; }
-.studio-choice .launch-agents { padding: 16px; background: var(--card); border-radius: 16px; }
+.studio-choice .launch-agents { padding: 16px; background: var(--card); border-radius: var(--r-lg); }
 .home-desk .launch-compose { margin: 0; }
 .home-desk .launch-prompt { min-height: 110px; }
 .studio-options { margin: 0 10px; }
@@ -219,19 +228,19 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .home-live .pb-main, .home-live .pb-stats, .home-live .pb-all { display: none; }
 .home-live .pb-strip { border: 0; padding: 0; }
 .home-live .pb-agents { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-.home-live .pb-agent { display: flex; flex-direction: column; align-items: flex-start; padding: 22px; min-height: 205px; background: var(--card); border-radius: 20px; gap: 18px; }
+.home-live .pb-agent { display: flex; flex-direction: column; align-items: flex-start; padding: 22px; min-height: 205px; background: var(--card); border-radius: var(--r-lg); gap: 18px; }
 .home-live .pb-agent:hover { background: var(--line-2); }
 .home-live .pb-agent-text b { font-size: 12px; color: var(--mute); margin-top: 6px; }
 .studio-nickname { font-size: 20px; font-weight: 400; }
-.studio-avatar, .home-live .pb-agent-logo.studio-avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: color-mix(in srgb, var(--persona) 12%, var(--card)); color: var(--persona); font-size: 32px; box-shadow: none; }
+.studio-avatar, .home-live .pb-agent-logo.studio-avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--persona) 12%, var(--card)); color: var(--persona); font-size: 32px; box-shadow: none; }
 .home-history { margin: 0; }
-.studio-dialog { width: min(480px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--line); border-radius: 24px; background: var(--card); color: var(--ink); }
+.studio-dialog { width: min(480px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); color: var(--ink); }
 .studio-dialog::backdrop { background: #10101466; }
 .studio-dialog header, .studio-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .studio-dialog h2 { font-size: 24px; font-weight: 400; }
 .studio-dialog p { color: var(--mute); font-size: 14px; line-height: 1.5; margin: 16px 0; }
 .studio-dialog label { display: grid; gap: 6px; margin: 14px 0; font-size: 14px; }
-.studio-dialog :is(input, select) { width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); color: var(--ink); font: inherit; }
+.studio-dialog :is(input, select) { width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper); color: var(--ink); font: inherit; }
 .studio-preview { display: flex; align-items: center; gap: 18px; padding: 18px 0; font-size: 24px; }
 @media (max-width: 1100px) { .home-live .pb-agents { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .home-live .pb-agents { gap: 10px; } .home-live .pb-agent { padding: 16px; } .studio-customize { position: static; margin-bottom: 16px; } .home-intro { text-align: left; } }
@@ -258,7 +267,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .robot *, .pb-agent[data-state='working'] .robot-body { animation: none; transition: none; } }
 
 /* Contextual companion: one optional, dismissible hint; never a popup over work. */
-.robot-guide { display: flex; align-items: center; gap: 22px; padding: 12px 24px 12px 16px; margin-bottom: 28px; border-radius: 20px; background: color-mix(in srgb, var(--action) 4%, var(--card)); }
+.robot-guide { display: flex; align-items: center; gap: 22px; padding: 12px 24px 12px 16px; margin-bottom: 28px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--action) 4%, var(--card)); }
 .guide-robot { display: block; width: 82px; height: 86px; flex: none; }
 .guide-robot .robot { width: 82px; height: 86px; }
 .guide-copy { flex: 1; min-width: 0; }
@@ -282,7 +291,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 /* Agent collection: individually readable companions rather than a dense ledger. */
 .table:has(.agent-robot-tile) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0; background: none; border: 0; }
 .table:has(.agent-robot-tile) .row-head { display: none; }
-.table:has(.agent-robot-tile) .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 22px; border: 1px solid var(--line-2); border-radius: 20px; background: var(--card); box-shadow: none; }
+.table:has(.agent-robot-tile) .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 22px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); box-shadow: none; }
 .table:has(.agent-robot-tile) .agent-robot-tile { grid-column: 1; width: 76px; height: 80px; }
 .table:has(.agent-robot-tile) .agent-portrait, .table:has(.agent-robot-tile) .robot { width: 76px; height: 80px; }
 .table:has(.agent-robot-tile) .cell-status { grid-column: 2; grid-row: 1; align-self: start; }
@@ -457,7 +466,7 @@ html[data-theme='dark'] .robot-face { fill: #101016; }
 
 /* Bubliny robotů (public/js/robot-bubliny.js): světlé sklo nad plochou, ocásek míří na robota.
    Jedna bublina pro celou aplikaci, pozici počítá skript tak, aby zůstala v okně. */
-.rb { position: fixed; left: 0; top: 0; z-index: 60; max-width: min(280px, calc(100vw - 24px)); padding: 10px 14px; border-radius: 16px; pointer-events: none;
+.rb { position: fixed; left: 0; top: 0; z-index: 60; max-width: min(280px, calc(100vw - 24px)); padding: 10px 14px; border-radius: var(--r-lg); pointer-events: none;
   color: var(--ink); font: 500 13px/1.45 var(--f-body); letter-spacing: .005em; text-wrap: pretty;
   background: color-mix(in srgb, #ffffff 74%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
@@ -496,3 +505,61 @@ html[data-theme='dark'] .rb[data-strana='dole']::after { border-color: color-mix
 @keyframes rb-naklon { 0%, 100% { rotate: 0deg; } 35% { rotate: -10deg; } 70% { rotate: 6deg; } }
 @keyframes rb-otocka { 0% { rotate: 0deg; } 100% { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .robot[data-gesto] * { animation: none !important; } }
+
+/* Toast je jednořádková kapsle: kulatá ikona vlevo je soustředná s půlkruhem okraje
+   (odsazení 6 px kolem 28px ikony = výška 40 px, poloměr 20 px). */
+.toast { border-radius: var(--r-full); padding: 6px 8px 6px 6px; min-height: 40px; }
+.toast .toast-close, .toast button { border-radius: var(--r-full); }
+
+/* Přehled: rozhodnutí a stav agentů vedle sebe. Rozhodnutí je decentní karta (ne plná barevná
+   plocha), stav agentů jedna věta s barevnou tečkou, počty a nanejvýš tři problémy. */
+.home-dvojice { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+@media (min-width: 1100px) {
+  .home-dvojice { grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); align-items: stretch; }
+  /* Obě karty končí na stejné spodní hraně. */
+  .home-dvojice > section { display: flex; flex-direction: column; }
+  .home-dvojice > section > [data-region] { flex: 1; display: flex; flex-direction: column; }
+  .home-dvojice > section > [data-region] > :only-child { flex: 1; }
+}
+.home-dvojice > section { min-width: 0; margin: 0; }
+html[data-theme] .home-desk .decision { background: var(--card); border: 1px solid var(--line-2); box-shadow: none; padding: 20px; border-radius: var(--r-lg); }
+html[data-theme] .home-desk .decision .icon-tile { background: color-mix(in srgb, var(--velvet) 8%, var(--card)); }
+html[data-theme] .home-desk .calm { background: var(--card); box-shadow: none; border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 20px; }
+.zdravi { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); }
+.zdravi-veta { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; font-weight: 500; color: var(--ink); }
+.zdravi-tecka { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent); }
+.zdravi[data-stav='pozor'] .zdravi-tecka { background: var(--brass); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brass) 20%, transparent); }
+.zdravi[data-stav='problem'] .zdravi-tecka { background: var(--velvet); box-shadow: 0 0 0 4px color-mix(in srgb, var(--velvet) 18%, transparent); }
+.zdravi[data-stav='nevim'] .zdravi-tecka { background: var(--mute); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mute) 18%, transparent); }
+.zdravi-pocty { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.zdravi-pocty a { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-md); background: color-mix(in srgb, var(--ink) 3%, var(--card)); color: var(--ink-2); text-decoration: none; transition: background var(--motion-response) var(--ease); }
+.zdravi-pocty a:hover { background: color-mix(in srgb, var(--ink) 6%, var(--card)); }
+.zdravi-pocty b { font-size: 20px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.zdravi-pocty span { font-size: 12px; }
+.zdravi-pocty a[data-ton='pozor'] b { color: var(--brass-ink); }
+.zdravi-pocty a[data-ton='problem'] b { color: var(--velvet-ink); }
+.zdravi-problemy { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line-2); display: grid; gap: 4px; }
+.zdravi-problemy a { display: grid; gap: 2px; padding: 8px 10px; margin-inline: -10px; border-radius: var(--r-md); color: var(--ink); text-decoration: none; }
+.zdravi-problemy a:hover { background: color-mix(in srgb, var(--velvet) 6%, var(--card)); }
+.zdravi-problemy b { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zdravi-problemy small { font-size: 12px; color: var(--velvet-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) { .zdravi-pocty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Štítek stavu na kartě agenta v „Právě teď“: na první pohled v pořádku / pozor / problém. */
+.home-live .pb-agent { position: relative; }
+.pb-stav { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 500; line-height: 1; color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, var(--card)); }
+.pb-stav::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--mute); }
+.pb-stav[data-ton='ok'] { color: var(--teal-ink); background: var(--teal-tint); }
+.pb-stav[data-ton='ok']::before { background: var(--teal); }
+.pb-stav[data-ton='pozor'] { color: var(--brass-ink); background: var(--brass-tint); }
+.pb-stav[data-ton='pozor']::before { background: var(--brass); }
+.pb-stav[data-ton='problem'] { color: var(--velvet-ink); background: var(--velvet-tint); }
+.pb-stav[data-ton='problem']::before { background: var(--velvet); }
+
+/* Motiv Koncert (Slonovina/Eben) má pod „Právě teď“ původní tmavou scénu s gradientem; na nové
+   ploše karty agentů leží na čistém podkladu ve všech motivech. */
+html[data-theme] .home-live .pulse-bar, html[data-theme] .home-live .pb-strip { background: none; color: var(--ink); overflow: visible; box-shadow: none; }
+html[data-theme] .home-live .pb-strip { margin-inline: 0; padding-inline: 0; border-top: 0; }
+html[data-theme] .launch::before { content: none; }
+.zdravi { container-type: inline-size; }
+@container (max-width: 440px) { .zdravi-pocty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

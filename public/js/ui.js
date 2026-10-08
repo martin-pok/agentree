@@ -994,6 +994,9 @@ export function createPalette(getItems, onPick) {
       input.focus();
     },
     close,
+    // Data, která dorazí později (dovednosti ze serveru), se do otevřené palety promítnou bez
+    // ztráty rozepsaného dotazu.
+    refresh() { if (!root.hidden) render(); },
     get isOpen() { return !root.hidden; },
   };
 }

@@ -258,7 +258,9 @@ test('pro červený toast existuje jediný název tónu', async () => {
 // SKILL.md nebo odpracoval další hodinu, viděl stará čísla a neměl jak poznat, že jsou stará.
 test('stránky s daty ze souborů je načítají při každém otevření', async () => {
   const skills = await zdroj('public/js/views/skills.js');
-  assert.match(skills, /if \(v\.items\) update\(\);\s*\n\s*load\(\);/, 'seznam se obnoví při každém otevření');
+  assert.match(skills, /if \(v\.items\) update\(\);\s*\n\s*load\(\)[;.]/, 'seznam se obnoví při každém otevření');
+  assert.match(skills, /setInterval\(obnov, 30_000\)/, 'a za běhu se drží aktuální');
+  assert.match(skills, /clearInterval\(v\.casovac\)/, 'obnova skončí s odchodem ze stránky');
   assert.doesNotMatch(skills, /if \(!v\.items\) load\(\);/, 'načtení jen při prvním otevření');
   for (const f of ['views/stats.js', 'views/spend.js']) {
     const src = await zdroj(`public/js/${f}`);
