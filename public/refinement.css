@@ -1,0 +1,43 @@
+/* Satoshi optical hierarchy: body tracking is neutral; only large headings tighten. */
+:root {
+ --type-caption: .75rem; --type-small: .875rem; --type-body: 1rem;
+ --type-lead: 1.125rem; --type-title: 1.25rem; --type-section: 1.5rem;
+ --type-page: 2rem; --type-hero: 3rem;
+ --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+ --space-6: 24px; --space-8: 32px; --space-12: 48px;
+}
+body { font-size: var(--type-body); line-height: 1.5; letter-spacing: 0; font-kerning: normal; font-optical-sizing: auto; }
+button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0; }
+.brand > span { font-size: 18px; line-height: 1; font-weight: 500; letter-spacing: .045em; }
+.brand { gap: 8px; }
+.page-title { font-size: var(--type-page); line-height: 1.2; font-weight: 400; letter-spacing: -.025em; }
+.home-intro h2 { font-size: clamp(2rem, 3.1vw, var(--type-hero)); font-weight: 400; line-height: 1.15; letter-spacing: -.035em; margin: 16px 0; }
+.home-intro p { font-size: var(--type-body); line-height: 1.6; }
+.sec-head :is(h2,h3), .home-live > h2, .set-card-head :is(h2,h3), .pcard-name, .studio-nickname { font-size: var(--type-title); line-height: 1.35; letter-spacing: -.015em; font-weight: 400; }
+.table:has(.agent-robot-tile) .cell-title b, .decision-title { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
+:is(.small, .cell-app, .cell-sub, .guide-copy p, .studio-dialog label, .nav a, .lchip, .chip, .btn, .link, .set-nav) { font-size: var(--type-small); line-height: 1.5; letter-spacing: 0; }
+:is(.muted, .guide-copy p, .cell-sub, .cell-time) { color: var(--mute); }
+:is(.guide-label, .side-foot, .decision-kicker, .badge, .pill, .cell-time) { font-size: var(--type-caption); line-height: 1.5; }
+.guide-label { letter-spacing: .08em; }
+.guide-copy strong { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
+.guide-copy p { margin-top: 4px; max-width: 78ch; }
+.robot-guide { gap: var(--space-4); padding: 16px 24px; margin-bottom: 24px; }
+:is(.studio-dialog p, .set-card p, .decision-reason) { line-height: 1.6; }
+:is(.cell-num, .pb-num, .pb-stat b, .budget-num) { font-variant-numeric: tabular-nums lining-nums; }
+:is(.btn, .lchip, .chip, .picker-trigger) { min-height: 32px; height: auto; padding-block: 6px; }
+.launch-go { min-height: 40px; }
+.launch-prompt { line-height: 1.6; }
+.guide-controls { display: flex; align-items: center; gap: 12px; flex: none; }
+.mascot-motion-toggle { border: 0; padding: 8px; background: none; color: var(--mute); font: 400 var(--type-caption)/1.5 var(--f-body); cursor: pointer; border-radius: 24px; min-height: 32px; }
+:where(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+/* Motion replaces perpetual floating. Gaze and blink have independent transforms. */
+.robot .robot-eyes, .pb-agent[data-state='working'] .robot-body, .agent-portrait[data-state='working'] .robot-body { animation: none; }
+.robot-gaze { transform: translate(var(--gaze-x, 0px), var(--gaze-y, 0px)); transition: transform 180ms cubic-bezier(.2,.7,.3,1); }
+.robot[data-emote='blink'] .robot-eyes { animation: mascot-blink 180ms ease-in-out both; }
+@keyframes mascot-blink { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.12); } }
+.mascot-motion-off .robot *, .mascot-motion-off .pb-agent:hover .robot-head { animation: none !important; transition: none !important; transform: none !important; }
+@media(prefers-reduced-motion: reduce) { .robot * { animation: none !important; transition: none !important; transform: none !important; } }
+@media(max-width: 700px) { .robot-guide { flex-wrap: wrap; padding: 16px; } .guide-copy { flex-basis: calc(100% - 110px); } .guide-controls { margin-left: auto; } }
+
+/* Approved release: bodies remain still; gaze and occasional blinking only. */
+.robot .robot-body, .robot .robot-head, .pb-agent:hover .robot-head, .pb-agent[data-state] .robot-head, .agent-portrait[data-state] .robot-head { animation: none !important; transform: none !important; transition: none !important; }

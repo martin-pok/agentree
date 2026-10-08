@@ -1,3 +1,5 @@
+import { initMascotMotion } from './mascot-motion.js';
+import { robotGuide } from './robot-guide.js';
 import { state, subscribe, applySnapshot, applyEvent, emit, sessionsList, agentsList, setProjects, launchIntent, projectById } from './state.js';
 import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
@@ -236,6 +238,7 @@ function refresh(topics) {
   const drzKotvu = kotva(viewEl);
   try {
     current?.update(topics);
+    robotGuide(viewEl);
   } catch (err) {
     console.error('Agenteeq: chyba vykreslení', err);
   }
@@ -974,6 +977,7 @@ window.addEventListener('pageshow', (e) => { if (e.persisted) tichaObnova(tr('st
 setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 
 navigate();
+initMascotMotion();
 setInterval(tickClock, 1000);
 setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);
