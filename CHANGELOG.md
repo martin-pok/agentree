@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.1 – 2026-10-08 · Robot i v prázdných stavech
+
+- **Prázdné stavy v novém stylu.** Místo tří barevných tvarů (kolečko, čtverec, trojúhelník) z původní značky ukazuje každá prázdná stránka – třeba Dovednosti, když na počítači žádné nejsou – hlavu robota Agenteeq se zavřenýma očima: odpočívá, protože tu zatím nic není. Je ve značkové fialové (v tmavém vzhledu světlejší), anténa jemně dýchá; při omezení pohybu stojí.
+
 ## 0.45.0 – 2026-10-08 · Odpověď agentovi z aplikace, nové rozšíření pro Chrome
 
 - **Odpověz agentovi přímo z Agenteeq.** V detailu konverzace Claude Code je pod přepisem pole „Odpovědět agentovi“. Vybereš, jestli agent smí jen plánovat, nebo i upravovat soubory, a odešleš (⌘↵). Agent pokračuje v téže konverzaci na pozadí (`claude -p --resume`) a průběh vidíš v přehledu – nemusíš otevírat Terminál ani aplikaci Claude. Odpověď jde jen z Macu, na kterém agent běží, nikdy z telefonu. Když to nejde (konverzace právě běží v Terminálu, ve stejné složce pracuje jiný Claude Code, chybí program `claude`, nepodařilo se zjistit, co na počítači běží), pole se neukáže a místo něj je věta proč a tlačítko k pokračování tam, kde agent běží. Codex a další nástroje zatím ne.
