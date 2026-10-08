@@ -728,4 +728,11 @@ export default {
   "Tahle push služba není podporovaná.": "This push service isn't supported.",
   "Neplatný odběr upozornění.": "Invalid notification subscription.",
   "Takový odběr upozornění není.": "There is no such notification subscription.",
+  "Napiš, co mám najít.": "Tell me what to find.",
+  "Neplatné nastavení pomocníka.": "Invalid assistant settings.",
+  "V čase, který mám na hledání, jsem nic nenašel – prohledal jsem {0} přepisů, ale ne všechny. Zkus dotaz zúžit (nástroj, období).": "I found nothing in the time I have for searching – I went through {0} transcripts, but not all of them. Try narrowing the question (tool, period).",
+  "Nic jsem nenašel. Prohledal jsem konverzace v přehledu a {0} přepisů na tomto počítači. Zkus jiná slova nebo širší období.": "I found nothing. I searched the conversations in the overview and {0} transcripts on this computer. Try other words or a wider period.",
+  "V zadaném období nic, ale tyhle konverzace k tomu sedí z jiné doby:": "Nothing in that period, but these conversations from another time match:",
+  "Tohle je nejlepší shoda:": "This is the best match:",
+  "Tohle jsou nejlepší shody (nejlepší nahoře):": "These are the best matches (best first):",
 };

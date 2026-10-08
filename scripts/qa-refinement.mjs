@@ -20,12 +20,12 @@ try {
  assert.equal(await bot.getAttribute('data-emote'),null);
  assert.equal(await bot.locator('.robot-body').evaluate(el=>getComputedStyle(el).animationName),'none');
  await page.screenshot({path:`${out}/homepage.png`,fullPage:true});
- // Přepínač pohybu je v radě plovoucího robota (mimo Přehled).
- await page.goto(`${demo.url}/#/agenti`); await page.locator('.robot-fab').click();
+ // Přepínač pohybu robotů je v Nastavení → Účet a vzhled.
+ await page.goto(`${demo.url}/#/nastaveni`); await page.locator('[data-jump="set-ucet"]').click();
  await page.locator('[data-mascot-motion]').click();
  assert.equal(await page.locator('[data-mascot-motion]').getAttribute('aria-pressed'),'false');
- assert.equal(await page.locator('.robot-fab .robot').getAttribute('data-emote'),null);
- await page.reload();await page.locator('.robot-fab').click();await page.locator('[data-mascot-motion][aria-pressed="false"]').waitFor();
+ assert.equal(await page.locator('.pm-fab .robot').getAttribute('data-emote'),null);
+ await page.reload();await page.locator('[data-jump="set-ucet"]').click();await page.locator('[data-mascot-motion][aria-pressed="false"]').waitFor();
  await page.locator('[data-mascot-motion]').click();
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.evaluate(()=>document.dispatchEvent(new CustomEvent('robot:celebrate')));

@@ -86,6 +86,7 @@ const PREPINACE = () => [
   ['notifications', 'quietHours', tr('Noční ticho'), 'ticho noc nerusit spanek quiet hours do not disturb'],
   ['notifications', 'push-telefon', tr('Upozornění na tento telefon'), 'telefon mobil iphone android push notifikace phone mobile'],
   ['appearance', 'appearanceSystem', tr('Střídat podle systému'), 'automaticky system tmavy svetly auto dark mode'],
+  ['appearance', 'pomocnikZobrazit', tr('Pomocník'), 'pomocnik asistent chat robot tlacitko skryt schovat assistant helper'],
 ];
 
 /**

@@ -6,15 +6,17 @@ export const RELEASES = [
   {
     version: '0.42.0',
     date: '2026-10-08',
-    title: 'Pohodlnější zadávání práce',
+    title: 'Pomocník a pohodlnější zadávání práce',
     items: [
+      'Nový pomocník vpravo dole: najde dřívější konverzaci („před 3 měsíci jsme řešili…“) se kterýmkoli agentem na tomto počítači, nebo poradí, kde co zapnout. Hledá jen lokálně.',
       'Agenta vybereš přímo v poli pro zadání – nabídka s hledáním a ovládáním z klávesnice. Režim, projekt a složka jsou hned pod textem.',
       'Robot na Přehledu ukazuje, jestli na tebe někdo čeká. Jinde už nezabírá místo: malý robot vpravo dole nabídne radu, když ji chceš.',
       'Levý panel má zaoblené rohy.',
     ],
     en: {
-      title: 'Easier task entry',
+      title: 'Assistant and easier task entry',
       items: [
+        'A new assistant in the bottom-right corner: finds an earlier conversation (“about 3 months ago we worked on…”) with any agent on this computer, or shows where to turn things on. It searches only locally.',
         'Pick the agent right inside the task field – a searchable menu you can use with the keyboard. Mode, project and folder sit just below the text.',
         'The robot on the Overview shows whether anyone is waiting for you. Elsewhere it no longer takes up space: a small robot in the corner offers a tip when you want one.',
         'The left panel has rounded corners.',

@@ -61,6 +61,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/lan/pin` | `{ pin: { code, expiresAt } }`; jen z `127.0.0.1` (403), 409 s vypnutými oběma cestami |
 | POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
+| POST | `/api/pomocnik` | `{ dotaz }` → `{ zamer: 'hledat' \| 'jak', rozbor: { slova, aplikace, okno }, veta, vysledky: [{ sessionId, nazev, app, slozka, zacatek, konec, ukazka, pokracovat, shoda }], prohledano, nedokonceno, lokalne: { text, model } \| null }`; 400 prázdný dotaz. Z telefonu jen konverzace z přehledu, bez `ukazka` a `pokracovat` (`src/pomocnik.js`) |
 | GET | `/api/push` | `{ publicKey /* VAPID, base64url */, odbery: [{ id, nazev, zarizeni, vytvoreno, naposledyOk, chyba }] }`; telefon dostane jen své odběry. Adresa odběru ani klíče telefonu se nevrací nikdy |
 | POST | `/api/push/subscribe` | `{ subscription /* PushSubscription.toJSON() */ }` → `{ ok, odber }`; jen spárovaný telefon (z Macu 409), 422 adresa mimo známé push služby nebo neplatné klíče |
 | POST | `/api/push/unsubscribe` | `{ id }` nebo `{ endpoint }` → jako `GET /api/push`; telefon jen vlastní odběr (404 cizí) |
@@ -371,6 +372,8 @@ svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
 `integrations.claudeAuth` je `{ loggedIn: true | false | null, checkedAt: Unix ms }` z posledního `claude auth status --json`. `null` znamená, že se stav nepodařilo ověřit (nikdy neznamená odhlášení). Stav se znovu čte při startu, po napojení a každé 2 minuty; při změně přijde událost `integrations`. Rozhraní ukazuje výslovně odhlášení jen do 5 minut od úspěšného dotazu. `claudeHooks` popisuje nainstalované lokální hooky a stavový řádek, nikoli přihlášení k účtu. Ani přihlášení samo o sobě nedává čerstvé limity: čísla vyžadují aktuální měření z podporovaného zdroje.
 
 `{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, extension: { pairedAt, seenAt, version }, extensionInstallations: [{ id, origin, tokenHash /* sha256, nikdy token */, pairedAt }] /* max 5 */, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, providerAccounts: [{ id, provider, service, plan, seenAt }] /* max 24; bez osobních údajů a tokenů */, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` – zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
+
+Pomocník: `settings.pomocnik: { zobrazit, model }` (obojí výchozí true) – plovoucí tlačítko a formulování odpovědí lokálním modelem přes Ollamu.
 
 Upozornění na telefon: `push: { vapid: { publicKey, privateJwk } | null, odbery: [{ id, endpoint, keys: { p256dh, auth }, nazev, zarizeni, vytvoreno, naposledyOk, chyba }] /* max 10 */ }` (`src/push.js`). Klíč VAPID vznikne při prvním dotazu. Odběr bez spárovaného zařízení (`zarizeni` mimo `lanDevices`) se při dalším použití smaže.
 

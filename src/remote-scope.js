@@ -13,6 +13,8 @@ const POVOLENE_ZMENY = [
   ['POST', /^\/api\/lan\/pair$/],
   ['POST', /^\/api\/alerts\/read$/],
   ['POST', /^\/api\/push\/(subscribe|unsubscribe|test)$/],
+  // Pomocník jen čte; telefonu nevrací nic z přepisů (src/http.js).
+  ['POST', /^\/api\/pomocnik$/],
 ];
 
 // Čtení, které telefonu nepatří ani tak: procházení složek disku a celé přepisy konverzací i výstup

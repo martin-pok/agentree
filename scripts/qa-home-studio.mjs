@@ -74,9 +74,8 @@ try {
       assert.ok(pozadavek, 'Spustit odeslalo zadání');
       assert.equal(JSON.parse(pozadavek.postData()).prompt, 'Ověř navigaci');
 
-      // Robot na Přehledu je v panelu, plovoucí není.
+      // Robot na Přehledu je v panelu u pozdravu; vpravo dole je tlačítko pomocníka.
       assert.equal(await page.locator('.home-intro .home-robot .robot').count(), 1, 'robot v panelu pozdravu');
-      assert.equal(await page.locator('.robot-float').isVisible(), false, 'na Přehledu není plovoucí robot');
       assert.equal(await page.locator('.robot-guide').count(), 0, 'žádný pruh s robotem přes obsah');
       await page.screenshot({ path: `${out}/${typ}-prehled.png` });
 
@@ -84,17 +83,43 @@ try {
       const rohy = await page.locator('.sidebar').evaluate((n) => parseFloat(getComputedStyle(n).borderBottomLeftRadius));
       assert.ok(rohy >= 16, `levý panel je zaoblený (${rohy}px)`);
 
-      // Nastavení: plovoucí robot, rada nepřekrývá nadpis ani obsah.
-      await page.goto(`${demo.url}/#/nastaveni`);
-      await page.locator('.robot-fab').waitFor();
-      await page.locator('.robot-fab').click();
-      await page.locator('.robot-bubble:not([hidden])').waitFor();
-      const titulek = await page.locator('.page-title').boundingBox();
-      const robot = await page.locator('.robot-float').boundingBox();
-      assert.ok(robot.y > titulek.y + titulek.height, 'robot nekoliduje s nadpisem');
-      await page.screenshot({ path: `${out}/${typ}-nastaveni.png` });
+      // Pomocník: otevřít, „jak zapnu…“ → odkaz do Nastavení, který tam opravdu vede.
+      await page.locator('.pm-fab').click();
+      await page.locator('.pm-okno:not([hidden])').waitFor();
+      assert.ok(await page.locator('.pm-vstup').evaluate((n) => n === document.activeElement), 'po otevření má fokus pole');
+      await page.locator('.pm-vstup').fill('Jak zapnu upozornění na telefon?');
+      await page.keyboard.press('Enter');
+      await page.locator('.pm-cil').first().waitFor();
+      await page.screenshot({ path: `${out}/${typ}-pomocnik-jak.png` });
+      await page.locator('.pm-cil').first().click();
+      await page.waitForFunction(() => location.hash.startsWith('#/nastaveni'));
+      // „Najdi chat …“ → konverzace z přehledu jde otevřít.
+      await page.locator('.pm-vstup').fill('najdi chat, kde jsme řešili migraci API');
+      await page.keyboard.press('Enter');
+      await page.locator('.pm-vysledek').first().waitFor();
+      assert.match(await page.locator('.pm-vysledek b').first().innerText(), /migrace API/i);
+      await page.screenshot({ path: `${out}/${typ}-pomocnik-hledani.png` });
+      await page.locator('.pm-vysledek a').first().click();
+      await page.waitForFunction(() => location.hash.startsWith('#/agent/'));
+      // Esc zavře a fokus se vrátí na tlačítko; rozhovor přežije zavření.
+      await page.locator('.pm-fab').click();
       await page.keyboard.press('Escape');
-      assert.equal(await page.locator('.robot-bubble').isHidden(), true, 'Esc schová radu');
+      assert.equal(await page.locator('.pm-okno').isHidden(), true, 'Esc zavře');
+      await page.locator('.pm-fab').click();
+      assert.ok(await page.locator('.pm-msg--ja').count() >= 2, 'rozhovor zůstal');
+      await page.keyboard.press('Escape');
+
+      // Nastavení: tlačítko nekoliduje s nadpisem; skrýt a zase zobrazit přepínačem.
+      await page.goto(`${demo.url}/#/nastaveni`);
+      await page.locator('.pm-fab').waitFor();
+      const titulek = await page.locator('.page-title').boundingBox();
+      const fab = await page.locator('.pm-fab').boundingBox();
+      assert.ok(fab.y > titulek.y + titulek.height, 'tlačítko nekoliduje s nadpisem');
+      await page.locator('[data-jump="set-ucet"]').click();
+      await page.locator('[data-setting="pomocnikZobrazit"]').click();
+      await page.waitForFunction(() => document.querySelector('.pomocnik')?.hidden === true);
+      await page.locator('[data-setting="pomocnikZobrazit"]').click();
+      await page.waitForFunction(() => document.querySelector('.pomocnik')?.hidden === false);
 
       for (const [w, h] of [[1440, 1000], [880, 1000], [375, 812]]) {
         await page.setViewportSize({ width: w, height: h });
@@ -107,7 +132,7 @@ try {
         await page.screenshot({ path: `${out}/${typ}-prehled-${w}.png` });
       }
       assert.deepEqual(errors, [], `${typ}: chyby v konzoli`);
-      console.log(`PASS ${typ}: výběr agenta (klik, hledání, šipky, Enter, Esc, klik mimo), koncept zůstal, Spustit odeslal zadání, robot v panelu i plovoucí bez kolize, zaoblený panel, bez přetečení, čistá konzole`);
+      console.log(`PASS ${typ}: výběr agenta (klik, hledání, šipky, Enter, Esc, klik mimo), koncept zůstal, Spustit odeslal zadání, pomocník (jak zapnu → Nastavení, najdi chat → otevřít, Esc, skrytí v Nastavení), robot v panelu, zaoblený panel, bez přetečení, čistá konzole`);
       await ctx.close();
     } finally {
       await browser.close();
