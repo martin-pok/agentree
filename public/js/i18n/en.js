@@ -1540,6 +1540,7 @@ export default {
     "Tip": "Tip",
     "Zobrazit radu": "Show tip",
     "Skrýt radu": "Hide tip",
+    "Co je nového?": "What’s new?",
   },
   mnozne: {
     "výsledek|výsledky|výsledků": ["result", "results"],

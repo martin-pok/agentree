@@ -83,7 +83,7 @@ test('web: landing page drží design systém aplikace a maximální váhu písm
     assert.ok(css.includes(token), `landing page nemá token ${token}`);
     assert.ok(app.includes(token), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
-  for (const rodina of ["--f-display: 'Urbanist'", "--f-body: 'Onest'", "--f-mono: 'Geist Mono'"]) {
+  for (const rodina of ["--f-display: 'Satoshi'", "--f-body: 'Satoshi'", "--f-mono: 'Geist Mono'"]) {
     assert.ok(css.includes(rodina), rodina);
   }
   const vahy = [...css.matchAll(/font-weight:\s*(\d{3})/g)].map((m) => Number(m[1]));

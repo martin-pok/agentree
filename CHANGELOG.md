@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.41.0 – 2026-10-08 · Nový vzhled s roboty, nové logo a písmo Satoshi
+
+- **Pracovní plocha místo nástěnky.** Přehled začíná jednou otázkou „Co dnes posuneme dál?“ a polem pro zadání. Výběr agenta a podrobné volby jsou o klepnutí dál, rozhodnutí, která čekají na tebe, hned pod tím, živí agenti jako karty a statistiky dne po rozbalení „Průběh dne a spotřeba“.
+- **Roboti za každého agenta.** Každý agent má svého robota (čtyři podoby, čtyři barvy, vlastní jméno – uložené jen v tomto prohlížeči, tlačítko „Upravit vzhled agentů“). Agenti jsou karty s robotem, robot je i v detailu konverzace.
+- **Roboti ukazují stav.** Pracuje: anténa pulzuje a paže píšou. Potřebuje tebe: zvednutá ruka a krátké zamávání. Čeká: přimhouřené oči. Selhalo nebo limit: svěšená anténa. Oči sledují kurzor a občas mrknou. Stav je vždy i v textu; omezení pohybu v systému nebo přepínač „Ztišit pohyb“ animace vypne.
+- **Rady robota.** Každá stránka má krátkou radu, jak ji použít; dá se skrýt.
+- **Nové logo.** Hlava robota s anténou v aplikaci, ikoně pro Mac a Windows, na webu i v rozšíření.
+- **Písmo Satoshi** v aplikaci, na webu i v rozšíření. Licence (ITF Free Font License 2.0) dovoluje písmo vložit do aplikace, ne ho šířit přes veřejný repozitář – soubor se proto stahuje z Fontshare až při sestavení a ověřuje podle otisku (`scripts/satoshi.mjs`). Bez něj se sází dosavadní Onest.
+- **Bez jednostranných barevných proužků** u karet, bannerů a upozornění; stav nesou plocha, ikona a text.
+
 ## 0.40.0 – 2026-10-08 · Upozornění na telefon
 
 - **Upozornění na telefon (Web Push).** Spárovaný telefon si v Nastavení → Upozornění zapne přepínač **Upozornění na tento telefon** a dostává tatáž upozornění jako systém na Macu: agent potřebuje rozhodnutí, limit, rozpočet, dokončený úkol, souhrny. Přijdou i se zavřenou aplikací v telefonu. Klepnutí otevře konverzaci nebo seznam upozornění. Platí stejná pravidla jako na Macu: noční ticho, souhrn při nárazu a nastavení podle druhu upozornění.

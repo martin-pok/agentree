@@ -348,14 +348,17 @@ function updateChrome() {
     down: ['dot--down', tr('Obnovuji spojení…'), tr('Bez spojení')],
   };
   const [tecka, dlouhy, kratky] = STAVY[conn === 'live' || conn === 'connecting' ? conn : 'down'];
-  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>`);
+  // Jméno počítače není v patičce (vlastník 8. 10. 2026: „pročistit“) – ukáže se v bublině po
+  // najetí nebo zaostření pilulky spojení, kde dává smysl: k čemu přesně je okno připojené.
+  const pocitac = state.host ? `${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}` : '';
+  setHtml(connEl, `<i class="dot ${tecka}"></i><span class="conn-long">${dlouhy}</span><span class="conn-short">${kratky}</span>${pocitac ? `<span class="conn-tip" role="tooltip">${esc(pocitac)}</span>` : ''}`);
+  connEl.tabIndex = pocitac ? 0 : -1;
   renderUpdate();
   // Do načtení drží patička místo řádků počítače a verze, jinak by nabídka (stojí uprostřed mezi
   // profilem a patičkou) po načtení poskočila nahoru.
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
-    ${!state.loaded ? '<span class="source-host" aria-hidden="true"><span class="skel-text skel-text--host"></span></span><span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
-    ${state.host ? `<span class="source-host">${esc(`${JE_MAC ? 'Mac' : tr('Počítač')}: ${state.host.name.replace(/-+/g, ' ')}`)}</span>` : ''}
-    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového')}</span></button>` : ''}`);
+    ${!state.loaded ? '<span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
+    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového?')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
   if (!pop.hidden) renderPopover();

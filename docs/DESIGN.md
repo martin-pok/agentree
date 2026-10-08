@@ -8,6 +8,10 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
+## Písmo Satoshi a licence
+
+Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).
+
 ## Žádné částečné obrysy
 
 Výslovný požadavek vlastníka: nepoužívat jednostranné barevné okraje ani částečné obrysy kolem karet, bannerů, upozornění či aktivních položek. Platí i pro jejich imitaci pomocí inset box-shadow nebo pseudo-elementu. Stav vyjadřovat jemnou plochou, ikonou a textem; případný obrys musí být rovnoměrný po celém obvodu. Běžné oddělovače dat a viditelný obrys klávesnicového fokusu zůstávají.
@@ -61,12 +65,12 @@ Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka
 segmentová volba: kapsle 40 px, ne karta. Přepínač má 48 × 28 px, v okně rozšíření malou velikost
 40 × 24 px. Tvar (kapsle) a barva zapnutého stavu (`--action`) jsou všude stejné.
 
-**Popisek** je vždy Onest 500, věta s malými písmeny, sloveso, které říká, co se stane. Řez se při
+**Popisek** je vždy Satoshi 500, věta s malými písmeny, sloveso, které říká, co se stane. Řez se při
 výběru nemění: vybraná volba se pozná podle plochy, ne podle tučnějšího písma, které by text
-posunulo. Totéž platí pro menu Nastavení, které je z tlačítek: Onest 500 ve všech stavech.
+posunulo. Totéž platí pro menu Nastavení, které je z tlačítek: Satoshi 500 ve všech stavech.
 
 **Položka navigace a nabídky** (postranní panel, spodní lišta na telefonu, paleta příkazů, panel
-Více) tlačítko není – je to řádek seznamu míst a má Onest 400 jako ostatní text v seznamu. I tady
+Více) tlačítko není – je to řádek seznamu míst a má Satoshi 400 jako ostatní text v seznamu. I tady
 jeden řez pro všechny stavy: aktivní stránku ukazuje skleněná plocha s bílou hranou a barva textu (žádný boční proužek). Položka
 postranního panelu má výšku ze stupnice: 40 px, na nejnižším okně 32 px, na monitoru na výšku 48 px
 (dlaždice spodní lišty na telefonu má ikonu nad popiskem, není jednořádková).
@@ -107,7 +111,7 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
   stavu po změně velikosti okna, ne po pevném čekání.
 - `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše.
 
-## Prototyp Satoshi a maskot (nenasazeno)
+## Typografie Satoshi a maskot (od 0.41.0)
 
 `public/refinement.css` sjednocuje role: 12 px pomocné údaje, 14 px kompaktní ovládání,
 16 px běžný text, 18 px zvýrazněný text, 20 px nadpis karty, 24 px sekce,
@@ -117,10 +121,12 @@ Satoshi 400 je základ, 500 zvýraznění. Běžný text má tracking 0 a zapnut
 kerning. Velké nadpisy −0,025 až −0,035 em; wordmark 18 px / 500 / +0,045 em.
 Číselné přehledy používají tabulární číslice. Mezery vycházejí z 4px základu.
 
-Pohyb maskota řídí `public/js/mascot-motion.js`. Schválená varianta má statické
-roboty: žádné skákání, mávání, otáčení hlavy ani gesta rukou. Kurzor sleduje
-všichni viditelní roboti, oči maximálně ±3 px vodorovně a ±2 px svisle.
-Občasné mrknutí trvá 180 ms, po 8–14 sekundách mrkne jeden viditelný robot.
+Pohyb maskota řídí `public/js/mascot-motion.js` (oči) a `public/refinement.css` (stavy).
+Rozhodnutí vlastníka 8. 10. 2026: roboti se hýbou podle stavu agenta, tělo nikdy nelétá ani
+neposkakuje. Pracuje: anténa pulzuje, paže „píšou“. Potřebuje tebe: zvednutá ruka, krátké
+zamávání každých 5 s. Čeká a nečinný: přimhouřené oči. Selhalo a limit: svěšená anténa,
+ztlumené oči. Oči sledují kurzor nejvýš ±3 px vodorovně a ±2 px svisle; občasné mrknutí
+trvá 180 ms, po 8–14 sekundách mrkne jeden viditelný robot.
 Systémové omezení pohybu má přednost, ruční vypnutí se ukládá lokálně.
 Pohyb není jediným nositelem stavu a robot nevydává zvuky.
 

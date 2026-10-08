@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.41.0',
+    date: '2026-10-08',
+    title: 'Nový vzhled s roboty',
+    items: [
+      'Přehled začíná zadáním práce a ukazuje, co čeká na tebe. Každý agent má svého robota, kterému můžeš dát jméno, podobu a barvu.',
+      'Roboti ukazují stav: pracující píše, ten, který tě potřebuje, zvedne ruku a zamává. Pohyb jde ztišit a respektuje nastavení systému.',
+      'Nové logo a písmo Satoshi v aplikaci, na webu i v rozšíření.',
+    ],
+    en: {
+      title: 'A new look with robots',
+      items: [
+        'The Overview starts with describing the work and shows what is waiting for you. Every agent has its own robot you can name, shape and colour.',
+        'Robots show status: a working one types, one that needs you raises a hand and waves. Motion can be calmed and respects your system setting.',
+        'A new logo and the Satoshi typeface in the app, on the web and in the extension.',
+      ],
+    },
+  },
+  {
     version: '0.40.0',
     date: '2026-10-08',
     title: 'Upozornění na telefon',

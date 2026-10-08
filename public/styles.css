@@ -42,11 +42,11 @@
   --toast-ok: #2B6B53;
   --toast-err: #983A52;
 
-  --f-display: 'Urbanist', 'Avenir Next', system-ui, sans-serif;
-  --f-body: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* Čísla, štítky a cesty sází Onest s tabulkovými číslicemi: nula bez přeškrtnutí a čísla pod
+  --f-display: 'Satoshi', 'Urbanist', 'Avenir Next', system-ui, sans-serif;
+  --f-body: 'Satoshi', 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Čísla, štítky a cesty sází Satoshi (záložně Onest) s tabulkovými číslicemi: nula bez přeškrtnutí a čísla pod
      sebou drží sloupec. Neproporcionální písmo zůstává jen kódu (--f-code). */
-  --f-mono: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'Satoshi', 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-code: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Tvary. Všechno, na co se klepe a má jeden řádek (tlačítko, čip, filtr, výběr, pole, položka
@@ -220,9 +220,10 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .sidebar > .brand, .sidebar > .side-foot { flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
 .brand-mark { width: 34px; height: 34px; flex: none; }
-.brand-mark .bm-branch { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
-.brand-mark .bm-root { fill: var(--brass); }
-.brand-mark .bm-node { fill: var(--ink); }
+.brand-mark .bm-aerial { fill: none; stroke: var(--action); stroke-width: 3.5; stroke-linecap: round; }
+.brand-mark .bm-tip { fill: var(--action); }
+.brand-mark .bm-head { fill: var(--ink); }
+.brand-mark .bm-eye { fill: var(--paper); }
 /* Profil je jediná část panelu, která ustupuje. O jeho podobě nerozhoduje výška okna, ale místo,
    které v panelu opravdu zbylo po značce, nabídce a patičce – ať prohlížeč změří písmo jakkoli
    a ať má patička jeden řádek nebo tři. Vnější `.profile` je kontejner (`container-type: size`),
@@ -396,6 +397,10 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @media (prefers-reduced-motion: reduce) { .update-chip { animation: none; } }
 .conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--glass-strong); box-shadow: var(--shadow-sm); font-size: 13px; }
 .conn-pill .conn-short { display: none; }
+.conn-pill { position: relative; }
+.conn-pill:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+.conn-tip { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; padding: 8px 12px; border-radius: var(--r-sm); background: var(--ink); color: var(--paper); font-size: 13px; line-height: 1.4; white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--motion-response) var(--ease), visibility var(--motion-response) var(--ease); }
+.conn-pill:is(:hover, :focus-visible) .conn-tip { opacity: 1; visibility: visible; }
 .search-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border: 1px solid var(--glass-rim); border-radius: var(--r-full); background: var(--glass-strong); color: var(--mute); font-size: 14px; transition: border-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
 .search-btn:hover { border-color: var(--ink); color: var(--ink); background: var(--card); }
 kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-full); background: var(--line-2); color: var(--ink-2); }

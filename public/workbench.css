@@ -305,7 +305,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 /* Dotažení redesignu (0.41.0): rozbalovací volby jako kapsle, cesty v kartách bez strojového písma. */
 .studio-choice > summary, .studio-options > summary, .home-history > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: var(--r-full); font: 500 14px/1 var(--f-body); color: var(--ink-2); }
 .studio-choice > summary::-webkit-details-marker, .studio-options > summary::-webkit-details-marker { display: none; }
-.studio-choice > summary::after, .studio-options > summary::after { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); transition: transform var(--motion-response, .2s) var(--ease, ease); }
+.studio-choice > summary::after, .studio-options > summary::after { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); transition: transform var(--motion-response) var(--ease); }
 .studio-choice[open] > summary::after, .studio-options[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .studio-choice > summary:hover, .studio-options > summary:hover { background: var(--line-2); color: var(--ink); }
 .studio-choice { display: flex; flex-direction: column; align-items: center; }
