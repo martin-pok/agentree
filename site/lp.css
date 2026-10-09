@@ -1944,3 +1944,18 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
  #vyzkouset ol.steps > li:hover::before,#vyzkouset .steps li:hover::before {transform:none!important;}
 }
 @media(prefers-reduced-motion:reduce){#vyzkouset ol.steps > li,#vyzkouset .steps li{transition:none!important;}}
+
+
+/* Accordion precision: badge and plus share exact columns on both rows. */
+#vyzkouset .rows { border-top:0; overflow:visible; }
+#vyzkouset .rows > details > summary {
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(108px,max-content) 28px!important;
+ align-items:center;column-gap:12px;padding-inline:16px!important;box-sizing:border-box;
+}
+#vyzkouset .rows > details > summary .detail-tag {grid-column:2;justify-self:end;margin:0!important;}
+#vyzkouset .rows > details > summary::after {grid-column:3;justify-self:center;width:24px;text-align:center;margin:0!important;}
+#vyzkouset .rows > #rozsireni {border-bottom:0!important;margin-inline:0!important;padding-inline:0!important;}
+#vyzkouset .rows > #rozsireni > summary {width:100%!important;margin-inline:0!important;}
+#vyzkouset .rows > #rozsireni .detail-body {padding-inline:clamp(16px,2.4vw,28px)!important;}
+#vyzkouset .rows > #rozsireni + details {border-top:0!important;}
+@media(max-width:620px) {#vyzkouset .rows > details > summary {grid-template-columns:minmax(0,1fr) auto 24px!important;column-gap:8px;padding-inline:12px!important;}}
