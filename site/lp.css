@@ -1611,3 +1611,63 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   #soukromi .facts article .privacy-art { min-height:120px; margin-bottom:18px; }
   #soukromi .facts article h3 { margin-bottom:12px; }
 }
+
+
+/* Installation landing: quiet mesh illumination and meaningful product flow. */
+.install-page .hero {
+  position:relative;
+  isolation:isolate;
+  background:
+    radial-gradient(ellipse 34% 58% at 16% 64%,rgba(105,80,219,.23),transparent 82%),
+    radial-gradient(ellipse 36% 66% at 83% 74%,rgba(50,115,145,.19),transparent 80%),
+    radial-gradient(ellipse 35% 52% at 52% 105%,rgba(130,95,211,.24),transparent 82%),
+    linear-gradient(150deg,#11101a 0%,#0c0b13 55%,#11101b 100%);
+}
+.install-page .hero .kicker {
+  color:#cbbcff!important;
+  opacity:1!important;
+  font-weight:600;
+  letter-spacing:.055em;
+}
+.install-page .install-hero-scene {
+  isolation:isolate;
+  padding:30px 0 10px;
+  margin-top:clamp(28px,4vw,52px);
+}
+.install-page .install-hero-node {
+  position:relative;
+  min-width:0;
+  min-height:108px;
+  padding:22px 20px;
+  background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
+  border:1px solid rgba(200,188,249,.23);
+  border-radius:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 16px 30px -23px rgba(0,0,0,.66);
+  color:#e7e2f2;
+}
+.install-page .install-hero-node--app {
+  border-color:rgba(186,167,255,.53);
+  background:linear-gradient(145deg,rgba(105,88,168,.34),rgba(42,35,66,.62));
+  box-shadow:inset 0 1px rgba(255,255,255,.12),0 16px 46px -25px rgba(153,119,255,.45);
+}
+.install-page .install-hero-robot {
+  position:absolute;
+  top:-37px;
+  right:-21px;
+  width:52px;
+  transform:rotate(16deg);
+  pointer-events:none;
+  filter:drop-shadow(0 11px 18px rgba(8,5,23,.44));
+  z-index:3;
+}
+.install-page .install-hero-node--app b {color:#a8e6d8;}
+.install-page .install-hero-path {opacity:.75;}
+@media(max-width:620px) {
+  .install-page .install-hero-scene {padding-top:30px;gap:0;}
+  .install-page .install-hero-node {min-height:86px;padding:14px 7px;font-size:11px;border-radius:16px;}
+  .install-page .install-hero-node--app .install-hero-robot {width:36px;top:-26px;right:-11px;}
+  .install-page .hero .kicker {font-size:14px;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .install-page .install-hero-robot,.install-page .install-hero-node {animation:none!important;transition:none!important;}
+}
