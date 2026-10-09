@@ -1671,3 +1671,48 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(prefers-reduced-motion:reduce) {
  .install-page .install-hero-robot,.install-page .install-hero-node {animation:none!important;transition:none!important;}
 }
+
+
+/* Chrome extension: one original Agenteeq mascot peeks out from the lower-right
+   corner only while expanded on desktop. Never cover buttons or body copy. */
+@media(min-width:901px) {
+  #vyzkouset #rozsireni {
+    overflow:visible;
+  }
+  #vyzkouset #rozsireni[open] .detail-body {
+    position:relative;
+    padding-right:clamp(105px,12vw,155px);
+    min-height:178px;
+  }
+  #vyzkouset #rozsireni .extension-peek-robot {
+    position:absolute;
+    right:-38px;
+    bottom:-37px;
+    width:116px;
+    height:116px;
+    z-index:2;
+    pointer-events:none;
+    transform:translateY(12px) rotate(-15deg);
+    transform-origin:55% 55%;
+    opacity:0;
+  }
+  #vyzkouset #rozsireni[open] .extension-peek-robot {
+    opacity:1;
+    transform:translateY(0) rotate(-15deg);
+  }
+  #vyzkouset #rozsireni .extension-peek-robot svg {
+    display:block;
+    width:100%;
+    height:100%;
+    overflow:visible;
+    filter:drop-shadow(0 13px 16px rgba(49,33,106,.23));
+  }
+  @media(prefers-reduced-motion:no-preference) {
+    #vyzkouset #rozsireni .extension-peek-robot {
+      transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1);
+    }
+  }
+}
+@media(max-width:900px) {
+  #vyzkouset #rozsireni .extension-peek-robot {display:none;}
+}
