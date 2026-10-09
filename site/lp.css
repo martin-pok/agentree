@@ -1219,3 +1219,23 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   #otazky { background:linear-gradient(165deg,#f1eff7,#eae8f1); color:#16203a; }
   #vyzkouset .btn--vedlejsi { color:#16203a; }
 }
+
+
+/* Section rhythm — one deliberate heading-to-content gap per section.
+   Older rules added heading padding and content margin together, creating
+   excessive blank bands. Use a consistent responsive spacing scale. */
+:root { --section-content-gap:clamp(36px,4.2vw,60px); }
+#prohlidka .unit-head { padding-bottom:0; }
+#prohlidka .tiles,
+#propojeni .integration-map,
+#soukromi .privacy-stage,
+#vyzkouset .steps,
+.install-page .steps,
+.install-page .unit-head + .instalace-dalsi {
+  margin-top:var(--section-content-gap);
+}
+#soukromi .privacy-stage .facts { margin-top:0; }
+@media(max-width:620px) {
+  :root { --section-content-gap:32px; }
+  #soukromi .privacy-stage { margin-top:32px; }
+}
