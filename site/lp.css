@@ -1716,3 +1716,27 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(max-width:900px) {
   #vyzkouset #rozsireni .extension-peek-robot {display:none;}
 }
+
+
+/* 404: match the landing's primary white-to-violet CTA interaction. */
+.missing-page .missing-stage > .btn {
+  background:#F4F3F7;
+  color:#16141D;
+  border:1px solid transparent;
+  transition:background-color .24s var(--ease),color .24s var(--ease),box-shadow .3s var(--ease),transform .24s var(--ease);
+}
+@media (hover:hover) and (pointer:fine) {
+  .missing-page .missing-stage > .btn:hover {
+    background:#6255C9;
+    color:#FFFFFF;
+    border-color:#6255C9;
+    box-shadow:0 12px 30px -12px rgba(98,85,201,.45);
+  }
+}
+.missing-page .missing-stage > .btn:focus-visible {
+  outline:2px solid #C4B5FD;
+  outline-offset:4px;
+}
+@media(prefers-reduced-motion:reduce) {
+  .missing-page .missing-stage > .btn {transition:none;}
+}
