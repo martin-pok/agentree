@@ -403,6 +403,16 @@ function mount(el) {
       if (a.dataset.action === 'browser-link') { await copy(await api.browserLink(), tr('Odkaz je ve schránce – vlož ho do prohlížeče')); }
       else if (a.dataset.action === 'reset-layout') { await resetLayout(); toast(tr('Karty mají zase výchozí pořadí')); update(); }
       else if (a.dataset.action === 'claude-connect') await connectClaude();
+      else if (a.dataset.action === 'claude-check') {
+        const h = (await api.hooks('check')).claudeHooks;
+        state.integrations.claudeHooks = h;
+        toast(h.installed && h.current ? tr('Propojení je v nastavení Claude Code zapsané správně') : tr('Propojení v nastavení Claude Code chybí nebo je zastaralé'), { tone: h.installed && h.current ? undefined : 'err' });
+        update();
+      } else if (a.dataset.action === 'claude-reinstall') {
+        state.integrations.claudeHooks = (await api.hooks('install')).claudeHooks;
+        toast(tr('Propojení s Claude Code je zapnuté. Platí pro nově otevřené konverzace.'));
+        update();
+      }
       else if (a.dataset.action === 'claude-disconnect') {
         if (await confirmDialog({ title: tr('Vypnout propojení s Claude Code'), message: tr('Agenteeq odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.'), confirmLabel: tr('Vypnout propojení') })) {
           state.integrations.claudeHooks = (await api.hooks('uninstall')).claudeHooks;
@@ -1030,7 +1040,22 @@ function update(topics) {
   /* Propojení s Claude Code */
   const h = i.claudeHooks;
   const outdated = !h.error && (h.installed || h.partial) && !h.current;
-  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? ['connected', tr('Hooky zapnuté')] : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
+  // Aktivní konverzace Claude Code podle toho, jestli z nich chodí události (src/model.js#hookHealth).
+  const zdravi = { linked: 0, before: 0, silent: 0, unknown: 0, pending: 0 };
+  for (const s of state.sessions.values()) if (Object.hasOwn(zdravi, s.hookHealth)) zdravi[s.hookHealth]++;
+  const aktivni = Object.values(zdravi).reduce((a, b) => a + b, 0);
+  const nefunguje = zdravi.silent > 0 && zdravi.linked === 0;
+  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? (nefunguje ? ['idle', tr('Neozývá se')] : ['connected', tr('Hooky zapnuté')]) : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
+  const zdraviRadky = [
+    zdravi.before && tr('Spuštěné před zapnutím propojení: {0}. Přesný stav ukážou po novém spuštění Claude Code.', zdravi.before),
+    zdravi.silent && tr('Bez události, i když zadání přišlo po zapnutí propojení: {0}.', zdravi.silent),
+    zdravi.unknown + zdravi.pending && tr('Zatím bez události: {0}. Do první události je jejich stav odhad z přepisu.', zdravi.unknown + zdravi.pending),
+  ].filter(Boolean);
+  const zdraviHtml = !h.installed || !aktivni ? '' : `
+    <div class="set-row-inline"><span><strong>${tr('Propojené konverzace: {0} z {1} aktivních', zdravi.linked, aktivni)}</strong>${zdraviRadky.map((r) => `<small>${r}</small>`).join('')}</span></div>
+    ${zdravi.silent ? `<p class="set-note set-note--warn">${nefunguje
+      ? tr('Propojení nejspíš nefunguje: z Claude Code nepřišla žádná událost. Spusť Claude Code znovu, a když to nepomůže, propojení přeinstaluj – zapíše se aktuální adresa a klíč Agenteeq. Claude Code s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) propojení nenačte.')
+      : tr('Ostatní konverzace události posílají. Ty bez události nejspíš běží v Claude Code spuštěném před zapnutím propojení nebo s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) – spusť je znovu.')}</p>` : ''}`;
   // Kdo Claude Code nemá, tuhle kartu vidět nepotřebuje – Agenteeq na něm nestojí.
   const maClaude = state.connectors.some((c) => c.id === 'claude-code' && c.state !== 'missing') || h.installed || h.partial;
   fill(el, 'claude', !maClaude ? '' : `
@@ -1040,8 +1065,9 @@ function update(topics) {
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
     ${outdated ? `<p class="set-note">${tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
     ${h.statusLine === 'foreign' ? `<p class="set-note">${tr('Claude Code má vlastní informační řádek, přesné limity Claude proto chybí.')}</p>` : ''}
+    ${zdraviHtml}
     <div class="set-actions">${h.installed && h.current
-      ? `<button class="btn" type="button" data-action="claude-disconnect">${tr('Vypnout propojení')}</button>`
+      ? `${zdravi.silent ? `<button class="btn btn--primary" type="button" data-action="claude-check">${tr('Zkontrolovat znovu')}</button><button class="btn" type="button" data-action="claude-reinstall">${tr('Přeinstalovat propojení')}</button>` : ''}<button class="btn" type="button" data-action="claude-disconnect">${tr('Vypnout propojení')}</button>`
       : `<button class="btn btn--primary" type="button" data-action="claude-connect">${outdated ? tr('Obnovit propojení') : tr('Zapnout propojení')}</button>`}</div>`);
 
   /* Rozšíření pro Chrome */
