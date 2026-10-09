@@ -1438,3 +1438,21 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 
 /* Installation steps: centre the numbered markers without changing text alignment. */
 #vyzkouset .steps li .step-n { justify-self:center; text-align:center; width:max-content; }
+
+
+/* Primary white CTAs — consistent Agenteeq violet hover in header and hero. */
+@media (hover:hover) and (pointer:fine) {
+  .nav-in > .btn:hover,
+  .hero .cta-row > .btn:hover {
+    background:#6255C9;
+    color:#FFFFFF;
+    box-shadow:0 8px 26px -12px rgba(116,91,225,.65);
+  }
+}
+.nav-in > .btn,
+.hero .cta-row > .btn {
+  transition:background-color .24s var(--ease),color .24s var(--ease),box-shadow .3s var(--ease),transform .24s var(--ease);
+}
+@media (prefers-reduced-motion:reduce) {
+  .nav-in > .btn,.hero .cta-row > .btn { transition:none; }
+}
