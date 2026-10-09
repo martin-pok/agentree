@@ -1025,3 +1025,50 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .missing-stage h1 { font-size:clamp(42px,6vw,78px); letter-spacing:-.055em; margin:12px 0 16px; }
 .missing-stage > p:not(.missing-kicker):not(.missing-en) { max-width:40ch; color:#aaa4b8; font-size:18px; margin-bottom:32px; }
 .missing-en { margin-top:48px; font-size:13px; color:#aaa4b8; } .missing-en a { color:#e1ddfa; }
+
+
+/* Install experience v0.46: compressed, illustrated, progressive guide. */
+.install-page .hero { padding-block:clamp(74px,8vw,108px) clamp(62px,7vw,86px); }
+.install-page .hero .unit-head { gap:18px; }
+.install-page .hero h1 { font-size:clamp(44px,6vw,78px); line-height:1.07; }
+.install-hero-scene { position:relative; display:flex; align-items:center; justify-content:center; gap:0; width:min(100%,710px);
+ margin:clamp(28px,3vw,42px) auto 0; padding:32px 0 8px; }
+.install-hero-node { min-width:130px; display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;
+ padding:17px 19px; border-radius:20px; background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+ border:1px solid rgba(255,255,255,.13); box-shadow:0 16px 34px -26px #000; color:#e4e0ef; font-size:13px; }
+.install-hero-node--app { border-color:rgba(169,159,245,.35); background:linear-gradient(150deg,#373249,#242131); }
+.install-hero-node--app b { color:#7be5c8; font-size:15px; }
+.install-node-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; color:#c8c1ff; background:rgba(255,255,255,.075); font-size:24px; }
+.install-hero-path { width:clamp(30px,7vw,98px); height:1px; background:linear-gradient(90deg,rgba(176,166,235,.25),rgba(176,166,235,.68)); position:relative; }
+.install-hero-path i { position:absolute; right:0; top:-3px; width:7px; height:7px; border-radius:50%; background:#c6bbfd; }
+.install-hero-robot { position:absolute; top:-19px; right:24%; width:65px; transform:rotate(18deg); filter:drop-shadow(0 12px 17px #0008); }
+.install-hero-robot img { display:block; width:100%; height:auto; }
+.install-page #mac .steps--ctyri { grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; border-radius:26px;
+ border:1px solid rgba(55,50,100,.13); background:rgba(255,255,255,.65); overflow:hidden; }
+.install-page #mac .steps--ctyri li { min-width:0; min-height:260px; border:0; border-radius:0; background:none; box-shadow:none;
+ padding:30px 26px; position:relative; }
+.install-page #mac .steps--ctyri li:not(:last-child) { border-right:1px solid rgba(55,50,100,.12); }
+.install-page #mac .steps--ctyri li::before { content:""; position:absolute; top:54px; left:78px; right:0; height:1px;
+ background:linear-gradient(90deg,rgba(98,96,216,.26),transparent); pointer-events:none; }
+.install-page #mac .steps--ctyri li:last-child::before { display:none; }
+.install-page #mac .steps--ctyri .step-n { display:grid; place-items:center; width:52px; height:52px; margin-bottom:26px;
+ border-radius:16px; background:#efedfc; color:#6260d8; font-size:25px; }
+.install-page #mac .steps--ctyri li b { font-size:17px; }
+.install-page #mac .steps--ctyri li p { font-size:14px; line-height:1.65; }
+.install-page #mac .steps--ctyri li:hover { background:rgba(98,96,216,.047); }
+.install-page .extension-layout { align-items:center; grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr); }
+.install-page .extension-instructions { align-self:center; min-height:0; height:max-content; padding:clamp(26px,3vw,40px); }
+.install-page .extension-instructions .rozsireni-akce { margin:0; }
+.install-page .extension-display { max-width:640px; }
+@media(max-width:1100px) { .install-page #mac .steps--ctyri { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .install-page #mac .steps--ctyri li:nth-child(2) { border-right:0; }
+ .install-page #mac .steps--ctyri li:nth-child(-n+2) { border-bottom:1px solid rgba(55,50,100,.12); } }
+@media(max-width:700px) { .install-page .extension-layout { grid-template-columns:1fr; }
+ .install-hero-scene { padding-top:12px; } .install-hero-node { min-width:0; padding:12px 9px; flex:1; font-size:11px; }
+ .install-hero-path { width:22px; flex:none; } .install-hero-robot { width:42px; top:-24px; }
+ .install-page #mac .steps--ctyri { grid-template-columns:1fr; }
+ .install-page #mac .steps--ctyri li { min-height:0; padding:23px 26px; border-right:0!important; border-bottom:1px solid rgba(55,50,100,.12); }
+ .install-page #mac .steps--ctyri li:last-child { border-bottom:0; }
+ .install-page #mac .steps--ctyri li::before { display:none; }
+ .install-page #mac .steps--ctyri .step-n { margin-bottom:13px; } }
+@media(prefers-reduced-motion:reduce) { .install-page #mac .steps--ctyri li { transition:none; } }
