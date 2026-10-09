@@ -724,3 +724,21 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   #soukromi .privacy-orb { width:88px; height:88px; }
   #soukromi .privacy-orb svg { width:42px; height:42px; }
 }
+
+
+/* Footer finishing: centred ownership information, outlined scroll-to-top control. */
+.site-footer .footer-bottom { display:grid; grid-template-columns:1fr minmax(0,2.5fr) 1fr; align-items:center; gap:24px; }
+.site-footer .footer-bottom .foot-note { grid-column:2; flex-basis:auto; max-width:none; text-align:center; margin:0; }
+.site-footer .footer-bottom .brand { grid-column:1; justify-self:start; }
+.site-footer .footer-bottom > a.text-link { grid-column:3; justify-self:end; margin:0; display:inline-flex; justify-content:center; align-items:center;
+  min-height:40px; padding:0 18px; border:1px solid rgba(244,243,247,.28); border-radius:var(--r-full);
+  color:#f3f1f7; text-decoration:none; font-size:13px; font-weight:500;
+  transition:background .25s var(--ease),border-color .25s var(--ease); }
+.site-footer .footer-bottom > a.text-link:hover { background:rgba(255,255,255,.075); border-color:rgba(244,243,247,.55); }
+@media(max-width:700px) {
+ .site-footer .footer-bottom { grid-template-columns:1fr auto; gap:20px 12px; }
+ .site-footer .footer-bottom .brand { grid-column:1; grid-row:1; }
+ .site-footer .footer-bottom > a.text-link { grid-column:2; grid-row:1; }
+ .site-footer .footer-bottom .foot-note { grid-column:1 / -1; grid-row:2; text-align:center; }
+}
+@media(prefers-reduced-motion:reduce) { .site-footer .footer-bottom > a.text-link { transition:none; } }
