@@ -637,9 +637,9 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .showcase strong,.showcase b { font-weight:500; color:var(--sc-fg); }
 .showcase small { color:var(--sc-muted); font-size:12px; display:block; margin-top:3px; }
 .sc-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:28px; }
-.sc-label { font-size:10px; letter-spacing:.13em; color:#b5b0c6; font-weight:500; }
+.sc-label { font-size:12px; letter-spacing:.13em; color:#b5b0c6; font-weight:500; }
 .sc-meta,.sc-caption { color:var(--sc-muted); font-size:12px; }
-.sc-status { display:inline-flex; align-items:center; gap:7px; border-radius:var(--r-full); padding:7px 11px; font-size:11px; color:#ffaac2; background:rgba(233,116,152,.12); white-space:nowrap; }
+.sc-status { display:inline-flex; align-items:center; gap:7px; border-radius:var(--r-full); padding:7px 11px; font-size:12px; color:#ffaac2; background:rgba(233,116,152,.12); white-space:nowrap; }
 .sc-led { display:inline-block; vertical-align:middle; height:7px; width:7px; border-radius:50%; background:currentColor; }
 .sc-agent,.sc-limit-head,.sc-project-title { display:flex; align-items:center; gap:13px; }
 .sc-agent strong,.sc-limit-head strong,.sc-project-title strong { font-size:17px; }
@@ -656,7 +656,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .sc-amount strong span { font-size:.47em; color:#bab6c8; }
 .sc-meter { height:8px; background:#35323f; border-radius:var(--r-full); overflow:hidden; }
 .sc-meter i { display:block; width:var(--used); height:100%; background:linear-gradient(90deg,#40c3a3,#68e3c6); border-radius:inherit; }
-.sc-meter-labels,.sc-limit-foot { display:flex; justify-content:space-between; gap:12px; color:var(--sc-muted); font-size:11px; margin-top:11px; }
+.sc-meter-labels,.sc-limit-foot { display:flex; justify-content:space-between; gap:12px; color:var(--sc-muted); font-size:12px; margin-top:11px; }
 .sc-limit-foot { align-items:center; border-top:1px solid rgba(255,255,255,.09); padding-top:18px; margin-top:23px; }
 .sc-good { color:#77dbc3; display:flex; align-items:center; gap:8px; }
 .sc-project-title { margin-bottom:32px; }
@@ -667,13 +667,13 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .sc-chart { display:flex; align-items:flex-end; gap:7px; height:110px; padding-top:10px; }
 .sc-chart i { flex:1; height:var(--h); background:linear-gradient(180deg,#de836c,#a14d3d); border-radius:5px 5px 2px 2px; opacity:.85; }
 .sc-chart i:nth-child(3n) { opacity:.48; }
-.sc-chart-caption { margin-top:17px; display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; color:var(--sc-muted); font-size:11px; }
+.sc-chart-caption { margin-top:17px; display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; color:var(--sc-muted); font-size:12px; }
 .sc-spend-label { color:var(--sc-muted); font-size:13px; }
 .sc-spend-total { font:500 clamp(51px,6vw,72px)/1.1 var(--f-display); letter-spacing:-.06em; margin:9px 0 30px; }
 .sc-spend-total span { font-size:.38em; letter-spacing:0; color:var(--sc-muted); }
 .sc-budget { padding:20px; background:rgba(255,255,255,.045); border-radius:var(--r-md); }
 .sc-budget-meta { display:flex; justify-content:space-between; gap:10px; margin-bottom:13px; }
-.sc-budget p { color:var(--sc-muted); font-size:11px; margin-top:10px; }
+.sc-budget p { color:var(--sc-muted); font-size:12px; margin-top:10px; }
 .sc-meter--budget i { background:linear-gradient(90deg,#8a85ef,#c3befb); }
 .sc-cost-rows { display:grid; gap:14px; padding:24px 2px 0; }
 .sc-cost-rows div { display:flex; align-items:center; gap:10px; color:#c2bdce; font-size:13px; }
@@ -969,7 +969,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  background:linear-gradient(120deg,rgba(98,96,216,.12),rgba(255,255,255,.025) 57%); }
 .integration-brand { display:flex; flex:none; align-items:center; gap:12px; font-size:22px; letter-spacing:-.03em; }
 .integration-brand img { width:38px; height:38px; }
-.integration-eyebrow { display:block; letter-spacing:.14em; font-size:10px; color:#c2bbfa; }
+.integration-eyebrow { display:block; letter-spacing:.14em; font-size:12px; color:#c2bbfa; }
 .integration-result p { color:#c6c2cf; font-size:15px; max-width:36ch; margin-top:7px; }
 .integration-action { margin-left:auto; flex:none; color:#f5f2ff; font-size:13px; padding:12px 18px; border:1px solid rgba(240,235,255,.28); border-radius:999px; text-decoration:none; transition:background .25s ease,transform .3s var(--ease); }
 .integration-action:hover { background:rgba(255,255,255,.09); transform:scale(1.025); }
@@ -996,7 +996,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .extension-address { margin:auto; color:#a9a3b7; font-size:12px; letter-spacing:.02em; }
 .extension-display-body { padding:clamp(20px,3vw,36px); display:grid; gap:23px; }
 .extension-app { display:flex; align-items:center; gap:10px; font-size:17px; }
-.extension-linked { margin-left:auto; color:#83e2ca; font-size:11px; }
+.extension-linked { margin-left:auto; color:#83e2ca; font-size:12px; }
 .extension-linked i { display:inline-block; width:6px; height:6px; margin-left:6px; border-radius:50%; background:#66d9bd; }
 .extension-conversation,.extension-received { padding:20px; display:flex; align-items:center; gap:15px; border-radius:18px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.045); }
 .extension-profile { width:45px; height:45px; border-radius:13px; display:grid; place-items:center; background:rgba(255,255,255,.075); }
@@ -1064,7 +1064,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .install-page #mac .steps--ctyri li:nth-child(2) { border-right:0; }
  .install-page #mac .steps--ctyri li:nth-child(-n+2) { border-bottom:1px solid rgba(55,50,100,.12); } }
 @media(max-width:700px) { .install-page .extension-layout { grid-template-columns:1fr; }
- .install-hero-scene { padding-top:12px; } .install-hero-node { min-width:0; padding:12px 9px; flex:1; font-size:11px; }
+ .install-hero-scene { padding-top:12px; } .install-hero-node { min-width:0; padding:12px 9px; flex:1; font-size:12px; }
  .install-hero-path { width:22px; flex:none; } .install-hero-robot { width:42px; top:-24px; }
  .install-page #mac .steps--ctyri { grid-template-columns:1fr; }
  .install-page #mac .steps--ctyri li { min-height:0; padding:23px 26px; border-right:0!important; border-bottom:1px solid rgba(55,50,100,.12); }
