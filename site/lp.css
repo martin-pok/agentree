@@ -1072,3 +1072,30 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .install-page #mac .steps--ctyri li::before { display:none; }
  .install-page #mac .steps--ctyri .step-n { margin-bottom:13px; } }
 @media(prefers-reduced-motion:reduce) { .install-page #mac .steps--ctyri li { transition:none; } }
+
+
+/* Installation finishing — coherent Windows sequence and content-sized store panel. */
+.install-page #windows .windows-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; overflow:hidden;
+ border:1px solid rgba(55,50,100,.13); border-radius:26px; background:rgba(255,255,255,.7); }
+.install-page #windows .windows-steps li { min-width:0; min-height:230px; padding:30px 28px; border:0;
+ border-radius:0; box-shadow:none; background:transparent; }
+.install-page #windows .windows-steps li:not(:last-child) { border-right:1px solid rgba(55,50,100,.12); }
+.install-page #windows .windows-steps .step-n { display:grid; place-items:center; width:50px; height:50px; margin-bottom:22px; 
+ background:#efedfc; border-radius:15px; font-size:25px; color:#6260d8; }
+.install-page #windows .windows-steps li b { font-size:17px; }
+.install-page #windows .windows-steps li p { margin-top:8px; line-height:1.6; }
+.install-page #windows .windows-steps li:hover { background:rgba(98,96,216,.05); }
+.install-page #windows .gatekeeper { margin-top:20px; border-radius:22px; }
+.install-page .extension-store-card { align-self:center!important; height:auto!important; min-height:0!important; justify-self:stretch; display:flex; flex-direction:column; gap:23px; }
+.extension-store-heading { display:flex; align-items:center; gap:13px; }
+.extension-store-heading img { flex:none; width:40px; height:40px; }
+.extension-store-heading strong { font-size:17px; color:#17203b; display:block; }
+.extension-store-heading small { display:block; font-size:12px; margin-top:4px; color:#666279; }
+.install-page .extension-store-card .rozsireni-akce { margin:0; }
+.install-page .extension-store-card .extension-cta { display:inline-flex; align-items:center; justify-content:center; width:max-content; max-width:100%; }
+.install-page .extension-store-card > p { line-height:1.65; margin:0; }
+@media(max-width:900px) { .install-page #windows .windows-steps li { padding:24px 18px; } }
+@media(max-width:700px) { .install-page #windows .windows-steps { grid-template-columns:1fr; } .install-page #windows .windows-steps li { min-height:0; padding:22px 25px; }
+ .install-page #windows .windows-steps li:not(:last-child) { border-right:0; border-bottom:1px solid rgba(55,50,100,.12); }
+ .install-page #windows .windows-steps .step-n { margin-bottom:14px; }
+}
