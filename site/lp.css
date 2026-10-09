@@ -981,3 +981,35 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .integration-tools li { font-size:12px; gap:7px; padding:10px 8px; } .integration-flow { height:42px; padding:0; } .integration-flow span { width:1px; height:30px; } .integration-flow span:last-child,.integration-flow i { display:none; }
  .integration-down { height:44px; } .integration-down span { height:34px; } .integration-result { margin-top:0; padding:23px; gap:17px; } .integration-action { margin:0; } }
 @media(prefers-reduced-motion:reduce) { .integration-tools li,.integration-action { transition:none; transform:none!important; } }
+
+
+/* Install: extension as a useful product moment instead of an empty white box. */
+.install-page #rozsireni { background:radial-gradient(ellipse 53% 54% at 22% 63%,rgba(98,96,216,.12),transparent 85%),#f2f0f7; }
+.install-page .extension-layout { display:grid; grid-template-columns:minmax(0,1.13fr) minmax(320px,.87fr); align-items:center; gap:clamp(22px,4vw,56px); }
+.install-page .extension-instructions { min-width:0; padding:clamp(28px,3vw,46px); border-radius:26px; align-self:stretch; align-content:center; gap:20px; }
+.install-page .extension-instructions .rozsireni-akce { margin:0; }
+.install-page .extension-instructions .btn { min-height:52px; }
+.install-page .extension-display { min-width:0; position:relative; overflow:visible; border-radius:26px; background:#1d1b28;
+  border:1px solid rgba(255,255,255,.14); box-shadow:0 34px 65px -37px rgba(25,18,60,.45); color:#f6f3fa; }
+.extension-display-top { display:flex; align-items:center; gap:6px; min-height:46px; padding:0 20px; border-bottom:1px solid rgba(255,255,255,.09); }
+.extension-dot { width:7px; height:7px; background:#6c6776; border-radius:50%; }
+.extension-address { margin:auto; color:#a9a3b7; font-size:12px; letter-spacing:.02em; }
+.extension-display-body { padding:clamp(20px,3vw,36px); display:grid; gap:23px; }
+.extension-app { display:flex; align-items:center; gap:10px; font-size:17px; }
+.extension-linked { margin-left:auto; color:#83e2ca; font-size:11px; }
+.extension-linked i { display:inline-block; width:6px; height:6px; margin-left:6px; border-radius:50%; background:#66d9bd; }
+.extension-conversation,.extension-received { padding:20px; display:flex; align-items:center; gap:15px; border-radius:18px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.045); }
+.extension-profile { width:45px; height:45px; border-radius:13px; display:grid; place-items:center; background:rgba(255,255,255,.075); }
+.extension-profile img { filter:brightness(0) invert(1); }
+.extension-conversation strong,.extension-received strong { font-size:15px; font-weight:500; }
+.extension-conversation p,.extension-received small { display:block; margin-top:4px; color:#aea8bb; font-size:12px; }
+.extension-signal { display:flex; justify-content:center; align-items:center; gap:9px; }
+.extension-signal span { height:1px; width:55px; background:linear-gradient(90deg,transparent,rgba(172,165,240,.6)); }
+.extension-signal span:last-child { transform:rotate(180deg); }
+.extension-signal i { width:7px; height:7px; border-radius:50%; background:#a8a1ec; box-shadow:0 0 15px #8a7dea55; }
+.extension-received b { margin-left:auto; color:#80dfc4; font-size:20px; }
+.extension-mascot { position:absolute; top:-43px; right:25px; width:66px; transform:rotate(18deg); filter:drop-shadow(0 12px 14px #0c0b1250); }
+.extension-mascot img { display:block; width:100%; }
+@media(max-width:900px) { .install-page .extension-layout { grid-template-columns:minmax(0,1fr); } .install-page .extension-display { max-width:700px; margin:auto; width:100%; } }
+@media(max-width:620px) { .install-page .extension-display-body { padding:19px; gap:15px; } .extension-mascot { width:46px; top:-25px; } }
+@media(prefers-reduced-motion:reduce) { .install-page .extension-display * { animation:none!important; } }
