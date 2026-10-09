@@ -1435,3 +1435,6 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 }
 #soukromi .privacy-card .privacy-orb::after { border-color:rgba(235,226,255,.17); }
 #soukromi .privacy-orb svg { color:#fff; filter:drop-shadow(0 2px 5px rgba(23,14,72,.35)); }
+
+/* Installation steps: centre the numbered markers without changing text alignment. */
+#vyzkouset .steps li .step-n { justify-self:center; text-align:center; width:max-content; }
