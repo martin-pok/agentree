@@ -318,7 +318,12 @@ try {
         const poKlavese = await ustal();
         assert.ok(poKlavese - predKlavesou > 300, `${engine}: Page Down posunul jen o ${poKlavese - predKlavesou} px`);
         await p.click('.nav-links a[href="#soukromi"]');
-        await ustal();
+        // WebKit can schedule the native smooth anchor scroll after a quiet 200 ms window.
+        // Wait for the actual target position instead of mistaking that pause for completion.
+        await p.waitForFunction(() => {
+          const top = document.getElementById('soukromi').getBoundingClientRect().top;
+          return top >= 0 && top <= 80;
+        }, null, { timeout: 7000 });
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
         assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
         await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
