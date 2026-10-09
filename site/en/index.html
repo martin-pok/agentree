@@ -156,11 +156,11 @@
     <h2 id="privacy-heading"><span class="radek"><span>Your work</span></span> <span class="radek"><span>should stay yours.</span></span></h2>
     <p class="lead">Your conversation text, code and project names never leave your Mac. Agenteeq reads them only there.</p>
   </div>
-  <div class="wrap facts">
-    <article><h3>An account only if you want one</h3><p>Agenteeq works without signing up. With a Google account you also see tokens, spend and limits on the web, always as summary numbers, never conversation content.</p></article>
-    <article><h3>Your overview on your phone</h3><p>On the same Wi-Fi or over Tailscale, scan the QR code in the app and your phone is paired. It sees your agents’ status; transcripts stay on your Mac.</p></article>
-    <article><h3>No tracking</h3><p>No analytics and no ad trackers. Fonts and the interface ship with the app, nothing is loaded from third-party servers.</p></article>
-  </div>
+  <div class="wrap privacy-stage"><div class="privacy-peek" aria-hidden="true" data-privacy-robot></div><div class="facts">
+    <article class="privacy-card privacy-card--1"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><rect x="12" y="21" width="40" height="33" rx="11" stroke="currentColor" stroke-width="2.5"/><path d="M22 21v-5a10 10 0 0 1 20 0v5" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="38" r="4" fill="currentColor"/></svg></span></div><h3>An account only if you want one</h3><p>Agenteeq works without signing up. With a Google account you also see tokens, spend and limits on the web, always as summary numbers, never conversation content.</p></article>
+    <article class="privacy-card privacy-card--2"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><rect x="18" y="5" width="28" height="54" rx="8" stroke="currentColor" stroke-width="2.5"/><rect x="23" y="12" width="18" height="32" rx="4" stroke="currentColor" stroke-width="1.7" opacity=".5"/><path d="M29 51h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="28" r="5" fill="currentColor"/></svg></span></div><h3>Your overview on your phone</h3><p>On the same Wi-Fi or over Tailscale, scan the QR code in the app and your phone is paired. It sees your agents’ status; transcripts stay on your Mac.</p></article>
+    <article class="privacy-card privacy-card--3"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><path d="M32 6 54 16v16c0 15-10 22-22 27C20 54 10 47 10 32V16L32 6Z" stroke="currentColor" stroke-width="2.5"/><path d="m23 32 6 6 13-14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><h3>No tracking</h3><p>No analytics and no ad trackers. Fonts and the interface ship with the app, nothing is loaded from third-party servers.</p></article>
+  </div></div>
 </section>
 
 <section class="unit" id="vyzkouset" aria-labelledby="start-heading">
@@ -227,25 +227,20 @@
 </section>
 
 <section class="unit unit--tint" id="otazky" aria-labelledby="faq-heading">
-  <div class="wrap unit-head">
+  <div class="wrap faq-layout"><div class="unit-head faq-intro">
     <h2 id="faq-heading"><span class="radek"><span>Before you start.</span></span></h2>
-  </div>
-  <div class="wrap rows">
-    <details><summary>How much does it cost?</summary><p>During the beta, Agenteeq is free with every feature. We will publish pricing for the paid version before the beta ends.</p></details>
-    <details><summary>Does it show what I spend on AI?</summary><p>Yes. It recognises your Claude and ChatGPT plan on its own, with the tier and its list price. It loads API costs from the Anthropic and OpenAI Admin APIs, broken down by model. It never converts tokens into money, it shows only verified amounts.</p></details>
-    <details><summary>Do I have to set anything up?</summary><p>No. Agenteeq finds the tools on your Mac as soon as you start them. Add the extension for web chats, API costs or an account whenever you want them.</p></details>
-    <details><summary>Can anyone else see my conversations?</summary><p>No. Agenteeq reads transcripts only on your Mac and sends them nowhere. Account sync carries summary numbers only.</p></details>
-    <details><summary>What about Windows?</summary><p>The Windows version is in beta. Download it above; the <a href="/en/install#windows">install page</a> lists how it differs from the Mac.</p></details>
-  </div>
+    <p class="faq-caption">Good answers before your first agent starts working.</p></div>
+  <div class="rows faq-list">
+    <details name="agenteeq-faq"><summary>How much does it cost?</summary><p>During the beta, Agenteeq is free with every feature. We will publish pricing for the paid version before the beta ends.</p></details>
+    <details name="agenteeq-faq"><summary>Does it show what I spend on AI?</summary><p>Yes. It recognises your Claude and ChatGPT plan on its own, with the tier and its list price. It loads API costs from the Anthropic and OpenAI Admin APIs, broken down by model. It never converts tokens into money, it shows only verified amounts.</p></details>
+    <details name="agenteeq-faq"><summary>Do I have to set anything up?</summary><p>No. Agenteeq finds the tools on your Mac as soon as you start them. Add the extension for web chats, API costs or an account whenever you want them.</p></details>
+    <details name="agenteeq-faq"><summary>Can anyone else see my conversations?</summary><p>No. Agenteeq reads transcripts only on your Mac and sends them nowhere. Account sync carries summary numbers only.</p></details>
+    <details name="agenteeq-faq"><summary>What about Windows?</summary><p>The Windows version is in beta. Download it above; the <a href="/en/install#windows">install page</a> lists how it differs from the Mac.</p></details>
+  </div></div>
 </section>
 
 </main>
 
-<footer><div class="wrap foot-in">
-  <a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
-  <p>More focus. Less switching.</p>
-  <a class="text-link" href="#obsah">Back to top ↑</a>
-  <p class="foot-note">Service names and logos belong to their owners. <a href="/en/install">Install</a> · <a href="/en/privacy">Privacy policy</a></p>
-</div></footer>
+<footer class="site-footer"><div class="wrap footer-stage"><div class="footer-orbit" aria-hidden="true" data-footer-robot></div><div class="footer-main"><p class="footer-eyebrow">YOUR WORK. YOUR SPACE.</p><h2>Make room for<br><em>the next idea.</em></h2><p class="footer-sub">Keep the agents running. Stay in the flow.</p><a class="btn btn--lg footer-download" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Get Agenteeq for Mac <span aria-hidden="true">↗</span></a></div></div><div class="wrap foot-in footer-bottom"><a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a><p class="foot-note">Service names and logos belong to their owners. <a href="/en/install">Install</a> · <a href="/en/privacy">Privacy policy</a></p><a class="text-link" href="#obsah">Back to top ↑</a></div></footer>
 </body>
 </html>
