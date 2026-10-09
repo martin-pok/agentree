@@ -27,11 +27,11 @@
 <link rel="stylesheet" href="/lp.css">
 <script type="module" src="/lp.js"></script>
 </head>
-<body>
+<body class="install-page">
 <a class="skip" href="#obsah">Skip to content</a>
 
 <header class="nav"><div class="wrap nav-in">
-  <a class="brand" href="/en" aria-label="Agenteeq – home"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <a class="brand" href="/en" aria-label="Agenteeq – home"><img src="/brand-mark-clean.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
   <nav class="nav-links" aria-label="Page sections"><a href="#mac">Mac</a><a href="#windows">Windows</a><a href="#rozsireni">Extension</a><a href="#potize">Troubleshooting</a></nav>
   <div class="lang" role="group" aria-label="Page language"><a href="/instalace" lang="cs" hreflang="cs" aria-label="Čeština">CZ</a><a href="/en/install" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
   <a class="btn btn--sm" href="/en">Home<span class="nav-cta-extra"> and tour</span></a>
@@ -49,6 +49,14 @@
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
     </div>
     <p class="specs"><span>Mac with Apple silicon (M1 or later)</span><span>macOS 14 or later</span><span>Windows 10 and 11 as a beta</span></p>
+    <div class="install-hero-scene" role="img" aria-label="Install Agenteeq: download the app, move to Applications, open">
+<div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Download the app</strong><small>Open the downloaded file</small></span></div>
+<span class="install-hero-link" aria-hidden="true"></span>
+<div class="install-hero-step install-hero-step--featured"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2H10l2 2h6.5a2 2 0 0 1 2 2v10h-17V7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Move to Applications</strong><small>Drag the app to the folder</small></span><span class="install-hero-robot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt="" width="50" height="50"></span></div>
+<span class="install-hero-link" aria-hidden="true"></span>
+<div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4.3 4.3L19 6.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Open Agenteeq</strong><small>Allow once if prompted</small></span></div>
+</div>
+
   </div>
 </section>
 
@@ -60,14 +68,15 @@
   </div>
 
   <ol class="wrap steps steps--ctyri">
-    <!-- mac:zip -->
-    <li><span class="step-n" aria-hidden="true">1</span><b>Download and unzip</b><p>Click <b>Download for Mac</b>. A ZIP file appears in your Downloads – double-click it to unzip Agenteeq.</p></li>
-    <li><span class="step-n" aria-hidden="true">2</span><b>Drag it to Applications</b><p>In Finder, drag Agenteeq into the <b>Applications</b> folder. That’s the installation.</p></li>
-    <!-- /mac:zip -->
+
     <!-- mac:dmg -->
     <li><span class="step-n" aria-hidden="true">1</span><b>Download and open</b><p>Click <b>Download for Mac</b> and double-click Agenteeq in your Downloads. A window opens with the app and the Applications folder.</p></li>
     <li><span class="step-n" aria-hidden="true">2</span><b>Drag it to Applications</b><p>In that window, drag Agenteeq onto the <b>Applications</b> folder. That’s the installation; then close the window.</p></li>
     <!-- /mac:dmg -->
+    <!-- mac:zip -->
+    <li><span class="step-n" aria-hidden="true">1</span><b>Download and extract</b><p>Click <b>Download for Mac</b> and open the downloaded ZIP to extract the app.</p></li>
+    <li><span class="step-n" aria-hidden="true">2</span><b>Move it to Applications</b><p>Move the extracted Agenteeq app into the <b>Applications</b> folder.</p></li>
+    <!-- /mac:zip -->
     <li><span class="step-n" aria-hidden="true">3</span><b>Open it</b><p>Open Agenteeq from the Applications folder. macOS says it can’t verify the app. Close the dialog – don’t move the app to the Trash.</p></li>
     <li><span class="step-n" aria-hidden="true">4</span><b>Allow it in Settings</b><p>Open <b>System Settings → Privacy &amp; Security</b>, scroll down to Security and click <b>Open Anyway</b>. Enter your Mac password and confirm with <b>Open</b>.</p></li>
   </ol>
@@ -95,7 +104,7 @@
     <a class="btn btn--lg" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
   </div>
 
-  <ol class="wrap steps">
+  <ol class="wrap steps windows-steps">
     <li><span class="step-n" aria-hidden="true">1</span><b>Extract the ZIP</b><p>Right-click the downloaded <span class="bez-zlomu">Agenteeq-…-Windows-x64.zip</span> file and choose <b>Extract All</b>. You get an Agenteeq folder.</p></li>
     <li><span class="step-n" aria-hidden="true">2</span><b>Run Agenteeq.exe</b><p>Leave the folder where it is or move it. Inside, double-click <b>Agenteeq.exe</b>.</p></li>
     <li><span class="step-n" aria-hidden="true">3</span><b>Confirm SmartScreen</b><p>The build isn’t signed yet, so Windows shows a SmartScreen warning. Click <b>More info</b>, then <b>Run anyway</b>.</p></li>
@@ -115,10 +124,16 @@
     <h2 id="ext-heading"><span class="radek"><span>Web chats via the extension.</span></span></h2>
     <p class="lead">ChatGPT, Claude.ai, Gemini and other web services join the overview through the Chrome extension. It also works in Brave, Arc and Edge.</p>
   </div>
-  <div class="wrap instalace-dalsi">
-    <div class="gatekeeper">
+  <div class="wrap instalace-dalsi extension-layout">
+    <div class="extension-display" aria-label="Illustration: browser conversation connected to the Agenteeq overview" role="img">
+ <div class="extension-display-top"><span class="extension-dot"></span><span class="extension-dot"></span><span class="extension-dot"></span><span class="extension-address">chat.example</span></div>
+ <div class="extension-display-body"><div class="extension-app"><img src="/brand-mark-clean.svg" alt="" width="32" height="32"><span>Agenteeq</span><span class="extension-linked">Connected <i></i></span></div>
+ <div class="extension-conversation"><span class="extension-profile"><img src="/logos/openai.svg" alt="" width="24" height="24"></span><div><strong>Web conversation</strong><p>Available in your overview</p></div></div>
+ <div class="extension-signal"><span></span><i></i><span></span></div><div class="extension-received"><img src="/brand-mark-clean.svg" alt="" width="25" height="25"><div><strong>One overview</strong><small>Your agents, in one place</small></div><b aria-hidden="true">✓</b></div></div>
+ <div class="extension-mascot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt=""></div></div>
+    <div class="gatekeeper extension-instructions extension-store-card"><div class="extension-store-heading"><img src="/logos/chrome.svg" alt="" width="40" height="40"><div><strong>Google Chrome</strong><small>Chrome Web Store</small></div></div>
       <!-- rozsireni:obchod -->
-      <p class="rozsireni-akce"><a class="btn btn--sm" data-obchod-chrome href="#">Add to Chrome</a></p>
+      <p class="rozsireni-akce"><a class="btn btn--lg extension-cta" data-obchod-chrome href="#">Add to Chrome</a></p>
       <p>The extension pairs with the app on its own while Agenteeq is running.</p>
       <!-- /rozsireni:obchod -->
       <!-- rozsireni:rucne -->
@@ -148,11 +163,6 @@
 
 </main>
 
-<footer><div class="wrap foot-in">
-  <a class="brand" href="/en"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
-  <p>More focus. Less switching.</p>
-  <a class="text-link" href="#obsah">Back to top ↑</a>
-  <p class="foot-note">A development beta for macOS, with a trial build for Windows. Downloads are attachments of the latest release on <a href="https://github.com/martin-pok/agentree/releases/latest">GitHub</a>. <a href="/en/privacy">Privacy policy</a></p>
-</div></footer>
+<footer class="site-footer"><div class="wrap foot-in footer-bottom"><a class="brand" href="/en"><img src="/brand-mark-clean.svg" alt="" width="28" height="28"><span>Agenteeq</span></a><p class="foot-note">Service names and logos belong to their respective owners. <a href="/en/install">Install</a> · <a href="/en/privacy">Privacy policy</a></p><a class="text-link" href="#obsah">Back to top ↑</a></div></footer>
 </body>
 </html>

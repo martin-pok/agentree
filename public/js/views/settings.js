@@ -1165,7 +1165,7 @@ function update(topics) {
     ${head(hasAvatar(current) ? `<span class="avatar-mini">${avatarSvg(current)}</span>` : ICON.spark, tr('Profilový obrázek'), tr('Rychlá změna: v postranním panelu na obrázek najeď a klikni – pokaždé se ukáže jiný.'))}
     <div class="avatar-grid" role="group" aria-label="${tr('Vyber profilový obrázek')}">
       <button class="avatar-pick" type="button" data-avatar-pick="i" aria-pressed="${!hasAvatar(current)}" aria-label="${tr('Iniciály')}">${esc(initials(who || 'Agenteeq'))}</button>
-      ${Array.from({ length: AVATAR_COUNT }, (_, k) => `<button class="avatar-pick" type="button" data-avatar-pick="${k}" aria-pressed="${current === k}" aria-label="${tr('Abstraktní obrázek')} ${k + 1}">${avatarSvg(k)}</button>`).join('')}
+      ${Array.from({ length: AVATAR_COUNT }, (_, k) => `<button class="avatar-pick" type="button" data-avatar-pick="${k}" aria-pressed="${current === k}" aria-label="${tr('Robot')} ${k + 1}">${avatarSvg(k)}</button>`).join('')}
     </div>`);
 
   /* Licence */

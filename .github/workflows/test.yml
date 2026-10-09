@@ -115,6 +115,10 @@ jobs:
       - name: Sestavit
         run: npm run build:mac
 
+      # 0.46 ships a custom Finder DMG; validate the exact installer path before tagging.
+      - name: Sestavit a ověřit instalátor DMG
+        run: npm run build:dmg
+
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 

@@ -62,10 +62,10 @@ try {
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
             return {
-              videt: Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
+              videt: innerWidth <= 620 ? Boolean(document.querySelector('[data-mobile-menu-toggle]') && getComputedStyle(document.querySelector('[data-mobile-menu-toggle]')).display !== 'none') : Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
               prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)),
               jazyk: document.documentElement.lang,
-              aktualni: document.querySelector('.lang [aria-current="page"]')?.getAttribute('lang'),
+              aktualni: document.querySelector(innerWidth <= 620 ? '.mobile-menu-languages [aria-current="page"]' : '.lang [aria-current="page"]')?.getAttribute('lang'),
             };
           });
           const cekanyJazyk = stranka === '/en' ? 'en' : 'cs';
@@ -99,6 +99,29 @@ try {
           await page.locator('a[href="#rozsireni"]').click();
           await page.waitForFunction(() => document.getElementById('rozsireni').open);
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), '');
+          const accordion = await page.evaluate(() => {
+            const rows = [...document.querySelectorAll('#vyzkouset .rows > details')];
+            const badges = rows.map(row => row.querySelector('.detail-tag').getBoundingClientRect().right);
+            const plus = rows.map(row => {
+              const summary = row.querySelector('summary');
+              const rect = summary.getBoundingClientRect();
+              const css = getComputedStyle(summary);
+              return rect.right - parseFloat(css.paddingRight) - 14;
+            });
+            const extension = rows[0];
+            return {
+              badges, plus,
+              borderTop: getComputedStyle(document.querySelector('#vyzkouset .rows')).borderTopWidth,
+              highlightBottom: getComputedStyle(extension).borderBottomWidth,
+              nextTop: getComputedStyle(rows[1]).borderTopWidth,
+              radius: parseFloat(getComputedStyle(extension).borderTopLeftRadius),
+              mascot: getComputedStyle(extension.querySelector('.robot-shell')).fill,
+            };
+          });
+          assert.ok(Math.abs(accordion.badges[0] - accordion.badges[1]) <= 1 && Math.abs(accordion.plus[0] - accordion.plus[1]) <= 1, `${engine} ${theme} ${width} ${stranka}: odznaky a plus nejsou v jedné ose`);
+          assert.deepEqual([accordion.borderTop, accordion.highlightBottom, accordion.nextTop], ['0px', '0px', '0px'], `${engine} ${theme} ${width} ${stranka}: kolidující linka accordiona`);
+          assert.ok(accordion.radius >= 18 && accordion.mascot !== 'rgb(0, 0, 0)', `${engine} ${theme} ${width} ${stranka}: okraje nebo robot rozšíření`);
+          if ([375, 1440].includes(width)) await page.locator('#vyzkouset').screenshot({ path: `${output}/${engine}-${theme}-${width}${stranka === '/en' ? '-en' : ''}-stazeni.png` });
           await page.locator('#rozsireni summary').focus();
           await page.keyboard.press('Enter');
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), null);
@@ -288,11 +311,19 @@ try {
           setTimeout(() => { clearInterval(t); hotovo(scrollY); }, 4000);
         }));
         const predKlavesou = await ustal();
+        // WebKit headless can leave focus on an internal non-scrollable target after wheel.
+        // Give keyboard input an explicit document scroll target, as a real user would via Tab.
+        await p.evaluate(() => { document.body.tabIndex = -1; document.body.focus({ preventScroll: true }); });
         await p.keyboard.press('PageDown');
         const poKlavese = await ustal();
         assert.ok(poKlavese - predKlavesou > 300, `${engine}: Page Down posunul jen o ${poKlavese - predKlavesou} px`);
         await p.click('.nav-links a[href="#soukromi"]');
-        await ustal();
+        // WebKit can schedule the native smooth anchor scroll after a quiet 200 ms window.
+        // Wait for the actual target position instead of mistaking that pause for completion.
+        await p.waitForFunction(() => {
+          const top = document.getElementById('soukromi').getBoundingClientRect().top;
+          return top >= 0 && top <= 80;
+        }, null, { timeout: 7000 });
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
         assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
         await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
@@ -382,6 +413,9 @@ try {
       });
       await motionPage.mouse.up();
       await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
+      // Posun spustí nástup nadpisu sekce až ve chvíli, kdy ho observer uvidí (asynchronně).
+      // Počkat na něj, jinak by kontrola proběhla dřív, než nástup začne, a doběh by nestihla.
+      await motionPage.waitForFunction(() => document.querySelector('#prohlidka .unit-head')?.classList.contains('motion-entered'), null, { timeout: 4000 });
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.0 – 2026-10-09 · Nový úvod webu s roboty, robotí profilové obrázky
+
+- **Úvod webu ukazuje celou aplikaci.** Místo úzkého pruhu je pod nadpisem skutečný Přehled (pozdrav s robotem, pole pro zadání, rozhodnutí, stav agentů, roboti v „Právě teď“) v okně, které stojí nakloněné v prostoru a při posouvání se plynule narovná. Kolem okna roboti Agenteeq ve třech hloubkách – vzdálení malí a rozostření, blízcí velcí a rozostření, střední ostří – se skleněnými bublinami („Hotovo, testy prošly“, „Potřebuju tvé OK“). Na Macu se roboti lehce posouvají s myší. Roboti jednou přiletí a dál se hýbou jen s posouváním a myší (žádná smyčka); při omezeném pohybu je okno rovné a roboti stojí. Na telefonu zůstanou dva malí nad hranou okna, aby nic nezakrývali. Snímky vznikají z ukázkové scény skriptem `npm run shots:hero`.
+- **Profilové obrázky jsou roboti.** 29 abstraktních obrázků v původní teplé paletě nahradilo 29 robotů ze stejného tvarosloví jako logo: liší se barvou, tvarem očí (kapsle, kulaté, šťastné, mrknutí, vizor, jedno oko, hvězdičky) a anténou (kulička, dvojitá, blesk, uši, srdíčko). Uložená volba zůstává na stejném pořadí. Vybraný obrázek má fialový kroužek značky místo okrového.
+- **Dokončená stránka Stažení a Instalace.** Dlaždice rozšíření mají srovnané štítky i ovládání bez kolidujících linek, stažení pro Mac a Windows používá plné fialové ikony a instalační postup odpovídá skutečně nabízenému DMG nebo záložnímu ZIPu. Podklady pro Chrome jsou místní, takže vzhled nezávisí na načtení cizího obrázku.
+
 ## 0.45.1 – 2026-10-08 · Robot i v prázdných stavech
 
 - **Prázdné stavy v novém stylu.** Místo tří barevných tvarů (kolečko, čtverec, trojúhelník) z původní značky ukazuje každá prázdná stránka – třeba Dovednosti, když na počítači žádné nejsou – hlavu robota Agenteeq se zavřenýma očima: odpočívá, protože tu zatím nic není. Je ve značkové fialové (v tmavém vzhledu světlejší), anténa jemně dýchá; při omezení pohybu stojí.

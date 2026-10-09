@@ -33,30 +33,45 @@
 <a class="skip" href="#obsah">Přeskočit na obsah</a>
 
 <header class="nav"><div class="wrap nav-in">
-  <a class="brand" href="/" aria-label="Agenteeq – domů"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
+  <a class="brand" href="/" aria-label="Agenteeq – domů"><img src="/brand-mark-clean.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
   <nav class="nav-links" aria-label="Sekce stránky"><a href="#prohlidka">Prohlídka</a><a href="#propojeni">Propojení</a><a href="#soukromi">Soukromí</a><a href="/instalace">Instalace</a></nav>
   <div class="lang" role="group" aria-label="Jazyk stránky"><a href="/" lang="cs" hreflang="cs" aria-current="page" aria-label="Čeština">CZ</a><a href="/en" lang="en" hreflang="en" aria-label="English">EN</a></div>
   <a class="btn btn--sm" href="#vyzkouset">Stáhnout<span class="nav-cta-extra"> pro Mac</span></a>
+  <button class="mobile-menu-toggle" type="button" aria-label="Otevřít nabídku" aria-expanded="false" aria-controls="mobile-site-menu" data-mobile-menu-toggle><span class="hamburger-lines" aria-hidden="true"><i></i><i></i></span></button>
 </div></header>
+<div class="mobile-menu" id="mobile-site-menu" aria-hidden="true" inert data-mobile-menu>
+  <div class="mobile-menu-surface">
+    <div class="mobile-menu-header"><span>Navigace</span><button type="button" class="mobile-menu-close" aria-label="Zavřít nabídku" data-mobile-menu-close>×</button></div>
+    <nav aria-label="Mobilní navigace"><a href="#prohlidka">Prohlídka</a><a href="#propojeni">Propojení</a><a href="#soukromi">Soukromí</a><a href="/instalace">Instalace</a></nav>
+    <a class="mobile-menu-download" href="#vyzkouset">Stáhnout pro Mac <span aria-hidden="true">↗</span></a>
+    <div class="mobile-menu-languages" aria-label="Jazyk"><a href="/" lang="cs" hreflang="cs" aria-current="page">CZ</a><a href="/en" lang="en" hreflang="en">EN</a></div>
+  </div>
+</div>
+
 
 <main id="obsah">
 
 <section class="unit unit--dark hero" aria-labelledby="hero-title">
   <div class="wrap unit-head">
-    <p class="kicker">Agenteeq pro Mac</p>
+    <p class="kicker">Agenteeq pro macOS</p>
     <h1 id="hero-title"><span class="radek"><span>Každý agent má svůj úkol.</span></span> <span class="radek radek--tichy"><span>Ty máš přehled.</span></span></h1>
     <p class="lead">Claude Code, Codex, Cursor i webové chaty v jednom přehledu. Hned vidíš, kdo pracuje, kdo čeká na tvé rozhodnutí a kolik ti zbývá z limitů.</p>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
       <a class="text-link" href="#prohlidka">Podívat se dovnitř <span aria-hidden="true">↓</span></a>
     </div>
-    <p class="specs"><span>Apple Silicon</span><span>macOS 14 a novější</span><span>zdarma v betě</span></p>
+    
   </div>
   <figure class="wrap hero-figure detail">
-    <picture class="hero-shot">
-      <source media="(max-width: 620px)" srcset="/detail/stav-mobil.webp" width="342" height="170">
-      <img src="/detail/stav.webp" width="1072" height="174" alt="Pruh stavu v Agenteeq: dva agenti pracují, jeden potřebuje tvoje rozhodnutí, žádný neselhal a jeden čeká na zadání. Pod tím čtyři aktivní agenti s tím, co právě dělají." fetchpriority="high">
-    </picture>
+    <div class="hero-stage is-rovne" data-hero-stage>
+      <div class="hero-tilt">
+        <picture class="hero-shot">
+          <source media="(max-width: 620px)" srcset="/detail/prehled-mobil.webp" width="390" height="844">
+          <img src="/detail/prehled.webp" width="1440" height="1080" alt="Přehled v Agenteeq: pozdrav s robotem, pole pro zadání, jeden agent čekající na tvé rozhodnutí vedle stavu agentů a pod tím čtyři roboti v „Právě teď“ – každý s tím, co jeho agent právě dělá." fetchpriority="high">
+        </picture>
+      </div>
+      <div class="hero-roboti" data-hero-roboti aria-hidden="true"></div>
+    </div>
   </figure>
 </section>
 
@@ -67,7 +82,7 @@
   </div>
   <div class="wrap tiles">
     <article class="tile tile--wide tile--crop" aria-labelledby="t-vcas">
-      <h3 id="t-vcas">Všimni si včas.</h3>
+      <h3 id="t-vcas">Důležité změny ti neuniknou.</h3>
       <p>Upozornění přijde, když agent čeká na schválení, dokončí práci nebo mu dochází limit. Žádné kontrolování oken jedno po druhém.</p>
       <figure class="tile-shot detail">
         <picture>
@@ -77,72 +92,45 @@
       </figure>
     </article>
     <article class="tile tile--fit" aria-labelledby="t-ceka">
-      <h3 id="t-ceka">Čeká na tebe.</h3>
+      <h3 id="t-ceka">Hned víš, kdo čeká na schválení.</h3>
       <p>Agent, který potřebuje tvé rozhodnutí, je nahoře i s tlačítkem, které tě vrátí přímo do konverzace.</p>
-      <figure class="tile-shot detail">
-        <picture>
-          <source media="(max-width: 620px)" srcset="/detail/rozhodnuti-mobil.webp" width="342" height="142">
-          <img src="/detail/rozhodnuti.webp" width="408" height="142" alt="Karta Potřebuje tvé rozhodnutí: Codex u migrace API žádá o povolení zápisu nové konfigurace, s tlačítkem Pokračovat v Terminálu." loading="lazy">
-        </picture>
-      </figure>
+      <div class="tile-shot tile-shot--ui"><div class="sc-showcase-frame"><div class="showcase showcase--decision" role="img" aria-label="Ukázka: agent čeká na schválení migrace API"><div class="sc-top"><span class="sc-label">ČEKÁ NA ROZHODNUTÍ</span><span class="sc-status sc-status--pink"><span class="sc-led"></span>Potřebuje tebe</span></div><div class="sc-agent"><span class="sc-agentmark sc-agentmark--logo"><img src="/logos/openai.svg" alt="" width="26" height="26"></span><span><strong>Codex</strong><small>Migrace API · právě teď</small></span></div><p class="sc-question">Povolit zápis nové konfigurace?</p><div class="sc-actions"><span class="sc-action-main">Pokračovat v Terminálu <span aria-hidden="true">↗</span></span><span class="sc-caption">Čeká na tvé rozhodnutí</span></div></div></div></div>
     </article>
     <article class="tile tile--fit" aria-labelledby="t-limit">
       <h3 id="t-limit">Limit pod kontrolou.</h3>
       <p>Kolik ti zbývá z pětihodinového i týdenního limitu a kdy se obnoví. Bez překvapení uprostřed úkolu.</p>
-      <figure class="tile-shot detail">
-        <picture>
-          <source media="(max-width: 620px)" srcset="/detail/limit-mobil.webp" width="342" height="103">
-          <img src="/detail/limit.webp" width="408" height="81" alt="Okno limitu Claude Code na pět hodin: vyčerpáno 62 %, v pohodě pro běžnou práci, obnova za dvě hodiny." loading="lazy">
-        </picture>
-      </figure>
+      <div class="tile-shot tile-shot--ui"><div class="sc-showcase-frame"><div class="showcase showcase--limits" role="img" aria-label="Ukázka: pětihodinový limit Claude Code, využito 62 procent"><div class="sc-top"><span class="sc-label">PŘEHLED LIMITŮ</span><span class="sc-meta">Aktuální stav</span></div><div class="sc-limit-head"><span class="sc-agentmark sc-agentmark--claude sc-agentmark--logo"><img src="/logos/claude.svg" alt="" width="27" height="27"></span><span><strong>Claude Code</strong><small>Pětihodinové okno</small></span></div><div class="sc-amount"><strong>62<span>%</span></strong><span>využito</span></div><div class="sc-meter"><i style="--used:62%"></i></div><div class="sc-meter-labels"><span>0 % využito</span><span>100 %</span></div><div class="sc-limit-foot"><span class="sc-good"><span class="sc-led"></span>V rámci limitu</span><span>Obnova za 2 h</span></div></div></div></div>
     </article>
     <article class="tile tile--crop" aria-labelledby="t-kontext">
       <h3 id="t-kontext">Vrať se do kontextu.</h3>
       <p>Projekty spojí konverzace ze všech nástrojů podle pracovní složky. Ráno víš, kde jsi včera skončil.</p>
-      <figure class="tile-shot detail">
-        <picture>
-          <source media="(max-width: 620px)" srcset="/detail/projekt-lumen-mobil.webp" width="342" height="378">
-          <img src="/detail/projekt-lumen.webp" width="420" height="366" alt="Karta projektu E-shop Lumen: aktivita rozložená do posledních dní, dvě konverzace, 335 tisíc tokenů za 30 dní a nástroje Claude Code a Codex." loading="lazy">
-        </picture>
-      </figure>
+      <div class="tile-shot tile-shot--ui"><div class="sc-showcase-frame"><div class="showcase showcase--project" role="img" aria-label="Ukázkový projekt Client XYZ, konverzace a poslední aktivita"><div class="sc-top"><span class="sc-label">PROJEKTOVÝ PŘEHLED</span><span class="sc-meta">↗</span></div><div class="sc-project-title"><span class="sc-project-icon sc-project-icon--client"><img src="/client-xyz-mark.svg" alt="" width="32" height="32"></span><span><strong>Client XYZ</strong><small>Web a aplikace</small></span></div><div class="sc-project-detail"><span><strong>02</strong><small>Konverzace</small></span><span><strong>335k</strong><small>Tokenů / 30 dní</small></span></div><div class="sc-chart" aria-hidden="true"><i style="--h:22%"></i><i style="--h:49%"></i><i style="--h:32%"></i><i style="--h:72%"></i><i style="--h:55%"></i><i style="--h:88%"></i><i style="--h:60%"></i><i style="--h:77%"></i><i style="--h:44%"></i><i style="--h:61%"></i><i style="--h:92%"></i><i style="--h:72%"></i></div><div class="sc-chart-caption"><span>Aktivita · posledních 12 dní</span><span>Claude Code + Codex</span></div></div></div></div>
     </article>
     <article class="tile tile--crop" aria-labelledby="t-data">
-      <h3 id="t-data">Víš, kolik tě AI stojí.</h3>
+      <h3 id="t-data">Náklady na AI na jednom místě.</h3>
       <p>Náklady z API rozepsané po modelech, předplatná s úrovní a cenou a rozpočet, který se hlídá sám.</p>
-      <figure class="tile-shot detail">
-        <img src="/detail/utrata-mobil.webp" width="342" height="366" alt="Útrata v Agenteeq: 70 % měsíčního rozpočtu, utraceno 4 209 Kč." loading="lazy">
-      </figure>
+      <div class="tile-shot tile-shot--ui"><div class="sc-showcase-frame"><div class="showcase showcase--spend" role="img" aria-label="Ukázkový měsíční rozpočet: utraceno 4 209 Kč z 6 000 Kč"><div class="sc-top"><span class="sc-label">PŘEHLED NÁKLADŮ</span><span class="sc-meta">Tento měsíc</span></div><div class="sc-spend-label">Celkové náklady na AI</div><div class="sc-spend-total">4 209 <span>Kč</span></div><div class="sc-budget"><div class="sc-budget-meta"><span>Měsíční rozpočet</span><strong>70 %</strong></div><div class="sc-meter sc-meter--budget"><i style="--used:70%"></i></div><p>4 209 Kč z 6 000 Kč</p></div><div class="sc-cost-rows"><div><span class="sc-cost-dot"></span>Claude <b>2 890 Kč</b></div><div><span class="sc-cost-dot sc-cost-dot--alt"></span>OpenAI <b>1 319 Kč</b></div></div></div></div></div>
     </article>
   </div>
 </section>
 
 <section class="unit" id="propojeni" aria-labelledby="connections-heading">
-  <div class="wrap unit-head">
-    <h2 id="connections-heading"><span class="radek"><span>Z disku i prohlížeče.</span></span> <span class="radek"><span>Do jednoho přehledu.</span></span></h2>
-    <p class="lead">Nástroje na Macu najde Agenteeq sám, jakmile je spustíš. Webové chaty přidá rozšíření pro Chrome.</p>
-    <a class="text-link" href="#rozsireni">Přidat rozšíření <span aria-hidden="true">↓</span></a>
-  </div>
-  <div class="wrap sources">
-    <div class="source-group">
-      <h3>Na Macu</h3>
-      <ul class="logos">
-        <li><img src="/logos/claude.svg" alt="" width="40" height="40">Claude Code</li>
-        <li><img class="logo--mono" src="/logos/openai.svg" alt="" width="40" height="40">Codex</li>
-        <li><img class="logo--mono" src="/logos/cursor.svg" alt="" width="40" height="40">Cursor</li>
-        <li><img class="logo--mono" src="/logos/githubcopilot.svg" alt="" width="40" height="40">Copilot</li>
-      </ul>
-    </div>
-    <div class="source-group">
-      <h3>V prohlížeči <span class="tag">rozšíření · beta</span></h3>
-      <ul class="logos">
-        <li><img class="logo--mono" src="/logos/openai.svg" alt="" width="40" height="40">ChatGPT</li>
-        <li><img src="/logos/claude.svg" alt="" width="40" height="40">Claude.ai</li>
-        <li><img src="/logos/gemini.svg" alt="" width="40" height="40">Gemini</li>
-        <li><img src="/logos/perplexity.svg" alt="" width="40" height="40">Perplexity</li>
-      </ul>
-    </div>
-  </div>
-  <p class="wrap note">A k tomu Claude Desktop, Gemini CLI, Qwen Code, Windsurf, Zed, Warp a další nástroje na Macu. Na webu také Microsoft Copilot, GitHub Copilot, Grok a Qwen.</p>
+ <div class="wrap unit-head"><h2 id="connections-heading"><span class="radek"><span>Tvoje nástroje.</span></span><span class="radek"><span>Jeden přehled.</span></span></h2><p class="lead">Claude Code, Codex i webové AI služby na jednom místě. Propojení lokálních nástrojů funguje automaticky.</p></div>
+ <div class="wrap integration-map" aria-label="Schéma propojení Agenteeq">
+ <div class="integration-lane"><div class="integration-heading"><div><h3>NA MACU</h3><p>Automaticky z lokálních nástrojů</p></div></div><ul class="integration-tools">
+ <li><img src="/logos/claude.svg" alt="" width="27" height="27"><span>Claude Code</span></li>
+ <li><img src="/logos/openai.svg" class="logo--mono" alt="" width="27" height="27"><span>Codex</span></li>
+ <li><img src="/logos/cursor.svg" class="logo--mono" alt="" width="27" height="27"><span>Cursor</span></li>
+ <li><img src="/logos/githubcopilot.svg" class="logo--mono" alt="" width="27" height="27"><span>Copilot</span></li></ul></div>
+ <div class="integration-flow" aria-hidden="true"><span></span><i></i><span></span></div>
+ <div class="integration-lane"><div class="integration-heading"><div><h3>V PROHLÍŽEČI</h3><p>Přes rozšíření pro Chrome</p></div></div><ul class="integration-tools">
+ <li><img src="/logos/openai.svg" class="logo--mono" alt="" width="27" height="27"><span>ChatGPT</span></li>
+ <li><img src="/logos/claude.svg" alt="" width="27" height="27"><span>Claude.ai</span></li>
+ <li><img src="/logos/gemini.svg" alt="" width="27" height="27"><span>Gemini</span></li>
+ <li><img src="/logos/perplexity.svg" alt="" width="27" height="27"><span>Perplexity</span></li></ul></div>
+ <div class="integration-down" aria-hidden="true"><svg viewBox="0 0 1000 76" preserveAspectRatio="none" focusable="false"><path d="M 245 0 V 27 H 755 V 0 M 500 27 V 76"/></svg></div>
+ <div class="integration-result"><div class="integration-brand"><img src="/brand-mark-clean.svg" alt="" width="40" height="40"><strong>Agenteeq</strong></div><div><span class="integration-eyebrow">JEDEN PŘEHLED</span><p>Aktivita agentů, rozhodnutí a limity. Bez přepínání mezi okny.</p></div><a href="#rozsireni" class="integration-action">Nastavit rozšíření <span aria-hidden="true">↗</span></a></div>
+ </div><p class="wrap integration-more">Podporujeme také Claude Desktop, Gemini CLI, Qwen Code, Windsurf, Zed a Warp. Rozšíření funguje i s Copilotem, Grokem a Qwenem.</p>
 </section>
 
 <section class="unit unit--dark" id="soukromi" aria-labelledby="privacy-heading">
@@ -151,17 +139,17 @@
     <h2 id="privacy-heading"><span class="radek"><span>Tvoje práce</span></span> <span class="radek"><span>má zůstat tvoje.</span></span></h2>
     <p class="lead">Text konverzací, kód ani názvy projektů tvůj Mac neopustí. Agenteeq je čte jen u tebe.</p>
   </div>
-  <div class="wrap facts">
-    <article><h3>Účet, jen když ho chceš</h3><p>Agenteeq funguje bez registrace. S účtem Google uvidíš tokeny, útratu a limity i na webu, vždy jen jako souhrnná čísla, nikdy obsah konverzací.</p></article>
-    <article><h3>Přehled i na telefonu</h3><p>Ve stejné Wi-Fi nebo přes Tailscale načteš QR kód z aplikace a telefon je spárovaný. Vidí stav agentů, přepisy zůstávají na Macu.</p></article>
-    <article><h3>Bez sledování</h3><p>Žádná analytika ani reklamní měřiče. Písma i rozhraní jsou součástí aplikace, nic se nenačítá z cizích serverů.</p></article>
-  </div>
+  <div class="wrap privacy-stage"><div class="privacy-peek" aria-hidden="true" data-privacy-robot></div><div class="facts">
+    <article class="privacy-card privacy-card--1"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><rect x="12" y="21" width="40" height="33" rx="11" stroke="currentColor" stroke-width="2.5"/><path d="M22 21v-5a10 10 0 0 1 20 0v5" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="38" r="4" fill="currentColor"/></svg></span></div><h3>Účet, jen když ho chceš</h3><p>Agenteeq funguje bez registrace. S účtem Google uvidíš tokeny, útratu a limity i na webu, vždy jen jako souhrnná čísla, nikdy obsah konverzací.</p></article>
+    <article class="privacy-card privacy-card--2"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><rect x="18" y="5" width="28" height="54" rx="8" stroke="currentColor" stroke-width="2.5"/><rect x="23" y="12" width="18" height="32" rx="4" stroke="currentColor" stroke-width="1.7" opacity=".5"/><path d="M29 51h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="28" r="5" fill="currentColor"/></svg></span></div><h3>Přehled i na telefonu</h3><p>Telefon propojíš s aplikací pomocí QR kódu přes stejnou Wi-Fi síť nebo Tailscale. Uvidíš stav agentů, ale obsah konverzací zůstane na Macu.</p></article>
+    <article class="privacy-card privacy-card--3"><div class="privacy-art" aria-hidden="true"><span class="privacy-orb"><svg viewBox="0 0 64 64" fill="none"><path d="M32 6 54 16v16c0 15-10 22-22 27C20 54 10 47 10 32V16L32 6Z" stroke="currentColor" stroke-width="2.5"/><path d="m23 32 6 6 13-14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><h3>Bez sledování</h3><p>Žádná analytika ani reklamní měřiče. Písma i rozhraní jsou součástí aplikace, nic se nenačítá z cizích serverů.</p></article>
+  </div></div>
 </section>
 
 <section class="unit" id="vyzkouset" aria-labelledby="start-heading">
   <div class="wrap unit-head">
     <p class="kicker">Stažení</p>
-    <h2 id="start-heading"><span class="radek"><span>Stáhni, přesuň, spusť.</span></span></h2>
+    <h2 id="start-heading"><span class="radek"><span>Instalace během několika kroků.</span></span></h2>
     <p class="lead">Stáhneš, přetáhneš do Aplikací a napoprvé jednou povolíš. Hned potom vidíš své agenty.</p>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
@@ -172,13 +160,15 @@
   </div>
 
   <ol class="wrap steps">
-    <!-- mac:zip -->
-    <li><span class="step-n" aria-hidden="true">1</span><b>Rozbal stažený soubor</b><p>Ve Stahování se objeví Agenteeq. Dvojklikem se rozbalí.</p></li>
-    <!-- /mac:zip -->
+
     <!-- mac:dmg -->
     <li><span class="step-n" aria-hidden="true">1</span><b>Otevři stažený soubor</b><p>Ve Stahování dvakrát klikni na Agenteeq. Otevře se okno s aplikací a složkou Aplikace.</p></li>
-    <!-- /mac:dmg -->
     <li><span class="step-n" aria-hidden="true">2</span><b>Přetáhni ho do Aplikací</b><p>Tím je nainstalováno.</p></li>
+    <!-- /mac:dmg -->
+    <!-- mac:zip -->
+    <li><span class="step-n" aria-hidden="true">1</span><b>Rozbal stažený ZIP</b><p>Ve Stahování otevři stažený soubor. macOS rozbalí aplikaci Agenteeq.</p></li>
+    <li><span class="step-n" aria-hidden="true">2</span><b>Přesuň ho do Aplikací</b><p>Rozbalenou aplikaci přesuň do složky Aplikace.</p></li>
+    <!-- /mac:zip -->
     <li><span class="step-n" aria-hidden="true">3</span><b>Napoprvé ho povol v Nastavení</b><p>Otevři Agenteeq a dialog zavři. V <b>Nastavení systému → Soukromí a zabezpečení</b> sjeď dolů k části Zabezpečení, klikni na <b>Přesto otevřít</b> a potvrď heslem k Macu. <a href="/instalace#mac">Podrobný postup</a></p></li>
   </ol>
 
@@ -196,8 +186,10 @@
 
     <div class="rows">
       <details id="rozsireni"><summary>Přidat webové chaty přes rozšíření pro Chrome <span class="detail-tag" data-rozsireni-doba="2 minuty">10 minut</span></summary><div class="detail-body">
+        <p class="extension-pitch">Přidej do Agenteeq také ChatGPT, Claude, Gemini a další AI služby přímo z prohlížeče. Stav konverzací a upozornění uvidíš v jednom přehledu.</p>
+        <ul class="extension-benefits" aria-label="Výhody rozšíření"><li>Stav konverzací na jednom místě</li><li>Upozornění, když AI dokončí odpověď</li><li>Rychlý návrat do správné karty</li></ul>
         <!-- rozsireni:obchod -->
-        <p class="rozsireni-akce"><a class="btn btn--sm" data-obchod-chrome href="#">Přidat do Chromu</a></p>
+        <p class="rozsireni-akce"><a class="btn btn--sm" data-obchod-chrome href="#"><img class="chrome-cta-icon" src="/logos/chrome.svg" width="19" height="19" alt="" aria-hidden="true">Přidat do Chromu</a></p>
         <p>Rozšíření se s aplikací spáruje samo. Funguje i v Brave, Arcu a Edge.</p>
         <!-- /rozsireni:obchod -->
         <!-- rozsireni:rucne -->
@@ -208,13 +200,14 @@
           <li>Hotovo. Rozšíření se s aplikací spáruje samo.</li>
         </ol>
         <!-- /rozsireni:rucne -->
+        <div class="extension-peek-robot" data-extension-robot aria-hidden="true"></div>
       </div></details>
 
-      <details><summary>Dívat se na agenty z telefonu <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
+      <details><summary>Sledovat stav agentů na telefonu <span class="detail-tag">Wi-Fi / Tailscale</span></summary><div class="detail-body">
         <ol>
           <li>Na Macu nech Agenteeq spuštěný. Okno můžeš zavřít.</li>
           <li>V <b>Nastavení → Otevřít na telefonu</b> zapni přístup pro domácí síť nebo pro Tailscale.</li>
-          <li>Klikni na <b>Vytvořit kód pro telefon</b> a načti QR kód fotoaparátem. Telefon se otevře rovnou spárovaný.</li>
+          <li>Klikni na <b>Vytvořit kód pro telefon</b> a načti QR kód fotoaparátem. Stránka v telefonu se automaticky propojí s aplikací.</li>
         </ol>
       </div></details>
     </div>
@@ -222,25 +215,20 @@
 </section>
 
 <section class="unit unit--tint" id="otazky" aria-labelledby="faq-heading">
-  <div class="wrap unit-head">
-    <h2 id="faq-heading"><span class="radek"><span>Ještě než začneš.</span></span></h2>
-  </div>
-  <div class="wrap rows">
-    <details><summary>Kolik to stojí?</summary><p>Během bety je Agenteeq zdarma se všemi funkcemi. Ceník placené verze zveřejníme dřív, než beta skončí.</p></details>
-    <details><summary>Ukáže, kolik za AI utrácím?</summary><p>Ano. Plán Claude a ChatGPT pozná sám i s úrovní a cenou z ceníku. Náklady za API načte z Admin API Anthropicu a OpenAI, rozepsané po modelech. Tokeny na peníze nepřepočítává, ukazuje jen ověřené částky.</p></details>
-    <details><summary>Musím něco nastavovat?</summary><p>Ne. Nástroje na Macu Agenteeq najde sám, jakmile je spustíš. Rozšíření pro webové chaty, náklady z API i účet přidáš, až je budeš chtít.</p></details>
-    <details><summary>Uvidí moje konverzace někdo další?</summary><p>Ne. Agenteeq čte přepisy jen na tvém Macu a nikam je neposílá. Synchronizace s účtem přenáší jen souhrnná čísla.</p></details>
-    <details><summary>A co Windows?</summary><p>Verze pro Windows je v betě. Stáhneš ji výš, rozdíly proti Macu najdeš na <a href="/instalace#windows">stránce Instalace</a>.</p></details>
-  </div>
+  <div class="wrap faq-layout"><div class="unit-head faq-intro">
+    <h2 id="faq-heading"><span class="radek"><span>Časté dotazy.</span></span></h2>
+    <p class="faq-caption">Odpovědi na nejčastější otázky o Agenteeq.</p></div>
+  <div class="rows faq-list">
+    <details name="agenteeq-faq"><summary>Kolik to stojí?</summary><p>Během bety je Agenteeq zdarma se všemi funkcemi. Ceník placené verze zveřejníme dřív, než beta skončí.</p></details>
+    <details name="agenteeq-faq"><summary>Mohu sledovat náklady na AI?</summary><p>Ano. Agenteeq rozpozná předplatné Claude a ChatGPT a zobrazí jeho cenu. Po propojení s administrátorským API Anthropicu nebo OpenAI uvidíš také skutečné náklady na využívání API, včetně rozpisu podle modelů. Částky neodhaduje podle počtu tokenů.</p></details>
+    <details name="agenteeq-faq"><summary>Co je potřeba nastavit po instalaci?</summary><p>Lokální AI nástroje Agenteeq rozpozná automaticky. Pro sledování webových chatů je potřeba přidat rozšíření prohlížeče. Propojení nákladů na API a uživatelský účet jsou volitelné.</p></details>
+    <details name="agenteeq-faq"><summary>Zůstávají moje konverzace soukromé?</summary><p>Ano. Agenteeq čte přepisy jen na tvém Macu a nikam je neposílá. Synchronizace s účtem přenáší jen souhrnná čísla.</p></details>
+    <details name="agenteeq-faq"><summary>Je Agenteeq dostupný i pro Windows?</summary><p>Verze pro Windows je v betě. Stáhneš ji výš, rozdíly proti Macu najdeš na <a href="/instalace#windows">stránce Instalace</a>.</p></details>
+  </div></div>
 </section>
 
 </main>
 
-<footer><div class="wrap foot-in">
-  <a class="brand" href="/"><img src="/brand/agenteeq-mark-dark.svg" alt="" width="28" height="28"><span>Agenteeq</span></a>
-  <p>Více soustředění. Méně přepínání.</p>
-  <a class="text-link" href="#obsah">Zpátky nahoru ↑</a>
-  <p class="foot-note">Názvy a loga služeb patří jejich vlastníkům. <a href="/instalace">Instalace</a> · <a href="/soukromi">Zásady ochrany soukromí</a></p>
-</div></footer>
+<footer class="site-footer"><div class="wrap footer-stage"><div class="footer-orbit" aria-hidden="true" data-footer-robot></div><div class="footer-main"><h2>Méně přepínání.<br><em>Víc prostoru tvořit.</em></h2><p class="footer-sub">Agenti pracují. Ty víš, co se děje.</p><a class="btn btn--lg footer-download" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout Agenteeq pro macOS <span aria-hidden="true">↗</span></a></div></div><div class="wrap foot-in footer-bottom"><a class="brand" href="/"><img src="/brand-mark-clean.svg" alt="" width="28" height="28"><span>Agenteeq</span></a><p class="foot-note">Názvy a loga služeb patří jejich vlastníkům. <a href="/instalace">Instalace</a> · <a href="/soukromi">Zásady ochrany soukromí</a></p><a class="text-link" href="#obsah">Zpátky nahoru ↑</a></div></footer>
 </body>
 </html>

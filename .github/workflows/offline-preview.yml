@@ -1,0 +1,38 @@
+name: Offline frontend preview
+on:
+  push:
+    branches: [design/046-premium-landing]
+    paths:
+      - 'site/**'
+      - 'public/**'
+      - 'scripts/build-offline-preview.mjs'
+      - '.github/workflows/offline-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    name: Generate clickable preview ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/build-offline-preview.mjs
+      - name: Validate HTML links and assets
+        run: |
+          test -s dist/agenteeq-preview/index.html
+          test -s dist/agenteeq-preview/lp.css
+          test -s dist/agenteeq-preview/lp.js
+          grep -q 'href="./lp.css"' dist/agenteeq-preview/index.html
+          grep -q 'DOMContentLoaded' dist/agenteeq-preview/index.html
+          ! grep -q 'type="module" src="./lp.js"' dist/agenteeq-preview/index.html
+      - name: Upload complete offline frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: Agenteeq-clickable-frontend-preview
+          path: dist/agenteeq-preview/
+          if-no-files-found: error
+          retention-days: 30
