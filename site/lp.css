@@ -1176,3 +1176,21 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  #propojeni .integration-down::before { display:none; }
  #propojeni .integration-down::after { top:0; }
 }
+
+
+/* Final connection geometry: SVG owns every segment, no overlapping CSS lines. */
+#propojeni .integration-lane::after,
+#propojeni .integration-down::before,
+#propojeni .integration-down::after,
+#propojeni .integration-flow::before { content:none!important; display:none!important; }
+#propojeni .integration-down { position:relative; height:76px; grid-column:1/-1; display:block; }
+#propojeni .integration-down svg { display:block; width:100%; height:100%; overflow:visible; }
+#propojeni .integration-down svg path { vector-effect:non-scaling-stroke; stroke:rgba(174,167,231,.62); stroke-width:1; fill:none; stroke-linecap:square; stroke-linejoin:miter; }
+#propojeni .integration-result { margin-top:0; }
+@media(max-width:620px) {
+ #propojeni .integration-down { height:42px; }
+ #propojeni .integration-down svg { display:none; }
+ #propojeni .integration-down::after { content:""!important; display:block!important; position:absolute; left:calc(50% - .5px); width:1px; top:0; bottom:0; background:rgba(174,167,231,.62); }
+ #propojeni .integration-flow { height:24px; display:block; }
+ #propojeni .integration-flow::before { content:""!important; display:block!important; position:absolute; left:calc(50% - .5px); width:1px; top:0; bottom:0; background:rgba(174,167,231,.62); }
+}
