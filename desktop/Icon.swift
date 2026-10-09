@@ -20,6 +20,7 @@ for (points, scale) in [(16,1),(16,2),(32,1),(32,2),(128,1),(128,2),(256,1),(256
     stem.move(to: NSPoint(x: 512, y: 711))
     stem.line(to: NSPoint(x: 512, y: 804))
     white.setStroke(); stem.stroke()
+    white.setFill()
     NSBezierPath(ovalIn: NSRect(x: 488, y: 783, width: 48, height: 48)).fill()
     let face = NSBezierPath(roundedRect: NSRect(x: 275, y: 250, width: 474, height: 474), xRadius: 145, yRadius: 145)
     face.fill()
