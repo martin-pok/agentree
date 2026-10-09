@@ -9,10 +9,10 @@ import os from 'node:os';
 import { SYSTEM_UCTU, POCITAC } from './platform.js';
 import { ui } from './texty.js';
 import { hourKeyTs, localDay } from './util.js';
+import { uplnychDni } from './historie.js';
 
 const INTERVAL_MS = 5 * 60 * 1000;
 const CASOVY_LIMIT_MS = 20000;
-const DNI_ZPET = 35;
 const ID = /^[a-z0-9-]{2,40}$/;
 
 export const POVOLENA = {
@@ -44,9 +44,13 @@ const idCloudu = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-
 // `day` je MÍSTNÍ kalendářní den tohoto počítače – stejný „dnes“, jaký ukazuje aplikace. Hodinové
 // přihrádky jsou v UTC; každá hodina se přiřadí ke dni podle místního času svého začátku. Dřív se
 // bral den UTC, takže v Praze práce mezi půlnocí a 1:00 (v létě 2:00) spadla do včerejška.
-export function tokenyPoDnech(sessions, now = Date.now(), dni = DNI_ZPET) {
+//
+// Posílají se jen dny, za které má Mac úplná data (`dni` posledních dní včetně dneška, src/historie.js):
+// konverzace starší než sledované okno už v paměti nejsou a den na hraně by se poslal menší, než byl.
+// Upsert by jím v účtu přepsal pravdivé číslo poslané dřív.
+export function tokenyPoDnech(sessions, now = Date.now(), dni = uplnychDni(30)) {
   const d = new Date(now);
-  const od = localDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() - dni).getTime());
+  const od = localDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() - (dni - 1)).getTime());
   const mapa = new Map();
   for (const s of sessions) {
     const provider = idCloudu(s.provider);
@@ -202,7 +206,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
     const s = zdroje.sessions();
     const pridej = (tabulka, radky) => radky.map((r) => jenPovolena(tabulka, { ...r, device_id: deviceId }));
     return {
-      usage_daily: pridej('usage_daily', tokenyPoDnech(s, now())),
+      usage_daily: pridej('usage_daily', tokenyPoDnech(s, now(), uplnychDni(config.windowDays || 30))),
       spend_monthly: pridej('spend_monthly', zdroje.utrata()),
       limits: pridej('limits', limityProCloud(zdroje.limity())),
       agent_status: pridej('agent_status', [agentiProCloud(s)]),

@@ -821,6 +821,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   /* ---------- Spouštění agentů ---------- */
 
   let launchEnv = { bins: {}, chatgptApp: false, ollama: { ok: false, models: [] } };
+  // Prošlo už hledání programů aspoň jednou? Do té doby prázdné `bins` znamená „nevíme“, ne „není“.
+  let launchHledano = false;
 
   function launchPayload() {
     let targets = launchTargets(launchEnv);
@@ -862,6 +864,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (launchEnv.env?.CLAUDE_CONFIG_DIR) await connectors['claude-code']?.pridejKoren(path.join(launchEnv.env.CLAUDE_CONFIG_DIR, 'projects'));
       if (launchEnv.env?.CODEX_HOME) await connectors.codex?.pridejDomov(launchEnv.env.CODEX_HOME);
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
+    launchHledano = launchDetected || dry;
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
     return payload;
@@ -934,9 +937,15 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Odpověď agentovi z aplikace (src/odpoved.js): konverzace Claude Code pokračuje na pozadí.
+  // Program claude: cesta = nalezen, false = hledal se a nenašel, null = ještě se nehledal.
   function kontextOdpovedi() {
     const vypisOk = connectors.processes?.status?.().state !== 'error';
-    return { procesy: config.processes && vypisOk ? posledniProcesy : null, behy: runs.list(), claude: launchEnv.bins?.claude || null };
+    return {
+      procesy: config.processes && vypisOk ? posledniProcesy : null,
+      behy: runs.list(),
+      dostupne: config.launchAgents,
+      claude: launchHledano ? launchEnv.bins?.claude || false : null,
+    };
   }
   function muzeOdpovedet(id) {
     return lzeOdpovedet(store.sessions.get(id), kontextOdpovedi());
@@ -1261,7 +1270,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (!stav?.running) {
         return {
           status: 422,
-          error: stav?.installed
+          error: stav?.installed === null
+            ? ui('Stav Tailscale se nepodařilo zjistit.')
+            : stav?.installed
             ? ui('Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.')
             : ui('Tailscale na {0} neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.', POCITAC.tomto),
         };

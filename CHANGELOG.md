@@ -1,5 +1,14 @@
 # Changelog
 
+## Nevydáno
+
+- **Odpověď agentovi bez rizika rozdvojené konverzace.** Když se u běžícího Claude Code nepodaří zjistit, v jaké složce pracuje, nebo když se běh z Agenteeq teprve zastavuje, aplikace odpověď nepošle a řekne to. Složku běžícího agenta se navíc pokusí zjistit znovu, když se to napoprvé nepovede.
+- **Pravdivější důvod, proč odpovědět nejde.** Místo „program claude se nenašel“ aplikace rozliší, jestli to systém zatím neumí (odpovídat jde jen na macOS), jestli se program teprve hledá, nebo jestli opravdu chybí.
+- **Uložení rozpočtů už nezastaví kurz ČNB.** Dřív každé uložení Rozpočtů udělalo z denního kurzu ČNB ruční kurz, který se pak už neobnovoval. Teď se za ruční počítá jen kurz, který opravdu změníš. Kurz, který takhle zamrzl a od ČNB se liší jen zaokrouhlením, se sám vrátí k automatickému; jinak ho vrátí tlačítko „Použít kurz ČNB“.
+- **Synchronizace nepřepisuje starší dny menšími čísly.** Do účtu se posílají jen dny, za které má počítač úplná data.
+- **Vzdálený přístup nehádá.** Když se nepodaří zjistit, jestli je tunel nainstalovaný nebo jestli běží, Nastavení to řekne, místo „není nainstalováno“ nebo „neběží“. Návod k instalaci cloudflared odpovídá systému (Homebrew jen na Macu).
+- **Příkaz pro pokračování na Windows.** Zkopírovaný příkaz pro pokračování v konverzaci Claude Code má na Windows tvar pro PowerShell a nerozpadne se ani u složky se znakem „&“ v názvu.
+
 ## 0.45.1 – 2026-10-08 · Robot i v prázdných stavech
 
 - **Prázdné stavy v novém stylu.** Místo tří barevných tvarů (kolečko, čtverec, trojúhelník) z původní značky ukazuje každá prázdná stránka – třeba Dovednosti, když na počítači žádné nejsou – hlavu robota Agenteeq se zavřenýma očima: odpočívá, protože tu zatím nic není. Je ve značkové fialové (v tmavém vzhledu světlejší), anténa jemně dýchá; při omezení pohybu stojí.

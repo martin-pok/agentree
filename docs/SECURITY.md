@@ -241,5 +241,6 @@ jen ji telefon neuloží na plochu.
 
 - Jen z tohoto Macu (`zTohotoMacu`), telefon ji nemá v `remote-scope`.
 - Argumenty jdou procesu jako pole, nikdy přes shell; id konverzace musí být UUID, oprávnění jen `plan` nebo `acceptEdits`.
-- Odpověď se nepošle, když ve stejné složce běží proces Claude Code (konverzace by se rozdvojila), když se výpis procesů nepodařil (nepodařilo se zjistit ≠ nic neběží), ani když v konverzaci ještě pracuje běh z Agenteeq.
+- Odpověď se nepošle, když ve stejné složce běží proces Claude Code (konverzace by se rozdvojila), když se výpis procesů nepodařil nebo u některého běžícího Claude Code nevíme, v jaké složce běží (nepodařilo se zjistit ≠ nic neběží; složka se u procesu zkusí zjistit nejvýš třikrát), ani když v konverzaci ještě pracuje nebo se zastavuje běh z Agenteeq.
+- Důvod, proč odpovědět nejde, rozlišuje: systém to neumí (zatím jen macOS, `kod: 'system'`), program `claude` se ještě nehledal (`kod: 'nevim'`) a program se hledal a nenašel (`kod: 'program'`).
 - Codex zatím ne – syntaxi `codex exec resume` jsme neověřili na skutečném nástroji.

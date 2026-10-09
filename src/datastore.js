@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { writeJsonAtomic, randomToken, debounce } from './util.js';
+import { writeJsonAtomic, randomToken, debounce, round2 } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
 import { ui } from './texty.js';
@@ -140,6 +140,19 @@ export function meneNaEuro(spend) {
   };
 }
 
+// Do 0.45.1 bralo uložení Rozpočtů předvyplněný kurz ČNB zaokrouhlený na dvě místa jako ruční změnu
+// a kurz tím zamrzl. Bezpečně to jde poznat jen, dokud ČNB nevydala nový kurz: oba „ruční“ kurzy jsou
+// pak přesně zaokrouhlený poslední kurz ČNB a aspoň jeden se od něj zaokrouhlením liší. Takový kurz se
+// vrátí k automatickému; každý jiný ruční kurz platí dál.
+function zamrzlyKurzCnb(sp) {
+  const live = sp.liveRates;
+  if (sp.ratesSource !== 'manual' || !live || !/^\d{4}-\d{2}-\d{2}$/.test(live.date)) return false;
+  const meny = ['USD', 'EUR'];
+  const zive = (c) => Number(live[c]);
+  const rucni = (c) => Number(sp.rates?.[c]);
+  return meny.every((c) => zive(c) > 0 && round2(zive(c)) === rucni(c)) && meny.some((c) => zive(c) !== rucni(c));
+}
+
 export function normalizeData(raw) {
   const data = normalizeDataInner(raw);
   data.spend = meneNaEuro(data.spend);
@@ -193,10 +206,11 @@ function normalizeDataInner(raw) {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
       // Kdo měnu zvolil: 'user' = ručně v Rozpočtech (nikdy se nepřepíše), 'default' = výchozí.
       currencySource: sp.currencySource === 'user' ? 'user' : 'default',
-      rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },
+      rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), ...(zamrzlyKurzCnb(sp) ? { USD: Number(sp.liveRates.USD), EUR: Number(sp.liveRates.EUR) } : {}), CZK: 1 },
       // Odkud kurz je: ČNB (automaticky), ručně zadaný, nebo orientační výchozí. Dřívější ruční úpravu
       // (kurz jiný než výchozí bez záznamu o původu) poznáme a nepřepíšeme.
-      ratesSource: ['cnb', 'manual', 'default'].includes(sp.ratesSource) ? sp.ratesSource
+      ratesSource: zamrzlyKurzCnb(sp) ? 'cnb'
+        : ['cnb', 'manual', 'default'].includes(sp.ratesSource) ? sp.ratesSource
         : (Number(sp.rates?.USD) && Number(sp.rates.USD) !== DEFAULT_SPEND.rates.USD) || (Number(sp.rates?.EUR) && Number(sp.rates.EUR) !== DEFAULT_SPEND.rates.EUR) ? 'manual' : 'default',
       liveRates: sp.liveRates && /^\d{4}-\d{2}-\d{2}$/.test(sp.liveRates.date) && Number(sp.liveRates.USD) > 0 && Number(sp.liveRates.EUR) > 0
         ? { date: sp.liveRates.date, USD: Number(sp.liveRates.USD), EUR: Number(sp.liveRates.EUR), fetchedAt: Number(sp.liveRates.fetchedAt) || 0 } : null,

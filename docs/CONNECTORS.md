@@ -53,6 +53,13 @@ vnitřní uvozovky ani fallback. Příkaz i stavový řádek předávají UTF-8 
 serveru končí úspěšně, aby nezablokovaly Claude. Nativní Windows test ověřuje HTTP přenos
 a výpadek; skutečné vyvolání hooku uvnitř Claude Code zůstává samostatným integračním QA.
 
+**Příkaz pro pokračování (kopírování u konverzace Claude Code):** macOS a Linux
+`cd '<složka>' && claude --resume <id>`, Windows tvar pro PowerShell (výchozí terminál Windows)
+`Set-Location -LiteralPath "<složka>"; claude --resume <id>` – uvozovky chrání `&` ve jméně složky
+(„Design & Web“) v PowerShellu i v cmd.exe, `$`, zpětný apostrof a typografické uvozovky se
+zneplatní zpětným apostrofem (`src/platform.js#prikazVeSlozce`). 🧪 Windows tvar je ověřený jen
+testem generovaného řetězce, na skutečném Windows (PowerShell 5.1 i 7, cmd.exe) neověřený.
+
 Základ složky řeší jediná funkce `appSupportDir()` v `src/platform.js`; struktura pod ní je
 na obou systémech stejná. Konektory, které běžící procesy zjistit nedokážou, hlásí **„nevíme“**,
 nikdy „nic neběží“ – rozdíl mezi selháním zjišťování a zjištěným stavem se tu nesmí stírat.

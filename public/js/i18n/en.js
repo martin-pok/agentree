@@ -1006,6 +1006,8 @@ export default {
     "Nebylo co mazat": "Nothing to delete",
     "Zjištěno": "Detected",
     "Žádný nástroj pro vzdálený přístup není nainstalovaný": "No remote access tool is installed",
+    "Stav nástrojů se nepodařilo zjistit": "Couldn’t check the tools",
+    "Stav Tailscale se nepodařilo zjistit.": "Couldn’t find out the Tailscale status.",
     "Odpárovat zařízení": "Unpair device",
     "přestane vidět cokoli z Agenteeq. Znovu se spáruje novým kódem.": "will no longer see anything from Agenteeq. It can be paired again with a new code.",
     "Zařízení odpárováno": "Device unpaired",
