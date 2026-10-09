@@ -13,7 +13,7 @@ import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 import { tr, LOCALE, tomtoPocitaci, tvemPocitaci } from '../i18n.js';
 import { modifikator, MOD } from '../system.js';
 
-const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null, odpoved: null, odpovedStav: null };
+const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null, odpoved: null, odpovedStav: null, odpovedZnovu: null };
 const MAX_RENDERED = 400;
 
 // Bezpečný "markdown-lite": nejdřív escapovat, pak přidat jen kód, zvýraznění a odkazy http(s).
@@ -77,11 +77,20 @@ function progressHtml(p) {
   </div>`;
 }
 
+// „Nevím“ (program claude se ještě hledá, výpis procesů se nepodařil) je dočasné: server to zjistí
+// během pár sekund, ale stav konverzace se mezitím měnit nemusí. Bez dalšího dotazu by detail
+// ukazoval „Ještě se zjišťuje…“, dokud se neotevře znovu.
+const ODPOVED_ZNOVU_MS = 4000;
+function znovuOdpoved() {
+  clearTimeout(v.odpovedZnovu);
+  v.odpovedZnovu = v.odpoved?.kod === 'nevim' ? setTimeout(obnovOdpoved, ODPOVED_ZNOVU_MS) : null;
+}
+
 async function obnovOdpoved() {
   const id = v.id;
   try {
     const r = await api.session(id);
-    if (v.id === id) { v.odpoved = r.odpoved || null; emit(`session:${id}`); }
+    if (v.id === id) { v.odpoved = r.odpoved || null; znovuOdpoved(); emit(`session:${id}`); }
   } catch { /* stav odpovědi zůstane, jak byl */ }
 }
 
@@ -100,6 +109,7 @@ async function load() {
     t.error = '';
     if (!state.sessions.has(id)) state.sessions.set(id, r.session);
     v.odpoved = r.odpoved || null;
+    znovuOdpoved();
   } catch (err) {
     t.loaded = true;
     t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
@@ -113,7 +123,8 @@ function mount(el, [id]) {
   // Stav odpovědi patří jedné konverzaci: bez vynulování by se do doběhnutí load() (a po jeho
   // selhání natrvalo) ukazoval formulář nebo důvod z předchozí konverzace a obnovOdpoved by se
   // při stejném stavu obou konverzací vůbec nespustilo.
-  Object.assign(v, { id, el, rendered: new Map(), follow: true, odpoved: null, odpovedStav: null });
+  clearTimeout(v.odpovedZnovu);
+  Object.assign(v, { id, el, rendered: new Map(), follow: true, odpoved: null, odpovedStav: null, odpovedZnovu: null });
   el.innerHTML = `<div class="session">
     <a class="back" href="#/agenti">${ICON.back}${tr('Všichni agenti')}</a>
     <header class="session-head" data-region="head"><div class="skeleton" style="width:40%"></div><div class="skeleton skeleton--lg"></div></header>
@@ -469,6 +480,7 @@ export default {
     state.transcripts.delete(v.id);
     if (v.onDocPointer) document.removeEventListener('pointerdown', v.onDocPointer, true);
     v.sideDrag?.zrus();
-    Object.assign(v, { sideDrag: null, id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null, odpoved: null, odpovedStav: null });
+    clearTimeout(v.odpovedZnovu);
+    Object.assign(v, { sideDrag: null, id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null, odpoved: null, odpovedStav: null, odpovedZnovu: null });
   },
 };

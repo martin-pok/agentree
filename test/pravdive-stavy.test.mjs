@@ -118,3 +118,19 @@ test('detail konverzace při vstupu i odchodu zapomene stav odpovědi', async ()
   assert.match(unmount, /Object\.assign\(v, \{[^}]*odpoved: null, odpovedStav: null[^}]*\}\)/, 'unmount nuluje obojí');
   assert.match(kod, /if \(v\.odpovedStav !== s\.status\) \{ v\.odpovedStav = s\.status; obnovOdpoved\(\); \}/, 'obnovení podle stavu zůstává');
 });
+
+// „Nevím“ ze serveru (program claude se ještě hledá, výpis procesů selhal) je dočasný stav. Detail
+// se na něj musí zeptat znovu sám – stav konverzace se mezitím měnit nemusí – a časovač nesmí
+// přežít odchod z detailu ani přechod do jiné konverzace.
+test('detail se na dočasné „nevím“ u odpovědi zeptá znovu a časovač uklidí', async () => {
+  const kod = await zdroj('public/js/views/session.js');
+  assert.match(kod, /v\.odpovedZnovu = v\.odpoved\?\.kod === 'nevim' \? setTimeout\(obnovOdpoved, ODPOVED_ZNOVU_MS\) : null;/);
+  const obnov = kod.slice(kod.indexOf('async function obnovOdpoved('), kod.indexOf('async function load('));
+  assert.match(obnov, /znovuOdpoved\(\)/, 'po obnovení se naplánuje další dotaz, když je stav dál „nevím“');
+  const load = kod.slice(kod.indexOf('async function load('), kod.indexOf('function mount('));
+  assert.match(load, /v\.odpoved = r\.odpoved \|\| null;\s*znovuOdpoved\(\);/, 'i po prvním načtení');
+  const mount = kod.slice(kod.indexOf('function mount('), kod.indexOf('el.innerHTML', kod.indexOf('function mount(')));
+  assert.match(mount, /clearTimeout\(v\.odpovedZnovu\)/, 'přechod do jiné konverzace zruší časovač');
+  const unmount = kod.slice(kod.indexOf('unmount() {'));
+  assert.match(unmount, /clearTimeout\(v\.odpovedZnovu\)/, 'odchod z detailu zruší časovač');
+});
