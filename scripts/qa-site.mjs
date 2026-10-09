@@ -43,6 +43,33 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Robot u karet soukromí sleduje myš jen při povoleném pohybu. Ověřené na
+      // skutečně vykresleném SVG v obou jádrech, včetně návratu očí do středu.
+      {
+        const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+        await jenMistni(p, []);
+        await p.goto(url);
+        await p.locator('.privacy-peek').scrollIntoViewIfNeeded();
+        const points = await p.evaluate(() => {
+          const section = document.getElementById('soukromi').getBoundingClientRect();
+          const robot = document.querySelector('[data-privacy-robot] .robot').getBoundingClientRect();
+          return { left: section.left + 12, right: section.right - 12, y: Math.max(90, Math.min(innerHeight - 90, robot.top + robot.height / 2)) };
+        });
+        const gazeX = () => p.evaluate(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')));
+        await p.mouse.move(points.left, points.y);
+        await p.waitForFunction(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')) < -0.5);
+        assert.ok(await gazeX() >= -3, `${engine}: oči překročily levý okraj`);
+        await p.mouse.move(points.right, points.y);
+        await p.waitForFunction(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')) > 0.5);
+        assert.ok(await gazeX() <= 3, `${engine}: oči překročily pravý okraj`);
+        assert.notEqual(await p.locator('.privacy-peek .robot-gaze').evaluate(el => getComputedStyle(el).transform), 'none', `${engine}: SVG oči se nepohybují`);
+        await p.mouse.move(0, 0);
+        await p.waitForFunction(() => !document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x'));
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await p.mouse.move(points.right, points.y);
+        assert.equal(await p.locator('.privacy-peek .robot-gaze').evaluate(el => getComputedStyle(el).transform), 'none', `${engine}: omezený pohyb nechal oči běžet`);
+        await p.close();
+      }
       for (const theme of ['light', 'dark']) {
         for (const width of [360, 375, 768, 900, 1440]) for (const stranka of ['/', '/en']) {
           const page = await browser.newPage({ viewport: { width, height: 1000 }, colorScheme: theme, reducedMotion: 'reduce' });

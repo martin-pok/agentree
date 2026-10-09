@@ -566,6 +566,8 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 .privacy-peek .robot-aerial { stroke:currentColor; stroke-width:5; stroke-linecap:round; fill:none; }
 .privacy-peek .robot-face { fill:#181722; }
 .privacy-peek .robot-eyes { fill:#f4f3f7; }
+.privacy-peek .robot-gaze { transform:translate(var(--gaze-x,0px),var(--gaze-y,0px)); transition:transform 180ms cubic-bezier(.2,.7,.3,1); }
+@media(prefers-reduced-motion:reduce) { .privacy-peek .robot-gaze { transform:none; transition:none; } }
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
   .privacy-card:hover .privacy-orb { transform:translateY(-8px) rotateX(5deg) rotateY(12deg); }
 }
@@ -613,7 +615,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 @media(max-width:900px) { #otazky .faq-layout { grid-template-columns:1fr; gap:42px; } #otazky .faq-intro { position:static; }
  #otazky .faq-intro h2 { max-width:none; } .privacy-peek { right:3%; width:105px; top:-75px; } }
 @media(max-width:620px) { .privacy-stage { margin-top:82px; } #soukromi .facts article { min-height:340px; }
- .privacy-peek { width:85px; top:-63px; right:9%; } .privacy-art { min-height:132px; }
+ .privacy-peek { width:85px; top:-25px; right:9%; } .privacy-art { min-height:132px; }
  #otazky .faq-list summary { min-height:75px; font-size:18px; } .footer-main { padding-block:100px 70px; }
  .footer-stage { min-height:520px; } .footer-orbit { width:72px; top:7%; right:3%; }
  .footer-main h2 { font-size:clamp(43px,11vw,64px); } .footer-bottom { gap:20px; } }
@@ -663,6 +665,8 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .sc-good { color:#77dbc3; display:flex; align-items:center; gap:8px; }
 .sc-project-title { margin-bottom:32px; }
 .sc-project-icon { display:grid; place-items:center; height:48px; width:48px; flex:none; border-radius:var(--r-sm); background:#9a513e; color:#fff2e9; font-size:23px; font-weight:500; }
+.sc-project-icon--client { background:#353242; border:1px solid rgba(205,197,226,.24); }
+.sc-project-icon--client img { display:block; width:32px; height:32px; }
 .sc-project-detail { display:flex; gap:34px; margin-bottom:24px; }
 .sc-project-detail strong { display:block; font:500 31px/1 var(--f-display); letter-spacing:-.04em; }
 .sc-project-detail small { margin-top:8px; }

@@ -164,6 +164,35 @@ for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-r
   el.innerHTML = robot(el.hasAttribute('data-footer-robot') ? 'Nova' : 'Orbit');
 }
 
+// Robot u karet soukromí se podívá za kurzorem stejně jako roboti v aplikaci.
+// Reaguje jen uvnitř sekce; dotyk a systémové omezení pohybu zůstávají bez efektu.
+const soukromi = document.getElementById('soukromi');
+const privacyRobot = soukromi?.querySelector('[data-privacy-robot] .robot');
+const omezenyPohyb = matchMedia('(prefers-reduced-motion: reduce)');
+if (soukromi && privacyRobot && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  let snimek = 0;
+  const reset = () => {
+    cancelAnimationFrame(snimek);
+    snimek = 0;
+    privacyRobot.style.removeProperty('--gaze-x');
+    privacyRobot.style.removeProperty('--gaze-y');
+  };
+  soukromi.addEventListener('pointermove', (e) => {
+    if (omezenyPohyb.matches || e.pointerType === 'touch' || snimek) return;
+    const x = e.clientX;
+    const y = e.clientY;
+    snimek = requestAnimationFrame(() => {
+      snimek = 0;
+      const r = privacyRobot.getBoundingClientRect();
+      privacyRobot.style.setProperty('--gaze-x', `${Math.max(-3, Math.min(3, (x - r.left - r.width / 2) / 65))}px`);
+      privacyRobot.style.setProperty('--gaze-y', `${Math.max(-2, Math.min(2, (y - r.top - r.height / 2) / 80))}px`);
+    });
+  }, { passive: true });
+  soukromi.addEventListener('pointerleave', reset);
+  omezenyPohyb.addEventListener('change', reset);
+  addEventListener('blur', reset);
+}
+
 plynulePosouvani();
 
 
