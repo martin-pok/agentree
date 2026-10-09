@@ -233,7 +233,15 @@ export async function hlavickyWebu() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await zajistiSatoshi();
+  // Nasazení (Vercel, CI) bez Satoshi nevznikne. Vývoj a testy bez sítě sestaví web se záložním
+  // Onest: pravidlo @font-face se přidá, jen když soubor existuje (viz výše), takže nic nechybí.
+  const povinne = process.argv.includes('--povinne') || Boolean(process.env.VERCEL || process.env.CI);
+  try {
+    await zajistiSatoshi();
+  } catch (err) {
+    if (povinne) throw err;
+    console.warn(`Satoshi: ${err.message} Web se sestaví se záložním písmem Onest.`);
+  }
   const r = await buildSite();
   console.log(`Web sestaven: ${r.files.length} souborů v ${path.relative(root, r.out)}`);
   console.log(`  /      landing page (site/)`);
