@@ -99,7 +99,8 @@ test('web: výřezy rozhraní mají popisný alt a stránka je bez zbytečných 
   for (const soubor of ['site/index.html', 'site/en/index.html']) {
     const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
     const vyrezy = [...html.matchAll(/<img src="\/detail\/[^"]+"[^>]*>/g)].map((m) => m[0]);
-    assert.ok(vyrezy.length >= 5, `${soubor}: výřezy rozhraní na stránce jsou`);
+    assert.ok(vyrezy.length >= 3, `${soubor}: stránka má skutečné výřezy aplikace`);
+    assert.equal((html.match(/class="showcase showcase--/g) || []).length, 4, `${soubor}: čtyři produktové ukázky jsou vykreslené jako HTML`);
     for (const img of vyrezy) {
       const alt = img.match(/alt="([^"]*)"/);
       assert.ok(alt && alt[1].length >= 30, `${soubor}: výřez bez popisného alt textu: ${img.slice(0, 80)}`);
@@ -174,7 +175,7 @@ test('web: produkt ukazují výřezy, ve stránce není žádný vložený rám'
   assert.doesNotMatch(js, /iframe/i, 'lp.js nesmí rám vytvořit ani dodatečně');
   const rozmery = JSON.parse(await fs.readFile(path.join(ROOT, 'site/detail/rozmery.json'), 'utf8'));
   const pouzite = [...html.matchAll(/(?:src|srcset)="\/detail\/([^"]+)" width="(\d+)" height="(\d+)"/g)];
-  assert.ok(pouzite.length >= 10, `výřezů na stránce je jen ${pouzite.length}`);
+  assert.ok(pouzite.length >= 8, `výřezů na stránce je jen ${pouzite.length}`);
   for (const [, soubor, w, h] of pouzite) {
     assert.ok(rozmery[soubor], `${soubor} nevznikl skriptem shots-site`);
     assert.deepEqual([Number(w), Number(h)], rozmery[soubor], `${soubor}: rozměry v HTML nesedí na soubor`);
@@ -249,7 +250,7 @@ test('web: nástup začíná až v čitelné části okna a bez JS nic neskrýv�
       assert.match(nadpis, /^<span class="radek[^"]*"><span>/, `${soubor}: nadpis bez řádků pro masku: ${nadpis}`);
       assert.doesNotMatch(nadpis, /<br>/, `${soubor}: zalomení patří do řádků, ne do <br>`);
       // Mezera mezi řádky: čtečka jinak přečte „Tvoje prácemá zůstat tvoje“.
-      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span> <span class="radek/, soubor);
+      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span>\\s*<span class="radek/, soubor);
     }
   }
   const js = await fs.readFile(path.join(ROOT, 'site', 'lp.js'), 'utf8');
