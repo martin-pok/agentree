@@ -165,3 +165,50 @@ for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-r
 }
 
 plynulePosouvani();
+
+
+/* Mobile navigation: true modal-like full viewport overlay, focus restoration,
+   Escape and backdrop dismissal, no scroll leakage. */
+{
+ const trigger=document.querySelector('[data-mobile-menu-toggle]');
+ const overlay=document.querySelector('[data-mobile-menu]');
+ const close=overlay?.querySelector('[data-mobile-menu-close]');
+ if(trigger&&overlay&&close){
+   let previousFocus=null,previousOverflow='';
+   const links=[...overlay.querySelectorAll('a,button')];
+   const setOpen=(open)=>{
+     trigger.setAttribute('aria-expanded',String(open));
+     trigger.setAttribute('aria-label',open?(anglicky?'Close menu':'Zavřít nabídku'):(anglicky?'Open menu':'Otevřít nabídku'));
+     overlay.classList.toggle('is-open',open);
+     overlay.setAttribute('aria-hidden',String(!open));
+     overlay.inert=!open;
+     if(open){
+       previousFocus=document.activeElement;
+       previousOverflow=document.body.style.overflow;
+       document.body.style.overflow='hidden';
+       close.focus();
+     }else{
+       document.body.style.overflow=previousOverflow;
+       if(previousFocus instanceof HTMLElement)previousFocus.focus({preventScroll:true});
+     }
+   };
+   trigger.addEventListener('click',()=>setOpen(trigger.getAttribute('aria-expanded')!=='true'));
+   close.addEventListener('click',()=>setOpen(false));
+   overlay.addEventListener('click',e=>{
+     if(e.target===overlay||e.target.closest('a'))setOpen(false);
+   });
+   document.addEventListener('keydown',e=>{
+     if(!overlay.classList.contains('is-open'))return;
+     if(e.key==='Escape'){e.preventDefault();setOpen(false);return;}
+     if(e.key==='Tab'){
+       const available=links.filter(el=>el.getClientRects().length);
+       const first=available[0],last=available.at(-1);
+       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+     }
+   });
+   matchMedia('(min-width: 901px)').addEventListener?.('change',e=>{
+     if(e.matches&&overlay.classList.contains('is-open'))setOpen(false);
+   });
+ }
+}
