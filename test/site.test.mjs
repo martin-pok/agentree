@@ -250,7 +250,7 @@ test('web: nástup začíná až v čitelné části okna a bez JS nic neskrýv�
       assert.match(nadpis, /^<span class="radek[^"]*"><span>/, `${soubor}: nadpis bez řádků pro masku: ${nadpis}`);
       assert.doesNotMatch(nadpis, /<br>/, `${soubor}: zalomení patří do řádků, ne do <br>`);
       // Mezera mezi řádky: čtečka jinak přečte „Tvoje prácemá zůstat tvoje“.
-      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span>\\s*<span class="radek/, soubor);
+      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span>\s*<span class="radek(?: [^"]+)?"/, soubor);
     }
   }
   const js = await fs.readFile(path.join(ROOT, 'site', 'lp.js'), 'utf8');
