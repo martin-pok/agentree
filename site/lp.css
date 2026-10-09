@@ -872,3 +872,42 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  #vyzkouset .steps li:hover { border-color:rgba(98,96,216,.24);
   box-shadow:0 30px 60px -45px rgba(44,38,105,.24),inset 0 1px rgba(255,255,255,.95); }
 }
+
+/* Motion guardrails: no card content may be clipped by decorative hover transforms. */
+#prohlidka .tile { overflow:visible; transform:none; isolation:isolate; }
+#prohlidka .tile .tile-shot { overflow:visible; }
+#prohlidka .tile .showcase { transform:none; }
+#prohlidka .tile--wide .tile-shot { overflow:hidden; }
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #prohlidka .tile:hover { transform:none; box-shadow:0 35px 90px -60px rgba(0,0,0,.84),inset 0 1px rgba(255,255,255,.07); }
+ #prohlidka .tile:hover .showcase { transform:none; box-shadow:0 30px 75px -48px rgba(0,0,0,.74); }
+ #prohlidka .tile:hover .tile-shot > :is(picture,img) { transform:none; }
+ .btn:hover,.site-footer .footer-download:hover { transform:scale(1.035); }
+ .btn:active,.site-footer .footer-download:active { transform:scale(.985); }
+}
+.btn { transition:background-color .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease),transform .32s cubic-bezier(.2,.8,.2,1); transform-origin:center; }
+#prohlidka .sc-spend-total { font-size:clamp(33px,3vw,46px); line-height:1.15; letter-spacing:-.035em; }
+#prohlidka .sc-spend-total span { font-size:.46em; margin-left:3px; letter-spacing:0; }
+#prohlidka .sc-project-detail strong { font-size:clamp(23px,2.2vw,29px); }
+#prohlidka .sc-amount strong { font-size:clamp(33px,3vw,45px); }
+@media(prefers-reduced-motion:reduce) { .btn { transition:none; transform:none!important; } }
+/* Installation subpage shares the website's editorial surfaces, not the legacy flat cards. */
+.install-page { background:#f2f0f7; color:#17203b; }
+.install-page .hero { min-height:0; padding-block:clamp(94px,10vw,145px); background:radial-gradient(ellipse 50% 70% at 50% 85%,rgba(98,96,216,.16),transparent 85%),#0c0b12; }
+.install-page .hero .unit-head { gap:24px; }
+.install-page .hero h1 { max-width:15ch; }
+.install-page #mac,.install-page #windows,.install-page #rozsireni,.install-page #potize { position:relative; background:#f2f0f7; color:#17203b; }
+.install-page #windows,.install-page #potize { background:#eae8f1; }
+.install-page :is(#mac,#windows,#rozsireni,#potize) .unit-head h2 { letter-spacing:-.05em; }
+.install-page .steps { gap:18px; }
+.install-page .steps li,.install-page .gatekeeper { border:1px solid rgba(50,42,96,.11); background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(248,247,253,.94)); box-shadow:0 24px 56px -48px rgba(29,20,73,.25); }
+.install-page .steps li { min-height:235px; }
+.install-page .step-n { color:#6260d8; font-variant-numeric:tabular-nums; }
+.install-page .steps li b { color:#17203b; font-size:19px; }
+.install-page .steps li p,.install-page .gatekeeper p { color:#58566c; }
+.install-page .rows { border-color:rgba(32,26,70,.14); }
+.install-page .rows details { border-color:rgba(32,26,70,.14); }
+.install-page .rows summary { font-size:19px; }
+.install-page .prikaz { background:linear-gradient(145deg,#252132,#191722); box-shadow:0 28px 70px -49px rgba(18,14,37,.65); }
+.install-page .foot-in { color:#a8a2b7; }
+@media(max-width:620px) { .install-page .steps li { min-height:0; } }
