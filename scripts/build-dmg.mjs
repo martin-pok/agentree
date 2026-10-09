@@ -64,26 +64,26 @@ export function planDmg({ verze, arch = 'arm64', dist, docasna, identita = '-', 
 export function finderLayoutScript(mount) {
   const q = (v) => JSON.stringify(v);
   return `tell application "Finder"
-  tell disk ${q(SVAZEK)}
-    open
-    delay 1
-    set current view of container window to icon view
-    set toolbar visible of container window to false
-    set statusbar visible of container window to false
-    set bounds of container window to {120, 110, 880, 580}
-    set opts to icon view options of container window
-    set arrangement of opts to not arranged
-    set icon size of opts to 104
-    set text size of opts to 13
-    set background picture of opts to (POSIX file ${q(path.posix.join(mount, '.background', 'Agenteeq.png'))} as alias)
-    set position of item "Agenteeq.app" of container window to {198, 254}
-    set position of item "Applications" of container window to {566, 254}
-    close
-    open
-    update without registering applications
-    delay 1
-    close
-  end tell
+  set volumeFolder to (POSIX file ${q(mount)} as alias)
+  open volumeFolder
+  delay 1
+  set dmgWindow to front window
+  set current view of dmgWindow to icon view
+  set toolbar visible of dmgWindow to false
+  set statusbar visible of dmgWindow to false
+  set bounds of dmgWindow to {120, 110, 880, 580}
+  set opts to icon view options of dmgWindow
+  set arrangement of opts to not arranged
+  set icon size of opts to 104
+  set text size of opts to 13
+  set background picture of opts to (POSIX file ${q(path.posix.join(mount, '.background', 'Agenteeq.png'))} as alias)
+  set position of item "Agenteeq.app" of dmgWindow to {198, 254}
+  set position of item "Applications" of dmgWindow to {566, 254}
+  close dmgWindow
+  open volumeFolder
+  update volumeFolder without registering applications
+  delay 1
+  close front window
 end tell`;
 }
 
