@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { appSupportDir } from '../src/platform.js';
+import { appSupportDir, JE_WINDOWS } from '../src/platform.js';
 import { normalizeData } from '../src/datastore.js';
 import { startTestServer, writeJsonl, openStream, waitFor, api, tempDir } from './helpers.mjs';
 
@@ -49,7 +49,8 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.ok(s, 'session je ve stavu');
     assert.equal(s.title, 'Vytvoř landing page');
     assert.equal(s.status, 'waiting');
-    assert.equal(s.resume, `cd '/Users/x/proj' && claude --resume ${sid}`);
+    // Zkopírovaný příkaz pro pokračování: na Windows tvar pro PowerShell (src/platform.js#prikazVeSlozce).
+    assert.equal(s.resume, JE_WINDOWS ? `Set-Location -LiteralPath "/Users/x/proj"; claude --resume ${sid}` : `cd '/Users/x/proj' && claude --resume ${sid}`);
     assert.ok(r.body.connectors.some((c) => c.id === 'claude-code' && c.state === 'connected'));
   });
 
