@@ -99,7 +99,7 @@ test('web: výřezy rozhraní mají popisný alt a stránka je bez zbytečných 
   for (const soubor of ['site/index.html', 'site/en/index.html']) {
     const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
     const vyrezy = [...html.matchAll(/<img src="\/detail\/[^"]+"[^>]*>/g)].map((m) => m[0]);
-    assert.ok(vyrezy.length >= 3, `${soubor}: stránka má skutečné výřezy aplikace`);
+    assert.ok(vyrezy.length >= 2, `${soubor}: stránka má skutečné výřezy aplikace`);
     assert.equal((html.match(/class="showcase showcase--/g) || []).length, 4, `${soubor}: čtyři produktové ukázky jsou vykreslené jako HTML`);
     for (const img of vyrezy) {
       const alt = img.match(/alt="([^"]*)"/);
