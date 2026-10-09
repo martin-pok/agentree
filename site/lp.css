@@ -1305,3 +1305,39 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media (prefers-reduced-motion:reduce) {
  #propojeni .integration-lane,#propojeni .integration-result,#propojeni .integration-down svg path,#vyzkouset #rozsireni { animation:none!important;transition:none!important;opacity:1!important;transform:none!important; }
 }
+
+
+/* Mobile-first landing QA: clear CTA hierarchy, calm hero, no orphan mascots.
+   Desktop remains untouched. */
+@media (max-width:620px) {
+  .hero { padding-top:clamp(48px,13vw,72px); }
+  .hero > .unit-head { gap:clamp(17px,4.5vw,22px); }
+  .hero .unit-head h1 { font-size:clamp(39px,10vw,52px); line-height:1.055; letter-spacing:-.045em; }
+  .hero .unit-head .lead { font-size:clamp(16px,4.15vw,18px); line-height:1.52; max-width:36ch; }
+  .hero .cta-row { width:100%; max-width:370px; display:grid; grid-template-columns:minmax(0,1fr); gap:10px; margin:10px auto 0; }
+  .hero .cta-row .btn { width:100%; min-height:52px; justify-content:center; }
+  .hero .cta-row .text-link { display:flex; align-items:center; justify-content:center; width:100%; min-height:48px; gap:8px; text-decoration:none; border:1px solid rgba(244,243,247,.24); border-radius:999px; color:var(--on-stage); transition:background .2s ease,border-color .2s ease; }
+  .hero .cta-row .text-link:active { background:rgba(244,243,247,.12); }
+  .hero .specs { max-width:340px; margin-inline:auto; line-height:1.55; }
+  .hero .hero-figure { margin-top:clamp(30px,8vw,48px); }
+  .hero .hero-roboti { display:none!important; }
+  .hero .hero-stage { max-width:100%; }
+  .hero .hero-tilt { transform:none!important; }
+  .hero .hero-shot { max-width:100%; }
+  .wrap { width:min(100% - 36px,var(--page)); }
+  #prohlidka .tile { min-width:0; }
+  #prohlidka .tile-shot, #prohlidka .showcase { max-width:100%; }
+  #propojeni .integration-lane,#propojeni .integration-result { min-width:0; }
+  #propojeni .integration-tools { min-width:0; }
+  #propojeni .integration-tools li { min-width:0; }
+  #propojeni .integration-tools li span { min-width:0; overflow-wrap:anywhere; }
+}
+@media (max-width:380px) {
+  .hero .unit-head h1 { font-size:clamp(35px,9.7vw,39px); }
+  .hero .cta-row { max-width:100%; }
+  .hero .specs { font-size:12px; }
+  .wrap { width:calc(100% - 30px); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .hero .cta-row .text-link { transition:none; }
+}
