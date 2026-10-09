@@ -521,3 +521,14 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   #propojeni .source-group { text-align:center; } #propojeni .source-group h3 { justify-content:center; }
   #soukromi .facts article { min-height:unset; } }
 @media(prefers-reduced-motion:reduce) { .tile,.tile-shot > :is(picture,img),#propojeni .logos li { transition:none!important; transform:none!important; } }
+
+/* Hravá, ale stabilní kompozice: nezávislý náklon robota nezmění parallax ani pozici bubliny. */
+.hr-telo { transform: rotate(var(--naklon, 0deg)); transform-origin: 50% 54%; }
+@media (prefers-reduced-motion: no-preference) {
+  .hr-telo { animation-name: prilet-naklon; }
+}
+@keyframes prilet-naklon {
+  from { opacity: 0; transform: translateY(28px) rotate(calc(var(--naklon, 0deg) - 8deg)) scale(.86); }
+  to { opacity: 1; transform: rotate(var(--naklon, 0deg)); }
+}
+@media (prefers-reduced-motion: reduce) { .hr-telo { transform: rotate(var(--naklon, 0deg)); animation: none; } }
