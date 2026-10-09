@@ -67,31 +67,32 @@ const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor',
 // Konverzace v prohlížeči (Gemini, ChatGPT, Claude.ai, Perplexity, Grok, Copilot, Qwen) vidí
 // Agenteeq výhradně přes rozšíření – do stránky v prohlížeči se odjinud dostat nedá. Dokud
 // rozšíření nikdy nic neposlalo, musí to aplikace říct: mlčet a tvářit se, že nic neběží, je
-// k nerozeznání od chyby.
+// k nerozeznání od chyby. Je to nápověda, ne běžící položka – proto vlastní karta mimo seznam
+// „Běží na …, ale bez přepisu“ a mimo jeho počet.
 function webBezRozsireniHtml() {
   const web = (state.connectors || []).find((c) => c.id === 'web');
   if (!web || web.state !== 'missing') return '';
-  return `<li class="runtime-web">
+  return `<aside class="card pad runtime-note runtime-web" aria-labelledby="rt-web-h">
     <span class="icon-tile">${ICON.cloud}</span>
     <div class="runtime-main">
-      <b>${tr('Konverzace v prohlížeči se nesledují')}</b>
+      <b id="rt-web-h">${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
       <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu sleduje rozšíření pro Chrome.')}</p>
       <a class="link-inline" href="#/nastaveni" data-karta="extension">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
-  </li>`;
+  </aside>`;
 }
 
 function bezPrepisuHtml(sessions) {
   const bezi = (state.runtimes || []).filter((r) => r.running && bezPrepisu(r.id, sessions));
   const lokalni = state.localAgents || [];
   const web = webBezRozsireniHtml();
-  if (!bezi.length && !lokalni.length && !web) return '';
+  const pocet = bezi.length + lokalni.length;
+  if (!pocet) return web;
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
-  const pocet = bezi.length + lokalni.length + (web ? 1 : 0);
   return `<section class="card pad runtime-note" aria-labelledby="rt-h">
     <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}, ale bez přepisu', tomtoPocitaci())}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
-    <ul class="runtime-list">${web}${bezi.map((r) => {
+    <ul class="runtime-list">${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
     const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
     return `<li>
@@ -108,7 +109,7 @@ function bezPrepisuHtml(sessions) {
         </div>
       </li>`;
   }).join('')}${lokalni.map(lokalniHtml).join('')}</ul>
-  </section>`;
+  </section>${web}`;
 }
 
 // Detekovaný lokální agent – od vlastního modelu z Hugging Face po ComfyUI. U rozpoznaných podle
@@ -149,7 +150,9 @@ function applyQuery(q) {
 
 function rowHtml(s) {
   let sub;
-  if (s.status === 'working') sub = `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity || tr('Pracuje'))}`;
+  // Tečka a text jsou jeden prvek: v kartě se podpis zalamuje a samostatná tečka by zůstala
+  // viset za čipem projektu, zatímco text by odjel na další řádek.
+  if (s.status === 'working') sub = `<span class="sub-live"><span class="live-dot" aria-hidden="true"></span><span>${esc(s.activity || tr('Pracuje'))}</span></span>`;
   else if (needsYou(s) || s.status === 'failed' || s.status === 'limited') sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
   // Tento záznam není ověřená konverzace: z procesu samého nepoznáme, jestli jde o hlavního
   // nebo pomocného agenta. Složka proto zůstává jen kontextem, nikdy názvem konverzace.

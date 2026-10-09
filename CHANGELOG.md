@@ -10,6 +10,12 @@
 - **Synchronizace nepřepisuje starší dny menšími čísly.** Do účtu se posílají jen dny, za které má počítač úplná data.
 - **Vzdálený přístup nehádá.** Když se nepodaří zjistit, jestli je tunel nainstalovaný nebo jestli běží, Nastavení to řekne, místo „není nainstalováno“ nebo „neběží“. Návod k instalaci cloudflared odpovídá systému (Homebrew jen na Macu).
 - **Příkaz pro pokračování na Windows.** Zkopírovaný příkaz pro pokračování v konverzaci Claude Code má na Windows tvar pro PowerShell a nerozpadne se ani u složky se znakem „&“ v názvu.
+- **Pomocník nic nezakrývá.** Dokud je robot vpravo dole vidět, má obsah každé stránky dole rezervu na jeho tlačítko (na telefonu i nad spodní lištou). Poslední karta – štítek stavu v „Právě teď“, Detaily agenta, poslední konverzace v Agentech – se tak vždy dá odrolovat nad robota a ani prvek, na který přejdeš klávesnicí, pod ním nezůstane. Skrytý Pomocník místo nebere.
+- **Přehled říká každou věc jednou.** Věta u pozdravu radí, co dál („Nejdřív rozhodni, co agent potřebuje – pak může pokračovat.“), bez počtů a bez vysvětlování, kde co je. Box Stav agentů má jednu větu se správným tvarem podle počtu („Čeká na tebe 1 agent / Čekají na tebe 2 agenti / Čeká na tebe 5 agentů“, „Selhal 1 agent“, „Na limit narazili 2 agenti“), čísla nesou dlaždice pod ní. Když se nepodaří zjistit, co na počítači běží, box to řekne i ve chvíli, kdy má přednost jiná zpráva.
+- **Popisky filtrů běžnou sazbou.** Zdroj, Služba, Projekt v Agentech, Zdroj, Původ a Řadit v Dovednostech i dny v kalendáři už nejsou verzálky s prostrkáním.
+- **Detail agenta bez dvojího tlačítka a prázdné plochy.** „Pokračovat v Terminálu“ je jen v kartě s požadavkem, ne ještě jednou v hlavičce. Karta s přepisem má přirozenou výšku: krátký přepis nenatahuje kartu do výšky bočního sloupce, dlouhý ho vyplní a dál se čte po kliknutí.
+- **Agenti: počet sedí, tečka drží u textu.** Nápověda „Konverzace v prohlížeči se nesledují“ má vlastní kartu a nepočítá se mezi položky „Běží na tomto počítači, ale bez přepisu“. Zelená tečka pracujícího agenta už nevisí sama za čipem projektu – zalomí se vždy spolu se svým textem.
+
 ## Web po vydání 0.46.0 – 2026-10-09
 
 - Robot v sekci Soukromí jemně sleduje kurzor, když návštěvník používá myš; na dotyku a při omezeném pohybu zůstává v klidu.
