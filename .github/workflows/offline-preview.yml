@@ -27,7 +27,8 @@ jobs:
           test -s dist/agenteeq-preview/lp.css
           test -s dist/agenteeq-preview/lp.js
           grep -q 'href="./lp.css"' dist/agenteeq-preview/index.html
-          grep -q 'src="./lp.js"' dist/agenteeq-preview/index.html
+          grep -q 'DOMContentLoaded' dist/agenteeq-preview/index.html
+          ! grep -q 'type="module" src="./lp.js"' dist/agenteeq-preview/index.html
       - name: Upload complete offline frontend
         uses: actions/upload-artifact@v4
         with:

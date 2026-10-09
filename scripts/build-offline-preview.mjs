@@ -16,6 +16,15 @@ const destination=(url,depth)=>{
   if(p==='en'||p==='instalace'||p==='soukromi'||p==='en/install'||p==='en/privacy')p+='/index.html';
   return prefix+p+trailing;
 };
+// Browser ES modules do not work reliably through file://. Preserve exactly the
+// production behavior, but bundle its two dependency-free modules into a
+// classic script and defer execution until all HTML has been parsed.
+const robot=(await fs.readFile('public/js/robot-svg.js','utf8')).replace(/^export\\s+/gm,'');
+const scroll=(await fs.readFile('public/js/plynule-posouvani.js','utf8')).replace(/^export\\s+/gm,'');
+const original=(await fs.readFile('site/lp.js','utf8'))
+ .replace(/^import\\s+\\{[^}]+\\}\\s+from\\s+['\"][^'\"]+['\"];?\\s*$/gm,'');
+const bundled='document.addEventListener("DOMContentLoaded",()=>{\\n"use strict";\\n'+robot+'\\n'+scroll+'\\n'+original+'\\n});';
+if(/^\\s*(import|export)\\s/m.test(bundled))throw new Error('Offline bundle still has ES module syntax');
 async function walk(dir,depth=0){
  for(const entry of await fs.readdir(dir,{withFileTypes:true})){
   const filename=path.join(dir,entry.name);
@@ -23,6 +32,10 @@ async function walk(dir,depth=0){
   if(!/\.(html|css|js|json)$/i.test(entry.name))continue;
   let s=await fs.readFile(filename,'utf8');
   if(entry.name.endsWith('.html')){
+   // Bundle the entire interactive experience into each page instead of
+   // leaving imports rooted at /js, which fail for local files.
+   s=s.replace(/<script\\s+type=["']module["']\\s+src=["']\\/lp\\.js["']><\\/script>/g,
+     '<script>'+bundled.replace(/<\\/script/gi,'<\\\\/script')+'</script>');
    s=s.replace(/(href|src|srcset|poster)=(["'])(\/[^"']*)\2/g,(_m,k,q,url)=>`${k}=${q}${destination(url,depth)}${q}`);
    s=s.replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi,'');
    s=s.replace(/<link[^>]+rel=["']alternate["'][^>]*>/gi,'');
@@ -31,9 +44,6 @@ async function walk(dir,depth=0){
   s=s.replace(/url\((["']?)(\/[^)'"]+)\1\)/g,(_m,q,url)=>`url(${q}${destination(url,depth)}${q})`);
   // JS navigation and static asset URLs are rooted in the hosted build.
   // For local preview, translate explicit path literals at runtime.
-  if(entry.name==='lp.js'){
-   s += `\n// Offline preview: intercept local navigation links without a server.\nif(location.protocol==='file:'){document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(!a)return;const href=a.getAttribute('href');if(!href||!href.startsWith('/')||href.startsWith('//'))return;const base=document.documentElement.dataset.previewBase||'./';e.preventDefault();location.href=new URL(base+href.slice(1),location.href);},true);}\n`;
-  }
   await fs.writeFile(filename,s);
  }
 }
@@ -41,6 +51,8 @@ await walk(output);
 for(const f of ['index.html','lp.css','lp.js','instalace/index.html','en/index.html','soukromi/index.html']){
  if(!await fileExists(path.join(output,f)))throw new Error('Missing required preview file: '+f);
 }
+const landing=await fs.readFile(path.join(output,'index.html'),'utf8');
+if(!landing.includes('document.addEventListener("DOMContentLoaded"')||landing.includes('type="module" src="./lp.js"'))throw new Error('Interactive script not bundled');
 const readme=`AGENTEEQ — OFFLINE WEB PREVIEW
 
 1. Unzip the package.
