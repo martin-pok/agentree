@@ -1841,3 +1841,16 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
 .site-footer .footer-orbit .robot-ear {fill:#7266E3!important;}
 .site-footer .footer-orbit .robot-face {fill:#171525!important;}
 .site-footer .footer-orbit .robot-eyes {fill:#F7F6FF!important;}
+
+
+/* Editorial spacing v0.46: intentional 64–96px section rhythm, no empty chasms. */
+:root { --unit-y:clamp(60px,7vw,96px); }
+#propojeni { padding-top:clamp(68px,7.6vw,105px); }
+.tiles-unit .unit-head { padding-bottom:clamp(16px,2.5vw,34px); }
+.tiles { margin-top:clamp(26px,3.5vw,48px); }
+#propojeni .integration-flow { height:clamp(48px,5vw,72px); }
+@media(max-width:620px) {
+ :root { --unit-y:clamp(44px,9vw,66px); }
+ #propojeni { padding-top:clamp(52px,10vw,70px); }
+ .tiles { margin-top:26px; }
+}
