@@ -934,3 +934,13 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(prefers-reduced-motion:reduce) { #prohlidka .tile::after,#prohlidka .tile .sc-showcase-frame { transition:none; transform:none!important; } }
 .sc-project-icon--lumen { background:#201d2b; border:1px solid rgba(255,255,255,.13); }
 .sc-project-icon--lumen img { display:block; width:32px; height:32px; }
+
+/* Navbar: restrained, animated 1px SaaS underline replaces active pill. */
+.nav .nav-links a { position:relative; background:transparent!important; border-radius:0; padding-inline:4px; }
+.nav .nav-links a:hover { background:transparent!important; }
+.nav .nav-links a[aria-current="location"] { background:transparent!important; color:var(--on-stage); }
+.nav .nav-links a::after { content:""; display:block; position:absolute; left:4px; right:4px; bottom:3px; height:1px;
+  background:rgba(238,235,255,.92); border-radius:1px; transform:scaleX(0); transform-origin:center;
+  opacity:0; transition:transform .42s cubic-bezier(.22,1,.36,1),opacity .25s ease; }
+.nav .nav-links a:is(:hover,[aria-current="location"])::after { transform:scaleX(1); opacity:1; }
+@media(prefers-reduced-motion:reduce) { .nav .nav-links a::after { transition:none; } }
