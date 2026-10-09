@@ -1099,3 +1099,9 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .install-page #windows .windows-steps li:not(:last-child) { border-right:0; border-bottom:1px solid rgba(55,50,100,.12); }
  .install-page #windows .windows-steps .step-n { margin-bottom:14px; }
 }
+
+/* Official Google Chrome Web Store badge — intrinsic, unmodified artwork. */
+.extension-official-badge { display:inline-block; align-self:flex-start; width:206px; max-width:100%; text-decoration:none; line-height:0; border-radius:3px; outline-offset:5px; transition:filter .25s ease; }
+.extension-official-badge img { display:block; width:100%; height:auto; aspect-ratio:206/58; object-fit:contain; }
+@media(hover:hover) and (pointer:fine) { .extension-official-badge:hover { filter:brightness(.96); } }
+@media(prefers-reduced-motion:reduce) { .extension-official-badge { transition:none; } }
