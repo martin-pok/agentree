@@ -911,3 +911,26 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .prikaz { background:linear-gradient(145deg,#252132,#191722); box-shadow:0 28px 70px -49px rgba(18,14,37,.65); }
 .install-page .foot-in { color:#a8a2b7; }
 @media(max-width:620px) { .install-page .steps li { min-height:0; } }
+
+
+/* Safe Bento micro-interactions: the outer grid never moves or clips.
+   Light, shadow and a tiny contained visual response communicate hover. */
+#prohlidka .tile { position:relative; transition:border-color .35s var(--ease),box-shadow .45s var(--ease),background-color .4s var(--ease); }
+#prohlidka .tile::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(ellipse 68% 55% at 50% 0%,rgba(155,148,245,.085),transparent 75%);
+  opacity:0; transition:opacity .5s var(--ease); }
+#prohlidka .tile > * { position:relative; z-index:1; }
+#prohlidka .tile .showcase { transition:background-color .45s var(--ease),border-color .45s var(--ease),box-shadow .45s var(--ease); }
+#prohlidka .tile .sc-showcase-frame { transition:transform .55s cubic-bezier(.2,.8,.2,1); }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #prohlidka .tile:hover { transform:none; border-color:rgba(181,176,235,.32);
+   box-shadow:0 40px 90px -65px rgba(64,55,143,.36),inset 0 1px rgba(255,255,255,.09); }
+ #prohlidka .tile:hover::after { opacity:1; }
+ #prohlidka .tile:hover .showcase { transform:none; border-color:rgba(200,195,245,.18);
+   box-shadow:0 30px 75px -48px rgba(0,0,0,.74),0 0 35px -32px rgba(154,147,248,.4); }
+ #prohlidka .tile:hover .sc-showcase-frame { transform:translateY(-3px); }
+ #prohlidka .tile--wide:hover .tile-shot img { transform:none; }
+}
+@media(prefers-reduced-motion:reduce) { #prohlidka .tile::after,#prohlidka .tile .sc-showcase-frame { transition:none; transform:none!important; } }
+.sc-project-icon--lumen { background:#201d2b; border:1px solid rgba(255,255,255,.13); }
+.sc-project-icon--lumen img { display:block; width:32px; height:32px; }
