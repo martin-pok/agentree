@@ -616,3 +616,8 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
  .footer-stage { min-height:520px; } .footer-orbit { width:72px; top:7%; right:3%; }
  .footer-main h2 { font-size:clamp(43px,11vw,64px); } .footer-bottom { gap:20px; } }
 @media(prefers-reduced-motion:reduce) { .privacy-orb,#otazky .faq-list summary,#otazky .faq-list summary::after { transition:none; } }
+
+/* Footer owns its vertical rhythm, independent of legacy footer spacing. */
+footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
+.site-footer .footer-bottom { margin-inline:auto; }
+#otazky .faq-list summary:focus-visible { outline:2px solid #6260d8; outline-offset:-2px; border-radius:var(--r-sm); }
