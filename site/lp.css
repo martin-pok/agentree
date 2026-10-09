@@ -621,3 +621,71 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .site-footer .footer-bottom { margin-inline:auto; }
 #otazky .faq-list summary:focus-visible { outline:2px solid #6260d8; outline-offset:-2px; border-radius:var(--r-sm); }
+
+
+/* 0.46 — native-quality vector UI showcases. These are labeled demo compositions,
+   not fabricated live sessions or raster screenshots. All elements remain crisp on Retina. */
+.tile-shot--ui { align-items:center; justify-content:center; padding:clamp(30px,4.6vw,60px) 0 56px; height:auto!important; min-height:330px; -webkit-mask-image:none!important; mask-image:none!important; }
+.tile--crop .tile-shot--ui { min-height:380px; }
+.sc-showcase-frame { width:min(100%,480px); perspective:900px; }
+.showcase { --sc-fg:#f4f2f8; --sc-muted:#a9a4b6; position:relative; color:var(--sc-fg); text-align:left;
+  border-radius:var(--r-lg); padding:clamp(22px,3vw,32px); border:1px solid rgba(255,255,255,.11);
+  background:linear-gradient(155deg,#292634,#1a1824 65%,#191720);
+  box-shadow:0 30px 90px -45px rgba(0,0,0,.75),0 2px 0 rgba(255,255,255,.06) inset;
+  font-size:14px; line-height:1.4; transform:translateZ(0);
+  transition:transform 700ms var(--ease),box-shadow 700ms var(--ease); }
+.showcase strong,.showcase b { font-weight:500; color:var(--sc-fg); }
+.showcase small { color:var(--sc-muted); font-size:12px; display:block; margin-top:3px; }
+.sc-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:28px; }
+.sc-label { font-size:10px; letter-spacing:.13em; color:#b5b0c6; font-weight:500; }
+.sc-meta,.sc-caption { color:var(--sc-muted); font-size:12px; }
+.sc-status { display:inline-flex; align-items:center; gap:7px; border-radius:var(--r-full); padding:7px 11px; font-size:11px; color:#ffaac2; background:rgba(233,116,152,.12); white-space:nowrap; }
+.sc-led { display:inline-block; vertical-align:middle; height:7px; width:7px; border-radius:50%; background:currentColor; }
+.sc-agent,.sc-limit-head,.sc-project-title { display:flex; align-items:center; gap:13px; }
+.sc-agent strong,.sc-limit-head strong,.sc-project-title strong { font-size:17px; }
+.sc-agentmark { display:grid; place-items:center; flex:none; width:42px; height:42px; border-radius:var(--r-sm); color:#e3e0ff;
+  background:linear-gradient(145deg,#7470e2,#4c4799); font-size:21px; }
+.sc-agentmark--claude { color:#f6ae88; background:#32262c; }
+.sc-question { margin:26px 0 23px; font-size:clamp(19px,2vw,24px); letter-spacing:-.035em; line-height:1.3; max-width:22ch; }
+.sc-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.sc-action-main { display:inline-flex; align-items:center; gap:16px; background:#f5f3fb; border-radius:var(--r-full); padding:12px 17px; color:#23212b; font-size:12px; font-weight:500; }
+.sc-action-main > span { font-size:15px; }
+.sc-limit-head { margin-bottom:29px; }
+.sc-amount { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:17px; color:var(--sc-muted); }
+.sc-amount strong { font:500 clamp(54px,6vw,76px)/1 var(--f-display); letter-spacing:-.065em; }
+.sc-amount strong span { font-size:.47em; color:#bab6c8; }
+.sc-meter { height:8px; background:#35323f; border-radius:var(--r-full); overflow:hidden; }
+.sc-meter i { display:block; width:var(--used); height:100%; background:linear-gradient(90deg,#40c3a3,#68e3c6); border-radius:inherit; }
+.sc-meter-labels,.sc-limit-foot { display:flex; justify-content:space-between; gap:12px; color:var(--sc-muted); font-size:11px; margin-top:11px; }
+.sc-limit-foot { align-items:center; border-top:1px solid rgba(255,255,255,.09); padding-top:18px; margin-top:23px; }
+.sc-good { color:#77dbc3; display:flex; align-items:center; gap:8px; }
+.sc-project-title { margin-bottom:32px; }
+.sc-project-icon { display:grid; place-items:center; height:48px; width:48px; flex:none; border-radius:var(--r-sm); background:#9a513e; color:#fff2e9; font-size:23px; font-weight:500; }
+.sc-project-detail { display:flex; gap:34px; margin-bottom:24px; }
+.sc-project-detail strong { display:block; font:500 31px/1 var(--f-display); letter-spacing:-.04em; }
+.sc-project-detail small { margin-top:8px; }
+.sc-chart { display:flex; align-items:flex-end; gap:7px; height:110px; padding-top:10px; }
+.sc-chart i { flex:1; height:var(--h); background:linear-gradient(180deg,#de836c,#a14d3d); border-radius:5px 5px 2px 2px; opacity:.85; }
+.sc-chart i:nth-child(3n) { opacity:.48; }
+.sc-chart-caption { margin-top:17px; display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; color:var(--sc-muted); font-size:11px; }
+.sc-spend-label { color:var(--sc-muted); font-size:13px; }
+.sc-spend-total { font:500 clamp(51px,6vw,72px)/1.1 var(--f-display); letter-spacing:-.06em; margin:9px 0 30px; }
+.sc-spend-total span { font-size:.38em; letter-spacing:0; color:var(--sc-muted); }
+.sc-budget { padding:20px; background:rgba(255,255,255,.045); border-radius:var(--r-md); }
+.sc-budget-meta { display:flex; justify-content:space-between; gap:10px; margin-bottom:13px; }
+.sc-budget p { color:var(--sc-muted); font-size:11px; margin-top:10px; }
+.sc-meter--budget i { background:linear-gradient(90deg,#8a85ef,#c3befb); }
+.sc-cost-rows { display:grid; gap:14px; padding:24px 2px 0; }
+.sc-cost-rows div { display:flex; align-items:center; gap:10px; color:#c2bdce; font-size:13px; }
+.sc-cost-rows b { margin-left:auto; }
+.sc-cost-dot { width:9px; height:9px; border-radius:50%; background:#c0b9fc; }
+.sc-cost-dot--alt { background:#f2a081; }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ .tile:hover .showcase { transform:translateY(-8px) rotateX(2deg); box-shadow:0 45px 100px -45px rgba(0,0,0,.85); }
+}
+@media(max-width:620px) { .tile-shot--ui { padding-top:42px; padding-bottom:35px; min-height:unset; }
+ .tile--crop .tile-shot--ui { min-height:unset; } .showcase { padding:23px; }
+ .sc-amount strong { font-size:58px; } .sc-spend-total { font-size:56px; }
+ .sc-chart { height:95px; } .sc-action-main { font-size:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .showcase { transition:none; transform:none; } }
