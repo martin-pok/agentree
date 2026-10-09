@@ -545,16 +545,11 @@ html[data-theme] .home-desk .calm { background: var(--card); box-shadow: none; b
 .zdravi-problemy small { font-size: 12px; color: var(--velvet-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 560px) { .zdravi-pocty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* Štítek stavu na kartě agenta v „Právě teď“: na první pohled v pořádku / pozor / problém. */
+/* Štítek stavu na kartě agenta v „Právě teď“ je `.pill` (jméno i barva jako na Agentech a v detailu);
+   tady se mění jen umístění a velikost. */
 .home-live .pb-agent { position: relative; }
-.pb-stav { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 500; line-height: 1; color: var(--ink-2); background: color-mix(in srgb, var(--ink) 5%, var(--card)); }
-.pb-stav::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--mute); }
-.pb-stav[data-ton='ok'] { color: var(--teal-ink); background: var(--teal-tint); }
-.pb-stav[data-ton='ok']::before { background: var(--teal); }
-.pb-stav[data-ton='pozor'] { color: var(--brass-ink); background: var(--brass-tint); }
-.pb-stav[data-ton='pozor']::before { background: var(--brass); }
-.pb-stav[data-ton='problem'] { color: var(--velvet-ink); background: var(--velvet-tint); }
-.pb-stav[data-ton='problem']::before { background: var(--velvet); }
+.pb-stav { position: absolute; top: 14px; right: 14px; gap: 6px; height: 24px; padding: 0 10px; font-size: 12px; font-weight: 500; line-height: 1; }
+.pb-stav i { width: 6px; height: 6px; }
 
 /* Motiv Koncert (Slonovina/Eben) má pod „Právě teď“ původní tmavou scénu s gradientem; na nové
    ploše karty agentů leží na čistém podkladu ve všech motivech. */

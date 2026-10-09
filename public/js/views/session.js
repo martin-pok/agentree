@@ -13,7 +13,7 @@ import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 import { tr, LOCALE, tomtoPocitaci, tvemPocitaci } from '../i18n.js';
 import { modifikator, MOD } from '../system.js';
 
-const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null };
+const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null, odpoved: null, odpovedStav: null };
 const MAX_RENDERED = 400;
 
 // Bezpečný "markdown-lite": nejdřív escapovat, pak přidat jen kód, zvýraznění a odkazy http(s).
@@ -110,7 +110,10 @@ async function load() {
 }
 
 function mount(el, [id]) {
-  Object.assign(v, { id, el, rendered: new Map(), follow: true });
+  // Stav odpovědi patří jedné konverzaci: bez vynulování by se do doběhnutí load() (a po jeho
+  // selhání natrvalo) ukazoval formulář nebo důvod z předchozí konverzace a obnovOdpoved by se
+  // při stejném stavu obou konverzací vůbec nespustilo.
+  Object.assign(v, { id, el, rendered: new Map(), follow: true, odpoved: null, odpovedStav: null });
   el.innerHTML = `<div class="session">
     <a class="back" href="#/agenti">${ICON.back}${tr('Všichni agenti')}</a>
     <header class="session-head" data-region="head"><div class="skeleton" style="width:40%"></div><div class="skeleton skeleton--lg"></div></header>
@@ -319,7 +322,7 @@ function update() {
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile agent-robot-tile">${agentRobot(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     <div class="session-actions">
       ${s.proces ? '' : openButtons(s)}
@@ -466,6 +469,6 @@ export default {
     state.transcripts.delete(v.id);
     if (v.onDocPointer) document.removeEventListener('pointerdown', v.onDocPointer, true);
     v.sideDrag?.zrus();
-    Object.assign(v, { sideDrag: null, id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null });
+    Object.assign(v, { sideDrag: null, id: null, el: null, rendered: new Map(), browsing: false, onDocPointer: null, syncHint: null, odpoved: null, odpovedStav: null });
   },
 };

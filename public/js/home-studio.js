@@ -92,5 +92,5 @@ export function agentRobot(s) {
   const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
-  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}">${robot(type)}</span>`;
+  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${robot(type)}</span>`;
 }

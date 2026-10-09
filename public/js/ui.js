@@ -445,7 +445,18 @@ export async function copy(text, message = tr('Zkopírováno do schránky')) {
 
 /* ---------- Sdílené kousky UI ---------- */
 
-export const statusPill = (status) => `<span class="pill" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
+// Štítek stavu: jméno ze STATUS (format.js) a barva z `.pill[data-status]` – jeden zdroj pro Agenty,
+// detail, projekt i karty Přehledu. Třída navíc mění jen umístění a velikost, nikdy jméno ani barvu.
+export const statusPill = (status, cls = '') => `<span class="pill${cls ? ` ${esc(cls)}` : ''}" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
+
+// Věta pod názvem agenta na kartách „Právě teď“. Mimo práci a proces je to důvod z modelu
+// (src/model.js#deriveStatus), takže „Hotovo…“ zazní jen u agenta, který skutečně doběhl; tah,
+// který jen vypršel, nebo zadání bez odpovědi se za hotové nevydávají.
+export function vetaStavu(s) {
+  if (s.status === 'working') return s.activity || tr('Pracuje');
+  if (s.status === 'observed') return tr('Detekovaný proces bez přepisu');
+  return s.reason || STATUS[s.status]?.label || '';
+}
 
 export function kindLabel(kind) {
   if (kind === 'permission') return tr('Žádá o povolení');

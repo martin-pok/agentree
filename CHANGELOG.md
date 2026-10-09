@@ -2,6 +2,8 @@
 
 ## Nevydáno
 
+- **„Hotovo“ jen u agenta, který opravdu doběhl.** Karty v „Právě teď“ psaly „Hotovo“ u každé konverzace, která čeká na zadání – i když agent uprostřed práce přestal odpovídat nebo na zadání vůbec neodpověděl. Teď mají karty stejný štítek a barvu jako seznam Agentů a detail („Čeká na zadání“, „Potřebuje tebe“, „Pracuje“…) a pod ním skutečný důvod: „Hotovo, čeká na další zadání“, „Delší dobu bez aktivity“, nebo „Zatím bez odpovědi agenta“. Stejný důvod je u nedoběhlé konverzace vidět i na Agentech a v detailu a robot u ní neříká „Hotovo“. V boxu Stav agentů se počet jmenuje „potřebuje tebe“ jako všude jinde.
+- **Detail konverzace neukazuje odpověď z předchozí konverzace.** Při přechodu z jedné konverzace do druhé se pod přepisem chvíli (a když se načtení nepovedlo, natrvalo) ukazovalo pole „Odpovědět agentovi“ nebo důvod, proč odpovědět nejde, z té předchozí.
 - **Odpověď agentovi bez rizika rozdvojené konverzace.** Když se u běžícího Claude Code nepodaří zjistit, v jaké složce pracuje, nebo když se běh z Agenteeq teprve zastavuje, aplikace odpověď nepošle a řekne to. Složku běžícího agenta se navíc pokusí zjistit znovu, když se to napoprvé nepovede.
 - **Pravdivější důvod, proč odpovědět nejde.** Místo „program claude se nenašel“ aplikace rozliší, jestli to systém zatím neumí (odpovídat jde jen na macOS), jestli se program teprve hledá, nebo jestli opravdu chybí.
 - **Uložení rozpočtů už nezastaví kurz ČNB.** Dřív každé uložení Rozpočtů udělalo z denního kurzu ČNB ruční kurz, který se pak už neobnovoval. Teď se za ruční počítá jen kurz, který opravdu změníš. Kurz, který takhle zamrzl a od ČNB se liší jen zaokrouhlením, se sám vrátí k automatickému; jinak ho vrátí tlačítko „Použít kurz ČNB“.
