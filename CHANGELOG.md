@@ -15,6 +15,10 @@
 - **Popisky filtrů běžnou sazbou.** Zdroj, Služba, Projekt v Agentech, Zdroj, Původ a Řadit v Dovednostech i dny v kalendáři už nejsou verzálky s prostrkáním.
 - **Detail agenta bez dvojího tlačítka a prázdné plochy.** „Pokračovat v Terminálu“ je jen v kartě s požadavkem, ne ještě jednou v hlavičce. Karta s přepisem má přirozenou výšku: krátký přepis nenatahuje kartu do výšky bočního sloupce, dlouhý ho vyplní a dál se čte po kliknutí.
 - **Agenti: počet sedí, tečka drží u textu.** Nápověda „Konverzace v prohlížeči se nesledují“ má vlastní kartu a nepočítá se mezi položky „Běží na tomto počítači, ale bez přepisu“. Zelená tečka pracujícího agenta už nevisí sama za čipem projektu – zalomí se vždy spolu se svým textem.
+- **Pomocník rozumí tvarům slov.** „Najdi chat o fakturaci“ najde i konverzaci „platby a faktury“, „platby“ i „historie plateb“ nebo „platební brána“. Krátká slova se hledají jen celá, takže „plat“ nenajde „platformu“ a „data“ ne „databázi“.
+- **Hledání nezdrží aplikaci a neříká nepravdu.** Celý dotaz má jeden časový rozpočet (dřív dostalo hledání mimo zadané období nový), přepisy se procházejí od nejnovějších a server mezitím odpovídá ostatním. Když se hledání nestihne dokončit, odpověď to řekne – nikdy netvrdí, že „v tom období nic není“. U velmi dlouhých konverzací se čte i konec, takže sedí, kdy konverzace naposledy pokračovala.
+- **Úryvky konverzací neopustí počítač.** Odpověď formuluje jen model z Ollamy na tomto počítači: adresa mimo počítač se odmítne (a Pomocník to řekne), cloudové a embeddingové modely se nepoužijí. Přednost má model načtený v paměti, jinak nejmenší nainstalovaný.
+- **Texty Pomocníka bez první osoby a mužského rodu**, např. „Možná hledáš některou z těchto voleb v aplikaci.“
 
 ## Web po vydání 0.46.0 – 2026-10-09
 
