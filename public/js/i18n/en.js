@@ -1605,7 +1605,7 @@ export default {
     "Selhal {0} agent|Selhali {0} agenti|Selhalo {0} agentů": ["{0} agent failed", "{0} agents failed"],
     "Na limit narazil {0} agent|Na limit narazili {0} agenti|Na limit narazilo {0} agentů": ["{0} agent hit a limit", "{0} agents hit a limit"],
     "Problém má {0} agent|Problém mají {0} agenti|Problém má {0} agentů": ["{0} agent has a problem", "{0} agents have a problem"],
-    "Čeká na tebe {0} agent|Čekají na tebe {0} agenti|Čeká na tebe {0} agentů": ["{0} agent is waiting for you", "{0} agents are waiting for you"],
+    "Potřebuje tě {0} agent|Potřebují tě {0} agenti|Potřebuje tě {0} agentů": ["{0} agent needs you", "{0} agents need you"],
     "výsledek|výsledky|výsledků": ["result", "results"],
     "řádek|řádky|řádků": ["row", "rows"],
     "složka|složky|složek": ["folder","folders"],

@@ -12,7 +12,7 @@ const pravidlo = (css, sel) => css.match(new RegExp(`^${sel.replace(/[.*+?^${}()
 
 test('Stav agentů: jedna věta se správným tvarem podle počtu', async () => {
   const { stavAgentu } = await import('../public/js/stav-vety.js');
-  assert.deepEqual(['1', '2', '5'].map((n) => stavAgentu({ cekaji: Number(n) }).veta), ['Čeká na tebe 1 agent', 'Čekají na tebe 2 agenti', 'Čeká na tebe 5 agentů']);
+  assert.deepEqual(['1', '2', '5'].map((n) => stavAgentu({ cekaji: Number(n) }).veta), ['Potřebuje tě 1 agent', 'Potřebují tě 2 agenti', 'Potřebuje tě 5 agentů']);
   assert.deepEqual([1, 3, 6].map((n) => stavAgentu({ selhalo: n }).veta), ['Selhal 1 agent', 'Selhali 3 agenti', 'Selhalo 6 agentů']);
   assert.deepEqual([1, 2, 5].map((n) => stavAgentu({ limit: n }).veta), ['Na limit narazil 1 agent', 'Na limit narazili 2 agenti', 'Na limit narazilo 5 agentů']);
   assert.equal(stavAgentu({ selhalo: 1, limit: 1 }).veta, 'Problém mají 2 agenti');

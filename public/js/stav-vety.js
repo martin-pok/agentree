@@ -27,7 +27,7 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
       : !selhalo ? plural(limit, 'Na limit narazil {0} agent', 'Na limit narazili {0} agenti', 'Na limit narazilo {0} agentů')
         : plural(problemy, 'Problém má {0} agent', 'Problém mají {0} agenti', 'Problém má {0} agentů')).replace('{0}', problemy);
   } else if (stav === 'pozor') {
-    veta = plural(cekaji, 'Čeká na tebe {0} agent', 'Čekají na tebe {0} agenti', 'Čeká na tebe {0} agentů').replace('{0}', cekaji);
+    veta = plural(cekaji, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů').replace('{0}', cekaji);
   } else if (stav === 'nevim') {
     veta = tr('Nepodařilo se zjistit, co na počítači běží');
   } else {
