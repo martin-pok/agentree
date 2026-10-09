@@ -898,6 +898,8 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .cell-sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .cell-sub code { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
 .sub-alert { color: var(--velvet-ink); overflow: hidden; text-overflow: ellipsis; }
+.sub-live { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.sub-live > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-progress { display: block; height: 4px; border-radius: var(--r-full); background: var(--line-2); overflow: hidden; margin-top: 4px; max-width: 240px; }
 .row-progress i { display: block; height: 100%; background: var(--teal); }
 .cell-app { min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -957,19 +959,21 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .progress-top span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .progress-track { height: 6px; border-radius: var(--r-full); background: rgba(127, 122, 140, .25); overflow: hidden; }
 .progress-track i { display: block; height: 100%; background: var(--teal); transition: width var(--motion-value) var(--ease); }
-/* Oba sloupce sahají stejně hluboko. Dřív měl přepis pevnou výšku a boční sloupec byl o stovky
-   pixelů delší – vedle něj zůstávala prázdná plocha. Teď se prodlouží přepis a místo díry je
-   vidět víc konverzace. */
+/* Dlouhý přepis sahá stejně hluboko jako boční sloupec (místo díry vedle něj je vidět víc
+   konverzace), krátký má přirozenou výšku. Dřív se karta natáhla vždy, takže dvě zprávy seděly
+   v kartě vysoké jako celý boční sloupec a zbytek byl prázdný. Místo pro přepis
+   (.transcript-misto) se do výšky řádku nepočítá (contain: size) – řádek určí boční sloupec,
+   nejméně však spodní hranice. Karta v tom místě roste podle obsahu a nejvýš ho vyplní. */
 .session-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; margin-top: 32px; align-items: stretch; }
-.transcript { position: relative; display: flex; flex-direction: column; overflow: hidden; }
+.transcript-misto { min-width: 0; min-height: clamp(420px, calc(100dvh - 400px), 900px); contain: size; }
+.transcript { position: relative; display: flex; flex-direction: column; max-height: 100%; overflow: hidden; }
 .transcript-bar { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line-2); }
 .transcript-bar h2 { margin: 0; font: 500 16px/1.3 var(--f-body); }
 .transcript-bar .check-inline { margin-left: auto; }
 /* Přepis nekrade kolečko myši: scrolluje se až poté, co do něj uživatel klikne nebo na něj přejde tabulátorem. */
-/* Základ 0, ne auto: seznam si bere zbylou výšku karty, ne výšku celého přepisu – jinak by se
-   karta natáhla přes celou konverzaci a ořez s jemným zeslabením by ztratil smysl.
-   min-height drží spodní hranici pro případ, že je boční sloupec krátký. */
-.transcript-list { list-style: none; margin: 0; padding: 20px 24px 32px; flex: 1 1 0; min-height: clamp(420px, calc(100dvh - 400px), 900px); overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+/* Seznam se smí zmenšit pod výšku obsahu (min-height: 0): když se přepis do karty nevejde,
+   ořízne se s jemným zeslabením a dál se čte po kliknutí, karta nepřeroste místo pro přepis. */
+.transcript-list { list-style: none; margin: 0; padding: 20px 24px 32px; flex: 0 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
 .transcript-list.is-clipped { cursor: pointer; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 64px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 64px), transparent); }
 .transcript-list.is-browsing { overflow-y: auto; overscroll-behavior: contain; }
 .transcript-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: var(--r-md); background: var(--glass); color: var(--ink-2); font-size: 13px; box-shadow: var(--shadow-sm); pointer-events: none; animation: pop .2s var(--ease) both; }
@@ -1294,6 +1298,7 @@ html.is-cloud body { background: var(--paper); }
 
 .steps--compact { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
 .runtime-note { margin-top: 16px; }
+.runtime-web { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; }
 .runtime-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .runtime-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 16px; border-radius: var(--r-md); background: var(--surface-2); }
 /* Dlaždice běžící aplikace je tlačítko – vizuálně stejná jako ostatní, jen reaguje. */
@@ -1354,7 +1359,7 @@ html.is-cloud body { background: var(--paper); }
 .sk-filters .seg, .sk-sort .seg { padding: 2px; }
 .sk-filtr { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; }
 .sk-filtr + .sk-filtr { padding-top: 4px; border-top: 1px solid var(--line-2); }
-.sk-filtr-popis { font: 500 12px/1 var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.sk-filtr-popis { font: 400 14px/1.2 var(--f-body); letter-spacing: 0; color: var(--mute); }
 .sk-sort { display: inline-flex; align-items: center; gap: 10px; }
 .sk-note { margin: 0 0 20px; }
 @media (max-width: 560px) { .sk-filtr { grid-template-columns: minmax(0, 1fr); gap: 4px; } .sk-sort { width: 100%; } }
@@ -1803,6 +1808,9 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
   /* Na telefonu jeden sloupec – bloky jdou prostě pod sebou v pořadí, v jakém jsou v kódu. */
   .ov { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .session-grid, .grid-2, .grid-2--wide { grid-template-columns: minmax(0, 1fr); }
+  /* V jednom sloupci vedle přepisu nic není: přirozená výška, dlouhý přepis má strop. */
+  .transcript-misto { min-height: 0; contain: none; }
+  .transcript-list { max-height: clamp(420px, calc(100dvh - 400px), 900px); }
   .spend-hero { grid-template-columns: 180px minmax(0, 1fr); gap: 24px; padding: 28px; }
   .search-field { margin-left: 0; }
   .facts--row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1851,7 +1859,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
   .tl { --tl-label: 128px; }
   .pad { padding: 24px; }
   .session-title { font-size: 26px; }
-  .transcript-list { padding: 16px; height: clamp(360px, 70dvh, 720px); }
+  .transcript-list { padding: 16px; max-height: clamp(360px, 70dvh, 720px); }
   .live-strip { flex-wrap: wrap; }
   .indeterminate { width: 100%; }
   .notif-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; }
@@ -2399,7 +2407,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 /* Vpravo 8 px: hledání i „Vybrat“ pak sedí v kartě se stejným odstupem nad, pod i vpravo. */
 .filtry-rada { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; min-height: 56px; padding: 0 8px 0 24px; }
 .filtry-rada + .filtry-rada { border-top: 1px solid var(--line-2); }
-.filtry-popis { font: 500 12px/1 var(--f-body); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+.filtry-popis { font: 400 14px/1.2 var(--f-body); letter-spacing: 0; color: var(--mute); }
 .filtry-rada > .btn, .filtry-rada > .search-field { grid-column: 3; justify-self: end; margin: 0; }
 .filtry-rada > .search-field input { width: 240px; }
 .chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
@@ -2639,7 +2647,7 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .cal-nav:hover { background: var(--line-2); }
 .cal-nav .icon { width: 16px; height: 16px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.cal-dow span { display: grid; place-items: center; height: 28px; font-size: 12px; color: var(--mute); text-transform: uppercase; }
+.cal-dow span { display: grid; place-items: center; height: 28px; font-size: 12px; color: var(--mute); text-transform: capitalize; }
 .cal-day { display: grid; place-items: center; height: 36px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--ink); font: 400 14px/1 var(--f-body); cursor: pointer; transition: background-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
 .cal-day:hover { background: var(--line-2); }
 .cal-day.is-out { color: var(--mute); opacity: .55; }

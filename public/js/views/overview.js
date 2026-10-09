@@ -14,6 +14,7 @@ import { goToExtension } from '../jump.js';
 import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
 import { pouzivaneNastroje } from '../nastroje.js';
 import { noveNastrojeHtml } from '../detekce-ui.js';
+import { stavAgentu } from '../stav-vety.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -270,13 +271,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const stav = problemy.length ? 'problem' : needs.length ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
-    const veta = {
-      problem: tr('Problém u agentů: {0}', problemy.length),
-      pozor: tr('Na tvé rozhodnutí čeká agentů: {0}', needs.length),
-      nevim: tr('Nepodařilo se zjistit, co na počítači běží'),
-      ok: working.length ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje'),
-    }[stav];
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim });
     const pocty = [
       [working.length, tr('pracuje'), 'ok', '#/agenti?stav=working'],
       [needs.length, tr('potřebuje tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
@@ -284,7 +279,7 @@ function update(topics = new Set(['all'])) {
       [limited.length, tr('limit'), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
     ];
     zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
-      <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>
+      <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>${poznamka ? `<p class="zdravi-pozn">${esc(poznamka)}</p>` : ''}
       <ul class="zdravi-pocty">${pocty.map(([n, popis, ton, href]) => `<li><a href="${href}" data-ton="${ton}"><b>${n}</b><span>${esc(popis)}</span></a></li>`).join('')}</ul>
       ${problemy.length ? `<ul class="zdravi-problemy">${problemy.slice(0, 3).map((s) => `<li data-key="${esc(s.id)}"><a href="${agentHref(s.id)}"><b>${esc(s.title)}</b><small>${esc(s.status === 'limited' ? tr('Vyčerpaný limit') : s.reason || tr('Selhalo'))}</small></a></li>`).join('')}</ul>` : ''}
     </div>`);

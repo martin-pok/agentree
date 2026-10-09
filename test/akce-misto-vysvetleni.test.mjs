@@ -60,8 +60,8 @@ test('Přehled bez rozpočtu nabídne jeho nastavení a Útrata dialog rovnou ot
 test('agent, který čeká na odpověď, má tlačítko k otevření přímo v pruhu', async () => {
   const session = await zdroj('public/js/views/session.js');
   const banner = session.slice(session.indexOf("fill(el, 'banner'"), session.indexOf("fill(el, 'live'"));
-  assert.match(banner, /s\.status === 'needs_input'[\s\S]*?s\.open\?\.length \? `<div class="banner-actions">\$\{openButtons\(s, \{ small: true, max: 2 \}\)\}<\/div>` : `[^`]*howToAnswer\(s\)/,
-    'tlačítka z nabídky serveru, věta jen když žádné tlačítko není');
+  assert.match(banner, /s\.status === 'needs_input'[\s\S]*?s\.open\?\.length \? `<div class="banner-actions">\$\{openButtons\(s, \{ small: true \}\)\}<\/div>` : `[^`]*howToAnswer\(s\)/,
+    'tlačítka z nabídky serveru (všechna – hlavička je pak už neopakuje), věta jen když žádné tlačítko není');
 });
 
 test('rozhraní se neomlouvá a nemluví v první osobě', async () => {

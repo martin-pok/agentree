@@ -3,6 +3,7 @@ export { robot } from './robot-svg.js';
 import { robot } from './robot-svg.js';
 import { tr } from './i18n.js';
 import { agentsList } from './state.js';
+import { vetaPozdravu } from './stav-vety.js';
 
 const KEY = 'agenteeq:agent-personas:v1';
 const colors = ['#6260d8', '#367b68', '#a85c44', '#92609a'];
@@ -41,7 +42,7 @@ export function createHomeStudio(el) {
   form.addEventListener('input', preview);
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
   // Robot u pozdravu ukazuje stav všech agentů najednou: kdo čeká na tebe, zamává; když někdo
-  // pracuje, píše; jinak odpočívá. Věta pod nadpisem říká totéž slovy.
+  // pracuje, píše; jinak odpočívá. Věta pod nadpisem radí, co dělat dál (počty nese box Stav agentů).
   const hlavni = el.querySelector('.home-robot');
   if (hlavni) hlavni.innerHTML = robot('Orbit');
   const pulz = el.querySelector('[data-home-pulse]');
@@ -51,9 +52,7 @@ export function createHomeStudio(el) {
     const cekaji = vsichni.filter((a) => a.status === 'needs_input').length;
     const pracuji = vsichni.filter((a) => a.status === 'working').length;
     hlavni.dataset.state = cekaji ? 'needs_input' : pracuji ? 'working' : 'idle';
-    pulz.textContent = cekaji ? tr('Na tvé rozhodnutí čeká agentů: {0}. Najdeš je hned pod polem pro zadání.', cekaji)
-      : pracuji ? tr('Pracujících agentů: {0}. Mezitím můžeš zadat další úkol.', pracuji)
-        : tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.');
+    pulz.textContent = vetaPozdravu({ cekaji, pracuji });
   };
   const refresh = () => {
     stavPlochy();

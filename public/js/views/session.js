@@ -131,7 +131,7 @@ function mount(el, [id]) {
     <div data-region="banner"></div>
     <div data-region="live"></div>
     <div class="session-grid">
-      <section class="card transcript" aria-labelledby="tr-h">
+      <div class="transcript-misto"><section class="card transcript" aria-labelledby="tr-h">
         <div class="transcript-bar">
           <h2 id="tr-h">${tr('Přepis')}</h2><span class="muted small" data-region="tr-count"></span>
           <label class="check-inline"><input type="checkbox" data-tools checked> ${tr('Zobrazit nástroje')}</label>
@@ -141,7 +141,7 @@ function mount(el, [id]) {
         <span class="transcript-hint" data-hint aria-hidden="true" hidden>${ICON.down}${tr('Klikni a procházej přepis')}</span>
         <button class="jump" type="button" data-jump hidden>${ICON.down}${tr('Nové zprávy')}</button>
         <div data-reply-slot></div>
-      </section>
+      </section></div>
       <aside class="session-side" data-region="side"></aside>
     </div>
   </div>`;
@@ -330,22 +330,23 @@ function update() {
   }
   if (t) renderTranscript(el, t);
 
+  // Když agent čeká na tebe (nebo vzdálený agent selhal), patří tlačítka k pokračování do karty
+  // s požadavkem – tam, kde je otázka. V hlavičce by stejné tlačítko viselo podruhé.
+  const akceVBanneru = Boolean(s.open?.length) && (s.status === 'needs_input' || (s.status === 'failed' && s.observation));
+  const akce = `${s.proces || akceVBanneru ? '' : openButtons(s)}${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" title="${tr('Kopírovat příkaz pro pokračování')}">${ICON.copy}</button>` : ''}`;
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile agent-robot-tile">${agentRobot(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
-    <div class="session-actions">
-      ${s.proces ? '' : openButtons(s)}
-      ${s.resume ? `<button class="icon-btn icon-btn--line" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}" aria-label="${tr('Kopírovat příkaz pro pokračování')}" title="${tr('Kopírovat příkaz pro pokračování')}">${ICON.copy}</button>` : ''}
-    </div>`);
+    ${akce ? `<div class="session-actions">${akce}</div>` : ''}`);
 
   fill(el, 'banner', s.status === 'needs_input'
-    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true, max: 2 })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
+    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
-        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true, max: 1 })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
+        ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.proces
           ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
           : '');
