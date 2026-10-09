@@ -291,6 +291,9 @@ try {
           setTimeout(() => { clearInterval(t); hotovo(scrollY); }, 4000);
         }));
         const predKlavesou = await ustal();
+        // WebKit headless can leave focus on an internal non-scrollable target after wheel.
+        // Give keyboard input an explicit document scroll target, as a real user would via Tab.
+        await p.evaluate(() => { document.body.tabIndex = -1; document.body.focus({ preventScroll: true }); });
         await p.keyboard.press('PageDown');
         const poKlavese = await ustal();
         assert.ok(poKlavese - predKlavesou > 300, `${engine}: Page Down posunul jen o ${poKlavese - predKlavesou} px`);
