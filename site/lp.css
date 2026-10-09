@@ -1119,7 +1119,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .site-footer .footer-bottom .foot-note { grid-column:1/-1; grid-row:2; text-align:center; } }
 @media(prefers-reduced-motion:reduce) { .site-footer .footer-bottom .text-link { transition:none; transform:none!important; } }
  
-@media(max-width:900px) { .site-footer .footer-bottom { width:calc(100% - 32px); } }
+@media(max-width:620px) { .site-footer .footer-bottom { width:calc(100% - 32px); } }
 
 
 /* Installation CTA: a restrained organic lavender light falling from above.
