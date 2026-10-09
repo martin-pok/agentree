@@ -123,7 +123,7 @@ if (scena) {
   ];
   const PARALAXA = { daleko: 10, stred: 22, blizko: 42 };
   // Ručně komponované asymetrické náklony: jen roboti bez bublin, žádná náhodnost při načítání.
-  const NAKLONY = [-38, 0, 24, -58, 0, 42];
+  const NAKLONY = [-38, 0, 24, -58, 0, -42];
   scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, typ, bublina], i) =>
     `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i};--persona:${barva};--naklon:${bublina ? 0 : NAKLONY[i]}deg">`
     + `<span class="hr-telo">${robot(typ)}</span>`
