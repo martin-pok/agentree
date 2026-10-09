@@ -1142,3 +1142,13 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
       linear-gradient(180deg,#f4f2fa,#f7f6fb 55%,#f5f4fa);
   }
 }
+
+/* Integration lanes: complete visible glass contours, never cropped edge strokes. */
+#propojeni .integration-map { column-gap:20px; }
+#propojeni .integration-lane { position:relative; padding:28px; border:1px solid rgba(211,205,247,.21); border-radius:24px; background:linear-gradient(150deg,rgba(255,255,255,.065),rgba(255,255,255,.018)); box-shadow:inset 0 1px rgba(255,255,255,.055); overflow:visible; min-width:0; }
+#propojeni .integration-heading { gap:0; }
+#propojeni .integration-tools li { min-width:0; }
+#propojeni .integration-tools li img { display:block; max-width:27px; object-fit:contain; }
+#propojeni .integration-flow { align-self:center; padding-top:0; height:90px; }
+@media(max-width:900px) { #propojeni .integration-map { column-gap:12px; } #propojeni .integration-lane { padding:19px; } }
+@media(max-width:620px) { #propojeni .integration-map { display:block; } #propojeni .integration-lane { padding:22px; } }
