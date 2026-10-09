@@ -65,10 +65,10 @@ try {
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
             return {
-              videt: Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
+              videt: innerWidth <= 620 ? Boolean(document.querySelector('[data-mobile-menu-toggle]') && getComputedStyle(document.querySelector('[data-mobile-menu-toggle]')).display !== 'none') : Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
               prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)),
               jazyk: document.documentElement.lang,
-              aktualni: document.querySelector('.lang [aria-current="page"]')?.getAttribute('lang'),
+              aktualni: document.querySelector(innerWidth <= 620 ? '.mobile-menu-languages [aria-current="page"]' : '.lang [aria-current="page"]')?.getAttribute('lang'),
             };
           });
           const cekanyJazyk = stranka === '/en' ? 'en' : 'cs';

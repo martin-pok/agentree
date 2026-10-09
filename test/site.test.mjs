@@ -313,7 +313,7 @@ test('web: stránka Instalace v obou jazycích, stejná stavba a odkaz z úvodn�
   // Windows je beta a stránka to říká i s tím, co tam chybí – nevydává ho za hotový.
   assert.match(cs, /beta/);
   assert.match(en, /beta/);
-  assert.match(cs, /Co na Windows zatím chybí/);
+  assert.match(cs, /Omezení beta verze pro Windows/);
   assert.match(en, /What Windows doesn’t have yet/);
   const text = en.replace(/<script[\s\S]*?<\/script>/g, '').replace(/aria-label="Čeština"/, '');
   assert.deepEqual(text.match(/[^<>"]*[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][^<>"]*/g) || [], [], 'v anglické stránce zůstala čeština');

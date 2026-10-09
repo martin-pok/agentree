@@ -1664,7 +1664,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .install-hero-path {opacity:.75;}
 @media(max-width:620px) {
   .install-page .install-hero-scene {padding-top:30px;gap:0;}
-  .install-page .install-hero-node {min-height:86px;padding:14px 7px;font-size:11px;border-radius:16px;}
+  .install-page .install-hero-node {min-height:86px;padding:14px 7px;font-size:12px;border-radius:16px;}
   .install-page .install-hero-node--app .install-hero-robot {width:36px;top:-26px;right:-11px;}
   .install-page .hero .kicker {font-size:14px;}
 }
