@@ -19,12 +19,12 @@ const destination=(url,depth)=>{
 // Browser ES modules do not work reliably through file://. Preserve exactly the
 // production behavior, but bundle its two dependency-free modules into a
 // classic script and defer execution until all HTML has been parsed.
-const robot=(await fs.readFile('public/js/robot-svg.js','utf8')).replace(/^export\\s+/gm,'');
-const scroll=(await fs.readFile('public/js/plynule-posouvani.js','utf8')).replace(/^export\\s+/gm,'');
+const robot=(await fs.readFile('public/js/robot-svg.js','utf8')).replace(/^export\s+/gm,'');
+const scroll=(await fs.readFile('public/js/plynule-posouvani.js','utf8')).replace(/^export\s+/gm,'');
 const original=(await fs.readFile('site/lp.js','utf8'))
- .replace(/^import\\s+\\{[^}]+\\}\\s+from\\s+['\"][^'\"]+['\"];?\\s*$/gm,'');
-const bundled='document.addEventListener("DOMContentLoaded",()=>{\\n"use strict";\\n'+robot+'\\n'+scroll+'\\n'+original+'\\n});';
-if(/^\\s*(import|export)\\s/m.test(bundled))throw new Error('Offline bundle still has ES module syntax');
+ .replace(/^import\s+\{[^}]+\}\s+from\s+['\"][^'\"]+['\"];?\s*$/gm,'');
+const bundled='document.addEventListener("DOMContentLoaded",()=>{\n"use strict";\n'+robot+'\n'+scroll+'\n'+original+'\n});';
+if(/^\s*(import|export)\s/m.test(bundled))throw new Error('Offline bundle still has ES module syntax');
 async function walk(dir,depth=0){
  for(const entry of await fs.readdir(dir,{withFileTypes:true})){
   const filename=path.join(dir,entry.name);
@@ -34,8 +34,8 @@ async function walk(dir,depth=0){
   if(entry.name.endsWith('.html')){
    // Bundle the entire interactive experience into each page instead of
    // leaving imports rooted at /js, which fail for local files.
-   s=s.replace(/<script\\s+type=["']module["']\\s+src=["']\\/lp\\.js["']><\\/script>/g,
-     '<script>'+bundled.replace(/<\\/script/gi,'<\\\\/script')+'</script>');
+   s=s.replace(/<script\s+type=["']module["']\s+src=["']\/lp\.js["']><\/script>/g,
+     '<script>'+bundled.replace(/<\/script/gi,'<\\/script')+'</script>');
    s=s.replace(/(href|src|srcset|poster)=(["'])(\/[^"']*)\2/g,(_m,k,q,url)=>`${k}=${q}${destination(url,depth)}${q}`);
    s=s.replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi,'');
    s=s.replace(/<link[^>]+rel=["']alternate["'][^>]*>/gi,'');
