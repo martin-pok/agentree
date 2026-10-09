@@ -1417,3 +1417,21 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(max-width:620px) {
  #propojeni .integration-result {box-shadow:0 0 0 1px rgba(158,136,255,.14),0 0 34px rgba(130,96,240,.19),0 16px 56px -24px rgba(113,83,236,.37);}
 }
+
+
+/* Privacy trilogy — one Agenteeq violet identity, differentiated by pictograms.
+   Unified lighting, volume and hover behavior in all three cards. */
+#soukromi .privacy-card:is(.privacy-card--1,.privacy-card--2,.privacy-card--3) .privacy-orb {
+  color:#fff;
+  background:
+    radial-gradient(circle at 31% 22%,rgba(218,207,255,.65) 0%,rgba(165,143,255,.26) 17%,transparent 45%),
+    radial-gradient(circle at 36% 29%,#8a78e3 0%,#5a4db5 49%,#29235f 100%);
+  border:1px solid rgba(219,203,255,.32);
+  box-shadow:
+    inset 3px 5px 10px rgba(255,255,255,.20),
+    inset -10px -14px 23px rgba(13,7,57,.39),
+    0 20px 36px -13px rgba(101,80,218,.48),
+    0 0 35px -14px rgba(148,123,255,.38);
+}
+#soukromi .privacy-card .privacy-orb::after { border-color:rgba(235,226,255,.17); }
+#soukromi .privacy-orb svg { color:#fff; filter:drop-shadow(0 2px 5px rgba(23,14,72,.35)); }
