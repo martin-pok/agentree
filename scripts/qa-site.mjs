@@ -29,13 +29,10 @@ const output = 'dist/qa-site';
 // Stránka slibuje, že nic nedotahuje z cizích serverů. Tohle to drží: všechno mimo vlastní
 // původ se odmítne a zapíše. Zároveň to brání tomu, aby klik na Stáhnout odvedl kontrolu pryč.
 const puvod = new URL(url).origin;
-// Google's unmodified official Chrome Web Store badge is the sole approved external image.
-const officialBadge = 'https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png';
 async function jenMistni(page, cizi) {
   await page.route('**/*', (route) => {
     const cil = route.request().url();
     if (cil.startsWith(puvod) || cil.startsWith('data:') || cil.startsWith('blob:')) return route.continue();
-    if (cil === officialBadge) return route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==', 'base64') });
     cizi.push(cil);
     return route.abort();
   });
@@ -102,6 +99,29 @@ try {
           await page.locator('a[href="#rozsireni"]').click();
           await page.waitForFunction(() => document.getElementById('rozsireni').open);
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), '');
+          const accordion = await page.evaluate(() => {
+            const rows = [...document.querySelectorAll('#vyzkouset .rows > details')];
+            const badges = rows.map(row => row.querySelector('.detail-tag').getBoundingClientRect().right);
+            const plus = rows.map(row => {
+              const summary = row.querySelector('summary');
+              const rect = summary.getBoundingClientRect();
+              const css = getComputedStyle(summary);
+              return rect.right - parseFloat(css.paddingRight) - 14;
+            });
+            const extension = rows[0];
+            return {
+              badges, plus,
+              borderTop: getComputedStyle(document.querySelector('#vyzkouset .rows')).borderTopWidth,
+              highlightBottom: getComputedStyle(extension).borderBottomWidth,
+              nextTop: getComputedStyle(rows[1]).borderTopWidth,
+              radius: parseFloat(getComputedStyle(extension).borderTopLeftRadius),
+              mascot: getComputedStyle(extension.querySelector('.robot-shell')).fill,
+            };
+          });
+          assert.ok(Math.abs(accordion.badges[0] - accordion.badges[1]) <= 1 && Math.abs(accordion.plus[0] - accordion.plus[1]) <= 1, `${engine} ${theme} ${width} ${stranka}: odznaky a plus nejsou v jedné ose`);
+          assert.deepEqual([accordion.borderTop, accordion.highlightBottom, accordion.nextTop], ['0px', '0px', '0px'], `${engine} ${theme} ${width} ${stranka}: kolidující linka accordiona`);
+          assert.ok(accordion.radius >= 18 && accordion.mascot !== 'rgb(0, 0, 0)', `${engine} ${theme} ${width} ${stranka}: okraje nebo robot rozšíření`);
+          if ([375, 1440].includes(width)) await page.locator('#vyzkouset').screenshot({ path: `${output}/${engine}-${theme}-${width}${stranka === '/en' ? '-en' : ''}-stazeni.png` });
           await page.locator('#rozsireni summary').focus();
           await page.keyboard.press('Enter');
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), null);

@@ -49,8 +49,8 @@
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Windows</a>
     </div>
     <p class="specs"><span>Mac s čipem Apple (M1 a novější)</span><span>macOS 14 a novější</span><span>Windows 10/11 · beta</span></p>
-    <div class="install-hero-scene" role="img" aria-label="Instalace Agenteeq: stáhnout DMG, přesunout do Aplikací, otevřít">
-<div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Stáhni DMG</strong><small>Otevři obraz disku</small></span></div>
+    <div class="install-hero-scene" role="img" aria-label="Instalace Agenteeq: stáhnout aplikaci, přesunout do Aplikací, otevřít">
+<div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Stáhni balíček</strong><small>Otevři stažený soubor</small></span></div>
 <span class="install-hero-link" aria-hidden="true"></span>
 <div class="install-hero-step install-hero-step--featured"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2H10l2 2h6.5a2 2 0 0 1 2 2v10h-17V7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Přesuň do Aplikací</strong><small>Přetáhni aplikaci do složky</small></span><span class="install-hero-robot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt="" width="50" height="50"></span></div>
 <span class="install-hero-link" aria-hidden="true"></span>
@@ -69,8 +69,14 @@
 
   <ol class="wrap steps steps--ctyri">
 
+    <!-- mac:dmg -->
     <li><span class="step-n" aria-hidden="true">1</span><b>Stáhni a otevři</b><p>Klikni na <b>Stáhnout pro Mac</b> a ve Stahování dvakrát klikni na Agenteeq. Otevře se okno s aplikací a složkou Aplikace.</p></li>
     <li><span class="step-n" aria-hidden="true">2</span><b>Přetáhni ho do Aplikací</b><p>V tom okně přetáhni Agenteeq na složku <b>Aplikace</b>. Tím je nainstalováno; okno pak zavři.</p></li>
+    <!-- /mac:dmg -->
+    <!-- mac:zip -->
+    <li><span class="step-n" aria-hidden="true">1</span><b>Stáhni a rozbal</b><p>Klikni na <b>Stáhnout pro Mac</b>, otevři stažený ZIP a nech macOS rozbalit aplikaci.</p></li>
+    <li><span class="step-n" aria-hidden="true">2</span><b>Přesuň ho do Aplikací</b><p>Rozbalený Agenteeq přesuň do složky <b>Aplikace</b>.</p></li>
+    <!-- /mac:zip -->
     <li><span class="step-n" aria-hidden="true">3</span><b>Otevři ho</b><p>Otevři Agenteeq ze složky Aplikace. macOS ohlásí, že aplikaci nemůže ověřit. Dialog zavři, do Koše ji nepřesouvej.</p></li>
     <li><span class="step-n" aria-hidden="true">4</span><b>Povol ho v Nastavení</b><p>Otevři <b>Nastavení systému → Soukromí a zabezpečení</b>, sjeď dolů k části Zabezpečení a klikni na <b>Přesto otevřít</b>. Zadej heslo k Macu a potvrď <b>Otevřít</b>.</p></li>
   </ol>
@@ -125,9 +131,8 @@
  <div class="extension-conversation"><span class="extension-profile"><img src="/logos/openai.svg" alt="" width="24" height="24"></span><div><strong>Webová konverzace</strong><p>Dostupná ve tvém přehledu</p></div></div>
  <div class="extension-signal"><span></span><i></i><span></span></div><div class="extension-received"><img src="/brand-mark-clean.svg" alt="" width="25" height="25"><div><strong>Jeden přehled</strong><small>Všichni agenti na jednom místě</small></div><b aria-hidden="true">✓</b></div></div>
  <div class="extension-mascot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt=""></div></div>
-    <div class="gatekeeper extension-instructions extension-store-card"><div class="extension-store-heading"><div><strong>Google Chrome</strong><small>Chrome Web Store</small></div></div>
+    <div class="gatekeeper extension-instructions extension-store-card"><div class="extension-store-heading"><img src="/logos/chrome.svg" alt="" width="40" height="40"><div><strong>Google Chrome</strong><small>Chrome Web Store</small></div></div>
       <!-- rozsireni:obchod -->
-      <a class="extension-official-badge" data-obchod-chrome href="#" aria-label="Otevřít Agenteeq v Chrome Web Store"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png" alt="Available in the Chrome Web Store" width="206" height="58" loading="lazy"></a>
       <p class="rozsireni-akce"><a class="btn btn--lg extension-cta" data-obchod-chrome href="#">Přidat do Chromu</a></p>
       <p>Rozšíření se s aplikací spáruje samo, stačí mít Agenteeq spuštěný.</p>
       <!-- /rozsireni:obchod -->
