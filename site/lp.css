@@ -1202,3 +1202,20 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   .hero .btn:hover { transform:translateY(-2px) scale(1.015); }
   .hero .btn:active { transform:translateY(0) scale(.985); }
 }
+
+
+/* Light reading surfaces remain light even when the visitor's OS is dark.
+   Their backgrounds are intentionally fixed, so their foreground tokens must
+   not inherit the global dark palette (WCAG AA, CZ/EN, mobile/desktop). */
+@media (prefers-color-scheme: dark) {
+  #vyzkouset, #otazky, .install-page, .doc-page {
+    color-scheme: light;
+    --paper: #F3F5F8; --paper-2: #EAE8EF; --card: #FFFFFF;
+    --ink: #16203A; --ink-2: #3A3743; --mute: #686472;
+    --on-ink: #FFFFFF; --line: #E3E1E9; --line-2: #EFEDF3;
+    --brass: #B07D2C; --brass-ink: #86620F; --brass-tint: #F7EEDA;
+    --action: #16203A; --on-action: #FFFFFF; --action-hover: #3A3646;
+  }
+  #otazky { background:linear-gradient(165deg,#f1eff7,#eae8f1); color:#16203a; }
+  #vyzkouset .btn--vedlejsi { color:#16203a; }
+}
