@@ -529,10 +529,14 @@ h2[tabindex='-1']:focus, h3[tabindex='-1']:focus { outline: none; }
 .empty p { margin: 0; max-width: 52ch; }
 .empty .btn { margin-top: 8px; }
 .empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-.empty-mark { display: flex; gap: 6px; margin-bottom: 8px; }
-.empty-mark i { width: 16px; height: 16px; background: var(--brass); }
-.empty-mark i:nth-child(1) { border-radius: 50%; background: var(--velvet); }
-.empty-mark i:nth-child(3) { background: var(--teal); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.empty-mark { --er: #5254D8; display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: 8px; border-radius: 50%; background: color-mix(in srgb, var(--er) 9%, transparent); }
+html[data-theme='dark'] .empty-mark { --er: #8E90FF; }
+.empty-mark svg { width: 44px; height: 44px; overflow: visible; }
+.empty-mark .er-hlava { fill: color-mix(in srgb, var(--er) 14%, var(--card)); stroke: color-mix(in srgb, var(--er) 45%, transparent); stroke-width: 1.5; }
+.empty-mark .er-ant, .empty-mark .er-oko { stroke: var(--er); }
+.empty-mark .er-svetlo { fill: var(--er); transform-box: fill-box; transform-origin: center; animation: er-dech 3.2s ease-in-out infinite; }
+@keyframes er-dech { 50% { opacity: .35; transform: scale(.8); } }
+@media (prefers-reduced-motion: reduce) { .empty-mark .er-svetlo { animation: none; } }
 .empty-inline { padding: 24px; color: var(--mute); font-size: 14px; text-align: center; list-style: none; }
 
 /* ---------- Tlačítka, formuláře ---------- */

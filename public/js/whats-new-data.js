@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.45.1',
+    date: '2026-10-08',
+    title: 'Robot i v prázdných stavech',
+    items: [
+      'Prázdné stránky místo starých barevných tvarů ukazují odpočívajícího robota Agenteeq ve značkové fialové.',
+    ],
+    en: {
+      title: 'The robot in empty states too',
+      items: [
+        'Empty pages now show a resting Agenteeq robot in the brand violet instead of the old coloured shapes.',
+      ],
+    },
+  },
+  {
     version: '0.45.0',
     date: '2026-10-08',
     title: 'Odpověz agentovi přímo z aplikace',

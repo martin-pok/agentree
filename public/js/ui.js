@@ -528,8 +528,11 @@ export function legendHtml(series, { box = false } = {}) {
     .join('');
 }
 
+// Prázdný stav: hlava robota ze značky se zavřenýma očima – odpočívá, protože tu zatím nic není.
+const EMPTY_ROBOT = '<svg viewBox="0 0 48 48" width="48" height="48" fill="none"><path class="er-ant" d="M24 5V13" stroke-width="3" stroke-linecap="round"/><circle class="er-svetlo" cx="24" cy="5" r="3"/><rect class="er-hlava" x="6" y="13" width="36" height="29" rx="11.5"/><path class="er-oko" d="M15.5 28.5h5M27.5 28.5h5" stroke-width="3" stroke-linecap="round"/></svg>';
+
 export function emptyState({ title, text = '', action = '' }) {
-  return `<div class="empty"><span class="empty-mark" aria-hidden="true"><i></i><i></i><i></i></span><strong>${esc(title)}</strong>${text ? `<p>${text}</p>` : ''}${action}</div>`;
+  return `<div class="empty"><span class="empty-mark" aria-hidden="true">${EMPTY_ROBOT}</span><strong>${esc(title)}</strong>${text ? `<p>${text}</p>` : ''}${action}</div>`;
 }
 
 export function stateBadge(stateName, label) {
