@@ -2164,7 +2164,8 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .avatar-pick { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); overflow: hidden; display: grid; place-items: center; font: 400 18px/1 var(--f-display); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .avatar-pick svg { width: 100%; height: 100%; }
 :where(html:not(.is-scrolling)) .avatar-pick:hover { transform: translateY(-2px); }
-.avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--brass); }
+.avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px #5254D8; }
+html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px #8E90FF; }
 .run-log { margin: 0; max-height: 60vh; overflow: auto; padding: 16px; border-radius: var(--r-sm); background: var(--ink-surface); color: #F6F5F7; font: 400 12px/1.55 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Průvodce */

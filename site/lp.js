@@ -102,4 +102,65 @@ if ('IntersectionObserver' in window) {
   for (const kapitola of kapitoly) navigace.observe(kapitola);
 }
 
+// Scéna úvodu (site/lp.css „Scéna úvodu“): roboti kolem okna aplikace ve třech hloubkách
+// a okno, které se při posouvání narovná. Roboti jsou ozdoba (aria-hidden), stav nesou i slovy.
+// Hlava je stejná jako v logu a v aplikaci: anténa, plastové tělo s odleskem, tmavý displej, oči.
+const scena = document.querySelector('[data-hero-stage]');
+if (scena) {
+  const robot = (i, barva, svetla) => `<svg viewBox="0 0 80 80" fill="none"><defs><linearGradient id="hr-g${i}" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="${svetla}"/><stop offset="1" stop-color="${barva}"/></linearGradient></defs>`
+    + `<path d="M40 8v14" stroke="${barva}" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="8" r="5" fill="${svetla}"/>`
+    + `<rect x="5" y="38" width="8" height="18" rx="4" fill="${barva}"/><rect x="67" y="38" width="8" height="18" rx="4" fill="${barva}"/>`
+    + `<rect x="10" y="20" width="60" height="50" rx="19" fill="url(#hr-g${i})"/>`
+    + `<ellipse cx="27" cy="28" rx="11" ry="4" fill="#FFFFFF" opacity=".38" transform="rotate(-14 27 28)"/>`
+    + `<rect x="18" y="33" width="44" height="28" rx="12" fill="#101016"/>`
+    + `<rect x="28" y="40" width="7" height="13" rx="3.5" fill="#C8F0E6"/><rect x="45" y="40" width="7" height="13" rx="3.5" fill="#C8F0E6"/></svg>`;
+  const t = anglicky
+    ? { hotovo: 'Done, tests pass', ceka: 'Needs your OK' }
+    : { hotovo: 'Hotovo, testy prošly', ceka: 'Potřebuju tvé OK' };
+  // [x, y, velikost (vše v % scény), hloubka, barva, světlá, bublina]
+  // Všichni stojí mimo obsah okna: nad horní hranou, po stranách nebo u spodního rozplynutí.
+  const ROBOTI = [
+    ['-6%', '6%', '5%', 'daleko', '#5254D8', '#A5A7FF'],
+    ['91%', '-16%', '8.5%', 'stred', '#2B6B53', '#7FD9B8', ['hotovo', '#43D1B1', 'vlevo']],
+    ['-12%', '46%', '14%', 'blizko', '#B0284F', '#FF9EB9'],
+    ['101%', '34%', '4.5%', 'daleko', '#C99A3E', '#F5D78E'],
+    ['1%', '-17%', '7.5%', 'stred', '#C99A3E', '#F5D78E', ['ceka', '#E4B95F']],
+    ['100%', '84%', '12%', 'blizko', '#5254D8', '#A5A7FF'],
+  ];
+  const PARALAXA = { daleko: 10, stred: 22, blizko: 42 };
+  scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, svetla, bublina], i) =>
+    `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i}">`
+    + `<span class="hr-telo">${robot(i, barva, svetla)}</span>`
+    + (bublina ? `<span class="hr-bublina${bublina[2] ? ' hr-bublina--vlevo' : ''}" style="--ton:${bublina[1]}"><i></i>${t[bublina[0]]}</span>` : '')
+    + '</span>').join('');
+
+  // Náklon okna podle posouvání a paralaxa podle ukazatele. Jen transform přes proměnné CSS,
+  // jeden zápis za snímek. Při omezeném pohybu zůstane okno rovné a roboti stojí.
+  if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    let ceka = false;
+    const zmer = () => {
+      ceka = false;
+      const top = scena.getBoundingClientRect().top;
+      const p = Math.min(1, Math.max(0, 1 - (top - innerHeight * 0.12) / (innerHeight * 0.6)));
+      scena.style.setProperty('--p', p.toFixed(3));
+      scena.classList.toggle('is-rovne', p > 0.995);
+    };
+    const naplanuj = () => { if (!ceka) { ceka = true; requestAnimationFrame(zmer); } };
+    addEventListener('scroll', naplanuj, { passive: true });
+    addEventListener('resize', naplanuj);
+    zmer();
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      let mys = null;
+      addEventListener('pointermove', (e) => {
+        const posun = () => {
+          scena.style.setProperty('--mx', ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
+          scena.style.setProperty('--my', ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
+          mys = null;
+        };
+        if (!mys) mys = requestAnimationFrame(posun);
+      }, { passive: true });
+    }
+  }
+}
+
 plynulePosouvani();

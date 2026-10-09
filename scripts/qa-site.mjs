@@ -382,6 +382,9 @@ try {
       });
       await motionPage.mouse.up();
       await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
+      // Posun spustí nástup nadpisu sekce až ve chvíli, kdy ho observer uvidí (asynchronně).
+      // Počkat na něj, jinak by kontrola proběhla dřív, než nástup začne, a doběh by nestihla.
+      await motionPage.waitForFunction(() => document.querySelector('#prohlidka .unit-head')?.classList.contains('motion-entered'), null, { timeout: 4000 });
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
