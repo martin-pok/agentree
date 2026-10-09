@@ -1510,3 +1510,67 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(max-width:620px) {
  #vyzkouset ol.steps > li > .step-n {width:56px!important;height:56px!important;min-width:56px;font-size:30px;margin-bottom:16px!important;}
 }
+
+
+/* Installation: one joined editorial panel, like the Windows instructions.
+   The dividers live between columns only; no ornamental lines inside cards. */
+#vyzkouset ol.steps {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:0;
+  overflow:hidden;
+  border:1px solid rgba(55,50,100,.13);
+  border-radius:26px;
+  background:rgba(255,255,255,.68);
+  box-shadow:0 22px 55px -48px rgba(40,29,100,.24);
+}
+#vyzkouset ol.steps > li {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  padding:30px 28px 34px;
+  min-width:0;
+  min-height:275px;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:none;
+}
+#vyzkouset ol.steps > li:not(:last-child) { border-right:1px solid rgba(55,50,100,.13)!important; }
+#vyzkouset ol.steps > li::before,
+#vyzkouset ol.steps > li::after { content:none!important;display:none!important; }
+#vyzkouset ol.steps > li > .step-n {
+  width:50px!important;height:50px!important;min-width:50px;
+  display:grid!important;place-items:center!important;
+  align-self:flex-start!important;justify-self:auto!important;
+  margin:0 0 24px!important;
+  border-radius:16px!important;
+  background:#eeebfc!important;
+  box-shadow:none!important;
+  color:#6255c9!important;
+  font-size:29px;font-weight:400;line-height:1;
+}
+#vyzkouset ol.steps > li > .step-n .odo { color:inherit; }
+#vyzkouset ol.steps > li b { margin:0 0 12px; }
+#vyzkouset ol.steps > li p { margin:0; }
+@media(max-width:760px) {
+  #vyzkouset ol.steps { grid-template-columns:1fr; }
+  #vyzkouset ol.steps > li { min-height:0;padding:25px 24px; }
+  #vyzkouset ol.steps > li:not(:last-child) { border-right:0!important;border-bottom:1px solid rgba(55,50,100,.13)!important; }
+  #vyzkouset ol.steps > li > .step-n { width:48px!important;height:48px!important;min-width:48px;margin-bottom:18px!important; }
+}
+/* Consistent brand interactions only for filled CTA buttons. */
+@media(hover:hover) and (pointer:fine) {
+  .nav-in > .btn:hover,.hero .cta-row > .btn:hover,
+  #vyzkouset .cta-row .btn:hover,#vyzkouset .rozsireni-akce .btn:hover,
+  .install-page .cta-row .btn:hover,.install-page .extension-cta:hover,
+  .mobile-menu-download:hover,.site-footer .footer-download:hover {
+    background:#6255c9!important;color:#fff!important;
+    border-color:#6255c9!important;
+    box-shadow:0 12px 30px -12px rgba(98,85,201,.44);
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  #vyzkouset ol.steps > li { transition:none!important; }
+}
