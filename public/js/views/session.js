@@ -320,9 +320,9 @@ function propojeniNote(s) {
   const text = h === 'before'
     ? tr('Konverzace začala před zapnutím propojení, žádost o povolení se proto jen odhaduje z přepisu. Přesný stav bude vidět po novém spuštění: ukonči Claude Code a pokračuj v konverzaci znovu.')
     : tr('Z této konverzace zatím nepřišla žádná událost propojení, žádost o povolení se jen odhaduje z přepisu. Běží-li Claude Code od doby před zapnutím propojení, přesný stav bude vidět po novém spuštění.');
-  // „Pokračovat v Terminálu“ je hned pod poznámkou (a jen na macOS); příkaz jde zkopírovat všude.
-  const akce = s.resume ? `<button class="btn btn--sm" type="button" data-copy="${esc(s.resume)}" data-copy-message="${tr('Příkaz pro pokračování zkopírován')}">${ICON.copy}${tr('Kopírovat příkaz pro pokračování')}</button>` : '';
-  return `<div class="set-note hook-note"><span>${text}</span>${akce}</div>`;
+  // Pokračování nabízí lišta akcí hned pod poznámkou („Pokračovat v Terminálu“ na macOS a kopírování
+  // příkazu všude) – druhé tlačítko v poznámce by dělalo totéž.
+  return `<div class="set-note hook-note"><span>${text}</span></div>`;
 }
 
 function update() {

@@ -1,5 +1,16 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: pravdivé stavy, vizuální opravy, Pomocník, propojení hooků (9. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 952 testů, 940 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 305 souborů bez syntaktické chyby |
+| `qa:contrast` | aplikace, web a okno rozšíření: WCAG 2.2 AA |
+| `qa:tvary`, `qa:desktop` | prošly v Chromiu, bez chyb JavaScriptu; WebKit až v CI |
+| Prohlížeč | Přehled, Agenti, detail agenta, Dovednosti, Nastavení a Pomocník v 1440 i 375 px, světlý i tmavý vzhled, konzole čistá |
+| Neověřeno | příkaz pro pokračování v PowerShellu na skutečném Windows; cloudové modely Ollamy proti skutečné Ollamě; že Claude Code načítá hooky jen při startu (podle dokumentace, ne z běhu) |
+
 ## Protokol ověření – 0.38.2, zpětné odečty Claude a opravy UI (7. 10. 2026, macOS, Node 24.18)
 
 | Kontrola | Výsledek |
