@@ -6,6 +6,7 @@
 // Plynulé posouvání sdílí web s aplikací: hosting nese celé rozhraní (public/ leží v kořeni webu),
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
+import { robot } from '/js/robot-svg.js';
 
 const anglicky = document.documentElement.lang === 'en';
 
@@ -69,7 +70,7 @@ if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'Intersecti
 // Nástup začíná teprve v čitelné části okna. Bez JS, podpory API nebo při
 // omezeném pohybu zůstává celý obsah viditelný a přístupný.
 if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'IntersectionObserver' in window) {
-  const prvky = [...document.querySelectorAll('.unit:not(.hero) .unit-head, .tile, .source-group, .facts article, .steps li, .prikaz')];
+  const prvky = [...document.querySelectorAll('.unit:not(.hero) .unit-head, .tile, .source-group, .facts article, .steps li, .prikaz, #propojeni .integration-lane, #propojeni .integration-down, #propojeni .integration-result, #rozsireni')];
   for (const prvek of prvky) prvek.classList.add('motion-pending');
   const pozorovatel = new IntersectionObserver((zaznamy) => {
     for (const zaznam of zaznamy) {
@@ -102,4 +103,141 @@ if ('IntersectionObserver' in window) {
   for (const kapitola of kapitoly) navigace.observe(kapitola);
 }
 
+// Scéna úvodu (site/lp.css „Scéna úvodu“): roboti kolem okna aplikace ve třech hloubkách
+// a okno, které se při posouvání narovná. Roboti jsou ozdoba (aria-hidden), stav nesou i slovy.
+// Hlava je stejná jako v logu a v aplikaci: anténa, plastové tělo s odleskem, tmavý displej, oči.
+const scena = document.querySelector('[data-hero-stage]');
+if (scena) {
+  const t = anglicky
+    ? { hotovo: 'Done, tests pass', ceka: 'Needs your OK' }
+    : { hotovo: 'Hotovo, testy prošly', ceka: 'Potřebuju tvé OK' };
+  // [x, y, velikost (vše v % scény), hloubka, barva, světlá, bublina]
+  // Všichni stojí mimo obsah okna: nad horní hranou, po stranách nebo u spodního rozplynutí.
+  const ROBOTI = [
+    ['-6%', '6%', '5%', 'daleko', '#6260d8', 'Scout'],
+    ['91%', '-16%', '8.5%', 'stred', '#367b68', 'Orbit', ['hotovo', '#43D1B1', 'vlevo']],
+    ['-12%', '46%', '14%', 'blizko', '#a85c44', 'Pixel'],
+    ['101%', '34%', '4.5%', 'daleko', '#92609a', 'Nova'],
+    ['1%', '-17%', '7.5%', 'stred', '#92609a', 'Nova', ['ceka', '#E4B95F']],
+    ['100%', '84%', '12%', 'blizko', '#6260d8', 'Scout'],
+  ];
+  const PARALAXA = { daleko: 10, stred: 22, blizko: 42 };
+  // Ručně komponované asymetrické náklony: jen roboti bez bublin, žádná náhodnost při načítání.
+  const NAKLONY = [-38, 0, 24, -58, 0, -42];
+  scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, typ, bublina], i) =>
+    `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i};--persona:${barva};--naklon:${bublina ? 0 : NAKLONY[i]}deg">`
+    + `<span class="hr-telo">${robot(typ)}</span>`
+    + (bublina ? `<span class="hr-bublina${bublina[2] ? ' hr-bublina--vlevo' : ''}" style="--ton:${bublina[1]}"><i></i>${t[bublina[0]]}</span>` : '')
+    + '</span>').join('');
+
+  // Náklon okna podle posouvání a paralaxa podle ukazatele. Jen transform přes proměnné CSS,
+  // jeden zápis za snímek. Při omezeném pohybu zůstane okno rovné a roboti stojí.
+  if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    let ceka = false;
+    const zmer = () => {
+      ceka = false;
+      const top = scena.getBoundingClientRect().top;
+      const p = Math.min(1, Math.max(0, 1 - (top - innerHeight * 0.12) / (innerHeight * 0.6)));
+      scena.style.setProperty('--p', p.toFixed(3));
+      scena.classList.toggle('is-rovne', p > 0.995);
+    };
+    const naplanuj = () => { if (!ceka) { ceka = true; requestAnimationFrame(zmer); } };
+    addEventListener('scroll', naplanuj, { passive: true });
+    addEventListener('resize', naplanuj);
+    zmer();
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      let mys = null;
+      addEventListener('pointermove', (e) => {
+        const posun = () => {
+          scena.style.setProperty('--mx', ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
+          scena.style.setProperty('--my', ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
+          mys = null;
+        };
+        if (!mys) mys = requestAnimationFrame(posun);
+      }, { passive: true });
+    }
+  }
+}
+
+// Stejná kresba robota jako v desktopové aplikaci, bez duplicitního SVG na webu.
+for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-robot], [data-extension-robot]')) {
+  el.innerHTML = robot(el.hasAttribute('data-footer-robot') ? 'Nova' : 'Orbit');
+}
+
+// Robot u karet soukromí se podívá za kurzorem stejně jako roboti v aplikaci.
+// Reaguje jen uvnitř sekce; dotyk a systémové omezení pohybu zůstávají bez efektu.
+const soukromi = document.getElementById('soukromi');
+const privacyRobot = soukromi?.querySelector('[data-privacy-robot] .robot');
+const omezenyPohyb = matchMedia('(prefers-reduced-motion: reduce)');
+if (soukromi && privacyRobot && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  let snimek = 0;
+  const reset = () => {
+    cancelAnimationFrame(snimek);
+    snimek = 0;
+    privacyRobot.style.removeProperty('--gaze-x');
+    privacyRobot.style.removeProperty('--gaze-y');
+  };
+  soukromi.addEventListener('pointermove', (e) => {
+    if (omezenyPohyb.matches || e.pointerType === 'touch' || snimek) return;
+    const x = e.clientX;
+    const y = e.clientY;
+    snimek = requestAnimationFrame(() => {
+      snimek = 0;
+      const r = privacyRobot.getBoundingClientRect();
+      privacyRobot.style.setProperty('--gaze-x', `${Math.max(-3, Math.min(3, (x - r.left - r.width / 2) / 65))}px`);
+      privacyRobot.style.setProperty('--gaze-y', `${Math.max(-2, Math.min(2, (y - r.top - r.height / 2) / 80))}px`);
+    });
+  }, { passive: true });
+  soukromi.addEventListener('pointerleave', reset);
+  omezenyPohyb.addEventListener('change', reset);
+  addEventListener('blur', reset);
+}
+
 plynulePosouvani();
+
+
+/* Mobile navigation: true modal-like full viewport overlay, focus restoration,
+   Escape and backdrop dismissal, no scroll leakage. */
+{
+ const trigger=document.querySelector('[data-mobile-menu-toggle]');
+ const overlay=document.querySelector('[data-mobile-menu]');
+ const close=overlay?.querySelector('[data-mobile-menu-close]');
+ if(trigger&&overlay&&close){
+   let previousFocus=null,previousOverflow='';
+   const links=[...overlay.querySelectorAll('a,button')];
+   const setOpen=(open)=>{
+     trigger.setAttribute('aria-expanded',String(open));
+     trigger.setAttribute('aria-label',open?(anglicky?'Close menu':'Zavřít nabídku'):(anglicky?'Open menu':'Otevřít nabídku'));
+     overlay.classList.toggle('is-open',open);
+     overlay.setAttribute('aria-hidden',String(!open));
+     overlay.inert=!open;
+     if(open){
+       previousFocus=document.activeElement;
+       previousOverflow=document.body.style.overflow;
+       document.body.style.overflow='hidden';
+       close.focus();
+     }else{
+       document.body.style.overflow=previousOverflow;
+       if(previousFocus instanceof HTMLElement)previousFocus.focus({preventScroll:true});
+     }
+   };
+   trigger.addEventListener('click',()=>setOpen(trigger.getAttribute('aria-expanded')!=='true'));
+   close.addEventListener('click',()=>setOpen(false));
+   overlay.addEventListener('click',e=>{
+     if(e.target===overlay||e.target.closest('a'))setOpen(false);
+   });
+   document.addEventListener('keydown',e=>{
+     if(!overlay.classList.contains('is-open'))return;
+     if(e.key==='Escape'){e.preventDefault();setOpen(false);return;}
+     if(e.key==='Tab'){
+       const available=links.filter(el=>el.getClientRects().length);
+       const first=available[0],last=available.at(-1);
+       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+     }
+   });
+   matchMedia('(min-width: 901px)').addEventListener?.('change',e=>{
+     if(e.matches&&overlay.classList.contains('is-open'))setOpen(false);
+   });
+ }
+}

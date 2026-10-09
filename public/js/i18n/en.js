@@ -1150,7 +1150,7 @@ export default {
     "Rychlá změna: v postranním panelu na obrázek najeď a klikni – pokaždé se ukáže jiný.": "Quick change: hover over the picture in the sidebar and click – you get a different one each time.",
     "Vyber profilový obrázek": "Choose a profile picture",
     "Iniciály": "Initials",
-    "Abstraktní obrázek": "Abstract image",
+    "Robot": "Robot",
     "bez omezení": "no limit",
     "Verze Zdarma. Licence Pro odemkne placené funkce.": "Free version. A Pro license unlocks paid features.",
     "Všechny funkce jsou teď odemčené. Licenční klíč si schovej pro budoucí verze.": "All features are unlocked right now. Keep your license key for future versions.",

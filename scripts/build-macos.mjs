@@ -38,11 +38,12 @@ if (!licenceNode) throw new Error(`Chybí licence přibaleného Node: ${licenceC
 await fs.copyFile(licenceNode, path.join(resources, 'NODE-LICENSE.txt'));
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'UserNotifications', 'desktop/Agenteeq.swift', '-o', path.join(binary, 'Agenteeq')]);
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'Security', 'desktop/Keychain.swift', '-o', path.join(resources, 'agenteeq-keychain')]);
-// Keep the reviewed macOS icon as a source asset. Recent macOS releases can
-// reject a freshly generated .iconset despite valid PNG dimensions, which made
-// release builds non-deterministic. The checked-in ICNS is the exact reviewed
-// white-tile Agenteeq mark used by the app.
-await fs.copyFile(path.join(root, 'desktop', 'Agenteeq.icns'), path.join(resources, 'Agenteeq.icns'));
+// Generate the macOS icon from the reviewed monochrome source on every build.
+// Never ship an outdated checked-in ICNS with a coloured antenna.
+const iconset = path.join(build, 'Agenteeq.iconset');
+await fs.mkdir(iconset, { recursive: true });
+run('xcrun', ['swift', 'desktop/Icon.swift', iconset]);
+run('iconutil', ['-c', 'icns', '-o', path.join(resources, 'Agenteeq.icns'), iconset]);
 const identity = process.env.AGENTEEQ_SIGN_IDENTITY || '-';
 // Finder metadata can be inherited while copying into a .app; strip it only from our generated build.
 run('xattr', ['-cr', app]);

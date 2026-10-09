@@ -15,15 +15,26 @@ test('DMG: obraz vzniká z hotového ZIPu, se zástupcem Aplikací a jen nástro
   assert.equal(plan.dmg, '/r/dist/Agenteeq-1.2.3-macOS-arm64.dmg');
   assert.equal(jmenoDmg('1.2.3'), 'Agenteeq-1.2.3-macOS-arm64.dmg');
   const nastroje = plan.kroky.map(([prikaz]) => prikaz);
-  assert.deepEqual(nastroje, ['ditto', 'ln', 'hdiutil', 'hdiutil'], 'ad-hoc build se nepodepisuje ani nenotarizuje');
+  assert.deepEqual(nastroje, ['ditto', 'ln', 'xcrun', 'hdiutil', 'hdiutil', 'osascript', 'hdiutil', 'hdiutil', 'hdiutil'],
+    'branded DMG requires background, Finder geometry, read-only conversion and verification');
   for (const [prikaz, argumenty] of plan.kroky) {
-    assert.ok(Array.isArray(argumenty), `${prikaz}: argumenty jako pole – žádný shell`);
+    assert.ok(Array.isArray(argumenty), `${prikaz}: arguments are passed as argv`);
   }
-  const [rozbal, odkaz, vytvor, over] = plan.kroky.map(([, argumenty]) => argumenty);
-  assert.deepEqual(rozbal, ['-x', '-k', plan.zip, '/private/tmp/x/obsah']);
-  assert.deepEqual(odkaz, ['-s', '/Applications', '/private/tmp/x/obsah/Applications'], 'přetažení na Aplikace je celá instalace');
-  assert.deepEqual(vytvor, ['create', '-volname', SVAZEK, '-srcfolder', '/private/tmp/x/obsah', '-fs', 'HFS+', '-format', 'UDZO', '-ov', plan.dmg]);
-  assert.deepEqual(over, ['verify', plan.dmg], 'poškozený obraz se do vydání nedostane');
+  const [extract, link, art, writable, attach, layout, detach, convert, verify] = plan.kroky.map(([,args])=>args);
+  assert.deepEqual(extract, ['-x', '-k', plan.zip, '/private/tmp/x/obsah']);
+  assert.deepEqual(link, ['-s', '/Applications', '/private/tmp/x/obsah/Applications']);
+  assert.match(art[1], /DmgBackground.swift$/);
+  assert.equal(writable[0], 'create');
+  assert.ok(writable.includes('UDRW'), 'Finder layout needs writable disk');
+  assert.equal(attach[0], 'attach');
+  assert.equal(layout[0], '-e');
+  assert.match(layout[1], /set background picture/);
+  assert.match(layout[1], /set position of item "Agenteeq.app"/);
+  assert.match(layout[1], /set position of item "Applications"/);
+  assert.equal(detach[0], 'detach');
+  assert.equal(convert[0], 'convert');
+  assert.ok(convert.includes('UDZO'), 'published disk must be compressed read-only');
+  assert.deepEqual(verify, ['verify', plan.dmg]);
   assert.equal(SVAZEK, 'Agenteeq');
 });
 
