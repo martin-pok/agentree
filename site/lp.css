@@ -831,3 +831,17 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  #prohlidka .sc-chart { height:76px; }
  #prohlidka .tile--wide .tile-shot { margin-top:20px; }
 }
+
+/* Product showcase finishing: authentic provider marks, optical number scale, clean crops. */
+.sc-agentmark--logo { background:rgba(255,255,255,.065); border:1px solid rgba(255,255,255,.085); }
+.sc-agentmark--logo img { width:26px; height:26px; object-fit:contain; }
+.sc-agentmark--logo:not(.sc-agentmark--claude) img { filter:brightness(0) invert(1); }
+.sc-agentmark--claude.sc-agentmark--logo { background:rgba(202,130,92,.1); }
+#prohlidka .sc-amount { justify-content:flex-start; align-items:baseline; gap:12px; }
+#prohlidka .sc-amount strong { display:inline-flex; align-items:baseline; gap:3px; font-size:clamp(37px,3vw,49px); line-height:1.05; letter-spacing:-.045em; font-variant-numeric:tabular-nums; }
+#prohlidka .sc-amount strong span { font-size:.56em; line-height:1; letter-spacing:-.02em; color:var(--sc-fg); }
+#prohlidka .sc-amount > span { font-size:12px; }
+#prohlidka .tile--wide .tile-shot { overflow:hidden; border-radius:var(--r-lg); isolation:isolate; }
+#prohlidka .tile--wide .tile-shot > picture { display:block; width:100%; overflow:hidden; border-radius:inherit; }
+#prohlidka .tile--wide .tile-shot img { display:block; width:100%; border-radius:inherit; clip-path:inset(0 round var(--r-lg)); }
+@media(max-width:620px) { #prohlidka .sc-amount strong { font-size:43px; } }
