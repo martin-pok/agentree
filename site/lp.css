@@ -1239,3 +1239,69 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   :root { --section-content-gap:32px; }
   #soukromi .privacy-stage { margin-top:32px; }
 }
+
+
+/* Premium integration choreography: staggered sources, flowing connector, glowing hub.
+   Play once on entry, never loop; preserve static content under reduced motion. */
+#propojeni .integration-lane,
+#propojeni .integration-result { will-change:auto; }
+@media (prefers-reduced-motion:no-preference) {
+  #propojeni .integration-lane,
+  #propojeni .integration-result {
+    transition:opacity .72s cubic-bezier(.2,.8,.2,1),transform .85s cubic-bezier(.16,1,.3,1),box-shadow .45s ease,border-color .4s ease;
+  }
+  #propojeni .integration-lane.motion-pending { opacity:0; transform:translateY(30px) scale(.975); }
+  #propojeni .integration-lane.motion-entered { opacity:1; transform:none; }
+  #propojeni .integration-lane:nth-child(3) { transition-delay:110ms; }
+  #propojeni .integration-lane .integration-tools li { transition:opacity .5s ease,transform .65s cubic-bezier(.16,1,.3,1),background .3s ease,border-color .3s ease; }
+  #propojeni .integration-lane.motion-pending .integration-tools li { opacity:0; transform:translateY(12px); }
+  #propojeni .integration-lane.motion-entered .integration-tools li { opacity:1; transform:translateY(0); }
+  #propojeni .integration-tools li:nth-child(1) { transition-delay:140ms; }
+  #propojeni .integration-tools li:nth-child(2) { transition-delay:205ms; }
+  #propojeni .integration-tools li:nth-child(3) { transition-delay:270ms; }
+  #propojeni .integration-tools li:nth-child(4) { transition-delay:335ms; }
+  #propojeni .integration-down svg path { stroke-dasharray:1080; stroke-dashoffset:0; }
+  #propojeni .integration-down.motion-pending svg path { stroke-dashoffset:1080; }
+  #propojeni .integration-down.motion-entered svg path { animation:connection-draw 1.3s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes connection-draw { from { stroke-dashoffset:1080; opacity:.35; } to { stroke-dashoffset:0; opacity:1; } }
+  #propojeni .integration-result.motion-pending { opacity:0; transform:translateY(24px) scale(.98); }
+  #propojeni .integration-result.motion-entered { opacity:1; transform:none; }
+  #rozsireni.motion-pending { opacity:0; transform:translateY(24px); }
+  #rozsireni.motion-entered { opacity:1; transform:none; }
+  #rozsireni { transition:opacity .65s ease,transform .75s cubic-bezier(.16,1,.3,1),box-shadow .4s ease; }
+}
+#propojeni .integration-result {
+  isolation:isolate;
+  background:linear-gradient(115deg,rgba(104,87,177,.13),rgba(255,255,255,.025) 60%,rgba(91,79,162,.08));
+  box-shadow:0 0 0 1px rgba(178,161,255,.07),0 20px 80px -56px rgba(119,92,255,.32);
+}
+#propojeni .integration-result::before {
+  content:"";position:absolute;inset:-1px;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(ellipse 55% 105% at 30% -20%,rgba(158,135,255,.22),transparent 76%);
+}
+#propojeni .integration-action {
+  border-color:rgba(196,187,255,.38);
+  box-shadow:0 0 0 1px rgba(165,139,255,.06),0 0 36px -22px rgba(180,158,255,.52);
+}
+#propojeni .integration-action:focus-visible { outline:2px solid #c1adff; outline-offset:4px; }
+@media (hover:hover) and (pointer:fine) {
+  #propojeni .integration-lane:hover { border-color:rgba(196,182,255,.47); box-shadow:0 16px 62px -44px rgba(141,110,255,.52); }
+  #propojeni .integration-tools li:hover { background:rgba(148,133,225,.13); transform:translateY(-2px); }
+  #propojeni .integration-result:hover { border-color:rgba(196,182,255,.5);box-shadow:0 26px 90px -46px rgba(119,92,255,.5); }
+  #propojeni .integration-action:hover { box-shadow:0 0 0 1px rgba(205,190,255,.3),0 0 40px -12px rgba(175,152,255,.65); }
+}
+/* Extension accordion is a genuine feature callout, not another bare list row. */
+#vyzkouset #rozsireni { position:relative; isolation:isolate; border-radius:22px; padding:0 clamp(16px,2.4vw,28px);margin-inline:calc(-1 * clamp(16px,2.4vw,28px)); background:linear-gradient(120deg,rgba(106,93,201,.075),rgba(255,255,255,.035)); border:1px solid rgba(123,107,211,.21); overflow:hidden; }
+#vyzkouset #rozsireni::before { content:"";position:absolute;pointer-events:none;inset:-1px;z-index:-1;background:radial-gradient(ellipse 70% 115% at 6% 0%,rgba(142,122,242,.16),transparent 75%); }
+#vyzkouset #rozsireni[open] { box-shadow:0 22px 70px -42px rgba(118,92,201,.29);border-color:rgba(129,105,213,.36); }
+#vyzkouset #rozsireni summary { min-height:74px; }
+#vyzkouset #rozsireni summary:focus-visible { outline:2px solid #7561bf;outline-offset:-3px;border-radius:12px; }
+#vyzkouset #rozsireni .detail-body { gap:16px; }
+#vyzkouset .extension-benefits { list-style:none;padding:0;margin:0 0 6px;display:flex;flex-wrap:wrap;gap:8px; }
+#vyzkouset .extension-benefits li { font-size:13px;font-weight:500;line-height:1.4;border-radius:999px;padding:9px 13px;background:rgba(111,91,184,.09);color:#343055;border:1px solid rgba(111,91,184,.13); }
+#vyzkouset .extension-benefits li::before { content:"✓";margin-right:8px;color:#6252ab;font-weight:700; }
+#vyzkouset #rozsireni .rozsireni-akce .btn {box-shadow:0 8px 26px -13px rgba(81,71,144,.47);}
+@media(max-width:620px) { #vyzkouset #rozsireni { border-radius:18px;padding-inline:16px;margin-inline:-16px; } #vyzkouset .extension-benefits li {font-size:12px;} }
+@media (prefers-reduced-motion:reduce) {
+ #propojeni .integration-lane,#propojeni .integration-result,#propojeni .integration-down svg path,#vyzkouset #rozsireni { animation:none!important;transition:none!important;opacity:1!important;transform:none!important; }
+}
