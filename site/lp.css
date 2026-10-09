@@ -1013,3 +1013,15 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(max-width:900px) { .install-page .extension-layout { grid-template-columns:minmax(0,1fr); } .install-page .extension-display { max-width:700px; margin:auto; width:100%; } }
 @media(max-width:620px) { .install-page .extension-display-body { padding:19px; gap:15px; } .extension-mascot { width:46px; top:-25px; } }
 @media(prefers-reduced-motion:reduce) { .install-page .extension-display * { animation:none!important; } }
+
+
+/* Branded static not-found page. */
+.missing-page { margin:0; min-height:100vh; background:radial-gradient(ellipse 55% 45% at 50% 65%,rgba(98,96,216,.17),transparent),#0c0b12; color:#f4f3f7; }
+.missing-stage { min-height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:120px 24px 60px; box-sizing:border-box; }
+.missing-brand { position:absolute; top:38px; left:max(24px,calc((100vw - 1120px)/2)); color:#f4f3f7; font-size:20px; }
+.missing-visual { height:155px; width:155px; display:grid; place-items:center; margin-bottom:24px; border:1px solid rgba(255,255,255,.13); border-radius:46px; background:linear-gradient(140deg,rgba(255,255,255,.1),rgba(255,255,255,.025)); transform:rotate(-12deg); box-shadow:0 28px 75px -45px #5d57b870; }
+.missing-visual img { width:90px; height:90px; }
+.missing-kicker { font-size:12px; letter-spacing:.16em; color:#b8afe4; }
+.missing-stage h1 { font-size:clamp(42px,6vw,78px); letter-spacing:-.055em; margin:12px 0 16px; }
+.missing-stage > p:not(.missing-kicker):not(.missing-en) { max-width:40ch; color:#aaa4b8; font-size:18px; margin-bottom:32px; }
+.missing-en { margin-top:48px; font-size:13px; color:#aaa4b8; } .missing-en a { color:#e1ddfa; }
