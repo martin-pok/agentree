@@ -164,6 +164,20 @@ export function plynulePosouvani() {
   addEventListener('scroll', () => {
     if (bezi && posunutoJinak()) zastav();
   }, { passive: true });
+  // Page Up/Down must scroll the document even on desktop WebKit, whose native
+  // PageDown sometimes does nothing after a scripted wheel animation. Preserve
+  // native keyboard behavior inside inputs, editable regions and nested scrollers.
+  addEventListener('keydown', (e) => {
+    if (!zapnuto() || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey
+      || (e.key !== 'PageDown' && e.key !== 'PageUp')) return;
+    const target = e.target;
+    if (target instanceof Element && (target.closest('input, textarea, select, [contenteditable], [role="textbox"]')
+      || vnitrniPosuv(target, e.key === 'PageDown'))) return;
+    if (zamceno(target)) return;
+    const step = (e.key === 'PageDown' ? 1 : -1) * innerHeight * 0.9;
+    e.preventDefault();
+    skocNa(Math.min(maximum(), Math.max(0, scrollY + step)));
+  }, { passive: false });
   for (const udalost of ['keydown', 'mousedown', 'touchstart']) addEventListener(udalost, zastav, { passive: true });
   addEventListener('click', (e) => { if (e.target.closest?.('a[href^="#"]')) zastav(); });
   addEventListener('resize', () => { cil = Math.min(cil, maximum()); });
