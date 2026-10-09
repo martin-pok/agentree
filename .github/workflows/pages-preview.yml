@@ -1,0 +1,36 @@
+name: Live website preview (GitHub Pages)
+on:
+  push:
+    branches: [design/046-premium-landing]
+    paths:
+      - 'site/**'
+      - 'public/**'
+      - 'scripts/build-pages-preview.mjs'
+      - '.github/workflows/pages-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: agenteeq-live-preview
+  cancel-in-progress: true
+jobs:
+  publish-preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/build-pages-preview.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages-preview
+      - name: Publish live preview
+        id: publish
+        uses: actions/deploy-pages@v4
