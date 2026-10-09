@@ -29,10 +29,13 @@ const output = 'dist/qa-site';
 // Stránka slibuje, že nic nedotahuje z cizích serverů. Tohle to drží: všechno mimo vlastní
 // původ se odmítne a zapíše. Zároveň to brání tomu, aby klik na Stáhnout odvedl kontrolu pryč.
 const puvod = new URL(url).origin;
+// Google's unmodified official Chrome Web Store badge is the sole approved external image.
+const officialBadge = 'https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png';
 async function jenMistni(page, cizi) {
   await page.route('**/*', (route) => {
     const cil = route.request().url();
     if (cil.startsWith(puvod) || cil.startsWith('data:') || cil.startsWith('blob:')) return route.continue();
+    if (cil === officialBadge) return route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==', 'base64') });
     cizi.push(cil);
     return route.abort();
   });
