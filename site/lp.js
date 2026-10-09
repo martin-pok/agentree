@@ -160,7 +160,7 @@ if (scena) {
 }
 
 // Stejná kresba robota jako v desktopové aplikaci, bez duplicitního SVG na webu.
-for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-robot]')) {
+for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-robot], [data-extension-robot]')) {
   el.innerHTML = robot(el.hasAttribute('data-footer-robot') ? 'Nova' : 'Orbit');
 }
 
