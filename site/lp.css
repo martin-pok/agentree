@@ -1120,3 +1120,25 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 @media(prefers-reduced-motion:reduce) { .site-footer .footer-bottom .text-link { transition:none; transform:none!important; } }
  
 @media(max-width:900px) { .site-footer .footer-bottom { width:calc(100% - 32px); } }
+
+
+/* Installation CTA: a restrained organic lavender light falling from above.
+   Background-only treatment: copy and controls remain fully opaque. */
+#vyzkouset {
+  position:relative;
+  isolation:isolate;
+  background-color:#f5f4fa;
+  background-image:
+    radial-gradient(ellipse 53% 32% at 48% 0%,rgba(166,149,238,.27) 0%,rgba(192,181,246,.12) 56%,transparent 100%),
+    radial-gradient(ellipse 29% 26% at 79% 14%,rgba(189,179,246,.13),transparent 100%),
+    linear-gradient(180deg,#f4f2fa 0%,#f7f6fb 48%,#f5f4fa 100%);
+  background-repeat:no-repeat;
+}
+#vyzkouset > .wrap { position:relative; z-index:1; }
+@media(max-width:620px) {
+  #vyzkouset {
+    background-image:
+      radial-gradient(ellipse 90% 24% at 50% 0%,rgba(166,149,238,.21),transparent 100%),
+      linear-gradient(180deg,#f4f2fa,#f7f6fb 55%,#f5f4fa);
+  }
+}
