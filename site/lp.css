@@ -1904,7 +1904,7 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
 @media(max-width:760px) {
  .install-page .install-hero-scene {grid-template-columns:minmax(0,1fr);gap:0;max-width:460px;padding:24px 16px 0;}
  .install-page .install-hero-step {min-height:80px;padding:15px 17px;}
- .install-page .install-hero-link {width:1px;height:20px;justify-self:32px;margin-left:37px;}
+ .install-page .install-hero-link {width:1px;height:20px;justify-self:start;margin-left:37px;}
  .install-page .install-hero-robot {width:43px;height:43px;right:-5px;top:-26px;}
 }
 @media(prefers-reduced-motion:reduce) {.install-page .install-hero-step {animation:none!important;}}
