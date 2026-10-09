@@ -1922,3 +1922,25 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
 #vyzkouset #rozsireni .extension-peek-robot .robot-eyes {fill:#f8f7ff;}
 #vyzkouset #rozsireni .extension-peek-robot .robot-core {fill:#dad5ff;}
 #vyzkouset #rozsireni .extension-peek-robot .robot-shadow {fill:transparent;}
+
+
+/* Chrome extension accordion: preserve the rounded illuminated perimeter. */
+#vyzkouset #rozsireni { border-radius:22px; background-clip:padding-box; isolation:isolate; }
+#vyzkouset #rozsireni::before { inset:0!important; border-radius:inherit!important; clip-path:inset(0 round 21px)!important; z-index:-1; }
+#vyzkouset #rozsireni::after {border-radius:inherit!important;}
+/* Installation step cards: no jumpy 3D/translate hover; gentle color feedback. */
+#vyzkouset ol.steps > li,#vyzkouset .steps li {
+ transform:none!important;
+ will-change:auto!important;
+ transition:background-color .36s cubic-bezier(.22,1,.36,1),border-color .36s cubic-bezier(.22,1,.36,1),box-shadow .4s cubic-bezier(.22,1,.36,1)!important;
+}
+@media(hover:hover) and (pointer:fine){
+ #vyzkouset ol.steps > li:hover,#vyzkouset .steps li:hover {
+   transform:none!important;
+   background:rgba(255,255,255,.82)!important;
+   border-color:rgba(124,106,210,.3)!important;
+   box-shadow:0 10px 28px -23px rgba(77,64,162,.18)!important;
+ }
+ #vyzkouset ol.steps > li:hover::before,#vyzkouset .steps li:hover::before {transform:none!important;}
+}
+@media(prefers-reduced-motion:reduce){#vyzkouset ol.steps > li,#vyzkouset .steps li{transition:none!important;}}
