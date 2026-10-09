@@ -689,3 +689,38 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .sc-chart { height:95px; } .sc-action-main { font-size:12px; }
 }
 @media(prefers-reduced-motion:reduce) { .showcase { transition:none; transform:none; } }
+
+/* 0.46 refinements: FAQ heading belongs to the document flow, never pins on scroll. */
+#otazky .faq-intro { position:static; top:auto; align-self:start; }
+
+/* High-contrast, restrained enamel medallions with consistent readable pictograms. */
+#soukromi .privacy-art { min-height:142px; perspective:850px; }
+#soukromi .privacy-orb {
+  width:100px; height:100px; color:#fff;
+  transform:rotateX(-7deg) rotateY(-10deg);
+  background:radial-gradient(circle at 30% 23%,#8780e1 0%,#5550b9 51%,#302b7a 100%);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:inset 2px 3px 7px rgba(255,255,255,.23), inset -8px -12px 18px rgba(12,8,60,.26),
+    0 20px 32px -12px rgba(53,47,151,.46);
+}
+#soukromi .privacy-card--2 .privacy-orb {
+  background:radial-gradient(circle at 30% 23%,#48ae99 0%,#218570 52%,#105648 100%);
+  box-shadow:inset 2px 3px 7px rgba(255,255,255,.22), inset -8px -12px 18px rgba(0,30,23,.29),
+    0 20px 32px -12px rgba(18,110,87,.45);
+}
+#soukromi .privacy-card--3 .privacy-orb {
+  background:radial-gradient(circle at 30% 23%,#cda35c 0%,#a1742c 52%,#654318 100%);
+  box-shadow:inset 2px 3px 7px rgba(255,255,255,.22), inset -8px -12px 18px rgba(50,26,0,.29),
+    0 20px 32px -12px rgba(118,77,22,.43);
+}
+#soukromi .privacy-orb::after { inset:8px; border-color:rgba(255,255,255,.11); }
+#soukromi .privacy-orb svg { width:48px; height:48px; color:#fff; filter:drop-shadow(0 2px 3px rgba(0,0,0,.22)); }
+#soukromi .privacy-orb svg :is(path,rect,circle) { vector-effect:non-scaling-stroke; }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+  #soukromi .privacy-card:hover .privacy-orb { transform:translateY(-6px) rotateX(2deg) rotateY(8deg); }
+}
+@media(max-width:620px) {
+  #soukromi .privacy-art { min-height:120px; }
+  #soukromi .privacy-orb { width:88px; height:88px; }
+  #soukromi .privacy-orb svg { width:42px; height:42px; }
+}
