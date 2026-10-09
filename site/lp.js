@@ -6,6 +6,7 @@
 // Plynulé posouvání sdílí web s aplikací: hosting nese celé rozhraní (public/ leží v kořeni webu),
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
+import { robot } from '/js/robot-svg.js';
 
 const anglicky = document.documentElement.lang === 'en';
 
@@ -107,30 +108,23 @@ if ('IntersectionObserver' in window) {
 // Hlava je stejná jako v logu a v aplikaci: anténa, plastové tělo s odleskem, tmavý displej, oči.
 const scena = document.querySelector('[data-hero-stage]');
 if (scena) {
-  const robot = (i, barva, svetla) => `<svg viewBox="0 0 80 80" fill="none"><defs><linearGradient id="hr-g${i}" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="${svetla}"/><stop offset="1" stop-color="${barva}"/></linearGradient></defs>`
-    + `<path d="M40 8v14" stroke="${barva}" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="8" r="5" fill="${svetla}"/>`
-    + `<rect x="5" y="38" width="8" height="18" rx="4" fill="${barva}"/><rect x="67" y="38" width="8" height="18" rx="4" fill="${barva}"/>`
-    + `<rect x="10" y="20" width="60" height="50" rx="19" fill="url(#hr-g${i})"/>`
-    + `<ellipse cx="27" cy="28" rx="11" ry="4" fill="#FFFFFF" opacity=".38" transform="rotate(-14 27 28)"/>`
-    + `<rect x="18" y="33" width="44" height="28" rx="12" fill="#101016"/>`
-    + `<rect x="28" y="40" width="7" height="13" rx="3.5" fill="#C8F0E6"/><rect x="45" y="40" width="7" height="13" rx="3.5" fill="#C8F0E6"/></svg>`;
   const t = anglicky
     ? { hotovo: 'Done, tests pass', ceka: 'Needs your OK' }
     : { hotovo: 'Hotovo, testy prošly', ceka: 'Potřebuju tvé OK' };
   // [x, y, velikost (vše v % scény), hloubka, barva, světlá, bublina]
   // Všichni stojí mimo obsah okna: nad horní hranou, po stranách nebo u spodního rozplynutí.
   const ROBOTI = [
-    ['-6%', '6%', '5%', 'daleko', '#5254D8', '#A5A7FF'],
-    ['91%', '-16%', '8.5%', 'stred', '#2B6B53', '#7FD9B8', ['hotovo', '#43D1B1', 'vlevo']],
-    ['-12%', '46%', '14%', 'blizko', '#B0284F', '#FF9EB9'],
-    ['101%', '34%', '4.5%', 'daleko', '#C99A3E', '#F5D78E'],
-    ['1%', '-17%', '7.5%', 'stred', '#C99A3E', '#F5D78E', ['ceka', '#E4B95F']],
-    ['100%', '84%', '12%', 'blizko', '#5254D8', '#A5A7FF'],
+    ['-6%', '6%', '5%', 'daleko', '#6260d8', 'Scout'],
+    ['91%', '-16%', '8.5%', 'stred', '#367b68', 'Orbit', ['hotovo', '#43D1B1', 'vlevo']],
+    ['-12%', '46%', '14%', 'blizko', '#a85c44', 'Pixel'],
+    ['101%', '34%', '4.5%', 'daleko', '#92609a', 'Nova'],
+    ['1%', '-17%', '7.5%', 'stred', '#92609a', 'Nova', ['ceka', '#E4B95F']],
+    ['100%', '84%', '12%', 'blizko', '#6260d8', 'Scout'],
   ];
   const PARALAXA = { daleko: 10, stred: 22, blizko: 42 };
-  scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, svetla, bublina], i) =>
-    `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i}">`
-    + `<span class="hr-telo">${robot(i, barva, svetla)}</span>`
+  scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, typ, bublina], i) =>
+    `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i};--persona:${barva}">`
+    + `<span class="hr-telo">${robot(typ)}</span>`
     + (bublina ? `<span class="hr-bublina${bublina[2] ? ' hr-bublina--vlevo' : ''}" style="--ton:${bublina[1]}"><i></i>${t[bublina[0]]}</span>` : '')
     + '</span>').join('');
 
