@@ -35,6 +35,12 @@ const STAV = {
     tr('Mám volné ruce. Zadej další úkol.'),
     tr('Připraven. Stačí říct.'),
   ],
+  // Čeká, ale nedoběhl: tah jen vypršel, nebo agent na zadání zatím neodpověděl (s.done z modelu).
+  // „Hotovo“ by tu byla nepravda, proto věta jen o tom, co je opravdu vidět.
+  ticho: () => [
+    tr('Dlouho se tu nic neděje. Mrkni do detailu.'),
+    tr('Konec práce tu nezazněl. Detail ukáže, kde to stojí.'),
+  ],
   idle: () => [
     tr('Odpočívám. Zadej práci a jdu na to.'),
     tr('Klid na palubě.'),
@@ -69,6 +75,7 @@ const vyber = (pole, posledni) => {
 export function stavRobota(el) {
   const stav = el.closest('[data-status]')?.dataset.status || el.closest('[data-state]')?.dataset.state || 'idle';
   if (stav === 'alert') return 'needs_input';
+  if (stav === 'waiting' && el.closest('[data-done="false"]')) return 'ticho';
   return STAV[stav] ? stav : 'idle';
 }
 
@@ -252,7 +259,7 @@ export function initRobotBubliny() {
     }
   }
   new MutationObserver(() => { if (!cekani && document.querySelector('.home-robot')) cekani = requestAnimationFrame(zkontroluj); })
-    .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'data-status'] });
+    .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'data-status', 'data-done'] });
   zkontroluj();
 
   window.addEventListener('scroll', () => { if (u) umisti(); }, { passive: true, capture: true });

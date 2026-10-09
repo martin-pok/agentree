@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { tailscalePaths, whichCommand, bezziProces, POCITAC } from './platform.js';
+import { tailscalePaths, whichCommand, nalezenoVPath, prikazInstalace, bezziProces, POCITAC } from './platform.js';
 import { run as execRun } from './util.js';
 import { ui } from './texty.js';
 
@@ -101,7 +101,10 @@ async function detectTailscale({ run, fileExists, port }) {
   const zaklad = { id: m.id, name: m.name, kind: m.kind, security: m.security, dnsName: '', ips: [], tailnet: '', serve: { running: false, unknown: true } };
   try {
     const nainstalovana = TAILSCALE_BINARKY.find((cesta) => fileExists(cesta)) || null;
-    const bin = nainstalovana || ((await run(whichCommand, ['tailscale'], { timeout: 1000 }))?.ok ? 'tailscale' : null);
+    const vPath = nainstalovana ? true : nalezenoVPath(await run(whichCommand, ['tailscale'], { timeout: 1000 }));
+    // Vypršené hledání v PATH není „nenainstalováno“ (CLAUDE.md): installed i running jsou null.
+    if (vPath === null) return { ...zaklad, installed: null, running: null, url: '', hint: ui('Stav Tailscale se nepodařilo zjistit.') };
+    const bin = nainstalovana || (vPath ? 'tailscale' : null);
     if (!bin) {
       return { ...zaklad, installed: false, running: false, url: '', hint: ui('Nainstaluj Tailscale (tailscale.com) a přihlas se stejným účtem i na telefonu.') };
     }
@@ -123,47 +126,53 @@ async function detectTailscale({ run, fileExists, port }) {
     const hint = running ? '' : ui('Přihlas se v Tailscale – {0} "tailscale up", v appce na telefonu stejným účtem.', POCITAC.naHostiteli);
     return { ...zaklad, installed: true, running, url, dnsName: dns, ips, tailnet, serve, hint };
   } catch {
-    return { ...zaklad, installed: false, running: false, url: '', hint: ui('Stav Tailscale se nepodařilo zjistit.') };
+    return { ...zaklad, installed: null, running: null, url: '', hint: ui('Stav Tailscale se nepodařilo zjistit.') };
   }
 }
 
 async function detectCloudflared({ run }) {
   const m = meta('cloudflared');
   try {
-    const which = await run(whichCommand, ['cloudflared'], { timeout: 1000 });
-    const installed = Boolean(which?.ok);
+    const installed = nalezenoVPath(await run(whichCommand, ['cloudflared'], { timeout: 1000 }));
+    if (installed === null) {
+      return { id: m.id, name: m.name, installed: null, running: null, url: '', kind: m.kind, security: m.security, hint: ui('Stav cloudflared se nepodařilo zjistit.') };
+    }
     if (!installed) {
-      return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Nainstaluj cloudflared (brew install cloudflared).') };
+      const prikaz = prikazInstalace('cloudflared');
+      return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: prikaz ? ui('Nainstaluj cloudflared ({0}).', prikaz) : ui('Nainstaluj cloudflared (developers.cloudflare.com).') };
     }
     // Quick tunnel nemá lokální API – adresu vypisuje jen do stdout ve chvíli spuštění.
-    // Poctivě proto zjišťujeme jen to, jestli proces běží, adresu si nevymýšlíme.
+    // Poctivě proto zjišťujeme jen to, jestli proces běží, adresu si nevymýšlíme. Nepovedený
+    // výpis procesů je „nevíme“ (running: null), ne „neběží“ s radou tunel spustit.
     const proc = await bezziProces(/cloudflared[^\n]*tunnel/i, run);
-    const running = Boolean(proc?.ok && String(proc.stdout || '').trim());
+    const running = proc?.ok ? Boolean(proc.bezi) : null;
     const hint = running
       ? ui('Tunel běží – veřejnou adresu najdeš ve výstupu příkazu v Terminálu (řádek končící na trycloudflare.com).')
-      : ui('Spusť "cloudflared tunnel --url http://127.0.0.1:PORT" v Terminálu a nech okno otevřené.');
+      : running === null
+        ? ui('Stav cloudflared se nepodařilo zjistit.')
+        : ui('Spusť "cloudflared tunnel --url http://127.0.0.1:PORT" v Terminálu a nech okno otevřené.');
     return { id: m.id, name: m.name, installed: true, running, url: '', kind: m.kind, security: m.security, hint };
   } catch {
-    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Stav cloudflared se nepodařilo zjistit.') };
+    return { id: m.id, name: m.name, installed: null, running: null, url: '', kind: m.kind, security: m.security, hint: ui('Stav cloudflared se nepodařilo zjistit.') };
   }
 }
 
 async function detectNgrok({ run, fetchJson }) {
   const m = meta('ngrok');
   try {
-    const which = await run(whichCommand, ['ngrok'], { timeout: 1000 });
-    const installed = Boolean(which?.ok);
+    const installed = nalezenoVPath(await run(whichCommand, ['ngrok'], { timeout: 1000 }));
     const data = await fetchJson(NGROK_API, { timeoutMs: 600 });
     const tunnels = Array.isArray(data?.tunnels) ? data.tunnels : [];
     const pick = tunnels.find((t) => String(t?.public_url || '').startsWith('https://')) || tunnels[0] || null;
     const running = Boolean(pick?.public_url);
     const url = pick?.public_url || '';
-    const hint = !installed
-      ? ui('Nainstaluj ngrok (ngrok.com) a přihlas se účtem (ngrok config add-authtoken …).')
-      : running ? '' : ui('Spusť "ngrok http PORT" v Terminálu a nech okno otevřené.');
+    const hint = running ? ''
+      : installed === null ? ui('Stav ngrok se nepodařilo zjistit.')
+        : !installed ? ui('Nainstaluj ngrok (ngrok.com) a přihlas se účtem (ngrok config add-authtoken …).')
+          : ui('Spusť "ngrok http PORT" v Terminálu a nech okno otevřené.');
     return { id: m.id, name: m.name, installed, running, url, kind: m.kind, security: m.security, hint };
   } catch {
-    return { id: m.id, name: m.name, installed: false, running: false, url: '', kind: m.kind, security: m.security, hint: ui('Stav ngrok se nepodařilo zjistit.') };
+    return { id: m.id, name: m.name, installed: null, running: null, url: '', kind: m.kind, security: m.security, hint: ui('Stav ngrok se nepodařilo zjistit.') };
   }
 }
 
@@ -196,6 +205,13 @@ export function remoteAdvice(tunnels) {
         : [ui('Přihlas se do Tailscale {0} ("tailscale up").', POCITAC.naHostiteli), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.'), ui('Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon kódem.')],
     };
   }
+  // Co se nepodařilo zjistit, nesmí skončit radou „nic není nainstalované“ (CLAUDE.md).
+  const nevim = {
+    doporuceni: 'nevim',
+    text: ui('Které nástroje pro vzdálený přístup jsou nainstalované, se nepodařilo zjistit.'),
+    kroky: [ui('Spusť detekci znovu.')],
+  };
+  if (tailscale?.installed === null) return nevim;
   if (cloudflared?.installed) {
     return {
       doporuceni: 'cloudflared',
@@ -203,10 +219,12 @@ export function remoteAdvice(tunnels) {
       kroky: [ui('V Terminálu spusť "cloudflared tunnel --url http://127.0.0.1:PORT".'), ui('Zkopíruj adresu, kterou příkaz vypíše.'), ui('Nech okno Terminálu otevřené, dokud vzdálený přístup potřebuješ.')],
     };
   }
+  if (cloudflared?.installed === null) return nevim;
+  const prikaz = prikazInstalace('tailscale');
   return {
     doporuceni: 'zadny',
     text: ui('Žádný nástroj pro vzdálený přístup není nainstalovaný. Nejdřív zkus Tailscale – je zdarma pro osobní použití a nevytváří veřejnou adresu.'),
-    kroky: [ui('Nainstaluj Tailscale (tailscale.com nebo "brew install --cask tailscale").'), ui('Přihlas se stejným účtem {0} i na telefonu.', POCITAC.naHostiteli), ui('Spusť detekci znovu.')],
+    kroky: [prikaz ? ui('Nainstaluj Tailscale (tailscale.com nebo "{0}").', prikaz) : ui('Nainstaluj Tailscale (tailscale.com).'), ui('Přihlas se stejným účtem {0} i na telefonu.', POCITAC.naHostiteli), ui('Spusť detekci znovu.')],
   };
 }
 

@@ -1,10 +1,10 @@
 import path from 'node:path';
-import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, shellQuote, MIN, HOUR, DAY } from '../util.js';
+import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, MIN, HOUR, DAY } from '../util.js';
 import { touch, addTokens, pushEntry } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
 import { ui } from '../texty.js';
-import { POCITAC } from '../platform.js';
+import { POCITAC, prikazVeSlozce } from '../platform.js';
 
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
@@ -458,8 +458,10 @@ export function createClaudeCodeConnector(ctx) {
     },
   };
 
+  // Tvar příkazu (POSIX shell, nebo PowerShell na Windows) určuje src/platform.js. ID vzniká
+  // ze jména souboru; s pomlčkou na začátku by se z něj stal přepínač (stejně jako src/openers.js).
   function setResume(s, localId) {
-    if (s.cwd) s.resume = `cd ${shellQuote(s.cwd)} && claude --resume ${localId}`;
+    if (s.cwd && /^[A-Za-z0-9_][\w.-]*$/.test(String(localId || ''))) s.resume = prikazVeSlozce(s.cwd, 'claude', ['--resume', localId]);
   }
 
   // Přepisy pomocných agentů (Task) leží o dvě úrovně hlouběji:

@@ -183,6 +183,7 @@ interface SessionSummary {
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)
   stale: boolean;             // tah nebyl ukončen, ale dlouho se nic neděje (nehlásí „dokončeno“)
+  done: boolean;              // agent skutečně doběhl: odpověděl a tah nebyl stale; jen tehdy smí UI říct „hotovo“
   open: { id: 'app' | 'terminal' | 'folder'; label: string }[];  // dostupné akce otevření (podle nainstalovaných aplikací)
   startedAt: number; lastAt: number;   // ms
   turns: number;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TUNNELS, detectTunnels, remoteAdvice, remoteUrl } from '../src/tunnel.js';
-import { tailscalePaths } from '../src/platform.js';
+import { tailscalePaths, prikazInstalace, nalezenoVPath, SYSTEM } from '../src/platform.js';
 
 // Cesta k Tailscale se liší systém od systému; test proto předstírá tu, kterou
 // pro tenhle systém hlásí platformový šev, ne jednu konkrétní z macOS.
@@ -83,13 +83,15 @@ test('detekce: cloudflared nainstalovaný, ale neběžící', async () => {
     if (String(cmd).startsWith('which') || String(cmd).startsWith('where')) {
       return args[0] === 'cloudflared' ? { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 };
     }
-    if (cmd === 'pgrep') return { ok: false, stdout: '', stderr: '', code: 1 };
+    // Výpis procesů se povedl, jen v něm cloudflared není (nepovedený výpis je „nevíme“, test níž).
+    if (String(cmd) === 'ps' || String(cmd).includes('powershell')) return { ok: true, stdout: '4242 00:10 0.5 2048 /usr/bin/vim\n', stderr: '', code: 0 };
     return { ok: false, stdout: '', stderr: '', code: 1 };
   };
   const tunnels = await detectTunnels({ run, fileExists: () => false, fetchJson: noFetch });
   const cf = tunnels.find((t) => t.id === 'cloudflared');
   assert.equal(cf.installed, true);
   assert.equal(cf.running, false);
+  assert.match(cf.hint, /Spusť/);
   assert.equal(cf.url, '', 'quick tunnel nemá lokální API, adresa se nevymýšlí');
 });
 
@@ -172,22 +174,65 @@ test('remoteAdvice: bez Tailscale, ale s cloudflared → doporučí cloudflared 
   assert.match(advice.text, /veřejn/i);
 });
 
-test('detekce: chybný, padající nebo nesmyslný "run" nikdy nevyhodí výjimku, jen installed: false', async () => {
+// Selhání zjišťování není zjištěný stav (CLAUDE.md): installed je null = nevíme, ne false = není.
+test('detekce: chybný, padající nebo nesmyslný "run" nikdy nevyhodí výjimku, jen installed: null', async () => {
   const throwingRun = () => { throw new Error('boom'); };
   const rejectingRun = async () => { throw new Error('timeout'); };
   const garbageRun = async () => 'not-an-object';
 
   await assert.doesNotReject(detectTunnels({ run: throwingRun, fileExists: () => false, fetchJson: async () => { throw new Error('x'); } }));
   const r1 = await detectTunnels({ run: throwingRun, fileExists: () => false, fetchJson: noFetch });
-  for (const t of r1) assert.equal(t.installed, false, t.id);
+  for (const t of r1) assert.equal(t.installed, null, t.id);
 
   await assert.doesNotReject(detectTunnels({ run: rejectingRun, fileExists: () => { throw new Error('fs boom'); }, fetchJson: noFetch }));
   const r2 = await detectTunnels({ run: rejectingRun, fileExists: () => { throw new Error('fs boom'); }, fetchJson: noFetch });
-  for (const t of r2) assert.equal(t.installed, false, t.id);
+  for (const t of r2) assert.equal(t.installed, null, t.id);
 
   await assert.doesNotReject(detectTunnels({ run: garbageRun, fileExists: () => false, fetchJson: async () => 'garbage' }));
   const r3 = await detectTunnels({ run: garbageRun, fileExists: () => false, fetchJson: async () => 'garbage' });
-  for (const t of r3) assert.equal(t.installed, false, t.id);
+  for (const t of r3) assert.equal(t.installed, null, t.id);
+});
+
+// Vypršené `which` (run() vrátí neúspěch s kódem 0) dřív hlásilo „není nainstalováno“
+// a nepovedený výpis procesů „cloudflared neběží, spusť ho“.
+test('detekce: vypršené hledání v PATH je „nepodařilo se zjistit“, ne „není nainstalováno“', async () => {
+  const vyprselo = async () => ({ ok: false, stdout: '', stderr: '', code: 0 });
+  const tunnels = await detectTunnels({ run: vyprselo, fileExists: () => false, fetchJson: noFetch });
+  for (const t of tunnels) {
+    assert.equal(t.installed, null, t.id);
+    assert.match(t.hint, /nepodařilo zjistit/, t.id);
+  }
+  assert.equal(tunnels.find((t) => t.id === 'cloudflared').running, null);
+  const advice = remoteAdvice(tunnels);
+  assert.equal(advice.doporuceni, 'nevim', 'žádná rada „nic není nainstalované“');
+  assert.doesNotMatch(advice.text, /není nainstalovaný/);
+});
+
+test('detekce: nepovedený výpis procesů nehlásí, že cloudflared neběží', async () => {
+  const run = async (cmd, args) => {
+    if (jeHledani(cmd)) return args[0] === 'cloudflared' ? { ok: true, stdout: '/usr/local/bin/cloudflared\n', stderr: '', code: 0 } : { ok: false, stdout: '', stderr: '', code: 1 };
+    return { ok: false, stdout: '', stderr: '', code: 0 }; // výpis procesů vypršel
+  };
+  const cf = (await detectTunnels({ run, fileExists: () => false, fetchJson: noFetch })).find((t) => t.id === 'cloudflared');
+  assert.equal(cf.installed, true);
+  assert.equal(cf.running, null, 'nevíme, ne neběží');
+  assert.doesNotMatch(cf.hint, /Spusť/);
+  assert.match(cf.hint, /nepodařilo zjistit/);
+});
+
+test('nápověda k instalaci podle systému: Homebrew jen na Macu', async () => {
+  assert.equal(prikazInstalace('cloudflared', 'macos'), 'brew install cloudflared');
+  assert.equal(prikazInstalace('cloudflared', 'windows'), 'winget install --id Cloudflare.cloudflared');
+  assert.equal(prikazInstalace('cloudflared', 'linux'), '');
+  assert.equal(prikazInstalace('tailscale', 'windows'), '');
+  assert.equal(nalezenoVPath({ ok: false, code: 1 }), false);
+  assert.equal(nalezenoVPath({ ok: false, code: 0 }), null, 'vypršelo');
+  assert.equal(nalezenoVPath({ ok: false, code: 'ENOENT' }), null, 'which chybí');
+  // Na systému, kde test běží: nenainstalovaný cloudflared a Tailscale radí jen to, co tu funguje.
+  const tunnels = await detectTunnels({ run: noRun, fileExists: () => false, fetchJson: noFetch });
+  const rady = [tunnels.find((t) => t.id === 'cloudflared').hint, ...remoteAdvice(tunnels).kroky].join(' ');
+  if (SYSTEM === 'macos') assert.match(rady, /brew install cloudflared/);
+  else assert.doesNotMatch(rady, /brew/);
 });
 
 test('remoteUrl: privátní síť dostane port, veřejné tunely už mají celou adresu', () => {

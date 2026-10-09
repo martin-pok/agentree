@@ -18,6 +18,8 @@ export const HISTORIE_DNI = 400;
 // Den na hraně okna může mít část konverzací už mimo paměť. Přepočítávají se proto jen dny, které
 // jsou v okně celé, se dvoudenní rezervou na posun časových pásem a zaokrouhlení.
 const REZERVA_DNI = 2;
+/** Kolik posledních dní (včetně dneška) má úplná data při sledovaném okně `windowDays`. */
+export const uplnychDni = (windowDays) => Math.max(1, windowDays - REZERVA_DNI);
 
 const pridej = (mapa, klic, hodnota) => {
   if (!klic || !hodnota) return;
@@ -84,7 +86,7 @@ export function createHistorie({ dataDir, windowDays, now: hodiny = () => Date.n
   /** Přepočítá dny uvnitř okna z živých konverzací; starší dny nechá být. Vrací true při změně. */
   function aktualizuj(sessions) {
     const now = hodiny();
-    const plne = Math.max(1, windowDays - REZERVA_DNI);
+    const plne = uplnychDni(windowDays);
     const odDne = localDay(now - (plne - 1) * DAY);
     const nove = denniSouhrny(sessions, odDne);
     for (const d of Object.keys(data.dny)) if (d >= odDne && !nove[d]) delete data.dny[d];

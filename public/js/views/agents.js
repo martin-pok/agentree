@@ -154,6 +154,8 @@ function rowHtml(s) {
   // Tento záznam není ověřená konverzace: z procesu samého nepoznáme, jestli jde o hlavního
   // nebo pomocného agenta. Složka proto zůstává jen kontextem, nikdy názvem konverzace.
   else if (s.proces) sub = `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))}${s.cwd ? ` · <code>${esc(shortPath(s.cwd))}</code>` : ''}`;
+  // Čekání, které nedoběhlo (tah jen vypršel, agent zatím neodpověděl), se od hotového liší větou z modelu.
+  else if (s.status === 'waiting' && !s.done && s.reason) sub = `${esc(s.reason)}${s.cwd || s.url ? ` · <code>${esc(shortPath(s.cwd) || s.url)}</code>` : ''}`;
   else if (s.cwd || s.url) sub = `<code>${esc(shortPath(s.cwd) || s.url)}</code>`;
   else sub = '';
   const progress = s.progress?.total ? `<span class="row-progress" aria-label="${s.progress.done} ${tr('z {0} úkolů', s.progress.total)}"><i style="width:${((s.progress.done / s.progress.total) * 100).toFixed(1)}%"></i></span>` : '';

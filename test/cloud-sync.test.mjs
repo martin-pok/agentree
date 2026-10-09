@@ -25,13 +25,43 @@ const zaznamy = [
 const kurz = { USD: 23, EUR: 25, CZK: 1 };
 const prevod = (e) => e.amount * kurz[e.currency];
 
-test('tokeny po dnech: vstup + výstup z hodinových součtů, počet konverzací a jen posledních 35 dní', () => {
+test('tokeny po dnech: vstup + výstup z hodinových součtů, počet konverzací a jen dny s úplnými daty', () => {
   const r = tokenyPoDnech(relace, NYNI);
   assert.deepEqual(r, [
     { day: '2026-09-23', provider: 'anthropic', tokens: 200, sessions: 1 },
     { day: '2026-09-24', provider: 'anthropic', tokens: 1500, sessions: 1 },
     { day: '2026-09-24', provider: 'openai', tokens: 300, sessions: 1 },
   ]);
+});
+
+// Konverzace starší než sledované okno (30 dní) už Mac v paměti nemá a hodiny před hranou okna
+// se ze souhrnu ořezávají (src/model.js#summarize). Den na hraně by se poslal menší, než byl,
+// a upsert by jím v účtu přepsal pravdivé číslo. Dřív se posílalo 35 dní zpět.
+test('tokeny po dnech: neposílá se den, za který Mac nemá úplná data', async () => {
+  const den = (zpet) => new Date(NYNI - zpet * 86400e3).toISOString().slice(0, 13);
+  const r = [{ id: 'claude-code:x', provider: 'anthropic', hourly: { [den(0)]: 1, [den(27)]: 2, [den(28)]: 3, [den(29)]: 4, [den(33)]: 5 } }];
+  const dny = tokenyPoDnech(r, NYNI).map((x) => x.day);
+  assert.deepEqual(dny, ['2026-08-28', '2026-09-24'], 'výchozí okno 30 dní = 28 úplných dní včetně dneška (jako Statistiky)');
+
+  // Synchronizace bere úplné dny z nastaveného okna (AGENTEEQ_WINDOW_DAYS).
+  const volani = [];
+  const fetchImpl = async (url, init) => {
+    const u = new URL(url);
+    volani.push({ method: init.method, cesta: u.pathname, body: init.body ? JSON.parse(init.body) : null });
+    if (u.pathname === '/rest/v1/devices') return { ok: true, status: 201, json: async () => [{ id: '11111111-2222-4333-8444-555555555555' }] };
+    return { ok: true, status: 204, json: async () => { throw new Error('prázdné'); } };
+  };
+  const s = createCloudSync({
+    config: { ucet: { url: 'https://ucty.example', klic: 'pk' }, windowDays: 10 },
+    ucet: { pristup: async () => 't', uzivatelId: () => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee' },
+    datastore: { data: { cloud: { syncEnabled: true, syncAt: 0, devices: {} } }, save() {} },
+    now: () => NYNI,
+    fetchImpl,
+    zdroje: { sessions: () => [{ id: 'claude-code:x', provider: 'anthropic', hourly: { [den(0)]: 1, [den(7)]: 2, [den(8)]: 3, [den(9)]: 4 } }], utrata: () => [], limity: () => [], konektory: () => [] },
+  });
+  assert.equal((await s.synchronizuj()).ok, true);
+  const usage = volani.find((v) => v.cesta === '/rest/v1/usage_daily');
+  assert.deepEqual(usage.body.map((x) => x.day), ['2026-09-17', '2026-09-24'], '10denní okno = 8 úplných dní');
 });
 
 test('útrata po měsících: předplatné každý měsíc do konce, jednorázové jen ve svém měsíci, poznámka nikdy', () => {

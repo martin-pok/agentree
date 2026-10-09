@@ -109,6 +109,8 @@ export function takeDirty(s) {
 
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje; takový přechod nesmí hlásit „dokončeno“.
+// `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
+// říct „hotovo“ – stav `waiting` sám o sobě to neznamená (může jít o stale tah nebo o zadání bez odpovědi).
 export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
@@ -141,12 +143,13 @@ export function deriveStatus(s, now) {
     return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
   const stale = Boolean(s.running);
-  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false };
+  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
-  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale };
-  if (age < DAY) return { status: 'idle', reason: '', stale };
-  return { status: 'archived', reason: '', stale };
+  const done = answered && !stale;
+  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  if (age < DAY) return { status: 'idle', reason: '', stale, done };
+  return { status: 'archived', reason: '', stale, done };
 }
 
 // Bez názvu i skutečného zadání pojmenuj vlákno podle toho, čím je; název složky až jako poslední možnost.
@@ -157,7 +160,7 @@ function fallbackTitle(s) {
 }
 
 export function summarize(s, now, windowMs) {
-  const { status, reason, stale } = deriveStatus(s, now);
+  const { status, reason, stale, done = false } = deriveStatus(s, now);
   const since = hourKey(now - windowMs);
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
@@ -179,6 +182,7 @@ export function summarize(s, now, windowMs) {
     status,
     reason: clip(reason, 200),
     stale,
+    done,
     startedAt: s.startedAt,
     lastAt: s.lastAt,
     turns: s.turns,

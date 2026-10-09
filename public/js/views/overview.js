@@ -7,7 +7,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -255,11 +255,12 @@ function update(topics = new Set(['all'])) {
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
-        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
-        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}" href="${agentHref(s.id)}">
-          <span class="pb-stav" data-ton="${s.status === 'working' ? 'ok' : needsYou(s) ? 'pozor' : s.status === 'failed' || s.status === 'limited' ? 'problem' : 'klid'}">${esc({ working: tr('Běží'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Limit'), waiting: tr('Hotovo'), observed: tr('Proces') }[s.status] || tr('Klid'))}</span>
+        // Štítek i barva jako na Agentech a v detailu (statusPill). `data-done="false"` u čekání,
+        // které nedoběhlo, říká robotovi, ať netvrdí „hotovo“ (robot-bubliny.js).
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''} href="${agentHref(s.id)}">
+          ${statusPill(s.status, 'pb-stav')}
           <span class="pb-agent-logo">${glyph(s)}</span>
-          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
+          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
       }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
       : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
@@ -278,7 +279,7 @@ function update(topics = new Set(['all'])) {
     }[stav];
     const pocty = [
       [working.length, tr('pracuje'), 'ok', '#/agenti?stav=working'],
-      [needs.length, tr('čeká na tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
+      [needs.length, tr('potřebuje tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
       [failed.length, tr('selhalo'), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
       [limited.length, tr('limit'), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
     ];

@@ -91,12 +91,12 @@ function remoteCard() {
     ${bezi ? `<div class="code-line"><code>${esc(bezi.remoteUrl || bezi.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(bezi.remoteUrl || bezi.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat')}</button></div>
       <p class="set-note">${esc(bezi.name)} ${tr('běží.')} ${esc(bezi.security)}</p>` : ''}
     ${t.list.length ? `<ul class="privacy-list">${t.list.map((x) => `<li>
-      <div class="custom-agent-head"><b>${esc(x.name)}</b>${x.running ? `<span class="badge badge--ok">${tr('běží')}</span>` : x.installed ? `<span class="badge">${tr('nainstalováno')}</span>` : `<span class="badge badge--beta">${tr('není')}</span>`}${x.kind === 'verejny-tunel' ? `<span class="badge badge--beta">${tr('veřejná adresa')}</span>` : `<span class="badge">${tr('privátní síť')}</span>`}</div>
+      <div class="custom-agent-head"><b>${esc(x.name)}</b>${x.running ? `<span class="badge badge--ok">${tr('běží')}</span>` : x.installed ? `<span class="badge">${tr('nainstalováno')}</span>` : x.installed === null ? `<span class="badge">${tr('nezjištěno')}</span>` : `<span class="badge badge--beta">${tr('není')}</span>`}${x.kind === 'verejny-tunel' ? `<span class="badge badge--beta">${tr('veřejná adresa')}</span>` : `<span class="badge">${tr('privátní síť')}</span>`}</div>
       <span>${esc(x.description)}</span>
       <span class="muted small">${esc(x.security)}</span>
       ${x.hint ? `<span class="muted small">${esc(x.hint)}</span>` : ''}
     </li>`).join('')}</ul>` : `<p class="set-note">${tr('Zjištění ještě neproběhlo.')}</p>`}
-    ${rada && rada.doporuceni !== 'zadny' ? `<p class="set-note"><b>${tr('Doporučení:')}</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
+    ${rada && rada.doporuceni !== 'zadny' && rada.doporuceni !== 'nevim' ? `<p class="set-note"><b>${tr('Doporučení:')}</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
     ${rada?.kroky?.length ? `<ol class="steps steps--compact">${rada.kroky.map((k) => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}
     <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}${tr('Zjistit znovu')}</button></div>
     <p class="set-note">${tr('Uložení na plochu telefonu potřebuje HTTPS. Veřejný tunel ho má sám, u Tailscale ho zapneš příkazem <code>tailscale serve</code>.')}</p>`;
@@ -118,7 +118,9 @@ function tailscaleCard() {
     ? `${tr('Adresa {0} v síti Tailscale:', tohotoPocitace())} ${t.name || t.addresses[0]}`
     : bezi
       ? tr('Tailscale běží, ale {0} zatím nemá adresu v tailnetu.', tentoPocitac())
-      : detekce?.installed
+      : detekce?.installed === null
+        ? tr('Stav Tailscale se nepodařilo zjistit.')
+        : detekce?.installed
         ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený. Otevři aplikaci Tailscale a přihlas se.')
         : tr('Tailscale na {0} není. Nainstaluj ho z tailscale.com a přihlas se.', tomtoPocitaci());
   return `
@@ -533,7 +535,7 @@ function mount(el) {
         }
       } else if (a.dataset.action === 'remote-detect') {
         state.tunnels = (await api.detectRemote()).tunnels;
-        { const nalezen = state.tunnels.list.some((x) => x.installed); toast(nalezen ? tr('Zjištěno') : tr('Žádný nástroj pro vzdálený přístup není nainstalovaný'), nalezen ? {} : { tone: 'info' }); }
+        { const nalezen = state.tunnels.list.some((x) => x.installed); const nevim = !nalezen && state.tunnels.list.some((x) => x.installed === null); toast(nalezen ? tr('Zjištěno') : nevim ? tr('Stav nástrojů se nepodařilo zjistit') : tr('Žádný nástroj pro vzdálený přístup není nainstalovaný'), nalezen ? {} : { tone: 'info' }); }
         update();
       } else if (a.dataset.action === 'lan-pin') {
         v.pin = (await api.lanPin()).pin;

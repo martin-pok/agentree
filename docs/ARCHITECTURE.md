@@ -100,6 +100,8 @@ Konektor nastavuje fakta, `deriveStatus()` z nich určí stav v tomto pořadí:
 
 Když `running` vyprší bez explicitního konce, stav je `waiting`/`idle` s příznakem `stale: true` a důvodem „Delší dobu bez aktivity“. **Takový přechod nikdy nevyvolá upozornění „dokončil úlohu“.**
 
+`waiting` sám neznamená „hotovo“: patří sem i stale tah a zadání, na které agent zatím neodpověděl („Zatím bez odpovědi agenta“). Příznak `done` je `true` jen tehdy, když agent odpověděl a tah nebyl stale (důvod „Hotovo, čeká na další zadání“). Rozhraní ukazuje u všech `waiting` stejný štítek „Čeká na zadání“ a u `done: false` k němu důvod z modelu; robot pak neříká „hotovo“.
+
 Bez hooků je žádost o povolení vidět jen jako nástroj bez výsledku a rozhoduje druh nástroje (`toolWaitKind` z `src/connectors/claude-code.js`) a režim oprávnění (`permissionMode`, když ho přepis nese): **úprava souboru** (Edit, MultiEdit, Write, NotebookEdit) čekající déle než 20 s je `needs_input` s důvodem „Nejspíš čeká na tvé povolení: …“ – po schválení by proběhla během vteřin, a „nejspíš“ dává najevo odhad; **čtení** (Read, Grep, Glob, LS, TodoWrite, Task…) se na povolení neptá nikdy a žádnou poznámku nedostane; **ostatní** (Bash, MCP, WebFetch) umí běžet dlouho samy, a tak po 90 s jen „… · možná čeká na tvé povolení“ a zůstávají `working`. Režim `bypassPermissions` odhad vypne úplně, `acceptEdits` pro úpravy souborů. S hooky se žádost o povolení hlásí přesně a okamžitě.
 
 ## Klient (`public/js/`)

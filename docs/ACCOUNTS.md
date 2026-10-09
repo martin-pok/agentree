@@ -150,7 +150,7 @@ synchronizací; do té doby ho načtení volby z účtu nepřepíše.
 | Tabulka | Co odchází | Odkud |
 |---|---|---|
 | `devices` | jméno Macu (hostname), systém, verze aplikace, čas posledního spojení | `os.hostname()` |
-| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po **místních kalendářních dnech Macu** a poskytovatelích, 35 dní zpět | hodinové součty konverzací |
+| `usage_daily` | tokeny (vstup + výstup) a počet konverzací po **místních kalendářních dnech Macu** a poskytovatelích, jen dny s úplnými daty (sledované okno bez dvou dnů rezervy, výchozí 28 dní včetně dneška) | hodinové součty konverzací |
 | `spend_monthly` | součty útraty po měsících, službách a druzích v měně aplikace | zapsané výdaje a zjištěná předplatná – bez poznámek |
 | `limits` | procento, dosažení, obnova a čas měření oken limitů | limity – bez hlášek a popisků |
 | `agent_status` | počty agentů: pracuje, potřebuje tě, čeká, selhal | stav konverzací |
@@ -162,8 +162,13 @@ synchronizací; do té doby ho načtení volby z účtu nepřepíše.
   jsou v UTC; každá hodina patří ke dni podle místního času svého začátku (v časových pásmech
   s půlhodinovým posunem tedy celá hodina k jednomu dni). Web účtu staví osu z místních dnů
   prohlížeče a nic nepřepočítává do UTC. Schéma databáze se neměnilo, změnil se jen význam sloupce
-  (do 3. 10. 2026 to byl den UTC); řádky posledních 35 dní se při další synchronizaci přepíšou novým
+  (do 3. 10. 2026 to byl den UTC); řádky posledních 28 dní se při další synchronizaci přepíšou novým
   významem, starší řádky mohou mít den UTC.
+- **Den na hraně sledovaného okna se neposílá.** Konverzace starší než okno už Mac v paměti nemá
+  a takový den by se spočítal menší, než byl; upsert by jím v účtu přepsal dřív poslané pravdivé
+  číslo. Posílají se proto jen dny, které Statistiky přepočítávají z živých konverzací
+  (`src/historie.js#uplnychDni`). Do 0.45.1 se posílalo 35 dní zpět a nejstarší z nich
+  (za hranou 30denního okna) se v účtu mohly takhle zmenšit; synchronizace je sama neopraví.
 - **Rozpad tokenů po dnech na vstup, výstup a cache aplikace nemá**, proto jsou ty sloupce prázdné
   (`null` = nevíme), ne nula. Hlavní číslo je `tokens` – stejné jako v aplikaci.
 - **„Co přesně se posílá“** v kartě účtu ukáže přesně ten balík, který by odešel (`GET /api/ucet/nahled`):

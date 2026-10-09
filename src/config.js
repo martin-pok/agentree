@@ -17,7 +17,7 @@ export const VERSION = JSON.parse(readFileSync(path.join(ROOT_DIR, 'package.json
 //
 //   openMode     jak se plán provede: exec skutečně, dry jen vrátí plán (testy), off vůbec
 //   openApps     otevřít session v aplikaci a pokračovat v Terminálu (macOS)
-//   launchAgents spustit agenta na pozadí – hledá CLI přes přihlašovací shell (macOS)
+//   launchAgents spustit agenta na pozadí a odpovědět mu z aplikace – hledá CLI přes přihlašovací shell (macOS)
 //   autostart    spuštění po přihlášení přes LaunchAgent (macOS)
 function otevirani(env) {
   if (env.AGENTEEQ_OPEN === 'dry') {
