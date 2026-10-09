@@ -742,3 +742,39 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  .site-footer .footer-bottom .foot-note { grid-column:1 / -1; grid-row:2; text-align:center; }
 }
 @media(prefers-reduced-motion:reduce) { .site-footer .footer-bottom > a.text-link { transition:none; } }
+
+
+/* Product-grade navigation refinement: monochrome brand, balanced spacing, quieter active state. */
+.nav { background:#111017; }
+.nav.is-odjeto { background:rgba(17,16,23,.85); backdrop-filter:blur(24px) saturate(135%); -webkit-backdrop-filter:blur(24px) saturate(135%); border-bottom-color:rgba(255,255,255,.1); box-shadow:0 12px 35px -28px rgba(0,0,0,.8); }
+.nav-in { min-height:76px; gap:clamp(18px,2.5vw,36px); }
+.nav .brand { font-size:19px; gap:12px; letter-spacing:-.025em; }
+.nav .brand img { width:34px; height:34px; }
+.nav-links { gap:clamp(12px,2vw,26px); }
+.nav-links a { display:inline-flex; align-items:center; min-height:40px; border-radius:var(--r-full); padding:0 9px; transition:color .2s var(--ease),background-color .2s var(--ease); }
+.nav-links a:hover { background:rgba(255,255,255,.06); }
+.nav-links a[aria-current="location"] { background:rgba(255,255,255,.085); }
+.nav-links a::after { display:none; }
+.nav .btn--sm { transition:transform .3s var(--ease),background .3s var(--ease); }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) { .nav .btn--sm:hover { transform:translateY(-2px); } }
+/* Installation journey: subtle tinted light in the cards, rather than three empty white boxes. */
+#vyzkouset .steps { gap:20px; }
+#vyzkouset .steps li { position:relative; isolation:isolate; overflow:hidden; min-height:290px;
+  border:1px solid rgba(49,44,95,.1); background:rgba(255,255,255,.67);
+  box-shadow:0 25px 58px -52px rgba(37,31,88,.3),inset 0 1px rgba(255,255,255,.88);
+  transition:transform .55s var(--ease),box-shadow .55s var(--ease),border-color .55s var(--ease); }
+#vyzkouset .steps li::before { content:""; position:absolute; inset:-35% -35% 15%; pointer-events:none; z-index:-1;
+  background:radial-gradient(ellipse at 30% 25%,rgba(119,109,233,.17),transparent 64%);
+  transform:translate3d(0,0,0); transition:transform 1s var(--ease); }
+#vyzkouset .steps li:nth-child(2)::before { background:radial-gradient(ellipse at 30% 25%,rgba(49,169,148,.16),transparent 64%); }
+#vyzkouset .steps li:nth-child(3)::before { background:radial-gradient(ellipse at 30% 25%,rgba(194,142,77,.15),transparent 64%); }
+#vyzkouset .steps li:nth-child(2) .step-n { color:#198a76; }
+#vyzkouset .steps li:nth-child(3) .step-n { color:#95692d; }
+#vyzkouset .steps b { font-size:19px; letter-spacing:-.02em; }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ #vyzkouset .steps li:hover { transform:translateY(-5px); border-color:rgba(98,96,216,.2); box-shadow:0 32px 70px -50px rgba(37,31,88,.35),inset 0 1px white; }
+ #vyzkouset .steps li:hover::before { transform:translate3d(10%,8%,0); }
+}
+@media(max-width:900px) { #vyzkouset .steps li { min-height:unset; } }
+@media(max-width:620px) { .nav-in { min-height:68px; gap:12px; } .nav .brand { gap:8px; font-size:17px; } .nav .brand img { width:30px; height:30px; } #vyzkouset .steps { gap:12px; } }
+@media(prefers-reduced-motion:reduce) { #vyzkouset .steps li,#vyzkouset .steps li::before,.nav .btn--sm { transition:none!important; transform:none!important; } }
