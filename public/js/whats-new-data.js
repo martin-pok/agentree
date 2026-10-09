@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.0',
+    date: '2026-10-09',
+    title: 'Robotí profilové obrázky',
+    items: [
+      'Profilové obrázky v Nastavení jsou teď roboti Agenteeq – 29 povah v barvách značky.',
+      'Web má nový úvod: celý Přehled aplikace v prostoru a kolem něj roboti.',
+    ],
+    en: {
+      title: 'Robot profile pictures',
+      items: [
+        'Profile pictures in Settings are now Agenteeq robots – 29 characters in the brand colours.',
+        'The website has a new intro: the whole Overview in 3D space with robots around it.',
+      ],
+    },
+  },
+  {
     version: '0.45.1',
     date: '2026-10-08',
     title: 'Robot i v prázdných stavech',

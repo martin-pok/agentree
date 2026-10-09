@@ -3,39 +3,71 @@ import { api } from './api.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
 
-// Abstraktní profilové obrázky: jednoduché tvary v teplé paletě Agenteeq. Index se ukládá do nastavení (settings.avatar).
+// Profilové obrázky: roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
+// anténa a oči. Liší se barvou, tvarem očí a anténou. Počet zůstává stejný jako u původních
+// abstraktních obrázků, takže uložená volba (settings.avatar = index) ukazuje dál na obrázek.
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
 
+// Oči: [tvar, barva] → SVG. Středy očí leží na x 31 a 49, y 48.
+const OCI = {
+  kapsle: (c) => `<rect x="27.5" y="42" width="7" height="13" rx="3.5" fill="${c}"/><rect x="45.5" y="42" width="7" height="13" rx="3.5" fill="${c}"/>`,
+  kulate: (c) => `<circle cx="31" cy="48" r="5" fill="${c}"/><circle cx="49" cy="48" r="5" fill="${c}"/>`,
+  stastne: (c) => `<path d="M26 50a5 5 0 0 1 10 0M44 50a5 5 0 0 1 10 0" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`,
+  mrk: (c) => `<rect x="27.5" y="42" width="7" height="13" rx="3.5" fill="${c}"/><path d="M45 49h9" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`,
+  vizor: (c) => `<rect x="24" y="43" width="32" height="10" rx="5" fill="${c}"/>`,
+  jedno: (c) => `<circle cx="40" cy="48" r="7" fill="${c}"/><circle cx="42" cy="46" r="2.2" fill="#FFFFFF" opacity=".85"/>`,
+  ospale: (c) => `<path d="M26 48h10M44 48h10" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`,
+  hvezdy: (c) => `<path d="M31 42l1.8 4.2 4.2 1.8-4.2 1.8L31 54l-1.8-4.2-4.2-1.8 4.2-1.8zM49 42l1.8 4.2 4.2 1.8-4.2 1.8L49 54l-1.8-4.2-4.2-1.8 4.2-1.8z" fill="${c}"/>`,
+};
+// Anténa nad hlavou (hlava začíná na y 29).
+const ANTENY = {
+  kulicka: (c) => `<path d="M40 14v15" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/><circle cx="40" cy="13" r="4" fill="${c}"/>`,
+  dvojita: (c) => `<path d="M32 29l-5-12M48 29l5-12" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/><circle cx="26.5" cy="15.5" r="3.5" fill="${c}"/><circle cx="53.5" cy="15.5" r="3.5" fill="${c}"/>`,
+  blesk: (c) => `<path d="M42 10l-6 10h6l-4 9" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  usi: (c) => `<rect x="11" y="40" width="7" height="16" rx="3.5" fill="${c}"/><rect x="62" y="40" width="7" height="16" rx="3.5" fill="${c}"/><path d="M40 18v11" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`,
+  srdce: (c) => `<path d="M40 29v-8" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/><path d="M40 21c-4-5-10-1-6 4l6 5 6-5c4-5-2-9-6-4z" fill="${c}" transform="translate(0 -8)"/>`,
+};
+// Hlava: zaoblený obdélník jako v logu, případně širší nebo kulatější.
+const HLAVY = {
+  logo: (c) => `<rect x="17" y="29" width="46" height="38" rx="14" fill="${c}"/>`,
+  siroka: (c) => `<rect x="13" y="31" width="54" height="34" rx="13" fill="${c}"/>`,
+  kulata: (c) => `<rect x="18" y="27" width="44" height="42" rx="21" fill="${c}"/>`,
+};
+
+const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
+  svg(pozadi, ANTENY[antena](antBarva) + HLAVY[tvar](hlava) + OCI[oci](ocBarva));
+
+// Paleta značky: fialová, inkoust, papír, šalvěj, okr, růže a jejich světlé odstíny.
 const AVATARS = [
-  svg('#D97757', '<circle cx="46" cy="36" r="20" fill="#F7EEDA"/><circle cx="24" cy="58" r="7" fill="#16141D"/>'),
-  svg('#F3E6D1', '<circle cx="40" cy="46" r="19" fill="#D97757"/><path d="M0 52h80v28H0z" fill="#16141D"/><path d="M6 52h68" stroke="#F7EEDA" stroke-width="2.5" stroke-linecap="round" opacity=".55"/><circle cx="61" cy="22" r="4" fill="#C99A3E"/>'),
-  svg('#0D7A67', '<g transform="rotate(-24 40 42)"><path d="M40 12c15 11 15 49 0 60-15-11-15-49 0-60z" fill="#F4F3F7"/><path d="M40 18v48" stroke="#0D7A67" stroke-width="2.5" stroke-linecap="round" opacity=".5"/></g><circle cx="57" cy="24" r="5" fill="#C99A3E"/>'),
-  svg('#16141D', '<path d="M18 52a22 22 0 0 1 44 0" fill="none" stroke="#C99A3E" stroke-width="9" stroke-linecap="round"/><circle cx="40" cy="30" r="5" fill="#F4F3F7"/>'),
-  svg('#C99A3E', '<g stroke="#16141D" stroke-width="5" stroke-linecap="round"><path d="M40 16v48M16 40h48M23 23l34 34M57 23 23 57"/></g><circle cx="40" cy="40" r="7" fill="#F7EEDA"/>'),
-  svg('#22313F', '<circle cx="56" cy="24" r="9" fill="#C99A3E"/><circle cx="61" cy="20" r="7.5" fill="#22313F"/><path d="M-2 46c9-7 18-7 27 0s18 7 27 0 18-7 30 0v36H-2z" fill="#1F8A96"/><path d="M-2 56c9-7 18-7 27 0s18 7 27 0 18-7 30 0v26H-2z" fill="#22A38C"/><path d="M-2 66c9-6 18-6 27 0s18 6 27 0 18-6 30 0v16H-2z" fill="#43C9B0"/>'),
-  svg('#C2335A', '<circle cx="38" cy="40" r="21" fill="#F7EEDA"/><circle cx="49" cy="33" r="18" fill="#C2335A"/><circle cx="57" cy="55" r="3" fill="#F3D38E"/><circle cx="50" cy="63" r="2" fill="#F7EEDA" opacity=".85"/>'),
-  svg('#6F8F5E', '<g fill="#F4F3F7"><circle cx="40" cy="27" r="11"/><circle cx="40" cy="53" r="11"/><circle cx="27" cy="40" r="11"/><circle cx="53" cy="40" r="11"/></g><circle cx="40" cy="40" r="6" fill="#C99A3E"/>'),
-  svg('#8250DF', '<path d="M40 12 62 40 40 68 18 40z" fill="#F4F3F7"/><circle cx="40" cy="40" r="7" fill="#C2335A"/>'),
-  svg('#F4F3F7', '<g fill="#16141D"><circle cx="22" cy="22" r="6"/><circle cx="40" cy="22" r="6"/><circle cx="58" cy="22" r="6"/><circle cx="22" cy="40" r="6"/><circle cx="58" cy="40" r="6"/><circle cx="22" cy="58" r="6"/><circle cx="40" cy="58" r="6"/><circle cx="58" cy="58" r="6"/></g><circle cx="40" cy="40" r="8" fill="#D97757"/>'),
-  svg('#1F8A96', '<circle cx="40" cy="40" r="26" fill="none" stroke="#F1E6D6" stroke-width="6"/><circle cx="40" cy="40" r="13" fill="none" stroke="#F1E6D6" stroke-width="6"/><circle cx="40" cy="40" r="3" fill="#F1E6D6"/>'),
-  svg('#3A3743', '<path d="M22 44c-6-14 6-28 20-26s24 14 18 28-14 22-24 18-8-8-14-20z" fill="#D97757"/><circle cx="52" cy="30" r="5" fill="#F7EEDA"/>'),
-  svg('#F7EEDA', '<path d="M11 51c12-21 25-27 42-18 9 5 13 13 16 24H11z" fill="#8250DF"/><circle cx="25" cy="27" r="8" fill="#D97757"/><circle cx="53" cy="23" r="5" fill="#16141D"/>'),
-  svg('#164E63', '<path d="M11 28h58v24H11z" fill="#E0F3EF"/><path d="m23 40 11-11 12 11 11-11" fill="none" stroke="#22A38C" stroke-width="6" stroke-linecap="round"/><circle cx="57" cy="57" r="8" fill="#C99A3E"/>'),
-  svg('#E8B4C5', '<path d="M14 54a26 26 0 0 1 52 0" fill="#16141D"/><path d="M28 16h24v24H28z" fill="#F7EEDA" transform="rotate(45 40 28)"/><circle cx="40" cy="55" r="5" fill="#C2335A"/>'),
-  svg('#22313F', '<g fill="none" stroke="#F4F3F7" stroke-width="5"><path d="M16 24h48M16 40h48M16 56h48"/></g><circle cx="28" cy="24" r="7" fill="#C99A3E"/><circle cx="52" cy="40" r="7" fill="#22A38C"/><circle cx="36" cy="56" r="7" fill="#D97757"/>'),
-  svg('#DDE8F5', '<path d="M40 10 66 31v29L40 70 14 60V31z" fill="#1F8A96"/><path d="m27 43 9 9 18-20" fill="none" stroke="#F7EEDA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'),
-  svg('#6F8F5E', '<path d="M11 61c5-23 18-36 29-36s24 13 29 36z" fill="#F7EEDA"/><path d="M40 12v48" stroke="#16141D" stroke-width="5" stroke-linecap="round"/><circle cx="40" cy="22" r="7" fill="#C2335A"/>'),
-  svg('#2F2640', '<circle cx="40" cy="40" r="27" fill="#C99A3E"/><path d="M40 19v42M19 40h42" stroke="#F7EEDA" stroke-width="5"/><circle cx="40" cy="40" r="8" fill="#8250DF"/>'),
-  svg('#F3E6D1', '<path d="M16 18h48v44H16z" rx="6" fill="#D97757"/><path d="m23 51 12-12 8 8 8-8 6 6" fill="none" stroke="#F7EEDA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="30" r="5" fill="#16141D"/>'),
-  svg('#1A3A37', '<path d="M14 54 29 18l14 36 9-20 14 20z" fill="#43C9B0"/><path d="M14 61h52" stroke="#F7EEDA" stroke-width="5" stroke-linecap="round"/><circle cx="57" cy="20" r="6" fill="#C99A3E"/>'),
-  svg('#F1EDF6', '<g fill="#16141D"><circle cx="24" cy="25" r="7"/><circle cx="56" cy="25" r="7"/><circle cx="24" cy="55" r="7"/><circle cx="56" cy="55" r="7"/></g><path d="M40 14v52M14 40h52" stroke="#8250DF" stroke-width="5"/><circle cx="40" cy="40" r="8" fill="#D97757"/>'),
-  svg('#55223A', '<path d="M12 42c7-19 17-28 28-28s21 9 28 28c-7 19-17 28-28 28S19 61 12 42z" fill="#F7EEDA"/><circle cx="40" cy="42" r="13" fill="#C2335A"/><circle cx="40" cy="42" r="5" fill="#16141D"/>'),
-  svg('#D7E8E4', '<path d="M15 26h50v28H15z" fill="#16141D"/><circle cx="28" cy="40" r="8" fill="#22A38C"/><circle cx="52" cy="40" r="8" fill="#C99A3E"/><path d="M40 14v52" stroke="#D97757" stroke-width="5" stroke-linecap="round"/>'),
-  svg('#16141D', '<circle cx="40" cy="40" r="25" fill="none" stroke="#F7EEDA" stroke-width="2.5" opacity=".85"/><g stroke="#F7EEDA" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M40 11v5M40 64v5M11 40h5M64 40h5"/></g><path d="M40 17 46 40H34z" fill="#C99A3E"/><path d="M40 63 34 40h12z" fill="#C2335A"/><circle cx="40" cy="40" r="4" fill="#F7EEDA"/>'),
-  svg('#F4F3F7', '<path d="M37 37V15A22 22 0 0 0 15 37z" fill="#22A38C"/><path d="M43 37h22A22 22 0 0 0 43 15z" fill="#D97757"/><path d="M37 43H15a22 22 0 0 0 22 22z" fill="#C99A3E"/><path d="M43 43v22a22 22 0 0 0 22-22z" fill="#16141D"/>'),
-  svg('#8250DF', '<g fill="#F4F3F7"><rect x="19" y="33" width="6" height="14" rx="3"/><rect x="29" y="26" width="6" height="28" rx="3"/><rect x="49" y="28" width="6" height="24" rx="3"/><rect x="59" y="34" width="6" height="12" rx="3"/></g><rect x="37" y="20" width="6" height="40" rx="3" fill="#F3D38E"/>'),
-  svg('#1A3A37', '<g transform="rotate(-18 40 40)"><path d="M13 40a27 9 0 0 1 54 0" fill="none" stroke="#F7EEDA" stroke-width="3"/><circle cx="40" cy="40" r="15" fill="#C99A3E"/><path d="M13 40a27 9 0 0 0 54 0" fill="none" stroke="#F7EEDA" stroke-width="3"/></g><circle cx="61" cy="21" r="4" fill="#43C9B0"/>'),
-  svg('#F1E6D6', '<path d="M66 15 14 40l19 5z" fill="#16141D"/><path d="M66 15 33 45l5 8z" fill="#C99A3E"/><path d="M66 15 38 53l4 12z" fill="#D97757"/><g fill="#16141D" opacity=".25"><circle cx="20" cy="56" r="3"/><circle cx="13" cy="64" r="2"/></g>'),
+  robot('#5254D8', '#FAFAFA', 'logo', 'kapsle', '#17171D', 'kulicka', '#FAFAFA'),
+  robot('#2C2C3A', '#FAFAFA', 'logo', 'kapsle', '#17171D', 'kulicka', '#8E90FF'),
+  robot('#EEEEFC', '#17171D', 'logo', 'kapsle', '#C8F0E6', 'kulicka', '#5254D8'),
+  robot('#C8F0E6', '#2B6B53', 'kulata', 'stastne', '#C8F0E6', 'dvojita', '#2B6B53'),
+  robot('#F5EDDD', '#C99A3E', 'siroka', 'vizor', '#17171D', 'usi', '#83591A'),
+  robot('#FBEAF0', '#B0284F', 'logo', 'kulate', '#FBEAF0', 'srdce', '#B0284F'),
+  robot('#8E90FF', '#17171D', 'kulata', 'jedno', '#8E90FF', 'kulicka', '#17171D'),
+  robot('#2B6B53', '#C8F0E6', 'logo', 'mrk', '#17171D', 'blesk', '#F5D78E'),
+  robot('#2C2C3A', '#5254D8', 'siroka', 'vizor', '#C8F0E6', 'dvojita', '#8E90FF'),
+  robot('#E4E4F0', '#17171D', 'kulata', 'stastne', '#FAFAFA', 'kulicka', '#B0284F'),
+  robot('#C99A3E', '#17171D', 'logo', 'hvezdy', '#F5D78E', 'blesk', '#17171D'),
+  robot('#DDE8F5', '#5254D8', 'logo', 'ospale', '#EEEEFC', 'usi', '#17171D'),
+  robot('#B0284F', '#FBEAF0', 'kulata', 'kapsle', '#B0284F', 'kulicka', '#FBEAF0'),
+  robot('#EEEEFC', '#8E90FF', 'siroka', 'stastne', '#17171D', 'srdce', '#5254D8'),
+  robot('#2C2C3A', '#C8F0E6', 'logo', 'jedno', '#17171D', 'kulicka', '#43D1B1'),
+  robot('#F5EDDD', '#17171D', 'kulata', 'mrk', '#F5D78E', 'dvojita', '#C99A3E'),
+  robot('#5254D8', '#17171D', 'siroka', 'kulate', '#C8F0E6', 'usi', '#EEEEFC'),
+  robot('#C8F0E6', '#17171D', 'logo', 'hvezdy', '#43D1B1', 'kulicka', '#2B6B53'),
+  robot('#FBEAF0', '#17171D', 'logo', 'stastne', '#FFB3C7', 'dvojita', '#B0284F'),
+  robot('#2F2F3A', '#8E90FF', 'kulata', 'vizor', '#17171D', 'blesk', '#F5D78E'),
+  robot('#E4E4F0', '#5254D8', 'logo', 'kapsle', '#FAFAFA', 'srdce', '#B0284F'),
+  robot('#8E90FF', '#FAFAFA', 'siroka', 'ospale', '#5254D8', 'kulicka', '#FAFAFA'),
+  robot('#2B6B53', '#17171D', 'logo', 'kulate', '#C8F0E6', 'usi', '#C8F0E6'),
+  robot('#DDE8F5', '#17171D', 'kulata', 'kapsle', '#DDE8F5', 'dvojita', '#5254D8'),
+  robot('#C99A3E', '#F5EDDD', 'logo', 'stastne', '#83591A', 'kulicka', '#F5EDDD'),
+  robot('#2C2C3A', '#FFB3C7', 'kulata', 'mrk', '#17171D', 'srdce', '#FFB3C7'),
+  robot('#EEEEFC', '#2B6B53', 'siroka', 'hvezdy', '#C8F0E6', 'blesk', '#5254D8'),
+  robot('#B0284F', '#17171D', 'logo', 'vizor', '#FFB3C7', 'kulicka', '#FBEAF0'),
+  robot('#5254D8', '#C8F0E6', 'kulata', 'jedno', '#17171D', 'dvojita', '#C8F0E6'),
 ];
 
 export const AVATAR_COUNT = AVATARS.length;

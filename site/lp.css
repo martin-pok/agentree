@@ -166,8 +166,50 @@ section[id] { scroll-margin-top: 72px; }
 .hero h1 .radek--tichy { color: var(--on-stage-mute); }
 .hero .lead { max-width: 46ch; }
 .hero-figure { margin-top: clamp(48px, 5.5vw, 76px); display: grid; justify-items: center; gap: 28px; }
-.hero-shot { width: min(100%, 1072px); filter: drop-shadow(0 40px 80px rgba(0, 0, 0, .55)); }
-.hero-shot img { width: 100%; height: auto; }
+/* Scéna úvodu: skutečný Přehled aplikace v okně, které stojí nakloněné v prostoru a při
+   posouvání se narovná (--p 0 → 1 nastavuje lp.js). Bez JS a při omezeném pohybu je okno rovné.
+   Kolem okna roboti ve třech hloubkách: vzdálení malí a rozostření, blízcí velcí a rozostření,
+   střední ostří – hloubka ostrosti jako u fotoaparátu. */
+.hero-stage { --p: 1; --mx: 0; --my: 0; position: relative; width: min(100%, 1120px); perspective: 1800px; perspective-origin: 50% 0; }
+.hero-tilt { transform-origin: 50% 0; transform: rotateX(calc((1 - var(--p)) * 26deg)) scale(calc(.9 + var(--p) * .1)); }
+/* Narovnané okno nemá žádnou transformaci: prohlížeč ho pak vykreslí v plném rozlišení, ostré. */
+.hero-stage.is-rovne .hero-tilt { transform: none; }
+.hero-shot { display: block; position: relative; width: 100%; border-radius: var(--r-lg); overflow: hidden; background: #0B0E15;
+  box-shadow: 0 0 0 1px rgba(244, 243, 247, .09), 0 2px 0 0 rgba(244, 243, 247, .06) inset, 0 60px 120px -20px rgba(0, 0, 0, .7), 0 30px 60px -30px rgba(82, 84, 216, .45); }
+.hero-shot img { display: block; width: 100%; height: auto; }
+/* Spodek okna se rozplyne do scény – obraz z ní vyrůstá, nekončí ostrou hranou. */
+.hero-shot::after { content: ''; position: absolute; inset: auto 0 0; height: 22%; background: linear-gradient(to bottom, transparent, var(--backdrop)); pointer-events: none; }
+/* Záře pod oknem v barvě značky. */
+.hero-stage::before { content: ''; position: absolute; inset: 8% 10% -6%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, rgba(82, 84, 216, .38), transparent); filter: blur(40px); }
+
+.hero-roboti { position: absolute; inset: 0; pointer-events: none; }
+.hr { position: absolute; left: var(--x); top: var(--y); width: var(--s); --hloubka: 1;
+  transform: translate3d(calc(var(--mx) * var(--par) * 1px), calc((1 - var(--p)) * var(--par) * 6px + var(--my) * var(--par) * 1px), 0); }
+.hr-telo { display: block; }
+.hr svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .45)); }
+.hr--daleko { filter: blur(2.5px) saturate(.8); opacity: .62; z-index: -1; }
+.hr--blizko { filter: blur(5px); z-index: 2; }
+/* Roboti jednou přiletí na místo (žádná smyčka – WCAG 2.2.2), dál se hýbou jen s posouváním
+   a ukazatelem, tedy s tím, co dělá návštěvník. */
+@media (prefers-reduced-motion: no-preference) {
+  .hr-telo { animation: prilet 1.4s var(--ease) calc(.7s + var(--i, 0) * .12s) backwards; }
+  .hr-bublina { animation: prilet .8s var(--ease) calc(1.6s + var(--i, 0) * .12s) backwards; }
+}
+@keyframes prilet { from { opacity: 0; transform: translateY(28px) scale(.86) rotate(-6deg); } to { opacity: 1; transform: none; } }
+/* Skleněná bublina u robota – stav slovy jako v aplikaci. */
+.hr-bublina { position: absolute; left: 70%; top: -18px; padding: 6px 12px; border-radius: var(--r-full); white-space: nowrap;
+  background: rgba(244, 243, 247, .12); box-shadow: inset 0 0 0 1px rgba(244, 243, 247, .18); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--on-stage); font: 500 13px/1.3 var(--f-body); }
+.hr-bublina--vlevo { left: auto; right: 70%; }
+.hr-bublina i { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--ton, #43D1B1); vertical-align: 2px; }
+/* Na telefonu je scéna vysoká a úzká: procenta by poslala roboty až na výzvu ke stažení.
+   Zůstanou jen dva malí, kteří vykukují nad horní hranou okna, bez bublin. */
+@media (max-width: 620px) {
+  .hr--skryt-mobil, .hr--daleko, .hr-bublina { display: none; }
+  .hr--stred { top: -50px; width: 44px; --par: 0 !important; }
+  .hr--stred:nth-child(2) { left: auto; right: 4px; }
+  .hr--stred:nth-child(5) { left: 4px; }
+}
 .detail-note { font-size: 13px; line-height: 1.5; color: var(--mute); text-align: center; }
 .unit--dark .detail-note { color: var(--on-stage-mute); }
 
@@ -313,7 +355,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
   .tile > p { font-size: 16px; }
   .tile--fit .tile-shot { padding-bottom: 40px; }
   .tile--crop .tile-shot { height: 320px; }
-  .hero-shot { width: min(100%, 420px); }
+  .hero-stage { width: min(100%, 420px); }
   .specs { font-size: 13px; gap: 6px 8px; }
   .specs span { gap: 8px; }
   .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
