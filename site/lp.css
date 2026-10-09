@@ -1152,3 +1152,27 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 #propojeni .integration-flow { align-self:center; padding-top:0; height:90px; }
 @media(max-width:900px) { #propojeni .integration-map { column-gap:12px; } #propojeni .integration-lane { padding:19px; } }
 @media(max-width:620px) { #propojeni .integration-map { display:block; } #propojeni .integration-lane { padding:22px; } }
+
+
+/* Integration connector system: one continuous, measured path from both lanes to the hub.
+   No floating dots, no disconnected centrelines, no dependency on card heights. */
+#propojeni .integration-map { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px; align-items:stretch; }
+#propojeni .integration-flow { display:none; }
+#propojeni .integration-lane { position:relative; align-self:stretch; }
+#propojeni .integration-lane::after { content:""; position:absolute; width:1px; height:22px; left:50%; top:100%; background:rgba(174,167,231,.5); pointer-events:none; }
+#propojeni .integration-down { grid-column:1/-1; position:relative; display:block; height:72px; }
+#propojeni .integration-down span,#propojeni .integration-down i { display:none; }
+#propojeni .integration-down::before { content:""; position:absolute; top:21px; left:25%; width:50%; height:1px; background:rgba(174,167,231,.5); }
+#propojeni .integration-down::after { content:""; position:absolute; top:21px; bottom:0; left:50%; width:1px; background:rgba(174,167,231,.5); }
+#propojeni .integration-result { position:relative; }
+@media(max-width:900px) { #propojeni .integration-map { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:12px; } }
+@media(max-width:620px) {
+ #propojeni .integration-map { display:flex; flex-direction:column; gap:0; }
+ #propojeni .integration-lane::after { height:22px; }
+ #propojeni .integration-flow { display:block; position:relative; height:22px; padding:0; }
+ #propojeni .integration-flow::before { content:""; position:absolute; left:50%; top:0; height:100%; width:1px; background:rgba(174,167,231,.5); }
+ #propojeni .integration-flow span,#propojeni .integration-flow i { display:none; }
+ #propojeni .integration-down { height:48px; }
+ #propojeni .integration-down::before { display:none; }
+ #propojeni .integration-down::after { top:0; }
+}
