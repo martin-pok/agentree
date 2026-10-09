@@ -70,7 +70,7 @@ if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'Intersecti
 // Nástup začíná teprve v čitelné části okna. Bez JS, podpory API nebo při
 // omezeném pohybu zůstává celý obsah viditelný a přístupný.
 if (matchMedia('(prefers-reduced-motion: no-preference)').matches && 'IntersectionObserver' in window) {
-  const prvky = [...document.querySelectorAll('.unit:not(.hero) .unit-head, .tile, .source-group, .facts article, .steps li, .prikaz')];
+  const prvky = [...document.querySelectorAll('.unit:not(.hero) .unit-head, .tile, .source-group, .facts article, .steps li, .prikaz, #propojeni .integration-lane, #propojeni .integration-down, #propojeni .integration-result, #rozsireni')];
   for (const prvek of prvky) prvek.classList.add('motion-pending');
   const pozorovatel = new IntersectionObserver((zaznamy) => {
     for (const zaznam of zaznamy) {
