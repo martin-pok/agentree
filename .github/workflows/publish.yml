@@ -17,16 +17,21 @@ on:
         description: 'Tag konceptu, který se zveřejní (např. v0.25.0)'
         required: true
 
+# Výchozí práva tokenu jen pro čtení; zápis má jen úloha, která vydání zveřejňuje.
 permissions:
-  contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
+  contents: read
 
 jobs:
   zverejnit:
     name: zveřejnit koncept
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
     steps:
+      # Do repozitáře se nepushuje (vydání mění `gh` přes GH_TOKEN), token v checkoutu netřeba.
       - uses: actions/checkout@v5
+        with: { persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
 

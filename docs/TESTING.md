@@ -1,5 +1,15 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: nejmenší práva workflowů GitHub Actions (10. 10. 2026, Linux, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 977 testů, 966 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 309 souborů bez syntaktické chyby |
+| Nové testy | `workflow-opravneni` (4): výchozí práva jen pro čtení a zápis jen u `znacka`, `vydani` a `zverejnit`; žádný `pull_request_target` ani `${{ … }}` ve skriptu `run:`; cizí akce na celém SHA s verzí v komentáři a `persist-credentials: false` mimo úlohu s `git push`; vydání jen jako koncept, `concurrency` pro tag a tajemství jen v krocích sestavení. Proti workflowům z `main` padají všechny 4 |
+| SHA akce | `ilammy/msvc-dev-cmd` v1 = v1.13.0 = `0b201ec74fa43914dc39ae48a89fd1d8cb592756` (`git ls-remote` proti github.com) |
+| Neověřeno | skutečný běh workflowů: Testy po pushi, Vydání (tag i ruční spuštění se založením tagu) a Zveřejnit vydání s omezenými právy |
+
 ## Protokol ověření – Nevydáno: token hooků Claude Code mimo příkaz a settings.json (10. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |
