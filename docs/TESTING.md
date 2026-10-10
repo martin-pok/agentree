@@ -1,5 +1,16 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: token hooků Claude Code mimo příkaz a settings.json (10. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 962 testů, 951 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 306 souborů bez syntaktické chyby |
+| Nové testy | `hooky-token-soubor`: příkazy (POSIX i Windows) ani settings.json token nenesou, soubor s hlavičkami 0600; skutečný příkaz přes `sh -c` s datovou složkou „Jan Novák/Design & Web/it's $HOME \`id\` …“ doručí událost i stavový řádek, bez souboru mlčí; staré příkazy s tokenem se poznají, nahradí i odeberou a aplikace je sama nepřepíše; nová instalace po změně tokenu soubor přepíše. Bez opravy padá všech 6 |
+| `qa:contrast` | aplikace, web a okno rozšíření: WCAG 2.2 AA |
+| Prohlížeč | Nastavení → Claude se starým propojením (nová poznámka) v 1440 i 375 px, světlý i tmavý vzhled, česky i anglicky, konzole čistá; „Obnovit propojení“ zapíše příkazy bez tokenu |
+| Neověřeno | skutečné Claude Code na macOS s novým příkazem; skutečné `curl.exe` a PowerShell na Windows (nativní test `windows-regression` běží jen v CI na Windows) |
+
 ## Protokol ověření – Nevydáno: pravdivé stavy, vizuální opravy, Pomocník, propojení hooků (9. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |

@@ -12,34 +12,35 @@ const TOKEN = 'a'.repeat(48);
 test('stavový řádek: instalace vedle hooků, cizí stavový řádek se nepřepíše, odinstalace odebere jen náš', async () => {
   const dir = await tempDir();
   const file = path.join(dir, 'settings.json');
-  await installHooks(file, { port: 4620, token: TOKEN, now: 1 });
+  const headersFile = path.join(dir, 'agenteeq', 'claude-hooky-hlavicky');
+  await installHooks(file, { port: 4620, token: TOKEN, headersFile, now: 1 });
   let json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.statusLine.type, 'command');
   const command = json.statusLine.command.includes(' -EncodedCommand ')
     ? Buffer.from(json.statusLine.command.split(' -EncodedCommand ')[1], 'base64').toString('utf16le') : json.statusLine.command;
-  assert.ok(command.includes(STATUSLINE_PATH) && command.includes(TOKEN));
+  assert.ok(command.includes(STATUSLINE_PATH) && !command.includes(TOKEN), 'token je v souboru s hlavičkami, ne v příkazu');
   // Záleží na tom, že to stavový řádek poctivě řekne – ne na tom, kterým shellem.
   assert.match(command, /Agenteeq (neběží|nebezi)/,
     'když Agenteeq neběží, stavový řádek to poctivě řekne');
-  let st = await hooksStatus(file, TOKEN);
+  let st = await hooksStatus(file, TOKEN, headersFile);
   assert.equal(st.statusLine, 'ours');
   assert.equal(st.current, true);
-  assert.equal((await hooksStatus(file, 'b'.repeat(48))).current, false, 'jiný token = potřeba obnovit');
+  assert.equal((await hooksStatus(file, 'b'.repeat(48), headersFile)).current, false, 'jiný token = potřeba obnovit');
 
-  await uninstallHooks(file, { now: 2 });
+  await uninstallHooks(file, { headersFile, now: 2 });
   json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.statusLine, undefined);
 
   const foreign = { type: 'command', command: '~/.claude/muj-radek.sh' };
   await fs.writeFile(file, JSON.stringify({ statusLine: foreign, model: 'opus' }));
-  const r = await installHooks(file, { port: 4620, token: TOKEN, now: 3 });
+  const r = await installHooks(file, { port: 4620, token: TOKEN, headersFile, now: 3 });
   assert.equal(r.statusLine, 'foreign');
   json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.deepEqual(json.statusLine, foreign);
-  st = await hooksStatus(file, TOKEN);
+  st = await hooksStatus(file, TOKEN, headersFile);
   assert.equal(st.statusLine, 'foreign');
   assert.equal(st.current, true, 'hooky jsou aktuální, cizí stavový řádek respektujeme');
-  await uninstallHooks(file, { now: 4 });
+  await uninstallHooks(file, { headersFile, now: 4 });
   assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')).statusLine, foreign);
 });
 

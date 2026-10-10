@@ -9,7 +9,7 @@ import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { CAS_TICHA } from './nocni-ticho.js';
 import { remoteScope, JEN_NA_HOSTITELI_UDALOSTI } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
-import { claudeSettingsPath, installHooks, uninstallHooks } from './hooks-installer.js';
+import { claudeSettingsPath, hookHeadersPath, installHooks, uninstallHooks } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
@@ -747,9 +747,10 @@ export function createHttpServer(app, existingServer = null) {
     // `check` nic nezapisuje: znovu přečte settings.json, ať je vidět, jestli propojení pořád platí.
     ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall|check)$/, async (_req, m) => {
       const file = claudeSettingsPath(config.sourceHome);
+      const headersFile = hookHeadersPath(config.dataDir);
       try {
-        if (m[1] === 'install') await installHooks(file, { port: port(), token: datastore.data.ingestToken });
-        else if (m[1] === 'uninstall') await uninstallHooks(file);
+        if (m[1] === 'install') await installHooks(file, { port: port(), token: datastore.data.ingestToken, headersFile });
+        else if (m[1] === 'uninstall') await uninstallHooks(file, { headersFile });
       } catch (err) {
         throw new HttpError(err.code === 'INVALID_SETTINGS' ? 422 : 500, err.message);
       }

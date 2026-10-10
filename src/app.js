@@ -15,7 +15,7 @@ import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey 
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, describePlan, subscriptionPortfolio } from './subscriptions.js';
 import { claudeIdentity, observeAccount, readCodexAccount } from './provider-accounts.js';
-import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
+import { claudeSettingsPath, hookHeadersPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
 import { pushEntry, touch } from './model.js';
@@ -1059,7 +1059,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // že přesný čas neznáme. Nepřečtený settings.json nic nemění – „nevím“ není „vypnuto“.
   const spusteno = Date.now();
   async function claudeHooks() {
-    const h = await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken);
+    const h = await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken, hookHeadersPath(config.dataDir));
     if (!h.error) {
       const zaznam = datastore.data.claudeHooks;
       if (h.installed && !zaznam) datastore.data.claudeHooks = { od: Date.now(), presne: false };
