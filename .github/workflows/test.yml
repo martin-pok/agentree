@@ -153,6 +153,22 @@ jobs:
       - run: npm run qa:desktop
       - run: npm run qa:site
       - run: npm run qa:extension
+      # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
+      # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
+      - name: Renderovat aktuální Chrome Web Store branding
+        run: |
+          CHROME="$(node -p 'require("playwright").chromium.executablePath()')" node branding/chrome-web-store/render.mjs
+      - name: Uložit skutečně vyrenderované brand assety
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: chrome-store-branding
+          path: |
+            branding/chrome-web-store/export/icon-128.png
+            branding/chrome-web-store/export/promo-small-440x280.png
+            branding/chrome-web-store/export/marquee-1400x560.png
+            extension/icons/icon-*.png
+          retention-days: 14
       - run: npm run qa:contrast
       - run: npm run qa:tvary
       - run: npm run qa:studio
