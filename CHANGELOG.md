@@ -32,6 +32,13 @@
 - Robot v sekci Soukromí jemně sleduje kurzor, když návštěvník používá myš; na dotyku a při omezeném pohybu zůstává v klidu.
 - Ukázkový projekt má střídmý monogram místo výrazného provizorního loga. Český text na úvodu a stránce instalace prošel jazykovou úpravou; anglické texty zachovávají stejný význam.
 
+## 0.46.1 – 10. 10. 2026
+
+- Sjednocená dvoubarevná značka Agenteeq s bílou anténou napříč desktopovou aplikací, webem a Chrome extension.
+- Nahrazeny zastaralé ikonové podklady rozšíření a odstraněn původní větvený symbol ze zdrojů propagačních vizuálů.
+- Opraveno renderování podkladů Chrome Web Store pomocí Playwright; automatické snímky nyní čtou aktuální verzi rozšíření z manifestu.
+- Rozšířené regresní testy brandingu a kontroly instalace na macOS a Windows.
+
 ## 0.46.0 – 2026-10-09 · Nový úvod webu s roboty, robotí profilové obrázky
 
 - **Úvod webu ukazuje celou aplikaci.** Místo úzkého pruhu je pod nadpisem skutečný Přehled (pozdrav s robotem, pole pro zadání, rozhodnutí, stav agentů, roboti v „Právě teď“) v okně, které stojí nakloněné v prostoru a při posouvání se plynule narovná. Kolem okna roboti Agenteeq ve třech hloubkách – vzdálení malí a rozostření, blízcí velcí a rozostření, střední ostří – se skleněnými bublinami („Hotovo, testy prošly“, „Potřebuju tvé OK“). Na Macu se roboti lehce posouvají s myší. Roboti jednou přiletí a dál se hýbou jen s posouváním a myší (žádná smyčka); při omezeném pohybu je okno rovné a roboti stojí. Na telefonu zůstanou dva malí nad hranou okna, aby nic nezakrývali. Snímky vznikají z ukázkové scény skriptem `npm run shots:hero`.
