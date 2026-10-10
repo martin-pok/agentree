@@ -160,6 +160,8 @@ jobs:
           CHROME="$(node -p 'require("playwright").chromium.executablePath()')" node branding/chrome-web-store/render.mjs
       - name: Vyrenderovat aktuální snímky extension pro obchod
         run: node branding/chrome-web-store/snimky.mjs
+      - name: Ověřit úplnost exportů Chrome Web Store
+        run: node --test test/chrome-web-store.test.mjs test/brand-robot.test.mjs
       - name: Uložit skutečné snímky pro Chrome Web Store
         uses: actions/upload-artifact@v6
         if: always()
