@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.1',
+    date: '2026-10-10',
+    title: 'Jednotný vzhled a spolehlivější instalace',
+    items: [
+      'Značka Agenteeq má sjednocenou bílou anténu na webu, v aplikaci a rozšíření pro Chrome.',
+      'Opravené podklady pro Chrome Web Store a testování instalace na Macu i Windows.',
+    ],
+    en: {
+      title: 'Consistent branding and more reliable installation',
+      items: [
+        'The Agenteeq robot now has the same white antenna across the website, app and Chrome extension.',
+        'Fixed Chrome Web Store assets and installation checks for Mac and Windows.',
+      ],
+    },
+  },
+  {
     version: '0.46.0',
     date: '2026-10-09',
     title: 'Robotí profilové obrázky',
