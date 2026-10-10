@@ -186,3 +186,40 @@ test('aktualizace: ukončí proud okamžitě při překročení velikosti z rele
   assert.equal(canceled, true, 'nadlimitní proud se musí přerušit');
   assert.equal(service.state().status, 'available', 'chybné stažení nesmí být označené za hotové');
 });
+
+
+test('aktualizace: odmítne nedokončený proud i bez Content-Length', async () => {
+  const dir = await tempDir('agenteeq-updates-truncated-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('zip'));
+        controller.close();
+      },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  const result = await service.download();
+  assert.equal(result.status, 502);
+  assert.equal(service.state().status, 'available');
+  await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')));
+});
+
+test('aktualizace: neuloží balíček, pokud server uvede neplatný Content-Length', async () => {
+  const dir = await tempDir('agenteeq-updates-header-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return {
+      ok: true,
+      headers: new Headers({ 'content-length': '999' }),
+      arrayBuffer: async () => Buffer.from('zip!'),
+    };
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  assert.equal((await service.download()).status, 502);
+  assert.equal(service.state().status, 'available');
+  await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')));
+});
