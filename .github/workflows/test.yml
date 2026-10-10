@@ -157,7 +157,7 @@ jobs:
       # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
       - name: Renderovat aktuální Chrome Web Store branding
         run: |
-          CHROME="$(node -p 'require("playwright").chromium.executablePath()')" node branding/chrome-web-store/render.mjs
+          node branding/chrome-web-store/render.mjs
       - name: Vyrenderovat aktuální snímky extension pro obchod
         run: node branding/chrome-web-store/snimky.mjs
       - name: Ověřit úplnost exportů Chrome Web Store
