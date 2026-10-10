@@ -81,9 +81,10 @@ test('instalace Claude hooků zachová nastavení uživatele a je idempotentní'
   const original = { theme: 'dark', permissions: { allow: ['Bash(npm test)'] }, hooks: { Stop: [{ hooks: [{ type: 'command', command: 'say hotovo' }] }] } };
   await fs.writeFile(file, JSON.stringify(original, null, 2));
   const token = 'a'.repeat(48);
+  const headersFile = path.join(dir, 'agenteeq', 'claude-hooky-hlavicky');
 
-  const first = await installHooks(file, { port: 4620, token, now: 1 });
-  await installHooks(file, { port: 4620, token, now: 2 });
+  const first = await installHooks(file, { port: 4620, token, headersFile, now: 1 });
+  await installHooks(file, { port: 4620, token, headersFile, now: 2 });
   const json = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.equal(json.theme, 'dark');
   assert.deepEqual(json.permissions, original.permissions);
@@ -93,12 +94,12 @@ test('instalace Claude hooků zachová nastavení uživatele a je idempotentní'
   }
   assert.ok(json.hooks.Stop.some((g) => g.hooks.some((h) => h.command === 'say hotovo')), 'uživatelův hook zůstal');
   assert.ok(first.backup && (await fs.readFile(first.backup, 'utf8')).includes('say hotovo'));
-  const st = await hooksStatus(file, token);
+  const st = await hooksStatus(file, token, headersFile);
   assert.equal(st.installed, true);
   assert.equal(st.current, true);
-  assert.equal((await hooksStatus(file, 'b'.repeat(48))).current, false);
+  assert.equal((await hooksStatus(file, 'b'.repeat(48), headersFile)).current, false);
 
-  await uninstallHooks(file, { now: 3 });
+  await uninstallHooks(file, { headersFile, now: 3 });
   const after = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.deepEqual(after, original);
 });
@@ -107,7 +108,7 @@ test('neplatný settings.json se nepřepíše', async () => {
   const dir = await tempDir();
   const file = path.join(dir, 'settings.json');
   await fs.writeFile(file, '{ neplatný');
-  await assert.rejects(installHooks(file, { port: 4620, token: 'c'.repeat(48) }), (err) => err.code === 'INVALID_SETTINGS');
+  await assert.rejects(installHooks(file, { port: 4620, token: 'c'.repeat(48), headersFile: path.join(dir, 'h') }), (err) => err.code === 'INVALID_SETTINGS');
   assert.equal(await fs.readFile(file, 'utf8'), '{ neplatný');
 });
 
@@ -181,33 +182,42 @@ function plainCommand(command) {
 }
 
 test('příkaz hooku odpovídá shellu daného systému', () => {
-  const token = 'b'.repeat(40);
+  const headersFile = '/Users/jan/.agenteeq/claude-hooky-hlavicky';
 
-  const posix = hookCommand(4620, token, { windows: false });
+  const posix = hookCommand(4620, headersFile, { windows: false });
   assert.match(posix, /^curl -s/, 'POSIX volá curl');
-  assert.match(posix, /'Content-Type: application\/json'/, 'jednoduché uvozovky');
+  assert.ok(posix.includes(`-H @'${headersFile}'`), 'hlavičky ze souboru, cesta v jednoduchých uvozovkách');
   assert.match(posix, />\/dev\/null 2>&1 \|\| true$/, 'ticho a nenulový kód se spolkne');
 
-  const win = hookCommand(4620, token, { windows: true });
+  const win = hookCommand(4620, 'C:\\Users\\jan\\.agenteeq\\claude-hooky-hlavicky', { windows: true });
   assert.match(win, /^powershell\.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand [A-Za-z0-9+/=]+$/, 'vnější shell nemá co expandovat');
   assert.match(plainCommand(win), /& curl\.exe -s/);
   assert.match(plainCommand(win), /Console\]::InputEncoding = \[Console\]::OutputEncoding/);
   assert.match(plainCommand(win), /exit 0$/);
 
-  for (const p of [posix, win].map(plainCommand)) assert.ok(p.includes(token) && p.includes(HOOK_PATH));
+  assert.match(plainCommand(win), /Set-Location -LiteralPath 'C:\\Users\\jan\\\.agenteeq'; .* -H '@claude-hooky-hlavicky'/);
+  for (const p of [posix, win].map(plainCommand)) assert.ok(!/token/i.test(p) && p.includes(HOOK_PATH));
 });
 
 test('stavový řádek na Windows obsahuje fallback i při chybě spuštění curl', () => {
-  const token = 'c'.repeat(40);
-  assert.match(plainCommand(statuslineCommand(4620, token, { windows: true })), /catch \{ Write-Output 'Agenteeq nebezi' \}/);
-  assert.match(statuslineCommand(4620, token, { windows: false }), /\|\| printf 'Agenteeq neběží'$/);
+  assert.match(plainCommand(statuslineCommand(4620, 'C:\\Users\\jan\\.agenteeq\\h', { windows: true })), /catch \{ Write-Output 'Agenteeq nebezi' \}/);
+  assert.match(statuslineCommand(4620, '/Users/jan/.agenteeq/h', { windows: false }), /\|\| printf 'Agenteeq neběží'$/);
 });
 
-test('neplatný token neprojde ani do jednoho tvaru příkazu', () => {
+test('neplatná cesta k hlavičkám neprojde do příkazu a neplatný token do souboru', async () => {
   for (const windows of [true, false]) {
-    assert.throws(() => hookCommand(4620, 'krátký', { windows }), /token/i);
-    assert.throws(() => statuslineCommand(4620, '; rm -rf /', { windows }), /token/i);
+    assert.throws(() => hookCommand(4620, 'relativni/cesta', { windows }), /cesta/i);
+    assert.throws(() => statuslineCommand(4620, '/tmp/a\nrm -rf /', { windows }), /cesta/i);
+    assert.throws(() => hookCommand(4620, undefined, { windows }), /cesta/i);
   }
+  const dir = await tempDir();
+  const file = path.join(dir, 'settings.json');
+  const headersFile = path.join(dir, 'h');
+  for (const token of ['krátký', '; rm -rf /', `${'a'.repeat(32)}\nX-Jiny: 1`]) {
+    await assert.rejects(installHooks(file, { port: 4620, token, headersFile }), /token/i);
+  }
+  await assert.rejects(fs.stat(headersFile), { code: 'ENOENT' });
+  await assert.rejects(fs.stat(file), { code: 'ENOENT' }, 'settings.json se bez platného tokenu nezaložil');
 });
 
 test('výchozí měna je euro; dřívější výchozí koruna se jednou převede i s rozpočty, ruční volba zůstane', async () => {

@@ -1063,7 +1063,9 @@ function update(topics) {
       tr('Claude Code hned oznámí, že pracuje, čeká na tvé povolení nebo narazil na limit.'),
       stateBadge(...claudeState))}
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
-    ${outdated ? `<p class="set-note">${tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
+    ${outdated ? `<p class="set-note">${h.inlineToken
+      ? tr('Propojení vzniklo ve starší verzi Agenteeq a klíč Agenteeq stojí přímo v nastavení Claude Code. Obnov ho – klíč se přesune do souboru, který čte jen tvůj účet.')
+      : tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
     ${h.statusLine === 'foreign' ? `<p class="set-note">${tr('Claude Code má vlastní informační řádek, přesné limity Claude proto chybí.')}</p>` : ''}
     ${zdraviHtml}
     <div class="set-actions">${h.installed && h.current

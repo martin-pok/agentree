@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { startTestServer } from './helpers.mjs';
-import { hookCommand, statuslineCommand } from '../src/hooks-installer.js';
+import path from 'node:path';
+import { startTestServer, tempDir } from './helpers.mjs';
+import { hookCommand, statuslineCommand, installHooks } from '../src/hooks-installer.js';
 
 test('Windows capabilities retain web opening and launching without native application launch', async t => {
   const s = await startTestServer(); t.after(() => s.close());
@@ -29,6 +30,10 @@ test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', 
   t.after(() => { server.closeAllConnections(); server.close(); });
   const port = server.address().port;
   const token = 'd'.repeat(40);
+  // Složka s mezerou, &, apostrofem, $ a diakritikou: PowerShell ani curl.exe ji nesmí rozebrat.
+  const dir = await tempDir();
+  const headersFile = path.join(dir, "Jan Novák's Design & Web $HOME", '.agenteeq', 'claude-hooky-hlavicky');
+  await installHooks(path.join(dir, 'settings.json'), { port, token, headersFile });
   const payload = JSON.stringify({ text: 'Příliš žluťoučký kůň 🐎' });
   const run = command => new Promise((resolve, reject) => {
     const [exe, ...args] = command.split(' ');
@@ -37,15 +42,15 @@ test('Windows encoded hook delivers UTF-8 and succeeds when server is offline', 
     child.on('error', reject); child.on('close', code => resolve({ code, output }));
     child.stdin.end(payload);
   });
-  assert.equal((await run(hookCommand(port, token, { windows: true }))).code, 0);
-  const status = await run(statuslineCommand(port, token, { windows: true }));
+  assert.equal((await run(hookCommand(port, headersFile, { windows: true }))).code, 0);
+  const status = await run(statuslineCommand(port, headersFile, { windows: true }));
   assert.equal(status.code, 0); assert.match(status.output, /Připojeno/);
   assert.equal(received.length, 2);
   for (const req of received) { assert.deepEqual(JSON.parse(req.body), JSON.parse(payload)); assert.equal(req.token, token); }
   await new Promise(r => server.close(r));
-  const offline = await run(statuslineCommand(port, token, { windows: true }));
+  const offline = await run(statuslineCommand(port, headersFile, { windows: true }));
   assert.equal(offline.code, 0); assert.match(offline.output, /Agenteeq nebezi/);
-  assert.equal((await run(hookCommand(port, token, { windows: true }))).code, 0);
+  assert.equal((await run(hookCommand(port, headersFile, { windows: true }))).code, 0);
 });
 
 // Most pláště pro Windows (desktop/windows/Agenteeq.cpp) běží přes AddScriptToExecuteOnDocumentCreated,

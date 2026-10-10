@@ -10,9 +10,14 @@ export const HOOK_PATH = '/api/hooks/claude-code';
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
 
-// Claude Code používá na Windows Git Bash nebo PowerShell, ne nutně cmd.exe.
-// Explicitní PowerShell s -EncodedCommand funguje z obou shellů a nepustí jejich
-// expanzi do skriptu. UTF-16LE je kontrakt PowerShellu, nikoli šifrování tokenu.
+// Token hooků v příkazu nestojí: příkaz vidí každý místní uživatel v `ps` a settings.json mívá
+// práva 0644 a čtou (i synchronizují) ho jiné nástroje. Hlavičky proto leží v souboru 0600
+// v datové složce Agenteeq a curl je čte přes `-H @soubor` (curl 7.55+; macOS 14+ má curl 8,
+// curl.exe ve Windows 10 1803+ má 7.55.1+). Chybějící nebo nečitelný soubor = curl skončí chybou
+// ještě před odesláním, tedy stejně potichu jako u neběžícího Agenteeq.
+export const HOOK_HEADERS_FILE = 'claude-hooky-hlavicky';
+export const hookHeadersPath = (dataDir) => path.join(path.resolve(dataDir), HOOK_HEADERS_FILE);
+
 const HLAVICKY = (token) => [
   ['Content-Type', 'application/json'],
   ['X-Agenteeq-Token', token],
@@ -22,13 +27,36 @@ function overToken(token) {
   if (!/^[a-f0-9]{32,}$/.test(token)) throw new Error('Neplatný token');
 }
 
-function windowsCommand(url, token, statusline) {
-  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
+// Cesta jde do příkazu, který Claude Code pouští přes shell, a ten ji nesmí rozebrat podruhé:
+// „Design & Web“, apostrof, $ i diakritika jsou běžná jména složek.
+const shQuote = (s) => `'${s.split("'").join("'\\''")}'`;
+// PowerShell bere za apostrof i typografické ‘ ’ ‚ ‛ – zdvojují se stejně jako obyčejný, jinak by řetězec ukončily.
+const psQuote = (s) => `'${s.replace(/[\x27\u2018\u2019\u201A\u201B]/g, '$&$&')}'`;
+
+function overCestu(headersFile, windows) {
+  const p = windows ? path.win32 : path.posix;
+  if (typeof headersFile !== 'string' || !p.isAbsolute(headersFile) || /[\0\r\n]/.test(headersFile)) {
+    throw new Error('Neplatná cesta k hlavičkám hooku');
+  }
+}
+
+// Jak příkaz na soubor s hlavičkami odkazuje. Windows: curl.exe nemusí umět Unicode v argumentech,
+// proto PowerShell nejdřív vejde do složky (Set-Location je plně Unicode) a curl dostane jen
+// krátké ASCII jméno souboru. Spuštěný program dědí složku, ve které PowerShell právě stojí.
+const odkazPosix = (headersFile) => `-H @${shQuote(headersFile)}`;
+const odkazWindows = (headersFile) => `Set-Location -LiteralPath ${psQuote(path.win32.dirname(headersFile))}; `;
+const odkazujeNaHlavicky = (text, headersFile) => text.includes(odkazPosix(headersFile))
+  || (text.includes(odkazWindows(headersFile)) && text.includes(`-H '@${path.win32.basename(headersFile)}'`));
+
+// Claude Code používá na Windows Git Bash nebo PowerShell, ne nutně cmd.exe.
+// Explicitní PowerShell s -EncodedCommand funguje z obou shellů a nepustí jejich
+// expanzi do skriptu. UTF-16LE je kontrakt PowerShellu, nikoli šifrování.
+function windowsCommand(url, headersFile, statusline) {
   const output = statusline
     ? "if ($LASTEXITCODE -ne 0) { Write-Output 'Agenteeq nebezi' } else { $reply }"
     : '';
   const fallback = statusline ? "Write-Output 'Agenteeq nebezi'" : '';
-  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); $reply = $body | & curl.exe -s -m ${statusline ? 1 : 2} -X POST ${h} --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
+  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); ${odkazWindows(headersFile)}$reply = $body | & curl.exe -s -m ${statusline ? 1 : 2} -X POST -H '@${path.win32.basename(headersFile)}' --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
   return `powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(script, 'utf16le').toString('base64')}`;
 }
 
@@ -39,14 +67,17 @@ const commandText = (command) => {
   return encoded ? Buffer.from(encoded[1], 'base64').toString('utf16le') : command;
 };
 
-export function hookCommand(port, token, { windows = JE_WINDOWS } = {}) {
-  overToken(token);
+// Příkazy z dřívějších verzí nesly token přímo v hlavičce (`-H 'X-Agenteeq-Token: …'`). Fungují
+// dál, jen se hlásí jako zastaralé – přepíše je až „Obnovit propojení“, ne Agenteeq sám od sebe.
+const tokenVPrikazu = (command) => /X-Agent(?:eeq|ree)-Token:/i.test(commandText(command));
+
+export function hookCommand(port, headersFile, { windows = JE_WINDOWS } = {}) {
+  overCestu(headersFile, windows);
   const url = `http://127.0.0.1:${Number(port)}${HOOK_PATH}`;
   if (windows) {
-    return windowsCommand(url, token, false);
+    return windowsCommand(url, headersFile, false);
   }
-  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
-  return `curl -s -m 2 -X POST ${h} --data-binary @- ${url} >/dev/null 2>&1 || true`;
+  return `curl -s -m 2 -X POST ${odkazPosix(headersFile)} --data-binary @- ${url} >/dev/null 2>&1 || true`;
 }
 
 const isOurs = (h) => commandText(h?.command).includes(HOOK_PATH);
@@ -54,17 +85,31 @@ const isOurs = (h) => commandText(h?.command).includes(HOOK_PATH);
 // Stavový řádek: Claude Code mu posílá limity předplatného (5 h, týden). Agenteeq vrátí krátký text k zobrazení.
 export const STATUSLINE_PATH = '/api/hooks/claude-statusline';
 
-export function statuslineCommand(port, token, { windows = JE_WINDOWS } = {}) {
-  overToken(token);
+export function statuslineCommand(port, headersFile, { windows = JE_WINDOWS } = {}) {
+  overCestu(headersFile, windows);
   const url = `http://127.0.0.1:${Number(port)}${STATUSLINE_PATH}`;
   if (windows) {
-    return windowsCommand(url, token, true);
+    return windowsCommand(url, headersFile, true);
   }
-  const h = HLAVICKY(token).map(([k, v]) => `-H '${k}: ${v}'`).join(' ');
-  return `curl -s -m 1 -X POST ${h} --data-binary @- ${url} 2>/dev/null || printf 'Agenteeq neběží'`;
+  return `curl -s -m 1 -X POST ${odkazPosix(headersFile)} --data-binary @- ${url} 2>/dev/null || printf 'Agenteeq neběží'`;
 }
 
 const isOurStatusLine = (sl) => commandText(sl?.command).includes(STATUSLINE_PATH);
+
+// Atomicky a jen pro vlastníka (na Windows platí ACL uživatelského profilu, mode nic nezhorší).
+async function zapisHlavicky(headersFile, token) {
+  overToken(token);
+  await writeFileAtomic(headersFile, HLAVICKY(token).map(([k, v]) => `${k}: ${v}\n`).join(''), 0o600);
+}
+
+async function hlavickyPlati(headersFile, token) {
+  if (!headersFile || !token) return false;
+  try {
+    return (await fs.readFile(headersFile, 'utf8')).split(/\r?\n/).includes(`X-Agenteeq-Token: ${token}`);
+  } catch {
+    return false;
+  }
+}
 
 async function readSettings(file) {
   let raw = null;
@@ -85,24 +130,35 @@ async function readSettings(file) {
   }
 }
 
-export async function hooksStatus(file, token) {
+export async function hooksStatus(file, token, headersFile) {
   let json;
   try {
     ({ json } = await readSettings(file));
   } catch (err) {
-    return { installed: false, partial: false, current: false, events: [], path: file, error: err.message };
+    return { installed: false, partial: false, current: false, funguje: false, inlineToken: false, events: [], path: file, error: err.message };
   }
   const has = (ev, pred) => (Array.isArray(json.hooks?.[ev]) ? json.hooks[ev] : []).some((g) => (g?.hooks || []).some(pred));
   const events = HOOK_EVENTS.filter((ev) => has(ev, isOurs));
-  const current = (command) => commandText(command).includes(token) && !command.includes('>NUL');
-  const hooksCurrent = Boolean(token) && HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && current(h.command)));
+  // Aktuální příkaz odkazuje na soubor s hlavičkami této datové složky a ten nese platný token.
+  const hlavicky = await hlavickyPlati(headersFile, token);
+  const current = (command) => hlavicky && !tokenVPrikazu(command) && odkazujeNaHlavicky(commandText(command), headersFile) && !command.includes('>NUL');
+  const hooksCurrent = HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && current(h.command)));
   const statusLine = !json.statusLine ? 'none' : isOurStatusLine(json.statusLine) ? 'ours' : 'foreign';
-  const statusLineCurrent = statusLine === 'ours' && Boolean(token) && current(json.statusLine.command);
+  const statusLineCurrent = statusLine === 'ours' && current(json.statusLine.command);
+  // Funkční = události i limity dorazí: aktuální příkaz, nebo zápis z dřívější verze s platným tokenem
+  // přímo v příkazu. Takové propojení funguje, jen ho Nastavení nabídne obnovit (token mimo příkaz).
+  const funkcni = (command) => current(command) || (Boolean(token) && tokenVPrikazu(command) && commandText(command).includes(token) && !command.includes('>NUL'));
+  const hooksFunkcni = HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && funkcni(h.command)));
+  const statusLineFunkcni = statusLine === 'ours' && funkcni(json.statusLine.command);
   return {
     installed: events.length === HOOK_EVENTS.length,
     partial: events.length > 0 && events.length < HOOK_EVENTS.length,
     // Aktuální = hooky s platným tokenem a stavový řádek Agenteeq (cizí stavový řádek nepřepisujeme).
     current: hooksCurrent && (statusLine === 'foreign' || statusLineCurrent),
+    funguje: hooksFunkcni && (statusLine === 'foreign' || statusLineFunkcni),
+    // Některý náš příkaz má token přímo v sobě (zápis z dřívější verze) – Nastavení nabídne obnovu.
+    inlineToken: HOOK_EVENTS.some((ev) => has(ev, (h) => isOurs(h) && tokenVPrikazu(h.command)))
+      || (statusLine === 'ours' && tokenVPrikazu(json.statusLine.command)),
     events,
     statusLine,
     path: file,
@@ -141,29 +197,37 @@ async function writeSettings(file, json, raw, now) {
   return backup;
 }
 
-export async function installHooks(file, { port, token, now = Date.now() }) {
+// Každá instalace (i „Obnovit“ a „Přeinstalovat“) zapíše soubor s hlavičkami znovu s aktuálním
+// tokenem a příkazy s aktuálním portem. Soubor vzniká dřív než změna settings.json, takže hook
+// nikdy neodkazuje na soubor, který ještě neexistuje.
+export async function installHooks(file, { port, token, headersFile, now = Date.now() }) {
   const { raw, json } = await readSettings(file);
   stripOurs(json);
   if (!json.hooks || typeof json.hooks !== 'object') json.hooks = {};
-  const command = hookCommand(port, token);
+  const command = hookCommand(port, headersFile);
   for (const ev of HOOK_EVENTS) {
     if (!Array.isArray(json.hooks[ev])) json.hooks[ev] = [];
     json.hooks[ev].push({ hooks: [{ type: 'command', command, timeout: 5 }] });
   }
   let statusLine = 'foreign';
   if (!json.statusLine || isOurStatusLine(json.statusLine)) {
-    json.statusLine = { type: 'command', command: statuslineCommand(port, token), padding: 0 };
+    json.statusLine = { type: 'command', command: statuslineCommand(port, headersFile), padding: 0 };
     statusLine = 'ours';
   }
+  await zapisHlavicky(headersFile, token);
   const backup = await writeSettings(file, json, raw, now);
   return { backup, statusLine };
 }
 
-export async function uninstallHooks(file, { now = Date.now() } = {}) {
+export async function uninstallHooks(file, { headersFile, now = Date.now() } = {}) {
   const { raw, json } = await readSettings(file);
-  if (raw === null) return { backup: null };
-  stripOurs(json);
-  if (isOurStatusLine(json.statusLine)) delete json.statusLine;
-  const backup = await writeSettings(file, json, raw, now);
+  let backup = null;
+  if (raw !== null) {
+    stripOurs(json);
+    if (isOurStatusLine(json.statusLine)) delete json.statusLine;
+    backup = await writeSettings(file, json, raw, now);
+  }
+  // Až po úspěšném zápisu settings.json: když zápis selže, zůstanou funkční hooky i jejich hlavičky.
+  if (headersFile) await fs.rm(headersFile, { force: true });
   return { backup };
 }

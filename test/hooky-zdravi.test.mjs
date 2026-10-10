@@ -145,7 +145,7 @@ test('zdraví propojení přes API: instalace uloží čas, konverzace před ní
 test('zdraví propojení přes API: propojení zapnuté mimo Agenteeq má čas „nevím“', async (t) => {
   const sourceHome = await tempDir('agenteeq-src-');
   // Hooky zapsala starší verze (nebo ručně): v datech Agenteeq o nich není záznam.
-  await installHooks(claudeSettingsPath(sourceHome), { port: 4620, token: 'a'.repeat(32) });
+  await installHooks(claudeSettingsPath(sourceHome), { port: 4620, token: 'a'.repeat(32), headersFile: path.join(sourceHome, 'jinde', 'hlavicky') });
   const sid = 'bbbbbbbb-2222-4222-8222-000000000002';
   await writeJsonl(path.join(sourceHome, '.claude', 'projects', '-tmp-stare', `${sid}.jsonl`), [
     { type: 'user', timestamp: new Date(Date.now() - 60e3).toISOString(), sessionId: sid, cwd: '/tmp/stare', message: { role: 'user', content: 'Ahoj' } },
