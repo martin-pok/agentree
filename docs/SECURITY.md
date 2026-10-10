@@ -67,7 +67,7 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 4, 5 | střední | loopback je důvěryhodný bez tajemství; „z tohoto Macu“ se odhaduje z hlaviček | **opraveno v 0.18.0 pro okno aplikace na Macu, 5. 10. 2026 i pro plášť ve Windows a spuštění z Terminálu** (klíč okna – viz „Klíč okna“ níž) |
 | 8 | nízká | ingest token je v argumentech `curl` v hooku | **opraveno 10. 10. 2026** (hlavičky ze souboru 0600 přes `curl -H @soubor`, token není ani v `settings.json`; `test/hooky-token-soubor.test.mjs`). Zůstává: propojení zapsané dřívější verzí nese token dál, dokud ho uživatel v Nastavení neobnoví |
 | 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | **opraveno v 0.18.1** (přebití voleb na příkazové řádce, test předvádí útok) |
-| 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | otevřené, řeší se spolu se získáním Developer ID |
+| 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | **práva, připnutí cizích akcí a značka ve skriptu opraveny 10. 10. 2026** (viz „Workflowy GitHub Actions“, `test/workflow-opravneni.test.mjs`). Zůstává: kontrolní součty a atestace příloh a import certifikátu v CI – řeší se spolu se získáním Developer ID |
 | 12–14, 16–17 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline` (styly), kontrola odesílatele zpráv v rozšíření | otevřené |
 | 18 | info | hlavičky webu | **opraveno 5. 10. 2026** (`vercel.json`, viz „Hlavičky webu“) |
 | 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |
@@ -112,6 +112,27 @@ Web (landing page, `/app`, přehled účtu `/app?ucet`) posílá na všech adres
 `npm run qa:site` posílá tytéž hlavičky (`scripts/build-site.mjs#hlavickyWebu`) a ověřuje, že
 landing page, zásady soukromí, `/app`, `/app?ucet` a `/app?ukazka` se vykreslí bez porušení CSP.
 Při změně domény účtů (Supabase) se musí změnit i `connect-src`.
+
+## Workflowy GitHub Actions (`.github/workflows/`)
+
+Workflow Vydání sestavuje přílohy, na které vedou tlačítka Stáhnout. Platí pro všechny workflowy
+(od 10. 10. 2026, hlídá `test/workflow-opravneni.test.mjs`):
+
+- **Výchozí práva tokenu jen pro čtení** (`permissions: contents: read` na nejvyšší úrovni).
+  Zápis (`contents: write`) má jen úloha, která ho potřebuje: `release.yml` → `znacka` (push tagu
+  při ručním spuštění) a `vydani` (koncept vydání přes `gh release`), `publish.yml` → `zverejnit`.
+  Sestavení pro Mac, Windows a rozšíření, testy i ostatní workflowy zapisovat nemohou.
+  `id-token`, `actions` ani jiná práva nemá nikdo – atestace ani OIDC se nepoužívají.
+- **Cizí akce připnuté na celý commit** s verzí v komentáři (`ilammy/msvc-dev-cmd@0b201ec… # v1.13.0`).
+  Akce GitHubu (`actions/*`) zůstávají na hlavní verzi jako v celém repozitáři.
+- **Nic zvenku ve skriptu:** žádný výraz `${{ … }}` uvnitř `run:`. Jméno tagu, vstup ručního
+  spuštění i výstupy kroků jdou přes `env:` a skript je čte jako `"$TAG"`. Žádný `pull_request_target`.
+- **Checkout bez uloženého tokenu** (`persist-credentials: false`) všude kromě úlohy `znacka`,
+  která tag pushuje přes `git push`.
+- **Tajemství podpisu** (`AGENTEEQ_SIGN_IDENTITY`, `AGENTEEQ_NOTARY_PROFILE`) jen v `env` kroků
+  `build:mac` a `build:dmg`, ne v celé úloze ani workflow.
+- **Vydání zůstává konceptem** (`--draft`); zveřejňuje jen člověk (ručně nebo `publish.yml`).
+  Běhy pro týž tag se řadí za sebe (`concurrency`), aby nevznikly dva koncepty.
 
 ## Soukromí
 

@@ -28,8 +28,17 @@ on:
         description: 'Tag, ze kterého se vydání sestaví (např. v0.12.0)'
         required: true
 
+# Výchozí práva tokenu jen pro čtení. Zápis dostane jen úloha, která ho opravdu potřebuje:
+# „znacka“ (push tagu) a „vydani“ (koncept vydání). Sestavení na runnerech zapisovat nesmí –
+# kdyby jejich krok (npm skript, testy, cizí akce) něco podstrčil, nemá čím sáhnout do repozitáře.
 permissions:
-  contents: write # bez práva zápisu nejde vydání založit
+  contents: read
+
+# Dva běhy pro týž tag (push tagu a ruční opakování) by se mohly předběhnout mezi
+# `gh release view` a `gh release create` a založit dva koncepty. Druhý běh proto počká, nic se neruší.
+concurrency:
+  group: vydani-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   # Při pushnutém tagu tu není co dělat. Při ručním spuštění založí chybějící tag, aby se
@@ -39,7 +48,10 @@ jobs:
     name: značka vydání
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write # push nového tagu
     steps:
+      # Bez persist-credentials: false záměrně – `git push` níž jde přes token, který checkout uloží.
       - uses: actions/checkout@v5
         if: github.event_name == 'workflow_dispatch'
       - name: Založit tag, když ještě není
@@ -73,7 +85,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-        with: { ref: '${{ inputs.tag || github.ref }}' }
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
@@ -113,10 +125,10 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-        with: { ref: '${{ inputs.tag || github.ref }}' }
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with: { arch: x64 }
       - name: Sestavit plášť
         run: npm run build:windows
@@ -133,7 +145,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-        with: { ref: '${{ inputs.tag || github.ref }}' }
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
       - name: Sestavit rozšíření
@@ -154,9 +166,11 @@ jobs:
       && needs.rozsireni.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write # založení konceptu a nahrání příloh přes `gh release`
     steps:
       - uses: actions/checkout@v5
-        with: { ref: '${{ inputs.tag || github.ref }}' }
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
@@ -189,11 +203,14 @@ jobs:
           zkopiruj 'Agenteeq-*-Windows-x64.zip' Agenteeq-Windows-x64.zip
           ls -l prilohy
 
+      # Tag jde do skriptu přes env, ne vložením výrazu do textu skriptu: jméno tagu i vstup
+      # ručního spuštění by se jinak vykonaly jako příkaz shellu (script injection).
       - name: Popis vydání
         id: popis
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          VERZE="${{ inputs.tag || github.ref_name }}"
-          VERZE="${VERZE#v}"
+          VERZE="${TAG#v}"
           node scripts/release-notes.mjs "$VERZE" prilohy > poznamky.md
           echo "verze=$VERZE" >> "$GITHUB_OUTPUT"
           cat poznamky.md
@@ -203,15 +220,16 @@ jobs:
       - name: Založit koncept vydání
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          VERZE: ${{ steps.popis.outputs.verze }}
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg --clobber
             gh release edit "$TAG" --notes-file poznamky.md
           else
             gh release create "$TAG" prilohy/*.zip prilohy/*.dmg \
               --draft \
-              --title "Agenteeq ${{ steps.popis.outputs.verze }}" \
+              --title "Agenteeq $VERZE" \
               --notes-file poznamky.md
           fi
           gh release view "$TAG" --json isDraft,url,assets
