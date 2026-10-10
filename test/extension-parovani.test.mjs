@@ -166,5 +166,5 @@ test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, 
   await r.zprava({ type: 'agenteeq:hello' });
   const poZmene = r.volani.slice(-2);
   assert.ok(poZmene.every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), JSON.stringify(poZmene.map((v) => v.plna)));
-  assert.ok(poZmene.some((v) => v.url === '/api/extension/pripojit'), 'nový port = nové spárování');
+  assert.ok(r.volani.filter((v) => v.url === '/api/extension/pripojit').length >= 2, 'změna portu musí vyvolat nové spárování');
 });
