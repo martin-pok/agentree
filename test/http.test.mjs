@@ -303,7 +303,7 @@ test('Vlastní agenti přes API: cizí adresa neprojde, zápis chce hlavičku a 
 });
 
 
-test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE_WINDOWS }, async () => {
+test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE_WINDOWS && 'Windows CI nemá oprávnění vytvářet symbolické odkazy' }, async () => {
   const dir = await tempDir('agenteeq-static-secret-');
   const secret = path.join(dir, 'private.txt');
   await fs.writeFile(secret, 'PRIVATE_TEST_SECRET_DO_NOT_SERVE');
