@@ -54,31 +54,48 @@ async function installationId() {
 // za 20 s, ať se neptá pořád dokola, když aplikace neběží. Vrací, jestli je spárováno.
 let posledniPokus = 0;
 let probihajiciParovani = null;
-async function pripojit({ hned = false } = {}) {
-  await pairingReset;
-  if (probihajiciParovani && probihajiciParovani.generation === pairingGeneration) return probihajiciParovani.promise;
-  if (!hned && Date.now() - posledniPokus < 20000) return false;
-  posledniPokus = Date.now();
-  const generation = pairingGeneration;
-  const pokus = (async () => {
+
+// A response is valid only for the port generation that initiated the request.
+// This also prevents an old request from overwriting a newer pairing after a port switch.
+async function provedAutomatickeParovani(generation) {
   try {
-    const res = await fetch(`${await zaklad()}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
+    const res = await fetch(`${await zaklad()}/api/extension/pripojit`, {
+      method: 'POST',
+      headers: { 'X-Agenteeq-Installation-Id': await installationId() },
+    });
     const body = await res.json().catch(() => ({}));
     if (generation !== pairingGeneration) return false;
+
     if (!res.ok || typeof body.token !== 'string') {
       await chrome.storage.local.set({ parovani: res.status === 409 ? 'kod' : 'nedostupne' });
       return false;
     }
+
     token = body.token;
     await chrome.storage.local.set({ token, parovani: 'hotovo' });
     return true;
   } catch {
-    if (generation === pairingGeneration) await chrome.storage.local.set({ parovani: 'nedostupne' });
+    if (generation === pairingGeneration) {
+      await chrome.storage.local.set({ parovani: 'nedostupne' });
+    }
     return false;
   }
-  })();
-  probihajiciParovani = { promise: pokus, generation };
-  try { return await pokus; } finally { if (probihajiciParovani?.promise === pokus) probihajiciParovani = null; }
+}
+
+async function pripojit({ hned = false } = {}) {
+  await pairingReset;
+  const generation = pairingGeneration;
+  if (probihajiciParovani?.generation === generation) return probihajiciParovani.promise;
+  if (!hned && Date.now() - posledniPokus < 20000) return false;
+
+  posledniPokus = Date.now();
+  const promise = provedAutomatickeParovani(generation);
+  probihajiciParovani = { promise, generation };
+  try {
+    return await promise;
+  } finally {
+    if (probihajiciParovani?.promise === promise) probihajiciParovani = null;
+  }
 }
 
 async function pair(code) {
