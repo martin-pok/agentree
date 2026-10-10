@@ -39,7 +39,7 @@ try {
           svg.setAttribute('width', String(width));
           svg.setAttribute('height', String(height));
           document.documentElement.style.cssText = 'margin:0;padding:0;background:transparent';
-          document.body.style.cssText = 'margin:0;padding:0;background:transparent';
+          if (document.body) document.body.style.cssText = 'margin:0;padding:0;background:transparent';
         }, job);
       }
       await page.evaluate(() => document.fonts.ready);
