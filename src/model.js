@@ -25,6 +25,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     minutes: new Set(),
     running: false,
     runningAt: 0,
+    procesSkoncil: 0,     // kdy výpis procesů potvrdil, že proces vedoucí tah skončil (src/konec-procesu.js)
     stopAt: 0,
     toolWaitSince: 0,
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
@@ -108,7 +109,7 @@ export function takeDirty(s) {
 }
 
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
-// `stale` = agent formálně neukončil tah, ale dlouho se nic neděje; takový přechod nesmí hlásit „dokončeno“.
+// `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
 // říct „hotovo“ – stav `waiting` sám o sobě to neznamená (může jít o stale tah nebo o zadání bez odpovědi).
 export function deriveStatus(s, now) {
@@ -125,7 +126,11 @@ export function deriveStatus(s, now) {
   // Proces bez přepisu není konverzace ani stav „čeká na zadání“. Víme pouze, že příslušný program
   // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
   if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
-  if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
+  // Proces, který tah vedl, skončil a agent od té doby nic nezapsal (src/konec-procesu.js): tah
+  // neskončil odpovědí, takže ne „hotovo“ – ale ani „pracuje“. Nový zápis do přepisu posune
+  // `runningAt` za čas zjištění a konverzace zase pracuje.
+  const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
+  if (s.running && !skoncil && now - (s.runningAt || s.lastAt) < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
     // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
     // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
@@ -147,7 +152,7 @@ export function deriveStatus(s, now) {
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
   const done = answered && !stale;
-  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
   if (age < DAY) return { status: 'idle', reason: '', stale, done };
   return { status: 'archived', reason: '', stale, done };
 }

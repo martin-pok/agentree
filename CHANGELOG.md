@@ -15,6 +15,7 @@
 - **Popisky filtrů běžnou sazbou.** Zdroj, Služba, Projekt v Agentech, Zdroj, Původ a Řadit v Dovednostech i dny v kalendáři už nejsou verzálky s prostrkáním.
 - **Detail agenta bez dvojího tlačítka a prázdné plochy.** „Pokračovat v Terminálu“ je jen v kartě s požadavkem, ne ještě jednou v hlavičce. Karta s přepisem má přirozenou výšku: krátký přepis nenatahuje kartu do výšky bočního sloupce, dlouhý ho vyplní a dál se čte po kliknutí.
 - **Agenti: počet sedí, tečka drží u textu.** Nápověda „Konverzace v prohlížeči se nesledují“ má vlastní kartu a nepočítá se mezi položky „Běží na tomto počítači, ale bez přepisu“. Zelená tečka pracujícího agenta už nevisí sama za čipem projektu – zalomí se vždy spolu se svým textem.
+- **Agent, jehož proces skončil, už „nepracuje“.** Když se Claude Code nebo Codex CLI ukončí uprostřed práce (zavřený Terminál, kill, pád), konverzace dřív ukazovala „Pracuje“ až 30 minut. Teď ji Agenteeq podle výpisu procesů do pár vteřin přepne na „Čeká na zadání“ s důvodem „Agent skončil uprostřed práce“ – nikdy na „Hotovo“ a bez upozornění na dokončenou úlohu. Když se výpis procesů nepovede, když ve stejné složce běží jiný proces téhož nástroje nebo když u procesu nejde zjistit složku, nic se nemění.
 
 ## Web po vydání 0.46.0 – 2026-10-09
 

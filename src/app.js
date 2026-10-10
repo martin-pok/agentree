@@ -47,6 +47,7 @@ import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
+import { createKonecProcesu } from './konec-procesu.js';
 import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
@@ -316,6 +317,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
   // který aplikace spuštěná z Finderu jinak nevidí – přepis se pak najde a proces se spáruje.
   const bezici = createBeziciAgenti({ store });
+  // Konverzace, jejíž proces skončil uprostřed tahu, už nepracuje (src/konec-procesu.js). Proces běhu
+  // z Agenteeq eviduje běh sám; před rozhodnutím se přepisy přečtou znovu, ať má přednost řádný konec tahu.
+  const konecProcesu = createKonecProcesu({
+    store,
+    behy: () => runs.list(),
+    obnov: (ids) => Promise.all(ids.map((id) => connectors[id]?.scan())),
+  });
   // Poslední výpis procesů agentů – podle něj se pozná, že konverzace neběží v otevřeném Terminálu
   // (odpověď z aplikace, src/odpoved.js). null = výpis zatím nebyl nebo se nepodařil.
   let posledniProcesy = null;
@@ -332,6 +340,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // založí ~/.claude i projects/ najednou a strážce nad neexistujícím rodičem hlídat nemohl).
     // Sledování se zkusí hned, ne až za 5 s – jinak by agent do té doby visel jen jako proces.
     if (bezici.pocet()) for (const id of ['claude-code', 'codex']) connectors[id]?.zkusKoreny?.();
+    await konecProcesu.upravit(procesy);
   }
   if (config.processes) {
     // `vypisProcesu` podstrkují jen testy: omezí skutečný výpis na své procesy (test/helpers.mjs#jenProcesy).

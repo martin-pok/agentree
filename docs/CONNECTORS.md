@@ -181,6 +181,19 @@ ve složce, o které Agenteeq neví. Proto:
 - **Přednost zdrojů jednoho okna Claude (`public/js/ui.js#currentLimits`):** přesná měření (stavový řádek, uložená stránka Usage, odmítnutí `quotaLimits`) – z nich nejnovější, při shodném čase v tomto pořadí; teprve bez nich čerstvý vzorek historie Claude Desktopu. Odhad z textu hlášky se skryje, jakmile je k dispozici přesné měření.
 - **Hooky:** `SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd` → `POST /api/hooks/claude-code`. Příkaz: `curl -m 2 … || true` s timeoutem 5 s – nikdy neblokuje Claude Code. Instalace přes Nastavení (záloha `settings.json.agenteeq-backup-<čas>`).
 - **Známá omezení:** bez hooků se žádost o povolení nástroje v přepisu neobjeví (dlouho běžící nástroj vypadá jako „pracuje“ až 10 min).
+- **Proces skončil uprostřed tahu (`src/konec-procesu.js`, heuristika z výpisu procesů):** zavřený Terminál,
+  kill nebo pád nezapíše do přepisu konec tahu (ani hook `Stop`). Když výpis procesů dvakrát po sobě
+  potvrdí, že proces Claude Code, který byl během tahu vidět ve složce konverzace, skončil a že v té
+  složce žádný jiný proces Claude Code neběží, přestane konverzace pracovat se stavem „Čeká na zadání“
+  a důvodem „Agent skončil uprostřed práce“ (`done: false`, `stale: true` – žádné upozornění „dokončil
+  úlohu“). Před rozhodnutím se přepis přečte znovu, takže řádně dokončený `claude -p` zůstane „Hotovo“.
+  Nic se nemění, když se výpis nepovedl, když některý proces Claude Code nemá zjištěnou složku (lsof
+  selhal; na Windows se složka procesu nečte, takže tam pravidlo nepůsobí), když proces ve složce nebyl
+  během tahu nikdy vidět (jiná složka, worktree, Agenteeq spuštěný až po pádu) a u procesu běhu
+  spuštěného z Agenteeq (ten eviduje `src/runs.js`). Claude Desktop → Code se neposuzuje. Totéž platí
+  pro Codex CLI („Codex CLI“, „Codex · na pozadí“), ne pro aplikaci Codex a VS Code. Ověřeno testy
+  se skutečným procesem na Linuxu (`test/konec-procesu.test.mjs`); 🧪 na skutečném Macu zatím
+  neověřeno (složku procesu tam zjišťuje lsof, stejně jako pro pojistku proti přehlédnutému agentovi).
 
 #### Pravidla pravdivosti (audit 2026-09-22, hlídá `test/pravdivost-dat.test.mjs`)
 
