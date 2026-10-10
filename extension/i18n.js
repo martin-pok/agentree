@@ -104,6 +104,9 @@
       'Pracuje': 'Working',
       'Selhalo': 'Failed',
       'Narazil na limit': 'Hit a limit',
+      'Nepodařilo se zjistit, co na počítači běží': 'Couldn’t find out what is running on this computer',
+      'Vše běží v pořádku': 'Everything is running fine',
+      'V pořádku, nikdo nepracuje': 'All fine, nobody is working',
       // Patička
       'Otevřít Agenteeq': 'Open Agenteeq',
     },
@@ -113,6 +116,10 @@
       'otevřená konverzace|otevřené konverzace|otevřených konverzací': ['open conversation', 'open conversations'],
       'tvoje zpráva|tvoje zprávy|tvých zpráv': ['your message', 'your messages'],
       'odpověď|odpovědi|odpovědí': ['reply', 'replies'],
+      'Selhal {0} agent|Selhali {0} agenti|Selhalo {0} agentů': ['{0} agent failed', '{0} agents failed'],
+      'Na limit narazil {0} agent|Na limit narazili {0} agenti|Na limit narazilo {0} agentů': ['{0} agent hit a limit', '{0} agents hit a limit'],
+      'Problém má {0} agent|Problém mají {0} agenti|Problém má {0} agentů': ['{0} agent has a problem', '{0} agents have a problem'],
+      'Potřebuje tě {0} agent|Potřebují tě {0} agenti|Potřebuje tě {0} agentů': ['{0} agent needs you', '{0} agents need you'],
     },
   };
 

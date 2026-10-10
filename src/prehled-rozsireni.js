@@ -16,9 +16,15 @@ export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
   const limit = podle('limited');
   const problemy = selhalo.length + limit.length;
   const stav = problemy ? 'problem' : cekaji.length ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
+  // Tvary podle počtu jako v boxu Stav agentů v aplikaci (public/js/stav-vety.js): jeden tvar = jeden
+  // text (src/texty.js). Okno rozšíření si větu skládá samo z počtů, ať mluví svým jazykem; tahle
+  // česká zůstává pro starší verze rozšíření.
+  const tvar = (n, jeden, par, mnoho) => (n === 1 ? jeden : n >= 2 && n <= 4 ? par : mnoho);
   const veta = {
-    problem: ui('Problém u agentů: {0}', problemy),
-    pozor: ui('Na tvé rozhodnutí čeká agentů: {0}', cekaji.length),
+    problem: !limit.length ? tvar(problemy, ui('Selhal {0} agent', problemy), ui('Selhali {0} agenti', problemy), ui('Selhalo {0} agentů', problemy))
+      : !selhalo.length ? tvar(problemy, ui('Na limit narazil {0} agent', problemy), ui('Na limit narazili {0} agenti', problemy), ui('Na limit narazilo {0} agentů', problemy))
+        : tvar(problemy, ui('Problém má {0} agent', problemy), ui('Problém mají {0} agenti', problemy), ui('Problém má {0} agentů', problemy)),
+    pozor: tvar(cekaji.length, ui('Potřebuje tě {0} agent', cekaji.length), ui('Potřebují tě {0} agenti', cekaji.length), ui('Potřebuje tě {0} agentů', cekaji.length)),
     nevim: ui('Nepodařilo se zjistit, co na počítači běží'),
     ok: pracuji.length ? ui('Vše běží v pořádku') : ui('V pořádku, nikdo nepracuje'),
   }[stav];
