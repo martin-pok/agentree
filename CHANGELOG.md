@@ -32,7 +32,7 @@
 - Robot v sekci Soukromí jemně sleduje kurzor, když návštěvník používá myš; na dotyku a při omezeném pohybu zůstává v klidu.
 - Ukázkový projekt má střídmý monogram místo výrazného provizorního loga. Český text na úvodu a stránce instalace prošel jazykovou úpravou; anglické texty zachovávají stejný význam.
 
-## 0.46.1 – 10. 10. 2026
+## 0.46.1 – 2026-10-10 · Opravy brandingu a instalace
 
 - Sjednocená dvoubarevná značka Agenteeq s bílou anténou napříč desktopovou aplikací, webem a Chrome extension.
 - Nahrazeny zastaralé ikonové podklady rozšíření a odstraněn původní větvený symbol ze zdrojů propagačních vizuálů.
