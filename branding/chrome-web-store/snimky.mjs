@@ -32,6 +32,7 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 const vystup = path.join(here, 'export');
 const zdroj = path.join(here, 'source');
+const verzeRozsireni = JSON.parse(await fs.readFile(path.join(root, 'extension', 'manifest.json'), 'utf8')).version;
 
 // 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
 //    „spárováno“: na stránce ChatGPT agent právě odpovídá, v dalších kartách Claude.ai dopsal
@@ -39,7 +40,7 @@ const zdroj = path.join(here, 'source');
 //    Obojí česky i anglicky: jazyk okna se řídí _locales (chrome.i18n), tady ho volí atrapa.
 async function okno(stav, soubor, jazyk) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript((jazyk) => {
+  await page.addInitScript(({ jazyk, verze }) => {
     const ted = Date.now();
     const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
     const otevrene = {
@@ -50,11 +51,11 @@ async function okno(stav, soubor, jazyk) {
     window.chrome = {
       i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
-      runtime: { getManifest: () => ({ version: '0.29.0' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.29.0' } }) },
+      runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: verze } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: true }));
-  }, jazyk);
+  }, { jazyk, verze: verzeRozsireni });
   await page.goto(`${base}/extension/popup.html`);
   await page.waitForFunction(() => !['Chvilku…', 'One moment…'].includes(document.getElementById('headline').textContent));
   await page.waitForFunction(() => document.querySelector('.radek--tato'));
