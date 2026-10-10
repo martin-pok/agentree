@@ -48,7 +48,7 @@ function spust(sit, { ulozeno = {} } = {}) {
   vm.runInContext(zdroj, kontext);
   const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
   const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
-  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; delete local.token; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
+  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
 }
 
 test('pozadí rozšíření: aplikace neběží → „nedostupné“, bez tokenu a bez zahlcení dotazy', async () => {
@@ -156,7 +156,9 @@ test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, 
   const spatny = spust(odpoved, { ulozeno: { port: 80 } });
   await spatny.zprava({ type: 'agenteeq:hello' });
   assert.ok(spatny.volani.every((v) => v.plna.startsWith('http://127.0.0.1:4620/')), 'port pod 1024 se nepoužije');
+  assert.equal(r.local.token, 'p'.repeat(43), 'old port has a stored token');
   r.zmenPort(6001);
+  assert.equal(r.local.token, undefined, 'port change clears persistent pairing, not only in-memory token');
   r.posun(21e3);
   await r.zprava({ type: 'agenteeq:hello' });
   const poZmene = r.volani.slice(-2);
