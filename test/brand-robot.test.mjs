@@ -34,3 +34,19 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
   assert.match(nativeIcon, /white\.setFill\(\)/, 'macOS app icon draws white head and antenna tip');
   assert.doesNotMatch(nativeIcon, /#(?:9C8CFF|5254D8|6260D8)/i, 'no purple antenna in native icon generator');
 });
+
+
+test('brand: store icon and installed extension icon are byte-identical', async () => {
+  const extensionIcon = await fs.readFile(new URL('../extension/icons/icon-128.png', import.meta.url));
+  const storeIcon = await fs.readFile(new URL('../branding/chrome-web-store/export/icon-128.png', import.meta.url));
+  assert.deepEqual(extensionIcon, storeIcon, 'Chrome Web Store listing and installed toolbar must share the same current robot logo');
+
+  const manifest = JSON.parse(await read('extension/manifest.json'));
+  for (const size of ['16', '32', '48', '128']) {
+    assert.equal(manifest.action.default_icon[size], manifest.icons[size], `toolbar and extension settings must use the same ${size}px logo`);
+    const bytes = await fs.readFile(new URL('../extension/' + manifest.icons[size], import.meta.url));
+    assert.equal(bytes.toString('ascii', 1, 4), 'PNG', `icon ${size} must be PNG`);
+    assert.equal(bytes.readUInt32BE(16), Number(size), `icon ${size} width`);
+    assert.equal(bytes.readUInt32BE(20), Number(size), `icon ${size} height`);
+  }
+});
