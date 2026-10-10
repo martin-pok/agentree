@@ -4,11 +4,14 @@
 //     bez ohledu na 30denní okno přehledu;
 //   - „jak zapnu XY“ – to vyřeší klient z rejstříku stránek a nastavení (public/js/hledani.js),
 //     server jen pozná záměr.
-// Všechno běží lokálně. Když je k dispozici Ollama, může odpověď navíc zformulovat lokální model
-// – data pořád neopustí počítač. Selhání nebo vyčerpaný časový limit prohledávání se hlásí jako
-// takové, nikdy jako „nic jsem nenašel“.
+// Všechno běží lokálně. Když je k dispozici Ollama na tomto počítači, může odpověď navíc
+// zformulovat lokální model – data pořád neopustí počítač (adresa mimo loopback a cloudové modely
+// Ollamy se odmítají, viz vyberLokalniModel). Selhání nebo vyčerpaný rozpočet prohledávání se hlásí
+// jako takové, nikdy jako „nic není“.
 import fs from 'node:fs/promises';
+import net from 'node:net';
 import path from 'node:path';
+import { isLoopback } from './lan.js';
 import { ui } from './texty.js';
 
 const DEN = 864e5;
@@ -90,35 +93,82 @@ export function rozeberDotaz(text, now = Date.now()) {
   const casova = /^(pred|cca|asi|zhruba|dny|dni|dnu|den|tyden|tydny|tydnu|tydnem|mesic|mesici|mesicu|mesice|rok|roky|lety|let|vcera|minuly|minulej|minuleho|minulem|ago|days?|weeks?|months?|years?|last|yesterday|\d+)$/;
   const bezAplikaci = APLIKACE.reduce((t, [, , re]) => t.replace(new RegExp(re.source, 'g'), ' '), q);
   const slova = [...new Set(bezAplikaci.split(' ')
-    .filter((w) => w.length >= 2 && !STOP.has(w) && !casova.test(w) && !CISLA[w])
+    .filter((w) => w.length >= 2 && !STOP.has(w) && !STOP_KMENY.has(kmen(w)) && !casova.test(w) && !CISLA[w])
     .filter((w) => w !== mesicVeSlovech([w])?.slovo))];
-  return { zamer, slova, okno, aplikace };
+  return { zamer, slova, vzory: slova.map(vzorSlova), okno, aplikace };
 }
 
-// Kořen slova pro češtinu bez slovníku: odřízne běžné koncovky („faktury“ ~ „fakturu“).
-const koren = (w) => (w.length > 5 ? w.slice(0, w.length - 2) : w.length > 3 ? w.slice(0, w.length - 1) : w);
-
-function skore(text, slova) {
-  const t = bezDiakritiky(text);
-  let zasahy = 0;
-  let body = 0;
-  for (const w of slova) {
-    const k = koren(w);
-    const re = new RegExp(`(^|[^a-z0-9])${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-    const pocet = (t.match(re) || []).length;
-    if (pocet) { zasahy++; body += Math.min(pocet, 8); }
+// Lehký kmenovač pro češtinu bez slovníku: „fakturaci“, „faktury“, „fakturou“ i „fakturovat“
+// mají kmen „faktur“, „platba“, „platby“, „platbami“, „plateb“ i „platební“ kmen „platb“.
+// Pádové a číselné koncovky (bez diakritiky), od nejdelších. Úmyslně tu nejsou „at“, „am“, „es“,
+// „os“, „us“ – u přejatých slov (format, program, status) by kmen uřízly do nesmyslu.
+const KONCOVKY = ['atech', 'etem', 'atum', 'ech', 'ich', 'eho', 'emi', 'emu', 'ete', 'eti', 'iho', 'imi', 'imu', 'ach', 'ata', 'aty', 'ych', 'ama', 'ami', 'ove', 'ovi', 'ymi', 'em', 'im', 'um', 'ym', 'mi', 'ou', 'a', 'e', 'i', 'o', 'u', 'y'];
+const SOUHL = '[^aeiouy0-9]';
+function kmen(slovo) {
+  let w = bezDiakritiky(slovo);
+  const k = KONCOVKY.find((x) => w.endsWith(x) && w.length - x.length >= 3);
+  if (k) w = w.slice(0, -k.length);
+  // Odvozené tvary ke stejnému základu: -ace („fakturace“), -ovat/-ovan/-ov („fakturovat“,
+  // „systémový“), přídavné -n („platební“, „měsíční“). Jen dokud kmen zůstane aspoň pětipísmenný.
+  for (let zmena = true; zmena;) {
+    zmena = false;
+    for (const re of [/ovat$/, /ovan$/, /ov$/, /ac$/, new RegExp(`(?<=${SOUHL})n$`)]) {
+      const m = w.match(re);
+      if (m && w.length - m[0].length >= 5) { w = w.slice(0, -m[0].length); zmena = true; break; }
+    }
   }
-  return { zasahy, body };
+  // Vkladné e („plateb“ ~ „platb“, „objednávek“ ~ „objednávk“); vzor ho pak připustí volitelně.
+  const e = w.match(new RegExp(`^(.{2,}${SOUHL})e(${SOUHL})$`));
+  return e ? e[1] + e[2] : w;
 }
 
-function ukazka(text, slova, delka = 180) {
-  const t = String(text || '').replace(/\s+/g, ' ').trim();
-  const norm = bezDiakritiky(t);
-  let i = -1;
-  for (const w of slova) { i = norm.indexOf(koren(w)); if (i >= 0) break; }
-  if (i < 0) return t.slice(0, delka);
-  const start = Math.max(0, i - 60);
-  return `${start ? '…' : ''}${t.slice(start, start + delka)}${start + delka < t.length ? '…' : ''}`;
+const STOP_KMENY = new Set([...STOP].filter((w) => w.length >= 5).map(kmen));
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Vzor (zdroj RegExp) pro slovo v textu bez diakritiky; skupina 1 = shoda. Kmen od pěti písmen
+ * stačí jako začátek slova; kratší kmen musí být celé slovo s nanejvýš pádovou koncovkou – jinak by
+ * „plat“ našel „platformu“ a „data“ „databázi“. Mezi dvěma koncovými souhláskami smí být vkladné e.
+ */
+function vzorSlova(slovo) {
+  const k = kmen(slovo);
+  const telo = new RegExp(`${SOUHL}${SOUHL}$`).test(k) && k.length >= 4 ? `${reEsc(k.slice(0, -1))}e?${reEsc(k.slice(-1))}` : reEsc(k);
+  return k.length >= 5
+    ? `(?:^|[^a-z0-9])(${telo})`
+    : `(?:^|[^a-z0-9])(${telo}(?:${KONCOVKY.join('|')})?)(?![a-z0-9])`;
+}
+
+const prelozVzory = (r) => (r.vzory || r.slova.map(vzorSlova)).map((v) => new RegExp(v, 'g'));
+
+// Počet výskytů každého vzoru v už normalizovaném textu (nad 8 se nepočítá – víc bodů nepřidá).
+function pocty(norm, vzory, k = vzory.map(() => 0)) {
+  vzory.forEach((re, i) => {
+    re.lastIndex = 0;
+    while (k[i] < 8 && re.exec(norm)) k[i]++;
+  });
+  return k;
+}
+const soucet = (p) => p.reduce((s, n) => s + n, 0);
+
+// Ukázka kolem první shody. Jde po zprávách (řádcích), ne přes celý přepis najednou: normalizace
+// megabajtů textu by zbytečně blokovala server, a shoda bývá hned v prvním zadání.
+function ukazka(text, vzory, delka = 180) {
+  const radky = String(text || '').split('\n');
+  for (let j = 0; j < radky.length; j++) {
+    const t = radky[j].replace(/\s+/g, ' ').trim();
+    if (!t) continue;
+    const norm = bezDiakritiky(t);
+    for (const re of vzory) {
+      re.lastIndex = 0;
+      const m = re.exec(norm);
+      if (!m) continue;
+      const i = m.index + m[0].length - m[1].length;
+      const start = Math.max(0, i - 60);
+      const cely = [t, ...radky.slice(j + 1, j + 4).map((r) => r.slice(0, delka))].join(' ').replace(/\s+/g, ' ').trim();
+      return `${start ? '…' : ''}${cely.slice(start, start + delka)}${start + delka < cely.length ? '…' : ''}`;
+    }
+  }
+  return String(text || '').slice(0, delka * 4).replace(/\s+/g, ' ').trim().slice(0, delka);
 }
 
 // Text z řádku přepisu Claude Code nebo Codexu: jen zadání uživatele a odpovědi agenta, ne výstupy nástrojů.
@@ -131,24 +181,51 @@ function textRadku(o) {
   return null;
 }
 
-async function* jsonlSoubory(koren, hloubka = 5) {
-  let polozky;
-  try { polozky = await fs.readdir(koren, { withFileTypes: true }); } catch { return; }
-  for (const e of polozky) {
-    const p = path.join(koren, e.name);
-    if (e.isDirectory() && hloubka > 0 && e.name !== 'subagents') yield* jsonlSoubory(p, hloubka - 1);
-    else if (e.isFile() && e.name.endsWith('.jsonl')) yield p;
+// Seznam přepisů s časem poslední změny, nejnovější první: při mnoha přepisech a omezeném rozpočtu
+// se tak prohledají hlavně ty čerstvé (pořadí z readdir je náhodné). Stačí stat, obsah se nečte.
+async function seznamPrepisu(koreny, konecCasu, hloubka = 5) {
+  const out = [];
+  let uplny = true;
+  async function projdi(dir, app, h) {
+    if (Date.now() > konecCasu) { uplny = false; return; }
+    let polozky;
+    try { polozky = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
+    const soubory = polozky.filter((e) => e.isFile() && e.name.endsWith('.jsonl')).map((e) => path.join(dir, e.name));
+    const st = await Promise.all(soubory.map((p) => fs.stat(p).catch(() => null)));
+    soubory.forEach((soubor, i) => { if (st[i]) out.push({ soubor, app, mtime: st[i].mtimeMs }); });
+    for (const e of polozky) if (e.isDirectory() && h > 0 && e.name !== 'subagents') await projdi(path.join(dir, e.name), app, h - 1);
   }
+  for (const { cesta, app } of koreny) await projdi(cesta, app, hloubka);
+  out.sort((a, b) => b.mtime - a.mtime);
+  return { soubory: out, uplny };
 }
 
-/** Projde přepis a vrátí souhrn konverzace pro hledání. */
-async function prectiPrepis(soubor, app) {
+// Parsování přepisů je synchronní (JSON.parse po řádcích, až megabajty na soubor). Každých pár
+// milisekund se proto vrátí řízení smyčce událostí, aby server mezitím odpovídal ostatním.
+function uvolnovac(ms = 10) {
+  let od = Date.now();
+  return () => {
+    if (Date.now() - od < ms) return null;
+    return new Promise((r) => setImmediate(r)).then(() => { od = Date.now(); });
+  };
+}
+
+/**
+ * Projde přepis a vrátí souhrn konverzace pro hledání. Dlouhý přepis (nad `bajty`) se čte jen
+ * začátek a konec: konec nese čas posledního záznamu (jinak by se konverzace zdála skončit dřív
+ * a nesedělo by časové okno) i nejčerstvější text. `oriznuto` = prostředek se nečetl.
+ */
+async function prectiPrepis(soubor, app, bajty, uvolni, vzory) {
   let fh;
   try {
     fh = await fs.open(soubor, 'r');
     const st = await fh.stat();
-    const buf = Buffer.alloc(Math.min(st.size, LIMITY.bajty));
-    await fh.read(buf, 0, buf.length, 0);
+    const oriznuto = st.size > bajty;
+    const naKonec = oriznuto ? Math.floor(bajty / 6) : 0;
+    const zacatekBuf = Buffer.alloc(oriznuto ? bajty - naKonec : st.size);
+    await fh.read(zacatekBuf, 0, zacatekBuf.length, 0);
+    const konecBuf = Buffer.alloc(naKonec);
+    if (naKonec) await fh.read(konecBuf, 0, naKonec, st.size - naKonec);
     let id = path.basename(soubor, '.jsonl');
     let cwd = '';
     let zacatek = 0;
@@ -156,19 +233,28 @@ async function prectiPrepis(soubor, app) {
     let prvni = '';
     const uzivatel = [];
     const agent = [];
-    for (const radek of buf.toString('utf8').split('\n')) {
-      if (!radek) continue;
-      let o;
-      try { o = JSON.parse(radek); } catch { continue; }
-      const ts = Date.parse(o.timestamp || o.payload?.timestamp || '') || 0;
-      if (ts) { zacatek = zacatek || ts; konec = Math.max(konec, ts); }
-      if (o.cwd || o.payload?.cwd) cwd = o.cwd || o.payload.cwd;
-      if (o.type === 'session_meta' && o.payload?.id) id = o.payload.id;
-      const r = textRadku(o);
-      if (!r || !r.text || r.text.startsWith('<')) continue;
-      if (r.role === 'user') { prvni = prvni || r.text; uzivatel.push(r.text); } else agent.push(r.text);
-    }
-    return { soubor, app, id, cwd, zacatek: zacatek || st.mtimeMs, konec: konec || st.mtimeMs, nazev: prvni.replace(/\s+/g, ' ').slice(0, 100), uzivatel: uzivatel.join('\n'), agent: agent.join('\n'), oriznuto: st.size > LIMITY.bajty };
+    const vyskyty = { user: vzory.map(() => 0), agent: vzory.map(() => 0) };
+    const projdi = async (text) => {
+      for (const radek of text.split('\n')) {
+        const p = uvolni();
+        if (p) await p;
+        if (!radek) continue;
+        let o;
+        try { o = JSON.parse(radek); } catch { continue; }
+        const ts = Date.parse(o.timestamp || o.payload?.timestamp || '') || 0;
+        if (ts) { zacatek = zacatek || ts; konec = Math.max(konec, ts); }
+        if (o.cwd || o.payload?.cwd) cwd = o.cwd || o.payload.cwd;
+        if (o.type === 'session_meta' && o.payload?.id) id = o.payload.id;
+        const r = textRadku(o);
+        if (!r || !r.text || r.text.startsWith('<')) continue;
+        if (r.role === 'user') { prvni = prvni || r.text; uzivatel.push(r.text); } else agent.push(r.text);
+        pocty(bezDiakritiky(r.text), vzory, vyskyty[r.role]);
+      }
+    };
+    await projdi(zacatekBuf.toString('utf8'));
+    // Konec začíná uprostřed řádku – první (neúplný) řádek se zahodí.
+    if (naKonec) { const t = konecBuf.toString('utf8'); await projdi(t.slice(t.indexOf('\n') + 1)); }
+    return { soubor, app, id, cwd, zacatek: zacatek || st.mtimeMs, konec: konec || st.mtimeMs, nazev: prvni.replace(/\s+/g, ' ').slice(0, 100), uzivatel: uzivatel.join('\n'), agent: agent.join('\n'), poctyUzivatel: vyskyty.user, poctyAgent: vyskyty.agent, oriznuto };
   } catch {
     return null;
   } finally {
@@ -179,22 +265,27 @@ async function prectiPrepis(soubor, app) {
 /**
  * Najde konverzace k dotazu. `koreny`: [{ cesta, app }] složky s přepisy. `sessions`: to, co drží
  * přehled (i webové chaty). `smiPrepisy`: false pro telefon – ten přepisy číst nesmí (remote-scope).
+ * Celý dotaz má jeden rozpočet (`limity.casMs`, `limity.soubory`), i když se po prázdném období
+ * hledá dál ve starších přepisech.
  */
 export async function najdiKonverzace({ dotaz, sessions = [], koreny = [], now = Date.now(), smiPrepisy = true, limity = LIMITY }) {
   const r = typeof dotaz === 'string' ? rozeberDotaz(dotaz, now) : dotaz;
+  const vzory = prelozVzory(r);
   const kandidati = new Map();
   const vOkne = (zac, kon) => !r.okno || (kon >= r.okno.od && zac <= r.okno.do);
   const pridej = (k) => {
     if (r.aplikace && !String(k.app || '').toLowerCase().includes(r.aplikace.toLowerCase())) return;
-    const t = skore(k.nazev, r.slova);
-    const u = skore(k.uzivatel, r.slova);
-    const a = skore(k.agent, r.slova);
-    const zasahy = Math.max(t.zasahy, u.zasahy, a.zasahy, skore(`${k.nazev}\n${k.uzivatel}\n${k.agent}`, r.slova).zasahy);
+    // Přepis nese výskyty už spočítané (prectiPrepis po zprávách, s uvolňováním smyčky).
+    const t = pocty(bezDiakritiky(k.nazev), vzory);
+    const u = k.poctyUzivatel || pocty(bezDiakritiky(k.uzivatel), vzory);
+    const a = k.poctyAgent || pocty(bezDiakritiky(k.agent), vzory);
+    const zasahy = vzory.filter((_, i) => t[i] || u[i] || a[i]).length;
     if (r.slova.length && !zasahy) return;
-    const body = t.body * 4 + u.body * 2 + a.body;
+    const body = soucet(t) * 4 + soucet(u) * 2 + soucet(a);
     const stare = kandidati.get(k.klic);
     if (!stare || stare.body < body) kandidati.set(k.klic, { ...k, zasahy, body, okno: vOkne(k.zacatek, k.konec) });
   };
+  const nicVOkne = () => ![...kandidati.values()].some((k) => k.okno);
 
   // 1) Co drží přehled – rychlé a i pro webové chaty.
   for (const s of sessions) {
@@ -202,34 +293,36 @@ export async function najdiKonverzace({ dotaz, sessions = [], koreny = [], now =
     pridej({ klic: s.id, sessionId: s.id, app: s.app, cwd: s.cwd || '', zacatek: s.startedAt || s.lastAt, konec: s.lastAt, nazev: s.title || '', uzivatel: `${s.firstPrompt || ''}\n${s.lastPrompt || ''}`, agent: '' });
   }
 
-  // 2) Přepisy na disku – i starší než okno přehledu. Telefon je číst nesmí.
+  // 2) Přepisy na disku – i starší než okno přehledu, nejnovější první. Telefon je číst nesmí.
   let prohledano = 0;
+  let oriznute = 0;
   let nedokonceno = false;
+  let oknoProhledane = true;
   if (smiPrepisy) {
     const konecCasu = Date.now() + limity.casMs;
-    venku: for (const { cesta, app } of koreny) {
-      for await (const soubor of jsonlSoubory(cesta)) {
-        if (prohledano >= limity.soubory || Date.now() > konecCasu) { nedokonceno = true; break venku; }
-        if (r.okno) {
-          const st = await fs.stat(soubor).catch(() => null);
-          // Poslední zápis před začátkem okna = konverzace v okně nebyla. Dlouhé konverzace
-          // mohou začít v okně a pokračovat po něm, proto se horní mez filtruje až podle obsahu.
-          if (!st || st.mtimeMs < r.okno.od - DEN) continue;
-        }
+    const uvolni = uvolnovac();
+    const seznam = await seznamPrepisu(koreny, konecCasu);
+    if (!seznam.uplny) nedokonceno = true;
+    const projdi = async (soubory) => {
+      for (const { soubor, app } of soubory) {
+        if (prohledano >= limity.soubory || Date.now() > konecCasu) { nedokonceno = true; return; }
         prohledano++;
-        const k = await prectiPrepis(soubor, app);
+        const k = await prectiPrepis(soubor, app, limity.bajty, uvolni, vzory);
         if (!k) continue;
+        if (k.oriznuto) oriznute++;
         const sessionId = sessions.find((s) => s.id.endsWith(`:${k.id}`))?.id || null;
         pridej({ ...k, klic: sessionId || `${app}:${k.id}`, sessionId });
+        const p = uvolni();
+        if (p) await p;
       }
-    }
-  }
-
-  // V zadaném období nic: druhé kolo bez časového filtru, ať člověk vidí shodu z jiné doby
-  // (s pamětí, kterým souborem začít, by to bylo rychlejší; přepisů je řádově stovky, stačí to).
-  if (r.okno && ![...kandidati.values()].some((k) => k.okno) && r.slova.length) {
-    const druhe = await najdiKonverzace({ dotaz: { ...r, okno: null }, sessions, koreny, now, smiPrepisy, limity });
-    return { ...druhe, rozbor: r, prohledano: prohledano + druhe.prohledano, mimoOkno: druhe.vysledky.length > 0 };
+    };
+    // Poslední zápis před začátkem okna = konverzace v okně nebyla. Dlouhé konverzace mohou začít
+    // v okně a pokračovat po něm, proto se horní mez filtruje až podle obsahu.
+    const vOknuPodleCasu = (f) => !r.okno || f.mtime >= r.okno.od - DEN;
+    await projdi(seznam.soubory.filter(vOknuPodleCasu));
+    oknoProhledane = !nedokonceno;
+    // V zadaném období nic: dál starší přepisy (ze stejného rozpočtu), ať člověk vidí shodu z jiné doby.
+    if (r.okno && r.slova.length && nicVOkne()) await projdi(seznam.soubory.filter((f) => !vOknuPodleCasu(f)));
   }
 
   const vse = [...kandidati.values()].sort((a, b) => b.zasahy - a.zasahy || Number(b.okno) - Number(a.okno) || b.body - a.body || b.konec - a.konec);
@@ -239,6 +332,9 @@ export async function najdiKonverzace({ dotaz, sessions = [], koreny = [], now =
     rozbor: r,
     prohledano,
     nedokonceno,
+    // Neúplné prohledání samotného období – „v zadaném období nic“ by pak nebyla pravda.
+    oknoProhledane,
+    oriznute,
     mimoOkno: Boolean(r.okno && !vOknu.length && vse.length),
     vysledky: vybrane.map((k) => ({
       sessionId: k.sessionId || null,
@@ -247,21 +343,80 @@ export async function najdiKonverzace({ dotaz, sessions = [], koreny = [], now =
       slozka: k.cwd ? path.basename(k.cwd) : '',
       zacatek: k.zacatek || 0,
       konec: k.konec || 0,
-      ukazka: smiPrepisy ? ukazka(`${k.uzivatel}\n${k.agent}` || k.nazev, r.slova) : '',
+      ukazka: smiPrepisy ? ukazka(`${k.uzivatel}\n${k.agent}` || k.nazev, vzory) : '',
       pokracovat: smiPrepisy && k.app === 'Claude Code' && !k.sessionId ? `claude --resume ${k.id}` : smiPrepisy && k.app === 'Codex' && !k.sessionId ? `codex resume ${k.id}` : '',
       shoda: r.slova.length ? k.zasahy / r.slova.length : 1,
     })),
   };
 }
 
-/** Krátká věta nad výsledky – v češtině, rozhraní ji přeloží (src/texty.js). */
+/**
+ * Krátká věta nad výsledky – v češtině, rozhraní ji přeloží (src/texty.js). Bez první osoby;
+ * „nic není“ se tvrdí jen po úplném prohledání, jinak se řekne, že hledání nedoběhlo.
+ */
 export function vetaOdpovedi(v) {
   if (!v.vysledky.length) {
-    if (v.nedokonceno) return ui('V čase, který mám na hledání, jsem nic nenašel – prohledal jsem {0} přepisů, ale ne všechny. Zkus dotaz zúžit (nástroj, období).', v.prohledano);
-    return ui('Nic jsem nenašel. Prohledal jsem konverzace v přehledu a {0} přepisů na tomto počítači. Zkus jiná slova nebo širší období.', v.prohledano);
+    if (v.nedokonceno) return ui('Nic se nenašlo, ale hledání nestihlo projít všechny přepisy (prohledáno: {0}, od nejnovějších). Zkus dotaz zúžit – nástroj nebo období.', v.prohledano);
+    if (v.oriznute) return ui('Nic se nenašlo v konverzacích v přehledu ani v přepisech na tomto počítači (prohledáno: {0}; u velmi dlouhých přepisů jen začátek a konec – {1}). Zkus jiná slova nebo širší období.', v.prohledano, v.oriznute);
+    return ui('Nic se nenašlo v konverzacích v přehledu ani v přepisech na tomto počítači (prohledáno: {0}). Zkus jiná slova nebo širší období.', v.prohledano);
   }
-  if (v.mimoOkno) return ui('V zadaném období nic, ale tyhle konverzace k tomu sedí z jiné doby:');
+  if (v.mimoOkno) {
+    return v.oknoProhledane === false
+      ? ui('V prohledané části zadaného období nic – hledání nestihlo projít všechny přepisy. Z jiné doby k tomu sedí tyhle konverzace:')
+      : ui('V zadaném období nic, ale tyhle konverzace k tomu sedí z jiné doby:');
+  }
+  if (v.nedokonceno) return ui('Nejlepší shody z prohledané části – hledání nestihlo projít všechny přepisy (prohledáno: {0}, od nejnovějších):', v.prohledano);
   return v.vysledky.length === 1 ? ui('Tohle je nejlepší shoda:') : ui('Tohle jsou nejlepší shody (nejlepší nahoře):');
+}
+
+// Cloudové modely Ollamy („gpt-oss:120b-cloud“, „glm-4.6:cloud“): lokální server je jen přepošle
+// na ollama.com. Poznají se podle přípony jména nebo podle `remote_host`/`remote_model` v /api/tags.
+const CLOUDOVY = /(?:^|[-:])cloud$/;
+// Embeddingové modely neumí odpovídat textem. Starší Ollama neposílá `capabilities`, pak rozhoduje
+// jméno a rodina modelu.
+const EMBEDDING_JMENO = /embed|minilm|(?:^|\/)bge[-:]|paraphrase/;
+const EMBEDDING_RODINA = new Set(['bert', 'nomic-bert', 'xlm-roberta', 'jina-bert']);
+
+/** Adresa Ollamy na tomto počítači (loopback)? Jinam úryvky konverzací Pomocník neposílá. */
+export function ollamaNaTomtoPocitaci(url) {
+  let u;
+  try { u = new URL(url); } catch { return false; }
+  if (!/^https?:$/.test(u.protocol)) return false;
+  const host = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  // Jen IP adresa nebo localhost – jméno jako „127.0.0.1.nip.io“ může vést kamkoli.
+  return host === 'localhost' || (net.isIP(host) > 0 && isLoopback(host));
+}
+
+/**
+ * Model, kterým smí Pomocník formulovat odpověď. Pravidla (předvídatelně, ne „první z výpisu“):
+ *   1. Ollama musí běžet na loopback adrese – jinak `{ model: null, duvod: 'mimo-pocitac' }`
+ *      a žádný dotaz na ni nejde;
+ *   2. vyřadí se cloudové a embeddingové modely;
+ *   3. přednost má model už načtený v paměti (/api/ps – odpoví hned a je to ten, se kterým
+ *      uživatel pracuje), jinak nejmenší nainstalovaný (nejrychlejší načtení); shoda → podle jména.
+ * Když /api/tags schopnosti neuvádí, ověří se u kandidáta přes /api/show (`completion`, `remote_host`).
+ */
+export async function vyberLokalniModel({ ollama }) {
+  if (!ollama || !ollamaNaTomtoPocitaci(ollama.baseUrl)) return { model: null, duvod: 'mimo-pocitac' };
+  const { ok, models } = await ollama.models();
+  if (!ok) return { model: null, duvod: 'nedostupna' };
+  const vhodne = models.filter((m) => {
+    const jmeno = m.name.toLowerCase();
+    if (m.remote || CLOUDOVY.test(jmeno)) return false;
+    if (m.capabilities?.length) return m.capabilities.includes('completion');
+    return !EMBEDDING_JMENO.test(jmeno) && !EMBEDDING_RODINA.has(String(m.family || '').toLowerCase());
+  });
+  if (!vhodne.length) return { model: null, duvod: 'zadny-model' };
+  const nactene = new Set((await ollama.loaded()).models);
+  vhodne.sort((a, b) => Number(nactene.has(b.name)) - Number(nactene.has(a.name)) || (a.size || Infinity) - (b.size || Infinity) || a.name.localeCompare(b.name));
+  for (const m of vhodne.slice(0, 3)) {
+    if (m.capabilities?.length) return { model: m.name };
+    const info = await ollama.show(m.name);
+    if (!info) return { model: m.name };
+    if (info.remote) continue;
+    if (!info.capabilities?.length || info.capabilities.includes('completion')) return { model: m.name };
+  }
+  return { model: null, duvod: 'zadny-model' };
 }
 
 /**

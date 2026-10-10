@@ -21,7 +21,7 @@ import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWor
 import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector, korenyClaudeCode } from './connectors/claude-code.js';
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
-import { najdiKonverzace, vetaOdpovedi, formulujLokalne } from './pomocnik.js';
+import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
 import { createCursorConnector } from './connectors/cursor.js';
 import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
@@ -199,21 +199,25 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // počítače. Telefon dostane jen to, co vidí v přehledu – přepisy mu nepatří (remote-scope).
   async function pomocnik({ dotaz, smiPrepisy = true }) {
     const text = String(dotaz || '').trim().slice(0, 500);
-    if (!text) return { status: 400, error: ui('Napiš, co mám najít.') };
+    if (!text) return { status: 400, error: ui('Napiš, co hledáš.') };
     const koreny = [
       ...korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }).map((cesta) => ({ cesta, app: 'Claude Code' })),
       ...domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }).map((d) => ({ cesta: path.join(d, 'sessions'), app: 'Codex' })),
     ];
     const v = await najdiKonverzace({ dotaz: text, sessions: store.list(), koreny, smiPrepisy });
     let lokalne = null;
+    let modelMimoPocitac = false;
+    // Úryvky konverzací smí dostat jen model na tomto počítači (vyberLokalniModel): Ollama na
+    // loopback adrese, bez cloudových a embeddingových modelů. Jiná adresa se odmítne a řekne se to.
     if (smiPrepisy && v.vysledky.length && datastore.data.settings.pomocnik?.model !== false) {
-      const { ok, models } = await ollama.models();
-      if (ok && models.length) {
-        const odpoved = await formulujLokalne({ ollama, model: models[0].name, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language });
-        if (odpoved) lokalne = { text: odpoved, model: models[0].name };
+      const { model, duvod } = await vyberLokalniModel({ ollama });
+      modelMimoPocitac = duvod === 'mimo-pocitac';
+      if (model) {
+        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language });
+        if (odpoved) lokalne = { text: odpoved, model };
       }
     }
-    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne };
+    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne, modelMimoPocitac };
   }
 
   const runs = new RunManager({
