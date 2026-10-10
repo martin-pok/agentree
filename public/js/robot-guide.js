@@ -52,23 +52,29 @@ function ulozZpravy() {
   try { sessionStorage.setItem(ULOZENO, JSON.stringify(zpravy.slice(-30))); } catch { /* bez úložiště jen bez historie */ }
 }
 
-const zvyrazni = (text, slova) => {
-  let html = esc(text);
-  for (const w of slova || []) {
-    if (w.length < 3) continue;
-    const k = w.length > 5 ? w.slice(0, -2) : w;
-    // Zvýrazňuje se v textu bez diakritiky, ale vkládá do originálu: délky se shodují (NFD bez znamének).
-    const norm = bezDiakritiky(html);
-    let out = '';
-    let i = 0;
-    let j;
-    while ((j = norm.indexOf(k, i)) >= 0) {
-      out += `${html.slice(i, j)}<mark>${html.slice(j, j + k.length)}</mark>`;
-      i = j + k.length;
+// Zvýrazní shody podle vzorů ze serveru (src/pomocnik.js#vzorSlova – tytéž tvary slov, podle
+// kterých se hledalo; skupina 1 = shoda). Hledá se v textu bez diakritiky, vkládá do originálu:
+// délky se shodují (NFD bez znamének); když ne, zůstane text bez zvýraznění. Escapuje se po kouscích.
+const zvyrazni = (text, vzory) => {
+  const t = String(text || '');
+  const norm = bezDiakritiky(t);
+  const useky = [];
+  if (norm.length === t.length) {
+    for (const v of vzory || []) {
+      let re;
+      try { re = new RegExp(v, 'g'); } catch { continue; }
+      for (const m of norm.matchAll(re)) if (m[1]) useky.push([m.index + m[0].length - m[1].length, m.index + m[0].length]);
     }
-    html = out + html.slice(i);
   }
-  return html;
+  useky.sort((a, b) => a[0] - b[0]);
+  let html = '';
+  let i = 0;
+  for (const [od, po] of useky) {
+    if (od < i) continue;
+    html += `${esc(t.slice(i, od))}<mark>${esc(t.slice(od, po))}</mark>`;
+    i = po;
+  }
+  return html + esc(t.slice(i));
 };
 
 function zpravaHtml(z, i) {
@@ -77,7 +83,7 @@ function zpravaHtml(z, i) {
   const vysledky = (z.vysledky || []).map((v, j) => `<li class="pm-vysledek">
       <b>${esc(v.nazev)}</b>
       <small>${esc([v.app, v.konec ? dateLong(v.konec) : '', v.slozka].filter(Boolean).join(' · '))}</small>
-      ${v.ukazka ? `<p>${zvyrazni(v.ukazka, z.slova)}</p>` : ''}
+      ${v.ukazka ? `<p>${zvyrazni(v.ukazka, z.vzory)}</p>` : ''}
       <span class="pm-akce">${v.sessionId ? `<a class="btn btn--sm" href="${esc(agentHref(v.sessionId))}">${tr('Otevřít')}</a>` : ''}${v.pokracovat ? `<button type="button" class="btn btn--sm" data-kopirovat="${i}:${j}">${tr('Kopírovat příkaz')}</button>` : ''}</span>
     </li>`).join('');
   return `<div class="pm-msg pm-msg--on">
@@ -86,14 +92,15 @@ function zpravaHtml(z, i) {
     ${cile ? `<ul class="pm-cile">${cile}</ul>` : ''}
     ${vysledky ? `<ul class="pm-vysledky">${vysledky}</ul>` : ''}
     ${z.pozn ? `<p class="pm-pozn">${esc(z.pozn)}</p>` : ''}
+    ${z.modelMimo ? `<p class="pm-pozn">${esc(tr('Lokální model odpověď neformuloval: adresa Ollamy (AGENTEEQ_OLLAMA_URL) nevede na tento počítač, a úryvky konverzací proto nikam neodešly.'))}</p>` : ''}
   </div>`;
 }
 
 function vykresli() {
   if (!el) return;
   const log = el.querySelector('.pm-log');
-  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Ahoj, jsem pomocník Agenteeq. Najdu dřívější konverzaci se kterýmkoli agentem nebo poradím, kde co v aplikaci zapnout.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
-  log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledám…')}"><i></i><i></i><i></i></div>` : '');
+  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Pomocník najde dřívější konverzaci se kterýmkoli agentem nebo poradí, kde co v aplikaci zapnout.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
+  log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
   log.scrollTop = log.scrollHeight;
 }
@@ -124,19 +131,19 @@ async function posli(text) {
     if (r.zamer === 'jak') {
       const cile = poradSNastavenim(dotaz);
       odpoved = cile.length
-        ? { kdo: 'on', text: tr('Tohle najdeš tady – klepnutím tě tam pošlu:'), cile }
-        : { kdo: 'on', text: tr('Takovou volbu v aplikaci nevidím. Zkus to říct jinými slovy, nebo otevři hledání ({0}).', zkratka('K')) };
+        ? { kdo: 'on', text: tr('Tohle najdeš tady – klepnutím se tam dostaneš:'), cile }
+        : { kdo: 'on', text: tr('Taková volba se v aplikaci nenašla. Zkus jiná slova, nebo otevři hledání ({0}).', zkratka('K')) };
     } else {
-      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, slova: r.rozbor?.slova || [], lokalne: r.lokalne };
-      if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledal jsem v období {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
-      // Nic nenašel v konverzacích, ale dotaz vypadá i na nastavení – nabídnout obojí.
+      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [], lokalne: r.lokalne, modelMimo: Boolean(r.modelMimoPocitac) };
+      if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledané období: {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
+      // V konverzacích nic, ale dotaz vypadá i na nastavení – nabídnout obojí.
       if (!r.vysledky.length) {
         const cile = poradSNastavenim(dotaz);
-        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná jsi myslel některou z těchto voleb v aplikaci.') });
+        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná hledáš některou z těchto voleb v aplikaci.') });
       }
     }
   } catch (err) {
-    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Agenteeq teď neodpovídá, takže hledat nemůžu. Zkus to za chvíli.') : err.message };
+    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Agenteeq teď neodpovídá. Zkus to za chvíli.') : err.message };
   } finally {
     pracuje = false;
   }
