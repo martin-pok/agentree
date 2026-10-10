@@ -64,10 +64,42 @@ async function responseBytes(response, expected) {
   const length = rawLength === null ? null : Number(rawLength);
   if (rawLength !== null && (!Number.isSafeInteger(length) || length < 1 || length > MAX_PACKAGE_BYTES)) throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
   if (length !== null && length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-  const body = Buffer.from(await response.arrayBuffer());
-  if (!body.length || body.length > MAX_PACKAGE_BYTES || body.length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-  const otisk = crypto.createHash('sha256').update(body).digest('hex');
-  if (!expected.sha256 || otisk !== expected.sha256) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  // Reject oversized or malformed streamed responses before buffering the complete archive.
+  // The release metadata supplies the exact size and SHA-256 digest.
+  const chunks = [];
+  let received = 0;
+  const digest = crypto.createHash('sha256');
+  if (response.body?.getReader) {
+    const reader = response.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value?.byteLength) continue;
+        received += value.byteLength;
+        if (received > expected.size || received > MAX_PACKAGE_BYTES) {
+          await reader.cancel();
+          throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+        }
+        const chunk = Buffer.from(value);
+        digest.update(chunk);
+        chunks.push(chunk);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  } else {
+    // Test doubles and older fetch implementations may expose only arrayBuffer().
+    const chunk = Buffer.from(await response.arrayBuffer());
+    received = chunk.length;
+    if (received > expected.size || received > MAX_PACKAGE_BYTES) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+    digest.update(chunk);
+    chunks.push(chunk);
+  }
+  if (!received || received !== expected.size || !expected.sha256 || digest.digest('hex') !== expected.sha256) {
+    throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  }
+  const body = Buffer.concat(chunks, received);
   return body;
 }
 
