@@ -987,7 +987,12 @@ export function createHttpServer(app, existingServer = null) {
     if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
     let body;
     try {
-      body = await fs.readFile(file);
+      // A lexical prefix check is insufficient: a symlink inside public/ could
+      // point to private files outside the web root.
+      const resolvedRoot = await fs.realpath(PUBLIC_DIR);
+      const resolvedFile = await fs.realpath(file);
+      if (!resolvedFile.startsWith(resolvedRoot + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
+      body = await fs.readFile(resolvedFile);
     } catch (err) {
       if (err.code !== 'ENOENT' && err.code !== 'EISDIR') throw err;
       if (path.extname(rel)) throw new HttpError(404, ui('Nenalezeno.'));
