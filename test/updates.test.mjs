@@ -165,3 +165,24 @@ test('HTTP aktualizace: instalace jen se staženým balíčkem a jen přes okno 
     assert.equal(udalosti.length, 1);
   } finally { await s.close(); }
 });
+
+
+test('aktualizace: ukončí proud okamžitě při překročení velikosti z releasu', async () => {
+  let canceled = false;
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3, 4, 5]));
+      },
+      cancel() { canceled = true; },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-stream-'), fetchImpl, platform: 'darwin', arch: 'arm64' });
+  const available = await service.check();
+  assert.equal(available.status, 'available');
+  const result = await service.download();
+  assert.equal(result.status, 502);
+  assert.equal(canceled, true, 'nadlimitní proud se musí přerušit');
+  assert.equal(service.state().status, 'available', 'chybné stažení nesmí být označené za hotové');
+});
