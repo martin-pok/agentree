@@ -59,9 +59,11 @@ function validRelease(payload, version, target) {
 }
 
 async function responseBytes(response, expected) {
-  const length = Number(response.headers.get('content-length'));
-  if (Number.isFinite(length) && (length < 1 || length > MAX_PACKAGE_BYTES)) throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
-  if (Number.isFinite(length) && length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+  // Content-Length is optional for chunked downloads. Missing header is not zero bytes.
+  const rawLength = response.headers.get('content-length');
+  const length = rawLength === null ? null : Number(rawLength);
+  if (rawLength !== null && (!Number.isSafeInteger(length) || length < 1 || length > MAX_PACKAGE_BYTES)) throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
+  if (length !== null && length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
   const body = Buffer.from(await response.arrayBuffer());
   if (!body.length || body.length > MAX_PACKAGE_BYTES || body.length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
   const otisk = crypto.createHash('sha256').update(body).digest('hex');
