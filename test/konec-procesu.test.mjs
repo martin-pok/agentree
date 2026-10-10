@@ -218,8 +218,9 @@ test('živý proces claude ukončený uprostřed tahu: konverzace do dvou výpis
     assert.equal(v.status, 'waiting');
     assert.equal(v.reason, DUVOD);
     assert.equal(v.done, false);
-    // Výpis po 200 ms, potvrzení dvěma výpisy a nové čtení přepisu; rezerva na zatížený stroj.
-    assert.ok(Date.now() - zabito < 3000, `konec procesu se projevil až za ${Date.now() - zabito} ms`);
+    // Výpis po 200 ms, potvrzení dvěma výpisy a nové čtení přepisu (~1 s); velká rezerva na zatížený
+    // runner CI – podstatné je „vteřiny“, ne 30 minut do vypršení.
+    assert.ok(Date.now() - zabito < 6000, `konec procesu se projevil až za ${Date.now() - zabito} ms`);
   } finally {
     agent.kill();
     await srv.close();

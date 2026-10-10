@@ -1549,7 +1549,7 @@ export default {
     "Hotovo. Co dál?": "Done. What’s next?",
     "Mám volné ruce. Zadej další úkol.": "My hands are free. Give me the next task.",
     "Připraven. Stačí říct.": "Ready. Just say the word.",
-    "Dlouho se tu nic neděje. Mrkni do detailu.": "Nothing has happened here for a while. Check the details.",
+    "Práce se tu zastavila. Mrkni do detailu.": "Work stopped here. Check the details.",
     "Konec práce tu nezazněl. Detail ukáže, kde to stojí.": "No sign the work finished. The details show where it stands.",
     "Odpočívám. Zadej práci a jdu na to.": "Resting. Give me work and I’m on it.",
     "Klid na palubě.": "All quiet on deck.",
