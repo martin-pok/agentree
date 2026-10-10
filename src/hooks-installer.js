@@ -135,7 +135,7 @@ export async function hooksStatus(file, token, headersFile) {
   try {
     ({ json } = await readSettings(file));
   } catch (err) {
-    return { installed: false, partial: false, current: false, inlineToken: false, events: [], path: file, error: err.message };
+    return { installed: false, partial: false, current: false, funguje: false, inlineToken: false, events: [], path: file, error: err.message };
   }
   const has = (ev, pred) => (Array.isArray(json.hooks?.[ev]) ? json.hooks[ev] : []).some((g) => (g?.hooks || []).some(pred));
   const events = HOOK_EVENTS.filter((ev) => has(ev, isOurs));
@@ -145,11 +145,17 @@ export async function hooksStatus(file, token, headersFile) {
   const hooksCurrent = HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && current(h.command)));
   const statusLine = !json.statusLine ? 'none' : isOurStatusLine(json.statusLine) ? 'ours' : 'foreign';
   const statusLineCurrent = statusLine === 'ours' && current(json.statusLine.command);
+  // Funkční = události i limity dorazí: aktuální příkaz, nebo zápis z dřívější verze s platným tokenem
+  // přímo v příkazu. Takové propojení funguje, jen ho Nastavení nabídne obnovit (token mimo příkaz).
+  const funkcni = (command) => current(command) || (Boolean(token) && tokenVPrikazu(command) && commandText(command).includes(token) && !command.includes('>NUL'));
+  const hooksFunkcni = HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && funkcni(h.command)));
+  const statusLineFunkcni = statusLine === 'ours' && funkcni(json.statusLine.command);
   return {
     installed: events.length === HOOK_EVENTS.length,
     partial: events.length > 0 && events.length < HOOK_EVENTS.length,
     // Aktuální = hooky s platným tokenem a stavový řádek Agenteeq (cizí stavový řádek nepřepisujeme).
     current: hooksCurrent && (statusLine === 'foreign' || statusLineCurrent),
+    funguje: hooksFunkcni && (statusLine === 'foreign' || statusLineFunkcni),
     // Některý náš příkaz má token přímo v sobě (zápis z dřívější verze) – Nastavení nabídne obnovu.
     inlineToken: HOOK_EVENTS.some((ev) => has(ev, (h) => isOurs(h) && tokenVPrikazu(h.command)))
       || (statusLine === 'ours' && tokenVPrikazu(json.statusLine.command)),

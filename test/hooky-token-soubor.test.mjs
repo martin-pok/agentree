@@ -146,6 +146,9 @@ test('staré příkazy s tokenem: pořád „naše“, hlásí se k obnově, ins
 
     const st = await hooksStatus(file, TOKEN, headersFile);
     assert.deepEqual([st.installed, st.partial, st.current, st.inlineToken, st.statusLine], [true, false, false, true, 'ours'], windows ? 'Windows' : 'POSIX');
+    // Starý zápis s platným tokenem funguje: Přehled ani limity nesmí tvrdit, že propojení chybí.
+    assert.equal(st.funguje, true, 'starý zápis s platným tokenem funguje');
+    assert.equal((await hooksStatus(file, 'f'.repeat(48), headersFile)).funguje, false, 'starý zápis s jiným tokenem nefunguje');
 
     await installHooks(file, { port: 4620, token: TOKEN, headersFile, now: 1 });
     const json = JSON.parse(await fs.readFile(file, 'utf8'));
@@ -154,7 +157,7 @@ test('staré příkazy s tokenem: pořád „naše“, hlásí se k obnově, ins
     }
     assert.ok(!JSON.stringify(json).includes(TOKEN) && json.hooks.Stop.some((g) => g.hooks.some((h) => h.command === 'say hotovo')));
     const po = await hooksStatus(file, TOKEN, headersFile);
-    assert.deepEqual([po.current, po.inlineToken], [true, false]);
+    assert.deepEqual([po.current, po.funguje, po.inlineToken], [true, true, false]);
 
     await fs.writeFile(file, JSON.stringify(stareNastaveni(windows), null, 2));
     await uninstallHooks(file, { headersFile, now: 2 });
@@ -171,7 +174,8 @@ test('staré příkazy: Agenteeq je sám nepřepíše, zdraví propojení je ber
   const srv = await startTestServer({ AGENTEEQ_SOURCE_HOME: sourceHome });
   t.after(() => srv.close());
   const h = (await api(srv.url).get('/api/state')).body.integrations.claudeHooks;
-  assert.deepEqual([h.installed, h.current, h.inlineToken], [true, false, true]);
+  // Token v starém zápisu není token tohoto serveru – takové propojení opravdu nefunguje.
+  assert.deepEqual([h.installed, h.current, h.funguje, h.inlineToken], [true, false, false, true]);
   assert.ok(h.since > 0, 'propojení se počítá jako zapnuté (src/app.js#claudeHooks)');
   const check = (await api(srv.url).send('POST', '/api/integrations/claude-hooks/check')).body.claudeHooks;
   assert.equal(check.installed, true);

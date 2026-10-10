@@ -62,7 +62,8 @@ function poznamkaClaude(state, now) {
   if (claudeOdhlaseny(state, now)) return tr('Claude Code je odhlášený. Napoj ho v Nastavení.');
   const desktop = (state.connectors || []).find((c) => c.id === 'claude-desktop-usage');
   const maDesktop = desktop && desktop.state !== 'missing';
-  const propojeno = state.integrations?.claudeHooks?.installed && state.integrations?.claudeHooks?.current;
+  const h = state.integrations?.claudeHooks;
+  const propojeno = h?.installed && (h.current || h.funguje);
   const terminal = propojeno
     ? tr('spusť Claude Code v Terminálu se stavovým řádkem')
     : tr('propoj Claude Code v Nastavení a spusť ho v Terminálu');
