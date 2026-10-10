@@ -65,8 +65,9 @@ test('příkazy hooků ani stavového řádku token nenesou – v settings.json 
     assert.ok(plain(c).includes(path.basename(headersFile)), 'příkaz odkazuje na soubor s hlavičkami');
   }
   // Obě podoby příkazu, bez ohledu na systém, na kterém test běží.
-  for (const windows of [false, true]) {
-    for (const c of [hookCommand(4620, headersFile, { windows }), statuslineCommand(4620, headersFile, { windows })]) {
+  // Každá podoba dostane cestu svého systému (POSIX příkaz s cestou „D:\…“ se právem odmítne).
+  for (const [windows, cesta] of [[false, '/Users/eva/.agenteeq/claude-hooky-hlavicky'], [true, 'C:\\Users\\eva\\.agenteeq\\claude-hooky-hlavicky']]) {
+    for (const c of [hookCommand(4620, cesta, { windows }), statuslineCommand(4620, cesta, { windows })]) {
       assert.ok(!plain(c).includes(TOKEN) && !/X-Agenteeq-Token/i.test(plain(c)));
     }
   }
