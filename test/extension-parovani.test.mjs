@@ -184,3 +184,26 @@ test('pozadí rozšíření: souběžné pokusy o párování sdílejí jediný 
   assert.ok(results.every((v) => v.paired === true));
   assert.equal(calls, 1, 'simultaneous reconnect events must reuse one pairing request');
 });
+
+
+test('pozadí rozšíření: pozdní odpověď starého portu nesmí přepsat nové párování', async () => {
+  let dokoncitStare;
+  const staraOdpoved = new Promise((resolve) => { dokoncitStare = resolve; });
+  const r = spust(async (url, init) => {
+    if (url === '/api/extension/pripojit') {
+      if (r.volani.at(-1).plna.startsWith('http://127.0.0.1:5123/')) return staraOdpoved;
+      return { status: 200, body: { token: 'n'.repeat(43) } };
+    }
+    return { status: 200, body: {} };
+  }, { ulozeno: { port: 5123 } });
+  const puvodni = r.zprava({ type: 'agenteeq:hello' });
+  // Allow the first fetch to start before changing port.
+  for (let i = 0; i < 20 && r.volani.length === 0; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(r.volani.some((v) => v.plna.startsWith('http://127.0.0.1:5123/')));
+  r.zmenPort(6001);
+  const nove = await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(nove.paired, true);
+  dokoncitStare({ status: 200, body: { token: 'o'.repeat(43) } });
+  await puvodni;
+  assert.equal(r.local.token, 'n'.repeat(43), 'stale server response cannot overwrite current pairing');
+});
