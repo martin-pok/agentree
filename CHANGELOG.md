@@ -20,6 +20,7 @@
 - **Úryvky konverzací neopustí počítač.** Odpověď formuluje jen model z Ollamy na tomto počítači: adresa mimo počítač se odmítne (a Pomocník to řekne), cloudové a embeddingové modely se nepoužijí. Přednost má model načtený v paměti, jinak nejmenší nainstalovaný.
 - **Texty Pomocníka bez první osoby a mužského rodu**, např. „Možná hledáš některou z těchto voleb v aplikaci.“
 - **Agent, jehož proces skončil, už „nepracuje“.** Když se Claude Code nebo Codex CLI ukončí uprostřed práce (zavřený Terminál, kill, pád), konverzace dřív ukazovala „Pracuje“ až 30 minut. Teď ji Agenteeq podle výpisu procesů do pár vteřin přepne na „Čeká na zadání“ s důvodem „Agent skončil uprostřed práce“ – nikdy na „Hotovo“ a bez upozornění na dokončenou úlohu. Když se výpis procesů nepovede, když ve stejné složce běží jiný proces téhož nástroje nebo když u procesu nejde zjistit složku, nic se nemění.
+- **Rozšíření pro Chrome mluví o stavu agentů správnou češtinou i anglicky.** Místo „Na tvé rozhodnutí čeká agentů: 1“ píše okno rozšíření totéž co aplikace – „Potřebuje tě 1 agent“, „Selhali 2 agenti“, „Na limit narazil 1 agent“ – a v anglickém Chromu větu konečně ukáže anglicky („1 agent needs you“), ne česky.
 
 ## Web po vydání 0.46.0 – 2026-10-09
 

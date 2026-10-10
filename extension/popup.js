@@ -398,6 +398,22 @@ const TON_AGENTA = { working: 'work', needs_input: 'warn', failed: 'err', limite
 const STAV_AGENTA = { working: tr('Pracuje'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Narazil na limit') };
 let prehled = null;
 
+// Stav agentů z aplikace jednou větou. Skládá se tady z počtů, ať mluví jazykem okna (věta ze serveru
+// je česky); věty jsou stejné jako v boxu Stav agentů v aplikaci (public/js/stav-vety.js).
+function vetaZdravi(z) {
+  const tvar = (n, jeden, par, mnoho) => mnozne(n, jeden, par, mnoho).replace('{0}', n);
+  const selhalo = z.selhalo || 0;
+  const limit = z.limit || 0;
+  if (z.stav === 'problem') {
+    if (!limit) return tvar(selhalo, 'Selhal {0} agent', 'Selhali {0} agenti', 'Selhalo {0} agentů');
+    if (!selhalo) return tvar(limit, 'Na limit narazil {0} agent', 'Na limit narazili {0} agenti', 'Na limit narazilo {0} agentů');
+    return tvar(selhalo + limit, 'Problém má {0} agent', 'Problém mají {0} agenti', 'Problém má {0} agentů');
+  }
+  if (z.stav === 'pozor') return tvar(z.cekaNaTebe || 0, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů');
+  if (z.stav === 'nevim') return tr('Nepodařilo se zjistit, co na počítači běží');
+  return z.pracuje ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje');
+}
+
 async function nactiPrehled() {
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:prehled' }).catch(() => null);
   return r && r.zdravi ? r : null;
@@ -535,7 +551,7 @@ function hlavicka() {
   const vsech = pracuje + (prehled?.zdravi.pracuje || 0);
   const popis = vsech === 0 ? tr('agentů teď pracuje') : mnozne(vsech, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
   // Pod číslem stav agentů z aplikace; bez něj počet otevřených chatů v prohlížeči.
-  const sub = failed ? selhalo : prehled ? prehled.zdravi.veta : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  const sub = failed ? selhalo : prehled ? vetaZdravi(prehled.zdravi) : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
   if (prehled && !failed) $('sub').dataset.stav = prehled.zdravi.stav;
 }
