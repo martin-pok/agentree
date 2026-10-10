@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { planDmg, jmenoDmg, SVAZEK } from '../scripts/build-dmg.mjs';
+import { planDmg, jmenoDmg, SVAZEK, odpojSvazek, ODSTUPY_ODPOJENI } from '../scripts/build-dmg.mjs';
 
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -72,4 +72,21 @@ test('DMG: workflow Vydání ho sestaví po aplikaci, přiloží a zkopíruje po
   assert.match(yml, /return 1/, 'chybějící příloha zastaví vydání');
   assert.match(yml, /gh release create "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg/);
   assert.match(yml, /gh release upload "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg --clobber/);
+});
+
+test('DMG: zaneprázdněný svazek se odpojí na další pokus, -force až úplně nakonec', () => {
+  const zaneprazdneny = () => Object.assign(new Error('hdiutil: couldn\'t eject "disk7" - Resource busy'), { status: 16 });
+  const volani = [];
+  const pauzy = [];
+  let selhani = 2;
+  const pokusu = odpojSvazek('/t/mounted', { spust: (a) => { volani.push(a); if (selhani-- > 0) throw zaneprazdneny(); }, cekej: (ms) => pauzy.push(ms) });
+  assert.equal(pokusu, 3);
+  assert.deepEqual(volani, [['detach', '/t/mounted'], ['detach', '/t/mounted'], ['detach', '/t/mounted']], 'bez -force, dokud to jde jinak');
+  assert.deepEqual(pauzy, [1000, 2000]);
+
+  const vsechna = [];
+  assert.throws(() => odpojSvazek('/t/mounted', { spust: (a) => { vsechna.push(a); throw zaneprazdneny(); }, cekej: () => {} }), /Resource busy/);
+  assert.equal(vsechna.length, ODSTUPY_ODPOJENI.length);
+  assert.deepEqual(vsechna.at(-1), ['detach', '-force', '/t/mounted']);
+  assert.ok(vsechna.slice(0, -1).every((a) => !a.includes('-force')));
 });

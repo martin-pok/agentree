@@ -19,6 +19,7 @@
 - **Hledání nezdrží aplikaci a neříká nepravdu.** Celý dotaz má jeden časový rozpočet (dřív dostalo hledání mimo zadané období nový), přepisy se procházejí od nejnovějších a server mezitím odpovídá ostatním. Když se hledání nestihne dokončit, odpověď to řekne – nikdy netvrdí, že „v tom období nic není“. U velmi dlouhých konverzací se čte i konec, takže sedí, kdy konverzace naposledy pokračovala.
 - **Úryvky konverzací neopustí počítač.** Odpověď formuluje jen model z Ollamy na tomto počítači: adresa mimo počítač se odmítne (a Pomocník to řekne), cloudové a embeddingové modely se nepoužijí. Přednost má model načtený v paměti, jinak nejmenší nainstalovaný.
 - **Texty Pomocníka bez první osoby a mužského rodu**, např. „Možná hledáš některou z těchto voleb v aplikaci.“
+- **Sestavení instalátoru DMG nepadá na „Resource busy“.** Finder po rozložení okna drží svazek ještě chvíli otevřený; odpojení se teď zkusí znovu s rostoucím odstupem a vynucené odpojení přijde až v posledním pokusu.
 
 ## Web po vydání 0.46.0 – 2026-10-09
 
