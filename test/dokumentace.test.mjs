@@ -71,3 +71,11 @@ test('přeskočený test říká proč', async () => {
   assert.equal(sDuvodem('BEZ_PRAV || process.getuid?.() === 0', "const BEZ_PRAV = x && 'důvod';"), false);
   assert.equal(sDuvodem("process.platform !== 'win32' && 'jen Windows'", ''), true);
 });
+
+
+test('publikace nesmí vynechat ZIP Chrome extension stejné verze', async () => {
+  const workflow = await zdroj('.github/workflows/publish.yml');
+  assert.match(workflow, /const expectedExtension = `agenteeq-extension-\$\{process\.env\.TAG\.slice\(1\)\}\.zip`;/);
+  assert.match(workflow, /"Agenteeq-Windows-x64\.zip", expectedExtension\]/);
+  assert.match(workflow, /if \(!v\.assets\.some\(\(a\) => a\.name === stala\)\)/);
+});
