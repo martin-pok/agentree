@@ -23,6 +23,8 @@ export class Store extends EventEmitter {
     this.localAgentsJson = '[]';
     this.runtimes = [];
     this.runtimesJson = '';
+    // Propojení s Claude Code: { od, presne, start } nebo null (src/model.js#hookHealth).
+    this.hooky = null;
     this.ready = false;
   }
 
@@ -45,7 +47,7 @@ export class Store extends EventEmitter {
     const { entries, reset } = takeDirty(s);
     if (!this.sessions.has(s.id) || !s.lastAt) return;
     const prev = this.summaries.get(s.id);
-    const value = summarize(s, now, this.windowMs);
+    const value = summarize(s, now, this.windowMs, this.hooky);
     if (this.decorate) this.decorate(value);
     const json = JSON.stringify(value);
     if (!prev || prev.json !== json) {
@@ -55,6 +57,14 @@ export class Store extends EventEmitter {
     if (this.ready && (entries.length || reset)) {
       this.emit('transcript', { id: s.id, reset, entries: entries.map((e) => ({ ...e })) });
     }
+  }
+
+  // Zapnutí, vypnutí nebo nový čas propojení mění u konverzací Claude Code `hookHealth` hned,
+  // ne až s další změnou v přepisu.
+  setHooky(hooky) {
+    if (JSON.stringify(hooky) === JSON.stringify(this.hooky)) return;
+    this.hooky = hooky;
+    for (const s of this.sessions.values()) if (s.connector === 'claude-code') this.commit(s);
   }
 
   remove(id) {

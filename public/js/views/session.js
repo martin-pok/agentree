@@ -309,6 +309,22 @@ function renderTranscript(el, t) {
   v.syncHint?.();
 }
 
+// Konverzace Claude Code, ze které nepřišla žádná událost propojení, má stav jen z přepisu
+// (src/model.js#hookHealth). Věta řekne proč a nabídne jedinou akci, která to změní.
+function propojeniNote(s) {
+  const h = s.hookHealth;
+  if (h === 'silent') {
+    return `<div class="set-note set-note--warn hook-note"><span>${tr('Z této konverzace nepřišla žádná událost propojení, i když zadání přišlo po jeho zapnutí. Žádost o povolení se jen odhaduje z přepisu.')}</span><a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zkontrolovat propojení')}</a></div>`;
+  }
+  if (h !== 'before' && h !== 'unknown') return '';
+  const text = h === 'before'
+    ? tr('Konverzace začala před zapnutím propojení, žádost o povolení se proto jen odhaduje z přepisu. Přesný stav bude vidět po novém spuštění: ukonči Claude Code a pokračuj v konverzaci znovu.')
+    : tr('Z této konverzace zatím nepřišla žádná událost propojení, žádost o povolení se jen odhaduje z přepisu. Běží-li Claude Code od doby před zapnutím propojení, přesný stav bude vidět po novém spuštění.');
+  // Pokračování nabízí lišta akcí hned pod poznámkou („Pokračovat v Terminálu“ na macOS a kopírování
+  // příkazu všude) – druhé tlačítko v poznámce by dělalo totéž.
+  return `<div class="set-note hook-note"><span>${text}</span></div>`;
+}
+
 function update() {
   const el = v.el;
   if (!el) return;
@@ -338,6 +354,7 @@ function update() {
     <div class="session-kicker"><span class="icon-tile agent-robot-tile">${agentRobot(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
     <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    ${propojeniNote(s)}
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     ${akce ? `<div class="session-actions">${akce}</div>` : ''}`);
 

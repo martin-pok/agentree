@@ -2523,6 +2523,9 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .ext-reinstall summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 8px 0; }
 .ext-reinstall[open] summary { margin-bottom: 8px; }
 .set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
+/* Poznámka s akcí (detail konverzace: stav bez propojení s Claude Code). */
+.hook-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.hook-note > span { flex: 1 1 280px; min-width: 0; }
 
 /* ---------- Verze v postranním panelu = vstup do „Co je nového“ ---------- */
 .source-version { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; margin: 0; padding: 4px 0; border: 0; background: none; color: var(--mute); font: 400 12px/1.4 var(--f-mono); text-align: left; white-space: nowrap; cursor: pointer; }
