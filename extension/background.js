@@ -6,6 +6,7 @@ const VYCHOZI_PORT = 4620;
 const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
 let port = null;
 let pairingReset = Promise.resolve();
+let pairingGeneration = 0;
 async function zaklad() {
   if (port === null) {
     const ulozeny = await chrome.storage.local.get(['port']);
@@ -19,6 +20,7 @@ chrome.storage.onChanged?.addListener((zmeny, oblast) => {
   if (oblast !== 'local' || !('port' in zmeny)) return;
   port = null;
   token = null;
+  pairingGeneration++;
   posledniPokus = 0;
   // A port change can target a different local app instance. Never reuse its persisted token.
   pairingReset = pairingReset.then(async () => {
@@ -54,13 +56,15 @@ let posledniPokus = 0;
 let probihajiciParovani = null;
 async function pripojit({ hned = false } = {}) {
   await pairingReset;
-  if (probihajiciParovani) return probihajiciParovani;
+  if (probihajiciParovani && probihajiciParovani.generation === pairingGeneration) return probihajiciParovani.promise;
   if (!hned && Date.now() - posledniPokus < 20000) return false;
   posledniPokus = Date.now();
+  const generation = pairingGeneration;
   const pokus = (async () => {
   try {
     const res = await fetch(`${await zaklad()}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
     const body = await res.json().catch(() => ({}));
+    if (generation !== pairingGeneration) return false;
     if (!res.ok || typeof body.token !== 'string') {
       await chrome.storage.local.set({ parovani: res.status === 409 ? 'kod' : 'nedostupne' });
       return false;
@@ -69,12 +73,12 @@ async function pripojit({ hned = false } = {}) {
     await chrome.storage.local.set({ token, parovani: 'hotovo' });
     return true;
   } catch {
-    await chrome.storage.local.set({ parovani: 'nedostupne' });
+    if (generation === pairingGeneration) await chrome.storage.local.set({ parovani: 'nedostupne' });
     return false;
   }
   })();
-  probihajiciParovani = pokus;
-  try { return await pokus; } finally { if (probihajiciParovani === pokus) probihajiciParovani = null; }
+  probihajiciParovani = { promise: pokus, generation };
+  try { return await pokus; } finally { if (probihajiciParovani?.promise === pokus) probihajiciParovani = null; }
 }
 
 async function pair(code) {
