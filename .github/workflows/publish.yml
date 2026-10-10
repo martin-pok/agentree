@@ -7,7 +7,7 @@
 # textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
 # nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
 # přílohy se stálým jménem, na které vedou tlačítka ke stažení na webu (ZIP a DMG pro Mac,
-# ZIP pro Windows).
+# ZIP pro Windows a verzovaný ZIP rozšíření pro Chrome).
 name: Zveřejnit vydání
 
 on:
@@ -52,7 +52,8 @@ jobs:
           node -e '
             const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
             if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
-            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip"]) {
+            const expectedExtension = `agenteeq-extension-${process.env.TAG.slice(1)}.zip`;
+            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
               if (!v.assets.some((a) => a.name === stala)) {
                 console.log(`::error::Chybí příloha ${stala} – tlačítko ke stažení na webu by vedlo do prázdna.`);
                 process.exit(1);
