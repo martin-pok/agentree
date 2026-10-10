@@ -168,3 +168,19 @@ test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, 
   assert.ok(poZmene.every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), JSON.stringify(poZmene.map((v) => v.plna)));
   assert.ok(r.volani.filter((v) => v.url === '/api/extension/pripojit').length >= 2, 'změna portu musí vyvolat nové spárování');
 });
+
+
+test('pozadí rozšíření: souběžné pokusy o párování sdílejí jediný HTTP požadavek', async () => {
+  let calls = 0;
+  const r = spust(async (url) => {
+    if (url === '/api/extension/pripojit') {
+      calls++;
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      return { status: 200, body: { token: 'x'.repeat(43) } };
+    }
+    return { status: 200, body: {} };
+  });
+  const results = await Promise.all(Array.from({ length: 8 }, () => r.zprava({ type: 'agenteeq:hello' })));
+  assert.ok(results.every((v) => v.paired === true));
+  assert.equal(calls, 1, 'simultaneous reconnect events must reuse one pairing request');
+});
