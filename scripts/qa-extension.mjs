@@ -80,7 +80,7 @@ try {
           const [pracuje, otevreno] = { paired: [3, 1], outdated: [3, 1], overeni: [1, 2], 'overeni-chyby': [2, 2] }[state];
           assert.equal(await page.locator('#hero-num').textContent(), String(pracuje), `${state}: počet pracujících agentů`);
           assert.equal(await page.locator('#headline').textContent(), pracuje === 1 ? 'agent právě pracuje' : 'agenti právě pracují');
-          assert.equal(await page.locator('#sub').textContent(), ['paired', 'outdated'].includes(state) ? 'Na tvé rozhodnutí čeká agentů: 1' : otevreno === 1 ? '1 otevřená konverzace' : '2 otevřené konverzace');
+          assert.equal(await page.locator('#sub').textContent(), ['paired', 'outdated'].includes(state) ? 'Potřebuje tě 1 agent' : otevreno === 1 ? '1 otevřená konverzace' : '2 otevřené konverzace');
           // Odpovídající agent ukazuje, jak dlouho už odpovídá.
           assert.match(await page.locator('#konverzace').innerText(), /odpovídá · 0:4\d/);
         }
@@ -196,7 +196,10 @@ try {
             b: { site: 'claude', tab: 2, okno: 1, generating: false, konec: ted - 180000, at: ted },
             c: { site: 'codex-web', tab: 3, okno: 1, generating: false, limit: true, at: ted },
           } }), set: async () => {} } },
-          runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async () => ({ paired: sparovano, status: { expectedVersion: '0.13.0' } }) },
+          // Souhrn z aplikace nese českou větu (starší server); okno ji skládá samo v angličtině.
+          runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async (m) => (m?.type === 'agenteeq:prehled'
+            ? (state === 'paired' ? { zdravi: { stav: 'pozor', veta: 'Na tvé rozhodnutí čeká agentů: 1', pracuje: 0, cekaNaTebe: 1, selhalo: 0, limit: 0 }, rozhodnuti: [], pracuji: [] } : null)
+            : { paired: sparovano, status: { expectedVersion: '0.13.0' } }) },
           tabs: { query: async () => [{ id: 1 }], update: async () => {}, sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika'
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'obecne', zpravy: { user: 1, assistant: 2, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } } : null) },
         };
@@ -221,7 +224,7 @@ try {
       assert.ok(text.includes(ocekavane), `en ${state}: chybí „${ocekavane}“`);
       if (state === 'paired') {
         assert.match(text, /replying · 0:4\d/);
-        assert.match(text, /3 open conversations/);
+        assert.match(text, /1 agent needs you/);
         assert.match(text, /Codex on the web/);
         assert.match(text, /finished 3 min ago/);
       }
