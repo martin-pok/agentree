@@ -11,6 +11,15 @@
 | Prohlížeč | Nastavení → Claude se starým propojením (nová poznámka) v 1440 i 375 px, světlý i tmavý vzhled, česky i anglicky, konzole čistá; „Obnovit propojení“ zapíše příkazy bez tokenu |
 | Neověřeno | skutečné Claude Code na macOS s novým příkazem; skutečné `curl.exe` a PowerShell na Windows (nativní test `windows-regression` běží jen v CI na Windows) |
 
+## Protokol ověření – konec procesu uprostřed tahu (10. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 954 testů, 943 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal: „web nese verzi z package.json“ – sestavení webu stahuje písmo z `api.fontshare.com`, které vývojové prostředí nepustí |
+| `npm run check` | 306 souborů bez syntaktické chyby |
+| Nové testy | `konec-procesu` (11): konec do dvou výpisů s důvodem „Agent skončil uprostřed práce“, nepovedený výpis, dva procesy v jedné složce, proces bez složky, jeden výpadek výpisu, běh z Agenteeq, přednost přepisu, Codex CLI vs. aplikace, žádné upozornění „dokončil úlohu“, živý proces `claude` ukončený SIGKILL (Linux, `/proc`) |
+| Prohlížeč | ukázková data s konverzací po konci procesu: Přehled, Agenti a detail v 1440 i 375 px, světlý i tmavý vzhled – štítek „Čeká na zadání“ a věta „Agent skončil uprostřed práce“, konzole bez chyb, bez vodorovného posunu |
+| Neověřeno | skutečný Mac (složka procesu přes lsof) a skutečný Codex CLI |
 ## Protokol ověření – Nevydáno: pravdivé stavy, vizuální opravy, Pomocník, propojení hooků (9. 10. 2026, Linux, Node 22.22, Playwright Chromium)
 
 | Kontrola | Výsledek |
