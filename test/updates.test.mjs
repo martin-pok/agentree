@@ -56,6 +56,22 @@ test('aktualizace: stažení je lokální, atomické a nové ověření ho nema�
   assert.equal(path.dirname(service.downloadedPath()), path.join(dir, 'updates'));
 });
 
+test('aktualizace: chybějící Content-Length neodmítne balíček s platnou velikostí a SHA-256', async () => {
+  const dir = await tempDir('agenteeq-updates-chunked-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    // Real-world chunked download: no Content-Length header, still verify body and digest.
+    return new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new TextEncoder().encode('zip!')); controller.close(); },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  const result = await service.download();
+  assert.equal(result.ok, true);
+  assert.equal(await fs.readFile(result.update.downloaded.path, 'utf8'), 'zip!');
+});
+
 test('aktualizace: chyba zdroje ani poškozený balíček se nikdy nevydává za aktuální vydání', async () => {
   const unavailable = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-'), fetchImpl: async () => { throw new Error('offline'); }, platform: 'darwin', arch: 'arm64' });
   const failed = await unavailable.check();
