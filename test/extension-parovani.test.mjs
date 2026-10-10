@@ -158,7 +158,10 @@ test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, 
   assert.ok(spatny.volani.every((v) => v.plna.startsWith('http://127.0.0.1:4620/')), 'port pod 1024 se nepoužije');
   assert.equal(r.local.token, 'p'.repeat(43), 'old port has a stored token');
   r.zmenPort(6001);
-  assert.equal(r.local.token, undefined, 'port change clears persistent pairing, not only in-memory token');
+  // Real Chrome storage is asynchronous: hello immediately after a port change must not read the old token.
+  await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(r.local.token, 'p'.repeat(43), 'immediate reconnect receives a freshly paired token');
+  assert.ok(r.volani.slice(-2).every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), 'immediate reconnect targets the new port');
   r.posun(21e3);
   await r.zprava({ type: 'agenteeq:hello' });
   const poZmene = r.volani.slice(-2);
