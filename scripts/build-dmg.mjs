@@ -31,6 +31,28 @@ export const jmenoZip = (verze, arch = 'arm64') => `Agenteeq-${verze}-macOS-${ar
  * do řetězce, který by se rozebíral podruhé). Funkce nic nespouští, takže jde testovat kdekoli.
  */
 
+// Finder po rozložení okna (osascript) drží svazek ještě chvíli otevřený a hdiutil detach hlásí
+// „Resource busy“ (viděno na runneru s macOS). První pokus přitom svazek často odpojí, jen disk
+// nevysune – přípojný bod pak už neexistuje a další pokus s ním skončí „No such file“. Proto se
+// odpojuje zařízení (/dev/diskN z výpisu attach), opakovaně s rostoucím odstupem, a -force přijde
+// až v posledním pokusu, kdy už Finder měl čas zapsat .DS_Store s rozložením.
+export const ODSTUPY_ODPOJENI = [0, 1000, 2000, 4000, 8000];
+
+/** Zařízení připojeného obrazu z výpisu `hdiutil attach` (první řádek „/dev/diskN …“), jinak ''. */
+export const zarizeniZVypisu = (vypis) => String(vypis).match(/^(\/dev\/disk\d+)\s/m)?.[1] || '';
+
+/** Odpojí svazek; `spust(argv)` a `cekej(ms)` se předávají, ať jde pořadí pokusů ověřit testem. */
+export function odpojSvazek(cil, { spust, cekej }) {
+  let chyba;
+  for (const [i, odstup] of ODSTUPY_ODPOJENI.entries()) {
+    if (odstup) cekej(odstup);
+    const posledni = i === ODSTUPY_ODPOJENI.length - 1;
+    try { spust(['detach', ...(posledni ? ['-force'] : []), cil]); return i + 1; }
+    catch (error) { chyba = error; }
+  }
+  throw chyba;
+}
+
 export function planDmg({ verze, arch = 'arm64', dist, docasna, identita = '-', notarProfil = '' }) {
   const zip = path.posix.join(dist, jmenoZip(verze, arch));
   const dmg = path.posix.join(dist, jmenoDmg(verze, arch));
@@ -99,13 +121,23 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     identita:process.env.AGENTEEQ_SIGN_IDENTITY || '-',
     notarProfil:process.env.AGENTEEQ_NOTARY_PROFILE || ''});
   let mounted = false;
+  let zarizeni = '';
   try {
     await fs.access(plan.zip).catch(() => {throw new Error('Chybí hotový ZIP. Nejdřív spusť npm run build:mac.');});
     await fs.mkdir(path.dirname(plan.art), {recursive:true});
     await fs.mkdir(plan.obsah, {recursive:true});
     await fs.mkdir(plan.mounted, {recursive:true});
     for(const [command,args] of plan.kroky) {
-      try {execFileSync(command,args,{cwd:root,stdio:'inherit',timeout:180000});}
+      const spust=(argv)=>execFileSync(command,argv,{cwd:root,stdio:'inherit',timeout:180000});
+      const cekej=(ms)=>Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms);
+      try {
+        if(command==='hdiutil' && args[0]==='detach') odpojSvazek(zarizeni || args.at(-1),{spust,cekej});
+        else if(command==='hdiutil' && args[0]==='attach') {
+          const vypis=execFileSync(command,args,{cwd:root,stdio:['ignore','pipe','inherit'],timeout:180000});
+          process.stdout.write(vypis);
+          zarizeni=zarizeniZVypisu(vypis);
+        } else spust(args);
+      }
       catch(error){throw new Error(`Krok DMG selhal: ${command} ${args[0]} (${error.message})`);}
       if(command==='hdiutil' && args[0]==='attach') mounted=true;
       if(command==='hdiutil' && args[0]==='detach') mounted=false;
@@ -119,7 +151,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(`Hotovo: ${path.relative(root,plan.dmg)} (${(size/1048576).toFixed(1)} MB)`);
   } catch(error){console.error(error.message);process.exitCode=1;}
   finally {
-    if(mounted)try{execFileSync('hdiutil',['detach','-force',plan.mounted],{stdio:'ignore'});}catch{}
+    if(mounted)try{execFileSync('hdiutil',['detach','-force',zarizeni || plan.mounted],{stdio:'ignore'});}catch{}
     await fs.rm(docasna,{recursive:true,force:true});
   }
 }

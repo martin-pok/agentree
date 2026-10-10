@@ -1,5 +1,14 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: odpojení disku při sestavení DMG (10. 10. 2026, Linux, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 947 testů, 936 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 304 souborů bez syntaktické chyby |
+| Nové testy | `dmg`: zařízení z výpisu `hdiutil attach` (skutečný výpis z runneru), opakované odpojení bez `-force` a `-force` až v posledním pokusu |
+| Neověřeno | skutečné sestavení obrazu – jen na runneru s macOS (job „aplikace pro Mac“) |
+
 ## Protokol ověření – 0.38.2, zpětné odečty Claude a opravy UI (7. 10. 2026, macOS, Node 24.18)
 
 | Kontrola | Výsledek |
