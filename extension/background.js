@@ -19,6 +19,9 @@ chrome.storage.onChanged?.addListener((zmeny, oblast) => {
   port = null;
   token = null;
   posledniPokus = 0;
+  // A port change can target a different local app instance. Never reuse its persisted token.
+  void chrome.storage.local.remove('token');
+  void chrome.storage.local.set({ parovani: 'nedostupne' });
 });
 let token = null;
 
