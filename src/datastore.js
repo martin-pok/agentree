@@ -179,6 +179,9 @@ function normalizeDataInner(raw) {
     // Každá instalace rozšíření má vlastní token vázaný na svůj původ (chrome-extension://…).
     // Na disku je jen jeho sha256 – ze zálohy dat se za rozšíření vydávat nedá.
     extensionInstallations: normalizeExtensionInstallations(d.extensionInstallations),
+    // Od kdy je zapnuté propojení s Claude Code (src/app.js#claudeHooks). `presne: false` = zapnuté
+    // ručně nebo starší verzí Agenteeq; `od` je pak chvíle, kdy ho Agenteeq poprvé viděl.
+    claudeHooks: Number(d.claudeHooks?.od) > 0 ? { od: Number(d.claudeHooks.od), presne: d.claudeHooks.presne === true } : null,
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

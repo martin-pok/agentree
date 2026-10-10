@@ -1063,9 +1063,32 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
   }
 
+  // Propojení s Claude Code a od kdy platí. Čas zapnutí zapisuje instalace z Agenteeq
+  // (zaznamenejHooky); propojení zapnuté jinak dostane čas, kdy ho Agenteeq poprvé viděl, a příznak,
+  // že přesný čas neznáme. Nepřečtený settings.json nic nemění – „nevím“ není „vypnuto“.
+  const spusteno = Date.now();
+  async function claudeHooks() {
+    const h = await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken);
+    if (!h.error) {
+      const zaznam = datastore.data.claudeHooks;
+      if (h.installed && !zaznam) datastore.data.claudeHooks = { od: Date.now(), presne: false };
+      else if (!h.installed && !h.partial && zaznam) datastore.data.claudeHooks = null;
+      if (zaznam !== datastore.data.claudeHooks) datastore.save();
+      const z = datastore.data.claudeHooks;
+      store.setHooky(h.installed && z ? { od: z.od, presne: z.presne, start: spusteno } : null);
+    }
+    const z = datastore.data.claudeHooks;
+    return { ...h, since: z?.od || null, sinceExact: Boolean(z?.presne) };
+  }
+
+  function zaznamenejHooky(zapnuto, now = Date.now()) {
+    datastore.data.claudeHooks = zapnuto ? { od: now, presne: true } : null;
+    datastore.save();
+  }
+
   async function integrations() {
     return {
-      claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
+      claudeHooks: await claudeHooks(),
       claudeAuth,
       extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), port: config.port, ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
@@ -1516,6 +1539,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await Promise.all([whoami, launchReady]);
+    let hookyJson = JSON.stringify(await claudeHooks().catch(() => null));
     store.reevaluate();
     store.ready = true;
     historie.aktualizuj(store.list());
@@ -1548,6 +1572,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       timers.push(t);
     };
     every(() => store.reevaluate(), 5000);
+    // settings.json může přepsat jiný nástroj nebo ho uživatel upraví ručně. Změna propojení se
+    // tak v Nastavení i u konverzací ukáže do 30 s, ne až po dalším načtení stránky.
+    every(async () => {
+      const json = JSON.stringify(await claudeHooks());
+      if (json === hookyJson) return;
+      hookyJson = json;
+      store.emit('integrations', await integrations());
+    }, 30000);
     // Historie Statistik: den se mění pomalu, souhrn za posledních 28 dní stačí přepočítat jednou za pár minut.
     every(() => historie.aktualizuj(store.list()), 5 * 60e3);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
@@ -1608,7 +1640,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

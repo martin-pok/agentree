@@ -9,7 +9,7 @@ import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { CAS_TICHA } from './nocni-ticho.js';
 import { remoteScope, JEN_NA_HOSTITELI_UDALOSTI } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
-import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
+import { claudeSettingsPath, installHooks, uninstallHooks } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
@@ -744,16 +744,18 @@ export function createHttpServer(app, existingServer = null) {
       if (body.updateMode === 'automatic') app.checkForUpdates().catch(() => {});
       return { settings: datastore.data.settings };
     }],
-    ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall)$/, async (_req, m) => {
+    // `check` nic nezapisuje: znovu přečte settings.json, ať je vidět, jestli propojení pořád platí.
+    ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall|check)$/, async (_req, m) => {
       const file = claudeSettingsPath(config.sourceHome);
       try {
         if (m[1] === 'install') await installHooks(file, { port: port(), token: datastore.data.ingestToken });
-        else await uninstallHooks(file);
+        else if (m[1] === 'uninstall') await uninstallHooks(file);
       } catch (err) {
         throw new HttpError(err.code === 'INVALID_SETTINGS' ? 422 : 500, err.message);
       }
-      await refreshIntegrations();
-      return { claudeHooks: await hooksStatus(file, datastore.data.ingestToken) };
+      // Čas zapnutí: konverzace Claude Code spuštěné dřív hooky nenačetly (src/model.js#hookHealth).
+      if (m[1] !== 'check') app.zaznamenejHooky(m[1] === 'install');
+      return { claudeHooks: (await refreshIntegrations()).claudeHooks };
     }],
     ['PUT', /^\/api\/secrets\/([\w-]+)$/, async (req, m) => {
       // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
