@@ -51,10 +51,13 @@ async function installationId() {
 // Zkouší se po instalaci, po startu Chromu, při otevření okna a před odesláním – nejvýš jednou
 // za 20 s, ať se neptá pořád dokola, když aplikace neběží. Vrací, jestli je spárováno.
 let posledniPokus = 0;
+let probihajiciParovani = null;
 async function pripojit({ hned = false } = {}) {
   await pairingReset;
+  if (probihajiciParovani) return probihajiciParovani;
   if (!hned && Date.now() - posledniPokus < 20000) return false;
   posledniPokus = Date.now();
+  const pokus = (async () => {
   try {
     const res = await fetch(`${await zaklad()}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
     const body = await res.json().catch(() => ({}));
@@ -69,6 +72,9 @@ async function pripojit({ hned = false } = {}) {
     await chrome.storage.local.set({ parovani: 'nedostupne' });
     return false;
   }
+  })();
+  probihajiciParovani = pokus;
+  try { return await pokus; } finally { if (probihajiciParovani === pokus) probihajiciParovani = null; }
 }
 
 async function pair(code) {
