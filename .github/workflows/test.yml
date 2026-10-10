@@ -187,6 +187,15 @@ jobs:
         run: node branding/chrome-web-store/snimky.mjs
       - name: Ověřit úplnost exportů Chrome Web Store
         run: node --test test/chrome-web-store.test.mjs test/brand-robot.test.mjs
+      - name: Sestavit instalační ZIP rozšíření pro Chrome Web Store
+        run: npm run build:extension
+      - name: Uložit ZIP připravený k nahrání do Chrome Web Store
+        uses: actions/upload-artifact@v6
+        with:
+          name: agenteeq-extension-store-upload
+          path: dist/agenteeq-extension-*.zip
+          if-no-files-found: error
+          retention-days: 14
       - name: Uložit skutečné snímky pro Chrome Web Store
         uses: actions/upload-artifact@v6
         if: always()
