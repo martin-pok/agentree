@@ -223,9 +223,10 @@ test('web nese verzi z package.json, ne opsanou z minula', async () => {
   assert.throws(() => verzeVDatechStranky('<html></html>', '1.0.0'), /softwareVersion/, 'bez pole se nesmí mlčky vrátit stará verze');
   const fsp = await import('node:fs/promises');
   const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  const { execFileSync } = await import('node:child_process');
-  const { fileURLToPath } = await import('node:url');
-  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'ignore' });
+  // Test the actual site output without forcing an unrelated font download.
+  // Production CLI still downloads and verifies the official Satoshi font.
+  const { buildSite } = await import('../scripts/build-site.mjs');
+  await buildSite();
   const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
   assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
 });
