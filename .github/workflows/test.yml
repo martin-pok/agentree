@@ -153,6 +153,31 @@ jobs:
       - run: npm run qa:desktop
       - run: npm run qa:site
       - run: npm run qa:extension
+      - run: npm run qa:contrast
+      - run: npm run qa:tvary
+      - run: npm run qa:studio
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: browser-qa
+          path: |
+            dist/qa/
+            dist/qa-site/
+            dist/qa-extension/
+          retention-days: 14
+
+  chrome-store:
+    name: Chrome Web Store branding a screenshoty
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
       # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
       # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
       - name: Renderovat aktuální Chrome Web Store branding
@@ -181,16 +206,4 @@ jobs:
             branding/chrome-web-store/export/promo-small-440x280.png
             branding/chrome-web-store/export/marquee-1400x560.png
             extension/icons/icon-*.png
-          retention-days: 14
-      - run: npm run qa:contrast
-      - run: npm run qa:tvary
-      - run: npm run qa:studio
-      - uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: browser-qa
-          path: |
-            dist/qa/
-            dist/qa-site/
-            dist/qa-extension/
           retention-days: 14
