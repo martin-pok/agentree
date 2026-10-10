@@ -8,12 +8,12 @@
 
 ## Instalace
 
-**[Stáhnout pro Mac](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip)** · **[Stáhnout pro Windows (beta)](https://github.com/martin-pok/agentree/releases/latest)** · [postup na webu](https://agentree-fawn.vercel.app/instalace)
+**[Stáhnout pro Mac (DMG)](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.dmg)** · **[Stáhnout pro Windows (beta)](https://github.com/martin-pok/agentree/releases/latest)** · [postup na webu](https://agentree-fawn.vercel.app/instalace)
 
 Mac (Apple Silicon, M1 a novější, macOS 14+; Mac s procesorem Intel nepodporujeme), bez Terminálu:
 
-1. Stáhni a rozbal ZIP.
-2. Přetáhni Agenteeq do složky Aplikace.
+1. Stáhni a otevři obraz disku DMG.
+2. V okně instalátoru přetáhni Agenteeq do složky Aplikace.
 3. Otevři Agenteeq. macOS ohlásí, že aplikaci nemůže ověřit – dialog zavři.
 4. Nastavení systému → Soukromí a zabezpečení → v části Zabezpečení klikni na **Přesto otevřít** a potvrď heslem. Příště se Agenteeq otevře dvojklikem.
 
