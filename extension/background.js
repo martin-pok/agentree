@@ -5,6 +5,7 @@ const HOST = 'http://127.0.0.1';
 const VYCHOZI_PORT = 4620;
 const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
 let port = null;
+let pairingReset = Promise.resolve();
 async function zaklad() {
   if (port === null) {
     const ulozeny = await chrome.storage.local.get(['port']);
@@ -20,12 +21,15 @@ chrome.storage.onChanged?.addListener((zmeny, oblast) => {
   token = null;
   posledniPokus = 0;
   // A port change can target a different local app instance. Never reuse its persisted token.
-  void chrome.storage.local.remove('token');
-  void chrome.storage.local.set({ parovani: 'nedostupne' });
+  pairingReset = pairingReset.then(async () => {
+    await chrome.storage.local.remove('token');
+    await chrome.storage.local.set({ parovani: 'nedostupne' });
+  });
 });
 let token = null;
 
 async function getToken() {
+  await pairingReset;
   if (token) return token;
   const stored = await chrome.storage.local.get(['token']);
   if (stored.token) return (token = stored.token);
@@ -48,6 +52,7 @@ async function installationId() {
 // za 20 s, ať se neptá pořád dokola, když aplikace neběží. Vrací, jestli je spárováno.
 let posledniPokus = 0;
 async function pripojit({ hned = false } = {}) {
+  await pairingReset;
   if (!hned && Date.now() - posledniPokus < 20000) return false;
   posledniPokus = Date.now();
   try {
@@ -157,6 +162,7 @@ async function takeHandoff(site) {
 
 // Souhrn agentů pro okno rozšíření. Bez tokenu nebo při chybě vrátí null – okno pak sekci skryje.
 async function prehled() {
+  await pairingReset;
   const t = token || (await chrome.storage.local.get(['token'])).token;
   if (!t) return null;
   try {
@@ -170,6 +176,7 @@ async function prehled() {
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
 async function hello({ hned = false, znovu = false } = {}) {
+  await pairingReset;
   let t = token || (await chrome.storage.local.get(['token'])).token;
   if (!t && (await pripojit({ hned }))) t = token;
   if (!t) return { paired: false, parovani: (await chrome.storage.local.get(['parovani'])).parovani || 'nedostupne' };
