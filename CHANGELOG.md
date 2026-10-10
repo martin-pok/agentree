@@ -21,7 +21,7 @@
 - **Texty Pomocníka bez první osoby a mužského rodu**, např. „Možná hledáš některou z těchto voleb v aplikaci.“
 - **Pravdivé propojení s Claude Code.** Claude Code načítá propojení (hooky) jen při startu, takže konverzace, které běžely už před jeho zapnutím, žádnou událost nepošlou a jejich „čeká na tvé povolení“ zůstává odhadem z přepisu. Detail takové konverzace to teď řekne a nabídne pokračování v Terminálu (nebo zkopírování příkazu); přesný stav naskočí po novém spuštění Claude Code. Aplikace si pamatuje, kdy se propojení zapnulo – u propojení zapnutého ručně nebo starší verzí to poctivě neví a netvrdí „před zapnutím“.
 - **Poznáš, když propojení nefunguje.** Když v konverzaci začaté po zapnutí propojení přijde zadání, ale z Claude Code žádná událost (jiný port, změněný klíč, nastavení přepsané jiným nástrojem, jiná složka nastavení `CLAUDE_CONFIG_DIR`), detail konverzace odkáže do Nastavení a karta Claude ukáže varování s „Zkontrolovat znovu“ a „Přeinstalovat propojení“. Karta zároveň ukazuje, kolik aktivních konverzací je propojených a kolik ne a proč. Nastavení Claude Code se kontroluje každých 30 s, takže vypnuté nebo přepsané propojení je vidět bez obnovení stránky.
-- **Sestavení instalátoru DMG nepadá na „Resource busy“.** Finder po rozložení okna drží svazek ještě chvíli otevřený; odpojení se teď zkusí znovu s rostoucím odstupem a vynucené odpojení přijde až v posledním pokusu.
+- **Sestavení instalátoru DMG nepadá na „Resource busy“.** Finder po rozložení okna drží svazek ještě chvíli otevřený; odpojuje se teď zařízení disku (ne přípojný bod, který po prvním pokusu může zmizet), znovu s rostoucím odstupem, a vynucené odpojení přijde až v posledním pokusu.
 
 ## Web po vydání 0.46.0 – 2026-10-09
 

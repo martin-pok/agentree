@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { planDmg, jmenoDmg, SVAZEK, odpojSvazek, ODSTUPY_ODPOJENI } from '../scripts/build-dmg.mjs';
+import { planDmg, jmenoDmg, SVAZEK, odpojSvazek, ODSTUPY_ODPOJENI, zarizeniZVypisu } from '../scripts/build-dmg.mjs';
 
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -74,19 +74,28 @@ test('DMG: workflow Vydání ho sestaví po aplikaci, přiloží a zkopíruje po
   assert.match(yml, /gh release upload "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg --clobber/);
 });
 
+test('DMG: odpojuje se zařízení z výpisu attach – přípojný bod po prvním pokusu může zmizet', () => {
+  // Skutečný výpis z runneru: první pokus svazek odpojil, disk ale nevysunul („Resource busy“).
+  const vypis = '/dev/disk7          \tGUID_partition_scheme          \t\n/dev/disk7s1        \tApple_HFS                      \t/private/tmp/agenteeq-dmg-dFybqq/mounted\n';
+  assert.equal(zarizeniZVypisu(vypis), '/dev/disk7');
+  assert.equal(zarizeniZVypisu(''), '');
+  const skript = fs.readFile(new URL('../scripts/build-dmg.mjs', import.meta.url), 'utf8');
+  return skript.then((t) => assert.match(t, /odpojSvazek\(zarizeni \|\| args\.at\(-1\)/, 'detach míří na zařízení, přípojný bod je jen záloha'));
+});
+
 test('DMG: zaneprázdněný svazek se odpojí na další pokus, -force až úplně nakonec', () => {
   const zaneprazdneny = () => Object.assign(new Error('hdiutil: couldn\'t eject "disk7" - Resource busy'), { status: 16 });
   const volani = [];
   const pauzy = [];
   let selhani = 2;
-  const pokusu = odpojSvazek('/t/mounted', { spust: (a) => { volani.push(a); if (selhani-- > 0) throw zaneprazdneny(); }, cekej: (ms) => pauzy.push(ms) });
+  const pokusu = odpojSvazek('/dev/disk7', { spust: (a) => { volani.push(a); if (selhani-- > 0) throw zaneprazdneny(); }, cekej: (ms) => pauzy.push(ms) });
   assert.equal(pokusu, 3);
-  assert.deepEqual(volani, [['detach', '/t/mounted'], ['detach', '/t/mounted'], ['detach', '/t/mounted']], 'bez -force, dokud to jde jinak');
+  assert.deepEqual(volani, [['detach', '/dev/disk7'], ['detach', '/dev/disk7'], ['detach', '/dev/disk7']], 'bez -force, dokud to jde jinak');
   assert.deepEqual(pauzy, [1000, 2000]);
 
   const vsechna = [];
-  assert.throws(() => odpojSvazek('/t/mounted', { spust: (a) => { vsechna.push(a); throw zaneprazdneny(); }, cekej: () => {} }), /Resource busy/);
+  assert.throws(() => odpojSvazek('/dev/disk7', { spust: (a) => { vsechna.push(a); throw zaneprazdneny(); }, cekej: () => {} }), /Resource busy/);
   assert.equal(vsechna.length, ODSTUPY_ODPOJENI.length);
-  assert.deepEqual(vsechna.at(-1), ['detach', '-force', '/t/mounted']);
+  assert.deepEqual(vsechna.at(-1), ['detach', '-force', '/dev/disk7']);
   assert.ok(vsechna.slice(0, -1).every((a) => !a.includes('-force')));
 });
