@@ -134,6 +134,8 @@ test('nová konverzace v prohlížeči: po přidělení ID zůstane jeden zázna
 // ── Selhání výpisu procesů ≠ nic neběží ─────────────────────────────────────
 
 test('selhání výpisu procesů: stav zdroje hned hlásí chybu, běžící agenti nezmizí', async (t) => {
+  // Windows runner can schedule subprocess polling and SSE more slowly under concurrent test load.
+  const limit = process.platform === 'win32' ? 6000 : 3000;
   const vypis = { ok: true, radky: [
     '9100001 1 05:00 0.1 100 /Applications/Cursor.app/Contents/MacOS/Cursor',
     '9100002 1 05:00 0.1 100 /usr/local/bin/claude',
@@ -145,16 +147,16 @@ test('selhání výpisu procesů: stav zdroje hned hlásí chybu, běžící age
   try {
     const a = api(srv.url);
     const stav = async () => (await a.get('/api/state')).body;
-    await waitFor(async () => (await stav()).sessions.some((s) => s.id === 'claude-code:proces-9100002'), 3000);
+    await waitFor(async () => (await stav()).sessions.some((s) => s.id === 'claude-code:proces-9100002'), limit);
     assert.equal((await stav()).connectors.find((c) => c.id === 'processes').state, 'connected');
 
     const t0 = Date.now();
     vypis.ok = false;
-    const udalost = await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t0 && e.data.find((c) => c.id === 'processes')?.state === 'error'), 2000);
+    const udalost = await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t0 && e.data.find((c) => c.id === 'processes')?.state === 'error'), limit);
     const procesy = udalost.data.find((c) => c.id === 'processes');
     assert.match(procesy.detail, /nepodařilo zjistit/);
     // Ani lokální agenti (jinak průchod po 10 s) nehlásí „nic neběží“ – přepočtou se hned.
-    await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t0 && e.data.find((c) => c.id === 'local-agents')?.state === 'error'), 2000);
+    await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t0 && e.data.find((c) => c.id === 'local-agents')?.state === 'error'), limit);
     // Poslední známý stav zůstává – selhání není „nic neběží“.
     const s = await stav();
     assert.equal(s.runtimes.find((r) => r.id === 'cursor').running, true);
@@ -164,8 +166,8 @@ test('selhání výpisu procesů: stav zdroje hned hlásí chybu, běžící age
     const t1 = Date.now();
     vypis.ok = true;
     vypis.radky = [vypis.radky[0]];
-    await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t1 && e.data.find((c) => c.id === 'processes')?.state === 'connected'), 2000);
-    await waitFor(async () => !(await stav()).sessions.some((x) => x.id === 'claude-code:proces-9100002'), 2000);
+    await waitFor(() => stream.events.find((e) => e.event === 'connectors' && e.at > t1 && e.data.find((c) => c.id === 'processes')?.state === 'connected'), limit);
+    await waitFor(async () => !(await stav()).sessions.some((x) => x.id === 'claude-code:proces-9100002'), limit);
   } finally {
     stream.close();
     await srv.close();
