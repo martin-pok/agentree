@@ -301,3 +301,21 @@ test('Vlastní agenti přes API: cizí adresa neprojde, zápis chce hlavičku a 
   const stav = await api(s.url).get('/api/state');
   assert.equal(Array.isArray(stav.body.customAgents), true, 'vlastní agenti jsou součástí stavu');
 });
+
+
+test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE_WINDOWS }, async () => {
+  const dir = await tempDir('agenteeq-static-secret-');
+  const secret = path.join(dir, 'private.txt');
+  await fs.writeFile(secret, 'PRIVATE_TEST_SECRET_DO_NOT_SERVE');
+  const link = new URL('../public/.qa-static-escape.txt', import.meta.url);
+  await fs.symlink(secret, link);
+  const server = await startTestServer({ AGENTEEQ_CLOUD: '0' });
+  try {
+    const response = await raw(`${server.url}/.qa-static-escape.txt`);
+    assert.equal(response.status, 403);
+    assert.doesNotMatch(response.body, /PRIVATE_TEST_SECRET_DO_NOT_SERVE/);
+  } finally {
+    await server.close();
+    await fs.rm(link, { force: true });
+  }
+});
