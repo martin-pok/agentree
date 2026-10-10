@@ -520,6 +520,7 @@ export default {
   "Nejspíš čeká na tvé povolení: {0}": "Most likely waiting for your permission: {0}",
   "Konverzace ukončena": "Conversation ended",
   "Delší dobu bez aktivity": "No activity for a while",
+  "Agent skončil uprostřed práce": "The agent stopped mid-task",
   "Hotovo, čeká na další zadání": "Done, waiting for the next prompt",
   "Zatím bez odpovědi agenta": "No reply from the agent yet",
   "Plánovaná úloha · {0}": "Scheduled task · {0}",

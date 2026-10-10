@@ -35,10 +35,11 @@ const STAV = {
     tr('Mám volné ruce. Zadej další úkol.'),
     tr('Připraven. Stačí říct.'),
   ],
-  // Čeká, ale nedoběhl: tah jen vypršel, nebo agent na zadání zatím neodpověděl (s.done z modelu).
+  // Čeká, ale nedoběhl: tah vypršel, proces agenta skončil uprostřed práce, nebo agent na zadání
+  // zatím neodpověděl (s.done z modelu).
   // „Hotovo“ by tu byla nepravda, proto věta jen o tom, co je opravdu vidět.
   ticho: () => [
-    tr('Dlouho se tu nic neděje. Mrkni do detailu.'),
+    tr('Práce se tu zastavila. Mrkni do detailu.'),
     tr('Konec práce tu nezazněl. Detail ukáže, kde to stojí.'),
   ],
   idle: () => [
