@@ -126,6 +126,10 @@ test('0.46.1 preview resumes failed builds without republishing existing release
     'inspect both release draft status and assets before deciding to skip');
   assert.match(start, /agenteeq-extension-0\.46\.1\.zip/,
     'extension artifact is mandatory for a complete draft');
+  assert.match(start, /Existing complete draft may have missed publication; resuming gated release workflow/,
+    'complete but unpublished draft must also retry to trigger publication');
+  assert.doesNotMatch(start, /Existing draft has all release assets; awaiting publication/,
+    'complete draft must not stall without a successful release event');
   assert.match(start, /Release draft missing assets; retrying the artifact build/,
     'incomplete draft must be recoverable');
   assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO"/,
