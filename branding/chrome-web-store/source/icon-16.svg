@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 128 128" fill="none">
-  <!-- Agenteeq robot mark — same character as the desktop and landing page; no legacy tree/trident. -->
-  <rect x="0" y="0" width="128" height="128" rx="30" fill="#191622"/>
-  <path d="M64 35V50" stroke="#FAF9FF" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="64" cy="33" r="6" fill="#FAF9FF"/>
-  <rect x="29" y="49" width="70" height="54" rx="21" fill="#FAF9FF"/>
-  <rect x="47" y="67" width="9" height="20" rx="4.5" fill="#191622"/>
-  <rect x="72" y="67" width="9" height="20" rx="4.5" fill="#191622"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 48 48" fill="none">
+  <!-- Full-bleed canonical robot for the smallest browser toolbar size. -->
+  <rect width="48" height="48" rx="13" fill="#17171D"/>
+  <path d="M24 9V17" stroke="#FAFAFA" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="24" cy="9" r="2.8" fill="#FAFAFA"/>
+  <rect x="9" y="16.5" width="30" height="24" rx="9.5" fill="#FAFAFA"/>
+  <rect x="17" y="24" width="4" height="8" rx="2" fill="#17171D"/>
+  <rect x="27" y="24" width="4" height="8" rx="2" fill="#17171D"/>
 </svg>

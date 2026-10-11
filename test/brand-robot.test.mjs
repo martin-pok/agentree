@@ -7,17 +7,22 @@ const read = (p) => fs.readFile(new URL('../' + p, import.meta.url), 'utf8');
 test('brand: extension and Chrome Store logo is the two-tone robot, no legacy trident', async () => {
   for (const p of ['branding/chrome-web-store/source/icon.svg', 'branding/chrome-web-store/source/icon-16.svg']) {
     const svg = await read(p);
-    assert.match(svg, /<rect[^>]+rx=/, p + ': robot head');
-    assert.match(svg, /<circle[^>]+fill="#FAF9FF"/, p + ': white antenna tip');
-    assert.match(svg, /stroke="#FAF9FF"/, p + ': white antenna stem');
+    assert.match(svg, /<rect x="9" y="16\.5" width="30" height="24" rx="9\.5"/, p + ': canonical robot head');
+    assert.match(svg, /<circle cx="24" cy="9" r="2\.8" fill="#FAFAFA"/, p + ': white antenna tip');
+    assert.match(svg, /stroke="#FAFAFA"/, p + ': white antenna stem');
     assert.doesNotMatch(svg, /#9C8CFF|#C99A3E|M64 50V82|M8 6\.5V11\.5/, p + ': legacy accent or trident');
   }
   const popup = await read('extension/popup.html');
-  assert.match(popup, /\.robo \.ant \{ stroke: #FAFAFA; \}/);
-  assert.match(popup, /\.robo \.ant-svetlo \{ fill: #FAFAFA; \}/);
+  assert.match(popup, /<img src="icons\/brand\.svg" width="22" height="22" alt="">/);
+  assert.equal(await read('extension/icons/brand.svg'), await read('public/brand/agenteeq-mark.svg'),
+    'popup mark stays byte-identical to the product brand');
+  const popupScript = await read('extension/popup.js');
+  assert.match(popupScript, /<rect class="hlava" x="9" y="16\.5" width="30" height="24" rx="9\.5"/,
+    'state robots in the popup use the same head proportions');
+  assert.doesNotMatch(popupScript, /<rect class="hlava" x="5" y="12" width="38" height="31"/);
   for (const p of ['branding/chrome-web-store/source/promo-small.html', 'branding/chrome-web-store/source/marquee.html']) {
     const html = await read(p);
-    assert.match(html, /stroke="#FAF9FF"/);
+    assert.match(html, /public\/brand\/agenteeq-mark\.svg/, p + ': canonical brand mark');
     assert.doesNotMatch(html, /#9C8CFF|M700 236V410|M220 124V190/, p);
   }
 });
@@ -34,6 +39,16 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
   assert.ok(nativeIcon.indexOf('white.setStroke()') < nativeIcon.indexOf('stem.stroke()'), 'macOS app icon draws the antenna after selecting white');
   assert.match(nativeIcon, /white\.setFill\(\)/, 'macOS app icon draws white head and antenna tip');
   assert.doesNotMatch(nativeIcon, /#(?:9C8CFF|5254D8|6260D8)/i, 'no purple antenna in native icon generator');
+
+  const mark = await read('public/brand/agenteeq-mark.svg');
+  const menuIcon = await read('desktop/Agenteeq.swift');
+  assert.match(mark, /<rect x="9" y="16\.5" width="30" height="24" rx="9\.5"/);
+  assert.match(menuIcon, /NSRect\(x: 9 \* s, y: 16\.5 \* s, width: 30 \* s, height: 24 \* s\)/,
+    'menu bar robot head uses the official mark geometry');
+  assert.match(menuIcon, /NSRect\(x: x \* s, y: 24 \* s, width: 4 \* s, height: 8 \* s\)/,
+    'menu bar robot eyes use the official mark geometry');
+  assert.doesNotMatch(menuIcon, /NSRect\(x: 5 \* s, y: 12 \* s, width: 38 \* s/,
+    'the oversized alternate robot head must not return');
 });
 
 

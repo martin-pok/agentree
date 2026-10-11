@@ -175,18 +175,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
 
-    // Ikona v horní liště: hlava robota z public/brand/agenteeq-mark.svg (mřížka 48 jednotek) jako
-    // šablona, kterou macOS sám obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
-    // Kulička antény je proti logu o kousek větší a stopka užší, aby anténa v 18 bodech nesplynula v čáru.
+    // Stejná geometrie hlavy jako public/brand/agenteeq-mark.svg bez tmavé dlaždice.
+    // Šablonu macOS obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
     static func robotIkonaListy() -> NSImage {
         let ikona = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
             let s: CGFloat = 18.0 / 48.0
             NSColor.black.setFill()
-            NSBezierPath(roundedRect: NSRect(x: 22.6 * s, y: 4.5 * s, width: 2.8 * s, height: 9 * s), xRadius: 1.4 * s, yRadius: 1.4 * s).fill()
-            NSBezierPath(ovalIn: NSRect(x: 20.2 * s, y: 0.7 * s, width: 7.6 * s, height: 7.6 * s)).fill()
-            let hlava = NSBezierPath(roundedRect: NSRect(x: 5 * s, y: 12 * s, width: 38 * s, height: 31 * s), xRadius: 12 * s, yRadius: 12 * s)
-            for x in [14.5, 28.0] as [CGFloat] {
-                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 21.5 * s, width: 5.5 * s, height: 11 * s), xRadius: 2.75 * s, yRadius: 2.75 * s))
+            NSColor.black.setStroke()
+            let antena = NSBezierPath()
+            antena.lineWidth = 3 * s
+            antena.lineCapStyle = .round
+            antena.move(to: NSPoint(x: 24 * s, y: 9 * s))
+            antena.line(to: NSPoint(x: 24 * s, y: 17 * s))
+            antena.stroke()
+            NSBezierPath(ovalIn: NSRect(x: 21.2 * s, y: 6.2 * s, width: 5.6 * s, height: 5.6 * s)).fill()
+            let hlava = NSBezierPath(roundedRect: NSRect(x: 9 * s, y: 16.5 * s, width: 30 * s, height: 24 * s), xRadius: 9.5 * s, yRadius: 9.5 * s)
+            for x in [17, 27] as [CGFloat] {
+                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 24 * s, width: 4 * s, height: 8 * s), xRadius: 2 * s, yRadius: 2 * s))
             }
             hlava.windingRule = .evenOdd
             hlava.fill()
@@ -483,7 +488,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let active = max(0, min(count, 999))
             statusItem.button?.title = " \(active)"
             statusItem.button?.toolTip = "Agenteeq – aktivně pracující agenti: \(active)"
-            statusItem.button?.accessibilityLabel = "Agenteeq, aktivně pracující agenti: \(active)"
+            statusItem.button?.setAccessibilityLabel("Agenteeq, aktivně pracující agenti: \(active)")
         }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)

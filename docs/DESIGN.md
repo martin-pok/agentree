@@ -8,6 +8,10 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
+Hlava robota v macOS liště, ikoně aplikace pro Mac i Windows a jejím náhledu vychází z
+`public/brand/agenteeq-mark.svg`. Lišta používá její průhlednou šablonu bez tmavé dlaždice;
+rozměry hlavy, očí a antény se při další změně značky musí upravit společně.
+
 ## Písmo Satoshi a licence
 
 Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).

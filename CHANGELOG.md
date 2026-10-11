@@ -2,6 +2,8 @@
 
 ## Nevydáno
 
+- **Hlava robota je stejná v macOS liště i ikonách aplikace.** Ikona vedle živého počtu agentů používá přesný tvar z oficiální značky. Náhled aplikace a ikona pro Windows už nemají starou fialovou anténu.
+- **Rozšíření a podklady pro Chrome Web Store používají současnou značku.** Ikony rozšíření, hlavička okna a malí roboti v seznamu mají stejné proporce jako logo Agenteeq. České i anglické snímky a propagační plochy vycházejí z aktuálního světlého vzhledu a skutečného okna rozšíření.
 - **Horní obsah v aplikaci pro Mac už nekoliduje se záhlavím.** Nadpis a horní akce začínají na stejné výšce jako levý panel, pod 44px oblastí tlačítek okna a tažného pruhu. Při zúžení okna zůstává hlavní obsah pod touto oblastí a navigace přejde dolů.
 - **Pomocník drží místo v historii a odpovídá na obecné otázky.** Při čtení starších zpráv už nové vykreslení neposune chat na konec; automatický posun zůstává při vlastní zprávě a u dna. Na „Jak tahle app funguje?“ v češtině i angličtině vysvětlí Přehled, agenty, projekty a rozdíl mezi tokeny a účtovanými náklady bez nesouvisejících odkazů.
 - **„Hotovo“ jen u agenta, který opravdu doběhl.** Karty v „Právě teď“ psaly „Hotovo“ u každé konverzace, která čeká na zadání – i když agent uprostřed práce přestal odpovídat nebo na zadání vůbec neodpověděl. Teď mají karty stejný štítek a barvu jako seznam Agentů a detail („Čeká na zadání“, „Potřebuje tebe“, „Pracuje“…) a pod ním skutečný důvod: „Hotovo, čeká na další zadání“, „Delší dobu bez aktivity“, nebo „Zatím bez odpovědi agenta“. Stejný důvod je u nedoběhlé konverzace vidět i na Agentech a v detailu a robot u ní neříká „Hotovo“. V boxu Stav agentů se počet jmenuje „potřebuje tebe“ jako všude jinde.

@@ -40,7 +40,7 @@ const verzeRozsireni = JSON.parse(await fs.readFile(path.join(root, 'extension',
 //    Obojí česky i anglicky: jazyk okna se řídí _locales (chrome.i18n), tady ho volí atrapa.
 async function okno(stav, soubor, jazyk) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript(({ jazyk, verze }) => {
+  await page.addInitScript(({ jazyk, verze, stav }) => {
     const ted = Date.now();
     const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
     const otevrene = {
@@ -54,11 +54,11 @@ async function okno(stav, soubor, jazyk) {
       runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: verze } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
-    window.fetch = async () => new Response(JSON.stringify({ ok: true }));
-  }, { jazyk, verze: verzeRozsireni });
+    window.fetch = async () => new Response(JSON.stringify({ ok: stav !== 'odpojeno' }));
+  }, { jazyk, verze: verzeRozsireni, stav });
   await page.goto(`${base}/extension/popup.html`);
   await page.waitForFunction(() => !['Chvilku…', 'One moment…'].includes(document.getElementById('headline').textContent));
-  await page.waitForFunction(() => document.querySelector('.radek--tato'));
+  if (stav !== 'odpojeno') await page.waitForFunction(() => document.querySelector('.radek--tato'));
   if (stav === 'sluzby') await page.locator('#sites-open').click();
   await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
   await page.evaluate(() => document.fonts.ready);
@@ -71,7 +71,11 @@ async function okno(stav, soubor, jazyk) {
 try {
   for (const jazyk of ['cs', 'en']) {
   const pripona = jazyk === 'cs' ? '' : `-${jazyk}`;
-  const vysky = { paired: await okno('sparovano', `okno-sparovano${pripona}.png`, jazyk), sluzby: await okno('sluzby', `okno-sluzby${pripona}.png`, jazyk) };
+  const vysky = {
+    paired: await okno('sparovano', `okno-sparovano${pripona}.png`, jazyk),
+    sluzby: await okno('sluzby', `okno-sluzby${pripona}.png`, jazyk),
+    odpojeno: await okno('odpojeno', `okno-odpojeno${pripona}.png`, jazyk),
+  };
   const cil = jazyk === 'cs' ? vystup : path.join(vystup, jazyk);
   await fs.mkdir(cil, { recursive: true });
   // 2) Kompozice přesně 1280 × 800, poměr 1:1 (obchod jiné rozměry odmítne).
@@ -80,7 +84,7 @@ try {
     const chyby = [];
     page.on('pageerror', (e) => chyby.push(e.message));
     page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
-    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}`);
+    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}&odpojeno=${vysky.odpojeno}`);
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(200);
     const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {
