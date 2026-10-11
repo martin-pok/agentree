@@ -34,9 +34,15 @@ jobs:
           test "$MAIN_SHA" = "$TESTED_SHA" || { echo "::notice::Main moved since CI; skipping outdated run."; exit 0; }
           VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
           test "$VERSION" = "0.46.1" || { echo "::notice::Another version is already current."; exit 0; }
-          if gh api "repos/$REPO/git/ref/tags/v0.46.1" >/dev/null 2>&1; then
-            echo "::notice::Release tag already exists; no duplicate build."
+          # A tag alone does not prove the release artifacts exist: a previous build
+          # may have failed after creating the tag. Re-run release.yml in that case.
+          # Its concurrency group serializes concurrent builds for this tag.
+          if gh release view v0.46.1 --repo "$REPO" >/dev/null 2>&1; then
+            echo "::notice::Release already exists (draft or published); skipping duplicate build."
             exit 0
+          fi
+          if gh api "repos/$REPO/git/ref/tags/v0.46.1" >/dev/null 2>&1; then
+            echo "::notice::Release tag exists without a release; retrying the artifact build."
           fi
           gh workflow run release.yml --repo "$REPO" --ref main -f tag=v0.46.1
           echo "Triggered version-pinned release draft generation for $TESTED_SHA"
