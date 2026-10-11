@@ -346,3 +346,23 @@ test('Codex CLI zabalené v ChatGPT.app se najde i bez PATH a ověří napojení
   assert.equal(stav.nainstalovano, true);
   assert.equal(stav.napojeno, true);
 });
+
+
+test('webová služba: staré pozorování není důkaz trvalého přihlášení ani OAuth', async () => {
+  const { n, zapis } = atrapa();
+  const ted = Date.now();
+  zapis.rozsireni = { state: 'active', sites: { chatgpt: ted - 10 * 60 * 1000 } };
+  let p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, null);
+  assert.equal(p.overeni, 'nezname');
+  assert.equal(p.posledni, ted - 10 * 60 * 1000);
+  assert.equal(p.zdroj, 'chrome-extension');
+  zapis.rozsireni.sites.chatgpt = Date.now();
+  p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, true);
+  assert.equal(p.overeni, 'pozorovano');
+  zapis.rozsireni.state = 'missing';
+  zapis.rozsireni.sites = {};
+  p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, false);
+});
