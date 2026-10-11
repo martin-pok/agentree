@@ -50,3 +50,20 @@ test('brand: store icon and installed extension icon are byte-identical', async 
     assert.equal(bytes.readUInt32BE(20), Number(size), `icon ${size} height`);
   }
 });
+
+
+test('rebrand: active surfaces do not link deprecated trident artwork', async () => {
+  const files = [
+    'site/index.html', 'site/en/index.html',
+    'site/instalace/index.html', 'site/en/install/index.html',
+    'site/404.html', 'extension/popup.html',
+    'branding/chrome-web-store/source/marquee.html',
+  ];
+  for (const p of files) {
+    const body = await read(p);
+    assert.doesNotMatch(body, /(?:robot-predloha|agentree-mark|trident-logo|trojzubec\.svg)/i, p);
+  }
+  for (const p of ['docs/brand/robot-predloha.svg', 'docs/brand/robot-predloha.png']) {
+    await assert.rejects(fs.access(new URL('../' + p, import.meta.url)), { code: 'ENOENT' }, p + ' must be removed');
+  }
+});
