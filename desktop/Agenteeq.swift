@@ -274,6 +274,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard !quitting, child?.isRunning != true else { return }
         generation += 1
         let currentGeneration = generation
+        statusItem.button?.title = " —" // no current count until a fresh local server snapshot
+        statusItem.button?.toolTip = "Agenteeq – stav agentů se načítá"
         showLoading()
         setLoading(retries == 0 ? "Připravujeme tvůj pracovní prostor…" : "Obnovujeme spojení s tvými agenty…")
         failedMessage = nil; buffer = ""; baseURL = nil
@@ -324,6 +326,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             DispatchQueue.main.async {
                 guard let self, !self.quitting, self.generation == currentGeneration else { return }
                 self.input = nil; self.output = nil; self.child = nil
+                self.statusItem.button?.title = " —"
+                self.statusItem.button?.toolTip = "Agenteeq – spojení s agenty přerušeno"
                 self.showLoading()
                 if self.failedMessage == nil && self.retries < 3 {
                     self.retries += 1
