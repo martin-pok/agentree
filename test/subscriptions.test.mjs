@@ -310,6 +310,21 @@ test('druhý izolovaný profil Claude je aktivní i při odhlášení výchozíh
   } finally { await t.close(); }
 });
 
+test('Claude bez ověřeného UUID se nevydává za druhou aktivní licenci', async () => {
+  const src = await tempDir('agenteeq-unknown-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {
+    organizationType: 'claude_pro', emailAddress: 'private@example.com',
+  } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src });
+  try {
+    await t.app.refreshSubscriptions();
+    const payload = t.app.spendPayload();
+    assert.equal(payload.providerAccounts.some((x) => x.provider === 'anthropic' && x.active), false);
+    assert.equal(payload.subscriptions.some((x) => x.service === 'claude'), false);
+    assert.doesNotMatch(JSON.stringify(payload.providerAccounts), /private@example.com/);
+  } finally { await t.close(); }
+});
+
 test('dva současné domovy Codexu dávají dvě oddělené licence', async () => {
   const src = await tempDir('agenteeq-src-codex-');
   const alt = await tempDir('agenteeq-alt-codex-');
