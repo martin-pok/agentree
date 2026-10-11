@@ -151,9 +151,10 @@ export function preloadPrimarnihoPisma(html, satoshiAvailable = false) {
 // aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
 export function znackaStatickeKopie(html) {
   const znacka = '<meta name="agenteeq-staticka-kopie" content="1">';
+  const noindex = '<meta name="robots" content="noindex, nofollow">';
   if (html.includes('agenteeq-staticka-kopie')) return html;
   if (!html.includes('<head>')) throw new Error('public/index.html nemá <head> — uprav scripts/build-site.mjs.');
-  return html.replace('<head>', `<head>\n${znacka}`);
+  return html.replace('<head>', `<head>\n${znacka}\n${noindex}`);
 }
 
 async function copyDir(from, to, { skip = () => false } = {}) {
@@ -218,7 +219,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await fs.writeFile(path.join(out, 'ukazka', 'data.json'), JSON.stringify(await ukazkoveOdpovedi()));
 
   // 6. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
-  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
+  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
 
   // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.
   // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede – proto
