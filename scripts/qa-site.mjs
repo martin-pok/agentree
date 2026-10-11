@@ -526,7 +526,7 @@ try {
                 return r.width > 0 && (r.right > vw + 2 || r.left < -2);
               }).map(el => el.className || el.tagName));
             const menu = document.querySelector('[data-mobile-menu-toggle]');
-            const mobile = menu && getComputedStyle(menu).display !== 'none';
+            const mobile = Boolean(menu && getComputedStyle(menu).display !== 'none');
             const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
             const shortTargets = [...document.querySelectorAll(
               '.nav .brand, .nav .lang a, [data-mobile-menu-toggle], .site-footer .brand')]
