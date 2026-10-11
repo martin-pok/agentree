@@ -283,6 +283,9 @@ test('pomocník: lokální model jen z Ollamy na tomto počítači, bez cloudov�
   // Bez schopností v /api/tags (starší Ollama) se kandidát ověří přes /api/show.
   const show = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'tajemny:1b', size: 1 }, { name: 'mistral:7b', size: 4e9 }], show: { 'tajemny:1b': { capabilities: ['embedding'] }, 'mistral:7b': { capabilities: ['completion'] } } });
   assert.deepEqual(await vyberLokalniModel({ ollama: show.ollama }), { model: 'mistral:7b' });
+  const neoveritelny = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'unknown:1b', size: 1 }] });
+  assert.deepEqual(await vyberLokalniModel({ ollama: neoveritelny.ollama }), { model: null, duvod: 'zadny-model' }, 'neověřený model se nesmí automaticky považovat za lokální');
+
 });
 
 test('HTTP: /api/pomocnik formuluje jen lokálním modelem; Ollama mimo počítač se odmítne a řekne se to', async (t) => {
