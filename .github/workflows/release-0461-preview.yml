@@ -37,9 +37,21 @@ jobs:
           # A tag alone does not prove the release artifacts exist: a previous build
           # may have failed after creating the tag. Re-run release.yml in that case.
           # Its concurrency group serializes concurrent builds for this tag.
-          if gh release view v0.46.1 --repo "$REPO" >/dev/null 2>&1; then
-            echo "::notice::Release already exists (draft or published); skipping duplicate build."
-            exit 0
+          # A published release is final. An incomplete draft can be repaired by
+          # the existing release workflow, which uploads missing assets and notes.
+          if gh release view v0.46.1 --repo "$REPO" --json isDraft,assets > preview-release.json 2>/dev/null; then
+            if ! jq -e '.isDraft == true' preview-release.json >/dev/null; then
+              echo "::notice::Preview release already published; no duplicate build."
+              exit 0
+            fi
+            if jq -e '[.assets[].name] as $names |
+              ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
+               "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.1.zip"] |
+              all(. as $name | $names | index($name) != null)' preview-release.json >/dev/null; then
+              echo "::notice::Existing draft has all release assets; awaiting publication."
+              exit 0
+            fi
+            echo "::notice::Release draft missing assets; retrying the artifact build."
           fi
           if gh api "repos/$REPO/git/ref/tags/v0.46.1" >/dev/null 2>&1; then
             echo "::notice::Release tag exists without a release; retrying the artifact build."
