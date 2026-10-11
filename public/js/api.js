@@ -151,17 +151,27 @@ export function connectStream({ onHello, onEvent, onStatus }) {
     const proud = new EventSource('/api/stream');
     es = proud;
     proud.addEventListener('hello', (e) => {
+      if (ukonceno || proud !== es) return;
+      let payload;
+      try { payload = JSON.parse(e.data); } catch {
+        // A corrupt handshake cannot mark the app connected or suppress recovery.
+        onStatus('reconnecting');
+        proud.close();
+        naplanuj();
+        return;
+      }
       pokus = 0;
+      onHello(payload);
       onStatus('live');
-      onHello(JSON.parse(e.data));
     });
     for (const name of EVENTS) {
       proud.addEventListener(name, (e) => {
+        if (ukonceno || proud !== es) return;
         try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
       });
     }
     proud.onerror = () => {
-      if (proud !== es) return;
+      if (ukonceno || proud !== es) return;
       if (proud.readyState !== EventSource.CLOSED) return onStatus('reconnecting');
       onStatus('offline');
       naplanuj();
