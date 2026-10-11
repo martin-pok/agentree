@@ -2090,3 +2090,11 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
   .nav .brand, .site-footer .brand { min-height:44px; }
   .nav .lang a { min-width:44px; height:44px; }
 }
+
+
+/* Touch laptops and landscape tablets can be wider than 900px. Hit-area sizing
+   follows the input modality too, not only the phone breakpoint. */
+@media (hover:none) and (pointer:coarse) {
+  .nav .lang a { min-width:44px; min-height:44px; height:44px; }
+  .nav .nav-links a { min-height:44px; }
+}
