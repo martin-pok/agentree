@@ -256,6 +256,8 @@ plynulePosouvani();
    let target;
    try { target=document.getElementById(decodeURIComponent(hash.slice(1))); } catch { return false; }
    if(!target) return false;
+   // Native fragment navigation expands <details>; preserve that behavior when scrolling manually.
+   if(target.tagName==='DETAILS' && !target.open) target.open=true;
    // Leave the section's kicker and headline visible below the sticky header.
    const sticky=document.querySelector('.nav');
    const headerHeight=sticky?.getBoundingClientRect().height||72;
