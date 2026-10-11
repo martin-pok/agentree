@@ -72,7 +72,10 @@ test('above-fold screenshot is high-priority; offscreen screenshots are lazy and
       assert.match(img, /height="\d+"/);
       assert.match(img, /alt="[^"]+"/);
     }
-    for (const img of images.slice(1)) assert.match(img, /loading="lazy"/);
+    for (const img of images.slice(1)) {
+      assert.match(img, /loading="lazy"/);
+      assert.match(img, /decoding="async"/, 'below-fold screenshot must decode asynchronously');
+    }
   }
 });
 
