@@ -116,3 +116,18 @@ test('workflowy: vydání zůstává konceptem a souběžné běhy pro týž tag
   }
   assert.doesNotMatch(vydani.slice(0, vydani.search(/^jobs:/m)), /secrets\./, 'tajemství nepatří do env celého workflow');
 });
+
+test('0.46.1 preview resumes failed builds without republishing existing releases', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0461-preview.yml')?.yml;
+  assert.ok(preview, 'preview workflow must exist');
+  const start = ulohy(preview)['start-preview-build'];
+  assert.ok(start, 'preview build job must exist');
+  assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO"/,
+    'check for an existing draft or published release before dispatch');
+  assert.match(start, /gh api "repos\/\$REPO\/git\/ref\/tags\/v0\.46\.1"/,
+    'detect an existing tag without suppressing recovery');
+  assert.doesNotMatch(start, /Release tag already exists; no duplicate build/,
+    'tag existence alone must not block a retry after build failure');
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.1/,
+    'resume through the existing gated release workflow');
+});
