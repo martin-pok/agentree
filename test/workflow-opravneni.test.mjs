@@ -126,10 +126,10 @@ test('0.46.1 preview resumes failed builds without republishing existing release
     'inspect both release draft status and assets before deciding to skip');
   assert.match(start, /agenteeq-extension-0\.46\.1\.zip/,
     'extension artifact is mandatory for a complete draft');
-  assert.match(start, /Existing complete draft may have missed publication; resuming gated release workflow/,
-    'complete but unpublished draft must also retry to trigger publication');
-  assert.doesNotMatch(start, /Existing draft has all release assets; awaiting publication/,
-    'complete draft must not stall without a successful release event');
+  assert.match(start, /Draft is complete; independent publish-preview job checks release gates/,
+    'complete draft should use the main-CI publication path, not repeat an expensive build');
+  assert.doesNotMatch(start, /Existing complete draft may have missed publication; resuming gated release workflow/,
+    'complete draft must not enter repeated release-build dispatches');
   assert.match(start, /Release draft missing assets; retrying the artifact build/,
     'incomplete draft must be recoverable');
   assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO"/,
@@ -140,4 +140,27 @@ test('0.46.1 preview resumes failed builds without republishing existing release
     'tag existence alone must not block a retry after build failure');
   assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.1/,
     'resume through the existing gated release workflow');
+});
+
+test('0.46.1 preview can publish an already completed draft after green main CI', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0461-preview.yml')?.yml;
+  assert.ok(preview, 'missing preview workflow');
+  const publish = ulohy(preview)['publish-preview'];
+  assert.ok(publish, 'publication job must exist');
+  assert.match(publish, /github\.event\.workflow_run\.name == 'Testy'/,
+    'green main CI must be an independent publication trigger');
+  assert.match(publish, /github\.event\.workflow_run\.name == 'Vydání'/,
+    'retain the direct release workflow trigger');
+  assert.match(publish, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(publish, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(publish, /MAIN_SHA.*BUILD_SHA/,
+    'CI-triggered publication must reject a stale main commit');
+  assert.match(publish, /TAG_SHA/,
+    'published assets must retain their exact release tag identity');
+  assert.match(publish, /actions\/workflows\/test\.yml\/runs\?head_sha=\$TAG_SHA/,
+    'original tag commit must already have green complete CI');
+  assert.match(publish, /\.name==\$name and \.size>100000/,
+    'all expected binary artifacts must have plausible nonzero sizes');
+  assert.match(publish, /--draft=false --prerelease --latest=false/,
+    'preview must not replace stable latest release');
 });
