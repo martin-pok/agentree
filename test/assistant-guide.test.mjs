@@ -25,3 +25,11 @@ test('průvodce vrací skutečné navigační cíle a omezuje neověřená tvrze
   assert.match(source, /Odhady nepovažuj za skutečné faktury/);
   assert.match(source, /ne z přímého potvrzení služby/);
 });
+
+
+test('assistant guidance uses actual app snapshot without claiming provider status', () => {
+  assert.match(source, /snapshot\.connection !== 'connected'/);
+  assert.match(source, /snapshot\.sessions instanceof Map/);
+  assert.match(source, /snapshot\.updates\?\.currentVersion/);
+  assert.match(ui, /snapshot: state/);
+});
