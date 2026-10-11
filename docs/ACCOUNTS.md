@@ -231,14 +231,22 @@ rovnou i z `/app`.
 
 ## Napojení modelů tlačítkem (`src/napojeni.js`, `public/js/napojeni-ui.js`)
 
-Nastavení → Propojení → **Napojené modely**. Klik na „Napojit“ spustí přihlášení u dodavatele,
-okno Agenteeq čeká a samo pozná, až je hotovo. Pak ukáže „Napojení … proběhlo v pořádku“.
+Nastavení → Propojení → **Napojené modely**. Klik na „Napojit“ u Claude Code nebo Codexu
+spustí **vlastní CLI přihlášení dodavatele** a otevře jeho oficiální prohlížečovou stránku.
+Agenteeq si nevyžaduje cizí OAuth token; úspěch potvrzuje až výsledek oficiálního CLI statusu,
+potom znovu načte lokální údaje o účtu a ukáže **skutečný čas posledních nalezených dat**
+nebo informaci, že data dosud nejsou k dispozici. Když se refresh nepodaří, přihlášení zůstává
+ověřené, ale UI oznámí problém s daty. Zrušený pokus nesmí později potvrdit opožděná odpověď.
+
+U webových chatů jde o jiný proces: otevře se daný web a spárované rozšíření pošle stav
+konverzace. **To není OAuth ani důkaz přihlášení webového účtu.** UI říká „Data z Chromu“
+a uvádí stáří pozorování, nikoli „účet autorizován“.
 
 | Model | Co se spustí | Jak Agenteeq pozná, že je hotovo | Ověřeno |
 |---|---|---|---|
 | Claude Code | `claude auth login --claudeai` na pozadí (sám hned otevře přihlášení Anthropicu v prohlížeči, na nic se neptá) | `claude auth status --json` → `loggedIn: true`; plán z `~/.claude.json` | nápověda CLI a běh bez okna, Claude Code 2.1.283, 26. 9. 2026 |
 | Codex | `codex login` na pozadí (Codex otevře přihlášení ChatGPT v prohlížeči) | `codex login status` → „Logged in using …“ | zdroj `codex-rs/cli/src/login.rs`, 24. 9. 2026 |
-| ChatGPT, Claude.ai, Gemini, Perplexity na webu | otevře službu v prohlížeči (potřebuje spárované rozšíření) | první stav z té služby od rozšíření | – |
+| ChatGPT, Codex web, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot | otevře odpovídající oficiální službu; vyžaduje spárované Chrome rozšíření | nově přijatý validovaný stav konverzace z rozšíření; **nejde o autentizaci účtu** | regresní testy místního rozhraní, skutečné přihlášení a živé stránky se ověřují v UAT |
 
 Na macOS se Codex CLI hledá také přímo v `ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` (a ve starším umístění `Contents/Resources/codex`). Finder nemusí mít stejný PATH jako interaktivní shell; přepisy Codexu lze číst i bez CLI, ale ověření přihlášení a spuštění agenta potřebují jeho spustitelný soubor.
 
@@ -246,7 +254,9 @@ Na macOS se Codex CLI hledá také přímo v `ChatGPT.app/Contents/Resources/cod
   přihlášení k předplatnému (Pro, Max, Plus) – `docs/CLOUD-ACCOUNTS.md`. Převzít přihlášení Claude
   Code nebo Codexu by znamenalo vydávat se za jejich aplikaci; to Agenteeq nedělá. Spouští jejich
   vlastní přihlášení a ptá se jejich vlastním příkazem.
-- **Hesla ani tokeny dodavatelů Agenteeq nevidí.** Ze stavu bere jen „přihlášen ano / ne“ a plán.
+- **Hesla ani tokeny dodavatelů Agenteeq nevidí.** U CLI bere jen „přihlášen ano / ne“ a ověřené údaje o účtu; webové rozšíření posílá jen dostupná metadata konverzace. U poskytovatele nesmí z neznámého stavu odvodit kladnou autorizaci.
+- **Bezpečné odkazy z rozšíření:** server vyžaduje HTTPS a přesnou doménu služby; `codex-web` a `github-copilot` mají navíc vlastní cesty. Parametry `?` a `#` se před uložením zahazují, aby se nepřenášely tokeny v URL.
+- **UAT evidence pro všechny konektory:** [CONNECTOR-UAT-0461.md](CONNECTOR-UAT-0461.md). Bez reálného Macu a živého přihlášení nelze považovat všechna připojení za end-to-end ověřená.
 - **Neznámý výstup je „nepodařilo se zjistit“,** ne „nenapojeno“. Hlídání běží nejvýš 10 minut
   po 2 s a skončí zprávou „vypršelo“. Zavřené okno hlídání zruší.
 - **Terminál se nikdy neotvírá** (`src/prihlaseni.js`). Přihlášení běží jako podproces aplikace:
