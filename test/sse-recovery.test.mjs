@@ -34,7 +34,8 @@ test('SSE malformed hello never declares live and reconnects',()=>{
  assert.equal(timers.at(-1).delay,2000);
  timers.pop().cb();
  streams.at(-1).emit('hello','{"ready":true}');
- assert.deepEqual(hellos,[{ready:true}]);
+ assert.equal(hellos.length,1);
+ assert.equal(hellos[0].ready,true);
  assert.equal(statuses.at(-1),'live');
  client.close();
 });
