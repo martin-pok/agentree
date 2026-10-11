@@ -232,18 +232,25 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;
     if (!web) return { status: 404, error: ui('Tuhle službu napojit nejde.') };
     if (extension().state === 'missing') return { status: 409, error: ui('Webové chaty se napojují přes rozšíření pro Chrome. Nejdřív ho přidej a spáruj.'), rozsireni: true };
-    const r = await open(web.url);
-    if (!r.ok) return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
+    // Arm the observer before launching the browser. An already-open website can
+    // send the first extension event while open() is still resolving.
     ukonci(id);
-    ceka.set(id, { od: now() });
-    const c = ceka.get(id);
-    c.casovac = setTimeout(() => {
-      if (!ceka.has(id)) return;
+    const attempt = { od: now() };
+    ceka.set(id, attempt);
+    attempt.casovac = setTimeout(() => {
+      if (ceka.get(id) !== attempt) return;
       ukonci(id);
       emit({ id, label: web.label, udalost: 'vyprselo' });
     }, limitMs);
-    c.casovac.unref?.();
-    return { ok: true, ceka: true, dry: Boolean(r.dry) };
+    attempt.casovac.unref?.();
+    let r;
+    try { r = await open(web.url); }
+    catch { r = { ok: false }; }
+    if (!r.ok) {
+      if (ceka.get(id) === attempt) ukonci(id);
+      return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
+    }
+    return { ok: true, ceka: ceka.get(id) === attempt, dry: Boolean(r.dry) };
   }
 
   // Rozšíření poslalo stav z webové služby. Když na ni člověk právě čeká, je napojeno.
