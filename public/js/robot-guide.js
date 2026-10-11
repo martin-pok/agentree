@@ -12,6 +12,7 @@ import { state } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
 import { hledejCile } from './hledani.js';
+import { guideAnswer } from './assistant-guide.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
@@ -127,6 +128,11 @@ async function posli(text) {
   vykresli();
   let odpoved;
   try {
+    const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
+    const rada = guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa() });
+    if (rada) {
+      odpoved = { kdo: 'on', ...rada };
+    } else {
     const r = await request('POST', '/api/pomocnik', { dotaz });
     if (r.zamer === 'jak') {
       const cile = poradSNastavenim(dotaz);
@@ -141,6 +147,7 @@ async function posli(text) {
         const cile = poradSNastavenim(dotaz);
         if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná hledáš některou z těchto voleb v aplikaci.') });
       }
+    }
     }
   } catch (err) {
     odpoved = { kdo: 'on', text: err.status === 0 ? tr('Agenteeq teď neodpovídá. Zkus to za chvíli.') : err.message };
