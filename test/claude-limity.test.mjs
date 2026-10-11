@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
+import { providerIdentity } from '../src/provider-accounts.js';
 import { createSession, deriveStatus } from '../src/model.js';
 import { applyClaudeLine, newFileState, quotaLimit, createClaudeCodeConnector } from '../src/connectors/claude-code.js';
 import { applyPlanUsageSample } from '../src/connectors/claude-desktop-usage.js';
@@ -250,4 +251,49 @@ test('Přehled: chybějící Claude limit ukáže stav účtu bez vymyšleného 
   assert.match(claudeLimitStatus({ ...base, integrations: { claudeAuth: { loggedIn: null, checkedAt: now } } }, now), /Čeká na čerstvá data/, 'chyba dotazu není odhlášení');
   assert.equal(claudeLimitStatus({ ...base, limits: [quotaLimit(odmitnuti(now - MIN), now - MIN)] }, now), '', 's čerstvým limitem nemá pomocný řádek co dělat');
   assert.equal(claudeLimitStatus({ ...base, connectors: [{ id: 'claude-code', state: 'missing' }] }, now), '', 'nenalezený Claude nepřidává prázdnou kartu');
+});
+
+test('two independently authenticated Claude profiles keep statusline quotas isolated', async () => {
+  const home = await tempDir('agenteeq-quota-a-');
+  const second = await tempDir('agenteeq-quota-b-');
+  const config = loadConfig({
+    AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: path.join(home, 'app'),
+    AGENTEEQ_CLAUDE_CONFIG_DIR: second,
+  });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const primaryId = 'sessionA1234';
+  const secondId = 'sessionB1234';
+  const rootA = path.join(home, '.claude', 'projects');
+  const rootB = path.join(second, 'projects');
+  const now = Date.now();
+  const prompt = (id) => ({ type: 'user', timestamp: new Date(now - MIN).toISOString(),
+    message: { role: 'user', content: 'Synthetic agent ' + id } });
+  await writeJsonl(path.join(rootA, 'projectA', primaryId + '.jsonl'), [prompt(primaryId)]);
+  await writeJsonl(path.join(rootB, 'projectB', secondId + '.jsonl'), [prompt(secondId)]);
+  const c = createClaudeCodeConnector({ store, config });
+  try {
+    await c.scan();
+    await c.idle?.();
+    const accountA = providerIdentity('claude', 'license-aaaa-123456');
+    const accountB = providerIdentity('claude', 'license-bbbb-123456');
+    c.bindProfileAccounts([
+      { root: rootA, accountId: accountA, observedAt: now },
+      { root: rootB, accountId: accountB, observedAt: now },
+    ]);
+    assert.equal(store.summary('claude-code:' + primaryId)?.accountBinding?.accountId, accountA);
+    assert.equal(store.summary('claude-code:' + secondId)?.accountBinding?.accountId, accountB);
+    const status = (session_id, used_percentage) => ({
+      session_id, rate_limits: { five_hour: { used_percentage, resets_at: Math.floor((now + 2 * H) / 1000) } },
+    });
+    c.ingestStatusline(status(primaryId, 37), now);
+    c.ingestStatusline(status(secondId, 81), now + 1);
+    assert.equal(store.limits.get('claude:five_hour:' + accountA)?.usedPercent, 37);
+    assert.equal(store.limits.get('claude:five_hour:' + accountB)?.usedPercent, 81);
+    assert.equal(store.limits.get('claude:five_hour:' + accountA)?.accountId, accountA);
+    assert.equal(store.limits.has('claude:five_hour'), false, 'no merged provider-wide percentage');
+    c.ingestStatusline(status('unknown99', 99), now + 2);
+    assert.equal(store.limits.size, 2, 'ambiguous license cannot publish a third shared quota');
+  } finally {
+    c.stop();
+  }
 });
