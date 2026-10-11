@@ -1092,6 +1092,11 @@ export function createHttpServer(app, existingServer = null) {
   };
 
   server = existingServer || http.createServer();
+  // Bound slow headers and never-ending uploads without closing long-lived SSE responses.
+  // Existing desktop server is subject to the same defensive limits.
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.maxHeadersCount = 100;
   server.on('request', onRequest);
 
   // Listener pro místní síť obsluhuje tentýž kód (a tedy i stejnou kontrolu tokenu).
