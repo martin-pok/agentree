@@ -48,7 +48,7 @@ export class Store extends EventEmitter {
   bindAccount(sessionId, evidence) {
     const s = this.sessions.get(sessionId);
     if (!s) return { ok: false, reason: 'session_not_found' };
-    const binding = sessionAccountBinding({ sessionId, provider: s.provider, ...evidence });
+    const binding = sessionAccountBinding({ ...evidence, sessionId, provider: s.provider });
     if (!binding || binding.confidence !== 'verified') return { ok: false, reason: 'unverified_identity' };
     if (s.accountBinding?.confidence === 'verified' && s.accountBinding.accountId !== binding.accountId) {
       return { ok: false, reason: 'identity_conflict' };
