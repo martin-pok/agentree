@@ -32,7 +32,8 @@
     return {
       site: adapter.id,
       conversationId: String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-'),
-      url: location.href,
+      // Query and fragment may contain user prompts or access tokens. They never leave the tab.
+      url: `${location.origin}${location.pathname}`,
       generating,
       counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
       model: adapter.model(document) || '',
