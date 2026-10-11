@@ -31,7 +31,7 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
   for (const p of ['public/brand/agenteeq-mark.svg', 'public/brand/agenteeq-mark-dark.svg', 'site/brand-mark-clean.svg']) {
     const svg = await read(p);
     assert.match(svg, /<path[^>]+stroke="#(?:FAFAFA|F4F3F7)"/, p + ': white antenna');
-    assert.match(svg, /<g transform="translate\\(123 109\\) scale\\(7\\.2\\)" fill="#FAFAFA">/, p + ': canonical white silhouette');
+    assert.ok(svg.includes('<g transform="translate(123 109) scale(7.2)" fill="#FAFAFA">'), p + ': canonical white silhouette');
     assert.match(svg, /<circle cx="54" cy="22" r="4"/, p + ': canonical antenna tip inherits white fill');
     assert.doesNotMatch(svg, /#(?:9C8CFF|5254D8|6260D8|C99A3E)/i, p + ': unexpected coloured logo accent');
   }
