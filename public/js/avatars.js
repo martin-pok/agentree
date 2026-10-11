@@ -37,12 +37,12 @@ const HLAVY = {
 // Every profile robot uses the EXACT silhouette and eye placement of the official
 // public/brand/agenteeq-mark.svg. Only palette variants change; no second robot design.
 const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
-  svg(pozadi, `<g transform="scale(1.6666666667)">
-    <path d="M24 9V17" stroke="${hlava}" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="24" cy="9" r="2.8" fill="${hlava}"/>
-    <rect x="9" y="16.5" width="30" height="24" rx="9.5" fill="${hlava}"/>
-    <rect x="17" y="24" width="4" height="8" rx="2" fill="${ocBarva}"/>
-    <rect x="27" y="24" width="4" height="8" rx="2" fill="${ocBarva}"/>
+  svg(pozadi, `<g transform="scale(0.7407407407407407)">
+    <path d="M54 25V34" stroke="${hlava}" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="54" cy="22" r="4" fill="${hlava}"/>
+    <rect x="15" y="34" width="78" height="53" rx="20" fill="${hlava}"/>
+    <rect x="36" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
+    <rect x="64" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
   </g>`);
 
 // Paleta značky: fialová, inkoust, papír, šalvěj, okr, růže a jejich světlé odstíny.
