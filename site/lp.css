@@ -2082,3 +2082,11 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
     backdrop-filter:none;
   }
 }
+
+
+/* iPhone/tablet touch ergonomics: small visual pills retain their design while
+   the actual interactive boxes meet a 44px minimum. Includes landscape layouts. */
+@media (max-width:900px) {
+  .nav .brand, .site-footer .brand { min-height:44px; }
+  .nav .lang a { min-width:44px; height:44px; }
+}
