@@ -83,6 +83,15 @@ Při stejném session UUID z různých skutečných souborů `src/connectors/cla
 
 **Otevřená funkční mezera:** dvě různé relace se stejným UUID nejsou zatím zobrazeny jako dvě plnohodnotné samostatné session. Současné chování je fail-closed pro účet, ale konflikt vyžaduje budoucí migraci na identitu odvozenou také z profilu a spolehlivé směrování hooků. Netvrdit, že všechny agentní procesy byly započteny. Neumožnit release Multi-account, dokud není tento scénář vyřešen a integračně otestován.
 
+## První oddělené limity podle licence
+
+- `src/connectors/claude-code.js#ingestStatusline`: je-li session připojena k ověřené licenci, 5h/7d/spend limit má vlastní klíč a `accountId`; dva účty se nemohou přepsat jedním globálním procentem.
+- Pokud je připojeno více ověřených účtů, ale statusline nemá jednoznačně přiřazenou session, **její kvóty se nezapočítají**, protože zdroj není prokazatelný.
+- `src/app.js#providerAccounts`: limitní okna přiřazuje jen odpovídajícímu účtu a pouze z čerstvých ověřených odečtů; nedostupná data neprezentuje jako 0 %.
+- Úspěch jednoho agenta nesmí resetovat limit jiného účtu. Přidaný filter v `onSuccess` respektuje vazbu session→account.
+- Test: `test/claude-limity.test.mjs` ověřuje 2 účty s různými 5h limity, bez globálního sloučení a bez zpřístupnění neznámých kvót. **Zatím čeká na CI**, nikoliv potvrzeno z reálného Claude API.
+- Vedle statusline existují textová odmítnutí a historické limitní zdroje: jejich přiřazení k účtům vyžaduje další audit a nesmí se vydávat za kompletně vyřešené. Další provider adaptéry stále chybějí.
+
 ## Gates
 
 - Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
