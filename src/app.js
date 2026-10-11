@@ -880,10 +880,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
     prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
-    emit: (u) => {
-      store.emit('napojeni', u);
-      if (u.id === 'claude-code' && u.udalost === 'napojeno') refreshSubscriptions().catch(() => {});
+    // A completed CLI login must re-read subscriptions/accounts before the success
+    // SSE is sent. This works for both Claude Code and Codex; no stale-plan modal.
+    onVerified: async (id) => {
+      await refreshSubscriptions();
+      return store.list().reduce((latest, session) =>
+        session.connector === id && !session.proces && session.lastAt > latest ? session.lastAt : latest, 0);
     },
+    emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
       if (id === 'claude-code') {
