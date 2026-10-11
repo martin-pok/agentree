@@ -99,11 +99,17 @@ async function pripojit({ hned = false } = {}) {
 }
 
 async function pair(code) {
-  const res = await fetch(`${await zaklad()}/api/extension/pair`, {
+  await pairingReset;
+  const generation = pairingGeneration;
+  const base = await zaklad();
+  const id = await installationId();
+  if (generation !== pairingGeneration) throw new Error('Port se změnil. Spusť spárování znovu.');
+  const res = await fetch(`${base}/api/extension/pair`, {
     method: 'POST',
-    headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': await installationId() },
+    headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': id },
   });
   const body = await res.json().catch(() => ({}));
+  if (generation !== pairingGeneration) throw new Error('Port se změnil. Spusť spárování znovu.');
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
   await chrome.storage.local.set({ token, parovani: 'hotovo' });
