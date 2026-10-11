@@ -50,7 +50,7 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
   let text = en ? found.en : found.cs;
   // Diagnose from the already-rendered local snapshot; do not invent provider status.
   if (snapshot && found.id === 'agents') {
-    if (snapshot.connection !== 'connected') {
+    if (snapshot.connection !== 'live') {
       text += en ? ' The live connection is not confirmed; agent activity may be stale. Check whether the desktop backend is reachable.' : ' Teď nemám potvrzené spojení s aplikací. Údaje o agentech tak nemusí být aktuální. Nejdřív ověř, že desktopová aplikace běží.';
     } else if (snapshot.loaded && snapshot.sessions instanceof Map && snapshot.sessions.size === 0) {
       text += en ? ' The current dashboard snapshot contains no sessions. This does not prove the provider has no conversations.' : ' V přehledu teď nevidím žádné zaznamenané konverzace. To ale neznamená, že u poskytovatele žádné nemáš.';

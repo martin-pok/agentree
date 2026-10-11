@@ -28,7 +28,7 @@ test('průvodce vrací skutečné navigační cíle a omezuje neověřená tvrze
 
 
 test('assistant guidance uses actual app snapshot without claiming provider status', () => {
-  assert.match(source, /snapshot\.connection !== 'connected'/);
+  assert.match(source, /snapshot\.connection !== 'live'/);
   assert.match(source, /snapshot\.sessions instanceof Map/);
   assert.match(source, /snapshot\.updates\?\.currentVersion/);
   assert.match(ui, /snapshot: state/);
@@ -60,5 +60,12 @@ test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale
   assert.doesNotMatch(noVersion.text, /Installed version reported/);
   const disconnected = guide('Why are agents missing?', { language: 'en-GB', snapshot: { connection: 'offline' } });
   assert.match(disconnected.text, /not confirmed/);
+  const connected = guide('Why are agents missing?', { language: 'en-GB', snapshot: { connection: 'live', loaded: true, sessions: new Map([['a', { id: 'a' }]]) } });
+  assert.doesNotMatch(connected.text, /not confirmed|no sessions/);
+  const empty = guide('Why are agents missing?', { language: 'en-GB', snapshot: { connection: 'live', loaded: true, sessions: new Map() } });
+  assert.match(empty.text, /contains no sessions/);
+  const connecting = guide('Proč nevidím agenty?', { language: 'cs-CZ', snapshot: { connection: 'connecting', loaded: false, sessions: new Map() } });
+  assert.match(connecting.text, /nemám potvrzené spojení/);
+
   assert.equal(guide('Find chat about invoices', { language: 'en-GB' }), null, 'conversation search stays routed to retrieval');
 });
