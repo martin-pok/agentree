@@ -56,9 +56,14 @@ export const AGENTI = {
 // a otevřít chat. Napojeno je ve chvíli, kdy rozšíření z té služby pošle první stav.
 export const WEBY = {
   chatgpt: { label: 'ChatGPT', provider: 'openai', logo: 'openai', url: 'https://chatgpt.com/' },
+  'codex-web': { label: 'Codex · web', provider: 'openai', logo: 'codex', url: 'https://chatgpt.com/codex' },
   claude: { label: 'Claude.ai', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/new' },
   gemini: { label: 'Gemini', provider: 'google', logo: 'gemini', url: 'https://gemini.google.com/app' },
+  mscopilot: { label: 'Microsoft Copilot', provider: 'microsoft', logo: 'copilot', url: 'https://copilot.microsoft.com/' },
   perplexity: { label: 'Perplexity', provider: 'perplexity', logo: 'perplexity', url: 'https://www.perplexity.ai/' },
+  grok: { label: 'Grok', provider: 'xai', logo: 'grok', url: 'https://grok.com/' },
+  qwen: { label: 'Qwen Chat', provider: 'alibaba', logo: 'qwen', url: 'https://chat.qwen.ai/' },
+  'github-copilot': { label: 'GitHub Copilot', provider: 'github', logo: 'copilot', url: 'https://github.com/copilot' },
 };
 
 // Kód z prohlížeče (ruční cesta Claude Code) je jeden řádek tisknutelných znaků. Nic jiného se
