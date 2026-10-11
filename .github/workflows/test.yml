@@ -151,6 +151,7 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run qa:desktop
+      - run: npm run qa:desktop-inset
       - run: npm run qa:assistant
       - run: npm run qa:refresh
       - run: npm run qa:site

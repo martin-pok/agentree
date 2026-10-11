@@ -36,6 +36,7 @@
     "smoke:server": "node scripts/smoke-server.mjs",
     "license": "node scripts/license.mjs",
     "qa:desktop": "node scripts/qa-desktop.mjs",
+    "qa:desktop-inset": "node scripts/qa-desktop-inset.mjs",
     "qa:assistant": "node scripts/qa-assistant.mjs",
     "qa:studio": "node scripts/qa-home-studio.mjs",
     "qa:refresh": "node scripts/qa-refresh-motion.mjs",

@@ -104,6 +104,12 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
   výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
+- `npm run qa:desktop-inset` v Chromiu a WebKitu simuluje `is-desktop` z WKWebView a měří,
+  že nadpis i akce na Přehledu, Agentech a v Nastavení zůstávají pod 44px nativním pruhem.
+  Na šířkách 900–1440 px začínají stejně vysoko jako levý panel; při 880 px a méně
+  se navigace přesouvá dolů a hlavní obsah zůstává mimo horní pruh. Výstupem jsou i snímky.
+  `npm run qa:native` navíc změří tytéž souřadnice v běžící macOS aplikaci přes sondu WKWebView,
+  i když je nad Přehledem otevřený úvodní průvodce.
 - `npm run qa:desktop` ověří postranní panel na oknech 620–1200 px vysokých při šířce 881, 1180
   a 1440 px, česky i anglicky, i s patičkou při výpadku spojení, s víc zdroji tokenů, než se
   vypisuje, a s patičkou uměle vyšší o 48 px: poslední položka navigace je celá vidět, nabídka
