@@ -75,3 +75,29 @@ test('SSE stays reconnecting while snapshot fails and becomes live only after a 
  assert.equal(timers.at(-1).delay,2000);
  client.close();
 });
+
+test('older SSE handshake completion cannot mark a newer snapshot live',async()=>{
+ const statuses=[];
+ let resolveFirst,resolveSecond;
+ let count=0;
+ const client=connectStream({
+  onStatus:s=>statuses.push(s),
+  onHello:()=>new Promise(resolve=>{
+   if(++count===1) resolveFirst=resolve;
+   else resolveSecond=resolve;
+  }),
+  onEvent:()=>{}
+ });
+ const stream=streams.at(-1);
+ stream.emit('hello','{"version":1}');
+ await new Promise(resolve=>setImmediate(resolve));
+ stream.emit('hello','{"version":2}');
+ await new Promise(resolve=>setImmediate(resolve));
+ resolveFirst();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(!statuses.includes('live'),'superseded snapshot must not mark stream live');
+ resolveSecond();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(statuses.at(-1),'live');
+ client.close();
+});
