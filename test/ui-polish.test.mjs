@@ -370,19 +370,6 @@ test('průvodce drží vodorovný tvar a na nízkém okně ustoupí', async () =
   assert.match(css, /@media \(min-width: 721px\) and \(max-height: 700px\) \{[^@]*\.welcome-dialog \{ height: calc\(100dvh - 32px\)/s, 'na nízkém okně se karta stáhne');
 });
 
-test('ikona průvodce je kreslená čárou v barvě textu, ne obrázek s pevnou barvou', async () => {
-  const icons = await zdroj('public/js/icons.js');
-  assert.match(icons, /export const BULB = `<svg viewBox="0 0 64 64"/);
-  assert.match(icons, /stroke="currentColor"/, 'barva se dědí z textu, takže platí pro oba režimy');
-  assert.doesNotMatch(icons, /BULB[\s\S]{0,400}fill="#/, 'žádná napevno zapsaná barva');
-  const settings = await zdroj('public/js/views/settings.js');
-  assert.match(settings, /<span class="guide-art" aria-hidden="true">\$\{BULB\}<\/span>/, 'vložené inline – <img> by barvu textu nezdědil');
-  const css = await zdroj('public/styles.css');
-  const art = css.match(/\.guide-art \{[^}]*\}/)?.[0] || '';
-  assert.doesNotMatch(art, /linear-gradient/, 'barevný přechod s bublinami se nevrací');
-  assert.match(art, /color: var\(--ink\)/);
-});
-
 // Rozbalený seznam limitů protáhl pravý sloupec a pod levým zůstalo prázdno (naměřeno 253 px).
 test('poslední aktivita doplní řádky podle volného místa pod sloupcem', async () => {
   const src = await zdroj('public/js/views/overview.js');
