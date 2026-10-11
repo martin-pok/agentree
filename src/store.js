@@ -43,6 +43,24 @@ export class Store extends EventEmitter {
     return s;
   }
 
+  // Assign an account only with explicit same-session proof supplied by a connector.
+  // Switching login elsewhere must never silently reassign an existing session.
+  bindAccount(sessionId, evidence) {
+    const s = this.sessions.get(sessionId);
+    if (!s) return { ok: false, reason: 'session_not_found' };
+    const binding = sessionAccountBinding({ sessionId, provider: s.provider, ...evidence });
+    if (!binding || binding.confidence !== 'verified') return { ok: false, reason: 'unverified_identity' };
+    if (s.accountBinding?.confidence === 'verified' && s.accountBinding.accountId !== binding.accountId) {
+      return { ok: false, reason: 'identity_conflict' };
+    }
+    if (s.accountBinding?.confidence === 'verified' && s.accountBinding.observedAt > binding.observedAt) {
+      return { ok: false, reason: 'stale_evidence' };
+    }
+    s.accountBinding = binding;
+    this.commit(s);
+    return { ok: true, binding };
+  }
+
   commit(s, now = Date.now()) {
     s.recheckAt = 0;
     const { entries, reset } = takeDirty(s);
