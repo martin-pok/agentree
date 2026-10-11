@@ -1,8 +1,12 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
 // Posílá jen stav a počty – text zpráv ani název konverzace stránku neopustí (docs/ACCOUNTS.md).
 (() => {
+  // Manifest injection and post-update reinjection may both run on the same tab.
+  // Never create duplicate observers, intervals or duplicate telemetry streams.
+  if (globalThis.__agenteeqContentActive) return;
   const adapter = window.AgenteeqSites?.detect(location);
   if (!adapter) return;
+  globalThis.__agenteeqContentActive = true;
 
   let lastSig = '';
   let lastSentAt = 0;
