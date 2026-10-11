@@ -448,6 +448,49 @@ try {
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
+      // Repeatable local Core Web Vitals diagnostics for desktop and mobile.
+      // These are lab readings under localhost and MUST NOT be advertised as
+      // Google PageSpeed scores or 75th-percentile real-user experience.
+      const vitals = [];
+      for (const width of [390, 1440]) {
+        const page = await browser.newPage({ viewport: { width, height: 900 },
+          reducedMotion: 'reduce', colorScheme: 'light' });
+        await jenMistni(page, []);
+        await page.addInitScript(() => {
+          window.__agenteeqVitals = { lcp: null, cls: 0, longTasks: 0 };
+          const watch = (kind, cb) => {
+            try { new PerformanceObserver((list) => {
+              for (const entry of list.getEntries()) cb(entry);
+            }).observe({ type: kind, buffered: true }); } catch { /* WebKit may omit entries. */ }
+          };
+          watch('largest-contentful-paint', entry => { window.__agenteeqVitals.lcp = entry.startTime; });
+          watch('layout-shift', entry => {
+            if (!entry.hadRecentInput) window.__agenteeqVitals.cls += entry.value;
+          });
+          watch('longtask', () => { window.__agenteeqVitals.longTasks++; });
+        });
+        const resp = await page.goto(url, { waitUntil: 'load' });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(250);
+        const values = await page.evaluate(() => {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const resources = performance.getEntriesByType('resource');
+          return {
+            ...window.__agenteeqVitals,
+            domContentLoaded: Math.round(nav?.domContentLoadedEventEnd ?? 0),
+            loadEvent: Math.round(nav?.loadEventEnd ?? 0),
+            resources: resources.length,
+            resourceBytes: Math.round(resources.reduce((sum, item) =>
+              sum + (item.transferSize || 0), 0)),
+          };
+        });
+        vitals.push({ engine, viewport: width, ...values });
+        assert.equal(resp.status(), 200, `${engine} ${width}: landing request`);
+        assert.ok(Number.isFinite(values.cls) && values.cls <= 0.1,
+          `${engine} ${width}: layout shift score ${values.cls}`);
+        await page.close();
+      }
+      await fs.writeFile(`${output}/web-vitals-${engine}.json`, JSON.stringify(vitals, null, 2));
       // Breakpoint sweep: recycle two pages instead of reloading dozens of times.
       // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
       // major CSS breakpoint, tablets, laptops and ultrawide monitors.
