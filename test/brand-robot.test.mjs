@@ -30,7 +30,8 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
     assert.doesNotMatch(svg, /#(?:9C8CFF|5254D8|6260D8|C99A3E)/i, p + ': unexpected coloured logo accent');
   }
   const nativeIcon = await read('desktop/Icon.swift');
-  assert.match(nativeIcon, /white\.setStroke\(\); stem\.stroke\(\)/, 'macOS app icon draws white antenna stem');
+  assert.match(nativeIcon, /white\.setStroke\(\)/, 'macOS app icon selects white for the antenna stem');
+  assert.ok(nativeIcon.indexOf('white.setStroke()') < nativeIcon.indexOf('stem.stroke()'), 'macOS app icon draws the antenna after selecting white');
   assert.match(nativeIcon, /white\.setFill\(\)/, 'macOS app icon draws white head and antenna tip');
   assert.doesNotMatch(nativeIcon, /#(?:9C8CFF|5254D8|6260D8)/i, 'no purple antenna in native icon generator');
 });

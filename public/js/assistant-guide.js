@@ -31,11 +31,20 @@ const intents = [
 ];
 const isSearch = /\b(najdi chat|vyhledej chat|find chat|search conversations?|najdi konverzaci)\b/;
 const greetings = /^(ahoj|cau|cus|hello|hi|hey|dobry den)[!. ]*$/;
+const appOverview = /\b(?:jak (?:tahle |tato |ta )?(?:app|apka|aplikace|agenteeq) funguje|jak funguje (?:tahle |tato |ta )?(?:app|apka|aplikace|agenteeq)|co (?:je|dela) agenteeq|k cemu (?:je|slouzi) agenteeq|how does (?:this |the )?(?:app|application|agenteeq) work|how (?:do i use|to use) (?:this |the )?(?:app|application|agenteeq)|what does agenteeq do|what is (?:this app|agenteeq))\b/;
 export function guideAnswer(question, { previousTopic = null, language = 'cs', route = '', snapshot = null } = {}) {
   const q = norm(question).trim();
   if (!q || isSearch.test(q)) return null;
   const en = String(language).toLowerCase().startsWith('en');
   if (greetings.test(q)) return { topic: null, cile: [], text: en ? 'Hi! What are you trying to do in Agenteeq? I can help with agents, connections, projects, notifications or costs.' : 'Ahoj! S čím ti můžu pomoct? Můžeme projít propojení nástrojů, práci agentů, projekty i náklady.' };
+  if (appOverview.test(q)) {
+    let text = en
+      ? 'Agenteeq brings activity from connected AI tools together on this computer. The Overview shows which agents are working or waiting for you; open a conversation to see available context and continue in its source tool. Projects group related work across tools. Recorded tokens are activity, not billed costs; billed amounts appear only when a supported provider supplies them.'
+      : 'Agenteeq na tomto počítači spojuje aktivitu připojených AI nástrojů. V Přehledu vidíš, kdo pracuje a kdo čeká na tvoje rozhodnutí; v detailu konverzace najdeš dostupný kontext a můžeš pokračovat ve zdrojovém nástroji. Projekty seskupují související práci napříč nástroji. Zaznamenané tokeny nejsou účtované náklady; ty se ukazují jen s podporovanými daty poskytovatele.';
+    if (route === 'prehled') text += en ? ' You are on the Overview now; enter a new task in the field below.' : ' Právě jsi v Přehledu; nový úkol zadáš v poli dole.';
+    if (snapshot && snapshot.connection !== 'live') text += en ? ' The current live connection is not confirmed, so agent activity may be stale.' : ' Živé spojení teď není potvrzené, takže údaje o agentech nemusí být aktuální.';
+    return { topic: 'overview', cile: [], text };
+  }
   let found = intents.find((x) => x.pattern.test(q));
   if (!found && previousTopic && /^(?:a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)(?:\b|$)/.test(q)) found = intents.find((x) => x.id === previousTopic);
   if (!found && /^(co umis|pomoc|help|what can you do)/.test(q)) return { topic: null, cile: [], text: en ? 'I can explain the app, guide you to a setting and help investigate missing agent activity. What is your goal?' : 'Pomůžu ti zorientovat se v Agenteeq, najít správné nastavení nebo zjistit, proč něco nefunguje. Co právě řešíš?' };

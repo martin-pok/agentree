@@ -1,5 +1,14 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 1013 testů, 1006 prošlo, 7 přeskočeno podle platformy, 0 selhalo. Lokálně použité UTC a přibalený Git; systémový Git blokuje nepřijatá licence Xcode. |
+| `npm run check` | 319 souborů bez syntaktické chyby. |
+| `qa:assistant` | Chromium i WebKit, 1440 a 375 px, CZ/EN: obecná otázka vrací vysvětlení bez nesouvisejících odkazů; ruční čtení historie přežije nové vykreslení i opožděnou odpověď; vlastní zpráva obnoví sledování konce; při chybě hledání 503 zůstane chat použitelný. Bez chyb JavaScriptu; při simulované 503 konzole hlásí jen očekávaný neúspěšný požadavek. |
+| Neověřeno | CI pro nový commit v PR #130, nainstalovaná macOS aplikace a uživatelovo ruční QA. |
+
 ## Protokol ověření – Nevydáno: nejmenší práva workflowů GitHub Actions (10. 10. 2026, Linux, Node 22.22)
 
 | Kontrola | Výsledek |
