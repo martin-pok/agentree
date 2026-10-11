@@ -22,8 +22,8 @@ test('průvodce vrací skutečné navigační cíle a omezuje neověřená tvrze
   for (const topic of ['extension', 'connect', 'alerts', 'costs', 'mobile', 'update', 'projects', 'agents']) {
     assert.ok(source.includes("id: '"+topic+"'"), topic);
   }
-  assert.match(source, /Odhady nepovažuj za skutečné faktury/);
-  assert.match(source, /ne z přímého potvrzení služby/);
+  assert.match(source, /Odhad není faktura/);
+  assert.match(source, /nikoli přímo od služby/);
 });
 
 
