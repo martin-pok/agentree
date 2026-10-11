@@ -147,6 +147,37 @@ export function preloadPrimarnihoPisma(html, satoshiAvailable = false) {
   return html.includes(preload) ? html : html.replace(marker, `${preload}\n${marker}`);
 }
 
+// Safe production-only CSS compaction. Preserve selectors, declaration whitespace,
+// data strings, URLs and all cascade ordering: *only* remove block comments.
+// The authored site/lp.css stays readable, and the output can be visually compared
+// byte-for-byte after replacing comments with a single whitespace separator.
+export function cssBezKomentaru(css) {
+  let result = '';
+  let quote = '';
+  let escaped = false;
+  for (let i = 0; i < css.length; i++) {
+    const c = css[i];
+    if (quote) {
+      result += c;
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'") { quote = c; result += c; continue; }
+    if (c === '/' && css[i + 1] === '*') {
+      const end = css.indexOf('*/', i + 2);
+      if (end < 0) throw new Error('Nedokončený CSS komentář; odmítám vydat poškozené styly.');
+      result += ' ';
+      i = end + 1;
+      continue;
+    }
+    result += c;
+  }
+  if (quote) throw new Error('Neukončený řetězec v CSS.');
+  return result;
+}
+
 // Značka „tohle je kopie na webu, žádný server tu není“. Vkládá se hned za <head>,
 // aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
 export function znackaStatickeKopie(html) {
@@ -197,6 +228,9 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
 
   // 4. Landing page do kořene. Jde poslední, takže její index.html je ten, který návštěvník uvidí.
   await copyDir(path.join(root, 'site'), out);
+  // Keep developer CSS intact, but don't transmit 14 KB of source comments to visitors.
+  const cssPath = path.join(out, 'lp.css');
+  await fs.writeFile(cssPath, cssBezKomentaru(await fs.readFile(cssPath, 'utf8')));
   // Verze v datech pro vyhledávače se bere z package.json při každém sestavení. Napsaná ručně by po
   // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
   // Stejně se upraví každá jazyková verze stránky – odkaz ke stažení i verze musí sedět v obou.
