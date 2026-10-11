@@ -10,7 +10,7 @@ import { createCodexConnector, createCodexTokenState, applyCodexTokenUsage, mapC
 import { applyGeminiChat } from '../src/connectors/gemini-family.js';
 import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js';
 import { applyCursorComposer } from '../src/connectors/cursor.js';
-import { validateWebPayload, applyWebPayload } from '../src/connectors/web.js';
+import { validateWebPayload, applyWebPayload, normalizedWebUrl, WEB_SITES } from '../src/connectors/web.js';
 import { parsePs, etimeToSec } from '../src/connectors/processes.js';
 import { createClaudeDesktopUsageConnector, applyPlanUsageSample, findLatestSample, planUsageSeries } from '../src/connectors/claude-desktop-usage.js';
 import { appSupportDir } from '../src/platform.js';
@@ -488,4 +488,37 @@ test('Historie vytížení plánu: hustá data se naředí a poslední bod zůst
   assert.ok(out.fiveHour.length <= 101, `bodů má být nejvýš 101, je ${out.fiveHour.length}`);
   assert.equal(out.fiveHour[out.fiveHour.length - 1].at, now - 60000, 'poslední vzorek se nesmí zahodit');
   assert.equal(out.samples, 1000);
+});
+
+test('Web provider ingest accepts only its own HTTPS origin and excludes URL secrets', () => {
+  const valid = {
+    chatgpt: 'https://chatgpt.com/c/abc',
+    'codex-web': 'https://chatgpt.com/codex/tasks/abc',
+    claude: 'https://claude.ai/new',
+    gemini: 'https://gemini.google.com/app',
+    mscopilot: 'https://copilot.microsoft.com/chats/abc',
+    perplexity: 'https://www.perplexity.ai/search/abc',
+    grok: 'https://grok.com/chat/abc',
+    qwen: 'https://chat.qwen.ai/c/abc',
+    'github-copilot': 'https://github.com/copilot/c/abc',
+  };
+  assert.deepEqual(Object.keys(valid).sort(), Object.keys(WEB_SITES).sort());
+  for (const [site, url] of Object.entries(valid)) {
+    const r = validateWebPayload({ site, conversationId: 'abc', url: url + '?token=do-not-store#private', generating: false });
+    assert.equal(r.ok, true, site + ' should pass with correct origin');
+    assert.equal(r.value.url, url, site + ' must discard URL query and fragment');
+    for (const attacker of [
+      'https://evil.example/c/abc',
+      'https://chatgpt.com.evil.example/c/abc',
+      'https://u:p@' + new URL(url).hostname + new URL(url).pathname,
+      url.replace('https:', 'http:'),
+    ]) {
+      assert.equal(validateWebPayload({ site, conversationId: 'abc', url: attacker }).ok, false,
+        site + ' accepted untrusted origin ' + attacker);
+    }
+  }
+  assert.equal(normalizedWebUrl('codex-web', 'https://chatgpt.com/c/abc'), null,
+    'Codex web must not be impersonated by a ChatGPT page');
+  assert.equal(normalizedWebUrl('github-copilot', 'https://github.com/settings/profile'), null,
+    'GitHub Copilot must not accept unrelated pages');
 });
