@@ -145,6 +145,7 @@ export function connectStream({ onHello, onEvent, onStatus }) {
   let pokus = 0;
   let casovac = null;
   let ukonceno = false;
+  let posledniPozdrav = 0;
 
   function pripoj() {
     casovac = null;
@@ -152,6 +153,7 @@ export function connectStream({ onHello, onEvent, onStatus }) {
     es = proud;
     proud.addEventListener('hello', (e) => {
       if (ukonceno || proud !== es) return;
+      const cisloPozdravu = ++posledniPozdrav;
       let payload;
       try { payload = JSON.parse(e.data); } catch {
         // A corrupt handshake cannot mark the app connected or suppress recovery.
@@ -163,11 +165,11 @@ export function connectStream({ onHello, onEvent, onStatus }) {
       // The stream is only healthy once its matching state snapshot has loaded.
       // Reconnects must not report "live" while the UI still has stale data.
       Promise.resolve().then(() => onHello(payload)).then(() => {
-        if (ukonceno || proud !== es) return;
+        if (ukonceno || proud !== es || cisloPozdravu !== posledniPozdrav) return;
         pokus = 0;
         onStatus('live');
       }).catch(() => {
-        if (ukonceno || proud !== es) return;
+        if (ukonceno || proud !== es || cisloPozdravu !== posledniPozdrav) return;
         onStatus('reconnecting');
         proud.close();
         naplanuj();
