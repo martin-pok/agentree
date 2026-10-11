@@ -19,7 +19,7 @@ export function validAccountId(id) {
 // je viditelné odděleně a NESMÍ se používat pro odečet kvót.
 export function sessionAccountBinding({ sessionId, accountId, provider, source, observedAt, verified = false } = {}) {
   if (typeof sessionId !== 'string' || !/^[a-z0-9-]+:[^\\s]{1,200}$/i.test(sessionId)) return null;
-  if (!validAccountId(accountId) || !PROVIDER_ID.test(provider) || accountId.split(':')[0] !== provider) {
+  if (!validAccountId(accountId) || !PROVIDER_ID.test(provider) || accountId.split(':')[0] !== (provider === 'anthropic' ? 'claude' : provider === 'openai' ? 'codex' : provider)) {
     return { sessionId, accountId: null, confidence: 'unresolved', source: null, observedAt: null };
   }
   if (!verified || typeof source !== 'string' || !source.trim() || !Number.isSafeInteger(observedAt) || observedAt <= 0) {
