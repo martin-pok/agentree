@@ -41,6 +41,12 @@ Implementovaná částečná detekce identit účtů a kvót zatím nezajišťuj
 - **Duplicitní agenty a historická data:** závazně testovat vícenásobné kořeny stejného přepisu, symlinky, stejný session UUID z různých nezávislých profilů, obnovu SSE po restartu a konflikt více instancí. Jeden logický běh musí mít jednu identitu a nesmí se započítat dvakrát; při konfliktu identit nevymýšlet sloučené statistiky.
 - **Otevřené P1:** pokrytí dynamických cache/session verzí, stale renderů a souběžných migrací, měření p95 latence a vizuální kontrola na reálných zařízeních.
 
+## Web performance / responsive / SEO — release gate
+
+Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opravené přednačítání primárního písma, neblokující cache revalidace, lehčí hero parallax, nativní webový trackpad, safe-area / ultrawide gutters, minimální dotykové cíle a `/app` noindex. Nová QA kontroluje **šest veřejných stránek** v Chromiu/WebKitu na 22 šířkách od **320 do 3840 px**, plus laboratorní LCP/CLS a SEO regresní pravidla.
+
+**Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
+
 ## Právě teď — cesta od 0.46.1 k dalšímu releasu
 
 | Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
