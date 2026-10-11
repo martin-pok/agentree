@@ -140,6 +140,14 @@ export class Store extends EventEmitter {
     if (this.ready) this.emit('limits', this.limitList(), limit, prev || null);
   }
 
+  removeLimit(id) {
+    const prev = this.limits.get(id);
+    if (!prev) return false;
+    this.limits.delete(id);
+    if (this.ready) this.emit('limits', this.limitList(), null, prev);
+    return true;
+  }
+
   limitList() {
     return [...this.limits.values()].sort((a, b) => a.id.localeCompare(b.id));
   }
