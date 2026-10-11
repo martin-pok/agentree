@@ -3,6 +3,7 @@ import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, l
 import { touch, addTokens, pushEntry } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
+import { verifiedProfileForTranscript } from '../provider-accounts.js';
 import { ui } from '../texty.js';
 import { POCITAC, prikazVeSlozce } from '../platform.js';
 
@@ -422,12 +423,11 @@ export function createClaudeCodeConnector(ctx) {
   let verifiedProfiles = [];
   function bindFileAccount(file, entry) {
     if (drzitele.get(entry.localId) !== file) return false;
-    const matches = verifiedProfiles.filter((profile) => profile?.accountId && profile?.root
-      && path.resolve(file).startsWith(path.resolve(profile.root) + path.sep));
-    if (matches.length !== 1) return false;
+    const profile = verifiedProfileForTranscript(file, verifiedProfiles);
+    if (!profile) return false;
     return store.bindAccount(`claude-code:${entry.localId}`, {
-      accountId: matches[0].accountId, source: 'verified-cli-profile',
-      observedAt: matches[0].observedAt, verified: true,
+      accountId: profile.accountId, source: 'verified-cli-profile',
+      observedAt: profile.observedAt, verified: true,
     }).ok;
   }
   let lastEventAt = 0;
