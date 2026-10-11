@@ -12,7 +12,7 @@ const verze = JSON.parse(await zdroj('package.json')).version;
 
 test('verze v README odpovídá vydané verzi', async () => {
   const readme = await zdroj('README.md');
-  assert.match(readme, new RegExp(`Stav: \\*\\*v${verze.replace(/\./g, '\\.')} `), 'README hlásí jinou verzi než package.json');
+  assert.ok(readme.includes('**'+verze+'**'), 'README musí uvádět současnou pracovní verzi');
   // Odkaz vede na přílohu se stálým jménem v posledním vydání – stejně jako tlačítko na webu.
   // Adresa s číslem verze by po každém vydání ukazovala do prázdna.
   assert.match(readme, /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/, 'README má odkazovat na stálý DMG instalátor posledního vydání');
