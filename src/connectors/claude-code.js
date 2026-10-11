@@ -420,9 +420,10 @@ export function createClaudeCodeConnector(ctx) {
   // Tatáž konverzace může být vidět ze dvou kořenů (~/.config/claude jako symlink na ~/.claude,
   // zkopírovaná složka). Čte se jen z prvního souboru, jinak by se tokeny i přepis započítaly dvakrát.
   const drzitele = new Map(); // localId → soubor
+  const konfliktyId = new Set(); // duplicate UUID in distinct transcript paths: fail closed
   let verifiedProfiles = [];
   function bindFileAccount(file, entry) {
-    if (drzitele.get(entry.localId) !== file) return false;
+    if (drzitele.get(entry.localId) !== file || konfliktyId.has(entry.localId)) return false;
     const profile = verifiedProfileForTranscript(file, verifiedProfiles);
     if (!profile) return false;
     return store.bindAccount(`claude-code:${entry.localId}`, {
@@ -511,7 +512,12 @@ export function createClaudeCodeConnector(ctx) {
     mimoObdobi.delete(file);
     if (!f) {
       const drzi = drzitele.get(path.basename(file, '.jsonl'));
-      if (drzi && drzi !== file && files.has(drzi)) return;
+      if (drzi && drzi !== file && files.has(drzi)) {
+        // Same UUID from another profile must not be silently counted as one verified account.
+        konfliktyId.add(path.basename(file, '.jsonl'));
+        store.unbindAccount(`claude-code:${path.basename(file, '.jsonl')}`);
+        return;
+      }
     }
     if (f && stat.size < f.tail.offset) {
       store.remove(`claude-code:${f.localId}`);
@@ -582,6 +588,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    konfliktyId.clear();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
     for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
@@ -754,8 +761,9 @@ export function createClaudeCodeConnector(ctx) {
     status() {
       const count = files.size;
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count
+        state: konfliktyId.size ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        collisions: konfliktyId.size,
+        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : count
           ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
           : exists
             ? ui('Složka existuje, zatím bez sessions.')
