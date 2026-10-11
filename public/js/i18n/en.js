@@ -20,6 +20,7 @@ export default {
     "účet": "account",
     "Aktivní": "Active",
     "Dříve rozpoznaný": "Previously detected",
+    "Neznámá služba": "Unknown service",
     "Odhlášeno": "Signed out",
     "Nelze ověřit": "Unable to verify",
     "Naposledy {0}": "Last detected: {0}",
