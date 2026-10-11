@@ -2040,3 +2040,45 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
 /* Installation preview: full-body Scout, not a third repeated head logo. */
 .extension-received > .extension-received-robot {display:block;width:42px;height:44px;flex:0 0 42px;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.15));}
 @media(max-width:620px){.extension-received > .extension-received-robot{width:40px;height:42px;flex-basis:40px;}}
+
+
+/* Responsive resilience: logical CSS viewport, not hard-coded phone models.
+   Covers narrow iPhones, landscape safe areas, foldable-width layouts and 4K desktop.
+   No new breakpoint-specific card layout: existing 620/760/900px rules own composition. */
+:where(.unit, .unit-head, .hero-figure, .hero-stage, .hero-tilt, .tile,
+  .tile-shot, .integration-lane, .integration-tools, .install-hero-step,
+  .extension-layout, .site-footer .foot-in) { min-width:0; }
+:where(.hero h1, .unit-head h2, .tile h3) { overflow-wrap:break-word; }
+@media (max-width:620px) {
+  .wrap {
+    width:min(
+      calc(100% - max(15px, env(safe-area-inset-left, 0px)) - max(15px, env(safe-area-inset-right, 0px))),
+      var(--page)
+    );
+  }
+}
+@media (min-width:621px) {
+  .wrap {
+    width:min(
+      calc(100% - max(24px, env(safe-area-inset-left, 0px)) - max(24px, env(safe-area-inset-right, 0px))),
+      var(--page)
+    );
+  }
+}
+/* Large screens remain intentionally centered and readable, never edge-to-edge. */
+@media (min-width:1800px) { :root { --page:1280px; } }
+
+/* Safari on coarse-pointer devices should not repaint a 24px backdrop blur on
+   each scroll frame. Preserve the dark premium navigation using an opaque layer. */
+@media (hover:none) and (pointer:coarse) {
+  .nav.is-odjeto {
+    background:#17141f;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  .mobile-menu {
+    background:rgba(8,7,16,.94);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
