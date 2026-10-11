@@ -45,6 +45,14 @@ export class Store extends EventEmitter {
 
   // Assign an account only with explicit same-session proof supplied by a connector.
   // Switching login elsewhere must never silently reassign an existing session.
+  unbindAccount(sessionId) {
+    const s = this.sessions.get(sessionId);
+    if (!s?.accountBinding) return false;
+    s.accountBinding = null;
+    this.commit(s);
+    return true;
+  }
+
   bindAccount(sessionId, evidence) {
     const s = this.sessions.get(sessionId);
     if (!s) return { ok: false, reason: 'session_not_found' };
