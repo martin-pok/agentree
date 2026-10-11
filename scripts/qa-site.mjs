@@ -521,11 +521,18 @@ try {
             const menu = document.querySelector('[data-mobile-menu-toggle]');
             const mobile = menu && getComputedStyle(menu).display !== 'none';
             const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
+            const shortTargets = [...document.querySelectorAll(
+              '.nav .brand, .nav .lang a, [data-mobile-menu-toggle], .site-footer .brand')]
+              .filter(el => getComputedStyle(el).display !== 'none')
+              .filter(el => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 && (rect.width < 43.5 || rect.height < 43.5);
+              }).map(el => el.className || el.tagName);
             const heading = document.querySelector('h1')?.getBoundingClientRect();
             const cta = document.querySelector('.hero .btn, .install-page .btn')?.getBoundingClientRect();
             const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
               .every(el => el.getBoundingClientRect().width > 0);
-            return { vw, screenHasOverflow, overflow, mobile,
+            return { vw, screenHasOverflow, overflow, shortTargets, mobile,
               hasMenu: Boolean(menu), heading: heading?.width,
               cta: cta?.width || null, links };
           });
@@ -533,6 +540,8 @@ try {
             `${engine} ${language} ${width}px: horizontal page overflow`);
           assert.deepEqual(layout.overflow, [],
             `${engine} ${language} ${width}px: key content crosses viewport`);
+          if (width <= 900) assert.deepEqual(layout.shortTargets, [],
+            `${engine} ${language} ${width}px: navigation touch targets below 44px`);
           assert.ok(layout.heading > 0 && (layout.cta === null || layout.cta >= 44) && layout.links,
             `${engine} ${language} ${width}px: missing heading, CTA, or logo`);
           assert.equal(layout.mobile, layout.hasMenu && width <= 900,
