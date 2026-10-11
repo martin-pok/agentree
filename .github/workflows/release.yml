@@ -78,9 +78,24 @@ jobs:
           git push origin "refs/tags/$TAG"
           echo "Založen tag $TAG na $(git rev-parse --short HEAD)."
 
-  mac:
-    name: aplikace pro Mac (Apple Silicon)
-    needs: znacka
+  # Fail closed before building or uploading any artifacts from an arbitrary release tag.
+  overeni:
+    name: validace tagu a verze
+    needs: overeni
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.tag || github.ref }}'
+          persist-credentials: false
+      - name: Tag musí odpovídat verzi v package.json
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\\.[0-9]+\\.[0-9]+
+    needs: overeni
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -120,7 +135,7 @@ jobs:
 
   windows:
     name: aplikace pro Windows
-    needs: znacka
+    needs: overeni
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
@@ -140,7 +155,172 @@ jobs:
 
   rozsireni:
     name: rozšíření pro Chrome
-    needs: znacka
+    needs: overeni
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - name: Sestavit rozšíření
+        run: npm run build:extension
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rozsireni
+          path: dist/agenteeq-extension-*.zip
+          if-no-files-found: error
+
+  vydani:
+    name: koncept vydání
+    needs: [mac, windows, rozsireni]
+    if: >-
+      always()
+      && needs.mac.result == 'success'
+      && needs.windows.result == 'success'
+      && needs.rozsireni.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # založení konceptu a nahrání příloh přes `gh release`
+    steps:
+      - uses: actions/checkout@v5
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+
+      - uses: actions/download-artifact@v7
+        with: { path: stazeno }
+
+      # Přílohy z různých úloh chodí každá ve své složce; vydání je chce pohromadě.
+      - name: Srovnat přílohy
+        run: |
+          mkdir -p prilohy
+          find stazeno \( -name '*.zip' -o -name '*.dmg' \) -exec cp {} prilohy/ \;
+          # latest-build.json zapisuje build a je v něm pravda o podpisu. Bereme ten
+          # z Apple Silicon, protože to je hlavní build; když není, popis bude opatrnější.
+          cp stazeno/mac-arm64/latest-build.json prilohy/ 2>/dev/null || true
+          # Kopie se stálým jménem. Web na ni odkazuje přes /releases/latest/download/, takže
+          # tlačítko Stáhnout přežije každé vydání bez zásahu do stránky. Bez tohohle souboru
+          # by odkaz po dalším vydání ukazoval do prázdna.
+          # Stejně se jmenují stálé kopie instalátoru pro Mac (DMG) a balíčku pro Windows, na které
+          # vedou tlačítka na stránce Instalace. Chybějící soubor zastaví vydání: tlačítko bez
+          # přílohy je horší než žádné vydání.
+          zkopiruj() {
+            for f in prilohy/$1; do
+              if [ -e "$f" ]; then cp "$f" "prilohy/$2"; return 0; fi
+            done
+            echo "::error::K vydání chybí $1 – stálá příloha $2 by vedla do prázdna."
+            return 1
+          }
+          zkopiruj 'Agenteeq-*-macOS-arm64.zip' Agenteeq-macOS-arm64.zip
+          zkopiruj 'Agenteeq-*-macOS-arm64.dmg' Agenteeq-macOS-arm64.dmg
+          zkopiruj 'Agenteeq-*-Windows-x64.zip' Agenteeq-Windows-x64.zip
+          ls -l prilohy
+
+      # Tag jde do skriptu přes env, ne vložením výrazu do textu skriptu: jméno tagu i vstup
+      # ručního spuštění by se jinak vykonaly jako příkaz shellu (script injection).
+      - name: Popis vydání
+        id: popis
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          VERZE="${TAG#v}"
+          node scripts/release-notes.mjs "$VERZE" prilohy > poznamky.md
+          echo "verze=$VERZE" >> "$GITHUB_OUTPUT"
+          cat poznamky.md
+
+      # `gh` je na runnerech předinstalované, takže nepřibývá žádná cizí akce.
+      # `--draft`: vydání čeká na člověka, dokud ho sám nezveřejní.
+      - name: Založit koncept vydání
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          VERZE: ${{ steps.popis.outputs.verze }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg --clobber
+            gh release edit "$TAG" --notes-file poznamky.md
+          else
+            gh release create "$TAG" prilohy/*.zip prilohy/*.dmg \
+              --draft \
+              --title "Agenteeq $VERZE" \
+              --notes-file poznamky.md
+          fi
+          gh release view "$TAG" --json isDraft,url,assets
+; then
+            echo "::error::Neplatný formát release tagu."
+            exit 1
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Tag $TAG neodpovídá package.json ($VERSION)."
+            exit 1
+          fi
+
+  mac:
+    name: aplikace pro Mac (Apple Silicon)
+    needs: overeni
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+
+      # Vydává se jen to, co prošlo. Testy tu nejsou formalita: na Macu běží i ty, které se
+      # na Linuxu přeskakují. Aplikace pro Mac je jen pro Apple Silicon (M1 a novější) –
+      # rozhodnutí vlastníka produktu; Mac s procesorem Intel nepodporujeme.
+      - name: Kontrola a testy
+        run: npm run check && npm test
+
+      - name: Sestavit aplikaci
+        env:
+          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
+          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
+        run: npm run build:mac
+
+      # Instalátor s přetažením do Aplikací. Obsah bere z právě sestaveného ZIPu, takže je
+      # v něm tatáž (a stejně podepsaná) aplikace. Jen nástroje macOS: ditto, ln, hdiutil.
+      - name: Sestavit obraz disku (DMG)
+        env:
+          AGENTEEQ_SIGN_IDENTITY: ${{ secrets.AGENTEEQ_SIGN_IDENTITY }}
+          AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
+        run: npm run build:dmg
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mac-arm64
+          path: |
+            dist/Agenteeq-*-macOS-*.zip
+            dist/Agenteeq-*-macOS-*.dmg
+            dist/latest-build.json
+          if-no-files-found: error
+
+  windows:
+    name: aplikace pro Windows
+    needs: overeni
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with: { arch: x64 }
+      - name: Sestavit plášť
+        run: npm run build:windows
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows
+          path: dist/Agenteeq-*-Windows-x64.zip
+          if-no-files-found: error
+
+  rozsireni:
+    name: rozšíření pro Chrome
+    needs: overeni
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
