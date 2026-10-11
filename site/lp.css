@@ -2036,3 +2036,7 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
     .mobile-menu-languages a:hover {background:rgba(255,255,255,.09);}
   }
 }
+
+/* Installation preview: full-body Scout, not a third repeated head logo. */
+.extension-received > .extension-received-robot {display:block;width:42px;height:44px;flex:0 0 42px;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.15));}
+@media(max-width:620px){.extension-received > .extension-received-robot{width:40px;height:42px;flex-basis:40px;}}
