@@ -13,7 +13,7 @@ Malá ikona v macOS **menu baru** a značka rozšíření pro Chrome vychází z
 Velká ikona aplikace v macOS **Docku** používá schválený rozšířený filled
 logomark: samostatnou bílou hlavu s jednou bílou anténou, dvěma tmavými
 kapslovými očima, bez těla. Zakázaná celotělová varianta Scout se pro Dock
-nepoužívá. Nativní vektor generuje `desktop/Icon.swift`, nikoli historická
+nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg`; transparentní varianta bez dlaždice je `public/brand/agenteeq-dock-transparent.svg`. Jejich rozměry jsou odvozené ze stejných souřadnic jako Swift generátor. Nativní vektor generuje `desktop/Icon.swift`, nikoli historická
 binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
 zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
 
