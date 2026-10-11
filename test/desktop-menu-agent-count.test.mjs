@@ -13,4 +13,6 @@ test('native menu count is separate from attention badge and updates with sessio
   const badge = swift.slice(swift.indexOf('if type == "badge"'), swift.indexOf('if type == "running-agents"'));
   assert.ok(!badge.includes('statusItem.button?.title'), 'attention count never overwrites agent count');
   assert.ok(swift.includes('statusItem.button?.title = " —"'), 'unknown before first snapshot');
+  assert.ok(swift.includes('self.statusItem.button?.title = " —"'), 'server failure must clear stale count');
+  assert.ok(swift.includes('Agenteeq – spojení s agenty přerušeno'), 'disconnected status is explicit');
 });
