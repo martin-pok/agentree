@@ -436,14 +436,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
     // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
     // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
-    claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
-      .map(({ account }) => {
-        const id = claudeIdentity(account);
-        if (!id) return null;
-        const plan = claudePlanFromAccount(account);
-        return [id, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
-          observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
-      }).filter(Boolean)).values()];
+    const authenticatedClaudeProfiles = [primary, ...extraClaude].filter((item) => item?.account)
+      .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
+      .filter((item) => item.accountId);
+    claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
+      [item.accountId, { id: item.accountId, provider: 'anthropic', service: 'claude',
+        plan: item.plan?.plan || null, observedAt: Date.now(),
+        evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
+    // An account is bound only where authenticated CLI profile and transcript root agree.
+    // Never assign all agents to the currently signed-in global account.
+    const observedAt = Date.now();
+    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
+      home === config.sourceHome
+        ? [path.join(home, '.claude', 'projects'), path.join(home, '.config', 'claude', 'projects')]
+          .map((root) => ({ root, accountId, observedAt }))
+        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
