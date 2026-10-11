@@ -305,7 +305,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
   }
 
   if (s.limit && ts > s.limit.at) s.limit = null;
-  onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null);
+  onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null, s);
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 
   const parts = Array.isArray(m.content) ? m.content : [];
@@ -455,11 +455,13 @@ export function createClaudeCodeConnector(ctx) {
     // (public/js/ui.js#currentLimits). Úspěšná odpověď před obnovou ho nesmaže: může přijít
     // z jiného účtu nebo z dokupovaného využití – okno předplatného je pořád vyčerpané.
     onQuota: (limit) => store.setLimit(limit),
-    onSuccess: (ts, model) => {
+    onSuccess: (ts, model, session) => {
       const klic = model || '';
       if ((posledniUspech.get(klic) || 0) < ts) posledniUspech.set(klic, ts);
       for (const l of store.limits.values()) {
         if (l.provider !== 'anthropic' || !l.reached || l.at >= ts) continue;
+        // Success from another licensed account cannot clear an exhausted quota.
+        if (l.accountId && session?.accountBinding?.accountId !== l.accountId) continue;
         if (l.source === 'transcript-quota') continue;
         // Úspěch jiného modelu nic neříká o limitu toho, který narazil. Dřív ho shodil kdokoli:
         // Opus zablokovaný do 23:20 svítil jako volný 84 sekund po vyčerpání, jen proto, že
