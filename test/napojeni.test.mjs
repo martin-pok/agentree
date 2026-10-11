@@ -477,3 +477,29 @@ test('Nastavení pokrývá všechny skutečně podporované webové konektory ex
   assert.deepEqual(otevreno, Object.values(WEBY).map((w) => w.url));
   n.stop();
 });
+
+test('první stav z Chrome extension během otevírání prohlížeče se neztratí', async () => {
+  let finishOpen;
+  let opened;
+  const opening = new Promise((resolve) => { finishOpen = resolve; });
+  const browserEntered = new Promise((resolve) => { opened = resolve; });
+  const events = [];
+  const n = createNapojeni({
+    bins: () => ({}), run: async () => ({}),
+    prihlas: async () => ({ ok: false }), extension: () => ({ state: 'ready', sites: {} }),
+    open: async () => { opened(); return opening; },
+    emit: (event) => events.push(event),
+  });
+  const pending = n.napojit('web:chatgpt');
+  await browserEntered;
+  n.webOzvalo('chatgpt');
+  assert.equal(events.filter((e) => e.udalost === 'napojeno').length, 1,
+    'event arriving during browser opening must confirm the connection');
+  assert.equal(events[0].overeni, 'pozorovano', 'browser event is not provider OAuth');
+  finishOpen({ ok: true });
+  const result = await pending;
+  assert.equal(result.ok, true);
+  assert.equal(result.ceka, false, 'observer was already completed by the first Chrome event');
+  assert.equal(n.ceka('web:chatgpt'), false);
+  n.stop();
+});
