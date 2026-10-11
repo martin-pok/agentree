@@ -276,10 +276,13 @@ test('two independently authenticated Claude profiles keep statusline quotas iso
     await c.idle?.();
     const accountA = providerIdentity('claude', 'license-aaaa-123456');
     const accountB = providerIdentity('claude', 'license-bbbb-123456');
+    store.setLimit({ id: 'claude:five_hour', provider: 'anthropic', at: now - 1000,
+      usedPercent: 98, source: 'statusline' });
     c.bindProfileAccounts([
       { root: rootA, accountId: accountA, observedAt: now },
       { root: rootB, accountId: accountB, observedAt: now },
     ]);
+    assert.equal(store.limits.has('claude:five_hour'), false, 'stale global gauge removed when two licenses appear');
     assert.equal(store.summary('claude-code:' + primaryId)?.accountBinding?.accountId, accountA);
     assert.equal(store.summary('claude-code:' + secondId)?.accountBinding?.accountId, accountB);
     const status = (session_id, used_percentage) => ({
