@@ -722,6 +722,23 @@ export function createClaudeCodeConnector(ctx) {
     },
     scan,
     pridejKoren,
+    // Verified account IDs come from the auth status of the *same* CLI profile.
+    // Transcript roots are compared by exact path segment, never by project name.
+    bindProfileAccounts(profiles = []) {
+      let bound = 0;
+      for (const [file, entry] of files) {
+        if (drzitele.get(entry.localId) !== file) continue;
+        const matches = profiles.filter((profile) => profile?.accountId && profile?.root
+          && path.resolve(file).startsWith(path.resolve(profile.root) + path.sep));
+        if (matches.length !== 1) continue; // ambiguous or unknown, never guess
+        const result = store.bindAccount(`claude-code:${entry.localId}`, {
+          accountId: matches[0].accountId, source: 'verified-cli-profile',
+          observedAt: matches[0].observedAt, verified: true,
+        });
+        if (result.ok) bound++;
+      }
+      return bound;
+    },
     koreny: () => koreny.seznam(),
     zkusKoreny: () => koreny.zkusChybejici(),
     stop() {
