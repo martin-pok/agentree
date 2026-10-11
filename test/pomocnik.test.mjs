@@ -334,3 +334,9 @@ test('pomocník: texty bez první osoby a bez mužského rodu („Možná jsi my
   const prvniOsoba = /(?<![\p{L}])(myslel|myslela|jsem|mám|nevidím|pošlu|hledám|nemůžu|najdu|poradím|nenašel|prohledal|hledal)(?![\p{L}])/iu;
   for (const t of texty) assert.doesNotMatch(t, prvniOsoba, t);
 });
+
+
+test('volitelný lokální model má krátký časový limit, aby neblokoval odpověď pomocníka', async () => {
+  const app = await fs.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.match(app, /formulujLokalne\(\{[^\n]*casMs: 4500 \}\)/);
+});
