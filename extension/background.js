@@ -254,7 +254,35 @@ chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
 chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() => {}); });
 
+// Do not trust a content-script payload claiming to originate from a different AI site.
+// The browser-controlled sender.tab.url is stronger evidence than the page-provided site field.
+const SITE_HOSTS = {
+  chatgpt: ['chatgpt.com', 'chat.openai.com'],
+  'codex-web': ['chatgpt.com'],
+  claude: ['claude.ai'],
+  gemini: ['gemini.google.com'],
+  mscopilot: ['copilot.microsoft.com'],
+  perplexity: ['www.perplexity.ai', 'perplexity.ai'],
+  grok: ['grok.com'],
+  qwen: ['chat.qwen.ai'],
+  'github-copilot': ['github.com'],
+};
+function senderMatchesSite(sender, site) {
+  if (!sender?.tab) return true; // Internal popup tests and messages do not carry a tab.
+  try {
+    const url = new URL(sender.tab.url || sender.url);
+    return url.protocol === 'https:' && SITE_HOSTS[site]?.includes(url.hostname) === true
+      && (site !== 'github-copilot' || url.pathname.startsWith('/copilot'));
+  } catch {
+    return false;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === 'agenteeq:update' && !senderMatchesSite(sender, msg.payload?.site)) {
+    sendResponse({ ok: false });
+    return false;
+  }
   if (msg?.type === 'agenteeq:update') {
     send(msg.payload, sender?.tab).then((ok) => sendResponse({ ok }), (err) => {
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } });
