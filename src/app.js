@@ -476,7 +476,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
     if (!rows.some((x) => x.provider === 'anthropic' && x.active)) rows.push({ provider: 'anthropic', service: 'claude', id: null, plan: null, active: false, state: claudeAuth.loggedIn === false ? 'signed_out' : 'unavailable', limits: [], credits: null, observedAt: null });
     if (!rows.some((x) => x.provider === 'openai' && x.active)) rows.push({ provider: 'openai', service: 'chatgpt', id: null, plan: null, active: false, state: 'unavailable', limits: [], credits: null, observedAt: null });
-    return rows.map((row) => ({ ...row, planLabel: row.plan ? describePlan(row).label : null }))
+    return rows.map((row) => ({ ...row, planLabel: row.plan
+      ? (row.service === 'claude' || row.service === 'chatgpt'
+        ? describePlan(row).label : `${row.provider} · ${row.plan}`)
+      : null }))
       .sort((a, b) => Number(b.active) - Number(a.active) || (b.observedAt || 0) - (a.observedAt || 0));
   }
 
