@@ -214,7 +214,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       const { model, duvod } = await vyberLokalniModel({ ollama });
       modelMimoPocitac = duvod === 'mimo-pocitac';
       if (model) {
-        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language });
+        // Optional wording must not hold the assistant response hostage for 25 seconds.
+        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language, casMs: 4500 });
         if (odpoved) lokalne = { text: odpoved, model };
       }
     }
