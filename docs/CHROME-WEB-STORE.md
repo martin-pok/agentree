@@ -17,7 +17,11 @@ Když je vypnutý, ukazuje se všude ruční instalace. Po zapnutí je potřeba 
 
 Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.
 
-Poslední v dokumentaci doložená veřejná verze rozšíření je **0.31.4** (stav k 6. 10. 2026). Zdrojový manifest a CI artefakt už obsahují **0.46.1**, ale samotné zveřejnění této aktualizace v Chrome Web Store **není potvrzené**. Aktuální veřejnou verzi je nutné ověřit v Developer Dashboard; zelené CI samo nic do obchodu nenahrává. ID položky: `hocghhpigfilngdajmafkdcljdedanch`.
+Veřejná stránka obchodu 11. 10. 2026 stále ukazuje verzi **0.31.4**. Připravený zdrojový manifest
+a balíček mají verzi **0.46.1**; ta v Chrome Web Store ještě zveřejněná není. Developer Dashboard
+vyžaduje opětovné ověření vlastníka Google účtu, takže aktualizaci balíčku a obrázků musí předcházet
+jeho přihlášení. Zelené CI samo nic do obchodu nenahrává. ID položky:
+`hocghhpigfilngdajmafkdcljdedanch`.
 Stav vydání se ověřuje v [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 
 Po zveřejnění ověřit veřejnou stránku, zapnout příznak a vydat novou verzi aplikace, která obchod
