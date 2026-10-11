@@ -84,8 +84,10 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     const bin = nalezene[a.bin];
     if (!bin) return { nainstalovano: false, napojeno: null };
     const r = await run(bin, a.stav, { timeout: 10000, env: prostrediPro(bin) });
-    // Failed or incomplete status probes must not establish a verified session.
-    return { nainstalovano: true, napojeno: r?.ok === false ? null : a.precti(r) };
+    // A nonzero exit can still be an explicit "Not logged in" from the CLI.
+    // It must never prove a positive login. Other failure output stays unknown.
+    const observed = a.precti(r);
+    return { nainstalovano: true, napojeno: r?.ok === false ? (observed === false ? false : null) : observed };
   }
 
   async function prehled() {
