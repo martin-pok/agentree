@@ -319,3 +319,12 @@ test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE
     await fs.rm(link, { force: true });
   }
 });
+
+
+test('HTTP backend nastavuje pevné limity pomalých požadavků', async () => {
+  const source = await fs.readFile(new URL('../src/http.js', import.meta.url), 'utf8');
+  assert.match(source, /server\.headersTimeout = 15_000/);
+  assert.match(source, /server\.requestTimeout = 30_000/);
+  assert.match(source, /server\.maxHeadersCount = 100/);
+  assert.match(source, /server\.on\('request', onRequest\)/);
+});
