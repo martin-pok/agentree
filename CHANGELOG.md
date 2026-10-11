@@ -2,6 +2,11 @@
 
 ## Nevydáno
 
+- **Web: rychlejší a přesnější vykreslení (ve vývoji).** Odstraněno přednačítání nepotřebného Urbanist TTF; build přednačítá Satoshi WOFF2 jen tehdy, když je dostupné. Webové trackpady používají nativní plynulý posun a robotická hero scéna nepočítá parallax mimo viewport. CSS/JS mohou znovu použít validovanou cache.
+- **Web: citlivá responzivita a přístupnost (ve vývoji).** Safe-area odsazení pro iPhone v landscape, čitelná šířka na velkých monitorech a minimálně 44px navigační dotykové cíle. Přidány breakpointové a laboratorní Web Vitals testy pro CZ/EN homepage, instalaci a zásady soukromí v Chromiu a WebKitu.
+- **SEO (ve vývoji).** Webová ukázka rozhraní `/app` má vlastní `noindex` a crawler ji smí navštívit, aby značku respektoval. Šest veřejných stránek má regresní kontrolu canonical, hreflang, OG a priorit assetů. Skutečné Google PSI výsledky dosud nejsou ověřené; viz `docs/WEB-PERFORMANCE-AUDIT-0461.md`.
+
+
 - **Oddělení limitů více Claude účtů (ve vývoji).** Pokud aplikace bezpečně rozpozná účet konkrétního běhu, jeho 5hodinové, týdenní a extra-usage okno již nebude sdílet stejné ID s jinou licencí. Úspěch u jiné licence nesmí odstranit její vyčerpaný limit. Neověřené víceúčtové údaje zůstávají neznámé, nikoli sloučené. Čeká na CI a ověření na skutečných účtech.
 
 
