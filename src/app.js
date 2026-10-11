@@ -478,7 +478,17 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function providerAccounts() {
     const current = new Map();
-    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) current.set(claudeAccount.id, { plan: claudeAccount.plan, limits: [], credits: null, observedAt: claudeAccount.observedAt });
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) {
+      const limits = store.limitList().filter((l) => l.provider === 'anthropic'
+        && l.accountId === claudeAccount.id && l.source === 'statusline'
+        && Number.isFinite(l.usedPercent) && l.at <= Date.now()
+        && Date.now() - l.at <= 5 * 60_000)
+        .map((l) => ({ key: l.id, label: l.label, primary: {
+          usedPercent: l.usedPercent, windowMinutes: l.windowMinutes, resetsAt: l.resetsAt,
+        }, secondary: null }));
+      current.set(claudeAccount.id, { plan: claudeAccount.plan, limits, credits: null,
+        observedAt: claudeAccount.observedAt });
+    }
     for (const codexAccount of codexAccounts) current.set(codexAccount.id, { plan: codexAccount.plan, limits: codexAccount.limits, credits: codexAccount.credits, observedAt: codexAccount.observedAt });
     const rows = datastore.data.providerAccounts.map((item) => ({ ...item, active: current.has(item.id),
       ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
