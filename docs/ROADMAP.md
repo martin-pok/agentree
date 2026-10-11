@@ -4,6 +4,21 @@
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
+## Rozhodnutí schválená vlastníkem — sledování implementace
+
+| Požadavek | Stav v kódu | Co chybí do reálného dokončení |
+|---|---|---|
+| Obsah pod macOS titlebarem a bez kolizí s průvodcem | Oprava na PR #130 | Vizuální QA skutečné nainstalované aplikace |
+| Živý počet pracujících agentů v macOS menu baru | Implementováno v pracovní větvi | Ověřit reálné běhy, restart serveru a výpadky na Macu |
+| Dovednosti: ikona blesku; „Omezit pohyb“ | Implementováno | Finální vizuální kontrola |
+| Jediný oficiální širší filled logomark s kapslovými očima a jednou anténou | Geometrie Dock generátoru aktualizovaná; **není pixelově schválená proti originálu** | Exportovat schválené SVG/PNG/transparent varianty; sjednotit aktivní brand assety a binárky, bez Scouta jako Dock ikony, trojzubce a fialové antény |
+| České a anglické aktuální skutečné screenshoty Chrome Store | Exporty v `branding/chrome-web-store/export/` | Zkontrolovat proti finálnímu UI a zveřejnit přes účet vydavatele |
+| Google OAuth a profilová fotografie | Stav skutečného přihlášení neověřen | UAT přes Google účet, logout/login a offline |
+| SEO prodejní landing page | Metadata a strukturovaná data v kódu | Produkční crawl, canonical/hreflang, indexace, CWV, reálné nasazení |
+| Automaticky aktuální GitHub / lokální aplikace / Store | Commity v GitHubu jsou oddělené od distribuce | Release build, QA upgrade nainstalované aplikace, publikace obchodu; neslibovat vzdálenou úpravu Macu bez přístupu |
+
+Tato tabulka zachovává rozhodnutí i při změně agenta. Po každém schváleném požadavku aktualizovat odpovídající řádek, changelog a testy. Uzavřít položku až s odkazem na ověřitelné artefakty.
+
 ## Právě teď — cesta od 0.46.1 k dalšímu releasu
 
 | Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
