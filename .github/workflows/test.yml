@@ -12,6 +12,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One current validation per branch. A PR and its push share the same branch key;
+# superseded workflow runs are cancelled before consuming test runners.
+concurrency:
+  group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
