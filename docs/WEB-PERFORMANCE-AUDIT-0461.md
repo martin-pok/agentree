@@ -28,6 +28,15 @@
 - `scripts/qa-site.mjs` také exportuje laboratorní `web-vitals-{engine}.json` pro 390/1440 px: LCP (pokud API podporuje), CLS (kde podporováno), dlouhé úlohy, načítání a počet/přenos resource entries. Automaticky blokuje CLS >0.1 v podporovaných prohlížečích.
 - Testy musí **projít na HEAD** před merge. Zelený statický unit test není skutečný mobilní Safari výkonnostní profil a laboratorní localhost LCP není PSI score.
 
+## Další dokončená iterace — bezpečný build a orientace zařízení
+
+- **Produkční CSS `lp.css`:** `scripts/build-site.mjs#cssBezKomentaru` odebírá pouze CSS komentáře mimo uvozovky. Výstup zachovává deklarace, pořadí i media query; zdrojový stylopis pro design zůstává beze změny. Z původních ~133,8 kB textu zhruba 14 kB tvořily komentáře. **Nejde o 14kB úsporu Brotli přenosu**; to je nutné ověřit měřením skutečné komprese. Regrese v `test/site-performance-seo.test.mjs` kontroluje celé výsledné CSS i quoted `/* */`.
+- **Mobilní instalační navigace:** Instalace CZ/EN původně skrývala desktopové menu pod 900px, ale na rozdíl od homepage nenabízela mobilní menu. Nyní používá stejný přístupný overlay s focus lock, Escape, inert, obnovením focusu a blokací scrollu. `qa:site` navíc ověřuje šířky/výšky 390×844, 568×320 a 844×390 v Chromium/WebKit.
+- **Tablet v landscape:** minimální 44px dotykové cíle se u navigace řídí také `(hover:none) and (pointer:coarse)`, protože iPad/touch zařízení mohou být při šířce nad 900px.
+- **Pravdivost QA:** opraveno falešné označení scoped `scena.addEventListener('pointermove')` za globální listener a falešné `null != false` u stránek bez mobilního menu. Test instalace nyní vyžaduje **skutečně viditelnou** akci (hamburger v mobilu / CTA na desktopu), ne nulovou šířku skrytého tlačítka.
+- **Syntaktická kontrola:** parsování (bez spuštění kódu) vybraných modulů `site/lp.js`, `scripts/build-site.mjs`, `scripts/qa-site.mjs`, `test/site*.mjs`, `public/js/plynule-posouvani.js` proběhlo bez chyb. To **nenahrazuje** test sestavení a interakcí.
+- **CI:** na této větvi GitHub Actions zatím zůstává ve stavu `queued`. Finální review, skutečný browser QA a žádné nové nasazení nebudou označeny jako dokončené, dokud joby neskončí.
+
 ## Kritéria před veřejným tvrzením „PageSpeed 100“
 
 1. Publikovat pouze přes review/green CI a ověřený Vercel preview/prod SHA. Měřit oficiální PageSpeed Insights **mobile i desktop** na všech šesti URL (min. 3 běhy na každé kombinaci) a zapisovat celé reporty/čas. **Cíl 100** není garance; skóre může kolísat s prostředím a aktualizací Lighthouse.
