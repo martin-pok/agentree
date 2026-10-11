@@ -1409,7 +1409,7 @@ export default {
     "Pokračovat přes Google": "Continue with Google",
     "Pozastaveno do obnovení spojení.": "Paused until the connection is back.",
     "Vyber účet Google v okně prohlížeče. Agenteeq se přihlásí sám, jakmile to potvrdíš.": "Pick your Google account in the browser window. Agenteeq signs in on its own as soon as you confirm.",
-    "Souhrny – tokeny, útrata, limity a počty agentů – se teď synchronizují do tvého účtu a uvidíš je i na webu. Konverzace a kód dál zůstávají jen na {0}. Synchronizaci vypneš v Nastavení → Účet.": "Your summaries \u2013 tokens, spend, limits and agent counts \u2013 now sync to your account, and you can see them on the web too. Conversations and code still stay only on {0}. You can turn sync off in Settings \u2192 Account.",
+    "Přihlášení přes Google je ověřené. Synchronizace souhrnů – tokenů, útraty, limitů a počtů agentů – se spustí zvlášť. Na webu se data zobrazí až po úspěšném přenosu. Konverzace a kód zůstávají na {0}. Stav synchronizace ověříš v Nastavení → Účet.": "Google sign-in is verified. Syncing your summaries (tokens, spend, limits and agent counts) starts separately. Data appears on the web only after a successful transfer. Conversations and code stay on {0}. Check sync status in Settings → Account.",
     "Konverzace i tokeny": "Conversations and tokens",
     "Stav přes rozšíření": "Status via extension",
     "Jen stav běhu": "Running status only",
