@@ -40,7 +40,13 @@ const el = (tag, trida, text) => {
 };
 const SIPKA = '<svg class="sipka" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
+// Zastaralé, chybějící nebo časově nesmyslné události nepředstírají živý stav.
+// Čas z lokálního zdroje je v ms; čísla v sekundách a skok hodin dopředu odmítáme.
+function validniCas(at, now = Date.now()) {
+  return typeof at === 'number' && Number.isFinite(at) && at > 1e12 && at <= now + 60e3;
+}
 function ago(at) {
+  if (!validniCas(at)) return '—';
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
   if (s < 3600) return tr('před {0} min', Math.max(1, Math.round(s / 60)));
   if (s < 86400) return tr('před {0} h', Math.round(s / 3600));
@@ -48,6 +54,7 @@ function ago(at) {
 }
 // Jak dlouho agent odpovídá: 0:42, 3:05, 1:02:10.
 function trvani(od) {
+  if (!validniCas(od)) return '—';
   const s = Math.max(0, Math.floor((Date.now() - od) / 1000));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
