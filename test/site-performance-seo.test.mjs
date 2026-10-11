@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSite, JAZYKY, INSTALACE, preloadPrimarnihoPisma, hlavickyWebu } from '../scripts/build-site.mjs';
+import { buildSite, JAZYKY, INSTALACE, preloadPrimarnihoPisma, hlavickyWebu, cssBezKomentaru } from '../scripts/build-site.mjs';
 import { tempDir } from './helpers.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -97,4 +97,21 @@ test('browser can conditionally revalidate unchanged JS and CSS rather than redo
   for (const uri of ['/lp.js', '/lp.css', '/js/app.js', '/sw.js']) {
     assert.equal(headers(uri)['Cache-Control'], 'public, max-age=0, must-revalidate', uri);
   }
+});
+
+test('production CSS removes source comments without touching quoted strings or declarations', async () => {
+  assert.equal(cssBezKomentaru('a{/* drop */color:red;content:"/* preserve */"}'),
+    'a{ color:red;content:"/* preserve */"}');
+  assert.equal(cssBezKomentaru("a{content:'it\\'s /* not a comment */';}/* clean */"),
+    "a{content:'it\\'s /* not a comment */';} ");
+  assert.throws(() => cssBezKomentaru('a { /* unterminated'), /Nedokončený CSS komentář/);
+  assert.throws(() => cssBezKomentaru('a { content:"unterminated'), /Neukončený řetězec/);
+
+  const original = await fs.readFile(path.join(ROOT, 'site/lp.css'), 'utf8');
+  const compressed = cssBezKomentaru(original);
+  assert.ok(original.length - compressed.length > 9_000, 'marketing CSS must shed >9 KB comments');
+  const out = await tempDir('site-css-optimized-');
+  await buildSite({ out });
+  assert.equal(await fs.readFile(path.join(out, 'lp.css'), 'utf8'), compressed,
+    'production CSS differs only by comment removal');
 });
