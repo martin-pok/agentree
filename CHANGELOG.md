@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.46.2 – 2026-10-11 · spolehlivější připojení AI nástrojů
+
+### Co se mění pro uživatele
+
+- **Připojení Claude Code a Codexu:** stav „přihlášeno“ se potvrzuje až po ověření oficiálním CLI příkazem. Údaje o účtu a limitech se znovu načtou před potvrzením; případná nedostupnost dat je zobrazena místo nepravdivého úspěchu.
+- **Všech devět podporovaných webových služeb v Nastavení:** ChatGPT, Codex web, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot. U webových chatů aplikace správně označuje přijatá data z rozšíření, nikoliv neexistující OAuth autorizaci.
+- **Spolehlivější návrat z prohlížeče:** první událost rozšíření se neztratí při otevírání webu a opožděný výsledek zrušeného přihlášení nepřepíše rozhodnutí uživatele.
+- **Ochrana soukromí:** příchozí webové adresy musí odpovídat oficiální HTTPS doméně služby a neukládají se z nich parametry dotazu ani fragment.
+- **Přihlášení do Agenteeq přes Google:** potvrzení přihlášení nezaměňuje autentizaci s dokončenou cloudovou synchronizací; ta má samostatný stav.
+
+### Rozsah ověření
+
+Automatizované regresní testy kontrolují autorizaci, běh dialogů, zrušení, datovou čerstvost, bezpečné domény a jazykové verze. **Živé přihlášení a instalace na skutečném Macu s daným účtem stále vyžadují UAT.** Nejde o potvrzení, že všechny služby nabízejí OAuth integraci nebo že okamžitě poskytují kompletní spotřebu a předplatné.
+
 ## Nevydáno
 
 - **Web: instalace je plně ovladatelná i na telefonu (ve vývoji).** Česká i anglická instalační stránka nově používají totožné přístupné mobilní menu jako landing page; odkazy na Mac/Windows/rozšíření/potíže nezmizí pod breakpointem 900px. Automatické QA pokrývá i krátkou landscape obrazovku.
