@@ -19,6 +19,16 @@ Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ov�
 
 Tato tabulka zachovává rozhodnutí i při změně agenta. Po každém schváleném požadavku aktualizovat odpovídající řádek, changelog a testy. Uzavřít položku až s odkazem na ověřitelné artefakty.
 
+## Zátěžové a mezizařízení scénáře — akceptační kritéria
+
+**20 současně běžících agentů na jednom Macu (P0):** každá session má vlastní ID, neztrácí se SSE změny, počítadlo v menu baru odpovídá skutečným pracujícím session (nikoliv počtu procesů nebo všech historických chatů). Ověřit start/stop 20 běhů, jejich různá pořadí, rychlé přechody, reconnect SSE, vypršení čerstvosti a výpadek lokálního serveru. Automatická syntetická simulace: `test/twenty-agents-stress.test.mjs`; skutečných 20 externích procesů na Macu **neověřeno**. Cíl od zdroje do UI dle `AGENTS.md` je do 2 sekund pro souborové události, okamžitě pro hooky.
+
+**Mac mini s lokálním modelem (P0/P1):** katalog procesů už zahrnuje Ollamu a LM Studio. Zjištění, že běží hostitel/model, **nedokazuje**, že model vyřizuje konkrétní požadavek. Přidat explicitní read-only status konkrétních generování na základě ověřitelného zdroje (např. vlastní instrumentace běhů či podporované API), pravdivě rozlišit načtený model, běžící proces a aktivní inferenci. Ověřit model unload, několik lokálních běhů současně, chybějící Ollama endpoint a restart serveru. U vzdáleného Mac mini je zapotřebí spárovaný zdroj na tom zařízení; lokální process scan jiného Macu vzdálené procesy **neuvidí**.
+
+**Claude Code spuštěný na telefonu (P0/product decision):** pokud telefon vzdáleně ovládá **stejný Mac**, kde běží Claude Code a Agenteeq, jeho nový proces/hooky se mohou zobrazit v macOS aplikaci ze stávajícího lokálního zdroje. Je-li to Claude Code běžící **na jiném hostiteli/cloud VM**, Agenteeq to bez konektoru k tomuto hostiteli neuvidí. Současná spárovaná mobilní aplikace je z bezpečnostních důvodů read-only: endpointy pro vzdálené spuštění blokuje `src/remote-scope.js`. Neobcházet ochrany. Pro požadované spuštění přímo z telefonu navrhnout výslovně autorizovanou frontu akcí se schválením na hostiteli, omezením dostupných nástrojů a audit trail; až po security review + UAT. Testované blokování zápisu: `test/twenty-agents-stress.test.mjs`.
+
+**Kvalita dat (P0):** při 20 souběžných session testovat duplicitní ID, opožděné timestampy, chybějící proces, přerušení zdroje a hodnoty „neznámé“; žádný odhad se nemá vydávat za naměřený údaj. Reálné UI testy a skutečný mobilní přístup zůstávají otevřené.
+
 ## Právě teď — cesta od 0.46.1 k dalšímu releasu
 
 | Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
