@@ -134,3 +134,18 @@ test('detail se na dočasné „nevím“ u odpovědi zeptá znovu a časovač u
   const unmount = kod.slice(kod.indexOf('unmount() {'));
   assert.match(unmount, /clearTimeout\(v\.odpovedZnovu\)/, 'odchod z detailu zruší časovač');
 });
+
+test('future or invalid activity timestamp cannot make an agent look actively working', () => {
+  const now = Date.now();
+  for (const at of [now + 61e3, now + 86400e3, Number.POSITIVE_INFINITY, Number.NaN]) {
+    const s = konverzace(now);
+    s.running = true;
+    s.runningAt = at;
+    assert.notEqual(deriveStatus(s, now).status, 'working', `bad runningAt: ${at}`);
+    assert.equal(deriveStatus(s, now).stale, true);
+  }
+  const smallClockSkew = konverzace(now);
+  smallClockSkew.running = true;
+  smallClockSkew.runningAt = now + 15e3;
+  assert.equal(deriveStatus(smallClockSkew, now).status, 'working', 'small device clock drift is tolerated');
+});

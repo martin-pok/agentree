@@ -130,7 +130,11 @@ export function deriveStatus(s, now) {
   // neskončil odpovědí, takže ne „hotovo“ – ale ani „pracuje“. Nový zápis do přepisu posune
   // `runningAt` za čas zjištění a konverzace zase pracuje.
   const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
-  if (s.running && !skoncil && now - (s.runningAt || s.lastAt) < s.staleMs) {
+  // A future source timestamp must never keep an agent in a live working state.
+  // Allow 60 seconds of clock skew, in line with the limits freshness contract.
+  const runningAt = s.runningAt || s.lastAt;
+  const trustworthyRunningAt = Number.isFinite(runningAt) && runningAt > 0 && runningAt <= now + 60e3;
+  if (s.running && !skoncil && trustworthyRunningAt && now - runningAt < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
     // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
     // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
