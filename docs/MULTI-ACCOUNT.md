@@ -56,6 +56,13 @@ První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIde
 - **Zatím není hotovo**: prokazatelná vazba mezi běžící session a konkrétní licencí, oddělená živá Claude 5h/7d okna pro každý profil, filtrování agentů dle licence, plnohodnotný CRUD aliasů a e2e UAT více přihlášených účtů. Proto nejde tuto část označit za dokončenou ani zapnout placený paywall.
 - Bezpečnostní audit a neověřené brány: [SECURITY-AUDIT-0461.md](SECURITY-AUDIT-0461.md).
 
+## Nově propojená runtime datová vrstva
+
+- `src/model.js`: každá session má výchozí `accountBinding: null`; souhrn pro UI/SSE zveřejní pouze vazbu s `confidence: verified`.
+- `src/store.js#bindAccount`: jeden společný vstup pro providery; odmítá chybějící důkaz, cizího poskytovatele, starší pozorování a pokus přepsat již ověřenou vazbu jinou licencí. Změna ověřené vazby publikuje aktualizaci přes standardní session událost.
+- `test/session-account-binding.test.mjs`: simulace ověřené Google/Gemini licence, přepnutí účtu během session, opožděného důkazu a nesouhlasícího providera.
+- **Důležitá hranice:** samotná metoda není důkazem, že každý stávající konektor dodává ověřitelný account evidence. Napojení connectorů na jejich konkrétní proces/profil a per-account limity teprve následuje. Bez něj zůstane binding `null`, nikoli chybná licence.
+
 ## Gates
 
 - Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
