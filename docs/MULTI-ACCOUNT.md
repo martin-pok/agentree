@@ -1,6 +1,6 @@
 # ADR — Více účtů stejného AI poskytovatele
 
-**Stav:** schváleno k návrhu / realizace zatím nekompletní; návrh tarifikace Pro je produktové doporučení, nikoliv schválená cena nebo aktivovaný paywall. **Datum:** 2026-10-11.
+**Stav:** částečně implementováno; doplněna ochrana odmítnutí neověřených Claude identit, ale session-binding a oddělené Claude kvóty zůstávají nehotové; návrh tarifikace Pro je produktové doporučení, nikoliv schválená cena nebo aktivovaný paywall. **Datum:** 2026-10-11.
 
 ## Zjištěný stav implementace
 
@@ -40,6 +40,13 @@ Navržené klíčové oprávnění: `providerMultiAccount: 'pro'`. **Neaktivovat
 8. Ochrana soukromí: žádné tokeny, e-maily, autentizační soubory nebo obsah přepisů v synchronizaci a logování.
 9. Free→Pro→Free bez ztráty historie a přiřazení; nepřístupné placené ovládání nesmí vypnout zobrazení aktivních agentů.
 10. UAT na skutečném Macu, Chrome a případně dalším hostiteli. Synthetic fixture ani CI **nenahrazují** reálné víceúčtové přihlášení.
+
+## Implementační stav k poslední revizi
+
+- `src/app.js` již odmítá publikovat `claudeAccounts` bez ověřeného `accountUuid` jako aktivní licence. Nová regresní kontrola v `test/subscriptions.test.mjs`.
+- `test/security-adversarial.test.mjs` obsahuje negativní scénáře pro vzdálené mutace, přepis, neplatné kvóty a podvržené identity.
+- **Zatím není hotovo**: prokazatelná vazba mezi běžící session a konkrétní licencí, oddělená živá Claude 5h/7d okna pro každý profil, filtrování agentů dle licence, plnohodnotný CRUD aliasů a e2e UAT více přihlášených účtů. Proto nejde tuto část označit za dokončenou ani zapnout placený paywall.
+- Bezpečnostní audit a neověřené brány: [SECURITY-AUDIT-0461.md](SECURITY-AUDIT-0461.md).
 
 ## Gates
 
