@@ -16,6 +16,13 @@ const workflowy = await Promise.all(soubory.map(async (f) => ({ f, yml: await fs
 const ZAPIS = {
   'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
+  // Jednorázový workflow pro výslovně požadovanou 0.46.1 testovací verzi:
+  // actions:write jen k ručnímu dispatch vydání a contents:write výhradně
+  // ke zveřejnění ověřeného draftu jako prerelease (nikoli jako latest).
+  'release-0461-preview.yml': {
+    'start-preview-build': 'spustit zkontrolované release.yml přes workflow_dispatch',
+    'publish-preview': 'publikovat jen ověřený v0.46.1 prerelease s úplnými přílohami',
+  },
 };
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
