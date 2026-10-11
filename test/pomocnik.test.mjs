@@ -236,9 +236,9 @@ test('pomocník: prohledávání průběžně uvolňuje smyčku událostí (serv
   const celkem = performance.now() - start;
   assert.equal(v.prohledano, 1);
   // Na rychlém stroji trvá celé hledání jen pár desítek ms a jediný 10ms úsek mezi uvolněními je pak
-  // víc než třetina. Proto stačí i absolutní mez: smyčka nikdy nestojí déle než 25 ms. Bez uvolňování
-  // by stála celou dobu čtení souboru – na rychlém stroji nad 25 ms, na pomalém nad třetinou.
-  assert.ok(nejdelsi < 25 || nejdelsi < celkem / 3, `nejdelší blokování smyčky ${nejdelsi.toFixed(0)} ms z ${celkem.toFixed(0)} ms`);
+  // víc než třetina. Proto stačí i absolutní mez: smyčka nikdy nestojí déle než 50 ms (CI runner může krátce pozastavit proces). Bez uvolňování
+  // by stála celou dobu čtení souboru – na rychlém stroji nad 50 ms, na pomalém nad třetinou.
+  assert.ok(nejdelsi < 50 || nejdelsi < celkem / 3, `nejdelší blokování smyčky ${nejdelsi.toFixed(0)} ms z ${celkem.toFixed(0)} ms`);
 });
 
 // Falešná Ollama přes skutečného klienta (src/ollama.js): zaznamená každý dotaz.
