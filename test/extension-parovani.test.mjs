@@ -255,6 +255,6 @@ test('late manual pairing from an old port cannot replace the active token', asy
 
 test('content telemetry never sends query strings or fragments that may hold prompts or tokens', async () => {
   const content = await fs.readFile(fileURLToPath(new URL('../extension/content.js', import.meta.url)), 'utf8');
-  assert.match(content, /url: \`\\$\\{location\\.origin\\}\\$\\{location\\.pathname\\}\\`/);
-  assert.doesNotMatch(content, /url:\\s*location\\.href/);
+  assert.ok(content.includes('url: `${location.origin}${location.pathname}`'), 'query and fragment are excluded');
+  assert.ok(!content.includes('url: location.href'), 'full URL must never be transmitted');
 });
