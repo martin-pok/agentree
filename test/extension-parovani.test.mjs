@@ -228,3 +228,26 @@ test('content script is idempotent when Chrome reinjects it after an extension u
   assert.equal(intervals, 1, 'only one polling interval');
   assert.equal(callbacks.length, 1, 'only one message listener');
 });
+
+
+test('late manual pairing from an old port cannot replace the active token', async () => {
+  let completeOld;
+  const oldResponse = new Promise((resolve) => { completeOld = resolve; });
+  const r = spust((path) => {
+    if (path === '/api/extension/pair') return oldResponse;
+    if (path === '/api/extension/pripojit') return { status: 200, body: { token: 'n'.repeat(43) } };
+    return { status: 200, body: {} };
+  }, { ulozeno: { port: 5123 } });
+  const pairing = r.zprava({ type: 'agenteeq:pair', code: '12345678' });
+  for (let i = 0; i < 20 && !r.volani.some((v) => v.url === '/api/extension/pair'); i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.ok(r.volani.some((v) => v.url === '/api/extension/pair'));
+  r.zmenPort(6001);
+  const fresh = await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(fresh.paired, true);
+  completeOld({ status: 200, body: { token: 'o'.repeat(43) } });
+  const stale = await pairing;
+  assert.equal(stale.ok, false);
+  assert.equal(r.local.token, 'n'.repeat(43));
+});
