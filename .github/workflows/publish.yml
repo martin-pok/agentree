@@ -35,6 +35,31 @@ jobs:
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
+      # Tag musí ukazovat na commit, který prošel kompletní maticí CI.
+      # Kontrola přes GitHub API nevyžaduje externí službu ani placenou licenci.
+      - name: Ověřit zelené CI označeného commitu
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')
+          TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')
+          if [ "$TYPE" = "tag" ]; then
+            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${SHA}" --jq '.object.sha')
+          fi
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}" --jq '.sha')" = "$SHA"
+          GH_SHA="$SHA" node --input-type=module -e '
+            if (!/^[a-f0-9]{40}$/.test(process.env.GH_SHA)) process.exit(1);
+          '
+          RUNS=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SHA}&per_page=30")
+          RUNS_JSON="$RUNS" node --input-type=module -e '
+            const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs || [];
+            if (!runs.some(r => r.head_sha === process.env.GH_SHA && r.status === "completed" && r.conclusion === "success")) {
+              console.error("::error::Tag nemá úspěšný kompletní test.yml běh na shodném commitu.");
+              process.exit(1);
+            }
+          '
       - name: Zkontrolovat koncept
         env:
           GH_TOKEN: ${{ github.token }}
