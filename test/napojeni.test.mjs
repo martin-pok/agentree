@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { AGENTI, WEBY, createNapojeni } from '../src/napojeni.js';
+import { WEB_SITES } from '../src/connectors/web.js';
 import { spustPrihlaseni, odkazZVystupu, prostrediPro } from '../src/prihlaseni.js';
 import { startTestServer, api, openStream, waitFor, pairExtension, tempDir, EXTENSION_ORIGIN } from './helpers.mjs';
 
@@ -459,4 +460,21 @@ test('zrušení během aktualizace dat nesmí později potvrdit staré přihlá�
   await new Promise((resolve) => setTimeout(resolve, 30));
   assert.equal(events.filter((e) => e.udalost === 'napojeno').length, 0,
     'late account refresh must not override cancellation');
+});
+
+test('Nastavení pokrývá všechny skutečně podporované webové konektory extension', async () => {
+  assert.deepEqual(Object.keys(WEBY).sort(), Object.keys(WEB_SITES).sort(),
+    'uživatel musí umět otevřít každou službu, kterou extension skutečně podporuje');
+  const otevreno = [];
+  const n = createNapojeni({
+    bins: () => ({}), run: async () => ({}), prihlas: async () => ({ ok: false }),
+    open: async (url) => { otevreno.push(url); return { ok: true }; },
+    extension: () => ({ state: 'ready', sites: {} }),
+  });
+  for (const id of Object.keys(WEB_SITES)) {
+    const r = await n.napojit('web:' + id);
+    assert.equal(r.ceka, true, id + ' must open its real service page');
+  }
+  assert.deepEqual(otevreno, Object.values(WEBY).map((w) => w.url));
+  n.stop();
 });
