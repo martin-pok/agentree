@@ -39,6 +39,11 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
   let found = intents.find((x) => x.pattern.test(q));
   if (!found && previousTopic && /^(a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)/.test(q)) found = intents.find((x) => x.id === previousTopic);
   if (!found && /^(co umis|pomoc|help|what can you do)/.test(q)) return { topic: null, cile: [], text: en ? 'I can explain the app, guide you to a setting and help investigate missing agent activity. What is your goal?' : 'Umím vysvětlit používání aplikace, navést tě na konkrétní nastavení a pomoci hledat příčinu chybějící aktivity. Co je tvůj cíl?' };
+  if (!found && /^(jak|proc|proč|kde|co mam|nejde|nefunguje|pomoz|porad|how|why|where|cannot|doesnt|doesn't)/.test(q)) {
+    return { topic: null, cile: [], text: en
+      ? 'I can help troubleshoot that. Which part of Agenteeq is involved, and what exactly do you see? I will suggest a verifiable next step.'
+      : 'Pomůžu ti najít příčinu. Které části Agenteeq se to týká a co přesně vidíš? Podle toho navrhnu ověřitelný další krok.' };
+  }
   if (!found) return null;
   const cile = cileHledani().filter((c) => c.id === found.target);
   const selected = cile.length ? cile : hledejCile(found.id).slice(0, 1);
