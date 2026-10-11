@@ -33,7 +33,7 @@ for (points, scale) in [(16,1),(16,2),(32,1),(32,2),(128,1),(128,2),(256,1),(256
                                    width: 30 * factor, height: 24 * factor),
                  xRadius: 9.5 * factor, yRadius: 9.5 * factor).fill()
     paper.setFill()
-    for eyeX: CGFloat in [17, 27] {
+    for eyeX in [CGFloat(17), CGFloat(27)] {
         NSBezierPath(roundedRect: NSRect(x: x(eyeX), y: y(24 + 8),
                                        width: 4 * factor, height: 8 * factor),
                      xRadius: 2 * factor, yRadius: 2 * factor).fill()
