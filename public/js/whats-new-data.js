@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.3',
+    date: '2026-10-11',
+    title: 'Stejné proporce loga na Macu i v Chromu',
+    items: [
+      'Ikona v Docku a malé logo používají stejnou robotickou hlavu, oči a anténu, bez deformace při zmenšování.',
+      'Sjednocené jsou ikony v menu baru, Chrome extension, na webu i v Chrome Web Store.',
+    ],
+    en: {
+      title: 'One consistent icon across Mac and Chrome',
+      items: [
+        'Dock and small icons now share the same robot head, eyes and antenna, scaled without changing proportions.',
+        'Menu bar, Chrome extension, website and Chrome Web Store icons use one consistent design.',
+      ],
+    },
+  },
+  {
     version: '0.46.2',
     date: '2026-10-11',
     title: 'Jistější připojení a skutečný stav dat',
