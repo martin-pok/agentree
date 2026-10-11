@@ -34,9 +34,27 @@ jobs:
           test "$MAIN_SHA" = "$TESTED_SHA" || { echo "::notice::Main moved since CI; skipping outdated run."; exit 0; }
           VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
           test "$VERSION" = "0.46.1" || { echo "::notice::Another version is already current."; exit 0; }
+          # A tag alone does not prove the release artifacts exist: a previous build
+          # may have failed after creating the tag. Re-run release.yml in that case.
+          # Its concurrency group serializes concurrent builds for this tag.
+          # A published release is final. An incomplete draft can be repaired by
+          # the existing release workflow, which uploads missing assets and notes.
+          if gh release view v0.46.1 --repo "$REPO" --json isDraft,assets > preview-release.json 2>/dev/null; then
+            if ! jq -e '.isDraft == true' preview-release.json >/dev/null; then
+              echo "::notice::Preview release already published; no duplicate build."
+              exit 0
+            fi
+            if jq -e '[.assets[].name] as $names |
+              ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
+               "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.1.zip"] |
+              all(. as $name | $names | index($name) != null)' preview-release.json >/dev/null; then
+              echo "::notice::Existing complete draft may have missed publication; resuming gated release workflow."
+              # Do not exit: a successful release.yml run triggers publish-preview.
+            fi
+            echo "::notice::Release draft missing assets; retrying the artifact build."
+          fi
           if gh api "repos/$REPO/git/ref/tags/v0.46.1" >/dev/null 2>&1; then
-            echo "::notice::Release tag already exists; no duplicate build."
-            exit 0
+            echo "::notice::Release tag exists without a release; retrying the artifact build."
           fi
           gh workflow run release.yml --repo "$REPO" --ref main -f tag=v0.46.1
           echo "Triggered version-pinned release draft generation for $TESTED_SHA"
