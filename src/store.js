@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { createSession, summarize, takeDirty, pruneMinutes } from './model.js';
 import { DAY } from './util.js';
+import { sessionAccountBinding } from './provider-accounts.js';
 import { detectTopUps } from './credits.js';
 
 const CREDIT_POINTS_MAX = 400;
