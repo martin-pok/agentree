@@ -132,7 +132,7 @@ export function deriveStatus(s, now) {
   const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
   // A future source timestamp must never keep an agent in a live working state.
   // Allow 60 seconds of clock skew, in line with the limits freshness contract.
-  const runningAt = s.runningAt || s.lastAt;
+  const runningAt = s.runningAt === 0 ? s.lastAt : s.runningAt;
   const trustworthyRunningAt = Number.isFinite(runningAt) && runningAt > 0 && runningAt <= now + 60e3;
   if (s.running && !skoncil && trustworthyRunningAt && now - runningAt < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
