@@ -1034,6 +1034,7 @@ const proud = connectStream({
         throw err; // SSE remains reconnecting until an actual snapshot succeeds.
       })
       .finally(() => { loadingSnapshot = null; });
+    return loadingSnapshot;
   },
   onEvent: (name, data) => {
     if (!state.loaded || loadingSnapshot) queued.push([name, data]);
