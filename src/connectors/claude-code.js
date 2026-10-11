@@ -679,24 +679,30 @@ export function createClaudeCodeConnector(ctx) {
   // Neposouvá „poslední aktivitu“ – stavový řádek se překresluje i bez práce agenta.
   const statusCache = new Map();
 
-  function statusLimit(key, w, now) {
-    if (!w || typeof w.used_percentage !== 'number' || !Number.isFinite(w.used_percentage)) return null;
+  function statusLimit(key, w, now, accountId = null, ambiguous = false) {
+    if (ambiguous || !w || typeof w.used_percentage !== 'number' || !Number.isFinite(w.used_percentage)) return null;
     const def = STATUS_WINDOWS[key];
+    const id = accountId ? `${def.id}:${accountId}` : def.id;
     const used = Math.max(0, Math.min(100, w.used_percentage));
     const resetsAt = Number(w.resets_at) > 0 ? Math.round(Number(w.resets_at) * 1000) : null;
-    const prev = store.limits.get(def.id);
+    const prev = store.limits.get(id);
     if (!prev || prev.usedPercent !== used || prev.resetsAt !== resetsAt || now - prev.at > MIN) {
-      store.setLimit({ id: def.id, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });
+      store.setLimit({ id, accountId, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });
     }
     return { used, resetsAt };
   }
 
   function ingestStatusline(p, now = Date.now()) {
     if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
+    const session = store.get(`claude-code:${p.session_id}`);
+    const accountId = session?.accountBinding?.confidence === 'verified' ? session.accountBinding.accountId : null;
+    // When multiple Claude licenses are connected, an unbound statusline is NOT a shared
+    // provider-wide quota. Discard its account-specific metrics rather than mixing licenses.
+    const ambiguous = !accountId && new Set(verifiedProfiles.map((x) => x.accountId)).size > 1;
     const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
-    const five = statusLimit('five_hour', rl.five_hour, now);
-    const week = statusLimit('seven_day', rl.seven_day, now);
-    statusLimit('spend_limit', rl.spend_limit, now);
+    const five = statusLimit('five_hour', rl.five_hour, now, accountId, ambiguous);
+    const week = statusLimit('seven_day', rl.seven_day, now, accountId, ambiguous);
+    statusLimit('spend_limit', rl.spend_limit, now, accountId, ambiguous);
     const cw = p.context_window && typeof p.context_window === 'object' ? p.context_window : {};
     const ctxPct = typeof cw.used_percentage === 'number' && Number.isFinite(cw.used_percentage) ? Math.round(Math.max(0, Math.min(100, cw.used_percentage))) : null;
     const s = store.get(`claude-code:${p.session_id}`);
