@@ -170,6 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = AppDelegate.robotIkonaListy()
+        statusItem.button?.title = " —" // unknown until first confirmed local snapshot
         statusItem.button?.toolTip = "Agenteeq – zobrazit přehled"
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
@@ -475,7 +476,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard let type = data["type"] as? String else { return }
         if type == "badge", let count = data["count"] as? Int {
             NSApp.dockTile.badgeLabel = count > 0 ? String(min(count, 999)) : nil
-            statusItem.button?.title = count > 0 ? " \(min(count, 999))" : ""
+            // Dock badge shows items needing attention; menu bar count is separate.
+        }
+        if type == "running-agents", let count = data["count"] as? Int {
+            // Explicit zero matters: the menu bar must not retain a stale count.
+            let active = max(0, min(count, 999))
+            statusItem.button?.title = " \(active)"
+            statusItem.button?.toolTip = "Agenteeq – aktivně pracující agenti: \(active)"
+            statusItem.button?.accessibilityLabel = "Agenteeq, aktivně pracující agenti: \(active)"
         }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)
