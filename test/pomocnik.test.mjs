@@ -272,7 +272,7 @@ test('pomocník: lokální model jen z Ollamy na tomto počítači, bez cloudov�
     { name: 'qwen2.5:14b', size: 9e9, capabilities: ['completion', 'tools'] },
     { name: 'llama3.2:3b', size: 2e9 },
   ];
-  const nic = falesnaOllama('http://127.0.0.1:11434', { tags });
+  const nic = falesnaOllama('http://127.0.0.1:11434', { tags, show: { 'llama3.2:3b': { capabilities: ['completion'] } } });
   assert.deepEqual(await vyberLokalniModel({ ollama: nic.ollama }), { model: 'llama3.2:3b' }, 'nic načteného → nejmenší vhodný');
   const nacteny = falesnaOllama('http://127.0.0.1:11434', { tags, ps: ['gpt-oss:120b-cloud', 'qwen2.5:14b'] });
   assert.deepEqual(await vyberLokalniModel({ ollama: nacteny.ollama }), { model: 'qwen2.5:14b' }, 'načtený lokální model má přednost, cloudový nikdy');
