@@ -258,3 +258,15 @@ test('content telemetry never sends query strings or fragments that may hold pro
   assert.ok(content.includes('url: `${location.origin}${location.pathname}`'), 'query and fragment are excluded');
   assert.ok(!content.includes('url: location.href'), 'full URL must never be transmitted');
 });
+
+
+test('telemetry from a browser tab cannot impersonate another provider', async () => {
+  const r = spust(() => ({ status: 200, body: { token: 't'.repeat(43) } }), { ulozeno: { token: 't'.repeat(43) } });
+  const payload = { site: 'claude', conversationId: 'abc', generating: false };
+  const rejected = await r.zprava({ type: 'agenteeq:update', payload }, { tab: { id: 4, url: 'https://chatgpt.com/c/abc' } });
+  assert.equal(rejected.ok, false);
+  assert.equal(r.volani.filter((v) => v.url === '/api/ingest/web').length, 0);
+  const accepted = await r.zprava({ type: 'agenteeq:update', payload }, { tab: { id: 4, url: 'https://claude.ai/chat/abc' } });
+  assert.equal(accepted.ok, true);
+  assert.equal(r.volani.filter((v) => v.url === '/api/ingest/web').length, 1);
+});
