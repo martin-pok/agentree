@@ -129,7 +129,7 @@ async function posli(text) {
   let odpoved;
   try {
     const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
-    const rada = guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa() });
+    const rada = guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
     if (rada) {
       odpoved = { kdo: 'on', ...rada };
     } else {
