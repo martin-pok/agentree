@@ -457,17 +457,24 @@ try {
           reducedMotion: 'reduce', colorScheme: 'light' });
         await jenMistni(page, []);
         await page.addInitScript(() => {
-          window.__agenteeqVitals = { lcp: null, cls: 0, longTasks: 0 };
+          // Null means unsupported/unavailable, not a claimed perfect zero.
+          window.__agenteeqVitals = { lcp: null, cls: null, longTasks: null };
           const watch = (kind, cb) => {
-            try { new PerformanceObserver((list) => {
-              for (const entry of list.getEntries()) cb(entry);
-            }).observe({ type: kind, buffered: true }); } catch { /* WebKit may omit entries. */ }
+            if (!window.PerformanceObserver?.supportedEntryTypes?.includes(kind)) return false;
+            try {
+              new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) cb(entry);
+              }).observe({ type: kind, buffered: true });
+              return true;
+            } catch { return false; }
           };
           watch('largest-contentful-paint', entry => { window.__agenteeqVitals.lcp = entry.startTime; });
-          watch('layout-shift', entry => {
+          if (watch('layout-shift', entry => {
             if (!entry.hadRecentInput) window.__agenteeqVitals.cls += entry.value;
-          });
-          watch('longtask', () => { window.__agenteeqVitals.longTasks++; });
+          })) window.__agenteeqVitals.cls = 0;
+          if (watch('longtask', () => { window.__agenteeqVitals.longTasks++; })) {
+            window.__agenteeqVitals.longTasks = 0;
+          }
         });
         const resp = await page.goto(url, { waitUntil: 'load' });
         await page.evaluate(() => document.fonts.ready);
@@ -486,7 +493,7 @@ try {
         });
         vitals.push({ engine, viewport: width, ...values });
         assert.equal(resp.status(), 200, `${engine} ${width}: landing request`);
-        assert.ok(Number.isFinite(values.cls) && values.cls <= 0.1,
+        assert.ok(values.cls === null || (Number.isFinite(values.cls) && values.cls <= 0.1),
           `${engine} ${width}: layout shift score ${values.cls}`);
         await page.close();
       }
