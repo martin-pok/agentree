@@ -251,3 +251,10 @@ test('late manual pairing from an old port cannot replace the active token', asy
   assert.equal(stale.ok, false);
   assert.equal(r.local.token, 'n'.repeat(43));
 });
+
+
+test('content telemetry never sends query strings or fragments that may hold prompts or tokens', async () => {
+  const content = await fs.readFile(fileURLToPath(new URL('../extension/content.js', import.meta.url)), 'utf8');
+  assert.match(content, /url: \`\\$\\{location\\.origin\\}\\$\\{location\\.pathname\\}\\`/);
+  assert.doesNotMatch(content, /url:\\s*location\\.href/);
+});
