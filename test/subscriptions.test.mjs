@@ -177,7 +177,7 @@ test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výcho
 
 test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho útratu', async () => {
   const src = await tempDir('agenteeq-src-');
-  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', accountUuid: 'stable-claude-test-account-12345', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
   const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
     napojeniRun: async (_bin, args) => args[0] === 'auth'
       ? { ok: true, stdout: JSON.stringify({ loggedIn: true }), stderr: '' }
