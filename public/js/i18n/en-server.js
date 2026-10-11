@@ -6,6 +6,7 @@ export default {
   "Agentovi jde odpovědět jen z Macu, na kterém běží.": "You can only reply to the agent from the Mac it runs on.",
   "Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.": "Replying from Agenteeq currently works only in Claude Code conversations.",
   "Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.": "Claude Code can’t resume this conversation. Continue it where it runs.",
+  "Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.": "Conversation ID collisions between profiles: {0}. Some runs cannot be safely attributed to an account.",
   "Na tomto počítači se nenašel program claude.": "The claude program wasn’t found on this computer.",
   "Odpovídat z Agenteeq jde zatím jen na macOS.": "Replying from Agenteeq works only on macOS for now.",
   "Ještě se zjišťuje, jestli je na tomto počítači program claude.": "Still checking whether the claude program is on this computer.",
