@@ -70,6 +70,13 @@ První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIde
 - UI už nesmí vydávat `undefined` kredity za nulu nebo skutečný zůstatek; číslo se zobrazuje jen je-li nezáporné a konečné (`public/js/views/spend.js`).
 - Další fáze: důvěryhodné read-only adaptéry jednotlivých providerů a test dostupnosti per-account limitů; nikdy nedoplňovat chybějící důkazy heuristikou.
 
+## Implementovaná první automatická identifikace běhu (Claude Code)
+
+- `src/app.js#refreshSubscriptions` sestavuje seznam profilů pouze po ověření autentizace CLI a odvození stabilního účtu.
+- `src/connectors/claude-code.js` přijímá pouze identitu autentizovaného profilu, jehož `projects/` je přesný rodičovský kořen čteného JSONL přepisu. Ověřený binding jde přes centrální `Store.bindAccount` do živého session snapshotu. Platí i pro nově objevené přepisy po refreshe účtů.
+- Sdílený matcher `verifiedProfileForTranscript` neakceptuje podobné prefixy, neplatné časy, neznámé nebo nejednoznačné kořeny. Regresní test: `test/provider-multi-account.test.mjs`.
+- **Zatím nehotové:** stejné UUID ve dvou izolovaných profilech může kolidovat ve starším společném indexu session a musí mít explicitní ochranu před sloučením; Claude 5h/7d kvóty zatím nejsou vždy vázány na účet; Codex i ostatní poskytovatelé čekají na důvěryhodný session→account adaptér. Nezaměňovat částečnou integraci s hotovou obecnou funkcí.
+
 ## Gates
 
 - Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
