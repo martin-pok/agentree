@@ -7,7 +7,7 @@ const intents = [
   { id: 'extension', pattern: /chrom|rozsiren|extension|prohlizec|browser|webov.*chat/, target: 'karta:extension',
     cs: 'Webové chaty uvidíš díky rozšíření pro Chrome. Najdeš ho v Nastavení → Propojení → Rozšíření pro Chrome. Pokud se chat neukazuje, ověř, jestli je rozšíření spárované a stránka otevřená. Přihlášení k účtu AI služby je něco jiného.',
     en: 'Web conversations are detected by the Chrome extension, not by signing into a provider API. Open Settings → Connections → Chrome Extension. Check pairing, your open tab and connection status.' },
-  { id: 'connect', pattern: /pripoj|napoj|integrac|connect|autoriz|login|claude code|codex|nevidim agent/, target: 'karta:models',
+  { id: 'connect', pattern: /pripoj|napoj|integrac|connect|autoriz|login|claude code|codex/, target: 'karta:models',
     cs: 'Podívej se do Nastavení → Propojení → Napojené modely. U každého nástroje uvidíš, co Agenteeq dokáže zjistit. Claude Code, webové chaty a API se propojují různě — ne všude stačí kliknout na Připojit.',
     en: 'Open Settings → Connections → Connected models. Check the individual integration. Local CLI, browser extension and API access are different sources; not all support direct sign-in.' },
   { id: 'alerts', pattern: /upozorn|notifik|oznamen|notification|alert|nerusit|nocni ticho/, target: 'karta:notifications',

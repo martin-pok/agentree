@@ -64,7 +64,7 @@ test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale
   assert.doesNotMatch(connected.text, /not confirmed|no sessions/);
   const empty = guide('Why are agents missing?', { language: 'en-GB', snapshot: { connection: 'live', loaded: true, sessions: new Map() } });
   assert.match(empty.text, /contains no sessions/);
-  const connecting = guide('Why are agents missing?', { language: 'cs-CZ', snapshot: { connection: 'connecting', loaded: false, sessions: new Map() } });
+  const connecting = guide('Proč nevidím agenty?', { language: 'cs-CZ', snapshot: { connection: 'connecting', loaded: false, sessions: new Map() } });
   assert.match(connecting.text, /nemám potvrzené spojení/);
 
   assert.equal(guide('Find chat about invoices', { language: 'en-GB' }), null, 'conversation search stays routed to retrieval');
