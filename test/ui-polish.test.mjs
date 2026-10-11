@@ -529,8 +529,8 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.match(app, /button\.classList\.add\('is-refreshing'\)/);
   assert.match(app, /button\.getAttribute\('aria-busy'\) === 'true'/, 'druhý refresh se nesmí spustit souběžně');
   assert.doesNotMatch(app.slice(app.indexOf("data-action === 'rescan'"), app.indexOf("data-action === 'rescan'") + 900), /button\.disabled\s*=/, 'stav obnovy nesmí změnit geometrii ani fokus tlačítka');
-  assert.match(css, /#refresh-app\.is-refreshing \.icon \{ animation: refresh-rotation/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#refresh-app\.is-refreshing \.icon \{ animation: none/);
+  assert.match(css, /\.refresh-status__track i \{[^}]*animation: refresh-scan/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.refresh-status__robot svg, \.refresh-status__eyes, \.refresh-status__track i \{ animation: none/);
 });
 
 test('Útrata bez připojeného API: na telefonu drží ikona, text a tlačítko jednu osu', async () => {
