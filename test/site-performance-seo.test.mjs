@@ -89,7 +89,7 @@ test('static budgets guard marketing page against heavy regressions', async () =
   const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
   assert.match(js, /scena\.addEventListener\('pointermove'/);
   assert.match(js, /scenaViditelna/);
-  assert.doesNotMatch(js, /(?:window\.)?addEventListener\('pointermove'/);
+  assert.doesNotMatch(js, /^\s*(?:window\.)?addEventListener\('pointermove'/m);
 });
 
 test('browser can conditionally revalidate unchanged JS and CSS rather than redownload', async () => {
