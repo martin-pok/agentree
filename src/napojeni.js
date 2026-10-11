@@ -11,6 +11,8 @@ import { ui } from './texty.js';
 
 const INTERVAL_MS = 2000;
 const LIMIT_MS = 10 * 60 * 1000;
+// A past browser event proves observation, not a permanent authenticated connection.
+const WEB_FRESH_MS = 5 * 60 * 1000;
 
 // Ověřeno proti skutečným nástrojům (24. 9. 2026): `claude auth --help` v Claude Code a zdroj
 // `codex-rs/cli/src/login.rs` v Codexu. Neznámý výstup = null („nepodařilo se zjistit“), ne „ne“.
@@ -86,11 +88,18 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       return { id, druh: 'agent', label: a.label, provider: a.provider, logo: a.logo, ...z, plan: z.napojeno ? await plan(id).catch(() => '') : '', ceka: ceka.has(id), posledni: posledni(id) || 0, oknoDni };
     }));
     const rozsireni = extension();
-    const weby = Object.entries(WEBY).map(([id, w]) => ({
-      id: `web:${id}`, druh: 'web', label: w.label, provider: w.provider, logo: w.logo,
-      nainstalovano: rozsireni.state !== 'missing', napojeno: rozsireni.sites?.[id] ? true : rozsireni.state === 'missing' ? false : null,
-      ceka: ceka.has(`web:${id}`),
-    }));
+    const weby = Object.entries(WEBY).map(([id, w]) => {
+      const lastSeen = Number(rozsireni.sites?.[id]) || 0;
+      const fresh = lastSeen > 0 && lastSeen <= now() && now() - lastSeen < WEB_FRESH_MS;
+      return {
+        id: `web:${id}`, druh: 'web', label: w.label, provider: w.provider, logo: w.logo,
+        nainstalovano: rozsireni.state !== 'missing',
+        // Seeing browser activity never establishes OAuth authorization or a lasting connection.
+        napojeno: fresh ? true : rozsireni.state === 'missing' ? false : null,
+        posledni: lastSeen, zdroj: 'chrome-extension', overeni: fresh ? 'pozorovano' : 'nezname',
+        ceka: ceka.has(`web:${id}`),
+      };
+    });
     return [...agenti, ...weby];
   }
 
