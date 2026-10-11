@@ -12,6 +12,8 @@ const ROUTES = [
   { file: 'site/en/index.html', output: 'en/index.html', url: 'https://agentree-fawn.vercel.app/en', lang: 'en' },
   { file: 'site/instalace/index.html', output: 'instalace/index.html', url: 'https://agentree-fawn.vercel.app/instalace', lang: 'cs' },
   { file: 'site/en/install/index.html', output: 'en/install/index.html', url: 'https://agentree-fawn.vercel.app/en/install', lang: 'en' },
+  { file: 'site/soukromi/index.html', output: 'soukromi/index.html', url: 'https://agentree-fawn.vercel.app/soukromi', lang: 'cs' },
+  { file: 'site/en/privacy/index.html', output: 'en/privacy/index.html', url: 'https://agentree-fawn.vercel.app/en/privacy', lang: 'en' },
 ];
 
 test('web font preload targets the actual Satoshi WOFF2, never the unused Urbanist TTF', async () => {
