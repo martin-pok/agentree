@@ -47,3 +47,10 @@ test('checksum generation fails closed for missing or unsafe release assets', as
   await fs.writeFile(path.join(dir, 'evil\nother.zip'), 'malicious');
   await assert.rejects(checksumsForDirectory(dir), /Invalid release asset filename/);
 });
+
+test('release workflow verifies checksums before publishing and includes manifest in both paths', async () => {
+  const yaml = await fs.readFile(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+  assert.match(yaml, /node scripts\/release-checksums\.mjs prilohy[\s\S]*?sha256sum --check SHA256SUMS\.txt/);
+  assert.equal((yaml.match(/prilohy\/\*\.zip prilohy\/\*\.dmg prilohy\/SHA256SUMS\.txt/g) || []).length, 2,
+    'both draft creation and draft update must attach the checksum manifest');
+});
