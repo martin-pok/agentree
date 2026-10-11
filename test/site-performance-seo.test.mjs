@@ -115,3 +115,20 @@ test('production CSS removes source comments without touching quoted strings or 
   assert.equal(await fs.readFile(path.join(out, 'lp.css'), 'utf8'), compressed,
     'production CSS differs only by comment removal');
 });
+
+test('integration logo requests are deferred, never the main brand or LCP hero', async () => {
+  for (const file of ['site/index.html', 'site/en/index.html']) {
+    const html = await fs.readFile(path.join(ROOT, file), 'utf8');
+    const logos = [...html.matchAll(/<img\\b[^>]*src="\\/logos\\/[^"]+"[^>]*>/g)].map(m => m[0]);
+    assert.ok(logos.length >= 8, 'expected provider integrations on ' + file);
+    for (const img of logos) {
+      assert.match(img, /loading="lazy"/, 'offscreen provider logo must not compete for first paint');
+      assert.match(img, /decoding="async"/);
+    }
+    const hero = html.match(/<img\\b[^>]*src="\\/detail\\/prehled[^"]+"[^>]*>/)?.[0];
+    assert.ok(hero && /fetchpriority="high"/.test(hero), 'LCP hero must retain fetch priority');
+    assert.doesNotMatch(hero, /loading="lazy"/, 'LCP hero must never be lazy loaded');
+    const brand = html.match(/<img\\b[^>]*src="\\/brand-mark-clean.svg"[^>]*>/)?.[0];
+    assert.ok(brand && !/loading="lazy"/.test(brand), 'navigation brand remains eager');
+  }
+});
