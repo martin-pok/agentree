@@ -11,6 +11,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     provider,
     app,
     source,
+    accountBinding: null, // only verified account provenance, never inferred from provider/model
     title: '',
     firstPrompt: '',
     lastPrompt: '',
