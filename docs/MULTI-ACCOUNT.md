@@ -87,6 +87,7 @@ Při stejném session UUID z různých skutečných souborů `src/connectors/cla
 
 - `src/connectors/claude-code.js#ingestStatusline`: je-li session připojena k ověřené licenci, 5h/7d/spend limit má vlastní klíč a `accountId`; dva účty se nemohou přepsat jedním globálním procentem.
 - Pokud je připojeno více ověřených účtů, ale statusline nemá jednoznačně přiřazenou session, **její kvóty se nezapočítají**, protože zdroj není prokazatelný.
+- Při přechodu z jedné na více licencí se staré globální statusline limity smažou ze Store a SSE okamžitě aktualizuje UI. Nedochází ke kombinaci historického společného procenta s novými oddělenými účty.
 - `src/app.js#providerAccounts`: limitní okna přiřazuje jen odpovídajícímu účtu a pouze z čerstvých ověřených odečtů; nedostupná data neprezentuje jako 0 %.
 - Úspěch jednoho agenta nesmí resetovat limit jiného účtu. Přidaný filter v `onSuccess` respektuje vazbu session→account.
 - Test: `test/claude-limity.test.mjs` ověřuje 2 účty s různými 5h limity, bez globálního sloučení a bez zpřístupnění neznámých kvót. **Zatím čeká na CI**, nikoliv potvrzeno z reálného Claude API.
