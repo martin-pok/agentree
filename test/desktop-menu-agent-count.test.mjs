@@ -5,7 +5,10 @@ import fs from 'node:fs/promises';
 test('native menu count is separate from attention badge and updates with sessions', async () => {
   const server = await fs.readFile(new URL('../desktop/server.mjs', import.meta.url), 'utf8');
   const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
-  assert.ok(server.includes("type: 'running-agents', count: sessions.filter((s) => s.status === 'working').length"));
+  assert.ok(server.includes("const running = sessions.filter((s) => s.status === 'working').length"));
+  assert.ok(server.includes("type: 'running-agents', count: running"));
+  assert.ok(server.includes('setInterval(badge, 15_000)'), 'time-based status expiry must refresh the menu bar');
+  assert.ok(server.includes('running !== lastRunningCount'), 'unchanged counts must not produce duplicate events');
   assert.ok(server.includes("app.store.on('session', scheduleBadge)"));
   assert.ok(server.includes("app.store.on('session:remove', scheduleBadge)"));
   assert.ok(swift.includes('if type == "running-agents"'));
