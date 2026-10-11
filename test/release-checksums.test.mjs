@@ -44,7 +44,7 @@ test('checksum generation fails closed for missing or unsafe release assets', as
     path.join(dir, 'agenteeq-extension-untagged.zip'));
   await assert.rejects(checksumsForDirectory(dir), /Missing versioned Chrome extension/);
   await fs.writeFile(path.join(dir, 'agenteeq-extension-0.46.2.zip'), 'extension');
-  await fs.writeFile(path.join(dir, 'evil\nother.zip'), 'malicious');
+  await fs.writeFile(path.join(dir, 'evil other.zip'), 'malicious');
   await assert.rejects(checksumsForDirectory(dir), /Invalid release asset filename/);
 });
 
