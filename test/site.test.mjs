@@ -23,7 +23,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   // Kopie se od aplikace smí lišit přesně v jedné věci: značce „tady žádný server není“.
   // Cokoli dalšího by znamenalo, že se rozhraní na webu začalo rozcházet s tím v aplikaci.
   const zdroj = await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8');
-  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">', '');
+  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">\n<meta name="robots" content="noindex, nofollow">', '');
   assert.equal(bezZnacky, zdroj, 'kopie se od aplikace nesmí lišit v ničem jiném než ve značce');
 
   // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) – musí tam být, jinak je /app rozbité.
@@ -31,7 +31,8 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
     assert.ok(r.files.includes(soubor), `v sestavení chybí ${soubor}`);
   }
   assert.ok(r.files.includes('lp.css'), 'styly landing page');
-  assert.match(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), new RegExp(`Disallow: ${APP_PATH}`));
+  assert.doesNotMatch(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), /Disallow:\s*\/app/, 'crawler must be able to read /app noindex');
+  assert.match(aplikace, /<meta name="robots" content="noindex, nofollow">/, 'static /app must not be indexed');
 
   // Ukázka rozhraní (/app?ukazka) čte data sestavená spolu s webem – bez nich by skončila na rozcestníku.
   assert.ok(r.files.includes('ukazka/data.json'), 'data živé prohlídky');
