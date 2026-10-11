@@ -34,22 +34,24 @@ try {
   await page.locator('#refresh-app').click();
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  const moving = await page.locator('#refresh-app .icon').evaluate((element) => ({
-    name: getComputedStyle(element).animationName,
-    running: element.getAnimations().some((animation) => animation.playState === 'running'),
-  }));
-  assert.deepEqual(moving, { name: 'refresh-rotation', running: true }, 'ikona obnovy musí při načítání plynule rotovat');
+  await page.locator('.refresh-status').waitFor();
+  assert.equal(await page.locator('.refresh-status').getAttribute('data-motif'), '0');
+  assert.equal(await page.locator('.refresh-status strong').textContent(), 'Obnovuji aktuální data');
+  assert.equal(await page.locator('.refresh-status__track').count(), 1);
+  assert.equal(await page.locator('.refresh-status [role="progressbar"]').count(), 0, 'no fictional numerical progress');
+  assert.equal(await page.locator('.refresh-status').evaluate((el) => getComputedStyle(el).pointerEvents), 'none', 'refresh must not block app');
   assert.equal(await page.locator('#refresh-app').isDisabled(), false, 'tlačítko obnovy nesmí při práci změnit velikost ani přijít o fokus');
   await page.screenshot({ path: `${out}/refresh-motion.png` });
   assert.equal((await response).status(), 200);
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
+  assert.equal(await page.locator('.refresh-status').count(), 0, 'status disappears after refresh');
   assert.equal(requests, 1, 'opakované kliknutí nesmí spustit souběžnou obnovu');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const reducedResponse = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  assert.equal(await page.locator('#refresh-app .icon').evaluate((element) => getComputedStyle(element).animationName), 'none', 'omezený pohyb nesmí nechat rotaci běžet');
+  assert.equal(await page.locator('.refresh-status__robot svg').evaluate((element) => getComputedStyle(element).animationName), 'none', 'reduced motion disables robot animation');
   await reducedResponse;
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   assert.deepEqual(errors, [], `chyby prohlížeče: ${errors.join('; ')}`);
