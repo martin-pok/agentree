@@ -1531,7 +1531,7 @@ export default {
     "Vzhled se nepodařilo uložit.": "The look couldn’t be saved.",
     "Pohyb omezen systémem": "Motion reduced by system",
     "Zapnout pohyb": "Turn on motion",
-    "Ztišit pohyb": "Calm motion",
+    "Omezit pohyb": "Reduce motion",
     "Filtr „Potřebuje tebe“ ukáže agenty čekající na rozhodnutí. Otevři agenta a pokračuj v jeho nástroji.": "The “Needs you” filter shows agents waiting for a decision. Open the agent and continue in its tool.",
     "Přepis ukazuje kontext. Tlačítko „Pokračovat“ tě přenese do nástroje, kde agent čeká na odpověď.": "The transcript shows the context. “Continue” takes you to the tool where the agent is waiting for an answer.",
     "Projekt propojí konverzace z různých nástrojů. V Nezařazených najdeš práci, která zatím projekt nemá.": "A project links conversations from different tools. Unassigned shows work that has no project yet.",
