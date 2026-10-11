@@ -448,7 +448,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const observedAt = Date.now();
     const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
       home === config.sourceHome
-        ? [path.join(home, '.claude', 'projects'), path.join(home, '.config', 'claude', 'projects')]
+        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
           .map((root) => ({ root, accountId, observedAt }))
         : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
     connectors['claude-code'].bindProfileAccounts(roots);
