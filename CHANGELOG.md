@@ -2,6 +2,27 @@
 
 ## Nevydáno
 
+### Co se změní pro uživatele ve verzi 0.46.1
+
+> Následující změny jsou ve vývojové větvi. Nejsou automaticky dostupné v instalované aplikaci ani ve veřejném Chrome Web Store. Označení „vydáno“ vyžaduje samostatné ověření release.
+
+- **Přehlednější hlavní okno na Macu:** obsah a horní akce už nezasahují do prostoru systémového záhlaví; banner průvodce byl odstraněn z Nastavení, kde překrýval horní ovládání. Průvodce samotný zůstává dostupný.
+- **Živý počet pracujících agentů v horní liště macOS:** vedle ikony se zobrazuje aktuální počet; upozornění se s ním nepletou. Nula znamená žádnou právě evidovanou práci a pomlčka neznámý stav při výpadku. Počet se přepočítává i při časovém vypršení stavu.
+- **Spolehlivější živý přehled:** aplikace odolává překrývajícím se SSE spojením a opožděným odpovědím API, které by jinak mohly vrátit staré údaje.
+- **Srozumitelnější Pomocník:** drží polohu při čtení starších zpráv, poradí s fungováním aplikace a méně často nabízí nerelevantní navigaci.
+- **Dovednosti mají v navigaci ikonu blesku.** Popisek nastavení pohybu se mění na „Omezit pohyb“ (EN „Reduce motion“).
+- **Čistší identita značky:** rozšíření a podklady pro Chrome Web Store mají sjednocenou robotí hlavu; starý trojzubec a fialová anténa nejsou schválené motivy. Nový rozšířený filled logomark byl schválen pro Dock, jeho finální pixelově přesný vektor a aplikace do všech distribuovaných assetů stále vyžadují ověření.
+- **Rozšíření pro Chrome:** přehlednější časové stavy a lepší zotavení z přerušení spojení; nové CZ/EN snímky jsou připravené v repozitáři, **nejsou dosud potvrzené jako veřejně zveřejněné**.
+- **Sdílení prodejního webu:** česká i anglická landing page mají doplněná metadata pro obrázky na sociálních sítích. Produkční nasazení a SEO audit zůstávají samostatnými úkoly.
+
+### Ověření a dostupnost
+
+- **Zdrojový kód:** pracovní větev `work/app-extension-reliability-0461`, PR #130.
+- **Automatické testy:** stav se posuzuje výhradně podle CI na přesném HEAD commitu.
+- **Reálný Mac, Windows a Chrome:** ruční UAT dosud nelze označit jako hotové.
+- **Veřejné vydání:** poslední ověřené GitHub vydání je `v0.46.0`; Chrome Web Store ještě vyžaduje nové publikování a kontrolu veřejné verze.
+
+
 - **Hlava robota je stejná v macOS liště i ikonách aplikace.** Ikona vedle živého počtu agentů používá přesný tvar z oficiální značky. Náhled aplikace a ikona pro Windows už nemají starou fialovou anténu.
 - **Rozšíření a podklady pro Chrome Web Store používají současnou značku.** Ikony rozšíření, hlavička okna a malí roboti v seznamu mají stejné proporce jako logo Agenteeq. České i anglické snímky a propagační plochy vycházejí z aktuálního světlého vzhledu a skutečného okna rozšíření.
 - **Horní obsah v aplikaci pro Mac už nekoliduje se záhlavím.** Nadpis a horní akce začínají na stejné výšce jako levý panel, pod 44px oblastí tlačítek okna a tažného pruhu. Při zúžení okna zůstává hlavní obsah pod touto oblastí a navigace přejde dolů.
