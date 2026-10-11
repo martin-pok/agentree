@@ -34,10 +34,10 @@ const greetings = /^(ahoj|cau|cus|hello|hi|hey|dobry den)[!. ]*$/;
 export function guideAnswer(question, { previousTopic = null, language = 'cs', route = '', snapshot = null } = {}) {
   const q = norm(question).trim();
   if (!q || isSearch.test(q)) return null;
-  const en = language === 'en';
+  const en = String(language).toLowerCase().startsWith('en');
   if (greetings.test(q)) return { topic: null, cile: [], text: en ? 'Hi! What are you trying to do in Agenteeq? I can help with agents, connections, projects, notifications or costs.' : 'Ahoj! Co chceš v Agenteeq vyřešit? Poradím s agenty, propojením, projekty, upozorněními i náklady.' };
   let found = intents.find((x) => x.pattern.test(q));
-  if (!found && previousTopic && /^(a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)/.test(q)) found = intents.find((x) => x.id === previousTopic);
+  if (!found && previousTopic && /^(?:a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)(?:\\b|$)/.test(q)) found = intents.find((x) => x.id === previousTopic);
   if (!found && /^(co umis|pomoc|help|what can you do)/.test(q)) return { topic: null, cile: [], text: en ? 'I can explain the app, guide you to a setting and help investigate missing agent activity. What is your goal?' : 'Umím vysvětlit používání aplikace, navést tě na konkrétní nastavení a pomoci hledat příčinu chybějící aktivity. Co je tvůj cíl?' };
   if (!found && /^(jak|proc|proč|kde|co mam|nejde|nefunguje|pomoz|porad|how|why|where|cannot|doesnt|doesn't)/.test(q)) {
     return { topic: null, cile: [], text: en
@@ -56,7 +56,7 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
       text += en ? ' The current dashboard snapshot contains no sessions. This does not prove the provider has no conversations.' : ' Aktuální přehled neobsahuje žádné zaznamenané konverzace. Neznamená to, že u poskytovatele žádné nemáš.';
     }
   }
-  if (snapshot && found.id === 'update' && typeof snapshot.updates?.currentVersion === 'string' && /^\\d+\\.\\d+\\.\\d+$/.test(snapshot.updates.currentVersion)) {
+  if (snapshot && found.id === 'update' && typeof snapshot.updates?.currentVersion === 'string' && /^[0-9]+[.][0-9]+[.][0-9]+$/.test(snapshot.updates.currentVersion)) {
     text += en ? ` Installed version reported by this app: ${snapshot.updates.currentVersion}.` : ` Aplikace hlásí nainstalovanou verzi ${snapshot.updates.currentVersion}.`;
   }
   if (found.id === 'agents' && route === 'agenti') text += en ? ' You are already on the Agents page.' : ' Už jsi na stránce Agenti.';
