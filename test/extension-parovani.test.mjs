@@ -24,6 +24,7 @@ function spust(sit, { ulozeno = {} } = {}) {
     remove: async (k) => { delete data[k]; },
   });
   const kontext = vm.createContext({
+    URL,
     crypto: { randomUUID: () => 'instalace-1234' },
     Date: { now: () => ted },
     fetch: async (url, init = {}) => {
@@ -109,7 +110,7 @@ test('pozadí rozšíření: odvolaný token (401) → jedno nové spárování,
 
 test('pozadí rozšíření: otevřené konverzace pro okno – jen stav, staré se zapomenou', async () => {
   const r = spust((url) => (url === '/api/extension/pripojit' ? { status: 200, body: { token: 't'.repeat(43) } } : { status: 200, body: {} }));
-  const karta = (id) => ({ tab: { id, windowId: 3 } });
+  const karta = (id) => ({ tab: { id, windowId: 3, url: id === 12 ? 'https://claude.ai/chat/b' : 'https://chatgpt.com/c/a' } });
   await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: true, counts: { user: 1, assistant: 1 } } }, karta(11));
   await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude', conversationId: 'b', generating: false, limit: true } }, karta(12));
   assert.deepEqual(Object.keys(r.session.otevrene).sort(), ['chatgpt:a', 'claude:b']);
