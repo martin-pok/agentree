@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.2',
+    date: '2026-10-11',
+    title: 'Jistější připojení a skutečný stav dat',
+    items: [
+      'Claude Code a Codex: připojení se potvrdí až po ověření přihlášení a novém načtení dostupných údajů o účtu.',
+      'V Nastavení nyní najdeš všech devět podporovaných webových služeb. Uvidíš, kdy rozšíření skutečně poslalo data.',
+      'Opravené návraty z prohlížeče a zabezpečené adresy služeb. Google přihlášení už nezaměňuje úspěch s dokončenou synchronizací.',
+    ],
+    en: {
+      title: 'More reliable connections and honest data status',
+      items: [
+        'Claude Code and Codex connections are confirmed only after login verification and a fresh account-data check.',
+        'Settings now lists all nine supported web services and shows when the extension actually observed their data.',
+        'Safer service URLs and browser return flows. Google sign-in no longer implies cloud sync has already completed.',
+      ],
+    },
+  },
+  {
     version: '0.46.1',
     date: '2026-10-10',
     title: 'Jednotný vzhled a spolehlivější instalace',
