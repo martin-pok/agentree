@@ -134,27 +134,57 @@ if (scena) {
   // jeden zápis za snímek. Při omezeném pohybu zůstane okno rovné a roboti stojí.
   if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
     let ceka = false;
+    let scenaViditelna = true;
     const zmer = () => {
       ceka = false;
+      if (!scenaViditelna || document.hidden) return;
       const top = scena.getBoundingClientRect().top;
       const p = Math.min(1, Math.max(0, 1 - (top - innerHeight * 0.12) / (innerHeight * 0.6)));
       scena.style.setProperty('--p', p.toFixed(3));
       scena.classList.toggle('is-rovne', p > 0.995);
     };
-    const naplanuj = () => { if (!ceka) { ceka = true; requestAnimationFrame(zmer); } };
+    const naplanuj = () => {
+      if (scenaViditelna && !document.hidden && !ceka) {
+        ceka = true;
+        requestAnimationFrame(zmer);
+      }
+    };
+    // Většina scrollu návštěvníka probíhá mimo hero. Nečteme tam layout
+    // a neaktualizujeme transformace robota na každý scroll snímek.
+    if ('IntersectionObserver' in window) {
+      const viditelnost = new IntersectionObserver(([entry]) => {
+        scenaViditelna = Boolean(entry?.isIntersecting);
+        if (scenaViditelna) naplanuj();
+      }, { rootMargin: '120px 0px 120px 0px', threshold: 0 });
+      viditelnost.observe(scena);
+    }
     addEventListener('scroll', naplanuj, { passive: true });
     addEventListener('resize', naplanuj);
+    addEventListener('visibilitychange', naplanuj);
     zmer();
+
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      let mys = null;
-      addEventListener('pointermove', (e) => {
-        const posun = () => {
-          scena.style.setProperty('--mx', ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
-          scena.style.setProperty('--my', ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
-          mys = null;
-        };
-        if (!mys) mys = requestAnimationFrame(posun);
+      let mys = 0;
+      let x = 0;
+      let y = 0;
+      const posun = () => {
+        mys = 0;
+        if (!scenaViditelna || document.hidden) return;
+        scena.style.setProperty('--mx', ((x / innerWidth) * 2 - 1).toFixed(3));
+        scena.style.setProperty('--my', ((y / innerHeight) * 2 - 1).toFixed(3));
+      };
+      // Jen interakce uvnitř hero; žádné trvalé pointermove výpočty na celém webu.
+      scena.addEventListener('pointermove', (e) => {
+        x = e.clientX;
+        y = e.clientY;
+        if (!mys && scenaViditelna && !document.hidden) mys = requestAnimationFrame(posun);
       }, { passive: true });
+      scena.addEventListener('pointerleave', () => {
+        if (mys) cancelAnimationFrame(mys);
+        mys = 0;
+        scena.style.removeProperty('--mx');
+        scena.style.removeProperty('--my');
+      });
     }
   }
 }
