@@ -419,6 +419,17 @@ export function createClaudeCodeConnector(ctx) {
   // Tatáž konverzace může být vidět ze dvou kořenů (~/.config/claude jako symlink na ~/.claude,
   // zkopírovaná složka). Čte se jen z prvního souboru, jinak by se tokeny i přepis započítaly dvakrát.
   const drzitele = new Map(); // localId → soubor
+  let verifiedProfiles = [];
+  function bindFileAccount(file, entry) {
+    if (drzitele.get(entry.localId) !== file) return false;
+    const matches = verifiedProfiles.filter((profile) => profile?.accountId && profile?.root
+      && path.resolve(file).startsWith(path.resolve(profile.root) + path.sep));
+    if (matches.length !== 1) return false;
+    return store.bindAccount(`claude-code:${entry.localId}`, {
+      accountId: matches[0].accountId, source: 'verified-cli-profile',
+      observedAt: matches[0].observedAt, verified: true,
+    }).ok;
+  }
   let lastEventAt = 0;
   let lastHookAt = 0;
   let exists = false;
@@ -546,6 +557,7 @@ export function createClaudeCodeConnector(ctx) {
     f.size = stat.size;
     f.mtimeMs = stat.mtimeMs;
     store.commit(s);
+    bindFileAccount(file, f);
   }
 
   // Pravidelný průchod je pojistka za sledování souborů. Soubor, do kterého se hodinu nezapsalo,
@@ -725,18 +737,9 @@ export function createClaudeCodeConnector(ctx) {
     // Verified account IDs come from the auth status of the *same* CLI profile.
     // Transcript roots are compared by exact path segment, never by project name.
     bindProfileAccounts(profiles = []) {
+      verifiedProfiles = profiles;
       let bound = 0;
-      for (const [file, entry] of files) {
-        if (drzitele.get(entry.localId) !== file) continue;
-        const matches = profiles.filter((profile) => profile?.accountId && profile?.root
-          && path.resolve(file).startsWith(path.resolve(profile.root) + path.sep));
-        if (matches.length !== 1) continue; // ambiguous or unknown, never guess
-        const result = store.bindAccount(`claude-code:${entry.localId}`, {
-          accountId: matches[0].accountId, source: 'verified-cli-profile',
-          observedAt: matches[0].observedAt, verified: true,
-        });
-        if (result.ok) bound++;
-      }
+      for (const [file, entry] of files) if (bindFileAccount(file, entry)) bound++;
       return bound;
     },
     koreny: () => koreny.seznam(),
