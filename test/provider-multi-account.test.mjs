@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { providerIdentity, sessionAccountBinding, groupAccountsByProvider,
-  normalizeObservedAccounts, observeAccount } from '../src/provider-accounts.js';
+  normalizeObservedAccounts, observeAccount, verifiedProfileForTranscript } from '../src/provider-accounts.js';
 
 test('universal account IDs distinguish same provider profiles and vendors', () => {
   const a = providerIdentity('google', 'user-A-123456');
@@ -54,4 +54,19 @@ test('legacy Claude and Codex account IDs still resolve to canonical providers',
       source: 'verified-cli', observedAt: 1000, verified: true });
     assert.equal(r.accountId, id);
   }
+});
+
+test('authenticated profiles match exact transcript roots and reject ambiguous overlaps', () => {
+  const a = providerIdentity('claude', 'profile-one-identity');
+  const b = providerIdentity('claude', 'profile-two-identity');
+  const roots = [
+    { root: '/Users/test/.claude/projects', accountId: a, observedAt: 1000 },
+    { root: '/Users/test/.claude-secondary/projects', accountId: b, observedAt: 1001 },
+  ];
+  assert.equal(verifiedProfileForTranscript('/Users/test/.claude/projects/p1/session.jsonl', roots)?.accountId, a);
+  assert.equal(verifiedProfileForTranscript('/Users/test/.claude-secondary/projects/p1/session.jsonl', roots)?.accountId, b);
+  assert.equal(verifiedProfileForTranscript('/Users/test/.claude/projects-evil/p1/session.jsonl', roots), null);
+  assert.equal(verifiedProfileForTranscript('/Users/test/.claude/projects/p1/session.jsonl', [...roots, roots[0]]), null);
+  assert.equal(verifiedProfileForTranscript('/Users/test/.claude/projects/p1/session.jsonl',
+    [{ root: '/Users/test/.claude/projects', accountId: a, observedAt: NaN }]), null);
 });
