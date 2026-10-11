@@ -48,8 +48,8 @@ jobs:
               ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
                "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.1.zip"] |
               all(. as $name | $names | index($name) != null)' preview-release.json >/dev/null; then
-              echo "::notice::Existing draft has all release assets; awaiting publication."
-              exit 0
+              echo "::notice::Existing complete draft may have missed publication; resuming gated release workflow."
+              # Do not exit: a successful release.yml run triggers publish-preview.
             fi
             echo "::notice::Release draft missing assets; retrying the artifact build."
           fi
