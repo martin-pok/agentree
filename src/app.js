@@ -434,13 +434,16 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
     if (generation !== subscriptionRefreshGeneration) return;
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
+    // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
+    // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
     claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
-      .map(({ account }, index) => {
-        const plan = claudePlanFromAccount(account);
+      .map(({ account }) => {
         const id = claudeIdentity(account);
-        return [id || `unknown:${index}`, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
+        if (!id) return null;
+        const plan = claudePlanFromAccount(account);
+        return [id, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
           observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
-      })).values()];
+      }).filter(Boolean)).values()];
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
