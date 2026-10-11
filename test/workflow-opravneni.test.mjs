@@ -122,6 +122,12 @@ test('0.46.1 preview resumes failed builds without republishing existing release
   assert.ok(preview, 'preview workflow must exist');
   const start = ulohy(preview)['start-preview-build'];
   assert.ok(start, 'preview build job must exist');
+  assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO" --json isDraft,assets/,
+    'inspect both release draft status and assets before deciding to skip');
+  assert.match(start, /agenteeq-extension-0\.46\.1\.zip/,
+    'extension artifact is mandatory for a complete draft');
+  assert.match(start, /Release draft missing assets; retrying the artifact build/,
+    'incomplete draft must be recoverable');
   assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO"/,
     'check for an existing draft or published release before dispatch');
   assert.match(start, /gh api "repos\/\$REPO\/git\/ref\/tags\/v0\.46\.1"/,
