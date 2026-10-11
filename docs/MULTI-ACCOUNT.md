@@ -1,0 +1,49 @@
+# ADR — Více účtů stejného AI poskytovatele
+
+**Stav:** schváleno k návrhu / realizace zatím nekompletní; návrh tarifikace Pro je produktové doporučení, nikoliv schválená cena nebo aktivovaný paywall. **Datum:** 2026-10-11.
+
+## Zjištěný stav implementace
+
+- `src/provider-accounts.js` vytváří pseudonymní identitu `claude:<hash>` ze skutečného `accountUuid`, u Codexu `codex:<hash>` z `accountId`. Nesmí se ukládat OAuth tokeny ani emaily.
+- `src/app.js` již obsluhuje `claudeAccounts`, `codexAccounts`, `providerAccounts()` a historické pozorování. `src/subscriptions.js` umí více plánů, ale zobrazení plánu neprokazuje identitu běžící session.
+- `src/provider-accounts.js#normalizeCodexAccount` získává oddělené buckets limitů a credits z odpovědi účtu. Claude ze souboru `~/.claude.json` dodává plán/identitu, ale ne průkazně všechna zbývající okna jednotlivých účtů.
+- `src/plans.js#PAID_FEATURES` je zatím prázdná: **žádný skutečně zapnutý multi-account paywall neexistuje**.
+- Ke každé session chybí obecně spolehlivý immutable account binding pro více současně spuštěných profilů. **Nikdy** neodvozovat účet pouze z názvu služby, modelu, ceny nebo posledního globálně přihlášeného účtu.
+
+## UX rozhodnutí: progressive disclosure
+
+**Jedna licence od každé služby** je výchozí a zůstává plně čitelná bez nové sekce správy. Uživatelské rozhraní ukazuje pouze Claude, Codex atd. s aktuálními limity a zdrojem/časem odečtu.
+
+**Více licencí jedné služby** aktivuje při více skutečně identifikovaných účtech složenou kartu poskytovatele (např. Claude), s jednotlivými podkartami „Claude 1“, „Claude 2“ (uživatelsky přejmenovatelnými). Každá karta má plán, identitu v anonymní podobě, profil/zařízení, zdroj a čerstvost odečtu, intervaly limitů s časem resetu, připojené běhy a poslední synchronizaci. Mezi účty lze filtrovat agenty a limity; barevné kódování **není jediná indikace** identity. Zastaralé údaje přecházejí do „Neznámé“, nikdy do 0 %.
+
+## Datový kontrakt cílového řešení
+
+`ProviderAccount`: `id` (pseudonymní stabilní klíč), `provider`, `alias`, `plan`, `source`, `hostId`, `observedAt`, `health`, `limitBuckets[]` (název, spotřebováno, reset, jednotka, observedAt, provenance).
+
+`SessionAccountBinding`: `sessionId`, `accountId|null`, `confidence: verified|unresolved|user_assigned`, `source`, `observedAt`. Účet při běhu nejprve odvodit ze **stejného procesu/profilu/konfiguračního adresáře** jako session; když není doložen, zachovat `null` + „Účet nelze určit“. Uživatelské přiřazení je explicitní metadata, není samo o sobě důkaz odečtu kvóty.
+
+**Limity** agregovat jedině uvnitř stejného účtu, stejného limitního okna a stejné jednotky. Limity různých účtů/modelů nikdy nesčítat do falešné společné rezervy. Pro Claude 5h/7d a Codex primary/secondary zobrazit oddělená okna. Modelový limit zobrazit jen tehdy, pokud zdroj jednoznačně identifikuje model/bucket. Cenové plány nejsou API kredity ani příslib objemu tokenů.
+
+## Monetizace
+
+Navržené klíčové oprávnění: `providerMultiAccount: 'pro'`. **Neaktivovat** dřív, než jsou hotové identity, oddělení kvót, migrace starších dat a UX. Free: jeden aktivně spravovaný účet pro každého poskytovatele, ale automatická detekce a bezpečné zobrazení neznámých sekundárních běhů musí zůstat funkční (neblokovat monitoring nebo bezpečnost). Pro: neomezené spravované účty v rámci rozumného technického limitu; bez automatického přepínání nebo obcházení limitů poskytovatelů. Team není automaticky totéž co více osobních účtů.
+
+## Acceptance + crazy cases
+
+1. 2× Claude Pro v paralelních `CLAUDE_CONFIG_DIR`, samostatné procesy, hooky a účty; žádné křížové přiřazení.
+2. Claude 1 běží, Claude 2 je vyčerpaný; zobrazit správný stav jen u Claude 2.
+3. 20 paralelních běhů napříč 3 účty, současná změna loginu a reconnect SSE; zachovat identity a správné počty.
+4. Restart, výpadek CLI, offline, smazaný profil, neúplné `accountUuid`, chybějící model bucket, různá časová pásma resetu.
+5. Dvě session se stejnou cestou/projektem, ale různými účty: žádná heuristika podle složky.
+6. Sekundární účet bez limit API: „Data nedostupná“, ne náhradní hodnota z primárního.
+7. Historická session bez účtu zůstane unassigned i po přihlášení nového účtu.
+8. Ochrana soukromí: žádné tokeny, e-maily, autentizační soubory nebo obsah přepisů v synchronizaci a logování.
+9. Free→Pro→Free bez ztráty historie a přiřazení; nepřístupné placené ovládání nesmí vypnout zobrazení aktivních agentů.
+10. UAT na skutečném Macu, Chrome a případně dalším hostiteli. Synthetic fixture ani CI **nenahrazují** reálné víceúčtové přihlášení.
+
+## Gates
+
+- Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
+- Dokud API kvóty účtu chybí, použít transparentní `unknown`; žádné predikce prezentované jako fakta.
+- Nové UI otestovat na 1/2/5 účtech, dlouhých alias names, lokalizaci CZ/EN, malém okně a přístupnosti.
+- Monetizační hranici a copy následně zapsat do `docs/LICENSING.md`, `CHANGELOG.md` a `docs/DATA-CONTRACT.md` až s implementací.
