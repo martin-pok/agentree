@@ -438,8 +438,7 @@ test('webová událost znamená jen pozorovaná data z extension, ne OAuth přih
 test('zrušení během aktualizace dat nesmí později potvrdit staré přihlášení', async () => {
   let logged = false;
   let complete;
-  let onVerifiedStarted;
-  const started = new Promise((resolve) => { onVerifiedStarted = resolve; });
+  let verifiedStarted = false;
   const awaitingData = new Promise((resolve) => { complete = resolve; });
   const events = [];
   const n = createNapojeni({
@@ -447,14 +446,14 @@ test('zrušení během aktualizace dat nesmí později potvrdit staré přihlá�
     run: async () => ({ ok: true, stdout: '', stderr: logged ? 'Logged in using ChatGPT' : 'Not logged in' }),
     prihlas: async () => ({ ok: true, zastav: () => {}, odkaz: () => null }),
     open: async () => ({ ok: true }),
-    onVerified: async () => { onVerifiedStarted(); await awaitingData; return 123; },
+    onVerified: async () => { verifiedStarted = true; await awaitingData; return 123; },
     emit: (u) => events.push(u),
     intervalMs: 2, limitMs: 3000,
   });
   const r = await n.napojit('codex');
   assert.equal(r.ceka, true);
   logged = true;
-  await started;
+  await waitFor(() => verifiedStarted, 1000);
   n.zrusit('codex');
   complete();
   await new Promise((resolve) => setTimeout(resolve, 30));
