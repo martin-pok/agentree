@@ -8,9 +8,13 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
-Hlava robota v macOS liště, ikoně aplikace pro Mac i Windows a jejím náhledu vychází z
-`public/brand/agenteeq-mark.svg`. Lišta používá její průhlednou šablonu bez tmavé dlaždice;
-rozměry hlavy, očí a antény se při další změně značky musí upravit společně.
+Malá ikona v macOS **menu baru** a značka rozšíření pro Chrome vychází z
+`public/brand/agenteeq-mark.svg` (kanonická hlava s jednou bílou anténou).
+Velká ikona aplikace v macOS **Docku** používá monochromatickou celotělovou
+postavu Scout ze `site/robot-scout.svg` v paletě `#17171D` / `#FAFAFA`.
+Vektor pro Dock generuje `desktop/Icon.swift`, nikoli historický soubor
+`desktop/Agenteeq.icns`. Motiv trojzubce ani fialová anténa se nesmí vrátit.
+Při další změně Scouta aktualizovat Dock, web i odpovídající regresní testy.
 
 ## Písmo Satoshi a licence
 
