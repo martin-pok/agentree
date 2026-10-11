@@ -121,12 +121,16 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
   // was actually any previously observed provider data.
   async function potvrditAgenta(id, { uz = false } = {}) {
     const a = AGENTI[id];
-    ukonci(id);
+    const aktualniPokus = ceka.get(id);
     let posledniData = 0;
     let dataError = false;
     try { posledniData = Number(await onVerified(id)) || 0; }
     catch { dataError = true; }
     const p = await plan(id).catch(() => '');
+    // If a user cancelled or restarted login while refreshing account data,
+    // never emit a success from the previous attempt.
+    if (aktualniPokus && ceka.get(id) !== aktualniPokus) return { ok: false, zruseno: true };
+    ukonci(id);
     const vysledek = { id, label: a.label, udalost: 'napojeno', overeni: 'cli', posledniData, dataError, plan: p, ...(uz ? { uz: true } : {}) };
     emit(vysledek);
     return { ok: true, uz, plan: p, posledniData, dataError };
