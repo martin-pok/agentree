@@ -349,10 +349,12 @@ try {
         // Wait for the actual target position instead of mistaking that pause for completion.
         await p.waitForFunction(() => {
           const top = document.getElementById('soukromi').getBoundingClientRect().top;
-          return top >= 0 && top <= 80;
+          const header = document.querySelector('.nav').getBoundingClientRect().height;
+          return top >= header && top <= header + 20;
         }, null, { timeout: 7000 });
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
-        assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
+        const hlavicka = await p.evaluate(() => document.querySelector('.nav').getBoundingClientRect().height);
+        assert.ok(sekce >= hlavicka && sekce <= hlavicka + 20, `${engine}: odkaz na sekci skončil na ${sekce} px, hlavička má ${hlavicka} px`);
         await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
         assert.deepEqual(chyby, [], `${engine}: chyby při plynulém posouvání`);
         await p.close();
