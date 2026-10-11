@@ -10,11 +10,12 @@ prvků, která se nesmí rozjet mezi produkty.
 
 Malá ikona v macOS **menu baru** a značka rozšíření pro Chrome vychází z
 `public/brand/agenteeq-mark.svg` (kanonická hlava s jednou bílou anténou).
-Velká ikona aplikace v macOS **Docku** používá monochromatickou celotělovou
-postavu Scout ze `site/robot-scout.svg` v paletě `#17171D` / `#FAFAFA`.
-Vektor pro Dock generuje `desktop/Icon.swift`, nikoli historický soubor
-`desktop/Agenteeq.icns`. Motiv trojzubce ani fialová anténa se nesmí vrátit.
-Při další změně Scouta aktualizovat Dock, web i odpovídající regresní testy.
+Velká ikona aplikace v macOS **Docku** používá schválený rozšířený filled
+logomark: samostatnou bílou hlavu s jednou bílou anténou, dvěma tmavými
+kapslovými očima, bez těla. Zakázaná celotělová varianta Scout se pro Dock
+nepoužívá. Nativní vektor generuje `desktop/Icon.swift`, nikoli historická
+binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
+zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
 
 ## Písmo Satoshi a licence
 
