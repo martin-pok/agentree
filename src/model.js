@@ -212,6 +212,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,
     subagent: s.subagent || null,
     taskName: s.taskName || '',
