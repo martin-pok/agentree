@@ -3,7 +3,7 @@ import { WEB_AGENTEEQ } from '../obchod.js';
 import { api } from '../api.js';
 import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
-import { glyph, ICON, BULB } from '../icons.js';
+import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
@@ -290,14 +290,6 @@ function mount(el) {
         ${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <section class="guide-banner" data-enter style="--i:0">
-          <span class="guide-art" aria-hidden="true">${BULB}</span>
-          <div class="guide-text">
-            <strong>${tr('Průvodce Agenteeq')}</strong>
-            <p>${tr('Šest obrazovek o tom, co Agenteeq umí: přehled agentů, kdy je řada na tobě, limity a útrata, projekty, chaty z prohlížeče a kde zůstávají tvá data.')}</p>
-          </div>
-          <button class="btn btn--primary" type="button" data-welcome>${tr('Prohlédnout průvodce')}</button>
-        </section>
         ${GROUPS.map(([id, label, regions]) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h"${id === v.tab ? '' : ' hidden'} data-enter style="--i:1">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -1019,7 +1011,7 @@ function update(topics) {
     <div class="set-divider"></div>
     ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko s robotem vpravo dole: najde dřívější konverzaci nebo poradí, kde co zapnout. Hledá jen na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
     ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), desc: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Ztišit pohyb')}</button></div>
+    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));

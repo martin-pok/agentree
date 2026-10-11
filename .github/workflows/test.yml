@@ -12,6 +12,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One current validation per branch. A PR and its push share the same branch key;
+# superseded workflow runs are cancelled before consuming test runners.
+concurrency:
+  group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -151,6 +157,8 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run qa:desktop
+      - run: npm run qa:desktop-inset
+      - run: npm run qa:assistant
       - run: npm run qa:refresh
       - run: npm run qa:site
       - run: npm run qa:extension

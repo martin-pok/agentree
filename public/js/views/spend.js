@@ -124,7 +124,7 @@ export function providerAccountsHtml(sp) {
   const accounts = sp.providerAccounts || [];
   if (!accounts.length) return '';
   const rows = accounts.map((account) => {
-    const name = account.provider === 'anthropic' ? 'Claude Code' : 'Codex';
+    const name = ({ anthropic: 'Claude Code', openai: 'Codex', google: 'Gemini', github: 'GitHub Copilot', openrouter: 'OpenRouter', mistral: 'Mistral', xai: 'Grok' })[account.provider] || account.provider || tr('Neznámá služba');
     const known = Boolean(account.id);
     const tag = known ? `${tr('účet')} ${esc(account.id.slice(-4))}` : '';
     const status = account.active ? tr('Aktivní') : known ? tr('Dříve rozpoznaný')
@@ -145,7 +145,7 @@ export function providerAccountsHtml(sp) {
         <div class="provider-account-top"><strong>${name}${tag ? ` <span class="provider-account-id">${tag}</span>` : ''}</strong><span class="provider-account-state">${status}</span></div>
         <span class="plan-sub">${esc(description)}${account.observedAt ? ` · <span data-ago="${account.observedAt}">${esc(rel(account.observedAt))}</span>` : ''}</span>
         ${limits.map((limit) => `<div class="provider-account-limit"><span>${esc(limit.label)}${limit.resetsAt ? ` · ${tr('obnova {0}', esc(dateLong(limit.resetsAt)))}` : ''}</span><strong>${Math.round(limit.usedPercent)} %</strong><span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(limit.usedPercent)}" aria-label="${esc(`${name} ${limit.label}`)}"><i style="width:${limit.usedPercent}%"></i></span></div>`).join('')}
-        ${account.active && account.credits !== null ? `<div class="provider-account-credit">${tr('Kredity Codexu')} <strong>${esc(fmtNum(account.credits))}</strong></div>` : ''}
+        ${account.active && Number.isFinite(account.credits) && account.credits >= 0 ? `<div class="provider-account-credit">${tr('Kredity Codexu')} <strong>${esc(fmtNum(account.credits))}</strong></div>` : ''}
       </div>
     </li>`;
   }).join('');

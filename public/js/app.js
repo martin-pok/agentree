@@ -995,6 +995,8 @@ const autorizace = api.state().then((snap) => {
   return true;
 });
 
+let generaceSnimek = 0;
+
 function prijmiSnimek(snap) {
   applySnapshot(snap);
   window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
@@ -1010,7 +1012,9 @@ function hlidejNacteni() {
     if (state.loaded) return;
     if (!loadingSnapshot) {
       try {
-        prijmiSnimek(await api.state());
+        const generace = generaceSnimek;
+        const snap = await api.state();
+        if (generace === generaceSnimek && !loadingSnapshot && !state.loaded) prijmiSnimek(snap);
         return;
       } catch (err) {
         if (err.status === 401) return;
@@ -1025,14 +1029,20 @@ hlidejNacteni();
 const proud = connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
-    loadingSnapshot = api
-      .state()
-      .then(prijmiSnimek)
-      .catch((err) => {
-        if (err.status === 401) return parovaciObrazovka();
-        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+    const generace = ++generaceSnimek;
+    const nacitani = api.state()
+      .then((snap) => {
+        if (generace === generaceSnimek) prijmiSnimek(snap);
       })
-      .finally(() => { loadingSnapshot = null; });
+      .catch((err) => {
+        if (generace !== generaceSnimek) return; // Starší odpověď nesmí přepsat nový pokus ani vyvolat chybu.
+        if (err.status === 401) parovaciObrazovka();
+        else toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+        throw err; // SSE remains reconnecting until an actual snapshot succeeds.
+      })
+      .finally(() => { if (generace === generaceSnimek) loadingSnapshot = null; });
+    loadingSnapshot = nacitani;
+    return nacitani;
   },
   onEvent: (name, data) => {
     if (!state.loaded || loadingSnapshot) queued.push([name, data]);

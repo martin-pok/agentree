@@ -8,6 +8,15 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
+Malá ikona v macOS **menu baru** a značka rozšíření pro Chrome vychází z
+`public/brand/agenteeq-mark.svg` (kanonická hlava s jednou bílou anténou).
+Velká ikona aplikace v macOS **Docku** používá schválený rozšířený filled
+logomark: samostatnou bílou hlavu s jednou bílou anténou, dvěma tmavými
+kapslovými očima, bez těla. Zakázaná celotělová varianta Scout se pro Dock
+nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg`; transparentní varianta bez dlaždice je `public/brand/agenteeq-dock-transparent.svg`. Jejich rozměry jsou odvozené ze stejných souřadnic jako Swift generátor. Nativní vektor generuje `desktop/Icon.swift`, nikoli historická
+binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
+zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
+
 ## Písmo Satoshi a licence
 
 Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).
@@ -104,6 +113,12 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
   výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
+- `npm run qa:desktop-inset` v Chromiu a WebKitu simuluje `is-desktop` z WKWebView a měří,
+  že nadpis i akce na Přehledu, Agentech a v Nastavení zůstávají pod 44px nativním pruhem.
+  Na šířkách 900–1440 px začínají stejně vysoko jako levý panel; při 880 px a méně
+  se navigace přesouvá dolů a hlavní obsah zůstává mimo horní pruh. Výstupem jsou i snímky.
+  `npm run qa:native` navíc změří tytéž souřadnice v běžící macOS aplikaci přes sondu WKWebView,
+  i když je nad Přehledem otevřený úvodní průvodce.
 - `npm run qa:desktop` ověří postranní panel na oknech 620–1200 px vysokých při šířce 881, 1180
   a 1440 px, česky i anglicky, i s patičkou při výpadku spojení, s víc zdroji tokenů, než se
   vypisuje, a s patičkou uměle vyšší o 48 px: poslední položka navigace je celá vidět, nabídka

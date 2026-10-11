@@ -22,7 +22,6 @@
 <meta property="og:image" content="https://agentree-fawn.vercel.app/icons/icon-512.png">
 <meta property="og:image:alt" content="Agenteeq logo">
 <meta name="twitter:card" content="summary">
-<link rel="preload" href="/fonts/urbanist-500.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/lp.css">
 <script type="module" src="/lp.js"></script>
@@ -35,7 +34,16 @@
   <nav class="nav-links" aria-label="Page sections"><a href="#mac">Mac</a><a href="#windows">Windows</a><a href="#rozsireni">Extension</a><a href="#potize">Troubleshooting</a></nav>
   <div class="lang" role="group" aria-label="Page language"><a href="/instalace" lang="cs" hreflang="cs" aria-label="Čeština">CZ</a><a href="/en/install" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
   <a class="btn btn--sm" href="/en">Home<span class="nav-cta-extra"> and tour</span></a>
+  <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-site-menu" data-mobile-menu-toggle><span class="hamburger-lines" aria-hidden="true"><i></i><i></i></span></button>
 </div></header>
+<div class="mobile-menu" id="mobile-site-menu" aria-hidden="true" inert data-mobile-menu>
+  <div class="mobile-menu-surface">
+    <div class="mobile-menu-header"><span class="mobile-menu-brand" aria-label="Agenteeq"><img src="/brand-mark-clean.svg" width="48" height="48" alt="" aria-hidden="true"></span><button type="button" class="mobile-menu-close" aria-label="Close menu" data-mobile-menu-close>×</button></div>
+    <nav aria-label="Mobile navigation"><a href="#mac">Mac</a><a href="#windows">Windows</a><a href="#rozsireni">Extension</a><a href="#potize">Troubleshooting</a></nav>
+    <a class="mobile-menu-download" href="/en">Home and tour <span aria-hidden="true">↗</span></a>
+    <div class="mobile-menu-languages" aria-label="Language"><a href="/instalace" lang="cs" hreflang="cs" aria-label="Czech">CZ</a><a href="/en/install" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
+  </div>
+</div>
 
 <main id="obsah">
 

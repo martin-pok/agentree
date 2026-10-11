@@ -434,13 +434,24 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
     if (generation !== subscriptionRefreshGeneration) return;
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
-    claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
-      .map(({ account }, index) => {
-        const plan = claudePlanFromAccount(account);
-        const id = claudeIdentity(account);
-        return [id || `unknown:${index}`, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
-          observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
-      })).values()];
+    // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
+    // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
+    const authenticatedClaudeProfiles = [primary, ...extraClaude].filter((item) => item?.account)
+      .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
+      .filter((item) => item.accountId);
+    claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
+      [item.accountId, { id: item.accountId, provider: 'anthropic', service: 'claude',
+        plan: item.plan?.plan || null, observedAt: Date.now(),
+        evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
+    // An account is bound only where authenticated CLI profile and transcript root agree.
+    // Never assign all agents to the currently signed-in global account.
+    const observedAt = Date.now();
+    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
+      home === config.sourceHome
+        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
+          .map((root) => ({ root, accountId, observedAt }))
+        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
@@ -467,13 +478,26 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function providerAccounts() {
     const current = new Map();
-    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) current.set(claudeAccount.id, { plan: claudeAccount.plan, limits: [], credits: null, observedAt: claudeAccount.observedAt });
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) {
+      const limits = store.limitList().filter((l) => l.provider === 'anthropic'
+        && l.accountId === claudeAccount.id && l.source === 'statusline'
+        && Number.isFinite(l.usedPercent) && l.at <= Date.now()
+        && Date.now() - l.at <= 5 * 60_000)
+        .map((l) => ({ key: l.id, label: l.label, primary: {
+          usedPercent: l.usedPercent, windowMinutes: l.windowMinutes, resetsAt: l.resetsAt,
+        }, secondary: null }));
+      current.set(claudeAccount.id, { plan: claudeAccount.plan, limits, credits: null,
+        observedAt: claudeAccount.observedAt });
+    }
     for (const codexAccount of codexAccounts) current.set(codexAccount.id, { plan: codexAccount.plan, limits: codexAccount.limits, credits: codexAccount.credits, observedAt: codexAccount.observedAt });
     const rows = datastore.data.providerAccounts.map((item) => ({ ...item, active: current.has(item.id),
       ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
     if (!rows.some((x) => x.provider === 'anthropic' && x.active)) rows.push({ provider: 'anthropic', service: 'claude', id: null, plan: null, active: false, state: claudeAuth.loggedIn === false ? 'signed_out' : 'unavailable', limits: [], credits: null, observedAt: null });
     if (!rows.some((x) => x.provider === 'openai' && x.active)) rows.push({ provider: 'openai', service: 'chatgpt', id: null, plan: null, active: false, state: 'unavailable', limits: [], credits: null, observedAt: null });
-    return rows.map((row) => ({ ...row, planLabel: row.plan ? describePlan(row).label : null }))
+    return rows.map((row) => ({ ...row, planLabel: row.plan
+      ? (row.service === 'claude' || row.service === 'chatgpt'
+        ? describePlan(row).label : `${row.provider} · ${row.plan}`)
+      : null }))
       .sort((a, b) => Number(b.active) - Number(a.active) || (b.observedAt || 0) - (a.observedAt || 0));
   }
 

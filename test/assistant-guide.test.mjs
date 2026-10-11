@@ -67,5 +67,21 @@ test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale
   const connecting = guide('Proč nevidím agenty?', { language: 'cs-CZ', snapshot: { connection: 'connecting', loaded: false, sessions: new Map() } });
   assert.match(connecting.text, /nemám potvrzené spojení/);
 
+  for (const question of ['jak tahle app funguje?', 'Jak funguje Agenteeq?', 'Co dělá Agenteeq?']) {
+    const overview = guide(question, { language: 'cs-CZ', route: 'prehled', snapshot: { connection: 'live' } });
+    assert.equal(overview.topic, 'overview', question);
+    assert.deepEqual(overview.cile, [], 'obecný dotaz nesmí vrátit náhodné navigační odkazy');
+    assert.match(overview.text, /kdo pracuje a kdo čeká na tvoje rozhodnutí/);
+    assert.match(overview.text, /Projekty seskupují/);
+    assert.match(overview.text, /Právě jsi v Přehledu/);
+    assert.match(overview.text, /nový úkol zadáš v poli dole/);
+  }
+  const englishOverview = guide('How does this app work?', { language: 'en-GB', route: 'agenti', snapshot: { connection: 'offline' } });
+  assert.equal(englishOverview.topic, 'overview');
+  assert.deepEqual(englishOverview.cile, []);
+  assert.match(englishOverview.text, /working or waiting for you/);
+  assert.match(englishOverview.text, /live connection is not confirmed/);
+  assert.doesNotMatch(englishOverview.text, /Právě jsi/);
+
   assert.equal(guide('Find chat about invoices', { language: 'en-GB' }), null, 'conversation search stays routed to retrieval');
 });

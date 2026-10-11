@@ -13,6 +13,7 @@ import { request } from './api.js';
 import { esc, dateLong } from './format.js';
 import { hledejCile } from './hledani.js';
 import { guideAnswer } from './assistant-guide.js';
+import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
@@ -97,13 +98,14 @@ function zpravaHtml(z, i) {
   </div>`;
 }
 
-function vykresli() {
+function vykresli({ ownMessage = false } = {}) {
   if (!el) return;
   const log = el.querySelector('.pm-log');
   const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Hledáš starý chat, nebo nevíš, kde něco nastavit? Napiš mi, co potřebuješ.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
-  log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+  renderChatAtPosition(log, () => {
+    log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+  }, { ownMessage });
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
-  log.scrollTop = log.scrollHeight;
 }
 
 // „Jak zapnu …“: hledání v rejstříku stránek a nastavení bez výplňových slov; když celé spojení
@@ -125,7 +127,7 @@ async function posli(text) {
   if (!dotaz || pracuje) return;
   zpravy.push({ kdo: 'ja', text: dotaz });
   pracuje = true;
-  vykresli();
+  vykresli({ ownMessage: true });
   let odpoved;
   try {
     const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;

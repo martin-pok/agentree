@@ -4,6 +4,49 @@
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
+## Rozhodnutí schválená vlastníkem — sledování implementace
+
+| Požadavek | Stav v kódu | Co chybí do reálného dokončení |
+|---|---|---|
+| Obsah pod macOS titlebarem a bez kolizí s průvodcem | Oprava na PR #130 | Vizuální QA skutečné nainstalované aplikace |
+| Živý počet pracujících agentů v macOS menu baru | Implementováno v pracovní větvi | Ověřit reálné běhy, restart serveru a výpadky na Macu |
+| Dovednosti: ikona blesku; „Omezit pohyb“ | Implementováno | Finální vizuální kontrola |
+| Jediný oficiální širší filled logomark s kapslovými očima a jednou anténou | Geometrie Dock generátoru aktualizovaná; **není pixelově schválená proti originálu** | Exportovat schválené SVG/PNG/transparent varianty; sjednotit aktivní brand assety a binárky, bez Scouta jako Dock ikony, trojzubce a fialové antény |
+| České a anglické aktuální skutečné screenshoty Chrome Store | Exporty v `branding/chrome-web-store/export/` | Zkontrolovat proti finálnímu UI a zveřejnit přes účet vydavatele |
+| Google OAuth a profilová fotografie | Stav skutečného přihlášení neověřen | UAT přes Google účet, logout/login a offline |
+| SEO prodejní landing page | Metadata a strukturovaná data v kódu | Produkční crawl, canonical/hreflang, indexace, CWV, reálné nasazení |
+| Automaticky aktuální GitHub / lokální aplikace / Store | Commity v GitHubu jsou oddělené od distribuce | Release build, QA upgrade nainstalované aplikace, publikace obchodu; neslibovat vzdálenou úpravu Macu bez přístupu |
+
+Tato tabulka zachovává rozhodnutí i při změně agenta. Po každém schváleném požadavku aktualizovat odpovídající řádek, changelog a testy. Uzavřít položku až s odkazem na ověřitelné artefakty.
+
+## Zátěžové a mezizařízení scénáře — akceptační kritéria
+
+**20 současně běžících agentů na jednom Macu (P0):** každá session má vlastní ID, neztrácí se SSE změny, počítadlo v menu baru odpovídá skutečným pracujícím session (nikoliv počtu procesů nebo všech historických chatů). Ověřit start/stop 20 běhů, jejich různá pořadí, rychlé přechody, reconnect SSE, vypršení čerstvosti a výpadek lokálního serveru. Automatická syntetická simulace: `test/twenty-agents-stress.test.mjs`; skutečných 20 externích procesů na Macu **neověřeno**. Cíl od zdroje do UI dle `AGENTS.md` je do 2 sekund pro souborové události, okamžitě pro hooky.
+
+**Mac mini s lokálním modelem (P0/P1):** katalog procesů už zahrnuje Ollamu a LM Studio. Zjištění, že běží hostitel/model, **nedokazuje**, že model vyřizuje konkrétní požadavek. Přidat explicitní read-only status konkrétních generování na základě ověřitelného zdroje (např. vlastní instrumentace běhů či podporované API), pravdivě rozlišit načtený model, běžící proces a aktivní inferenci. Ověřit model unload, několik lokálních běhů současně, chybějící Ollama endpoint a restart serveru. U vzdáleného Mac mini je zapotřebí spárovaný zdroj na tom zařízení; lokální process scan jiného Macu vzdálené procesy **neuvidí**.
+
+**Claude Code spuštěný na telefonu (P0/product decision):** pokud telefon vzdáleně ovládá **stejný Mac**, kde běží Claude Code a Agenteeq, jeho nový proces/hooky se mohou zobrazit v macOS aplikaci ze stávajícího lokálního zdroje. Je-li to Claude Code běžící **na jiném hostiteli/cloud VM**, Agenteeq to bez konektoru k tomuto hostiteli neuvidí. Současná spárovaná mobilní aplikace je z bezpečnostních důvodů read-only: endpointy pro vzdálené spuštění blokuje `src/remote-scope.js`. Neobcházet ochrany. Pro požadované spuštění přímo z telefonu navrhnout výslovně autorizovanou frontu akcí se schválením na hostiteli, omezením dostupných nástrojů a audit trail; až po security review + UAT. Testované blokování zápisu: `test/twenty-agents-stress.test.mjs`.
+
+**Kvalita dat (P0):** při 20 souběžných session testovat duplicitní ID, opožděné timestampy, chybějící proces, přerušení zdroje a hodnoty „neznámé“; žádný odhad se nemá vydávat za naměřený údaj. Reálné UI testy a skutečný mobilní přístup zůstávají otevřené.
+
+## Multi-account Claude / Codex — produktové rozhodnutí
+
+Implementovaná částečná detekce identit účtů a kvót zatím nezajišťuje spolehlivé přiřazení každé session ani oddělená Claude okna pro více licencí. UX a datové/bezpečnostní požadavky v [MULTI-ACCOUNT.md](MULTI-ACCOUNT.md). **P1 návrh, nehotová funkce**, navržené zařazení správy více licencí stejného nástroje do Pro vyžaduje samostatné produktové schválení. Free musí zachovat sledování všech rozpoznaných agentů. Nezapínat paywall před hotovou a otestovanou správou identit, přiřazení a limitů.
+
+## Integrita časových řad, cache a čerstvost dat
+
+- **Kalendářní den ≠ posledních 24 hodin.** „Dnes“, „včera“, posledních N **kalendářních** dní a měsíční statistiky se řídí místní časovou zónou zařízení; 24 h znamená klouzavých 86 400 sekund. Při změně DST je kalendářní den dlouhý 23 nebo 25 hodin. Testy: `test/kalendarni-den.test.mjs`. V UI nesmí být tyto metriky zaměňovány ani při překladu CZ/EN.
+- **Cloudový souhrn:** `src/cloud-sync.js#tokenyPoDnech` nyní odmítá neplatné a budoucí hodinové buckety a nečíselné součty. Regresní scénář: `test/cloud-sync.test.mjs`. Pro synchronizaci zachovat pouze kompletní místní dny; zabránit přepsání pravdivé minulosti neúplnou historií.
+- **Verzování cache:** `src/verze-souboru.js` používá obsahové značky/Etag a service worker `public/sw.js` je network-first, API odpovědi se neukládají. Před releasem ověřit skutečný upgrade staré→nové instalace, offline fallback, návrat serveru a vzhled všech assetů v Mac WKWebView/Chrome; implementační princip sám o sobě nedokazuje absenci starého UI.
+- **Duplicitní agenty a historická data:** závazně testovat vícenásobné kořeny stejného přepisu, symlinky, stejný session UUID z různých nezávislých profilů, obnovu SSE po restartu a konflikt více instancí. Jeden logický běh musí mít jednu identitu a nesmí se započítat dvakrát; při konfliktu identit nevymýšlet sloučené statistiky.
+- **Otevřené P1:** pokrytí dynamických cache/session verzí, stale renderů a souběžných migrací, měření p95 latence a vizuální kontrola na reálných zařízeních.
+
+## Web performance / responsive / SEO — release gate
+
+Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opravené přednačítání primárního písma, neblokující cache revalidace, lehčí hero parallax, nativní webový trackpad, safe-area / ultrawide gutters, minimální dotykové cíle a `/app` noindex. Nová QA kontroluje **šest veřejných stránek** v Chromiu/WebKitu na 22 šířkách od **320 do 3840 px**, plus laboratorní LCP/CLS a SEO regresní pravidla.
+
+**Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
+
 ## Právě teď — cesta od 0.46.1 k dalšímu releasu
 
 | Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
@@ -12,7 +55,7 @@ Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ov�
 | P0 | Vydání 0.46.1 bez nesouladu souborů | Zdrojová verze 0.46.1; veřejný release zatím 0.46.0 | Workflow z tagu `v0.46.1` sestaví odpovídající Mac, Windows a extension balíčky; kontrola jejich verzí a kontrolních součtů projde; koncept je po výslovném schválení zveřejněn |
 | P0 | Jediná aktuální identita Agenteeq | Aktivní SVG a odstraněná historická robotí předloha; binární assety neprošly úplnou vizuální kontrolou | Vizuálně porovnané PNG/ICO/ICNS, screenshoty, instalátor, Dock a Chrome Store; žádný trojzubec ani staré logo |
 | P0 | Správné údaje a bezpečné připojení | Implementované automatické párování a kontrola původu zpráv; živé poskytovatelské scénáře neověřeny | Reálná kontrola přihlášení, výpadku, obnovení a odvolání přístupu; u odvozených dat viditelný zdroj a stáří |
-| P1 | AI pomocník, který skutečně poradí | Kontextová navigace a první diagnostika z lokálního snapshotu; omezené pokrytí | CZ/EN sada běžných dotazů, neznámé chyby, navazující otázky, správné odkazy; odpovědi nezaměňují domněnky za fakta; měřená latence a spolehlivost |
+| P1 | AI pomocník, který skutečně poradí | Kontextová navigace a první diagnostika z lokálního snapshotu; obecné vysvětlení aplikace CZ/EN a poloha historie opraveny; pokrytí je stále omezené | CZ/EN sada běžných dotazů, neznámé chyby, navazující otázky, správné odkazy; odpovědi nezaměňují domněnky za fakta; měřená latence a spolehlivost |
 | P1 | Udržovatelná Chrome extension | Content skripty a párování mají regresní testy; popup zůstává velký modul | Oddělené UI, stav a transport; bezpečnostní a DOM regresní testy; ruční ověření podporovaných služeb |
 | P1 | Sjednocené texty CZ/EN | Upraven pomocník a vybrané texty landing page; úplný obsahový audit neskončil | Stavové hlášky, onboarding, nastavení, extension, emaily a web ověřeny proti [VOICE-AND-COPY.md](VOICE-AND-COPY.md) |
 | P2 | Komerční připravenost | Právní, platební a distribuční úkoly zůstávají otevřené | DPA, právní posouzení, podpis/notarizace macOS a reálné QA Windows |

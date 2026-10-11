@@ -2,6 +2,47 @@
 
 ## Nevydáno
 
+- **Web: instalace je plně ovladatelná i na telefonu (ve vývoji).** Česká i anglická instalační stránka nově používají totožné přístupné mobilní menu jako landing page; odkazy na Mac/Windows/rozšíření/potíže nezmizí pod breakpointem 900px. Automatické QA pokrývá i krátkou landscape obrazovku.
+- **Web: lehčí produkční CSS (ve vývoji).** Build zachovává všechny vizuální deklarace i pořadí kaskády, ale odstraňuje pouze komentáře mimo CSS řetězce. Responzivita počítá s dotykovými tablety širšími než 900px. Nové regresní testy chrání pravidla i obsah řetězců.
+
+
+- **Web: rychlejší a přesnější vykreslení (ve vývoji).** Odstraněno přednačítání nepotřebného Urbanist TTF; build přednačítá Satoshi WOFF2 jen tehdy, když je dostupné. Webové trackpady používají nativní plynulý posun a robotická hero scéna nepočítá parallax mimo viewport. CSS/JS mohou znovu použít validovanou cache.
+- **Web: citlivá responzivita a přístupnost (ve vývoji).** Safe-area odsazení pro iPhone v landscape, čitelná šířka na velkých monitorech a minimálně 44px navigační dotykové cíle. Přidány breakpointové a laboratorní Web Vitals testy pro CZ/EN homepage, instalaci a zásady soukromí v Chromiu a WebKitu.
+- **SEO (ve vývoji).** Webová ukázka rozhraní `/app` má vlastní `noindex` a crawler ji smí navštívit, aby značku respektoval. Šest veřejných stránek má regresní kontrolu canonical, hreflang, OG a priorit assetů. Skutečné Google PSI výsledky dosud nejsou ověřené; viz `docs/WEB-PERFORMANCE-AUDIT-0461.md`.
+
+
+- **Oddělení limitů více Claude účtů (ve vývoji).** Pokud aplikace bezpečně rozpozná účet konkrétního běhu, jeho 5hodinové, týdenní a extra-usage okno již nebude sdílet stejné ID s jinou licencí. Úspěch u jiné licence nesmí odstranit její vyčerpaný limit. Neověřené víceúčtové údaje zůstávají neznámé, nikoli sloučené. Čeká na CI a ověření na skutečných účtech.
+
+
+- **Přesnější přiřazení konverzací ke správnému profilu Claude Code (ve vývoji).** Když je identita konkrétního CLI profilu ověřená a přepis patří jednoznačně tomuto profilu, Agenteeq ji přiřadí ke konverzaci a aktualizuje její živý souhrn. Neznámé a kolidující profily se nepřiřazují odhadem. Ostatní poskytovatelé a kompletní per-account limity zatím zůstávají nedokončené.
+
+## Nevydáno
+
+### Co se změní pro uživatele ve verzi 0.46.1
+
+> Následující změny jsou ve vývojové větvi. Nejsou automaticky dostupné v instalované aplikaci ani ve veřejném Chrome Web Store. Označení „vydáno“ vyžaduje samostatné ověření release.
+
+- **Přehlednější hlavní okno na Macu:** obsah a horní akce už nezasahují do prostoru systémového záhlaví; banner průvodce byl odstraněn z Nastavení, kde překrýval horní ovládání. Průvodce samotný zůstává dostupný.
+- **Živý počet pracujících agentů v horní liště macOS:** vedle ikony se zobrazuje aktuální počet; upozornění se s ním nepletou. Nula znamená žádnou právě evidovanou práci a pomlčka neznámý stav při výpadku. Počet se přepočítává i při časovém vypršení stavu.
+- **Spolehlivější živý přehled:** aplikace odolává překrývajícím se SSE spojením a opožděným odpovědím API, které by jinak mohly vrátit staré údaje.
+- **Srozumitelnější Pomocník:** drží polohu při čtení starších zpráv, poradí s fungováním aplikace a méně často nabízí nerelevantní navigaci.
+- **Dovednosti mají v navigaci ikonu blesku.** Popisek nastavení pohybu se mění na „Omezit pohyb“ (EN „Reduce motion“).
+- **Čistší identita značky:** rozšíření a podklady pro Chrome Web Store mají sjednocenou robotí hlavu; starý trojzubec a fialová anténa nejsou schválené motivy. Nový rozšířený filled logomark byl schválen pro Dock, jeho finální pixelově přesný vektor a aplikace do všech distribuovaných assetů stále vyžadují ověření.
+- **Rozšíření pro Chrome:** přehlednější časové stavy a lepší zotavení z přerušení spojení; nové CZ/EN snímky jsou připravené v repozitáři, **nejsou dosud potvrzené jako veřejně zveřejněné**.
+- **Sdílení prodejního webu:** česká i anglická landing page mají doplněná metadata pro obrázky na sociálních sítích. Produkční nasazení a SEO audit zůstávají samostatnými úkoly.
+
+### Ověření a dostupnost
+
+- **Zdrojový kód:** pracovní větev `work/app-extension-reliability-0461`, PR #130.
+- **Automatické testy:** stav se posuzuje výhradně podle CI na přesném HEAD commitu.
+- **Reálný Mac, Windows a Chrome:** ruční UAT dosud nelze označit jako hotové.
+- **Veřejné vydání:** poslední ověřené GitHub vydání je `v0.46.0`; Chrome Web Store ještě vyžaduje nové publikování a kontrolu veřejné verze.
+
+
+- **Hlava robota je stejná v macOS liště i ikonách aplikace.** Ikona vedle živého počtu agentů používá přesný tvar z oficiální značky. Náhled aplikace a ikona pro Windows už nemají starou fialovou anténu.
+- **Rozšíření a podklady pro Chrome Web Store používají současnou značku.** Ikony rozšíření, hlavička okna a malí roboti v seznamu mají stejné proporce jako logo Agenteeq. České i anglické snímky a propagační plochy vycházejí z aktuálního světlého vzhledu a skutečného okna rozšíření.
+- **Horní obsah v aplikaci pro Mac už nekoliduje se záhlavím.** Nadpis a horní akce začínají na stejné výšce jako levý panel, pod 44px oblastí tlačítek okna a tažného pruhu. Při zúžení okna zůstává hlavní obsah pod touto oblastí a navigace přejde dolů.
+- **Pomocník drží místo v historii a odpovídá na obecné otázky.** Při čtení starších zpráv už nové vykreslení neposune chat na konec; automatický posun zůstává při vlastní zprávě a u dna. Na „Jak tahle app funguje?“ v češtině i angličtině vysvětlí Přehled, agenty, projekty a rozdíl mezi tokeny a účtovanými náklady bez nesouvisejících odkazů.
 - **„Hotovo“ jen u agenta, který opravdu doběhl.** Karty v „Právě teď“ psaly „Hotovo“ u každé konverzace, která čeká na zadání – i když agent uprostřed práce přestal odpovídat nebo na zadání vůbec neodpověděl. Teď mají karty stejný štítek a barvu jako seznam Agentů a detail („Čeká na zadání“, „Potřebuje tebe“, „Pracuje“…) a pod ním skutečný důvod: „Hotovo, čeká na další zadání“, „Delší dobu bez aktivity“, nebo „Zatím bez odpovědi agenta“. Stejný důvod je u nedoběhlé konverzace vidět i na Agentech a v detailu a robot u ní neříká „Hotovo“. V boxu Stav agentů se počet jmenuje „potřebuje tebe“ jako všude jinde.
 - **Detail konverzace neukazuje odpověď z předchozí konverzace.** Při přechodu z jedné konverzace do druhé se pod přepisem chvíli (a když se načtení nepovedlo, natrvalo) ukazovalo pole „Odpovědět agentovi“ nebo důvod, proč odpovědět nejde, z té předchozí.
 - **Odpověď agentovi bez rizika rozdvojené konverzace.** Když se u běžícího Claude Code nepodaří zjistit, v jaké složce pracuje, nebo když se běh z Agenteeq teprve zastavuje, aplikace odpověď nepošle a řekne to. Složku běžícího agenta se navíc pokusí zjistit znovu, když se to napoprvé nepovede.

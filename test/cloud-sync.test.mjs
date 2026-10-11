@@ -64,6 +64,23 @@ test('tokeny po dnech: neposílá se den, za který Mac nemá úplná data', asy
   assert.deepEqual(usage.body.map((x) => x.day), ['2026-09-17', '2026-09-24'], '10denní okno = 8 úplných dní');
 });
 
+test('denní cloud sync ignoruje budoucí hodiny, NaN, Infinity a neplatné hodnoty', () => {
+  const now = Date.UTC(2026, 9, 11, 17, 30);
+  const hourly = {
+    '2026-10-11T16': 10,
+    '2026-10-11T17': 15,
+    '2026-10-11T18': 900,
+    '2026-10-12T01': 800,
+    '2026-10-11T14': Infinity,
+    '2026-10-11T13': NaN,
+    '2026-10-11T12': '100',
+    '2026-10-11T11': -5,
+    'nonsense': 999,
+  };
+  const result = tokenyPoDnech([{ id: 'claude-code:x', provider: 'anthropic', hourly }], now);
+  assert.deepEqual(result, [{ day: '2026-10-11', provider: 'anthropic', tokens: 25, sessions: 1 }]);
+});
+
 test('útrata po měsících: předplatné každý měsíc do konce, jednorázové jen ve svém měsíci, poznámka nikdy', () => {
   const r = utrataPoMesicich(zaznamy, { mesice: ['2026-07', '2026-08', '2026-09'], prevod, mena: 'CZK' });
   const klic = (x) => `${x.month} ${x.service} ${x.kind}`;

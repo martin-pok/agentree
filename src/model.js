@@ -11,6 +11,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     provider,
     app,
     source,
+    accountBinding: null, // only verified account provenance, never inferred from provider/model
     title: '',
     firstPrompt: '',
     lastPrompt: '',
@@ -130,7 +131,11 @@ export function deriveStatus(s, now) {
   // neskončil odpovědí, takže ne „hotovo“ – ale ani „pracuje“. Nový zápis do přepisu posune
   // `runningAt` za čas zjištění a konverzace zase pracuje.
   const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
-  if (s.running && !skoncil && now - (s.runningAt || s.lastAt) < s.staleMs) {
+  // A future source timestamp must never keep an agent in a live working state.
+  // Allow 60 seconds of clock skew, in line with the limits freshness contract.
+  const runningAt = s.runningAt === 0 ? s.lastAt : s.runningAt;
+  const trustworthyRunningAt = Number.isFinite(runningAt) && runningAt > 0 && runningAt <= now + 60e3;
+  if (s.running && !skoncil && trustworthyRunningAt && now - runningAt < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
     // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
     // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
@@ -207,6 +212,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,
     subagent: s.subagent || null,
     taskName: s.taskName || '',

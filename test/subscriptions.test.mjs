@@ -177,7 +177,7 @@ test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výcho
 
 test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho útratu', async () => {
   const src = await tempDir('agenteeq-src-');
-  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', accountUuid: 'stable-claude-test-account-12345', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
   const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
     napojeniRun: async (_bin, args) => args[0] === 'auth'
       ? { ok: true, stdout: JSON.stringify({ loggedIn: true }), stderr: '' }
@@ -307,6 +307,21 @@ test('druhý izolovaný profil Claude je aktivní i při odhlášení výchozíh
     assert.equal(sp.subscriptions.find((p) => p.service === 'claude').plan, 'max5x');
     assert.equal(sp.providerAccounts.find((x) => x.provider === 'anthropic' && x.active).plan, 'max5x');
     assert.doesNotMatch(JSON.stringify(sp), /11111111|22222222/);
+  } finally { await t.close(); }
+});
+
+test('Claude bez ověřeného UUID se nevydává za druhou aktivní licenci', async () => {
+  const src = await tempDir('agenteeq-unknown-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {
+    organizationType: 'claude_pro', emailAddress: 'private@example.com',
+  } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src });
+  try {
+    await t.app.refreshSubscriptions();
+    const payload = t.app.spendPayload();
+    assert.equal(payload.providerAccounts.some((x) => x.provider === 'anthropic' && x.active), false);
+    assert.equal(payload.subscriptions.some((x) => x.service === 'claude'), false);
+    assert.doesNotMatch(JSON.stringify(payload.providerAccounts), /private@example.com/);
   } finally { await t.close(); }
 });
 

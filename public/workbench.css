@@ -456,7 +456,7 @@ body:has(> .pomocnik:not([hidden])) .main { padding-bottom: calc(var(--pm-spodek
 @media (min-width: 881px) {
   .shell { grid-template-columns: 248px minmax(0, 1fr); }
   .sidebar { top: 12px; height: calc(100dvh - 24px); margin: 12px 0 12px 12px; border: 1px solid var(--line-2); border-radius: var(--r-xl); }
-  html.is-desktop .sidebar { top: 44px; height: calc(100dvh - 56px); margin: 44px 0 12px 12px; }
+  html.is-desktop:not(.is-windows) .sidebar { top: var(--desktop-top-inset); height: calc(100dvh - var(--desktop-top-inset) - 12px); margin: var(--desktop-top-inset) 0 12px 12px; }
 }
 /* Nabídka agentů: skupiny pod sebou (přebije starší dvousloupcové rozložení .launch-agents). */
 .launch .lpick-pop .launch-agents { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }

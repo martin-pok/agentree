@@ -40,7 +40,13 @@ const el = (tag, trida, text) => {
 };
 const SIPKA = '<svg class="sipka" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
+// Zastaralé, chybějící nebo časově nesmyslné události nepředstírají živý stav.
+// Čas z lokálního zdroje je v ms; čísla v sekundách a skok hodin dopředu odmítáme.
+function validniCas(at, now = Date.now()) {
+  return typeof at === 'number' && Number.isFinite(at) && at > 1e12 && at <= now + 60e3;
+}
 function ago(at) {
+  if (!validniCas(at)) return '—';
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
   if (s < 3600) return tr('před {0} min', Math.max(1, Math.round(s / 60)));
   if (s < 86400) return tr('před {0} h', Math.round(s / 3600));
@@ -48,6 +54,7 @@ function ago(at) {
 }
 // Jak dlouho agent odpovídá: 0:42, 3:05, 1:02:10.
 function trvani(od) {
+  if (!validniCas(od)) return '—';
   const s = Math.max(0, Math.floor((Date.now() - od) / 1000));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -393,7 +400,7 @@ async function obnovSeznam() {
 // ── Agenti na tomto počítači ────────────────────────────────────────────────
 // Souhrn posílá aplikace (POST /api/extension/prehled) přes background se tokenem spárování.
 // Okno ukáže, kdo čeká na tvé rozhodnutí a kdo pracuje; klik otevře agenta přímo v Agenteeq.
-const ROBOT = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 4.5V13" stroke-width="3.5" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="4.5" r="3.2"/><rect class="hlava" x="5" y="12" width="38" height="31" rx="12"/><rect class="oko" x="15" y="22" width="5" height="10" rx="2.5"/><rect class="oko" x="28" y="22" width="5" height="10" rx="2.5"/></svg>';
+const ROBOT = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 9V17" stroke-width="3" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="9" r="2.8"/><rect class="hlava" x="9" y="16.5" width="30" height="24" rx="9.5"/><rect class="oko" x="17" y="24" width="4" height="8" rx="2"/><rect class="oko" x="27" y="24" width="4" height="8" rx="2"/></svg>';
 const TON_AGENTA = { working: 'work', needs_input: 'warn', failed: 'err', limited: 'err' };
 const STAV_AGENTA = { working: tr('Pracuje'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Narazil na limit') };
 let prehled = null;
