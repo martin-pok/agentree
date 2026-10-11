@@ -31,7 +31,7 @@ const intents = [
 ];
 const isSearch = /\b(najdi chat|vyhledej chat|find chat|search conversations?|najdi konverzaci)\b/;
 const greetings = /^(ahoj|cau|cus|hello|hi|hey|dobry den)[!. ]*$/;
-export function guideAnswer(question, { previousTopic = null, language = 'cs', route = '' } = {}) {
+export function guideAnswer(question, { previousTopic = null, language = 'cs', route = '', snapshot = null } = {}) {
   const q = norm(question).trim();
   if (!q || isSearch.test(q)) return null;
   const en = language === 'en';
@@ -48,6 +48,17 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
   const cile = cileHledani().filter((c) => c.id === found.target);
   const selected = cile.length ? cile : hledejCile(found.id).slice(0, 1);
   let text = en ? found.en : found.cs;
+  // Diagnose from the already-rendered local snapshot; do not invent provider status.
+  if (snapshot && found.id === 'agents') {
+    if (snapshot.connection !== 'connected') {
+      text += en ? ' The live connection is not confirmed; agent activity may be stale. Check whether the desktop backend is reachable.' : ' Živé spojení s backendem není potvrzené. Údaje o aktivitě mohou být zastaralé; nejdřív ověř dostupnost desktopové aplikace.';
+    } else if (snapshot.loaded && snapshot.sessions instanceof Map && snapshot.sessions.size === 0) {
+      text += en ? ' The current dashboard snapshot contains no sessions. This does not prove the provider has no conversations.' : ' Aktuální přehled neobsahuje žádné zaznamenané konverzace. Neznamená to, že u poskytovatele žádné nemáš.';
+    }
+  }
+  if (snapshot && found.id === 'update' && typeof snapshot.updates?.currentVersion === 'string' && /^\\d+\\.\\d+\\.\\d+$/.test(snapshot.updates.currentVersion)) {
+    text += en ? ` Installed version reported by this app: ${snapshot.updates.currentVersion}.` : ` Aplikace hlásí nainstalovanou verzi ${snapshot.updates.currentVersion}.`;
+  }
   if (found.id === 'agents' && route === 'agenti') text += en ? ' You are already on the Agents page.' : ' Už jsi na stránce Agenti.';
   return { topic: found.id, text, cile: selected };
 }
