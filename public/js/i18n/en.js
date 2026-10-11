@@ -7,6 +7,14 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "Data z Chromu": "Data from Chrome",
+    "Data z webu dorazila": "Website data received",
+    "Přihlášení ověřeno": "Sign-in verified",
+    "Rozšíření načetlo stav konverzace. Přihlášení k webovému účtu Agenteeq neověřuje.": "The extension has received conversation status. Agenteeq does not verify sign-in to the website account.",
+    "Přihlášení funguje, ale údaje o účtu se zatím nepodařilo obnovit.": "Sign-in succeeded, but account details could not be refreshed yet.",
+    "Poslední známá aktivita nástroje: {0}.": "Last observed tool activity: {0}.",
+    "Přihlášení funguje. Data se objeví, jakmile nástroj zaznamená první aktivitu.": "Sign-in succeeded. Data will appear as soon as the tool records its first activity.",
+    "Zaznamenána aktivita: {0}": "Activity observed: {0}",
     "Obnovuji aktuální data": "Refreshing current data",
     "Kontroluji dostupné zdroje…": "Checking available sources…",
     "Aktualizuji zobrazená data…": "Updating displayed data…",
