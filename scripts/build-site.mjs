@@ -214,6 +214,13 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
       satoshiAvailable));
   }
 
+  // Privacy-policy routes are also indexable public pages: use the same verified
+  // font hint as the two landing pages and installation guides, in both languages.
+  for (const rel of ['soukromi/index.html', 'en/privacy/index.html']) {
+    const file = path.join(out, rel);
+    await fs.writeFile(file, preloadPrimarnihoPisma(await fs.readFile(file, 'utf8'), satoshiAvailable));
+  }
+
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
   await fs.mkdir(path.join(out, 'ukazka'), { recursive: true });
   await fs.writeFile(path.join(out, 'ukazka', 'data.json'), JSON.stringify(await ukazkoveOdpovedi()));
