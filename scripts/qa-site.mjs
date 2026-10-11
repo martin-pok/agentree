@@ -498,6 +498,42 @@ try {
         await page.close();
       }
       await fs.writeFile(`${output}/web-vitals-${engine}.json`, JSON.stringify(vitals, null, 2));
+      // Installation guide must never lose its section navigation on mobile,
+      // including very short landscape viewports with safe-area constraints.
+      for (const route of ['/instalace', '/en/install']) {
+        const mobile = await browser.newPage({
+          viewport: { width: 390, height: 844 }, reducedMotion: 'reduce',
+        });
+        await jenMistni(mobile, []);
+        await mobile.goto(url + route);
+        for (const [width, height] of [[390, 844], [568, 320], [844, 390]]) {
+          await mobile.setViewportSize({ width, height });
+          const toggle = mobile.locator('[data-mobile-menu-toggle]');
+          assert.equal(await toggle.isVisible(), true, `${engine} ${route} ${width}: mobile menu missing`);
+          await toggle.click();
+          const state = await mobile.evaluate(() => {
+            const overlay = document.querySelector('[data-mobile-menu]');
+            const close = overlay.querySelector('[data-mobile-menu-close]');
+            const r = close.getBoundingClientRect();
+            return {
+              expanded: document.querySelector('[data-mobile-menu-toggle]').getAttribute('aria-expanded'),
+              hidden: overlay.getAttribute('aria-hidden'),
+              locked: document.body.style.overflow,
+              focus: document.activeElement === close,
+              accessibleClose: r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 2
+                && r.left >= -2 && r.bottom <= innerHeight + 2,
+              horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+            };
+          });
+          assert.deepEqual(state, { expanded: 'true', hidden: 'false', locked: 'hidden',
+            focus: true, accessibleClose: true, horizontalOverflow: false },
+          `${engine} ${route} ${width}x${height}: menu accessibility or layout`);
+          await mobile.keyboard.press('Escape');
+          assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+          assert.equal(await mobile.evaluate(() => document.body.style.overflow), '');
+        }
+        await mobile.close();
+      }
       // Breakpoint sweep: recycle two pages instead of reloading dozens of times.
       // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
       // major CSS breakpoint, tablets, laptops and ultrawide monitors.
