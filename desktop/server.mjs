@@ -45,16 +45,30 @@ try {
   server.removeListener('request', starting);
   createHttpServer(app, server);
   await app.start();
+  let lastAttentionCount = null;
+  let lastRunningCount = null;
   const badge = () => {
     const sessions = app.store.list();
-    report({ type: 'badge', count: sessions.filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length });
-    // Menu bar reports verified active work, not historical sessions or attention alerts.
-    report({ type: 'running-agents', count: sessions.filter((s) => s.status === 'working').length });
+    const attention = sessions.filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length;
+    const running = sessions.filter((s) => s.status === 'working').length;
+    if (attention !== lastAttentionCount) {
+      report({ type: 'badge', count: attention });
+      lastAttentionCount = attention;
+    }
+    // Menu bar tracks active work, separately from Dock alerts.
+    if (running !== lastRunningCount) {
+      report({ type: 'running-agents', count: running });
+      lastRunningCount = running;
+    }
   };
   let badgeTimer;
   const scheduleBadge = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(badge, 100); badgeTimer.unref(); };
   app.store.on('session', scheduleBadge);
   app.store.on('session:remove', scheduleBadge);
+  // A working session can expire without another store event. Re-evaluate time-based
+  // statuses so the native menu bar never keeps an obsolete working count indefinitely.
+  const statusRefresh = setInterval(badge, 15_000);
+  statusRefresh.unref();
   // Odznak výš se mění vždy – to je stav. Oznámení (se zvukem) je vyrušení: ztlumené upozornění
   // (noční ticho, náraz) ho nedostane, přijde za něj souhrn (src/alerts.js).
   app.store.on('alert', (alert) => {
