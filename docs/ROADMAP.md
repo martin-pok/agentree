@@ -1,8 +1,41 @@
-# Roadmapa
+# Roadmapa Agenteeq
 
-Každá položka má akceptační kritéria. Pořadí je doporučené – nejdřív ověřit hodnotu, potom škálovat.
-Stav je prověřený proti kódu (naposledy 7. 10. 2026, po vydání 0.38.1). Hotové položky zůstávají
-přeškrtnuté s odkazem, kde to je, aby bylo vidět, co se rozhodlo jinak, než stálo v plánu.
+**Stav k 11. 10. 2026.** Pracovní verze v `package.json` je **0.46.1**; poslední potvrzené veřejné vydání na GitHubu je **v0.46.0** (9. 10. 2026). Změny v `main` nejsou automaticky součástí stažitelné aplikace. CI pro aktuální HEAD v okamžiku revize ještě běželo, proto není označené jako hotové.
+
+Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
+
+## Právě teď — cesta od 0.46.1 k dalšímu releasu
+
+| Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
+|---|---|---|---|
+| P0 | Stabilní hlavní větev | CI běží; výsledek nového HEAD zatím nepotvrzen | `check`, unit testy, macOS/Windows/Linux, browser QA a Chrome Store QA na stejném SHA jsou zelené |
+| P0 | Vydání 0.46.1 bez nesouladu souborů | Zdrojová verze 0.46.1; veřejný release zatím 0.46.0 | Workflow z tagu `v0.46.1` sestaví odpovídající Mac, Windows a extension balíčky; kontrola jejich verzí a kontrolních součtů projde; koncept je po výslovném schválení zveřejněn |
+| P0 | Jediná aktuální identita Agenteeq | Aktivní SVG a odstraněná historická robotí předloha; binární assety neprošly úplnou vizuální kontrolou | Vizuálně porovnané PNG/ICO/ICNS, screenshoty, instalátor, Dock a Chrome Store; žádný trojzubec ani staré logo |
+| P0 | Správné údaje a bezpečné připojení | Implementované automatické párování a kontrola původu zpráv; živé poskytovatelské scénáře neověřeny | Reálná kontrola přihlášení, výpadku, obnovení a odvolání přístupu; u odvozených dat viditelný zdroj a stáří |
+| P1 | AI pomocník, který skutečně poradí | Kontextová navigace a první diagnostika z lokálního snapshotu; omezené pokrytí | CZ/EN sada běžných dotazů, neznámé chyby, navazující otázky, správné odkazy; odpovědi nezaměňují domněnky za fakta; měřená latence a spolehlivost |
+| P1 | Udržovatelná Chrome extension | Content skripty a párování mají regresní testy; popup zůstává velký modul | Oddělené UI, stav a transport; bezpečnostní a DOM regresní testy; ruční ověření podporovaných služeb |
+| P1 | Sjednocené texty CZ/EN | Upraven pomocník a vybrané texty landing page; úplný obsahový audit neskončil | Stavové hlášky, onboarding, nastavení, extension, emaily a web ověřeny proti [VOICE-AND-COPY.md](VOICE-AND-COPY.md) |
+| P2 | Komerční připravenost | Právní, platební a distribuční úkoly zůstávají otevřené | DPA, právní posouzení, podpis/notarizace macOS a reálné QA Windows |
+
+## Backlog — další vývoj po stabilizaci
+
+**Reliability:** automaticky měřit čerstvost každého zdroje, opakované načtení, bezpečné offline stavy a rychlost klíčových akcí. U každé nové integrace zaznamenat původ dat, datum posledního potvrzení a test selhání.
+
+**AI pomocník:** přesně vymezit důvěryhodný kontext a akce, přidat strukturované read-only diagnostické nástroje; na schvalované zásahy vyžadovat potvrzení uživatele. Lokální model je volitelná vrstva pro formulaci, nikoli náhrada pravdivých dat.
+
+**Extension:** modulární popup, diagnostika podporovaných adaptérů, CI i reálné scénáře Chromu, odstranění zastaralých screenshotů před uploadem nového balíčku.
+
+**UX a značka:** sjednotit desktop/web/extension v jediné systémové sadě log, tokenů, textů a stavů; zdrojové i generované soubory kontrolovat při buildu.
+
+**SaaS:** fakturace, právní dokumentace, přístupy a týmové role až po bezpečném dokončení základního local-first produktu.
+
+## Historické plány a dosavadní rozhodnutí
+
+Následující záznamy pocházejí z etap v0.3–v1.0. Jsou ponechány jako historie rozhodnutí, **ne jako aktuální sprint**.
+
+---
+<details>
+<summary>Archiv priorit po 0.38.1 (zachováno pro kontext)</summary>
 
 ## Teď – po 0.38.1
 
@@ -33,6 +66,9 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 | 4 | Ověřit webové konektory na živých stránkách | vlastník + vývoj | Pro každý z 8 webů: ověření stránky v okně rozšíření (řádek *tato karta* → *Počty nesedí? Ověřit stránku*) projde a vzorek stránky je v `test/fixtures/web/` s testem adaptéru; teprve pak ✅ v [CONNECTORS.md](CONNECTORS.md). Zatím tam žádný vzorek není |
 | 5 | Ruční QA účtu a napojení modelů na Macu | vlastník | Od 0.29.0 spustí „Napojit“ přihlášení na pozadí bez Terminálu (`claude auth login --claudeai`, `codex login`) a prohlížeč dodavatele se otevře rovnou. Ověřit na Macu přihlášení, návrat do aplikace, potvrzení s plánem a záložní cestu „Prohlížeč se neotevřel?“ s vložením kódu; zápis do protokolu v `docs/TESTING.md` |
 | 6 | Rozšíření v Chrome Web Store | vlastník | ~~Veřejná instalace jedním klikem~~ **hotovo 6. 10. 2026:** položka je zveřejněná (potvrdil vlastník), od 0.37.1 web i aplikace vedou rovnou do obchodu tlačítkem **Přidat do Chromu**. Zbývá: nahrát do obchodu balíček aktuální verze (`agenteeq-extension-<verze>.zip` z přílohy vydání), aby uživatelé z obchodu nedostali starší rozšíření. Viz [CHROME-WEB-STORE.md](CHROME-WEB-STORE.md). |
+
+
+</details>
 
 ## v0.6 – z bety k prvnímu prodeji (navazuje na 0.5.0)
 
@@ -78,7 +114,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 | 5 | Týmový workspace | Sdílený přehled a rozpočty, role vlastník/člen, bez sdílení obsahu přepisů bez souhlasu |
 | 6 | Právní a compliance | Zásady ochrany údajů, DPA, podmínky, kontrola podmínek služeb pro rozšíření. Zásady ochrany soukromí jsou od 0.29.0 na webu, zatím bez právní kontroly („Teď“ #2) |
 
-## Známé problémy (backlog)
+## Historický seznam známých problémů (nutno znovu ověřit)
 
 Seznam se udržuje proti kódu: co je hotové, odsud mizí (naposledy prověřeno 7. 10. 2026).
 
