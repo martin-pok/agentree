@@ -77,6 +77,12 @@ První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIde
 - Sdílený matcher `verifiedProfileForTranscript` neakceptuje podobné prefixy, neplatné časy, neznámé nebo nejednoznačné kořeny. Regresní test: `test/provider-multi-account.test.mjs`.
 - **Zatím nehotové:** stejné UUID ve dvou izolovaných profilech může kolidovat ve starším společném indexu session a musí mít explicitní ochranu před sloučením; Claude 5h/7d kvóty zatím nejsou vždy vázány na účet; Codex i ostatní poskytovatelé čekají na důvěryhodný session→account adaptér. Nezaměňovat částečnou integraci s hotovou obecnou funkcí.
 
+## Ochrana kolizí identit mezi profily
+
+Při stejném session UUID z různých skutečných souborů `src/connectors/claude-code.js` nově **signalizuje konflikt** ve stavu konektoru (`collisions`), místo tichého ignorování duplicitní relace jako úspěchu. `Store.unbindAccount` okamžitě zneplatní dříve ověřené přiřazení licence a vyšle změnu do živého UI. Test `test/session-account-binding.test.mjs` ověřuje revokaci a idempotenci.
+
+**Otevřená funkční mezera:** dvě různé relace se stejným UUID nejsou zatím zobrazeny jako dvě plnohodnotné samostatné session. Současné chování je fail-closed pro účet, ale konflikt vyžaduje budoucí migraci na identitu odvozenou také z profilu a spolehlivé směrování hooků. Netvrdit, že všechny agentní procesy byly započteny. Neumožnit release Multi-account, dokud není tento scénář vyřešen a integračně otestován.
+
 ## Gates
 
 - Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
