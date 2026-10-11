@@ -34,7 +34,13 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
     assert.match(svg, /<circle[^>]+fill="#(?:FAFAFA|F4F3F7)"/, p + ': white antenna tip');
     assert.doesNotMatch(svg, /#(?:9C8CFF|5254D8|6260D8|C99A3E)/i, p + ': unexpected coloured logo accent');
   }
-  const nativeIcon = await read('desktop/Icon.swift');
+  const dockSvg = await read('public/brand/agenteeq-dock.svg');
+  const transparentSvg = await read('public/brand/agenteeq-dock-transparent.svg');
+  assert.match(dockSvg, /width="78" height="53" rx="20"/, 'Dock master has approved wide filled head');
+  assert.match(dockSvg, /translate\(123 109\) scale\(7\.2\)/, 'Dock master matches native build coordinates');
+  assert.match(transparentSvg, /viewBox="0 0 108 108"/);
+  assert.doesNotMatch(transparentSvg, /<rect[^>]+fill="#17171D"\s*\/>/, 'transparent mark has no background tile');
+    const nativeIcon = await read('desktop/Icon.swift');
   assert.match(nativeIcon, /approved widened filled robot head/, 'Dock uses approved wide head, not full-body Scout');
   assert.match(nativeIcon, /rounded\(15, 34, 78, 53, 20, white\)/, 'widened filled head');
   assert.match(nativeIcon, /rounded\(36, 52, 8, 16, 4, paper\)/, 'first capsule eye');
