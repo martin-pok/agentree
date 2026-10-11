@@ -160,7 +160,7 @@ if (scena) {
     }
     addEventListener('scroll', naplanuj, { passive: true });
     addEventListener('resize', naplanuj);
-    addEventListener('visibilitychange', naplanuj);
+    document.addEventListener('visibilitychange', naplanuj);
     zmer();
 
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
