@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 // Univerzální pseudonymní identita účtu bez tokenu/e-mailu; namespace patří poskytovateli,
@@ -27,6 +28,19 @@ export function sessionAccountBinding({ sessionId, accountId, provider, source, 
   }
   return { sessionId, accountId, confidence: 'verified', source: source.slice(0, 80), observedAt };
 }
+
+// Only an authenticated account associated with the exact transcript root may be used.
+// A prefix such as /profiles/one must not match /profiles/one-evil.
+export function verifiedProfileForTranscript(file, profiles = []) {
+  if (typeof file !== 'string' || !path.isAbsolute(file)) return null;
+  const normalized = path.resolve(file);
+  const matches = profiles.filter((profile) => validAccountId(profile?.accountId)
+    && typeof profile?.root === 'string' && path.isAbsolute(profile.root)
+    && normalized.startsWith(path.resolve(profile.root) + path.sep)
+    && Number.isSafeInteger(profile.observedAt) && profile.observedAt > 0);
+  return matches.length === 1 ? matches[0] : null;
+}
+
 export function groupAccountsByProvider(accounts) {
   const groups = new Map();
   for (const account of accounts || []) {
