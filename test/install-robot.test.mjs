@@ -7,6 +7,6 @@ test('installation preview shows full-body Scout instead of repeated robot logo'
  for(const key of ['robot-torso','robot-limbs','robot-head','robot-eyes','robot-aerial']) assert.ok(asset.includes(key),key);
  for(const path of ['site/instalace/index.html','site/en/install/index.html']) {
   const html=await read(path);
-  assert.match(html, /class="extension-received"><img class="extension-received-robot" src="\\/robot-scout\\.svg"/);
+  assert.ok(html.includes('class="extension-received"><img class="extension-received-robot" src="/robot-scout.svg"'), path);
  }
 });
