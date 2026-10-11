@@ -1029,8 +1029,9 @@ const proud = connectStream({
       .state()
       .then(prijmiSnimek)
       .catch((err) => {
-        if (err.status === 401) return parovaciObrazovka();
-        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+        if (err.status === 401) parovaciObrazovka();
+        else toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+        throw err; // SSE remains reconnecting until an actual snapshot succeeds.
       })
       .finally(() => { loadingSnapshot = null; });
   },

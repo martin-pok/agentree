@@ -24,7 +24,7 @@ const ctx = vm.createContext({
 vm.runInContext(code, ctx);
 const connectStream=vm.runInContext('connectStream',ctx);
 
-test('SSE malformed hello never declares live and reconnects',()=>{
+test('SSE malformed hello never declares live and reconnects',async()=>{
  const statuses=[],hellos=[];
  const client=connectStream({onStatus:s=>statuses.push(s),onHello:x=>hellos.push(x),onEvent:()=>{}});
  streams.at(-1).emit('hello','{oops');
@@ -34,6 +34,7 @@ test('SSE malformed hello never declares live and reconnects',()=>{
  assert.equal(timers.at(-1).delay,2000);
  timers.pop().cb();
  streams.at(-1).emit('hello','{"ready":true}');
+ await new Promise(resolve=>setImmediate(resolve));
  assert.equal(hellos.length,1);
  assert.equal(hellos[0].ready,true);
  assert.equal(statuses.at(-1),'live');
@@ -53,4 +54,24 @@ test('SSE old and closed connections cannot inject events',()=>{
  client.close();
  streams.at(-1).emit('session','{"id":"closed"}');
  assert.equal(events.length,1);
+});
+
+test('SSE stays reconnecting while snapshot fails and becomes live only after a successful snapshot',async()=>{
+ const statuses=[];
+ let rejectSnapshot;
+ const client=connectStream({
+  onStatus:s=>statuses.push(s),
+  onHello:()=>new Promise((_, reject)=>{ rejectSnapshot=reject; }),
+  onEvent:()=>{}
+ });
+ const broken=streams.at(-1);
+ broken.emit('hello','{"ready":true}');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(!statuses.includes('live'),'handshake alone does not confirm a fresh state');
+ rejectSnapshot(new Error('snapshot unavailable'));
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(statuses.at(-1),'reconnecting');
+ assert.equal(broken.readyState,2);
+ assert.equal(timers.at(-1).delay,2000);
+ client.close();
 });

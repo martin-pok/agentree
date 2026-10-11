@@ -160,9 +160,18 @@ export function connectStream({ onHello, onEvent, onStatus }) {
         naplanuj();
         return;
       }
-      pokus = 0;
-      onHello(payload);
-      onStatus('live');
+      // The stream is only healthy once its matching state snapshot has loaded.
+      // Reconnects must not report "live" while the UI still has stale data.
+      Promise.resolve().then(() => onHello(payload)).then(() => {
+        if (ukonceno || proud !== es) return;
+        pokus = 0;
+        onStatus('live');
+      }).catch(() => {
+        if (ukonceno || proud !== es) return;
+        onStatus('reconnecting');
+        proud.close();
+        naplanuj();
+      });
     });
     for (const name of EVENTS) {
       proud.addEventListener(name, (e) => {
