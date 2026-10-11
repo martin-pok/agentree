@@ -48,8 +48,8 @@ jobs:
               ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
                "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.1.zip"] |
               all(. as $name | $names | index($name) != null)' preview-release.json >/dev/null; then
-              echo "::notice::Existing complete draft may have missed publication; resuming gated release workflow."
-              # Do not exit: a successful release.yml run triggers publish-preview.
+              echo "::notice::Draft is complete; independent publish-preview job checks release gates."
+              exit 0
             fi
             echo "::notice::Release draft missing assets; retrying the artifact build."
           fi
@@ -61,7 +61,8 @@ jobs:
 
   publish-preview:
     if: >-
-      github.event.workflow_run.name == 'Vydání' &&
+      (github.event.workflow_run.name == 'Vydání' ||
+       github.event.workflow_run.name == 'Testy') &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
@@ -75,6 +76,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
         run: |
           set -euo pipefail
           TAG=v0.46.1
@@ -82,11 +84,26 @@ jobs:
           TAG_SHA=$(echo "$OBJ" | jq -r '.object.sha')
           TAG_TYPE=$(echo "$OBJ" | jq -r '.object.type')
           if [ "$TAG_TYPE" = tag ]; then TAG_SHA=$(gh api "repos/$REPO/git/tags/$TAG_SHA" --jq '.object.sha'); fi
-          test "$TAG_SHA" = "$BUILD_SHA" || { echo "::error::Release build does not match v0.46.1 tag."; exit 1; }
+          if [ "$SOURCE_WORKFLOW" = "Vydání" ]; then
+            test "$TAG_SHA" = "$BUILD_SHA" || { echo "::error::Release build does not match v0.46.1 tag."; exit 1; }
+          else
+            # A successful MAIN CI is the independent path that can publish a
+            # completed draft; a fourth chained workflow_run may never fire.
+            MAIN_SHA=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+            test "$MAIN_SHA" = "$BUILD_SHA" || { echo "::notice::Main moved since CI; skipping stale run."; exit 0; }
+            VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
+            test "$VERSION" = "0.46.1" || { echo "::notice::Main has moved beyond v0.46.1."; exit 0; }
+          fi
           gh api "repos/$REPO/actions/workflows/test.yml/runs?head_sha=$TAG_SHA&per_page=25" \
             | jq -e --arg sha "$TAG_SHA" '[.workflow_runs[]|select(.head_sha==$sha and .status=="completed" and .conclusion=="success")]|length>0'
-          gh release view "$TAG" --repo "$REPO" --json isDraft,assets > release.json
-          jq -e '.isDraft==true' release.json
+          if ! gh release view "$TAG" --repo "$REPO" --json isDraft,assets > release.json 2>/dev/null; then
+            echo "::notice::v0.46.1 draft not created yet; release builder will handle it."
+            exit 0
+          fi
+          if ! jq -e '.isDraft == true' release.json >/dev/null; then
+            echo "::notice::Release is already published; no further action."
+            exit 0
+          fi
           for asset in Agenteeq-macOS-arm64.dmg Agenteeq-macOS-arm64.zip Agenteeq-Windows-x64.zip agenteeq-extension-0.46.1.zip; do
             jq -e --arg name "$asset" 'any(.assets[]; .name==$name and .size>100000)' release.json
           done
