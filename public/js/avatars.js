@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
 
-// Profilové obrázky: roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
+// Profilové obrázky: anténa má vždy stejnou barvu jako hlava (žádný fialový akcent). Roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
 // anténa a oči. Liší se barvou, tvarem očí a anténou. Počet zůstává stejný jako u původních
 // abstraktních obrázků, takže uložená volba (settings.avatar = index) ukazuje dál na obrázek.
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
@@ -35,7 +35,7 @@ const HLAVY = {
 };
 
 const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
-  svg(pozadi, ANTENY[antena](antBarva) + HLAVY[tvar](hlava) + OCI[oci](ocBarva));
+  svg(pozadi, ANTENY[antena](hlava) + HLAVY[tvar](hlava) + OCI[oci](ocBarva));
 
 // Paleta značky: fialová, inkoust, papír, šalvěj, okr, růže a jejich světlé odstíny.
 const AVATARS = [
