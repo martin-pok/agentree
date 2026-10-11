@@ -45,7 +45,12 @@ try {
   server.removeListener('request', starting);
   createHttpServer(app, server);
   await app.start();
-  const badge = () => report({ type: 'badge', count: app.store.list().filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length });
+  const badge = () => {
+    const sessions = app.store.list();
+    report({ type: 'badge', count: sessions.filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length });
+    // Menu bar reports verified active work, not historical sessions or attention alerts.
+    report({ type: 'running-agents', count: sessions.filter((s) => s.status === 'working').length });
+  };
   let badgeTimer;
   const scheduleBadge = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(badge, 100); badgeTimer.unref(); };
   app.store.on('session', scheduleBadge);
