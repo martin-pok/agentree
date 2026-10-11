@@ -753,6 +753,11 @@ export function createClaudeCodeConnector(ctx) {
     // Transcript roots are compared by exact path segment, never by project name.
     bindProfileAccounts(profiles = []) {
       verifiedProfiles = profiles;
+      // A formerly valid single-license global window becomes misleading as soon as
+      // independent accounts are detected. Remove it and stream the change to clients.
+      if (new Set(profiles.map((profile) => profile.accountId).filter(Boolean)).size > 1) {
+        for (const window of Object.values(STATUS_WINDOWS)) store.removeLimit(window.id);
+      }
       let bound = 0;
       for (const [file, entry] of files) if (bindFileAccount(file, entry)) bound++;
       return bound;
