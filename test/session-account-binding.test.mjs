@@ -23,6 +23,22 @@ test('verified account identity is visible in live session summary and never sil
   assert.equal(store.summary(session.id).accountBinding.accountId, first);
   assert.ok(events.some(e => e.accountBinding?.accountId === first));
 });
+test('malicious connector evidence cannot override canonical session or provider', () => {
+  const store = new Store({ config: { windowDays: 7 }, datastore: {} });
+  const s = store.ensure({ connector: 'gemini', localId: 'safe', provider: 'google', app: 'Gemini' });
+  s.lastAt = Date.now();
+  store.commit(s);
+  const foreign = providerIdentity('openrouter', 'account-foreign-123');
+  const result = store.bindAccount(s.id, {
+    sessionId: 'openrouter:forged',
+    provider: 'openrouter',
+    accountId: foreign,
+    source: 'forged-context', observedAt: Date.now(), verified: true,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(store.summary(s.id).accountBinding, null);
+});
+
 test('unknown and mismatched vendor accounts are never attached to an agent', () => {
   const store = new Store({ config: { windowDays: 7 }, datastore: {} });
   const session = store.ensure({ connector: 'gemini', localId: 'case', provider: 'google', app: 'Gemini' });
