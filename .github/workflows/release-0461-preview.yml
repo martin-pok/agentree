@@ -1,0 +1,77 @@
+# One-time v0.46.1 preview release for real-device user acceptance testing.
+# This is NOT a stable/latest production release. Remove this workflow after v0.46.1 is public.
+# Trigger sequence: merge -> green main CI -> release.yml draft -> public prerelease.
+name: 0.46.1 Preview Delivery
+
+on:
+  workflow_run:
+    workflows: ["Testy", "Vydání"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  start-preview-build:
+    if: >-
+      github.event.workflow_run.name == 'Testy' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch only the matching verified main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          MAIN_SHA=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+          test "$MAIN_SHA" = "$TESTED_SHA" || { echo "::notice::Main moved since CI; skipping outdated run."; exit 0; }
+          VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
+          test "$VERSION" = "0.46.1" || { echo "::notice::Another version is already current."; exit 0; }
+          if gh api "repos/$REPO/git/ref/tags/v0.46.1" >/dev/null 2>&1; then
+            echo "::notice::Release tag already exists; no duplicate build."
+            exit 0
+          fi
+          gh workflow run release.yml --repo "$REPO" --ref main -f tag=v0.46.1
+          echo "Triggered version-pinned release draft generation for $TESTED_SHA"
+
+  publish-preview:
+    if: >-
+      github.event.workflow_run.name == 'Vydání' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Verify tag, tested commit, and complete release assets before prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          TAG=v0.46.1
+          OBJ=$(gh api "repos/$REPO/git/ref/tags/$TAG")
+          TAG_SHA=$(echo "$OBJ" | jq -r '.object.sha')
+          TAG_TYPE=$(echo "$OBJ" | jq -r '.object.type')
+          if [ "$TAG_TYPE" = tag ]; then TAG_SHA=$(gh api "repos/$REPO/git/tags/$TAG_SHA" --jq '.object.sha'); fi
+          test "$TAG_SHA" = "$BUILD_SHA" || { echo "::error::Release build does not match v0.46.1 tag."; exit 1; }
+          gh api "repos/$REPO/actions/workflows/test.yml/runs?head_sha=$TAG_SHA&per_page=25" \
+            | jq -e --arg sha "$TAG_SHA" '[.workflow_runs[]|select(.head_sha==$sha and .status=="completed" and .conclusion=="success")]|length>0'
+          gh release view "$TAG" --repo "$REPO" --json isDraft,assets > release.json
+          jq -e '.isDraft==true' release.json
+          for asset in Agenteeq-macOS-arm64.dmg Agenteeq-macOS-arm64.zip Agenteeq-Windows-x64.zip agenteeq-extension-0.46.1.zip; do
+            jq -e --arg name "$asset" 'any(.assets[]; .name==$name and .size>100000)' release.json
+          done
+          echo "All preview release gates passed; publishing prerelease without changing Latest."
+          gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease --latest=false
+          gh release view "$TAG" --repo "$REPO" --json isDraft,isPrerelease,url,assets
