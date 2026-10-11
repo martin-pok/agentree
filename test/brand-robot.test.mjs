@@ -35,10 +35,10 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
     assert.doesNotMatch(svg, /#(?:9C8CFF|5254D8|6260D8|C99A3E)/i, p + ': unexpected coloured logo accent');
   }
   const nativeIcon = await read('desktop/Icon.swift');
-  assert.match(nativeIcon, /full-body Scout from site\/robot-scout\.svg/, 'Dock uses the approved full-body Scout');
-  assert.match(nativeIcon, /line\(54, 23, 54, 13, 5\)/, 'antenna has the actual Scout geometry');
-  assert.match(nativeIcon, /rounded\(21, 23, 66, 51, 18, white\)/, 'head shape matches Scout');
-  assert.match(nativeIcon, /rounded\(33, 69, 42, 24, 11, white\)/, 'body is present; no old isolated head');
+  assert.match(nativeIcon, /approved widened filled robot head/, 'Dock uses approved wide head, not full-body Scout');
+  assert.match(nativeIcon, /rounded\(15, 34, 78, 53, 20, white\)/, 'widened filled head');
+  assert.match(nativeIcon, /rounded\(36, 52, 8, 16, 4, paper\)/, 'first capsule eye');
+  assert.match(nativeIcon, /rounded\(64, 52, 8, 16, 4, paper\)/, 'second capsule eye');
   assert.doesNotMatch(nativeIcon, /#(?:9C8CFF|5254D8|6260D8)/i, 'no purple antenna in native icon generator');
 
   const mark = await read('public/brand/agenteeq-mark.svg');
