@@ -1979,3 +1979,58 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
 #vyzkouset .rows > #rozsireni .detail-body {padding-inline:clamp(16px,2.4vw,28px)!important;}
 #vyzkouset .rows > #rozsireni + details {border-top:0!important;}
 @media(max-width:620px) {#vyzkouset .rows > details > summary {grid-template-columns:minmax(0,1fr) auto 24px!important;column-gap:8px;padding-inline:12px!important;}}
+
+
+/* Mobile overlay — official Agenteeq mark, fully circular icon controls,
+   fully rounded CTA/language controls. Shared by CZ and EN. */
+@media (max-width:900px) {
+  .mobile-menu-surface {
+    background: radial-gradient(ellipse 85% 50% at 8% 4%, rgba(107,83,166,.13), transparent 68%),
+                linear-gradient(155deg,#191622 0%,#100e17 76%,#0b0a10 100%);
+    padding-top:max(28px,env(safe-area-inset-top));
+    padding-bottom:max(32px,env(safe-area-inset-bottom));
+  }
+  .mobile-menu-header { min-height:56px; }
+  .mobile-menu-brand { display:flex;align-items:center;justify-content:center;width:54px;height:54px;flex:none; }
+  .mobile-menu-brand img { display:block;width:48px;height:48px;object-fit:contain; }
+  .mobile-menu-close {
+    display:grid;place-items:center;
+    width:52px;height:52px;flex:none;
+    border-radius:50%;
+    border:1px solid rgba(244,243,247,.18);
+    background:rgba(255,255,255,.055);
+    font:400 33px/1 var(--f-display);
+    transition:background .2s ease,transform .2s ease,border-color .2s ease;
+  }
+  .mobile-menu nav {margin-top:clamp(42px,8vh,72px);}
+  .mobile-menu nav a {
+    padding:19px 0;
+    font-size:clamp(30px,7.5vw,40px);
+    border-bottom-color:rgba(244,243,247,.13);
+    transition:color .2s ease,padding-left .2s ease;
+  }
+  .mobile-menu-download {
+    min-height:64px;
+    margin-top:34px;
+    padding:18px 26px;
+    border-radius:9999px;
+    font-weight:600;
+    background:#f5f3fa;
+    color:#171422;
+    transition:background .2s ease,transform .2s ease;
+  }
+  .mobile-menu-download span {display:grid;place-items:center;font-size:22px;}
+  .mobile-menu-languages {gap:12px;}
+  .mobile-menu-languages a {
+    width:54px;height:54px;min-width:54px;min-height:54px;
+    border-radius:50%;
+    font-size:15px;
+    transition:background .2s ease,border-color .2s ease;
+  }
+  @media (hover:hover) and (pointer:fine) {
+    .mobile-menu-close:hover {background:rgba(255,255,255,.12);transform:rotate(90deg);}
+    .mobile-menu nav a:hover {color:#d1c0ff;padding-left:5px;}
+    .mobile-menu-download:hover {background:white;transform:translateY(-2px);}
+    .mobile-menu-languages a:hover {background:rgba(255,255,255,.09);}
+  }
+}
