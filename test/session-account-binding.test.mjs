@@ -48,3 +48,20 @@ test('unknown and mismatched vendor accounts are never attached to an agent', ()
   assert.equal(store.bindAccount(session.id, { accountId: null, verified: true }).ok, false);
   assert.equal(store.summary(session.id).accountBinding, null);
 });
+
+test('duplicate session UUID invalidates previously trusted account attribution', () => {
+  const store = new Store({ config: { windowDays: 7 }, datastore: {} });
+  store.ready = true;
+  const s = store.ensure({ connector: 'claude-code', localId: 'duplicate', provider: 'anthropic', app: 'Claude Code' });
+  s.lastAt = Date.now();
+  store.commit(s);
+  const accountId = providerIdentity('claude', 'distinct-license-1234');
+  assert.equal(store.bindAccount(s.id, { accountId, source: 'verified-cli-profile',
+    observedAt: Date.now(), verified: true }).ok, true);
+  let last;
+  store.on('session', v => { last = v; });
+  assert.equal(store.unbindAccount(s.id), true);
+  assert.equal(store.summary(s.id).accountBinding, null);
+  assert.equal(last.accountBinding, null, 'live clients receive revoked attribution');
+  assert.equal(store.unbindAccount(s.id), false, 'second invalidation is idempotent');
+});
