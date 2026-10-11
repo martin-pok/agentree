@@ -37,7 +37,7 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
   const en = String(language).toLowerCase().startsWith('en');
   if (greetings.test(q)) return { topic: null, cile: [], text: en ? 'Hi! What are you trying to do in Agenteeq? I can help with agents, connections, projects, notifications or costs.' : 'Ahoj! S čím ti můžu pomoct? Můžeme projít propojení nástrojů, práci agentů, projekty i náklady.' };
   let found = intents.find((x) => x.pattern.test(q));
-  if (!found && previousTopic && /^(?:a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)(?:\\b|$)/.test(q)) found = intents.find((x) => x.id === previousTopic);
+  if (!found && previousTopic && /^(?:a |tak |kde |jak |co dal|dale|dal|pokracuj|tam|to |then|and |how|where|next|yes|jo|ano)(?:\b|$)/.test(q)) found = intents.find((x) => x.id === previousTopic);
   if (!found && /^(co umis|pomoc|help|what can you do)/.test(q)) return { topic: null, cile: [], text: en ? 'I can explain the app, guide you to a setting and help investigate missing agent activity. What is your goal?' : 'Pomůžu ti zorientovat se v Agenteeq, najít správné nastavení nebo zjistit, proč něco nefunguje. Co právě řešíš?' };
   if (!found && /^(jak|proc|proč|kde|co mam|nejde|nefunguje|pomoz|porad|how|why|where|cannot|doesnt|doesn't)/.test(q)) {
     return { topic: null, cile: [], text: en

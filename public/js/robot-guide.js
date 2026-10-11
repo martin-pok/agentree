@@ -138,7 +138,7 @@ async function posli(text) {
       const cile = poradSNastavenim(dotaz);
       odpoved = cile.length
         ? { kdo: 'on', text: tr('Tady to najdeš:'), cile }
-        : { kdo: 'on', text: tr('Tohle nastavení jsem nenašel. Zkus ho popsat jinak nebo otevři hledání ({0}).', zkratka('K')) };
+        : { kdo: 'on', text: tr('Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).', zkratka('K')) };
     } else {
       odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [], lokalne: r.lokalne, modelMimo: Boolean(r.modelMimoPocitac) };
       if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledané období: {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));

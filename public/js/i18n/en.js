@@ -1597,7 +1597,7 @@ export default {
     "Tip k této stránce:": "Tip for this page:",
     "Hledá se…": "Searching…",
     "Tady to najdeš:": "Here's where to find it:",
-    "Tohle nastavení jsem nenašel. Zkus ho popsat jinak nebo otevři hledání ({0}).": "I couldn't find that setting. Try describing it differently or open search ({0}).",
+    "Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).": "I couldn't find that setting. Try describing it differently or open search ({0}).",
     "Hledané období: {0} – {1}.": "Period searched: {0} – {1}.",
     "Možná ti pomůže některá z těchto možností.": "One of these options might help.",
     "Lokální model odpověď neformuloval: adresa Ollamy (AGENTEEQ_OLLAMA_URL) nevede na tento počítač, a úryvky konverzací proto nikam neodešly.": "The local model didn’t phrase this answer: the Ollama address (AGENTEEQ_OLLAMA_URL) doesn’t point to this computer, so no conversation excerpts were sent anywhere.",
