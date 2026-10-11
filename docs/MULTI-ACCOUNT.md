@@ -63,6 +63,13 @@ První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIde
 - `test/session-account-binding.test.mjs`: simulace ověřené Google/Gemini licence, přepnutí účtu během session, opožděného důkazu a nesouhlasícího providera.
 - **Důležitá hranice:** samotná metoda není důkazem, že každý stávající konektor dodává ověřitelný account evidence. Napojení connectorů na jejich konkrétní proces/profil a per-account limity teprve následuje. Bez něj zůstane binding `null`, nikoli chybná licence.
 
+## Audit hranic důvěry a pravdivosti UI
+
+- `Store.bindAccount` nepřijímá `sessionId` ani `provider` z podvrženého evidence objektu; identita pochází výhradně z existující session. Negativní test přidán do `test/session-account-binding.test.mjs`.
+- Neznámý nový provider nesmí dostat štítek předplatného ChatGPT jen proto, že nemá samostatnou ceníkovou mapu (`src/app.js`); zobrazuje se název poskytovatele a jeho původní plán.
+- UI už nesmí vydávat `undefined` kredity za nulu nebo skutečný zůstatek; číslo se zobrazuje jen je-li nezáporné a konečné (`public/js/views/spend.js`).
+- Další fáze: důvěryhodné read-only adaptéry jednotlivých providerů a test dostupnosti per-account limitů; nikdy nedoplňovat chybějící důkazy heuristikou.
+
 ## Gates
 
 - Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
