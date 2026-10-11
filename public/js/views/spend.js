@@ -124,7 +124,7 @@ export function providerAccountsHtml(sp) {
   const accounts = sp.providerAccounts || [];
   if (!accounts.length) return '';
   const rows = accounts.map((account) => {
-    const name = account.provider === 'anthropic' ? 'Claude Code' : 'Codex';
+    const name = ({ anthropic: 'Claude Code', openai: 'Codex', google: 'Gemini', github: 'GitHub Copilot', openrouter: 'OpenRouter', mistral: 'Mistral', xai: 'Grok' })[account.provider] || account.provider || tr('Neznámá služba');
     const known = Boolean(account.id);
     const tag = known ? `${tr('účet')} ${esc(account.id.slice(-4))}` : '';
     const status = account.active ? tr('Aktivní') : known ? tr('Dříve rozpoznaný')
