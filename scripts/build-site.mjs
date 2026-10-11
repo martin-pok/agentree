@@ -136,6 +136,17 @@ export function serviceWorkerProWeb(text, appPath = APP_PATH) {
   return text.replace(puvodni, `const PRECACHE = ['${appPath}',`);
 }
 
+// Na marketingových stránkách je primární Satoshi (woff2), nikoli záložní Urbanist TTF.
+// Přednačítat jej lze až po ověření, že build daný soubor opravdu přibalil.
+// Bez souboru ponecháme fallback písma a nevytváříme 404 ani zbytečný network request.
+export function preloadPrimarnihoPisma(html, satoshiAvailable = false) {
+  const marker = '<link rel="stylesheet" href="/fonts/fonts.css">';
+  if (!html.includes(marker)) throw new Error('Webu chybí fonts.css, nelze bezpečně připravit preload.');
+  if (!satoshiAvailable) return html;
+  const preload = '<link rel="preload" href="/fonts/satoshi/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin>';
+  return html.includes(preload) ? html : html.replace(marker, `${preload}\n${marker}`);
+}
+
 // Značka „tohle je kopie na webu, žádný server tu není“. Vkládá se hned za <head>,
 // aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
 export function znackaStatickeKopie(html) {
@@ -164,7 +175,9 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await copyDir(path.join(root, 'public'), out, { skip: (rel) => rel === path.join('public', 'index.html') });
 
   // Satoshi: soubor přibalený do sestavení (scripts/satoshi.mjs) dostane pravidlo @font-face.
-  if (await fs.stat(path.join(out, 'fonts', 'satoshi', 'Satoshi-Variable.woff2')).then(() => true, () => false)) {
+  const satoshiAvailable = await fs.stat(path.join(out, 'fonts', 'satoshi', 'Satoshi-Variable.woff2'))
+    .then((st) => st.isFile(), () => false);
+  if (satoshiAvailable) {
     await fs.appendFile(path.join(out, 'fonts', 'fonts.css'), `${SATOSHI_FACE}\n`);
   }
 
@@ -189,11 +202,15 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
-    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))));
+    await fs.writeFile(stranka, preloadPrimarnihoPisma(
+      rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))),
+      satoshiAvailable));
   }
   for (const jazyk of INSTALACE) {
     const stranka = path.join(out, jazyk.soubor);
-    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))));
+    await fs.writeFile(stranka, preloadPrimarnihoPisma(
+      rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))),
+      satoshiAvailable));
   }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
