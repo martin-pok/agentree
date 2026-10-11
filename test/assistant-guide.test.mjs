@@ -33,3 +33,32 @@ test('assistant guidance uses actual app snapshot without claiming provider stat
   assert.match(source, /snapshot\.updates\?\.currentVersion/);
   assert.match(ui, /snapshot: state/);
 });
+
+
+test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale', () => {
+  // Run actual guide implementation (not a source-only regex) with a deterministic nav registry.
+  const body = source.replace(/^import .*;\s*/m, '').replace('export function guideAnswer(', 'function guideAnswer(');
+  const guide = new Function('cileHledani', 'hledejCile', body + '\nreturn guideAnswer;')(
+    () => [{ id: 'karta:extension', label: 'Chrome Extension', route: '#/nastaveni', karta: 'extension' },
+      { id: 'karta:updates', label: 'Updates', route: '#/nastaveni', karta: 'updates' },
+      { id: 'stranka:agenti', label: 'Agents', route: '#/agenti' }],
+    () => []
+  );
+  const cs = guide('Proč mi nefunguje rozšíření v Chromu?', { language: 'cs-CZ' });
+  assert.equal(cs.topic, 'extension');
+  assert.match(cs.text, /Nastavení/);
+  assert.equal(cs.cile[0].karta, 'extension');
+  const en = guide('My Chrome extension is not working', { language: 'en-GB' });
+  assert.equal(en.topic, 'extension');
+  assert.match(en.text, /Settings/);
+  assert.doesNotMatch(en.text, /Nastavení/);
+  const followUp = guide('And what next?', { previousTopic: 'extension', language: 'en-GB' });
+  assert.equal(followUp.topic, 'extension');
+  const update = guide('How do I update?', { language: 'en-GB', snapshot: { updates: { currentVersion: '0.46.1' } } });
+  assert.match(update.text, /0[.]46[.]1/);
+  const noVersion = guide('How do I update?', { language: 'en-GB', snapshot: { updates: { currentVersion: 'unknown' } } });
+  assert.doesNotMatch(noVersion.text, /Installed version reported/);
+  const disconnected = guide('Why are agents missing?', { language: 'en-GB', snapshot: { connection: 'offline' } });
+  assert.match(disconnected.text, /not confirmed/);
+  assert.equal(guide('Find chat about invoices', { language: 'en-GB' }), null, 'conversation search stays routed to retrieval');
+});
