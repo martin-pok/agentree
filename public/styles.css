@@ -2756,11 +2756,50 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .link[href]:hover::after { translate: none; }
 }
 
-/* Obnova aktuálních dat: pohybuje se pouze znak uvnitř kruhového tlačítka. Tvar, poloha i hover
-   zůstávají beze změny, takže rychlá odezva nepůsobí jako zakázaný nebo poskakující ovladač. */
-#refresh-app[aria-busy='true'] { cursor: progress; }
-#refresh-app.is-refreshing .icon { animation: refresh-rotation 700ms cubic-bezier(.45, .05, .35, 1) infinite; transform-origin: 50% 50%; }
-@keyframes refresh-rotation { to { transform: rotate(1turn); } }
+/* Refresh: compact, contextual, non-blocking. Never imply a measured percentage. */
+#refresh-app[aria-busy='true'] { cursor: progress; color: var(--ink); }
+#refresh-app.is-refreshing .icon { animation: none; }
+.refresh-status {
+  position: fixed; z-index: 110; top: 76px; right: 24px; width: min(340px, calc(100vw - 32px));
+  display: flex; gap: 12px; align-items: center; box-sizing: border-box;
+  padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 16px;
+  background: var(--surface, var(--bg)); color: var(--ink);
+  box-shadow: 0 12px 36px #00000018; pointer-events: none;
+}
+.refresh-status__robot {
+  flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center;
+  border-radius: 14px; color: var(--ink);
+  background: radial-gradient(circle at 25% 25%, #9a80f426, transparent 72%), radial-gradient(circle at 80% 80%, #63b8d326, transparent 70%);
+}
+.refresh-status__robot svg { width: 38px; height: 38px; }
+.refresh-status__content { min-width: 0; flex: 1; display: grid; gap: 5px; font-size: 12px; }
+.refresh-status__content strong { font-size: 13px; font-weight: 650; }
+.refresh-status__content span { color: var(--ink-2); }
+.refresh-status__track { overflow: hidden; height: 3px; border-radius: 8px; background: var(--line-2); margin-top: 3px; }
+.refresh-status__track i { display: block; width: 35%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#8a6fe8,#7bc0c8); animation: refresh-scan 1.8s ease-in-out infinite alternate; }
+@keyframes refresh-scan { from { transform: translateX(-105%); } to { transform: translateX(295%); } }
+@keyframes refresh-float { 50% { transform: translateY(-4px); } }
+@keyframes refresh-tilt { 50% { transform: rotate(8deg); } }
+@keyframes refresh-wink { 45% { transform: scaleY(.12); } 50% { transform: scaleY(1); } }
+@keyframes refresh-sway { 50% { transform: translateX(4px); } }
+@keyframes refresh-pulse { 50% { transform: scale(.93); opacity: .7; } }
+@keyframes refresh-roll { 50% { transform: rotate(-9deg) translateY(-2px); } }
+@keyframes refresh-turn { 50% { transform: rotate(6deg) translateX(2px); } }
+@keyframes refresh-bob { 25% { transform: translateY(-3px); } 75% { transform: translateY(2px); } }
+@keyframes refresh-drift { 50% { transform: translate(3px,-3px); } }
+@keyframes refresh-nod { 50% { transform: rotate(5deg) translateY(2px); } }
+.refresh-status__robot svg { animation: refresh-float 2.5s ease-in-out infinite; transform-origin: center; }
+.refresh-status[data-motif='1'] svg { animation-name: refresh-tilt; }
+.refresh-status[data-motif='2'] .refresh-status__eyes { animation: refresh-wink 2.2s ease-in-out infinite; transform-origin: center; }
+.refresh-status[data-motif='3'] svg { animation-name: refresh-sway; }
+.refresh-status[data-motif='4'] svg { animation-name: refresh-pulse; }
+.refresh-status[data-motif='5'] svg { animation-name: refresh-roll; }
+.refresh-status[data-motif='6'] svg { animation-name: refresh-turn; }
+.refresh-status[data-motif='7'] svg { animation-name: refresh-bob; }
+.refresh-status[data-motif='8'] svg { animation-name: refresh-drift; }
+.refresh-status[data-motif='9'] svg { animation-name: refresh-nod; }
+@media (max-width: 880px) { .refresh-status { top: 68px; right: 12px; } }
 @media (prefers-reduced-motion: reduce) {
-  #refresh-app.is-refreshing .icon { animation: none; opacity: .58; }
+  .refresh-status__robot svg, .refresh-status__eyes, .refresh-status__track i { animation: none !important; }
+  .refresh-status__track i { width: 100%; opacity: .55; }
 }
