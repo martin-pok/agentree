@@ -665,7 +665,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .sc-good { color:#77dbc3; display:flex; align-items:center; gap:8px; }
 .sc-project-title { margin-bottom:32px; }
 .sc-project-icon { display:grid; place-items:center; height:48px; width:48px; flex:none; border-radius:var(--r-sm); background:#9a513e; color:#fff2e9; font-size:23px; font-weight:500; }
-.sc-project-icon--client { background:#353242; border:1px solid rgba(205,197,226,.24); }
+.sc-project-icon--client { background:#352620; border:1px solid rgba(255,161,92,.28); box-shadow:inset 0 1px 0 rgba(255,196,145,.08); }
 .sc-project-icon--client img { display:block; width:32px; height:32px; }
 .sc-project-detail { display:flex; gap:34px; margin-bottom:24px; }
 .sc-project-detail strong { display:block; font:500 31px/1 var(--f-display); letter-spacing:-.04em; }
