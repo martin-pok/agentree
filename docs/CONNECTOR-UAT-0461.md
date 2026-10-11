@@ -49,3 +49,18 @@ Automated CI can inspect source code, HTTP responses, mocked OAuth providers, ex
 At real-device UAT, record for **each** provider: Connect click time; official domain opened; browser callback or extension activity time; CLI command exit status (without stdout secrets); status probe success/failure; first verified session and age; account/plan freshness; SSE time; UI confirmation; disconnect/revocation; relogin; app restart; and whether **the same data** reappears. Collect elapsed times and redact tokens, emails, personal paths, conversation content, full URLs with queries, and authorization codes before storing any logs.
 
 **Acceptance:** No “Connected” badge for mere website activity. No assertion that data is current when it is not. Confirm only supported live credentials and report partial/beta states without hiding errors. Do not close the gate without macOS UAT and a real Chrome Store-extension version check.
+
+## Connected backend evidence (11 October 2026)
+
+Read-only Supabase inspection of the actual Agenteeq project (`quxfenxxdcafcuptucnn`, eu-central-1) reports `ACTIVE_HEALTHY`. Over the most recent available 24-hour log window, aggregate gateway records show 25 successful `/auth/v1/token` requests (HTTP 200), hundreds of successful read requests for `limits`, `connections`, `devices`, `agent_status`, `spend_monthly`, and `usage_daily`, plus two `usage_daily` HTTP 201 writes. Auth logs contain informational login and token revocation entries. **These logs prove backend requests were served, not that a particular Mac completed its browser callback or that all account data is ready immediately.** Do not publish personal login identifiers or full request URLs.
+
+Security advisors report:
+- `public.smazat_muj_ucet()` as a callable `SECURITY DEFINER` function for authenticated users. The inspected definition verifies `auth.uid()` and deletes only `auth.users.id = auth.uid()`; this appears intentional for self-service account deletion. Keep it in a formal privileged-RPC review, not a blind privilege removal. Reference: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+- Leaked password protection disabled. Authentication currently uses Google OAuth; validate whether password-based sign-in is exposed, and enable the control before permitting password login. Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+**Commercial integration discovery:** Official OpenAI documentation now describes `Sign in with ChatGPT` using browser OAuth, PKCE and a loopback callback for open-source local clients. It can authorize eligible Responses API inference with a ChatGPT plan, but **does not grant conversation history or broader ChatGPT account context**. Paid/remotely hosted app usage requires the provider's commercial approval/interest process. This is **not yet implemented** in Agenteeq and is not interchangeable with the existing Codex CLI login or the Chrome extension. Evaluate only as a separately approved integration, not a silently enabled provider button.
+Source: https://developers.openai.com/siwc/token-sharing-open-source
+
+## Current blockers to claiming complete E2E connection
+
+A signed/notarized and installed current Mac build, genuine Anthropic and OpenAI CLI sessions, a real browser OAuth round trip, installed Chrome extension matching the app, permission/revocation tests and live data freshness still require first-party device UAT. The above tests and API logs are evidence of automated and backend behavior, not of these physical acceptance conditions.
