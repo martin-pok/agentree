@@ -69,7 +69,7 @@ const KOD = /^[\x21-\x7e]{8,512}$/;
 // (nainstalovano: null), nikdy „není“. `posledni(id)` = kdy agent na tomhle Macu naposledy
 // pracoval (0 = za sledované období nic); podle toho člověk pozná, proč jsou tokeny nulové.
 // `prihlas(bin, args, { naKonec })` spustí přihlášení na pozadí (src/prihlaseni.js).
-export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
+export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', onVerified = async () => 0, extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
   const ceka = new Map(); // id → { od, casovac?, proces? }
 
   async function zjisti(id) {
@@ -79,7 +79,8 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     const bin = nalezene[a.bin];
     if (!bin) return { nainstalovano: false, napojeno: null };
     const r = await run(bin, a.stav, { timeout: 10000, env: prostrediPro(bin) });
-    return { nainstalovano: true, napojeno: a.precti(r) };
+    // Failed or incomplete status probes must not establish a verified session.
+    return { nainstalovano: true, napojeno: r?.ok === false ? null : a.precti(r) };
   }
 
   async function prehled() {
@@ -115,6 +116,22 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     emit({ id, label, udalost: 'napojeno', ...extra });
   }
 
+  // CLI authentication is only one part of connection. Refresh the account and
+  // local source snapshot before confirming success, then report whether there
+  // was actually any previously observed provider data.
+  async function potvrditAgenta(id, { uz = false } = {}) {
+    const a = AGENTI[id];
+    ukonci(id);
+    let posledniData = 0;
+    let dataError = false;
+    try { posledniData = Number(await onVerified(id)) || 0; }
+    catch { dataError = true; }
+    const p = await plan(id).catch(() => '');
+    const vysledek = { id, label: a.label, udalost: 'napojeno', overeni: 'cli', posledniData, dataError, plan: p, ...(uz ? { uz: true } : {}) };
+    emit(vysledek);
+    return { ok: true, uz, plan: p, posledniData, dataError };
+  }
+
   // Hlídá, dokud se nástroj nepřihlásí. Selhání dotazu není „nepřihlášeno“ – jen se zkusí znovu.
   function hlidej(id, za = intervalMs) {
     const a = AGENTI[id];
@@ -132,7 +149,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       }
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
       if (ceka.get(id) !== c) return;
-      if (z.napojeno === true) return hotovo(id, a.label, { plan: await plan(id).catch(() => '') });
+      if (z.napojeno === true) return potvrditAgenta(id);
       // Přihlášení skončilo, a přihlášen není: proces to vzdal (zavřená stránka, chyba). Čekat
       // dál by znamenalo tvrdit „čekám“, i když už není na co.
       if (c.skoncil) {
@@ -195,11 +212,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       const bin = nalezene[a.bin];
       if (!bin) return { status: 422, error: ui('{0} se na {1} nepodařilo najít.', a.label, POCITAC.tomto) };
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
-      if (z.napojeno === true) {
-        const p = await plan(id).catch(() => '');
-        emit({ id, label: a.label, udalost: 'napojeno', plan: p, uz: true });
-        return { ok: true, uz: true, plan: p };
-      }
+      if (z.napojeno === true) return potvrditAgenta(id, { uz: true });
       ukonci(id);
       const r = await spust(id, bin, a.prihlaseni);
       if (!r.ok) return { status: 422, error: r.error || ui('Přihlášení {0} se nepodařilo spustit.', a.label) };
@@ -225,7 +238,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
   // Rozšíření poslalo stav z webové služby. Když na ni člověk právě čeká, je napojeno.
   function webOzvalo(site) {
     const id = `web:${site}`;
-    if (ceka.has(id)) hotovo(id, WEBY[site]?.label || site);
+    if (ceka.has(id) && WEBY[site]) hotovo(id, WEBY[site].label, { overeni: 'pozorovano' });
   }
 
   // „Prohlížeč se neotevřel?“ – otevře záložní odkaz, který přihlášení vypsalo. Odkaz se objeví
