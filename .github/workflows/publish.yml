@@ -27,7 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
+      contents: write # úprava a zveřejnění GitHub releasu
+      actions: read # čtení výsledků povinného CI pro přesný tag commit
     steps:
       # Do repozitáře se nepushuje (vydání mění `gh` přes GH_TOKEN), token v checkoutu netřeba.
       - uses: actions/checkout@v5
