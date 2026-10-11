@@ -433,3 +433,30 @@ test('webová událost znamená jen pozorovaná data z extension, ne OAuth přih
   assert.equal(events[0].overeni, 'pozorovano');
   assert.equal(events[0].dataError, undefined);
 });
+
+test('zrušení během aktualizace dat nesmí později potvrdit staré přihlášení', async () => {
+  let logged = false;
+  let complete;
+  let onVerifiedStarted;
+  const started = new Promise((resolve) => { onVerifiedStarted = resolve; });
+  const awaitingData = new Promise((resolve) => { complete = resolve; });
+  const events = [];
+  const n = createNapojeni({
+    bins: () => ({ codex: '/bin/codex' }),
+    run: async () => ({ ok: true, stdout: '', stderr: logged ? 'Logged in using ChatGPT' : 'Not logged in' }),
+    prihlas: async () => ({ ok: true, zastav: () => {}, odkaz: () => null }),
+    open: async () => ({ ok: true }),
+    onVerified: async () => { onVerifiedStarted(); await awaitingData; return 123; },
+    emit: (u) => events.push(u),
+    intervalMs: 2, limitMs: 3000,
+  });
+  const r = await n.napojit('codex');
+  assert.equal(r.ceka, true);
+  logged = true;
+  await started;
+  n.zrusit('codex');
+  complete();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(events.filter((e) => e.udalost === 'napojeno').length, 0,
+    'late account refresh must not override cancellation');
+});
