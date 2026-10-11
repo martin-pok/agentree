@@ -448,6 +448,54 @@ try {
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
+      // Breakpoint sweep: recycle two pages instead of reloading dozens of times.
+      // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
+      // major CSS breakpoint, tablets, laptops and ultrawide monitors.
+      // A future phone's exact panel size is unknown; use fluid layout assertions.
+      for (const language of ['/', '/en']) {
+        const responsive = await browser.newPage({
+          viewport: { width: 390, height: 844 },
+          reducedMotion: 'reduce',
+          colorScheme: 'light',
+        });
+        const errors = [];
+        await jenMistni(responsive, errors);
+        responsive.on('pageerror', e => errors.push(e.message));
+        await responsive.goto(url + (language === '/' ? '' : language));
+        for (const width of [320, 344, 360, 390, 402, 430, 600, 620, 621, 700,
+          720, 760, 768, 820, 900, 901, 1024, 1280, 1536, 1920, 2560, 3840]) {
+          await responsive.setViewportSize({ width, height: width <= 430 ? 844 : 950 });
+          const layout = await responsive.evaluate(() => {
+            const vw = document.documentElement.clientWidth;
+            const selectors = ['.nav-in', '.hero .unit-head', '.hero-figure',
+              '#prohlidka .tiles', '#propojeni .integration-tools', '.site-footer .foot-in'];
+            const overflow = selectors.flatMap(selector => [...document.querySelectorAll(selector)]
+              .filter(el => {
+                const r = el.getBoundingClientRect();
+                return r.width > 0 && (r.right > vw + 2 || r.left < -2);
+              }).map(el => el.className || el.tagName));
+            const menu = document.querySelector('[data-mobile-menu-toggle]');
+            const mobile = menu && getComputedStyle(menu).display !== 'none';
+            const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
+            const heading = document.querySelector('h1')?.getBoundingClientRect();
+            const cta = document.querySelector('.hero .btn')?.getBoundingClientRect();
+            const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
+              .every(el => el.getBoundingClientRect().width > 0);
+            return { vw, screenHasOverflow, overflow, mobile, heading: heading?.width,
+              cta: cta?.width, links };
+          });
+          assert.equal(layout.screenHasOverflow, false,
+            `${engine} ${language} ${width}px: horizontal page overflow`);
+          assert.deepEqual(layout.overflow, [],
+            `${engine} ${language} ${width}px: key content crosses viewport`);
+          assert.ok(layout.heading > 0 && layout.cta >= 44 && layout.links,
+            `${engine} ${language} ${width}px: missing heading, CTA, or logo`);
+          assert.equal(layout.mobile, width <= 900,
+            `${engine} ${language} ${width}px: mobile navigation breakpoint`);
+        }
+        assert.deepEqual(errors, [], `${engine} ${language}: errors during breakpoint sweep`);
+        await responsive.close();
+      }
     } finally { await browser.close(); }
   }
   await fs.writeFile(`${output}/results.json`, JSON.stringify(results, null, 2));
