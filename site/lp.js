@@ -241,3 +241,40 @@ plynulePosouvani();
    });
  }
 }
+
+
+/* Accurate in-page navigation, including iOS Safari.
+   #obsah (the footer's "back to top") means document top, not the start
+   of <main> underneath the sticky site header. */
+{
+ const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const scrollToAnchor=(hash)=>{
+   if(hash==='#obsah'||hash==='#top'){
+     window.scrollTo({top:0,behavior:reduceMotion()?'instant':'smooth'});
+     return true;
+   }
+   let target;
+   try { target=document.getElementById(decodeURIComponent(hash.slice(1))); } catch { return false; }
+   if(!target) return false;
+   // Leave the section's kicker and headline visible below the sticky header.
+   const sticky=document.querySelector('.nav');
+   const headerHeight=sticky?.getBoundingClientRect().height||72;
+   const offset=headerHeight+16;
+   const y=Math.max(0,window.scrollY+target.getBoundingClientRect().top-offset);
+   window.scrollTo({top:y,behavior:reduceMotion()?'instant':'smooth'});
+   return true;
+ };
+ document.addEventListener('click',event=>{
+   const link=event.target.closest('a[href^="#"]');
+   if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+   const hash=link.getAttribute('href');
+   if(!hash||hash==='#')return;
+   const target=hash==='#obsah'||hash==='#top'?true:(()=>{try{return Boolean(document.getElementById(decodeURIComponent(hash.slice(1))));}catch{return false;}})();
+   if(!target)return;
+   event.preventDefault();
+   if(location.hash!==hash)history.pushState(null,'',hash);
+   // Close handler for mobile overlay runs first; scroll after its body unlock.
+   requestAnimationFrame(()=>scrollToAnchor(hash));
+ });
+ window.addEventListener('hashchange',()=>{if(location.hash==='#obsah'||location.hash==='#top')scrollToAnchor(location.hash);});
+}

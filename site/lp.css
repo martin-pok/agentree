@@ -83,7 +83,7 @@ code, kbd { font-family: var(--f-mono); font-size: .92em; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal-ink); flex: none; }
 
 /* ---------- jednotky ---------- */
-section[id] { scroll-margin-top: 72px; }
+section[id], details[id] { scroll-margin-top: 96px; }\n#obsah { scroll-margin-top: 0; }
 .unit { padding-block: var(--unit-y); }
 .unit--tint { background: var(--paper-2); }
 .unit--dark { background: var(--backdrop); color: var(--on-stage); }
