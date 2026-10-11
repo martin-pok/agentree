@@ -33,6 +33,14 @@ Tato tabulka zachovává rozhodnutí i při změně agenta. Po každém schvále
 
 Implementovaná částečná detekce identit účtů a kvót zatím nezajišťuje spolehlivé přiřazení každé session ani oddělená Claude okna pro více licencí. UX a datové/bezpečnostní požadavky v [MULTI-ACCOUNT.md](MULTI-ACCOUNT.md). **P1 návrh, nehotová funkce**, navržené zařazení správy více licencí stejného nástroje do Pro vyžaduje samostatné produktové schválení. Free musí zachovat sledování všech rozpoznaných agentů. Nezapínat paywall před hotovou a otestovanou správou identit, přiřazení a limitů.
 
+## Integrita časových řad, cache a čerstvost dat
+
+- **Kalendářní den ≠ posledních 24 hodin.** „Dnes“, „včera“, posledních N **kalendářních** dní a měsíční statistiky se řídí místní časovou zónou zařízení; 24 h znamená klouzavých 86 400 sekund. Při změně DST je kalendářní den dlouhý 23 nebo 25 hodin. Testy: `test/kalendarni-den.test.mjs`. V UI nesmí být tyto metriky zaměňovány ani při překladu CZ/EN.
+- **Cloudový souhrn:** `src/cloud-sync.js#tokenyPoDnech` nyní odmítá neplatné a budoucí hodinové buckety a nečíselné součty. Regresní scénář: `test/cloud-sync.test.mjs`. Pro synchronizaci zachovat pouze kompletní místní dny; zabránit přepsání pravdivé minulosti neúplnou historií.
+- **Verzování cache:** `src/verze-souboru.js` používá obsahové značky/Etag a service worker `public/sw.js` je network-first, API odpovědi se neukládají. Před releasem ověřit skutečný upgrade staré→nové instalace, offline fallback, návrat serveru a vzhled všech assetů v Mac WKWebView/Chrome; implementační princip sám o sobě nedokazuje absenci starého UI.
+- **Duplicitní agenty a historická data:** závazně testovat vícenásobné kořeny stejného přepisu, symlinky, stejný session UUID z různých nezávislých profilů, obnovu SSE po restartu a konflikt více instancí. Jeden logický běh musí mít jednu identitu a nesmí se započítat dvakrát; při konfliktu identit nevymýšlet sloučené statistiky.
+- **Otevřené P1:** pokrytí dynamických cache/session verzí, stale renderů a souběžných migrací, měření p95 latence a vizuální kontrola na reálných zařízeních.
+
 ## Právě teď — cesta od 0.46.1 k dalšímu releasu
 
 | Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
