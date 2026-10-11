@@ -495,7 +495,7 @@ try {
       // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
       // major CSS breakpoint, tablets, laptops and ultrawide monitors.
       // A future phone's exact panel size is unknown; use fluid layout assertions.
-      for (const language of ['/', '/en']) {
+      for (const language of ['/', '/en', '/instalace', '/en/install', '/soukromi', '/en/privacy']) {
         const responsive = await browser.newPage({
           viewport: { width: 390, height: 844 },
           reducedMotion: 'reduce',
@@ -511,7 +511,8 @@ try {
           const layout = await responsive.evaluate(() => {
             const vw = document.documentElement.clientWidth;
             const selectors = ['.nav-in', '.hero .unit-head', '.hero-figure',
-              '#prohlidka .tiles', '#propojeni .integration-tools', '.site-footer .foot-in'];
+              '#prohlidka .tiles', '#propojeni .integration-tools', '.site-footer .foot-in',
+              '.install-page .install-hero-scene', '.install-page .extension-layout', '.doc-body'];
             const overflow = selectors.flatMap(selector => [...document.querySelectorAll(selector)]
               .filter(el => {
                 const r = el.getBoundingClientRect();
@@ -521,19 +522,20 @@ try {
             const mobile = menu && getComputedStyle(menu).display !== 'none';
             const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
             const heading = document.querySelector('h1')?.getBoundingClientRect();
-            const cta = document.querySelector('.hero .btn')?.getBoundingClientRect();
+            const cta = document.querySelector('.hero .btn, .install-page .btn')?.getBoundingClientRect();
             const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
               .every(el => el.getBoundingClientRect().width > 0);
-            return { vw, screenHasOverflow, overflow, mobile, heading: heading?.width,
-              cta: cta?.width, links };
+            return { vw, screenHasOverflow, overflow, mobile,
+              hasMenu: Boolean(menu), heading: heading?.width,
+              cta: cta?.width || null, links };
           });
           assert.equal(layout.screenHasOverflow, false,
             `${engine} ${language} ${width}px: horizontal page overflow`);
           assert.deepEqual(layout.overflow, [],
             `${engine} ${language} ${width}px: key content crosses viewport`);
-          assert.ok(layout.heading > 0 && layout.cta >= 44 && layout.links,
+          assert.ok(layout.heading > 0 && (layout.cta === null || layout.cta >= 44) && layout.links,
             `${engine} ${language} ${width}px: missing heading, CTA, or logo`);
-          assert.equal(layout.mobile, width <= 900,
+          assert.equal(layout.mobile, layout.hasMenu && width <= 900,
             `${engine} ${language} ${width}px: mobile navigation breakpoint`);
         }
         assert.deepEqual(errors, [], `${engine} ${language}: errors during breakpoint sweep`);
