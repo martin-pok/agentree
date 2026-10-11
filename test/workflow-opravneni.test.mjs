@@ -23,6 +23,10 @@ const ZAPIS = {
     'start-preview-build': 'spustit zkontrolované release.yml přes workflow_dispatch',
     'publish-preview': 'publikovat jen ověřený v0.46.1 prerelease s úplnými přílohami',
   },
+  'release-0462-preview.yml': {
+    'start-preview-build': 'spustit konkrétní zelený v0.46.2 build',
+    'publish-preview': 'po dokončení release buildu zveřejnit pouze ověřený preview',
+  },
 };
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
@@ -163,4 +167,27 @@ test('0.46.1 preview can publish an already completed draft after green main CI'
     'all expected binary artifacts must have plausible nonzero sizes');
   assert.match(publish, /--draft=false --prerelease --latest=false/,
     'preview must not replace stable latest release');
+});
+
+test('0.46.2 preview only runs after successful main push CI and publishes after its own release build', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0462-preview.yml')?.yml;
+  assert.ok(preview, 'missing 0.46.2 preview workflow');
+  const jobs = ulohy(preview);
+  assert.ok(jobs['start-preview-build'] && jobs['publish-preview']);
+  const start = jobs['start-preview-build'];
+  const publish = jobs['publish-preview'];
+  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
+  assert.match(start, /VERSION.*0\.46\.2/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.2/);
+  assert.match(publish, /needs: start-preview-build/);
+  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
+  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
+  assert.match(publish, /"Agenteeq-macOS-arm64.dmg"/);
+  assert.match(publish, /"agenteeq-extension-0\.46\.2.zip"/);
+  assert.match(publish, /\.size > 100000/);
+  assert.match(publish, /--draft=false --prerelease --latest=false/);
+  assert.doesNotMatch(skripty(preview).join('\n'), /--latest(?:\s|$)/, 'preview cannot be latest');
 });
