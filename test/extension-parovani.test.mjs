@@ -207,3 +207,24 @@ test('pozadí rozšíření: pozdní odpověď starého portu nesmí přepsat no
   await puvodni;
   assert.equal(r.local.token, 'n'.repeat(43), 'stale server response cannot overwrite current pairing');
 });
+
+
+test('content script is idempotent when Chrome reinjects it after an extension update', async () => {
+  const content = await fs.readFile(fileURLToPath(new URL('../extension/content.js', import.meta.url)), 'utf8');
+  const callbacks = [];
+  let observed = 0;
+  let intervals = 0;
+  const scope = { document: { documentElement: {} }, location: { href: 'https://chatgpt.com/c/1' },
+    window: { AgenteeqSites: { detect: () => ({ id: 'chatgpt' }) }, addEventListener: () => {} },
+    MutationObserver: class { observe() { observed++; } },
+    setInterval: () => { intervals++; }, setTimeout: () => 1,
+    chrome: { runtime: { onMessage: { addListener: (fn) => callbacks.push(fn) }, sendMessage: () => Promise.resolve({ prompt: null }) } },
+  };
+  scope.globalThis = scope;
+  const context = vm.createContext(scope);
+  vm.runInContext(content, context);
+  vm.runInContext(content, context);
+  assert.equal(observed, 1, 'only one DOM observer');
+  assert.equal(intervals, 1, 'only one polling interval');
+  assert.equal(callbacks.length, 1, 'only one message listener');
+});
