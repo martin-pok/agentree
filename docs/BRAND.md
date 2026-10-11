@@ -1,20 +1,17 @@
-# Jméno produktu
+# Agenteeq — značka a kompatibilita
 
-Tenhle dokument existuje z jediného důvodu: jméno se ještě bude měnit a ta změna nemá být
-archeologie. Je tu seznam všech míst, kde jméno žije, a co každé z nich stojí.
+**Agenteeq je aktuální produktová značka.** Tento dokument zachovává migrační poznámky pro starší instalace, nikoliv otevřené rozhodnutí o názvu. Ve veřejném rozhraní, ikonkách a marketingu používej výhradně Agenteeq a aktuální dvoubarevný robotí symbol bez trojzubce a bez barevné antény.
 
 ## Kde jsme teď
 
 | | |
 |---|---|
-| Jméno v produktu | **Agenteeq** – kód, rozhraní, dokumentace i web jedou pod ním beze zbytku |
-| Jméno repozitáře | `agentree` – jediné místo, kde zůstalo starší jméno |
+| Jméno v produktu | **Agenteeq** – závazné jméno pro produkt, UI, web i distribuční balíčky |
+| Jméno repozitáře | `agentree` – historické jméno repozitáře a některých kompatibilních technických identifikátorů |
 | Starší jména | `Dirigent` (do 0.4.0) → `Agentree` (do 0.7.0) → `Agenteeq` (od 0.8.0) |
-| Stav rozhodnutí | **otevřené.** `Agentree` koliduje s existujícím produktem, `Agenteeq` je zatím pracovní. |
+| Stav rozhodnutí | **uzavřené pro současný release: Agenteeq.** Původní jména slouží jen k migraci a kompatibilitě. |
 
-Dokud jméno není rozhodnuté, nic dalšího nepřejmenováváme. Dvakrát přejmenovat je dražší
-než jednou počkat, a každé přejmenování stojí uživatele data nebo přihlášení, pokud se udělá
-nedbale.
+Nové prvky nesmějí vracet logo Agentree s trojzubcem. Starší názvy uvnitř migrací, hlaviček a souborových cest ponecháváme jen tehdy, když chrání data nebo spojení uživatelů. Nepřejmenovávat je mechanicky.
 
 ## Co už je připravené na přejmenování
 
@@ -57,7 +54,7 @@ Seřazeno podle toho, co uživatele bolí nejvíc.
    na to ale nechceme.
 10. Doména a e-maily, až nějaké budou.
 
-## Postup, až jméno padne
+## Historický postup přejmenování (neprovádět znovu)
 
 1. Ověřit dostupnost: doména, GitHub, Chrome Web Store, ochranná známka v ČR a EU.
 2. Přidat kompatibilitu podle tabulky výš (nová jména s odečtem starých) a testy na ni.
