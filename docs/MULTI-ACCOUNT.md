@@ -1,4 +1,4 @@
-# ADR — Více účtů stejného AI poskytovatele
+# ADR — Univerzální správa více účtů LIBOVOLNÉHO AI poskytovatele
 
 **Stav:** částečně implementováno; doplněna ochrana odmítnutí neověřených Claude identit, ale session-binding a oddělené Claude kvóty zůstávají nehotové; návrh tarifikace Pro je produktové doporučení, nikoliv schválená cena nebo aktivovaný paywall. **Datum:** 2026-10-11.
 
@@ -40,6 +40,14 @@ Navržené klíčové oprávnění: `providerMultiAccount: 'pro'`. **Neaktivovat
 8. Ochrana soukromí: žádné tokeny, e-maily, autentizační soubory nebo obsah přepisů v synchronizaci a logování.
 9. Free→Pro→Free bez ztráty historie a přiřazení; nepřístupné placené ovládání nesmí vypnout zobrazení aktivních agentů.
 10. UAT na skutečném Macu, Chrome a případně dalším hostiteli. Synthetic fixture ani CI **nenahrazují** reálné víceúčtové přihlášení.
+
+## Povinná univerzální architektura — žádné výjimky podle značky
+
+Multi-account platí pro **každého poskytovatele a každou použitelnou integraci**, například Claude, Codex/OpenAI, Gemini/Google, GitHub Copilot, Cursor, OpenRouter, Mistral, Grok i budoucí služby. Není dovoleno implementovat oddělené obchodní nebo datové chování jen pro Claude. Jednotný datový model musí mít provider adaptery pro získání **skutečně ověřených** identit a limitů; adaptér bez podpory důvěryhodných dat musí transparentně hlásit `unavailable`.
+
+První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIdentity`, `validAccountId`, `groupAccountsByProvider`, `sessionAccountBinding`, univerzální normalizaci historie až 96 účtů. Test `test/provider-multi-account.test.mjs` zkouší dvě oddělená Google identity, jiného providera, nemožnost podvrhnout account binding a kompatibilitu Claude/Codex. Přehled účtů už nepovažuje každého neznámého poskytovatele za Codex.
+
+**To není dokončená feature.** Provider adaptéry pro účet/kvóty jsou reálně implementované pouze pro konkrétní zdroje Claude a Codex; Gemini, Copilot, Cursor atd. se nesmějí v UI tvářit jako ověřené připojené licence bez vlastních důkazů. Vazba `SessionAccountBinding` zatím tvoří samostatný validovaný kontrakt, nikoli automatické kompletní přiřazení všech běhů. Pro dokončení potřebujeme: profily a jejich read-only account identity adapters, verifikaci session→account na úrovni procesu/konfiguračního domova, per-account kvóty a jejich freshness, aliase/editace v UI, robustní migrace a bezpečný Pro gate. Free musí stále zobrazit všechny detekované agenty bez placené vazby.
 
 ## Implementační stav k poslední revizi
 
