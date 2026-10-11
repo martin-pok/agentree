@@ -183,7 +183,13 @@ try {
             const box = (s) => document.querySelector(s)?.getBoundingClientRect();
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && cta && cta.right <= innerWidth), prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)) };
+            const mobileMenu = document.querySelector('[data-mobile-menu-toggle]');
+            const mb = mobileMenu?.getBoundingClientRect();
+            const actionVisible = innerWidth <= 900
+              ? Boolean(mb && mb.width >= 44 && mb.height >= 44 && mb.right <= innerWidth)
+              : Boolean(cta && cta.width > 0 && cta.right <= innerWidth);
+            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && actionVisible),
+              prekryv: Boolean(pres(lang, innerWidth > 900 ? cta : mb) || pres(lang, znacka)) };
           });
           assert.deepEqual(lista, { videt: true, prekryv: false }, `${kde}: lišta`);
           const okraje = await page.evaluate(() => {
