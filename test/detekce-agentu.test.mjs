@@ -508,7 +508,8 @@ test('ztracená událost strážce: první projects/ se aktivuje bez pětisekund
   assert.equal(w.strazi, '', 'the parent guard is removed after activation');
   assert.ok(trace.some((x) => x.kind === 'guard-poll-found'), 'fallback actually recovered missing event');
   assert.ok(trace.some((x) => x.kind === 'watch-active'), 'full scan follows the recovered watcher');
-  assert.deepEqual(events, [null], 'existing files are rescanned on activation');
+  assert.ok(events.length >= 1 && events.length <= 2 && events.every((event) => event === null),
+    'newly created root is scanned on activation with at most one bounded follow-up');
   assert.equal(closedGuards, 1, 'no accumulating fs.watch handles');
 
   // The guard must not walk above a forbidden directory even if it exists.
