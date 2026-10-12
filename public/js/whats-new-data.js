@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.6',
+    date: '2026-10-12',
+    title: 'Vidíš, kdy agent potřebuje rozhodnutí',
+    items: [
+      'Když Claude Code možná čeká na povolení, upozornění se ukáže v Přehledu, Agentech i detailu, místo aby agent vypadal jen jako pracující.',
+      'Konverzace spuštěné z terminálu nabízejí pokračování ve správném terminálu; u běžící konverzace se nevytváří druhé spuštění.',
+      'V přepisu uvidíš otázky agenta i nabízené možnosti. Pomocník odpoví na „Co na mě čeká?“ podle právě načteného stavu.',
+    ],
+    en: {
+      title: 'See when your agent needs a decision',
+      items: [
+        'Potential approval waits appear consistently in Overview, Agents and session details instead of looking like ordinary activity.',
+        'Terminal-originated sessions direct you back to Terminal without restarting a session that is already running.',
+        'Agent questions and suggested answers are visible in transcripts. Ask the helper what needs your attention using live app state.',
+      ],
+    },
+  },
+  {
     version: '0.46.5',
     date: '2026-10-12',
     title: 'Volitelné aktualizace Preview',
