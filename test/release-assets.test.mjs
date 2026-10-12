@@ -126,3 +126,15 @@ test('release assets: only strict numeric version tags are accepted', () => {
   assert.throws(() => expectedAssets('v0.46.07'), /exact vX.Y.Z/);
   assert.equal(expectedAssets(TAG).length, 8);
 });
+
+test('publish workflow verifies full downloaded bytes before changing release visibility', async () => {
+  const publish = await fs.readFile(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8');
+  const verifyPos = publish.indexOf('scripts/verify-release-assets.mjs');
+  const publishPos = publish.indexOf('gh release edit "$TAG" --notes-file poznamky.md --draft=false');
+  assert.ok(verifyPos > 0 && publishPos > verifyPos, 'binary checks must precede publication');
+  assert.match(publish, /gh release download "\$TAG" --dir overene-prilohy --repo "\$GITHUB_REPOSITORY"/);
+  assert.match(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/tags\/\$\{TAG\}" > release-metadata\.json/);
+  assert.match(publish, /sha256sum --check SHA256SUMS\.txt/);
+  assert.match(publish, /channel:[\s\S]*?default: preview/);
+  assert.match(publish, /--prerelease --latest=false/);
+});
