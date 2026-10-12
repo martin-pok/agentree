@@ -395,3 +395,69 @@ test('Old download from Preview cannot be accepted after Preview → Stable → 
   assert.equal(service.state().status, 'available');
   assert.equal(service.downloadedPath(), null);
 });
+
+
+test('a previously verified ZIP is independently checked again before installation or reveal', async () => {
+  const dir = await tempDir('agenteeq-update-reverify-');
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  const first = await service.download();
+  assert.equal(first.ok, true);
+  const file = first.update.downloaded.path;
+  assert.equal(await service.verifiedDownloadedPath(), file, 'untouched and SHA-verified local ZIP remains installable');
+
+  // Size and filename are identical. A stat-only check would accept this.
+  await fs.writeFile(file, 'evil');
+  assert.equal(await service.verifiedDownloadedPath(), null, 'same-size corruption must fail before install');
+  assert.equal(service.state().status, 'available');
+  assert.equal(service.state().downloaded, null);
+  assert.equal(service.downloadedPath(), null);
+
+  assert.equal((await service.download()).ok, true, 'a bad local ZIP can be fetched anew');
+  assert.equal(await service.verifiedDownloadedPath(), file);
+  await fs.rm(file);
+  assert.equal(await service.verifiedDownloadedPath(), null, 'deleted file invalidates cached update');
+  assert.equal(service.state().status, 'available');
+});
+
+test('desktop install/reveal reject changed or deleted ZIP and never dispatch it to native shell', async () => {
+  const home = await tempDir('agenteeq-reverify-native-');
+  const updater = new UpdateService({ version: '0.29.9', dataDir: home, fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
+  const s = await startTestServer({ AGENTEEQ_HOME: home, AGENTEEQ_CLOUD: '1', AGENTEEQ_SELF_INSTALL: '1' }, { updateService: updater });
+  try {
+    const events = [];
+    s.app.nastavDesktop(event => events.push(event));
+    const client = api(s.url);
+    assert.equal((await client.send('POST', '/api/updates/check', {})).status, 200);
+    assert.equal((await client.send('POST', '/api/updates/download', {})).status, 200);
+    const file = updater.downloadedPath();
+    assert.ok(file);
+    await fs.writeFile(file, 'oops');
+    const rejected = await client.send('POST', '/api/updates/install', {});
+    assert.equal(rejected.status, 409);
+    assert.match(rejected.body.error, /aktualizační balíček/i);
+    assert.equal(updater.state().status, 'available');
+    assert.deepEqual(events, [], 'native install-update event MUST NOT be emitted for corrupt ZIP');
+    assert.equal((await client.send('POST', '/api/updates/download', {})).status, 200);
+    await fs.rm(updater.downloadedPath());
+    const reveal = await client.send('POST', '/api/updates/reveal', {});
+    assert.equal(reveal.status, 409);
+    assert.equal(updater.state().status, 'available');
+    assert.deepEqual(events, [], 'reveal also must not leak an invalid ZIP');
+    assert.equal((await client.get('/api/state')).body.updates.status, 'available');
+  } finally { await s.close(); }
+});
+
+test('a symlink cannot stand in for a SHA-matching downloaded update ZIP', { skip: process.platform === 'win32' && 'Windows symlinks require elevated privileges or Developer Mode in CI' }, async () => {
+  const home = await tempDir('agenteeq-update-symlink-');
+  const service = new UpdateService({ version: '0.29.9', dataDir: home, fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
+  await service.check();
+  assert.equal((await service.download()).ok, true);
+  const file = service.downloadedPath();
+  const alias = path.join(home, 'outside.zip');
+  await fs.copyFile(file, alias);
+  await fs.rm(file);
+  await fs.symlink(alias, file);
+  assert.equal(await service.verifiedDownloadedPath(), null);
+  assert.equal(service.state().status, 'available');
+});

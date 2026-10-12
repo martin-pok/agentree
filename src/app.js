@@ -1199,19 +1199,31 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    // Persist user state before the final ZIP hash check, minimizing the gap
+    // between verification and native app replacement.
+    if (previouslyDownloaded) await datastore.flush?.();
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
     const version = updates.state().latestVersion;
     if (!/^\d+\.\d+\.\d+$/.test(version || '')) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-    await datastore.flush?.();
     desktopReport({ type: 'install-update', zip: path.resolve(target), version });
     return { ok: true, restarting: true };
   }
 
   async function revealUpdate() {
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
