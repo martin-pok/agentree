@@ -38,13 +38,11 @@ export const INSTALACE = [
   { kod: 'en', adresa: '/en/install', soubor: path.join('en', 'install', 'index.html') },
 ];
 
-// Přepíše softwareVersion ve strukturovaných datech stránky. Když ji tam nenajde, spadne: tichá
-// změna tvaru stránky by jinak vrátila zastaralou verzi a nikdo by si nevšiml.
-export function verzeVDatechStranky(html, verze) {
-  const vzor = /"softwareVersion":"[^"]*"/;
-  if (!vzor.test(html)) throw new Error('Stránka webu nemá „softwareVersion“ ve strukturovaných datech — uprav scripts/build-site.mjs.');
-  return html.replace(vzor, `"softwareVersion":"${verze}"`);
-}
+// JSON-LD must describe what is PUBLICLY available, not the unshipped package.json
+// version. The download CTA follows GitHub's published Stable /releases/latest,
+// but build-time source version may be an unpublished Preview draft. Omit the
+// optional softwareVersion property entirely until the publication pipeline has
+// an authoritative, automatically maintained public-version source.
 
 // Odkaz na stažení míří na přílohu se stálým jménem v posledním vydání. Adresa s číslem verze
 // by po každém vydání ukazovala do prázdna, dokud by někdo nepřestavěl web — a přesně tak vypadá
@@ -231,14 +229,13 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   // Keep developer CSS intact, but don't transmit 14 KB of source comments to visitors.
   const cssPath = path.join(out, 'lp.css');
   await fs.writeFile(cssPath, cssBezKomentaru(await fs.readFile(cssPath, 'utf8')));
-  // Verze v datech pro vyhledávače se bere z package.json při každém sestavení. Napsaná ručně by po
-  // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
-  // Stejně se upraví každá jazyková verze stránky – odkaz ke stažení i verze musí sedět v obou.
-  const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
+  // Marketing pages must never leak the unpublished package.json version into
+  // JSON-LD. Their Schema.org fields are source-controlled and version-neutral;
+  // download links are still resolved to the published Stable release.
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
     await fs.writeFile(stranka, preloadPrimarnihoPisma(
-      rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))),
+      rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))),
       satoshiAvailable));
   }
   for (const jazyk of INSTALACE) {
