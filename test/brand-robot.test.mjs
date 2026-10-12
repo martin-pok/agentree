@@ -87,6 +87,18 @@ test('brand: every small icon is a proportional scale, never an alternate head',
   }
 });
 
+test('brand: macOS bundle never ships obsolete checked-in icon previews', async () => {
+  const build = await read('scripts/build-macos.mjs');
+  assert.match(build, /for \(const stale of \['Agenteeq\.icns', 'Agenteeq-icon\.png'\]\)/,
+    'both old checked-in icon variants must be explicitly removed from the app runtime');
+  assert.match(build, /fs\.rm\(path\.join\(resources, 'app', 'desktop', stale\), \{ force: true \}\)/,
+    'old icons must not remain copied into the signed app');
+  assert.match(build, /run\('sips', \['-s', 'format', 'png', path\.join\(resources, 'Agenteeq\.icns'\)/,
+    'preview PNG must be derived from the generated shipping icon');
+  assert.doesNotMatch(build, /fs\.copyFile\(iconPreview/,
+    'stale checked-in PNG must not be copied to dist');
+});
+
 test('brand: store icon and installed extension icon are byte-identical', async () => {
   const extensionIcon = await fs.readFile(new URL('../extension/icons/icon-128.png', import.meta.url));
   const storeIcon = await fs.readFile(new URL('../branding/chrome-web-store/export/icon-128.png', import.meta.url));

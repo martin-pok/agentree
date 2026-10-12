@@ -127,6 +127,21 @@ jobs:
       - name: Sestavit
         run: npm run build:mac
 
+      - name: Verify actual packaged ICNS and no obsolete artwork
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find dist -maxdepth 1 -name 'Agenteeq-*-macOS-arm64.zip' -print -quit)"
+          test -n "$archive"
+          mkdir -p dist/qa-bundle-icons
+          ditto -x -k "$archive" dist/qa-bundle-icons
+          test -s dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/Agenteeq.icns
+          test ! -e dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/app/desktop/Agenteeq.icns
+          test ! -e dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/app/desktop/Agenteeq-icon.png
+          test -s dist/Agenteeq-icon.png
+          sips -g format dist/Agenteeq-icon.png | grep -q 'format: png'
+          echo "Verified signed Mac bundle contains only generated icon and matching preview"
+
       # 0.46 ships a custom Finder DMG; validate the exact installer path before tagging.
       - name: Sestavit a ověřit instalátor DMG
         run: npm run build:dmg
