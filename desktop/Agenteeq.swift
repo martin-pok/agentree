@@ -493,7 +493,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
               let data = try? JSONSerialization.data(withJSONObject: [route]),
               let json = String(data: data, encoding: .utf8) else { return }
         pendingAgentRoute = nil
-        web.evaluateJavaScript("location.hash=\\(json)[0]")
+        web.evaluateJavaScript("location.hash=\(json)[0]")
     }
 
     func handleDesktopEvent(_ data: [String: Any]) {
