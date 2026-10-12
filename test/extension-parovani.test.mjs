@@ -25,6 +25,7 @@ function spust(sit, { ulozeno = {} } = {}) {
   });
   const kontext = vm.createContext({
     URL,
+    AbortSignal,
     crypto: { randomUUID: () => 'instalace-1234' },
     Date: { now: () => ted },
     fetch: async (url, init = {}) => {
