@@ -7,6 +7,14 @@
 - **Ověření:** automatické testy tokenu, podvrženého původu, neznámého/archivovaného ID, nepřítomného desktopu a opakovaného kliknutí. Reálné UAT macOS zůstává samostatná podmínka.
 - **Distribuce:** není součástí již sestaveného 0.46.7 draftu ani aktuálního Chrome Store balíčku.
 
+## Rozpracováno po 0.46.7 · Chrome extension: pracovní filtr konverzací (zatím nevydáno)
+
+- **Rychlé soustředění:** při více otevřených webových AI chatech je možné filtrovat Vše / Odpovídají / Limity, s pravdivým počtem v každém stavu. Přepnutí nevyvolá žádné síťové ani cloudové požadavky a respektuje uživatelem vypnuté služby.
+- **Čerstvý stav má přednost:** otevřená karta používá diagnostiku skutečné stránky, ne starou hodnotu z background cache; ztráta aktuální diagnostiky nesmí skrýt dříve potvrzený chat.
+- **Přístupnost a minimalismus:** tlačítka mají `aria-pressed`, fungují z klávesnice, při nulovém výsledku se zobrazí věta, nikoliv prázdná plocha. Filtry se u jedné konverzace neukazují.
+- **Design QA:** odstraněna jednostranná mosazná linka u aktuální karty, místo ní subtilní celoplošné zvýraznění v design tokenech; nepřidává nové roboty ani ilustrace.
+- **Kontroly:** regresní `node:test` + skutečné popup interakce v Chromium/WebKit při světlém a tmavém tématu, kontrola limitu Chrome 600 px. Tento kód **není** v již vytvořeném draftu v0.46.7 ani v Chrome Web Store.
+
 ## Rozpracováno po 0.46.7 · pravdivá verze na veřejném webu (nevydáno)
 
 - **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
