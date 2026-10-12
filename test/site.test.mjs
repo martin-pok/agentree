@@ -214,22 +214,30 @@ test('značka se do stránky nepřidá dvakrát', () => {
   assert.throws(() => znackaStatickeKopie('<html><body>bez hlavičky</body></html>'), /head/);
 });
 
-// Verze ve strukturovaných datech stránky se bere z package.json při sestavení, ne z ruky.
-test('web nese verzi z package.json, ne opsanou z minula', async () => {
-  const { verzeVDatechStranky } = await import('../scripts/build-site.mjs');
-  assert.equal(
-    verzeVDatechStranky('x "softwareVersion":"0.1.0" y', '9.8.7'),
-    'x "softwareVersion":"9.8.7" y',
-  );
-  assert.throws(() => verzeVDatechStranky('<html></html>', '1.0.0'), /softwareVersion/, 'bez pole se nesmí mlčky vrátit stará verze');
-  const fsp = await import('node:fs/promises');
-  const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  // Test the actual site output without forcing an unrelated font download.
-  // Production CLI still downloads and verifies the official Satoshi font.
-  const { buildSite } = await import('../scripts/build-site.mjs');
-  await buildSite();
-  const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
-  assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
+// marketing SEO must not advertise a development/draft version as the public app.
+// The website downloads GitHub Stable Latest, which may lag package.json and
+// an unpublished Preview draft by multiple releases. softwareVersion is optional.
+test('web JSON-LD never mislabels an unpublished package.json version as publicly available', async () => {
+  const out = await tempDir('web-seo-versions-');
+  await buildSite({ out });
+  const packageJson = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8'));
+  assert.match(packageJson.version, /^\d+\.\d+\.\d+$/);
+  for (const locale of JAZYKY) {
+    const html = await fs.readFile(path.join(out, locale.soubor), 'utf8');
+    const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    assert.ok(match, locale.kod + ': JSON-LD must be present');
+    const data = JSON.parse(match[1]);
+    const software = data['@graph'].find(node => node['@type'] === 'SoftwareApplication');
+    assert.ok(software, locale.kod + ': SoftwareApplication must remain in schema');
+    assert.equal(software.name, 'Agenteeq');
+    assert.match(software.operatingSystem, /macOS/);
+    assert.equal(software.isAccessibleForFree, true);
+    assert.equal(Object.hasOwn(software, 'softwareVersion'), false,
+      'unpublished source version must not be represented as publicly downloadable');
+    assert.doesNotMatch(html, /"softwareVersion":/);
+    assert.match(html, /https:\/\/github\.com\/martin-pok\/agentree\/releases\/latest\/download\//,
+      'download CTA must remain anchored to the real published Stable');
+  }
 });
 
 // Na webu nesmí nic běžet donekonečna: návštěvník stránku čte, nedívá se na smyčku.

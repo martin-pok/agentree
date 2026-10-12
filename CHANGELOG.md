@@ -6,6 +6,12 @@
 - **Testy:** kontrola škodlivé adresy, neplatného formátu, příliš dlouhé URL a priority validního primárního obrázku. Bez odesílání údajů mimo Google obrázkovou CDN.
 - **Ověření:** jde o automaticky testovanou opravu metadat; skutečné zobrazení Google fotky v macOS UI stále vyžaduje UAT a není touto změnou prohlášeno za hotové.
 
+## Rozpracováno po 0.46.7 · pravdivá verze na veřejném webu (nevydáno)
+
+- **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
+- **Stejná pravidla CZ/EN:** obě jazykové varianty zachovávají validní strukturovaná data i odkaz ke skutečně zveřejněnému Stable a odstraňují neověřené `softwareVersion`.
+- **Regresní testy:** sestaví skutečný web, parsují JSON-LD v obou jazycích a kontrolují existující odkazy GitHubu. Bez placených služeb, bez změny release tagů.
+
 ## Rozpracováno po 0.46.7 · živý stav po opětovném připojení (nevydáno)
 
 - **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
