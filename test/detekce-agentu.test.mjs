@@ -482,7 +482,7 @@ test('ztracená událost strážce: první projects/ se aktivuje bez pětisekund
   let rootCanWatch = false;
   let closedGuards = 0;
   const silentWatch = (dir, _options, _callback) => {
-    if (dir === root && !rootCanWatch) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    if (dir !== parent && (dir !== root || !rootCanWatch)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
     return {
       on() { return this; },
       unref() {},
