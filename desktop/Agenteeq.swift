@@ -175,23 +175,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
 
-    // Stejná geometrie hlavy jako public/brand/agenteeq-mark.svg bez tmavé dlaždice.
-    // Šablonu macOS obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
+    // Exact proportions of the Dock master (78:53 head, 8:16 capsule eyes).
+    // Draw the silhouette transparently at 18pt; never redesign it for menu size.
     static func robotIkonaListy() -> NSImage {
         let ikona = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
-            let s: CGFloat = 18.0 / 48.0
+            let s: CGFloat = 18.0 / 108.0
             NSColor.black.setFill()
             NSColor.black.setStroke()
             let antena = NSBezierPath()
-            antena.lineWidth = 3 * s
+            antena.lineWidth = 5 * s
             antena.lineCapStyle = .round
-            antena.move(to: NSPoint(x: 24 * s, y: 9 * s))
-            antena.line(to: NSPoint(x: 24 * s, y: 17 * s))
+            antena.move(to: NSPoint(x: 54 * s, y: 25 * s))
+            antena.line(to: NSPoint(x: 54 * s, y: 34 * s))
             antena.stroke()
-            NSBezierPath(ovalIn: NSRect(x: 21.2 * s, y: 6.2 * s, width: 5.6 * s, height: 5.6 * s)).fill()
-            let hlava = NSBezierPath(roundedRect: NSRect(x: 9 * s, y: 16.5 * s, width: 30 * s, height: 24 * s), xRadius: 9.5 * s, yRadius: 9.5 * s)
-            for x in [17, 27] as [CGFloat] {
-                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 24 * s, width: 4 * s, height: 8 * s), xRadius: 2 * s, yRadius: 2 * s))
+            NSBezierPath(ovalIn: NSRect(x: 50 * s, y: 18 * s, width: 8 * s, height: 8 * s)).fill()
+            let hlava = NSBezierPath(roundedRect: NSRect(x: 15 * s, y: 34 * s, width: 78 * s, height: 53 * s),
+                                    xRadius: 20 * s, yRadius: 20 * s)
+            for x in [36, 64] as [CGFloat] {
+                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 52 * s, width: 8 * s, height: 16 * s),
+                                          xRadius: 4 * s, yRadius: 4 * s))
             }
             hlava.windingRule = .evenOdd
             hlava.fill()

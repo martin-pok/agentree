@@ -23,7 +23,15 @@ const ZAPIS = {
     'start-preview-build': 'spustit zkontrolované release.yml přes workflow_dispatch',
     'publish-preview': 'publikovat jen ověřený v0.46.1 prerelease s úplnými přílohami',
   },
-};
+  'release-0462-preview.yml': {
+    'start-preview-build': 'spustit konkrétní zelený v0.46.2 build',
+    'publish-preview': 'po dokončení release buildu zveřejnit pouze ověřený preview',
+  },
+
+  'release-0463-preview.yml': {
+    'start-preview-build': 'spustit ověřený v0.46.3 build po zeleném main CI',
+    'publish-preview': 'zveřejnit jen shodný tag a úplnou ověřenou binárku jako prerelease',
+  },};
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
 const blok = (yml, klic) => yml.match(new RegExp(`^${klic}:[^\\n]*\\n(?: +[^\\n]*\\n)*`, 'm'));
@@ -115,4 +123,95 @@ test('workflowy: vydání zůstává konceptem a souběžné běhy pro týž tag
     for (const k of sTajemstvim) assert.match(k, /run: npm run build:(?:mac|dmg)/, `release.yml → ${jmeno}: tajemství mimo krok sestavení`);
   }
   assert.doesNotMatch(vydani.slice(0, vydani.search(/^jobs:/m)), /secrets\./, 'tajemství nepatří do env celého workflow');
+});
+
+test('0.46.1 preview resumes failed builds without republishing existing releases', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0461-preview.yml')?.yml;
+  assert.ok(preview, 'preview workflow must exist');
+  const start = ulohy(preview)['start-preview-build'];
+  assert.ok(start, 'preview build job must exist');
+  assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO" --json isDraft,assets/,
+    'inspect both release draft status and assets before deciding to skip');
+  assert.match(start, /agenteeq-extension-0\.46\.1\.zip/,
+    'extension artifact is mandatory for a complete draft');
+  assert.match(start, /Draft is complete; independent publish-preview job checks release gates/,
+    'complete draft should use the main-CI publication path, not repeat an expensive build');
+  assert.doesNotMatch(start, /Existing complete draft may have missed publication; resuming gated release workflow/,
+    'complete draft must not enter repeated release-build dispatches');
+  assert.match(start, /Release draft missing assets; retrying the artifact build/,
+    'incomplete draft must be recoverable');
+  assert.match(start, /gh release view v0\.46\.1 --repo "\$REPO"/,
+    'check for an existing draft or published release before dispatch');
+  assert.match(start, /gh api "repos\/\$REPO\/git\/ref\/tags\/v0\.46\.1"/,
+    'detect an existing tag without suppressing recovery');
+  assert.doesNotMatch(start, /Release tag already exists; no duplicate build/,
+    'tag existence alone must not block a retry after build failure');
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.1/,
+    'resume through the existing gated release workflow');
+});
+
+test('0.46.1 preview can publish an already completed draft after green main CI', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0461-preview.yml')?.yml;
+  assert.ok(preview, 'missing preview workflow');
+  const publish = ulohy(preview)['publish-preview'];
+  assert.ok(publish, 'publication job must exist');
+  assert.match(publish, /github\.event\.workflow_run\.name == 'Testy'/,
+    'green main CI must be an independent publication trigger');
+  assert.match(publish, /github\.event\.workflow_run\.name == 'Vydání'/,
+    'retain the direct release workflow trigger');
+  assert.match(publish, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(publish, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(publish, /MAIN_SHA.*BUILD_SHA/,
+    'CI-triggered publication must reject a stale main commit');
+  assert.match(publish, /TAG_SHA/,
+    'published assets must retain their exact release tag identity');
+  assert.match(publish, /actions\/workflows\/test\.yml\/runs\?head_sha=\$TAG_SHA/,
+    'original tag commit must already have green complete CI');
+  assert.match(publish, /\.name==\$name and \.size>100000/,
+    'all expected binary artifacts must have plausible nonzero sizes');
+  assert.match(publish, /--draft=false --prerelease --latest=false/,
+    'preview must not replace stable latest release');
+});
+
+test('0.46.2 preview only runs after successful main push CI and publishes after its own release build', () => {
+  const preview = workflowy.find((w) => w.f === 'release-0462-preview.yml')?.yml;
+  assert.ok(preview, 'missing 0.46.2 preview workflow');
+  const jobs = ulohy(preview);
+  assert.ok(jobs['start-preview-build'] && jobs['publish-preview']);
+  const start = jobs['start-preview-build'];
+  const publish = jobs['publish-preview'];
+  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
+  assert.match(start, /VERSION.*0\.46\.2/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.2/);
+  assert.match(publish, /needs: start-preview-build/);
+  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
+  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
+  assert.match(publish, /"Agenteeq-macOS-arm64.dmg"/);
+  assert.match(publish, /"agenteeq-extension-0\.46\.2.zip"/);
+  assert.match(publish, /\.size > 100000/);
+  assert.match(publish, /--draft=false --prerelease --latest=false/);
+  assert.doesNotMatch(skripty(preview).join('\n'), /--latest(?:\s|$)/, 'preview cannot be latest');
+});
+
+test('0.46.3 icon preview is pinned to exact green main SHA and never promoted to stable latest', () => {
+  const wf = workflowy.find(({ f }) => f === 'release-0463-preview.yml')?.yml;
+  assert.ok(wf, 'missing 0.46.3 preview workflow');
+  const jobs = ulohy(wf);
+  const start = jobs['start-preview-build'];
+  const publish = jobs['publish-preview'];
+  assert.ok(start && publish);
+  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
+  assert.match(start, /VERSION.*0\.46\.3/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.3/);
+  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
+  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
+  assert.match(publish, /agenteeq-extension-0\.46\.3\.zip/);
+  assert.match(publish, /\.size > 100000/);
+  assert.match(publish, /--draft=false --prerelease --latest=false/);
 });

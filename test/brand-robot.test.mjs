@@ -7,8 +7,8 @@ const read = (p) => fs.readFile(new URL('../' + p, import.meta.url), 'utf8');
 test('brand: extension and Chrome Store logo is the two-tone robot, no legacy trident', async () => {
   for (const p of ['branding/chrome-web-store/source/icon.svg', 'branding/chrome-web-store/source/icon-16.svg']) {
     const svg = await read(p);
-    assert.match(svg, /<rect x="9" y="16\.5" width="30" height="24" rx="9\.5"/, p + ': canonical robot head');
-    assert.match(svg, /<circle cx="24" cy="9" r="2\.8" fill="#FAFAFA"/, p + ': white antenna tip');
+    assert.match(svg, /width="78" height="53" rx="20"/, p + ': must match wide Dock head');
+    assert.match(svg, /<circle cx="54" cy="22" r="4"/, p + ': Dock antenna tip');
     assert.match(svg, /stroke="#FAFAFA"/, p + ': white antenna stem');
     assert.doesNotMatch(svg, /#9C8CFF|#C99A3E|M64 50V82|M8 6\.5V11\.5/, p + ': legacy accent or trident');
   }
@@ -17,8 +17,8 @@ test('brand: extension and Chrome Store logo is the two-tone robot, no legacy tr
   assert.equal(await read('extension/icons/brand.svg'), await read('public/brand/agenteeq-mark.svg'),
     'popup mark stays byte-identical to the product brand');
   const popupScript = await read('extension/popup.js');
-  assert.match(popupScript, /<rect class="hlava" x="9" y="16\.5" width="30" height="24" rx="9\.5"/,
-    'state robots in the popup use the same head proportions');
+  assert.match(popupScript, /<rect class="hlava" x="15" y="34" width="78" height="53" rx="20"/,
+    'state robots in the popup use the same Dock head proportions');
   assert.doesNotMatch(popupScript, /<rect class="hlava" x="5" y="12" width="38" height="31"/);
   for (const p of ['branding/chrome-web-store/source/promo-small.html', 'branding/chrome-web-store/source/marquee.html']) {
     const html = await read(p);
@@ -31,7 +31,8 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
   for (const p of ['public/brand/agenteeq-mark.svg', 'public/brand/agenteeq-mark-dark.svg', 'site/brand-mark-clean.svg']) {
     const svg = await read(p);
     assert.match(svg, /<path[^>]+stroke="#(?:FAFAFA|F4F3F7)"/, p + ': white antenna');
-    assert.match(svg, /<circle[^>]+fill="#(?:FAFAFA|F4F3F7)"/, p + ': white antenna tip');
+    assert.ok(svg.includes('<g transform="translate(123 109) scale(7.2)" fill="#FAFAFA">'), p + ': canonical white silhouette');
+    assert.match(svg, /<circle cx="54" cy="22" r="4"/, p + ': canonical antenna tip inherits white fill');
     assert.doesNotMatch(svg, /#(?:9C8CFF|5254D8|6260D8|C99A3E)/i, p + ': unexpected coloured logo accent');
   }
   const dockSvg = await read('public/brand/agenteeq-dock.svg');
@@ -49,15 +50,42 @@ test('brand: web and native app use white antenna and two-tone mark', async () =
 
   const mark = await read('public/brand/agenteeq-mark.svg');
   const menuIcon = await read('desktop/Agenteeq.swift');
-  assert.match(mark, /<rect x="9" y="16\.5" width="30" height="24" rx="9\.5"/);
-  assert.match(menuIcon, /NSRect\(x: 9 \* s, y: 16\.5 \* s, width: 30 \* s, height: 24 \* s\)/,
-    'menu bar robot head uses the official mark geometry');
-  assert.match(menuIcon, /NSRect\(x: x \* s, y: 24 \* s, width: 4 \* s, height: 8 \* s\)/,
-    'menu bar robot eyes use the official mark geometry');
+  assert.equal(mark, dockSvg, 'small brand asset must be identical to canonical Dock SVG');
+  assert.match(menuIcon, /NSRect\(x: 15 \* s, y: 34 \* s, width: 78 \* s, height: 53 \* s\)/,
+    'menu bar robot uses the exact Dock head, no second proportions');
+  assert.match(menuIcon, /NSRect\(x: x \* s, y: 52 \* s, width: 8 \* s, height: 16 \* s\)/,
+    'menu bar robot uses the exact Dock eye geometry');
   assert.doesNotMatch(menuIcon, /NSRect\(x: 5 \* s, y: 12 \* s, width: 38 \* s/,
     'the oversized alternate robot head must not return');
 });
 
+
+
+test('brand: every small icon is a proportional scale, never an alternate head', async () => {
+  const master = await read('public/brand/agenteeq-dock.svg');
+  for (const p of ['public/brand/agenteeq-mark.svg', 'public/brand/agenteeq-mark-dark.svg', 'extension/icons/brand.svg']) {
+    assert.equal(await read(p), master, p + ' must reuse master byte-for-byte');
+  }
+  for (const [file, width] of [
+    ['branding/chrome-web-store/source/icon.svg', 128],
+    ['branding/chrome-web-store/source/icon-16.svg', 16],
+  ]) {
+    const svg = await read(file);
+    assert.equal(svg.replace(`<svg width="${width}" height="${width}" xmlns=`, '<svg xmlns='), master,
+      file + ' may change only output dimensions, never icon geometry');
+  }
+  const native = await read('desktop/Agenteeq.swift');
+  assert.match(native, /let s: CGFloat = 18\.0 \/ 108\.0/);
+  assert.match(native, /roundedRect: NSRect\(x: 15 \* s, y: 34 \* s, width: 78 \* s, height: 53 \* s\)/);
+  const popup = await read('extension/popup.js');
+  assert.match(popup, /<svg viewBox="0 0 108 108"/);
+  assert.match(popup, /<rect class="hlava" x="15" y="34" width="78" height="53" rx="20"/);
+  const avatars = await read('public/js/avatars.js');
+  assert.match(avatars, /<rect x="15" y="34" width="78" height="53" rx="20"/);
+  for(const p of ['public/brand/agenteeq-mark.svg', 'extension/icons/brand.svg', 'branding/chrome-web-store/source/icon-16.svg']) {
+    assert.doesNotMatch(await read(p), /width="30" height="24" rx="9\.5"/, 'old narrow robot must not return');
+  }
+});
 
 test('brand: store icon and installed extension icon are byte-identical', async () => {
   const extensionIcon = await fs.readFile(new URL('../extension/icons/icon-128.png', import.meta.url));
