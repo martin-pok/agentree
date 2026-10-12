@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.6 – 2026-10-12 · srozumitelná rozhodnutí agentů
+
+- **Viditelná žádost o povolení:** stav „možná čeká na tvé povolení“ se zobrazí v Přehledu, seznamu agentů, detailu i projektu, pokud ho model odvodí. Není vydáván za potvrzenou interakci bez příslušných hooků.
+- **Správná cesta ke konverzaci:** konverzace Claude Code nebo Codexu spuštěné z příkazového řádku odkazují primárně na Terminál; u stále běžící konverzace se nevytváří duplicitní nové pokračování.
+- **Otázky v přepisu:** AskUserQuestion může ukázat přesné znění otázky a nabízené možnosti; nabídka je informační, vlastní odpověď probíhá v konverzaci.
+- **Pomocník a živý stav:** „Co na mě čeká?“ bere dostupný stav agentů, místo hledání v historických konverzacích; chybějící načtení ani neověřené živé spojení se neprezentuje jako jistota.
+- **Ověřování:** automatizované testy pokrývají chování konektorů, UI, přepis a odkazy. Otevření reálné konverzace a potvrzení dialogu na uživatelském Macu vyžaduje samostatné UAT.
+
 ## 0.46.5 – 2026-10-12 · volitelné aktualizace Preview
 
 - **Stable / Preview:** v Nastavení lze zapnout testovací aktualizační kanál. Výchozí zůstává Stable. Režimy ručního a automatického stahování se nemění a instalace stále vyžaduje potvrzení.
