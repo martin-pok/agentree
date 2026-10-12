@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { UpdateService, assetName, compareVersions, parseVersion, RELEASE_URL } from '../src/updates.js';
+import { UpdateService, assetName, compareVersions, parseVersion, RELEASE_URL, PREVIEW_RELEASES_URL } from '../src/updates.js';
 import { api, startTestServer, tempDir } from './helpers.mjs';
 
 // Otisk, který GitHub u přílohy vydání zveřejňuje (pole `digest`), pro obsah atrapy 'zip!'.
@@ -18,6 +18,7 @@ const release = (version = '0.30.0', digest = OTISK) => ({
 function fetchForUpdate(payload = release()) {
   return async (url) => {
     if (url === RELEASE_URL) return new Response(JSON.stringify(payload), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify([payload]), { status: 200, headers: { 'content-type': 'application/json' } });
     if (String(url).startsWith('https://github.com/martin-pok/agentree/releases/download/')) return new Response(Buffer.from('zip!'), { status: 200, headers: { 'content-length': '4' } });
     throw new Error(`Nečekaná URL ${url}`);
   };
@@ -114,6 +115,9 @@ test('HTTP aktualizace: lokální UI ověří, stáhne a ve zkušebním režimu 
     assert.equal(remote.updates.downloaded, null);
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'automatic' })).body.settings.updateMode, 'automatic');
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'surprise' })).status, 422);
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'preview' })).body.settings.updateChannel, 'preview');
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'unknown' })).status, 422);
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'stable' })).body.settings.updateChannel, 'stable');
   } finally { await s.close(); }
 });
 
@@ -222,4 +226,76 @@ test('aktualizace: neuloží balíček, pokud server uvede neplatný Content-Len
   assert.equal((await service.download()).status, 502);
   assert.equal(service.state().status, 'available');
   await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')));
+});
+
+
+test('Preview channel is opt-in, chooses highest published semver and never a draft', async () => {
+  const releases = [
+    { ...release('0.46.2'), prerelease: true },
+    { ...release('0.46.4'), prerelease: true },
+    { ...release('0.46.3'), prerelease: true },
+    { ...release('0.46.5'), draft: true, prerelease: true },
+    { ...release('0.46.1'), prerelease: false },
+    { ...release('0.99.0'), tag_name: 'not-a-release', prerelease: true },
+  ];
+  const seen = [];
+  const fetchImpl = async (url) => {
+    seen.push(url);
+    if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify(releases), { status: 200 });
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+    throw new Error('Unexpected URL ' + url);
+  };
+  const service = new UpdateService({ version: '0.46.1', channel: 'preview',
+    dataDir: await tempDir('preview-channel-'), fetchImpl, platform: 'darwin', arch: 'arm64' });
+  const preview = await service.check();
+  assert.equal(preview.channel, 'preview');
+  assert.equal(preview.status, 'available');
+  assert.equal(preview.latestVersion, '0.46.4');
+  assert.equal(preview.asset.name, 'Agenteeq-0.46.4-macOS-arm64.zip');
+  assert.deepEqual(seen, [PREVIEW_RELEASES_URL]);
+  const stable = await service.check('stable');
+  assert.equal(stable.channel, 'stable');
+  assert.equal(stable.status, 'current');
+  assert.equal(stable.asset, null, 'changing channel removes any Preview download offer');
+  assert.deepEqual(seen, [PREVIEW_RELEASES_URL, RELEASE_URL]);
+});
+
+test('Preview channel rejects missing digest and mismatched release asset links', async () => {
+  const original = release('0.46.4');
+  for (const asset of [
+    { ...original.assets[0], digest: null },
+    { ...original.assets[0], browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.3/Agenteeq-0.46.4-macOS-arm64.zip' },
+    { ...original.assets[0], browser_download_url: 'https://evil.example/Agenteeq-0.46.4-macOS-arm64.zip' },
+  ]) {
+    const service = new UpdateService({ version: '0.46.3', channel: 'preview',
+      dataDir: await tempDir('preview-invalid-'), platform: 'darwin', arch: 'arm64',
+      fetchImpl: async () => new Response(JSON.stringify([{ ...original, prerelease: true, assets: [asset] }]), { status: 200 }) });
+    const result = await service.check();
+    assert.equal(result.status, 'unsupported');
+    assert.equal(result.asset, null);
+  }
+});
+
+test('late Preview response cannot replace Stable after channel switch', async () => {
+  let resolvePreview;
+  const oldResponse = new Promise((resolve) => { resolvePreview = resolve; });
+  const service = new UpdateService({ version: '0.46.1', channel: 'preview',
+    dataDir: await tempDir('preview-race-'), platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => url === PREVIEW_RELEASES_URL ? oldResponse : new Response(JSON.stringify(release('0.46.0')), { status: 200 }) });
+  const first = service.check();
+  const stable = await service.check('stable');
+  assert.equal(stable.channel, 'stable');
+  assert.equal(stable.status, 'current');
+  resolvePreview(new Response(JSON.stringify([{ ...release('0.46.4'), prerelease: true }]), { status: 200 }));
+  await first;
+  assert.equal(service.state().channel, 'stable');
+  assert.equal(service.state().status, 'current');
+  assert.equal(service.state().asset, null);
+});
+
+test('Preview channel rejects invalid constructor and check arguments', async () => {
+  assert.throws(() => new UpdateService({ version: '0.46.1', channel: 'unknown' }), /Invalid update channel/);
+  const service = new UpdateService({ version: '0.46.1', channel: 'stable',
+    dataDir: await tempDir('stable-invalid-'), fetchImpl: fetchForUpdate() });
+  await assert.rejects(service.check('unknown'), /Invalid update channel/);
 });
