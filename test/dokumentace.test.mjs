@@ -107,7 +107,7 @@ test('publish Preview stays prerelease and never overwrites stable Latest', asyn
 test('roadmap current sprint must not refer to an obsolete release', async () => {
   const doc = await zdroj('docs/ROADMAP.md');
   const current = doc.slice(doc.indexOf('## Právě teď'), doc.indexOf('## Backlog'));
-  assert.match(current, /0\\.46\\.7 Preview/, 'active plan must mention the upcoming version');
-  assert.doesNotMatch(current, /Zdrojová verze 0\\.46\\.1|Vydání 0\\.46\\.1 bez nesouladu/, 'historical releases are not current work');
+  assert.match(current, /0\.46\.7 Preview/, 'active plan must mention the upcoming version');
+  assert.doesNotMatch(current, /Zdrojová verze 0\.46\.1|Vydání 0\.46\.1 bez nesouladu/, 'historical releases are not current work');
   assert.match(current, /UAT/, 'device acceptance must remain an explicit gate');
 });
