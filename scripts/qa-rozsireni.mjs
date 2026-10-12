@@ -22,7 +22,7 @@ function atrapa({ stav, ted }) {
       local: { get: async (k) => Object.fromEntries((Array.isArray(k) ? k : [k]).map((x) => [x, data[x]])), set: async (o) => Object.assign(data, o) },
       session: { get: async () => ({ otevrene }), set: async () => {} },
     },
-    runtime: { getManifest: () => ({ version: '0.0.0' }), sendMessage: async () => ({ paired: sparovano, status: { expectedVersion: stav === 'spárováno' ? '0.0.1' : '0.0.0' } }) },
+    runtime: { getManifest: () => ({ version: '0.0.0' }), sendMessage: async () => ({ paired: sparovano, online: sparovano, status: { expectedVersion: stav === 'spárováno' ? '0.0.1' : '0.0.0' } }) },
     tabs: { query: async () => [{ id: 1 }], sendMessage: async () => (sparovano ? diagnostika : null), update: async () => {} },
   };
   const puvodni = window.fetch;
