@@ -60,7 +60,7 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
 - **Do rozhraní** jdou jen `stav`, `jmeno`, `email`, `foto` (otisk), `chyba`, `ceka`, `trvale` –
   nikdy tokeny. Spárovaný telefon vidí jen `stav`.
 - **Profilová fotka:** adresu bere z `user_metadata.avatar_url` (nebo `picture`), ale jen https na
-  `*.googleusercontent.com` – metadata jsou nedůvěryhodná a server na Macu nic odjinud nestáhne.
+  `*.googleusercontent.com` – metadata jsou nedůvěryhodná a server na Macu nic odjinud nestáhne. Pokud je `avatar_url` přítomná, ale neplatná nebo mimo povolenou doménu, ověří i `picture` podle stejných pravidel; neplatná primární adresa už tedy nezablokuje bezpečnou záložní fotku.
   Žádá 192 px (Retina). HTTP přesměrování se následují ručně (nejvýš tři) a každý cílový host
   se ověří **před** odesláním požadavku; z cizí domény se nikdy nic nestáhne. Přijme jen skutečný
   obrázek (JPEG, PNG, WebP podle prvních bajtů) do 300 kB, velikost hlídá už během streamování,

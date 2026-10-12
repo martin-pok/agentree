@@ -1,12 +1,6 @@
 # Testování a ověření
 
-## Aktuální rozsah testů (12. 10. 2026)
-
-| Kontrola | Stav |
-|---|---|
-| `npm test` | 1128 testů v aktuální zdrojové sadě PR #171; skutečné pass/fail určuje odpovídající CI běh. |
-
-Údaje o dřívějších bězích níže zůstávají historickým protokolem; jejich počet není současný počet testů.
+**Aktuální inventář automatických testů:** 1128 deklarovaných testů v `test/*.test.mjs` (podle volání `test()` a `t.test()`). Inventář zdrojových testů není tvrzení o počtu testů, které prošly v CI; výsledky níže jsou historické protokoly a nerozšiřují se zpětně.
 
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
@@ -607,3 +601,4 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 - Mock `procesyNevim: true` + známý pracující či selhaný agent musí zobrazit číselné údaje pravdivě, ale i samostatné upozornění na neúplné zjišťování; tón nesmí být zelený.
 - Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu. Nová pole jsou jen boolean bez přepisů nebo cest.
 - Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.
+
