@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · rychlejší a úspornější aktualizace (nevydáno)
+
+- **Jeden skutečný download:** souběžné kliknutí na stažení stejného balíčku využije jediný HTTP přenos a jeden bezpečně ověřený archiv místo zbytečného vícenásobného stahování.
+- **Oddělené generace:** při přepnutí Stable / Preview či změně SHA-256 se starý požadavek nepřipojí k novému; nové vydání má vlastní stahování.
+- **Obnova po chybě:** přerušený společný přenos uvolní stav pro opakování a na disku nenechá neúplný balíček. Tři regresní testy ověřují deduplikaci, výměnu otisku a retry.
+- Změna vzniká po tagu v0.46.7; existující neveřejný draft a instalátory tím nejsou změněné.
+
 ## Rozpracováno po 0.46.7 · otevření existujícího agenta z Chrome extension (nevydáno)
 
 - **Přechod do nativní aplikace:** kliknutí na již zobrazeného lokálního agenta nově prochází pouze ověřeným tokenem rozšíření a přepne existující macOS okno. Neslibuje otevření localhostu v nové kartě Chromu, kde chyběla autorizace.
