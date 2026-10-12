@@ -61,8 +61,10 @@ Agenteeq (Mac)                       prohlížeč                  Supabase Auth
   nikdy tokeny. Spárovaný telefon vidí jen `stav`.
 - **Profilová fotka:** adresu bere z `user_metadata.avatar_url` (nebo `picture`), ale jen https na
   `*.googleusercontent.com` – metadata jsou nedůvěryhodná a server na Macu nic odjinud nestáhne.
-  Žádá 192 px (Retina). Přijme jen skutečný obrázek (JPEG, PNG, WebP podle prvních bajtů) do
-  300 kB a uloží ho do složky dat (`ucet-foto`, práva 0600). Rozhraní ho čte z `/api/ucet/foto`
+  Žádá 192 px (Retina). HTTP přesměrování se následují ručně (nejvýš tři) a každý cílový host
+  se ověří **před** odesláním požadavku; z cizí domény se nikdy nic nestáhne. Přijme jen skutečný
+  obrázek (JPEG, PNG, WebP podle prvních bajtů) do 300 kB, velikost hlídá už během streamování,
+  a uloží ho do složky dat (`ucet-foto`, práva 0600). Rozhraní ho čte z `/api/ucet/foto`
   jen z tohoto Macu. Odhlášení a smazání účtu fotku i profil z disku smažou.
 - **Profil na disku:** jméno, e-mail a adresa fotky (bez tokenů) jsou v `ucet-profil.json`, aby
   karta účtu po startu bez sítě neukazovala prázdné místo.
