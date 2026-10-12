@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS = {
   // Stahování se nikdy nezapíná samo. Po výslovném přepnutí na automatické režim stáhne pouze
   // přesně ověřený balíček z oficiálního GitHub releasu; instalaci pořád potvrzuje uživatel ve Finderu.
   updateMode: 'manual',
+  // Opt-in only: stable GitHub Latest remains the default, previews never auto-enable.
+  updateChannel: 'stable',
   notifications: {
     needsInput: true,
     limits: true,
@@ -196,6 +198,7 @@ function normalizeDataInner(raw) {
       look: s.look === 'koncert' ? 'koncert' : 'obloha',
       language: s.language === 'en' ? 'en' : 'cs',
       updateMode: s.updateMode === 'automatic' ? 'automatic' : 'manual',
+      updateChannel: s.updateChannel === 'preview' ? 'preview' : 'stable',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
       layout: normalizeLayout(s.layout),
       // Pomocník: plovoucí tlačítko s chatem a volitelné formulování odpovědí lokálním modelem (Ollama).
