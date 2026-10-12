@@ -662,7 +662,7 @@ function hlavicka() {
     : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
   // Keep actionable failure/approval at the front and independently disclose
   // missing process visibility. Never repeat the same unknown message twice.
-  const upozorneniProcesy = nejisteProcesy && prehled?.zdravi?.stav !== 'nevim'
+  const upozorneniProcesy = nejisteProcesy && (failed || prehled?.zdravi?.stav !== 'nevim')
     ? tr('Nepodařilo se zjistit, co na počítači běží') : '';
   const sub = [failed ? selhalo : zakladniPopis, upozorneniProcesy].filter(Boolean).join(' · ');
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
