@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.6 – 2026-10-12 · srozumitelná rozhodnutí agentů
+
+- **Viditelná žádost o povolení:** stav „možná čeká na tvé povolení“ se zobrazí v Přehledu, seznamu agentů, detailu i projektu, pokud ho model odvodí. Není vydáván za potvrzenou interakci bez příslušných hooků.
+- **Správná cesta ke konverzaci:** konverzace Claude Code nebo Codexu spuštěné z příkazového řádku odkazují primárně na Terminál; u stále běžící konverzace se nevytváří duplicitní nové pokračování.
+- **Otázky v přepisu:** AskUserQuestion může ukázat přesné znění otázky a nabízené možnosti; nabídka je informační, vlastní odpověď probíhá v konverzaci.
+- **Pomocník a živý stav:** „Co na mě čeká?“ bere dostupný stav agentů, místo hledání v historických konverzacích; chybějící načtení ani neověřené živé spojení se neprezentuje jako jistota.
+- **Ověřování:** automatizované testy pokrývají chování konektorů, UI, přepis a odkazy. Otevření reálné konverzace a potvrzení dialogu na uživatelském Macu vyžaduje samostatné UAT.
+
 ## 0.46.5 – 2026-10-12 · volitelné aktualizace Preview
 
 - **Stable / Preview:** v Nastavení lze zapnout testovací aktualizační kanál. Výchozí zůstává Stable. Režimy ručního a automatického stahování se nemění a instalace stále vyžaduje potvrzení.
@@ -48,10 +56,6 @@ Automatizované regresní testy kontrolují autorizaci, běh dialogů, zrušení
 
 
 - **Přesnější přiřazení konverzací ke správnému profilu Claude Code (ve vývoji).** Když je identita konkrétního CLI profilu ověřená a přepis patří jednoznačně tomuto profilu, Agenteeq ji přiřadí ke konverzaci a aktualizuje její živý souhrn. Neznámé a kolidující profily se nepřiřazují odhadem. Ostatní poskytovatelé a kompletní per-account limity zatím zůstávají nedokončené.
-- **„Možná čeká na tvé povolení“ je vidět všude, kde je stav agenta.** Agenteeq tu domněnku u Claude Code bez hooků počítal, ale řádek na Agentech, pruh v detailu, karta v Právě teď ani řádek v projektu ji neukázaly – agent vypadal, že jen pracuje. Všechna místa teď berou větu o stavu z jednoho pomocníka (`vetaStavu`), který u práce ukáže důvod z modelu, když řekne víc než samotná činnost.
-- **Hlavní tlačítko u konverzace z Terminálu vede do Terminálu.** U Claude Code a Codexu spuštěných z příkazové řádky je teď první (tmavé) tlačítko „Pokračovat v Terminálu“ – tam otázka opravdu čeká. „Otevřít Claude“ jen spustilo Claude.app, která konverzace z příkazové řádky neukazuje; zůstává jako vedlejší volba. Když v Terminálu konverzace pořád běží (podle výpisu procesů), tlačítko je „Přepnout do Terminálu“ a jen ho přenese do popředí – nový `--resume` by konverzaci rozdvojil. Konverzace z Claude Desktop a z aplikace Codex se dál otevírají hlavně v aplikaci.
-- **Otázka agenta v přepisu i s nabízenými možnostmi.** Místo jména nástroje „AskUserQuestion“ stojí „Ptá se tě“, pod tím celé znění otázky a možnosti, které agent nabízí (třeba Ano / Ne).
-- **Pomocník odpoví na „co na mě čeká?“ ze živého stavu.** Vyjmenuje agenty, kteří potřebují tvé rozhodnutí, i ty, kteří selhali nebo narazili na limit, s odkazem na každého – nebo věcně řekne, že nic nečeká. Dřív otázku hledal ve starých přepisech a odpověděl „Nic se nenašlo“, i když agenti čekali. Odpovídá lokálně a bez modelu; dokud se stav nenačte, nic netvrdí.
 
 ## Nevydáno
 

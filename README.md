@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **Stav vydání (12. 10. 2026):** veřejná testovací verze **0.46.5** ([**Preview release**](https://github.com/martin-pok/agentree/releases/tag/v0.46.5)) byla publikována s Mac/Windows balíčky, Chrome extension a `SHA256SUMS.txt` po úspěšném hlavním CI 8/8. Obsahuje **volitelný kanál aktualizací Preview** v Nastavení; výchozí zůstává Stable. Poslední stabilní vydání **v0.46.0** je nadále `Latest`. Skutečný upgrade a přihlášení na uživatelském Macu vyžadují manuální UAT. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md).
+> **Stav vydání (12. 10. 2026):** připravovaná verze **0.46.6** (Preview) přidává pravdivé stavy rozhodování agentů a návrat do správné terminálové konverzace; **0.46.6 dosud není vydaná**. Poslední veřejná testovací verze **0.46.5** ([**Preview release**](https://github.com/martin-pok/agentree/releases/tag/v0.46.5)) byla publikována s Mac/Windows balíčky, Chrome extension a `SHA256SUMS.txt` po úspěšném hlavním CI 8/8. Obsahuje **volitelný kanál aktualizací Preview** v Nastavení; výchozí zůstává Stable. Poslední stabilní vydání **v0.46.0** je nadále `Latest`. Skutečný upgrade a přihlášení na uživatelském Macu vyžadují manuální UAT. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md).
 >
 > **Desktop:** aplikace pro macOS (Apple Silicon). Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
@@ -55,7 +55,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 977 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
+npm test          # 1086 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
