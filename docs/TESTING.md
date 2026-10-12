@@ -1,5 +1,7 @@
 # Testování a ověření
 
+**Aktuální inventář automatických testů:** 1126 deklarovaných testů v `test/*.test.mjs` (podle volání `test()` a `t.test()`). Jde o inventář zdrojových testů, ne o tvrzení, kolik testů aktuálně prošlo v CI. Níže uvedené výsledky jsou historické protokoly k uvedeným datům a nemají se zpětně přepisovat.
+
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
 | Kontrola | Výsledek |
