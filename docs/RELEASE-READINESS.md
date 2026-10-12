@@ -1,6 +1,6 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 11. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní vydání prošlo.
+**Aktualizováno 12. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní vydání prošlo.
 
 ## Zdroj pravdy
 
