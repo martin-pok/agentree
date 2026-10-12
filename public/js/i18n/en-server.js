@@ -3,6 +3,7 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.": "The downloaded update package has changed or disappeared. Download the update again.",
   "Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.": "First open the native Agenteeq app on this computer.",
   "Neplatný agent.": "Invalid agent.",
   "Agent už není v aktuálním přehledu. Obnov seznam.": "This agent is no longer in the current overview. Refresh the list.",
