@@ -18,6 +18,11 @@ await fs.mkdir(binary, { recursive: true });
 await fs.mkdir(path.join(resources, 'app'), { recursive: true });
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' });
 for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) await fs.cp(path.join(root, dir), path.join(resources, 'app', dir), { recursive: true });
+// The old checked-in icon and PNG preview use different proportions from the
+// reviewed Dock master. Runtime must ship ONLY the newly generated .icns below.
+for (const stale of ['Agenteeq.icns', 'Agenteeq-icon.png']) {
+  await fs.rm(path.join(resources, 'app', 'desktop', stale), { force: true });
+}
 // Zákazník dostane jen návod. Ostatní dokumenty jsou interní (licence a podpisový klíč, obchodní
 // strategie, QA) a do prodávaného balíčku nepatří – stejně jako v npm balíčku (package.json → files).
 await fs.mkdir(path.join(resources, 'app', 'docs'), { recursive: true });
@@ -72,11 +77,9 @@ if (notaryProfile) {
   run('spctl', ['--assess', '--type', 'execute', '--verbose=2', app]);
   notarized = true;
 }
-const iconPreview = path.join(root, 'desktop', 'Agenteeq-icon.png');
-try {
-  await fs.copyFile(iconPreview, path.join(root, 'dist/Agenteeq-icon.png'));
-} catch {
-  // The app icon remains present; the PNG preview is a convenience artifact.
-}
+// Preview is exported from the very same generated ICNS that Finder uses,
+// never copied from a stale checked-in illustration.
+run('sips', ['-s', 'format', 'png', path.join(resources, 'Agenteeq.icns'),
+  '--out', path.join(root, 'dist/Agenteeq-icon.png')]);
 await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }, null, 2));
 console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }));
