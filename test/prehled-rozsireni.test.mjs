@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prehledProRozsireni } from '../src/prehled-rozsireni.js';
+import { agentsList, state } from '../public/js/state.js';
+import { selectAgents } from '../public/js/agent-selection.js';
 
 const s = (id, status, extra = {}) => ({ id, status, title: `Agent ${id}`, app: 'Claude Code', lastAt: Number(id.replace(/\D/g, '')) || 1, reason: 'Povolit zápis?', ...extra });
 
@@ -32,6 +34,56 @@ test('rozšíření: věta o stavu má správný tvar podle počtu, stejně jako
   assert.equal(veta(...Array(3).fill('failed'), ...Array(2).fill('limited')), 'Problém má 5 agentů');
 });
 
+
+test('extension mirrors dashboard for 20 concurrent agents and does not double-count child sessions', () => {
+  const real = Array.from({ length: 20 }, (_, i) => s('live-' + (i + 1), 'working', {
+    connector: i % 2 ? 'claude-code' : 'codex',
+    lastAt: 1000 + i,
+  }));
+  const children = [
+    s('child-1', 'working', { connector: 'codex', parentId: real[0].id, lastAt: 1100 }),
+    s('child-2', 'needs_input', { connector: 'codex', parentId: real[0].id, lastAt: 1200 }),
+  ];
+  const all = [...real, ...children];
+  const before = state.sessions;
+  try {
+    state.sessions = new Map(all.map((x) => [x.id, x]));
+    const desktop = agentsList();
+    const popup = prehledProRozsireni(all);
+    assert.equal(desktop.length, 20, 'main app has exactly 20 visible agents');
+    assert.equal(popup.zdravi.pracuje, 20, 'extension has exactly the same 20');
+    assert.equal(popup.zdravi.cekaNaTebe, 0, 'hidden child must not create a phantom action');
+    assert.deepEqual(selectAgents(all).map(x => x.id).sort(), desktop.map(x => x.id).sort());
+    assert.equal(popup.rozhodnuti.length, 0);
+    assert.equal(popup.pracuji.length, 4, 'popup only renders first four, aggregate stays 20');
+  } finally {
+    state.sessions = before;
+  }
+});
+
+test('repeated scheduled task counts only latest run, without losing unrelated agents', () => {
+  const old = s('plan-old', 'needs_input', { connector: 'claude-code', taskName: 'backup', lastAt: 100 });
+  const now = s('plan-new', 'working', { connector: 'claude-code', taskName: 'backup', lastAt: 200 });
+  const otherConnector = s('codex-run', 'failed', { connector: 'codex', taskName: 'backup', lastAt: 150 });
+  const plain = s('plain-agent', 'working', { connector: 'claude-code', lastAt: 90 });
+  const all = [old, now, otherConnector, plain];
+  const p = prehledProRozsireni(all);
+  assert.deepEqual(selectAgents(all).map(s => s.id), ['plan-new', 'codex-run', 'plain-agent']);
+  assert.deepEqual([p.zdravi.pracuje, p.zdravi.cekaNaTebe, p.zdravi.selhalo], [2, 0, 1]);
+  assert.equal(p.zdravi.stav, 'problem');
+  assert.deepEqual(p.rozhodnuti.map(x => x.id), ['codex-run']);
+  assert.ok(!JSON.stringify(p).includes('plan-old'), 'obsolete run must never appear');
+});
+
+test('child is standalone when parent is absent or archived, archived sessions never count', () => {
+  const orphan = s('orphan', 'needs_input', { parentId: 'missing-id', lastAt: 400 });
+  const parent = s('parent', 'working', { archived: true, lastAt: 120 });
+  const child = s('child', 'working', { parentId: 'parent', lastAt: 130 });
+  const p = prehledProRozsireni([orphan, parent, child]);
+  assert.deepEqual([p.zdravi.pracuje, p.zdravi.cekaNaTebe], [1, 1]);
+  assert.deepEqual(p.rozhodnuti.map(x => x.id), ['orphan']);
+  assert.deepEqual(p.pracuji.map(x => x.id), ['child']);
+});
 
 test('extension reports incomplete process scan even when important agents are visible', () => {
   for (const entries of [
