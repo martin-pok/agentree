@@ -236,7 +236,7 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
         if (!res.ok) return nepovedlo(`HTTP ${res.status}`);
         // Hlavička šetří přenos; rozhodující je limit počítaný během samotného streamu.
         const sizeHeader = res.headers?.get?.('content-length');
-        if (sizeHeader && /^\\d+$/.test(sizeHeader) && Number(sizeHeader) > FOTO_MAX) return nepovedlo('size');
+        if (sizeHeader && /^\d+$/.test(sizeHeader) && Number(sizeHeader) > FOTO_MAX) return nepovedlo('size');
         let body;
         if (res.body?.getReader) {
           const reader = res.body.getReader();
