@@ -45,6 +45,10 @@ try {
                   { id: 'claude-code:c3', title: 'Testy pro přihlášení', app: 'Claude Code', reason: 'Spouští testy', at: Date.now() - 12000 },
                 ],
               } : null;
+              if (m.type === 'agenteeq:focus-agent') {
+                fixture.focusedAgent = m.id;
+                return { ok: true };
+              }
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
@@ -165,7 +169,13 @@ try {
           assert.equal(await page.locator('#agenti').isVisible(), true, 'přehled agentů je vidět');
           assert.equal(await page.locator('#rozhodnuti .agent').count(), 1);
           assert.equal(await page.locator('#pracuji .agent').count(), 2);
-          assert.match(await page.locator('#rozhodnuti .agent').getAttribute('href'), /#\/agent\/claude-code%3Aa1$/);
+          const focus = page.locator('#rozhodnuti button.agent');
+          assert.equal(await focus.count(), 1, 'native agent uses explicit button, not an unauthenticated localhost link');
+          assert.equal(await focus.getAttribute('href'), null, 'Chrome must never navigate to a 403 localhost tab');
+          await focus.click();
+          await page.waitForFunction(() => fixture.focusedAgent === 'claude-code:a1');
+          assert.equal(await page.evaluate(() => fixture.focusedAgent), 'claude-code:a1', 'native focus receives existing agent ID only');
+          assert.equal(await focus.getAttribute('aria-busy'), null, 'button always clears busy state after successful focus');
           // ChatGPT test výš vypnul, nahoře tedy zůstanou jen dva agenti z aplikace.
           assert.equal(await page.locator('#hero-num').textContent(), '2');
           const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);

@@ -557,6 +557,15 @@ export function createHttpServer(app, existingServer = null) {
       app.extensionSeen();
       return prehledProRozsireni(store.list(), { procesyNevim: app.connectors.processes?.status?.().state === 'error' });
     }, { token: true }],
+    // Explicitní kliknutí v okně spárovaného rozšíření. Chrome nikdy nedostane
+    // lokální klíč WKWebView ani přístup k přepisu: pouze požádá native shell,
+    // aby zobrazil existujícího viditelného agenta. Přes LAN/Tailscale zakázáno.
+    ['POST', /^\/api\/extension\/focus-agent$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Agenta lze otevřít jen na místním počítači.'));
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      const body = await readBody(req);
+      return unwrap(app.focusExtensionAgent(body && typeof body === 'object' ? body.id : null));
+    }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
