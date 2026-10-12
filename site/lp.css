@@ -121,6 +121,10 @@ section[id], details[id] { scroll-margin-top: 96px; }\n#obsah { scroll-margin-to
 .unit--dark .text-link:hover { color: var(--on-stage); }
 .cta-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 28px; margin-top: 8px; }
 .specs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; font-size: 14px; color: var(--mute); }
+/* Transparent release-channel choice: stable remains primary; tested previews have their own URL. */
+.preview-option { margin: 12px auto 0; max-width: 68ch; font-size: 13px; line-height: 1.6; text-align: center; color: var(--mute); }
+.preview-option .text-link { font-size: inherit; }
+.unit--dark .preview-option { color: var(--on-stage-mute); }
 .unit--dark .specs { color: var(--on-stage-mute); }
 .specs span { display: inline-flex; align-items: center; gap: 10px; }
 .specs span + span::before { content: '·'; }
