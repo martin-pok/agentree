@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.5',
+    date: '2026-10-12',
+    title: 'Volitelné aktualizace Preview',
+    items: [
+      'V Nastavení si zvolíš Stabilní nebo Preview kanál. Testovací verze zůstanou dobrovolné.',
+      'Aktualizace kontrolují skutečný GitHub release i SHA-256 staženého balíčku, ne pouze název verze.',
+      'Při přepnutí kanálu se staré nabídky zneplatní; instalaci vždy potvrdíš.',
+    ],
+    en: {
+      title: 'Opt-in Preview updates',
+      items: [
+        'Choose Stable or Preview in Settings. Experimental releases are always opt-in.',
+        'Updates verify the published GitHub release and SHA-256 checksum, not just a version number.',
+        'Changing channels clears outdated offers; you still confirm installation.',
+      ],
+    },
+  },
+  {
     version: '0.46.4',
     date: '2026-10-12',
     title: 'Jednotné nativní ikony a ověřené balíčky',
