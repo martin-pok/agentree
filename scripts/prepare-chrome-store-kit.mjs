@@ -111,6 +111,7 @@ export async function prepareChromeStoreKit({
     version: pkg.version,
     sourceCommit,
     state: 'REVIEW_REQUIRED_NOT_PUBLISHED',
+    compatibleDesktopRelease: 'NOT_VERIFIED',
     uploadFile: 'package/' + zipName,
     files,
   };
@@ -120,6 +121,7 @@ export async function prepareChromeStoreKit({
   await fs.writeFile(path.join(output, 'PUBLISHING-GATE.txt'),
     'NOT PUBLISHED. Only use after all 8/8 main CI checks are green on ' + sourceCommit + '.\n' +
     'Manually review rendered CZ/EN screenshots and icon against actual UI, then test ZIP in clean Chrome.\n' +
+    'Confirm the public or approved Preview desktop build supports every extension action; same version alone is NOT proof.\n' +
     'Require pairing, native app navigation, restart and offline QA; see issue #172 and docs/CHROME-WEB-STORE.md.\n' +
     'Upload ONLY the ZIP inside package/ to the existing Chrome Web Store item after owner approval.\n' +
     'Verify public store version and listing after Google publishes; do not confuse artifact with publication.\n');
