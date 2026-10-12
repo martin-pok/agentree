@@ -469,6 +469,57 @@ test('sledování kořene převezme novou složku hned, bez čekání na opakov�
   assert.equal(domov.strazi, '', 'domov uživatele se nehlídá ani nerekurzivně');
 });
 
+// FSEvents may coalesce/drop the rename that announces "projects/" creation.
+// A small fallback probes ONLY that exact missing folder, so the first agent
+// is found promptly even when fs.watch(parent) never invokes its callback.
+test('ztracená událost strážce: první projects/ se aktivuje bez pětisekundového fallbacku', async (t) => {
+  const { performance } = await import('node:perf_hooks');
+  const parent = path.join(await tempDir('agenteeq-ztracena-udalost-'), 'claude cfg');
+  await fs.mkdir(parent);
+  const root = path.join(parent, 'projects');
+  const events = [];
+  const trace = [];
+  let rootCanWatch = false;
+  let closedGuards = 0;
+  const silentWatch = (dir, _options, _callback) => {
+    if (dir !== parent && (dir !== root || !rootCanWatch)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    return {
+      on() { return this; },
+      unref() {},
+      close() { if (dir === parent) closedGuards++; },
+    };
+  };
+  const started = performance.now();
+  const w = watchTree(root, (file) => events.push(file), {
+    retryMs: 3_600_000, hlidatVznik: true, watch: silentWatch,
+    onTrace: (kind) => trace.push({ kind, elapsedMs: performance.now() - started }),
+  });
+  t.after(() => w.close());
+  assert.equal(w.active, false);
+  assert.equal(w.strazi, parent);
+  assert.ok(trace.some((x) => x.kind === 'guard-active'));
+
+  // No callback is emitted by silentWatch: the only way to activate is the
+  // bounded stat of the exact root, not a 5s retry or parent directory scan.
+  await fs.mkdir(root);
+  rootCanWatch = true;
+  await waitFor(() => w.active, 1700);
+  assert.ok(performance.now() - started < 2000, 'lost guard event must recover inside product 2s SLA');
+  assert.equal(w.strazi, '', 'the parent guard is removed after activation');
+  assert.ok(trace.some((x) => x.kind === 'guard-poll-found'), 'fallback actually recovered missing event');
+  assert.ok(trace.some((x) => x.kind === 'watch-active'), 'full scan follows the recovered watcher');
+  assert.deepEqual(events, [null], 'existing files are rescanned on activation');
+  assert.equal(closedGuards, 1, 'no accumulating fs.watch handles');
+
+  // The guard must not walk above a forbidden directory even if it exists.
+  const blockedRoot = path.join(parent, 'not-allowed-projects');
+  const blocked = watchTree(blockedRoot, () => events.push('not-allowed'), {
+    retryMs: 3_600_000, hlidatVznik: true, bezStrazce: [parent], watch: silentWatch,
+  });
+  t.after(() => blocked.close());
+  assert.equal(blocked.strazi, '', 'no watch of user HOME or disallowed parent');
+});
+
 // Totéž celou cestou: aplikace s nainstalovaným Claude Code bez jediné konverzace ukáže první
 // konverzaci do 2 s. Opakování sledování je 5 s po startu a plný průchod v testech 60 s, takže
 // do 2 s od startu ji může přinést jen strážce.
