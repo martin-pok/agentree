@@ -234,6 +234,8 @@ jobs:
       - name: Renderovat aktuální Chrome Web Store branding
         run: |
           node branding/chrome-web-store/render.mjs
+      - name: Zabránit tiché změně schválených ikon při renderování
+        run: git diff --exit-code -- extension/icons/icon-16.png extension/icons/icon-32.png extension/icons/icon-48.png extension/icons/icon-128.png
       - name: Vyrenderovat aktuální snímky extension pro obchod
         run: node branding/chrome-web-store/snimky.mjs
       - name: Ověřit úplnost exportů Chrome Web Store
