@@ -207,6 +207,15 @@ try {
           assert.equal(await page.locator('#prazdne-konverzace').isVisible(), false);
           const filtrVyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
           assert.ok(filtrVyska <= 600, `${engine} ${theme}: filtr nesmí zvětšit Chrome popup nad 600px (měřeno ${Math.round(filtrVyska)}px)`);
+          await page.locator('[data-filtr="pozor"]').click();
+          await page.evaluate(async () => {
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, generating: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#filtry-konverzaci').isVisible(), false, 'jeden chat nemá zbytečné filtry');
+          assert.equal(await page.locator('#konverzace li').count(), 1, 'skrytý filtr nikdy nesmí schovat poslední chat');
         }
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png`, fullPage: true });
