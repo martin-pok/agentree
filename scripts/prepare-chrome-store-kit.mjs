@@ -17,9 +17,11 @@ function pngDimensions(buffer) {
 
 // Validate the manifest from inside the ACTUAL ZIP, not merely the source folder.
 // The extension packer writes local ZIP headers with concrete lengths (no data descriptors).
-export function packagedManifest(buffer) {
+// Read one bounded ZIP entry (the packaging format is produced by build-extension.mjs).
+// Verifies the bytes inside the actual upload ZIP, not just the source icon files.
+export function packagedEntry(buffer, wanted, maxSize = 2 * 1024 * 1024) {
   let offset = 0;
-  let manifest = null;
+  let result = null;
   while (offset + 4 <= buffer.length) {
     const signature = buffer.readUInt32LE(offset);
     if (signature === 0x02014b50 || signature === 0x06054b50) break;
@@ -35,20 +37,25 @@ export function packagedManifest(buffer) {
     const end = dataStart + size;
     if (end > buffer.length) throw new Error('Truncated ZIP entry');
     const name = buffer.subarray(nameStart, nameStart + nameLength).toString('utf8');
-    if (name === 'manifest.json') {
-      if (manifest) throw new Error('Duplicate manifest.json in ZIP');
+    if (name === wanted) {
+      if (result !== null) throw new Error('Duplicate ' + wanted + ' in ZIP');
+      if (size > maxSize) throw new Error('Oversized compressed ZIP entry: ' + wanted);
       const packed = buffer.subarray(dataStart, end);
-      if (size > 1024 * 1024) throw new Error('Extension manifest too large');
       const raw = method === 0 ? packed : method === 8
-        ? zlib.inflateRawSync(packed, { maxOutputLength: 1024 * 1024 })
+        ? zlib.inflateRawSync(packed, { maxOutputLength: maxSize })
         : null;
-      if (!raw) throw new Error('Unsupported ZIP compression for manifest');
-      manifest = JSON.parse(raw.toString('utf8'));
+      if (!raw) throw new Error('Unsupported ZIP compression for ' + wanted);
+      if (raw.length > maxSize) throw new Error('Oversized ZIP entry: ' + wanted);
+      result = raw;
     }
     offset = end;
   }
-  if (!manifest) throw new Error('Extension ZIP has no manifest.json');
-  return manifest;
+  if (result === null) throw new Error('Extension ZIP has no ' + wanted);
+  return result;
+}
+
+export function packagedManifest(buffer) {
+  return JSON.parse(packagedEntry(buffer, 'manifest.json', 1024 * 1024).toString('utf8'));
 }
 
 const IMAGES = [
@@ -84,6 +91,23 @@ export async function prepareChromeStoreKit({
   }
   if (JSON.stringify(embedded) !== JSON.stringify(sourceManifest)) {
     throw new Error('Built ZIP manifest does not match current source; rebuild extension before publishing');
+  }
+
+  // The release runner packs tracked icons, but Chrome Store CI used to replace
+  // them with new Chromium-rasterized PNGs before packing. v0.46.8 produced
+  // two different ZIP digests for the same source SHA as a result.
+  // Refuse a Store upload unless ALL four packaged icon bytes are precisely the
+  // approved source assets, and the listing icon matches the actual package.
+  for (const size of [16, 32, 48, 128]) {
+    const name = 'icons/icon-' + size + '.png';
+    const approved = await fs.readFile(path.join(root, 'extension', name));
+    if (!packagedEntry(zip, name).equals(approved)) {
+      throw new Error('Packaged Chrome icon differs from approved source: ' + name);
+    }
+  }
+  const listingIcon = await fs.readFile(path.join(root, EXPORT, 'icon-128.png'));
+  if (!listingIcon.equals(packagedEntry(zip, 'icons/icon-128.png'))) {
+    throw new Error('Chrome Store listing icon differs from packaged 128px icon');
   }
 
   const entries = [{ relative: 'package/' + zipName, bytes: zip }];

@@ -1,5 +1,12 @@
 # Changelog
 
+## Nezařazeno do vydání · shodné ikony v GitHub releasu a Chrome Web Store
+
+- **Jeden binární brand:** renderování marketingových snímků už nepřepisuje schválené PNG ikony, které se používají v GitHub release ZIPu. Každou velikost stále vizuálně porovná se zdrojovým SVG a výrazný rozdíl zastaví build.
+- **Zabezpečená sada pro vydavatele:** před vytvořením upload kitu musí ZIP obsahovat všechna čtyři přesně schválená PNG a 128px ikona listingu se musí bajtově shodovat s ikonou uvnitř ZIPu.
+- **Detekované riziko:** z historického buildu 0.46.8 vznikly dva odlišné ZIPy se stejným manifestem, ale rozdílnými PNG ikonami. Nová sada pro Store se musí znovu ověřit proti oficiálnímu draftu; starý review kit se nepovažuje za totožný s releasem.
+- **Distribuční stav:** tato oprava vzniká **po tagu v0.46.8** a již vytvořený draft ani veřejný Chrome Web Store automaticky nemění.
+
 ## 0.46.8 – 2026-10-12 · rychlejší návrat k agentům a spolehlivější aktualizace
 
 **Stav: Preview kandidát.** Tato sekce popisuje kód připravovaný do verze 0.46.8, nikoli
