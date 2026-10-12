@@ -369,6 +369,7 @@ export default {
   "Aktualizace se nepodařilo zkontrolovat.": "Could not check for updates.",
   "Nová aktualizace zatím není připravená ke stažení.": "A new update is not ready to download yet.",
   "Aktualizační balíček se nepodařilo stáhnout.": "Could not download the update package.",
+  "Aktualizační balíček se nepodařilo uložit.": "Could not save the update package.",
 
   // src/http.js
   "Synchronizace je vypnutá – nic se neposlalo.": "Sync is off – nothing was sent.",
