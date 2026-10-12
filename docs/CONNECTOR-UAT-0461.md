@@ -1,6 +1,6 @@
 # Agenteeq 0.46.1 — connector and authentication acceptance
 
-**Status: automated fixes prepared on a review branch. This is NOT a real-Mac sign-off.** The baseline is the actual `src/napojeni.js`, `src/connectors/web.js`, Chrome extension adapters and `docs/ACCOUNTS.md`. CI mocks do not demonstrate that a third-party service currently lets a user sign in.
+**Status as of 12 October 2026: connector code fixes merged via PR #136 and released in v0.46.2+; v0.46.3 Preview is publicly downloadable. This is NOT a real-Mac OAuth or account-data sign-off.** The baseline is the actual `src/napojeni.js`, `src/connectors/web.js`, Chrome extension adapters and `docs/ACCOUNTS.md`. CI mocks do not demonstrate that a third-party service currently lets a user sign in.
 
 ## Two different meanings of “connected”
 
