@@ -29,7 +29,7 @@
 1. Projít nový draft `v0.46.8` a release notes proti požadavkům v issue #187. Zdroj a checksumy jsou sestavené, fyzická instalace se zatím neověřila.
 2. Na skutečném Apple Silicon Macu zkontrolovat DMG, Gatekeeper (ad-hoc podpis), správnou ikonografii, Google OAuth, avatar, upgrade a návrat do konverzace; u Windows beta a Chrome přidat skutečné smoke testy.
 3. Před publikací spustit `publish.yml` s výslovným kanálem `preview`: automatický krok znovu stáhne přílohy draftu, ověří všechny skutečné SHA-256 otisky proti `SHA256SUMS.txt` a GitHub API a odmítne nesoulad.
-4. Pouze po schválení UAT a všech kontrol zveřejnit `v0.46.7` jako Preview. Stabilní `Latest` musí nadále ukazovat na `v0.46.0` až do samostatného rozhodnutí o Stable.
+4. Pouze po schválení UAT a všech kontrol zveřejnit `v0.46.8` jako Preview. Starší `v0.46.7` draft nepřepisovat ani automaticky nepublikovat. Stabilní `Latest` musí nadále ukazovat na `v0.46.0` až do samostatného rozhodnutí o Stable.
 
 ## Co zůstává mimo automatickou garanci
 

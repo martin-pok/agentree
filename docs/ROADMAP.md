@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav k 12. 10. 2026.** Verze **0.46.7 Preview** je sestavená ze SHA `00daf73b`, prošla **8/8 CI** a GitHub pro ni vytvořil **neveřejný draft s 8 soubory** (DMG, ZIP Mac/Windows/Chrome a SHA-256). **Zatím není zveřejněná ani ručně otestovaná na Macu**; první dostupné Preview zůstává [v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6) a stabilní `Latest` je `v0.46.0`. Další brána je nezávislé stažení a ověření release příloh proti GitHub API a manifestu a fyzické UAT podle [issue #157](https://github.com/martin-pok/agentree/issues/157). 
+**Aktuální distribuční stav ověřený 12. 10. 2026:** Kandidát **v0.46.8** je sestavený ze schváleného commitu `dd32fa98879a8c34137c6bde49b50dc205202e93`, jeho CI prošlo **8/8 kontrol** a GitHub vytvořil **neveřejný draft release ID `410973749` s osmi přílohami** (Mac DMG/ZIP, Windows, Chrome a checksumy). Tag i manifest odpovídají verzi 0.46.8. **Vydání není veřejné, instalace na skutečném Macu ani Google OAuth nejsou odzkoušené**; evidence v [issue #187](https://github.com/martin-pok/agentree/issues/187). Poslední potvrzené veřejné Preview je [v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6), stabilní `Latest` je `v0.46.0`. Starší draft `v0.46.7` zůstává neveřejný a oddělený. Důležitý distribuční problém mezi ikonami původního Chrome Store kitu a GitHub release ZIPu byl opraven v [PR #190](https://github.com/martin-pok/agentree/pull/190) a oba nové buildy byly bajtově porovnány; **tato oprava nezměnila existující release tag ani skutečný veřejný Chrome Store**.
 
 **Aktuální realizační sprint:** [směr 0.46.8 — spolehlivost, kvalita tří produktů, distribuce a marketing](SPRINT-0468.md). Obsahuje P0/P1 podle rizika, konkrétní akceptační kritéria, souběžnou marketingovou přípravu a jasně odděluje úkoly bez placených služeb od podpisu/notarizace nebo placené infrastruktury. Po vytvoření draftu 0.46.7 nepřepisovat starý tag novými opravami: následné změny patří do dalšího kandidáta.
 
@@ -49,11 +49,11 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 
 **Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
 
-## Právě teď — vydání 0.46.7 Preview a skutečné UAT
+## Právě teď — vydání 0.46.8 Preview a skutečné UAT
 
 | Priorita | Výsledek | Aktuální stav (12. 10. 2026) | Hotovo, až když… |
 |---|---|---|---|
-| P0 | Bezpečný release 0.46.7 Preview | Tag míří na `00daf73b`; 8/8 CI, release build i **neveřejný draft s 8 přílohami hotový** | Nezávisle ověřené stažené přílohy; schválené živé UAT; manuální publikace pouze jako Preview |
+| P0 | Bezpečný release 0.46.8 Preview | Tag míří na `dd32fa98`; 8/8 CI, release build i **neveřejný draft s 8 přílohami hotový** (ID `410973749`) | Nezávisle ověřené všechny stažené přílohy, skutečné Mac/Chrome UAT a výslovně schválená publikace pouze jako Preview; [issue #187](https://github.com/martin-pok/agentree/issues/187) |
 | P0 | Oddělené kanály Stable / Preview | Stable Latest je `v0.46.0`, veřejný Preview je `v0.46.6`; bezpečnost publikování sloučena v PR #156 | Preview ponechá `Latest` beze změny, Stable vyžaduje samostatnou volbu i potvrzení a je pokryto testy |
 | P0 | Google OAuth a profilová fotka | Zabezpečení stahování fotky sloučeno v PR #155, nativní Google přihlášení a avatar na Macu **neověřeny** | Úspěšné i odmítnuté přihlášení, logout, offline návrat, foto, přesměrování a upgrade doložené na reálném Macu |
 | P0 | Vizuální identita v distribuované aplikaci | Binární assety pro Mac a Windows mají regresní testy, ale chybí pixelová vizuální kontrola na zařízení | Ručně porovnaný Dock, menu bar, DMG, ICO/ICNS i skutečné Chrome Store screenshoty proti schválenému masteru |
