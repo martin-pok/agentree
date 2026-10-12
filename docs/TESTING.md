@@ -602,3 +602,4 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 - Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu. Nová pole jsou jen boolean bez přepisů nebo cest.
 - Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.
 
+

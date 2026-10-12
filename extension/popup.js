@@ -483,11 +483,11 @@ async function nactiPrehled() {
 }
 
 function radekAgenta(a) {
-  const odkaz = el('a', 'agent');
-  odkaz.href = `${APLIKACE}#/agent/${encodeURIComponent(a.id)}`;
-  odkaz.target = '_blank';
-  odkaz.rel = 'noopener';
-  odkaz.dataset.ton = TON_AGENTA[a.status || 'working'] || 'work';
+  const li = el('li');
+  const tlacitko = el('button', 'agent');
+  tlacitko.type = 'button';
+  tlacitko.dataset.ton = TON_AGENTA[a.status || 'working'] || 'work';
+  tlacitko.setAttribute('aria-label', tr('Otevřít agenta {0} v aplikaci Agenteeq', a.title || a.app || tr('Agent')));
   const bot = el('span', 'bot');
   bot.innerHTML = ROBOT;
   const t = el('span', 't');
@@ -497,10 +497,31 @@ function radekAgenta(a) {
   st.append(el('span', '', sazba(popis)));
   if (a.at) st.title = ago(a.at);
   t.append(st);
-  odkaz.append(bot, t);
-  odkaz.insertAdjacentHTML('beforeend', SIPKA);
-  const li = el('li');
-  li.append(odkaz);
+  tlacitko.append(bot, t);
+  tlacitko.insertAdjacentHTML('beforeend', SIPKA);
+  const chyba = el('p', 'agent-focus-error');
+  chyba.setAttribute('role', 'status');
+  chyba.setAttribute('aria-live', 'polite');
+  chyba.hidden = true;
+  tlacitko.addEventListener('click', async () => {
+    if (tlacitko.disabled) return;
+    tlacitko.disabled = true;
+    tlacitko.setAttribute('aria-busy', 'true');
+    chyba.hidden = true;
+    let result = null;
+    try { result = await chrome.runtime.sendMessage({ type: 'agenteeq:focus-agent', id: a.id }); } catch { /* app offline */ }
+    if (!result?.ok) {
+      chyba.hidden = false;
+      chyba.textContent = result?.unpaired
+        ? tr('Rozšíření není spárované. Otevři Agenteeq a obnov připojení.')
+        : result?.unsupported
+          ? tr('Tato akce vyžaduje nativní aplikaci Agenteeq pro Mac.')
+          : tr('Agenta se nepodařilo otevřít. Ověř, že Agenteeq běží, a obnov seznam.');
+    }
+    tlacitko.disabled = false;
+    tlacitko.removeAttribute('aria-busy');
+  });
+  li.append(tlacitko, chyba);
   return li;
 }
 

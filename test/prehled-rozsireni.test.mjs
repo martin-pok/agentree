@@ -85,6 +85,7 @@ test('child is standalone when parent is absent or archived, archived sessions n
   assert.deepEqual(p.pracuji.map(x => x.id), ['child']);
 });
 
+
 test('extension reports incomplete process scan even when important agents are visible', () => {
   for (const entries of [
     [s('work1', 'working')],
