@@ -29,11 +29,14 @@ test('one-shot release dispatch verifies SHA, versions, all eight checks', async
 test('one-shot release triggers draft workflow but never publishes to Latest', async () => {
   const w = await read('.github/workflows/release-0467-boot.yml');
   assert.match(w, /TAG: v0\.46\.7/);
-  assert.match(w, /gh workflow run release\.yml --ref main -f "tag=\$TAG"/);
+  assert.match(w, /gh workflow run release\.yml --ref main -f "tag=\$TAG" -f "expected_sha=\$VERIFIED_SHA"/);
   assert.match(w, /git\/ref\/tags\/\$\{TAG\}/);
   assert.doesNotMatch(w, /gh release edit|gh release create|--draft=false|--latest(?:[ =]|$)/);
   const release = await read('.github/workflows/release.yml');
   assert.match(release, /workflow_dispatch:/);
+  assert.match(release, /expected_sha:/);
+  assert.match(release, /git rev-parse HEAD/);
+  assert.match(release, /if \[ -n "\$EXPECTED_SHA" \]/);
   assert.match(release, /gh release create "\$TAG"[\s\S]*?--draft/);
   assert.match(release, /IS_DRAFT=\$\(gh release view "\$TAG" --json isDraft --jq \.isDraft\)/);
   assert.match(release, /if \[ "\$IS_DRAFT" != "true" \]; then[\s\S]*?exit 1[\s\S]*?gh release upload/);
