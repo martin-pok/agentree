@@ -11,11 +11,11 @@ const end = src.indexOf('// Konverzace se mění', start);
 assert.ok(start >= 0 && end > start, 'popup header function located');
 const code = src.slice(start, end);
 
-function paint({ unknown, status = 'problem', working = 1 } = {}) {
+function paint({ unknown, status = 'problem', working = 1, deliveryFailed = false } = {}) {
   const sub = { dataset: {} };
   const screen = { hero: null };
   const context = {
-    seznam: { pripojeno: true, lastStatus: null, zastarala: false, off: [], konverzace: [] },
+    seznam: { pripojeno: true, lastStatus: deliveryFailed ? { ok: false } : null, zastarala: false, off: [], konverzace: [] },
     overeni: { diagnostika: null, tab: null },
     prehled: { zdravi: { stav: status, pracuje: working, cekaNaTebe: 0, selhalo: status === 'problem' ? 1 : 0, limit: 0, procesyNevim: unknown } },
     tr: s => s,
@@ -41,4 +41,14 @@ test('extension does not duplicate the unknown-process message when it is alread
   const result = paint({ unknown: true, status: 'nevim', working: 0 });
   assert.equal(result.tone, 'warn');
   assert.equal(result.sub, 'Nepodařilo se zjistit, co na počítači běží');
+});
+
+test('extension shows BOTH delivery failure and unknown process coverage without duplicating either', () => {
+  const result = paint({ unknown: true, status: 'nevim', working: 0, deliveryFailed: true });
+  assert.equal(result.tone, 'warn');
+  assert.match(result.sub, /Poslední hlášení se do Agenteeq nedostalo/);
+  assert.match(result.sub, /Nepodařilo se zjistit, co na počítači běží/);
+  assert.equal(result.sub.match(/Nepodařilo se zjistit, co na počítači běží/g)?.length, 1);
+  const known = paint({ unknown: false, status: 'nevim', working: 0, deliveryFailed: true });
+  assert.doesNotMatch(known.sub, /Nepodařilo se zjistit/);
 });
