@@ -141,6 +141,8 @@ export class UpdateService {
     this.now = now;
     this.value = empty(version, this.enabled ? 'checking' : 'disabled');
     this.inFlight = null;
+    // Identical simultaneous user actions reuse one verified network transfer.
+    this.downloadInFlight = null;
     // A channel can change A → B → A while A's original HTTP request is pending.
     // Comparing the channel string alone cannot distinguish old and new requests.
     this.requestEpoch = 0;
@@ -205,7 +207,24 @@ export class UpdateService {
     return this.state();
   }
 
-  async download() {
+  download() {
+    if (this.value.status !== 'available' || !this.value.asset) {
+      return Promise.resolve({ status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') });
+    }
+    // Repeated clicks / HTTP retries must not fetch the same 100MB package twice.
+    // Key includes the generation AND published digest: after a channel switch
+    // or metadata replacement, a new download starts independently.
+    const asset = this.value.asset;
+    const key = [this.requestEpoch, this.channel, asset.url, asset.sha256, asset.size].join('\0');
+    if (this.downloadInFlight?.key === key) return this.downloadInFlight.promise;
+    const promise = this.#download().finally(() => {
+      if (this.downloadInFlight?.promise === promise) this.downloadInFlight = null;
+    });
+    this.downloadInFlight = { key, promise };
+    return promise;
+  }
+
+  async #download() {
     if (this.value.status !== 'available' || !this.value.asset) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
     const asset = this.value.asset;
     const channel = this.channel;
