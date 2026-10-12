@@ -85,7 +85,7 @@ test('Chrome Store kit refuses a ZIP built from stale manifest or a store-keyed 
 
 test('Chrome Store kit fails closed on untracked commit, incorrect listing dimensions and malformed ZIP', async () => {
   await useFixture(async (root) => {
-    await assert.rejects(prepareChromeStoreKit({ root }), /Full 40-character/);
+    await assert.rejects(prepareChromeStoreKit({ root, sourceCommit: 'invalid' }), /Full 40-character/);
     await fs.writeFile(path.join(root, 'branding/chrome-web-store/export/en/snimek-2-1280x800.png'), png(100, 100));
     await assert.rejects(prepareChromeStoreKit({ root, sourceCommit: SHA }), /Wrong image dimensions/);
     await fs.writeFile(path.join(root, 'dist/agenteeq-extension-' + VERSION + '.zip'), Buffer.from('not a ZIP'));
