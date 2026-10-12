@@ -2,6 +2,8 @@
 
 **Stav k 12. 10. 2026.** Verze **0.46.7 Preview** je sestavená ze SHA `00daf73b`, prošla **8/8 CI** a GitHub pro ni vytvořil **neveřejný draft s 8 soubory** (DMG, ZIP Mac/Windows/Chrome a SHA-256). **Zatím není zveřejněná ani ručně otestovaná na Macu**; první dostupné Preview zůstává [v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6) a stabilní `Latest` je `v0.46.0`. Další brána je nezávislé stažení a ověření release příloh proti GitHub API a manifestu a fyzické UAT podle [issue #157](https://github.com/martin-pok/agentree/issues/157). 
 
+**Aktuální realizační sprint:** [směr 0.46.8 — spolehlivost, kvalita tří produktů, distribuce a marketing](SPRINT-0468.md). Obsahuje P0/P1 podle rizika, konkrétní akceptační kritéria, souběžnou marketingovou přípravu a jasně odděluje úkoly bez placených služeb od podpisu/notarizace nebo placené infrastruktury. Po vytvoření draftu 0.46.7 nepřepisovat starý tag novými opravami: následné změny patří do dalšího kandidáta.
+
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
 ## Rozhodnutí schválená vlastníkem — sledování implementace

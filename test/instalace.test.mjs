@@ -269,3 +269,80 @@ test('instalace: Mac s procesorem Intel dostane srozumitelnou zprávu a nic se n
   assert.equal(await p.znacka(), 'stara', 'nainstalovaná aplikace zůstala');
   assert.deepEqual(await p.obsah('kos'), []);
 });
+
+
+test('stable installer checks installed SemVer before downloading or replacing the app', async () => {
+  const script = await fs.readFile(SKRIPT, 'utf8');
+  const text = kod(script);
+  assert.match(text, /installed_newer_than_release\(\)/);
+  assert.match(text, /if installed_newer_than_release "\$installed_version" "\$version"; then/);
+  assert.match(text, /Downgrade refused/);
+  assert.match(text, /Cannot verify the installed Agenteeq version/);
+  assert.ok(text.indexOf('if installed_newer_than_release "$installed_version" "$version"; then') <
+            text.indexOf('say "Agenteeq: stahuji '),
+    'downgrade prevention must happen before downloading the release ZIP');
+});
+
+test('macOS installer refuses downgrade from newer Preview to older Stable and preserves local app', { skip: JEN_MAC }, async (t) => {
+  const p = await prostredi();
+  t.after(() => fs.rm(p.root, { recursive: true, force: true }));
+  await vydani(p.root, { verze: '0.46.0' });
+  await aplikace(path.join(p.root, 'apps'), { verze: '0.46.6', znacka: 'preview-neprepisovat' });
+  const downgrade = p.spust();
+  assert.notEqual(downgrade.status, 0, 'older Stable installer must refuse replacing newer Preview');
+  assert.match(downgrade.stderr, /Downgrade refused/);
+  assert.match(downgrade.stderr, /novější Agenteeq 0\.46\.6/);
+  assert.deepEqual(await p.log(), [API], 'must not download Stable ZIP');
+  assert.equal(await p.znacka(), 'preview-neprepisovat');
+  assert.deepEqual(await p.obsah('kos'), []);
+  assert.deepEqual(await p.obsah('apps'), ['Agenteeq.app']);
+});
+
+test('macOS installer compares multi-digit release versions numerically, not lexicographically', { skip: JEN_MAC }, async (t) => {
+  const p = await prostredi();
+  t.after(() => fs.rm(p.root, { recursive: true, force: true }));
+  await vydani(p.root, { verze: '0.46.9' });
+  await aplikace(path.join(p.root, 'apps'), { verze: '0.46.10', znacka: 'newer-multi-digit' });
+  const result = p.spust();
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Downgrade refused/);
+  assert.deepEqual(await p.log(), [API]);
+  assert.equal(await p.znacka(), 'newer-multi-digit');
+});
+
+test('macOS installer refuses replacing a local app with invalid version metadata', { skip: JEN_MAC }, async (t) => {
+  const p = await prostredi();
+  t.after(() => fs.rm(p.root, { recursive: true, force: true }));
+  await vydani(p.root, { verze: '0.46.0' });
+  await aplikace(path.join(p.root, 'apps'), { verze: 'invalid-version', znacka: 'preserve-unknown' });
+  const result = p.spust();
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Cannot verify the installed Agenteeq version/);
+  assert.deepEqual(await p.log(), [API]);
+  assert.equal(await p.znacka(), 'preserve-unknown');
+});
+
+
+test('installed vs offered Stable SemVer uses 3 numeric components without integer overflow', { skip: spawnSync('bash', ['--version']).error && 'bash not available' }, async () => {
+  const script = await fs.readFile(SKRIPT, 'utf8');
+  const begin = script.indexOf('installed_newer_than_release() {');
+  const end = script.indexOf('\n}\n', begin);
+  assert.ok(begin >= 0 && end > begin, 'install script exports a standalone numeric comparator');
+  const functionDefinition = script.slice(begin, end + 2);
+  const check = (installed, offered) => spawnSync('bash', ['-c',
+    functionDefinition + '\ninstalled_newer_than_release "$1" "$2"', '--', installed, offered], { encoding: 'utf8' });
+  for (const [installed, offered, expected] of [
+    ['0.46.6', '0.46.0', 0],
+    ['0.46.10', '0.46.9', 0],
+    ['0.46.9', '0.46.10', 1],
+    ['1.0.0', '0.99.99', 0],
+    ['0.46.0', '0.46.0', 1],
+    ['0.46.7', '1.0.0', 1],
+    ['0.99999999999999999999999999.0', '0.46.0', 0],
+    ['not-a-version', '0.46.0', 2],
+  ]) {
+    const result = check(installed, offered);
+    assert.equal(result.status, expected,
+      'SemVer ' + installed + ' vs ' + offered + ': ' + result.stderr);
+  }
+});
