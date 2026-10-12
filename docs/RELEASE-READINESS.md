@@ -4,8 +4,8 @@
 
 ## Zdroj pravdy
 
-- Aktuální pracovní kandidát v `package.json` na přípravné větvi: **0.46.6**, zatím nevydaný. Poslední zveřejněná **v0.46.5 Preview** byla ověřena přímo v GitHub Releases (`draft=false`, `prerelease=true`) včetně DMG, ZIP a SHA-256 manifestu.
-- Poslední potvrzené **zveřejněné** Preview: GitHub Releases — **v0.46.5** (12. 10. 2026), přílohy Mac/Windows/Chrome a `SHA256SUMS.txt`, hlavní CI 8/8. Stabilní Latest je stále **v0.46.0** (9. 10. 2026). Živé UAT Mac instalace a účtů nebylo provedeno.
+- Aktuální verze v `package.json` na `main` je **0.46.6**. Veřejné vydání **v0.46.6 Preview** (`draft=false`, `prerelease=true`) je ověřené přímo přes GitHub Releases API; nejde o stabilní Latest.
+- Poslední potvrzené **zveřejněné** Preview: **[v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6)** (12. 10. 2026, 11:45 UTC). Tag míří na commit `27f3d2a`, CI pro tento SHA má 8/8 úspěšných kontrol, release build prošel a osm příloh Mac/Windows/Chrome včetně `SHA256SUMS.txt` je dostupných s nenulovou velikostí a zveřejněnými SHA-256 otisky. Stabilní Latest zůstává **v0.46.0** (9. 10. 2026). Živé UAT Mac instalace, aktualizace, Google přihlášení a Windows zařízení nebylo provedeno.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
 
