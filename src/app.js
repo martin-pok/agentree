@@ -1200,6 +1200,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
     const previouslyDownloaded = Boolean(updates.downloadedPath());
+    // Persist user state before the final ZIP hash check, minimizing the gap
+    // between verification and native app replacement.
+    if (previouslyDownloaded) await datastore.flush?.();
     const target = await updates.verifiedDownloadedPath();
     if (previouslyDownloaded && !target) {
       store.emit('updates', updates.state());
@@ -1210,7 +1213,6 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
     const version = updates.state().latestVersion;
     if (!/^\d+\.\d+\.\d+$/.test(version || '')) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-    await datastore.flush?.();
     desktopReport({ type: 'install-update', zip: path.resolve(target), version });
     return { ok: true, restarting: true };
   }
