@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.7',
+    date: '2026-10-12',
+    title: 'Bezpečnější Google profilová fotografie',
+    items: [
+      'Profilová fotka se načítá pouze z ověřených serverů Googlu, i když odkaz přesměrovává.',
+      'Příliš velký obrázek se zastaví už během stahování; když se fotku nepodaří načíst, aplikace dál funguje s iniciálami.',
+    ],
+    en: {
+      title: 'Safer Google profile photos',
+      items: [
+        'Profile photos load only from verified Google servers, including when the URL redirects.',
+        'Oversized images are stopped during download. If the photo is unavailable, your account continues to work with initials.',
+      ],
+    },
+  },
+  {
     version: '0.46.6',
     date: '2026-10-12',
     title: 'Vidíš, kdy agent potřebuje rozhodnutí',
