@@ -378,13 +378,13 @@ test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vyd�
 });
 
 
-test('web: published 0.46.3 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
-  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.3/Agenteeq-0.46.3-macOS-arm64.dmg';
+test('web: published 0.46.4 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
+  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.4/Agenteeq-0.46.4-macOS-arm64.dmg';
   const destinations = [
-    ['site/index.html', 'index.html', /0\.46\.3 Preview pro Mac/],
-    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.3/],
-    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.3 Preview pro Mac/],
-    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.3/],
+    ['site/index.html', 'index.html', /0\.46\.4 Preview pro Mac/],
+    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.4/],
+    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.4 Preview pro Mac/],
+    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.4/],
   ];
   const output = await tempDir('web-preview-');
   await buildSite({ out: output });
