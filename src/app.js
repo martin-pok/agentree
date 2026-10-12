@@ -94,7 +94,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
-  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
+  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, channel: datastore.data.settings.updateChannel, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
   const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
   await historie.load();
@@ -1155,7 +1155,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function checkForUpdates() {
-    const value = await updates.check();
+    const value = await updates.check(datastore.data.settings.updateChannel === 'preview' ? 'preview' : 'stable');
     store.emit('updates', value);
     // Automatická volba znamená stažení ověřeného balíčku, nikdy tichou výměnu běžící aplikace.
     if (value.status === 'available' && datastore.data.settings.updateMode === 'automatic') {
