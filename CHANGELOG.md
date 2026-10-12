@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · ochrana instalace Stable / Preview (zatím nevydáno)
+
+- **Bez downgrade:** terminálový instalátor Stable nesmí přepsat novější Preview verzi již nainstalovanou na Macu. Prohlíží jen GitHub metadata a odmítne starší balíček ještě před jeho stažením.
+- **Poškozená či neznámá verze:** pokud nelze z existujícího bundle ověřit číslo verze, instalátor jej odmítne přepsat.
+- **Regresní testy:** scénáře Stable 0.46.0 proti Preview 0.46.6, víceciferná čísla verzí a neplatná metadata, včetně zachování původní instalace.
+- Tyto úpravy vznikají **po vytvoření draftu v0.46.7** a nejsou součástí už připraveného DMG.
+
 ## Rozpracováno po 0.46.7 · spolehlivější aktualizace (dosud není součástí žádného instalačního balíčku)
 
 - **Závody při přepínání kanálů:** staré HTTP odpovědi ani jejich chyby nemohou přepsat novější stav po přepnutí Preview → Stable → Preview.
