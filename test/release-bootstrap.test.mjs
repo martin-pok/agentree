@@ -2,36 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const read = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+const read = (p) => fs.readFile(new URL("../" + p, import.meta.url), "utf8");
+const workflowsDir = new URL("../.github/workflows/", import.meta.url);
 
-test('one-shot candidate workflow is pinned to successful main push Testy', async () => {
-  const w = await read('.github/workflows/release-0467-boot.yml');
-  assert.match(w, /workflow_run:[\s\S]*?workflows: \['Testy'\][\s\S]*?types: \[completed\][\s\S]*?branches: \[main\]/);
-  assert.match(w, /workflow_run\.conclusion == 'success'/);
-  assert.match(w, /workflow_run\.event == 'push'/);
-  assert.match(w, /workflow_run\.head_branch == 'main'/);
-  assert.match(w, /workflow_run\.head_repository\.full_name == github\.repository/);
-  assert.match(w, /cancel-in-progress: false/);
+test('completed v0.46.7 one-shot CI bootstrap does not waste Actions minutes on every main push', async () => {
+  const names = await fs.readdir(workflowsDir);
+  assert.ok(!names.includes('release-0467-boot.yml'),
+    'the version-pinned workflow_run bootstrap should be removed after the draft exists');
+  assert.ok(!names.some(n => /^release-\d+-boot\.ya?ml$/.test(n)),
+    'no stale one-shot draft creation listeners should remain active');
+  assert.ok(names.includes('test.yml'), 'full CI remains configured');
+  assert.ok(names.includes('release.yml'), 'normal manual draft build remains available');
+  assert.ok(names.includes('publish.yml'), 'explicit human-controlled publish workflow remains');
 });
 
-test('one-shot release dispatch verifies SHA, versions, all eight checks', async () => {
-  const w = await read('.github/workflows/release-0467-boot.yml');
-  assert.match(w, /CURRENT_SHA=\$\(git rev-parse HEAD\)/);
-  assert.match(w, /test "\$CURRENT_SHA" = "\$VERIFIED_SHA"/);
-  assert.match(w, /app !== "0\.46\.7" \|\| ext !== app/);
-  assert.match(w, /repos\/\$\{GITHUB_REPOSITORY\}\/commits\/\$\{VERIFIED_SHA\}\/check-runs/);
-  for (const name of ['ubuntu-latest', 'windows-latest', 'macos-latest', 'Web, rozšíření a kontrast', 'aplikace pro Mac', 'Chrome Web Store branding a screenshoty']) {
-    assert.ok(w.includes(name), `missing CI check ${name}`);
-  }
-  assert.match(w, /x\.status === "completed" && x\.conclusion === "success"/);
-});
-
-test('one-shot release triggers draft workflow but never publishes to Latest', async () => {
-  const w = await read('.github/workflows/release-0467-boot.yml');
-  assert.match(w, /TAG: v0\.46\.7/);
-  assert.match(w, /gh workflow run release\.yml --ref main -f "tag=\$TAG" -f "expected_sha=\$VERIFIED_SHA"/);
-  assert.match(w, /git\/ref\/tags\/\$\{TAG\}/);
-  assert.doesNotMatch(w, /gh release edit|gh release create|--draft=false|--latest(?:[ =]|$)/);
+test('manual draft build still pins the tested commit SHA and cannot alter public release assets', async () => {
   const release = await read('.github/workflows/release.yml');
   assert.match(release, /workflow_dispatch:/);
   assert.match(release, /expected_sha:/);
@@ -40,5 +25,13 @@ test('one-shot release triggers draft workflow but never publishes to Latest', a
   assert.match(release, /gh release create "\$TAG"[\s\S]*?--draft/);
   assert.match(release, /IS_DRAFT=\$\(gh release view "\$TAG" --json isDraft --jq \.isDraft\)/);
   assert.match(release, /if \[ "\$IS_DRAFT" != "true" \]; then[\s\S]*?exit 1[\s\S]*?gh release upload/);
+});
 
+test('publishing requires an explicit manual Preview/Stable choice and verifies downloaded assets', async () => {
+  const publish = await read('.github/workflows/publish.yml');
+  assert.match(publish, /workflow_dispatch:/);
+  assert.match(publish, /channel:[\s\S]*?default: preview/);
+  assert.match(publish, /confirm_stable:/);
+  assert.match(publish, /scripts\/verify-release-assets\.mjs/);
+  assert.match(publish, /--prerelease --latest=false/);
 });
