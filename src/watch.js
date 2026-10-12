@@ -11,12 +11,18 @@ import { readdirSafe, statSafe } from './util.js';
 // Strážce hlídá jen přímého rodiče (nikdy nic širšího, nikdy domov z `bezStrazce`) a reaguje jen na
 // položku se jménem sledované složky – soubory, které nástroj píše vedle, žádnou práci nevyvolají.
 // Opakování zůstává jako pojistka, kdyby strážce událost minul.
-export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, bezStrazce = [] } = {}) {
+export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, bezStrazce = [], watch = fs.watch, onTrace = null } = {}) {
   let watcher = null;
   let closed = false;
   let retry = null;
   let strazce = null;
   let strazeno = '';
+  let kontrolaVzniku = null;
+  // The guard event can be lost on busy macOS runners or when a new folder is
+  // created alongside its first JSONL. Check only the exact missing directory,
+  // never scan the parent or a user's HOME; stop immediately after activation.
+  const GUARD_POLL_MS = 250;
+  const trace = (event) => { try { onTrace?.(event); } catch { /* diagnostics cannot break watchers */ } };
   let rodicChybi = false;
   let pokusy = 0;
   const jmeno = path.basename(dir).toLowerCase();
@@ -31,6 +37,8 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
   };
 
   function konecStraze() {
+    clearInterval(kontrolaVzniku);
+    kontrolaVzniku = null;
     strazce?.close();
     strazce = null;
     strazeno = '';
@@ -42,9 +50,10 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
     if (strazce) return true;
     rodicChybi = false;
     try {
-      strazce = fs.watch(rodic, (_event, name) => {
+      strazce = watch(rodic, (_event, name) => {
         // Bez jména (systém ho nedal) se zkusí vždy; jinak jen na položku se jménem složky.
         if (name && name.toString().toLowerCase() !== jmeno) return;
+        trace('guard-event');
         arm();
       });
       strazce.on('error', () => {
@@ -53,6 +62,14 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
       });
       strazce.unref?.();
       strazeno = rodic;
+      trace('guard-active');
+      // fs.watch is the fast path (<2s). The bounded poll is a last-resort
+      // recovery if FSEvents/coalescing drops the one directory-creation event.
+      kontrolaVzniku = setInterval(() => {
+        if (closed || watcher) return;
+        if (fs.existsSync(dir)) { trace('guard-poll-found'); arm(); }
+      }, GUARD_POLL_MS);
+      kontrolaVzniku.unref?.();
       return true;
     } catch (err) {
       strazce = null;
@@ -71,7 +88,7 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
     }
     pokusy++;
     try {
-      watcher = fs.watch(dir, { recursive: true }, (_event, name) => {
+      watcher = watch(dir, { recursive: true }, (_event, name) => {
         onChange(name ? path.join(dir, name.toString()) : null);
       });
       watcher.on('error', () => {
@@ -81,6 +98,7 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
       });
       konecStraze();
       clearTimeout(retry);
+      trace('watch-active');
       // Složka mohla vzniknout mezi skenem a sledováním – ohlásit plný průchod.
       onChange(null);
     } catch {
