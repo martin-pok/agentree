@@ -356,6 +356,15 @@ function vykresliSeznam() {
   const pocetLimity = ostatniVse.filter((k) => chatMaLimit(k, null)).length
     + Number(Boolean(d && !off.includes(d.site) && chatMaLimit(tato, d)));
   const filtry = $('filtry-konverzaci');
+  // When the list shrinks to one chat, hide the toolbar AND restore "All".
+  // Otherwise a previously chosen "Limits" filter could leave the only chat
+  // invisible with no control available to reveal it again.
+  if ((pocetVse <= 1 || !prehled) && filtrKonverzaci !== 'vse') {
+    filtrKonverzaci = 'vse';
+    for (const button of filtry.querySelectorAll('[data-filtr]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.filtr === 'vse'));
+    }
+  }
   filtry.hidden = !seznam.pripojeno || pocetVse <= 1 || !prehled;
   for (const [key, count] of [['vse', pocetVse], ['odpovida', pocetOdpovida], ['pozor', pocetLimity]]) {
     filtry.querySelector('[data-filtr-pocet="' + key + '"]').textContent = String(count);
