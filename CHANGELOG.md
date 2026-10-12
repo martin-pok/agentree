@@ -6,6 +6,12 @@
 - Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
 - Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
 
+## Rozpracováno po 0.46.7 · Chrome extension: pravdivá částečná detekce (dosud nevydáno)
+
+- Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.
+- API přenáší pouze boolean `procesyNevim`, žádný přepis, cestu ani soukromé údaje. Současné filtry konverzací zůstávají beze změny.
+- Změna je **po tagu v0.46.7**; žádný už sestavený DMG ani veřejné rozšíření se nepřepisuje.
+
 ## Rozpracováno po 0.46.7 · přístup ke změnám přímo před aktualizací (nevydáno)
 
 - **Jasný changelog:** když je nová ověřená verze dostupná, Nastavení → Aktualizace nabízí odkaz na poznámky příslušného zveřejněného GitHub releasu, nikoli pouze číslo aktualizace.
