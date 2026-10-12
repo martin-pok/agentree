@@ -1,5 +1,13 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · úsporné a bezpečné stahování velkých aktualizací (zatím nevydáno)
+
+- **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
+- **Atomické dokončení:** teprve po ověření přesné velikosti, obsahu a kanálu se soubor přejmenuje na finální ZIP; po chybě ani přerušeném spojení nezůstává neúplný balíček.
+- **Souběžnost:** paralelní požadavky používají různé dočasné názvy; starý požadavek nesmí dokončit aktualizaci jiného kanálu.
+- **Regresní testy:** osmimegabajtový proud bez volání `arrayBuffer`, přerušený přenos, špatný digest, překročená velikost i dva souběžné downloady.
+- Jde o změnu zdrojového kódu pro budoucí vydání; již sestavený draft v0.46.7 se nemění.
+
 ## Rozpracováno po 0.46.7 · ochrana instalace Stable / Preview (zatím nevydáno)
 
 - **Bez downgrade:** terminálový instalátor Stable nesmí přepsat novější Preview verzi již nainstalovanou na Macu. Prohlíží jen GitHub metadata a odmítne starší balíček ještě před jeho stažením.
