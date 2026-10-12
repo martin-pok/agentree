@@ -199,7 +199,7 @@ try {
           // Souhrn z aplikace nese českou větu (starší server); okno ji skládá samo v angličtině.
           runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async (m) => (m?.type === 'agenteeq:prehled'
             ? (state === 'paired' ? { zdravi: { stav: 'pozor', veta: 'Na tvé rozhodnutí čeká agentů: 1', pracuje: 0, cekaNaTebe: 1, selhalo: 0, limit: 0 }, rozhodnuti: [], pracuji: [] } : null)
-            : { paired: sparovano, status: { expectedVersion: '0.13.0' } }) },
+            : { paired: sparovano, online: sparovano, status: { expectedVersion: '0.13.0' } }) },
           tabs: { query: async () => [{ id: 1 }], update: async () => {}, sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika'
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'obecne', zpravy: { user: 1, assistant: 2, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } } : null) },
         };
