@@ -127,6 +127,9 @@ export class UpdateService {
     this.now = now;
     this.value = empty(version, this.enabled ? 'checking' : 'disabled');
     this.inFlight = null;
+    // A channel can change A → B → A while A's original HTTP request is pending.
+    // Comparing the channel string alone cannot distinguish old and new requests.
+    this.requestEpoch = 0;
   }
 
   state() { return { ...this.value, channel: this.channel, asset: this.value.asset ? { ...this.value.asset } : null, downloaded: this.value.downloaded ? { ...this.value.downloaded } : null }; }
@@ -135,6 +138,7 @@ export class UpdateService {
     if (!['stable', 'preview'].includes(channel)) throw new Error(ui('Neplatný kanál aktualizací.'));
     if (channel !== this.channel) {
       this.channel = channel;
+      this.requestEpoch += 1;
       // Switching channels invalidates an old available/downloaded update and its
       // in-flight response, so a stale stable reply cannot overwrite Preview.
       this.value = empty(this.version, this.enabled ? 'checking' : 'disabled');
@@ -145,14 +149,15 @@ export class UpdateService {
       return this.state();
     }
     if (this.inFlight) return this.inFlight;
-    const pending = this.#check(channel).finally(() => {
+    const epoch = this.requestEpoch;
+    const pending = this.#check(channel, epoch).finally(() => {
       if (this.inFlight === pending) this.inFlight = null;
     });
     this.inFlight = pending;
     return pending;
   }
 
-  async #check(channel) {
+  async #check(channel, epoch) {
     const checkedAt = this.now();
     const previous = this.value;
     try {
@@ -162,13 +167,15 @@ export class UpdateService {
       });
       if (!response.ok) throw new Error(ui('Zdroj aktualizací teď neodpovídá.'));
       const payload = await response.json();
-      if (channel !== this.channel) return this.state();
+      if (channel !== this.channel || epoch !== this.requestEpoch) return this.state();
       const release = channel === 'preview'
         ? newestPreviewRelease(payload, this.version, this.target)
         : validRelease(payload, this.version, this.target);
       if (!release) throw new Error(ui('Zdroj aktualizací poslal neplatná data.'));
       if (release.asset) {
-        const sameDownloaded = previous.status === 'downloaded' && previous.latestVersion === release.latestVersion && previous.downloaded?.name === release.asset.name;
+        const sameDownloaded = previous.status === 'downloaded' && previous.latestVersion === release.latestVersion
+          && previous.downloaded?.name === release.asset.name
+          && previous.asset?.sha256 === release.asset.sha256 && previous.asset?.size === release.asset.size;
         this.value = sameDownloaded
           ? { ...empty(this.version, 'downloaded'), checkedAt, latestVersion: release.latestVersion, asset: release.asset, downloaded: previous.downloaded }
           : { ...empty(this.version, 'available'), checkedAt, latestVersion: release.latestVersion, asset: release.asset };
@@ -178,7 +185,7 @@ export class UpdateService {
         this.value = { ...empty(this.version, 'current'), checkedAt, latestVersion: release.latestVersion || this.version };
       }
     } catch (err) {
-      if (channel !== this.channel) return this.state();
+      if (channel !== this.channel || epoch !== this.requestEpoch) return this.state();
       this.value = { ...empty(this.version, 'error'), checkedAt, error: err?.message || ui('Aktualizace se nepodařilo zkontrolovat.') };
     }
     return this.state();
@@ -188,11 +195,13 @@ export class UpdateService {
     if (this.value.status !== 'available' || !this.value.asset) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
     const asset = this.value.asset;
     const channel = this.channel;
+    const epoch = this.requestEpoch;
     try {
       const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS), redirect: 'follow' });
       if (!response.ok) throw new Error(ui('Aktualizační balíček se nepodařilo stáhnout.'));
       const body = await responseBytes(response, asset);
-      if (channel !== this.channel || this.value.asset?.url !== asset.url) {
+      if (epoch !== this.requestEpoch || channel !== this.channel || this.value.asset?.url !== asset.url
+          || this.value.asset?.sha256 !== asset.sha256 || this.value.asset?.size !== asset.size) {
         return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
       }
       const dir = path.join(this.dataDir, 'updates');
@@ -200,7 +209,12 @@ export class UpdateService {
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });
       await fs.writeFile(`${file}.tmp`, body, { mode: 0o600 });
       await fs.rename(`${file}.tmp`, file);
-      if (channel !== this.channel || this.value.asset?.url !== asset.url) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+      if (epoch !== this.requestEpoch || channel !== this.channel || this.value.asset?.url !== asset.url
+          || this.value.asset?.sha256 !== asset.sha256 || this.value.asset?.size !== asset.size) {
+        // A new release may have replaced an asset while a previous download was writing.
+        // Do not expose the stale package as a completed update.
+        return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+      }
       this.value = { ...this.value, status: 'downloaded', downloaded: { name: asset.name, path: file, size: body.length, at: this.now() } };
       return { ok: true, update: this.state() };
     } catch (err) {
