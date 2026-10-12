@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.4',
+    date: '2026-10-12',
+    title: 'Jednotné nativní ikony a ověřené balíčky',
+    items: [
+      'Mac používá jednu skutečnou ikonu v Docku a instalátoru bez starých duplicitních souborů.',
+      'Windows aplikace má stejný proporční tvar ikony jako Mac a Chrome.',
+      'Instalační balíčky mají SHA-256 kontrolní součty pro ověření stažených souborů.',
+    ],
+    en: {
+      title: 'Consistent native icons and verified downloads',
+      items: [
+        'The Mac app ships one real Dock and installer icon, without obsolete duplicate assets.',
+        'The Windows application icon preserves the same shape and proportions as Mac and Chrome.',
+        'Downloadable builds include SHA-256 checksums to verify file integrity.',
+      ],
+    },
+  },
+  {
     version: '0.46.3',
     date: '2026-10-11',
     title: 'Stejné proporce loga na Macu i v Chromu',
