@@ -291,8 +291,26 @@ export async function hlavickyWebu() {
   };
 }
 
+/** Development can use bundled Onest while CI/Vercel must verify the real licensed Satoshi font. */
+export async function prepareSatoshiForWebBuild({
+  ensure = zajistiSatoshi,
+  argv = process.argv,
+  env = process.env,
+  warn = console.warn,
+} = {}) {
+  const required = argv.includes('--povinne') || Boolean(env.CI || env.VERCEL);
+  try {
+    await ensure();
+    return true;
+  } catch (error) {
+    if (required) throw error;
+    warn(`Satoshi: ${error?.message || String(error)} Web se sestaví se záložním písmem Onest.`);
+    return false;
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await zajistiSatoshi();
+  await prepareSatoshiForWebBuild();
   const r = await buildSite();
   console.log(`Web sestaven: ${r.files.length} souborů v ${path.relative(root, r.out)}`);
   console.log(`  /      landing page (site/)`);
