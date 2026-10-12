@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { ui } from './texty.js';
 import { CLAUDE_PERMISSIONS } from './launcher.js';
+import { deriveStatus } from './model.js';
 
 // Odpověď agentovi přímo z Agenteeq: konverzace Claude Code pokračuje na pozadí
 // (`claude -p --resume <id>`), stejně jako běh spuštěný z pole pro zadání. Výsledek se objeví
@@ -13,6 +14,10 @@ import { CLAUDE_PERMISSIONS } from './launcher.js';
 //   neběží“ (CLAUDE.md). Totéž platí pro běžící Claude Code, u kterého se nezjistila složka
 //   (lsof nebo /proc selhaly, na Windows se nečte vůbec): může běžet právě v téhle konverzaci.
 // - Když v konverzaci ještě pracuje (nebo se zastavuje) běh spuštěný z Agenteeq, čeká se na něj.
+// - Když je agent na limitu se známým časem obnovy, odpověď by skončila stejnou hláškou o limitu:
+//   pole se nenabídne a řekne se proč. Stav „na limitu“ bere ze src/model.js#deriveStatus, nikdy
+//   ho neodvozuje znovu. Bez času obnovy (stav platí jen odhadem 5 h od hlášky) se odpovědět dá –
+//   limit se mezitím mohl obnovit a uživatel to ví líp než Agenteeq. Rozhraní to řekne poznámkou.
 // Codex (`codex exec resume`) zatím ne: syntaxi jsme neověřili na skutečném nástroji.
 
 export const ODPOVED_MAX = 20000;
@@ -21,12 +26,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const stejnaSlozka = (a, b) => Boolean(a && b) && path.resolve(a) === path.resolve(b);
 
 /**
- * Lze konverzaci odpovědět z aplikace? Vrací { lze: true } nebo { lze: false, proc, kod }.
+ * Lze konverzaci odpovědět z aplikace? Vrací { lze: true, pozn? } nebo { lze: false, proc, kod }.
  * `procesy`: poslední výpis [{ runtime, cwd }] nebo null, když se výpis nepodařil.
  * `dostupne`: umí to tenhle systém (config.launchAgents – zatím jen macOS).
  * `claude`: cesta k programu; false = hledal se a nenašel; null = ještě se nehledal (nevíme).
  */
-export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true } = {}) {
+export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true, now = Date.now() } = {}) {
   if (!s || s.connector !== 'claude-code') {
     return { lze: false, kod: 'nastroj', proc: ui('Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.') };
   }
@@ -37,6 +42,10 @@ export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = 
   if (claude === false) return { lze: false, kod: 'program', proc: ui('Na tomto počítači se nenašel program claude.') };
   if (!claude) return { lze: false, kod: 'nevim', proc: ui('Ještě se zjišťuje, jestli je na tomto počítači program claude.') };
   if (!s.cwd || !path.isAbsolute(s.cwd)) return { lze: false, kod: 'slozka', proc: ui('U konverzace chybí složka, ve které běžela.') };
+  const naLimitu = Boolean(s.limit?.reached) && deriveStatus(s, now).status === 'limited';
+  if (naLimitu && s.limit.resetsAt) {
+    return { lze: false, kod: 'limit', proc: ui('Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.') };
+  }
   if (behy.some((r) => r.sessionId === s.id && (r.status === 'running' || r.status === 'stopping'))) {
     return { lze: false, kod: 'bezi-beh', proc: ui('Agent ještě pracuje na předchozím zadání z Agenteeq. Počkej, až doběhne.') };
   }
@@ -49,6 +58,7 @@ export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = 
   if (procesy.some((p) => p.runtime === 'claude-code' && !(p.cwd && path.isAbsolute(p.cwd)))) {
     return { lze: false, kod: 'nevim', proc: ui('Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.') };
   }
+  if (naLimitu) return { lze: true, pozn: ui('Čas obnovy limitu není známý. Odpověď projde, jen pokud se limit už obnovil.') };
   return { lze: true };
 }
 

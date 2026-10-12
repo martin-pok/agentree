@@ -694,7 +694,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .gauge { display: grid; justify-items: center; align-content: start; gap: 8px; min-width: 0; text-align: center; }
 .gauge-dial { position: relative; width: 100%; max-width: 132px; aspect-ratio: 1; }
 .gauge svg { width: 100%; height: 100%; }
-.gauge--sm .gauge-dial { max-width: 96px; }
+.gauge--sm .gauge-dial { max-width: 112px; }
 .gauge--lg .gauge-dial { max-width: 212px; }
 .gauge-track { fill: none; stroke: var(--line); stroke-width: 10; stroke-linecap: round; }
 .gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke var(--motion-move) var(--ease); }
@@ -706,6 +706,16 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .gauge-value--text { font-size: 16px; letter-spacing: 0; }
 .gauge--sm .gauge-value--text { font-size: 12px; }
 .gauge--lg .gauge-value--text { font-size: 26px; }
+/* Slovo se pevnou velikostí dotýkalo oblouku („Vyčerpáno“ 61 px ve vnitřním kruhu 69 px malého
+   ukazatele). Velikost se proto odvozuje od šířky středu ciferníku (56 % ciferníku): 19,6 % středu
+   = 11 % ciferníku na písmeno, slovo pak zabere nejvýš střed. Na malém ukazateli nikdy pod 12 px –
+   proto má malý ciferník 112 px. Kontejnerem je absolutně umístěný střed, ne ciferník: jeho šířka
+   je vždy daná ciferníkem, kdežto ciferník v zúženém rodiči (Útrata na telefonu) by se s
+   containmentem smrskl na nulu. */
+@supports (width: 1cqi) {
+  .gauge-center { container-type: inline-size; }
+  .gauge .gauge-value--text { font-size: max(12px, 19.6cqi); }
+}
 .gauge-label { font-size: 12px; line-height: 1.5; color: var(--mute); overflow-wrap: anywhere; }
 .gauge-sub { font-size: 12px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
 .token-card { padding: 24px; min-width: 0; }
@@ -1414,6 +1424,8 @@ html.is-cloud body { background: var(--paper); }
 .spend-stats .val { display: block; margin-top: 6px; font: 300 40px/1.05 var(--f-display); letter-spacing: -.03em; }
 .spend-stats .val--soft { font-size: 26px; color: var(--ink-2); font-weight: 400; }
 .spend-stats .is-over { color: var(--velvet-ink); }
+.set-note.budget-api-note { margin: 0 0 16px; }
+.spend-stats .spend-note { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
 .budget-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
 .budget-card { padding: 18px 20px; display: grid; gap: 10px; }
 .budget-top { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
@@ -2185,13 +2197,15 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 .onboard-track i { display: block; height: 100%; background: var(--teal); border-radius: var(--r-full); transition: width var(--motion-value) var(--ease); }
 .onboard-head .link { margin-left: auto; }
 .onboard-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.onboard-step { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 4px 10px; align-content: start; padding: 12px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line-2); }
-.onboard-step .btn { grid-column: 2; justify-self: start; margin-top: 6px; }
+/* Text kroku zabere roztažitelný řádek, tlačítko řádek pod ním – v řadě karet tak tlačítka stojí
+   na jedné linii, ať je popis dlouhý jakkoli. */
+.onboard-step { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 4px 10px; padding: 12px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line-2); }
+.onboard-step .btn { grid-column: 2; justify-self: start; align-self: end; margin-top: 6px; }
 .onboard-mark { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; }
 .onboard-mark .icon { width: 14px; height: 14px; color: #fff; stroke-width: 2.6; }
 .onboard-step.is-done .onboard-mark { background: var(--teal-ink); box-shadow: none; }
 .onboard-step.is-done .onboard-text span { color: var(--mute); }
-.onboard-text { display: grid; gap: 2px; min-width: 0; }
+.onboard-text { display: grid; gap: 2px; align-content: start; min-width: 0; }
 .onboard-text span { font-size: 14px; }
 .onboard-text small { font-size: 12px; color: var(--mute); }
 

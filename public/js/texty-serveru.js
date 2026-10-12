@@ -63,6 +63,13 @@ function preformatuj(hodnota, locale) {
       return d[4] ? datum.toLocaleString(locale, { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : datum.toLocaleDateString(locale);
     }
   }
+  // Den a čas bez roku („10. 10. 23:00“ – obnova limitu, src/model.js#vetaLimitu). Rok se nepíše
+  // ani v překladu, takže na něm nezáleží.
+  const dc = /^(\d{1,2})\.\s?(\d{1,2})\.\s+(\d{1,2}):(\d{2})$/.exec(s);
+  if (dc) {
+    const datum = new Date(2000, Number(dc[2]) - 1, Number(dc[1]), Number(dc[3]), Number(dc[4]));
+    if (!Number.isNaN(datum.getTime())) return datum.toLocaleString(locale, { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
   return hodnota;
 }
 

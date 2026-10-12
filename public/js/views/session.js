@@ -361,7 +361,7 @@ function update() {
   fill(el, 'banner', s.status === 'needs_input'
     ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
     : s.status === 'limited'
-      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
+      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.reason)}</p>${s.limit?.resetsAt && !s.limit.label ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.proces
@@ -431,6 +431,10 @@ function update() {
         </form>`;
         slot._html = '';
       }
+      // Na limitu bez známého času obnovy se odpovědět dá (src/odpoved.js) – poznámka říká, kdy projde.
+      const hint = slot.querySelector('.reply-hint');
+      const hintText = v.odpoved.pozn || tr('Agent pokračuje v této konverzaci na pozadí; průběh uvidíš tady i v přehledu.');
+      if (hint && hint.textContent !== hintText) hint.textContent = hintText;
     } else {
       const note = `<p class="reply-note">${esc(v.odpoved.proc)}${s.open?.length ? ` ${openButtons(s, { small: true, max: 1 })}` : ''}</p>`;
       if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }

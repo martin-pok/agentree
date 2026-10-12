@@ -149,3 +149,59 @@ test('future or invalid activity timestamp cannot make an agent look actively wo
   smallClockSkew.runningAt = now + 15e3;
   assert.equal(deriveStatus(smallClockSkew, now).status, 'working', 'small device clock drift is tolerated');
 });
+
+// Nastavení → Propojení si u nováčka protiřečilo: „Napojené modely“ psaly u Claude Code a Codexu
+// „Agent na tomto počítači“ (vedle štítku „Nepodařilo se zjistit“ nebo „CLI nenalezeno“) a o dvě
+// karty níž „Zdroje agentů“ hlásily „Claude Code na tomto počítači není“. Každá sekce teď říká jen
+// fakt, který sama ověřila: řádek modelu přítomnost programu ve štítku (nevím / není / je),
+// zdroje to, jestli na počítači našly konverzace.
+test('Propojení: řádek modelu netvrdí přítomnost agenta, nevím a není zůstávají rozlišené', async () => {
+  globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
+  const { radekNapojeni } = await import('../public/js/napojeni-ui.js');
+  const zaklad = { druh: 'agent', id: 'claude-code', label: 'Claude Code', provider: 'anthropic', logo: 'claude', napojeno: null, posledni: 0, oknoDni: 30 };
+  const nevim = radekNapojeni({ ...zaklad, nainstalovano: null });
+  const neni = radekNapojeni({ ...zaklad, nainstalovano: false });
+  const je = radekNapojeni({ ...zaklad, nainstalovano: true, napojeno: false, posledni: Date.now() - 60e3 });
+  for (const html of [nevim, neni, je]) {
+    assert.doesNotMatch(html, /Agent na /, 'podtitulek netvrdí, že agent na počítači je');
+    assert.match(html, /Programovací agent/);
+  }
+  assert.match(nevim, /data-state="unavailable"[^>]*><i><\/i>Nepodařilo se zjistit/, 'nevím ≠ není');
+  assert.doesNotMatch(nevim, /data-napojit/, 'napojit bez známého programu nejde, tlačítko by jen vrátilo chybu');
+  assert.match(neni, /data-state="missing"[^>]*><i><\/i>Program nenalezen/);
+  assert.match(neni, /posledních 30 dní tu nepracoval/);
+  assert.match(je, /naposledy pracoval/);
+  assert.match(je, /data-napojit="claude-code"/);
+});
+
+test('Zdroje agentů: bez složky s konverzacemi hlásí chybějící konverzace, ne chybějící nástroj', async () => {
+  const { startTestServer, api } = await import('./helpers.mjs');
+  const srv = await startTestServer();
+  try {
+    const { body } = await api(srv.url).get('/api/state');
+    const zdroj = (id) => body.connectors.find((c) => c.id === id);
+    assert.equal(zdroj('claude-code').state, 'missing');
+    assert.match(zdroj('claude-code').detail, /nejsou žádné konverzace Claude Code/);
+    assert.equal(zdroj('codex').state, 'missing');
+    assert.match(zdroj('codex').detail, /nejsou žádné konverzace Codexu/);
+    for (const id of ['claude-code', 'codex']) assert.doesNotMatch(zdroj(id).detail, /není\.$/);
+  } finally {
+    await srv.close();
+  }
+});
+
+// Průvodce na Přehledu: nesplněný krok „Agenti na tomto počítači nalezeni“ se četl jako hotová věc,
+// i když se nenašel žádný agent. Nesplněný krok je teď úkol. A tlačítka v pěti kartách nestála na
+// jedné linii – karta má řádek pro text, který se roztáhne, a tlačítko pod ním.
+test('průvodce: nesplněný krok s agenty je úkol a tlačítka karet stojí na jedné linii', async () => {
+  const kod = await zdroj('public/js/views/overview.js');
+  const prvniKrok = kod.slice(kod.indexOf('function onboardingHtml('), kod.indexOf("tr('Propojení s Claude Code')"));
+  assert.match(prvniKrok, /nalezeni \? tr\('Agenti na \{0\} nalezeni', tomtoPocitaci\(\)\) : tr\('Najít agenty na \{0\}', tomtoPocitaci\(\)\)/);
+  assert.match(prvniKrok, /done: nalezeni,/);
+  const css = await zdroj('public/styles.css');
+  const krok = /\n\.onboard-step \{([^}]*)\}/.exec(css)[1];
+  assert.match(krok, /grid-template-rows: 1fr auto/, 'text v roztažitelném řádku, tlačítko pod ním');
+  assert.doesNotMatch(krok, /align-content: start/, 'obsah karty se nesmí smrsknout nahoru');
+  assert.match(/\n\.onboard-step \.btn \{([^}]*)\}/.exec(css)[1], /align-self: end/);
+  assert.match(/\n\.onboard-text \{([^}]*)\}/.exec(css)[1], /align-content: start/, 'nadpis a popis drží u sebe i v nižší kartě');
+});

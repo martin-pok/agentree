@@ -5,7 +5,7 @@ import { api } from './api.js';
 import { esc, rel } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { modal, toast, stateBadge } from './ui.js';
-import { tr, tomtoPocitaci } from './i18n.js';
+import { tr } from './i18n.js';
 
 const DODAVATEL = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', perplexity: 'Perplexity' };
 const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.');
@@ -24,7 +24,7 @@ export function radekNapojeni(n) {
     stav = stateBadge('unavailable', tr('Nepodařilo se zjistit'));
   } else if (n.druh === 'agent' && !n.nainstalovano) {
     // Přepis agenta může být připojený i bez jeho příkazového programu.
-    stav = stateBadge('missing', tr('CLI nenalezeno'));
+    stav = stateBadge('missing', tr('Program nenalezen'));
   } else if (n.druh === 'web' && !n.nainstalovano) {
     stav = stateBadge('missing', tr('Potřebuje rozšíření'));
     akce = `<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button>`;
@@ -40,8 +40,12 @@ export function radekNapojeni(n) {
       : stateBadge('unavailable', tr('Nepodařilo se zjistit'));
     akce = `<button class="btn btn--sm${n.napojeno === false ? ' btn--primary' : ''}" type="button" data-napojit="${esc(n.id)}">${tr('Napojit')}</button>`;
   }
+  // Podtitulek říká, co to je, a jen ověřená fakta. Dřív tu stálo „Agent na tomto počítači“ bez
+  // ohledu na `nainstalovano` – vedle štítku „Nepodařilo se zjistit“ nebo „Program nenalezen“
+  // a nad Zdroji agentů, které pro tentýž nástroj hlásí, že tu nejsou žádné konverzace. Přítomnost
+  // programu patří štítku (ten rozlišuje nevím / není / je), práce na počítači podtitulku.
   return `<li class="model-row"><span class="model-logo">${logo}</span>
-    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? `${tr('Webový chat')}${n.posledni ? ` · ${esc(rel(n.posledni))}` : ''}` : `${tr('Agent na {0}', tomtoPocitaci())} · ${posledniPrace(n)}`}</span></div>
+    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? `${tr('Webový chat')}${n.posledni ? ` · ${esc(rel(n.posledni))}` : ''}` : `${tr('Programovací agent')} · ${posledniPrace(n)}`}</span></div>
     ${stav}${akce}</li>`;
 }
 

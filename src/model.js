@@ -109,6 +109,24 @@ export function takeDirty(s) {
   return out;
 }
 
+// Věta o vyčerpaném limitu z rozpoznaných údajů (druh limitu a čas obnovy), ne surová hláška
+// nástroje – ta je anglicky a do českého rozhraní pronikala doslova („You've hit your session
+// limit · resets 11pm (Europe/Prague)“). Čas se píše po česku v zóně tohoto počítače
+// („10. 10. 23:00“); klient ho v angličtině přepíše do svého zápisu (public/js/texty-serveru.js).
+// Surová hláška zůstává jen tam, kde se ji rozpoznat nepodařilo: bez druhu limitu, nebo když
+// zmiňuje obnovu, jejíž čas se nepřečetl – tu informaci by věta zahodila.
+const CAS_OBNOVY = (ts) => {
+  const d = new Date(ts);
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+export function vetaLimitu(limit) {
+  const text = limit?.text || '';
+  if (!limit?.label) return text || ui('Vyčerpaný limit');
+  if (limit.resetsAt) return ui('{0} vyčerpán · obnoví se {1}', limit.label, CAS_OBNOVY(limit.resetsAt));
+  if (/reset/i.test(text)) return text;
+  return ui('{0} vyčerpán', limit.label);
+}
+
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
@@ -117,7 +135,7 @@ export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
-    if (active) return { status: 'limited', reason: s.limit.text || ui('Vyčerpaný limit'), stale: false };
+    if (active) return { status: 'limited', reason: vetaLimitu(s.limit), stale: false };
   }
   // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
   if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {

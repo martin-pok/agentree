@@ -15,6 +15,8 @@ export default {
   "Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.": "Couldn’t check whether the conversation is running elsewhere. Better reply in Terminal.",
   "V této složce právě běží Claude Code. Odpověz tam, ať se konverzace nerozdvojí.": "Claude Code is running in this folder right now. Reply there so the conversation doesn’t split.",
   "Odpověď je moc dlouhá.": "The reply is too long.",
+  "Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.": "The agent has used up its limit. You can reply once it resets.",
+  "Čas obnovy limitu není známý. Odpověď projde, jen pokud se limit už obnovil.": "The limit reset time is unknown. The reply goes through only if the limit has already reset.",
   "Selhal {0} agent": "{0} agent failed",
   "Selhali {0} agenti": "{0} agents failed",
   "Selhalo {0} agentů": "{0} agents failed",
@@ -36,6 +38,8 @@ export default {
   "{0}: vyčerpaný limit": "{0}: limit reached",
   "{0} dokončil úlohu": "{0} finished a task",
   "{0}: {1} vyčerpán": "{0}: {1} used up",
+  "{0} vyčerpán · obnoví se {1}": "{0} used up · resets {1}",
+  "{0} vyčerpán": "{0} used up",
   "Obnoví se {0}.": "Resets {0}.",
   "Limit je vyčerpaný.": "The limit is used up.",
   "{0}: {1} na {2} %": "{0}: {1} at {2} %",
@@ -165,7 +169,7 @@ export default {
   "Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.": "Tracking {0} sessions from the last {1} days. Instant events are active.",
   "Sleduji {0} sessions za {1} dní.": "Tracking {0} sessions from the last {1} days.",
   "Složka existuje, zatím bez sessions.": "The folder exists, no sessions yet.",
-  "Claude Code na {0} není.": "Claude Code isn’t on {0}.",
+  "Na {0} nejsou žádné konverzace Claude Code.": "No Claude Code conversations on {0}.",
 
   // src/connectors/claude-desktop-code.js
   "Claude Desktop · vzdálený Code": "Claude Desktop · remote Code",
@@ -221,7 +225,7 @@ export default {
   "Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.": "Real-time transcript, task status, tokens, plan limits and credit balance.",
   "Sleduji {0} konverzací za posledních {1} dní.": "Tracking {0} conversations from the last {1} days.",
   "Složka existuje, zatím bez konverzací.": "The folder exists, no conversations yet.",
-  "Codex na {0} není.": "Codex isn’t on {0}.",
+  "Na {0} nejsou žádné konverzace Codexu.": "No Codex conversations on {0}.",
 
   // src/connectors/copilot.js
   "Nástroj": "Tool",

@@ -123,7 +123,8 @@ export class AlertEngine {
         level: 'critical',
         kind: 'limit',
         title: `${s.app}: vyčerpaný limit`,
-        body: s.limit?.text || s.title,
+        // Věta z rozpoznaných údajů (src/model.js#vetaLimitu), surová hláška nástroje jen jako záloha.
+        body: s.reason || s.limit?.text || s.title,
         sessionId: s.id,
       });
     } else if (before === 'working' && (s.status === 'waiting' || s.status === 'idle') && !s.stale && n.done) {
