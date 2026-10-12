@@ -38,6 +38,7 @@ function spust(sit, { ulozeno = {} } = {}) {
       storage: { local: oblast(local), session: oblast(session), onChanged: { addListener: (fn) => { zmenaUloziste = fn; } } },
       runtime: {
         getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
+        getURL: (name) => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/' + name,
         onInstalled: { addListener() {} },
         onStartup: { addListener() {} },
         onMessage: { addListener: (fn) => { posluchac = fn; } },
@@ -270,4 +271,42 @@ test('telemetry from a browser tab cannot impersonate another provider', async (
   const accepted = await r.zprava({ type: 'agenteeq:update', payload }, { tab: { id: 4, url: 'https://claude.ai/chat/abc' } });
   assert.equal(accepted.ok, true);
   assert.equal(r.volani.filter((v) => v.url === '/api/ingest/web').length, 1);
+});
+
+
+test('native focus: only the extension popup can request the existing agent; content scripts cannot', async () => {
+  const t = 'q'.repeat(43);
+  const calls = [];
+  const r = spust(async (url, init) => {
+    calls.push({ url, method: init.method, body: init.body, headers: init.headers });
+    return { status: 200, body: { ok: true, focused: true } };
+  }, { ulozeno: { token: t } });
+  const popup = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' };
+  const id = 'claude-code:existing-agent';
+  assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id }, popup)).ok, true);
+  const nativeCalls = calls.filter(c => c.url === '/api/extension/focus-agent');
+  assert.equal(nativeCalls.length, 1);
+  assert.equal(nativeCalls[0].method, 'POST');
+  assert.equal(JSON.parse(nativeCalls[0].body).id, id);
+  assert.equal(nativeCalls[0].headers['X-Agenteeq-Token'], t);
+  for (const sender of [
+    { tab: { id: 5 }, url: popup.url },
+    { tab: { id: 8 }, url: 'https://chatgpt.com' },
+    { url: 'https://evil.example' },
+    { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/background.html' },
+    {},
+  ]) assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id }, sender)).ok, false);
+  assert.equal(calls.filter(c => c.url === '/api/extension/focus-agent').length, 1, 'no untrusted website triggers native focus');
+});
+
+test('native focus: an invalid ID or missing token never causes HTTP or hidden pairing', async () => {
+  const r = spust(() => ({ status: 200, body: { ok: true } }));
+  const sender = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' };
+  assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id: 'agent' }, sender)).unpaired, true);
+  assert.equal(r.volani.length, 0);
+  const joined = spust(() => ({ status: 200, body: { ok: true } }), { ulozeno: { token: 's'.repeat(43) } });
+  for (const id of ['', 1, {}, null, 'x'.repeat(201)]) {
+    assert.equal((await joined.zprava({ type: 'agenteeq:focus-agent', id }, sender)).ok, false);
+  }
+  assert.equal(joined.volani.length, 0);
 });
