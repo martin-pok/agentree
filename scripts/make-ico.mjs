@@ -127,6 +127,35 @@ function zmensi(zdroj, sirkaZ, vyskaZ, velikost) {
   return out;
 }
 
+// Bilinear upscaling with premultiplied alpha avoids the blocky 256px
+// Explorer preview when using the canonical 128px raster.
+function zvetsi(src, sw, sh, size) {
+  const out = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    const sy = (y + 0.5) * sh / size - 0.5;
+    const y0 = Math.max(0, Math.floor(sy)), y1 = Math.min(sh - 1, y0 + 1);
+    const fy = Math.min(1, Math.max(0, sy - y0));
+    for (let x = 0; x < size; x++) {
+      const sx = (x + 0.5) * sw / size - 0.5;
+      const x0 = Math.max(0, Math.floor(sx)), x1 = Math.min(sw - 1, x0 + 1);
+      const fx = Math.min(1, Math.max(0, sx - x0));
+      const taps = [[x0,y0,(1-fx)*(1-fy)], [x1,y0,fx*(1-fy)], [x0,y1,(1-fx)*fy], [x1,y1,fx*fy]];
+      let a = 0, r = 0, g = 0, b = 0;
+      for (const [px, py, weight] of taps) {
+        const at = (py * sw + px) * 4, alpha = src[at+3] / 255 * weight;
+        a += alpha;
+        r += src[at] * alpha; g += src[at+1] * alpha; b += src[at+2] * alpha;
+      }
+      const dest = (y * size + x) * 4;
+      out[dest] = a ? Math.round(r/a) : 0;
+      out[dest+1] = a ? Math.round(g/a) : 0;
+      out[dest+2] = a ? Math.round(b/a) : 0;
+      out[dest+3] = Math.round(a*255);
+    }
+  }
+  return out;
+}
+
 // ── Zápis PNG ────────────────────────────────────────────────────────────────
 
 function chunk(typ, telo) {
@@ -187,16 +216,21 @@ function sestavIco(obrazky) {
   return Buffer.concat([hlavicka, ...polozky, ...obrazky.map((o) => o.png)]);
 }
 
-const zdrojovy = path.join(root, 'desktop', 'Agenteeq-icon.png');
-const cil = path.join(root, 'desktop', 'windows', 'Agenteeq.ico');
+// Canonical 128px raster comes from the reviewed Dock SVG master and is
+// byte-matched with the Chrome Web Store release icon in brand-robot.test.mjs.
+// Never read the old desktop/Agenteeq-icon.png: its head proportions differ.
+const zdrojovy = path.join(root, 'extension', 'icons', 'icon-128.png');
+const cil = process.env.AGENTEEQ_ICON_OUT || path.join(root, 'desktop', 'windows', 'Agenteeq.ico');
 
 const { sirka, vyska, pixely } = dekodujPng(await fs.readFile(zdrojovy));
 if (sirka !== vyska) throw new Error(`Zdrojová ikona musí být čtvercová, je ${sirka}×${vyska}.`);
 console.log(`Zdroj: ${path.relative(root, zdrojovy)} (${sirka}×${vyska})`);
 
 const obrazky = VELIKOSTI.map((velikost) => {
-  const zmenseno = velikost === sirka ? pixely : zmensi(pixely, sirka, vyska, velikost);
-  return { velikost, png: zakodujPng(zmenseno, velikost) };
+  const scaled = velikost === sirka ? pixely : velikost < sirka
+    ? zmensi(pixely, sirka, vyska, velikost)
+    : zvetsi(pixely, sirka, vyska, velikost);
+  return { velikost, png: zakodujPng(scaled, velikost) };
 });
 
 await fs.mkdir(path.dirname(cil), { recursive: true });
