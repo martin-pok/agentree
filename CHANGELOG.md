@@ -24,6 +24,25 @@ publikační proces; žádný soubor z tohoto commitu se automaticky neobjeví v
 
 ### Technický přehled změn od 0.46.7
 
+### automaticky sestavené release drafty
+
+- Po kompletním zeleném CI na přesném commitu `main` se nová správně verzovaná aplikace sama připraví k sestavení jako **neveřejný** GitHub release draft, bez dalšího ručního kroku tagování či spouštění buildu.
+- Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
+- Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
+
+### Chrome extension: pravdivá částečná detekce
+
+- Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.
+- API přenáší pouze boolean `procesyNevim`, žádný přepis, cestu ani soukromé údaje. Současné filtry konverzací zůstávají beze změny.
+- Změna je **po tagu v0.46.7**; žádný už sestavený DMG ani veřejné rozšíření se nepřepisuje.
+
+### přístup ke změnám přímo před aktualizací
+
+- **Jasný changelog:** když je nová ověřená verze dostupná, Nastavení → Aktualizace nabízí odkaz na poznámky příslušného zveřejněného GitHub releasu, nikoli pouze číslo aktualizace.
+- **Bez záměny draftu:** dialog „Co je nového“ ukazuje jen vydání, která jsou nanejvýš ve verzi skutečně nainstalované aplikace. Budoucí zdrojové záznamy se nevydávají za hotové a nainstalované.
+- **CZ/EN a QA:** odkaz a historické filtrování mají anglickou lokalizaci a regresní testy. Novinka se projeví až v nové verzi aplikace; není to změna ve starších instalátorech.
+
+
 ### rychlejší a úspornější aktualizace
 
 - **Jeden skutečný download:** souběžné kliknutí na stažení stejného balíčku využije jediný HTTP přenos a jeden bezpečně ověřený archiv místo zbytečného vícenásobného stahování.

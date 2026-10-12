@@ -34,6 +34,17 @@ Agenteeq poskytuje spolehlivý, local-first přehled AI práce napříč nativn�
 - **Produktová komunikace:** připravit reálné ukázky „jedno místo pro běžící agenty“, „čeká na moje rozhodnutí“, „otevřu původní konverzaci“, rozdíl mezi lokální app a extension, transparentní označení Beta/neznámé. Neslibovat ověřené uživatelské přínosy, které nemají měření.
 - **Release evidence:** zdrojově kontrolovaný manifest verze/assetů/checksumů, vizuální QA z reálně renderovaného produktu a checklist go/no-go. Žádné nerealistické marketingové screenshoty vydávané za produkt.
 
+
+### Ověřitelná sada pro Chrome Store — připravovaný krok
+
+Technické artefakty z různých CI jobů se nesmějí ručně kombinovat bez důkazu
+shodné verze. Nová izolovaná práce `ci/chrome-store-review-kit-0468` proto
+generuje jeden hashovaný souborový kit z reálně sestaveného rozšíření a
+vyrenderovaných podkladů, dostupný jen pro běh na `main`. Pro doručení
+uživateli stále zbývá ověřené 8/8 CI na hlavním SHA, skutečný Chrome a
+macOS/Windows UAT, schválení uploadu a následné ověření verze v obchodě.
+Nezapínat automatické vydávání bez výslovného schválení vlastníka.
+
 ## Nezavádět placené závislosti
 
 Developer ID + notarizace, případný Apple Developer membership, Stripe a další platební API, právní review a placený monitoring patří do samostatných rozhodnutí vlastníka. **Zatím neaktivovat, nenakupovat, nic nefakturovat.** Vývoj CI, local-first funkce, brand, automatizované testy a bezplatné nasazení nepodmiňovat těmito účty. Při chybějícím přístupu vytvořit konkrétní blokující issue se skutečným důvodem; náhradní výsledek netvrdit za hotový.

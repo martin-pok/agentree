@@ -595,3 +595,11 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | Obrazovky v prohlížeči | Přehled, Agenti, Detail agenta (266 položek přepisu), Statistiky, Útrata (validace formuláře, fokus na chybné pole), Nastavení, paleta ⌘K, panel upozornění – konzole bez chyb |
 | Mobil 375 px | bez vodorovného rolování |
 | **Neověřeno** | rozšíření na živých webech, Cursor s aktivním agentem, Copilot CLI / VS Code / Gemini CLI / Qwen Code s reálnými daty, Admin API s klíči, instalace hooků do skutečného `~/.claude/settings.json` (ověřeno jen v dočasném HOME), LaunchAgent (ověřen jen vygenerovaný plist) |
+
+## Chrome extension — neúplný výpis procesů (P0)
+
+- Mock `procesyNevim: true` + známý pracující či selhaný agent musí zobrazit číselné údaje pravdivě, ale i samostatné upozornění na neúplné zjišťování; tón nesmí být zelený.
+- Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu, ale pokud nastanou **obě závady současně**, musí být vidět obě zprávy (odeslání i neúplné procesy). Nová pole jsou jen boolean bez přepisů nebo cest.
+- Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.
+
+
