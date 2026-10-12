@@ -566,7 +566,10 @@ function hlavicka() {
   const pocet = zive.length + (d && !tataVSeznamu && (d.zpravy?.user || d.zpravy?.assistant || d.generuje) ? 1 : 0);
   const pracuje = zive.filter((k) => (k.tab === overeni.tab && d ? d.generuje : k.generating)).length + (d && !tataVSeznamu && d.generuje ? 1 : 0);
   const failed = Boolean(lastStatus && !lastStatus.ok);
-  const tone = outdated || failed ? 'warn' : 'ok';
+  // A working agent does not prove the process scan succeeded. A partial
+  // observation must never be presented with the green fully-connected tone.
+  const nejisteProcesy = Boolean(prehled?.zdravi?.procesyNevim);
+  const tone = outdated || failed || nejisteProcesy ? 'warn' : 'ok';
   const selhalo = tr('Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.');
   if (!pocet && !prehled) {
     setHero({ tone, pill: 'Připojeno', headline: tr('Žádná otevřená konverzace'), sub: failed ? selhalo : tr('Otevři chat s AI a objeví se tady i v Agenteeq.') });
@@ -576,7 +579,12 @@ function hlavicka() {
   const vsech = pracuje + (prehled?.zdravi.pracuje || 0);
   const popis = vsech === 0 ? tr('agentů teď pracuje') : mnozne(vsech, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
   // Pod číslem stav agentů z aplikace; bez něj počet otevřených chatů v prohlížeči.
-  const sub = failed ? selhalo : prehled ? vetaZdravi(prehled.zdravi) : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  const zakladniPopis = prehled ? vetaZdravi(prehled.zdravi) : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  // Preserve the highest-priority error/decision while also explaining that
+  // some local agents may be missing from the counts.
+  const upozorneniProcesy = nejisteProcesy && prehled?.zdravi?.stav !== 'nevim'
+    ? tr('Nepodařilo se zjistit, co na počítači běží') : '';
+  const sub = failed ? selhalo : [zakladniPopis, upozorneniProcesy].filter(Boolean).join(' · ');
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
   if (prehled && !failed) $('sub').dataset.stav = prehled.zdravi.stav;
 }
