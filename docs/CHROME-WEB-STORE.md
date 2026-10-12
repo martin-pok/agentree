@@ -1,6 +1,6 @@
 # Rozšíření v Chrome Web Store
 
-Stav k 6. 10. 2026: **zveřejněno.** Vlastník potvrdil, že položka je v Chrome Web Store veřejně
+Stav ověřený k 12. 10. 2026: **položka je zveřejněná, ale veřejná verze je stále 0.31.4** (záznam Chrome Web Store, aktualizace 4. 10. 2026). Vlastník potvrdil, že položka je v Chrome Web Store veřejně
 dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
 web i aplikace nabízejí instalaci jedním kliknutím (**Přidat do Chromu**) a rozšíření se spáruje samo.
 Na snímku veřejné stránky z 11. 10. 2026 je stále starý symbol a stará tmavá prezentační grafika.
@@ -38,12 +38,17 @@ Vlastník musí ručně nahrát jednotlivý ZIP a odpovídající obrázky do ex
 položky `hocghhpigfilngdajmafkdcljdedanch`, potvrdit publikaci a následně
 ověřit veřejnou verzi i zobrazení. **Nepublikovat jen proto, že prošlo CI.**
 
+## Konkrétní kontrolní balíček 0.46.8 — zatím **nevydáno**
+
+Z PR #184, úspěšného CI runu [38302384956](https://github.com/martin-pok/agentree/actions/runs/38302384956), vznikl artefakt `agenteeq-extension-store-upload` **ID 11771456640**. Nalezený vnitřní soubor `agenteeq-extension-0.46.8.zip` má **244 296 B**, SHA-256 `a17a810d0cc159682ba1b801eda3ba0c7bbe8566bd9596d73fb55aaf42d1a7d1`. Ručně ověřený manifest je MV3 **0.46.8**; balíček obsahuje 32 souborů, obě lokalizace CZ/EN a skutečné PNG ikony **16, 32, 48 a 128 px**. Nejsou v něm nečekané absolutní cesty ani soubory `../`. Kontrola je z kandidátského **PR CI**; neznamená, že totéž již bylo publikováno v Chromu nebo že pozdější release tag poskytne bajtově totožný ZIP.
+
+**Další ověřovací brána:** stáhnout `chrome-store-review-kit` z dokončeného **8/8 CI na `main` pro přesnou verzi**, znovu porovnat SHA-256 všech souborů a manifest, vyzkoušet skutečné rozšíření ve světlém/tmavém Chrome a na čistém profilu, párování, filtry, návrat do nativní aplikace a zotavení po restartu. Obrázky obchodu zobrazují **skutečné UI s testovacími daty**, ne důkaz živé integrace. Teprve pak pod existujícím ID `hocghhpigfilngdajmafkdcljdedanch` v [Developer Dashboard](https://chrome.google.com/webstore/devconsole) autorizovaně nahrát **Package → Upload new package**, doplnit české a anglické screenshoty/promo, překontrolovat Privacy practices, předložit ke kontrole a po schválení ověřit veřejný listing. Upload, placené licence ani publikaci neprovádí GitHub CI automaticky. Viz [issue #172](https://github.com/martin-pok/agentree/issues/172) a [release gate #187](https://github.com/martin-pok/agentree/issues/187).
+
 ## Stav účtu vydavatele
 
 Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.
 
-Veřejná stránka obchodu 11. 10. 2026 stále ukazuje verzi **0.31.4**. Připravený zdrojový manifest
-a balíček mají verzi **0.46.1**; ta v Chrome Web Store ještě zveřejněná není. Developer Dashboard
+Veřejný záznam Chrome Web Store ověřený 12. 10. 2026 stále ukazuje verzi **0.31.4**. V repozitáři je od PR #184 ve zdrojovém manifestu kandidát **0.46.8**; **ani zelené CI, ani ZIP pro Store nejsou důkazem jeho veřejného vydání**. Verzi přílohy z konkrétního buildu je vždy nutné číst z `manifest.json` uvnitř výsledného ZIPu. Developer Dashboard
 vyžaduje opětovné ověření vlastníka Google účtu, takže aktualizaci balíčku a obrázků musí předcházet
 jeho přihlášení. Zelené CI samo nic do obchodu nenahrává. ID položky:
 `hocghhpigfilngdajmafkdcljdedanch`.
