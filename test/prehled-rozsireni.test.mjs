@@ -84,3 +84,26 @@ test('child is standalone when parent is absent or archived, archived sessions n
   assert.deepEqual(p.rozhodnuti.map(x => x.id), ['orphan']);
   assert.deepEqual(p.pracuji.map(x => x.id), ['child']);
 });
+
+
+test('extension reports incomplete process scan even when important agents are visible', () => {
+  for (const entries of [
+    [s('work1', 'working')],
+    [s('help1', 'needs_input')],
+    [s('failed1', 'failed')],
+    [s('limit1', 'limited')],
+    [s('mixed1', 'working'), s('mixed2', 'needs_input'), s('mixed3', 'failed')],
+  ]) {
+    const missing = prehledProRozsireni(entries, { procesyNevim: true });
+    const healthy = prehledProRozsireni(entries, { procesyNevim: false });
+    assert.equal(missing.zdravi.procesyNevim, true, 'unknown must not be hidden by priority');
+    assert.equal(healthy.zdravi.procesyNevim, false);
+    assert.deepEqual([missing.zdravi.pracuje, missing.zdravi.cekaNaTebe, missing.zdravi.selhalo, missing.zdravi.limit],
+      [healthy.zdravi.pracuje, healthy.zdravi.cekaNaTebe, healthy.zdravi.selhalo, healthy.zdravi.limit],
+      'observed counts remain factual, not artificially suppressed');
+    assert.equal(missing.zdravi.stav, healthy.zdravi.stav === 'ok' ? 'nevim' : healthy.zdravi.stav,
+      'urgent problems keep their correct priority');
+    assert.doesNotMatch(JSON.stringify(missing), /transcript|cwd|token|password/,
+      'only the boolean, never process metadata or private text, crosses into Chrome');
+  }
+});
