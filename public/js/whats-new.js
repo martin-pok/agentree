@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { state, subscribe } from './state.js';
 import { esc } from './format.js';
 import { modal } from './ui.js';
-import { RELEASES, unseenReleases } from './whats-new-data.js';
+import { RELEASES, unseenReleases, compareVersions } from './whats-new-data.js';
 import { goToExtension } from './jump.js';
 import { tr, LOCALE, podleJazyka } from './i18n.js';
 
@@ -27,12 +27,18 @@ async function markSeen() {
   } catch { /* příště se ukáže znovu – lepší než tiše ztratit informaci */ }
 }
 
+// The bundled catalogue may include a future/draft version. The installed app must
+// never describe that entry as already received or display it in older release history.
+export const installedReleaseHistory = (version, entries = RELEASES) =>
+  entries.filter((entry) => compareVersions(entry.version, version) <= 0);
+
 let open = false;
 export async function showWhatsNew({ releases } = {}) {
   if (open) return;
   open = true;
-  const list = releases?.length ? releases : RELEASES.slice(0, 3);
-  const older = RELEASES.filter((r) => !list.includes(r));
+  const installed = installedReleaseHistory(state.version);
+  const list = releases?.length ? releases.filter((r) => installed.includes(r)) : installed.slice(0, 3);
+  const older = installed.filter((r) => !list.includes(r));
   const ext = state.integrations?.extension;
   const offerExtension = list.some((r) => r.extension) && (!ext || ext.state === 'missing' || ext.outdated);
   const body = `<div class="wn">
