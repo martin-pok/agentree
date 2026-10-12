@@ -379,6 +379,27 @@ test('fotka: jen https z obrázkového serveru Googlu, v rozlišení pro Retinu'
   }
 });
 
+test('Google avatar fallback: invalid avatar_url cannot hide valid picture, off-domain URLs remain blocked', () => {
+  const google = 'https://lh5.googleusercontent.com/a/FALLBACK=s96-c';
+  const expected = 'https://lh5.googleusercontent.com/a/FALLBACK=s192-c';
+  for (const invalid of [
+    'https://evil.example/private.jpg',
+    'http://lh3.googleusercontent.com/a/image',
+    'https://googleusercontent.com.evil.example/a',
+    'not a URL',
+    'x'.repeat(2049),
+  ]) {
+    assert.equal(fotoZMetadat({ avatar_url: invalid, picture: google }), expected, invalid.slice(0, 70));
+  }
+  assert.equal(fotoZMetadat({ avatar_url: FOTO_URL, picture: google }),
+    'https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c', 'preferred valid avatar_url wins');
+  assert.equal(fotoZMetadat({ avatar_url: 'https://evil.example', picture: 'https://evil.example/2' }), '',
+    'fallback cannot weaken the Google-only origin policy');
+  assert.equal(uzivatelZOdpovedi({
+    id: 'u1', email: 'user@example.com', user_metadata: { full_name: 'User', avatar_url: 'https://bad.invalid', picture: google },
+  }).fotoUrl, expected, 'actual Supabase user metadata must use the valid fallback');
+});
+
 test('po přihlášení si Mac fotku stáhne, uloží k sobě a ukáže ji i po startu bez sítě', async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-ucet-'));
   try {
