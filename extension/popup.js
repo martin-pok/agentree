@@ -265,6 +265,32 @@ $('check-save').addEventListener('click', async () => {
 // kartu, jestli agent odpovídá, kdy začal a kdy skončil. Nic ze stránky.
 const seznam = { konverzace: [], off: [], casovac: null, lastStatus: null, zastarala: false, pripojeno: false };
 
+// Compact, local-only filters. Nothing about the user's activity is sent to
+// storage or any server merely because they switch the popup view.
+const FILTRY_KONVERZACI = new Set(['vse', 'odpovida', 'pozor']);
+let filtrKonverzaci = 'vse';
+function chatOdpovida(k, d) { return Boolean(d ? d.generuje : k?.generating); }
+function chatMaLimit(k, d) { return !chatOdpovida(k, d) && Boolean(d ? d.limit : k?.limit); }
+function odpovidaFiltru(k, d, vypnute) {
+  if (filtrKonverzaci === 'vse') return true;
+  if (vypnute.includes((d || k)?.site)) return false;
+  return filtrKonverzaci === 'odpovida' ? chatOdpovida(k, d) : chatMaLimit(k, d);
+}
+function nastavFiltrKonverzaci(next) {
+  if (!FILTRY_KONVERZACI.has(next) || next === filtrKonverzaci) return;
+  filtrKonverzaci = next;
+  for (const button of $('filtry-konverzaci').querySelectorAll('[data-filtr]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.filtr === next));
+  }
+  delete $('konverzace').dataset.podpis;
+  vykresliSeznam();
+}
+$('filtry-konverzaci').addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-filtr]');
+  if (button) nastavFiltrKonverzaci(button.dataset.filtr);
+});
+
+
 async function nactiKonverzace() {
   try {
     const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
@@ -316,21 +342,34 @@ async function prepni(k) {
 
 function vykresliSeznam() {
   const box = $('konverzace');
-  if (box.hidden && !seznam.konverzace.length && !overeni.diagnostika) return;
   const d = overeni.diagnostika;
   const off = seznam.off;
   const tato = seznam.konverzace.find((k) => overeni.tab !== null && k.tab === overeni.tab) || null;
-  const ostatni = seznam.konverzace
-    .filter((k) => k !== tato && !off.includes(k.site))
-    .sort((a, b) => (b.generating - a.generating) || (Boolean(b.limit) - Boolean(a.limit)) || (b.at - a.at));
+  // When diagnostics of the current tab are unavailable, preserve its last
+  // confirmed report from the session cache instead of hiding it completely.
+  const ostatniVse = seznam.konverzace
+    .filter((k) => (!d || k !== tato) && !off.includes(k.site))
+    .sort((a, b) => (Boolean(b.generating) - Boolean(a.generating)) || (Boolean(b.limit) - Boolean(a.limit)) || (b.at - a.at));
+  const pocetVse = ostatniVse.length + Number(Boolean(d));
+  const pocetOdpovida = ostatniVse.filter((k) => chatOdpovida(k, null)).length
+    + Number(Boolean(d && !off.includes(d.site) && chatOdpovida(tato, d)));
+  const pocetLimity = ostatniVse.filter((k) => chatMaLimit(k, null)).length
+    + Number(Boolean(d && !off.includes(d.site) && chatMaLimit(tato, d)));
+  const filtry = $('filtry-konverzaci');
+  filtry.hidden = !seznam.pripojeno || pocetVse === 0 || !prehled;
+  for (const [key, count] of [['vse', pocetVse], ['odpovida', pocetOdpovida], ['pozor', pocetLimity]]) {
+    filtry.querySelector('[data-filtr-pocet="' + key + '"]').textContent = String(count);
+  }
+  const zobrazTuto = Boolean(d && odpovidaFiltru(tato, d, off));
+  const ostatni = ostatniVse.filter((k) => odpovidaFiltru(k, null, off));
   // Beze změny dat se nepřekresluje (jen čas), jinak by čtečka i zaostření začínaly znovu.
-  const podpis = JSON.stringify([d && [d.site, d.generuje, d.limit, d.zpravy], tato && [tato.od, tato.konec], ostatni.map((k) => [k.site, k.tab, k.generating, k.limit, k.od, k.konec, Math.floor((Date.now() - (k.konec || 0)) / 60e3)]), off]);
+  const podpis = JSON.stringify([filtrKonverzaci, d && [d.site, d.generuje, d.limit, d.zpravy], tato && [tato.od, tato.konec], ostatni.map((k) => [k.site, k.tab, k.generating, k.limit, k.od, k.konec, Math.floor((Date.now() - (k.konec || 0)) / 60e3)]), off]);
   if (box.dataset.podpis === podpis) { tikni(); return; }
   box.dataset.podpis = podpis;
   box.textContent = '';
   let bezi = false;
 
-  if (d) {
+  if (zobrazTuto) {
     const [, , klic] = sluzba(d.site) || [d.site, d.site, ''];
     const name = nazevSluzby(d.site);
     const li = el('li');
@@ -380,7 +419,12 @@ function vykresliSeznam() {
   }
 
   box.hidden = !box.children.length;
-  $('web-nadpis').hidden = box.hidden || !prehled;
+  $('web-nadpis').hidden = pocetVse === 0 || !prehled;
+  const empty = $('prazdne-konverzace');
+  empty.hidden = !filtrKonverzaci || filtrKonverzaci === 'vse' || pocetVse === 0 || !box.hidden || !seznam.pripojeno;
+  if (!empty.hidden) empty.textContent = tr(filtrKonverzaci === 'odpovida'
+    ? 'Žádný webový chat právě neodpovídá.'
+    : 'Žádný webový chat nehlásí limit.');
   // Čas odpovědi běží po sekundách, jen dokud nějaký agent odpovídá.
   clearInterval(seznam.casovac);
   if (bezi) seznam.casovac = setInterval(tikni, 1000);
@@ -469,6 +513,8 @@ function zakladniStav() {
   seznam.pripojeno = false;
   $('outdated').hidden = true;
   $('konverzace').hidden = true;
+  $('filtry-konverzaci').hidden = true;
+  $('prazdne-konverzace').hidden = true;
   $('agenti').hidden = true;
   $('web-nadpis').hidden = true;
   $('sites-open').hidden = true;
