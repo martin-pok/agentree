@@ -294,8 +294,8 @@ test('late Preview response cannot replace Stable after channel switch', async (
 });
 
 test('Preview channel rejects invalid constructor and check arguments', async () => {
-  assert.throws(() => new UpdateService({ version: '0.46.1', channel: 'unknown' }), /Invalid update channel/);
+  assert.throws(() => new UpdateService({ version: '0.46.1', channel: 'unknown' }), /Neplatný kanál aktualizací|Invalid update channel/);
   const service = new UpdateService({ version: '0.46.1', channel: 'stable',
     dataDir: await tempDir('stable-invalid-'), fetchImpl: fetchForUpdate() });
-  await assert.rejects(service.check('unknown'), /Invalid update channel/);
+  await assert.rejects(service.check('unknown'), /Neplatný kanál aktualizací|Invalid update channel/);
 });
