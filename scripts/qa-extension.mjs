@@ -49,7 +49,7 @@ try {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
               }
-              return { paired: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
+              return { paired: fixture.paired, online: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
             } },
           };
           // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
