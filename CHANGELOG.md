@@ -7,6 +7,13 @@
 - **Soukromí a QA:** do rozšíření se předává pouze boolean o nejistotě, žádné údaje o procesech, přepisy či cesty. Regresní testy kontrolují český a anglicky překládaný text i stav označení.
 - Změna dosud není v distribuovaném Chrome Store balíčku ani v draftu macOS 0.46.7.
 
+## Rozpracováno po 0.46.7 · živý stav po opětovném připojení (nevydáno)
+
+- **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
+- **20 současných agentů:** deterministické testy kontrolují obnovu, pořadí a jednorázové zpracování událostí bez přenosu přepisů nebo soukromých dat na cloud.
+- **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
+- Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
+
 ## Rozpracováno po 0.46.7 · jednotné počty agentů (nevydáno)
 
 - **Chrome extension počítá stejné agenty jako aplikace:** podřízené konverzace s viditelným rodičem se nezapočítají podruhé, u opakovaných naplánovaných úloh je v souhrnu pouze poslední běh.
