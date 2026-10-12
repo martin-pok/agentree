@@ -448,7 +448,7 @@ test('desktop install/reveal reject changed or deleted ZIP and never dispatch it
   } finally { await s.close(); }
 });
 
-test('a symlink cannot stand in for a SHA-matching downloaded update ZIP', { skip: process.platform === 'win32' }, async () => {
+test('a symlink cannot stand in for a SHA-matching downloaded update ZIP', { skip: process.platform === 'win32' && 'Windows symlinks require elevated privileges or Developer Mode in CI' }, async () => {
   const home = await tempDir('agenteeq-update-symlink-');
   const service = new UpdateService({ version: '0.29.9', dataDir: home, fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
   await service.check();
