@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
-import { fill, statusPill, emptyState, agentHref, toast } from '../ui.js';
+import { fill, statusPill, emptyState, agentHref, toast, vetaStavu } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
@@ -152,7 +152,7 @@ function rowHtml(s) {
   let sub;
   // Tečka a text jsou jeden prvek: v kartě se podpis zalamuje a samostatná tečka by zůstala
   // viset za čipem projektu, zatímco text by odjel na další řádek.
-  if (s.status === 'working') sub = `<span class="sub-live"><span class="live-dot" aria-hidden="true"></span><span>${esc(s.activity || tr('Pracuje'))}</span></span>`;
+  if (s.status === 'working') sub = `<span class="sub-live"><span class="live-dot" aria-hidden="true"></span><span>${esc(vetaStavu(s))}</span></span>`;
   else if (needsYou(s) || s.status === 'failed' || s.status === 'limited') sub = `<span class="sub-alert">${esc(s.reason)}</span>`;
   // Tento záznam není ověřená konverzace: z procesu samého nepoznáme, jestli jde o hlavního
   // nebo pomocného agenta. Složka proto zůstává jen kontextem, nikdy názvem konverzace.

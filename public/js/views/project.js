@@ -4,7 +4,7 @@ import { esc, fmtTok, fmtMoney, rel, norm, plural, shortPath, dateLong } from '.
 import { odhadCenyApi, CENIK_API_OVERENO, CENIK_API_ZDROJ } from '../cenik-api.js';
 import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
-import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy } from '../ui.js';
+import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy, vetaStavu } from '../ui.js';
 import { sessionTotal, needsYou } from '../data.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
@@ -32,7 +32,7 @@ function rowHtml(s, now) {
   return `<li class="prow">
     <a class="prow-link" href="${agentHref(s.id)}">
       <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
-      <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="live-dot"></span>${esc(s.activity)}` : sub}</span></span>
+      <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="live-dot"></span>${esc(vetaStavu(s))}` : sub}</span></span>
     </a>
     <span class="prow-meta">${statusPill(s.status)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '–'}</span></span>
     <span class="prow-actions">${actions}</span>

@@ -56,7 +56,8 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
 
   await t.test('otevření v aplikaci: nabídka akcí, plán, ochrana', async () => {
     const st = await a.get(`/api/sessions/${encodeURIComponent(id)}`);
-    assert.deepEqual(st.body.session.open.map((x) => x.id), ['app', 'terminal', 'folder']);
+    // Konverzace Claude Code z příkazové řádky čeká v Terminálu, proto je hlavní akcí (src/openers.js#openTargets).
+    assert.deepEqual(st.body.session.open.map((x) => x.id), ['terminal', 'app', 'folder']);
     const path = `/api/sessions/${encodeURIComponent(id)}/open`;
     assert.equal((await a.send('POST', path, { target: 'terminal' }, {})).status, 403);
     const r = await a.send('POST', path, { target: 'terminal' });

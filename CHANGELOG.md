@@ -48,6 +48,10 @@ Automatizované regresní testy kontrolují autorizaci, běh dialogů, zrušení
 
 
 - **Přesnější přiřazení konverzací ke správnému profilu Claude Code (ve vývoji).** Když je identita konkrétního CLI profilu ověřená a přepis patří jednoznačně tomuto profilu, Agenteeq ji přiřadí ke konverzaci a aktualizuje její živý souhrn. Neznámé a kolidující profily se nepřiřazují odhadem. Ostatní poskytovatelé a kompletní per-account limity zatím zůstávají nedokončené.
+- **„Možná čeká na tvé povolení“ je vidět všude, kde je stav agenta.** Agenteeq tu domněnku u Claude Code bez hooků počítal, ale řádek na Agentech, pruh v detailu, karta v Právě teď ani řádek v projektu ji neukázaly – agent vypadal, že jen pracuje. Všechna místa teď berou větu o stavu z jednoho pomocníka (`vetaStavu`), který u práce ukáže důvod z modelu, když řekne víc než samotná činnost.
+- **Hlavní tlačítko u konverzace z Terminálu vede do Terminálu.** U Claude Code a Codexu spuštěných z příkazové řádky je teď první (tmavé) tlačítko „Pokračovat v Terminálu“ – tam otázka opravdu čeká. „Otevřít Claude“ jen spustilo Claude.app, která konverzace z příkazové řádky neukazuje; zůstává jako vedlejší volba. Konverzace z Claude Desktop a z aplikace Codex se dál otevírají hlavně v aplikaci.
+- **Otázka agenta v přepisu i s nabízenými možnostmi.** Místo jména nástroje „AskUserQuestion“ stojí „Ptá se tě“, pod tím celé znění otázky a možnosti, které agent nabízí (třeba Ano / Ne).
+- **Pomocník odpoví na „co na mě čeká?“ ze živého stavu.** Vyjmenuje agenty, kteří potřebují tvé rozhodnutí, i ty, kteří selhali nebo narazili na limit, s odkazem na každého – nebo věcně řekne, že nic nečeká. Dřív otázku hledal ve starých přepisech a odpověděl „Nic se nenašlo“, i když agenti čekali. Odpovídá lokálně a bez modelu; dokud se stav nenačte, nic netvrdí.
 
 ## Nevydáno
 

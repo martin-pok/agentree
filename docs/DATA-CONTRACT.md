@@ -204,7 +204,9 @@ interface SessionSummary {
   transcriptSeq: number;
 }
 
-interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error' }
+interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error'; questions?: { question: string; options: string[] }[] }
+// questions = otázka agenta (Claude Code AskUserQuestion) i s popisky nabízených možností, max. 4 otázky
+// po 8 možnostech, oříznuté. `text` dál nese samotná znění otázek (hledání, starší klienti).
 
 interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; reached: boolean; plan: string | null; text: string; at: number; source?: 'statusline' | 'desktop-usage' | 'transcript-quota' | 'plan-history' | string; overage?: 'on' | 'off' | null }
 // resetsAt = přesný čas obnovy od zdroje. Živý přehled neukazuje měření starší než 30 minut

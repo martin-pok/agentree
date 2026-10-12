@@ -186,7 +186,9 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-live .pb-agents { display: grid; margin: 0; padding: 0; gap: 4px; overflow: visible; }
 .home-live .pb-agent { height: auto; min-height: 66px; border-radius: var(--r-lg); padding: 10px 6px; max-width: none; }
 .home-live .pb-agent-text b { white-space: normal; font-size: 14px; }
-.home-live .pb-agent-text small { margin-top: 5px; }
+/* Věta o stavu smí na dva řádky: „… · možná čeká na tvé povolení“ nebo otázka agenta se jinak
+   ořízla právě v místě, které říká, že agent čeká na tebe. */
+.home-live .pb-agent-text small { margin-top: 5px; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .home-live .sec-head h2 { font-size: 16px; }
 .home-live .card { background: transparent; padding: 0; border: 0; }
 .home-history { border-top: 1px solid var(--line); padding-top: 18px; }
@@ -298,6 +300,11 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .table:has(.agent-robot-tile) .cell-title { grid-column: 1 / -1; }
 .table:has(.agent-robot-tile) .cell-title b { font-size: 18px; font-weight: 400; white-space: normal; }
 .table:has(.agent-robot-tile) .cell-sub { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+/* Věta o stavu v kartě smí na dva řádky, ať „… · možná čeká na tvé povolení“ nebo otázka agenta
+   na úzké kartě nezmizí za třemi tečkami. */
+.table:has(.agent-robot-tile) :is(.sub-live > span:last-child, .sub-alert) { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.table:has(.agent-robot-tile) .sub-live { align-items: flex-start; }
+.table:has(.agent-robot-tile) .sub-live .live-dot { margin-top: 6px; }
 .table:has(.agent-robot-tile) .cell-app { display: block; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
 .table:has(.agent-robot-tile) .cell-app small { display: inline; margin-left: 8px; }
 .table:has(.agent-robot-tile) .cell-num { display: block; text-align: left; font-size: 14px; }

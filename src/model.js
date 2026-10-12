@@ -81,10 +81,11 @@ export function addTokens(s, ts, delta, sign = 1) {
   else delete s.hourly[k];
 }
 
-export function pushEntry(s, { at, role, text = '', tool, status }) {
+export function pushEntry(s, { at, role, text = '', tool, status, questions }) {
   const entry = { seq: ++s.seq, at: at || Date.now(), role, text };
   if (tool) entry.tool = tool;
   if (status) entry.status = status;
+  if (questions?.length) entry.questions = questions;
   s.transcript.push(entry);
   if (s.transcript.length > TRANSCRIPT_MAX) s.transcript.splice(0, s.transcript.length - TRANSCRIPT_MAX);
   s.dirty.push(entry);

@@ -127,9 +127,18 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   return null;
 }
 
-// Nabídka akcí pro UI (pořadí = důležitost).
+// Konverzace z příkazové řádky (Claude Code nebo Codex v Terminálu): otázka na ni čeká v Terminálu.
+// Claude.app konverzace z příkazové řádky neukazuje, takže „Otevřít Claude“ by uživatele poslalo
+// jinam, než kde se čeká na jeho rozhodnutí. Konverzace z Claude Desktop (app „Claude Desktop · Code“)
+// a z aplikace Codex se dál otevírají hlavně v aplikaci. Jména jsou pevná z konektorů
+// (src/connectors/claude-code.js, src/connectors/codex.js#codexAppName).
+export const zPrikazoveRadky = (s) => (s.connector === 'claude-code' && s.app === 'Claude Code')
+  || (s.connector === 'codex' && s.app === 'Codex CLI');
+
+// Nabídka akcí pro UI (pořadí = důležitost; první je hlavní tlačítko). U konverzace z příkazové
+// řádky vede hlavní akce do Terminálu, kde konverzace pokračuje.
 export function openTargets(s, apps = {}, moznosti = {}) {
-  return ['app', 'terminal', 'folder']
+  return (zPrikazoveRadky(s) ? ['terminal', 'app', 'folder'] : ['app', 'terminal', 'folder'])
     .map((id) => {
       const plan = planOpen(s, id, apps, moznosti);
       return plan ? { id, label: plan.title } : null;

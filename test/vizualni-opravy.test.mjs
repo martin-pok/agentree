@@ -124,7 +124,7 @@ test('Agenti: zelená tečka pracujícího agenta drží u svého textu', async 
   const a = await zdroj('public/js/views/agents.js');
   // Dřív byla tečka a text dva sourozenci v zalamovaném podpisu karty: text odjel na další řádek
   // a tečka visela sama za čipem projektu.
-  assert.match(a, /<span class="sub-live"><span class="live-dot" aria-hidden="true"><\/span><span>\$\{esc\(s\.activity/);
+  assert.match(a, /<span class="sub-live"><span class="live-dot" aria-hidden="true"><\/span><span>\$\{esc\(vetaStavu\(s\)\)/);
   const css = await zdroj('public/styles.css');
   assert.match(pravidlo(css, '.sub-live') || '', /display: inline-flex/);
 });
