@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav k 12. 10. 2026.** Na vývojové větvi je kandidát **0.46.7 Preview** pro bezpečné Google profilové fotografie (PR #155) a deduplikaci GitHub CI (PR #154); kandidát **není publikovaný**, vydání vyžaduje zelené CI přesného releasového SHA a sestavení instalačních balíčků. Nejnovější veřejné testovací vydání je **[v0.46.6 Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.6)** s Mac/Windows/Chrome přílohami a SHA-256. Poslední stabilní **v0.46.0** zůstává `Latest`. Automatické testy nenahrazují živé UAT upgrade, Google OAuth, macOS ikon a přepínání Terminálu. Další priority: dokončit CI release kandidáta, připravit draft pro zařízení a otestovat na skutečném Macu.
+**Stav k 12. 10. 2026.** Zdrojová verze **0.46.7 Preview** je sloučená do `main` v commitu `f29501cf` (PR #156) a má **8/8 úspěšných kontrol přesného SHA**. Zahrnuje ochranu Google profilových fotografií a oddělené publikování Stable/Preview. **Není zatím vydaná**: navazující PR připravuje jednorázové spuštění workflow, které po zeleném CI sestaví pouze neveřejný draft (Mac/Windows/Chrome a SHA-256). Nejnovější veřejný Preview je **[v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6)**, stabilní `Latest` je **v0.46.0**. Automatické testy nenahrazují živé UAT upgrade, Google OAuth, macOS ikon a návratu do Terminálu (issue #157).
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
@@ -51,8 +51,8 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 
 | Priorita | Výsledek | Aktuální stav (12. 10. 2026) | Hotovo, až když… |
 |---|---|---|---|
-| P0 | Bezpečný release 0.46.7 Preview | Kandidát na PR #156; balíček **není vydaný**, povinné CI a merge nejsou potvrzené | 8/8 CI kandidáta i shodného `main` SHA, Mac/Windows/extension balíčky a SHA-256, ruční publikace výhradně jako Preview |
-| P0 | Oddělené kanály Stable / Preview | Stable Latest je `v0.46.0`, veřejný Preview je `v0.46.6`; PR #156 opravuje publikovací workflow | Preview ponechá `Latest` beze změny, Stable vyžaduje samostatnou volbu i potvrzení a je pokryto testy |
+| P0 | Bezpečný release 0.46.7 Preview | PR #156 sloučen; CI na `main` SHA `f29501cf` **8/8 zelené**; instalační balíček a draft teprve čekají na sestavení | Draft s Mac/Windows/extension balíčky a SHA-256; publikace pouze po ověření release gate jako Preview |
+| P0 | Oddělené kanály Stable / Preview | Stable Latest je `v0.46.0`, veřejný Preview je `v0.46.6`; bezpečnost publikování sloučena v PR #156 | Preview ponechá `Latest` beze změny, Stable vyžaduje samostatnou volbu i potvrzení a je pokryto testy |
 | P0 | Google OAuth a profilová fotka | Zabezpečení stahování fotky sloučeno v PR #155, nativní Google přihlášení a avatar na Macu **neověřeny** | Úspěšné i odmítnuté přihlášení, logout, offline návrat, foto, přesměrování a upgrade doložené na reálném Macu |
 | P0 | Vizuální identita v distribuované aplikaci | Binární assety pro Mac a Windows mají regresní testy, ale chybí pixelová vizuální kontrola na zařízení | Ručně porovnaný Dock, menu bar, DMG, ICO/ICNS i skutečné Chrome Store screenshoty proti schválenému masteru |
 | P0 | Živý stav a návrat do konverzace | Opravy pro agent decisions a Terminál vyšly v `0.46.6 Preview`; reálný Terminál, iTerm a Warp UAT zbývá | Při běžící session se nevytvoří kopie, agent čeká skutečně tam, kam akce vede, odvozený stav je přiznaný |
