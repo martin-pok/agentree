@@ -187,15 +187,20 @@ export class UpdateService {
   async download() {
     if (this.value.status !== 'available' || !this.value.asset) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
     const asset = this.value.asset;
+    const channel = this.channel;
     try {
       const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS), redirect: 'follow' });
       if (!response.ok) throw new Error(ui('Aktualizační balíček se nepodařilo stáhnout.'));
       const body = await responseBytes(response, asset);
+      if (channel !== this.channel || this.value.asset?.url !== asset.url) {
+        return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+      }
       const dir = path.join(this.dataDir, 'updates');
       const file = path.join(dir, asset.name);
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });
       await fs.writeFile(`${file}.tmp`, body, { mode: 0o600 });
       await fs.rename(`${file}.tmp`, file);
+      if (channel !== this.channel || this.value.asset?.url !== asset.url) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
       this.value = { ...this.value, status: 'downloaded', downloaded: { name: asset.name, path: file, size: body.length, at: this.now() } };
       return { ok: true, update: this.state() };
     } catch (err) {
