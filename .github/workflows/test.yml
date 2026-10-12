@@ -160,9 +160,6 @@ jobs:
       - run: npm run qa:desktop-inset
       - run: npm run qa:assistant
       - run: npm run qa:refresh
-      - run: npm run qa:site
-      - run: npm run qa:extension
-      - run: npm run qa:contrast
       - run: npm run qa:tvary
       - run: npm run qa:studio
       - uses: actions/upload-artifact@v6
@@ -171,8 +168,32 @@ jobs:
           name: browser-qa
           path: |
             dist/qa/
+          retention-days: 14
+
+  browser-web-qa:
+    name: Web, rozšíření a kontrast
+    runs-on: ubuntu-latest
+    # Independently test site/extension/a11y; do not serialize behind long desktop QA.
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run qa:site
+      - run: npm run qa:extension
+      - run: npm run qa:contrast
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: browser-web-qa
+          path: |
             dist/qa-site/
             dist/qa-extension/
+            dist/qa-contrast/
           retention-days: 14
 
   chrome-store:

@@ -135,3 +135,23 @@ test('integration logo requests are deferred, never the main brand or LCP hero',
     assert.ok(brand && !/loading="lazy"/.test(brand), 'navigation brand remains eager');
   }
 });
+
+test('privacy trust link is localized, visible in its section, and resolves to a published policy', async () => {
+  for (const { file, href, policy } of [
+    { file: 'site/index.html', href: '/soukromi', policy: 'site/soukromi/index.html' },
+    { file: 'site/en/index.html', href: '/en/privacy', policy: 'site/en/privacy/index.html' },
+  ]) {
+    const html = await fs.readFile(path.join(ROOT, file), 'utf8');
+    const start = html.indexOf('id="soukromi"');
+    assert.ok(start >= 0, file + ' has no privacy section');
+    const end = html.indexOf('</section>', start);
+    assert.ok(end > start, file + ' has no privacy section end');
+    const privacy = html.slice(start, end);
+    assert.match(privacy, new RegExp('<a class="text-link" href="' + href + '">'),
+      'privacy detail link must be part of the trust section: ' + file);
+    const policyHtml = await fs.readFile(path.join(ROOT, policy), 'utf8');
+    assert.match(policyHtml, /<link rel="canonical" href="https:\/\/agentree-fawn\.vercel\.app\//);
+    assert.doesNotMatch(privacy, /penetration tested|certified|100% secure|neprolomitelné/i,
+      'marketing must not imply an unverified security guarantee');
+  }
+});
