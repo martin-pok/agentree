@@ -712,6 +712,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!['manual', 'automatic'].includes(body.updateMode)) throw new HttpError(422, ui('Aktualizace mohou být ruční nebo automatické.'));
         datastore.data.settings.updateMode = body.updateMode;
       }
+      if (body.updateChannel !== undefined) {
+        if (!['stable', 'preview'].includes(body.updateChannel)) throw new HttpError(422, ui('Neplatný kanál aktualizací.'));
+        datastore.data.settings.updateChannel = body.updateChannel;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, ui('Neplatný profilový obrázek.'));
@@ -741,7 +745,7 @@ export function createHttpServer(app, existingServer = null) {
       // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
       if (!(await datastore.flush())) throw new HttpError(500, ui('Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.'));
-      if (body.updateMode === 'automatic') app.checkForUpdates().catch(() => {});
+      if (body.updateMode === 'automatic' || body.updateChannel !== undefined) app.checkForUpdates().catch(() => {});
       return { settings: datastore.data.settings };
     }],
     // `check` nic nezapisuje: znovu přečte settings.json, ať je vidět, jestli propojení pořád platí.

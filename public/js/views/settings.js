@@ -362,6 +362,16 @@ function mount(el) {
     if (motiv) { await vyberMotiv(motiv.dataset.themePick); return; }
     const lang = e.target.closest('button[data-lang]');
     if (lang) { await setLanguage(lang.dataset.lang); return; }
+    const updateChannel = e.target.closest('button[data-update-channel]');
+    if (updateChannel) {
+      const channel = updateChannel.dataset.updateChannel;
+      if (channel !== state.settings.updateChannel) {
+        state.settings = (await api.saveSettings({ updateChannel: channel })).settings;
+        toast(channel === 'preview' ? tr('Kanál Preview je zapnutý. Testovací verze mohou obsahovat chyby.') : tr('Budou se nabízet jen stabilní vydání.'));
+        update();
+      }
+      return;
+    }
     const updateMode = e.target.closest('button[data-update-mode]');
     if (updateMode) {
       const mode = updateMode.dataset.updateMode;
@@ -1254,8 +1264,9 @@ function update(topics) {
     <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Odkaz platí jen pro {0} a do restartu aplikace.', tentoPocitac())}</small></span>
       <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>`);
 
-  /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
-  const upd = state.updates || {};
+  /* Kanál aktualizací je výslovná volba: Stable je výchozí, Preview zahrnuje testovací releasy. */
+  const channel = state.settings.updateChannel === 'preview' ? 'preview' : 'stable';
+  const upd = (state.updates?.channel || 'stable') === channel ? (state.updates || {}) : { status: 'checking' };
   const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
   // Každý stav služby má vlastní větu: vypnutá kontrola ani vydání bez balíčku pro tento počítač
   // se nesmí tvářit jako probíhající kontrola.
@@ -1274,8 +1285,13 @@ function update(topics) {
           : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
+  const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
+    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Kanál aktualizací')}">
+      ${channelOption('stable', tr('Stabilní'), tr('Pouze ověřená stabilní vydání'))}
+      ${channelOption('preview', tr('Preview · testovací'), tr('Novinky dřív, ale s rizikem chyb'))}
+    </div>
     <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
       ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
       ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}

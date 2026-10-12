@@ -1,11 +1,11 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 11. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní vydání prošlo.
+**Aktualizováno 12. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
 
 ## Zdroj pravdy
 
-- Aktuální pracovní kandidát: `package.json` (`0.46.2` v release přípravné větvi).
-- Poslední potvrzené **zveřejněné** Preview: GitHub Releases — `v0.46.1` (11. 10. 2026); stabilní Latest zůstává `v0.46.0` (9. 10. 2026). Nové 0.46.2 není zveřejněno. Koncepty vydání nejsou veřejně stažitelné.
+- Aktuální verze `package.json` na `main`: **0.46.4**. Nové funkce v PR nejsou součástí instalačních balíčků, dokud nevyjde další release.
+- Poslední potvrzené **zveřejněné** Preview: GitHub Releases — **v0.46.4** (12. 10. 2026), přílohy DMG/ZIP/Chrome a `SHA256SUMS.txt`, hlavní CI 8/8. Stabilní Latest je stále **v0.46.0** (9. 10. 2026). Koncepty vydání nejsou veřejně stažitelné.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
 
