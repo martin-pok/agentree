@@ -35,4 +35,7 @@ test('one-shot release triggers draft workflow but never publishes to Latest', a
   const release = await read('.github/workflows/release.yml');
   assert.match(release, /workflow_dispatch:/);
   assert.match(release, /gh release create "\$TAG"[\s\S]*?--draft/);
+  assert.match(release, /IS_DRAFT=\$\(gh release view "\$TAG" --json isDraft --jq \.isDraft\)/);
+  assert.match(release, /if \[ "\$IS_DRAFT" != "true" \]; then[\s\S]*?exit 1[\s\S]*?gh release upload/);
+
 });
