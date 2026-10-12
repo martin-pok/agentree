@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import { startTestServer, api, pairExtension, EXTENSION_ORIGIN } from './helpers.mjs';
 
 async function fixture(t, { native = true } = {}) {
@@ -44,7 +45,17 @@ test('extension focus is strictly local, paired and origin bound; forged identit
   assert.equal((await run({ ...valid, Origin: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' })).status, 401, 'wrong paired extension origin');
   assert.equal((await run({ ...valid, Origin: 'https://evil.example' })).status, 401, 'web origin');
   assert.equal((await run({ ...valid, 'X-Forwarded-For': '198.51.100.3' })).status, 403, 'proxy request is not local Mac');
-  assert.equal((await run({ ...valid, Host: 'attacker.example' })).status, 403, 'Host cannot spoof local Mac');
+  // Node's fetch normalizes/overrides Host. Send a real raw HTTP request to
+  // exercise the malicious Host header at the transport boundary.
+  const spoofedHost = await new Promise((resolve, reject) => {
+    const req = http.request(f.server.url + '/api/extension/focus-agent', {
+      method: 'POST',
+      headers: { ...valid, Host: 'attacker.example', 'Content-Type': 'application/json' },
+    }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+    req.on('error', reject);
+    req.end(JSON.stringify({ id: f.s.id }));
+  });
+  assert.equal(spoofedHost, 403, 'a forged HTTP Host cannot impersonate the Mac');
   assert.equal(f.messages.length, 0);
 });
 
@@ -54,8 +65,9 @@ test('extension focus rejects missing, archived, stale or malformed agent IDs wi
     const res = await f.send(id);
     assert.ok([404, 422].includes(res.status), 'unexpected status ' + res.status + ' for ' + String(id));
   }
-  f.s.archived = true;
-  f.server.app.store.commit(f.s, Date.now());
+  // Archived status is derived from activity timestamps, not set by a
+  // caller-provided boolean. Remove the actual session from the current store.
+  f.server.app.store.remove(f.s.id);
   assert.equal((await f.send(f.s.id)).status, 404);
   assert.equal(f.messages.length, 0);
 });
