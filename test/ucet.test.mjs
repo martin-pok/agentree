@@ -460,6 +460,103 @@ test('fotka přesměrovaná mimo Google se nepřijme', async () => {
   assert.equal(ucet.status().foto, '');
 });
 
+
+test('fotka: přesměrování mimo Google je odmítnuto před dalším síťovým požadavkem', async () => {
+  const navstivene = [];
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, options) => {
+      if (url.startsWith('https://ucty.example')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      navstivene.push(url);
+      assert.equal(options.redirect, 'manual', 'HTTP client must not auto-follow redirects');
+      return { status: 302, url, headers: { get: (key) => key === 'location' ? 'http://127.0.0.1:4620/api/state' : null } };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.deepEqual(navstivene, ['https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c']);
+  assert.equal(ucet.status().foto, '');
+});
+
+test('fotka: bezpečný redirect mezi CDN Googlu je povolen, ale nejvýš tři hops', async () => {
+  const pozadavky = [];
+  const dalsi = 'https://lh4.googleusercontent.com/real-photo';
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, options) => {
+      if (!url.startsWith('https://lh')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      pozadavky.push(url);
+      assert.equal(options.redirect, 'manual');
+      if (url.startsWith('https://lh3.')) return { status: 302, url, headers: { get: (key) => key === 'location' ? dalsi : null } };
+      return { ...obrazek(JPEG), url };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().foto);
+  assert.deepEqual(pozadavky, ['https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c', dalsi]);
+});
+
+test('fotka: velikost streamu se omezí během čtení, ne až po arrayBuffer()', async () => {
+  let read = 0;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url) => {
+      if (!url.startsWith('https://lh')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      return {
+        status: 200, ok: true, url, headers: { get: () => null },
+        body: new ReadableStream({
+          pull(controller) {
+            read += 1;
+            controller.enqueue(new Uint8Array(180_000));
+          },
+        }),
+        arrayBuffer: () => { throw Error('unbounded arrayBuffer must not be called'); },
+      };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(ucet.status().foto, '');
+  assert.ok(read <= 3, 'oversized image should cancel reading promptly');
+});
+
+
+test('fotka: chybné Content-Length odmítne přenos bez načtení těla', async () => {
+  let stazeno = false;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url) => url.startsWith('https://lh')
+      ? { status: 200, ok: true, url, headers: { get: (name) => name === 'content-length' ? '500000' : null }, arrayBuffer: async () => { stazeno = true; throw Error('should not read'); } }
+      : odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU }),
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(stazeno, false, 'oversized Content-Length must fail before loading');
+  assert.equal(ucet.status().foto, '');
+});
+
+test('fotka: více než tři CDN redirecty jsou odmítnuty', async () => {
+  const requests = [];
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, opts) => {
+      if (!url.startsWith('https://lh3.googleusercontent.com')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      assert.equal(opts.redirect, 'manual');
+      requests.push(url);
+      return { status: 302, url, headers: { get: (name) => name === 'location' ? '/photo?hop=' + requests.length : null } };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(requests.length, 4, 'initial request plus at most three redirects');
+  assert.equal(ucet.status().foto, '');
+});
+
 test('fotka, která není obrázek (nebo je moc velká), se nepřijme – zůstanou iniciály', async () => {
   for (const telo of [Buffer.from('<html>chyba</html>'), Buffer.concat([JPEG, Buffer.alloc(400_000)])]) {
     const ucet = createUcet({
