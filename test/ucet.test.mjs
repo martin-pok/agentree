@@ -466,7 +466,7 @@ test('fotka: přesměrování mimo Google je odmítnuto před dalším síťový
   const ucet = createUcet({
     config, secrets: falesneTajemstvi('obnova-1'),
     fetchImpl: async (url, options) => {
-      if (!url.startsWith('https://lh3.googleusercontent.com')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      if (url.startsWith('https://ucty.example')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
       navstivene.push(url);
       assert.equal(options.redirect, 'manual', 'HTTP client must not auto-follow redirects');
       return { status: 302, url, headers: { get: (key) => key === 'location' ? 'http://127.0.0.1:4620/api/state' : null } };
