@@ -101,6 +101,22 @@ jobs:
             console.log(v.assets.map((a) => `${a.name} ${a.size}`).join("\n"));
           '
 
+      # Re-download the DRAFT assets from GitHub before changing their visibility.
+      # Compare exact inventory, bytes and sizes against *both* GitHub's published
+      # asset digests and SHA256SUMS.txt. The build already checked local files,
+      # but only this second pass checks the files actually stored by GitHub.
+      - name: Znovu stáhnout a nezávisle ověřit všech 8 příloh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > release-metadata.json
+          mkdir -p overene-prilohy
+          gh release download "$TAG" --dir overene-prilohy --repo "$GITHUB_REPOSITORY"
+          node scripts/verify-release-assets.mjs "$TAG" overene-prilohy release-metadata.json
+          (cd overene-prilohy && sha256sum --check SHA256SUMS.txt)
+
       # Skript popisu čte jména a velikosti příloh ze složky. Soubory se nestahují: stačí prázdné
       # soubory se skutečnou velikostí. Podpis se přebírá z popisu, který napsal build – build
       # je jediný, kdo ví, jestli se podepsal Developer ID.
