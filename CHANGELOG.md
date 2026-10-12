@@ -7,6 +7,13 @@
 - **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
 - Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
 
+## Rozpracováno po 0.46.7 · jednotné počty agentů (nevydáno)
+
+- **Chrome extension počítá stejné agenty jako aplikace:** podřízené konverzace s viditelným rodičem se nezapočítají podruhé, u opakovaných naplánovaných úloh je v souhrnu pouze poslední běh.
+- **Jeden výběr v kódu:** nativní/dashboard rozhraní i souhrn pro Chrome používají stejnou čistou funkci, takže se pravidla nerozcházejí při dalších změnách.
+- **Regresní ověření:** syntetických 20 běžících agentů, rodič/pomocná vlákna, opakované úlohy, chybějící rodič a archiv; žádný text přepisu se rozšíření neposílá.
+- Tato oprava je určená až pro nové vydání po draftu 0.46.7; nevkládá se zpětně do hotového DMG ani Chrome Store.
+
 ## Rozpracováno po 0.46.7 · úsporné a bezpečné stahování velkých aktualizací (zatím nevydáno)
 
 - **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
