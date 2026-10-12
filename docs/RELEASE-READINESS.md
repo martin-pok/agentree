@@ -21,7 +21,7 @@
 | Zdroje dat | kontrola hranice „naměřené / odvozené / neznámé“ a citlivých informací v URL | Zastavit publikaci při regresi |
 | Instalace | DMG, ZIP macOS Apple Silicon, Windows beta ZIP, Chrome extension ZIP a jejich checksumy | Zastavit publikaci |
 | Ruční QA | Mac, Windows beta, Chrome v CZ i EN podle [TESTING.md](TESTING.md) | Neoznačovat jako ověřené |
-| Schválení | vědomé zveřejnění konceptu `publish.yml` nebo GitHub UI | Koncept ponechat neveřejný |
+| Schválení a kanál | výslovně zvolit `preview` nebo `stable` při ručním `publish.yml`; pro Stable navíc potvrdit změnu `Latest` | Preview nikdy nesmí změnit stabilní `Latest`; koncept bez schválení ponechat neveřejný |
 
 ## Jaký je další postup
 
