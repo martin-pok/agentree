@@ -57,6 +57,7 @@ import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
 import { UpdateService } from './updates.js';
+import { prehledProRozsireni } from './prehled-rozsireni.js';
 import { watchExactFile } from './watch.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
@@ -1181,6 +1182,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // protože jen ono může skončit samo a spustit novou verzi. Server mu pošle cestu k balíčku a verzi.
   let desktopReport = null;
   function nastavDesktop(report) { desktopReport = typeof report === 'function' ? report : null; }
+
+  // A Chrome extension click is NOT a browser session and must never receive
+  // the WKWebView window key. Send a one-way, strictly scoped navigation request
+  // to the existing native shell instead. No agent process or shell command runs.
+  function focusExtensionAgent(id) {
+    if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
+    if (typeof id !== 'string' || !id || id.length > 200) return { status: 422, error: ui('Neplatný agent.') };
+    // Allow only an ID actually offered to the extension now. An arbitrary
+    // history ID, hidden child session or archived transcript is not eligible.
+    const summary = prehledProRozsireni(store.list());
+    const visible = [...summary.rozhodnuti, ...summary.pracuji].some((s) => s.id === id);
+    if (!visible) return { status: 404, error: ui('Agent už není v aktuálním přehledu. Obnov seznam.') };
+    desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
+    return { ok: true, focused: true };
+  }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
     const target = updates.downloadedPath();
@@ -1678,7 +1694,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
