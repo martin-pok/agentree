@@ -223,7 +223,7 @@ async function focusExistingAgent(id) {
     });
     if (res.status === 401) await forgetToken();
     const body = await res.json().catch(() => ({}));
-    return res.ok && body.ok ? { ok: true } : { ok: false, unpaired: res.status === 401, error: typeof body.error === 'string' ? body.error.slice(0, 240) : '' };
+    return res.ok && body.ok ? { ok: true } : { ok: false, unpaired: res.status === 401, unsupported: res.status === 409, error: typeof body.error === 'string' ? body.error.slice(0, 240) : '' };
   } catch {
     return { ok: false, offline: true };
   }
