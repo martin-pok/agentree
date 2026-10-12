@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · otevření existujícího agenta z Chrome extension (nevydáno)
+
+- **Přechod do nativní aplikace:** kliknutí na již zobrazeného lokálního agenta nově prochází pouze ověřeným tokenem rozšíření a přepne existující macOS okno. Neslibuje otevření localhostu v nové kartě Chromu, kde chyběla autorizace.
+- **Oprávnění:** žádný klíč WKWebView, text přepisu, nový agent, shell ani širší oprávnění pro Chrome; požadavek musí být z tohoto Macu a z vlastní stránky popupu.
+- **Ověření:** automatické testy tokenu, podvrženého původu, neznámého/archivovaného ID, nepřítomného desktopu a opakovaného kliknutí. Reálné UAT macOS zůstává samostatná podmínka.
+- **Distribuce:** není součástí již sestaveného 0.46.7 draftu ani aktuálního Chrome Store balíčku.
+
 ## Rozpracováno po 0.46.7 · pravdivá verze na veřejném webu (nevydáno)
 
 - **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
