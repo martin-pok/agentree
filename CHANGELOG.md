@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.4 – 2026-10-12 · ověřené nativní ikony a bezpečnější instalace
+
+- **macOS:** Dock používá skutečný distribuovaný `Agenteeq.icns` jako jediný zdroj ikony. Staré duplicitní ikony se do instalačního ZIPu nepřibalují; PNG náhled se generuje ze stejného souboru.
+- **Windows:** ikona EXE se vytváří proporčně ze stejného zdrojového Dock masteru jako Mac a Chrome extension; její vzhled kontroluje automatický regresní test.
+- **Ověřitelné stažení:** vydání obsahuje `SHA256SUMS.txt` s otisky skutečných instalačních příloh a během release buildu probíhá nezávislé ověření přes `sha256sum --check`.
+- **Stav instalace:** testy sestavení ověřují artefakty a balení, nikoli to, jak se ikona vykresluje na konkrétním uživatelském Macu. Developer ID notarizace a živé UAT zůstávají otevřené.
+
 ## 0.46.3 – 2026-10-11 · stejná ikona v každé velikosti
 
 - **Jednotný vizuální master:** stejný poměr stran bílé robotické hlavy, očí a antény na Docku, v menu baru, na webu a v Chrome extension; menší verze se jen proporčně škálují, nikoli překreslují.

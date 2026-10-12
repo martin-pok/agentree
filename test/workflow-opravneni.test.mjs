@@ -31,7 +31,12 @@ const ZAPIS = {
   'release-0463-preview.yml': {
     'start-preview-build': 'spustit ověřený v0.46.3 build po zeleném main CI',
     'publish-preview': 'zveřejnit jen shodný tag a úplnou ověřenou binárku jako prerelease',
-  },};
+  },
+  'release-0464-preview.yml': {
+    'start-preview-build': 'sestavit jen zelený 0.46.4 candidate ze stejného main SHA',
+    'publish-preview': 'ověřit shodný tag, binaries a SHA-256 manifest',
+  },
+};
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
 const blok = (yml, klic) => yml.match(new RegExp(`^${klic}:[^\\n]*\\n(?: +[^\\n]*\\n)*`, 'm'));
@@ -214,4 +219,32 @@ test('0.46.3 icon preview is pinned to exact green main SHA and never promoted t
   assert.match(publish, /agenteeq-extension-0\.46\.3\.zip/);
   assert.match(publish, /\.size > 100000/);
   assert.match(publish, /--draft=false --prerelease --latest=false/);
+});
+
+test('0.46.4 icon preview is pinned to exact green main SHA and never promoted to stable latest', () => {
+  const wf = workflowy.find(({ f }) => f === 'release-0464-preview.yml')?.yml;
+  assert.ok(wf, 'missing 0.46.4 preview workflow');
+  const jobs = ulohy(wf);
+  const start = jobs['start-preview-build'];
+  const publish = jobs['publish-preview'];
+  assert.ok(start && publish);
+  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
+  assert.match(start, /VERSION.*0\.46\.4/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.4/);
+  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
+  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
+  assert.match(publish, /agenteeq-extension-0\.46\.4\.zip/);
+  assert.match(publish, /\.size > 100000/);
+  assert.match(publish, /--draft=false --prerelease --latest=false/);
+});
+
+
+test('0.46.4 Preview publication additionally requires the independent SHA256SUMS asset', () => {
+  const workflow = workflowy.find(({ f }) => f === 'release-0464-preview.yml')?.yml;
+  assert.ok(workflow);
+  assert.match(ulohy(workflow)['publish-preview'], /SHA256SUMS\.txt/);
+  assert.match(ulohy(workflow)['publish-preview'], /\.size > 100/);
 });
