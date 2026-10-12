@@ -63,16 +63,20 @@ export function uzivatelZOdpovedi(user) {
 // na obrázkovém serveru Googlu – server na Macu nikdy nestáhne nic odjinud. Google dává 96 px;
 // pro ostré zobrazení na Retině si řekneme o 192 px.
 export function fotoZMetadat(meta) {
-  const raw = meta?.avatar_url || meta?.picture;
-  if (typeof raw !== 'string' || raw.length > 2048) return '';
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== 'https:' || !/(^|\.)googleusercontent\.com$/.test(u.hostname) || u.username || u.password || u.port) return '';
-    u.pathname = u.pathname.replace(/=s\d+(-[a-z]+)*$/, '=s192-c');
-    return u.href;
-  } catch {
-    return '';
+  // Supabase may expose both avatar_url and picture. A malformed or off-domain
+  // avatar_url must not suppress a valid Google picture fallback.
+  // Validate EACH candidate against the same strict CDN allowlist, never pass
+  // arbitrary metadata URLs to the network.
+  for (const raw of [meta?.avatar_url, meta?.picture]) {
+    if (typeof raw !== 'string' || raw.length > 2048) continue;
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'https:' || !/(^|\.)googleusercontent\.com$/.test(u.hostname) || u.username || u.password || u.port) continue;
+      u.pathname = u.pathname.replace(/=s\d+(-[a-z]+)*$/, '=s192-c');
+      return u.href;
+    } catch { /* Try the other Google identity metadata field. */ }
   }
+  return '';
 }
 
 // Typ obrázku podle prvních bajtů – hlavičce Content-Type ze sítě se nevěří.

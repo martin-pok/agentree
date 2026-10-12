@@ -1,5 +1,11 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · spolehlivější načtení profilové fotky (nevydáno)
+
+- **Google foto:** pokud Supabase vrátí neplatné `avatar_url`, aplikace zkusí alternativní `picture` místo prázdné profilovky. Obě adresy musí vždy projít stejnou kontrolou HTTPS a povolené Google CDN.
+- **Testy:** kontrola škodlivé adresy, neplatného formátu, příliš dlouhé URL a priority validního primárního obrázku. Bez odesílání údajů mimo Google obrázkovou CDN.
+- **Ověření:** jde o automaticky testovanou opravu metadat; skutečné zobrazení Google fotky v macOS UI stále vyžaduje UAT a není touto změnou prohlášeno za hotové.
+
 ## Rozpracováno po 0.46.7 · Chrome extension: pracovní filtr konverzací (zatím nevydáno)
 
 - **Rychlé soustředění:** při více otevřených webových AI chatech je možné filtrovat Vše / Odpovídají / Limity, s pravdivým počtem v každém stavu. Přepnutí nevyvolá žádné síťové ani cloudové požadavky a respektuje uživatelem vypnuté služby.

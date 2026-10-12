@@ -27,7 +27,7 @@ test('počet testů v dokumentaci se neliší o víc než desetinu', async () =>
     // Soubor se čte přes URL, ne přes `dir.pathname` – z „/D:/…“ by na Windows vzniklo „D:\D:\…“.
     skutecnost += (await fs.readFile(new URL(f, dir), 'utf8')).match(/^\s*(?:await )?(?:t\.)?test\(/gm)?.length || 0;
   }
-  for (const [soubor, re] of [['README.md', /npm test\s+# (\d+) testů/], ['docs/TESTING.md', /\| `npm test` \| (\d+) testů/]]) {
+  for (const [soubor, re] of [['README.md', /npm test\s+# (\d+) testů/], ['docs/TESTING.md', /\*\*Aktuální inventář automatických testů:\*\* (\d+) deklarovaných testů/]]) {
     const uvedeno = Number((await zdroj(soubor)).match(re)?.[1]);
     assert.ok(uvedeno, `${soubor}: počet testů se nepodařilo najít`);
     const odchylka = Math.abs(uvedeno - skutecnost) / skutecnost;

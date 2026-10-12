@@ -1,12 +1,6 @@
 # Testování a ověření
 
-## Aktuální rozsah testů (12. 10. 2026)
-
-| Kontrola | Stav |
-|---|---|
-| `npm test` | 1128 testů v aktuální zdrojové sadě PR #171; skutečné pass/fail určuje odpovídající CI běh. |
-
-Údaje o dřívějších bězích níže zůstávají historickým protokolem; jejich počet není současný počet testů.
+**Aktuální inventář automatických testů:** 1128 deklarovaných testů v `test/*.test.mjs` (podle volání `test()` a `t.test()`). Inventář zdrojových testů není tvrzení o počtu testů, které prošly v CI; výsledky níže jsou historické protokoly a nerozšiřují se zpětně.
 
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
