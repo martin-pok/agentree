@@ -4,6 +4,30 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.8',
+    date: '2026-10-12',
+    title: 'Rychleji zpátky k agentům a spolehlivější aktualizace',
+    items: [
+      'Z Chrome rozšíření lze přepnout přímo do existujícího agenta v nativní aplikaci bez otevření nepřístupné karty prohlížeče.',
+      'U více webových chatů přibyly přehledné filtry Vše, Odpovídají a Limity. Stav spojení se po výpadku obnovuje bez falešných počtů.',
+      'Přehled a rozšíření používají shodné počítání agentů; po opětovném spojení se už nevrací staré události.',
+      'Aktualizační balíčky se stahují průběžně, atomicky a s ověřením SHA-256; souběžná stejná stažení nespotřebovávají síť opakovaně.',
+      'Google profilová fotografie může použít bezpečně ověřené náhradní metadata. Skutečné přihlášení i návrat do terminálu ještě vyžadují UAT na Macu.',
+      'Před instalací dostupné aktualizace si můžeš v Nastavení otevřít přesné poznámky zveřejněného vydání. Nevydané verze se netváří jako nainstalované.'
+    ],
+    en: {
+      title: 'Faster agent focus and more reliable updates',
+      items: [
+        'Open an existing local agent directly in the native app from Chrome without an unauthorized browser tab.',
+        'Filter multiple web chats by All, Replying and Limits. Connection status recovers after an outage without showing stale counts.',
+        'Desktop and extension share the same agent totals; reconnecting cannot replay obsolete events.',
+        'Update archives download as verified streams with atomic completion and SHA-256; identical simultaneous downloads share one transfer.',
+        'Google profile photos can use a validated fallback metadata field. Live sign-in and terminal navigation still need real-Mac acceptance testing.',
+        'Read the exact published release notes from Settings before installing an update. Unpublished versions are not presented as installed.'
+      ],
+    },
+  },
+  {
     version: '0.46.7',
     date: '2026-10-12',
     title: 'Bezpečnější Google profilová fotografie',
