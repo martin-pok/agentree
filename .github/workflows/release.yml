@@ -223,6 +223,13 @@ jobs:
           zkopiruj 'Agenteeq-*-Windows-x64.zip' Agenteeq-Windows-x64.zip
           ls -l prilohy
 
+      # Checksumy vznikají až ze skutečných příloh včetně stálých názvů.
+      # Druhý krok znovu čte soubory přes nezávislý systémový sha256sum.
+      - name: Manifest SHA-256 a ověření příloh
+        run: |
+          node scripts/release-checksums.mjs prilohy
+          (cd prilohy && sha256sum --check SHA256SUMS.txt)
+
       # Tag jde do skriptu přes env, ne vložením výrazu do textu skriptu: jméno tagu i vstup
       # ručního spuštění by se jinak vykonaly jako příkaz shellu (script injection).
       - name: Popis vydání
@@ -244,10 +251,10 @@ jobs:
           VERZE: ${{ steps.popis.outputs.verze }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg --clobber
+            gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg prilohy/SHA256SUMS.txt --clobber
             gh release edit "$TAG" --notes-file poznamky.md
           else
-            gh release create "$TAG" prilohy/*.zip prilohy/*.dmg \
+            gh release create "$TAG" prilohy/*.zip prilohy/*.dmg prilohy/SHA256SUMS.txt \
               --draft \
               --title "Agenteeq $VERZE" \
               --notes-file poznamky.md
