@@ -191,7 +191,10 @@ jobs:
     name: Web, rozšíření a kontrast
     runs-on: ubuntu-latest
     # Independently test site/extension/a11y; do not serialize behind long desktop QA.
-    timeout-minutes: 25
+    # Playwright --with-deps can spend >23 min provisioning WebKit system packages
+    # on a fresh GitHub runner. 25 min cancelled qa:site before qa:extension/qa:contrast.
+    # Allow the full QA to finish; never treat cancelled tests as passing.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
