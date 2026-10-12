@@ -65,7 +65,8 @@ try {
             const image = new Image();
             image.src = 'data:image/png;base64,' + base64;
             await image.decode();
-            const canvas = document.createElement('canvas');
+            // This page is image/svg+xml; createElement('canvas') would create an SVG element.
+            const canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'canvas');
             canvas.width = image.naturalWidth;
             canvas.height = image.naturalHeight;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
