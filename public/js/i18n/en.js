@@ -1335,6 +1335,7 @@ export default {
     "Stáhnout aktualizaci": "Download update",
     "Otevřít aktualizaci": "Open update",
     "Zkontrolovat nyní": "Check now",
+    "Co se změnilo ve verzi {0}": "What changed in version {0}",
     // Detekce agentů v činnosti (0.32.0)
     "Přidat {0} do Mých nástrojů": "Add {0} to My tools",
     "Přidat": "Add",

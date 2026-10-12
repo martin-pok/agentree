@@ -64,3 +64,19 @@ test('CHANGELOG.md má záznam pro aktuální verzi', async () => {
   const log = await fs.readFile(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
   assert.match(log, new RegExp(`^## ${version.replace(/\./g, '\\.')} – `, 'm'), `CHANGELOG.md nemá sekci „## ${version} – …“`);
 });
+
+test('installed release history never advertises changes from a newer draft build', () => {
+  const code = "globalThis.document = { documentElement: { lang: 'cs', dataset: {} } }; const { installedReleaseHistory } = await import('./public/js/whats-new.js'); console.log(JSON.stringify(installedReleaseHistory('0.46.6').map((r) => r.version).slice(0, 3)));";
+  const actual = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], {
+    cwd: new URL('..', import.meta.url), encoding: 'utf8',
+  }));
+  assert.deepEqual(actual[0], '0.46.6');
+  assert.ok(!actual.includes('0.46.7'), 'unpublished, not installed version must not appear');
+});
+
+test('Settings provides changelog of the exact published update version, never GitHub main', async () => {
+  const settings = await fs.readFile(new URL('../public/js/views/settings.js', import.meta.url), 'utf8');
+  assert.match(settings, /releases\/tag\/v/);
+  assert.match(settings, /Co se změnilo ve verzi/);
+  assert.doesNotMatch(settings, /releases\/latest\/download\/CHANGELOG/);
+});
