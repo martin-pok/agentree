@@ -1,5 +1,13 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · Chrome extension: pravdivý živý stav (dosud nevydáno)
+
+- **Živá dostupnost:** otevřený popup každých 5 sekund ověří skutečnou dostupnost lokální aplikace, nejen cache posledních agentů.
+- **Žádná falešná „Připojeno“:** při výpadku nebo selhání chráněného endpointu skryje staré počty a nabídne obnovení. Návrat aplikace se rozpozná automaticky, bez zavírání a otevírání popupu.
+- **Subtilní značka:** rozhraní nepřidává dekorace ani roboty navíc, používá existující vizuální stavy a české/anglické texty.
+- **Regresní ověření:** testy pokrývají neúspěšný HTTP health check, síťový výpadek, vyčištění starého stavu a návrat spojení.
+- **Distribuce:** existující Chrome Store verze ani již sestavený macOS draft v0.46.7 se tím nemění.
+
 ## Rozpracováno po 0.46.7 · spolehlivější aktualizace (dosud není součástí žádného instalačního balíčku)
 
 - **Závody při přepínání kanálů:** staré HTTP odpovědi ani jejich chyby nemohou přepsat novější stav po přepnutí Preview → Stable → Preview.
