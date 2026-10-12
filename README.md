@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **Stav vydání:** nejnovější veřejně dostupná testovací verze je [**v0.46.3 Preview**](https://github.com/martin-pok/agentree/releases/tag/v0.46.3) (12. 10. 2026). Připravovaný kandidát **0.46.4** obsahuje ověřenou sjednocenou ikonu Mac/Windows, odstranění starých ikon a kryptografický manifest SHA-256. Stabilní **v0.46.0** zůstává `Latest`; 0.46.4 je dostupná až po úspěšném CI, sestavení a veřejném vydání na GitHubu. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md).
+> **Stav vydání (12. 10. 2026):** poslední veřejná testovací verze je [**v0.46.4 Preview**](https://github.com/martin-pok/agentree/releases/tag/v0.46.4), s Mac/Windows balíčky, Chrome extension a souborem `SHA256SUMS.txt` (hlavní CI 8/8). Poslední stabilní verze je nadále **v0.46.0** (`Latest`). Volitelný aktualizační kanál Preview se teprve vyvíjí v samostatném PR; není součástí vydané 0.46.4. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md).
 >
 > **Desktop:** aplikace pro macOS (Apple Silicon). Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
