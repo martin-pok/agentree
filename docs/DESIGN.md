@@ -8,9 +8,14 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
-Malá ikona v macOS **menu baru** a značka rozšíření pro Chrome vychází z
-`public/brand/agenteeq-mark.svg` (kanonická hlava s jednou bílou anténou).
-Velká ikona aplikace v macOS **Docku** používá schválený rozšířený filled
+**Jeden tvar pro všechny velikosti:** jediným schváleným masterem je
+`public/brand/agenteeq-dock.svg`. Jeho bílá hlava má poměr **78:53**,
+oči **8:16**, poloměr hlavy **20** a anténa leží na ose **x=54**. Ikona
+v Docku, značka na webu, Chrome rozšíření i macOS menu bar se zmenšují
+**uniformním měřítkem**: žádná samostatně překreslená „menší hlava“, žádná
+deformace poměru stran. Menu bar a transparentní značka používají stejnou
+geometrii bez podkladové dlaždice.
+Velká ikona aplikace v macOS **Docku** používá schválený filled
 logomark: samostatnou bílou hlavu s jednou bílou anténou, dvěma tmavými
 kapslovými očima, bez těla. Zakázaná celotělová varianta Scout se pro Dock
 nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg`; transparentní varianta bez dlaždice je `public/brand/agenteeq-dock-transparent.svg`. Jejich rozměry jsou odvozené ze stejných souřadnic jako Swift generátor. Nativní vektor generuje `desktop/Icon.swift`, nikoli historická

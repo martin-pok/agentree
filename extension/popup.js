@@ -400,7 +400,7 @@ async function obnovSeznam() {
 // ── Agenti na tomto počítači ────────────────────────────────────────────────
 // Souhrn posílá aplikace (POST /api/extension/prehled) přes background se tokenem spárování.
 // Okno ukáže, kdo čeká na tvé rozhodnutí a kdo pracuje; klik otevře agenta přímo v Agenteeq.
-const ROBOT = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 9V17" stroke-width="3" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="9" r="2.8"/><rect class="hlava" x="9" y="16.5" width="30" height="24" rx="9.5"/><rect class="oko" x="17" y="24" width="4" height="8" rx="2"/><rect class="oko" x="27" y="24" width="4" height="8" rx="2"/></svg>';
+const ROBOT = '<svg viewBox="0 0 108 108" fill="none" aria-hidden="true"><path class="ant" d="M54 25V34" stroke-width="5" stroke-linecap="round"/><circle class="ant-svetlo" cx="54" cy="22" r="4"/><rect class="hlava" x="15" y="34" width="78" height="53" rx="20"/><rect class="oko" x="36" y="52" width="8" height="16" rx="4"/><rect class="oko" x="64" y="52" width="8" height="16" rx="4"/></svg>';
 const TON_AGENTA = { working: 'work', needs_input: 'warn', failed: 'err', limited: 'err' };
 const STAV_AGENTA = { working: tr('Pracuje'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Narazil na limit') };
 let prehled = null;
