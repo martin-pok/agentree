@@ -116,7 +116,7 @@ async function responseBytes(response, expected) {
 
 export class UpdateService {
   constructor({ version, dataDir, fetchImpl = globalThis.fetch, platform = PLATFORM, arch = ARCHITECTURE, enabled = true, channel = 'stable', now = () => Date.now() } = {}) {
-    if (!['stable', 'preview'].includes(channel)) throw new Error('Invalid update channel');
+    if (!['stable', 'preview'].includes(channel)) throw new Error(ui('Neplatný kanál aktualizací.'));
     if (!parseVersion(version)) throw new Error(ui('Služba aktualizací potřebuje platnou verzi.'));
     this.version = version;
     this.channel = channel;
@@ -132,7 +132,7 @@ export class UpdateService {
   state() { return { ...this.value, channel: this.channel, asset: this.value.asset ? { ...this.value.asset } : null, downloaded: this.value.downloaded ? { ...this.value.downloaded } : null }; }
 
   async check(channel = this.channel) {
-    if (!['stable', 'preview'].includes(channel)) throw new Error('Invalid update channel');
+    if (!['stable', 'preview'].includes(channel)) throw new Error(ui('Neplatný kanál aktualizací.'));
     if (channel !== this.channel) {
       this.channel = channel;
       // Switching channels invalidates an old available/downloaded update and its
