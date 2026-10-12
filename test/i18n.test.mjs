@@ -225,7 +225,7 @@ const MIMO_ROZHRANI = {
   'src/platform.js': ['\n$ErrorActionPreference'], // skript PowerShellu
   'src/datastore.js': ['Neplatný JSON', 'Neplatný kořen dat', 'obnoveno ze zálohy', 'začínám od výchozích hodnot'], // vnitřní kód chyby a log
   'src/extension-install.js': ['Zdrojová složka rozšíření chybí.', 'Kopii rozšíření se nepodařilo vytvořit: '], // jen log při startu
-  'src/hooks-installer.js': ['Neplatný token', 'not object', 'curl -s -m 1 -X POST'], // vnitřní chyba a text ve stavovém řádku Claude Code
+  'src/hooks-installer.js': ['Neplatný token', 'Neplatná cesta k hlavičkám hooku', 'not object', 'curl -s -m 1 -X POST'], // vnitřní chyby a text ve stavovém řádku Claude Code
   'src/http.js': ['<!doctype html><meta', 'index.html nemá <html', 'Access removed'], // stránka pro prohlížeč bez klíče okna, chyba vývojáře
   // Stránka, na kterou se prohlížeč vrátí z přihlášení Google (mimo okno aplikace, zatím jen česky).
   'src/ucet-stranka.js': null,

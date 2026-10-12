@@ -15,6 +15,35 @@ export const WEB_SITES = {
   'github-copilot': { name: 'GitHub Copilot', provider: 'github' },
 };
 
+// Independent server-side allowlist. A paired extension cannot turn an arbitrary
+// phishing URL into a trusted conversation link by choosing a supported site ID.
+const WEB_ORIGINS = {
+  chatgpt: ['chatgpt.com', 'chat.openai.com'],
+  'codex-web': ['chatgpt.com', 'chat.openai.com'],
+  claude: ['claude.ai'],
+  gemini: ['gemini.google.com'],
+  mscopilot: ['copilot.microsoft.com'],
+  perplexity: ['perplexity.ai', 'www.perplexity.ai'],
+  grok: ['grok.com'],
+  qwen: ['chat.qwen.ai'],
+  'github-copilot': ['github.com'],
+};
+
+export function normalizedWebUrl(site, raw) {
+  if (typeof raw !== 'string' || raw.length > 2000) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port ||
+        !WEB_ORIGINS[site]?.includes(url.hostname)) return null;
+    if (site === 'codex-web' && !/^\/codex(?:\/|$)/.test(url.pathname)) return null;
+    if (site === 'github-copilot' && !/^\/copilot(?:\/|$)/.test(url.pathname)) return null;
+    // URLs may carry temporary tokens or user queries; only the route is needed.
+    url.search = '';
+    url.hash = '';
+    return url.href;
+  } catch { return null; }
+}
+
 const ZASTUPNE_ID = /^tab-[a-z0-9]{1,16}$|^tab-unknown$/;
 const MAX_POCET = 100000;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
@@ -23,7 +52,8 @@ export function validateWebPayload(p) {
   if (!p || typeof p !== 'object') return { ok: false, error: ui('Chybí data.') };
   if (!WEB_SITES[p.site]) return { ok: false, error: ui('Neznámá služba.') };
   if (typeof p.conversationId !== 'string' || !/^[\w.:-]{1,200}$/.test(p.conversationId)) return { ok: false, error: ui('Neplatné ID konverzace.') };
-  if (typeof p.url !== 'string' || !/^https:\/\//.test(p.url) || p.url.length > 2000) return { ok: false, error: ui('Neplatná adresa.') };
+  const safeUrl = normalizedWebUrl(p.site, p.url);
+  if (!safeUrl) return { ok: false, error: ui('Neplatná adresa.') };
   // Z webových chatů bere Agenteeq jen stav a počty zpráv. Starší rozšíření (do 0.24) posílá ještě
   // text a název konverzace – z toho se tu spočítají role a text se zahodí, nikam se neuloží.
   let counts = { user: 0, assistant: 0 };
@@ -36,7 +66,7 @@ export function validateWebPayload(p) {
     value: {
       site: p.site,
       conversationId: p.conversationId,
-      url: p.url,
+      url: safeUrl,
       generating: p.generating === true,
       counts,
       model: clip(typeof p.model === 'string' ? p.model : '', 60),

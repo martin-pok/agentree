@@ -12,7 +12,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { run } from './util.js';
+import { run, shellQuote } from './util.js';
 import { ui } from './texty.js';
 
 export const JE_MAC = process.platform === 'darwin';
@@ -261,8 +261,57 @@ export function tailscalePaths() {
  */
 export const jeAbsolutniCesta = (p) => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(String(p || ''));
 
+/**
+ * Příkaz „přejdi do složky a pokračuj“, který si uživatel zkopíruje do terminálu svého systému
+ * (např. `claude --resume <id>`). Vrací null, když ho bezpečně složit nejde.
+ *
+ * macOS a Linux: POSIX shell, `cd '…' && …`. Windows: PowerShell, výchozí terminál Windows.
+ * `cd '…' && …` by tam nefungoval: PowerShell 5.1 `&&` nezná a cmd.exe apostrofy neuvozuje,
+ * takže složka „Design & Web“ by se mu na ampersandu rozpadla na dva příkazy. Složka je proto
+ * v uvozovkách – ty chrání `&` v cmd.exe i v PowerShellu. Uvnitř se zpětným apostrofem
+ * zneplatní vše, co PowerShell v uvozovkách rozvíjí (`$`, zpětný apostrof), i typografické
+ * uvozovky, které bere jako obyčejné. Uvozovka sama ve jméně složky na Windows být nemůže; kdyby
+ * přesto přišla, příkaz se nesloží. `;` odděluje příkazy jen v PowerShellu – v cmd.exe celý řádek
+ * jen skončí chybou a nic dalšího se nespustí. -LiteralPath, aby `[ ]` ve jméně nebyly zástupné
+ * znaky. Na skutečném Windows neověřeno (docs/CONNECTORS.md).
+ */
+export function prikazVeSlozce(slozka, program, args = [], system = SYSTEM) {
+  const cil = String(slozka || '');
+  if (!cil || /[\r\n\0]/.test(cil)) return null;
+  const holy = (a) => /^[\w.-]+$/.test(String(a));
+  if (system === 'windows') {
+    if (cil.includes('"') || !args.every(holy)) return null;
+    // \u0060 = zpětný apostrof, únikový znak PowerShellu; \u201c–\u201e typografické uvozovky.
+    const uvnitr = cil.replace(/[\u0060$\u201c\u201d\u201e]/g, (z) => '\u0060' + z);
+    return `Set-Location -LiteralPath "${uvnitr}"; ${[program, ...args].join(' ')}`;
+  }
+  return `cd ${shellQuote(cil)} && ${[program, ...args.map((a) => (holy(a) ? a : shellQuote(a)))].join(' ')}`;
+}
+
 /** Příkaz, kterým se v systému hledá program v PATH. */
 export const whichCommand = JE_WINDOWS ? 'where.exe' : 'which';
+
+/**
+ * Co říká výsledek `whichCommand`: true = nalezen, false = není, null = nepodařilo se zjistit.
+ * `which` i `where.exe` vrací kód 1 právě tehdy, když program nenašly. Cokoli jiného – vypršený
+ * časový limit (run() pak vrátí neúspěch s kódem 0), chybějící `which`, jiná chyba – „není“ neznamená.
+ */
+export function nalezenoVPath(r) {
+  if (r?.ok) return true;
+  return r?.code === 1 ? false : null;
+}
+
+/**
+ * Příkaz, kterým se nástroj pro vzdálený přístup na tomhle systému instaluje, nebo '' – pak
+ * rozhraní odkáže jen na stránku nástroje. Homebrew je jen na Macu; winget podle návodu Cloudflare.
+ */
+export function prikazInstalace(nastroj, system = SYSTEM) {
+  const prikazy = {
+    macos: { cloudflared: 'brew install cloudflared', tailscale: 'brew install --cask tailscale' },
+    windows: { cloudflared: 'winget install --id Cloudflare.cloudflared' },
+  };
+  return prikazy[system]?.[nastroj] || '';
+}
 
 /**
  * Kam instalátory dávají programy agentů (claude, codex…) na macOS a Linuxu.
@@ -329,13 +378,14 @@ export async function listeningPorts(runImpl = run) {
  * v tom, co ještě považují za shodu. Výpis procesů je společný, tak se hledá v něm
  * všude stejně – je to o něco dražší, ale volá se při obnově stavu, ne ve smyčce.
  *
- * Vrací `{ ok }`; nikdy nevyhodí výjimku a nikdy si nedomýšlí, že něco běží.
+ * Vrací `{ ok, bezi, stdout }`: `ok` = výpis procesů se povedl, `bezi` = našel se proces
+ * (null, když se výpis nepovedl – „nepodařilo se zjistit“ není „neběží“). Nikdy nevyhodí výjimku.
  */
 export async function bezziProces(vzor, runImpl = run) {
   const r = await processList(runImpl);
-  if (!r?.ok) return { ok: false, stdout: '' };
+  if (!r?.ok) return { ok: false, bezi: null, stdout: '' };
   const radky = String(r.stdout || '').split('\n').filter((radek) => vzor.test(radek));
-  return { ok: radky.length > 0, stdout: radky.join('\n') };
+  return { ok: true, bezi: radky.length > 0, stdout: radky.join('\n') };
 }
 
 // ── Celé jméno uživatele ─────────────────────────────────────────────────────

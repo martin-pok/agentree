@@ -23,7 +23,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   // Kopie se od aplikace smí lišit přesně v jedné věci: značce „tady žádný server není“.
   // Cokoli dalšího by znamenalo, že se rozhraní na webu začalo rozcházet s tím v aplikaci.
   const zdroj = await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8');
-  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">', '');
+  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">\n<meta name="robots" content="noindex, nofollow">', '');
   assert.equal(bezZnacky, zdroj, 'kopie se od aplikace nesmí lišit v ničem jiném než ve značce');
 
   // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) – musí tam být, jinak je /app rozbité.
@@ -31,7 +31,8 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
     assert.ok(r.files.includes(soubor), `v sestavení chybí ${soubor}`);
   }
   assert.ok(r.files.includes('lp.css'), 'styly landing page');
-  assert.match(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), new RegExp(`Disallow: ${APP_PATH}`));
+  assert.doesNotMatch(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), /Disallow:\s*\/app/, 'crawler must be able to read /app noindex');
+  assert.match(aplikace, /<meta name="robots" content="noindex, nofollow">/, 'static /app must not be indexed');
 
   // Ukázka rozhraní (/app?ukazka) čte data sestavená spolu s webem – bez nich by skončila na rozcestníku.
   assert.ok(r.files.includes('ukazka/data.json'), 'data živé prohlídky');
@@ -99,7 +100,8 @@ test('web: výřezy rozhraní mají popisný alt a stránka je bez zbytečných 
   for (const soubor of ['site/index.html', 'site/en/index.html']) {
     const html = await fs.readFile(path.join(ROOT, soubor), 'utf8');
     const vyrezy = [...html.matchAll(/<img src="\/detail\/[^"]+"[^>]*>/g)].map((m) => m[0]);
-    assert.ok(vyrezy.length >= 5, `${soubor}: výřezy rozhraní na stránce jsou`);
+    assert.ok(vyrezy.length >= 2, `${soubor}: stránka má skutečné výřezy aplikace`);
+    assert.equal((html.match(/class="showcase showcase--/g) || []).length, 4, `${soubor}: čtyři produktové ukázky jsou vykreslené jako HTML`);
     for (const img of vyrezy) {
       const alt = img.match(/alt="([^"]*)"/);
       assert.ok(alt && alt[1].length >= 30, `${soubor}: výřez bez popisného alt textu: ${img.slice(0, 80)}`);
@@ -174,7 +176,7 @@ test('web: produkt ukazují výřezy, ve stránce není žádný vložený rám'
   assert.doesNotMatch(js, /iframe/i, 'lp.js nesmí rám vytvořit ani dodatečně');
   const rozmery = JSON.parse(await fs.readFile(path.join(ROOT, 'site/detail/rozmery.json'), 'utf8'));
   const pouzite = [...html.matchAll(/(?:src|srcset)="\/detail\/([^"]+)" width="(\d+)" height="(\d+)"/g)];
-  assert.ok(pouzite.length >= 10, `výřezů na stránce je jen ${pouzite.length}`);
+  assert.ok(pouzite.length >= 8, `výřezů na stránce je jen ${pouzite.length}`);
   for (const [, soubor, w, h] of pouzite) {
     assert.ok(rozmery[soubor], `${soubor} nevznikl skriptem shots-site`);
     assert.deepEqual([Number(w), Number(h)], rozmery[soubor], `${soubor}: rozměry v HTML nesedí na soubor`);
@@ -222,9 +224,10 @@ test('web nese verzi z package.json, ne opsanou z minula', async () => {
   assert.throws(() => verzeVDatechStranky('<html></html>', '1.0.0'), /softwareVersion/, 'bez pole se nesmí mlčky vrátit stará verze');
   const fsp = await import('node:fs/promises');
   const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  const { execFileSync } = await import('node:child_process');
-  const { fileURLToPath } = await import('node:url');
-  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'ignore' });
+  // Test the actual site output without forcing an unrelated font download.
+  // Production CLI still downloads and verifies the official Satoshi font.
+  const { buildSite } = await import('../scripts/build-site.mjs');
+  await buildSite();
   const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
   assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
 });
@@ -249,7 +252,7 @@ test('web: nástup začíná až v čitelné části okna a bez JS nic neskrýv�
       assert.match(nadpis, /^<span class="radek[^"]*"><span>/, `${soubor}: nadpis bez řádků pro masku: ${nadpis}`);
       assert.doesNotMatch(nadpis, /<br>/, `${soubor}: zalomení patří do řádků, ne do <br>`);
       // Mezera mezi řádky: čtečka jinak přečte „Tvoje prácemá zůstat tvoje“.
-      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span> <span class="radek/, soubor);
+      if ((nadpis.match(/class="radek/g) || []).length > 1) assert.match(nadpis, /<\/span><\/span>\s*<span class="radek(?: [^"]+)?"/, soubor);
     }
   }
   const js = await fs.readFile(path.join(ROOT, 'site', 'lp.js'), 'utf8');
@@ -312,7 +315,7 @@ test('web: stránka Instalace v obou jazycích, stejná stavba a odkaz z úvodn�
   // Windows je beta a stránka to říká i s tím, co tam chybí – nevydává ho za hotový.
   assert.match(cs, /beta/);
   assert.match(en, /beta/);
-  assert.match(cs, /Co na Windows zatím chybí/);
+  assert.match(cs, /Omezení beta verze pro Windows/);
   assert.match(en, /What Windows doesn’t have yet/);
   const text = en.replace(/<script[\s\S]*?<\/script>/g, '').replace(/aria-label="Čeština"/, '');
   assert.deepEqual(text.match(/[^<>"]*[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][^<>"]*/g) || [], [], 'v anglické stránce zůstala čeština');
@@ -371,5 +374,29 @@ test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vyd�
     const html = await fs.readFile(path.join(out, jazyk.soubor), 'utf8');
     assert.doesNotMatch(html, /<!-- \/?(?:mac|rozsireni):/, `${jazyk.soubor}: zbyla značka`);
     for (const [, odkaz] of html.matchAll(/data-stahnout="windows-x64" href="([^"]+)"/g)) assert.equal(odkaz, dnes.windows, jazyk.soubor);
+  }
+});
+
+
+test('web: published 0.46.4 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
+  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.4/Agenteeq-0.46.4-macOS-arm64.dmg';
+  const destinations = [
+    ['site/index.html', 'index.html', /0\.46\.4 Preview pro Mac/],
+    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.4/],
+    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.4 Preview pro Mac/],
+    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.4/],
+  ];
+  const output = await tempDir('web-preview-');
+  await buildSite({ out: output });
+  for (const [source, built, label] of destinations) {
+    const html = await fs.readFile(path.join(ROOT, source), 'utf8');
+    const rendered = await fs.readFile(path.join(output, built), 'utf8');
+    for (const [where, page] of [[source, html], [built, rendered]]) {
+      assert.equal(page.split(url).length - 1, 1, where + ': one direct versioned Preview DMG link');
+      assert.match(page, label, where + ': must say this is Preview, not stable');
+      assert.match(page, /data-stahnout="mac-arm64"/, where + ': stable Mac download must remain primary');
+    }
+    assert.match(rendered, /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/,
+      built + ': main CTA must keep current stable release instead of silently adopting prerelease');
   }
 });

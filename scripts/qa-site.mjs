@@ -43,6 +43,33 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Robot u karet soukromí sleduje myš jen při povoleném pohybu. Ověřené na
+      // skutečně vykresleném SVG v obou jádrech, včetně návratu očí do středu.
+      {
+        const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+        await jenMistni(p, []);
+        await p.goto(url);
+        await p.locator('.privacy-peek').scrollIntoViewIfNeeded();
+        const points = await p.evaluate(() => {
+          const section = document.getElementById('soukromi').getBoundingClientRect();
+          const robot = document.querySelector('[data-privacy-robot] .robot').getBoundingClientRect();
+          return { left: section.left + 12, right: section.right - 12, y: Math.max(90, Math.min(innerHeight - 90, robot.top + robot.height / 2)) };
+        });
+        const gazeX = () => p.evaluate(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')));
+        await p.mouse.move(points.left, points.y);
+        await p.waitForFunction(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')) < -0.5);
+        assert.ok(await gazeX() >= -3, `${engine}: oči překročily levý okraj`);
+        await p.mouse.move(points.right, points.y);
+        await p.waitForFunction(() => parseFloat(document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x')) > 0.5);
+        assert.ok(await gazeX() <= 3, `${engine}: oči překročily pravý okraj`);
+        assert.notEqual(await p.locator('.privacy-peek .robot-gaze').evaluate(el => getComputedStyle(el).transform), 'none', `${engine}: SVG oči se nepohybují`);
+        await p.mouse.move(0, 0);
+        await p.waitForFunction(() => !document.querySelector('[data-privacy-robot] .robot').style.getPropertyValue('--gaze-x'));
+        await p.emulateMedia({ reducedMotion: 'reduce' });
+        await p.mouse.move(points.right, points.y);
+        assert.equal(await p.locator('.privacy-peek .robot-gaze').evaluate(el => getComputedStyle(el).transform), 'none', `${engine}: omezený pohyb nechal oči běžet`);
+        await p.close();
+      }
       for (const theme of ['light', 'dark']) {
         for (const width of [360, 375, 768, 900, 1440]) for (const stranka of ['/', '/en']) {
           const page = await browser.newPage({ viewport: { width, height: 1000 }, colorScheme: theme, reducedMotion: 'reduce' });
@@ -62,10 +89,10 @@ try {
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
             return {
-              videt: Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
+              videt: innerWidth <= 620 ? Boolean(document.querySelector('[data-mobile-menu-toggle]') && getComputedStyle(document.querySelector('[data-mobile-menu-toggle]')).display !== 'none') : Boolean(lang && lang.width > 0 && lang.left >= 0 && lang.right <= innerWidth),
               prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)),
               jazyk: document.documentElement.lang,
-              aktualni: document.querySelector('.lang [aria-current="page"]')?.getAttribute('lang'),
+              aktualni: document.querySelector(innerWidth <= 620 ? '.mobile-menu-languages [aria-current="page"]' : '.lang [aria-current="page"]')?.getAttribute('lang'),
             };
           });
           const cekanyJazyk = stranka === '/en' ? 'en' : 'cs';
@@ -99,6 +126,29 @@ try {
           await page.locator('a[href="#rozsireni"]').click();
           await page.waitForFunction(() => document.getElementById('rozsireni').open);
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), '');
+          const accordion = await page.evaluate(() => {
+            const rows = [...document.querySelectorAll('#vyzkouset .rows > details')];
+            const badges = rows.map(row => row.querySelector('.detail-tag').getBoundingClientRect().right);
+            const plus = rows.map(row => {
+              const summary = row.querySelector('summary');
+              const rect = summary.getBoundingClientRect();
+              const css = getComputedStyle(summary);
+              return rect.right - parseFloat(css.paddingRight) - 14;
+            });
+            const extension = rows[0];
+            return {
+              badges, plus,
+              borderTop: getComputedStyle(document.querySelector('#vyzkouset .rows')).borderTopWidth,
+              highlightBottom: getComputedStyle(extension).borderBottomWidth,
+              nextTop: getComputedStyle(rows[1]).borderTopWidth,
+              radius: parseFloat(getComputedStyle(extension).borderTopLeftRadius),
+              mascot: getComputedStyle(extension.querySelector('.robot-shell')).fill,
+            };
+          });
+          assert.ok(Math.abs(accordion.badges[0] - accordion.badges[1]) <= 1 && Math.abs(accordion.plus[0] - accordion.plus[1]) <= 1, `${engine} ${theme} ${width} ${stranka}: odznaky a plus nejsou v jedné ose`);
+          assert.deepEqual([accordion.borderTop, accordion.highlightBottom, accordion.nextTop], ['0px', '0px', '0px'], `${engine} ${theme} ${width} ${stranka}: kolidující linka accordiona`);
+          assert.ok(accordion.radius >= 18 && accordion.mascot !== 'rgb(0, 0, 0)', `${engine} ${theme} ${width} ${stranka}: okraje nebo robot rozšíření`);
+          if ([375, 1440].includes(width)) await page.locator('#vyzkouset').screenshot({ path: `${output}/${engine}-${theme}-${width}${stranka === '/en' ? '-en' : ''}-stazeni.png` });
           await page.locator('#rozsireni summary').focus();
           await page.keyboard.press('Enter');
           assert.equal(await page.locator('#rozsireni').getAttribute('open'), null);
@@ -133,7 +183,13 @@ try {
             const box = (s) => document.querySelector(s)?.getBoundingClientRect();
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && cta && cta.right <= innerWidth), prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)) };
+            const mobileMenu = document.querySelector('[data-mobile-menu-toggle]');
+            const mb = mobileMenu?.getBoundingClientRect();
+            const actionVisible = innerWidth <= 900
+              ? Boolean(mb && mb.width >= 44 && mb.height >= 44 && mb.right <= innerWidth)
+              : Boolean(cta && cta.width > 0 && cta.right <= innerWidth);
+            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && actionVisible),
+              prekryv: Boolean(pres(lang, innerWidth > 900 ? cta : mb) || pres(lang, znacka)) };
           });
           assert.deepEqual(lista, { videt: true, prekryv: false }, `${kde}: lišta`);
           const okraje = await page.evaluate(() => {
@@ -288,13 +344,23 @@ try {
           setTimeout(() => { clearInterval(t); hotovo(scrollY); }, 4000);
         }));
         const predKlavesou = await ustal();
+        // WebKit headless can leave focus on an internal non-scrollable target after wheel.
+        // Give keyboard input an explicit document scroll target, as a real user would via Tab.
+        await p.evaluate(() => { document.body.tabIndex = -1; document.body.focus({ preventScroll: true }); });
         await p.keyboard.press('PageDown');
         const poKlavese = await ustal();
         assert.ok(poKlavese - predKlavesou > 300, `${engine}: Page Down posunul jen o ${poKlavese - predKlavesou} px`);
         await p.click('.nav-links a[href="#soukromi"]');
-        await ustal();
+        // WebKit can schedule the native smooth anchor scroll after a quiet 200 ms window.
+        // Wait for the actual target position instead of mistaking that pause for completion.
+        await p.waitForFunction(() => {
+          const top = document.getElementById('soukromi').getBoundingClientRect().top;
+          const header = document.querySelector('.nav').getBoundingClientRect().height;
+          return top >= header && top <= header + 20;
+        }, null, { timeout: 7000 });
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
-        assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
+        const hlavicka = await p.evaluate(() => document.querySelector('.nav').getBoundingClientRect().height);
+        assert.ok(sekce >= hlavicka && sekce <= hlavicka + 20, `${engine}: odkaz na sekci skončil na ${sekce} px, hlavička má ${hlavicka} px`);
         await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
         assert.deepEqual(chyby, [], `${engine}: chyby při plynulém posouvání`);
         await p.close();
@@ -382,9 +448,157 @@ try {
       });
       await motionPage.mouse.up();
       await motionPage.evaluate(() => document.getElementById('prohlidka').scrollIntoView());
+      // Posun spustí nástup nadpisu sekce až ve chvíli, kdy ho observer uvidí (asynchronně).
+      // Počkat na něj, jinak by kontrola proběhla dřív, než nástup začne, a doběh by nestihla.
+      await motionPage.waitForFunction(() => document.querySelector('#prohlidka .unit-head')?.classList.contains('motion-entered'), null, { timeout: 4000 });
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
+      // Repeatable local Core Web Vitals diagnostics for desktop and mobile.
+      // These are lab readings under localhost and MUST NOT be advertised as
+      // Google PageSpeed scores or 75th-percentile real-user experience.
+      const vitals = [];
+      for (const width of [390, 1440]) {
+        const page = await browser.newPage({ viewport: { width, height: 900 },
+          reducedMotion: 'reduce', colorScheme: 'light' });
+        await jenMistni(page, []);
+        await page.addInitScript(() => {
+          // Null means unsupported/unavailable, not a claimed perfect zero.
+          window.__agenteeqVitals = { lcp: null, cls: null, longTasks: null };
+          const watch = (kind, cb) => {
+            if (!window.PerformanceObserver?.supportedEntryTypes?.includes(kind)) return false;
+            try {
+              new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) cb(entry);
+              }).observe({ type: kind, buffered: true });
+              return true;
+            } catch { return false; }
+          };
+          watch('largest-contentful-paint', entry => { window.__agenteeqVitals.lcp = entry.startTime; });
+          if (watch('layout-shift', entry => {
+            if (!entry.hadRecentInput) window.__agenteeqVitals.cls += entry.value;
+          })) window.__agenteeqVitals.cls = 0;
+          if (watch('longtask', () => { window.__agenteeqVitals.longTasks++; })) {
+            window.__agenteeqVitals.longTasks = 0;
+          }
+        });
+        const resp = await page.goto(url, { waitUntil: 'load' });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(250);
+        const values = await page.evaluate(() => {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const resources = performance.getEntriesByType('resource');
+          return {
+            ...window.__agenteeqVitals,
+            domContentLoaded: Math.round(nav?.domContentLoadedEventEnd ?? 0),
+            loadEvent: Math.round(nav?.loadEventEnd ?? 0),
+            resources: resources.length,
+            resourceBytes: Math.round(resources.reduce((sum, item) =>
+              sum + (item.transferSize || 0), 0)),
+          };
+        });
+        vitals.push({ engine, viewport: width, ...values });
+        assert.equal(resp.status(), 200, `${engine} ${width}: landing request`);
+        assert.ok(values.cls === null || (Number.isFinite(values.cls) && values.cls <= 0.1),
+          `${engine} ${width}: layout shift score ${values.cls}`);
+        await page.close();
+      }
+      await fs.writeFile(`${output}/web-vitals-${engine}.json`, JSON.stringify(vitals, null, 2));
+      // Installation guide must never lose its section navigation on mobile,
+      // including very short landscape viewports with safe-area constraints.
+      for (const route of ['/instalace', '/en/install']) {
+        const mobile = await browser.newPage({
+          viewport: { width: 390, height: 844 }, reducedMotion: 'reduce',
+        });
+        await jenMistni(mobile, []);
+        await mobile.goto(url + route);
+        for (const [width, height] of [[390, 844], [568, 320], [844, 390]]) {
+          await mobile.setViewportSize({ width, height });
+          const toggle = mobile.locator('[data-mobile-menu-toggle]');
+          assert.equal(await toggle.isVisible(), true, `${engine} ${route} ${width}: mobile menu missing`);
+          await toggle.click();
+          const state = await mobile.evaluate(() => {
+            const overlay = document.querySelector('[data-mobile-menu]');
+            const close = overlay.querySelector('[data-mobile-menu-close]');
+            const r = close.getBoundingClientRect();
+            return {
+              expanded: document.querySelector('[data-mobile-menu-toggle]').getAttribute('aria-expanded'),
+              hidden: overlay.getAttribute('aria-hidden'),
+              locked: document.body.style.overflow,
+              focus: document.activeElement === close,
+              accessibleClose: r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 2
+                && r.left >= -2 && r.bottom <= innerHeight + 2,
+              horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+            };
+          });
+          assert.deepEqual(state, { expanded: 'true', hidden: 'false', locked: 'hidden',
+            focus: true, accessibleClose: true, horizontalOverflow: false },
+          `${engine} ${route} ${width}x${height}: menu accessibility or layout`);
+          await mobile.keyboard.press('Escape');
+          assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+          assert.equal(await mobile.evaluate(() => document.body.style.overflow), '');
+        }
+        await mobile.close();
+      }
+      // Breakpoint sweep: recycle two pages instead of reloading dozens of times.
+      // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
+      // major CSS breakpoint, tablets, laptops and ultrawide monitors.
+      // A future phone's exact panel size is unknown; use fluid layout assertions.
+      for (const language of ['/', '/en', '/instalace', '/en/install', '/soukromi', '/en/privacy']) {
+        const responsive = await browser.newPage({
+          viewport: { width: 390, height: 844 },
+          reducedMotion: 'reduce',
+          colorScheme: 'light',
+        });
+        const errors = [];
+        await jenMistni(responsive, errors);
+        responsive.on('pageerror', e => errors.push(e.message));
+        await responsive.goto(url + (language === '/' ? '' : language));
+        for (const width of [320, 344, 360, 390, 402, 430, 600, 620, 621, 700,
+          720, 760, 768, 820, 900, 901, 1024, 1280, 1536, 1920, 2560, 3840]) {
+          await responsive.setViewportSize({ width, height: width <= 430 ? 844 : 950 });
+          const layout = await responsive.evaluate(() => {
+            const vw = document.documentElement.clientWidth;
+            const selectors = ['.nav-in', '.hero .unit-head', '.hero-figure',
+              '#prohlidka .tiles', '#propojeni .integration-tools', '.site-footer .foot-in',
+              '.install-page .install-hero-scene', '.install-page .extension-layout', '.doc-body'];
+            const overflow = selectors.flatMap(selector => [...document.querySelectorAll(selector)]
+              .filter(el => {
+                const r = el.getBoundingClientRect();
+                return r.width > 0 && (r.right > vw + 2 || r.left < -2);
+              }).map(el => el.className || el.tagName));
+            const menu = document.querySelector('[data-mobile-menu-toggle]');
+            const mobile = Boolean(menu && getComputedStyle(menu).display !== 'none');
+            const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
+            const shortTargets = [...document.querySelectorAll(
+              '.nav .brand, .nav .lang a, [data-mobile-menu-toggle], .site-footer .brand')]
+              .filter(el => getComputedStyle(el).display !== 'none')
+              .filter(el => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 && (rect.width < 43.5 || rect.height < 43.5);
+              }).map(el => el.className || el.tagName);
+            const heading = document.querySelector('h1')?.getBoundingClientRect();
+            const cta = document.querySelector('.hero .btn, .install-page .btn')?.getBoundingClientRect();
+            const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
+              .every(el => el.getBoundingClientRect().width > 0);
+            return { vw, screenHasOverflow, overflow, shortTargets, mobile,
+              hasMenu: Boolean(menu), heading: heading?.width,
+              cta: cta?.width || null, links };
+          });
+          assert.equal(layout.screenHasOverflow, false,
+            `${engine} ${language} ${width}px: horizontal page overflow`);
+          assert.deepEqual(layout.overflow, [],
+            `${engine} ${language} ${width}px: key content crosses viewport`);
+          if (width <= 900) assert.deepEqual(layout.shortTargets, [],
+            `${engine} ${language} ${width}px: navigation touch targets below 44px`);
+          assert.ok(layout.heading > 0 && (layout.cta === null || layout.cta >= 44) && layout.links,
+            `${engine} ${language} ${width}px: missing heading, CTA, or logo`);
+          assert.equal(layout.mobile, layout.hasMenu && width <= 900,
+            `${engine} ${language} ${width}px: mobile navigation breakpoint`);
+        }
+        assert.deepEqual(errors, [], `${engine} ${language}: errors during breakpoint sweep`);
+        await responsive.close();
+      }
     } finally { await browser.close(); }
   }
   await fs.writeFile(`${output}/results.json`, JSON.stringify(results, null, 2));

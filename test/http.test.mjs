@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { appSupportDir } from '../src/platform.js';
+import { appSupportDir, JE_WINDOWS } from '../src/platform.js';
 import { normalizeData } from '../src/datastore.js';
 import { startTestServer, writeJsonl, openStream, waitFor, api, tempDir } from './helpers.mjs';
 
@@ -49,7 +49,8 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
     assert.ok(s, 'session je ve stavu');
     assert.equal(s.title, 'Vytvoř landing page');
     assert.equal(s.status, 'waiting');
-    assert.equal(s.resume, `cd '/Users/x/proj' && claude --resume ${sid}`);
+    // Zkopírovaný příkaz pro pokračování: na Windows tvar pro PowerShell (src/platform.js#prikazVeSlozce).
+    assert.equal(s.resume, JE_WINDOWS ? `Set-Location -LiteralPath "/Users/x/proj"; claude --resume ${sid}` : `cd '/Users/x/proj' && claude --resume ${sid}`);
     assert.ok(r.body.connectors.some((c) => c.id === 'claude-code' && c.state === 'connected'));
   });
 
@@ -299,4 +300,31 @@ test('Vlastní agenti přes API: cizí adresa neprojde, zápis chce hlavičku a 
 
   const stav = await api(s.url).get('/api/state');
   assert.equal(Array.isArray(stav.body.customAgents), true, 'vlastní agenti jsou součástí stavu');
+});
+
+
+test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE_WINDOWS && 'Windows CI nemá oprávnění vytvářet symbolické odkazy' }, async () => {
+  const dir = await tempDir('agenteeq-static-secret-');
+  const secret = path.join(dir, 'private.txt');
+  await fs.writeFile(secret, 'PRIVATE_TEST_SECRET_DO_NOT_SERVE');
+  const link = new URL('../public/.qa-static-escape.txt', import.meta.url);
+  await fs.symlink(secret, link);
+  const server = await startTestServer({ AGENTEEQ_CLOUD: '0' });
+  try {
+    const response = await raw(`${server.url}/.qa-static-escape.txt`);
+    assert.equal(response.status, 403);
+    assert.doesNotMatch(response.body, /PRIVATE_TEST_SECRET_DO_NOT_SERVE/);
+  } finally {
+    await server.close();
+    await fs.rm(link, { force: true });
+  }
+});
+
+
+test('HTTP backend nastavuje pevné limity pomalých požadavků', async () => {
+  const source = await fs.readFile(new URL('../src/http.js', import.meta.url), 'utf8');
+  assert.match(source, /server\.headersTimeout = 15_000/);
+  assert.match(source, /server\.requestTimeout = 30_000/);
+  assert.match(source, /server\.maxHeadersCount = 100/);
+  assert.match(source, /server\.on\('request', onRequest\)/);
 });

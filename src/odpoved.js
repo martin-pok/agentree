@@ -10,8 +10,9 @@ import { CLAUDE_PERMISSIONS } from './launcher.js';
 // - Když ve stejné složce běží proces Claude Code, odpověď se nepošle. Agenteeq neumí spolehlivě
 //   poznat, ve které konverzaci ten proces je, a dvě současná pokračování by konverzaci rozdvojila.
 // - Když se výpis procesů nepodařil, odpověď se nepošle taky – „nepodařilo se zjistit“ není „nic
-//   neběží“ (CLAUDE.md).
-// - Když v konverzaci ještě pracuje běh spuštěný z Agenteeq, čeká se na něj.
+//   neběží“ (CLAUDE.md). Totéž platí pro běžící Claude Code, u kterého se nezjistila složka
+//   (lsof nebo /proc selhaly, na Windows se nečte vůbec): může běžet právě v téhle konverzaci.
+// - Když v konverzaci ještě pracuje (nebo se zastavuje) běh spuštěný z Agenteeq, čeká se na něj.
 // Codex (`codex exec resume`) zatím ne: syntaxi jsme neověřili na skutečném nástroji.
 
 export const ODPOVED_MAX = 20000;
@@ -22,17 +23,21 @@ const stejnaSlozka = (a, b) => Boolean(a && b) && path.resolve(a) === path.resol
 /**
  * Lze konverzaci odpovědět z aplikace? Vrací { lze: true } nebo { lze: false, proc, kod }.
  * `procesy`: poslední výpis [{ runtime, cwd }] nebo null, když se výpis nepodařil.
+ * `dostupne`: umí to tenhle systém (config.launchAgents – zatím jen macOS).
+ * `claude`: cesta k programu; false = hledal se a nenašel; null = ještě se nehledal (nevíme).
  */
-export function lzeOdpovedet(s, { procesy, behy = [], claude = null } = {}) {
+export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true } = {}) {
   if (!s || s.connector !== 'claude-code') {
     return { lze: false, kod: 'nastroj', proc: ui('Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.') };
   }
   if (!UUID.test(String(s.localId || ''))) {
     return { lze: false, kod: 'id', proc: ui('Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.') };
   }
-  if (!claude) return { lze: false, kod: 'program', proc: ui('Na tomto počítači se nenašel program claude.') };
+  if (!dostupne) return { lze: false, kod: 'system', proc: ui('Odpovídat z Agenteeq jde zatím jen na macOS.') };
+  if (claude === false) return { lze: false, kod: 'program', proc: ui('Na tomto počítači se nenašel program claude.') };
+  if (!claude) return { lze: false, kod: 'nevim', proc: ui('Ještě se zjišťuje, jestli je na tomto počítači program claude.') };
   if (!s.cwd || !path.isAbsolute(s.cwd)) return { lze: false, kod: 'slozka', proc: ui('U konverzace chybí složka, ve které běžela.') };
-  if (behy.some((r) => r.sessionId === s.id && r.status === 'running')) {
+  if (behy.some((r) => r.sessionId === s.id && (r.status === 'running' || r.status === 'stopping'))) {
     return { lze: false, kod: 'bezi-beh', proc: ui('Agent ještě pracuje na předchozím zadání z Agenteeq. Počkej, až doběhne.') };
   }
   if (!Array.isArray(procesy)) {
@@ -40,6 +45,9 @@ export function lzeOdpovedet(s, { procesy, behy = [], claude = null } = {}) {
   }
   if (procesy.some((p) => p.runtime === 'claude-code' && stejnaSlozka(p.cwd, s.cwd))) {
     return { lze: false, kod: 'bezi-proces', proc: ui('V této složce právě běží Claude Code. Odpověz tam, ať se konverzace nerozdvojí.') };
+  }
+  if (procesy.some((p) => p.runtime === 'claude-code' && !(p.cwd && path.isAbsolute(p.cwd)))) {
+    return { lze: false, kod: 'nevim', proc: ui('Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.') };
   }
   return { lze: true };
 }

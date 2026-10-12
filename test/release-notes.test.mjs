@@ -253,6 +253,6 @@ test('ruční spuštění založí tag jen z main a jen pro verzi z package.json
   assert.match(znacka, /"v\$VERZE" != "\$TAG"/, 'tag musí sedět s verzí v package.json');
   assert.match(znacka, /git ls-remote --exit-code --tags origin/, 'existující tag se jen použije, nepřepíše');
   for (const uloha of ['mac', 'windows', 'rozsireni']) {
-    assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: znacka\\n`), `${uloha} čeká na tag`);
+    assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: overeni\\n`), `${uloha} čeká na validaci tagu`);
   }
 });

@@ -12,12 +12,14 @@ import { state } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
 import { hledejCile } from './hledani.js';
+import { guideAnswer } from './assistant-guide.js';
+import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
 
 const TIPY = () => ({
-  prehled: tr('Agenta vybereš tlačítkem v poli pro zadání. Robot nahoře ukazuje, jestli na tebe někdo čeká.'),
+  prehled: tr('Nový úkol zadáš v poli dole. Přehled nahoře ti ukáže, jestli některý agent čeká na tvoje rozhodnutí.'),
   agenti: tr('Filtr „Potřebuje tebe“ ukáže agenty čekající na rozhodnutí. Otevři agenta a pokračuj v jeho nástroji.'),
   agent: tr('Přepis ukazuje kontext. Tlačítko „Pokračovat“ tě přenese do nástroje, kde agent čeká na odpověď.'),
   projekty: tr('Projekt propojí konverzace z různých nástrojů. V Nezařazených najdeš práci, která zatím projekt nemá.'),
@@ -25,7 +27,7 @@ const TIPY = () => ({
   statistiky: tr('Tokeny z přepisů popisují zaznamenanou aktivitu. Skutečné účtované náklady hledej v Útratě po propojení API.'),
   utrata: tr('Bez propojeného API nejsou skutečné náklady dostupné. Ruční záznamy a předplatné uvidíš odděleně.'),
   upozorneni: tr('Otevři souvisejícího agenta a zjisti, co potřebuje. Přečtení upozornění samo požadavek agenta nevyřeší.'),
-  dovednosti: tr('Tady můžeš procházet nalezené dovednosti. Jejich dostupnost závisí na připojených nástrojích a zdrojích.'),
+  dovednosti: tr('Tady najdeš dostupné dovednosti. Které se zobrazí, záleží na nástrojích, které máš připojené.'),
   nastaveni: tr('V části Účet a vzhled změníš téma aplikace. Tam jde i schovat tohle tlačítko pomocníka.'),
 });
 
@@ -52,23 +54,29 @@ function ulozZpravy() {
   try { sessionStorage.setItem(ULOZENO, JSON.stringify(zpravy.slice(-30))); } catch { /* bez úložiště jen bez historie */ }
 }
 
-const zvyrazni = (text, slova) => {
-  let html = esc(text);
-  for (const w of slova || []) {
-    if (w.length < 3) continue;
-    const k = w.length > 5 ? w.slice(0, -2) : w;
-    // Zvýrazňuje se v textu bez diakritiky, ale vkládá do originálu: délky se shodují (NFD bez znamének).
-    const norm = bezDiakritiky(html);
-    let out = '';
-    let i = 0;
-    let j;
-    while ((j = norm.indexOf(k, i)) >= 0) {
-      out += `${html.slice(i, j)}<mark>${html.slice(j, j + k.length)}</mark>`;
-      i = j + k.length;
+// Zvýrazní shody podle vzorů ze serveru (src/pomocnik.js#vzorSlova – tytéž tvary slov, podle
+// kterých se hledalo; skupina 1 = shoda). Hledá se v textu bez diakritiky, vkládá do originálu:
+// délky se shodují (NFD bez znamének); když ne, zůstane text bez zvýraznění. Escapuje se po kouscích.
+const zvyrazni = (text, vzory) => {
+  const t = String(text || '');
+  const norm = bezDiakritiky(t);
+  const useky = [];
+  if (norm.length === t.length) {
+    for (const v of vzory || []) {
+      let re;
+      try { re = new RegExp(v, 'g'); } catch { continue; }
+      for (const m of norm.matchAll(re)) if (m[1]) useky.push([m.index + m[0].length - m[1].length, m.index + m[0].length]);
     }
-    html = out + html.slice(i);
   }
-  return html;
+  useky.sort((a, b) => a[0] - b[0]);
+  let html = '';
+  let i = 0;
+  for (const [od, po] of useky) {
+    if (od < i) continue;
+    html += `${esc(t.slice(i, od))}<mark>${esc(t.slice(od, po))}</mark>`;
+    i = po;
+  }
+  return html + esc(t.slice(i));
 };
 
 function zpravaHtml(z, i) {
@@ -77,7 +85,7 @@ function zpravaHtml(z, i) {
   const vysledky = (z.vysledky || []).map((v, j) => `<li class="pm-vysledek">
       <b>${esc(v.nazev)}</b>
       <small>${esc([v.app, v.konec ? dateLong(v.konec) : '', v.slozka].filter(Boolean).join(' · '))}</small>
-      ${v.ukazka ? `<p>${zvyrazni(v.ukazka, z.slova)}</p>` : ''}
+      ${v.ukazka ? `<p>${zvyrazni(v.ukazka, z.vzory)}</p>` : ''}
       <span class="pm-akce">${v.sessionId ? `<a class="btn btn--sm" href="${esc(agentHref(v.sessionId))}">${tr('Otevřít')}</a>` : ''}${v.pokracovat ? `<button type="button" class="btn btn--sm" data-kopirovat="${i}:${j}">${tr('Kopírovat příkaz')}</button>` : ''}</span>
     </li>`).join('');
   return `<div class="pm-msg pm-msg--on">
@@ -86,16 +94,18 @@ function zpravaHtml(z, i) {
     ${cile ? `<ul class="pm-cile">${cile}</ul>` : ''}
     ${vysledky ? `<ul class="pm-vysledky">${vysledky}</ul>` : ''}
     ${z.pozn ? `<p class="pm-pozn">${esc(z.pozn)}</p>` : ''}
+    ${z.modelMimo ? `<p class="pm-pozn">${esc(tr('Lokální model odpověď neformuloval: adresa Ollamy (AGENTEEQ_OLLAMA_URL) nevede na tento počítač, a úryvky konverzací proto nikam neodešly.'))}</p>` : ''}
   </div>`;
 }
 
-function vykresli() {
+function vykresli({ ownMessage = false } = {}) {
   if (!el) return;
   const log = el.querySelector('.pm-log');
-  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Ahoj, jsem pomocník Agenteeq. Najdu dřívější konverzaci se kterýmkoli agentem nebo poradím, kde co v aplikaci zapnout.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
-  log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledám…')}"><i></i><i></i><i></i></div>` : '');
+  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Hledáš starý chat, nebo nevíš, kde něco nastavit? Napiš mi, co potřebuješ.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
+  renderChatAtPosition(log, () => {
+    log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+  }, { ownMessage });
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
-  log.scrollTop = log.scrollHeight;
 }
 
 // „Jak zapnu …“: hledání v rejstříku stránek a nastavení bez výplňových slov; když celé spojení
@@ -117,26 +127,32 @@ async function posli(text) {
   if (!dotaz || pracuje) return;
   zpravy.push({ kdo: 'ja', text: dotaz });
   pracuje = true;
-  vykresli();
+  vykresli({ ownMessage: true });
   let odpoved;
   try {
+    const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
+    const rada = guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
+    if (rada) {
+      odpoved = { kdo: 'on', ...rada };
+    } else {
     const r = await request('POST', '/api/pomocnik', { dotaz });
     if (r.zamer === 'jak') {
       const cile = poradSNastavenim(dotaz);
       odpoved = cile.length
-        ? { kdo: 'on', text: tr('Tohle najdeš tady – klepnutím tě tam pošlu:'), cile }
-        : { kdo: 'on', text: tr('Takovou volbu v aplikaci nevidím. Zkus to říct jinými slovy, nebo otevři hledání ({0}).', zkratka('K')) };
+        ? { kdo: 'on', text: tr('Tady to najdeš:'), cile }
+        : { kdo: 'on', text: tr('Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).', zkratka('K')) };
     } else {
-      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, slova: r.rozbor?.slova || [], lokalne: r.lokalne };
-      if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledal jsem v období {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
-      // Nic nenašel v konverzacích, ale dotaz vypadá i na nastavení – nabídnout obojí.
+      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [], lokalne: r.lokalne, modelMimo: Boolean(r.modelMimoPocitac) };
+      if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledané období: {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
+      // V konverzacích nic, ale dotaz vypadá i na nastavení – nabídnout obojí.
       if (!r.vysledky.length) {
         const cile = poradSNastavenim(dotaz);
-        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná jsi myslel některou z těchto voleb v aplikaci.') });
+        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná ti pomůže některá z těchto možností.') });
       }
     }
+    }
   } catch (err) {
-    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Agenteeq teď neodpovídá, takže hledat nemůžu. Zkus to za chvíli.') : err.message };
+    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Spojení s Agenteeq se nepovedlo. Zkontroluj, jestli aplikace běží, a zkus to znovu.') : err.message };
   } finally {
     pracuje = false;
   }
@@ -165,7 +181,7 @@ function sestav() {
     <section class="pm-okno" id="pm-okno" role="dialog" aria-labelledby="pm-nadpis" hidden>
       <header class="pm-hlava">
         <span class="pm-avatar" style="--persona:#6260d8">${robot('Orbit')}</span>
-        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('Hledá jen na tomto počítači')}</small></div>
+        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('Rady a hledání na tvém počítači')}</small></div>
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
@@ -173,7 +189,7 @@ function sestav() {
       <div class="pm-navrhy">${NAVRHY().map((n) => `<button type="button" class="pm-navrh" data-navrh="${esc(n)}">${esc(n)}</button>`).join('')}</div>
       <form class="pm-pole">
         <label class="sr-only" for="pm-vstup">${tr('Zeptej se pomocníka')}</label>
-        <textarea id="pm-vstup" class="pm-vstup" rows="1" maxlength="500" placeholder="${tr('Zeptej se – třeba „najdi chat o …“')}"></textarea>
+        <textarea id="pm-vstup" class="pm-vstup" rows="1" maxlength="500" placeholder="${tr('S čím ti můžu pomoct?')}"></textarea>
         <button type="submit" class="pm-poslat" aria-label="${tr('Poslat')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </form>
     </section>

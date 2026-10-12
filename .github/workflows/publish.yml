@@ -7,7 +7,7 @@
 # textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
 # nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
 # přílohy se stálým jménem, na které vedou tlačítka ke stažení na webu (ZIP a DMG pro Mac,
-# ZIP pro Windows).
+# ZIP pro Windows a verzovaný ZIP rozšíření pro Chrome).
 name: Zveřejnit vydání
 
 on:
@@ -17,19 +17,50 @@ on:
         description: 'Tag konceptu, který se zveřejní (např. v0.25.0)'
         required: true
 
+# Výchozí práva tokenu jen pro čtení; zápis má jen úloha, která vydání zveřejňuje.
 permissions:
-  contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
+  contents: read
 
 jobs:
   zverejnit:
     name: zveřejnit koncept
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write # úprava a zveřejnění GitHub releasu
+      actions: read # čtení výsledků povinného CI pro přesný tag commit
     steps:
+      # Do repozitáře se nepushuje (vydání mění `gh` přes GH_TOKEN), token v checkoutu netřeba.
       - uses: actions/checkout@v5
+        with: { persist-credentials: false }
       - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
+      # Tag musí ukazovat na commit, který prošel kompletní maticí CI.
+      # Kontrola přes GitHub API nevyžaduje externí službu ani placenou licenci.
+      - name: Ověřit zelené CI označeného commitu
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')
+          TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')
+          if [ "$TYPE" = "tag" ]; then
+            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${SHA}" --jq '.object.sha')
+          fi
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}" --jq '.sha')" = "$SHA"
+          GH_SHA="$SHA" node --input-type=module -e '
+            if (!/^[a-f0-9]{40}$/.test(process.env.GH_SHA)) process.exit(1);
+          '
+          RUNS=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SHA}&per_page=30")
+          GH_SHA="$SHA" RUNS_JSON="$RUNS" node --input-type=module -e '
+            const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs || [];
+            if (!runs.some(r => r.head_sha === process.env.GH_SHA && r.status === "completed" && r.conclusion === "success")) {
+              console.error("::error::Tag nemá úspěšný kompletní test.yml běh na shodném commitu.");
+              process.exit(1);
+            }
+          '
       - name: Zkontrolovat koncept
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,7 +78,8 @@ jobs:
           node -e '
             const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
             if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
-            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip"]) {
+            const expectedExtension = `agenteeq-extension-${process.env.TAG.slice(1)}.zip`;
+            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
               if (!v.assets.some((a) => a.name === stala)) {
                 console.log(`::error::Chybí příloha ${stala} – tlačítko ke stažení na webu by vedlo do prázdna.`);
                 process.exit(1);

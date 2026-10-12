@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { startTestServer, tempDir, waitFor } from './helpers.mjs';
+import { startTestServer, tempDir, waitFor, api } from './helpers.mjs';
 import { parseCnb, applyLiveRates, createRateFeed } from '../src/rates.js';
 import { claudePlanFromAccount, chatgptPlanFromLimits, describePlan, subscriptionPortfolio } from '../src/subscriptions.js';
-import { spendSummary, DEFAULT_SPEND, validateEntry } from '../src/spend.js';
+import { spendSummary, DEFAULT_SPEND, validateEntry, validateBudgets } from '../src/spend.js';
 import { normalizeData } from '../src/datastore.js';
 import { claudeIdentity, normalizeCodexAccount, observeAccount } from '../src/provider-accounts.js';
 
@@ -127,6 +127,47 @@ test('rozpoznaný plán bez billing dat nevytváří výdaj a ruční platba nez
   assert.equal(s.months.find((m) => m.key === '2026-07').total, 0, 'před začátkem předplatného se nic nepočítá');
 });
 
+// Kurz ČNB má tři desetinná místa, formulář Rozpočtů ho posílá předvyplněný a server ho zaokrouhluje
+// na dvě. Dřív každé uložení Rozpočtů udělalo z kurzu ČNB „ruční“ a kurz se už nikdy neobnovil.
+test('uložení Rozpočtů s předvyplněným kurzem ČNB kurz nezamrazí; skutečná změna ano', async (t) => {
+  const cur = { currency: 'EUR', rates: { CZK: 1, USD: 21.537, EUR: 24.312 }, budgets: { total: 0, services: {} } };
+  for (const vstup of [{ USD: '21.537', EUR: '24.312' }, { USD: '21,54', EUR: '24,31' }, { USD: 21.54, EUR: 24.31 }]) {
+    const r = validateBudgets({ rates: vstup }, cur);
+    assert.deepEqual(r.value.rates, cur.rates, `${JSON.stringify(vstup)} se od uloženého liší jen zaokrouhlením`);
+  }
+  assert.equal(validateBudgets({ rates: { USD: '22' } }, cur).value.rates.USD, 22);
+
+  const srv = await startTestServer();
+  t.after(() => srv.close());
+  const sp = srv.app.datastore.data.spend;
+  Object.assign(sp, { rates: { CZK: 1, USD: 21.537, EUR: 24.312 }, ratesSource: 'cnb', liveRates: { date: '2026-10-09', USD: 21.537, EUR: 24.312, fetchedAt: 1 } });
+  const ulozit = (telo) => api(srv.url).send('PUT', '/api/spend/budgets', telo);
+  assert.equal((await ulozit({ total: 100, rates: { USD: '21.537', EUR: '24.312' } })).status, 200);
+  assert.equal(sp.ratesSource, 'cnb', 'předvyplněný kurz není ruční změna');
+  assert.equal(sp.rates.USD, 21.537, 'přesný kurz ČNB zůstává');
+  applyLiveRates(sp, { date: '2026-10-10', USD: 21.6, EUR: 24.4 });
+  assert.equal(sp.rates.USD, 21.6, 'nový kurz ČNB se dál uplatní');
+  await ulozit({ total: 100, rates: { USD: '22,5', EUR: '24.4' } });
+  assert.equal(sp.ratesSource, 'manual', 'kurz zadaný uživatelem platí');
+  assert.equal(sp.rates.USD, 22.5);
+  applyLiveRates(sp, { date: '2026-10-11', USD: 21.7, EUR: 24.5 });
+  assert.equal(sp.rates.USD, 22.5, 'ruční kurz ČNB nepřepíše');
+});
+
+test('kurz zamrzlý chybou z 0.45.1 se při načtení rozmrazí, jen když ho bezpečně poznáme', () => {
+  const live = { date: '2026-10-09', USD: 21.537, EUR: 24.312, fetchedAt: 1 };
+  const zamrzly = normalizeData({ spend: { ratesSource: 'manual', rates: { USD: 21.54, EUR: 24.31 }, liveRates: live } }).spend;
+  assert.equal(zamrzly.ratesSource, 'cnb');
+  assert.equal(zamrzly.rates.USD, 21.537);
+  assert.equal(zamrzly.rates.EUR, 24.312);
+  // Ruční kurz, který se od ČNB liší víc než zaokrouhlením, platí dál.
+  assert.equal(normalizeData({ spend: { ratesSource: 'manual', rates: { USD: 22, EUR: 24.31 }, liveRates: live } }).spend.ratesSource, 'manual');
+  // Shodný s ČNB na všechna místa: tohle chyba nevyrobí (zaokrouhlením by se nic nezměnilo).
+  assert.equal(normalizeData({ spend: { ratesSource: 'manual', rates: { USD: 21.5, EUR: 24.3 }, liveRates: { ...live, USD: 21.5, EUR: 24.3 } } }).spend.ratesSource, 'manual');
+  // Bez známého kurzu ČNB se nic nehádá.
+  assert.equal(normalizeData({ spend: { ratesSource: 'manual', rates: { USD: 21.54, EUR: 24.31 } } }).spend.ratesSource, 'manual');
+});
+
 test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výchozí', () => {
   assert.equal(normalizeData({ spend: { rates: { USD: 22.5 } } }).spend.ratesSource, 'manual');
   assert.equal(normalizeData({ spend: {} }).spend.ratesSource, 'default');
@@ -136,7 +177,7 @@ test('starý soubor s vlastním kurzem se pozná jako ruční, nový jako výcho
 
 test('aplikace s účtem Claude Pro ukáže přesný plán, ale nevymyslí jeho útratu', async () => {
   const src = await tempDir('agenteeq-src-');
-  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: { organizationType: 'claude_pro', accountUuid: 'stable-claude-test-account-12345', emailAddress: 'tajne@example.com', subscriptionCreatedAt: '2026-01-10T00:00:00Z' } }));
   const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
     napojeniRun: async (_bin, args) => args[0] === 'auth'
       ? { ok: true, stdout: JSON.stringify({ loggedIn: true }), stderr: '' }
@@ -266,6 +307,21 @@ test('druhý izolovaný profil Claude je aktivní i při odhlášení výchozíh
     assert.equal(sp.subscriptions.find((p) => p.service === 'claude').plan, 'max5x');
     assert.equal(sp.providerAccounts.find((x) => x.provider === 'anthropic' && x.active).plan, 'max5x');
     assert.doesNotMatch(JSON.stringify(sp), /11111111|22222222/);
+  } finally { await t.close(); }
+});
+
+test('Claude bez ověřeného UUID se nevydává za druhou aktivní licenci', async () => {
+  const src = await tempDir('agenteeq-unknown-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {
+    organizationType: 'claude_pro', emailAddress: 'private@example.com',
+  } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src });
+  try {
+    await t.app.refreshSubscriptions();
+    const payload = t.app.spendPayload();
+    assert.equal(payload.providerAccounts.some((x) => x.provider === 'anthropic' && x.active), false);
+    assert.equal(payload.subscriptions.some((x) => x.service === 'claude'), false);
+    assert.doesNotMatch(JSON.stringify(payload.providerAccounts), /private@example.com/);
   } finally { await t.close(); }
 });
 

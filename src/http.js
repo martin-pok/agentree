@@ -9,7 +9,7 @@ import { LAYOUT_KEYS, normalizeLayout } from './datastore.js';
 import { CAS_TICHA } from './nocni-ticho.js';
 import { remoteScope, JEN_NA_HOSTITELI_UDALOSTI } from './remote-scope.js';
 import { applyLiveRates } from './rates.js';
-import { claudeSettingsPath, installHooks, uninstallHooks, hooksStatus } from './hooks-installer.js';
+import { claudeSettingsPath, hookHeadersPath, installHooks, uninstallHooks } from './hooks-installer.js';
 import { SECRET_IDS } from './secrets.js';
 import { strankaNavratu, SKRIPT_NAVRATU } from './ucet-stranka.js';
 import { createSkills } from './skills.js';
@@ -712,6 +712,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!['manual', 'automatic'].includes(body.updateMode)) throw new HttpError(422, ui('Aktualizace mohou být ruční nebo automatické.'));
         datastore.data.settings.updateMode = body.updateMode;
       }
+      if (body.updateChannel !== undefined) {
+        if (!['stable', 'preview'].includes(body.updateChannel)) throw new HttpError(422, ui('Neplatný kanál aktualizací.'));
+        datastore.data.settings.updateChannel = body.updateChannel;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, ui('Neplatný profilový obrázek.'));
@@ -741,19 +745,22 @@ export function createHttpServer(app, existingServer = null) {
       // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
       if (!(await datastore.flush())) throw new HttpError(500, ui('Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.'));
-      if (body.updateMode === 'automatic') app.checkForUpdates().catch(() => {});
+      if (body.updateMode === 'automatic' || body.updateChannel !== undefined) app.checkForUpdates().catch(() => {});
       return { settings: datastore.data.settings };
     }],
-    ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall)$/, async (_req, m) => {
+    // `check` nic nezapisuje: znovu přečte settings.json, ať je vidět, jestli propojení pořád platí.
+    ['POST', /^\/api\/integrations\/claude-hooks\/(install|uninstall|check)$/, async (_req, m) => {
       const file = claudeSettingsPath(config.sourceHome);
+      const headersFile = hookHeadersPath(config.dataDir);
       try {
-        if (m[1] === 'install') await installHooks(file, { port: port(), token: datastore.data.ingestToken });
-        else await uninstallHooks(file);
+        if (m[1] === 'install') await installHooks(file, { port: port(), token: datastore.data.ingestToken, headersFile });
+        else if (m[1] === 'uninstall') await uninstallHooks(file, { headersFile });
       } catch (err) {
         throw new HttpError(err.code === 'INVALID_SETTINGS' ? 422 : 500, err.message);
       }
-      await refreshIntegrations();
-      return { claudeHooks: await hooksStatus(file, datastore.data.ingestToken) };
+      // Čas zapnutí: konverzace Claude Code spuštěné dřív hooky nenačetly (src/model.js#hookHealth).
+      if (m[1] !== 'check') app.zaznamenejHooky(m[1] === 'install');
+      return { claudeHooks: (await refreshIntegrations()).claudeHooks };
     }],
     ['PUT', /^\/api\/secrets\/([\w-]+)$/, async (req, m) => {
       // Ručně se zadávají jen klíče k API; přihlášení k účtu si server spravuje sám (src/ucet.js).
@@ -984,7 +991,12 @@ export function createHttpServer(app, existingServer = null) {
     if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
     let body;
     try {
-      body = await fs.readFile(file);
+      // A lexical prefix check is insufficient: a symlink inside public/ could
+      // point to private files outside the web root.
+      const resolvedRoot = await fs.realpath(PUBLIC_DIR);
+      const resolvedFile = await fs.realpath(file);
+      if (!resolvedFile.startsWith(resolvedRoot + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
+      body = await fs.readFile(resolvedFile);
     } catch (err) {
       if (err.code !== 'ENOENT' && err.code !== 'EISDIR') throw err;
       if (path.extname(rel)) throw new HttpError(404, ui('Nenalezeno.'));
@@ -1084,6 +1096,11 @@ export function createHttpServer(app, existingServer = null) {
   };
 
   server = existingServer || http.createServer();
+  // Bound slow headers and never-ending uploads without closing long-lived SSE responses.
+  // Existing desktop server is subject to the same defensive limits.
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.maxHeadersCount = 100;
   server.on('request', onRequest);
 
   // Listener pro místní síť obsluhuje tentýž kód (a tedy i stejnou kontrolu tokenu).

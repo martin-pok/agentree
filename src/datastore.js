@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { writeJsonAtomic, randomToken, debounce } from './util.js';
+import { writeJsonAtomic, randomToken, debounce, round2 } from './util.js';
 import { DEFAULT_SPEND } from './spend.js';
 import { normalizeProjects } from './projects.js';
 import { ui } from './texty.js';
@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS = {
   // Stahování se nikdy nezapíná samo. Po výslovném přepnutí na automatické režim stáhne pouze
   // přesně ověřený balíček z oficiálního GitHub releasu; instalaci pořád potvrzuje uživatel ve Finderu.
   updateMode: 'manual',
+  // Opt-in only: stable GitHub Latest remains the default, previews never auto-enable.
+  updateChannel: 'stable',
   notifications: {
     needsInput: true,
     limits: true,
@@ -140,6 +142,19 @@ export function meneNaEuro(spend) {
   };
 }
 
+// Do 0.45.1 bralo uložení Rozpočtů předvyplněný kurz ČNB zaokrouhlený na dvě místa jako ruční změnu
+// a kurz tím zamrzl. Bezpečně to jde poznat jen, dokud ČNB nevydala nový kurz: oba „ruční“ kurzy jsou
+// pak přesně zaokrouhlený poslední kurz ČNB a aspoň jeden se od něj zaokrouhlením liší. Takový kurz se
+// vrátí k automatickému; každý jiný ruční kurz platí dál.
+function zamrzlyKurzCnb(sp) {
+  const live = sp.liveRates;
+  if (sp.ratesSource !== 'manual' || !live || !/^\d{4}-\d{2}-\d{2}$/.test(live.date)) return false;
+  const meny = ['USD', 'EUR'];
+  const zive = (c) => Number(live[c]);
+  const rucni = (c) => Number(sp.rates?.[c]);
+  return meny.every((c) => zive(c) > 0 && round2(zive(c)) === rucni(c)) && meny.some((c) => zive(c) !== rucni(c));
+}
+
 export function normalizeData(raw) {
   const data = normalizeDataInner(raw);
   data.spend = meneNaEuro(data.spend);
@@ -166,6 +181,9 @@ function normalizeDataInner(raw) {
     // Každá instalace rozšíření má vlastní token vázaný na svůj původ (chrome-extension://…).
     // Na disku je jen jeho sha256 – ze zálohy dat se za rozšíření vydávat nedá.
     extensionInstallations: normalizeExtensionInstallations(d.extensionInstallations),
+    // Od kdy je zapnuté propojení s Claude Code (src/app.js#claudeHooks). `presne: false` = zapnuté
+    // ručně nebo starší verzí Agenteeq; `od` je pak chvíle, kdy ho Agenteeq poprvé viděl.
+    claudeHooks: Number(d.claudeHooks?.od) > 0 ? { od: Number(d.claudeHooks.od), presne: d.claudeHooks.presne === true } : null,
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,
@@ -180,6 +198,7 @@ function normalizeDataInner(raw) {
       look: s.look === 'koncert' ? 'koncert' : 'obloha',
       language: s.language === 'en' ? 'en' : 'cs',
       updateMode: s.updateMode === 'automatic' ? 'automatic' : 'manual',
+      updateChannel: s.updateChannel === 'preview' ? 'preview' : 'stable',
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
       layout: normalizeLayout(s.layout),
       // Pomocník: plovoucí tlačítko s chatem a volitelné formulování odpovědí lokálním modelem (Ollama).
@@ -193,10 +212,11 @@ function normalizeDataInner(raw) {
       currency: typeof sp.currency === 'string' ? sp.currency : DEFAULT_SPEND.currency,
       // Kdo měnu zvolil: 'user' = ručně v Rozpočtech (nikdy se nepřepíše), 'default' = výchozí.
       currencySource: sp.currencySource === 'user' ? 'user' : 'default',
-      rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), CZK: 1 },
+      rates: { ...DEFAULT_SPEND.rates, ...(sp.rates || {}), ...(zamrzlyKurzCnb(sp) ? { USD: Number(sp.liveRates.USD), EUR: Number(sp.liveRates.EUR) } : {}), CZK: 1 },
       // Odkud kurz je: ČNB (automaticky), ručně zadaný, nebo orientační výchozí. Dřívější ruční úpravu
       // (kurz jiný než výchozí bez záznamu o původu) poznáme a nepřepíšeme.
-      ratesSource: ['cnb', 'manual', 'default'].includes(sp.ratesSource) ? sp.ratesSource
+      ratesSource: zamrzlyKurzCnb(sp) ? 'cnb'
+        : ['cnb', 'manual', 'default'].includes(sp.ratesSource) ? sp.ratesSource
         : (Number(sp.rates?.USD) && Number(sp.rates.USD) !== DEFAULT_SPEND.rates.USD) || (Number(sp.rates?.EUR) && Number(sp.rates.EUR) !== DEFAULT_SPEND.rates.EUR) ? 'manual' : 'default',
       liveRates: sp.liveRates && /^\d{4}-\d{2}-\d{2}$/.test(sp.liveRates.date) && Number(sp.liveRates.USD) > 0 && Number(sp.liveRates.EUR) > 0
         ? { date: sp.liveRates.date, USD: Number(sp.liveRates.USD), EUR: Number(sp.liveRates.EUR), fetchedAt: Number(sp.liveRates.fetchedAt) || 0 } : null,

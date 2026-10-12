@@ -305,6 +305,10 @@ const adresaOllamy = (klient) => {
   try { return new URL(klient?.baseUrl).host; } catch { return ui('Ollama nenastavená'); }
 };
 
+// Kolikrát se zkusí zjistit složku procesu, než se to vzdá. Víc ne: každý pokus na macOS je lsof
+// s limitem 4 s a proces, jehož složku systém nevydá (jiný uživatel, Windows), se nezmění.
+const POKUSU_O_SLOZKU = 3;
+
 export function createProcessesConnector(ctx) {
   // Ollama jde přes sdíleného klienta z src/ollama.js, tedy na adresu z AGENTEEQ_OLLAMA_URL. Bez klienta
   // se na Ollamu neptá vůbec – nikdy natvrdo na 127.0.0.1:11434.
@@ -316,21 +320,33 @@ export function createProcessesConnector(ctx) {
   // neběží – údaje o běžících aplikacích jsou pak jen poslední známé a rozhraní to musí říct.
   let posledniOk = null;
   // Složka a prostředí se u procesu nemění – zjišťují se jednou za jeho život (klíč pid + start).
+  // Když se složka napoprvé nezjistí (lsof vypršel), zkusí se to ještě v dalších průchodech:
+  // proces bez složky blokuje odpověď z aplikace (src/odpoved.js) a nespáruje se s konverzací.
   const znamy = new Map();
 
   // Jednotliví agenti v příkazové řádce se složkou, startem a proměnnými domova (CLAUDE_CONFIG_DIR…).
   async function agenti(stdout, now = Date.now()) {
     const seznam = agentniProcesy(stdout).map((p) => ({ ...p, od: Math.round((now - p.uptimeSec * 1000) / 1000) * 1000 }));
     const klic = (p) => `${p.pid}:${Math.round(p.od / 5000)}`;
-    const nove = seznam.filter((p) => !znamy.has(klic(p)));
+    const nove = seznam.filter((p) => {
+      const z = znamy.get(klic(p));
+      return !z || (!z.cwd && z.pokusy < POKUSU_O_SLOZKU);
+    });
     if (nove.length) {
       const d = await detaily(nove.map((p) => p.pid), promenne);
-      // Start se drží z prvního průchodu: doba běhu má vteřinovou přesnost a dopočet by jinak kolísal.
-      for (const p of nove) znamy.set(klic(p), { cwd: '', env: {}, ...d.get(p.pid), od: p.od });
+      for (const p of nove) {
+        const z = znamy.get(klic(p));
+        const n = d.get(p.pid) || {};
+        // Start se drží z prvního průchodu: doba běhu má vteřinovou přesnost a dopočet by jinak kolísal.
+        znamy.set(klic(p), { cwd: n.cwd || '', env: { ...z?.env, ...n.env }, od: z ? z.od : p.od, pokusy: (z?.pokusy || 0) + 1 });
+      }
     }
     const zive = new Set(seznam.map(klic));
     for (const k of znamy.keys()) if (!zive.has(k)) znamy.delete(k);
-    return seznam.map((p) => ({ ...p, ...znamy.get(klic(p)) }));
+    return seznam.map((p) => {
+      const { pokusy, ...z } = znamy.get(klic(p));
+      return { ...p, ...z };
+    });
   }
 
   const starty = createStabilniStart();

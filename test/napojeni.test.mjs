@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { AGENTI, WEBY, createNapojeni } from '../src/napojeni.js';
+import { WEB_SITES } from '../src/connectors/web.js';
 import { spustPrihlaseni, odkazZVystupu, prostrediPro } from '../src/prihlaseni.js';
 import { startTestServer, api, openStream, waitFor, pairExtension, tempDir, EXTENSION_ORIGIN } from './helpers.mjs';
 
@@ -115,7 +116,7 @@ test('napojení Claude Code: přihlášení se spustí na pozadí (bez Terminál
   assert.equal(zapis.emit.length, 0, 'dokud se člověk nepřihlásí, nic se nepotvrzuje');
   prihlasen.claude = true;
   await waitFor(() => zapis.emit.length);
-  assert.deepEqual(zapis.emit[0], { id: 'claude-code', label: 'Claude Code', udalost: 'napojeno', plan: 'Claude Max' });
+  assert.deepEqual(zapis.emit[0], { id: 'claude-code', label: 'Claude Code', udalost: 'napojeno', overeni: 'cli', posledniData: 0, dataError: false, plan: 'Claude Max' });
   assert.equal(n.ceka('claude-code'), false, 'po potvrzení se přestane hlídat');
   assert.equal(zapis.zastaveno, 1, 'proces přihlášení se uklidí');
 });
@@ -202,7 +203,7 @@ test('webový chat se napojí přes rozšíření: otevře se služba a potvrdí
   n.webOzvalo('gemini');
   assert.equal(zapis.emit.length, 0, 'ozvala se jiná služba');
   n.webOzvalo('chatgpt');
-  assert.deepEqual(zapis.emit[0], { id: 'web:chatgpt', label: 'ChatGPT', udalost: 'napojeno' });
+  assert.deepEqual(zapis.emit[0], { id: 'web:chatgpt', label: 'ChatGPT', udalost: 'napojeno', overeni: 'pozorovano' });
   assert.equal((await n.napojit('web:neznamy')).status, 404);
 });
 
@@ -345,4 +346,160 @@ test('Codex CLI zabalené v ChatGPT.app se najde i bez PATH a ověří napojení
   const stav = (await napojeni.prehled()).find((agent) => agent.id === 'codex');
   assert.equal(stav.nainstalovano, true);
   assert.equal(stav.napojeno, true);
+});
+
+
+test('webová služba: staré pozorování není důkaz trvalého přihlášení ani OAuth', async () => {
+  const { n, zapis } = atrapa();
+  const ted = Date.now();
+  zapis.rozsireni = { state: 'active', sites: { chatgpt: ted - 10 * 60 * 1000 } };
+  let p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, null);
+  assert.equal(p.overeni, 'nezname');
+  assert.equal(p.posledni, ted - 10 * 60 * 1000);
+  assert.equal(p.zdroj, 'chrome-extension');
+  zapis.rozsireni.sites.chatgpt = Date.now();
+  p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, true);
+  assert.equal(p.overeni, 'pozorovano');
+  zapis.rozsireni.state = 'missing';
+  zapis.rozsireni.sites = {};
+  p = (await n.prehled()).find((x) => x.id === 'web:chatgpt');
+  assert.equal(p.napojeno, false);
+});
+
+test('neúspěšná sonda nikdy neoznačí CLI za přihlášené podle zavádějícího stdout', async () => {
+  const napojeni = createNapojeni({
+    bins: () => ({ claude: '/bin/claude', codex: '/bin/codex' }),
+    run: async (bin) => ({ ok: false, stdout: bin.includes('claude') ? '{"loggedIn":true}' : 'Logged in using ChatGPT', stderr: '' }),
+    prihlas: async () => ({ ok: false }), open: async () => ({ ok: true }),
+  });
+  assert.equal((await napojeni.stav('claude-code')).napojeno, null);
+  assert.equal((await napojeni.stav('codex')).napojeno, null);
+});
+
+test('ověřený Codex počká na aktualizaci dat před SSE potvrzením a zobrazí skutečný čas záznamu', async () => {
+  let obnov;
+  const probihajiciObnova = new Promise((resolve) => { obnov = resolve; });
+  const udalosti = [];
+  let planReady = false;
+  const napojeni = createNapojeni({
+    bins: () => ({ codex: '/bin/codex' }),
+    run: async () => ({ ok: true, stdout: '', stderr: 'Logged in using ChatGPT' }),
+    prihlas: async () => ({ ok: true }), open: async () => ({ ok: true }),
+    onVerified: async () => { await probihajiciObnova; planReady = true; return 1234567890; },
+    plan: async () => planReady ? 'Plus' : 'outdated',
+    emit: (e) => udalosti.push(e),
+  });
+  const pending = napojeni.napojit('codex');
+  await new Promise((res) => setTimeout(res, 15));
+  assert.equal(udalosti.length, 0, 'není potvrzeno před načtením dat');
+  obnov();
+  const result = await pending;
+  assert.deepEqual({ uz: result.uz, plan: result.plan, posledniData: result.posledniData },
+    { uz: true, plan: 'Plus', posledniData: 1234567890 });
+  assert.equal(udalosti[0].overeni, 'cli');
+  assert.equal(udalosti[0].posledniData, 1234567890);
+});
+
+test('chyba při načítání dat nezmění skutečně přihlášený účet na odhlášený', async () => {
+  const udalosti = [];
+  const napojeni = createNapojeni({
+    bins: () => ({ codex: '/bin/codex' }),
+    run: async () => ({ ok: true, stdout: '', stderr: 'Logged in using ChatGPT' }),
+    prihlas: async () => ({ ok: true }), open: async () => ({ ok: true }),
+    onVerified: async () => { throw new Error('offline'); },
+    emit: (e) => udalosti.push(e),
+  });
+  const result = await napojeni.napojit('codex');
+  assert.equal(result.uz, true);
+  assert.equal(result.dataError, true);
+  assert.equal(udalosti[0].dataError, true);
+  assert.equal(udalosti[0].overeni, 'cli');
+});
+
+test('webová událost znamená jen pozorovaná data z extension, ne OAuth přihlášení', async () => {
+  let web = { state: 'ready', sites: {} };
+  const events = [];
+  const napojeni = createNapojeni({
+    bins: () => ({}), run: async () => ({}), prihlas: async () => ({ ok: false }),
+    open: async () => ({ ok: true }), extension: () => web,
+    emit: (e) => events.push(e),
+  });
+  assert.equal((await napojeni.napojit('web:gemini')).ceka, true);
+  napojeni.webOzvalo('unknown-site');
+  assert.equal(events.length, 0);
+  napojeni.webOzvalo('gemini');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].overeni, 'pozorovano');
+  assert.equal(events[0].dataError, undefined);
+});
+
+test('zrušení během aktualizace dat nesmí později potvrdit staré přihlášení', async () => {
+  let logged = false;
+  let complete;
+  let verifiedStarted = false;
+  const awaitingData = new Promise((resolve) => { complete = resolve; });
+  const events = [];
+  const n = createNapojeni({
+    bins: () => ({ codex: '/bin/codex' }),
+    run: async () => ({ ok: true, stdout: '', stderr: logged ? 'Logged in using ChatGPT' : 'Not logged in' }),
+    prihlas: async () => ({ ok: true, zastav: () => {}, odkaz: () => null }),
+    open: async () => ({ ok: true }),
+    onVerified: async () => { verifiedStarted = true; await awaitingData; return 123; },
+    emit: (u) => events.push(u),
+    intervalMs: 2, limitMs: 3000,
+  });
+  const r = await n.napojit('codex');
+  assert.equal(r.ceka, true);
+  logged = true;
+  await waitFor(() => verifiedStarted, 1000);
+  n.zrusit('codex');
+  complete();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(events.filter((e) => e.udalost === 'napojeno').length, 0,
+    'late account refresh must not override cancellation');
+});
+
+test('Nastavení pokrývá všechny skutečně podporované webové konektory extension', async () => {
+  assert.deepEqual(Object.keys(WEBY).sort(), Object.keys(WEB_SITES).sort(),
+    'uživatel musí umět otevřít každou službu, kterou extension skutečně podporuje');
+  const otevreno = [];
+  const n = createNapojeni({
+    bins: () => ({}), run: async () => ({}), prihlas: async () => ({ ok: false }),
+    open: async (url) => { otevreno.push(url); return { ok: true }; },
+    extension: () => ({ state: 'ready', sites: {} }),
+  });
+  for (const id of Object.keys(WEB_SITES)) {
+    const r = await n.napojit('web:' + id);
+    assert.equal(r.ceka, true, id + ' must open its real service page');
+  }
+  assert.deepEqual(otevreno, Object.values(WEBY).map((w) => w.url));
+  n.stop();
+});
+
+test('první stav z Chrome extension během otevírání prohlížeče se neztratí', async () => {
+  let finishOpen;
+  let opened;
+  const opening = new Promise((resolve) => { finishOpen = resolve; });
+  const browserEntered = new Promise((resolve) => { opened = resolve; });
+  const events = [];
+  const n = createNapojeni({
+    bins: () => ({}), run: async () => ({}),
+    prihlas: async () => ({ ok: false }), extension: () => ({ state: 'ready', sites: {} }),
+    open: async () => { opened(); return opening; },
+    emit: (event) => events.push(event),
+  });
+  const pending = n.napojit('web:chatgpt');
+  await browserEntered;
+  n.webOzvalo('chatgpt');
+  assert.equal(events.filter((e) => e.udalost === 'napojeno').length, 1,
+    'event arriving during browser opening must confirm the connection');
+  assert.equal(events[0].overeni, 'pozorovano', 'browser event is not provider OAuth');
+  finishOpen({ ok: true });
+  const result = await pending;
+  assert.equal(result.ok, true);
+  assert.equal(result.ceka, false, 'observer was already completed by the first Chrome event');
+  assert.equal(n.ceka('web:chatgpt'), false);
+  n.stop();
 });

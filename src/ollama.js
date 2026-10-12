@@ -11,7 +11,15 @@ export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchIm
         const res = await fetchImpl(url('/api/tags'), { signal: AbortSignal.timeout(800) });
         if (!res.ok) return { ok: false, models: [] };
         const json = await res.json();
-        const models = (json.models || []).map((m) => ({ name: String(m.name || m.model || ''), size: Number(m.size) || 0 })).filter((m) => m.name);
+        // `remote` = cloudový model (Ollama ho jen přepošle na svůj server), `capabilities` posílají
+        // novější verze („completion“, „embedding“…). Obojí potřebuje Pomocník (src/pomocnik.js).
+        const models = (json.models || []).map((m) => ({
+          name: String(m.name || m.model || ''),
+          size: Number(m.size) || 0,
+          remote: Boolean(m.remote_host || m.remote_model),
+          family: String(m.details?.family || ''),
+          capabilities: Array.isArray(m.capabilities) ? m.capabilities.map(String) : [],
+        })).filter((m) => m.name);
         return { ok: true, models };
       } catch {
         return { ok: false, models: [] };
@@ -26,6 +34,18 @@ export function createOllamaClient({ baseUrl = 'http://127.0.0.1:11434', fetchIm
         return { ok: Boolean(json), models: (json?.models || []).map((m) => String(m.name || m.model || '')).filter(Boolean) };
       } catch {
         return { ok: false, models: [] };
+      }
+    },
+
+    // Podrobnosti modelu: schopnosti a jestli je cloudový. null = nepodařilo se zjistit.
+    async show(model) {
+      try {
+        const res = await fetchImpl(url('/api/show'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model }), signal: AbortSignal.timeout(800) });
+        if (!res.ok) return null;
+        const json = await res.json();
+        return { remote: Boolean(json.remote_host || json.remote_model), capabilities: Array.isArray(json.capabilities) ? json.capabilities.map(String) : [] };
+      } catch {
+        return null;
       }
     },
 

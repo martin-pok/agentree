@@ -86,5 +86,21 @@
   "utrata-mobil-en.webp": [
     342,
     366
+  ],
+  "prehled.webp": [
+    1440,
+    1080
+  ],
+  "prehled-mobil.webp": [
+    390,
+    844
+  ],
+  "prehled-en.webp": [
+    1440,
+    1080
+  ],
+  "prehled-mobil-en.webp": [
+    390,
+    844
   ]
 }

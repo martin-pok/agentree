@@ -11,6 +11,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     provider,
     app,
     source,
+    accountBinding: null, // only verified account provenance, never inferred from provider/model
     title: '',
     firstPrompt: '',
     lastPrompt: '',
@@ -25,6 +26,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     minutes: new Set(),
     running: false,
     runningAt: 0,
+    procesSkoncil: 0,     // kdy výpis procesů potvrdil, že proces vedoucí tah skončil (src/konec-procesu.js)
     stopAt: 0,
     toolWaitSince: 0,
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
@@ -108,7 +110,9 @@ export function takeDirty(s) {
 }
 
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
-// `stale` = agent formálně neukončil tah, ale dlouho se nic neděje; takový přechod nesmí hlásit „dokončeno“.
+// `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
+// `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
+// říct „hotovo“ – stav `waiting` sám o sobě to neznamená (může jít o stale tah nebo o zadání bez odpovědi).
 export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
@@ -123,7 +127,15 @@ export function deriveStatus(s, now) {
   // Proces bez přepisu není konverzace ani stav „čeká na zadání“. Víme pouze, že příslušný program
   // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
   if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
-  if (s.running && now - (s.runningAt || s.lastAt) < s.staleMs) {
+  // Proces, který tah vedl, skončil a agent od té doby nic nezapsal (src/konec-procesu.js): tah
+  // neskončil odpovědí, takže ne „hotovo“ – ale ani „pracuje“. Nový zápis do přepisu posune
+  // `runningAt` za čas zjištění a konverzace zase pracuje.
+  const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
+  // A future source timestamp must never keep an agent in a live working state.
+  // Allow 60 seconds of clock skew, in line with the limits freshness contract.
+  const runningAt = s.runningAt === 0 ? s.lastAt : s.runningAt;
+  const trustworthyRunningAt = Number.isFinite(runningAt) && runningAt > 0 && runningAt <= now + 60e3;
+  if (s.running && !skoncil && trustworthyRunningAt && now - runningAt < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
     // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
     // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
@@ -141,12 +153,44 @@ export function deriveStatus(s, now) {
     return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
   const stale = Boolean(s.running);
-  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false };
+  if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
-  if (age < 3 * HOUR) return { status: 'waiting', reason: stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale };
-  if (age < DAY) return { status: 'idle', reason: '', stale };
-  return { status: 'archived', reason: '', stale };
+  const done = answered && !stale;
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  if (age < DAY) return { status: 'idle', reason: '', stale, done };
+  return { status: 'archived', reason: '', stale, done };
+}
+
+// Je stav konverzace Claude Code hlášený propojením (hooky, src/hooks-installer.js), nebo jen odhad
+// z přepisu? Bez událostí z hooků se žádost o povolení jen odhaduje (deriveStatus výše). Claude Code
+// načítá hooky při startu, takže konverzace spuštěná před zapnutím propojení je neposílá, dokud se
+// Claude Code nespustí znovu. `hooky` = { od, presne, start } ze storu (src/app.js#claudeHooks):
+// od kdy je propojení zapnuté (`presne: false` = nevíme, kdy se zapnulo, `od` je pak chvíle, kdy ho
+// Agenteeq poprvé viděl) a kdy začal Agenteeq poslouchat. `hookAt` se neukládá, po restartu Agenteeq
+// tedy „propojeno“ potvrdí až další událost. Hodnoty:
+//   'linked'  – přišla událost z propojení;
+//   'before'  – konverzace začala před zapnutím propojení: odhad do nového spuštění Claude Code;
+//   'unknown' – začala dřív, než Agenteeq propojení poprvé viděl, a čas zapnutí neznáme;
+//   'silent'  – zadání přišlo po zapnutí propojení i po startu Agenteeq, ale hook UserPromptSubmit,
+//               který Claude Code spouští ještě před zápisem zadání, do HOOK_GRACE nedorazil:
+//               propojení z této konverzace nejspíš nefunguje;
+//   'pending' – začala po zapnutí, ale od startu Agenteeq zatím nebylo zadání, podle kterého to poznat;
+//   null      – netýká se: jiný nástroj, pomocný agent, proces bez přepisu, Claude Desktop bez
+//               události, propojení vypnuté nebo konverzace, která už neběží.
+// Rezerva pokrývá zpoždění sledování souborů (do 2 s) i pomalé spuštění příkazu hooku (curl -m 2).
+export const HOOK_GRACE = 30e3;
+export function hookHealth(s, status, hooky, now) {
+  if (!hooky?.od || s.connector !== 'claude-code' || s.parentId || s.proces || s.ended) return null;
+  if (status !== 'working' && status !== 'needs_input' && status !== 'waiting') return null;
+  if (s.hookAt) return 'linked';
+  // Jestli Claude Desktop → Code spouští hooky z ~/.claude/settings.json, ověřené není – bez
+  // události se o jeho konverzacích nic netvrdí (docs/CONNECTORS.md).
+  if (s.app !== 'Claude Code') return null;
+  if ((s.startedAt || 0) < hooky.od) return hooky.presne ? 'before' : 'unknown';
+  const zadani = s.turnStartedAt || 0;
+  if (zadani >= Math.max(hooky.od, hooky.start || 0) && now - zadani >= HOOK_GRACE) return 'silent';
+  return 'pending';
 }
 
 // Bez názvu i skutečného zadání pojmenuj vlákno podle toho, čím je; název složky až jako poslední možnost.
@@ -156,8 +200,8 @@ function fallbackTitle(s) {
   return lastSegment(s.cwd).replace(/[-_]+/g, ' ') || ui('Konverzace bez názvu');
 }
 
-export function summarize(s, now, windowMs) {
-  const { status, reason, stale } = deriveStatus(s, now);
+export function summarize(s, now, windowMs, hooky = null) {
+  const { status, reason, stale, done = false } = deriveStatus(s, now);
   const since = hourKey(now - windowMs);
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
@@ -168,6 +212,7 @@ export function summarize(s, now, windowMs) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,
     subagent: s.subagent || null,
     taskName: s.taskName || '',
@@ -179,6 +224,7 @@ export function summarize(s, now, windowMs) {
     status,
     reason: clip(reason, 200),
     stale,
+    done,
     startedAt: s.startedAt,
     lastAt: s.lastAt,
     turns: s.turns,
@@ -195,6 +241,7 @@ export function summarize(s, now, windowMs) {
     resume: s.resume,
     url: s.url,
     hooked: Boolean(s.hookAt),
+    hookHealth: hookHealth(s, status, hooky, now),
     proces: s.proces ? { pid: s.proces.pid, od: s.proces.od } : null,
     failure: s.failure || null,
     context: s.context || null,

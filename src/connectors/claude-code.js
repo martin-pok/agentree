@@ -1,10 +1,11 @@
 import path from 'node:path';
-import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, shellQuote, MIN, HOUR, DAY } from '../util.js';
+import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, MIN, HOUR, DAY } from '../util.js';
 import { touch, addTokens, pushEntry } from '../model.js';
 import { createFileQueue, listFiles } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
+import { verifiedProfileForTranscript } from '../provider-accounts.js';
 import { ui } from '../texty.js';
-import { POCITAC } from '../platform.js';
+import { POCITAC, prikazVeSlozce } from '../platform.js';
 
 export const LIMIT_RE = /(hit your .{0,40}limit|usage limit reached|limit reached|spend limit)/i;
 
@@ -304,7 +305,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
   }
 
   if (s.limit && ts > s.limit.at) s.limit = null;
-  onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null);
+  onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null, s);
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 
   const parts = Array.isArray(m.content) ? m.content : [];
@@ -419,6 +420,17 @@ export function createClaudeCodeConnector(ctx) {
   // Tatáž konverzace může být vidět ze dvou kořenů (~/.config/claude jako symlink na ~/.claude,
   // zkopírovaná složka). Čte se jen z prvního souboru, jinak by se tokeny i přepis započítaly dvakrát.
   const drzitele = new Map(); // localId → soubor
+  const konfliktyId = new Set(); // duplicate UUID in distinct transcript paths: fail closed
+  let verifiedProfiles = [];
+  function bindFileAccount(file, entry) {
+    if (drzitele.get(entry.localId) !== file || konfliktyId.has(entry.localId)) return false;
+    const profile = verifiedProfileForTranscript(file, verifiedProfiles);
+    if (!profile) return false;
+    return store.bindAccount(`claude-code:${entry.localId}`, {
+      accountId: profile.accountId, source: 'verified-cli-profile',
+      observedAt: profile.observedAt, verified: true,
+    }).ok;
+  }
   let lastEventAt = 0;
   let lastHookAt = 0;
   let exists = false;
@@ -443,11 +455,13 @@ export function createClaudeCodeConnector(ctx) {
     // (public/js/ui.js#currentLimits). Úspěšná odpověď před obnovou ho nesmaže: může přijít
     // z jiného účtu nebo z dokupovaného využití – okno předplatného je pořád vyčerpané.
     onQuota: (limit) => store.setLimit(limit),
-    onSuccess: (ts, model) => {
+    onSuccess: (ts, model, session) => {
       const klic = model || '';
       if ((posledniUspech.get(klic) || 0) < ts) posledniUspech.set(klic, ts);
       for (const l of store.limits.values()) {
         if (l.provider !== 'anthropic' || !l.reached || l.at >= ts) continue;
+        // Success from another licensed account cannot clear an exhausted quota.
+        if (l.accountId && session?.accountBinding?.accountId !== l.accountId) continue;
         if (l.source === 'transcript-quota') continue;
         // Úspěch jiného modelu nic neříká o limitu toho, který narazil. Dřív ho shodil kdokoli:
         // Opus zablokovaný do 23:20 svítil jako volný 84 sekund po vyčerpání, jen proto, že
@@ -458,8 +472,10 @@ export function createClaudeCodeConnector(ctx) {
     },
   };
 
+  // Tvar příkazu (POSIX shell, nebo PowerShell na Windows) určuje src/platform.js. ID vzniká
+  // ze jména souboru; s pomlčkou na začátku by se z něj stal přepínač (stejně jako src/openers.js).
   function setResume(s, localId) {
-    if (s.cwd) s.resume = `cd ${shellQuote(s.cwd)} && claude --resume ${localId}`;
+    if (s.cwd && /^[A-Za-z0-9_][\w.-]*$/.test(String(localId || ''))) s.resume = prikazVeSlozce(s.cwd, 'claude', ['--resume', localId]);
   }
 
   // Přepisy pomocných agentů (Task) leží o dvě úrovně hlouběji:
@@ -498,7 +514,12 @@ export function createClaudeCodeConnector(ctx) {
     mimoObdobi.delete(file);
     if (!f) {
       const drzi = drzitele.get(path.basename(file, '.jsonl'));
-      if (drzi && drzi !== file && files.has(drzi)) return;
+      if (drzi && drzi !== file && files.has(drzi)) {
+        // Same UUID from another profile must not be silently counted as one verified account.
+        konfliktyId.add(path.basename(file, '.jsonl'));
+        store.unbindAccount(`claude-code:${path.basename(file, '.jsonl')}`);
+        return;
+      }
     }
     if (f && stat.size < f.tail.offset) {
       store.remove(`claude-code:${f.localId}`);
@@ -544,6 +565,7 @@ export function createClaudeCodeConnector(ctx) {
     f.size = stat.size;
     f.mtimeMs = stat.mtimeMs;
     store.commit(s);
+    bindFileAccount(file, f);
   }
 
   // Pravidelný průchod je pojistka za sledování souborů. Soubor, do kterého se hodinu nezapsalo,
@@ -568,6 +590,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    konfliktyId.clear();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
     for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
@@ -658,24 +681,30 @@ export function createClaudeCodeConnector(ctx) {
   // Neposouvá „poslední aktivitu“ – stavový řádek se překresluje i bez práce agenta.
   const statusCache = new Map();
 
-  function statusLimit(key, w, now) {
-    if (!w || typeof w.used_percentage !== 'number' || !Number.isFinite(w.used_percentage)) return null;
+  function statusLimit(key, w, now, accountId = null, ambiguous = false) {
+    if (ambiguous || !w || typeof w.used_percentage !== 'number' || !Number.isFinite(w.used_percentage)) return null;
     const def = STATUS_WINDOWS[key];
+    const id = accountId ? `${def.id}:${accountId}` : def.id;
     const used = Math.max(0, Math.min(100, w.used_percentage));
     const resetsAt = Number(w.resets_at) > 0 ? Math.round(Number(w.resets_at) * 1000) : null;
-    const prev = store.limits.get(def.id);
+    const prev = store.limits.get(id);
     if (!prev || prev.usedPercent !== used || prev.resetsAt !== resetsAt || now - prev.at > MIN) {
-      store.setLimit({ id: def.id, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });
+      store.setLimit({ id, accountId, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });
     }
     return { used, resetsAt };
   }
 
   function ingestStatusline(p, now = Date.now()) {
     if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
+    const session = store.get(`claude-code:${p.session_id}`);
+    const accountId = session?.accountBinding?.confidence === 'verified' ? session.accountBinding.accountId : null;
+    // When multiple Claude licenses are connected, an unbound statusline is NOT a shared
+    // provider-wide quota. Discard its account-specific metrics rather than mixing licenses.
+    const ambiguous = !accountId && new Set(verifiedProfiles.map((x) => x.accountId)).size > 1;
     const rl = p.rate_limits && typeof p.rate_limits === 'object' ? p.rate_limits : {};
-    const five = statusLimit('five_hour', rl.five_hour, now);
-    const week = statusLimit('seven_day', rl.seven_day, now);
-    statusLimit('spend_limit', rl.spend_limit, now);
+    const five = statusLimit('five_hour', rl.five_hour, now, accountId, ambiguous);
+    const week = statusLimit('seven_day', rl.seven_day, now, accountId, ambiguous);
+    statusLimit('spend_limit', rl.spend_limit, now, accountId, ambiguous);
     const cw = p.context_window && typeof p.context_window === 'object' ? p.context_window : {};
     const ctxPct = typeof cw.used_percentage === 'number' && Number.isFinite(cw.used_percentage) ? Math.round(Math.max(0, Math.min(100, cw.used_percentage))) : null;
     const s = store.get(`claude-code:${p.session_id}`);
@@ -720,6 +749,19 @@ export function createClaudeCodeConnector(ctx) {
     },
     scan,
     pridejKoren,
+    // Verified account IDs come from the auth status of the *same* CLI profile.
+    // Transcript roots are compared by exact path segment, never by project name.
+    bindProfileAccounts(profiles = []) {
+      verifiedProfiles = profiles;
+      // A formerly valid single-license global window becomes misleading as soon as
+      // independent accounts are detected. Remove it and stream the change to clients.
+      if (new Set(profiles.map((profile) => profile.accountId).filter(Boolean)).size > 1) {
+        for (const window of Object.values(STATUS_WINDOWS)) store.removeLimit(window.id);
+      }
+      let bound = 0;
+      for (const [file, entry] of files) if (bindFileAccount(file, entry)) bound++;
+      return bound;
+    },
     koreny: () => koreny.seznam(),
     zkusKoreny: () => koreny.zkusChybejici(),
     stop() {
@@ -732,8 +774,9 @@ export function createClaudeCodeConnector(ctx) {
     status() {
       const count = files.size;
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count
+        state: konfliktyId.size ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        collisions: konfliktyId.size,
+        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : count
           ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
           : exists
             ? ui('Složka existuje, zatím bez sessions.')

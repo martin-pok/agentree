@@ -1,5 +1,63 @@
 # Testování a ověření
 
+## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 1013 testů, 1006 prošlo, 7 přeskočeno podle platformy, 0 selhalo. Lokálně použité UTC a přibalený Git; systémový Git blokuje nepřijatá licence Xcode. |
+| `npm run check` | 319 souborů bez syntaktické chyby. |
+| `qa:assistant` | Chromium i WebKit, 1440 a 375 px, CZ/EN: obecná otázka vrací vysvětlení bez nesouvisejících odkazů; ruční čtení historie přežije nové vykreslení i opožděnou odpověď; vlastní zpráva obnoví sledování konce; při chybě hledání 503 zůstane chat použitelný. Bez chyb JavaScriptu; při simulované 503 konzole hlásí jen očekávaný neúspěšný požadavek. |
+| Neověřeno | CI pro nový commit v PR #130, nainstalovaná macOS aplikace a uživatelovo ruční QA. |
+
+## Protokol ověření – Nevydáno: nejmenší práva workflowů GitHub Actions (10. 10. 2026, Linux, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 977 testů, 966 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 309 souborů bez syntaktické chyby |
+| Nové testy | `workflow-opravneni` (4): výchozí práva jen pro čtení a zápis jen u `znacka`, `vydani` a `zverejnit`; žádný `pull_request_target` ani `${{ … }}` ve skriptu `run:`; cizí akce na celém SHA s verzí v komentáři a `persist-credentials: false` mimo úlohu s `git push`; vydání jen jako koncept, `concurrency` pro tag a tajemství jen v krocích sestavení. Proti workflowům z `main` padají všechny 4 |
+| SHA akce | `ilammy/msvc-dev-cmd` v1 = v1.13.0 = `0b201ec74fa43914dc39ae48a89fd1d8cb592756` (`git ls-remote` proti github.com) |
+| Neověřeno | skutečný běh workflowů: Testy po pushi, Vydání (tag i ruční spuštění se založením tagu) a Zveřejnit vydání s omezenými právy |
+
+## Protokol ověření – Nevydáno: token hooků Claude Code mimo příkaz a settings.json (10. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 962 testů, 951 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 306 souborů bez syntaktické chyby |
+| Nové testy | `hooky-token-soubor`: příkazy (POSIX i Windows) ani settings.json token nenesou, soubor s hlavičkami 0600; skutečný příkaz přes `sh -c` s datovou složkou „Jan Novák/Design & Web/it's $HOME \`id\` …“ doručí událost i stavový řádek, bez souboru mlčí; staré příkazy s tokenem se poznají, nahradí i odeberou a aplikace je sama nepřepíše; nová instalace po změně tokenu soubor přepíše. Bez opravy padá všech 6 |
+| `qa:contrast` | aplikace, web a okno rozšíření: WCAG 2.2 AA |
+| Prohlížeč | Nastavení → Claude se starým propojením (nová poznámka) v 1440 i 375 px, světlý i tmavý vzhled, česky i anglicky, konzole čistá; „Obnovit propojení“ zapíše příkazy bez tokenu |
+| Neověřeno | skutečné Claude Code na macOS s novým příkazem; skutečné `curl.exe` a PowerShell na Windows (nativní test `windows-regression` běží jen v CI na Windows) |
+
+## Protokol ověření – konec procesu uprostřed tahu (10. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 954 testů, 943 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal: „web nese verzi z package.json“ – sestavení webu stahuje písmo z `api.fontshare.com`, které vývojové prostředí nepustí |
+| `npm run check` | 306 souborů bez syntaktické chyby |
+| Nové testy | `konec-procesu` (11): konec do dvou výpisů s důvodem „Agent skončil uprostřed práce“, nepovedený výpis, dva procesy v jedné složce, proces bez složky, jeden výpadek výpisu, běh z Agenteeq, přednost přepisu, Codex CLI vs. aplikace, žádné upozornění „dokončil úlohu“, živý proces `claude` ukončený SIGKILL (Linux, `/proc`) |
+| Prohlížeč | ukázková data s konverzací po konci procesu: Přehled, Agenti a detail v 1440 i 375 px, světlý i tmavý vzhled – štítek „Čeká na zadání“ a věta „Agent skončil uprostřed práce“, konzole bez chyb, bez vodorovného posunu |
+| Neověřeno | skutečný Mac (složka procesu přes lsof) a skutečný Codex CLI |
+## Protokol ověření – Nevydáno: pravdivé stavy, vizuální opravy, Pomocník, propojení hooků (9. 10. 2026, Linux, Node 22.22, Playwright Chromium)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 952 testů, 940 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 305 souborů bez syntaktické chyby |
+| `qa:contrast` | aplikace, web a okno rozšíření: WCAG 2.2 AA |
+| `qa:tvary`, `qa:desktop` | prošly v Chromiu, bez chyb JavaScriptu; WebKit až v CI |
+| Prohlížeč | Přehled, Agenti, detail agenta, Dovednosti, Nastavení a Pomocník v 1440 i 375 px, světlý i tmavý vzhled, konzole čistá |
+| Neověřeno | příkaz pro pokračování v PowerShellu na skutečném Windows; cloudové modely Ollamy proti skutečné Ollamě; že Claude Code načítá hooky jen při startu (podle dokumentace, ne z běhu) |
+## Protokol ověření – Nevydáno: odpojení disku při sestavení DMG (10. 10. 2026, Linux, Node 22.22)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 947 testů, 936 prošlo, 10 přeskočeno s důvodem (jen macOS / jen Windows), 1 selhal mimo kód: `web nese verzi z package.json` – vývojové prostředí nemá přístup k api.fontshare.com (písmo Satoshi); v CI prochází |
+| `npm run check` | 304 souborů bez syntaktické chyby |
+| Nové testy | `dmg`: zařízení z výpisu `hdiutil attach` (skutečný výpis z runneru), opakované odpojení bez `-force` a `-force` až v posledním pokusu |
+| Neověřeno | skutečné sestavení obrazu – jen na runneru s macOS (job „aplikace pro Mac“) |
+
 ## Protokol ověření – 0.38.2, zpětné odečty Claude a opravy UI (7. 10. 2026, macOS, Node 24.18)
 
 | Kontrola | Výsledek |

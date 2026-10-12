@@ -12,10 +12,10 @@ const verze = JSON.parse(await zdroj('package.json')).version;
 
 test('verze v README odpovídá vydané verzi', async () => {
   const readme = await zdroj('README.md');
-  assert.match(readme, new RegExp(`Stav: \\*\\*v${verze.replace(/\./g, '\\.')} `), 'README hlásí jinou verzi než package.json');
+  assert.ok(readme.includes('**'+verze+'**'), 'README musí uvádět současnou pracovní verzi');
   // Odkaz vede na přílohu se stálým jménem v posledním vydání – stejně jako tlačítko na webu.
   // Adresa s číslem verze by po každém vydání ukazovala do prázdna.
-  assert.match(readme, /releases\/latest\/download\/Agenteeq-macOS-arm64\.zip/, 'README má odkazovat na stálou přílohu posledního vydání');
+  assert.match(readme, /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/, 'README má odkazovat na stálý DMG instalátor posledního vydání');
 });
 
 test('počet testů v dokumentaci se neliší o víc než desetinu', async () => {
@@ -70,4 +70,23 @@ test('přeskočený test říká proč', async () => {
   assert.equal(sDuvodem("process.platform !== 'win32'", ''), false);
   assert.equal(sDuvodem('BEZ_PRAV || process.getuid?.() === 0', "const BEZ_PRAV = x && 'důvod';"), false);
   assert.equal(sDuvodem("process.platform !== 'win32' && 'jen Windows'", ''), true);
+});
+
+
+test('publikace nesmí vynechat ZIP Chrome extension stejné verze', async () => {
+  const workflow = await zdroj('.github/workflows/publish.yml');
+  assert.match(workflow, /const expectedExtension = `agenteeq-extension-\$\{process\.env\.TAG\.slice\(1\)\}\.zip`;/);
+  assert.match(workflow, /"Agenteeq-Windows-x64\.zip", expectedExtension\]/);
+  assert.match(workflow, /if \(!v\.assets\.some\(\(a\) => a\.name === stala\)\)/);
+});
+
+
+test('publikace releasu vyžaduje úspěšné CI přesného označeného commitu', async () => {
+  const workflow = await zdroj('.github/workflows/publish.yml');
+  assert.match(workflow, /actions: read/, 'release musí mít jen čtecí přístup k výsledkům Actions');
+  assert.match(workflow, /Ověřit zelené CI označeného commitu/);
+  assert.match(workflow, /git\/ref\/tags\/\$\{TAG\}/, 'SHA se musí odvozovat z tagu, ne aktuálního main');
+  assert.match(workflow, /actions\/workflows\/test\.yml\/runs\?head_sha=\$\{SHA\}/);
+  assert.match(workflow, /r\.head_sha === process\.env\.GH_SHA && r\.status === "completed" && r\.conclusion === "success"/);
+  assert.ok(workflow.indexOf('Ověřit zelené CI označeného commitu') < workflow.indexOf('      - name: Zveřejnit\n'), 'kontrola musí blokovat publikaci');
 });

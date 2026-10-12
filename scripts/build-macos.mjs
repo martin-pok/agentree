@@ -18,6 +18,11 @@ await fs.mkdir(binary, { recursive: true });
 await fs.mkdir(path.join(resources, 'app'), { recursive: true });
 const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' });
 for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) await fs.cp(path.join(root, dir), path.join(resources, 'app', dir), { recursive: true });
+// The old checked-in icon and PNG preview use different proportions from the
+// reviewed Dock master. Runtime must ship ONLY the newly generated .icns below.
+for (const stale of ['Agenteeq.icns', 'Agenteeq-icon.png']) {
+  await fs.rm(path.join(resources, 'app', 'desktop', stale), { force: true });
+}
 // Zákazník dostane jen návod. Ostatní dokumenty jsou interní (licence a podpisový klíč, obchodní
 // strategie, QA) a do prodávaného balíčku nepatří – stejně jako v npm balíčku (package.json → files).
 await fs.mkdir(path.join(resources, 'app', 'docs'), { recursive: true });
@@ -38,11 +43,12 @@ if (!licenceNode) throw new Error(`Chybí licence přibaleného Node: ${licenceC
 await fs.copyFile(licenceNode, path.join(resources, 'NODE-LICENSE.txt'));
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'AppKit', '-framework', 'WebKit', '-framework', 'UserNotifications', 'desktop/Agenteeq.swift', '-o', path.join(binary, 'Agenteeq')]);
 run('xcrun', ['swiftc', '-O', '-module-cache-path', path.join(build, 'module-cache'), '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos14.0`, '-framework', 'Security', 'desktop/Keychain.swift', '-o', path.join(resources, 'agenteeq-keychain')]);
-// Keep the reviewed macOS icon as a source asset. Recent macOS releases can
-// reject a freshly generated .iconset despite valid PNG dimensions, which made
-// release builds non-deterministic. The checked-in ICNS is the exact reviewed
-// white-tile Agenteeq mark used by the app.
-await fs.copyFile(path.join(root, 'desktop', 'Agenteeq.icns'), path.join(resources, 'Agenteeq.icns'));
+// Generate the macOS icon from the reviewed monochrome source on every build.
+// Never ship an outdated checked-in ICNS with a coloured antenna.
+const iconset = path.join(build, 'Agenteeq.iconset');
+await fs.mkdir(iconset, { recursive: true });
+run('xcrun', ['swift', 'desktop/Icon.swift', iconset]);
+run('iconutil', ['-c', 'icns', '-o', path.join(resources, 'Agenteeq.icns'), iconset]);
 const identity = process.env.AGENTEEQ_SIGN_IDENTITY || '-';
 // Finder metadata can be inherited while copying into a .app; strip it only from our generated build.
 run('xattr', ['-cr', app]);
@@ -71,11 +77,9 @@ if (notaryProfile) {
   run('spctl', ['--assess', '--type', 'execute', '--verbose=2', app]);
   notarized = true;
 }
-const iconPreview = path.join(root, 'desktop', 'Agenteeq-icon.png');
-try {
-  await fs.copyFile(iconPreview, path.join(root, 'dist/Agenteeq-icon.png'));
-} catch {
-  // The app icon remains present; the PNG preview is a convenience artifact.
-}
+// Preview is exported from the very same generated ICNS that Finder uses,
+// never copied from a stale checked-in illustration.
+run('sips', ['-s', 'format', 'png', path.join(resources, 'Agenteeq.icns'),
+  '--out', path.join(root, 'dist/Agenteeq-icon.png')]);
 await fs.writeFile(path.join(root, 'dist/latest-build.json'), JSON.stringify({ app, archive, version, arch: process.arch, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }, null, 2));
 console.log(JSON.stringify({ app, archive, version, signature: identity === '-' ? 'ad-hoc' : 'Developer ID', notarized }));

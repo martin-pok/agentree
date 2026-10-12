@@ -15,13 +15,13 @@ import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey 
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, describePlan, subscriptionPortfolio } from './subscriptions.js';
 import { claudeIdentity, observeAccount, readCodexAccount } from './provider-accounts.js';
-import { claudeSettingsPath, hooksStatus } from './hooks-installer.js';
+import { claudeSettingsPath, hookHeadersPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
 import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector, korenyClaudeCode } from './connectors/claude-code.js';
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
-import { najdiKonverzace, vetaOdpovedi, formulujLokalne } from './pomocnik.js';
+import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
 import { createCursorConnector } from './connectors/cursor.js';
 import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
@@ -47,6 +47,7 @@ import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
+import { createKonecProcesu } from './konec-procesu.js';
 import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
@@ -93,7 +94,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
-  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
+  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, channel: datastore.data.settings.updateChannel, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
   const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
   await historie.load();
@@ -199,21 +200,26 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // počítače. Telefon dostane jen to, co vidí v přehledu – přepisy mu nepatří (remote-scope).
   async function pomocnik({ dotaz, smiPrepisy = true }) {
     const text = String(dotaz || '').trim().slice(0, 500);
-    if (!text) return { status: 400, error: ui('Napiš, co mám najít.') };
+    if (!text) return { status: 400, error: ui('Napiš, co hledáš.') };
     const koreny = [
       ...korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }).map((cesta) => ({ cesta, app: 'Claude Code' })),
       ...domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }).map((d) => ({ cesta: path.join(d, 'sessions'), app: 'Codex' })),
     ];
     const v = await najdiKonverzace({ dotaz: text, sessions: store.list(), koreny, smiPrepisy });
     let lokalne = null;
+    let modelMimoPocitac = false;
+    // Úryvky konverzací smí dostat jen model na tomto počítači (vyberLokalniModel): Ollama na
+    // loopback adrese, bez cloudových a embeddingových modelů. Jiná adresa se odmítne a řekne se to.
     if (smiPrepisy && v.vysledky.length && datastore.data.settings.pomocnik?.model !== false) {
-      const { ok, models } = await ollama.models();
-      if (ok && models.length) {
-        const odpoved = await formulujLokalne({ ollama, model: models[0].name, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language });
-        if (odpoved) lokalne = { text: odpoved, model: models[0].name };
+      const { model, duvod } = await vyberLokalniModel({ ollama });
+      modelMimoPocitac = duvod === 'mimo-pocitac';
+      if (model) {
+        // Optional wording must not hold the assistant response hostage for 25 seconds.
+        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language, casMs: 4500 });
+        if (odpoved) lokalne = { text: odpoved, model };
       }
     }
-    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne };
+    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne, modelMimoPocitac };
   }
 
   const runs = new RunManager({
@@ -316,6 +322,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
   // který aplikace spuštěná z Finderu jinak nevidí – přepis se pak najde a proces se spáruje.
   const bezici = createBeziciAgenti({ store });
+  // Konverzace, jejíž proces skončil uprostřed tahu, už nepracuje (src/konec-procesu.js). Proces běhu
+  // z Agenteeq eviduje běh sám; před rozhodnutím se přepisy přečtou znovu, ať má přednost řádný konec tahu.
+  const konecProcesu = createKonecProcesu({
+    store,
+    behy: () => runs.list(),
+    obnov: (ids) => Promise.all(ids.map((id) => connectors[id]?.scan())),
+  });
   // Poslední výpis procesů agentů – podle něj se pozná, že konverzace neběží v otevřeném Terminálu
   // (odpověď z aplikace, src/odpoved.js). null = výpis zatím nebyl nebo se nepodařil.
   let posledniProcesy = null;
@@ -332,6 +345,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // založí ~/.claude i projects/ najednou a strážce nad neexistujícím rodičem hlídat nemohl).
     // Sledování se zkusí hned, ne až za 5 s – jinak by agent do té doby visel jen jako proces.
     if (bezici.pocet()) for (const id of ['claude-code', 'codex']) connectors[id]?.zkusKoreny?.();
+    await konecProcesu.upravit(procesy);
   }
   if (config.processes) {
     // `vypisProcesu` podstrkují jen testy: omezí skutečný výpis na své procesy (test/helpers.mjs#jenProcesy).
@@ -420,13 +434,24 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
     if (generation !== subscriptionRefreshGeneration) return;
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
-    claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
-      .map(({ account }, index) => {
-        const plan = claudePlanFromAccount(account);
-        const id = claudeIdentity(account);
-        return [id || `unknown:${index}`, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
-          observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
-      })).values()];
+    // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
+    // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
+    const authenticatedClaudeProfiles = [primary, ...extraClaude].filter((item) => item?.account)
+      .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
+      .filter((item) => item.accountId);
+    claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
+      [item.accountId, { id: item.accountId, provider: 'anthropic', service: 'claude',
+        plan: item.plan?.plan || null, observedAt: Date.now(),
+        evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
+    // An account is bound only where authenticated CLI profile and transcript root agree.
+    // Never assign all agents to the currently signed-in global account.
+    const observedAt = Date.now();
+    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
+      home === config.sourceHome
+        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
+          .map((root) => ({ root, accountId, observedAt }))
+        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
@@ -453,13 +478,26 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function providerAccounts() {
     const current = new Map();
-    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) current.set(claudeAccount.id, { plan: claudeAccount.plan, limits: [], credits: null, observedAt: claudeAccount.observedAt });
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) {
+      const limits = store.limitList().filter((l) => l.provider === 'anthropic'
+        && l.accountId === claudeAccount.id && l.source === 'statusline'
+        && Number.isFinite(l.usedPercent) && l.at <= Date.now()
+        && Date.now() - l.at <= 5 * 60_000)
+        .map((l) => ({ key: l.id, label: l.label, primary: {
+          usedPercent: l.usedPercent, windowMinutes: l.windowMinutes, resetsAt: l.resetsAt,
+        }, secondary: null }));
+      current.set(claudeAccount.id, { plan: claudeAccount.plan, limits, credits: null,
+        observedAt: claudeAccount.observedAt });
+    }
     for (const codexAccount of codexAccounts) current.set(codexAccount.id, { plan: codexAccount.plan, limits: codexAccount.limits, credits: codexAccount.credits, observedAt: codexAccount.observedAt });
     const rows = datastore.data.providerAccounts.map((item) => ({ ...item, active: current.has(item.id),
       ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
     if (!rows.some((x) => x.provider === 'anthropic' && x.active)) rows.push({ provider: 'anthropic', service: 'claude', id: null, plan: null, active: false, state: claudeAuth.loggedIn === false ? 'signed_out' : 'unavailable', limits: [], credits: null, observedAt: null });
     if (!rows.some((x) => x.provider === 'openai' && x.active)) rows.push({ provider: 'openai', service: 'chatgpt', id: null, plan: null, active: false, state: 'unavailable', limits: [], credits: null, observedAt: null });
-    return rows.map((row) => ({ ...row, planLabel: row.plan ? describePlan(row).label : null }))
+    return rows.map((row) => ({ ...row, planLabel: row.plan
+      ? (row.service === 'claude' || row.service === 'chatgpt'
+        ? describePlan(row).label : `${row.provider} · ${row.plan}`)
+      : null }))
       .sort((a, b) => Number(b.active) - Number(a.active) || (b.observedAt || 0) - (a.observedAt || 0));
   }
 
@@ -821,6 +859,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   /* ---------- Spouštění agentů ---------- */
 
   let launchEnv = { bins: {}, chatgptApp: false, ollama: { ok: false, models: [] } };
+  // Prošlo už hledání programů aspoň jednou? Do té doby prázdné `bins` znamená „nevíme“, ne „není“.
+  let launchHledano = false;
 
   function launchPayload() {
     let targets = launchTargets(launchEnv);
@@ -840,10 +880,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
     prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
-    emit: (u) => {
-      store.emit('napojeni', u);
-      if (u.id === 'claude-code' && u.udalost === 'napojeno') refreshSubscriptions().catch(() => {});
+    // A completed CLI login must re-read subscriptions/accounts before the success
+    // SSE is sent. This works for both Claude Code and Codex; no stale-plan modal.
+    onVerified: async (id) => {
+      await refreshSubscriptions();
+      return store.list().reduce((latest, session) =>
+        session.connector === id && !session.proces && session.lastAt > latest ? session.lastAt : latest, 0);
     },
+    emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
       if (id === 'claude-code') {
@@ -862,6 +906,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (launchEnv.env?.CLAUDE_CONFIG_DIR) await connectors['claude-code']?.pridejKoren(path.join(launchEnv.env.CLAUDE_CONFIG_DIR, 'projects'));
       if (launchEnv.env?.CODEX_HOME) await connectors.codex?.pridejDomov(launchEnv.env.CODEX_HOME);
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
+    launchHledano = launchDetected || dry;
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);
     return payload;
@@ -934,9 +979,15 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   // Odpověď agentovi z aplikace (src/odpoved.js): konverzace Claude Code pokračuje na pozadí.
+  // Program claude: cesta = nalezen, false = hledal se a nenašel, null = ještě se nehledal.
   function kontextOdpovedi() {
     const vypisOk = connectors.processes?.status?.().state !== 'error';
-    return { procesy: config.processes && vypisOk ? posledniProcesy : null, behy: runs.list(), claude: launchEnv.bins?.claude || null };
+    return {
+      procesy: config.processes && vypisOk ? posledniProcesy : null,
+      behy: runs.list(),
+      dostupne: config.launchAgents,
+      claude: launchHledano ? launchEnv.bins?.claude || false : null,
+    };
   }
   function muzeOdpovedet(id) {
     return lzeOdpovedet(store.sessions.get(id), kontextOdpovedi());
@@ -1041,9 +1092,32 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     return r.ok ? { ok: true, prohlizec: vChromu?.prohlizec || '', dry: Boolean(r.dry) } : { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
   }
 
+  // Propojení s Claude Code a od kdy platí. Čas zapnutí zapisuje instalace z Agenteeq
+  // (zaznamenejHooky); propojení zapnuté jinak dostane čas, kdy ho Agenteeq poprvé viděl, a příznak,
+  // že přesný čas neznáme. Nepřečtený settings.json nic nemění – „nevím“ není „vypnuto“.
+  const spusteno = Date.now();
+  async function claudeHooks() {
+    const h = await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken, hookHeadersPath(config.dataDir));
+    if (!h.error) {
+      const zaznam = datastore.data.claudeHooks;
+      if (h.installed && !zaznam) datastore.data.claudeHooks = { od: Date.now(), presne: false };
+      else if (!h.installed && !h.partial && zaznam) datastore.data.claudeHooks = null;
+      if (zaznam !== datastore.data.claudeHooks) datastore.save();
+      const z = datastore.data.claudeHooks;
+      store.setHooky(h.installed && z ? { od: z.od, presne: z.presne, start: spusteno } : null);
+    }
+    const z = datastore.data.claudeHooks;
+    return { ...h, since: z?.od || null, sinceExact: Boolean(z?.presne) };
+  }
+
+  function zaznamenejHooky(zapnuto, now = Date.now()) {
+    datastore.data.claudeHooks = zapnuto ? { od: now, presne: true } : null;
+    datastore.save();
+  }
+
   async function integrations() {
     return {
-      claudeHooks: await hooksStatus(claudeSettingsPath(config.sourceHome), datastore.data.ingestToken),
+      claudeHooks: await claudeHooks(),
       claudeAuth,
       extension: { path: extensionPath, sites: WEB_SITES, obchod: adresaObchodu(), port: config.port, ...extensionStatus() },
       cloud: connectors['cloud-billing'].providers(),
@@ -1081,7 +1155,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function checkForUpdates() {
-    const value = await updates.check();
+    const value = await updates.check(datastore.data.settings.updateChannel === 'preview' ? 'preview' : 'stable');
     store.emit('updates', value);
     // Automatická volba znamená stažení ověřeného balíčku, nikdy tichou výměnu běžící aplikace.
     if (value.status === 'available' && datastore.data.settings.updateMode === 'automatic') {
@@ -1261,7 +1335,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (!stav?.running) {
         return {
           status: 422,
-          error: stav?.installed
+          error: stav?.installed === null
+            ? ui('Stav Tailscale se nepodařilo zjistit.')
+            : stav?.installed
             ? ui('Tailscale je nainstalovaný, ale nejsi přihlášený. Spusť „tailscale up“ a zkus to znovu.')
             : ui('Tailscale na {0} neběží. Nainstaluj ho, přihlas se („tailscale up“) a zkus to znovu.', POCITAC.tomto),
         };
@@ -1492,6 +1568,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
     await Promise.all([whoami, launchReady]);
+    let hookyJson = JSON.stringify(await claudeHooks().catch(() => null));
     store.reevaluate();
     store.ready = true;
     historie.aktualizuj(store.list());
@@ -1524,6 +1601,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       timers.push(t);
     };
     every(() => store.reevaluate(), 5000);
+    // settings.json může přepsat jiný nástroj nebo ho uživatel upraví ručně. Změna propojení se
+    // tak v Nastavení i u konverzací ukáže do 30 s, ne až po dalším načtení stránky.
+    every(async () => {
+      const json = JSON.stringify(await claudeHooks());
+      if (json === hookyJson) return;
+      hookyJson = json;
+      store.emit('integrations', await integrations());
+    }, 30000);
     // Historie Statistik: den se mění pomalu, souhrn za posledních 28 dní stačí přepočítat jednou za pár minut.
     every(() => historie.aktualizuj(store.list()), 5 * 60e3);
     // Restore after Wi-Fi changes, sleep or Tailscale starting after Agenteeq.
@@ -1584,7 +1669,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   return {
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

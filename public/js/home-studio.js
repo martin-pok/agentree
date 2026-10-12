@@ -1,15 +1,14 @@
 import { esc } from './format.js';
+export { robot } from './robot-svg.js';
+import { robot } from './robot-svg.js';
 import { tr } from './i18n.js';
 import { agentsList } from './state.js';
+import { vetaPozdravu } from './stav-vety.js';
 
 const KEY = 'agenteeq:agent-personas:v1';
 const colors = ['#6260d8', '#367b68', '#a85c44', '#92609a'];
 const avatars = ['Scout', 'Orbit', 'Pixel', 'Nova'];
-export function robot(type = 'Scout') {
-  const round = type === 'Orbit' ? 25 : type === 'Pixel' ? 10 : 18;
-  const antenna = type === 'Nova' ? '<path d="M47 22 40 12M61 22 68 12"/>' : '<path d="M54 23V13"/><circle cx="54" cy="10" r="4" fill="currentColor" stroke="none"/>';
-  return `<svg class="robot" viewBox="0 0 108 112" aria-hidden="true"><ellipse class="robot-shadow" cx="54" cy="104" rx="24" ry="4"/><g class="robot-body"><path class="robot-limbs" d="M37 88v10m34-10v10"/><path class="robot-limbs robot-arm-left" d="M28 75l-7 9"/><path class="robot-limbs robot-arm-right" d="M80 75l7 9"/><rect class="robot-torso" x="33" y="69" width="42" height="24" rx="11"/><circle class="robot-core" cx="54" cy="80" r="3"/><g class="robot-head"><g class="robot-aerial">${antenna}</g><rect class="robot-ear" x="14" y="39" width="10" height="19" rx="5"/><rect class="robot-ear" x="84" y="39" width="10" height="19" rx="5"/><rect class="robot-shell" x="21" y="23" width="66" height="51" rx="${round}"/><rect class="robot-face" x="28" y="32" width="52" height="32" rx="${Math.min(round, 14)}"/><g class="robot-gaze"><g class="robot-eyes"><rect x="38" y="42" width="7" height="11" rx="3.5"/><rect x="63" y="42" width="7" height="11" rx="3.5"/></g></g></g></g></svg>`;
-}
+
 export function createHomeStudio(el) {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { /* defaults */ }
@@ -43,7 +42,7 @@ export function createHomeStudio(el) {
   form.addEventListener('input', preview);
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
   // Robot u pozdravu ukazuje stav všech agentů najednou: kdo čeká na tebe, zamává; když někdo
-  // pracuje, píše; jinak odpočívá. Věta pod nadpisem říká totéž slovy.
+  // pracuje, píše; jinak odpočívá. Věta pod nadpisem radí, co dělat dál (počty nese box Stav agentů).
   const hlavni = el.querySelector('.home-robot');
   if (hlavni) hlavni.innerHTML = robot('Orbit');
   const pulz = el.querySelector('[data-home-pulse]');
@@ -53,9 +52,7 @@ export function createHomeStudio(el) {
     const cekaji = vsichni.filter((a) => a.status === 'needs_input').length;
     const pracuji = vsichni.filter((a) => a.status === 'working').length;
     hlavni.dataset.state = cekaji ? 'needs_input' : pracuji ? 'working' : 'idle';
-    pulz.textContent = cekaji ? tr('Na tvé rozhodnutí čeká agentů: {0}. Najdeš je hned pod polem pro zadání.', cekaji)
-      : pracuji ? tr('Pracujících agentů: {0}. Mezitím můžeš zadat další úkol.', pracuji)
-        : tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.');
+    pulz.textContent = vetaPozdravu({ cekaji, pracuji });
   };
   const refresh = () => {
     stavPlochy();
@@ -92,5 +89,5 @@ export function agentRobot(s) {
   const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
-  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}">${robot(type)}</span>`;
+  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${robot(type)}</span>`;
 }

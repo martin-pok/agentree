@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { UpdateService, assetName, compareVersions, parseVersion, RELEASE_URL } from '../src/updates.js';
+import { UpdateService, assetName, compareVersions, parseVersion, RELEASE_URL, PREVIEW_RELEASES_URL } from '../src/updates.js';
 import { api, startTestServer, tempDir } from './helpers.mjs';
 
 // Otisk, který GitHub u přílohy vydání zveřejňuje (pole `digest`), pro obsah atrapy 'zip!'.
@@ -18,6 +18,7 @@ const release = (version = '0.30.0', digest = OTISK) => ({
 function fetchForUpdate(payload = release()) {
   return async (url) => {
     if (url === RELEASE_URL) return new Response(JSON.stringify(payload), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify([payload]), { status: 200, headers: { 'content-type': 'application/json' } });
     if (String(url).startsWith('https://github.com/martin-pok/agentree/releases/download/')) return new Response(Buffer.from('zip!'), { status: 200, headers: { 'content-length': '4' } });
     throw new Error(`Nečekaná URL ${url}`);
   };
@@ -54,6 +55,22 @@ test('aktualizace: stažení je lokální, atomické a nové ověření ho nema�
   assert.equal(await fs.readFile(downloaded.update.downloaded.path, 'utf8'), 'zip!');
   assert.equal((await service.check()).status, 'downloaded');
   assert.equal(path.dirname(service.downloadedPath()), path.join(dir, 'updates'));
+});
+
+test('aktualizace: chybějící Content-Length neodmítne balíček s platnou velikostí a SHA-256', async () => {
+  const dir = await tempDir('agenteeq-updates-chunked-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    // Real-world chunked download: no Content-Length header, still verify body and digest.
+    return new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new TextEncoder().encode('zip!')); controller.close(); },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  const result = await service.download();
+  assert.equal(result.ok, true);
+  assert.equal(await fs.readFile(result.update.downloaded.path, 'utf8'), 'zip!');
 });
 
 test('aktualizace: chyba zdroje ani poškozený balíček se nikdy nevydává za aktuální vydání', async () => {
@@ -98,6 +115,9 @@ test('HTTP aktualizace: lokální UI ověří, stáhne a ve zkušebním režimu 
     assert.equal(remote.updates.downloaded, null);
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'automatic' })).body.settings.updateMode, 'automatic');
     assert.equal((await client.send('PUT', '/api/settings', { updateMode: 'surprise' })).status, 422);
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'preview' })).body.settings.updateChannel, 'preview');
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'unknown' })).status, 422);
+    assert.equal((await client.send('PUT', '/api/settings', { updateChannel: 'stable' })).body.settings.updateChannel, 'stable');
   } finally { await s.close(); }
 });
 
@@ -148,4 +168,134 @@ test('HTTP aktualizace: instalace jen se staženým balíčkem a jen přes okno 
     assert.equal(cizi.status, 403, 'instalovat jde jen z tohoto Macu');
     assert.equal(udalosti.length, 1);
   } finally { await s.close(); }
+});
+
+
+test('aktualizace: ukončí proud okamžitě při překročení velikosti z releasu', async () => {
+  let canceled = false;
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3, 4, 5]));
+      },
+      cancel() { canceled = true; },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: await tempDir('agenteeq-updates-stream-'), fetchImpl, platform: 'darwin', arch: 'arm64' });
+  const available = await service.check();
+  assert.equal(available.status, 'available');
+  const result = await service.download();
+  assert.equal(result.status, 502);
+  assert.equal(canceled, true, 'nadlimitní proud se musí přerušit');
+  assert.equal(service.state().status, 'available', 'chybné stažení nesmí být označené za hotové');
+});
+
+
+test('aktualizace: odmítne nedokončený proud i bez Content-Length', async () => {
+  const dir = await tempDir('agenteeq-updates-truncated-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('zip'));
+        controller.close();
+      },
+    }), { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  const result = await service.download();
+  assert.equal(result.status, 502);
+  assert.equal(service.state().status, 'available');
+  await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')));
+});
+
+test('aktualizace: neuloží balíček, pokud server uvede neplatný Content-Length', async () => {
+  const dir = await tempDir('agenteeq-updates-header-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200 });
+    return {
+      ok: true,
+      headers: new Headers({ 'content-length': '999' }),
+      arrayBuffer: async () => Buffer.from('zip!'),
+    };
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  assert.equal((await service.download()).status, 502);
+  assert.equal(service.state().status, 'available');
+  await assert.rejects(fs.access(path.join(dir, 'updates', 'Agenteeq-0.30.0-macOS-arm64.zip')));
+});
+
+
+test('Preview channel is opt-in, chooses highest published semver and never a draft', async () => {
+  const releases = [
+    { ...release('0.46.2'), prerelease: true },
+    { ...release('0.46.4'), prerelease: true },
+    { ...release('0.46.3'), prerelease: true },
+    { ...release('0.46.5'), draft: true, prerelease: true },
+    { ...release('0.46.1'), prerelease: false },
+    { ...release('0.99.0'), tag_name: 'not-a-release', prerelease: true },
+  ];
+  const seen = [];
+  const fetchImpl = async (url) => {
+    seen.push(url);
+    if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify(releases), { status: 200 });
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+    throw new Error('Unexpected URL ' + url);
+  };
+  const service = new UpdateService({ version: '0.46.1', channel: 'preview',
+    dataDir: await tempDir('preview-channel-'), fetchImpl, platform: 'darwin', arch: 'arm64' });
+  const preview = await service.check();
+  assert.equal(preview.channel, 'preview');
+  assert.equal(preview.status, 'available');
+  assert.equal(preview.latestVersion, '0.46.4');
+  assert.equal(preview.asset.name, 'Agenteeq-0.46.4-macOS-arm64.zip');
+  assert.deepEqual(seen, [PREVIEW_RELEASES_URL]);
+  const stable = await service.check('stable');
+  assert.equal(stable.channel, 'stable');
+  assert.equal(stable.status, 'current');
+  assert.equal(stable.asset, null, 'changing channel removes any Preview download offer');
+  assert.deepEqual(seen, [PREVIEW_RELEASES_URL, RELEASE_URL]);
+});
+
+test('Preview channel rejects missing digest and mismatched release asset links', async () => {
+  const original = release('0.46.4');
+  for (const asset of [
+    { ...original.assets[0], digest: null },
+    { ...original.assets[0], browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.3/Agenteeq-0.46.4-macOS-arm64.zip' },
+    { ...original.assets[0], browser_download_url: 'https://evil.example/Agenteeq-0.46.4-macOS-arm64.zip' },
+  ]) {
+    const service = new UpdateService({ version: '0.46.3', channel: 'preview',
+      dataDir: await tempDir('preview-invalid-'), platform: 'darwin', arch: 'arm64',
+      fetchImpl: async () => new Response(JSON.stringify([{ ...original, prerelease: true, assets: [asset] }]), { status: 200 }) });
+    const result = await service.check();
+    assert.equal(result.status, 'unsupported');
+    assert.equal(result.asset, null);
+  }
+});
+
+test('late Preview response cannot replace Stable after channel switch', async () => {
+  let resolvePreview;
+  const oldResponse = new Promise((resolve) => { resolvePreview = resolve; });
+  const service = new UpdateService({ version: '0.46.1', channel: 'preview',
+    dataDir: await tempDir('preview-race-'), platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => url === PREVIEW_RELEASES_URL ? oldResponse : new Response(JSON.stringify(release('0.46.0')), { status: 200 }) });
+  const first = service.check();
+  const stable = await service.check('stable');
+  assert.equal(stable.channel, 'stable');
+  assert.equal(stable.status, 'current');
+  resolvePreview(new Response(JSON.stringify([{ ...release('0.46.4'), prerelease: true }]), { status: 200 }));
+  await first;
+  assert.equal(service.state().channel, 'stable');
+  assert.equal(service.state().status, 'current');
+  assert.equal(service.state().asset, null);
+});
+
+test('Preview channel rejects invalid constructor and check arguments', async () => {
+  assert.throws(() => new UpdateService({ version: '0.46.1', channel: 'unknown' }), /Neplatný kanál aktualizací|Invalid update channel/);
+  const service = new UpdateService({ version: '0.46.1', channel: 'stable',
+    dataDir: await tempDir('stable-invalid-'), fetchImpl: fetchForUpdate() });
+  await assert.rejects(service.check('unknown'), /Neplatný kanál aktualizací|Invalid update channel/);
 });

@@ -8,7 +8,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 |---|---|
 | Všechny | Hlavička `Host` musí být `127.0.0.1` nebo `localhost` (jinak 403) |
 | Mutace z dashboardu (POST/PUT/PATCH/DELETE) | `X-Agenteeq: 1`; pokud je `Origin`, musí být lokální původ serveru (jinak 403) |
-| Hooky a rozšíření | `X-Agenteeq-Token: <ingestToken>` (jinak 401) |
+| Hooky a rozšíření | `X-Agenteeq-Token: <ingestToken>` (jinak 401). Hooky Claude Code ho čtou ze souboru `~/.agenteeq/claude-hooky-hlavicky` (0600, `curl -H @soubor`), v příkazu ani v `settings.json` není |
 
 ## REST
 
@@ -38,7 +38,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/alerts/read` | `{ ids: string[] \| "all" }` → `{ unread }` |
 | POST | `/api/alerts/test` | Testovací upozornění |
 | PUT | `/api/settings` | `{ notifications?: Partial<Notifications>, welcomeCompleted?: boolean, onboardingDismissed?: boolean, appearance?: 'light' \| 'dark' \| 'system', avatar?: number \| null }` → `{ settings }` |
-| POST | `/api/integrations/claude-hooks/install` \| `uninstall` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json |
+| POST | `/api/integrations/claude-hooks/install` \| `uninstall` \| `check` | `{ claudeHooks: HooksStatus }`; 422 při neplatném settings.json. `install` zapíše soubor s hlavičkami a uloží čas zapnutí, `uninstall` smaže obojí, `check` jen znovu přečte settings.json |
 | PUT / DELETE | `/api/secrets/:id` | `openai-admin` \| `anthropic-admin`; PUT `{ value }` → `{ integrations }`. Přihlášení k účtu (`ucet`) tudy nejde – 404 |
 | POST | `/api/ucet/prihlaseni` | Jen z tohoto Macu → `{ url, otevreno }` a otevře přihlášení přes Google v prohlížeči; 503 když přihlášení na serveru účtů ještě neběží nebo server neodpovídá, 404 bez nastavených účtů. Viz `docs/ACCOUNTS.md` |
 | POST | `/api/ucet/zruseni` \| `odhlaseni` \| `smazani` | Jen z tohoto Macu → `{ ucet: UcetStatus }`. `smazani` smaže účet i data v cloudu, na Macu nic; 401 bez přihlášení |
@@ -61,7 +61,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/lan/pin` | `{ pin: { code, expiresAt } }`; jen z `127.0.0.1` (403), 409 s vypnutými oběma cestami |
 | POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
-| POST | `/api/pomocnik` | `{ dotaz }` → `{ zamer: 'hledat' \| 'jak', rozbor: { slova, aplikace, okno }, veta, vysledky: [{ sessionId, nazev, app, slozka, zacatek, konec, ukazka, pokracovat, shoda }], prohledano, nedokonceno, lokalne: { text, model } \| null }`; 400 prázdný dotaz. Z telefonu jen konverzace z přehledu, bez `ukazka` a `pokracovat` (`src/pomocnik.js`) |
+| POST | `/api/pomocnik` | `{ dotaz }` → `{ zamer: 'hledat' \| 'jak', rozbor: { slova, vzory, aplikace, okno }, veta, vysledky: [{ sessionId, nazev, app, slozka, zacatek, konec, ukazka, pokracovat, shoda }], prohledano, nedokonceno, lokalne: { text, model } \| null, modelMimoPocitac }`; `vzory` = zdroje RegExp pro text bez diakritiky (skupina 1 = shoda) ke zvýraznění v ukázce, `modelMimoPocitac` = formulace odmítnutá, protože `AGENTEEQ_OLLAMA_URL` nevede na loopback; 400 prázdný dotaz. Z telefonu jen konverzace z přehledu, bez `ukazka` a `pokracovat` (`src/pomocnik.js`) |
 | GET | `/api/push` | `{ publicKey /* VAPID, base64url */, odbery: [{ id, nazev, zarizeni, vytvoreno, naposledyOk, chyba }] }`; telefon dostane jen své odběry. Adresa odběru ani klíče telefonu se nevrací nikdy |
 | POST | `/api/push/subscribe` | `{ subscription /* PushSubscription.toJSON() */ }` → `{ ok, odber }`; jen spárovaný telefon (z Macu 409), 422 adresa mimo známé push služby nebo neplatné klíče |
 | POST | `/api/push/unsubscribe` | `{ id }` nebo `{ endpoint }` → jako `GET /api/push`; telefon jen vlastní odběr (404 cizí) |
@@ -183,6 +183,7 @@ interface SessionSummary {
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)
   stale: boolean;             // tah nebyl ukončen, ale dlouho se nic neděje (nehlásí „dokončeno“)
+  done: boolean;              // agent skutečně doběhl: odpověděl a tah nebyl stale; jen tehdy smí UI říct „hotovo“
   open: { id: 'app' | 'terminal' | 'folder'; label: string }[];  // dostupné akce otevření (podle nainstalovaných aplikací)
   startedAt: number; lastAt: number;   // ms
   turns: number;
@@ -198,6 +199,7 @@ interface SessionSummary {
   resume: string | null;      // příkaz pro Terminál
   url: string | null;         // webová konverzace
   hooked: boolean;
+  hookHealth: 'linked' | 'before' | 'silent' | 'unknown' | 'pending' | null; // jen aktivní konverzace Claude Code CLI se zapnutým propojením, jinak null; význam v docs/CONNECTORS.md (Zdraví propojení)
   observation?: { at: number; transcriptThrough: number; partial: true }; // remote Claude: query observation time, available cached transcript boundary; never complete usage
   transcriptSeq: number;
 }
@@ -369,9 +371,9 @@ svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
 
 `settings.welcomeCompleted` je samostatný boolean pro šestikrokový úvod (výchozí false). `settings.appearance` je `light` (výchozí), `dark` nebo `system`; ovlivňuje jen vzhled na tomto Macu. `onboardingDismissed` řídí existující checklist napojení. Dokončení úvodu nemění napojení ani souhlas s hooky. `integrations.desktop` označuje nativní obal; desktop nepovolí instalaci soupeřícího CLI LaunchAgentu přes API (422). `integrations.extension` je `{ state: 'missing' | 'ready' | 'active' | 'quiet', pairedAt, seenAt, version, expectedVersion, outdated, repair, path, sites, obchod }`; spárované je jen rozšíření s platným tokenem instalace. `obchod` je adresa rozšíření v Chrome Web Store, dokud tam není, prázdný řetězec. `repair: true` znamená rozšíření spárované před 0.25.0 (se sdíleným tokenem hooků), které je potřeba spárovat znovu.
 
-`integrations.claudeAuth` je `{ loggedIn: true | false | null, checkedAt: Unix ms }` z posledního `claude auth status --json`. `null` znamená, že se stav nepodařilo ověřit (nikdy neznamená odhlášení). Stav se znovu čte při startu, po napojení a každé 2 minuty; při změně přijde událost `integrations`. Rozhraní ukazuje výslovně odhlášení jen do 5 minut od úspěšného dotazu. `claudeHooks` popisuje nainstalované lokální hooky a stavový řádek, nikoli přihlášení k účtu. Ani přihlášení samo o sobě nedává čerstvé limity: čísla vyžadují aktuální měření z podporovaného zdroje.
+`integrations.claudeAuth` je `{ loggedIn: true | false | null, checkedAt: Unix ms }` z posledního `claude auth status --json`. `null` znamená, že se stav nepodařilo ověřit (nikdy neznamená odhlášení). Stav se znovu čte při startu, po napojení a každé 2 minuty; při změně přijde událost `integrations`. Rozhraní ukazuje výslovně odhlášení jen do 5 minut od úspěšného dotazu. `claudeHooks` popisuje nainstalované lokální hooky a stavový řádek, nikoli přihlášení k účtu: `{ installed, partial, current, funguje, inlineToken, events, statusLine, path, error?, since: Unix ms | null, sinceExact: boolean }`. `current` znamená, že příkazy odkazují na soubor s hlavičkami této datové složky a ten nese platný token; `inlineToken: true` = některý příkaz Agenteeq má token přímo v sobě (zápis z verze do 0.46), funguje dál, ale Nastavení nabídne obnovu. `funguje` = události i limity dorazí (aktuální zápis, nebo starý s platným tokenem); podle něj Přehled a limity poznají, že propojení je zapnuté, i když ho Nastavení nabízí obnovit. `since` je čas zapnutí propojení; `sinceExact: false` znamená, že propojení nezapnul Agenteeq (ručně nebo starší verze) a `since` je jen chvíle, kdy ho Agenteeq poprvé viděl. Ani přihlášení samo o sobě nedává čerstvé limity: čísla vyžadují aktuální měření z podporovaného zdroje.
 
-`{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, extension: { pairedAt, seenAt, version }, extensionInstallations: [{ id, origin, tokenHash /* sha256, nikdy token */, pairedAt }] /* max 5 */, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, providerAccounts: [{ id, provider, service, plan, seenAt }] /* max 24; bez osobních údajů a tokenů */, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` – zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
+`{ version: 1, ingestToken, extensionPairing?: { code, expiresAt } | null, extension: { pairedAt, seenAt, version }, extensionInstallations: [{ id, origin, tokenHash /* sha256, nikdy token */, pairedAt }] /* max 5 */, claudeHooks: { od, presne } | null /* čas zapnutí propojení s Claude Code */, settings (+ onboardingDismissed), spend: { currency, rates, budgets, ledger }, providerAccounts: [{ id, provider, service, plan, seenAt }] /* max 24; bez osobních údajů a tokenů */, alerts (max 300), alertKeys (deduplikace, TTL 60 dní), credits, projects: { items, assignments, snapshots (max 3000) }, license: { key, activatedAt } | null, usage: { launches } }` – zapisováno atomicky s právy 0600. Snímky konverzací v projektech se při živé práci ukládají s odstupem 15 s.
 
 Pomocník: `settings.pomocnik: { zobrazit, model }` (obojí výchozí true) – plovoucí tlačítko a formulování odpovědí lokálním modelem přes Ollamu.
 

@@ -3,7 +3,7 @@ import { WEB_AGENTEEQ } from '../obchod.js';
 import { api } from '../api.js';
 import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
-import { glyph, ICON, BULB } from '../icons.js';
+import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
@@ -91,12 +91,12 @@ function remoteCard() {
     ${bezi ? `<div class="code-line"><code>${esc(bezi.remoteUrl || bezi.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(bezi.remoteUrl || bezi.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat')}</button></div>
       <p class="set-note">${esc(bezi.name)} ${tr('běží.')} ${esc(bezi.security)}</p>` : ''}
     ${t.list.length ? `<ul class="privacy-list">${t.list.map((x) => `<li>
-      <div class="custom-agent-head"><b>${esc(x.name)}</b>${x.running ? `<span class="badge badge--ok">${tr('běží')}</span>` : x.installed ? `<span class="badge">${tr('nainstalováno')}</span>` : `<span class="badge badge--beta">${tr('není')}</span>`}${x.kind === 'verejny-tunel' ? `<span class="badge badge--beta">${tr('veřejná adresa')}</span>` : `<span class="badge">${tr('privátní síť')}</span>`}</div>
+      <div class="custom-agent-head"><b>${esc(x.name)}</b>${x.running ? `<span class="badge badge--ok">${tr('běží')}</span>` : x.installed ? `<span class="badge">${tr('nainstalováno')}</span>` : x.installed === null ? `<span class="badge">${tr('nezjištěno')}</span>` : `<span class="badge badge--beta">${tr('není')}</span>`}${x.kind === 'verejny-tunel' ? `<span class="badge badge--beta">${tr('veřejná adresa')}</span>` : `<span class="badge">${tr('privátní síť')}</span>`}</div>
       <span>${esc(x.description)}</span>
       <span class="muted small">${esc(x.security)}</span>
       ${x.hint ? `<span class="muted small">${esc(x.hint)}</span>` : ''}
     </li>`).join('')}</ul>` : `<p class="set-note">${tr('Zjištění ještě neproběhlo.')}</p>`}
-    ${rada && rada.doporuceni !== 'zadny' ? `<p class="set-note"><b>${tr('Doporučení:')}</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
+    ${rada && rada.doporuceni !== 'zadny' && rada.doporuceni !== 'nevim' ? `<p class="set-note"><b>${tr('Doporučení:')}</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
     ${rada?.kroky?.length ? `<ol class="steps steps--compact">${rada.kroky.map((k) => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}
     <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}${tr('Zjistit znovu')}</button></div>
     <p class="set-note">${tr('Uložení na plochu telefonu potřebuje HTTPS. Veřejný tunel ho má sám, u Tailscale ho zapneš příkazem <code>tailscale serve</code>.')}</p>`;
@@ -118,7 +118,9 @@ function tailscaleCard() {
     ? `${tr('Adresa {0} v síti Tailscale:', tohotoPocitace())} ${t.name || t.addresses[0]}`
     : bezi
       ? tr('Tailscale běží, ale {0} zatím nemá adresu v tailnetu.', tentoPocitac())
-      : detekce?.installed
+      : detekce?.installed === null
+        ? tr('Stav Tailscale se nepodařilo zjistit.')
+        : detekce?.installed
         ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený. Otevři aplikaci Tailscale a přihlas se.')
         : tr('Tailscale na {0} není. Nainstaluj ho z tailscale.com a přihlas se.', tomtoPocitaci());
   return `
@@ -288,14 +290,6 @@ function mount(el) {
         ${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <section class="guide-banner" data-enter style="--i:0">
-          <span class="guide-art" aria-hidden="true">${BULB}</span>
-          <div class="guide-text">
-            <strong>${tr('Průvodce Agenteeq')}</strong>
-            <p>${tr('Šest obrazovek o tom, co Agenteeq umí: přehled agentů, kdy je řada na tobě, limity a útrata, projekty, chaty z prohlížeče a kde zůstávají tvá data.')}</p>
-          </div>
-          <button class="btn btn--primary" type="button" data-welcome>${tr('Prohlédnout průvodce')}</button>
-        </section>
         ${GROUPS.map(([id, label, regions]) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h"${id === v.tab ? '' : ' hidden'} data-enter style="--i:1">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -368,6 +362,16 @@ function mount(el) {
     if (motiv) { await vyberMotiv(motiv.dataset.themePick); return; }
     const lang = e.target.closest('button[data-lang]');
     if (lang) { await setLanguage(lang.dataset.lang); return; }
+    const updateChannel = e.target.closest('button[data-update-channel]');
+    if (updateChannel) {
+      const channel = updateChannel.dataset.updateChannel;
+      if (channel !== state.settings.updateChannel) {
+        state.settings = (await api.saveSettings({ updateChannel: channel })).settings;
+        toast(channel === 'preview' ? tr('Kanál Preview je zapnutý. Testovací verze mohou obsahovat chyby.') : tr('Budou se nabízet jen stabilní vydání.'));
+        update();
+      }
+      return;
+    }
     const updateMode = e.target.closest('button[data-update-mode]');
     if (updateMode) {
       const mode = updateMode.dataset.updateMode;
@@ -401,6 +405,16 @@ function mount(el) {
       if (a.dataset.action === 'browser-link') { await copy(await api.browserLink(), tr('Odkaz je ve schránce – vlož ho do prohlížeče')); }
       else if (a.dataset.action === 'reset-layout') { await resetLayout(); toast(tr('Karty mají zase výchozí pořadí')); update(); }
       else if (a.dataset.action === 'claude-connect') await connectClaude();
+      else if (a.dataset.action === 'claude-check') {
+        const h = (await api.hooks('check')).claudeHooks;
+        state.integrations.claudeHooks = h;
+        toast(h.installed && h.current ? tr('Propojení je v nastavení Claude Code zapsané správně') : tr('Propojení v nastavení Claude Code chybí nebo je zastaralé'), { tone: h.installed && h.current ? undefined : 'err' });
+        update();
+      } else if (a.dataset.action === 'claude-reinstall') {
+        state.integrations.claudeHooks = (await api.hooks('install')).claudeHooks;
+        toast(tr('Propojení s Claude Code je zapnuté. Platí pro nově otevřené konverzace.'));
+        update();
+      }
       else if (a.dataset.action === 'claude-disconnect') {
         if (await confirmDialog({ title: tr('Vypnout propojení s Claude Code'), message: tr('Agenteeq odebere své příkazy a informační řádek z nastavení Claude Code. Tvoje ostatní nastavení zůstane beze změny.'), confirmLabel: tr('Vypnout propojení') })) {
           state.integrations.claudeHooks = (await api.hooks('uninstall')).claudeHooks;
@@ -533,7 +547,7 @@ function mount(el) {
         }
       } else if (a.dataset.action === 'remote-detect') {
         state.tunnels = (await api.detectRemote()).tunnels;
-        { const nalezen = state.tunnels.list.some((x) => x.installed); toast(nalezen ? tr('Zjištěno') : tr('Žádný nástroj pro vzdálený přístup není nainstalovaný'), nalezen ? {} : { tone: 'info' }); }
+        { const nalezen = state.tunnels.list.some((x) => x.installed); const nevim = !nalezen && state.tunnels.list.some((x) => x.installed === null); toast(nalezen ? tr('Zjištěno') : nevim ? tr('Stav nástrojů se nepodařilo zjistit') : tr('Žádný nástroj pro vzdálený přístup není nainstalovaný'), nalezen ? {} : { tone: 'info' }); }
         update();
       } else if (a.dataset.action === 'lan-pin') {
         v.pin = (await api.lanPin()).pin;
@@ -1007,7 +1021,7 @@ function update(topics) {
     <div class="set-divider"></div>
     ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko s robotem vpravo dole: najde dřívější konverzaci nebo poradí, kde co zapnout. Hledá jen na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
     ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), desc: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Ztišit pohyb')}</button></div>
+    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
@@ -1028,7 +1042,22 @@ function update(topics) {
   /* Propojení s Claude Code */
   const h = i.claudeHooks;
   const outdated = !h.error && (h.installed || h.partial) && !h.current;
-  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? ['connected', tr('Hooky zapnuté')] : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
+  // Aktivní konverzace Claude Code podle toho, jestli z nich chodí události (src/model.js#hookHealth).
+  const zdravi = { linked: 0, before: 0, silent: 0, unknown: 0, pending: 0 };
+  for (const s of state.sessions.values()) if (Object.hasOwn(zdravi, s.hookHealth)) zdravi[s.hookHealth]++;
+  const aktivni = Object.values(zdravi).reduce((a, b) => a + b, 0);
+  const nefunguje = zdravi.silent > 0 && zdravi.linked === 0;
+  const claudeState = h.error ? ['error', tr('Chyba')] : h.installed && h.current ? (nefunguje ? ['idle', tr('Neozývá se')] : ['connected', tr('Hooky zapnuté')]) : outdated ? ['missing', tr('Je potřeba obnovit')] : ['idle', tr('Vypnuto')];
+  const zdraviRadky = [
+    zdravi.before && tr('Spuštěné před zapnutím propojení: {0}. Přesný stav ukážou po novém spuštění Claude Code.', zdravi.before),
+    zdravi.silent && tr('Bez události, i když zadání přišlo po zapnutí propojení: {0}.', zdravi.silent),
+    zdravi.unknown + zdravi.pending && tr('Zatím bez události: {0}. Do první události je jejich stav odhad z přepisu.', zdravi.unknown + zdravi.pending),
+  ].filter(Boolean);
+  const zdraviHtml = !h.installed || !aktivni ? '' : `
+    <div class="set-row-inline"><span><strong>${tr('Propojené konverzace: {0} z {1} aktivních', zdravi.linked, aktivni)}</strong>${zdraviRadky.map((r) => `<small>${r}</small>`).join('')}</span></div>
+    ${zdravi.silent ? `<p class="set-note set-note--warn">${nefunguje
+      ? tr('Propojení nejspíš nefunguje: z Claude Code nepřišla žádná událost. Spusť Claude Code znovu, a když to nepomůže, propojení přeinstaluj – zapíše se aktuální adresa a klíč Agenteeq. Claude Code s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) propojení nenačte.')
+      : tr('Ostatní konverzace události posílají. Ty bez události nejspíš běží v Claude Code spuštěném před zapnutím propojení nebo s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) – spusť je znovu.')}</p>` : ''}`;
   // Kdo Claude Code nemá, tuhle kartu vidět nepotřebuje – Agenteeq na něm nestojí.
   const maClaude = state.connectors.some((c) => c.id === 'claude-code' && c.state !== 'missing') || h.installed || h.partial;
   fill(el, 'claude', !maClaude ? '' : `
@@ -1036,10 +1065,13 @@ function update(topics) {
       tr('Claude Code hned oznámí, že pracuje, čeká na tvé povolení nebo narazil na limit.'),
       stateBadge(...claudeState))}
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
-    ${outdated ? `<p class="set-note">${tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
+    ${outdated ? `<p class="set-note">${h.inlineToken
+      ? tr('Propojení vzniklo ve starší verzi Agenteeq a klíč Agenteeq stojí přímo v nastavení Claude Code. Obnov ho – klíč se přesune do souboru, který čte jen tvůj účet.')
+      : tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
     ${h.statusLine === 'foreign' ? `<p class="set-note">${tr('Claude Code má vlastní informační řádek, přesné limity Claude proto chybí.')}</p>` : ''}
+    ${zdraviHtml}
     <div class="set-actions">${h.installed && h.current
-      ? `<button class="btn" type="button" data-action="claude-disconnect">${tr('Vypnout propojení')}</button>`
+      ? `${zdravi.silent ? `<button class="btn btn--primary" type="button" data-action="claude-check">${tr('Zkontrolovat znovu')}</button><button class="btn" type="button" data-action="claude-reinstall">${tr('Přeinstalovat propojení')}</button>` : ''}<button class="btn" type="button" data-action="claude-disconnect">${tr('Vypnout propojení')}</button>`
       : `<button class="btn btn--primary" type="button" data-action="claude-connect">${outdated ? tr('Obnovit propojení') : tr('Zapnout propojení')}</button>`}</div>`);
 
   /* Rozšíření pro Chrome */
@@ -1165,7 +1197,7 @@ function update(topics) {
     ${head(hasAvatar(current) ? `<span class="avatar-mini">${avatarSvg(current)}</span>` : ICON.spark, tr('Profilový obrázek'), tr('Rychlá změna: v postranním panelu na obrázek najeď a klikni – pokaždé se ukáže jiný.'))}
     <div class="avatar-grid" role="group" aria-label="${tr('Vyber profilový obrázek')}">
       <button class="avatar-pick" type="button" data-avatar-pick="i" aria-pressed="${!hasAvatar(current)}" aria-label="${tr('Iniciály')}">${esc(initials(who || 'Agenteeq'))}</button>
-      ${Array.from({ length: AVATAR_COUNT }, (_, k) => `<button class="avatar-pick" type="button" data-avatar-pick="${k}" aria-pressed="${current === k}" aria-label="${tr('Abstraktní obrázek')} ${k + 1}">${avatarSvg(k)}</button>`).join('')}
+      ${Array.from({ length: AVATAR_COUNT }, (_, k) => `<button class="avatar-pick" type="button" data-avatar-pick="${k}" aria-pressed="${current === k}" aria-label="${tr('Robot')} ${k + 1}">${avatarSvg(k)}</button>`).join('')}
     </div>`);
 
   /* Licence */
@@ -1232,8 +1264,9 @@ function update(topics) {
     <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Odkaz platí jen pro {0} a do restartu aplikace.', tentoPocitac())}</small></span>
       <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>`);
 
-  /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
-  const upd = state.updates || {};
+  /* Kanál aktualizací je výslovná volba: Stable je výchozí, Preview zahrnuje testovací releasy. */
+  const channel = state.settings.updateChannel === 'preview' ? 'preview' : 'stable';
+  const upd = (state.updates?.channel || 'stable') === channel ? (state.updates || {}) : { status: 'checking' };
   const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
   // Každý stav služby má vlastní větu: vypnutá kontrola ani vydání bez balíčku pro tento počítač
   // se nesmí tvářit jako probíhající kontrola.
@@ -1252,8 +1285,13 @@ function update(topics) {
           : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
+  const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
+    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Kanál aktualizací')}">
+      ${channelOption('stable', tr('Stabilní'), tr('Pouze ověřená stabilní vydání'))}
+      ${channelOption('preview', tr('Preview · testovací'), tr('Novinky dřív, ale s rizikem chyb'))}
+    </div>
     <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
       ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
       ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}

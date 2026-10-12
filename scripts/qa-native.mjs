@@ -134,6 +134,12 @@ try {
     zapis(sonda.aplikace === true, 'rozhraní ví, že běží v aplikaci (agenteeqDesktop)');
     zapis(sonda.desktop === true, 'styly aplikace jsou zapnuté (is-desktop)');
     if (win) zapis(sonda.windows === true, 'rozhraní ví, že běží na Windows (is-windows)');
+    if (mac) {
+      const { title, actions, sidebar, padding } = sonda.layout || {};
+      const aligned = [title, actions, sidebar, padding].every((n) => Number.isFinite(n) && n >= 44 - 1)
+        && Math.abs(sidebar - padding) <= 1;
+      zapis(aligned, `nadpis, horní akce a panel jsou pod 44px záhlavím WKWebView (${[title, actions, sidebar, padding].join('/')} px)`);
+    }
   }
   await cekej(1500);
   const soubor = path.join(vystup, `${mac ? 'macos' : 'windows'}-okno.png`);

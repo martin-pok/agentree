@@ -99,7 +99,10 @@ export function validateBudgets(input, current) {
     for (const c of ['USD', 'EUR']) {
       if (input.rates[c] === undefined) continue;
       const v = Number(String(input.rates[c]).replace(',', '.'));
-      if (v > 0 && v < 1000) next.rates[c] = round2(v);
+      // Formulář posílá i předvyplněný kurz. Kurz ČNB má tři desetinná místa, uložený kurz dvě:
+      // hodnota, která se od uložené liší jen zaokrouhlením, není změna od uživatele – jinak by
+      // každé uložení Rozpočtů udělalo z kurzu ČNB ruční a ten by se už nikdy neobnovil.
+      if (v > 0 && v < 1000) { if (round2(v) !== round2(current.rates?.[c])) next.rates[c] = round2(v); }
       else errors[`rates.${c}`] = ui('Kurz musí být kladné číslo.');
     }
   }

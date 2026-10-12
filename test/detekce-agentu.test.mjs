@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { korenyClaudeCode, korenZPrepisu } from '../src/connectors/claude-code.js';
 import { domovyCodexu } from '../src/connectors/codex.js';
-import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs } from '../src/connectors/processes.js';
+import { agentniProcesy, vedeKonverzaci, RUNTIMES, parsePs, createProcessesConnector } from '../src/connectors/processes.js';
 import { nesparovane, createBeziciAgenti } from '../src/bezici-agenti.js';
 import { detailyProcesu, promennaZPrikazu, slozkyZLsof } from '../src/platform.js';
 import { rozbalCestu, createKorenyPrepisu } from '../src/koreny-prepisu.js';
@@ -268,6 +268,42 @@ test('podrobnosti procesu na macOS se skládají z lsof a ps -E', async () => {
   assert.deepEqual(volani, ['lsof', 'ps']);
   const win = await detailyProcesu([7], ['X'], { runImpl, jeMac: false, jeWindows: true });
   assert.deepEqual(win.get(7), { cwd: '', env: {} }, 'Windows: nic se nehádá');
+});
+
+// Složka procesu se dřív zjišťovala jednou za jeho život: když lsof napoprvé vypršel, zůstal proces
+// bez složky natrvalo – a s ním „nevím“ u odpovědi z aplikace i nespárovaná konverzace.
+test('složka procesu, která se napoprvé nezjistila, se zkusí znovu – nejvýš třikrát', async () => {
+  const store = { runtimes: [], setRuntimes(r) { this.runtimes = r; } };
+  let pokus = 0;
+  const vysledky = [];
+  const detaily = async (pids) => {
+    pokus += 1;
+    // 1. a 2. pokus selže (lsof vypršel), třetí složku vrátí.
+    return new Map(pids.map((pid) => [pid, pokus < 3 ? { cwd: '', env: {} } : { cwd: '/Users/eva/Design & Web', env: { CLAUDE_CONFIG_DIR: '/Users/eva/cfg' } }]));
+  };
+  const c = createProcessesConnector({
+    store,
+    config: { processIntervalMs: 60000 },
+    procesy: async () => ({ ok: true, stdout: '4242 1 10:00 0.1 100 /Users/eva/.local/bin/claude' }),
+    detaily,
+    onAgenti: (p) => vysledky.push(p),
+  });
+  for (let i = 0; i < 5; i++) await c.scan();
+  assert.equal(pokus, 3, 'po úspěchu se už neptá');
+  assert.deepEqual(vysledky.map((p) => p[0].cwd), ['', '', '/Users/eva/Design & Web', '/Users/eva/Design & Web', '/Users/eva/Design & Web']);
+  assert.equal(vysledky.at(-1)[0].env.CLAUDE_CONFIG_DIR, '/Users/eva/cfg');
+  assert.equal('pokusy' in vysledky.at(-1)[0], false, 'počítadlo pokusů ven nejde');
+
+  // Složka, kterou systém nevydá nikdy (Windows, cizí uživatel): po třech pokusech se přestane ptát.
+  let nikdy = 0;
+  const c2 = createProcessesConnector({
+    store,
+    config: { processIntervalMs: 60000 },
+    procesy: async () => ({ ok: true, stdout: '4343 1 10:00 0.1 100 /Users/eva/.local/bin/claude' }),
+    detaily: async (pids) => { nikdy += 1; return new Map(pids.map((pid) => [pid, { cwd: '', env: {} }])); },
+  });
+  for (let i = 0; i < 6; i++) await c2.scan();
+  assert.equal(nikdy, 3);
 });
 
 // Skutečný běžící proces „claude“ (skript) ve složce s ampersandem a s CLAUDE_CONFIG_DIR. Aplikace ho

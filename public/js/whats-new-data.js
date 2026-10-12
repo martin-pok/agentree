@@ -4,6 +4,108 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.5',
+    date: '2026-10-12',
+    title: 'Volitelné aktualizace Preview',
+    items: [
+      'V Nastavení si zvolíš Stabilní nebo Preview kanál. Testovací verze zůstanou dobrovolné.',
+      'Aktualizace kontrolují skutečný GitHub release i SHA-256 staženého balíčku, ne pouze název verze.',
+      'Při přepnutí kanálu se staré nabídky zneplatní; instalaci vždy potvrdíš.',
+    ],
+    en: {
+      title: 'Opt-in Preview updates',
+      items: [
+        'Choose Stable or Preview in Settings. Experimental releases are always opt-in.',
+        'Updates verify the published GitHub release and SHA-256 checksum, not just a version number.',
+        'Changing channels clears outdated offers; you still confirm installation.',
+      ],
+    },
+  },
+  {
+    version: '0.46.4',
+    date: '2026-10-12',
+    title: 'Jednotné nativní ikony a ověřené balíčky',
+    items: [
+      'Mac používá jednu skutečnou ikonu v Docku a instalátoru bez starých duplicitních souborů.',
+      'Windows aplikace má stejný proporční tvar ikony jako Mac a Chrome.',
+      'Instalační balíčky mají SHA-256 kontrolní součty pro ověření stažených souborů.',
+    ],
+    en: {
+      title: 'Consistent native icons and verified downloads',
+      items: [
+        'The Mac app ships one real Dock and installer icon, without obsolete duplicate assets.',
+        'The Windows application icon preserves the same shape and proportions as Mac and Chrome.',
+        'Downloadable builds include SHA-256 checksums to verify file integrity.',
+      ],
+    },
+  },
+  {
+    version: '0.46.3',
+    date: '2026-10-11',
+    title: 'Stejné proporce loga na Macu i v Chromu',
+    items: [
+      'Ikona v Docku a malé logo používají stejnou robotickou hlavu, oči a anténu, bez deformace při zmenšování.',
+      'Sjednocené jsou ikony v menu baru, Chrome extension, na webu i v Chrome Web Store.',
+    ],
+    en: {
+      title: 'One consistent icon across Mac and Chrome',
+      items: [
+        'Dock and small icons now share the same robot head, eyes and antenna, scaled without changing proportions.',
+        'Menu bar, Chrome extension, website and Chrome Web Store icons use one consistent design.',
+      ],
+    },
+  },
+  {
+    version: '0.46.2',
+    date: '2026-10-11',
+    title: 'Jistější připojení a skutečný stav dat',
+    items: [
+      'Claude Code a Codex: připojení se potvrdí až po ověření přihlášení a novém načtení dostupných údajů o účtu.',
+      'V Nastavení nyní najdeš všech devět podporovaných webových služeb. Uvidíš, kdy rozšíření skutečně poslalo data.',
+      'Opravené návraty z prohlížeče a zabezpečené adresy služeb. Google přihlášení už nezaměňuje úspěch s dokončenou synchronizací.',
+    ],
+    en: {
+      title: 'More reliable connections and honest data status',
+      items: [
+        'Claude Code and Codex connections are confirmed only after login verification and a fresh account-data check.',
+        'Settings now lists all nine supported web services and shows when the extension actually observed their data.',
+        'Safer service URLs and browser return flows. Google sign-in no longer implies cloud sync has already completed.',
+      ],
+    },
+  },
+  {
+    version: '0.46.1',
+    date: '2026-10-10',
+    title: 'Jednotný vzhled a spolehlivější instalace',
+    items: [
+      'Značka Agenteeq má sjednocenou bílou anténu na webu, v aplikaci a rozšíření pro Chrome.',
+      'Opravené podklady pro Chrome Web Store a testování instalace na Macu i Windows.',
+    ],
+    en: {
+      title: 'Consistent branding and more reliable installation',
+      items: [
+        'The Agenteeq robot now has the same white antenna across the website, app and Chrome extension.',
+        'Fixed Chrome Web Store assets and installation checks for Mac and Windows.',
+      ],
+    },
+  },
+  {
+    version: '0.46.0',
+    date: '2026-10-09',
+    title: 'Robotí profilové obrázky',
+    items: [
+      'Profilové obrázky v Nastavení jsou teď roboti Agenteeq – 29 povah v barvách značky.',
+      'Web má nový úvod: celý Přehled aplikace v prostoru a kolem něj roboti.',
+    ],
+    en: {
+      title: 'Robot profile pictures',
+      items: [
+        'Profile pictures in Settings are now Agenteeq robots – 29 characters in the brand colours.',
+        'The website has a new intro: the whole Overview in 3D space with robots around it.',
+      ],
+    },
+  },
+  {
     version: '0.45.1',
     date: '2026-10-08',
     title: 'Robot i v prázdných stavech',

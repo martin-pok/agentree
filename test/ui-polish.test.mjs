@@ -349,20 +349,17 @@ test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou',
   }
 });
 
-// Tlačítko na průvodce bylo obrysové na prázdném řádku a splývalo s pozadím. Banner ho udrží vidět
-// a jeho popis musí souhlasit s počtem kroků, jinak slibuje něco jiného, než co uživatel dostane.
-test('banner průvodce sedí s obsahem průvodce', async () => {
+// Průvodce zůstává dostupný z hlavní aplikace, ale nesmí zakrývat horní toolbar
+// ani se opakovat na každé kartě Nastavení.
+test('nastavení neobsahuje kolidující banner průvodce', async () => {
   const settings = await zdroj('public/js/views/settings.js');
   const welcome = await zdroj('public/js/welcome.js');
-  assert.match(settings, /class="guide-banner"/);
-  assert.match(settings, /<button class="btn btn--primary" type="button" data-welcome>/, 'výzva má být plné tlačítko, ne obrys');
-  const kroku = (welcome.match(/^\s*\{ tag: tr\('/gm) || []).length;
-  const cislovky = { 4: 'Čtyři', 5: 'Pět', 6: 'Šest', 7: 'Sedm' };
-  assert.match(settings, new RegExp(`<p>\\$\\{tr\\('${cislovky[kroku]} obrazovek`), `průvodce má ${kroku} kroků – banner musí slíbit stejný počet`);
-  // Průvodce musí mluvit o tom, co aplikace umí teď.
-  for (const [co, kde] of [['limits', 'ukázka limitů'], ['ověřené API náklady', 'ověřené náklady'], ['logo klienta', 'obrázky projektů'], ['data jen čte', 'zabezpečení spárovaného telefonu']]) {
-    assert.ok(welcome.includes(co), `průvodce nezmiňuje ${kde}`);
-  }
+  const css = await zdroj('public/styles.css');
+  const icons = await zdroj('public/js/icons.js');
+  assert.doesNotMatch(settings, /class="guide-banner"/);
+  assert.doesNotMatch(css, /\.(?:guide-banner|guide-art|guide-text)(?:\s|\{|\.|:)/, 'odstraněný banner nesmí zanechat mrtvé CSS');
+  assert.doesNotMatch(icons, /export const BULB\s*=/, 'odstraněný banner nesmí dodávat nepoužitou ikonu');
+  assert.match(welcome, /export function showWelcome/);
 });
 
 // Průvodce je vodorovná karta. Bez určené výšky se na vysokém okně natáhl přes celou obrazovku
@@ -375,19 +372,6 @@ test('průvodce drží vodorovný tvar a na nízkém okně ustoupí', async () =
   assert.doesNotMatch(css, /\.welcome-art \{[^}]*min-height: 500px/, 'vizuál nesmí diktovat výšku karty');
   assert.match(css, /\.welcome-content \{[^}]*overflow-y: auto/, 'delší text si odroluje uvnitř karty');
   assert.match(css, /@media \(min-width: 721px\) and \(max-height: 700px\) \{[^@]*\.welcome-dialog \{ height: calc\(100dvh - 32px\)/s, 'na nízkém okně se karta stáhne');
-});
-
-test('ikona průvodce je kreslená čárou v barvě textu, ne obrázek s pevnou barvou', async () => {
-  const icons = await zdroj('public/js/icons.js');
-  assert.match(icons, /export const BULB = `<svg viewBox="0 0 64 64"/);
-  assert.match(icons, /stroke="currentColor"/, 'barva se dědí z textu, takže platí pro oba režimy');
-  assert.doesNotMatch(icons, /BULB[\s\S]{0,400}fill="#/, 'žádná napevno zapsaná barva');
-  const settings = await zdroj('public/js/views/settings.js');
-  assert.match(settings, /<span class="guide-art" aria-hidden="true">\$\{BULB\}<\/span>/, 'vložené inline – <img> by barvu textu nezdědil');
-  const css = await zdroj('public/styles.css');
-  const art = css.match(/\.guide-art \{[^}]*\}/)?.[0] || '';
-  assert.doesNotMatch(art, /linear-gradient/, 'barevný přechod s bublinami se nevrací');
-  assert.match(art, /color: var\(--ink\)/);
 });
 
 // Rozbalený seznam limitů protáhl pravý sloupec a pod levým zůstalo prázdno (naměřeno 253 px).
@@ -529,8 +513,8 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.match(app, /button\.classList\.add\('is-refreshing'\)/);
   assert.match(app, /button\.getAttribute\('aria-busy'\) === 'true'/, 'druhý refresh se nesmí spustit souběžně');
   assert.doesNotMatch(app.slice(app.indexOf("data-action === 'rescan'"), app.indexOf("data-action === 'rescan'") + 900), /button\.disabled\s*=/, 'stav obnovy nesmí změnit geometrii ani fokus tlačítka');
-  assert.match(css, /#refresh-app\.is-refreshing \.icon \{ animation: refresh-rotation/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#refresh-app\.is-refreshing \.icon \{ animation: none/);
+  assert.match(css, /\.refresh-status__track i \{[^}]*animation: refresh-scan/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.refresh-status__robot svg, \.refresh-status__eyes, \.refresh-status__track i \{ animation: none/);
 });
 
 test('Útrata bez připojeného API: na telefonu drží ikona, text a tlačítko jednu osu', async () => {

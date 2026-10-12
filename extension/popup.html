@@ -47,10 +47,7 @@
     /* ---------- Horní lišta ---------- */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px; padding: 0 16px; }
     .mark { display: inline-flex; align-items: center; gap: 8px; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; }
-    .robo .ant { stroke: var(--action); }
-    .robo .ant-svetlo { fill: var(--action); }
-    .robo .hlava { fill: var(--ink); }
-    .robo .oko { fill: var(--paper); transform-box: fill-box; transform-origin: center; animation: mrk 6s infinite; }
+    .mark img { display: block; width: 22px; height: 22px; }
     @keyframes mrk { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
     .zpet { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-left: -8px; padding: 0 12px 0 6px; border: 0; border-radius: var(--r-full); background: none; font: 500 15px/1 var(--f-display); letter-spacing: -.01em; cursor: pointer; }
     .zpet:hover { background: var(--line-2); }
@@ -97,9 +94,9 @@
     .bot svg { width: 20px; height: 20px; }
     .bot .hlava { fill: var(--teal); }
     .bot .oko { fill: var(--card); transform-box: fill-box; transform-origin: center; }
-    .bot .ant { stroke: var(--teal); transform-box: view-box; transform-origin: 24px 13px; }
+    .bot .ant { stroke: var(--teal); transform-box: view-box; transform-origin: 24px 17px; }
     .bot .ant-svetlo { fill: var(--teal); }
-    .agent[data-ton="work"] .bot .ant, .agent[data-ton="work"] .bot .ant-svetlo { animation: kyv 2.4s var(--ease) infinite; transform-origin: 24px 13px; }
+    .agent[data-ton="work"] .bot .ant, .agent[data-ton="work"] .bot .ant-svetlo { animation: kyv 2.4s var(--ease) infinite; transform-origin: 24px 17px; }
     .agent[data-ton="work"] .bot .oko { animation: mrk 4.2s infinite; }
     @keyframes kyv { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-10deg); } 60% { transform: rotate(8deg); } }
     .agent[data-ton="warn"] .bot { background: var(--brass-tint); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 30%, transparent); }
@@ -232,7 +229,7 @@
 <body data-pohled="hlavni">
   <header class="top">
     <span class="mark" id="brand">
-      <svg class="robo" width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 4.5V13" stroke-width="3.5" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="4.5" r="3.2"/><rect class="hlava" x="5" y="12" width="38" height="31" rx="12"/><rect class="oko" x="15" y="22" width="5" height="10" rx="2.5"/><rect class="oko" x="28" y="22" width="5" height="10" rx="2.5"/></svg>
+      <img src="icons/brand.svg" width="22" height="22" alt="">
       Agenteeq
     </span>
     <button class="zpet" id="back" type="button" hidden>

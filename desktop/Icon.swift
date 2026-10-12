@@ -1,30 +1,54 @@
 import AppKit
-// Exact geometry of public/brand/agenteeq-mark.svg, on a white macOS icon tile.
+// macOS Dock icon: approved widened filled robot head, rendered using
+// the canonical monochrome palette. It intentionally differs from the small
+// head-only mark used in the menu bar and browser toolbar.
+// No trident, no purple antenna, no legacy external icon assets.
 let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+let paper = NSColor(srgbRed: 0x17/255.0, green: 0x17/255.0, blue: 0x1D/255.0, alpha: 1)
+let white = NSColor(srgbRed: 0xFA/255.0, green: 0xFA/255.0, blue: 0xFA/255.0, alpha: 1)
 for (points, scale) in [(16,1),(16,2),(32,1),(32,2),(128,1),(128,2),(256,1),(256,2),(512,1),(512,2)] {
     let size = points * scale
-    let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size,
+                                  bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                  isPlanar: false, colorSpaceName: .deviceRGB,
+                                  bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
     let context = NSGraphicsContext.current!.cgContext
-    context.scaleBy(x: CGFloat(size)/1024, y: CGFloat(size)/1024)
-    let tile = NSBezierPath(roundedRect: NSRect(x: 64, y: 64, width: 896, height: 896), xRadius: 198, yRadius: 198)
-    NSGraphicsContext.saveGraphicsState()
-    let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.16); shadow.shadowBlurRadius = 24; shadow.shadowOffset = NSSize(width: 0, height: -10); shadow.set()
-    NSColor.white.setFill(); tile.fill()
-    NSGraphicsContext.restoreGraphicsState()
-    NSColor(white: 0.88, alpha: 1).setStroke(); tile.lineWidth = 1; tile.stroke()
-    context.translateBy(x: 172, y: 858); context.scaleBy(x: 17, y: -17)
-    let ink = NSColor(srgbRed: 22/255, green: 20/255, blue: 29/255, alpha: 1)
-    ink.setStroke(); ink.setFill()
-    let stem = NSBezierPath(); stem.lineWidth = 3.2; stem.lineCapStyle = .round; stem.lineJoinStyle = .round
-    stem.move(to: NSPoint(x: 20, y: 13)); stem.line(to: NSPoint(x: 20, y: 29))
-    stem.move(to: NSPoint(x: 20, y: 18.5)); stem.curve(to: NSPoint(x: 10.5, y: 29), controlPoint1: NSPoint(x: 20, y: 23.5), controlPoint2: NSPoint(x: 10.5, y: 22.5))
-    stem.move(to: NSPoint(x: 20, y: 18.5)); stem.curve(to: NSPoint(x: 29.5, y: 29), controlPoint1: NSPoint(x: 20, y: 23.5), controlPoint2: NSPoint(x: 29.5, y: 22.5)); stem.stroke()
-    for x in [10.5,20.0,29.5] { NSBezierPath(ovalIn: NSRect(x: x-3.4, y: 27.6, width: 6.8, height: 6.8)).fill() }
-    NSColor(srgbRed: 201/255, green: 154/255, blue: 62/255, alpha: 1).setFill()
-    NSBezierPath(ovalIn: NSRect(x: 15.8, y: 4.3, width: 8.4, height: 8.4)).fill()
+    context.scaleBy(x: CGFloat(size) / 1024, y: CGFloat(size) / 1024)
+    let factor: CGFloat = 7.2
+    func x(_ v: CGFloat) -> CGFloat { 123 + v * factor }
+    func y(_ v: CGFloat) -> CGFloat { 1024 - (109 + v * factor) }
+    func rounded(_ px: CGFloat, _ py: CGFloat, _ w: CGFloat, _ h: CGFloat, _ radius: CGFloat, _ fill: NSColor) {
+        fill.setFill()
+        NSBezierPath(roundedRect: NSRect(x: x(px), y: y(py + h), width: w * factor, height: h * factor),
+                     xRadius: radius * factor, yRadius: radius * factor).fill()
+    }
+    func circle(_ cx: CGFloat, _ cy: CGFloat, _ radius: CGFloat, _ fill: NSColor) {
+        fill.setFill()
+        NSBezierPath(ovalIn: NSRect(x: x(cx - radius), y: y(cy + radius),
+                                   width: radius * 2 * factor, height: radius * 2 * factor)).fill()
+    }
+    func line(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ width: CGFloat) {
+        white.setStroke()
+        let path = NSBezierPath()
+        path.lineWidth = width * factor
+        path.lineCapStyle = .round
+        path.move(to: NSPoint(x: x(x1), y: y(y1)))
+        path.line(to: NSPoint(x: x(x2), y: y(y2)))
+        path.stroke()
+    }
+    paper.setFill()
+    NSBezierPath(roundedRect: NSRect(x: 70, y: 70, width: 884, height: 884),
+                 xRadius: 239.4, yRadius: 239.4).fill()
+    // Approved Dock logomark: filled antenna and wider head, unchanged capsule eyes.
+    line(54, 34, 54, 25, 5)
+    circle(54, 22, 4, white)
+    rounded(15, 34, 78, 53, 20, white)
+    rounded(36, 52, 8, 16, 4, paper)
+    rounded(64, 52, 8, 16, 4, paper)
+    NSGraphicsContext.current?.flushGraphics()
     NSGraphicsContext.restoreGraphicsState()
     let name = "icon_\(points)x\(points)\(scale == 2 ? "@2x" : "").png"
     try bitmap.representation(using: .png, properties: [:])!.write(to: destination.appendingPathComponent(name))

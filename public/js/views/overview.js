@@ -7,13 +7,14 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
 import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
 import { pouzivaneNastroje } from '../nastroje.js';
 import { noveNastrojeHtml } from '../detekce-ui.js';
+import { stavAgentu } from '../stav-vety.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -70,7 +71,7 @@ function onboardingHtml() {
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   const steps = [
     { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="connectors">${tr('Zdroje dat')}</a>` },
-    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && hooks?.current), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zapnout')}</a>` }] : []),
+    ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && (hooks?.current || hooks?.funguje)), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zapnout')}</a>` }] : []),
     { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
     { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
     { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
@@ -255,11 +256,12 @@ function update(topics = new Set(['all'])) {
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>
     <div class="pb-strip">${live.length
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
-        const text = s.status === 'working' ? (s.activity || tr('Pracuje')) : s.status === 'observed' ? tr('Detekovaný proces bez přepisu') : needsYou(s) || s.status === 'failed' || s.status === 'limited' ? s.reason : tr('Čeká na zadání');
-        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}" href="${agentHref(s.id)}">
-          <span class="pb-stav" data-ton="${s.status === 'working' ? 'ok' : needsYou(s) ? 'pozor' : s.status === 'failed' || s.status === 'limited' ? 'problem' : 'klid'}">${esc({ working: tr('Běží'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Limit'), waiting: tr('Hotovo'), observed: tr('Proces') }[s.status] || tr('Klid'))}</span>
+        // Štítek i barva jako na Agentech a v detailu (statusPill). `data-done="false"` u čekání,
+        // které nedoběhlo, říká robotovi, ať netvrdí „hotovo“ (robot-bubliny.js).
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''} href="${agentHref(s.id)}">
+          ${statusPill(s.status, 'pb-stav')}
           <span class="pb-agent-logo">${glyph(s)}</span>
-          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(text)}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
+          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
       }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
       : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
@@ -269,21 +271,15 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const stav = problemy.length ? 'problem' : needs.length ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
-    const veta = {
-      problem: tr('Problém u agentů: {0}', problemy.length),
-      pozor: tr('Na tvé rozhodnutí čeká agentů: {0}', needs.length),
-      nevim: tr('Nepodařilo se zjistit, co na počítači běží'),
-      ok: working.length ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje'),
-    }[stav];
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim });
     const pocty = [
       [working.length, tr('pracuje'), 'ok', '#/agenti?stav=working'],
-      [needs.length, tr('čeká na tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
+      [needs.length, tr('potřebuje tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
       [failed.length, tr('selhalo'), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
       [limited.length, tr('limit'), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
     ];
     zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
-      <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>
+      <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>${poznamka ? `<p class="zdravi-pozn">${esc(poznamka)}</p>` : ''}
       <ul class="zdravi-pocty">${pocty.map(([n, popis, ton, href]) => `<li><a href="${href}" data-ton="${ton}"><b>${n}</b><span>${esc(popis)}</span></a></li>`).join('')}</ul>
       ${problemy.length ? `<ul class="zdravi-problemy">${problemy.slice(0, 3).map((s) => `<li data-key="${esc(s.id)}"><a href="${agentHref(s.id)}"><b>${esc(s.title)}</b><small>${esc(s.status === 'limited' ? tr('Vyčerpaný limit') : s.reason || tr('Selhalo'))}</small></a></li>`).join('')}</ul>` : ''}
     </div>`);

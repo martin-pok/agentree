@@ -40,7 +40,13 @@ const el = (tag, trida, text) => {
 };
 const SIPKA = '<svg class="sipka" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
+// Zastaralé, chybějící nebo časově nesmyslné události nepředstírají živý stav.
+// Čas z lokálního zdroje je v ms; čísla v sekundách a skok hodin dopředu odmítáme.
+function validniCas(at, now = Date.now()) {
+  return typeof at === 'number' && Number.isFinite(at) && at > 1e12 && at <= now + 60e3;
+}
 function ago(at) {
+  if (!validniCas(at)) return '—';
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
   if (s < 3600) return tr('před {0} min', Math.max(1, Math.round(s / 60)));
   if (s < 86400) return tr('před {0} h', Math.round(s / 3600));
@@ -48,6 +54,7 @@ function ago(at) {
 }
 // Jak dlouho agent odpovídá: 0:42, 3:05, 1:02:10.
 function trvani(od) {
+  if (!validniCas(od)) return '—';
   const s = Math.max(0, Math.floor((Date.now() - od) / 1000));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -393,10 +400,26 @@ async function obnovSeznam() {
 // ── Agenti na tomto počítači ────────────────────────────────────────────────
 // Souhrn posílá aplikace (POST /api/extension/prehled) přes background se tokenem spárování.
 // Okno ukáže, kdo čeká na tvé rozhodnutí a kdo pracuje; klik otevře agenta přímo v Agenteeq.
-const ROBOT = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path class="ant" d="M24 4.5V13" stroke-width="3.5" stroke-linecap="round"/><circle class="ant-svetlo" cx="24" cy="4.5" r="3.2"/><rect class="hlava" x="5" y="12" width="38" height="31" rx="12"/><rect class="oko" x="15" y="22" width="5" height="10" rx="2.5"/><rect class="oko" x="28" y="22" width="5" height="10" rx="2.5"/></svg>';
+const ROBOT = '<svg viewBox="0 0 108 108" fill="none" aria-hidden="true"><path class="ant" d="M54 25V34" stroke-width="5" stroke-linecap="round"/><circle class="ant-svetlo" cx="54" cy="22" r="4"/><rect class="hlava" x="15" y="34" width="78" height="53" rx="20"/><rect class="oko" x="36" y="52" width="8" height="16" rx="4"/><rect class="oko" x="64" y="52" width="8" height="16" rx="4"/></svg>';
 const TON_AGENTA = { working: 'work', needs_input: 'warn', failed: 'err', limited: 'err' };
 const STAV_AGENTA = { working: tr('Pracuje'), needs_input: tr('Čeká na tebe'), failed: tr('Selhalo'), limited: tr('Narazil na limit') };
 let prehled = null;
+
+// Stav agentů z aplikace jednou větou. Skládá se tady z počtů, ať mluví jazykem okna (věta ze serveru
+// je česky); věty jsou stejné jako v boxu Stav agentů v aplikaci (public/js/stav-vety.js).
+function vetaZdravi(z) {
+  const tvar = (n, jeden, par, mnoho) => mnozne(n, jeden, par, mnoho).replace('{0}', n);
+  const selhalo = z.selhalo || 0;
+  const limit = z.limit || 0;
+  if (z.stav === 'problem') {
+    if (!limit) return tvar(selhalo, 'Selhal {0} agent', 'Selhali {0} agenti', 'Selhalo {0} agentů');
+    if (!selhalo) return tvar(limit, 'Na limit narazil {0} agent', 'Na limit narazili {0} agenti', 'Na limit narazilo {0} agentů');
+    return tvar(selhalo + limit, 'Problém má {0} agent', 'Problém mají {0} agenti', 'Problém má {0} agentů');
+  }
+  if (z.stav === 'pozor') return tvar(z.cekaNaTebe || 0, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů');
+  if (z.stav === 'nevim') return tr('Nepodařilo se zjistit, co na počítači běží');
+  return z.pracuje ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje');
+}
 
 async function nactiPrehled() {
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:prehled' }).catch(() => null);
@@ -535,7 +558,7 @@ function hlavicka() {
   const vsech = pracuje + (prehled?.zdravi.pracuje || 0);
   const popis = vsech === 0 ? tr('agentů teď pracuje') : mnozne(vsech, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
   // Pod číslem stav agentů z aplikace; bez něj počet otevřených chatů v prohlížeči.
-  const sub = failed ? selhalo : prehled ? prehled.zdravi.veta : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  const sub = failed ? selhalo : prehled ? vetaZdravi(prehled.zdravi) : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
   if (prehled && !failed) $('sub').dataset.stav = prehled.zdravi.stav;
 }

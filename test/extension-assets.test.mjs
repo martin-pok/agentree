@@ -104,7 +104,7 @@ test('balíček: sestavení projde jen se sjednocenou verzí a nese všechny č�
   assert.match(r.file, /agenteeq-extension-\d+\.\d+\.\d+\.zip$/);
 
   const archiv = await fs.readFile(r.file);
-  for (const musi of ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons/icon-128.png', 'fonts/onest-400.ttf']) {
+  for (const musi of ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons/brand.svg', 'icons/icon-128.png', 'fonts/onest-400.ttf']) {
     assert.ok(archiv.includes(Buffer.from(musi, 'utf8')), `v balíčku chybí ${musi}`);
   }
   // Skryté soubory a smetí z macOS do obchodu nepatří.

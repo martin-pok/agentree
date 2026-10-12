@@ -3,7 +3,9 @@
 Stav k 6. 10. 2026: **zveřejněno.** Vlastník potvrdil, že položka je v Chrome Web Store veřejně
 dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
 web i aplikace nabízejí instalaci jedním kliknutím (**Přidat do Chromu**) a rozšíření se spáruje samo.
-Veřejnou stránku obchodu z vývojového prostředí ověřit nejde (síť ji blokuje); ověřuje ji vlastník.
+Na snímku veřejné stránky z 11. 10. 2026 je stále starý symbol a stará tmavá prezentační grafika.
+Aktuální podklady v tomto repozitáři se na veřejné stránce projeví až po nahrání a zveřejnění
+nového balíčku a obrázků v Developer Dashboard.
 
 Příznak je jediné místo, které instalaci z obchodu zapíná všude najednou: kartu v aplikaci
 (Nastavení → Propojení → Rozšíření pro Chrome, tlačítko **Přidat do Chromu**), web
@@ -15,8 +17,11 @@ Když je vypnutý, ukazuje se všude ruční instalace. Po zapnutí je potřeba 
 
 Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.
 
-Balíček verze 0.31.4 je v Chrome Web Store. Opravená metadata jsou znovu odeslaná ke kontrole s
-automatickým zveřejněním po schválení. ID položky: `hocghhpigfilngdajmafkdcljdedanch`.
+Veřejná stránka obchodu 11. 10. 2026 stále ukazuje verzi **0.31.4**. Připravený zdrojový manifest
+a balíček mají verzi **0.46.1**; ta v Chrome Web Store ještě zveřejněná není. Developer Dashboard
+vyžaduje opětovné ověření vlastníka Google účtu, takže aktualizaci balíčku a obrázků musí předcházet
+jeho přihlášení. Zelené CI samo nic do obchodu nenahrává. ID položky:
+`hocghhpigfilngdajmafkdcljdedanch`.
 Stav vydání se ověřuje v [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 
 Po zveřejnění ověřit veřejnou stránku, zapnout příznak a vydat novou verzi aplikace, která obchod
@@ -45,9 +50,12 @@ OAuth klienta v Google Cloud, který si musí vytvořit vlastník.
 | Domovská stránka | https://agentree-fawn.vercel.app/ |
 | Podpora | https://github.com/martin-pok/agentree/issues |
 
-Snímky se vyrábějí ze skutečného okna rozšíření a skutečného rozhraní aplikace se smyšlenými daty:
+Snímky se vyrábějí ze skutečného okna rozšíření s ukázkovými stavy a počty:
 `PLAYWRIGHT_PATH=… node branding/chrome-web-store/snimky.mjs`. Dlaždice a ikony:
 `node branding/chrome-web-store/render.mjs` (na Macu s Chromem).
+Pro anglickou kartu jsou vedle tří snímků v `export/en/` také anglické verze obou dlaždic.
+Třetí snímek ukazuje skutečný stav okna při vypnuté místní aplikaci; starý výřez předchozího
+rozhraní aplikace už se v podkladech obchodu nepoužívá.
 
 ### Popis (Description)
 

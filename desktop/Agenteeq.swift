@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard self.qa, let path = ProcessInfo.processInfo.environment["AGENTEEQ_DESKTOP_QA_REPORT"], !path.isEmpty else { return nil }
         return path
     }()
-    let qaProbe = "setTimeout(function(){var v=document.querySelector('#view');window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{puvod:'ready',titulek:document.title,pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length,desktop:document.documentElement.classList.contains('is-desktop'),aplikace:window.agenteeqDesktop===true,windows:document.documentElement.classList.contains('is-windows'),trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240)}});},1500);"
+    let qaProbe = "setTimeout(function(){var v=document.querySelector('#view'),t=document.querySelector('.page-title'),a=document.querySelector('.topbar-actions'),s=document.querySelector('.sidebar'),m=document.querySelector('.main');window.webkit.messageHandlers.agenteeq.postMessage({type:'qa-sonda',sonda:{puvod:'ready',titulek:document.title,pohled:v?v.children.length:0,navigace:document.querySelectorAll('.sidebar .nav a').length,desktop:document.documentElement.classList.contains('is-desktop'),aplikace:window.agenteeqDesktop===true,windows:document.documentElement.classList.contains('is-windows'),trasa:location.hash,text:(document.body?document.body.innerText:'').slice(0,240),layout:{title:t?t.getBoundingClientRect().top:null,actions:a?a.getBoundingClientRect().top:null,sidebar:s?s.getBoundingClientRect().top:null,padding:m?parseFloat(getComputedStyle(m).paddingTop):null}}});},1500);"
     func qaWrite(_ object: [String: Any]) {
         guard let path = qaReport, let data = try? JSONSerialization.data(withJSONObject: object), let line = String(data: data, encoding: .utf8) else { return }
         if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
@@ -170,22 +170,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = AppDelegate.robotIkonaListy()
+        statusItem.button?.title = " —" // unknown until first confirmed local snapshot
         statusItem.button?.toolTip = "Agenteeq – zobrazit přehled"
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
 
-    // Ikona v horní liště: hlava robota z public/brand/agenteeq-mark.svg (mřížka 48 jednotek) jako
-    // šablona, kterou macOS sám obarví pro světlou i tmavou lištu; oči jsou průhledné výřezy.
-    // Kulička antény je proti logu o kousek větší a stopka užší, aby anténa v 18 bodech nesplynula v čáru.
+    // Exact proportions of the Dock master (78:53 head, 8:16 capsule eyes).
+    // Draw the silhouette transparently at 18pt; never redesign it for menu size.
     static func robotIkonaListy() -> NSImage {
         let ikona = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
-            let s: CGFloat = 18.0 / 48.0
+            let s: CGFloat = 18.0 / 108.0
             NSColor.black.setFill()
-            NSBezierPath(roundedRect: NSRect(x: 22.6 * s, y: 4.5 * s, width: 2.8 * s, height: 9 * s), xRadius: 1.4 * s, yRadius: 1.4 * s).fill()
-            NSBezierPath(ovalIn: NSRect(x: 20.2 * s, y: 0.7 * s, width: 7.6 * s, height: 7.6 * s)).fill()
-            let hlava = NSBezierPath(roundedRect: NSRect(x: 5 * s, y: 12 * s, width: 38 * s, height: 31 * s), xRadius: 12 * s, yRadius: 12 * s)
-            for x in [14.5, 28.0] as [CGFloat] {
-                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 21.5 * s, width: 5.5 * s, height: 11 * s), xRadius: 2.75 * s, yRadius: 2.75 * s))
+            NSColor.black.setStroke()
+            let antena = NSBezierPath()
+            antena.lineWidth = 5 * s
+            antena.lineCapStyle = .round
+            antena.move(to: NSPoint(x: 54 * s, y: 25 * s))
+            antena.line(to: NSPoint(x: 54 * s, y: 34 * s))
+            antena.stroke()
+            NSBezierPath(ovalIn: NSRect(x: 50 * s, y: 18 * s, width: 8 * s, height: 8 * s)).fill()
+            let hlava = NSBezierPath(roundedRect: NSRect(x: 15 * s, y: 34 * s, width: 78 * s, height: 53 * s),
+                                    xRadius: 20 * s, yRadius: 20 * s)
+            for x in [36, 64] as [CGFloat] {
+                hlava.append(NSBezierPath(roundedRect: NSRect(x: x * s, y: 52 * s, width: 8 * s, height: 16 * s),
+                                          xRadius: 4 * s, yRadius: 4 * s))
             }
             hlava.windingRule = .evenOdd
             hlava.fill()
@@ -268,6 +276,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard !quitting, child?.isRunning != true else { return }
         generation += 1
         let currentGeneration = generation
+        statusItem.button?.title = " —" // no current count until a fresh local server snapshot
+        statusItem.button?.toolTip = "Agenteeq – stav agentů se načítá"
         showLoading()
         setLoading(retries == 0 ? "Připravujeme tvůj pracovní prostor…" : "Obnovujeme spojení s tvými agenty…")
         failedMessage = nil; buffer = ""; baseURL = nil
@@ -318,6 +328,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             DispatchQueue.main.async {
                 guard let self, !self.quitting, self.generation == currentGeneration else { return }
                 self.input = nil; self.output = nil; self.child = nil
+                self.statusItem.button?.title = " —"
+                self.statusItem.button?.toolTip = "Agenteeq – spojení s agenty přerušeno"
                 self.showLoading()
                 if self.failedMessage == nil && self.retries < 3 {
                     self.retries += 1
@@ -475,7 +487,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard let type = data["type"] as? String else { return }
         if type == "badge", let count = data["count"] as? Int {
             NSApp.dockTile.badgeLabel = count > 0 ? String(min(count, 999)) : nil
-            statusItem.button?.title = count > 0 ? " \(min(count, 999))" : ""
+            // Dock badge shows items needing attention; menu bar count is separate.
+        }
+        if type == "running-agents", let count = data["count"] as? Int {
+            // Explicit zero matters: the menu bar must not retain a stale count.
+            let active = max(0, min(count, 999))
+            statusItem.button?.title = " \(active)"
+            statusItem.button?.toolTip = "Agenteeq – aktivně pracující agenti: \(active)"
+            statusItem.button?.setAccessibilityLabel("Agenteeq, aktivně pracující agenti: \(active)")
         }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)

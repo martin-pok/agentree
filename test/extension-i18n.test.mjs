@@ -68,6 +68,29 @@ test('rozšíření: jazyk okna se řídí _locales, česká i anglická podoba'
   assert.equal(kontext.AgenteeqI18n.jazyk(), 'cs');
 });
 
+test('rozšíření: věta o stavu agentů se skládá z počtů v jazyce okna (ne česká věta ze serveru)', async () => {
+  const popup = await cti('extension/popup.js');
+  const zacatek = popup.indexOf('function vetaZdravi(');
+  assert.ok(zacatek >= 0, 'okno má vlastní skladbu věty');
+  assert.doesNotMatch(popup, /zdravi\.veta/, 'okno neukazuje českou větu ze serveru');
+  const kod = popup.slice(zacatek, popup.indexOf('\n}\n', zacatek) + 2);
+  const veta = (i18n, z) => vm.runInNewContext(`${kod}; vetaZdravi(z)`, { tr: i18n.tr, mnozne: i18n.mnozne, z });
+  const cs = await nactiI18n('cs');
+  const en = await nactiI18n('en');
+  const z = (stav, x = {}) => ({ stav, pracuje: 0, cekaNaTebe: 0, selhalo: 0, limit: 0, ...x });
+  assert.equal(veta(cs, z('pozor', { cekaNaTebe: 1 })), 'Potřebuje tě 1 agent');
+  assert.equal(veta(cs, z('pozor', { cekaNaTebe: 3 })), 'Potřebují tě 3 agenti');
+  assert.equal(veta(cs, z('pozor', { cekaNaTebe: 7 })), 'Potřebuje tě 7 agentů');
+  assert.equal(veta(en, z('pozor', { cekaNaTebe: 1 })), '1 agent needs you');
+  assert.equal(veta(en, z('pozor', { cekaNaTebe: 2 })), '2 agents need you');
+  assert.equal(veta(cs, z('problem', { selhalo: 2 })), 'Selhali 2 agenti');
+  assert.equal(veta(en, z('problem', { limit: 1 })), '1 agent hit a limit');
+  assert.equal(veta(cs, z('problem', { selhalo: 1, limit: 4 })), 'Problém má 5 agentů');
+  assert.equal(veta(en, z('nevim')), 'Couldn’t find out what is running on this computer');
+  assert.equal(veta(cs, z('ok', { pracuje: 2 })), 'Vše běží v pořádku');
+  assert.equal(veta(en, z('ok')), 'All fine, nobody is working');
+});
+
 test('rozšíření: manifest má název a popis v obou jazycích a v limitech Chromu', async () => {
   const manifest = JSON.parse(await cti('extension/manifest.json'));
   const zpravy = {};

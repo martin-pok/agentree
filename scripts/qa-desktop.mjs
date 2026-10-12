@@ -926,11 +926,6 @@ for (const engine of engines) {
     assert.ok(Math.abs(projectScrollAfter - projectScrollBefore) <= 1,
       `${engine}: zavření projektového modalu změnilo scroll z ${projectScrollBefore} na ${projectScrollAfter}`);
     results.push({ engine, check: 'zavření modalu projektu zachová přesnou pozici stránky' });
-    await page.goto(`${server.url}/#/nastaveni`);
-    await page.locator('[data-welcome]').waitFor();
-    await page.locator('[data-welcome]').click();
-    await page.locator('[data-welcome-skip]').click();
-    await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
     for (const width of [375, 900, 1180]) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'nastaveni']) {
@@ -939,7 +934,9 @@ for (const engine of engines) {
       }
     }
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.locator('[data-welcome]').click();
+    // Nativní menu Nápověda otevírá průvodce touto událostí; banner v Nastavení už neexistuje.
+    await page.evaluate(() => window.dispatchEvent(new Event('agenteeq-welcome')));
+    await page.locator('.welcome-dialog[open]').waitFor();
     await page.screenshot({ path: `dist/qa/${engine}-welcome-mobile.png` });
     assert.equal(await page.locator('.welcome-dialog').evaluate((el) => el.scrollWidth > el.clientWidth), false);
     await page.locator('[data-welcome-skip]').click();

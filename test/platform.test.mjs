@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { appSupportDir, openCommand, tailscalePaths, JE_MAC, JE_WINDOWS } from '../src/platform.js';
+import { appSupportDir, openCommand, tailscalePaths, prikazVeSlozce, JE_MAC, JE_WINDOWS } from '../src/platform.js';
 import { originOf } from '../src/skills.js';
 import { RUNTIMES } from '../src/connectors/processes.js';
 import { detectLocalAgents } from '../src/connectors/local-agents.js';
@@ -43,6 +43,31 @@ test('otevírání nikdy neposílá cíl přes shell, který by ho znovu rozebra
   if (!p) return;
   assert.equal(p.args.at(-1), zakerna, 'cíl jde jako jeden celý argument');
   assert.ok(!/^(cmd|powershell|sh|bash)/i.test(p.cmd), `${p.cmd} by cíl znovu rozebral`);
+});
+
+// Příkaz pro pokračování (kopírování u konverzace Claude Code). Dřív se i na Windows skládal POSIX
+// `cd '<složka>' && claude --resume <id>`: PowerShell 5.1 `&&` nezná a cmd.exe by se na ampersandu
+// ve složce „Design & Web“ rozpadl. Na skutečném Windows neověřeno – test hlídá generovaný řetězec.
+test('příkaz pro pokračování ve složce: POSIX shell, na Windows tvar pro PowerShell', () => {
+  assert.equal(prikazVeSlozce('/Users/jana/Design & Web', 'claude', ['--resume', 'abc-1'], 'macos'), "cd '/Users/jana/Design & Web' && claude --resume abc-1");
+  assert.equal(prikazVeSlozce("/Users/jana/Evin web", 'claude', ['--resume', 'a b'], 'linux'), "cd '/Users/jana/Evin web' && claude --resume 'a b'");
+
+  const win = prikazVeSlozce('C:\\Users\\jana\\Design & Web', 'claude', ['--resume', '0f3c2a1e-1111-4222-8333-444455556666'], 'windows');
+  assert.equal(win, 'Set-Location -LiteralPath "C:\\Users\\jana\\Design & Web"; claude --resume 0f3c2a1e-1111-4222-8333-444455556666');
+  assert.doesNotMatch(win, /&&/, 'PowerShell 5.1 && nezná');
+  // cmd.exe: ampersand mimo uvozovky by oddělil příkazy. Před ním musí být lichý počet uvozovek.
+  assert.equal((win.slice(0, win.indexOf('&')).match(/"/g) || []).length % 2, 1);
+
+  // PowerShell v uvozovkách rozvíjí $ a zpětný apostrof a typografické uvozovky bere jako obyčejné.
+  const zrada = 'C:\\x\\$(calc)`n “a” „b';
+  const z = prikazVeSlozce(zrada, 'claude', ['--resume', 'abc'], 'windows');
+  const uvnitr = /^Set-Location -LiteralPath "(.*)"; claude --resume abc$/.exec(z)[1];
+  assert.equal(uvnitr.replace(/`(.)/g, '$1'), zrada, 'po zrušení zpětných apostrofů zbude přesně původní složka');
+  assert.doesNotMatch(uvnitr, /(^|[^`])[$“”„]/, 'každý nebezpečný znak je zneplatněný');
+  assert.equal(prikazVeSlozce('C:\\a"b', 'claude', ['--resume', 'abc'], 'windows'), null, 'uvozovka ve jméně = nesložit');
+  assert.equal(prikazVeSlozce('C:\\a\nb', 'claude', ['--resume', 'abc'], 'windows'), null);
+  assert.equal(prikazVeSlozce('C:\\a', 'claude', ['--resume', 'a;b'], 'windows'), null, 'argument mimo bezpečný tvar se na Windows nesloží');
+  assert.equal(prikazVeSlozce('', 'claude', ['--resume', 'abc'], 'macos'), null);
 });
 
 test('tailscalePaths vrací jen absolutní cesty pro tento systém', () => {

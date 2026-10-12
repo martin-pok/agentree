@@ -1,0 +1,101 @@
+# ADR — Univerzální správa více účtů LIBOVOLNÉHO AI poskytovatele
+
+**Stav:** částečně implementováno; doplněna ochrana odmítnutí neověřených Claude identit, ale session-binding a oddělené Claude kvóty zůstávají nehotové; návrh tarifikace Pro je produktové doporučení, nikoliv schválená cena nebo aktivovaný paywall. **Datum:** 2026-10-11.
+
+## Zjištěný stav implementace
+
+- `src/provider-accounts.js` vytváří pseudonymní identitu `claude:<hash>` ze skutečného `accountUuid`, u Codexu `codex:<hash>` z `accountId`. Nesmí se ukládat OAuth tokeny ani emaily.
+- `src/app.js` již obsluhuje `claudeAccounts`, `codexAccounts`, `providerAccounts()` a historické pozorování. `src/subscriptions.js` umí více plánů, ale zobrazení plánu neprokazuje identitu běžící session.
+- `src/provider-accounts.js#normalizeCodexAccount` získává oddělené buckets limitů a credits z odpovědi účtu. Claude ze souboru `~/.claude.json` dodává plán/identitu, ale ne průkazně všechna zbývající okna jednotlivých účtů.
+- `src/plans.js#PAID_FEATURES` je zatím prázdná: **žádný skutečně zapnutý multi-account paywall neexistuje**.
+- Ke každé session chybí obecně spolehlivý immutable account binding pro více současně spuštěných profilů. **Nikdy** neodvozovat účet pouze z názvu služby, modelu, ceny nebo posledního globálně přihlášeného účtu.
+
+## UX rozhodnutí: progressive disclosure
+
+**Jedna licence od každé služby** je výchozí a zůstává plně čitelná bez nové sekce správy. Uživatelské rozhraní ukazuje pouze Claude, Codex atd. s aktuálními limity a zdrojem/časem odečtu.
+
+**Více licencí jedné služby** aktivuje při více skutečně identifikovaných účtech složenou kartu poskytovatele (např. Claude), s jednotlivými podkartami „Claude 1“, „Claude 2“ (uživatelsky přejmenovatelnými). Každá karta má plán, identitu v anonymní podobě, profil/zařízení, zdroj a čerstvost odečtu, intervaly limitů s časem resetu, připojené běhy a poslední synchronizaci. Mezi účty lze filtrovat agenty a limity; barevné kódování **není jediná indikace** identity. Zastaralé údaje přecházejí do „Neznámé“, nikdy do 0 %.
+
+## Datový kontrakt cílového řešení
+
+`ProviderAccount`: `id` (pseudonymní stabilní klíč), `provider`, `alias`, `plan`, `source`, `hostId`, `observedAt`, `health`, `limitBuckets[]` (název, spotřebováno, reset, jednotka, observedAt, provenance).
+
+`SessionAccountBinding`: `sessionId`, `accountId|null`, `confidence: verified|unresolved|user_assigned`, `source`, `observedAt`. Účet při běhu nejprve odvodit ze **stejného procesu/profilu/konfiguračního adresáře** jako session; když není doložen, zachovat `null` + „Účet nelze určit“. Uživatelské přiřazení je explicitní metadata, není samo o sobě důkaz odečtu kvóty.
+
+**Limity** agregovat jedině uvnitř stejného účtu, stejného limitního okna a stejné jednotky. Limity různých účtů/modelů nikdy nesčítat do falešné společné rezervy. Pro Claude 5h/7d a Codex primary/secondary zobrazit oddělená okna. Modelový limit zobrazit jen tehdy, pokud zdroj jednoznačně identifikuje model/bucket. Cenové plány nejsou API kredity ani příslib objemu tokenů.
+
+## Monetizace
+
+Navržené klíčové oprávnění: `providerMultiAccount: 'pro'`. **Neaktivovat** dřív, než jsou hotové identity, oddělení kvót, migrace starších dat a UX. Free: jeden aktivně spravovaný účet pro každého poskytovatele, ale automatická detekce a bezpečné zobrazení neznámých sekundárních běhů musí zůstat funkční (neblokovat monitoring nebo bezpečnost). Pro: neomezené spravované účty v rámci rozumného technického limitu; bez automatického přepínání nebo obcházení limitů poskytovatelů. Team není automaticky totéž co více osobních účtů.
+
+## Acceptance + crazy cases
+
+1. 2× Claude Pro v paralelních `CLAUDE_CONFIG_DIR`, samostatné procesy, hooky a účty; žádné křížové přiřazení.
+2. Claude 1 běží, Claude 2 je vyčerpaný; zobrazit správný stav jen u Claude 2.
+3. 20 paralelních běhů napříč 3 účty, současná změna loginu a reconnect SSE; zachovat identity a správné počty.
+4. Restart, výpadek CLI, offline, smazaný profil, neúplné `accountUuid`, chybějící model bucket, různá časová pásma resetu.
+5. Dvě session se stejnou cestou/projektem, ale různými účty: žádná heuristika podle složky.
+6. Sekundární účet bez limit API: „Data nedostupná“, ne náhradní hodnota z primárního.
+7. Historická session bez účtu zůstane unassigned i po přihlášení nového účtu.
+8. Ochrana soukromí: žádné tokeny, e-maily, autentizační soubory nebo obsah přepisů v synchronizaci a logování.
+9. Free→Pro→Free bez ztráty historie a přiřazení; nepřístupné placené ovládání nesmí vypnout zobrazení aktivních agentů.
+10. UAT na skutečném Macu, Chrome a případně dalším hostiteli. Synthetic fixture ani CI **nenahrazují** reálné víceúčtové přihlášení.
+
+## Povinná univerzální architektura — žádné výjimky podle značky
+
+Multi-account platí pro **každého poskytovatele a každou použitelnou integraci**, například Claude, Codex/OpenAI, Gemini/Google, GitHub Copilot, Cursor, OpenRouter, Mistral, Grok i budoucí služby. Není dovoleno implementovat oddělené obchodní nebo datové chování jen pro Claude. Jednotný datový model musí mít provider adaptery pro získání **skutečně ověřených** identit a limitů; adaptér bez podpory důvěryhodných dat musí transparentně hlásit `unavailable`.
+
+První implementační vrstva: `src/provider-accounts.js` poskytuje `providerIdentity`, `validAccountId`, `groupAccountsByProvider`, `sessionAccountBinding`, univerzální normalizaci historie až 96 účtů. Test `test/provider-multi-account.test.mjs` zkouší dvě oddělená Google identity, jiného providera, nemožnost podvrhnout account binding a kompatibilitu Claude/Codex. Přehled účtů už nepovažuje každého neznámého poskytovatele za Codex.
+
+**To není dokončená feature.** Provider adaptéry pro účet/kvóty jsou reálně implementované pouze pro konkrétní zdroje Claude a Codex; Gemini, Copilot, Cursor atd. se nesmějí v UI tvářit jako ověřené připojené licence bez vlastních důkazů. Vazba `SessionAccountBinding` zatím tvoří samostatný validovaný kontrakt, nikoli automatické kompletní přiřazení všech běhů. Pro dokončení potřebujeme: profily a jejich read-only account identity adapters, verifikaci session→account na úrovni procesu/konfiguračního domova, per-account kvóty a jejich freshness, aliase/editace v UI, robustní migrace a bezpečný Pro gate. Free musí stále zobrazit všechny detekované agenty bez placené vazby.
+
+## Implementační stav k poslední revizi
+
+- `src/app.js` již odmítá publikovat `claudeAccounts` bez ověřeného `accountUuid` jako aktivní licence. Nová regresní kontrola v `test/subscriptions.test.mjs`.
+- `test/security-adversarial.test.mjs` obsahuje negativní scénáře pro vzdálené mutace, přepis, neplatné kvóty a podvržené identity.
+- **Zatím není hotovo**: prokazatelná vazba mezi běžící session a konkrétní licencí, oddělená živá Claude 5h/7d okna pro každý profil, filtrování agentů dle licence, plnohodnotný CRUD aliasů a e2e UAT více přihlášených účtů. Proto nejde tuto část označit za dokončenou ani zapnout placený paywall.
+- Bezpečnostní audit a neověřené brány: [SECURITY-AUDIT-0461.md](SECURITY-AUDIT-0461.md).
+
+## Nově propojená runtime datová vrstva
+
+- `src/model.js`: každá session má výchozí `accountBinding: null`; souhrn pro UI/SSE zveřejní pouze vazbu s `confidence: verified`.
+- `src/store.js#bindAccount`: jeden společný vstup pro providery; odmítá chybějící důkaz, cizího poskytovatele, starší pozorování a pokus přepsat již ověřenou vazbu jinou licencí. Změna ověřené vazby publikuje aktualizaci přes standardní session událost.
+- `test/session-account-binding.test.mjs`: simulace ověřené Google/Gemini licence, přepnutí účtu během session, opožděného důkazu a nesouhlasícího providera.
+- **Důležitá hranice:** samotná metoda není důkazem, že každý stávající konektor dodává ověřitelný account evidence. Napojení connectorů na jejich konkrétní proces/profil a per-account limity teprve následuje. Bez něj zůstane binding `null`, nikoli chybná licence.
+
+## Audit hranic důvěry a pravdivosti UI
+
+- `Store.bindAccount` nepřijímá `sessionId` ani `provider` z podvrženého evidence objektu; identita pochází výhradně z existující session. Negativní test přidán do `test/session-account-binding.test.mjs`.
+- Neznámý nový provider nesmí dostat štítek předplatného ChatGPT jen proto, že nemá samostatnou ceníkovou mapu (`src/app.js`); zobrazuje se název poskytovatele a jeho původní plán.
+- UI už nesmí vydávat `undefined` kredity za nulu nebo skutečný zůstatek; číslo se zobrazuje jen je-li nezáporné a konečné (`public/js/views/spend.js`).
+- Další fáze: důvěryhodné read-only adaptéry jednotlivých providerů a test dostupnosti per-account limitů; nikdy nedoplňovat chybějící důkazy heuristikou.
+
+## Implementovaná první automatická identifikace běhu (Claude Code)
+
+- `src/app.js#refreshSubscriptions` sestavuje seznam profilů pouze po ověření autentizace CLI a odvození stabilního účtu.
+- `src/connectors/claude-code.js` přijímá pouze identitu autentizovaného profilu, jehož `projects/` je přesný rodičovský kořen čteného JSONL přepisu. Ověřený binding jde přes centrální `Store.bindAccount` do živého session snapshotu. Platí i pro nově objevené přepisy po refreshe účtů.
+- Sdílený matcher `verifiedProfileForTranscript` neakceptuje podobné prefixy, neplatné časy, neznámé nebo nejednoznačné kořeny. Regresní test: `test/provider-multi-account.test.mjs`.
+- **Zatím nehotové:** stejné UUID ve dvou izolovaných profilech může kolidovat ve starším společném indexu session a musí mít explicitní ochranu před sloučením; Claude 5h/7d kvóty zatím nejsou vždy vázány na účet; Codex i ostatní poskytovatelé čekají na důvěryhodný session→account adaptér. Nezaměňovat částečnou integraci s hotovou obecnou funkcí.
+
+## Ochrana kolizí identit mezi profily
+
+Při stejném session UUID z různých skutečných souborů `src/connectors/claude-code.js` nově **signalizuje konflikt** ve stavu konektoru (`collisions`), místo tichého ignorování duplicitní relace jako úspěchu. `Store.unbindAccount` okamžitě zneplatní dříve ověřené přiřazení licence a vyšle změnu do živého UI. Test `test/session-account-binding.test.mjs` ověřuje revokaci a idempotenci.
+
+**Otevřená funkční mezera:** dvě různé relace se stejným UUID nejsou zatím zobrazeny jako dvě plnohodnotné samostatné session. Současné chování je fail-closed pro účet, ale konflikt vyžaduje budoucí migraci na identitu odvozenou také z profilu a spolehlivé směrování hooků. Netvrdit, že všechny agentní procesy byly započteny. Neumožnit release Multi-account, dokud není tento scénář vyřešen a integračně otestován.
+
+## První oddělené limity podle licence
+
+- `src/connectors/claude-code.js#ingestStatusline`: je-li session připojena k ověřené licenci, 5h/7d/spend limit má vlastní klíč a `accountId`; dva účty se nemohou přepsat jedním globálním procentem.
+- Pokud je připojeno více ověřených účtů, ale statusline nemá jednoznačně přiřazenou session, **její kvóty se nezapočítají**, protože zdroj není prokazatelný.
+- Při přechodu z jedné na více licencí se staré globální statusline limity smažou ze Store a SSE okamžitě aktualizuje UI. Nedochází ke kombinaci historického společného procenta s novými oddělenými účty.
+- `src/app.js#providerAccounts`: limitní okna přiřazuje jen odpovídajícímu účtu a pouze z čerstvých ověřených odečtů; nedostupná data neprezentuje jako 0 %.
+- Úspěch jednoho agenta nesmí resetovat limit jiného účtu. Přidaný filter v `onSuccess` respektuje vazbu session→account.
+- Test: `test/claude-limity.test.mjs` ověřuje 2 účty s různými 5h limity, bez globálního sloučení a bez zpřístupnění neznámých kvót. **Zatím čeká na CI**, nikoliv potvrzeno z reálného Claude API.
+- Vedle statusline existují textová odmítnutí a historické limitní zdroje: jejich přiřazení k účtům vyžaduje další audit a nesmí se vydávat za kompletně vyřešené. Další provider adaptéry stále chybějí.
+
+## Gates
+
+- Konkrétní provider-level identifikace session, přístup ke kvótám a jejich provenance musí být implementované a regresně testované před uvedením jako fungující.
+- Dokud API kvóty účtu chybí, použít transparentní `unknown`; žádné predikce prezentované jako fakta.
+- Nové UI otestovat na 1/2/5 účtech, dlouhých alias names, lokalizaci CZ/EN, malém okně a přístupnosti.
+- Monetizační hranici a copy následně zapsat do `docs/LICENSING.md`, `CHANGELOG.md` a `docs/DATA-CONTRACT.md` až s implementací.

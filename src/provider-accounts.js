@@ -1,8 +1,58 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const identity = (provider, value) => typeof value === 'string' && value.length >= 8
+// Univerzální pseudonymní identita účtu bez tokenu/e-mailu; namespace patří poskytovateli,
+// nikoli aplikaci (Codex, Claude Code, mobil atd.). Staré claude:/codex: klíče zůstávají
+// čitelné pro migraci. Neznámý účet se nesmí přiřadit automaticky.
+export const PROVIDER_ID = /^[a-z][a-z0-9-]{1,39}$/;
+export const ACCOUNT_ID = /^([a-z][a-z0-9-]{1,39}):([0-9a-f]{16})$/;
+const identity = (provider, value) => PROVIDER_ID.test(provider) && typeof value === 'string' && value.length >= 8
   ? `${provider}:${crypto.createHash('sha256').update(`${provider}:${value}`).digest('hex').slice(0, 16)}` : null;
+export function providerIdentity(provider, stableExternalId) {
+  return identity(provider, stableExternalId);
+}
+export function validAccountId(id) {
+  return typeof id === 'string' && ACCOUNT_ID.test(id);
+}
+// Jedno místo pro vazbu session→licence, platné pro všechny providery.
+// Verified vyžaduje důkaz identity ze stejného běhu/profilu. Uživatelské označení
+// je viditelné odděleně a NESMÍ se používat pro odečet kvót.
+export function sessionAccountBinding({ sessionId, accountId, provider, source, observedAt, verified = false } = {}) {
+  if (typeof sessionId !== 'string' || !/^[a-z0-9-]+:[^\s]{1,200}$/i.test(sessionId)) return null;
+  if (!validAccountId(accountId) || !PROVIDER_ID.test(provider) || accountId.split(':')[0] !== (provider === 'anthropic' ? 'claude' : provider === 'openai' ? 'codex' : provider)) {
+    return { sessionId, accountId: null, confidence: 'unresolved', source: null, observedAt: null };
+  }
+  if (!verified || typeof source !== 'string' || !source.trim() || !Number.isSafeInteger(observedAt) || observedAt <= 0) {
+    return { sessionId, accountId: null, confidence: 'unresolved', source: null, observedAt: null };
+  }
+  return { sessionId, accountId, confidence: 'verified', source: source.slice(0, 80), observedAt };
+}
+
+// Only an authenticated account associated with the exact transcript root may be used.
+// A prefix such as /profiles/one must not match /profiles/one-evil.
+export function verifiedProfileForTranscript(file, profiles = []) {
+  if (typeof file !== 'string' || !path.isAbsolute(file)) return null;
+  const normalized = path.resolve(file);
+  const matches = profiles.filter((profile) => validAccountId(profile?.accountId)
+    && typeof profile?.root === 'string' && path.isAbsolute(profile.root)
+    && normalized.startsWith(path.resolve(profile.root) + path.sep)
+    && Number.isSafeInteger(profile.observedAt) && profile.observedAt > 0);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+export function groupAccountsByProvider(accounts) {
+  const groups = new Map();
+  for (const account of accounts || []) {
+    if (!validAccountId(account?.id) || !PROVIDER_ID.test(account.provider)) continue;
+    // Klíč účtu musí patřit deklarovanému poskytovateli (legacy Codex = openai).
+    if (account.id.split(':')[0] !== (account.provider === 'openai' ? 'codex' : account.provider === 'anthropic' ? 'claude' : account.provider)) continue;
+    const group = groups.get(account.provider) || [];
+    if (!group.some((item) => item.id === account.id)) group.push(account);
+    groups.set(account.provider, group);
+  }
+  return groups;
+}
 
 export function claudeIdentity(account) {
   return identity('claude', account?.accountUuid);
@@ -74,9 +124,11 @@ export function readCodexAccount(bin, { home, timeoutMs = 8000, spawnFn = spawn 
 
 export function normalizeObservedAccounts(input) {
   if (!Array.isArray(input)) return [];
-  return input.filter((x) => x && /^(claude|codex):[0-9a-f]{16}$/.test(x.id)
-    && ['anthropic', 'openai'].includes(x.provider) && Number.isFinite(Number(x.seenAt)))
-    .slice(-24).map((x) => ({ id: x.id, provider: x.provider, service: x.provider === 'anthropic' ? 'claude' : 'chatgpt',
+  return input.filter((x) => x && validAccountId(x.id) && PROVIDER_ID.test(x.provider)
+    && x.id.split(':')[0] === (x.provider === 'anthropic' ? 'claude' : x.provider === 'openai' ? 'codex' : x.provider)
+    && Number.isSafeInteger(Number(x.seenAt)) && Number(x.seenAt) > 0)
+    .slice(-96).map((x) => ({ id: x.id, provider: x.provider,
+      service: x.provider === 'anthropic' ? 'claude' : x.provider === 'openai' ? 'chatgpt' : x.provider,
       plan: typeof x.plan === 'string' && /^[a-z0-9_]{1,64}$/.test(x.plan) ? x.plan : null, seenAt: Number(x.seenAt) }));
 }
 
