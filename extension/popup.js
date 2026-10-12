@@ -356,7 +356,7 @@ function vykresliSeznam() {
   const pocetLimity = ostatniVse.filter((k) => chatMaLimit(k, null)).length
     + Number(Boolean(d && !off.includes(d.site) && chatMaLimit(tato, d)));
   const filtry = $('filtry-konverzaci');
-  filtry.hidden = !seznam.pripojeno || pocetVse === 0 || !prehled;
+  filtry.hidden = !seznam.pripojeno || pocetVse <= 1 || !prehled;
   for (const [key, count] of [['vse', pocetVse], ['odpovida', pocetOdpovida], ['pozor', pocetLimity]]) {
     filtry.querySelector('[data-filtr-pocet="' + key + '"]').textContent = String(count);
   }
