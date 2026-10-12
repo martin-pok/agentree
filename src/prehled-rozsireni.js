@@ -29,7 +29,9 @@ export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
     ok: pracuji.length ? ui('Vše běží v pořádku') : ui('V pořádku, nikdo nepracuje'),
   }[stav];
   return {
-    zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length },
+    // Unknown process discovery remains visible even when an urgent action has priority.
+    // Otherwise a partially-observed Mac can look fully healthy in the extension.
+    zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length, procesyNevim: Boolean(procesyNevim) },
     rozhodnuti: [...cekaji, ...selhalo, ...limit].slice(0, MAX).map((s) => ({ ...polozka(s), status: s.status })),
     pracuji: pracuji.slice(0, MAX).map(polozka),
   };
