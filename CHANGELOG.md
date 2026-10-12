@@ -8,6 +8,13 @@
 - **Design QA:** odstraněna jednostranná mosazná linka u aktuální karty, místo ní subtilní celoplošné zvýraznění v design tokenech; nepřidává nové roboty ani ilustrace.
 - **Kontroly:** regresní `node:test` + skutečné popup interakce v Chromium/WebKit při světlém a tmavém tématu, kontrola limitu Chrome 600 px. Tento kód **není** v již vytvořeném draftu v0.46.7 ani v Chrome Web Store.
 
+## Rozpracováno po 0.46.7 · živý stav po opětovném připojení (nevydáno)
+
+- **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
+- **20 současných agentů:** deterministické testy kontrolují obnovu, pořadí a jednorázové zpracování událostí bez přenosu přepisů nebo soukromých dat na cloud.
+- **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
+- Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
+
 ## Rozpracováno po 0.46.7 · jednotné počty agentů (nevydáno)
 
 - **Chrome extension počítá stejné agenty jako aplikace:** podřízené konverzace s viditelným rodičem se nezapočítají podruhé, u opakovaných naplánovaných úloh je v souhrnu pouze poslední běh.
