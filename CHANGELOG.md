@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · spolehlivější aktualizace (dosud není součástí žádného instalačního balíčku)
+
+- **Závody při přepínání kanálů:** staré HTTP odpovědi ani jejich chyby nemohou přepsat novější stav po přepnutí Preview → Stable → Preview.
+- **Kontrola aktualizací:** stažený ZIP přestává být nabídnutý jako platný při změně SHA-256 nebo velikosti přílohy na GitHubu, i kdyby název a verze zůstaly stejné.
+- **Stažení:** rozpracovaný požadavek nesmí dokončit aktualizaci, pokud byl v mezidobí přepnut kanál nebo změněn očekávaný digest. Regresní testy pokrývají souběžné požadavky bez skutečné sítě.
+- **Vydání:** stávající neveřejný draft 0.46.7 stále odpovídá dřívějšímu tagu SHA `00daf73b`; tyto následné opravy se do již vytvořeného DMG zpětně nedostanou.
+
 ## 0.46.7 – 2026-10-12 · bezpečnější profilová fotografie z Googlu
 
 - **Bezpečné načítání fotografie:** HTTP přesměrování se kontrolují před každým dalším síťovým požadavkem. Profilový obrázek se nikdy vědomě nestahuje z jiné domény než schválené Google CDN.
