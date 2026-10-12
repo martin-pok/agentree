@@ -229,21 +229,6 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium
 
-      # A release candidate is a single reviewable, content-addressed upload set.
-      # Only main receives this artifact: PR builds are not publisher candidates.
-      # Still requires the entire 8/8 run to finish green and manual Chrome/host UAT.
-      - name: Připravit verifikovatelnou sadu pro ruční nahrání do obchodu
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: node scripts/prepare-chrome-store-kit.mjs
-      - name: Uložit kompletní balíček obchodu s otisky souborů
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v6
-        with:
-          name: chrome-store-review-kit
-          path: dist/chrome-store-kit/
-          if-no-files-found: error
-          retention-days: 14
-
       # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
       # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
       - name: Renderovat aktuální Chrome Web Store branding
@@ -281,4 +266,19 @@ jobs:
             branding/chrome-web-store/export/promo-small-440x280.png
             branding/chrome-web-store/export/marquee-1400x560.png
             extension/icons/icon-*.png
+          retention-days: 14
+
+      # A release candidate is a single reviewable, content-addressed upload set.
+      # Only main receives this artifact: PR builds are not publisher candidates.
+      # Still requires the entire 8/8 run to finish green and manual Chrome/host UAT.
+      - name: Připravit verifikovatelnou sadu pro ruční nahrání do obchodu
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/prepare-chrome-store-kit.mjs
+      - name: Uložit kompletní balíček obchodu s otisky souborů
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: chrome-store-review-kit
+          path: dist/chrome-store-kit/
+          if-no-files-found: error
           retention-days: 14
