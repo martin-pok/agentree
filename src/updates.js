@@ -257,5 +257,58 @@ export class UpdateService {
     }
   }
 
+  // Streamed SHA-256 verification happens during download, but the on-disk ZIP
+  // can be deleted, truncated or modified before a user clicks Install/Reveal.
+  // A successful metadata check MUST NOT turn a stale/corrupt disk copy into
+  // an executable update. Stream it through a bounded 256 KiB buffer again.
+  async verifiedDownloadedPath() {
+    const snapshot = this.value;
+    if (snapshot.status !== 'downloaded' || !snapshot.asset || !snapshot.downloaded) return null;
+    const epoch = this.requestEpoch;
+    const target = path.join(this.dataDir, 'updates', snapshot.asset.name);
+    const invalidated = () => {
+      // A concurrent channel switch/new release must not be overwritten by an
+      // outdated verification result.
+      if (this.requestEpoch === epoch && this.value === snapshot) {
+        this.value = { ...snapshot, status: 'available', downloaded: null };
+      }
+      return null;
+    };
+    if (snapshot.downloaded.path !== target || snapshot.downloaded.name !== snapshot.asset.name
+        || snapshot.downloaded.size !== snapshot.asset.size || !snapshot.asset.sha256) return invalidated();
+    let ok = false;
+    try {
+      // Reject symlinks and non-regular files: the installer reads a local ZIP.
+      const link = await fs.lstat(target);
+      if (!link.isFile() || link.size !== snapshot.asset.size) return invalidated();
+      const handle = await fs.open(target, 'r');
+      try {
+        const before = await handle.stat();
+        if (!before.isFile() || before.size !== snapshot.asset.size) return invalidated();
+        const digest = crypto.createHash('sha256');
+        const buffer = Buffer.allocUnsafe(256 * 1024);
+        let length = 0;
+        while (true) {
+          const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+          if (!bytesRead) break;
+          length += bytesRead;
+          if (length > snapshot.asset.size) break;
+          digest.update(buffer.subarray(0, bytesRead));
+        }
+        const after = await handle.stat();
+        ok = length === snapshot.asset.size && before.size === after.size
+          && before.mtimeMs === after.mtimeMs && before.ctimeMs === after.ctimeMs
+          && before.ino === after.ino && digest.digest('hex') === snapshot.asset.sha256;
+      } finally {
+        await handle.close();
+      }
+    } catch {
+      // A removed file is the same recovery path as a corrupt file.
+    }
+    if (!ok) return invalidated();
+    if (epoch !== this.requestEpoch || this.value !== snapshot) return null;
+    return target;
+  }
+
   downloadedPath() { return this.value.status === 'downloaded' ? this.value.downloaded?.path || null : null; }
 }
