@@ -1,5 +1,13 @@
 # Changelog
 
+## Nezařazeno do vydání · nové ověření instalačního ZIPu před použitím
+
+- **Ochrana jedním kliknutím:** instalace v nativní Mac aplikaci ani otevření staženého balíčku ve Finderu nepoužije archiv, který se od stažení změnil nebo zmizel. Kontroluje se skutečná velikost a celý SHA-256 otisk, nejen název ZIPu.
+- **Omezené prostředky:** kontrola čte soubor postupně v 256kB blocích bez načtení balíčku do operační paměti.
+- **Bezpečný návrat:** po neúspěšném ověření se stav vrátí na `K dispozici`, aplikace nic nespustí a aktualizaci lze znovu stáhnout.
+- **Regresní testy:** poškození ZIPu se stejnou velikostí, zmizelý soubor, symlink a zákaz události `install-update` při poškození.
+- **Distribuce:** jde o práci **po zmrazení tagu 0.46.8**; existující draft ani veřejný release se touto změnou nemění.
+
 ## Nezařazeno do vydání · shodné ikony v GitHub releasu a Chrome Web Store
 
 - **Jeden binární brand:** renderování marketingových snímků už nepřepisuje schválené PNG ikony, které se používají v GitHub release ZIPu. Každou velikost stále vizuálně porovná se zdrojovým SVG a výrazný rozdíl zastaví build.
