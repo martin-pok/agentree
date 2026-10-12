@@ -16,6 +16,7 @@ const workflowy = await Promise.all(soubory.map(async (f) => ({ f, yml: await fs
 const ZAPIS = {
   'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
+  'release-0467-boot.yml': { 'dispatch-draft': 'pouze spuštění release.yml přes actions: write' },
 
 };
 
