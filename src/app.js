@@ -48,7 +48,7 @@ import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { createKonecProcesu } from './konec-procesu.js';
-import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
+import { planOdpovedi, lzeOdpovedet, beziVeSlozce } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -263,8 +263,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const mediaRoot = path.join(config.dataDir, 'media');
 
   let apps = {};
+  // Poslední výpis procesů pro volbu akce „Terminál“ (src/openers.js#planOpen). Objekt, ne proměnná
+  // níž: decorate se může volat dřív, než createApp dojde k výpisu procesů.
+  const procesyProOtevreni = { seznam: null };
+  const moznostiOtevreni = (s) => ({ aplikace: config.openApps, bezi: config.processes ? beziVeSlozce(s, procesyProOtevreni.seznam) : null });
   store.decorate = (summary) => {
-    summary.open = openTargets(summary, apps, { aplikace: config.openApps });
+    summary.open = openTargets(summary, apps, moznostiOtevreni(summary));
     Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
@@ -280,7 +284,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         ? ui('Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.')
         : ui('Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.') };
     }
-    const plan = planOpen(s, target, apps, { aplikace: config.openApps });
+    const plan = planOpen(s, target, apps, moznostiOtevreni(s));
     if (!plan) return { status: 422, error: ui('Tuto akci pro konverzaci nelze provést.') };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
@@ -334,6 +338,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let posledniProcesy = null;
   async function beziciAgenti(procesy) {
     posledniProcesy = Array.isArray(procesy) ? procesy.map((p) => ({ runtime: p.runtime, cwd: p.cwd })) : null;
+    procesyProOtevreni.seznam = posledniProcesy;
     for (const p of procesy || []) {
       const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
       if (!domov || !path.isAbsolute(domov)) continue;

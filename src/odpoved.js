@@ -26,6 +26,19 @@ const stejnaSlozka = (a, b) => Boolean(a && b) && path.resolve(a) === path.resol
  * `dostupne`: umí to tenhle systém (config.launchAgents – zatím jen macOS).
  * `claude`: cesta k programu; false = hledal se a nenašel; null = ještě se nehledal (nevíme).
  */
+// Běží ve složce konverzace program téhož nástroje? true / false / null (nevím: výpis procesů
+// není, nebo některý proces nemá zjištěnou složku). Podle toho se pozná, jestli konverzace čeká
+// v otevřeném Terminálu (přepnout se tam) nebo už neběží (pokračovat novým `--resume`).
+const RUNTIME_KONVERZACE = { 'claude-code': 'claude-code', codex: 'codex' };
+export function beziVeSlozce(s, procesy) {
+  const runtime = RUNTIME_KONVERZACE[s?.connector];
+  if (!runtime || !Array.isArray(procesy) || !s.cwd || !path.isAbsolute(s.cwd)) return null;
+  const svoje = procesy.filter((p) => p.runtime === runtime);
+  if (svoje.some((p) => stejnaSlozka(p.cwd, s.cwd))) return true;
+  if (svoje.some((p) => !(p.cwd && path.isAbsolute(p.cwd)))) return null;
+  return false;
+}
+
 export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true } = {}) {
   if (!s || s.connector !== 'claude-code') {
     return { lze: false, kod: 'nastroj', proc: ui('Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.') };

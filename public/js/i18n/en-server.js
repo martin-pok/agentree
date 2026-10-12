@@ -551,6 +551,7 @@ export default {
   "Otevřít v Cursoru": "Open in Cursor",
   "Otevřít ve VS Code": "Open in VS Code",
   "Přepnout do {0}": "Switch to {0}",
+  "Přepnout do Terminálu": "Switch to Terminal",
   "Otevřít konverzaci": "Open conversation",
   "Pokračovat v Terminálu": "Continue in Terminal",
   "Otevřít složku": "Open folder",
