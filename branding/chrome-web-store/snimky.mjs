@@ -83,9 +83,17 @@ try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const chyby = [];
     page.on('pageerror', (e) => chyby.push(e.message));
-    page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
+    // jazyk.js replaces the initial Czech <img src> with the English file immediately.
+    // Chromium cancels that obsolete image as net::ERR_ABORTED; it is not a missing asset.
+    // Fail on every other network error and separately verify ALL final images loaded.
+    page.on('requestfailed', (r) => {
+      if (r.resourceType() === 'image' && r.failure()?.errorText === 'net::ERR_ABORTED') return;
+      chyby.push(`${r.url()} ${r.failure()?.errorText}`);
+    });
     await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}&odpojeno=${vysky.odpojeno}`);
     await page.evaluate(() => document.fonts.ready);
+    // Covers a real missing English screenshot even if the Czech request was aborted.
+    await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0), undefined, { timeout: 5000 });
     await page.waitForTimeout(200);
     const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {
       const r = el.getBoundingClientRect();
