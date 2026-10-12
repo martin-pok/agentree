@@ -405,7 +405,7 @@ test('web: current Preview documentation and published preview links agree witho
   const files = ['README.md', 'docs/ROADMAP.md', 'docs/RELEASE-READINESS.md'];
   for (const name of files) {
     const doc = await fs.readFile(path.join(ROOT, name), 'utf8');
-    assert.match(doc, /v0\\.46\\.5/, name + ' must identify the currently published preview');
-    assert.match(doc, /v0\\.46\\.0/, name + ' must keep the stable channel distinct');
+    assert.ok(doc.includes('v0.46.5'), name + ' must identify the currently published preview');
+    assert.ok(doc.includes('v0.46.0'), name + ' must keep the stable channel distinct');
   }
 });
