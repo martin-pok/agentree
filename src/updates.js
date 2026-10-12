@@ -69,49 +69,63 @@ function newestPreviewRelease(payload, version, target) {
   return latest ? validRelease(latest, version, target, true) : { latestVersion: version, asset: null };
 }
 
-async function responseBytes(response, expected) {
-  // Content-Length is optional for chunked downloads. Missing header is not zero bytes.
+async function streamVerifiedPackage(response, expected, temporaryFile) {
+  // A signed GitHub digest identifies the exact bytes. Never buffer an entire
+  // installer (tens or hundreds of MB) in RAM: stream directly to a unique,
+  // mode-0600 staging file. Only rename it after size and SHA-256 match.
   const rawLength = response.headers.get('content-length');
   const length = rawLength === null ? null : Number(rawLength);
-  if (rawLength !== null && (!Number.isSafeInteger(length) || length < 1 || length > MAX_PACKAGE_BYTES)) throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
+  if (rawLength !== null && (!Number.isSafeInteger(length) || length < 1 || length > MAX_PACKAGE_BYTES)) {
+    throw new Error(ui('Aktualizační balíček má neplatnou velikost.'));
+  }
   if (length !== null && length !== expected.size) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-  // Reject oversized or malformed streamed responses before buffering the complete archive.
-  // The release metadata supplies the exact size and SHA-256 digest.
-  const chunks = [];
   let received = 0;
   const digest = crypto.createHash('sha256');
-  if (response.body?.getReader) {
-    const reader = response.body.getReader();
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (!value?.byteLength) continue;
-        received += value.byteLength;
-        if (received > expected.size || received > MAX_PACKAGE_BYTES) {
-          await reader.cancel();
-          throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-        }
-        const chunk = Buffer.from(value);
-        digest.update(chunk);
-        chunks.push(chunk);
+  // 'wx' avoids overwriting another download's staged archive. A unique UUID
+  // also prevents concurrent retries from corrupting each other's temp file.
+  const out = await fs.open(temporaryFile, 'wx', 0o600);
+  try {
+    async function accept(value) {
+      const chunk = Buffer.from(value);
+      if (!chunk.length) return;
+      received += chunk.length;
+      if (received > expected.size || received > MAX_PACKAGE_BYTES) {
+        throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
       }
-    } finally {
-      reader.releaseLock();
+      digest.update(chunk);
+      for (let offset = 0; offset < chunk.length;) {
+        const { bytesWritten } = await out.write(chunk, offset, chunk.length - offset, null);
+        if (!bytesWritten) throw new Error(ui('Aktualizační balíček se nepodařilo uložit.'));
+        offset += bytesWritten;
+      }
     }
-  } else {
-    // Test doubles and older fetch implementations may expose only arrayBuffer().
-    const chunk = Buffer.from(await response.arrayBuffer());
-    received = chunk.length;
-    if (received > expected.size || received > MAX_PACKAGE_BYTES) throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-    digest.update(chunk);
-    chunks.push(chunk);
+    if (response.body?.getReader) {
+      const reader = response.body.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value?.byteLength) await accept(value);
+        }
+      } catch (err) {
+        await reader.cancel().catch(() => {});
+        throw err;
+      } finally {
+        reader.releaseLock();
+      }
+    } else {
+      // A few test doubles and legacy implementations expose only arrayBuffer.
+      // Normal fetch Response bodies always use the incremental stream above.
+      await accept(await response.arrayBuffer());
+    }
+    if (!received || received !== expected.size || !expected.sha256 || digest.digest('hex') !== expected.sha256) {
+      throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
+    }
+    await out.sync();
+    return received;
+  } finally {
+    await out.close();
   }
-  if (!received || received !== expected.size || !expected.sha256 || digest.digest('hex') !== expected.sha256) {
-    throw new Error(ui('Aktualizační balíček neodpovídá vydání.'));
-  }
-  const body = Buffer.concat(chunks, received);
-  return body;
 }
 
 export class UpdateService {
@@ -199,24 +213,26 @@ export class UpdateService {
     try {
       const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS), redirect: 'follow' });
       if (!response.ok) throw new Error(ui('Aktualizační balíček se nepodařilo stáhnout.'));
-      const body = await responseBytes(response, asset);
-      if (epoch !== this.requestEpoch || channel !== this.channel || this.value.asset?.url !== asset.url
-          || this.value.asset?.sha256 !== asset.sha256 || this.value.asset?.size !== asset.size) {
-        return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-      }
       const dir = path.join(this.dataDir, 'updates');
       const file = path.join(dir, asset.name);
+      const unchanged = () => epoch === this.requestEpoch && channel === this.channel
+        && this.value.asset?.url === asset.url
+        && this.value.asset?.sha256 === asset.sha256 && this.value.asset?.size === asset.size;
+      // An old channel can finish its fetch while a new Preview request starts.
+      // Never create a temporary file when the request is already obsolete.
+      if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-      await fs.writeFile(`${file}.tmp`, body, { mode: 0o600 });
-      await fs.rename(`${file}.tmp`, file);
-      if (epoch !== this.requestEpoch || channel !== this.channel || this.value.asset?.url !== asset.url
-          || this.value.asset?.sha256 !== asset.sha256 || this.value.asset?.size !== asset.size) {
-        // A new release may have replaced an asset while a previous download was writing.
-        // Do not expose the stale package as a completed update.
-        return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+      const staging = path.join(dir, `.${asset.name}.${crypto.randomUUID()}.tmp`);
+      try {
+        const size = await streamVerifiedPackage(response, asset, staging);
+        if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+        await fs.rename(staging, file);
+        if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+        this.value = { ...this.value, status: 'downloaded', downloaded: { name: asset.name, path: file, size, at: this.now() } };
+        return { ok: true, update: this.state() };
+      } finally {
+        await fs.rm(staging, { force: true }).catch(() => {});
       }
-      this.value = { ...this.value, status: 'downloaded', downloaded: { name: asset.name, path: file, size: body.length, at: this.now() } };
-      return { ok: true, update: this.state() };
     } catch (err) {
       return { status: 502, error: err?.message || ui('Aktualizační balíček se nepodařilo stáhnout.') };
     }
