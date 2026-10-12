@@ -1266,7 +1266,7 @@ function update(topics) {
 
   /* Kanál aktualizací je výslovná volba: Stable je výchozí, Preview zahrnuje testovací releasy. */
   const channel = state.settings.updateChannel === 'preview' ? 'preview' : 'stable';
-  const upd = state.updates?.channel === channel ? state.updates : { status: 'checking' };
+  const upd = (state.updates?.channel || 'stable') === channel ? (state.updates || {}) : { status: 'checking' };
   const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
   // Každý stav služby má vlastní větu: vypnutá kontrola ani vydání bez balíčku pro tento počítač
   // se nesmí tvářit jako probíhající kontrola.
@@ -1285,7 +1285,7 @@ function update(topics) {
           : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
-  const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.flaskConical || ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
+  const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
     <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Kanál aktualizací')}">
