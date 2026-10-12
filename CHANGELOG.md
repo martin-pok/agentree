@@ -1,5 +1,12 @@
 # Changelog
 
+## Nezařazeno do vydání · první konverzace Claude Code po založení projects/
+
+- **První agent bez zpoždění:** když Claude Code právě založí `projects/`, krátká jednorázová kontrola zachytí i první soubor konverzace zapsaný těsně po aktivaci sledování, pokud macOS zahodí následnou událost změny.
+- **Žádné trvalé skenování:** dodatečný průchod běží pouze u nově vzniklého kořene, po 350 ms, nikdy na existujících adresářích; po vypnutí watcheru se ruší. Bez procházení uživatelova HOME.
+- **Regresní testy:** simulují pozdní zápis JSONL bez jediné dětské `fs.watch` události, omezení 2 s, zrušení watcheru a absenci zbytečného skenu existujícího kořene.
+- **Verze:** změna vzniká až po tagu `v0.46.8`; do existujícího draftu ani veřejného Chrome rozšíření zpětně nevstupuje.
+
 ## Nezařazeno do vydání · shodné ikony v GitHub releasu a Chrome Web Store
 
 - **Jeden binární brand:** renderování marketingových snímků už nepřepisuje schválené PNG ikony, které se používají v GitHub release ZIPu. Každou velikost stále vizuálně porovná se zdrojovým SVG a výrazný rozdíl zastaví build.
