@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · živý stav po opětovném připojení (nevydáno)
+
+- **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
+- **20 současných agentů:** deterministické testy kontrolují obnovu, pořadí a jednorázové zpracování událostí bez přenosu přepisů nebo soukromých dat na cloud.
+- **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
+- Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
+
 ## Rozpracováno po 0.46.7 · úsporné a bezpečné stahování velkých aktualizací (zatím nevydáno)
 
 - **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
