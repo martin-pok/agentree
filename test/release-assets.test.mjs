@@ -133,7 +133,15 @@ test('publish workflow verifies full downloaded bytes before changing release vi
   const publishPos = publish.indexOf('gh release edit "$TAG" --notes-file poznamky.md --draft=false');
   assert.ok(verifyPos > 0 && publishPos > verifyPos, 'binary checks must precede publication');
   assert.match(publish, /gh release download "\$TAG" --dir overene-prilohy --repo "\$GITHUB_REPOSITORY"/);
-  assert.match(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/tags\/\$\{TAG\}" > release-metadata\.json/);
+  // GitHub REST release-by-tag returns 404 for *unpublished drafts*.
+  // The authenticated CLI can resolve the draft ID; metadata is fetched by ID.
+  assert.match(publish, /gh release view "\$TAG" --json isDraft,assets,body,databaseId,tagName > vydani\.json/);
+  assert.match(publish, /v\.tagName !== process\.env\.TAG/);
+  assert.match(publish, /Number\.isSafeInteger\(v\.databaseId\)/);
+  assert.match(publish, /RELEASE_ID=\$\(node -p/);
+  assert.match(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/\$\{RELEASE_ID\}" > release-metadata\.json/);
+  assert.doesNotMatch(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/tags\/\$\{TAG\}"/,
+    'draft releases are not accessible via GitHub GET release-by-tag');
   assert.match(publish, /sha256sum --check SHA256SUMS\.txt/);
   assert.match(publish, /channel:[\s\S]*?default: preview/);
   assert.match(publish, /--prerelease --latest=false/);
