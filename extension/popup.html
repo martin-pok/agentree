@@ -111,6 +111,14 @@
     .agent[data-ton="err"] .st { color: var(--velvet); }
     .agent[data-ton="work"] .st { color: var(--teal); }
 
+    /* Quick status views for busy users: compact segmented pills, no extra cards or mascots. */
+    .filtry-konverzaci { display: flex; gap: 4px; margin: 4px 16px 10px; padding: 3px; border-radius: var(--r-full); background: var(--line-2); }
+    .filtry-konverzaci button { flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; min-width: 0; height: 32px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--ink-2); font: 500 12px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
+    .filtry-konverzaci button:hover { color: var(--ink); }
+    .filtry-konverzaci button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(10,10,20,.08); }
+    .filtry-konverzaci .pocet-filtr { font-variant-numeric: tabular-nums; color: var(--mute); }
+    .filtry-konverzaci button[aria-pressed="true"] .pocet-filtr { color: var(--ink); }
+    .prazdne-konverzace { margin: 0 16px 12px; padding: 16px 12px; border-radius: var(--r-md); background: var(--surface); color: var(--mute); font: 400 12px/1.5 var(--f-body); text-align: center; }
     /* ---------- Otevřené konverzace ---------- */
     .konverzace { padding: 4px 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
     /* Řádky jsou odsazené od okraje, aby zvýraznění i panel aktuální karty měly celé zaoblení. */
@@ -268,8 +276,13 @@
     </section>
 
     <h2 class="nadpis nadpis--web" id="web-nadpis" hidden data-i18n>Chaty v&nbsp;prohlížeči</h2>
-
+    <div class="filtry-konverzaci" id="filtry-konverzaci" role="group" aria-label="Filtrovat chaty podle stavu" data-i18n-attr="aria-label" hidden>
+      <button type="button" data-filtr="vse" aria-pressed="true"><span data-i18n>Vše</span><span class="pocet-filtr" data-filtr-pocet="vse"></span></button>
+      <button type="button" data-filtr="odpovida" aria-pressed="false"><span data-i18n>Odpovídají</span><span class="pocet-filtr" data-filtr-pocet="odpovida"></span></button>
+      <button type="button" data-filtr="pozor" aria-pressed="false"><span data-i18n>Limity</span><span class="pocet-filtr" data-filtr-pocet="pozor"></span></button>
+    </div>
     <ol class="konverzace" id="konverzace" aria-label="Otevřené konverzace" data-i18n-attr="aria-label" hidden></ol>
+    <p class="prazdne-konverzace" id="prazdne-konverzace" role="status" hidden></p>
     <button class="sluzby" id="sites-open" type="button" aria-expanded="false" aria-controls="view-sluzby" hidden>
       <span class="sr-only" data-i18n>Sledované služby</span>
       <span class="loga" id="sites-logos" aria-hidden="true"></span>
