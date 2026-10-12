@@ -13,6 +13,31 @@ Příznak je jediné místo, které instalaci z obchodu zapíná všude najednou
 `scripts/build-site.mjs#rozsireniNaWebu` nechá jen blok `rozsireni:obchod`) a popis vydání.
 Když je vypnutý, ukazuje se všude ruční instalace. Po zapnutí je potřeba web přestavět (`npm run build:site`, na hostingu se to stane samo).
 
+## Ověřitelná sada pro vydavatele — nová příprava (po 0.46.7)
+
+**Cíl:** zabránit tomu, aby se do obchodu omylem nahrál starší ZIP s novými
+screenshoty, nebo ZIP z jiného commitu než vizuální podklady. CI na `main`
+po vykreslení reálného popupu a buildění rozšíření skládá jediný artifact
+`chrome-store-review-kit`:
+
+- `package/agenteeq-extension-X.Y.Z.zip` — **jediný ZIP pro Package → Upload new package**;
+- `listing/` — ikona 128 px, české a anglické screenshoty 1280×800 a promo obrázky;
+- `STORE-KIT.json` — přesná verze, zdrojové SHA, seznam a SHA-256 souborů;
+- `SHA256SUMS.txt` a `PUBLISHING-GATE.txt` — ověření příloh a ruční stop podmínky.
+
+Skript `scripts/prepare-chrome-store-kit.mjs` rozbalí manifest ze **skutečně
+sestaveného ZIPu**, porovná jej se zdrojovým manifestem a verzí aplikace, ověří
+rozměry všech devíti obrázků a připojí jejich kryptografické otisky. Souborům
+nepřisuzuje žádný status publikace. Testy používají odlišné a poškozené ZIPy.
+
+**Před použitím:** vybrat artefakt z dokončeného běhu `Testy` na `main`
+s přesně **8/8 úspěšnými úlohami**, porovnat SHA commitu, ověřit skutečné UI,
+proporce ikony, CZ/EN, párování a navigaci z čistého Chrome profilu i po
+restartu hostitele. Artefakt je připravená sada, nikoli schválený release.
+Vlastník musí ručně nahrát jednotlivý ZIP a odpovídající obrázky do existující
+položky `hocghhpigfilngdajmafkdcljdedanch`, potvrdit publikaci a následně
+ověřit veřejnou verzi i zobrazení. **Nepublikovat jen proto, že prošlo CI.**
+
 ## Stav účtu vydavatele
 
 Registrace vývojáře byla uhrazena. Vydavatel zvolil stav **neobchodník** a ověřil kontaktní e-mail.
