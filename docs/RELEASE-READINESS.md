@@ -4,7 +4,7 @@
 
 ## Zdroj pravdy
 
-- Aktuální verze v `package.json` na hlavní větvi: **0.46.5**. Vydání bylo ověřeno přímo v GitHub Releases (`draft=false`, `prerelease=true`) včetně DMG, ZIP a SHA-256 manifestu.
+- Aktuální pracovní kandidát v `package.json` na přípravné větvi: **0.46.6**, zatím nevydaný. Poslední zveřejněná **v0.46.5 Preview** byla ověřena přímo v GitHub Releases (`draft=false`, `prerelease=true`) včetně DMG, ZIP a SHA-256 manifestu.
 - Poslední potvrzené **zveřejněné** Preview: GitHub Releases — **v0.46.5** (12. 10. 2026), přílohy Mac/Windows/Chrome a `SHA256SUMS.txt`, hlavní CI 8/8. Stabilní Latest je stále **v0.46.0** (9. 10. 2026). Živé UAT Mac instalace a účtů nebylo provedeno.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
