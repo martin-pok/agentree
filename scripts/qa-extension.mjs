@@ -170,6 +170,43 @@ try {
           assert.equal(await page.locator('#hero-num').textContent(), '2');
           const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
           assert.ok(vyska <= 600, `${engine} ${theme} ${state}: okno má ${Math.round(vyska)} px`);
+          // Real Chromium/WebKit interactions: three tracked chats, live counts,
+          // filters, keyboard focus and a truthful empty state.
+          await page.evaluate(async () => {
+            fixture.data.disabledSites = [];
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() },
+              b: { site: 'claude', tab: 6, okno: 2, generating: false, limit: true, at: Date.now() },
+              c: { site: 'gemini', tab: 7, okno: 2, generating: false, limit: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#filtry-konverzaci').isVisible(), true);
+          assert.deepEqual(await page.locator('.pocet-filtr').allTextContents(), ['3', '1', '1']);
+          await page.locator('[data-filtr="odpovida"]').click();
+          assert.equal(await page.locator('#konverzace li').count(), 1);
+          assert.match(await page.locator('#konverzace').innerText(), /ChatGPT/);
+          assert.equal(await page.locator('[data-filtr="odpovida"]').getAttribute('aria-pressed'), 'true');
+          await page.locator('[data-filtr="pozor"]').focus();
+          await page.keyboard.press('Enter');
+          assert.equal(await page.locator('#konverzace li').count(), 1);
+          assert.match(await page.locator('#konverzace').innerText(), /Claude/);
+          assert.equal(await page.locator('[data-filtr="pozor"]').getAttribute('aria-pressed'), 'true');
+          await page.evaluate(async () => {
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, generating: true, at: Date.now() },
+              b: { site: 'claude', tab: 6, generating: false, limit: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#konverzace').isVisible(), false);
+          assert.equal(await page.locator('#prazdne-konverzace').isVisible(), true);
+          assert.match(await page.locator('#prazdne-konverzace').textContent(), /Žádný webový chat nehlásí limit/);
+          await page.locator('[data-filtr="vse"]').click();
+          assert.equal(await page.locator('#konverzace li').count(), 2);
+          assert.equal(await page.locator('#prazdne-konverzace').isVisible(), false);
+          const filtrVyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
+          assert.ok(filtrVyska <= 600, `${engine} ${theme}: filtr nesmí zvětšit Chrome popup nad 600px (měřeno ${Math.round(filtrVyska)}px)`);
         }
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png`, fullPage: true });
