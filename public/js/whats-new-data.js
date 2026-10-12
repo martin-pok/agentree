@@ -13,6 +13,7 @@ export const RELEASES = [
       'Přehled a rozšíření používají shodné počítání agentů; po opětovném spojení se už nevrací staré události.',
       'Aktualizační balíčky se stahují průběžně, atomicky a s ověřením SHA-256; souběžná stejná stažení nespotřebovávají síť opakovaně.',
       'Google profilová fotografie může použít bezpečně ověřené náhradní metadata. Skutečné přihlášení i návrat do terminálu ještě vyžadují UAT na Macu.',
+      'Před instalací dostupné aktualizace si můžeš v Nastavení otevřít přesné poznámky zveřejněného vydání. Nevydané verze se netváří jako nainstalované.'
     ],
     en: {
       title: 'Faster agent focus and more reliable updates',
@@ -22,6 +23,7 @@ export const RELEASES = [
         'Desktop and extension share the same agent totals; reconnecting cannot replay obsolete events.',
         'Update archives download as verified streams with atomic completion and SHA-256; identical simultaneous downloads share one transfer.',
         'Google profile photos can use a validated fallback metadata field. Live sign-in and terminal navigation still need real-Mac acceptance testing.',
+        'Read the exact published release notes from Settings before installing an update. Unpublished versions are not presented as installed.'
       ],
     },
   },
