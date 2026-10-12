@@ -90,3 +90,15 @@ test('publikace releasu vyžaduje úspěšné CI přesného označeného commitu
   assert.match(workflow, /r\.head_sha === process\.env\.GH_SHA && r\.status === "completed" && r\.conclusion === "success"/);
   assert.ok(workflow.indexOf('Ověřit zelené CI označeného commitu') < workflow.indexOf('      - name: Zveřejnit\n'), 'kontrola musí blokovat publikaci');
 });
+
+
+test('publish Preview stays prerelease and never overwrites stable Latest', async () => {
+  const workflow = await zdroj('.github/workflows/publish.yml');
+  assert.match(workflow, /default: preview/, 'manual publish must default to Preview');
+  assert.match(workflow, /CONFIRM_STABLE: /, 'Stable needs a separate explicit confirmation');
+  assert.match(workflow, /if \[ "\$CONFIRM_STABLE" != "true" \]/, 'Stable cannot publish without opt-in');
+  assert.match(workflow, /gh release edit "\$TAG" --notes-file poznamky\.md --draft=false --prerelease --latest=false/, 'Preview must not become Latest');
+  assert.match(workflow, /gh release edit "\$TAG" --notes-file poznamky\.md --draft=false --prerelease=false --latest/, 'only Stable may become Latest');
+  assert.match(workflow, /test "\$LATEST" != "\$TAG"/, 'verify Preview did not become Latest');
+  assert.match(workflow, /test "\$LATEST" = "\$TAG"/, 'verify Stable became Latest');
+});
