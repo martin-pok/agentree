@@ -83,6 +83,9 @@ const rc = (await fs.readFile(path.join(zdroje, 'Agenteeq.rc.in'), 'utf8'))
   .replaceAll('__VERZE__', version);
 await fs.writeFile(path.join(zdroje, 'Agenteeq.generated.rc'), rc, 'utf8');
 
+// Always regenerate the Windows resource icon from the proportional SVG-derived
+// Chrome PNG before rc.exe reads it. A checked-in legacy ICO must never win.
+run(process.execPath, ['scripts/make-ico.mjs']);
 const res = path.join(build, 'Agenteeq.res');
 console.log('Prostředky (ikona, manifest, verze)…');
 run('rc.exe', ['/nologo', '/fo', res, path.join(zdroje, 'Agenteeq.generated.rc')]);
