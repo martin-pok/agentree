@@ -440,7 +440,10 @@ function vykresliSeznam() {
   // Dlouhý seznam se posune uvnitř, okno zůstane do 600 px.
   box.style.maxHeight = '';
   const navic = document.body.getBoundingClientRect().height - MAX_VYSKA;
-  if (navic > 0) box.style.maxHeight = `${Math.max(120, Math.floor(box.getBoundingClientRect().height - navic))}px`;
+  // Chrome caps the popup at 600px. After adding status filters the local
+  // agent queue may leave only one row of room for web chats; allow a 56px row
+  // plus scrollbar rather than overflowing the entire popup.
+  if (navic > 0) box.style.maxHeight = `${Math.max(64, Math.floor(box.getBoundingClientRect().height - navic))}px`;
 }
 
 async function obnovSeznam() {
