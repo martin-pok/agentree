@@ -4,7 +4,7 @@
 
 ## Zdroj pravdy
 
-- Aktuální verze `package.json` na `main`: **0.46.4**. Nové funkce v PR nejsou součástí instalačních balíčků, dokud nevyjde další release.
+- Aktuální kandidát v `package.json` na této přípravné větvi: **0.46.5**. Poslední veřejně ověřené Preview zůstává 0.46.4 do úspěšného dokončení celého nového release workflow; samotný PR ani merge nestačí.
 - Poslední potvrzené **zveřejněné** Preview: GitHub Releases — **v0.46.4** (12. 10. 2026), přílohy DMG/ZIP/Chrome a `SHA256SUMS.txt`, hlavní CI 8/8. Stabilní Latest je stále **v0.46.0** (9. 10. 2026). Koncepty vydání nejsou veřejně stažitelné.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
