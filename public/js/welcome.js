@@ -1,7 +1,8 @@
 import { api } from './api.js';
 import { state, subscribe } from './state.js';
 import { ICON, glyph } from './icons.js';
-import { esc } from './format.js';
+import { esc, plural } from './format.js';
+import { ze } from './predlozky.js';
 import { goToExtension } from './jump.js';
 import { tr, tvemPocitaci } from './i18n.js';
 import { JE_MAC, SYSTEM } from './system.js';
@@ -13,7 +14,7 @@ const steps = [
   { tag: tr('V pravou chvíli'), title: tr('Víš, kdy je\nřada na tobě.'), text: tr('Sleduj práci, dokončení i selhání. Když agent potřebuje rozhodnutí, otevři jeho konverzaci přímo z přehledu.'), visual: 'attention' },
   { tag: tr('Limity a peníze'), title: tr('Víš, kolik\nti zbývá.'), text: tr('Limity Claude a Codexu vedle sebe, po rozbalení i ostatní nástroje. Agenteeq automaticky rozpozná dostupné plány a ověřené API náklady.'), visual: 'limits' },
   { tag: tr('Pořádek v každé zakázce'), title: tr('Konverzace patří\nk projektům.'), text: tr('Spoj agenty podle klienta nebo složky. Přidej logo klienta, přetáhni karty do svého pořadí a měj brief po ruce, když zadáváš další práci.'), visual: 'projects' },
-  { tag: tr('Agenti i v prohlížeči'), title: 'ChatGPT, Gemini\na Claude.ai taky.', text: tr('Rozšíření pro Chrome přidá do přehledu i chaty z webu: jestli agent pracuje, počet zpráv a dosažený limit. Zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.'), visual: 'browser', action: tr('Nainstalovat rozšíření') },
+  { tag: tr('Agenti i v prohlížeči'), title: tr('ChatGPT, Gemini\na Claude.ai taky.'), text: tr('Rozšíření pro Chrome přidá do přehledu i chaty z webu: jestli agent pracuje, počet zpráv a dosažený limit. Zadání, které napíšeš tady, samo vloží do okna služby. Nainstaluješ ho za minutu.'), visual: 'browser', action: tr('Nainstalovat rozšíření') },
   { tag: tr('Připraveno na {0}', tvemPocitaci()), title: tr('Tvá práce.\nTvá data.'), text: tr('Přepisy zůstávají na tomto počítači, bez účtu a bez odesílání. Telefon, který spáruješ, data jen čte.'), visual: 'privacy' },
 ];
 
@@ -22,11 +23,11 @@ function visual(kind) {
   if (kind === 'attention') return `<div class="welcome-demo"><span class="welcome-demo-label">${tr('Ukázka stavů')}</span><div><i class="welcome-dot working"></i><span>${tr('Agent pracuje')}</span><small>${tr('máš klid')}</small></div><div class="welcome-attention"><i class="welcome-dot attention"></i><span>${tr('Potřebuje rozhodnutí')}</span>${ICON.arrowRight || ICON.check}</div><div><i class="welcome-dot done"></i><span>${tr('Úloha dokončena')}</span>${ICON.check}</div></div><p class="welcome-caption">${tr('Žádosti Claude Code o povolení uvidíš po zapnutí propojení.')}<br>${tr('Codex je do přepisů nezapisuje.')}</p>`;
   if (kind === 'projects') return `<div class="welcome-project"><span class="welcome-demo-label">${tr('Ukázka projektu')}</span><div class="welcome-project-title">${ICON.folder}<span>${tr('Nový web')}</span></div><div class="welcome-project-row"><span>${tr('Brief a pravidla')}</span>${ICON.check}</div><div class="welcome-project-row"><span>${tr('Konverzace na jednom místě')}</span><div class="welcome-mini-logos">${glyph('claude')}${glyph('codex')}</div></div><div class="welcome-project-bar"></div></div><p class="welcome-caption">${tr('Od prvního zadání po poslední detail')}</p>`;
   if (kind === 'limits') return `<div class="welcome-limits"><span class="welcome-demo-label">${tr('Ukázka limitů')}</span>
-    ${[['Claude · Limit 5 h', 41, 'teal'], [tr('Codex · Týdenní limit'), 78, 'brass']].map(([l, p, t]) => `<div class="wl-row"><span>${esc(l)}</span><b>${p} %</b><i class="wl-bar wl-bar--${t}"><em style="width:${p}%"></em></i></div>`).join('')}
+    ${[[tr('Claude · Limit 5 h'), 41, 'teal'], [tr('Codex · Týdenní limit'), 78, 'brass']].map(([l, p, t]) => `<div class="wl-row"><span>${esc(l)}</span><b>${p} %</b><i class="wl-bar wl-bar--${t}"><em style="width:${p}%"></em></i></div>`).join('')}
     <div class="wl-spend"><span>${tr('Útrata tento měsíc')}</span><b>${tr('850 Kč')}</b></div></div><p class="welcome-caption">${tr('Ověřené náklady a živé limity')}</p>`;
   if (kind === 'browser') return `<div class="welcome-browser"><div class="wb-bar"><i></i><i></i><i></i><span>gemini.google.com</span></div><div class="wb-body"><div class="wb-agent">${glyph('gemini')}<span>Gemini</span><em><i class="welcome-dot working"></i>${tr('pracuje')}</em></div><div class="wb-input"><span>${tr('Navrhni název kavárny…')}</span><small>${ICON.spark}${tr('Vloženo z Agenteeq')}</small></div></div></div><div class="welcome-browser-sites">${['openai', 'claude', 'gemini', 'perplexity', 'copilot'].map((p) => `<span>${glyph(p)}</span>`).join('')}</div><p class="welcome-caption">${tr('Rozšíření pro Chrome')}<br>${tr('Data jdou jen do Agenteeq na {0}.', tvemPocitaci())}</p>`;
   const n = state.sessions.size;
-  return `<div class="welcome-local"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na {0}', tvemPocitaci())}</span><span class="welcome-local-count">${n}</span><span>${tr('nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
+  return `<div class="welcome-local"><img src="${adresaSouboru('/brand/agenteeq-mark-dark.svg')}" width="80" height="80" alt=""><span class="welcome-local-label">${tr('Lokálně na {0}', tvemPocitaci())}</span><span class="welcome-local-count">${n}</span><span>${plural(n, 'nalezená konverzace', 'nalezené konverzace', 'nalezených konverzací')}</span></div><p class="welcome-caption">${tr('Bez účtu. Bez telemetrie.')}<br>${tr('Webové chaty vyžadují rozšíření prohlížeče.')}</p>`;
 }
 
 export function showWelcome() {
@@ -44,7 +45,7 @@ export function showWelcome() {
     dialog.querySelector('.welcome-art').innerHTML = visual(step.visual);
     const last = steps.length - 1;
     dialog.querySelector('.welcome-copy').innerHTML = `<p class="welcome-kicker">${step.tag}</p><h2 id="welcome-title">${step.title.replace('\n', '<br>')}</h2><p>${step.text}</p>${step.action ? `<button type="button" class="link-inline welcome-action" data-welcome-action>${step.action} ${ICON.arrow}</button>` : ''}`;
-    dialog.querySelector('.welcome-dots').innerHTML = steps.map((_, i) => `<span class="${i === index ? 'is-current' : i < index ? 'is-done' : ''}" aria-label="${tr('Krok {0} z {1}', i + 1, steps.length)}"${i === index ? ' aria-current="step"' : ''}></span>`).join('');
+    dialog.querySelector('.welcome-dots').innerHTML = steps.map((_, i) => `<span class="${i === index ? 'is-current' : i < index ? 'is-done' : ''}" aria-label="${ze(steps.length) ? tr('Krok {0} ze {1}', i + 1, steps.length) : tr('Krok {0} z {1}', i + 1, steps.length)}"${i === index ? ' aria-current="step"' : ''}></span>`).join('');
     dialog.querySelector('[data-welcome-back]').hidden = index === 0;
     dialog.querySelector('[data-welcome-next]').textContent = index === last ? tr('Otevřít přehled') : tr('Pokračovat');
   };

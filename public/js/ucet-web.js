@@ -9,6 +9,7 @@ import { esc, fmtTok, fmtMoney, rel, initials, plural, resetsLabel, MONTHS } fro
 import { miniBars } from './charts.js';
 import { applyAppearance } from './appearance.js';
 import { tr } from './i18n.js';
+import { popisPoctu } from './stav-vety.js';
 import { adresaSouboru } from './verze.js';
 
 const KLIC_RELACE = 'agenteeq-ucet-web';
@@ -280,7 +281,7 @@ function prihlasovaciObrazovka(zprava = '') {
 }
 
 function kartaAgentu(a, now) {
-  const pole = [['working', 'pracuje', 'is-work'], ['needs_you', tr('potřebuje tebe'), 'is-alert'], ['waiting', tr('čeká na zadání'), 'is-wait'], ['failed', 'selhalo', 'is-alert']];
+  const pole = [['working', 'working', 'is-work'], ['needs_you', 'needs_input', 'is-alert'], ['waiting', 'waiting', 'is-wait'], ['failed', 'failed', 'is-alert']];
   const cerstve = a.aktualizovano && now - a.aktualizovano <= CERSTVE_MS;
   // Stáří je vidět vždy. Když žádný počítač není čerstvý, čísla „teď“ nejsou: místo nul se řekne proč.
   const vek = !a.aktualizovano ? tr('zatím bez dat')
@@ -291,7 +292,7 @@ function kartaAgentu(a, now) {
       <span class="cloud-age">${vek}</span></div>
     ${a.aktualizovano && !cerstve
       ? `<p class="cloud-stage-stale">${tr('Stav agentů není známý: žádný počítač se neozval přes 15 minut.')}</p>`
-      : `<div class="cloud-stage-stats">${pole.map(([k, label, cls]) => `<div class="cloud-stat${a[k] ? ` ${cls}` : ''}"><b>${a[k]}</b><span>${label}</span></div>`).join('')}</div>
+      : `<div class="cloud-stage-stats">${pole.map(([k, stav, cls]) => `<div class="cloud-stat${a[k] ? ` ${cls}` : ''}"><b>${a[k]}</b><span>${popisPoctu(stav, a[k])}</span></div>`).join('')}</div>
     ${a.zastarale ? `<p class="cloud-stage-stale">${tr('Počítače, které se neozvaly přes 15 minut, se nepočítají ({0}).', a.zastarale)}</p>` : ''}`}
   </section>`;
 }

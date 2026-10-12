@@ -163,7 +163,7 @@ function update() {
     [tr('Zaznamenané tokeny'), tween(`st-tok-${v.period}`, tokens, 'tok'), tr('vstup + výstup')],
     [tr('Aktivní konverzace'), tween(`st-ses-${v.period}`, active.length), `${new Set(active.map((s) => s.app)).size} ${plural(new Set(active.map((s) => s.app)).size, 'aplikace', 'aplikace', 'aplikací')}`],
     [tr('Hodiny s aktivitou'), tween(`st-h-${v.period}`, hours), tr('hodiny, kdy aspoň jeden agent pracoval')],
-    [tr('Zadání'), tween(`st-p-${v.period}`, prompts), `v ${plural(active.length, 'aktivní konverzaci', 'aktivních konverzacích', 'aktivních konverzacích')}`],
+    [tr('Zadání'), tween(`st-p-${v.period}`, prompts), plural(active.length, 'v aktivní konverzaci', 'v aktivních konverzacích', 'v aktivních konverzacích')],
   ].map(([l, val, sub]) => `<div class="card kpi"><span class="eyebrow">${l}</span><span class="val">${val}</span><small>${esc(sub)}</small></div>`).join(''));
 
   const changed = fill(el, 'chart', ser.series.length

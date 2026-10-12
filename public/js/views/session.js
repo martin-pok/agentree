@@ -11,6 +11,7 @@ import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { pdot, projectHref, assignDialog } from '../projects-ui.js';
 import { tr, LOCALE, tomtoPocitaci, tvemPocitaci } from '../i18n.js';
+import { ze } from '../predlozky.js';
 import { modifikator, MOD } from '../system.js';
 
 const v = { id: null, el: null, quoteOpen: false, rendered: new Map(), follow: true, loading: false, browsing: false, onDocPointer: null, odpoved: null, odpovedStav: null, odpovedZnovu: null };
@@ -72,7 +73,7 @@ function entryHtml(e) {
 function progressHtml(p) {
   const pct = p.total ? (p.done / p.total) * 100 : 0;
   return `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}" aria-label="${tr('Plán úkolů')}">
-    <div class="progress-top"><span>${p.done} z ${p.total} ${plural(p.total, 'úkolu', 'úkolů', 'úkolů')}</span>${p.current ? `<span class="muted">${esc(p.current)}</span>` : ''}</div>
+    <div class="progress-top"><span>${ze(p.total) ? tr('{0} ze {1}', p.done, p.total) : tr('{0} z {1}', p.done, p.total)} ${plural(p.total, 'úkolu', 'úkolů', 'úkolů')}</span>${p.current ? `<span class="muted">${esc(p.current)}</span>` : ''}</div>
     <div class="progress-track"><i style="width:${pct.toFixed(1)}%"></i></div>
   </div>`;
 }
@@ -463,7 +464,7 @@ function update() {
         <dl class="facts">
           <div><dt>${tr('Model')}</dt><dd>${esc(s.model || '–')}</dd></div>
           <div><dt>${tr('Větev')}</dt><dd>${esc(s.branch || '–')}${s.worktree ? `<br><span class="muted">${tr('pracovní kopie')} ${esc(s.worktree)}</span>` : ''}</dd></div>
-          ${s.context ? `<div><dt>${tr('Kontext')}</dt><dd>${s.context.usedPercent} %${s.context.size ? ` z ${fmtTok(s.context.size)}` : ''}</dd></div>` : ''}
+          ${s.context ? `<div><dt>${tr('Kontext')}</dt><dd>${s.context.usedPercent} %${s.context.size ? ` ${ze(s.context.size) ? tr('ze {0}', fmtTok(s.context.size)) : tr('z {0}', fmtTok(s.context.size))}` : ''}</dd></div>` : ''}
           ${s.effort ? `<div><dt>${tr('Úroveň přemýšlení')}</dt><dd>${esc(s.effort)}</dd></div>` : ''}
           ${s.repo ? `<div><dt>${tr('Repozitář')}</dt><dd>${esc(s.repo)}</dd></div>` : ''}
           ${s.pr ? `<div><dt>${tr('Pull request')}</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}

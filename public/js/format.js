@@ -19,10 +19,13 @@ export function fmtTok(n) {
   return podleJazyka(`${dec(n / 1e9, 2)} mld.`, `${dec(n / 1e9, 2)} bn`);
 }
 
+// Popisky osy grafu: stejné jednotky jako fmtTok („2 tis.“, „1,5 M“, „1,2 mld.“), jen s jedním
+// desetinným místem a nezlomitelnou mezerou. Dřív osa psala „2k“ a „1,5M“, zatímco čísla vedle
+// ní „2 tis.“.
 export function fmtAxis(n) {
-  if (n >= 1e9) return `${dec(n / 1e9, 1)}B`;
-  if (n >= 1e6) return `${dec(n / 1e6, 1)}M`;
-  if (n >= 1e3) return `${dec(n / 1e3, 1)}k`;
+  if (n >= 1e9) return podleJazyka(`${dec(n / 1e9, 1)}\u00a0mld.`, `${dec(n / 1e9, 1)}\u00a0bn`);
+  if (n >= 1e6) return `${dec(n / 1e6, 1)}\u00a0M`;
+  if (n >= 1e3) return podleJazyka(`${dec(n / 1e3, 1)}\u00a0tis.`, `${dec(n / 1e3, 1)}k`);
   return String(Math.round(n));
 }
 

@@ -94,7 +94,8 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   if (Number.isFinite(created) && created > 0 && created <= updated) s.startedAt = created;
   // One point = reported source update, not a continuous multi-day work span.
   touch(s, updated);
-  s.title = clip(typeof metadata.title === 'string' ? metadata.title : '', 100);
+  // Jen horní mez; na zobrazení zkracuje model.js#summarize na hranici slova s „…“.
+  s.title = clip(typeof metadata.title === 'string' ? metadata.title : '', 400);
   s.source = 'desktop-cache';
   s.app = ui('Claude Desktop · vzdálený Code');
   s.url = `https://claude.ai/code/${metadata.id}`;

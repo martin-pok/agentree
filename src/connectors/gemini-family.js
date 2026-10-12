@@ -153,7 +153,7 @@ export function applyQwenJsonl(s, text, mtimeMs, now = Date.now()) {
     if (typeof r.gitBranch === 'string' && r.gitBranch) s.branch = r.gitBranch;
     if (r.type === 'system') {
       const titulek = r.subtype === 'custom_title' ? r.systemPayload?.customTitle : null;
-      if (typeof titulek === 'string' && titulek.trim()) s.title = clip(titulek.trim(), 120);
+      if (typeof titulek === 'string' && titulek.trim()) s.title = clip(titulek.trim(), 400);
       continue;
     }
     touch(s, ts);

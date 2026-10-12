@@ -226,8 +226,8 @@ test('časová osa přiznává agenty, kteří se na ni nevešli', async () => {
   const src = await zdroj('public/js/views/overview.js');
   assert.match(src, /const TIMELINE_MAX = 7;/);
   assert.match(src, /const skryto = vybrane\.length - rows\.length;/);
-  assert.match(src, /tr\('Dalších \{0\} je', skryto\)/, 'počet skrytých agentů je vidět');
-  assert.match(src, /class="tl-more" href="#\/agenti"/, 'a vede na seznam, kde jsou všichni');
+  assert.match(src, /plural\(skryto, 'Další je v sekci Agenti\.', 'Další \{0\} jsou v sekci Agenti\.', 'Dalších \{0\} je v sekci Agenti\.'\)\.replace\('\{0\}', skryto\)/, 'počet skrytých agentů je vidět');
+  assert.match(src, /<p class="tl-more">[^]*?<a class="link" href="#\/agenti">/, 'a vede na seznam, kde jsou všichni');
   assert.doesNotMatch(src, /\.slice\(0, 7\)/, 'napevno zapsaná sedmička bez vysvětlení');
 });
 

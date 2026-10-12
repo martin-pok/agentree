@@ -91,6 +91,31 @@ test('i18n: v angličtině nezůstala čeština a slovník nenese staré texty',
   assert.deepEqual(Object.keys(EN.mnozne).filter((k) => !mnozne.has(k)), []);
 });
 
+// Čeština bez diakritiky předchozí testy minula: titulek „ChatGPT, Gemini / a Claude.ai taky.“ bez
+// tr(), „Claude · Limit 5 h“ v ukázce limitů a „v “ přilepené před přeložený tvar („v active
+// conversation“). Hlídá se proto podle místa: předložka nebo spojka v šabloně těsně před dosazenou
+// hodnotou a věta v poli rozhraní (title, text, label…) nebo na začátku pole, která nejde přes tr().
+test('i18n: v klientu nezůstala česká slova mimo tr() ani bez diakritiky', async () => {
+  const PREDLOZKA = /(?:^|[\s>(])(?:v|ve|z|ze|na|do|od|pro|po|za|a|je|jsou)\s+\{\d+\}/;
+  const POLE = /\b(?:title|tag|text|label|action|caption|hint|placeholder|error|message)\s*:\s*$|\[\s*$/;
+  const VETA = /[a-zá-ž]{2,}\s+[a-zá-ž]{2,}|[A-Za-zá-ž]{2,} \d+\s?[a-z]\b/;
+  const nalezy = [];
+  for (const f of await soubory(path.join(ROOT, 'public/js'))) {
+    // Novinky nesou češtinu i angličtinu vedle sebe (hlídá test/whats-new.test.mjs).
+    if (f.includes(`${path.sep}i18n${path.sep}`) || f.endsWith('whats-new-data.js')) continue;
+    const s = await fs.readFile(f, 'utf8');
+    for (const l of literaly(s)) {
+      const pred = s.slice(Math.max(0, l.od - 40), l.od);
+      if (/\b(?:tr|plural|mnozne|trServer|podleJazyka)\(\s*$/.test(pred)) continue;
+      const text = l.text.replace(/<[^>]*>/g, ' ');
+      if ((l.druh === 'sablona' && PREDLOZKA.test(text)) || (l.druh === 'retezec' && POLE.test(pred) && VETA.test(l.text))) {
+        nalezy.push(`${path.relative(ROOT, f)}:${l.radek} ${text.trim().replace(/\s+/g, ' ').slice(0, 80)}`);
+      }
+    }
+  }
+  assert.deepEqual(nalezy, [], 'text rozhraní patří do tr(…) s překladem v public/js/i18n/en.js');
+});
+
 // ---------------------------------------------------------------------------------------------
 // Texty ze serveru. Server píše česky a texty rozhraní označuje ui('…') (src/texty.js); klient je
 // v angličtině přeloží podle public/js/i18n/en-server.js (public/js/texty-serveru.js). Dřív tu

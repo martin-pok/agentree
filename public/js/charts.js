@@ -1,5 +1,6 @@
 import { esc, fmtTok, fmtAxis, timeHM, dateTime } from './format.js';
 import { tr, podleJazyka } from './i18n.js';
+import { ze } from './predlozky.js';
 
 // Pravidla grafů Agenteeq: kreslí se jen naměřené hodnoty. Žádné vyhlazování mezi body (vymýšlelo by hodnoty),
 // intervaly jako sloupce, stav v čase jako schodovitá čára na skutečné časové ose, popisky se nesmí překrývat.
@@ -350,7 +351,7 @@ export function bindHeatmap(root = document) {
     heat.querySelector(`.heat-hours span[data-h="${h}"]`)?.classList.add('is-hot');
     tip.innerHTML = `<span class="tip-label">${esc(DNY_PLNE[d])} · ${esc(hodina(h))}</span>
       <b class="heat-tip-num">${tokens > 0 ? `${esc(fmtTok(tokens))} <small>${tr('tokenů')}</small>` : tr('Nic se nedělo')}</b>
-      ${tokens > 0 && mozne ? `<span class="tip-row">${Number(mozne) === 1 ? tr('Pracovali {0} z {1} dne', esc(dny), esc(mozne)) : tr('Pracovali {0} z {1} dní', esc(dny), esc(mozne))}</span>` : ''}
+      ${tokens > 0 && mozne ? `<span class="tip-row">${Number(mozne) === 1 ? tr('Pracovali {0} z {1} dne', esc(dny), esc(mozne)) : ze(mozne) ? tr('Pracovali {0} ze {1} dní', esc(dny), esc(mozne)) : tr('Pracovali {0} z {1} dní', esc(dny), esc(mozne))}</span>` : ''}
       ${tokens > 0 && app ? `<span class="tip-row">${tr('Nejvíc')} ${esc(app)} <b>${esc(podil)} %</b></span>` : ''}`;
     tip.hidden = false;
     const box = heat.getBoundingClientRect();
@@ -417,7 +418,7 @@ export function timeline({ rows, from, to, now }) {
     <div class="tl-axis" aria-hidden="true"><span></span><span class="tl-ticks">${ticks.filter((t) => Math.abs(pct(t) - pct(now)) > 7 && pct(t) > 3 && pct(t) < 97).map((t, k) => `<span class="${k % 2 ? 'is-minor' : ''}" style="left:${pct(t)}%">${timeHM(t)}</span>`).join('')}</span></div>
     ${rows
       .map((r) => `<a class="tl-row" href="#/agent/${encodeURIComponent(r.id)}" data-status="${r.status}">
-        <span class="tl-label">${r.glyph}<span class="tl-text"><span class="tl-title">${esc(r.title)}</span><small>${esc(r.app)}</small></span></span>
+        <span class="tl-label">${r.glyph}<span class="tl-text"><span class="tl-title" title="${esc(r.fullTitle || r.title)}">${esc(r.title)}</span><small>${esc(r.app)}</small></span></span>
         <span class="tl-track">${r.spans
           .filter(([, b]) => b >= from)
           .map(([a, b]) => {

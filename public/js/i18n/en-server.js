@@ -87,6 +87,7 @@ export default {
   "Projekt {0}: rozpočet tokenů vyčerpán": "Project {0}: token budget used up",
   "Projekt {0}: {1} % rozpočtu tokenů": "Project {0}: {1} % of the token budget",
   "{0} z {1} tokenů tento měsíc.": "{0} of {1} tokens this month.",
+  "{0} ze {1} tokenů tento měsíc.": "{0} of {1} tokens this month.",
   "Spouštění agentů na pozadí umí Agenteeq zatím jen na macOS.": "Agenteeq can run agents in the background only on macOS for now.",
   "Terminál": "Terminal",
   "{0} se nepodařilo spustit: {1}": "Couldn’t start {0}: {1}",
@@ -201,7 +202,7 @@ export default {
   "Denní náklady a spotřeba tokenů organizace za 180 dní.": "The organisation’s daily costs and token usage for 180 days.",
   "Náklady za API": "API costs",
   "Automaticky doplní útratu a spotřebu tokenů za API do grafů a rozpočtů.": "Automatically adds API spend and token usage to charts and budgets.",
-  "Připojeno {0} z 2 API.": "{0} of 2 APIs connected.",
+  "Připojeno {0} ze 2 API.": "{0} of 2 APIs connected.",
   "Žádný API klíč. Náklady zatím nelze ověřit.": "No API key. Costs cannot be verified yet.",
 
   // src/connectors/codex.js
@@ -648,6 +649,7 @@ export default {
   "Rozpočet překročen: {0}": "Budget exceeded: {0}",
   "Vyčerpáno {0} % rozpočtu: {1}": "{0} % of the budget used: {1}",
   "Tento měsíc {0} z {1}.": "{0} of {1} this month.",
+  "Tento měsíc {0} ze {1}.": "{0} of {1} this month.",
 
   // src/subscriptions.js
   "přihlášený účet Claude Code (typ účtu {0}, úroveň {1})": "the signed-in Claude Code account (account type {0}, tier {1})",
