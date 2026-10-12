@@ -513,6 +513,7 @@ function zakladniStav() {
   seznam.pripojeno = false;
   $('outdated').hidden = true;
   $('konverzace').hidden = true;
+  delete $('konverzace').dataset.podpis; // Reconnect must re-render even unchanged data.
   $('filtry-konverzaci').hidden = true;
   $('prazdne-konverzace').hidden = true;
   $('agenti').hidden = true;
