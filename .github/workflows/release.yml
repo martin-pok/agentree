@@ -251,6 +251,13 @@ jobs:
           VERZE: ${{ steps.popis.outputs.verze }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
+            # Never mutate publicly released binaries/checksums or release notes
+            # through a rebuild. Only an unpublished draft can be refreshed.
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq .isDraft)
+            if [ "$IS_DRAFT" != "true" ]; then
+              echo "::error::Release $TAG is already public; refusing to overwrite published assets."
+              exit 1
+            fi
             gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg prilohy/SHA256SUMS.txt --clobber
             gh release edit "$TAG" --notes-file poznamky.md
           else
