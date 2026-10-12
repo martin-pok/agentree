@@ -117,3 +117,14 @@ test('historical preview delivery listeners do not fire on every completed CI ru
   assert.ok(soubory.includes('release.yml'), 'manual release build must remain available');
   assert.ok(soubory.includes('publish.yml'), 'explicit publication workflow must remain available');
 });
+
+
+test('CI does not start duplicate push and pull_request matrices for feature branches', () => {
+  const workflow = workflowy.find(({ f }) => f === 'test.yml')?.yml || '';
+  const triggers = workflow.slice(0, workflow.indexOf('\nconcurrency:'));
+  assert.match(triggers, /\n  push:\n    branches: \[main\]/, 'push CI belongs to main only');
+  assert.match(triggers, /\n  pull_request:/, 'feature branches run the complete matrix through a PR');
+  assert.match(triggers, /\n  workflow_dispatch:/, 'maintainers can explicitly run CI');
+  assert.doesNotMatch(triggers, /branches: \['\*\*'\]/, 'all-branches push CI duplicates PR checks');
+  assert.match(workflow, /cancel-in-progress: true/, 'new commits cancel obsolete PR runs');
+});

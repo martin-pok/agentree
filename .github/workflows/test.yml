@@ -7,13 +7,15 @@
 name: Testy
 
 on:
+  # Run branches through their PR only; pushing to an open PR otherwise duplicates the
+  # same 8-job matrix and cancel-in-progress can kill half of each run.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
-# One current validation per branch. A PR and its push share the same branch key;
-# superseded workflow runs are cancelled before consuming test runners.
+# One current validation per PR, plus one per main push. Superseded commits cancel
+# earlier runs without competing with a second push event for the same PR branch.
 concurrency:
   group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
