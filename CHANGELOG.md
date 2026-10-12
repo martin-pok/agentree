@@ -6,6 +6,12 @@
 - Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
 - Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
 
+## Rozpracováno po 0.46.7 · přístup ke změnám přímo před aktualizací (nevydáno)
+
+- **Jasný changelog:** když je nová ověřená verze dostupná, Nastavení → Aktualizace nabízí odkaz na poznámky příslušného zveřejněného GitHub releasu, nikoli pouze číslo aktualizace.
+- **Bez záměny draftu:** dialog „Co je nového“ ukazuje jen vydání, která jsou nanejvýš ve verzi skutečně nainstalované aplikace. Budoucí zdrojové záznamy se nevydávají za hotové a nainstalované.
+- **CZ/EN a QA:** odkaz a historické filtrování mají anglickou lokalizaci a regresní testy. Novinka se projeví až v nové verzi aplikace; není to změna ve starších instalátorech.
+
 ## Rozpracováno po 0.46.7 · rychlejší a úspornější aktualizace (nevydáno)
 
 - **Jeden skutečný download:** souběžné kliknutí na stažení stejného balíčku využije jediný HTTP přenos a jeden bezpečně ověřený archiv místo zbytečného vícenásobného stahování.
