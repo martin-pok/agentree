@@ -118,3 +118,82 @@ test('same-name in-flight downloads use unique temp files and do not leave corru
   assert.deepEqual(await files(dir), [name]);
   assert.deepEqual(await fs.readFile(path.join(dir, 'updates', name)), bytes);
 });
+
+
+test('three simultaneous identical download requests share one network transfer and one atomic file', async () => {
+  const dir = await tempDir('agenteeq-update-coalesce-');
+  const bytes = Buffer.alloc(512 * 1024, 73);
+  let transfers = 0;
+  let releaseBody;
+  const waiting = new Promise(resolve => { releaseBody = resolve; });
+  const service = makeService(dir, async request => {
+    if (request === RELEASE_URL) return new Response(JSON.stringify(metadata(bytes)), { status: 200 });
+    transfers++;
+    return waiting;
+  });
+  assert.equal((await service.check()).status, 'available');
+  const a = service.download();
+  const b = service.download();
+  const c = service.download();
+  assert.strictEqual(a, b, 'all same-asset calls must reuse one Promise');
+  assert.strictEqual(b, c);
+  assert.equal(transfers, 1, 'one download, not three network requests');
+  releaseBody(new Response(fakeStream([bytes.subarray(0, 4), bytes.subarray(4)])));
+  const values = await Promise.all([a, b, c]);
+  assert.ok(values.every(x => x.ok));
+  assert.equal(transfers, 1);
+  assert.deepEqual(await files(dir), [name]);
+  assert.deepEqual(await fs.readFile(path.join(dir, 'updates', name)), bytes);
+});
+
+test('asset SHA changed while old download is pending: new transfer is not coalesced with stale bytes', async () => {
+  const dir = await tempDir('agenteeq-update-coalesce-digest-');
+  const bytesA = Buffer.from('archive-old-digest-A');
+  const bytesB = Buffer.from('archive-new-digest-B');
+  let current = bytesA;
+  let resolveOld;
+  const oldTransfer = new Promise(resolve => { resolveOld = resolve; });
+  let transfers = 0;
+  const service = makeService(dir, async request => {
+    if (request === RELEASE_URL) return new Response(JSON.stringify(metadata(current)), { status: 200 });
+    transfers++;
+    return transfers === 1 ? oldTransfer : new Response(bytesB, { status: 200 });
+  });
+  assert.equal((await service.check()).status, 'available');
+  const stale = service.download();
+  current = bytesB;
+  assert.equal((await service.check()).status, 'available');
+  const fresh = service.download();
+  assert.notStrictEqual(stale, fresh);
+  assert.equal((await fresh).ok, true);
+  resolveOld(new Response(bytesA, { status: 200 }));
+  assert.equal((await stale).status, 409, 'outdated content must never be promoted to available');
+  assert.equal(transfers, 2);
+  assert.equal(service.state().status, 'downloaded');
+  assert.deepEqual(await fs.readFile(service.downloadedPath()), bytesB);
+  assert.deepEqual(await files(dir), [name], 'stale generation leaves no temporary files');
+});
+
+test('failed shared transfer is removed from in-flight cache so retry can succeed', async () => {
+  const dir = await tempDir('agenteeq-update-coalesce-retry-');
+  const bytes = Buffer.from('correct validated archive');
+  let transfers = 0;
+  const service = makeService(dir, async request => {
+    if (request === RELEASE_URL) return new Response(JSON.stringify(metadata(bytes)), { status: 200 });
+    transfers++;
+    return transfers === 1
+      ? { ok: true, headers: new Headers(), body: fakeStream([bytes.subarray(0, 2)], { broken: true }) }
+      : new Response(bytes, { status: 200 });
+  });
+  assert.equal((await service.check()).status, 'available');
+  const brokenA = service.download();
+  const brokenB = service.download();
+  assert.strictEqual(brokenA, brokenB);
+  assert.equal((await brokenA).status, 502);
+  assert.equal((await brokenB).status, 502);
+  assert.deepEqual(await files(dir), [], 'failed shared transfer never leaves a published archive');
+  const retry = await service.download();
+  assert.equal(retry.ok, true, retry.error);
+  assert.equal(transfers, 2);
+  assert.deepEqual(await fs.readFile(service.downloadedPath()), bytes);
+});
