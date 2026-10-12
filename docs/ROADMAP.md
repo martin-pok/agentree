@@ -47,18 +47,19 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 
 **Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
 
-## Právě teď — cesta od 0.46.1 k dalšímu releasu
+## Právě teď — vydání 0.46.7 Preview a skutečné UAT
 
-| Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
+| Priorita | Výsledek | Aktuální stav (12. 10. 2026) | Hotovo, až když… |
 |---|---|---|---|
-| P0 | Stabilní hlavní větev | CI běží; výsledek nového HEAD zatím nepotvrzen | `check`, unit testy, macOS/Windows/Linux, browser QA a Chrome Store QA na stejném SHA jsou zelené |
-| P0 | Vydání 0.46.1 bez nesouladu souborů | Zdrojová verze 0.46.1; veřejný release zatím 0.46.0 | Workflow z tagu `v0.46.1` sestaví odpovídající Mac, Windows a extension balíčky; kontrola jejich verzí a kontrolních součtů projde; koncept je po výslovném schválení zveřejněn |
-| P0 | Jediná aktuální identita Agenteeq | Aktivní SVG a odstraněná historická robotí předloha; binární assety neprošly úplnou vizuální kontrolou | Vizuálně porovnané PNG/ICO/ICNS, screenshoty, instalátor, Dock a Chrome Store; žádný trojzubec ani staré logo |
-| P0 | Správné údaje a bezpečné připojení | Implementované automatické párování a kontrola původu zpráv; živé poskytovatelské scénáře neověřeny | Reálná kontrola přihlášení, výpadku, obnovení a odvolání přístupu; u odvozených dat viditelný zdroj a stáří |
-| P1 | AI pomocník, který skutečně poradí | Kontextová navigace a první diagnostika z lokálního snapshotu; obecné vysvětlení aplikace CZ/EN a poloha historie opraveny; pokrytí je stále omezené | CZ/EN sada běžných dotazů, neznámé chyby, navazující otázky, správné odkazy; odpovědi nezaměňují domněnky za fakta; měřená latence a spolehlivost |
-| P1 | Udržovatelná Chrome extension | Content skripty a párování mají regresní testy; popup zůstává velký modul | Oddělené UI, stav a transport; bezpečnostní a DOM regresní testy; ruční ověření podporovaných služeb |
-| P1 | Sjednocené texty CZ/EN | Upraven pomocník a vybrané texty landing page; úplný obsahový audit neskončil | Stavové hlášky, onboarding, nastavení, extension, emaily a web ověřeny proti [VOICE-AND-COPY.md](VOICE-AND-COPY.md) |
-| P2 | Komerční připravenost | Právní, platební a distribuční úkoly zůstávají otevřené | DPA, právní posouzení, podpis/notarizace macOS a reálné QA Windows |
+| P0 | Bezpečný release 0.46.7 Preview | Kandidát na PR #156; balíček **není vydaný**, povinné CI a merge nejsou potvrzené | 8/8 CI kandidáta i shodného `main` SHA, Mac/Windows/extension balíčky a SHA-256, ruční publikace výhradně jako Preview |
+| P0 | Oddělené kanály Stable / Preview | Stable Latest je `v0.46.0`, veřejný Preview je `v0.46.6`; PR #156 opravuje publikovací workflow | Preview ponechá `Latest` beze změny, Stable vyžaduje samostatnou volbu i potvrzení a je pokryto testy |
+| P0 | Google OAuth a profilová fotka | Zabezpečení stahování fotky sloučeno v PR #155, nativní Google přihlášení a avatar na Macu **neověřeny** | Úspěšné i odmítnuté přihlášení, logout, offline návrat, foto, přesměrování a upgrade doložené na reálném Macu |
+| P0 | Vizuální identita v distribuované aplikaci | Binární assety pro Mac a Windows mají regresní testy, ale chybí pixelová vizuální kontrola na zařízení | Ručně porovnaný Dock, menu bar, DMG, ICO/ICNS i skutečné Chrome Store screenshoty proti schválenému masteru |
+| P0 | Živý stav a návrat do konverzace | Opravy pro agent decisions a Terminál vyšly v `0.46.6 Preview`; reálný Terminál, iTerm a Warp UAT zbývá | Při běžící session se nevytvoří kopie, agent čeká skutečně tam, kam akce vede, odvozený stav je přiznaný |
+| P1 | Web výkon a kvalita napříč zařízeními | V kódu jsou automatizované responzivní a výkonové kontroly; produkční PSI ani Safari+iPhone UAT nejsou doložené | Produkční crawl, Lighthouse/PSI, Safari iPhone/iPad, 320–3840 px, reduced motion a Core Web Vitals s pravdivým výsledkem |
+| P1 | Chrome Store a konektory | Rozšíření je veřejné, ale finální upload aktuálního ZIP a živé DOM testy podporovaných webů zbývají | Přesná verze v obchodě, screenshoty skutečného UI, každý konektor odzkoušený na živé službě |
+| P1 | AI Pomocník a copy CZ/EN | Implementovaná diagnostika z lokálního stavu; neověřené případy a obsahový audit zbývají | Sada testů CZ/EN, chybové stavy, navazující dotazy, přesná navigace a audit textů |
+| P2 | Komerční připravenost | Developer ID/notarizace, DPA a platby nejsou uzavřené | Zákonné dokumenty, podepsané instalátory, reálné Windows QA a ověřený nákup/licence |
 
 ## Backlog — další vývoj po stabilizaci
 
