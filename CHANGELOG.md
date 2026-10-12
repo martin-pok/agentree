@@ -1,5 +1,12 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · rozšíření přiznává neúplné sledování (nevydáno)
+
+- **Pravdivý stav Chrome extension:** jestliže Mac nedokáže přečíst seznam procesů, okno to výslovně ukáže, i když současně ví o běžících agentech nebo čekajícím rozhodnutí.
+- **Správná priorita:** chyba či požadavek na rozhodnutí zůstává hlavní zprávou; upozornění o neúplném sledování je jen krátká doplňující informace, bez duplicitního textu a bez dalších maskotů.
+- **Soukromí a QA:** do rozšíření se předává pouze boolean o nejistotě, žádné údaje o procesech, přepisy či cesty. Regresní testy kontrolují český a anglicky překládaný text i stav označení.
+- Změna dosud není v distribuovaném Chrome Store balíčku ani v draftu macOS 0.46.7.
+
 ## Rozpracováno po 0.46.7 · úsporné a bezpečné stahování velkých aktualizací (zatím nevydáno)
 
 - **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
