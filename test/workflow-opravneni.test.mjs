@@ -16,11 +16,7 @@ const workflowy = await Promise.all(soubory.map(async (f) => ({ f, yml: await fs
 const ZAPIS = {
   'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
-  // Keep only the pending/current release-specific delivery workflow. Historical releases remain immutable in GitHub.
-  'release-0466-preview.yml': {
-    'start-preview-build': 'spustit přesnou 0.46.6 pouze po zeleném main CI',
-    'publish-preview': 'ověřit shodný tag, kompletní přílohy a SHA-256 manifest',
-  },
+
 };
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
@@ -115,32 +111,9 @@ test('workflowy: vydání zůstává konceptem a souběžné běhy pro týž tag
   assert.doesNotMatch(vydani.slice(0, vydani.search(/^jobs:/m)), /secrets\./, 'tajemství nepatří do env celého workflow');
 });
 
-test('retired preview delivery workflows cannot fire on every completed main CI', () => {
+test('historical preview delivery listeners do not fire on every completed CI run', () => {
   const previews = soubory.filter((name) => /^release-\d{4}-preview\.yml$/.test(name));
-  assert.deepEqual(previews, ['release-0466-preview.yml'], 'keep only the current unpublished preview workflow');
-  for (const old of ['0461', '0462', '0463', '0464', '0465']) {
-    assert.equal(soubory.includes(`release-${old}-preview.yml`), false,
-      `historical ${old} release workflow still triggers on every run`);
-  }
-});
-
-test('0.46.6 Preview publication requires verified exact-SHA main CI, binaries and manifest', () => {
-  const workflow = workflowy.find(({ f }) => f === 'release-0466-preview.yml')?.yml;
-  assert.ok(workflow, 'missing 0.46.6 Preview delivery workflow');
-  const jobs = ulohy(workflow);
-  const start = jobs['start-preview-build'];
-  const publish = jobs['publish-preview'];
-  assert.ok(start && publish);
-  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
-  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
-  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
-  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
-  assert.match(start, /VERSION.*0\.46\.6/);
-  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.6/);
-  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
-  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
-  assert.match(publish, /Agenteeq-macOS-arm64\.dmg/);
-  assert.match(publish, /agenteeq-extension-0\.46\.6\.zip/);
-  assert.match(publish, /SHA256SUMS\.txt/);
-  assert.match(publish, /--draft=false --prerelease --latest=false/);
+  assert.deepEqual(previews, [], 'completed preview versions must not retain active workflow_run listeners');
+  assert.ok(soubory.includes('release.yml'), 'manual release build must remain available');
+  assert.ok(soubory.includes('publish.yml'), 'explicit publication workflow must remain available');
 });
