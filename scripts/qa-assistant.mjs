@@ -52,7 +52,12 @@ try {
           await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
           await page.mouse.wheel(0, -2000);
           await page.waitForFunction(() => document.querySelector('.pm-log').scrollTop < 200);
-          const reading = await page.locator('.pm-log').evaluate((log) => log.scrollTop);
+          // Mouse wheel scrolling can still be in flight (especially in WebKit).
+          // Fix the user-intended reading location after the gesture settles,
+          // then verify both sync re-render and delayed server replies preserve it.
+          await page.waitForTimeout(180);
+          const reading = await page.locator('.pm-log').evaluate((log) => { log.scrollTop = 0; return log.scrollTop; });
+          assert.equal(reading, 0, 'reader is looking at oldest visible chat message');
           await page.evaluate(() => document.dispatchEvent(new CustomEvent('agenteeq:pomocnik')));
           assert.ok(Math.abs((await page.locator('.pm-log').evaluate((log) => log.scrollTop)) - reading) <= 2, 're-render must retain reading position');
           release();
