@@ -972,7 +972,7 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Souhrny – tokeny, útrata, limity a počty agentů – se teď synchronizují do tvého účtu a uvidíš je i na webu. Konverzace a kód dál zůstávají jen na {0}. Synchronizaci vypneš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
+        <p>${tr('Přihlášení přes Google je ověřené. Synchronizace souhrnů – tokenů, útraty, limitů a počtů agentů – se spustí zvlášť. Na webu se data zobrazí až po úspěšném přenosu. Konverzace a kód zůstávají na {0}. Stav synchronizace ověříš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {

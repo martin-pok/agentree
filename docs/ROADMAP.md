@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav k 11. 10. 2026.** Pracovní verze v `package.json` je **0.46.1**; poslední potvrzené veřejné vydání na GitHubu je **v0.46.0** (9. 10. 2026). Změny v `main` nejsou automaticky součástí stažitelné aplikace. CI pro aktuální HEAD v okamžiku revize ještě běželo, proto není označené jako hotové.
+**Stav k 11. 10. 2026.** Veřejná testovací verze **v0.46.1 Preview** byla publikována 11. 10. 2026 (CI 7/7); poslední stabilní vydání **v0.46.0** zůstává Latest. Další kandidát **0.46.2 Preview** řeší ověření připojení, pravdivou čerstvost dat a zabezpečení webových konektorů; dostupný bude až po integraci PR #136, kompletním CI a vydání binárek. Stav zdrojového kódu v `main` není totožný s instalovanou verzí.
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 

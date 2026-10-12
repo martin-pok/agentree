@@ -1,0 +1,127 @@
+# One-time v0.46.3 preview: start the version-pinned draft and publish it
+# only after the exact Git tag, main CI and release build are all verified.
+# This is not the stable/latest release, and must not run on a PR event.
+name: 0.46.3 Preview Delivery
+
+on:
+  workflow_run:
+    workflows: ["Testy"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 0463-preview-delivery
+  cancel-in-progress: false
+
+jobs:
+  start-preview-build:
+    if: >-
+      github.event.workflow_run.name == 'Testy' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch exact green main version only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          MAIN_SHA=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+          if [ "$MAIN_SHA" != "$TESTED_SHA" ]; then
+            echo "::notice::Main advanced; skipping stale CI."
+            exit 0
+          fi
+          VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
+          if [ "$VERSION" != "0.46.3" ]; then
+            echo "::notice::Current version is not 0.46.3."
+            exit 0
+          fi
+          if gh release view v0.46.3 --repo "$REPO" --json isDraft,assets > draft.json 2>/dev/null; then
+            if jq -e '.isDraft == false' draft.json >/dev/null; then
+              echo "::notice::0.46.3 is already published."
+              exit 0
+            fi
+            if jq -e '[.assets[].name] as $names |
+              ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
+               "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.3.zip"] |
+              all(. as $name | $names | index($name) != null)' draft.json >/dev/null; then
+              echo "::notice::Draft assets are complete; publish gate will verify the build."
+              exit 0
+            fi
+          fi
+          gh workflow run release.yml --repo "$REPO" --ref main -f tag=v0.46.3
+          echo "::notice::Dispatched verified 0.46.3 build."
+
+  publish-preview:
+    needs: start-preview-build
+    if: needs.start-preview-build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Wait for verified draft and publish as prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          TAG=v0.46.3
+          for attempt in $(seq 1 105); do
+            CURRENT_SHA=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+            if [ "$CURRENT_SHA" != "$TESTED_SHA" ]; then
+              echo "::notice::Main has changed; will not publish an outdated candidate."
+              exit 0
+            fi
+            VERSION=$(gh api "repos/$REPO/contents/package.json?ref=main" --jq '.content' | base64 -d | node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>console.log(JSON.parse(s).version))')
+            if [ "$VERSION" != "0.46.3" ]; then
+              echo "::notice::Preview version no longer current."
+              exit 0
+            fi
+            if gh release view "$TAG" --repo "$REPO" --json isDraft,assets > draft.json 2>/dev/null; then
+              if jq -e '.isDraft == false' draft.json >/dev/null; then
+                echo "::notice::Already published, no duplicate edits."
+                exit 0
+              fi
+              if gh api "repos/$REPO/git/ref/tags/$TAG" > tag.json 2>/dev/null; then
+                TAG_SHA=$(jq -r '.object.sha' tag.json)
+                TAG_TYPE=$(jq -r '.object.type' tag.json)
+                if [ "$TAG_TYPE" = "tag" ]; then
+                  TAG_SHA=$(gh api "repos/$REPO/git/tags/$TAG_SHA" --jq '.object.sha')
+                fi
+                if [ "$TAG_SHA" != "$TESTED_SHA" ]; then
+                  echo "::error::Release tag points at a different commit."
+                  exit 1
+                fi
+                # Verify that the full release builder completed for the EXACT tag SHA.
+                FINISHED=$(gh api "repos/$REPO/actions/workflows/release.yml/runs?head_sha=$TAG_SHA&per_page=40" |
+                  jq -r --arg sha "$TAG_SHA" '[.workflow_runs[] |
+                    select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | length')
+                if [ "$FINISHED" -gt 0 ] && jq -e '
+                  [.assets[] | select(.size > 100000) | .name] as $names |
+                  ["Agenteeq-macOS-arm64.dmg", "Agenteeq-macOS-arm64.zip",
+                   "Agenteeq-Windows-x64.zip", "agenteeq-extension-0.46.3.zip"] |
+                  all(. as $name | $names | index($name) != null)' draft.json >/dev/null; then
+                  echo "All gates satisfied: exact main CI, exact tag, completed release builder and complete binary assets."
+                  gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease --latest=false
+                  gh release view "$TAG" --repo "$REPO" --json isDraft,isPrerelease,url,assets
+                  exit 0
+                fi
+              fi
+            fi
+            echo "Build not ready (check $attempt/105); will recheck."
+            sleep 20
+          done
+          echo "::error::Preview was not safely publishable within the release window."
+          exit 1

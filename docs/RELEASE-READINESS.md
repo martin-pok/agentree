@@ -4,8 +4,8 @@
 
 ## Zdroj pravdy
 
-- Aktuální pracovní verze: `package.json` (`0.46.1` k datu revize).
-- Nejnovější potvrzené **zveřejněné** vydání: GitHub Releases — `v0.46.0` (9. 10. 2026). Koncepty vydání nejsou veřejně stažitelné.
+- Aktuální pracovní kandidát: `package.json` (`0.46.2` v release přípravné větvi).
+- Poslední potvrzené **zveřejněné** Preview: GitHub Releases — `v0.46.1` (11. 10. 2026); stabilní Latest zůstává `v0.46.0` (9. 10. 2026). Nové 0.46.2 není zveřejněno. Koncepty vydání nejsou veřejně stažitelné.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
 

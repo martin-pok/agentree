@@ -70,8 +70,8 @@ test('DMG: workflow Vydání ho sestaví po aplikaci, přiloží a zkopíruje po
   assert.match(yml, /zkopiruj 'Agenteeq-\*-Windows-x64\.zip' Agenteeq-Windows-x64\.zip/, 'tlačítko pro Windows potřebuje stálé jméno');
   assert.match(yml, /zkopiruj 'Agenteeq-\*-macOS-arm64\.zip' Agenteeq-macOS-arm64\.zip/);
   assert.match(yml, /return 1/, 'chybějící příloha zastaví vydání');
-  assert.match(yml, /gh release create "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg/);
-  assert.match(yml, /gh release upload "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg --clobber/);
+  assert.match(yml, /gh release create "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg prilohy\/SHA256SUMS\.txt/);
+  assert.match(yml, /gh release upload "\$TAG" prilohy\/\*\.zip prilohy\/\*\.dmg prilohy\/SHA256SUMS\.txt --clobber/);
 });
 
 test('DMG: odpojuje se zařízení z výpisu attach – přípojný bod po prvním pokusu může zmizet', () => {
