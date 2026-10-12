@@ -206,6 +206,29 @@ async function prehled() {
   }
 }
 
+// A user click in the popup may bring an EXISTING local agent forward in the
+// native Mac window. This must not be callable by a page content script, must
+// not disclose the desktop's localKey, and never opens a localhost browser tab.
+async function focusExistingAgent(id) {
+  await pairingReset;
+  if (typeof id !== 'string' || !id || id.length > 200) return { ok: false };
+  const t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t) return { ok: false, unpaired: true };
+  try {
+    const res = await fetch(`${await zaklad()}/api/extension/focus-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
+      body: JSON.stringify({ id }),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.status === 401) await forgetToken();
+    const body = await res.json().catch(() => ({}));
+    return res.ok && body.ok ? { ok: true } : { ok: false, unpaired: res.status === 401, error: typeof body.error === 'string' ? body.error.slice(0, 240) : '' };
+  } catch {
+    return { ok: false, offline: true };
+  }
+}
+
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
 async function hello({ hned = false, znovu = false } = {}) {
@@ -294,6 +317,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  } else if (msg?.type === 'agenteeq:focus-agent') {
+    // Only the extension's own popup can request native window focus. Scripts
+    // injected into supported AI websites are explicitly excluded.
+    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+      sendResponse({ ok: false }); return false;
+    }
+    focusExistingAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
     prehled().then(sendResponse, () => sendResponse(null));
