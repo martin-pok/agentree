@@ -232,11 +232,11 @@ test('0.46.4 icon preview is pinned to exact green main SHA and never promoted t
   assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
   assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
   assert.match(start, /MAIN_SHA.*TESTED_SHA/);
-  assert.match(start, /VERSION.*0\.46\.3/);
-  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.3/);
+  assert.match(start, /VERSION.*0\.46\.4/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.4/);
   assert.match(publish, /TAG_SHA.*TESTED_SHA/);
   assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
-  assert.match(publish, /agenteeq-extension-0\.46\.3\.zip/);
+  assert.match(publish, /agenteeq-extension-0\.46\.4\.zip/);
   assert.match(publish, /\.size > 100000/);
   assert.match(publish, /--draft=false --prerelease --latest=false/);
 });
