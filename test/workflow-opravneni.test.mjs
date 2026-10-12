@@ -116,7 +116,7 @@ test('workflowy: vydání zůstává konceptem a souběžné běhy pro týž tag
 });
 
 test('retired preview delivery workflows cannot fire on every completed main CI', () => {
-  const previews = soubory.filter((name) => /^release-\\d{4}-preview\\.yml$/.test(name));
+  const previews = soubory.filter((name) => /^release-\d{4}-preview\.yml$/.test(name));
   assert.deepEqual(previews, ['release-0466-preview.yml'], 'keep only the current unpublished preview workflow');
   for (const old of ['0461', '0462', '0463', '0464', '0465']) {
     assert.equal(soubory.includes(`release-${old}-preview.yml`), false,
