@@ -321,3 +321,28 @@ test('macOS installer refuses replacing a local app with invalid version metadat
   assert.deepEqual(await p.log(), [API]);
   assert.equal(await p.znacka(), 'preserve-unknown');
 });
+
+
+test('installed vs offered Stable SemVer uses 3 numeric components without integer overflow', { skip: spawnSync('bash', ['--version']).error && 'bash not available' }, async () => {
+  const script = await fs.readFile(SKRIPT, 'utf8');
+  const begin = script.indexOf('installed_newer_than_release() {');
+  const end = script.indexOf('\n}\n', begin);
+  assert.ok(begin >= 0 && end > begin, 'install script exports a standalone numeric comparator');
+  const functionDefinition = script.slice(begin, end + 2);
+  const check = (installed, offered) => spawnSync('bash', ['-c',
+    functionDefinition + '\ninstalled_newer_than_release "$1" "$2"', '--', installed, offered], { encoding: 'utf8' });
+  for (const [installed, offered, expected] of [
+    ['0.46.6', '0.46.0', 0],
+    ['0.46.10', '0.46.9', 0],
+    ['0.46.9', '0.46.10', 1],
+    ['1.0.0', '0.99.99', 0],
+    ['0.46.0', '0.46.0', 1],
+    ['0.46.7', '1.0.0', 1],
+    ['0.99999999999999999999999999.0', '0.46.0', 0],
+    ['not-a-version', '0.46.0', 2],
+  ]) {
+    const result = check(installed, offered);
+    assert.equal(result.status, expected,
+      'SemVer ' + installed + ' vs ' + offered + ': ' + result.stderr);
+  }
+});
