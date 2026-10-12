@@ -7,6 +7,7 @@ import { ARCHITECTURE, PLATFORM } from './platform.js';
 // Jediný zdroj aktualizací je veřejný release stejného repozitáře. URL ani název souboru nikdy
 // nepřicházejí z prohlížeče; odpověď GitHubu je navíc tvarově ověřená dřív, než se ukáže v UI.
 export const RELEASE_URL = 'https://api.github.com/repos/martin-pok/agentree/releases/latest';
+export const PREVIEW_RELEASES_URL = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=30';
 const SEMVER = /^(?:v)?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const MAX_PACKAGE_BYTES = 500 * 1024 * 1024;
 // GitHub u každé přílohy vydání zveřejňuje otisk obsahu. Balíček bez něj se nestahuje.
@@ -42,13 +43,13 @@ function empty(version, status = 'checking') {
   return { status, currentVersion: version, checkedAt: 0, latestVersion: '', asset: null, downloaded: null, error: '' };
 }
 
-function validRelease(payload, version, target) {
-  if (!payload || typeof payload !== 'object' || payload.draft || payload.prerelease) return null;
+function validRelease(payload, version, target, allowPreview = false) {
+  if (!payload || typeof payload !== 'object' || payload.draft || (payload.prerelease && !allowPreview)) return null;
   const latestVersion = String(payload.tag_name || '').replace(/^v/, '');
   if (compareVersions(latestVersion, version) !== 1) return { latestVersion: parseVersion(latestVersion) ? latestVersion : '', asset: null };
   const wanted = assetName(latestVersion, target);
   const asset = Array.isArray(payload.assets)
-    ? payload.assets.find((item) => item && item.name === wanted && typeof item.browser_download_url === 'string' && /^https:\/\/github\.com\/martin-pok\/agentree\/releases\/download\//.test(item.browser_download_url))
+    ? payload.assets.find((item) => item && item.name === wanted && item.browser_download_url === `https://github.com/martin-pok/agentree/releases/download/v${latestVersion}/${wanted}`)
     : null;
   if (!asset) return { latestVersion, asset: null };
   const size = Number(asset.size);
@@ -56,6 +57,16 @@ function validRelease(payload, version, target) {
   const sha256 = typeof asset.digest === 'string' ? asset.digest.match(DIGEST)?.[1] : null;
   if (!sha256) return { latestVersion, asset: null };
   return { latestVersion, asset: { name: wanted, url: asset.browser_download_url, size, sha256 } };
+}
+
+// Preview is explicit opt-in. Consider published releases by numeric version, not GitHub
+// listing order, and never select a draft or a malformed/non-versioned tag.
+function newestPreviewRelease(payload, version, target) {
+  if (!Array.isArray(payload)) return null;
+  const published = payload.filter((r) => r && r.draft === false && parseVersion(r.tag_name));
+  published.sort((a, b) => compareVersions(b.tag_name, a.tag_name));
+  const latest = published[0];
+  return latest ? validRelease(latest, version, target, true) : { latestVersion: version, asset: null };
 }
 
 async function responseBytes(response, expected) {
@@ -104,9 +115,11 @@ async function responseBytes(response, expected) {
 }
 
 export class UpdateService {
-  constructor({ version, dataDir, fetchImpl = globalThis.fetch, platform = PLATFORM, arch = ARCHITECTURE, enabled = true, now = () => Date.now() } = {}) {
+  constructor({ version, dataDir, fetchImpl = globalThis.fetch, platform = PLATFORM, arch = ARCHITECTURE, enabled = true, channel = 'stable', now = () => Date.now() } = {}) {
+    if (!['stable', 'preview'].includes(channel)) throw new Error('Invalid update channel');
     if (!parseVersion(version)) throw new Error(ui('Služba aktualizací potřebuje platnou verzi.'));
     this.version = version;
+    this.channel = channel;
     this.dataDir = dataDir;
     this.fetch = fetchImpl;
     this.target = { platform, arch };
@@ -116,28 +129,43 @@ export class UpdateService {
     this.inFlight = null;
   }
 
-  state() { return { ...this.value, asset: this.value.asset ? { ...this.value.asset } : null, downloaded: this.value.downloaded ? { ...this.value.downloaded } : null }; }
+  state() { return { ...this.value, channel: this.channel, asset: this.value.asset ? { ...this.value.asset } : null, downloaded: this.value.downloaded ? { ...this.value.downloaded } : null }; }
 
-  async check() {
+  async check(channel = this.channel) {
+    if (!['stable', 'preview'].includes(channel)) throw new Error('Invalid update channel');
+    if (channel !== this.channel) {
+      this.channel = channel;
+      // Switching channels invalidates an old available/downloaded update and its
+      // in-flight response, so a stale stable reply cannot overwrite Preview.
+      this.value = empty(this.version, this.enabled ? 'checking' : 'disabled');
+      this.inFlight = null;
+    }
     if (!this.enabled) {
       this.value = empty(this.version, 'disabled');
       return this.state();
     }
     if (this.inFlight) return this.inFlight;
-    this.inFlight = this.#check().finally(() => { this.inFlight = null; });
-    return this.inFlight;
+    const pending = this.#check(channel).finally(() => {
+      if (this.inFlight === pending) this.inFlight = null;
+    });
+    this.inFlight = pending;
+    return pending;
   }
 
-  async #check() {
+  async #check(channel) {
     const checkedAt = this.now();
     const previous = this.value;
     try {
-      const response = await this.fetch(RELEASE_URL, {
+      const response = await this.fetch(channel === 'preview' ? PREVIEW_RELEASES_URL : RELEASE_URL, {
         headers: { Accept: 'application/vnd.github+json', 'User-Agent': `Agenteeq/${this.version}` },
         cache: 'no-store', signal: AbortSignal.timeout(12_000),
       });
       if (!response.ok) throw new Error(ui('Zdroj aktualizací teď neodpovídá.'));
-      const release = validRelease(await response.json(), this.version, this.target);
+      const payload = await response.json();
+      if (channel !== this.channel) return this.state();
+      const release = channel === 'preview'
+        ? newestPreviewRelease(payload, this.version, this.target)
+        : validRelease(payload, this.version, this.target);
       if (!release) throw new Error(ui('Zdroj aktualizací poslal neplatná data.'));
       if (release.asset) {
         const sameDownloaded = previous.status === 'downloaded' && previous.latestVersion === release.latestVersion && previous.downloaded?.name === release.asset.name;
@@ -150,6 +178,7 @@ export class UpdateService {
         this.value = { ...empty(this.version, 'current'), checkedAt, latestVersion: release.latestVersion || this.version };
       }
     } catch (err) {
+      if (channel !== this.channel) return this.state();
       this.value = { ...empty(this.version, 'error'), checkedAt, error: err?.message || ui('Aktualizace se nepodařilo zkontrolovat.') };
     }
     return this.state();
