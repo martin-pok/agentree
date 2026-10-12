@@ -1,11 +1,24 @@
 # Changelog
 
-## Rozpracováno po 0.46.7 · rozšíření přiznává neúplné sledování (nevydáno)
+## Rozpracováno po 0.46.7 · Chrome extension: pravdivá částečná detekce (dosud nevydáno)
 
-- **Pravdivý stav Chrome extension:** jestliže Mac nedokáže přečíst seznam procesů, okno to výslovně ukáže, i když současně ví o běžících agentech nebo čekajícím rozhodnutí.
-- **Správná priorita:** chyba či požadavek na rozhodnutí zůstává hlavní zprávou; upozornění o neúplném sledování je jen krátká doplňující informace, bez duplicitního textu a bez dalších maskotů.
-- **Soukromí a QA:** do rozšíření se předává pouze boolean o nejistotě, žádné údaje o procesech, přepisy či cesty. Regresní testy kontrolují český a anglicky překládaný text i stav označení.
-- Změna dosud není v distribuovaném Chrome Store balíčku ani v draftu macOS 0.46.7.
+- Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.
+- API přenáší pouze boolean `procesyNevim`, žádný přepis, cestu ani soukromé údaje. Současné filtry konverzací zůstávají beze změny.
+- Změna je **po tagu v0.46.7**; žádný už sestavený DMG ani veřejné rozšíření se nepřepisuje.
+
+## Rozpracováno po 0.46.7 · Chrome extension: pracovní filtr konverzací (zatím nevydáno)
+
+- **Rychlé soustředění:** při více otevřených webových AI chatech je možné filtrovat Vše / Odpovídají / Limity, s pravdivým počtem v každém stavu. Přepnutí nevyvolá žádné síťové ani cloudové požadavky a respektuje uživatelem vypnuté služby.
+- **Čerstvý stav má přednost:** otevřená karta používá diagnostiku skutečné stránky, ne starou hodnotu z background cache; ztráta aktuální diagnostiky nesmí skrýt dříve potvrzený chat.
+- **Přístupnost a minimalismus:** tlačítka mají `aria-pressed`, fungují z klávesnice, při nulovém výsledku se zobrazí věta, nikoliv prázdná plocha. Filtry se u jedné konverzace neukazují.
+- **Design QA:** odstraněna jednostranná mosazná linka u aktuální karty, místo ní subtilní celoplošné zvýraznění v design tokenech; nepřidává nové roboty ani ilustrace.
+- **Kontroly:** regresní `node:test` + skutečné popup interakce v Chromium/WebKit při světlém a tmavém tématu, kontrola limitu Chrome 600 px. Tento kód **není** v již vytvořeném draftu v0.46.7 ani v Chrome Web Store.
+
+## Rozpracováno po 0.46.7 · pravdivá verze na veřejném webu (nevydáno)
+
+- **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
+- **Stejná pravidla CZ/EN:** obě jazykové varianty zachovávají validní strukturovaná data i odkaz ke skutečně zveřejněnému Stable a odstraňují neověřené `softwareVersion`.
+- **Regresní testy:** sestaví skutečný web, parsují JSON-LD v obou jazycích a kontrolují existující odkazy GitHubu. Bez placených služeb, bez změny release tagů.
 
 ## Rozpracováno po 0.46.7 · živý stav po opětovném připojení (nevydáno)
 

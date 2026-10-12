@@ -33,7 +33,6 @@ export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
     ok: pracuji.length ? ui('Vše běží v pořádku') : ui('V pořádku, nikdo nepracuje'),
   }[stav];
   return {
-    // Preserve known facts AND uncertainty about unseen Mac processes.
     zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length, procesyNevim: Boolean(procesyNevim) },
     rozhodnuti: [...cekaji, ...selhalo, ...limit].slice(0, MAX).map((s) => ({ ...polozka(s), status: s.status })),
     pracuji: pracuji.slice(0, MAX).map(polozka),

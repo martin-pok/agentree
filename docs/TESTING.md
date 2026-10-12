@@ -1,12 +1,12 @@
 # Testování a ověření
 
-## Aktuální rozsah automatické sady (12. 10. 2026)
+## Aktuální rozsah testů (12. 10. 2026)
 
-| Kontrola | Aktuální rozsah |
+| Kontrola | Stav |
 |---|---|
-| `npm test` | 1127 testů detekovaných v CI při PR #169. Jde o počet testů ve zdrojové sadě, nikoli tvrzení, že všechny prošly. Finální výsledky musí pocházet z CI přesného commitu. |
+| `npm test` | 1128 testů v aktuální zdrojové sadě PR #171; skutečné pass/fail určuje odpovídající CI běh. |
 
-Historické protokoly níže jsou zachované v podobě, v jaké byly naměřeny; nezaměňovat historických 1013 s aktuálním rozsahem.
+Údaje o dřívějších bězích níže zůstávají historickým protokolem; jejich počet není současný počet testů.
 
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
@@ -601,3 +601,9 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | Obrazovky v prohlížeči | Přehled, Agenti, Detail agenta (266 položek přepisu), Statistiky, Útrata (validace formuláře, fokus na chybné pole), Nastavení, paleta ⌘K, panel upozornění – konzole bez chyb |
 | Mobil 375 px | bez vodorovného rolování |
 | **Neověřeno** | rozšíření na živých webech, Cursor s aktivním agentem, Copilot CLI / VS Code / Gemini CLI / Qwen Code s reálnými daty, Admin API s klíči, instalace hooků do skutečného `~/.claude/settings.json` (ověřeno jen v dočasném HOME), LaunchAgent (ověřen jen vygenerovaný plist) |
+
+## Chrome extension — neúplný výpis procesů (P0)
+
+- Mock `procesyNevim: true` + známý pracující či selhaný agent musí zobrazit číselné údaje pravdivě, ale i samostatné upozornění na neúplné zjišťování; tón nesmí být zelený.
+- Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu. Nová pole jsou jen boolean bez přepisů nebo cest.
+- Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.

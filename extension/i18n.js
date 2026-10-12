@@ -19,6 +19,12 @@
       'Obnovit aktuální stav': 'Refresh current status',
       // Hlavní pohled
       'Otevřené konverzace': 'Open conversations',
+      'Filtrovat chaty podle stavu': 'Filter chats by status',
+      'Vše': 'All',
+      'Odpovídají': 'Replying',
+      'Limity': 'Limits',
+      'Žádný webový chat právě neodpovídá.': 'No web chats are replying right now.',
+      'Žádný webový chat nehlásí limit.': 'No web chats report a limit.',
       'Žádná otevřená konverzace': 'No open conversations',
       'Otevři chat s AI a objeví se tady i v Agenteeq.': 'Open an AI chat and it shows up here and in Agenteeq.',
       'Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.': 'The last update didn’t reach Agenteeq. The extension will try again on its own.',
