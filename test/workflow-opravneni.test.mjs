@@ -16,6 +16,7 @@ const workflowy = await Promise.all(soubory.map(async (f) => ({ f, yml: await fs
 const ZAPIS = {
   'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
+  'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
 
 };
 
@@ -127,4 +128,15 @@ test('CI does not start duplicate push and pull_request matrices for feature bra
   assert.match(triggers, /\n  workflow_dispatch:/, 'maintainers can explicitly run CI');
   assert.doesNotMatch(triggers, /branches: \['\*\*'\]/, 'all-branches push CI duplicates PR checks');
   assert.match(workflow, /cancel-in-progress: true/, 'new commits cancel obsolete PR runs');
+});
+
+
+test('automatic draft preparation has only workflow dispatch rights, never release write rights', () => {
+  const draft = workflowy.find(({ f }) => f === 'prepare-preview-draft.yml')?.yml || '';
+  assert.match(draft, /^  prepare:\n[\s\S]*?^    permissions:\n      contents: read\n      actions: write /m);
+  assert.doesNotMatch(draft, /contents: write|packages: write|issues: write|pull-requests: write/);
+  assert.match(draft, /workflow_run:\n    workflows: \['Testy'\]/);
+  assert.match(draft, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(draft, /inputs\[expected_sha\]=\$TESTED_SHA/);
+  assert.doesNotMatch(skripty(draft).join('\n'), /gh release (create|edit)|--draft=false|--latest/);
 });

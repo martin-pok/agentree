@@ -1,5 +1,11 @@
 # Changelog
 
+## Rozpracováno po 0.46.7 · automaticky sestavené release drafty (nevydáno)
+
+- Po kompletním zeleném CI na přesném commitu `main` se nová správně verzovaná aplikace sama připraví k sestavení jako **neveřejný** GitHub release draft, bez dalšího ručního kroku tagování či spouštění buildu.
+- Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
+- Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
+
 ## Rozpracováno po 0.46.7 · Chrome extension: pravdivá částečná detekce (dosud nevydáno)
 
 - Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.

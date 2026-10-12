@@ -1,0 +1,89 @@
+# A fully green main CI dispatches existing release.yml for a DRAFT only.
+# Publication remains manual (publish.yml), with real-device UAT and owner approval.
+name: Prepare next Preview draft
+
+on:
+  workflow_run:
+    workflows: ['Testy']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-preview-draft-main
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: enqueue verified release build
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write # only dispatch existing release.yml; no direct publishing
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - name: Verify exact main, version consistency and release notes
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "$TESTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::CI event has invalid source SHA."
+            exit 1
+          fi
+          CURRENT_MAIN=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$CURRENT_MAIN" != "$TESTED_SHA" ] || [ "$(git rev-parse HEAD)" != "$TESTED_SHA" ]; then
+            echo "Newer main exists; its own CI will prepare the newer candidate."
+            echo "dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          MANIFEST=$(node -p "require('./extension/manifest.json').version")
+          if ! [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]] || [ "$VERSION" != "$MANIFEST" ]; then
+            echo "::error::Invalid or inconsistent native/Chrome release versions."
+            exit 1
+          fi
+          if ! grep -Fq "## $VERSION –" CHANGELOG.md || ! grep -Fq "version: '$VERSION'" public/js/whats-new-data.js; then
+            echo "::error::Version $VERSION has no matching CHANGELOG / What's New entry."
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists: leave it immutable; no build dispatched."
+            echo "dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "dispatch=true" >> "$GITHUB_OUTPUT"
+      - name: Build next draft from exact tested SHA
+        if: steps.gate.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          TAG: ${{ steps.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=$TAG" -f "inputs[expected_sha]=$TESTED_SHA"
+          {
+            echo "### Draft build queued: $TAG"
+            echo "Tested source SHA: $TESTED_SHA"
+            echo "No publication or installation has occurred."
+            echo "Follow release.yml for the Mac DMG, Windows/Chrome ZIP and SHA256SUMS."
+            echo "Manual real-device QA and publish.yml approval are still required."
+          } >> "$GITHUB_STEP_SUMMARY"

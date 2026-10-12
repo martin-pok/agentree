@@ -7,6 +7,12 @@ Aktualizace v aplikaci mají dva explicitní kanály. Nastavení se ukládá lok
 | Stabilní | `GET /repos/martin-pok/agentree/releases/latest` | Pouze stabilní vydání GitHub, bez prerelease a konceptů |
 | Preview | `GET /repos/martin-pok/agentree/releases?per_page=30` | Poslední veřejně vydanou sémantickou verzi, včetně prerelease, pokud je novější než nainstalovaná |
 
+## Od zeleného CI k připravenému instalačnímu balíčku
+
+Workflow `.github/workflows/prepare-preview-draft.yml` po **úspěšném kompletním CI na `main`** automaticky ověří přesné SHA zdroje, verzi `package.json`, verzi Chrome manifestu a existenci odpovídajícího `CHANGELOG.md` / „Co je nového“. Jen pokud se verze ještě netagovala, odešle existujícímu `release.yml` požadavek sestavit nový **neveřejný draft** z tohoto konkrétního SHA. Nečeká na ruční vytvoření tagu ani kliknutí na build. Pokud se `main` mezitím změnil, automatizace starší commit přeskočí; po dalším zeleném CI přijde na řadu aktuální.
+
+Toto **nikdy samo nezveřejňuje vydání** ani neinstaluje software. GitHub Preview se objeví v aktualizačním kanálu teprve po úspěšném buildu, ověření checksumů, reálném UAT a výslovném publikování pomocí `publish.yml`. Stable `Latest` zůstává oddělené. Existující tag a release přílohy se nesmějí přepsat novou verzí stejného čísla.
+
 ## Bezpečnost a očekávání
 
 - **Preview je opt-in.** Je označené jako testovací a může obsahovat chyby. Přepnutí zpět na Stabilní okamžitě zneplatní nabídku Preview balíčku; starý asynchronní požadavek nesmí přepsat aktuální kanál.
