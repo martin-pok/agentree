@@ -358,6 +358,7 @@ export default {
   "Aktualizační balíček už na disku není.": "The update package is no longer on disk.",
   "Ukázat aktualizaci ve správci souborů tenhle systém neumí.": "This system cannot show the update in the file manager.",
   "Aktualizace mohou být ruční nebo automatické.": "Updates can be manual or automatic.",
+  "Neplatný kanál aktualizací.": "Invalid update channel.",
   "Aktualizace lze zkontrolovat jen {0}.": "Updates can only be checked {0}.",
   "Aktualizaci lze stáhnout jen {0}.": "The update can only be downloaded {0}.",
   "Aktualizaci lze otevřít jen {0}.": "The update can only be opened {0}.",
