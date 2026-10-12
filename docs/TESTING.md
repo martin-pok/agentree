@@ -599,7 +599,7 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 ## Chrome extension — neúplný výpis procesů (P0)
 
 - Mock `procesyNevim: true` + známý pracující či selhaný agent musí zobrazit číselné údaje pravdivě, ale i samostatné upozornění na neúplné zjišťování; tón nesmí být zelený.
-- Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu. Nová pole jsou jen boolean bez přepisů nebo cest.
+- Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu, ale pokud nastanou **obě závady současně**, musí být vidět obě zprávy (odeslání i neúplné procesy). Nová pole jsou jen boolean bez přepisů nebo cest.
 - Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.
 
 
