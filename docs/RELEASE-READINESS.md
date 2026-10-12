@@ -4,7 +4,7 @@
 
 ## Zdroj pravdy
 
-- Aktuální zdrojová verze na `main` je **0.46.7 Preview** (PR #156, commit `f29501cf1be3093c04ee063c786405658b298580`, **8/8 zelených CI**). **Zatím nemá veřejný release ani nový instalační balíček.** Jednorázová automatizace `.github/workflows/release-0467-boot.yml` je omezená na verzi 0.46.7, úspěšný CI `Testy` na přesném aktuálním `main` SHA a osm konkrétních kontrol. Teprve potom může vyvolat dosavadní `release.yml`, který vytvoří tag a **neveřejný koncept** s přílohami. Zveřejnění zůstává výhradně ruční v `publish.yml` a Preview nikdy nesmí změnit stabilní `Latest`.
+- **v0.46.7** má ověřený tag na `00daf73bbdc2f3e7bb7342ae0a15ef4d5e1a4b90`; tento commit prošel **8/8 CI**. GitHub workflow `Vydání` dokončilo všechny platformy a založilo **neveřejný draft release ID `410716060`** se všemi osmi přílohami (macOS Apple Silicon DMG/ZIP, Windows ZIP, Chrome extension ZIP, tři stabilní názvy, `SHA256SUMS.txt`). Každá příloha má nenulovou velikost a `sha256:` otisk v GitHub API. Jde o **hotové sestavení, ne publikované vydání ani schválenou instalaci na zařízení**; Mac build je ad-hoc podepsaný, nikoli Developer ID/notarizovaný. UAT: [issue #157](https://github.com/martin-pok/agentree/issues/157). Zveřejnění zůstává manuální krok výhradně přes `publish.yml` s `channel=preview`, po ověření release gate.
 - Poslední potvrzené **zveřejněné** Preview: **[v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6)** (12. 10. 2026, 11:45 UTC). Tag míří na commit `27f3d2a`, CI pro tento SHA má 8/8 úspěšných kontrol, release build prošel a osm příloh Mac/Windows/Chrome včetně `SHA256SUMS.txt` je dostupných s nenulovou velikostí a zveřejněnými SHA-256 otisky. Stabilní Latest zůstává **v0.46.0** (9. 10. 2026). Živé UAT Mac instalace, aktualizace, Google přihlášení a Windows zařízení nebylo provedeno.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety.
@@ -19,16 +19,16 @@
 | Verze distribuce | tag = `package.json` = extension manifest = metadata sestavení | Zastavit release |
 | Branding | `test/brand-robot.test.mjs` a vizuální kontrola PNG/ICO/ICNS i screenshotů | Zastavit publikaci |
 | Zdroje dat | kontrola hranice „naměřené / odvozené / neznámé“ a citlivých informací v URL | Zastavit publikaci při regresi |
-| Instalace | DMG, ZIP macOS Apple Silicon, Windows beta ZIP, Chrome extension ZIP a jejich checksumy | Zastavit publikaci |
+| Integrita publikovaných balíčků | `publish.yml` znovu stáhne **všech osm** příloh draftu a `scripts/verify-release-assets.mjs` porovná úplnost, velikost i SHA-256 s manifestem a GitHub API včetně shody stálých/číslovaných variant | Při jakékoli neshodě zastavit publikaci |
 | Ruční QA | Mac, Windows beta, Chrome v CZ i EN podle [TESTING.md](TESTING.md) | Neoznačovat jako ověřené |
 | Schválení a kanál | výslovně zvolit `preview` nebo `stable` při ručním `publish.yml`; pro Stable navíc potvrdit změnu `Latest` | Preview nikdy nesmí změnit stabilní `Latest`; koncept bez schválení ponechat neveřejný |
 
 ## Jaký je další postup
 
-1. Zvolit jediný SHA, dokončit všechny jeho CI joby a vyřešit případná selhání. Nenahrazovat test tichým vynecháním.
-2. Porovnat nativní binární ikony, App bundle a screenshoty Chrome Store proti aktuálnímu značkovému SVG. Automatická kontrola SVG sama nestačí.
-3. Na skutečném zařízení ověřit připojení, odpojení, návrat autorizace a upgrade bez ztráty nastavení.
-4. Teprve poté vytvořit nebo opravit release tag, sestavit artefakty, ověřit checksumy a publikovat.
+1. Projít nový draft `v0.46.7` a release notes proti požadavkům v issue #157. Zdroj a checksumy jsou sestavené, fyzická instalace se zatím neověřila.
+2. Na skutečném Apple Silicon Macu zkontrolovat DMG, Gatekeeper (ad-hoc podpis), správnou ikonografii, Google OAuth, avatar, upgrade a návrat do konverzace; u Windows beta a Chrome přidat skutečné smoke testy.
+3. Před publikací spustit `publish.yml` s výslovným kanálem `preview`: automatický krok znovu stáhne přílohy draftu, ověří všechny skutečné SHA-256 otisky proti `SHA256SUMS.txt` a GitHub API a odmítne nesoulad.
+4. Pouze po schválení UAT a všech kontrol zveřejnit `v0.46.7` jako Preview. Stabilní `Latest` musí nadále ukazovat na `v0.46.0` až do samostatného rozhodnutí o Stable.
 
 ## Co zůstává mimo automatickou garanci
 
