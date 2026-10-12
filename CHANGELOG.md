@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.3 – 2026-10-11 · stejná ikona v každé velikosti
+
+- **Jednotný vizuální master:** stejný poměr stran bílé robotické hlavy, očí a antény na Docku, v menu baru, na webu a v Chrome extension; menší verze se jen proporčně škálují, nikoli překreslují.
+- **Nativní a distribuční assety:** sjednocená macOS menu-bar kresba, reálné Chrome PNG soubory v rozlišení 16/32/48/128 px a stejná 128px ikona v Chrome Web Store.
+- **Ověření:** regresní testy hlídají identitu SVG masterů, soulad exportů a rozměry PNG. Skutečná instalace macOS a finální zobrazení v Docku stále vyžadují kontrolu na zařízení.
+
 ## 0.46.2 – 2026-10-11 · spolehlivější připojení AI nástrojů
 
 ### Co se mění pro uživatele
