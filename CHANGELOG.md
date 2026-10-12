@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.7 – 2026-10-12 · bezpečnější profilová fotografie z Googlu
+
+- **Bezpečné načítání fotografie:** HTTP přesměrování se kontrolují před každým dalším síťovým požadavkem. Profilový obrázek se nikdy vědomě nestahuje z jiné domény než schválené Google CDN.
+- **Přenos a velikost:** stahování fotky hlídá limit 300 kB průběžně; nepřiměřeně velký obrázek odmítne bez načtení celého obsahu.
+- **Regresní testy:** kontrolují nebezpečná přesměrování, bezpečné přesměrování mezi servery Googlu a omezení velikosti streamu. CI workflow už nespouští dvě kolidující sady testů pro jednu vývojovou větev.
+- **Stav ověření:** bezpečnostní scénáře byly ověřeny automatickými testy. Skutečné přihlášení Google, profilová fotografie a upgrade na uživatelském Macu vyžadují samostatné ruční UAT; Preview není stabilní vydání.
+
 ## 0.46.6 – 2026-10-12 · srozumitelná rozhodnutí agentů
 
 - **Viditelná žádost o povolení:** stav „možná čeká na tvé povolení“ se zobrazí v Přehledu, seznamu agentů, detailu i projektu, pokud ho model odvodí. Není vydáván za potvrzenou interakci bez příslušných hooků.
