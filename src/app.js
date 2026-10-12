@@ -1199,7 +1199,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
@@ -1211,7 +1216,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function revealUpdate() {
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
