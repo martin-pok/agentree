@@ -478,6 +478,29 @@ function zakladniStav() {
   $('app-link-text').textContent = tr('Otevřít Agenteeq');
 }
 
+// Offline stav je skutečná dostupnost lokální služby, ne přítomnost starého snapshotu.
+// Kontrolujeme jej také při otevřeném popupu: jinak by náhlý restart aplikace nechal
+// zelené „Připojeno“ a čísla agentů označená jako právě živá.
+async function fungujeSluzba() {
+  try {
+    const res = await fetch(`${APLIKACE}api/health`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return false;
+    return (await res.json())?.ok === true;
+  } catch {
+    return false;
+  }
+}
+function ukazVypadek() {
+  zakladniStav();
+  prehled = null;
+  seznam.konverzace = [];
+  overeni.diagnostika = null;
+  $('feats').hidden = false;
+  $('app-link').href = WEB;
+  $('app-link-text').textContent = tr('Stáhnout Agenteeq');
+  setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
+}
+
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
 // načtení na okamžik prázdně bliklo.
 async function render() {
@@ -487,24 +510,19 @@ async function render() {
   if (document.activeElement !== $('port')) $('port').value = String(aktualniPort);
   await renderSites(lastStatus);
 
-  let health = null;
-  try {
-    const res = await fetch(`${APLIKACE}api/health`, { signal: AbortSignal.timeout(2000) });
-    health = await res.json();
-  } catch {
-    health = null;
-  }
-  if (!health?.ok) {
-    zakladniStav();
-    $('feats').hidden = false;
-    $('app-link').href = WEB;
-    $('app-link-text').textContent = tr('Stáhnout Agenteeq');
-    setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
+  if (!await fungujeSluzba()) {
+    ukazVypadek();
     return;
   }
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
+  if (r?.paired && !r.online) {
+    // The local health endpoint may answer while pairing's protected endpoint
+    // fails. Never present the extension as connected on an unsuccessful hello.
+    ukazVypadek();
+    return;
+  }
   if (!r?.paired) {
     zakladniStav();
     $('pairing').hidden = false;
@@ -570,12 +588,35 @@ chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
   hlavicka();
 });
 
-// Stav agentů se mění i při otevřeném okně: každých 5 s se souhrn načte znovu.
+// Otevřený popup musí poznat i skutečný výpadek aplikace a sám se zotavit.
+// Pouhé načítání prehled() nestačilo: při restartu hostitele vracelo null,
+// ale hlavička stále ukazovala zelené „Připojeno“ a stará čísla.
+let probihaKontrolaSpojeni = false;
 setInterval(async () => {
-  if (!seznam.pripojeno || document.hidden) return;
-  prehled = await nactiPrehled();
-  vykresliAgenty();
-  hlavicka();
+  if (document.hidden || probihaKontrolaSpojeni) return;
+  probihaKontrolaSpojeni = true;
+  try {
+    if (!seznam.pripojeno) {
+      await render(); // Recover automatically when the app comes back online.
+      return;
+    }
+    if (!await fungujeSluzba()) {
+      ukazVypadek(); // Clear stale agent counts before telling user we are offline.
+      return;
+    }
+    const aktualniPrehled = await nactiPrehled();
+    if (!aktualniPrehled) {
+      // A protected endpoint may fail independently of /api/health.
+      // Re-check pairing instead of claiming a live connection.
+      await render();
+      return;
+    }
+    prehled = aktualniPrehled;
+    vykresliAgenty();
+    hlavicka();
+  } finally {
+    probihaKontrolaSpojeni = false;
+  }
 }, 5000);
 
 $('retry').addEventListener('click', () => render());
