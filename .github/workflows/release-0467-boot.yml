@@ -1,0 +1,106 @@
+# One-shot bridge for v0.46.7: CI -> existing release.yml draft builder.
+#
+# The connected GitHub integration cannot call workflow_dispatch directly.
+# This workflow ONLY dispatches the existing, manually-gated build workflow after
+# the full Testy suite succeeds on the latest main commit at version 0.46.7.
+# It creates NO public release and does not change GitHub Latest.
+#
+# This is deliberately PINNED to 0.46.7 and becomes inert once the tag exists.
+# Do not generalize it to every push/release without an explicit release policy.
+name: 0.46.7 — spustit bezpečné sestavení konceptu
+
+on:
+  workflow_run:
+    workflows: ['Testy']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boot-0467-draft
+  cancel-in-progress: false
+
+jobs:
+  dispatch-draft:
+    name: 0.46.7 — zelené CI → sestavení konceptu
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_branch == 'main'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Prokázat totožný, otestovaný main commit a verze
+        env:
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          TAG: v0.46.7
+        run: |
+          set -euo pipefail
+          CURRENT_SHA=$(git rev-parse HEAD)
+          test "$CURRENT_SHA" = "$VERIFIED_SHA" || {
+            echo "::error::main moved after tested CI ($VERIFIED_SHA vs $CURRENT_SHA)."
+            exit 1
+          }
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const app = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
+            const ext = JSON.parse(fs.readFileSync("extension/manifest.json", "utf8")).version;
+            if (app !== "0.46.7" || ext !== app || process.env.TAG !== `v${app}`) {
+              console.error("::error::One-shot build is only for matching 0.46.7 versions.");
+              process.exit(1);
+            }
+          '
+      - name: Ověřit všech 8 úspěšných povinných CI kontrol na SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${VERIFIED_SHA}/check-runs?per_page=100" > checks.json
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const data = JSON.parse(fs.readFileSync("checks.json", "utf8"));
+            const required = [
+              "ubuntu-latest", "windows-latest", "macos-latest",
+              "rozhraní a přístupnost", "aplikace pro Mac", "plášť pro Windows",
+              "Chrome Web Store branding a screenshoty", "Web, rozšíření a kontrast"
+            ];
+            for (const name of required) {
+              if (!data.check_runs?.some(x => x.name === name && x.status === "completed" && x.conclusion === "success")) {
+                console.error(`::error::Missing passing CI check: ${name}`);
+                process.exitCode = 1;
+              }
+            }
+          '
+      - name: Spustit existující ruční workflow pouze pro neveřejný koncept
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.46.7
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          # A second execution must not replace a tag or existing release.
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; skip automatic dispatch."
+            exit 0
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; skip automatic dispatch."
+            exit 0
+          fi
+          # workflow_dispatch explicitly starts a new run even with GITHUB_TOKEN.
+          # release.yml creates an annotated tag from main, validates versions,
+          # builds macOS/Windows/Chrome assets + SHA256SUMS, and creates a DRAFT.
+          gh workflow run release.yml --ref main -f "tag=$TAG" -f "expected_sha=$VERIFIED_SHA" --repo "$GITHUB_REPOSITORY"
+          echo "Dispatched draft-only release workflow for $TAG at $VERIFIED_SHA."
