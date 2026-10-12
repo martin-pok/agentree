@@ -202,6 +202,8 @@ try {
           assert.equal(await page.locator('#konverzace').isVisible(), false);
           assert.equal(await page.locator('#prazdne-konverzace').isVisible(), true);
           assert.match(await page.locator('#prazdne-konverzace').textContent(), /Žádný webový chat nehlásí limit/);
+          assert.ok(await page.evaluate(() => document.body.getBoundingClientRect().height <= 600),
+            'prázdný filtr nesmí schovat ostatní ovládání okna pod hranicí 600 px');
           await page.locator('[data-filtr="vse"]').click();
           assert.equal(await page.locator('#konverzace li').count(), 2);
           assert.equal(await page.locator('#prazdne-konverzace').isVisible(), false);
