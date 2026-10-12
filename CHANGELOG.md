@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.5 – 2026-10-12 · volitelné aktualizace Preview
+
+- **Stable / Preview:** v Nastavení lze zapnout testovací aktualizační kanál. Výchozí zůstává Stable. Režimy ručního a automatického stahování se nemění a instalace stále vyžaduje potvrzení.
+- **Bezpečné nabídky:** Preview vyhledá nejnovější veřejné vydání podle čísla verze, nikdy ne koncept, a nabídne pouze balíček se správnou platformou, tagem, velikostí a SHA-256. Stažený obsah se dál kontroluje kryptografickým otiskem.
+- **Bez nežádoucího downgradu:** návrat na Stable zruší starou nabídku Preview; opožděná odpověď ani stahování ji nemohou obnovit. Instalaci a chování na skutečném Macu je nutné před produkcí ověřit samostatně.
+
 ## 0.46.4 – 2026-10-12 · ověřené nativní ikony a bezpečnější instalace
 
 - **macOS:** Dock používá skutečný distribuovaný `Agenteeq.icns` jako jediný zdroj ikony. Staré duplicitní ikony se do instalačního ZIPu nepřibalují; PNG náhled se generuje ze stejného souboru.
