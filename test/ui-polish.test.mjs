@@ -354,7 +354,11 @@ test('překryvy drží posouvání uvnitř sebe a zamykají stránku pod sebou',
 test('nastavení neobsahuje kolidující banner průvodce', async () => {
   const settings = await zdroj('public/js/views/settings.js');
   const welcome = await zdroj('public/js/welcome.js');
+  const css = await zdroj('public/styles.css');
+  const icons = await zdroj('public/js/icons.js');
   assert.doesNotMatch(settings, /class="guide-banner"/);
+  assert.doesNotMatch(css, /\.(?:guide-banner|guide-art|guide-text)(?:\s|\{|\.|:)/, 'odstraněný banner nesmí zanechat mrtvé CSS');
+  assert.doesNotMatch(icons, /export const BULB\s*=/, 'odstraněný banner nesmí dodávat nepoužitou ikonu');
   assert.match(welcome, /export function showWelcome/);
 });
 
