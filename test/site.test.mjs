@@ -376,3 +376,27 @@ test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vyd�
     for (const [, odkaz] of html.matchAll(/data-stahnout="windows-x64" href="([^"]+)"/g)) assert.equal(odkaz, dnes.windows, jazyk.soubor);
   }
 });
+
+
+test('web: published 0.46.3 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
+  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.3/Agenteeq-0.46.3-macOS-arm64.dmg';
+  const destinations = [
+    ['site/index.html', 'index.html', /0\.46\.3 Preview pro Mac/],
+    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.3/],
+    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.3 Preview pro Mac/],
+    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.3/],
+  ];
+  const output = await tempDir('web-preview-');
+  await buildSite({ out: output });
+  for (const [source, built, label] of destinations) {
+    const html = await fs.readFile(path.join(ROOT, source), 'utf8');
+    const rendered = await fs.readFile(path.join(output, built), 'utf8');
+    for (const [where, page] of [[source, html], [built, rendered]]) {
+      assert.equal(page.split(url).length - 1, 1, where + ': one direct versioned Preview DMG link');
+      assert.match(page, label, where + ': must say this is Preview, not stable');
+      assert.match(page, /data-stahnout="mac-arm64"/, where + ': stable Mac download must remain primary');
+    }
+    assert.match(rendered, /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/,
+      built + ': main CTA must keep current stable release instead of silently adopting prerelease');
+  }
+});
