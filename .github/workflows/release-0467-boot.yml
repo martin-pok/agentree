@@ -87,6 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: v0.46.7
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           # A second execution must not replace a tag or existing release.
@@ -101,5 +102,5 @@ jobs:
           # workflow_dispatch explicitly starts a new run even with GITHUB_TOKEN.
           # release.yml creates an annotated tag from main, validates versions,
           # builds macOS/Windows/Chrome assets + SHA256SUMS, and creates a DRAFT.
-          gh workflow run release.yml --ref main -f "tag=$TAG" --repo "$GITHUB_REPOSITORY"
-          echo "Dispatched draft-only release workflow for $TAG."
+          gh workflow run release.yml --ref main -f "tag=$TAG" -f "expected_sha=$VERIFIED_SHA" --repo "$GITHUB_REPOSITORY"
+          echo "Dispatched draft-only release workflow for $TAG at $VERIFIED_SHA."
