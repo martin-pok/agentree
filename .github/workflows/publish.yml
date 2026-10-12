@@ -2,6 +2,7 @@
 #
 # Workflow Vydání (release.yml) zakládá jen koncept, protože zveřejnění je krok ven ke stažení
 # a patří člověku. Tohle je ten krok: běží jen na ruční spuštění, nikdy sám od sebe.
+# Preview je výchozí a nikdy nesmí přepsat stabilní GitHub Latest.
 #
 # Před zveřejněním se popis přegeneruje aktuálním scripts/release-notes.mjs z `main`. Oprava
 # textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
@@ -16,6 +17,18 @@ on:
       tag:
         description: 'Tag konceptu, který se zveřejní (např. v0.25.0)'
         required: true
+      channel:
+        description: 'Preview (neovlivní Latest) nebo Stable (změní Latest)'
+        type: choice
+        required: true
+        default: preview
+        options:
+          - preview
+          - stable
+      confirm_stable:
+        description: 'Potvrzuji záměr změnit stabilní Latest (jen pro Stable)'
+        type: boolean
+        default: false
 
 # Výchozí práva tokenu jen pro čtení; zápis má jen úloha, která vydání zveřejňuje.
 permissions:
@@ -112,16 +125,48 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+          CONFIRM_STABLE: ${{ inputs.confirm_stable }}
         run: |
-          gh release edit "$TAG" --notes-file poznamky.md --draft=false --latest
-          gh release view "$TAG" --json isDraft,url,publishedAt
+          set -euo pipefail
+          case "$CHANNEL" in
+            preview)
+              # The opt-in Preview channel must never silently replace Stable Latest.
+              gh release edit "$TAG" --notes-file poznamky.md --draft=false --prerelease --latest=false
+              ;;
+            stable)
+              if [ "$CONFIRM_STABLE" != "true" ]; then
+                echo "::error::Stable release requires an explicit confirmation."
+                exit 1
+              fi
+              gh release edit "$TAG" --notes-file poznamky.md --draft=false --prerelease=false --latest
+              ;;
+            *)
+              echo "::error::Unsupported release channel."
+              exit 1
+              ;;
+          esac
+          gh release view "$TAG" --json isDraft,isPrerelease,url,publishedAt
 
-      # Tlačítka ke stažení na webu vedou na /releases/latest/download/…; ověří se, že každé
-      # opravdu vede na přílohu tohoto vydání.
-      - name: Ověřit odkazy ke stažení
+      # Preview keeps stable Latest untouched; only a confirmed Stable release changes
+      # /releases/latest/download/… and requires the stable asset-link verification.
+      - name: Ověřit kanál a odkazy ke stažení
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
+          set -euo pipefail
+          IS_PREVIEW=$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)
+          LATEST=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)
+          if [ "$CHANNEL" = "preview" ]; then
+            test "$IS_PREVIEW" = "true" || { echo "::error::Preview is not marked prerelease."; exit 1; }
+            test "$LATEST" != "$TAG" || { echo "::error::Preview unexpectedly became Latest."; exit 1; }
+            echo "Preview $TAG is public; stable Latest remains $LATEST."
+            exit 0
+          fi
+          test "$IS_PREVIEW" = "false" || { echo "::error::Stable is still marked prerelease."; exit 1; }
+          test "$LATEST" = "$TAG" || { echo "::error::Stable is not Latest."; exit 1; }
           for SOUBOR in Agenteeq-macOS-arm64.zip Agenteeq-macOS-arm64.dmg Agenteeq-Windows-x64.zip; do
             OK=
             for pokus in 1 2 3 4 5 6; do
