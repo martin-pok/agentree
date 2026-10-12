@@ -15,7 +15,7 @@ async function fixture() {
   const version = TAG.slice(1);
   const archives = new Map();
   for (const name of names.filter(n => n !== 'SHA256SUMS.txt')) {
-    const original = name.replace(/^Agenteeq-(?:macOS|Windows)/, (m) => 'Agenteeq-' + version + m.slice('Agenteeq-'.length));
+    const original = name.replace(/^Agenteeq-(?:macOS|Windows)/, (m) => 'Agenteeq-' + version + '-' + m.slice('Agenteeq-'.length));
     const bytes = Buffer.from('fixture archive for ' + original);
     archives.set(name, bytes);
     await fs.writeFile(path.join(dir, name), bytes);
