@@ -36,6 +36,10 @@ const ZAPIS = {
     'start-preview-build': 'sestavit jen zelený 0.46.4 candidate ze stejného main SHA',
     'publish-preview': 'ověřit shodný tag, binaries a SHA-256 manifest',
   },
+  'release-0465-preview.yml': {
+    'start-preview-build': 'spustit vydání 0.46.5 pouze po zeleném main CI',
+    'publish-preview': 'ověřit shodný tag, hotový build a SHA-256 manifest',
+  },
 };
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
@@ -247,4 +251,24 @@ test('0.46.4 Preview publication additionally requires the independent SHA256SUM
   assert.ok(workflow);
   assert.match(ulohy(workflow)['publish-preview'], /SHA256SUMS\.txt/);
   assert.match(ulohy(workflow)['publish-preview'], /\.size > 100/);
+});
+
+test('0.46.5 Preview delivery is version-pinned, SHA256-verified and never marked stable latest', () => {
+  const workflow = workflowy.find(({ f }) => f === 'release-0465-preview.yml')?.yml;
+  assert.ok(workflow, 'missing 0.46.5 Preview delivery workflow');
+  const jobs = ulohy(workflow);
+  const start = jobs['start-preview-build'];
+  const publish = jobs['publish-preview'];
+  assert.ok(start && publish);
+  assert.match(start, /github\.event\.workflow_run\.event == 'push'/);
+  assert.match(start, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(start, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(start, /MAIN_SHA.*TESTED_SHA/);
+  assert.match(start, /VERSION.*0\.46\.5/);
+  assert.match(start, /gh workflow run release\.yml --repo "\$REPO" --ref main -f tag=v0\.46\.5/);
+  assert.match(publish, /TAG_SHA.*TESTED_SHA/);
+  assert.match(publish, /actions\/workflows\/release\.yml\/runs\?head_sha=\$TAG_SHA/);
+  assert.match(publish, /agenteeq-extension-0\.46\.5\.zip/);
+  assert.match(publish, /SHA256SUMS\.txt/);
+  assert.match(publish, /--draft=false --prerelease --latest=false/);
 });
