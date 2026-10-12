@@ -299,3 +299,99 @@ test('Preview channel rejects invalid constructor and check arguments', async ()
     dataDir: await tempDir('stable-invalid-'), fetchImpl: fetchForUpdate() });
   await assert.rejects(service.check('unknown'), /Neplatný kanál aktualizací|Invalid update channel/);
 });
+
+
+test('Preview → Stable → Preview: late first Preview response cannot overwrite newer Preview result', async () => {
+  let resolveOld;
+  const oldResponse = new Promise(resolve => { resolveOld = resolve; });
+  let previews = 0;
+  const service = new UpdateService({
+    version: '0.46.1', channel: 'preview', dataDir: await tempDir('preview-aba-race-'),
+    platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => {
+      if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+      if (url === PREVIEW_RELEASES_URL) {
+        previews += 1;
+        return previews === 1 ? oldResponse : new Response(JSON.stringify([{ ...release('0.46.5'), prerelease: true }]), { status: 200 });
+      }
+      throw new Error('Unexpected URL: ' + url);
+    },
+  });
+  const stale = service.check();
+  assert.equal((await service.check('stable')).status, 'current');
+  const latest = await service.check('preview');
+  assert.equal(latest.status, 'available');
+  assert.equal(latest.latestVersion, '0.46.5');
+  resolveOld(new Response(JSON.stringify([{ ...release('0.46.4'), prerelease: true }]), { status: 200 }));
+  await stale;
+  assert.equal(previews, 2);
+  assert.equal(service.state().channel, 'preview');
+  assert.equal(service.state().latestVersion, '0.46.5');
+  assert.equal(service.state().asset.name, 'Agenteeq-0.46.5-macOS-arm64.zip');
+});
+
+test('Preview → Stable → Preview: late rejected request cannot replace good result with error', async () => {
+  let rejectOld;
+  const oldResponse = new Promise((resolve, reject) => { rejectOld = reject; });
+  let previews = 0;
+  const service = new UpdateService({
+    version: '0.46.1', channel: 'preview', dataDir: await tempDir('preview-aba-error-'),
+    platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => {
+      if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+      previews += 1;
+      return previews === 1 ? oldResponse : new Response(JSON.stringify([{ ...release('0.46.5'), prerelease: true }]), { status: 200 });
+    },
+  });
+  const stale = service.check();
+  await service.check('stable');
+  assert.equal((await service.check('preview')).latestVersion, '0.46.5');
+  rejectOld(new Error('original preview request timed out'));
+  await stale;
+  assert.equal(service.state().status, 'available');
+  assert.equal(service.state().latestVersion, '0.46.5');
+});
+
+test('Downloaded release is invalidated when same URL has a changed GitHub SHA-256 digest', async () => {
+  let sha = OTISK;
+  const service = new UpdateService({
+    version: '0.29.9', dataDir: await tempDir('updates-replaced-digest-'),
+    platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => url === RELEASE_URL
+      ? new Response(JSON.stringify(release('0.30.0', sha)), { status: 200 })
+      : new Response(Buffer.from('zip!'), { status: 200 }),
+  });
+  assert.equal((await service.check()).status, 'available');
+  assert.equal((await service.download()).ok, true);
+  assert.equal(service.state().status, 'downloaded');
+  sha = 'sha256:' + crypto.createHash('sha256').update('nope').digest('hex');
+  const next = await service.check();
+  assert.equal(next.status, 'available', 'changed checksum must invalidate previous cached download');
+  assert.equal(next.downloaded, null);
+  assert.equal(service.downloadedPath(), null);
+  assert.equal((await service.download()).status, 502, 'old bytes do not match new release digest');
+});
+
+test('Old download from Preview cannot be accepted after Preview → Stable → Preview channel switch', async () => {
+  let resolveZip;
+  const pendingZip = new Promise(resolve => { resolveZip = resolve; });
+  const newest = { ...release('0.46.4'), prerelease: true };
+  const service = new UpdateService({
+    version: '0.46.1', channel: 'preview', dataDir: await tempDir('preview-download-aba-'),
+    platform: 'darwin', arch: 'arm64',
+    fetchImpl: async (url) => {
+      if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify([newest]), { status: 200 });
+      if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+      return pendingZip;
+    },
+  });
+  assert.equal((await service.check()).status, 'available');
+  const staleDownload = service.download();
+  assert.equal((await service.check('stable')).status, 'current');
+  assert.equal((await service.check('preview')).status, 'available');
+  resolveZip(new Response(Buffer.from('zip!'), { status: 200 }));
+  const stale = await staleDownload;
+  assert.equal(stale.status, 409, 'an old request cannot complete after the channel generation changed');
+  assert.equal(service.state().status, 'available');
+  assert.equal(service.downloadedPath(), null);
+});
