@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav k 11. 10. 2026.** Veřejná testovací verze **v0.46.1 Preview** byla publikována 11. 10. 2026 (CI 7/7); poslední stabilní vydání **v0.46.0** zůstává Latest. Další kandidát **0.46.2 Preview** řeší ověření připojení, pravdivou čerstvost dat a zabezpečení webových konektorů; dostupný bude až po integraci PR #136, kompletním CI a vydání binárek. Stav zdrojového kódu v `main` není totožný s instalovanou verzí.
+**Stav k 12. 10. 2026.** [**v0.46.3 Preview**](https://github.com/martin-pok/agentree/releases/tag/v0.46.3) je veřejné testovací vydání (12. 10. 2026, sedm distribučních příloh); **v0.46.0** zůstává poslední stabilní `Latest`. Opravy ověřování konektorů z PR #136 jsou v 0.46.2+ a sjednocení proporcí ikon z PR #139 v 0.46.3. Produkční web Vercel je nasazený z commitu `630f42f9` a uvádí oddělený odkaz na Preview bez přesměrování stabilního tlačítka. **Zveřejněné neznamená nainstalované či otestované na konkrétním Macu.** Ani jedno živé přihlášení poskytovatele nesmí být označeno jako ověřené jen z CI mocků.
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
