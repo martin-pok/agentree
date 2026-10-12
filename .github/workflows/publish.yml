@@ -87,10 +87,13 @@ jobs:
             echo "::error::Tag $TAG nemá tvar vX.Y.Z."
             exit 1
           fi
-          gh release view "$TAG" --json isDraft,assets,body > vydani.json
+          gh release view "$TAG" --json isDraft,assets,body,databaseId,tagName > vydani.json
           node -e '
             const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
             if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
+            if (v.tagName !== process.env.TAG || !Number.isSafeInteger(v.databaseId) || v.databaseId < 1) {
+              console.error("::error::Draft má neplatný tag nebo release databaseId."); process.exit(1);
+            }
             const expectedExtension = `agenteeq-extension-${process.env.TAG.slice(1)}.zip`;
             for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
               if (!v.assets.some((a) => a.name === stala)) {
@@ -111,7 +114,12 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > release-metadata.json
+          # GitHub GET /releases/tags/{tag} deliberately returns 404 for DRAFTS.
+          # Resolve the database ID from the authenticated CLI draft lookup,
+          # then use the REST by-ID endpoint; the verifier checks exact tag/draft.
+          RELEASE_ID=$(node -p 'JSON.parse(require("fs").readFileSync("vydani.json", "utf8")).databaseId')
+          [[ "$RELEASE_ID" =~ ^[0-9]+$ ]] || { echo "::error::Missing draft release ID."; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" > release-metadata.json
           mkdir -p overene-prilohy
           gh release download "$TAG" --dir overene-prilohy --repo "$GITHUB_REPOSITORY"
           node scripts/verify-release-assets.mjs "$TAG" overene-prilohy release-metadata.json
