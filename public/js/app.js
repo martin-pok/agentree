@@ -1,3 +1,4 @@
+import { createLiveEventBacklog } from './sse-backlog.js';
 import { initMascotMotion } from './mascot-motion.js';
 import { initRobotBubliny } from './robot-bubliny.js';
 import { robotGuide } from './robot-guide.js';
@@ -954,7 +955,7 @@ if (UKAZKA) {
 }
 
 let loadingSnapshot = null;
-const queued = [];
+const queued = createLiveEventBacklog();
 
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
@@ -1000,7 +1001,7 @@ let generaceSnimek = 0;
 function prijmiSnimek(snap) {
   applySnapshot(snap);
   window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
-  for (const [name, data] of queued.splice(0)) handle(name, data);
+  queued.drain(handle);
 }
 
 // Pojistka pro první načtení: dokud stav není načtený, zkouší se ho stáhnout znovu (4 s, 6 s, 8 s…
@@ -1029,6 +1030,9 @@ hlidejNacteni();
 const proud = connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
+    // The preceding stream's undelivered events must not be replayed over a
+    // fresh state snapshot. Events from this handshake will be queued afresh.
+    queued.begin();
     const generace = ++generaceSnimek;
     const nacitani = api.state()
       .then((snap) => {
@@ -1045,7 +1049,7 @@ const proud = connectStream({
     return nacitani;
   },
   onEvent: (name, data) => {
-    if (!state.loaded || loadingSnapshot) queued.push([name, data]);
+    if (!state.loaded || loadingSnapshot) queued.add(name, data);
     else handle(name, data);
   },
 });
