@@ -4,7 +4,7 @@
 
 | Kontrola | Aktuální rozsah |
 |---|---|
-| `npm test` | **1127 testů** detekovaných v CI při PR #169. Jde o počet testů ve zdrojové sadě, nikoli tvrzení, že všechny prošly. Finální výsledky musí pocházet z CI přesného commitu. |
+| `npm test` | 1127 testů detekovaných v CI při PR #169. Jde o počet testů ve zdrojové sadě, nikoli tvrzení, že všechny prošly. Finální výsledky musí pocházet z CI přesného commitu. |
 
 Historické protokoly níže jsou zachované v podobě, v jaké byly naměřeny; nezaměňovat historických 1013 s aktuálním rozsahem.
 
