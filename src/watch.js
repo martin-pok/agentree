@@ -18,6 +18,8 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
   let strazce = null;
   let strazeno = '';
   let kontrolaVzniku = null;
+  let doskenNovehoKorene = null;
+  let driveChybelKoren = false;
   // The guard event can be lost on busy macOS runners or when a new folder is
   // created alongside its first JSONL. Check only the exact missing directory,
   // never scan the parent or a user's HOME; stop immediately after activation.
@@ -92,6 +94,8 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
         onChange(name ? path.join(dir, name.toString()) : null);
       });
       watcher.on('error', () => {
+        clearTimeout(doskenNovehoKorene);
+        doskenNovehoKorene = null;
         watcher?.close();
         watcher = null;
         schedule();
@@ -101,7 +105,26 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
       trace('watch-active');
       // Složka mohla vzniknout mezi skenem a sledováním – ohlásit plný průchod.
       onChange(null);
-    } catch {
+      // First Claude Code conversation often creates projects/ and writes its first
+      // .jsonl *just after* the directory-creation event. That first scan can be
+      // empty, and macOS FSEvents may coalesce the subsequent file write away.
+      // Reconcile that one newly discovered root once more after the writer's
+      // initial burst. Existing roots NEVER get this extra scan; no parent/HOME
+      // directories are traversed and the timer is cleared with the watcher.
+      if (driveChybelKoren) {
+        driveChybelKoren = false;
+        clearTimeout(doskenNovehoKorene);
+        doskenNovehoKorene = setTimeout(() => {
+          doskenNovehoKorene = null;
+          if (!closed && watcher) {
+            trace('new-root-rescan');
+            onChange(null);
+          }
+        }, 350);
+        doskenNovehoKorene.unref?.();
+      }
+    } catch (err) {
+      if (err?.code === 'ENOENT') driveChybelKoren = true;
       watcher = null;
       // Složka mohla vzniknout mezi neúspěšným pokusem a začátkem hlídání – jednou hned znovu.
       if (hlidej() && znovu && fs.existsSync(dir)) return arm(false);
@@ -114,6 +137,8 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
     close() {
       closed = true;
       clearTimeout(retry);
+      clearTimeout(doskenNovehoKorene);
+      doskenNovehoKorene = null;
       konecStraze();
       watcher?.close();
       watcher = null;
