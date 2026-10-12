@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav k 12. 10. 2026.** Veřejná testovací verze **[v0.46.5 Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.5)** byla publikována s DMG pro Apple Silicon, ZIP pro Windows a Chrome extension včetně manifestu SHA-256. Přesný hlavní commit prošel **8/8 GitHub CI**. Poslední stabilní **v0.46.0** zůstává `Latest`. V aplikaci je implementován volitelný kanál aktualizací Preview (výchozí Stable); instalaci upgradu a Google OAuth stále **není ověřeno na skutečném Macu**. Další prioritou je živé UAT aktualizace, účtu a nativního chování.
+**Stav k 12. 10. 2026.** Veřejná testovací verze **[v0.46.5 Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.5)** byla publikována s DMG pro Apple Silicon, ZIP pro Windows a Chrome extension včetně manifestu SHA-256. Přesný hlavní commit prošel **8/8 GitHub CI**. Poslední stabilní **v0.46.0** zůstává `Latest`. V aplikaci je implementován volitelný kanál aktualizací Preview (výchozí Stable); skutečný upgrade a Google OAuth stále **nebyly ověřeny na skutečném Macu**. Další prioritou je živé UAT aktualizace, účtu a nativního chování.
 
 Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
 

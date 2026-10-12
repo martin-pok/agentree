@@ -400,3 +400,12 @@ test('web: published 0.46.5 Preview is a separate CZ/EN Mac download, stable rem
       built + ': main CTA must keep current stable release instead of silently adopting prerelease');
   }
 });
+
+test('web: current Preview documentation and published preview links agree without changing stable', async () => {
+  const files = ['README.md', 'docs/ROADMAP.md', 'docs/RELEASE-READINESS.md'];
+  for (const name of files) {
+    const doc = await fs.readFile(path.join(ROOT, name), 'utf8');
+    assert.match(doc, /v0\\.46\\.5/, name + ' must identify the currently published preview');
+    assert.match(doc, /v0\\.46\\.0/, name + ' must keep the stable channel distinct');
+  }
+});
