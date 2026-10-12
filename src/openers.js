@@ -107,7 +107,7 @@ function appPlan(s, apps) {
 // Výchozí je „umí“: tahle funkce jen skládá plán a o schopnostech systému rozhoduje
 // volající (src/app.js podle config.openApps). Kdyby si to funkce zjišťovala sama,
 // nešla by otestovat pro jiný systém, než na kterém zrovna běží test.
-export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
+export function planOpen(s, target, apps = {}, { aplikace = true, bezi = null } = {}) {
   if (!s) return null;
   if (target === 'app') {
     // Odkaz na webovou konverzaci otevře prohlížeč, a ten je všude – na rozdíl od `open -a`.
@@ -117,6 +117,13 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   }
   if (target === 'terminal') {
     if (!aplikace) return null;
+    // Konverzace z příkazové řádky, jejíž program ve složce právě běží, čeká v otevřeném okně.
+    // Nový `--resume` by ji rozdvojil (dva procesy nad jednou konverzací), proto se Terminál
+    // jen přepne do popředí. `--resume` jen když víme, že tam nic neběží, nebo když to nevíme
+    // (dřívější chování – příkaz si jde vždy i zkopírovat).
+    if (zPrikazoveRadky(s) && bezi === true) {
+      return { kind: 'open', args: ['-a', 'Terminal'], label: ui('Terminál'), title: ui('Přepnout do Terminálu') };
+    }
     const command = terminalCommand(s, apps);
     return command ? { kind: 'terminal', command, label: ui('Terminál'), title: ui('Pokračovat v Terminálu') } : null;
   }

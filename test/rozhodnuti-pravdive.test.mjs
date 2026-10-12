@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import { createSession, summarize } from '../src/model.js';
 import { applyClaudeLine, newFileState, otazkyZVstupu } from '../src/connectors/claude-code.js';
 import { openTargets, planOpen, ALL_APPS } from '../src/openers.js';
+import { beziVeSlozce } from '../src/odpoved.js';
 import { vetaStavu, openButtons, otazkyHtml, kindLabel } from '../public/js/ui.js';
 import { jeOtazkaNaCekani, coNaMeCeka } from '../public/js/co-ceka.js';
 
@@ -81,6 +82,28 @@ test('B2: Claude Desktop a aplikace Codex se dál otevírají hlavně v aplikaci
   // Bez programu claude Terminál nabídnout nejde – hlavní zůstane, co skutečně jde.
   const bezCli = { id: 'claude-code:0b6a3c1e-1111-4222-8333-944455556666', connector: 'claude-code', app: 'Claude Code', source: 'local', cwd: '/Users/x' };
   assert.deepEqual(openTargets(bezCli, { claude: true, cli: { claude: false } }).map((t) => t.id), ['app', 'folder']);
+});
+
+test('B2: konverzace, jejíž program ve složce běží, se nerozdvojí – Terminál se jen přepne do popředí', () => {
+  const cli = { id: 'claude-code:0b6a3c1e-1111-4222-8333-944455556666', connector: 'claude-code', app: 'Claude Code', source: 'local', cwd: '/Users/jana/Design & Web' };
+  const bezi = planOpen(cli, 'terminal', ALL_APPS, { bezi: true });
+  assert.deepEqual([bezi.kind, bezi.args, bezi.title], ['open', ['-a', 'Terminal'], 'Přepnout do Terminálu'], 'žádný druhý `claude --resume` nad čekající konverzací');
+  assert.equal(openTargets(cli, ALL_APPS, { bezi: true })[0].label, 'Přepnout do Terminálu');
+  // Víme, že nic neběží, nebo to nevíme: pokračuje se novým `--resume` (příkaz jde i zkopírovat).
+  for (const stav of [false, null]) assert.match(planOpen(cli, 'terminal', ALL_APPS, { bezi: stav }).command, /claude --resume /);
+  // Claude Desktop se přepnutím Terminálu netýká.
+  const desktop = { ...cli, app: 'Claude Desktop · Code' };
+  assert.equal(planOpen(desktop, 'terminal', ALL_APPS, { bezi: true }).kind, 'terminal');
+});
+
+test('B2: běží ve složce konverzace program téhož nástroje – ano, ne, nevím', () => {
+  const s = { connector: 'claude-code', cwd: '/Users/jana/Design & Web' };
+  assert.equal(beziVeSlozce(s, [{ runtime: 'claude-code', cwd: '/Users/jana/Design & Web' }]), true);
+  assert.equal(beziVeSlozce(s, [{ runtime: 'claude-code', cwd: '/Users/jana/jinde' }, { runtime: 'codex', cwd: '/Users/jana/Design & Web' }]), false, 'jiná složka ani jiný nástroj se nepočítají');
+  assert.equal(beziVeSlozce(s, [{ runtime: 'claude-code', cwd: null }]), null, 'proces bez zjištěné složky = nevím');
+  assert.equal(beziVeSlozce(s, null), null, 'výpis procesů není = nevím');
+  assert.equal(beziVeSlozce({ connector: 'codex', cwd: '/x' }, [{ runtime: 'codex', cwd: '/x' }]), true);
+  assert.equal(beziVeSlozce({ connector: 'cursor', cwd: '/x' }, [{ runtime: 'claude-code', cwd: '/x' }]), null);
 });
 
 // --- Přepis: otázka agenta lidsky a i s nabízenými možnostmi ---
