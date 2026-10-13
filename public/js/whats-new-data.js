@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.9',
+    date: '2026-10-13',
+    title: 'Jistější aktualizace a rychlejší první agent',
+    items: [
+      'Přepnutí Stable/Preview okamžitě zruší zbytečné stahování včetně rozpracovaného instalátoru.',
+      'Před instalací aplikace znovu ověří celý SHA-256 otisk a velikost ZIPu, aby odmítla změněný nebo chybějící soubor.',
+      'Neplatná extrémně dlouhá čísla verzí z GitHubu již neovlivní výběr aktualizace.',
+      'První konverzace Claude Code se zachytí i po ztracené události při novém založení projects/.',
+      'Ikony v rozšíření a exportech pro Chrome Web Store jsou shodné s ověřenými PNG.',
+    ],
+    en: {
+      title: 'Safer updates and faster first agent detection',
+      items: [
+        'Switching Stable and Preview cancels obsolete downloads immediately, including partially streamed archives.',
+        'Before installation, the Mac app rechecks the entire downloaded ZIP against its SHA-256 and size, and refuses missing or altered files.',
+        'Unrepresentable GitHub version numbers can no longer interfere with update selection.',
+        'The first Claude Code conversation is detected even if a filesystem notification was missed after projects/ was created.',
+        'Store review assets and the packaged extension now share the same verified icon PNG files.',
+      ],
+    },
+  },
+  {
     version: '0.46.8',
     date: '2026-10-12',
     title: 'Rychleji zpátky k agentům a spolehlivější aktualizace',
