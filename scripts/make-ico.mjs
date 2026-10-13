@@ -1,8 +1,9 @@
 // Ikona pro Windows z jednoho zdrojového PNG: `node scripts/make-ico.mjs`
 //
-// Výsledek se jednou vygeneruje a uloží do repozitáře jako desktop/windows/Agenteeq.ico –
-// stejně jako Agenteeq.icns pro macOS. Důvod je stejný: ikona je schválený vizuální podklad,
-// ne mezivýsledek sestavení. Když se má změnit, změní se vědomě a je to vidět v diffu.
+// Soubor desktop/windows/Agenteeq.ico je čistě GENEROVANÝ při každém Windows
+// buildu z již kontrolovaného extension/icons/icon-128.png. Je gitignored.
+// Stejně tak Mac generuje .icns ze schváleného desktop/Icon.swift při buildu.
+// Historické kopie se správně neukládají do Gitu, aby se nemohly vrátit.
 //
 // Proč vlastní převod: projekt nemá žádné závislosti a nebude je mít ani kvůli obrázku.
 // Node umí zlib, a víc než zlib na PNG ani ICO potřeba není.
