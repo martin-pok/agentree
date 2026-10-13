@@ -27,6 +27,12 @@ function fetchForUpdate(payload = release()) {
 test('aktualizace: přijímá jen platné semver a přesný balíček platformy', async () => {
   assert.deepEqual(parseVersion('v1.20.3'), [1, 20, 3]);
   assert.equal(parseVersion('1.2'), null);
+  assert.equal(parseVersion('9007199254740991.0.0')?.[0], Number.MAX_SAFE_INTEGER);
+  for (const unsafe of ['9007199254740992.0.0', '999999999999999999999999.0.0', '0.9007199254740993.0', '1.0.99999999999999999999']) {
+    assert.equal(parseVersion(unsafe), null, `unsafe version should be rejected: ${unsafe}`);
+    assert.equal(compareVersions(unsafe, '1.0.0'), null);
+    assert.equal(assetName(unsafe, { platform: 'darwin', arch: 'arm64' }), '');
+  }
   assert.equal(compareVersions('1.2.3', '1.2.3'), 0);
   assert.equal(compareVersions('1.2.4', '1.2.3'), 1);
   assert.equal(assetName('0.30.0', { platform: 'darwin', arch: 'arm64' }), 'Agenteeq-0.30.0-macOS-arm64.zip');
@@ -460,4 +466,21 @@ test('a symlink cannot stand in for a SHA-matching downloaded update ZIP', { ski
   await fs.symlink(alias, file);
   assert.equal(await service.verifiedDownloadedPath(), null);
   assert.equal(service.state().status, 'available');
+});
+
+test('Preview ignores unrepresentable GitHub SemVer tags and selects the genuine latest release', async () => {
+  const valid = { ...release('0.46.8'), prerelease: true };
+  const unsafe = { ...release('9007199254740992.0.0'), prerelease: true };
+  const service = new UpdateService({
+    version: '0.46.6', dataDir: await tempDir('updates-unsafe-tags-'),
+    platform: 'darwin', arch: 'arm64', channel: 'preview',
+    fetchImpl: async (url) => {
+      assert.equal(url, PREVIEW_RELEASES_URL);
+      return new Response(JSON.stringify([unsafe, valid]), { status: 200 });
+    },
+  });
+  const result = await service.check();
+  assert.equal(result.status, 'available');
+  assert.equal(result.latestVersion, '0.46.8');
+  assert.equal(result.asset.name, 'Agenteeq-0.46.8-macOS-arm64.zip');
 });
