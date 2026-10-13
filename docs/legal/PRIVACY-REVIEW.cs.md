@@ -26,7 +26,7 @@ Zástupce v EU / vedoucí dozorový orgán: **[OVĚŘIT PODLE ORGANIZACE]**.
 | Vlastní API klíče poskytovatelů AI, OAuth prostředí | Vyžádaný dotaz na spotřebu či přihlášení do jejich nástroje | Funkce provedená na výslovnou akci uživatele; roli správce/poskytovatele vyhodnotit jednotlivě | Dodavatelé Anthropic/OpenAI/Google apod., vlastní DPA/terms; klíč v macOS Keychain, nikoliv zákaznická analytika Agenteeq |
 | Platby, faktury a daně — teprve po spuštění prodeje | Úhrada a účetnictví | Smlouva a zákonná povinnost, podle konkrétního prodejního procesu | Budoucí platební poskytovatel **[NENÍ AKTIVOVÁN]**, fakturační a zákonné retenční doby |
 
-**Důležité rozlišení:** síťové metadata technických požadavků (IP, User-Agent, čas) nejsou totéž jako odesílání obsahu AI konverzací. Veřejná privacy věta „automaticky jen ČNB, nic nikam jinam“ je příliš absolutní: aplikace kontroluje veřejné aktualizace u GitHubu; účet, vzdálená zařízení a provider integrace používají další síť podle povolených funkcí. **Každé tvrzení na webu musí projít testem skutečných síťových cest**, ne jen přečtením README.
+**Důležité rozlišení:** síťové metadata technických požadavků (IP, User-Agent, čas) nejsou totéž jako odesílání obsahu AI konverzací. Historická veřejná privacy věta „automaticky jen ČNB, nic nikam jinam“ byla v obou jazycích opravena v PR #221: aplikace kontroluje veřejné aktualizace u GitHubu; účet, vzdálená zařízení a provider integrace používají další síť podle povolených funkcí. **Každé tvrzení na webu musí projít testem skutečných síťových cest**, ne jen přečtením README.
 
 ## C. Zásady k dopracování dle GDPR čl. 13
 1. **Účel a právní titul** pro každou skutečně zpracovávanou kategorii, včetně oprávněného zájmu a jeho popisu. Neskládat automaticky všechny titulky pod „souhlas“.
@@ -42,7 +42,8 @@ Zástupce v EU / vedoucí dozorový orgán: **[OVĚŘIT PODLE ORGANIZACE]**.
 - [ ] **P0:** [DOPLNIT] identita správce, sídlo/adresa a přímý neveřejný GDPR kontakt (ne veřejný Issue).
 - [ ] **P0:** doložit právní tituly a rozdílné účely účet/web/support/extension.
 - [ ] **P0:** doplnit retenční lhůty, procesorů/DPA, přenos mimo EHP a pravidla pro technické logy/zálohy.
-- [ ] **P0:** upravit absolutní větu „jen ČNB“ o GitHub release check a všechny další síťové požadavky.
+- [x] **P0 dílčí náprava:** pravdivě zveřejnit GitHub release check vedle ČNB na obou veřejných privacy stránkách (PR #221). **Nedokazuje to úplný síťový audit.**
+- [ ] **P0 stále otevřené:** ověřit další síťové cesty, skutečné HTTP příjemce a obsah posílaných dat; popsat přesné podmínky volitelného účtu a integrací.
 - [ ] **P1:** posoudit věcnou správnost „všechno funguje bez účtu“ u konkrétního vydání; lokal-first core ano, volitelný sync ne.
 - [ ] **P1:** oba jazyky a propojení s podmínkami; otestovat jasný link ve webové i nativní aplikaci.
 - [ ] **P1:** evidence důsledků vypnutí účtu, RLS test cizího uživatele, smazání z cloudu a záloh po reálném e2e testu.
