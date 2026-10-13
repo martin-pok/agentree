@@ -1,5 +1,12 @@
 # Changelog
 
+## Nevydané změny po v0.46.10 — úplná shoda oficiálního loga
+
+- **Žádné staré ikony v balíčku pro Windows:** odstraněný starý `desktop/Agenteeq-icon.png` s odlišnou geometrií robota. Windows build jej spolu s případným zastaralým `Agenteeq.icns` explicitně vylučuje z instalačního ZIPu; nový CI test kontroluje **skutečný archiv**, nejen zdrojový kód. Mac už tyto staré kopie vylučoval.
+- **Stejné logo i na chybové stránce:** webová 404 výslovně odkazuje na oficiální robotí `/favicon.ico` a hlavní SVG master, stejně jako všechny jazykové varianty ostatních stránek.
+- **Brand gate:** přidané regresní testy shody SVG pro web/extension/Store a nepřítomnosti starých souborů; kontrola skutečné instalace a vizuální UAT na Macu/Windows/Chrome zůstává samostatně otevřená.
+- **Distribuce:** tyto změny vznikly až **po neměnném tagu `v0.46.10`**, a nejsou proto součástí existujícího osmipřílohového Draftu. Dostupné budou až v novém ověřeném vydání; zveřejnění ani instalace nejsou potvrzené.
+
 ## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
 
 **Dostupnost:** popis změn sám o sobě nepotvrzuje zveřejnění ani instalaci aplikace. Ověř skutečně publikovaný GitHub release a jeho přílohy; soukromý Draft se přes automatický updater nenabízí. Chrome Web Store se aktualizuje samostatně a vyžaduje ověření veřejné verze.
