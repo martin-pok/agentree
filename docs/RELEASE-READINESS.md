@@ -44,6 +44,7 @@
 4. Pouze po schválení UAT a všech kontrol zveřejnit `v0.46.8` jako Preview. Starší `v0.46.7` draft nepřepisovat ani automaticky nepublikovat. Stabilní `Latest` musí nadále ukazovat na `v0.46.0` až do samostatného rozhodnutí o Stable.
 
 5. Samostatnou novější `v0.46.9` jako Preview lze zveřejnit až po zeleném CI přesného commitu, novém tagu, ověřeném draftu, dokončeném zařízení UAT a výslovném schválení. Nikdy ji neoznačovat za dostupnou jen podle čísla v kódu.
+6. Následující `v0.46.10` jako Preview lze zveřejnit pouze po zeleném kompletním CI PR #207 i přesného `main` commitu, vytvoření **samostatného** neměnného tagu a Draftu, nezávislé kontrole skutečných příloh a splnění živého UAT v [#208](https://github.com/martin-pok/agentree/issues/208). Zveřejnění nesmí změnit Stable Latest ani automaticky aktualizovat Chrome Web Store.
 
 ## Co zůstává mimo automatickou garanci
 
