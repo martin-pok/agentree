@@ -5,6 +5,14 @@
 name: Audit release draft
 
 on:
+  # Reusable job: verifies the actual GitHub-hosted bytes within release.yml,
+  # avoiding GitHub's workflow_run chain depth limit (Testy → Prepare → Vydání → Audit).
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Exact immutable draft tag to audit'
+        required: true
+        type: string
   workflow_run:
     workflows: ['Vydání']
     types: [completed]
