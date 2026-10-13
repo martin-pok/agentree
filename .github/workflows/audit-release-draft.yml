@@ -1,7 +1,8 @@
 # Independent read-only verification of the exact bytes GitHub stores in a draft.
 # Does not create tags, upload binaries, or publish a release.
-# A one-time workflow-file push verifies the existing draft after introducing auto-audit.
-# Future successful release builds trigger this audit without extra manual steps.
+# A workflow-file push backfills the current unpublished draft; future releases
+# call this as a separate runner inside release.yml, bypassing GitHub's chain-depth cap.
+# Legacy workflow_run and explicit workflow_dispatch remain safe read-only fallbacks.
 name: Audit release draft
 
 on:
@@ -16,8 +17,8 @@ on:
   workflow_run:
     workflows: ['Vydání']
     types: [completed]
-  # One-time backfill for the current 0.46.9 draft, triggered when THIS
-  # workflow revision is merged to main; not every product commit.
+  # Backfill the currently tagged 0.46.10 draft when THIS workflow changes
+  # on main. Not triggered by unrelated product commits.
   push:
     branches: [main]
     paths:
