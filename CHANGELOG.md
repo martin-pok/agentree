@@ -12,6 +12,8 @@
 - **Odpověď agentovi na limitu.** Se známým časem obnovy by odpověď skončila stejnou hláškou, proto se pole nenabídne a místo něj stojí „Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.“ Bez známého času obnovy (stav je jen odhad) odpovědět jde – limit se mezitím mohl obnovit – a poznámka pod polem to říká.
 - **„Vyčerpáno“ se vejde do ukazatele.** Slovo v ukazateli limitu se dotýkalo oblouku; teď se jeho velikost řídí šířkou ciferníku a malý ukazatel je o něco větší.
 - **Průvodce na Přehledu.** Nesplněný první krok zní „Najít agenty na tomto počítači“ místo „Agenti na tomto počítači nalezeni“ a tlačítka v kartách stojí na jedné linii.
+- **Nastavení bez kolize s horní lištou.** V aplikaci pro Mac se lepivý nadpis Nastavení s akcemi vpravo nahoře (Připojeno, obnovit, hledat, upozornění) při otevření posunul o 100 px dolů a stál přes první kartu každé sekce. Lišta teď zůstává tam, kde stojí, nahoře v jedné linii s levým panelem, podmenu v jedné linii s nadpisem sekce, a při posouvání akce plynule ustoupí. Na užších oknech už nad lištou neprosvítá posouvaný obsah.
+- **Aktualizace: dvě volby, dvě skupiny.** Kanál (Stabilní / Preview) a způsob (Ručně / Automaticky) mají vlastní popisek a mezi sebou vzduch, obrysy vybraných karet se už nedotýkají.
 - **Útrata říká, co se počítá.** U starších ručních záznamů i u součtů stojí, že se do součtů, prognózy ani rozpočtu nepočítají. Dialog Rozpočty bez připojených nákladů za API řekne, že se rozpočet do té doby neukáže ani neupozorní.
 
 **Dostupnost:** neměnný Draft `v0.46.11` tyto opravy neobsahuje. Nový binární kandidát vyžaduje vlastní tag, kompletní CI, audit příloh a živé UAT; samotný commit ani nasazení webu není vydání aplikace.
