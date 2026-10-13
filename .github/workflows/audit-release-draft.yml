@@ -77,7 +77,7 @@ jobs:
             echo "::error::Successful build belongs to a different commit than the release tag."
             exit 1
           fi
-          # 'gh release view' may hide drafts under GitHub Actions even with
+          # The CLI GraphQL shortcut may hide drafts under GitHub Actions even with
           # a valid token. Read the authenticated REST inventory, then by ID.
           gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > release-list.json
           RELEASE_ID=$(node -e '
