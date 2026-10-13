@@ -33,5 +33,7 @@ test('publishing requires an explicit manual Preview/Stable choice and verifies 
   assert.match(publish, /channel:[\s\S]*?default: preview/);
   assert.match(publish, /confirm_stable:/);
   assert.match(publish, /scripts\/verify-release-assets\.mjs/);
-  assert.match(publish, /--prerelease --latest=false/);
+  assert.match(publish, /-F draft=false -F prerelease=true -f make_latest=false/);
+  assert.match(publish, /-F draft=false -F prerelease=false -f make_latest=true/);
+  assert.doesNotMatch(publish, /^\\s+gh release (?:view|download|edit)\\b/m);
 });

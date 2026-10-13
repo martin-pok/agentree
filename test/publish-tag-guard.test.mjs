@@ -47,7 +47,7 @@ test('publish workflow binds CI, notes and final visibility change to the first 
   const notes = workflow.indexOf('node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt --local');
   const changelog = workflow.indexOf('git show "${TAG_SHA}:CHANGELOG.md"');
   const finalCheck = workflow.lastIndexOf('node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt');
-  const publish = workflow.indexOf('gh release edit "$TAG" --notes-file poznamky.md --draft=false');
+  const publish = workflow.indexOf('gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"');
   assert.ok(initial > 0 && initial < ci && ci < notes && notes < changelog && changelog < finalCheck && finalCheck < publish);
   assert.match(workflow, /TAG_SHA=\$\(cat verified-tag-sha\.txt\)/);
 });
