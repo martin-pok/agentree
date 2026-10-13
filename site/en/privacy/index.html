@@ -44,10 +44,10 @@
     <h2>The desktop app</h2>
     <ul>
       <li><b>What it reads:</b> files that AI tools store on your computer themselves (for example Claude Code, Codex or Cursor transcripts). It reads them only on this computer and keeps its overview in the app’s own folder.</li>
-      <li><b>What it sends to the internet:</b> on its own, only a request for the Czech National Bank’s daily exchange rates for currency conversion. It contains none of your data.</li>
+      <li><b>Routine network requests:</b> the app checks public Agenteeq releases on GitHub for updates and requests daily exchange rates from the Czech National Bank for currency conversion. These requests do not include your conversation text or code; the recipient may process network metadata such as your IP address and request time.</li>
       <li><b>Only if you turn it on:</b> API spend through the official Anthropic or OpenAI interfaces with your admin key (the key stays in the macOS Keychain and goes only to that provider), and the Agenteeq account described below.</li>
       <li><b>Connecting models:</b> signing in to Claude Code or Codex happens directly with their provider. Agenteeq never sees your passwords or access keys. From the tool it learns only whether it is signed in and the plan name.</li>
-      <li>The app has no telemetry or analytics and shares nothing with third parties.</li>
+      <li>Agenteeq does not use its own analytics or advertising trackers. Routine requests and explicitly enabled connections do communicate with the providers described above. Optional account synchronization transmits only the stated numerical summaries, not conversation text.</li>
     </ul>
 
     <h2>Chrome extension</h2>
