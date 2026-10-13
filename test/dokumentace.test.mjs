@@ -148,13 +148,18 @@ test('independent draft audit re-downloads and checks actual GitHub bytes withou
   assert.doesNotMatch(workflow, /gh release (?:create|edit|upload)|git push|--draft=false/);
 });
 
-test('release 0.46.9 status keeps built Draft distinct from published release', async () => {
+test('current release status follows package version and distinguishes Draft from public updates', async () => {
   const readme = await zdroj('README.md');
   const roadmap = await zdroj('docs/ROADMAP.md');
   const readiness = await zdroj('docs/RELEASE-READINESS.md');
-  assert.match(readme, /\*\*0\.46\.9\*\* je již sestavená jako neveřejný Preview Draft/);
-  assert.match(roadmap, /audit stažených bajtů/);
-  assert.match(readiness, /assetsVerified=8/);
-  assert.match(readiness, /skutečné Mac\/Windows\/Chrome UAT/);
-  assert.doesNotMatch(readme, /0\.46\.9 zatím nemá tag|0\.46\.9.*není sestavená/);
+  assert.ok(readme.includes('**' + verze + '**'), 'README shows the current package version');
+  assert.ok(roadmap.includes('v' + verze + ' Preview'), 'roadmap active sprint follows package version');
+  assert.ok(readiness.includes('**v' + verze + ':'), 'release readiness refers to current version');
+  assert.match(readme, /neveřejný Draft|neveřejné vydání/, 'unpublished draft must not be advertised as public');
+  assert.match(roadmap, /nezávislý byte audit|nezávislý SHA-256 audit/, 'roadmap keeps real bytes audit evidence');
+  assert.match(readiness, /assetsVerified=8/, 'release readiness records verified actual release assets');
+  assert.match(readiness, /Mac|Chrome|Windows/, 'device UAT requirements remain explicit');
+  const current = roadmap.slice(roadmap.indexOf('## Právě teď'), roadmap.indexOf('## Backlog'));
+  assert.doesNotMatch(current, /\|\s*\*\*?P0\*\*?\s*\|\s*(?:0\.46\.(?:7|8|9|10))\b/,
+    'old immutable private Drafts must not be active parallel P0 release tasks');
 });
