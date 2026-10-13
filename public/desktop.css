@@ -83,7 +83,7 @@ html.is-desktop { --band-h: 88px; --desktop-top-inset: 44px; }
 html.is-desktop .sidebar { margin-top: var(--desktop-top-inset); top: var(--desktop-top-inset); bottom: 24px; height: calc(100dvh - var(--desktop-top-inset) - 44px); }
 /* WKWebView pokrývá i průhledné záhlaví. Nadpis a akce začínají až pod 44px
    pruhem pro traffic lights a tažení okna, na stejné úrovni jako levý panel. */
-html.is-desktop:not(.is-windows) .main { padding-top: max(var(--desktop-top-inset), calc(24px + env(safe-area-inset-top))); }
+html.is-desktop:not(.is-windows) .main { --main-top: max(var(--desktop-top-inset), calc(24px + env(safe-area-inset-top))); padding-top: var(--main-top); }
 html.is-desktop .offline code { display: none; }
 /* Na Windows má okno běžný titulkový pruh, pod který obsah nezajíždí. Odsazení 44 px,
    které na macOS uhýbá tlačítkům okna, by tam bylo jen prázdné místo navrchu. */

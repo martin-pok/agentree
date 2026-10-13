@@ -1288,13 +1288,19 @@ function update(topics) {
   const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
-    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Kanál aktualizací')}">
-      ${channelOption('stable', tr('Stabilní'), tr('Pouze ověřená stabilní vydání'))}
-      ${channelOption('preview', tr('Preview · testovací'), tr('Novinky dřív, ale s rizikem chyb'))}
+    <div class="set-choice">
+      <p class="set-choice-label" id="upd-channel-l">${tr('Kanál aktualizací')}</p>
+      <div class="appearance-options appearance-options--two" role="group" aria-labelledby="upd-channel-l">
+        ${channelOption('stable', tr('Stabilní'), tr('Pouze ověřená stabilní vydání'))}
+        ${channelOption('preview', tr('Preview · testovací'), tr('Novinky dřív, ale s rizikem chyb'))}
+      </div>
     </div>
-    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
-      ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
-      ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+    <div class="set-choice">
+      <p class="set-choice-label" id="upd-mode-l">${tr('Způsob aktualizací')}</p>
+      <div class="appearance-options appearance-options--two" role="group" aria-labelledby="upd-mode-l">
+        ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
+        ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+      </div>
     </div>
     <div class="set-actions">
       ${['available', 'downloaded'].includes(upd.status) && umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="install-update">${ICON.down}${tr('Aktualizovat na {0} a restartovat', upd.latestVersion)}</button>` : ''}

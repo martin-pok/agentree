@@ -116,7 +116,7 @@ body { letter-spacing: -.012em; }
   .sidebar .welcome b { font-size: 14px; font-weight: 400; }
   .sidebar .budget { display: none; }
   .sidebar .side-foot { order: 3; margin-top: 0; padding-top: 14px; font-size: 12px; }
-  .main { padding: 32px 36px 60px; }
+  .main { --main-top: 32px; padding: var(--main-top) 36px 60px; }
   .topbar { margin-bottom: 30px; }
 }
 @media (min-width: 1200px) {

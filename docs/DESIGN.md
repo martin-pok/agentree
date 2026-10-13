@@ -110,6 +110,15 @@ v jiném prohlížeči, delší patička –, profil zvolí menší podobu, a kd
 **Stavy.** Najetí změní plochu nebo linku (nikdy tvar), stisk zmenší tlačítko na 98 %, zakázané
 tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice ukazuje obrys 2 px.
 
+## Rozestupy v Nastavení
+
+Lepivá horní lišta a podmenu Nastavení se odvozují z `--main-top` (horní odsazení `.main`, které
+si každý režim – web, macOS okno, telefon, Koncert – nastaví sám). Žádné jiné číslo: lišta, která
+se lepí níž, než kde v toku stojí, při otevření sjede přes první kartu. Na užších oknech, kde je
+lišta neprůhledná, kryje pás nad ní stín v barvě papíru. Dvě nezávislé volby pod sebou (kanál
+a způsob aktualizací) mají každá viditelný popisek a mezi skupinami 24 px – víc než 10 px mezi
+kartami uvnitř skupiny, takže se obrysy vybraných karet nikdy nedotknou.
+
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
@@ -121,7 +130,10 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
 - `npm run qa:desktop-inset` v Chromiu a WebKitu simuluje `is-desktop` z WKWebView a měří,
   že nadpis i akce na Přehledu, Agentech a v Nastavení zůstávají pod 44px nativním pruhem.
   Na šířkách 900–1440 px začínají stejně vysoko jako levý panel; při 880 px a méně
-  se navigace přesouvá dolů a hlavní obsah zůstává mimo horní pruh. Výstupem jsou i snímky.
+  se navigace přesouvá dolů a hlavní obsah zůstává mimo horní pruh. V Nastavení navíc měří, že se
+  lepivý nadpis při otevření neposune (lepí se na `--main-top`, tedy přesně tam, kde v toku stojí),
+  že žádná karta nezasahuje pod akce vpravo nahoře a že dvě skupiny voleb v Aktualizacích mají
+  mezi sebou aspoň 16 px. Výstupem jsou i snímky.
   `npm run qa:native` navíc změří tytéž souřadnice v běžící macOS aplikaci přes sondu WKWebView,
   i když je nad Přehledem otevřený úvodní průvodce.
 - `npm run qa:desktop` ověří postranní panel na oknech 620–1200 px vysokých při šířce 881, 1180

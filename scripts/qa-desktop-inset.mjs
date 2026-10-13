@@ -54,6 +54,10 @@ for (const [engine, launcher] of [['chromium', chromium], ['webkit', webkit]]) {
             actions: actions.map(({ top, bottom, left, right }) => ({ top, bottom, left, right })),
             title: { left: title.left, right: title.right },
             overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            // Nastavení: viditelné karty (první skupina) a jejich vztah k akcím vpravo nahoře.
+            cards: [...document.querySelectorAll('.set-group:not([hidden]) .set-card')]
+              .filter((el) => getComputedStyle(el).display !== 'none')
+              .map((el) => el.getBoundingClientRect()).map(({ top, bottom, left, right }) => ({ top, bottom, left, right })),
           };
         });
         const where = `${engine} ${width}×${height} ${route}`;
@@ -68,6 +72,19 @@ for (const [engine, launcher] of [['chromium', chromium], ['webkit', webkit]]) {
           assert.ok(m.sidebarBottom <= height + 1, `${where}: spodní navigace je mimo okno`);
         }
         assert.ok(m.overflow <= 1, `${where}: vodorovné přetékání ${m.overflow} px`);
+        if (route === 'nastaveni') {
+          // Lepivá lišta se dřív lepila o --band-h + 56 px níž, než kde v toku stojí, a v aplikaci
+          // pro Mac tak sjela o 100 px přes první kartu Propojení.
+          assert.ok(Math.abs(m.titleTop - m.padding) <= 2, `${where}: nadpis Nastavení se při otevření posunul (${m.titleTop}/${m.padding})`);
+          const kolize = m.cards.filter((c) => m.actions.some((a) => c.top < a.bottom && c.bottom > a.top && c.left < a.right && c.right > a.left));
+          assert.equal(kolize.length, 0, `${where}: karta Nastavení zasahuje pod akce vpravo nahoře`);
+          // Dvě skupiny voleb v Aktualizacích: vybrané karty se obrysy nesmí dotknout.
+          await page.locator('.set-nav [data-jump="set-aplikace"]').click();
+          const mezery = await page.evaluate(() => [...document.querySelectorAll('[data-region="updates"] .set-choice')]
+            .map((el) => el.getBoundingClientRect())
+            .flatMap((r, i, all) => i ? [r.top - all[i - 1].bottom] : []));
+          assert.ok(mezery.length >= 1 && mezery.every((d) => d >= 16), `${where}: skupiny voleb Aktualizací jsou nalepené (${mezery})`);
+        }
         if (route === 'prehled' && [1440, 900, 375].includes(width)) {
           await page.screenshot({ path: `${out}/${engine}-desktop-inset-${width}.png` });
         }
