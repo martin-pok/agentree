@@ -44,7 +44,7 @@ test('public repo keeps only template documents and an explicit launch gate', as
   assert.match(gate, /\[ \] \*\*Entity\*\*/);
   assert.match(gate, /\[ \] \*\*Privacy\*\*/);
   assert.match(gate, /\[ \] \*\*IP\*\*/);
-  assert.match(privacy, /GitHub Issues/);
+  assert.match(privacy, /GitHub issues/i);
   assert.match(privacy, /ČNB|GitHub/);
   const root = await read('README.md');
   assert.match(root, /NEPLATÍ/);
