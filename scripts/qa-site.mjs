@@ -58,6 +58,29 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Verify real browser/CSP integration, not merely the metadata parser.
+      // Public metadata is intercepted above with an exact deterministic
+      // fixture; the production site fetches only near the download block.
+      {
+        const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+        const cizi = [];
+        const chyby = [];
+        await jenMistni(p, cizi);
+        p.on('pageerror', e => chyby.push(e.message));
+        await p.goto(url + '/instalace');
+        assert.match(await p.locator('[data-preview-mac]').getAttribute('href'), /v0\\.46\\.6/);
+        await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
+        await p.waitForFunction(() => document.querySelector('[data-preview-mac]')?.getAttribute('href')
+          ?.includes('/releases/download/v0.46.10/'), { timeout: 5000 });
+        assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
+          'https://github.com/martin-pok/agentree/releases/tag/v0.46.10');
+        assert.match(await p.locator('[data-preview-label]').innerText(), /0\\.46\\.10/);
+        assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
+          /releases\\/latest\\/download\\/Agenteeq-macOS-arm64\\.dmg/);
+        assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');
+        assert.deepEqual(chyby, [], 'Preview must not cause an unhandled browser exception');
+        await p.close();
+      }
       // Robot u karet soukromí sleduje myš jen při povoleném pohybu. Ověřené na
       // skutečně vykresleném SVG v obou jádrech, včetně návratu očí do středu.
       {
