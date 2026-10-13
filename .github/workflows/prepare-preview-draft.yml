@@ -28,11 +28,13 @@ jobs:
       contents: read
       actions: write # only dispatch existing release.yml; no direct publishing
     steps:
-      - uses: actions/checkout@v5
+      # Záměrně bez `ref:`. U události workflow_run je výchozí checkout nejnovější commit
+      # výchozí větve (main), tedy důvěryhodný kód, ne obsah z cizího běhu. Brána níže pak
+      # vyžaduje HEAD == TESTED_SHA == aktuální main; když se main mezitím posunul, nic se nespustí.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       - name: Verify exact main, version consistency and release notes
         id: gate

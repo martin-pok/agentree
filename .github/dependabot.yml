@@ -1,0 +1,17 @@
+# Týdenní návrhy aktualizací akcí v .github/workflows (všechny jsou připnuté na celý commit,
+# Dependabot mění SHA i komentář s verzí). Návrh je jen PR: sloučí ho člověk po zelené CI.
+# Ekosystém npm záměrně chybí: projekt nemá žádné runtime závislosti ani devDependencies
+# (AGENTS.md, „Bez runtime závislostí“); nástroj QA (playwright) se instaluje jen v CI.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'ci(deps)'

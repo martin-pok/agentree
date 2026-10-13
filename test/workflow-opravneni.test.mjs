@@ -19,7 +19,7 @@ const ZAPIS = {
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
   'scorecard.yml': { scorecard: 'nahrání výsledků do code scanning (security-events) a ověření původu přes OIDC (id-token); do repozitáře nezapisuje' },
-
+  'codeql.yml': { analyze: 'nahrání výsledků CodeQL do code scanning (security-events); do repozitáře nezapisuje' },
 };
 
 // Klíč na nejvyšší úrovni i s odsazenými řádky pod ním (`permissions: {}` i víceřádkový zápis).
@@ -105,8 +105,7 @@ test('workflowy: žádný pull_request_target a nic zvenku vložené do textu sk
 test('workflowy: cizí akce připnuté na celý commit, checkout bez uloženého tokenu, kde se nepushuje', () => {
   for (const { f, yml } of workflowy) {
     for (const [, akce, verze, poznamka] of yml.matchAll(/uses:\s*([\w.-]+\/[\w./-]+)@(\S+)([^\n]*)/g)) {
-      // Akce GitHubu (actions/*) zůstávají na hlavní verzi jako v celém repozitáři; cizí jen na SHA.
-      if (akce.startsWith('actions/')) continue;
+      // Od 13. 10. 2026 i akce GitHubu (actions/*) jen na SHA (OpenSSF Scorecard: Pinned-Dependencies).
       assert.match(verze, /^[0-9a-f]{40}$/, `${f}: ${akce} musí být připnutá na celý commit, ne na ${verze}`);
       assert.match(poznamka, /#\s*v\d/, `${f}: u ${akce} chybí verze v komentáři`);
     }
@@ -160,4 +159,63 @@ test('automatic draft preparation has only workflow dispatch rights, never relea
   assert.match(draft, /github\.event\.workflow_run\.conclusion == 'success'/);
   assert.match(draft, /inputs\[expected_sha\]=\$TESTED_SHA/);
   assert.doesNotMatch(skripty(draft).join('\n'), /gh release (create|edit)|--draft=false|--latest/);
+});
+
+test('workflowy: každé `uses:` je připnuté na 40místný commit s verzí v komentáři (jen lokální ./ výjimka)', () => {
+  let nalezeno = 0;
+  for (const { f, yml } of workflowy) {
+    for (const [, odkaz, poznamka] of yml.matchAll(/^\s*(?:-\s+)?uses:\s*(\S+)([^\n]*)/gm)) {
+      if (odkaz.startsWith('./')) continue; // znovupoužitelný workflow z téhož commitu
+      nalezeno++;
+      assert.match(odkaz, /^[\w.-]+\/[\w./-]+@[0-9a-f]{40}$/, `${f}: ${odkaz} není připnuté na celý commit (tag ani větev nestačí)`);
+      assert.match(poznamka, /^\s+#\s*v\d+\.\d+\.\d+\s*$/, `${f}: u ${odkaz} chybí přesná verze v komentáři (# vX.Y.Z)`);
+    }
+  }
+  assert.ok(nalezeno >= 40, 'čtení nenašlo žádné akce – test by prošel naprázdno');
+});
+
+test('workflowy: kód ze spuštěného běhu (workflow_run.head_sha) se nikdy nestahuje checkoutem', () => {
+  for (const { f, yml } of workflowy) {
+    for (const krok of yml.split(/^\s*- /m).filter((k) => /uses:\s*actions\/checkout@/.test(k))) {
+      assert.doesNotMatch(krok, /ref:[^\n]*(?:workflow_run|head_sha|pull_request\.head)/, `${f}: checkout nesmí stáhnout ref z cizího běhu nebo PR (Scorecard: Dangerous-Workflow)`);
+    }
+  }
+  const prepare = workflowy.find((w) => w.f === 'prepare-preview-draft.yml').yml;
+  // Brána místo toho porovnává výchozí checkout s otestovaným SHA i s aktuálním main.
+  assert.match(prepare, /"\$\(git rev-parse HEAD\)" != "\$TESTED_SHA"/);
+  assert.match(prepare, /"\$CURRENT_MAIN" != "\$TESTED_SHA"/);
+  const audit = workflowy.find((w) => w.f === 'audit-release-draft.yml').yml;
+  // Ověření přesného zdroje zůstává: SHA tagu musí sedět s SHA úspěšného sestavení.
+  assert.match(audit, /EXPECTED_RELEASE_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \}\}/);
+  assert.match(audit, /Successful build belongs to a different commit than the release tag/);
+});
+
+test('CodeQL: JavaScript, práva jen čtení + security-events u úlohy, bez uloženého tokenu', () => {
+  const codeql = workflowy.find(({ f }) => f === 'codeql.yml')?.yml || '';
+  assert.match(codeql, /^permissions:\n  contents: read\n/m);
+  assert.match(codeql, /^    permissions:\n      contents: read\n      security-events: write/m);
+  assert.match(codeql, /languages: javascript-typescript/);
+  assert.match(codeql, /\n  push:\n    branches: \[main\]/);
+  assert.match(codeql, /\n  pull_request:\n    branches: \[main\]/);
+  assert.match(codeql, /\n  schedule:/);
+  assert.match(codeql, /persist-credentials: false/);
+});
+
+test('Dependabot hlídá akce v workflowech, týdně a s malým počtem otevřených PR', async () => {
+  const dependabot = await fs.readFile(new URL('../.github/dependabot.yml', import.meta.url), 'utf8');
+  assert.match(dependabot, /package-ecosystem: github-actions/);
+  assert.match(dependabot, /interval: weekly/);
+  assert.match(dependabot, /open-pull-requests-limit: [1-5]\b/);
+  assert.match(dependabot, /groups:/);
+  // Projekt nemá žádné závislosti (AGENTS.md); npm ekosystem by hlídal prázdný seznam.
+  const balicek = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(balicek.dependencies, undefined);
+  assert.equal(balicek.devDependencies, undefined);
+  assert.doesNotMatch(dependabot, /package-ecosystem: npm/);
+});
+
+test('workflowy: nástroje QA se nespouštějí přes `npx` (při chybějícím balíčku by stáhl libovolnou verzi)', () => {
+  for (const { f, yml } of workflowy) {
+    assert.doesNotMatch(skripty(yml).join('\n'), /\bnpx\b/, `${f}: npx bez přesné verze`);
+  }
 });

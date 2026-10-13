@@ -35,12 +35,12 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
       # Projekt nemá žádné závislosti, takže žádná instalace není potřeba — jen Node.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
@@ -68,11 +68,11 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
@@ -111,7 +111,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: qa-native-windows
@@ -120,7 +120,7 @@ jobs:
 
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
@@ -134,11 +134,11 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
@@ -167,7 +167,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: qa-native-macos
@@ -181,21 +181,23 @@ jobs:
     # Instalace prohlížečů (apt) sama trvá na runneru 1–11 minut, 20 minut na celek nestačilo.
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       # Výhradně nástroj QA; nevstupuje do runtime balíčku ani package.json.
+      # Prohlížeče se instalují z lokálního binárního souboru (ne `npx`): `npx` by při chybějícím
+      # balíčku tiše stáhl libovolnou verzi; takhle by krok selhal.
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium webkit
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
       - run: npm run qa:desktop
       - run: npm run qa:desktop-inset
       - run: npm run qa:assistant
       - run: npm run qa:refresh
       - run: npm run qa:tvary
       - run: npm run qa:studio
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: browser-qa
@@ -212,17 +214,17 @@ jobs:
     # Allow the full QA to finish; never treat cancelled tests as passing.
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium webkit
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
       - run: npm run qa:site
       - run: npm run qa:extension
       - run: npm run qa:contrast
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: browser-web-qa
@@ -237,13 +239,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Ověřit PWA a Apple ikony proti Dock SVG
         run: npm run qa:icons
@@ -262,14 +264,14 @@ jobs:
       - name: Sestavit instalační ZIP rozšíření pro Chrome Web Store
         run: npm run build:extension
       - name: Uložit ZIP připravený k nahrání do Chrome Web Store
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: agenteeq-extension-store-upload
           path: dist/agenteeq-extension-*.zip
           if-no-files-found: error
           retention-days: 14
       - name: Uložit skutečné snímky pro Chrome Web Store
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: chrome-store-screenshots
@@ -278,7 +280,7 @@ jobs:
             branding/chrome-web-store/export/en/snimek-*.png
           retention-days: 14
       - name: Uložit skutečně vyrenderované brand assety
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: chrome-store-branding
@@ -297,7 +299,7 @@ jobs:
         run: node scripts/prepare-chrome-store-kit.mjs
       - name: Uložit kompletní balíček obchodu s otisky souborů
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: chrome-store-review-kit
           path: dist/chrome-store-kit/
