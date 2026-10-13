@@ -7,8 +7,12 @@
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
 import { robot } from '/js/robot-svg.js';
+import { enableLivePreview } from '/preview-release.js';
 
 const anglicky = document.documentElement.lang === 'en';
+
+// Published Preview and its changelog move together, without changing Stable.
+enableLivePreview();
 
 // Lišta nahoře splývá s úvodem; jakmile stránka odjede, dostane průhled a oddělí se linkou (site/lp.css).
 const lista = document.querySelector('.nav');
