@@ -51,10 +51,11 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 
 **Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
 
-## Právě teď — 0.46.9 Preview kandidát a 0.46.8 UAT
+## Právě teď — 0.46.10 Preview zdrojový kandidát, 0.46.9 Draft a UAT
 
 | Priorita | Výsledek | Aktuální stav (13. 10. 2026) | Hotovo, až když… |
 |---|---|---|---|
+| P0 | 0.46.10 Preview — nový bezpečnější updater | PR #206 sloučené s 8/8 CI; PR #207 sjednocuje verzi a CZ/EN changelog. Zatím **bez ověřeného 0.46.10 Draftu a UAT**, issue [#208](https://github.com/martin-pok/agentree/issues/208). | Plných 8/8 CI PR i `main`, samostatný tag a ověřené instalační přílohy; poté skutečné Mac/Chrome/Windows UAT, schválená Preview publikace. |
 | P0 | 0.46.9 Preview — dokončit release UAT | Tag a 8/8 CI, sestavený Draft s 8 přílohami i nezávislý SHA-256 audit hotové; **skutečná instalace na Macu, OAuth, aktualizace, Chrome/Windows a publikace stále otevřené**; [issue #194](https://github.com/martin-pok/agentree/issues/194). | Doložené reálné zařízení UAT, rozhodnutí vlastníka a teprve potom schválená ruční publikace v Preview. |
 | P0 | Bezpečný release 0.46.8 Preview | Tag `dd32fa98`; 8/8 CI; neveřejný draft `410973749`; skutečné přílohy 8/8 ověřené; izolovaný Mac start 11/11. Instalace/upgrade a Chrome UAT otevřené. | Skutečné Mac/Chrome UAT a výslovně schválená publikace pouze jako Preview; [issue #187](https://github.com/martin-pok/agentree/issues/187) |
 | P0 | Oddělené kanály Stable / Preview | Stable Latest je `v0.46.0`, veřejný Preview je `v0.46.6`; bezpečnost publikování sloučena v PR #156 | Preview ponechá `Latest` beze změny, Stable vyžaduje samostatnou volbu i potvrzení a je pokryto testy |
