@@ -121,6 +121,12 @@ test('roadmap current sprint must not refer to an obsolete release', async () =>
 test('independent draft audit re-downloads and checks actual GitHub bytes without publishing', async () => {
   const workflow = await zdroj('.github/workflows/audit-release-draft.yml');
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /workflow_run:[\\s\\S]*workflows: \\['Vydání'\\]/, 'successful release build triggers independent audit');
+  assert.match(workflow, /github.event.workflow_run.conclusion == 'success'/);
+  assert.match(workflow, /EXPECTED_RELEASE_SHA:[^\\n]*github.event.workflow_run.head_sha/);
+  assert.match(workflow, /paths:\\s*\\n\\s*- '\\.github\\/workflows\\/audit-release-draft\\.yml'/,
+    'workflow-file push backfills the existing draft just once');
+  assert.match(workflow, /steps.source.outputs.tag/g);
   assert.match(workflow, /contents: read/);
   assert.match(workflow, /verify-publish-tag\.mjs/);
   assert.match(workflow, /test\.yml\/runs\?head_sha=/);
