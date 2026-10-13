@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.11',
+    date: '2026-10-13',
+    title: 'Jednotné logo a aktuální instalační balíčky',
+    items: [
+      'Ikona robota má na Macu, Windows, webu a v rozšíření stejné proporce. Staré verze ikon se už nepřibalují k aplikaci.',
+      'Web nabízí aktuální skutečně publikovanou Preview verzi pro Mac včetně odkazu na její změny, aniž by zobrazoval neveřejné rozpracované verze.',
+      'Na všech stránkách webu včetně chybové stránky je oficiální ikona Agenteeq. Ověření distribučního ZIPu nyní automaticky hlídá staré logo.',
+    ],
+    en: {
+      title: 'Consistent branding and up-to-date installers',
+      items: [
+        'The robot icon now uses the same proportions across Mac, Windows, the website and the extension. Legacy icon files are no longer bundled.',
+        'The website offers the latest actually published Mac Preview alongside its matching release notes, without advertising unpublished drafts.',
+        'All site pages, including error pages, use the official Agenteeq icon. The packaged Windows ZIP is now checked for old branding.',
+      ],
+    },
+  },
+  {
     version: '0.46.10',
     date: '2026-10-13',
     title: 'Bezpečnější instalace aktualizací',
