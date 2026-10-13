@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import v8 from 'node:v8';
 import { maskedCrc, unsnappy, logRecords, tableEntries, readLevelSnapshot, readClaudeDesktopCache, decodeClone } from '../src/claude-desktop-cache.js';
-import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage } from '../src/connectors/claude-desktop-code.js';
+import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage, hlasenyStav } from '../src/connectors/claude-desktop-code.js';
 import { createSession, deriveStatus } from '../src/model.js';
 import { appSupportDir } from '../src/platform.js';
 import { tempDir, startTestServer, api, waitFor, openStream } from './helpers.mjs';
@@ -71,7 +71,11 @@ test('Claude remote: old running cache cannot become live from unrelated cache t
   const data = remoteSessions([{ key: 'react-query-cache', value: stale }]);
   const message = { type: 'assistant', uuid: 'event1', created_at: new Date(now - 3600000).toISOString(), message: { id: 'message1', content: [{ type: 'text', text: 'Hotovo.' }], stop_reason: 'end_turn', usage: { input_tokens: 12, output_tokens: 4 } } };
   const s = applyRemoteSession(newSession(), meta, { tree: { kind: 'code_session', messages: [message, message, { ...message, uuid: 'subagent', parent_tool_use_id: 'task1' }] } }, data.observedAt, now);
-  assert.notEqual(deriveStatus(s, now).status, 'working');
+  const d = deriveStatus(s, now);
+  assert.notEqual(d.status, 'working');
+  // Naposledy hlášené „pracuje“ není „hotovo“: dřív tu stálo „Hotovo, čeká na další zadání“.
+  assert.equal(d.done, false); assert.equal(d.stale, true);
+  assert.match(d.reason, /Při posledním načtení pracoval/);
   assert.equal(s.tokens.input, 12); assert.equal(s.tokens.output, 4); assert.equal(s.transcript.length, 1);
   assert.equal(Object.values(s.hourly).reduce((a, n) => a + n, 0), 16);
 });
@@ -154,4 +158,58 @@ test('Claude Desktop: vytížení plánu z uložené stránky Usage – přesný
     ['claude:seven_day:desktop', 'desktop-usage', 70, now - 60e3],
   ]);
   assert.ok(!JSON.stringify(zapsane).includes('example.com'), 'z účtu se nic nečte');
+});
+
+// Skutečné hodnoty z API (13. 10. 2026): výčet „SESSION_STATUS_RUNNING“ / „SESSION_STATUS_BUCKET_WORKING“,
+// kategorie „need_input“. Malá písmena REST tvaru platí dál. Relace i texty v testu jsou umělé.
+test('Claude remote: rozpozná běh, čekání i selhání ve výčtovém i REST tvaru', () => {
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_RUNNING', status_bucket: 'SESSION_STATUS_BUCKET_WORKING' }), 'working');
+  assert.equal(hlasenyStav({ session_status: 'running' }), 'working');
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_WORKING' }), 'working');
+  assert.equal(hlasenyStav({ session_status: 'requires_action' }), 'needs_input');
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_BLOCKED', post_turn_summary: { status_category: 'need_input' } }), 'needs_input');
+  assert.equal(hlasenyStav({ session_status: 'idle', post_turn_summary: { status_category: 'need_input' } }), 'needs_input');
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_FAILED', post_turn_summary: { status_category: 'failed' } }), 'failed');
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_REVIEW_READY' }), '');
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_COMPLETED' }), '');
+  // Souhrn minulého tahu nepřebije nový běh.
+  assert.equal(hlasenyStav({ session_status: 'SESSION_STATUS_RUNNING', post_turn_summary: { status_category: 'failed' } }), 'working');
+  assert.equal(hlasenyStav({}), '');
+  assert.equal(hlasenyStav(null), '');
+});
+
+test('Claude remote: běžící relace ve výčtovém tvaru pracuje, čekající žádá rozhodnutí i ze staršího načtení', () => {
+  const now = Date.now();
+  const enumZdroj = { sources: [{ git_repository: { url: 'https://github.com/example/project' } }], model: 'claude-opus-fixture' };
+  const bezi = { id, title: 'Běžící vzdálený agent', session_status: 'SESSION_STATUS_RUNNING', status_bucket: 'SESSION_STATUS_BUCKET_WORKING', created_at: new Date(now - 600e3).toISOString(), updated_at: new Date(now - 5e3).toISOString(), session_context: enumZdroj };
+  const data = remoteSessions([{ key: 'react-query-cache', value: cache([bezi], now - 3e3) }]);
+  assert.equal(data.sessions.length, 1, 'záznam bez pole type se nezahodí');
+  const s = applyRemoteSession(newSession(), data.sessions[0], null, data.observedAt, now);
+  assert.equal(deriveStatus(s, now).status, 'working');
+  assert.equal(s.repo, 'example/project');
+  // Po 2 minutách bez nového načtení je to nečerstvé, ale pořád ne „hotovo“.
+  const pozdeji = deriveStatus(s, now + 3 * 60e3);
+  assert.equal(pozdeji.status, 'waiting'); assert.equal(pozdeji.done, false);
+
+  const ceka = { ...bezi, session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_BLOCKED', updated_at: new Date(now - 20 * 60e3).toISOString(), post_turn_summary: { status_category: 'need_input', needs_action: 'Mám nasadit na produkci?' } };
+  const c = applyRemoteSession(newSession(), ceka, null, now - 15 * 60e3, now);
+  const dc = deriveStatus(c, now);
+  assert.equal(dc.status, 'needs_input'); assert.equal(dc.reason, 'Mám nasadit na produkci?');
+  // Čekání staré přes 12 h už do rozhodnutí nepatří (deriveStatus).
+  const stara = applyRemoteSession(newSession(), { ...ceka, updated_at: new Date(now - 13 * 3600e3).toISOString() }, null, now - 60e3, now);
+  assert.notEqual(deriveStatus(stara, now).status, 'needs_input');
+});
+
+test('Claude remote: novější uložený přepis s rozběhnutým tahem pracuje, i když seznam relací je starší', () => {
+  const now = Date.now();
+  const meta = { ...metadata(now), session_status: 'idle', status_bucket: 'completed', post_turn_summary: { status_category: 'completed' }, updated_at: new Date(now - 10 * 60e3).toISOString() };
+  const zadani = { type: 'user', uuid: 'u1', created_at: new Date(now - 40e3).toISOString(), message: { role: 'user', content: 'Oprav test' } };
+  const nastroj = { type: 'assistant', uuid: 'a1', created_at: new Date(now - 20e3).toISOString(), message: { id: 'm1', content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'npm test' } }], stop_reason: 'tool_use', usage: { input_tokens: 1, output_tokens: 1 } } };
+  const s = applyRemoteSession(newSession(), meta, { tree: { kind: 'code_session', messages: [zadani, nastroj] } }, now - 9 * 60e3, now);
+  const d = deriveStatus(s, now);
+  assert.equal(d.status, 'working');
+  assert.notEqual(d.reason, 'Pracuje podle stavu v Claude Desktopu', 'činnost z přepisu, ne obecná věta');
+  // Seznam načtený po konci tahu má přednost před starším přepisem.
+  const po = applyRemoteSession(newSession(), meta, { tree: { kind: 'code_session', messages: [zadani, nastroj] } }, now - 5e3, now);
+  assert.notEqual(deriveStatus(po, now).status, 'working');
 });

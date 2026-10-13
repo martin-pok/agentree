@@ -32,6 +32,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
     permissionMode: '',   // režim oprávnění Claude Code, když ho přepis nese
     staleMs: 5 * MIN,
+    staleReason: '',      // vlastní důvod nečerstvého tahu, když ho zdroj zná (claude-desktop-code.js)
     turnStartedAt: 0,
     turnSteps: 0,
     activity: '',
@@ -176,7 +177,7 @@ export function deriveStatus(s, now) {
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
   const done = answered && !stale;
-  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
   if (age < DAY) return { status: 'idle', reason: '', stale, done };
   return { status: 'archived', reason: '', stale, done };
 }
