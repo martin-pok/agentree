@@ -232,9 +232,25 @@ ve složce, o které Agenteeq neví. Proto:
   starší část přepisu a dodavatel ji může změnit. `observation.partial` vždy označuje neúplnost;
   `transcriptThrough` popisuje poslední dostupné razítko. Neznámé tokeny se neodhadují.
   Metadata přidají jen bod hlášené změny do osy, nikdy souvislou práci od vytvoření relace.
-  `running/working/busy` je čerstvý jen při pozorování konkrétního dotazu během 2 minut;
-  později platí stávající model stale. `failed` přebíráme ze serverové kategorie, přesný důvod
-  (např. limit) bez uložené chyby netvrdíme. Konverzace se otevírá na `https://claude.ai/code/session_…`.
+  **Hodnoty stavu (`hlasenyStav`):** interní API téže relace je posílá jako výčet – `session_status`
+  `SESSION_STATUS_RUNNING` / `_IDLE` / `_ARCHIVED`, `status_bucket` `SESSION_STATUS_BUCKET_WORKING` /
+  `_BLOCKED` / `_REVIEW_READY` / `_COMPLETED` / `_FAILED`, `post_turn_summary.status_category`
+  `need_input` / `review_ready` / `completed` / `failed` a u čekání `post_turn_summary.needs_action`
+  s otázkou agenta (✅ ověřeno 13. 10. 2026 na skutečných relacích účtu vlastníka, jen metadata).
+  Jestli seznam v cache Claude Desktopu nese tytéž hodnoty, nebo REST podobu malými písmeny
+  (`running`, `requires_action`), na disku ověřené není 🧪 – čte se obojí, předpona i velikost písmen
+  se ignorují. Do 0.46.11 se čekání hledalo podle `needs_input`/`needs_action`, které nepřicházejí,
+  a výčtová podoba běhu se nepoznala vůbec.
+  „Pracuje“ (`running`/`working`/`busy`) platí k `state.dataUpdatedAt` dotazu a 2 minuty od něj
+  je práce; později je tah nečerstvý (`stale`) s důvodem „Při posledním načtení pracoval · novější
+  stav Claude Desktop neuložil“ – nikdy „hotovo“. Uložený přepis `code:cse_…` s rozběhnutým tahem,
+  jehož poslední zpráva je novější než načtení seznamu, má přednost (i jeho popis činnosti).
+  Čekání na rozhodnutí (`requires_action`, skupina `blocked`, kategorie `need_input`) a selhání se
+  samy nezmění, platí od `updated_at` bez ohledu na stáří načtení (čekání 12 h, `deriveStatus`).
+  `failed` přebíráme ze serverové kategorie, přesný důvod (např. limit) bez uložené chyby netvrdíme.
+  Zdroj repozitáře se čte v REST tvaru `{ type: 'git_repository', url }` i ve výčtovém
+  `{ git_repository: { url } }`; záznam bez pole `type` se nezahodí. Stav zdroje v Nastavení uvádí,
+  kdy Claude Desktop seznam relací naposledy uložil. Konverzace se otevírá na `https://claude.ai/code/session_…`.
 - **Vytížení plánu z uložené stránky Usage 🧪 (neověřeno na skutečných datech):** stránka Usage
   na claude.ai načítá `five_hour` a `seven_day` s `utilization` (procenta) a `resets_at` (ISO čas
   obnovy od serveru) – stejná dvojice, jakou hlásí stavový řádek Claude Code. Pokud ji Desktop uloží

@@ -179,6 +179,7 @@ export default {
   // src/connectors/claude-desktop-code.js
   "Claude Desktop · vzdálený Code": "Claude Desktop · remote Code",
   "Pracuje podle stavu v Claude Desktopu": "Working, according to Claude Desktop",
+  "Při posledním načtení pracoval · novější stav Claude Desktop neuložil": "Was working when last loaded · Claude Desktop has not saved a newer status",
   "Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.": "The remote agent ended with an error. Open Claude for details.",
   "Vzdálený agent potřebuje rozhodnutí. Otevři Claude.": "The remote agent needs a decision. Open Claude.",
   "Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.": "The cache has no list of remote agents. Open the Code tab in Claude.",
@@ -186,6 +187,7 @@ export default {
   "Claude/IndexedDB (místní cache vzdálených relací)": "Claude/IndexedDB (local cache of remote sessions)",
   "Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.": "Remote agents, their last reported status and the available part of the transcript. Internal Claude Desktop format; tokens may be incomplete.",
   "Sleduji {0} vzdálených relací z místní cache Claude Desktopu.": "Tracking {0} remote sessions from the local Claude Desktop cache.",
+  "Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.": "Tracking {0} remote sessions from the local Claude Desktop cache. The session list was last saved {1}.",
   "Zatím bez místní cache vzdálených agentů.": "No local cache of remote agents yet.",
 
   // src/connectors/claude-desktop-usage.js
