@@ -129,6 +129,7 @@ jobs:
       # je jediný, kdo ví, jestli se podepsal Developer ID.
       - name: Přegenerovat popis
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
           mkdir -p prilohy
@@ -144,7 +145,12 @@ jobs:
           # Changelog musí pocházet ze stejného commitu jako vydávané binárky.
           # Checkout main používáme pro bezpečnostní verifier, ne pro release obsah.
           git fetch --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}"
-          git show "${TAG}:CHANGELOG.md" > CHANGELOG.md
+          TAG_SHA=$(git rev-parse "${TAG}^{commit}")
+          REF_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.sha)
+          REF_TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.type)
+          if [ "$REF_TYPE" = "tag" ]; then REF_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${REF_SHA}" --jq .object.sha); fi
+          test "$TAG_SHA" = "$REF_SHA" || { echo "::error::Release tag moved during publication."; exit 1; }
+          git show "${TAG_SHA}:CHANGELOG.md" > CHANGELOG.md
           node scripts/release-notes.mjs "${TAG#v}" prilohy > poznamky.md
           cat poznamky.md
 
