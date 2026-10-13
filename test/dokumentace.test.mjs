@@ -134,6 +134,9 @@ test('independent draft audit re-downloads and checks actual GitHub bytes withou
   assert.ok(workflow.includes('contents: write'), 'draft visibility requires scoped Contents write in GitHub Actions');
   assert.ok(workflow.includes('release-list.json'), 'resolve private draft through authenticated REST inventory');
   assert.ok(workflow.includes('releases/assets/${asset_id}'), 'download real draft bytes through REST asset ID');
+  assert.ok(workflow.includes('while read -r asset_id asset_name; do'), 'each draft archive must be downloaded');
+  assert.ok(workflow.includes('done < draft-asset-ids.tsv'), 'asset download loop must be closed');
+  assert.ok(workflow.trimEnd().endsWith('retention-days: 30'), 'audit workflow must not contain malformed trailing YAML');
   assert.doesNotMatch(workflow, /gh release view|gh release download/,
     'CLI shortcuts can hide Drafts from the GitHub Actions token');
   assert.match(workflow, /verify-release-assets\.mjs "\$TAG" audited-assets release-metadata\.json/);
