@@ -112,10 +112,17 @@ test('roadmap current sprint must not refer to an obsolete release', async () =>
   const doc = await zdroj('docs/ROADMAP.md');
   const current = doc.slice(doc.indexOf('## Právě teď'), doc.indexOf('## Backlog'));
   const { version } = JSON.parse(await zdroj('package.json'));
-  assert.ok(current.includes(version + ' Preview'), 'active roadmap must mention current package version ' + version);
   const readiness = await zdroj('docs/RELEASE-READINESS.md');
   const instructions = readiness.slice(readiness.indexOf('## Jaký je další postup'), readiness.indexOf('## Co zůstává'));
-  assert.ok(instructions.includes('`v' + version + '` jako Preview'), 'publish instructions must name current candidate v' + version);
+  if (readiness.includes('STOP publikace `v' + version + '`')) {
+    assert.ok(current.includes(version), 'blocked release remains visible in active roadmap');
+    assert.ok(instructions.includes('`v' + version + '`') && instructions.includes('zablokovaný pro publikaci'),
+      'publish instructions must explicitly block the defective immutable Draft');
+    assert.ok(!instructions.includes('tag=v' + version), 'blocked Draft cannot remain a publish target');
+  } else {
+    assert.ok(current.includes(version + ' Preview'), 'active roadmap must mention current package version ' + version);
+    assert.ok(instructions.includes('`v' + version + '` jako Preview'), 'publish instructions must name current candidate v' + version);
+  }
   assert.doesNotMatch(current, /Zdrojová verze 0\.46\.1|Vydání 0\.46\.1 bez nesouladu/, 'historical releases are not current work');
   assert.match(current, /UAT/, 'device acceptance must remain an explicit gate');
 });
@@ -153,7 +160,7 @@ test('current release status follows package version and distinguishes Draft fro
   const roadmap = await zdroj('docs/ROADMAP.md');
   const readiness = await zdroj('docs/RELEASE-READINESS.md');
   assert.ok(readme.includes('**' + verze + '**'), 'README shows the current package version');
-  assert.ok(roadmap.includes('v' + verze + ' Preview'), 'roadmap active sprint follows package version');
+  assert.ok(roadmap.includes('v' + verze), 'roadmap records the current package version, including a blocked Draft');
   assert.ok(readiness.includes('**v' + verze + ':'), 'release readiness refers to current version');
   assert.match(readme, /neveřejný Draft|neveřejné vydání/, 'unpublished draft must not be advertised as public');
   assert.match(roadmap, /nezávislý byte audit|nezávislý SHA-256 audit/, 'roadmap keeps real bytes audit evidence');
