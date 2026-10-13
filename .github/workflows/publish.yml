@@ -33,6 +33,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   zverejnit:
     name: zveřejnit koncept
@@ -202,24 +206,52 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
+          RELEASE_ID=$(cat release-id.txt)
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > prepublish.json
+          # Reject asset/tag swaps between download verification and publication.
+          node -e '
+            const before = require("./release-metadata.json");
+            const now = require("./prepublish.json");
+            if (now.id !== before.id || now.tag_name !== process.env.TAG ||
+                now.draft !== true || !Array.isArray(now.assets) || now.assets.length !== 8 ||
+                JSON.stringify(now.assets.map(a => [a.id,a.name,a.size,a.digest]).sort()) !==
+                JSON.stringify(before.assets.map(a => [a.id,a.name,a.size,a.digest]).sort())) {
+              console.error("::error::Draft mutated after the verified byte download.");
+              process.exit(1);
+            }
+          '
           case "$CHANNEL" in
             preview)
-              # The opt-in Preview channel must never silently replace Stable Latest.
-              gh release edit "$TAG" --notes-file poznamky.md --draft=false --prerelease --latest=false
+              # REST by ID works for private Drafts in Actions. Never alter Stable Latest.
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                -F draft=false -F prerelease=true -f make_latest=false \
+                -f body="$(cat poznamky.md)" > published.json
               ;;
             stable)
               if [ "$CONFIRM_STABLE" != "true" ]; then
                 echo "::error::Stable release requires an explicit confirmation."
                 exit 1
               fi
-              gh release edit "$TAG" --notes-file poznamky.md --draft=false --prerelease=false --latest
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                -F draft=false -F prerelease=false -f make_latest=true \
+                -f body="$(cat poznamky.md)" > published.json
               ;;
             *)
               echo "::error::Unsupported release channel."
               exit 1
               ;;
           esac
-          gh release view "$TAG" --json isDraft,isPrerelease,url,publishedAt
+          node -e '
+            const release = require("./published.json");
+            if (release.id !== Number(require("fs").readFileSync("release-id.txt", "utf8")) ||
+                release.tag_name !== process.env.TAG || release.draft !== false ||
+                release.prerelease !== (process.env.CHANNEL === "preview") ||
+                !release.published_at) {
+              console.error("::error::GitHub did not confirm the intended public release channel.");
+              process.exit(1);
+            }
+            console.log(release.html_url);
+          '
 
       # Preview keeps stable Latest untouched; only a confirmed Stable release changes
       # /releases/latest/download/… and requires the stable asset-link verification.
@@ -230,11 +262,13 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
         run: |
           set -euo pipefail
-          IS_PREVIEW=$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)
+          RELEASE_ID=$(cat release-id.txt)
+          IS_PREVIEW=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq .prerelease)
           LATEST=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)
           if [ "$CHANNEL" = "preview" ]; then
             test "$IS_PREVIEW" = "true" || { echo "::error::Preview is not marked prerelease."; exit 1; }
             test "$LATEST" != "$TAG" || { echo "::error::Preview unexpectedly became Latest."; exit 1; }
+            test "$LATEST" = "$(cat stable-before.txt)" || { echo "::error::Preview changed Stable Latest."; exit 1; }
             echo "Preview $TAG is public; stable Latest remains $LATEST."
             exit 0
           fi
