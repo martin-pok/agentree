@@ -1,6 +1,6 @@
 # Changelog
 
-## Připravované změny po 0.46.11 · nevydáno
+## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu
 
 - **Vzdálení agenti Claude Code znovu pracují.** Claude Code spuštěný v cloudu z Claude Desktopu (nebo z webu a telefonu) se v Přehledu nikdy neukázal jako pracující a čekání na tvé rozhodnutí se od něj nikdy neohlásilo: stav se poznával podle hodnot, které Claude neposílá. Teď se čte stav i ve tvaru, v jakém ho posílá server („SESSION_STATUS_RUNNING“, skupina „WORKING“ / „BLOCKED“ / „FAILED“, „need_input“), a otázka agenta se ukáže v kartě rozhodnutí. Když Claude Desktop novější stav neuložil, karta neříká „Hotovo, čeká na další zadání“, ale „Při posledním načtení pracoval · novější stav Claude Desktop neuložil“; novější uložený přepis s rozběhnutým tahem má přednost. Nastavení → Zdroje agentů ukazuje, kdy Claude Desktop seznam relací naposledy uložil.
 - **Přesnější právní evidence (bez spuštění nových podmínek):** technické CZ/EN privacy upozornění na GitHub kontrolu aktualizací a zákaz citlivých GDPR žádostí ve veřejných Issues pochází z PR #221; obě živé stránky také uvádějí pravdivé datum poslední aktualizace 13. 10. 2026 místo neaktuálního tvrzení o účinnosti od 27. 9.; pracovní právní přehledy nyní správně rozlišují tuto dílčí opravu od nevyřešené identity správce, neveřejného GDPR kontaktu, retenčních dob a právní revize (#232). Automatický test brání návratu zastaralého interního popisu. Nejde o certifikaci, právní schválení ani zveřejněnou novou verzi aplikace.
@@ -14,7 +14,7 @@
 - **Průvodce na Přehledu.** Nesplněný první krok zní „Najít agenty na tomto počítači“ místo „Agenti na tomto počítači nalezeni“ a tlačítka v kartách stojí na jedné linii.
 - **Útrata říká, co se počítá.** U starších ručních záznamů i u součtů stojí, že se do součtů, prognózy ani rozpočtu nepočítají. Dialog Rozpočty bez připojených nákladů za API řekne, že se rozpočet do té doby neukáže ani neupozorní.
 
-**Dostupnost:** neměnný Draft `v0.46.11` tyto opravy neobsahuje. Nový binární kandidát vyžaduje vlastní tag, kompletní CI, audit příloh a živé UAT; samotný commit ani nasazení webu není vydání aplikace.
+**Stav 14. 10. 2026: pouze zdrojový kandidát pro nové Preview, dosud nevydaný.** Vadný a neměnný Draft `v0.46.11` tyto opravy neobsahuje a nesmí se publikovat. Pro `v0.46.12` je nutný vlastní neměnný tag, kompletní 8/8 CI na přesném SHA, nový Mac/Windows/Chrome build, nezávislé ověření osmi příloh a skutečné UAT. Zveřejnění Preview až po ověření a schválení, Stable Latest ponechat beze změny. Samotný commit ani zelené testy nejsou aktualizací aplikace na Macu.
 
 ## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
 
