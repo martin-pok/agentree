@@ -127,22 +127,26 @@ test('release assets: only strict numeric version tags are accepted', () => {
   assert.equal(expectedAssets(TAG).length, 8);
 });
 
-test('publish workflow verifies full downloaded bytes before changing release visibility', async () => {
+test('publish workflow reads private Draft by REST ID, downloads real bytes and checks them before PATCH', async () => {
   const publish = await fs.readFile(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8');
   const verifyPos = publish.indexOf('scripts/verify-release-assets.mjs');
-  const publishPos = publish.indexOf('gh release edit "$TAG" --notes-file poznamky.md --draft=false');
-  assert.ok(verifyPos > 0 && publishPos > verifyPos, 'binary checks must precede publication');
-  assert.match(publish, /gh release download "\$TAG" --dir overene-prilohy --repo "\$GITHUB_REPOSITORY"/);
-  // GitHub REST release-by-tag returns 404 for *unpublished drafts*.
-  // The authenticated CLI can resolve the draft ID; metadata is fetched by ID.
-  assert.match(publish, /gh release view "\$TAG" --json isDraft,assets,body,databaseId,tagName > vydani\.json/);
-  assert.match(publish, /v\.tagName !== process\.env\.TAG/);
-  assert.match(publish, /Number\.isSafeInteger\(v\.databaseId\)/);
-  assert.match(publish, /RELEASE_ID=\$\(node -p/);
-  assert.match(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/\$\{RELEASE_ID\}" > release-metadata\.json/);
-  assert.doesNotMatch(publish, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/releases\/tags\/\$\{TAG\}"/,
-    'draft releases are not accessible via GitHub GET release-by-tag');
+  const publishPos = publish.indexOf('gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"');
+  assert.ok(verifyPos > 0 && publishPos > verifyPos, 'asset SHA-256 checks must precede release visibility change');
+  assert.match(publish, /gh api "repos\/\$GITHUB_REPOSITORY\/releases\?per_page=100" > release-list\.json/,
+    'Draft inventory is available to authenticated REST but not necessarily gh release CLI');
+  assert.match(publish, /r\.tag_name === process\.env\.TAG && r\.draft === true/);
+  assert.match(publish, /gh api "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID" > release-metadata\.json/);
+  assert.match(publish, /releases\/assets\/\$asset_id" > "overene-prilohy\/\$asset_name"/,
+    'fetch each exact stored asset through GitHub REST');
+  assert.match(publish, /!\/\^\[A-Za-z0-9\._-\]\+\$\/\.test\(a\.name\)/,
+    'filenames must be validated before writing');
+  assert.match(publish, /node scripts\/verify-release-assets\.mjs "\$TAG" overene-prilohy release-metadata\.json/);
   assert.match(publish, /sha256sum --check SHA256SUMS\.txt/);
+  assert.match(publish, /now\.draft !== true/);
+  assert.match(publish, /now\.assets\.length !== 8/, 'reject intervening edits before publishing');
+  assert.match(publish, /-f body="\$\(cat poznamky\.md\)"/, 'ship notes from tagged CHANGELOG');
   assert.match(publish, /channel:[\s\S]*?default: preview/);
-  assert.match(publish, /--prerelease --latest=false/);
+  assert.match(publish, /-F draft=false -F prerelease=true -f make_latest=false/);
+  assert.doesNotMatch(publish, /^\s+gh release (?:view|download|edit)\b/m,
+    'do not use unreliable draft CLI shortcuts in the publication workflow');
 });
