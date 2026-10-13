@@ -21,6 +21,7 @@
 | Branding | `test/brand-robot.test.mjs` a vizuální kontrola PNG/ICO/ICNS i screenshotů | Zastavit publikaci |
 | Zdroje dat | kontrola hranice „naměřené / odvozené / neznámé“ a citlivých informací v URL | Zastavit publikaci při regresi |
 | Integrita publikovaných balíčků | `publish.yml` znovu stáhne **všech osm** příloh draftu a `scripts/verify-release-assets.mjs` porovná úplnost, velikost i SHA-256 s manifestem a GitHub API včetně shody stálých/číslovaných variant | Při jakékoli neshodě zastavit publikaci |
+| Neměnný zdroj publikace | `publish.yml` uloží SHA tagu při ověření CI a porovná jej s tagem z GitHubu i lokálním tagem při tvorbě poznámek; před změnou viditelnosti jej ověří znovu. Přesunutý tag znamená nový schvalovací cyklus, nikoli převzetí jiného zeleného commitu. | Při změně SHA zastavit publikaci |
 | Ruční QA | Mac, Windows beta, Chrome v CZ i EN podle [TESTING.md](TESTING.md) | Neoznačovat jako ověřené |
 | Schválení a kanál | výslovně zvolit `preview` nebo `stable` při ručním `publish.yml`; pro Stable navíc potvrdit změnu `Latest` | Preview nikdy nesmí změnit stabilní `Latest`; koncept bez schválení ponechat neveřejný |
 
