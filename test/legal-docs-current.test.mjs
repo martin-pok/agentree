@@ -22,6 +22,11 @@ test('legal working overview reflects the fixed live privacy warnings without de
   assert.match(audit, /\[ \] \*\*P0 stále otevřené:/);
   assert.doesNotMatch(audit, /- \[ \] \*\*P0:\*\* upravit absolutní větu „jen ČNB“/);
 
+  assert.match(cz, /Aktualizováno 13\. 10\. 2026/);
+  assert.match(en, /Last updated 13 October 2026/);
+  assert.doesNotMatch(cz, /Platí od 27\. 9\. 2026/);
+  assert.doesNotMatch(en, /Effective 27 September 2026/);
+
   for (const html of [cz, en]) {
     assert.match(html, /GitHub Issues/);
     assert.match(html, /GitHub/);
