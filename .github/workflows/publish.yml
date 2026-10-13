@@ -56,11 +56,8 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')
-          TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')
-          if [ "$TYPE" = "tag" ]; then
-            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${SHA}" --jq '.object.sha')
-          fi
+          node scripts/verify-publish-tag.mjs "$TAG" --write verified-tag-sha.txt
+          SHA=$(cat verified-tag-sha.txt)
           test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}" --jq '.sha')" = "$SHA"
           GH_SHA="$SHA" node --input-type=module -e '
             if (!/^[a-f0-9]{40}$/.test(process.env.GH_SHA)) process.exit(1);
@@ -132,6 +129,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
+          set -euo pipefail
           mkdir -p prilohy
           node -e '
             const fs = require("fs");
@@ -145,11 +143,8 @@ jobs:
           # Changelog musí pocházet ze stejného commitu jako vydávané binárky.
           # Checkout main používáme pro bezpečnostní verifier, ne pro release obsah.
           git fetch --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}"
-          TAG_SHA=$(git rev-parse "${TAG}^{commit}")
-          REF_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.sha)
-          REF_TYPE=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.type)
-          if [ "$REF_TYPE" = "tag" ]; then REF_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${REF_SHA}" --jq .object.sha); fi
-          test "$TAG_SHA" = "$REF_SHA" || { echo "::error::Release tag moved during publication."; exit 1; }
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt --local
+          TAG_SHA=$(cat verified-tag-sha.txt)
           git show "${TAG_SHA}:CHANGELOG.md" > CHANGELOG.md
           node scripts/release-notes.mjs "${TAG#v}" prilohy > poznamky.md
           cat poznamky.md
@@ -162,6 +157,7 @@ jobs:
           CONFIRM_STABLE: ${{ inputs.confirm_stable }}
         run: |
           set -euo pipefail
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
           case "$CHANNEL" in
             preview)
               # The opt-in Preview channel must never silently replace Stable Latest.

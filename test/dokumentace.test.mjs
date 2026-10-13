@@ -85,7 +85,8 @@ test('publikace releasu vyžaduje úspěšné CI přesného označeného commitu
   const workflow = await zdroj('.github/workflows/publish.yml');
   assert.match(workflow, /actions: read/, 'release musí mít jen čtecí přístup k výsledkům Actions');
   assert.match(workflow, /Ověřit zelené CI označeného commitu/);
-  assert.match(workflow, /git\/ref\/tags\/\$\{TAG\}/, 'SHA se musí odvozovat z tagu, ne aktuálního main');
+  assert.match(workflow, /verify-publish-tag\.mjs "\$TAG" --write verified-tag-sha\.txt/, 'SHA se musí odvozovat z tagu, ne aktuálního main');
+  assert.match(await zdroj('scripts/verify-publish-tag.mjs'), /git\/ref\/tags\/\$\{tag\}/);
   assert.match(workflow, /actions\/workflows\/test\.yml\/runs\?head_sha=\$\{SHA\}/);
   assert.match(workflow, /r\.head_sha === process\.env\.GH_SHA && r\.status === "completed" && r\.conclusion === "success"/);
   assert.ok(workflow.indexOf('Ověřit zelené CI označeného commitu') < workflow.indexOf('      - name: Zveřejnit\n'), 'kontrola musí blokovat publikaci');
