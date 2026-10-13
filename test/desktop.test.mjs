@@ -156,7 +156,7 @@ test('vzhled Koncert: každé pravidlo je v rozsahu svého vzhledu a stránka ho
   assert.ok(html.indexOf('/styles.css') < html.indexOf('/koncert.css') && html.indexOf('/koncert.css') < html.indexOf('/desktop.css'), 'pořadí styles → koncert → desktop');
 });
 
-test('macOS install helper aborts instead of replacing a still-running app after deadline', { skip: process.platform === 'win32' }, async () => {
+test('macOS install helper aborts instead of replacing a still-running app after deadline', { skip: process.platform === 'win32' && 'requires a POSIX shell unavailable on Windows' }, async () => {
   const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
   const match = swift.match(/let script = """\n([\s\S]*?)\n\s*"""/);
   assert.ok(match, 'extract the actual native updater helper, not a test-only reimplementation');
