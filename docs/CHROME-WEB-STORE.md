@@ -1,5 +1,22 @@
 # Rozšíření v Chrome Web Store
 
+## Aktuální distribuce — 13. 10. 2026
+
+**Veřejný Chrome Web Store stále nabízí 0.31.4 (aktualizace 4. 10. 2026).** To je aktuální známý distribuční dluh, nikoli chyba instalace nových zdrojů; dokud vlastník z účtu vydavatele nenahraje nový balíček a Google jej nezveřejní, mají zákazníci starší produkt a mohou vidět starou ikonu. Aktivní P0 [#172](https://github.com/martin-pok/agentree/issues/172); reálné device UAT a celé Preview vydání [#208](https://github.com/martin-pok/agentree/issues/208).
+
+**Jediný aktuální publisher kit: 0.46.11 z otestovaného `main` commitu `1e72a0057637ad249e70388444346a80526e7083`.** [Přesné CI #38430918556](https://github.com/martin-pok/agentree/actions/runs/38430918556) prošlo 8/8. V jeho artefaktech:
+- `chrome-store-review-kit` **ID `11830811619`** — package, listing, CZ/EN screenshots, promo, SHA256SUMS a STORE-KIT.json.
+- `agenteeq-extension-store-upload` **ID `11830607078`** — přesný ZIP pro upload.
+- `chrome-store-screenshots` ID `11830681898`, `chrome-store-branding` ID `11830707040` pro kontrolu vizuálu.
+- Zkontrolovaná souborová shoda: **10/10 kontrolních hashů** publisher kitu, 6 CZ/EN screenshotů 1280×800, promo 440×280, marquee 1400×560, ikona 128×128. `listing/icon-128.png` se rovná ikonce uvnitř ZIPu; ZIP v kitu se **bajtově shoduje** s oficiálním souborem `agenteeq-extension-0.46.11.zip` (244 358 B, SHA-256 `2bb203b13b0b54d3a9ec00c3892ecd697755d20690fb6dfc3af58cd095e5038b`) v neveřejném Draftu v0.46.11, osm skutečných assetů ověřeno nezávislým [auditem](https://github.com/martin-pok/agentree/actions/runs/38432569881).
+
+**Před zveřejněním stále vyžadujeme:** reálný Chrome s přihlášenými podporovanými službami, spárovaný aktuální nainstalovaný Mac, přepnutí do původní session (bez 403), chybové stavy, foto/skutečné UI screenshotů, CZ/EN a proporce robota. Potom vlastník nahraje **tento jediný aktuální ZIP+listing** v <https://chrome.google.com/webstore/devconsole>, projde review a ověří veřejné číslo **0.46.11** a správné logo. Žádná CI úloha ani GitHub release nepublikuje samo Chrome Store.
+
+---
+### Historické podklady níže (0.46.8 a starší)
+
+Následující inventáře dokazují starší opravy pipeline, ale **nesmějí se znovu používat k uploadu**. Pro aktuální vydání platí výhradně kit 0.46.11 výše.
+
 Stav ověřený k 12. 10. 2026: **položka je zveřejněná, ale veřejná verze je stále 0.31.4** (záznam Chrome Web Store, aktualizace 4. 10. 2026). Vlastník potvrdil, že položka je v Chrome Web Store veřejně
 dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
 web i aplikace nabízejí instalaci jedním kliknutím (**Přidat do Chromu**) a rozšíření se spáruje samo.
