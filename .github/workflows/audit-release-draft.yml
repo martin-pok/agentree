@@ -131,44 +131,8 @@ jobs:
             });
             fs.writeFileSync("draft-asset-ids.tsv", entries.join("\n") + "\n");
           '
-          while IFS=
-          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
-          node scripts/verify-release-assets.mjs "$TAG" audited-assets release-metadata.json
-          (cd audited-assets && sha256sum --check SHA256SUMS.txt)
-          node --input-type=module -e '
-            import fs from "node:fs";
-            const release = JSON.parse(fs.readFileSync("release-metadata.json", "utf8"));
-            const sha = fs.readFileSync("verified-tag-sha.txt", "utf8").trim();
-            const report = {
-              tag: release.tag_name,
-              commitSha: sha,
-              releaseId: release.id,
-              unpublishedDraft: true,
-              verifiedAt: new Date().toISOString(),
-              assetsVerified: release.assets.length,
-              assets: release.assets.map(a => ({
-                name: a.name, size: a.size, sha256: a.digest
-              })).sort((a,b) => a.name.localeCompare(b.name))
-            };
-            fs.writeFileSync("draft-audit-report.json", JSON.stringify(report, null, 2) + "\n");
-          '
-          {
-            echo "### Draft release byte audit passed"
-            echo "Tag: $TAG"
-            echo "Commit: $(cat verified-tag-sha.txt)"
-            echo "All eight real downloaded assets match GitHub SHA-256 and SHA256SUMS."
-            echo "No release was published or installed."
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Save compact audit evidence
-        uses: actions/upload-artifact@v6
-        with:
-          name: release-draft-audit
-          path: draft-audit-report.json
-          if-no-files-found: error
-          retention-days: 30
-\t' read -r asset_id asset_name; do
-            gh api -H "Accept: application/octet-stream" \
-              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" > "audited-assets/${asset_name}"
+          while read -r asset_id asset_name; do
+            gh api -H "Accept: application/octet-stream" "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" > "audited-assets/${asset_name}"
           done < draft-asset-ids.tsv
           node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
           node scripts/verify-release-assets.mjs "$TAG" audited-assets release-metadata.json
