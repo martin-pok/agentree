@@ -17,7 +17,11 @@ const DOWNLOAD_TIMEOUT_MS = 15 * 60_000;
 
 export function parseVersion(value) {
   const match = typeof value === 'string' ? value.match(SEMVER) : null;
-  return match ? match.slice(1).map(Number) : null;
+  if (!match) return null;
+  const parts = match.slice(1).map(Number);
+  // GitHub tag names are untrusted metadata. Values outside the exact integer
+  // range collapse to the same Number and can break version comparisons.
+  return parts.every(Number.isSafeInteger) ? parts : null;
 }
 
 export function compareVersions(left, right) {
