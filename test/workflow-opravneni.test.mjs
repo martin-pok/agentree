@@ -14,7 +14,7 @@ const workflowy = await Promise.all(soubory.map(async (f) => ({ f, yml: await fs
 
 // Úlohy, které smějí zapisovat – a proč. Cokoli dalšího se zápisem je chyba.
 const ZAPIS = {
-  'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
+  'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release', audit: 'GitHub vyžaduje write token k čistě čtecímu přístupu k neveřejnému Draftu' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
