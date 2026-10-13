@@ -18,6 +18,7 @@ const ZAPIS = {
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
+  'scorecard.yml': { scorecard: 'nahrání výsledků do code scanning (security-events) a ověření původu přes OIDC (id-token); do repozitáře nezapisuje' },
 
 };
 
@@ -64,6 +65,15 @@ test('workflowy: výchozí práva tokenu jen pro čtení, zápis jen u vyjmenova
     const uloh = ulohy(workflowy.find((w) => w.f === f).yml);
     for (const jmeno of Object.keys(seznam)) assert.ok(uloh[jmeno], `${f}: úloha ${jmeno} zmizela – uprav i ZAPIS v tomto testu`);
   }
+});
+
+test('OpenSSF Scorecard: zapisuje jen výsledky skenu, ne do repozitáře', () => {
+  const sc = workflowy.find(({ f }) => f === 'scorecard.yml')?.yml;
+  if (!sc) return;
+  const prava = /^ {4}permissions:\n((?: {6}[^\n]*\n)*)/m.exec(ulohy(sc).scorecard)?.[1] || '';
+  const zapis = prava.split('\n').filter((r) => /write/.test(r)).map((r) => r.trim().split(':')[0]).sort();
+  assert.deepEqual(zapis, ['id-token', 'security-events'], 'jen code scanning a OIDC, žádné contents/actions/pull-requests: write');
+  assert.match(prava, /contents: read/);
 });
 
 test('draft audit: elevated token only views private draft, never changes release or repository', () => {
