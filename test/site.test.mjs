@@ -427,6 +427,10 @@ test('privacy CZ/EN accurately discloses update-check network access and optiona
   assert.match(en, /checks public Agenteeq releases on GitHub/);
   assert.match(en, /Czech National Bank/);
   assert.match(en, /communicate with the providers described above/);
+  assert.match(cz, /Nezveřejňuj zde osobní údaje, žádosti o přístup\/výmaz/);
+  assert.match(en, /Do not publicly post personal data, access or erasure requests/);
+  assert.doesNotMatch(cz, /žádosti podle GDPR posílej přes <a href/);
+  assert.doesNotMatch(en, /Send privacy questions and GDPR requests through the <a href/);
   assert.doesNotMatch(cz, /sama od sebe jen dotaz na denní kurzy/);
   assert.doesNotMatch(en, /on its own, only a request for the Czech National Bank/);
   // This test does not certify GDPR compliance: controller identity, legal
