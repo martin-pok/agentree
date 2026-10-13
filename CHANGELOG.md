@@ -1,5 +1,11 @@
 # Changelog
 
+## Nezařazeno do vydání · bezpečné porovnávání verzí
+
+- **Ochrana proti chybným GitHub tagům:** aktualizační služba odmítne čísla verzí mimo přesný rozsah JavaScriptových celých čísel. Takový tag již nemůže ovlivnit pořadí Preview vydání nebo se vydávat za platný instalační balíček.
+- **Regresní testy:** záměrně extrémně dlouhé verze, hraniční bezpečná hodnota a skutečná volba správného Preview mezi neplatnými tagy.
+- Jde o změnu **po vytvoření draftu 0.46.8**; již sestavené instalační soubory nejsou tímto commitem upravené.
+
 ## Nezařazeno do vydání · nové ověření instalačního ZIPu před použitím
 
 - **Ochrana jedním kliknutím:** instalace v nativní Mac aplikaci ani otevření staženého balíčku ve Finderu nepoužije archiv, který se od stažení změnil nebo zmizel. Kontroluje se skutečná velikost a celý SHA-256 otisk, nejen název ZIPu.
