@@ -27,6 +27,12 @@ function fetchForUpdate(payload = release()) {
 test('aktualizace: přijímá jen platné semver a přesný balíček platformy', async () => {
   assert.deepEqual(parseVersion('v1.20.3'), [1, 20, 3]);
   assert.equal(parseVersion('1.2'), null);
+  assert.equal(parseVersion('9007199254740991.0.0')?.[0], Number.MAX_SAFE_INTEGER);
+  for (const unsafe of ['9007199254740992.0.0', '999999999999999999999999.0.0', '0.9007199254740993.0', '1.0.99999999999999999999']) {
+    assert.equal(parseVersion(unsafe), null, `unsafe version should be rejected: ${unsafe}`);
+    assert.equal(compareVersions(unsafe, '1.0.0'), null);
+    assert.equal(assetName(unsafe, { platform: 'darwin', arch: 'arm64' }), '');
+  }
   assert.equal(compareVersions('1.2.3', '1.2.3'), 0);
   assert.equal(compareVersions('1.2.4', '1.2.3'), 1);
   assert.equal(assetName('0.30.0', { platform: 'darwin', arch: 'arm64' }), 'Agenteeq-0.30.0-macOS-arm64.zip');
