@@ -90,6 +90,7 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | [docs/LICENSING.md](docs/LICENSING.md) | Vydávání licencí, placené funkce, distribuce (pro vydavatele) |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vize, zákazník, hodnota, hypotézy monetizace (neověřené) |
 | [docs/BRAND.md](docs/BRAND.md) | Jméno produktu: kde všude žije, co stojí přejmenování a jak ho udělat bez ztráty dat |
+| [docs/legal/README.md](docs/legal/README.md) | **Pracovní, neúčinné právní návrhy k revizi**: CZ/EN Terms, GDPR audit, ochrana značky, IP evidence, bezplatné audity a předkomerční checklist |
 | [docs/REMOTE.md](docs/REMOTE.md) | Přístup z telefonu mimo domácí síť: napojení na Tailscale, veřejné tunely, hranice |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Cesta z lokální bety k SaaS, s akceptačními kritérii |
 | [CHANGELOG.md](CHANGELOG.md) | Historie verzí |
