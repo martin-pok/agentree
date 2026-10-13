@@ -562,3 +562,35 @@ test('přepnutí kanálu smaže i rozpracovaný streamovaný ZIP', async () => {
   assert.deepEqual(await fs.readdir(updateDir), [], 'cancelled stream staging file is removed');
   assert.equal(service.state().status, 'current');
 });
+
+test('swapping a verified ZIP for a same-byte symlink between lstat and open is rejected', { skip: process.platform === 'win32' && 'symlink privileges vary on Windows' }, async () => {
+  const home = await tempDir('agenteeq-update-swap-');
+  const service = new UpdateService({ version: '0.29.9', dataDir: home,
+    fetchImpl: fetchForUpdate(), platform: 'darwin', arch: 'arm64' });
+  assert.equal((await service.check()).status, 'available');
+  assert.equal((await service.download()).ok, true);
+  const file = service.downloadedPath();
+  const alias = path.join(home, 'byte-identical-outside.zip');
+  const originalLstat = fs.lstat;
+  let switched = false;
+  // Inject the race at the exact vulnerable boundary. Before the fix a
+  // normal open() followed the new symlink and accepted its matching SHA.
+  fs.lstat = async (...args) => {
+    const result = await originalLstat(...args);
+    if (args[0] === file && !switched) {
+      switched = true;
+      await fs.rename(file, alias);
+      await fs.symlink(alias, file);
+    }
+    return result;
+  };
+  try {
+    assert.equal(await service.verifiedDownloadedPath(), null,
+      'the checked inode must also be the opened regular file');
+    assert.equal(switched, true, 'the test must actually exercise the race');
+    assert.equal(service.state().status, 'available');
+    assert.equal(service.downloadedPath(), null);
+  } finally {
+    fs.lstat = originalLstat;
+  }
+});
