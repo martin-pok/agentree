@@ -417,3 +417,34 @@ test('web: current Preview documentation and published preview links agree witho
     assert.ok(doc.includes('v0.46.0'), name + ' must keep the stable channel distinct');
   }
 });
+
+test('privacy CZ/EN accurately discloses update-check network access and optional cloud connections', async () => {
+  const cz = await fs.readFile(path.join(ROOT, 'site/soukromi/index.html'), 'utf8');
+  const en = await fs.readFile(path.join(ROOT, 'site/en/privacy/index.html'), 'utf8');
+  assert.match(cz, /veřejný seznam vydání Agenteeq na GitHubu/);
+  assert.match(cz, /České národní banky/);
+  assert.match(cz, /síťovou komunikací s jejich provozovateli/);
+  assert.match(en, /checks public Agenteeq releases on GitHub/);
+  assert.match(en, /Czech National Bank/);
+  assert.match(en, /communicate with the providers described above/);
+  assert.doesNotMatch(cz, /sama od sebe jen dotaz na denní kurzy/);
+  assert.doesNotMatch(en, /on its own, only a request for the Czech National Bank/);
+  // This test does not certify GDPR compliance: controller identity, legal
+  // bases, processors and retention still require reviewed policy updates.
+});
+
+test('legal templates are unmistakably review-only, do not assert a registered mark or earned security badge', async () => {
+  const dir = path.join(ROOT, 'docs/legal');
+  for (const file of ['README.md', 'TERMS.cs.md', 'TERMS.en.md', 'PRIVACY-REVIEW.cs.md',
+    'BRAND-POLICY.cs.md', 'BRAND-POLICY.en.md', 'IP-REGISTER.md', 'FREE-ASSURANCE.md', 'LAUNCH-LEGAL-GATE.md']) {
+    const text = await fs.readFile(path.join(dir, file), 'utf8');
+    assert.ok(text.length > 800, file + ': nonempty legal template');
+  }
+  const terms = await fs.readFile(path.join(dir, 'TERMS.cs.md'), 'utf8');
+  assert.match(terms, /NENÍ ÚČINNÝ/);
+  assert.match(terms, /DOPLNIT PŘESNOU IDENTITU/);
+  const policy = await fs.readFile(path.join(dir, 'BRAND-POLICY.cs.md'), 'utf8');
+  assert.match(policy, /Nezakládá registrovanou ochrannou známku/);
+  const badges = await fs.readFile(path.join(dir, 'FREE-ASSURANCE.md'), 'utf8');
+  assert.match(badges, /No invented scores/);
+});
