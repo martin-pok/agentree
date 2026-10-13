@@ -15,9 +15,9 @@ test('brand inventory: no generated native icon may be tracked in Git', async ()
   const indexed = execFileSync('git', ['ls-files', '--cached', '--', ...native], { cwd: root, encoding: 'utf8' });
   assert.equal(indexed, '', 'generated native icon duplicates are not allowed in version control');
   const ignore = await read('.gitignore');
-  for (const name of native) assert.ok(ignore.split('\\n').includes(name), name + ' must be gitignored');
+  for (const name of native) assert.ok(ignore.split('\n').includes(name), name + ' must be gitignored');
   const make = await read('scripts/make-ico.mjs');
-  assert.match(make, /'extension', 'icons', 'icon-128\\.png'/,
+  assert.match(make, /'extension', 'icons', 'icon-128\.png'/,
     'Windows ICO must be generated from the reviewed 128px Chrome/Dock raster');
 });
 
