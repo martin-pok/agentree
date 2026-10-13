@@ -1,5 +1,12 @@
 # Changelog
 
+## Nevydané změny po 0.46.9 — pouze vývojová větev, nejsou součástí Draftu
+
+- **Bezpečnější instalace na Macu:** pokud se běžící Agenteeq do 60 sekund neukončí, aktualizační pomocník nepřepíše aplikaci za jejího běhu; odstraní pouze připravenou dočasnou kopii. K běžné výměně dojde teprve po skutečném ukončení procesu.
+- **Přísnější kontrola staženého ZIPu:** před instalací a zobrazením v souborech se kromě velikosti a SHA-256 ověřuje také identita otevřeného souboru a odmítnou se podstrčené symbolické odkazy i při souběžné výměně cesty.
+- **Regresní scénáře:** test simulující timeout pomocníka, bezpečný úspěšný restart po ukončení a souběžnou záměnu ZIPu za stejně velký a stejně hashovaný obsah za symbolickým odkazem.
+- **Distribuce:** tyto změny jsou novější než neměnný tag `v0.46.9`. Nejsou v jeho Draftu ani ve veřejném Preview `0.46.6`; nejdřív musejí projít CI a být sestavené v samostatném budoucím vydání.
+
 ## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
 
 **Stav: zdrojový Preview kandidát; zatím není zveřejněný ani nainstalovaný.** Vydání vyžaduje CI pro přesný commit, nový neměnný tag, ověřený draft se skutečnými soubory, UAT a výslovnou publikaci v Preview. Stable Latest a Chrome Web Store se samotným commitem nemění.
