@@ -256,3 +256,22 @@ test('ruční spuštění založí tag jen z main a jen pro verzi z package.json
     assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: overeni\\n`), `${uloha} čeká na validaci tagu`);
   }
 });
+
+test('release runs the independent eight-asset audit as a same-workflow reusable job', async () => {
+  const release = await zdroj('.github/workflows/release.yml');
+  const audit = await zdroj('.github/workflows/audit-release-draft.yml');
+  assert.match(release, /^  audit:\n    name: nezávislý audit uloženého Draftu\n    needs: vydani\n/m,
+    'audit must wait for successful artifact upload, not an unreliable fourth workflow_run');
+  assert.match(release, /uses: \.\/\.github\/workflows\/audit-release-draft\.yml/);
+  assert.match(release, /tag: \$\{\{ inputs\.tag \|\| github\.ref_name \}\}/,
+    'verify the exact tag, not the moving main branch');
+  assert.match(audit, /workflow_call:\n    inputs:\n      tag:/,
+    'audit must be callable after each successful draft upload');
+  assert.match(audit, /Download and hash every asset from GitHub draft/);
+  assert.match(audit, /sha256sum --check SHA256SUMS\.txt/,
+    'audit must inspect the actual downloaded archive bytes');
+  assert.match(audit, /release\.assets\.length !== 8/,
+    'a missing alias or checksum manifest must fail verification');
+  assert.match(audit, /github\.event_name != 'workflow_run'/,
+    'direct, reusable and one-time backfill runs must be allowed');
+});
