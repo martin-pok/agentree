@@ -6,7 +6,9 @@ const fromRoot = (path) => new URL('../' + path, import.meta.url);
 const read = async (path) => fs.readFile(fromRoot(path), 'utf8');
 
 test('brand inventory: obsolete checked-in desktop icon must not exist', async () => {
-  for (const path of ['desktop/Agenteeq-icon.png', 'desktop/Agenteeq.icns']) {
+  // A generated, gitignored desktop/Agenteeq.icns may exist temporarily during
+  // native QA and must be excluded by packagers, not prohibited on disk.
+  for (const path of ['desktop/Agenteeq-icon.png']) {
     await assert.rejects(fs.access(fromRoot(path)), { code: 'ENOENT' },
       path + ' is a legacy duplicate, never include in source or a release');
   }
