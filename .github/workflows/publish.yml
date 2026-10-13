@@ -4,9 +4,8 @@
 # a patří člověku. Tohle je ten krok: běží jen na ruční spuštění, nikdy sám od sebe.
 # Preview je výchozí a nikdy nesmí přepsat stabilní GitHub Latest.
 #
-# Před zveřejněním se popis přegeneruje aktuálním scripts/release-notes.mjs z `main`. Oprava
-# textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
-# nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
+# Před zveřejněním se popis generuje z CHANGELOG.md přesně vydávaného tagu,
+# nikoli z novějšího main. Release notes tak neslibují změny mimo sestavené binárky. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
 # přílohy se stálým jménem, na které vedou tlačítka ke stažení na webu (ZIP a DMG pro Mac,
 # ZIP pro Windows a verzovaný ZIP rozšíření pro Chrome).
 name: Zveřejnit vydání
@@ -142,6 +141,10 @@ jobs:
             }
             if (v.body.includes("Developer ID a notarizovaná")) fs.writeFileSync("prilohy/latest-build.json", JSON.stringify({ signature: "Developer ID" }));
           '
+          # Changelog musí pocházet ze stejného commitu jako vydávané binárky.
+          # Checkout main používáme pro bezpečnostní verifier, ne pro release obsah.
+          git fetch --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          git show "${TAG}:CHANGELOG.md" > CHANGELOG.md
           node scripts/release-notes.mjs "${TAG#v}" prilohy > poznamky.md
           cat poznamky.md
 
