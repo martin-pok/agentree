@@ -42,7 +42,8 @@ Zástupce v EU / vedoucí dozorový orgán: **[OVĚŘIT PODLE ORGANIZACE]**.
 - [ ] **P0:** [DOPLNIT] identita správce, sídlo/adresa a přímý neveřejný GDPR kontakt (ne veřejný Issue).
 - [ ] **P0:** doložit právní tituly a rozdílné účely účet/web/support/extension.
 - [ ] **P0:** doplnit retenční lhůty, procesorů/DPA, přenos mimo EHP a pravidla pro technické logy/zálohy.
-- [x] **P0 dílčí náprava:** pravdivě zveřejnit GitHub release check vedle ČNB na obou veřejných privacy stránkách (PR #221). **Nedokazuje to úplný síťový audit.**\n- [ ] **P0 stále otevřené:** ověřit další síťové cesty, skutečné HTTP příjemce a obsah posílaných dat; popsat přesné podmínky volitelného účtu a integrací.
+- [x] **P0 dílčí náprava:** pravdivě zveřejnit GitHub release check vedle ČNB na obou veřejných privacy stránkách (PR #221). **Nedokazuje to úplný síťový audit.**
+- [ ] **P0 stále otevřené:** ověřit další síťové cesty, skutečné HTTP příjemce a obsah posílaných dat; popsat přesné podmínky volitelného účtu a integrací.
 - [ ] **P1:** posoudit věcnou správnost „všechno funguje bez účtu“ u konkrétního vydání; lokal-first core ano, volitelný sync ne.
 - [ ] **P1:** oba jazyky a propojení s podmínkami; otestovat jasný link ve webové i nativní aplikaci.
 - [ ] **P1:** evidence důsledků vypnutí účtu, RLS test cizího uživatele, smazání z cloudu a záloh po reálném e2e testu.
