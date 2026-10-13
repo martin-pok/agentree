@@ -35,7 +35,7 @@
 
 ## Jaký je další postup
 
-Pro nezávislý audit již existujícího Draftu lze v GitHub Actions spustit **Audit release draft** s přesným tagem, např. `v0.46.9`. Read-only workflow stáhne všechny skutečné přílohy, porovná jejich SHA-256 s GitHub API i `SHA256SUMS.txt` a uloží malý `release-draft-audit` report. Úspěšný audit **nenahrazuje** instalaci, Google OAuth, vizuální kontrolu ikony ani další reálné UAT. Nespouští publikaci.
+**Audit release draft** se automaticky spouští po úspěšném sestavení nového Draftu a jednorázově po zavedení tohoto workflow pro již hotovou 0.46.9. Volitelně lze stejný audit spustit ručně z GitHub Actions s přesným tagem, např. `v0.46.9`. Read-only workflow stáhne všechny skutečné přílohy, porovná jejich SHA-256 s GitHub API i `SHA256SUMS.txt` a uloží malý `release-draft-audit` report. Úspěšný audit **nenahrazuje** instalaci, Google OAuth, vizuální kontrolu ikony ani další reálné UAT. Nespouští publikaci.
 
 1. Draft `v0.46.8`, release notes, skutečné stažené přílohy a izolovaný nativní start jsou ověřené výše. Fyzická instalace a upgrade se zatím neověřily.
 2. Na skutečném Apple Silicon Macu zkontrolovat DMG, Gatekeeper (ad-hoc podpis), správnou ikonografii, Google OAuth, avatar, upgrade a návrat do konverzace; u Windows beta a Chrome přidat skutečné smoke testy.
