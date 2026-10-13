@@ -460,6 +460,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let script = """
             pid="$1"; current="$2"; stage="$3"; backup="$4"; trash="$5"
             n=0; while kill -0 "$pid" 2>/dev/null && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n+1)); done
+            # Never replace a bundle while its original process is still alive.
+            # The 60-second limit is a failure deadline, NOT permission to force an upgrade.
+            if kill -0 "$pid" 2>/dev/null; then
+              rm -rf "$stage"
+              exit 1
+            fi
             if mv "$current" "$backup"; then
               if mv "$stage" "$current"; then
                 xattr -dr com.apple.quarantine "$current" 2>/dev/null

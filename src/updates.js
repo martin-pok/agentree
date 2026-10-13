@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { ui } from './texty.js';
 import { ARCHITECTURE, PLATFORM } from './platform.js';
@@ -293,10 +294,14 @@ export class UpdateService {
       // Reject symlinks and non-regular files: the installer reads a local ZIP.
       const link = await fs.lstat(target);
       if (!link.isFile() || link.size !== snapshot.asset.size) return invalidated();
-      const handle = await fs.open(target, 'r');
+      // O_NOFOLLOW closes the gap between the pathname lstat and open:
+      // an attacker must not be able to swap a checked regular file for a
+      // symlink pointing outside the private updates directory.
+      const handle = await fs.open(target, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0));
       try {
         const before = await handle.stat();
-        if (!before.isFile() || before.size !== snapshot.asset.size) return invalidated();
+        if (!before.isFile() || before.size !== snapshot.asset.size
+            || before.dev !== link.dev || before.ino !== link.ino) return invalidated();
         const digest = crypto.createHash('sha256');
         const buffer = Buffer.allocUnsafe(256 * 1024);
         let length = 0;
@@ -308,7 +313,9 @@ export class UpdateService {
           digest.update(buffer.subarray(0, bytesRead));
         }
         const after = await handle.stat();
-        ok = length === snapshot.asset.size && before.size === after.size
+        const afterPath = await fs.lstat(target);
+        ok = afterPath.isFile() && afterPath.dev === before.dev && afterPath.ino === before.ino
+          && length === snapshot.asset.size && before.size === after.size
           && before.mtimeMs === after.mtimeMs && before.ctimeMs === after.ctimeMs
           && before.ino === after.ino && digest.digest('hex') === snapshot.asset.sha256;
       } finally {
