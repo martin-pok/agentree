@@ -131,7 +131,11 @@ test('independent draft audit re-downloads and checks actual GitHub bytes withou
   assert.match(workflow, /contents: read/);
   assert.match(workflow, /verify-publish-tag\.mjs/);
   assert.match(workflow, /test\.yml\/runs\?head_sha=/);
-  assert.match(workflow, /gh release download "\$TAG"/);
+  assert.ok(workflow.includes('contents: write'), 'draft visibility requires scoped Contents write in GitHub Actions');
+  assert.ok(workflow.includes('release-list.json'), 'resolve private draft through authenticated REST inventory');
+  assert.ok(workflow.includes('releases/assets/${asset_id}'), 'download real draft bytes through REST asset ID');
+  assert.doesNotMatch(workflow, /gh release view|gh release download/,
+    'CLI shortcuts can hide Drafts from the GitHub Actions token');
   assert.match(workflow, /verify-release-assets\.mjs "\$TAG" audited-assets release-metadata\.json/);
   assert.match(workflow, /sha256sum --check SHA256SUMS\.txt/);
   assert.match(workflow, /draft-audit-report\.json/);
