@@ -46,6 +46,15 @@
 - [ ] **P2-09 Go-to-market.** Reálný product demo flow, aktuální CZ/EN Store screenshoty, srozumitelná privacy a příklad reálné hodnoty. 10 interview; teprve potom pricing/free vs Pro, retence a placená nabídka.
 - [ ] **P2-10 Team / iOS.** Konkurence má vzdálené workspace, cloud sandboxy a multiplayer; naší obranou musí být bezpečný local-first dohled a skutečně užitečné mobilní upozornění, ne další nekontrolovaný cloud s přepisy. Teprve po měření poptávky navrhnout team tenancy, E2EE a permission model. [#219](https://github.com/martin-pok/agentree/issues/219)
 
+### Co opravdu ukázaly aktuální browser QA artefakty
+
+Z [8/8 CI 0.46.11, run 38430918556](https://github.com/martin-pok/agentree/actions/runs/38430918556) jsem stáhl původní `browser-web-qa` (ID `11831865620`) a `browser-qa` (ID `11831965758`), včetně skutečných screenshotů a JSON protokolů. To je silnější důkaz než pouhý green badge, ale **jde o syntetický QA server s fixture, nikoli produkční uživatele, reálné iPhony nebo CrUX/PSI**.
+
+- [x] Web `qa-site` v **Chromiu 390 px**: `LCP=196 ms`, `CLS=0.0205`, `longTasks=0`; při 1440 px `LCP=272 ms`, `CLS=0.0125`, `longTasks=0`. V **WebKitu 390/1440 px** `LCP=648/575 ms`; jeho měřicí rozhraní nevrátilo `CLS` ani longtask údaje, neprohlašovat je za nulu.
+- [x] App QA `results.json` zaznamenal **0 long tasks >50 ms** pro osm route v opakovaném Chromiu a `CLS=0.0011` při lokálním načtení; nevyvrací starší intermitentní 53/61ms regresi v CI [#209](https://github.com/martin-pok/agentree/issues/209).
+- [x] Prohlédnuté vizuály: web hero desktop 1440 px / mobile 375 px, instalace dark 375 px, app Agents 1440 px, Nastavení, Přehled a šest CZ/EN Store screenshotů. Značka v headeru a app menu je schválená široká hlava. Malé copy ve screenshotovém thumbnailu a velmi vysoký panel filtrů na `Agenti` (tři řádky nad dvěma záznamy) jsou **podněty k usability testu**, nikoli zatím potvrzená chyba.
+- [ ] **Stále chybí** produkční PSI/CrUX p75 a skutečný Safari/iPhone, VoiceOver/NVDA, Google SSO, Gatekeeper a veřejný Chrome Store 0.46.11.
+
 ## Audit dostupných důkazů a hranice závěrů
 
 | Oblast | Potvrzeno | Co potvrzené není |
