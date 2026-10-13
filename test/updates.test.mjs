@@ -467,3 +467,20 @@ test('a symlink cannot stand in for a SHA-matching downloaded update ZIP', { ski
   assert.equal(await service.verifiedDownloadedPath(), null);
   assert.equal(service.state().status, 'available');
 });
+
+test('Preview ignores unrepresentable GitHub SemVer tags and selects the genuine latest release', async () => {
+  const valid = { ...release('0.46.8'), prerelease: true };
+  const unsafe = { ...release('9007199254740992.0.0'), prerelease: true };
+  const service = new UpdateService({
+    version: '0.46.6', dataDir: await tempDir('updates-unsafe-tags-'),
+    platform: 'darwin', arch: 'arm64', channel: 'preview',
+    fetchImpl: async (url) => {
+      assert.equal(url, PREVIEW_RELEASES_URL);
+      return new Response(JSON.stringify([unsafe, valid]), { status: 200 });
+    },
+  });
+  const result = await service.check();
+  assert.equal(result.status, 'available');
+  assert.equal(result.latestVersion, '0.46.8');
+  assert.equal(result.asset.name, 'Agenteeq-0.46.8-macOS-arm64.zip');
+});
