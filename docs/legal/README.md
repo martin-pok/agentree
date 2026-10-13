@@ -1,6 +1,6 @@
 # Agenteeq — právní základ (DRAFT / LEGAL REVIEW REQUIRED)
 
-**Stav: 13. října 2026 · Interní šablony v veřejném repozitáři · NEPLATÍ jako zveřejněné podmínky.**
+**Stav: 13. října 2026 · Pracovní šablony ve veřejném repozitáři · NEPLATÍ jako zveřejněné podmínky.**
 
 > Tyto dokumenty jsou pracovní právní návrhy. Nejsou advokátním stanoviskem, nepředstavují registraci ochranné známky, certifikát GDPR/WCAG ani automaticky uzavřenou smlouvu s uživatelem. **Před vystavením na web, registrací nebo komerční distribucí musí vlastník doplnit skutečné údaje, ověřit technické výroky a provést právní revizi.**
 
@@ -18,8 +18,8 @@
 
 ## Kritické blokery (nelze odložit do placené verze)
 1. Identita provozovatele/správce [DOPLNIT: právní jméno/obchodní firma, IČO pokud relevantní, adresa, kontaktní e-mail pro privacy i reklamace], datum účinnosti a kdo skutečně smluvně poskytuje software.
-2. Aktuální veřejné `site/soukromi/index.html` a `site/en/privacy/index.html` jen odkazují žádosti GDPR na **veřejné GitHub Issues** — to není vhodná cesta pro citlivé žádosti; vytvořit soukromý kontaktní kanál. Chybí úplná mapa titulů, retenčních dob a možných transferů podle GDPR čl. 13.
-3. Veřejná privacy stránka říká, že desktop sám od sebe volá jen ČNB, ale `src/updates.js` ověřuje i veřejná vydání na GitHubu. Před úpravou zásad ověřit všechny síťové cesty; tvrzení „nikdy nic nikomu“ přesně omezit na **obsah přepisů/kódu bez zapnuté synchronizace**, ne na všechny HTTP requesty.
+2. Veřejné `site/soukromi/index.html` a `site/en/privacy/index.html` po [PR #221](https://github.com/martin-pok/agentree/pull/221) **výslovně varují před zveřejňováním osobních údajů a GDPR žádostí ve veřejných GitHub Issues**. Nejde však o funkční neveřejný kontakt pro uplatnění práv: stále chybí ověřená identita správce, soukromý kontaktní kanál, úplné právní tituly, retenční doby a posouzení transferů podle čl. 13 GDPR. [P0 #232](https://github.com/martin-pok/agentree/issues/232).
+3. Historická verze privacy stránek chybně uváděla, že desktop automaticky komunikuje jen s ČNB. [PR #221](https://github.com/martin-pok/agentree/pull/221) opravil obě živé jazykové verze a výslovně popisuje GitHub release kontrolu i síťová metadata; [PR #233](https://github.com/martin-pok/agentree/pull/233) připravuje regresní kontrolu. Dál ověřit **všechny** skutečné síťové cesty a přesnost tvrzení o nepřenášení **obsahu přepisů/kódu**, zejména u volitelné synchronizace a API integrací. Opravené dvě věty nejsou kompletní GDPR audit.
 4. Zkontrolovat smluvní postavení a DPA/SCC u Supabase, Vercel a případně Google, retenční lhůty hostingu, podpory a bezpečnostních incidentů.
 5. Podpis/notarizace Mac, placené digitální plnění, reklamační proces a informace o právech spotřebitele se nemohou odstranit větou „bez záruky“.
 6. Zajistit důkazy o právu používat logo, software, obrázky a fonty; veřejné GitHub repo je nyní **bez deklarované hlavní licence**. Nevydávat žádné third-party soubory za vlastní autorské dílo.
