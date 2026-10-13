@@ -83,22 +83,43 @@ jobs:
             echo "::error::Tag $TAG nemá tvar vX.Y.Z."
             exit 1
           fi
-          gh release view "$TAG" --json isDraft,assets,body,databaseId,tagName > vydani.json
+          # GitHub Actions can hide private Drafts from gh release view's GraphQL
+          # shortcut. Resolve the exact unpublished draft through authenticated
+          # REST inventory, the same proven path as the independent byte audit.
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > release-list.json
           node -e '
-            const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
-            if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
-            if (v.tagName !== process.env.TAG || !Number.isSafeInteger(v.databaseId) || v.databaseId < 1) {
-              console.error("::error::Draft má neplatný tag nebo release databaseId."); process.exit(1);
+            const fs = require("node:fs");
+            const all = JSON.parse(fs.readFileSync("release-list.json", "utf8"));
+            const matches = Array.isArray(all)
+              ? all.filter(r => r.tag_name === process.env.TAG && r.draft === true)
+              : [];
+            if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id < 1) {
+              console.error("::error::Exact unpublished draft missing or not visible.");
+              process.exit(1);
             }
-            const expectedExtension = `agenteeq-extension-${process.env.TAG.slice(1)}.zip`;
-            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
-              if (!v.assets.some((a) => a.name === stala)) {
-                console.log(`::error::Chybí příloha ${stala} – tlačítko ke stažení na webu by vedlo do prázdna.`);
+            fs.writeFileSync("release-id.txt", String(matches[0].id) + "\n");
+          '
+          RELEASE_ID=$(cat release-id.txt)
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > vydani.json
+          node -e '
+            const v = require("./vydani.json");
+            if (v.draft !== true || v.tag_name !== process.env.TAG ||
+                !Number.isSafeInteger(v.id) || String(v.id) !== require("fs").readFileSync("release-id.txt", "utf8").trim() ||
+                !Array.isArray(v.assets) || v.assets.length !== 8) {
+              console.error("::error::Expected exact eight-asset unpublished Draft.");
+              process.exit(1);
+            }
+            const expectedExtension = "agenteeq-extension-" + process.env.TAG.slice(1) + ".zip";
+            for (const required of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
+              if (!v.assets.some(a => a.name === required && a.size > 0 && /^sha256:[0-9a-f]{64}$/.test(a.digest))) {
+                console.error("::error::Missing/unverified asset " + required);
                 process.exit(1);
               }
             }
-            console.log(v.assets.map((a) => `${a.name} ${a.size}`).join("\n"));
+            console.log(v.assets.map(a => a.name + " " + a.size).join("\n"));
           '
+          # Record the existing Stable Latest. Preview is forbidden from changing it.
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name > stable-before.txt
 
       # Re-download the DRAFT assets from GitHub before changing their visibility.
       # Compare exact inventory, bytes and sizes against *both* GitHub's published
