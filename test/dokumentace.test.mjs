@@ -149,7 +149,7 @@ test('release 0.46.9 status keeps built Draft distinct from published release', 
   const readme = await zdroj('README.md');
   const roadmap = await zdroj('docs/ROADMAP.md');
   const readiness = await zdroj('docs/RELEASE-READINESS.md');
-  assert.match(readme, /0\.46\.9 je již sestavená jako neveřejný Preview Draft/);
+  assert.match(readme, /\*\*0\.46\.9\*\* je již sestavená jako neveřejný Preview Draft/);
   assert.match(roadmap, /audit stažených bajtů/);
   assert.match(readiness, /assetsVerified=8/);
   assert.match(readiness, /skutečné Mac\/Windows\/Chrome UAT/);
