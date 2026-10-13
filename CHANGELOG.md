@@ -1,38 +1,21 @@
 # Changelog
 
-## Nezařazeno do vydání · přepnutí kanálu okamžitě ruší staré stahování
+## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
 
-- **Rychlejší změna Stable/Preview:** přepnutí kanálu okamžitě ukončí rozběhnutý síťový přenos staršího instalátoru. Nečeká se na jeho dokončení ani na patnáctiminutový timeout.
-- **Bezpečné zotavení:** zrušený přenos nehlásí chybu sítě, nepřepíše nové vydání a nezanechá instalační soubor. Opakovaná kontrola stejného kanálu právě stahovaný instalátor neruší.
-- **Regresní test:** simuluje přenos čekající na odpověď a následnou změnu Preview → Stable. Jde o změnu po sestavení kandidáta 0.46.8.
+**Stav: zdrojový Preview kandidát; zatím není zveřejněný ani nainstalovaný.** Vydání vyžaduje CI pro přesný commit, nový neměnný tag, ověřený draft se skutečnými soubory, UAT a výslovnou publikaci v Preview. Stable Latest a Chrome Web Store se samotným commitem nemění.
 
-## Nezařazeno do vydání · bezpečné porovnávání verzí
+### Co se změnilo
 
-- **Ochrana proti chybným GitHub tagům:** aktualizační služba odmítne čísla verzí mimo přesný rozsah JavaScriptových celých čísel. Takový tag již nemůže ovlivnit pořadí Preview vydání nebo se vydávat za platný instalační balíček.
-- **Regresní testy:** záměrně extrémně dlouhé verze, hraniční bezpečná hodnota a skutečná volba správného Preview mezi neplatnými tagy.
-- Jde o změnu **po vytvoření draftu 0.46.8**; již sestavené instalační soubory nejsou tímto commitem upravené.
+- **Přepínání Stable / Preview bez zbytečného stahování:** změna kanálu okamžitě ruší probíhající přenos již nepotřebného instalátoru a bezpečně uklidí částečný soubor. Opakovaná kontrola stejného kanálu stahování nepřeruší.
+- **Ověření těsně před instalací:** Mac znovu kontroluje celé SHA-256 a velikost ZIPu uloženého na disku, odmítá změněný, smazaný i podstrčený soubor a nabídne nové stažení bez spuštění poškozené aktualizace.
+- **Odolnost vůči chybným GitHub tagům:** updater nepřijímá číselné verze, které JavaScript neumí přesně reprezentovat.
+- **První konverzace Claude Code:** když poprvé vznikne adresář `projects/`, jednorázová následná kontrola zachytí JSONL i při ztracené události sledování. Bez trvalého procházení uživatelovy domovské složky.
+- **Stejné ikony rozšíření v balíčku a Store podkladech:** build kontroluje binární shodu schválených PNG, aby podklady obchodu neobsahovaly odlišnou ikonu než skutečné Chrome rozšíření.
 
-## Nezařazeno do vydání · nové ověření instalačního ZIPu před použitím
+### Ověření a dostupnost
 
-- **Ochrana jedním kliknutím:** instalace v nativní Mac aplikaci ani otevření staženého balíčku ve Finderu nepoužije archiv, který se od stažení změnil nebo zmizel. Kontroluje se skutečná velikost a celý SHA-256 otisk, nejen název ZIPu.
-- **Omezené prostředky:** kontrola čte soubor postupně v 256kB blocích bez načtení balíčku do operační paměti.
-- **Bezpečný návrat:** po neúspěšném ověření se stav vrátí na `K dispozici`, aplikace nic nespustí a aktualizaci lze znovu stáhnout.
-- **Regresní testy:** poškození ZIPu se stejnou velikostí, zmizelý soubor, symlink a zákaz události `install-update` při poškození.
-- **Distribuce:** jde o práci **po zmrazení tagu 0.46.8**; existující draft ani veřejný release se touto změnou nemění.
-
-## Nezařazeno do vydání · první konverzace Claude Code po založení projects/
-
-- **První agent bez zpoždění:** když Claude Code právě založí `projects/`, krátká jednorázová kontrola zachytí i první soubor konverzace zapsaný těsně po aktivaci sledování, pokud macOS zahodí následnou událost změny.
-- **Žádné trvalé skenování:** dodatečný průchod běží pouze u nově vzniklého kořene, po 350 ms, nikdy na existujících adresářích; po vypnutí watcheru se ruší. Bez procházení uživatelova HOME.
-- **Regresní testy:** simulují pozdní zápis JSONL bez jediné dětské `fs.watch` události, omezení 2 s, zrušení watcheru a absenci zbytečného skenu existujícího kořene.
-- **Verze:** změna vzniká až po tagu `v0.46.8`; do existujícího draftu ani veřejného Chrome rozšíření zpětně nevstupuje.
-
-## Nezařazeno do vydání · shodné ikony v GitHub releasu a Chrome Web Store
-
-- **Jeden binární brand:** renderování marketingových snímků už nepřepisuje schválené PNG ikony, které se používají v GitHub release ZIPu. Každou velikost stále vizuálně porovná se zdrojovým SVG a výrazný rozdíl zastaví build.
-- **Zabezpečená sada pro vydavatele:** před vytvořením upload kitu musí ZIP obsahovat všechna čtyři přesně schválená PNG a 128px ikona listingu se musí bajtově shodovat s ikonou uvnitř ZIPu.
-- **Detekované riziko:** z historického buildu 0.46.8 vznikly dva odlišné ZIPy se stejným manifestem, ale rozdílnými PNG ikonami. Nová sada pro Store se musí znovu ověřit proti oficiálnímu draftu; starý review kit se nepovažuje za totožný s releasem.
-- **Distribuční stav:** tato oprava vzniká **po tagu v0.46.8** a již vytvořený draft ani veřejný Chrome Web Store automaticky nemění.
+- Automatizované regresní testy se vztahují na popsané změny; jejich úspěch sám o sobě nepotvrzuje instalaci ani aktualizaci na skutečném Macu.
+- Soubory v dřívějším neveřejném draftu **v0.46.8** zůstávají beze změny. 0.46.9 bude dostupná teprve po vytvoření a schválení vlastního vydání. Aktuální veřejné Preview zůstává **v0.46.6**, Stable **v0.46.0**.
 
 ## 0.46.8 – 2026-10-12 · rychlejší návrat k agentům a spolehlivější aktualizace
 
