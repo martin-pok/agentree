@@ -112,6 +112,12 @@ for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) {
 }
 // Zdroje pláště do balíčku nepatří — uživatel dostává .exe, ne překladač.
 await fs.rm(path.join(balik, 'app', 'desktop', 'windows'), { recursive: true, force: true });
+// Fail-safe: never ship legacy icon previews alongside current Windows ICO.
+// Even if someone accidentally re-adds the old source files later, the
+// packaged app can contain only icon assets generated from the Dock master.
+for (const stale of ['Agenteeq-icon.png', 'Agenteeq.icns']) {
+  await fs.rm(path.join(balik, 'app', 'desktop', stale), { force: true });
+}
 
 // Zákazník dostane jen návod; ostatní dokumenty jsou interní (licence, obchod, QA).
 await fs.mkdir(path.join(balik, 'app', 'docs'), { recursive: true });
