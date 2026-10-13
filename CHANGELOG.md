@@ -1,11 +1,18 @@
 # Changelog
 
-## Nevydané změny po 0.46.9 — pouze vývojová větev, nejsou součástí Draftu
+## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
+
+**Stav: zdrojový Preview kandidát; zatím bez release tagu, sestavených příloh, publikace i instalace na zařízení.** Samotné číslo v kódu není stažitelná verze. Pro vydání je potřeba úspěšné CI na přesném commitu, samostatný neměnný tag, nezávisle ověřený Draft, UAT na zařízení a schválená ruční publikace v Preview. Stable Latest a Chrome Web Store zůstávají beze změny.
+
+### Co se změnilo
 
 - **Bezpečnější instalace na Macu:** pokud se běžící Agenteeq do 60 sekund neukončí, aktualizační pomocník nepřepíše aplikaci za jejího běhu; odstraní pouze připravenou dočasnou kopii. K běžné výměně dojde teprve po skutečném ukončení procesu.
 - **Přísnější kontrola staženého ZIPu:** před instalací a zobrazením v souborech se kromě velikosti a SHA-256 ověřuje také identita otevřeného souboru a odmítnou se podstrčené symbolické odkazy i při souběžné výměně cesty.
-- **Regresní scénáře:** test simulující timeout pomocníka, bezpečný úspěšný restart po ukončení a souběžnou záměnu ZIPu za stejně velký a stejně hashovaný obsah za symbolickým odkazem.
-- **Distribuce:** tyto změny jsou novější než neměnný tag `v0.46.9`. Nejsou v jeho Draftu ani ve veřejném Preview `0.46.6`; nejdřív musejí projít CI a být sestavené v samostatném budoucím vydání.
+
+### Ověření a distribuce
+
+- Regresní testy simulují timeout pomocníka, bezpečný restart po skončení procesu a souběžnou záměnu ZIPu za symbolický odkaz s totožným obsahem. PR #206 prošel 8/8 CI na své přesné větvi; to není důkaz UAT nového instalačního balíčku 0.46.10.
+- Stávající Drafty v0.46.9 a v0.46.8 se nepřepisují. Veřejné Preview zůstává v0.46.6 a Stable v0.46.0, dokud jiný skutečný release neprojde schválenou publikací.
 
 ## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
 
