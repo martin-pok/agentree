@@ -116,3 +116,17 @@ test('roadmap current sprint must not refer to an obsolete release', async () =>
   assert.doesNotMatch(current, /Zdrojová verze 0\.46\.1|Vydání 0\.46\.1 bez nesouladu/, 'historical releases are not current work');
   assert.match(current, /UAT/, 'device acceptance must remain an explicit gate');
 });
+
+
+test('independent draft audit re-downloads and checks actual GitHub bytes without publishing', async () => {
+  const workflow = await zdroj('.github/workflows/audit-release-draft.yml');
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /contents: read/);
+  assert.match(workflow, /verify-publish-tag\.mjs/);
+  assert.match(workflow, /test\.yml\/runs\?head_sha=/);
+  assert.match(workflow, /gh release download "\$TAG"/);
+  assert.match(workflow, /verify-release-assets\.mjs "\$TAG" audited-assets release-metadata\.json/);
+  assert.match(workflow, /sha256sum --check SHA256SUMS\.txt/);
+  assert.match(workflow, /draft-audit-report\.json/);
+  assert.doesNotMatch(workflow, /gh release (?:create|edit|upload)|git push|--draft=false/);
+});
