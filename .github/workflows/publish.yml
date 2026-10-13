@@ -131,14 +131,37 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          # GitHub GET /releases/tags/{tag} deliberately returns 404 for DRAFTS.
-          # Resolve the database ID from the authenticated CLI draft lookup,
-          # then use the REST by-ID endpoint; the verifier checks exact tag/draft.
-          RELEASE_ID=$(node -p 'JSON.parse(require("fs").readFileSync("vydani.json", "utf8")).databaseId')
+          RELEASE_ID=$(cat release-id.txt)
           [[ "$RELEASE_ID" =~ ^[0-9]+$ ]] || { echo "::error::Missing draft release ID."; exit 1; }
-          gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" > release-metadata.json
+          # Download the exact GitHub-hosted bytes by REST asset ID. The CLI
+          # shortcuts can hide Draft assets even with the correct write token.
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > release-metadata.json
           mkdir -p overene-prilohy
-          gh release download "$TAG" --dir overene-prilohy --repo "$GITHUB_REPOSITORY"
+          node -e '
+            const fs = require("node:fs");
+            const release = require("./release-metadata.json");
+            if (release.tag_name !== process.env.TAG || release.draft !== true ||
+                String(release.id) !== fs.readFileSync("release-id.txt", "utf8").trim() ||
+                !Array.isArray(release.assets) || release.assets.length !== 8) {
+              console.error("::error::Expected exact unchanged Draft and eight assets.");
+              process.exit(1);
+            }
+            const names = new Set();
+            const entries = release.assets.map(a => {
+              if (!Number.isSafeInteger(a.id) || a.id < 1 ||
+                  !/^[A-Za-z0-9._-]+$/.test(a.name) || names.has(a.name)) {
+                console.error("::error::Unsafe, duplicate or invalid asset identifier.");
+                process.exit(1);
+              }
+              names.add(a.name);
+              return a.id + "\t" + a.name;
+            });
+            fs.writeFileSync("draft-asset-ids.tsv", entries.join("\n") + "\n");
+          '
+          while read -r asset_id asset_name; do
+            gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" > "overene-prilohy/$asset_name"
+          done < draft-asset-ids.tsv
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
           node scripts/verify-release-assets.mjs "$TAG" overene-prilohy release-metadata.json
           (cd overene-prilohy && sha256sum --check SHA256SUMS.txt)
 
