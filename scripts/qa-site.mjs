@@ -29,9 +29,24 @@ const output = 'dist/qa-site';
 // Stránka slibuje, že nic nedotahuje z cizích serverů. Tohle to drží: všechno mimo vlastní
 // původ se odmítne a zapíše. Zároveň to brání tomu, aby klik na Stáhnout odvedl kontrolu pryč.
 const puvod = new URL(url).origin;
+// Deterministic, read-only GitHub PUBLIC release metadata. QA must not depend on
+// live internet, nor disable external-request blocking to test Preview links.
+const PREVIEW_API = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=20';
+const PREVIEW_FIXTURE = JSON.stringify([{
+  tag_name: 'v0.46.10', draft: false, prerelease: true,
+  assets: [{
+    name: 'Agenteeq-0.46.10-macOS-arm64.dmg',
+    size: 50_000_000, digest: 'sha256:' + 'a'.repeat(64),
+    browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.10/Agenteeq-0.46.10-macOS-arm64.dmg',
+  }],
+}]);
 async function jenMistni(page, cizi) {
   await page.route('**/*', (route) => {
     const cil = route.request().url();
+    if (cil === PREVIEW_API) return route.fulfill({
+      status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: PREVIEW_FIXTURE,
+    });
     if (cil.startsWith(puvod) || cil.startsWith('data:') || cil.startsWith('blob:')) return route.continue();
     cizi.push(cil);
     return route.abort();
