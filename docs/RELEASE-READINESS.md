@@ -1,14 +1,21 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 12. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
+**Aktualizováno 13. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
 
 ## Zdroj pravdy
 
-- **v0.46.8:** tag na přesném zdrojovém commitu `dd32fa98879a8c34137c6bde49b50dc205202e93`; PR #184 i výsledné `main` prošly **8/8 CI**. Automatické `prepare-preview-draft.yml` úspěšně předalo build workflow [Vydání #38304142467](https://github.com/martin-pok/agentree/actions/runs/38304142467), všechny platformy prošly a GitHub vytvořil **neveřejný draft release ID `410973749` s 8 přílohami**. macOS arm64 DMG/ZIP, Windows ZIP, Chrome ZIP, tři stabilní názvy a `SHA256SUMS.txt` mají nenulové velikosti a GitHub `sha256:` digesty. **Není to veřejný release, nainstalovaná aplikace ani skutečné macOS UAT.** Evidence: [issue #187](https://github.com/martin-pok/agentree/issues/187). Další kód sloučený po tagu není v těchto instalátorech.
+- **v0.46.8:** tag na přesném zdrojovém commitu `dd32fa98879a8c34137c6bde49b50dc205202e93`; PR #184 i výsledné `main` prošly **8/8 CI**. Automatické `prepare-preview-draft.yml` úspěšně předalo build workflow [Vydání #38304142467](https://github.com/martin-pok/agentree/actions/runs/38304142467), všechny platformy prošly a GitHub vytvořil **neveřejný draft release ID `410973749` s 8 přílohami**. Všech osm příloh bylo 13. 10. nezávisle staženo z tohoto draftu a ověřeno proti digestům GitHub API; sedm archivů také proti `SHA256SUMS.txt` (`scripts/verify-release-assets.mjs`: 8/8). Izolované spuštění skutečného macOS ZIPu na Apple Silicon Macu prošlo 11/11 nativních smoke kontrol; podrobnosti níže. **Není to veřejný release ani ověřená instalace/aktualizace běžné aplikace.** Evidence: [issue #187](https://github.com/martin-pok/agentree/issues/187). Další kód sloučený po tagu není v těchto instalátorech.
 - **v0.46.7** má ověřený tag na `00daf73bbdc2f3e7bb7342ae0a15ef4d5e1a4b90`; tento commit prošel **8/8 CI**. GitHub workflow `Vydání` dokončilo všechny platformy a založilo **neveřejný draft release ID `410716060`** se všemi osmi přílohami (macOS Apple Silicon DMG/ZIP, Windows ZIP, Chrome extension ZIP, tři stabilní názvy, `SHA256SUMS.txt`). Každá příloha má nenulovou velikost a `sha256:` otisk v GitHub API. Jde o **hotové sestavení, ne publikované vydání ani schválenou instalaci na zařízení**; Mac build je ad-hoc podepsaný, nikoli Developer ID/notarizovaný. UAT: [issue #157](https://github.com/martin-pok/agentree/issues/157). Zveřejnění zůstává manuální krok výhradně přes `publish.yml` s `channel=preview`, po ověření release gate.
 - Poslední potvrzené **zveřejněné** Preview: **[v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6)** (12. 10. 2026, 11:45 UTC). Tag míří na commit `27f3d2a`, CI pro tento SHA má 8/8 úspěšných kontrol, release build prošel a osm příloh Mac/Windows/Chrome včetně `SHA256SUMS.txt` je dostupných s nenulovou velikostí a zveřejněnými SHA-256 otisky. Stabilní Latest zůstává **v0.46.0** (9. 10. 2026). Živé UAT Mac instalace, aktualizace, Google přihlášení a Windows zařízení nebylo provedeno.
 - Spouštění QA: `.github/workflows/test.yml`; sestavení: `.github/workflows/release.yml`; zveřejnění: `.github/workflows/publish.yml`.
 - **Nepřebírat statusy z README ani z tagu:** veřejnou dostupnost musí potvrdit `GET /repos/martin-pok/agentree/releases/tags/v<version>` s `draft=false` a skutečnými assety. **Pozor: GitHub tento endpoint vrací jako HTTP 404 u neveřejného draftu.** Před publikací musí `publish.yml` zjistit `databaseId` z autentizovaného `gh release view`, načíst `GET /releases/<ID>`, ověřit stejný tag + `draft=true` a až potom nezávisle porovnat SHA-256 skutečně stažených bajtů. Nelze zaměňovat 404 draftu s chybějící verzí.
+
+## Dílčí ověření kandidáta 0.46.8 na Macu — 13. 10. 2026
+
+- Zdroj binárky: osm skutečně stažených příloh neveřejného draftu `410973749`. Verifikátor potvrdil všech 8/8 názvů, velikostí a SHA-256 vůči GitHub API a sedm archivů vůči `SHA256SUMS.txt`. Mac ZIP má SHA-256 `f8060456cb3e6145e019c64d46aedf785161be90cffbdc47b8a1dc0dd8329dd6`; DMG `e3b93866c9edf38c101aa938dc59c81321564f73a6e04c073393e6873b37f239`.
+- Prostředí: skutečný Mac s Apple Silicon, macOS 27.0.1, izolovaná testovací data a port (`AGENTEEQ_DESKTOP_QA=1`, `AGENTEEQ_SOURCE_HOME` a `AGENTEEQ_HOME` v dočasné složce, cloud/Keychain/procesy vypnuté). Skutečný ZIP běžel přes `npm run qa:native` z `main` `aa63cfec6abd1e9060ba5b2210da573f78a73f8c`: **11/11** včetně platného ad-hoc podpisu, startu přibaleného Node, vykreslení okna/navigace, odsazení pod záhlavím a ukončení serveru spolu s oknem. Snímek zachytil úvodního průvodce; nezaznamenává dokončení průvodce ani práci s reálnými účty.
+- Skutečný DMG šel připojit jen pro čtení; obsahuje `Agenteeq.app` verze `0.46.8`, arm64 a odkaz do `/Applications`. `codesign --verify --deep --strict` prošel, ale podpis je **ad-hoc, bez Team ID**. `spctl --assess` na tomto systému vrátil `internal error in Code Signing subsystem`; Gatekeeper tím není ověřený.
+- V `/Applications` zůstala původní `0.46.3`; QA ji nevyměnilo. Instalace z Finderu, upgrade a zachování dat, Dock po instalaci, Google OAuth/avatar, skutečné Chrome párování a Windows zařízení stále čekají na samostatné UAT. Lokální celoplošný snímek z QA neukládat do veřejného repozitáře, protože zachycuje i obsah plochy.
 
 ## Povinné brány před zveřejněním
 
@@ -27,7 +34,7 @@
 
 ## Jaký je další postup
 
-1. Projít nový draft `v0.46.8` a release notes proti požadavkům v issue #187. Zdroj a checksumy jsou sestavené, fyzická instalace se zatím neověřila.
+1. Draft `v0.46.8`, release notes, skutečné stažené přílohy a izolovaný nativní start jsou ověřené výše. Fyzická instalace a upgrade se zatím neověřily.
 2. Na skutečném Apple Silicon Macu zkontrolovat DMG, Gatekeeper (ad-hoc podpis), správnou ikonografii, Google OAuth, avatar, upgrade a návrat do konverzace; u Windows beta a Chrome přidat skutečné smoke testy.
 3. Před publikací spustit `publish.yml` s výslovným kanálem `preview`: automatický krok znovu stáhne přílohy draftu, ověří všechny skutečné SHA-256 otisky proti `SHA256SUMS.txt` a GitHub API a odmítne nesoulad.
 4. Pouze po schválení UAT a všech kontrol zveřejnit `v0.46.8` jako Preview. Starší `v0.46.7` draft nepřepisovat ani automaticky nepublikovat. Stabilní `Latest` musí nadále ukazovat na `v0.46.0` až do samostatného rozhodnutí o Stable.
