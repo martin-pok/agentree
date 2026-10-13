@@ -1,5 +1,7 @@
 # Agenteeq — značka a kompatibilita
 
+**Právní ochrana značky (pracovní návrhy, žádná registrovaná OZ netvrzena):** [CZ pravidla značky](legal/BRAND-POLICY.cs.md) · [EN brand usage](legal/BRAND-POLICY.en.md) · [prokazatelné IP a přihláška ochranné známky](legal/IP-REGISTER.md) · [právní launch gate](legal/LAUNCH-LEGAL-GATE.md). Veřejný GitHub repozitář není náhradou registrace OZ ani důkazem vlastnictví všech externích podkladů.
+
 **Agenteeq je aktuální produktová značka.** Tento dokument zachovává migrační poznámky pro starší instalace, nikoliv otevřené rozhodnutí o názvu. Ve veřejném rozhraní, ikonkách a marketingu používej výhradně Agenteeq a aktuální dvoubarevný robotí symbol bez trojzubce a bez barevné antény.
 
 ## Kde jsme teď
