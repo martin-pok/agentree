@@ -27,7 +27,7 @@ test('počet testů v dokumentaci se neliší o víc než desetinu', async () =>
     // Soubor se čte přes URL, ne přes `dir.pathname` – z „/D:/…“ by na Windows vzniklo „D:\D:\…“.
     skutecnost += (await fs.readFile(new URL(f, dir), 'utf8')).match(/^\s*(?:await )?(?:t\.)?test\(/gm)?.length || 0;
   }
-  for (const [soubor, re] of [['README.md', /npm test\s+# (\d+) testů/], ['docs/TESTING.md', /\| `npm test` \| (\d+) testů/]]) {
+  for (const [soubor, re] of [['README.md', /npm test\s+# (\d+) testů/], ['docs/TESTING.md', /\*\*Aktuální inventář automatických testů:\*\* (\d+) deklarovaných testů/]]) {
     const uvedeno = Number((await zdroj(soubor)).match(re)?.[1]);
     assert.ok(uvedeno, `${soubor}: počet testů se nepodařilo najít`);
     const odchylka = Math.abs(uvedeno - skutecnost) / skutecnost;
@@ -75,9 +75,10 @@ test('přeskočený test říká proč', async () => {
 
 test('publikace nesmí vynechat ZIP Chrome extension stejné verze', async () => {
   const workflow = await zdroj('.github/workflows/publish.yml');
-  assert.match(workflow, /const expectedExtension = `agenteeq-extension-\$\{process\.env\.TAG\.slice\(1\)\}\.zip`;/);
+  assert.match(workflow, /const expectedExtension = "agenteeq-extension-" \+ process\.env\.TAG\.slice\(1\) \+ "\.zip";/);
   assert.match(workflow, /"Agenteeq-Windows-x64\.zip", expectedExtension\]/);
-  assert.match(workflow, /if \(!v\.assets\.some\(\(a\) => a\.name === stala\)\)/);
+  assert.match(workflow, /!v\.assets\.some\(a => a\.name === required && a\.size > 0/);
+  assert.match(workflow, /v\.assets\.length !== 8/, 'reject incomplete drafts');
 });
 
 
@@ -85,8 +86,87 @@ test('publikace releasu vyžaduje úspěšné CI přesného označeného commitu
   const workflow = await zdroj('.github/workflows/publish.yml');
   assert.match(workflow, /actions: read/, 'release musí mít jen čtecí přístup k výsledkům Actions');
   assert.match(workflow, /Ověřit zelené CI označeného commitu/);
-  assert.match(workflow, /git\/ref\/tags\/\$\{TAG\}/, 'SHA se musí odvozovat z tagu, ne aktuálního main');
+  assert.match(workflow, /verify-publish-tag\.mjs "\$TAG" --write verified-tag-sha\.txt/, 'SHA se musí odvozovat z tagu, ne aktuálního main');
+  assert.match(await zdroj('scripts/verify-publish-tag.mjs'), /git\/ref\/tags\/\$\{tag\}/);
   assert.match(workflow, /actions\/workflows\/test\.yml\/runs\?head_sha=\$\{SHA\}/);
   assert.match(workflow, /r\.head_sha === process\.env\.GH_SHA && r\.status === "completed" && r\.conclusion === "success"/);
   assert.ok(workflow.indexOf('Ověřit zelené CI označeného commitu') < workflow.indexOf('      - name: Zveřejnit\n'), 'kontrola musí blokovat publikaci');
+});
+
+
+test('publish Preview stays prerelease, leaves Stable Latest unchanged and uses REST by ID', async () => {
+  const workflow = await zdroj('.github/workflows/publish.yml');
+  assert.match(workflow, /default: preview/, 'manual publish must default to Preview');
+  assert.match(workflow, /CONFIRM_STABLE: /, 'Stable needs a separate explicit confirmation');
+  assert.match(workflow, /if \[ "\$CONFIRM_STABLE" != "true" \]/);
+  assert.match(workflow, /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID"[\s\\]*-F draft=false -F prerelease=true -f make_latest=false/);
+  assert.match(workflow, /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID"[\s\\]*-F draft=false -F prerelease=false -f make_latest=true/);
+  assert.match(workflow, /test "\$LATEST" != "\$TAG"/);
+  assert.match(workflow, /test "\$LATEST" = "\$\(cat stable-before\.txt\)"/, 'Preview may not change stable Latest even to another old release');
+  assert.match(workflow, /test "\$LATEST" = "\$TAG"/);
+  assert.match(workflow, /concurrency:\n  group: publish-release-\$\{\{ inputs\.tag \}\}/, 'serialize publication for an exact tag');
+  assert.doesNotMatch(workflow, /^\s+gh release (?:view|edit|download)\b/m, 'GitHub Actions cannot reliably see private drafts via gh release CLI');
+});
+
+test('roadmap current sprint must not refer to an obsolete release', async () => {
+  const doc = await zdroj('docs/ROADMAP.md');
+  const current = doc.slice(doc.indexOf('## Právě teď'), doc.indexOf('## Backlog'));
+  const { version } = JSON.parse(await zdroj('package.json'));
+  const readiness = await zdroj('docs/RELEASE-READINESS.md');
+  const instructions = readiness.slice(readiness.indexOf('## Jaký je další postup'), readiness.indexOf('## Co zůstává'));
+  if (readiness.includes('STOP publikace `v' + version + '`')) {
+    assert.ok(current.includes(version), 'blocked release remains visible in active roadmap');
+    assert.ok(instructions.includes('`v' + version + '`') && instructions.includes('zablokovaný pro publikaci'),
+      'publish instructions must explicitly block the defective immutable Draft');
+    assert.ok(!instructions.includes('tag=v' + version), 'blocked Draft cannot remain a publish target');
+  } else {
+    assert.ok(current.includes(version + ' Preview'), 'active roadmap must mention current package version ' + version);
+    assert.ok(instructions.includes('`v' + version + '` jako Preview'), 'publish instructions must name current candidate v' + version);
+  }
+  assert.doesNotMatch(current, /Zdrojová verze 0\.46\.1|Vydání 0\.46\.1 bez nesouladu/, 'historical releases are not current work');
+  assert.match(current, /UAT/, 'device acceptance must remain an explicit gate');
+});
+
+
+test('independent draft audit re-downloads and checks actual GitHub bytes without publishing', async () => {
+  const workflow = await zdroj('.github/workflows/audit-release-draft.yml');
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.ok(workflow.includes("workflow_run:\n    workflows: ['Vydání']"),
+    'successful release build triggers independent audit');
+  assert.ok(workflow.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(workflow.includes("EXPECTED_RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}"));
+  assert.ok(workflow.includes("paths:\n      - '.github/workflows/audit-release-draft.yml'"),
+    'workflow-file push backfills the existing draft only when the audit workflow changes');
+  assert.ok(workflow.includes("TAG: ${{ steps.source.outputs.tag }}"));
+  assert.match(workflow, /contents: read/);
+  assert.match(workflow, /verify-publish-tag\.mjs/);
+  assert.match(workflow, /test\.yml\/runs\?head_sha=/);
+  assert.ok(workflow.includes('contents: write'), 'draft visibility requires scoped Contents write in GitHub Actions');
+  assert.ok(workflow.includes('release-list.json'), 'resolve private draft through authenticated REST inventory');
+  assert.ok(workflow.includes('releases/assets/${asset_id}'), 'download real draft bytes through REST asset ID');
+  assert.ok(workflow.includes('while read -r asset_id asset_name; do'), 'each draft archive must be downloaded');
+  assert.ok(workflow.includes('done < draft-asset-ids.tsv'), 'asset download loop must be closed');
+  assert.ok(workflow.trimEnd().endsWith('retention-days: 30'), 'audit workflow must not contain malformed trailing YAML');
+  assert.doesNotMatch(workflow, /gh release view|gh release download/,
+    'CLI shortcuts can hide Drafts from the GitHub Actions token');
+  assert.match(workflow, /verify-release-assets\.mjs "\$TAG" audited-assets release-metadata\.json/);
+  assert.match(workflow, /sha256sum --check SHA256SUMS\.txt/);
+  assert.match(workflow, /draft-audit-report\.json/);
+  assert.doesNotMatch(workflow, /gh release (?:create|edit|upload)|git push|--draft=false/);
+});
+
+test('current release status follows package version and distinguishes Draft from public updates', async () => {
+  const readme = await zdroj('README.md');
+  const roadmap = await zdroj('docs/ROADMAP.md');
+  const readiness = await zdroj('docs/RELEASE-READINESS.md');
+  assert.ok(readme.includes('**' + verze + '**'), 'README shows the current package version');
+  assert.ok(roadmap.includes('v' + verze), 'roadmap records the current package version, including a blocked Draft');
+  assert.ok(readiness.includes('**v' + verze + ':'), 'release readiness refers to current version');
+  assert.match(readme, /neveřejný Draft|neveřejné vydání/, 'unpublished draft must not be advertised as public');
+  assert.match(roadmap, /nezávislý byte audit|nezávislý SHA-256 audit/, 'roadmap keeps real bytes audit evidence');
+  assert.match(readiness, /assetsVerified=8/, 'release readiness records verified actual release assets');
+  assert.match(readiness, /Mac|Chrome|Windows/, 'device UAT requirements remain explicit');
+  const current = roadmap.slice(roadmap.indexOf('## Právě teď'), roadmap.indexOf('## Backlog'));
+  assert.doesNotMatch(current, /\|\s*\*\*?P0\*\*?\s*\|\s*(?:0\.46\.(?:7|8|9|10))\b/,
+    'old immutable private Drafts must not be active parallel P0 release tasks');
 });

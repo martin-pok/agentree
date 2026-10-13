@@ -1,5 +1,195 @@
 # Changelog
 
+## Připravované změny po 0.46.11 · nevydáno
+
+- PWA a Apple ikony nyní používají stejnou širokou hlavu s bílou anténou jako skutečně instalovaná Mac aplikace. Dřívější rastrové ikony měly odlišný tvar a fialovou anténu; CI je nově obrazově porovnává s oficiálním SVG.
+- Náhledy Přehledu na českém a anglickém webu jsou znovu zachycené ze současné ukázkové aplikace. Číslo neveřejné zdrojové verze je v marketingovém snímku skryté, aby nevypadalo jako dostupná aktualizace.
+
+**Dostupnost:** neměnný Draft `v0.46.11` tyto opravy neobsahuje. Nový binární kandidát vyžaduje vlastní tag, kompletní CI, audit příloh a živé UAT; samotný commit ani nasazení webu není vydání aplikace.
+
+## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
+
+**Dostupnost:** tato sekce popisuje obsah verze 0.46.11 ve zdrojovém kódu. Až úspěšné CI, nový neměnný tag, skutečné binárky, nezávislý SHA-256 audit, UAT a zveřejnění Preview potvrzují, že je aktualizace dostupná. Nestačí nový commit nebo neveřejný Draft. Stable Latest a Chrome Web Store se aktualizují samostatně.
+
+### Co se změnilo
+
+- **Jeden oficiální robot napříč platformami:** odstraněné historické nativní soubory `desktop/Agenteeq-icon.png`, `desktop/Agenteeq.icns` a `desktop/windows/Agenteeq.ico` ze zdrojového Gitu. Mac generuje ICNS ze schváleného `desktop/Icon.swift`; Windows vytváří ICO z aktuálního SVG-odvozeného 128px Chrome/Dock masteru. Všechny malé varianty zachovávají proporce široké hlavy, dvě kapslové oči a jedinou bílou anténu.
+- **Čisté instalační balíčky:** Windows po sestavení odstraňuje staré pomocné obrázky ze své distribuční kopie. CI navíc kontroluje *skutečný rozbalený Windows ZIP*, aby nemohl obsahovat starý PNG/ICNS nebo trojzubec; macOS již generuje a balí čistou nativní ikonu.
+- **Správná ikona i na webu a ve Vercelu:** sedm jazykových webových vstupů a stránka 404 odkazují na stejnou sadu skutečného `favicon.ico` a kanonického robotího SVG. Přidané testy webových cest; samostatný avatar projektu ve Vercel dashboardu vyžaduje vlastní ověření.
+- **Aktuálnější odkazy na veřejné Preview:** český i anglický web umí načíst informace pouze o skutečně zveřejněném GitHub Preview s kontrolovaným instalačním souborem a nabídnout jeho přesný changelog. Neveřejné Drafty, chybné assety ani stahování nepodložené SHA-256 se nikdy nepropagují.
+
+### Ověření a distribuce
+
+- Opravy mají regresní testy značky, nativních buildů, reálného Windows ZIPu a bezpečné volby vydání. Nezávislý audit osmi skutečných souborů verze **0.46.10** prošel, ale neprokazuje nic o nových binárkách **0.46.11**.
+- Změny následují až po neměnném tagu 0.46.10. Staré Drafty 0.46.7 až 0.46.10 zůstávají nepozměněné. Distribuovat se musí pouze nový přesně otestovaný a schválený kandidát 0.46.11; reálné Mac/Windows/Chrome UAT, Google OAuth/avatar a publikace se nesmějí zaměňovat za CI.
+
+## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
+
+**Dostupnost:** popis změn sám o sobě nepotvrzuje zveřejnění ani instalaci aplikace. Ověř skutečně publikovaný GitHub release a jeho přílohy; soukromý Draft se přes automatický updater nenabízí. Chrome Web Store se aktualizuje samostatně a vyžaduje ověření veřejné verze.
+
+### Co se změnilo
+
+- **Bezpečnější instalace na Macu:** pokud se běžící Agenteeq do 60 sekund neukončí, aktualizační pomocník nepřepíše aplikaci za jejího běhu; odstraní pouze připravenou dočasnou kopii. K běžné výměně dojde teprve po skutečném ukončení procesu.
+- **Přísnější kontrola staženého ZIPu:** před instalací a zobrazením v souborech se kromě velikosti a SHA-256 ověřuje také identita otevřeného souboru a odmítnou se podstrčené symbolické odkazy i při souběžné výměně cesty.
+
+### Ověření a distribuce
+
+- Regresní testy simulují timeout pomocníka, bezpečný restart po skončení procesu a souběžnou záměnu ZIPu za symbolický odkaz s totožným obsahem. PR #206 prošel 8/8 CI na své přesné větvi; to není důkaz UAT nového instalačního balíčku 0.46.10.
+- Starší neměnné tagy a přílohy v0.46.9 a v0.46.8 se tímto releasem nepřepisují. Zveřejnění 0.46.10 jako Preview samo o sobě nemění stabilní GitHub Latest; Chrome Web Store vyžaduje zvláštní publikaci.
+
+## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
+
+**Stav: zdrojový Preview kandidát; zatím není zveřejněný ani nainstalovaný.** Vydání vyžaduje CI pro přesný commit, nový neměnný tag, ověřený draft se skutečnými soubory, UAT a výslovnou publikaci v Preview. Stable Latest a Chrome Web Store se samotným commitem nemění.
+
+### Co se změnilo
+
+- **Přepínání Stable / Preview bez zbytečného stahování:** změna kanálu okamžitě ruší probíhající přenos již nepotřebného instalátoru a bezpečně uklidí částečný soubor. Opakovaná kontrola stejného kanálu stahování nepřeruší.
+- **Ověření těsně před instalací:** Mac znovu kontroluje celé SHA-256 a velikost ZIPu uloženého na disku, odmítá změněný, smazaný i podstrčený soubor a nabídne nové stažení bez spuštění poškozené aktualizace.
+- **Odolnost vůči chybným GitHub tagům:** updater nepřijímá číselné verze, které JavaScript neumí přesně reprezentovat.
+- **První konverzace Claude Code:** když poprvé vznikne adresář `projects/`, jednorázová následná kontrola zachytí JSONL i při ztracené události sledování. Bez trvalého procházení uživatelovy domovské složky.
+- **Stejné ikony rozšíření v balíčku a Store podkladech:** build kontroluje binární shodu schválených PNG, aby podklady obchodu neobsahovaly odlišnou ikonu než skutečné Chrome rozšíření.
+
+### Ověření a dostupnost
+
+- Automatizované regresní testy se vztahují na popsané změny; jejich úspěch sám o sobě nepotvrzuje instalaci ani aktualizaci na skutečném Macu.
+- Soubory v dřívějším neveřejném draftu **v0.46.8** zůstávají beze změny. 0.46.9 bude dostupná teprve po vytvoření a schválení vlastního vydání. Aktuální veřejné Preview zůstává **v0.46.6**, Stable **v0.46.0**.
+
+## 0.46.8 – 2026-10-12 · rychlejší návrat k agentům a spolehlivější aktualizace
+
+**Stav: Preview kandidát.** Tato sekce popisuje kód připravovaný do verze 0.46.8, nikoli
+již publikovanou instalaci. Dostupnost vyžaduje zelené 8/8 CI na přesném SHA, bezpečný
+sestavený balíček, živé UAT a zveřejnění GitHub Preview. Chrome Web Store má vlastní
+publikační proces; žádný soubor z tohoto commitu se automaticky neobjeví v obchodě.
+
+### Co uvidíš po instalaci vydané verze
+
+- **Kliknutí z Chrome do aplikace:** existující lokální agent se otevře přímo v nativním okně, bez neautorizované karty localhostu a bez spuštění duplicitního procesu.
+- **Filtry rozšíření:** Vše / Odpovídají / Limity; pravdivé upozornění na offline stav a automatické zotavení bez historických počtů.
+- **Stejný počet agentů:** Chrome a desktop vycházejí ze stejného výběru; SSE po opětovném připojení nepřehraje staré události přes nový snapshot.
+- **Lepší aktualizace:** velký archiv se ukládá po částech a dokončí až po ověření SHA-256; stejný současný požadavek sdílí jeden download, přepnutí kanálu nespustí starý instalační balíček.
+- **Google fotografie:** při chybném primárním odkazu se zkusí pouze bezpečně ověřený alternativní obrázek; žádné libovolné externí hosty.
+- **Poctivý web:** strukturovaná data nepředstírají zveřejnění vývojové verze; publikovaná verze se musí shodovat se stažitelnými přílohami.
+
+### Před zveřejněním
+
+- Kandidát musí projít CI na konkrétním commitu a musí být připravené, ověřené a nepřepisované release přílohy.
+- Google OAuth/avatar, skutečný návrat do Terminálu/iTerm/Warp a průchod instalace/aktualizace na Apple Silicon Macu **nejsou potvrzené** pouze automatickými testy.
+- Vydání Preview neovlivní stabilní Latest. Aktuální Chrome Store se nepovažuje za aktualizovaný bez ověření jeho veřejné verze.
+
+### Technický přehled změn od 0.46.7
+
+### automaticky sestavené release drafty
+
+- Po kompletním zeleném CI na přesném commitu `main` se nová správně verzovaná aplikace sama připraví k sestavení jako **neveřejný** GitHub release draft, bez dalšího ručního kroku tagování či spouštění buildu.
+- Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
+- Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
+
+### Chrome extension: pravdivá částečná detekce
+
+- Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.
+- API přenáší pouze boolean `procesyNevim`, žádný přepis, cestu ani soukromé údaje. Současné filtry konverzací zůstávají beze změny.
+- Změna je **po tagu v0.46.7**; žádný už sestavený DMG ani veřejné rozšíření se nepřepisuje.
+
+### přístup ke změnám přímo před aktualizací
+
+- **Jasný changelog:** když je nová ověřená verze dostupná, Nastavení → Aktualizace nabízí odkaz na poznámky příslušného zveřejněného GitHub releasu, nikoli pouze číslo aktualizace.
+- **Bez záměny draftu:** dialog „Co je nového“ ukazuje jen vydání, která jsou nanejvýš ve verzi skutečně nainstalované aplikace. Budoucí zdrojové záznamy se nevydávají za hotové a nainstalované.
+- **CZ/EN a QA:** odkaz a historické filtrování mají anglickou lokalizaci a regresní testy. Novinka se projeví až v nové verzi aplikace; není to změna ve starších instalátorech.
+
+
+### rychlejší a úspornější aktualizace
+
+- **Jeden skutečný download:** souběžné kliknutí na stažení stejného balíčku využije jediný HTTP přenos a jeden bezpečně ověřený archiv místo zbytečného vícenásobného stahování.
+- **Oddělené generace:** při přepnutí Stable / Preview či změně SHA-256 se starý požadavek nepřipojí k novému; nové vydání má vlastní stahování.
+- **Obnova po chybě:** přerušený společný přenos uvolní stav pro opakování a na disku nenechá neúplný balíček. Tři regresní testy ověřují deduplikaci, výměnu otisku a retry.
+- Změna vzniká po tagu v0.46.7; existující neveřejný draft a instalátory tím nejsou změněné.
+
+### otevření existujícího agenta z Chrome extension
+
+- **Přechod do nativní aplikace:** kliknutí na již zobrazeného lokálního agenta nově prochází pouze ověřeným tokenem rozšíření a přepne existující macOS okno. Neslibuje otevření localhostu v nové kartě Chromu, kde chyběla autorizace.
+- **Oprávnění:** žádný klíč WKWebView, text přepisu, nový agent, shell ani širší oprávnění pro Chrome; požadavek musí být z tohoto Macu a z vlastní stránky popupu.
+- **Ověření:** automatické testy tokenu, podvrženého původu, neznámého/archivovaného ID, nepřítomného desktopu a opakovaného kliknutí. Reálné UAT macOS zůstává samostatná podmínka.
+- **Distribuce:** není součástí již sestaveného 0.46.7 draftu ani aktuálního Chrome Store balíčku.
+
+### spolehlivější načtení profilové fotky
+
+- **Google foto:** pokud Supabase vrátí neplatné `avatar_url`, aplikace zkusí alternativní `picture` místo prázdné profilovky. Obě adresy musí vždy projít stejnou kontrolou HTTPS a povolené Google CDN.
+- **Testy:** kontrola škodlivé adresy, neplatného formátu, příliš dlouhé URL a priority validního primárního obrázku. Bez odesílání údajů mimo Google obrázkovou CDN.
+- **Ověření:** jde o automaticky testovanou opravu metadat; skutečné zobrazení Google fotky v macOS UI stále vyžaduje UAT a není touto změnou prohlášeno za hotové.
+
+### Chrome extension: pracovní filtr konverzací
+
+- **Rychlé soustředění:** při více otevřených webových AI chatech je možné filtrovat Vše / Odpovídají / Limity, s pravdivým počtem v každém stavu. Přepnutí nevyvolá žádné síťové ani cloudové požadavky a respektuje uživatelem vypnuté služby.
+- **Čerstvý stav má přednost:** otevřená karta používá diagnostiku skutečné stránky, ne starou hodnotu z background cache; ztráta aktuální diagnostiky nesmí skrýt dříve potvrzený chat.
+- **Přístupnost a minimalismus:** tlačítka mají `aria-pressed`, fungují z klávesnice, při nulovém výsledku se zobrazí věta, nikoliv prázdná plocha. Filtry se u jedné konverzace neukazují.
+- **Design QA:** odstraněna jednostranná mosazná linka u aktuální karty, místo ní subtilní celoplošné zvýraznění v design tokenech; nepřidává nové roboty ani ilustrace.
+- **Kontroly:** regresní `node:test` + skutečné popup interakce v Chromium/WebKit při světlém a tmavém tématu, kontrola limitu Chrome 600 px. Tento kód **není** v již vytvořeném draftu v0.46.7 ani v Chrome Web Store.
+
+### pravdivá verze na veřejném webu
+
+- **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
+- **Stejná pravidla CZ/EN:** obě jazykové varianty zachovávají validní strukturovaná data i odkaz ke skutečně zveřejněnému Stable a odstraňují neověřené `softwareVersion`.
+- **Regresní testy:** sestaví skutečný web, parsují JSON-LD v obou jazycích a kontrolují existující odkazy GitHubu. Bez placených služeb, bez změny release tagů.
+
+### živý stav po opětovném připojení
+
+- **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
+- **20 současných agentů:** deterministické testy kontrolují obnovu, pořadí a jednorázové zpracování událostí bez přenosu přepisů nebo soukromých dat na cloud.
+- **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
+- Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
+
+### jednotné počty agentů
+
+- **Chrome extension počítá stejné agenty jako aplikace:** podřízené konverzace s viditelným rodičem se nezapočítají podruhé, u opakovaných naplánovaných úloh je v souhrnu pouze poslední běh.
+- **Jeden výběr v kódu:** nativní/dashboard rozhraní i souhrn pro Chrome používají stejnou čistou funkci, takže se pravidla nerozcházejí při dalších změnách.
+- **Regresní ověření:** syntetických 20 běžících agentů, rodič/pomocná vlákna, opakované úlohy, chybějící rodič a archiv; žádný text přepisu se rozšíření neposílá.
+- Tato oprava je určená až pro nové vydání po draftu 0.46.7; nevkládá se zpětně do hotového DMG ani Chrome Store.
+
+### úsporné a bezpečné stahování velkých aktualizací
+
+- **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
+- **Atomické dokončení:** teprve po ověření přesné velikosti, obsahu a kanálu se soubor přejmenuje na finální ZIP; po chybě ani přerušeném spojení nezůstává neúplný balíček.
+- **Souběžnost:** paralelní požadavky používají různé dočasné názvy; starý požadavek nesmí dokončit aktualizaci jiného kanálu.
+- **Regresní testy:** osmimegabajtový proud bez volání `arrayBuffer`, přerušený přenos, špatný digest, překročená velikost i dva souběžné downloady.
+- Jde o změnu zdrojového kódu pro budoucí vydání; již sestavený draft v0.46.7 se nemění.
+
+### Chrome extension: pravdivý živý stav
+
+- **Živá dostupnost:** otevřený popup každých 5 sekund ověří skutečnou dostupnost lokální aplikace, nejen cache posledních agentů.
+- **Žádná falešná „Připojeno“:** při výpadku nebo selhání chráněného endpointu skryje staré počty a nabídne obnovení. Návrat aplikace se rozpozná automaticky, bez zavírání a otevírání popupu.
+- **Subtilní značka:** rozhraní nepřidává dekorace ani roboty navíc, používá existující vizuální stavy a české/anglické texty.
+- **Regresní ověření:** testy pokrývají neúspěšný HTTP health check, síťový výpadek, vyčištění starého stavu a návrat spojení.
+- **Distribuce:** existující Chrome Store verze ani již sestavený macOS draft v0.46.7 se tím nemění.
+
+### ochrana instalace Stable / Preview
+
+- **Bez downgrade:** terminálový instalátor Stable nesmí přepsat novější Preview verzi již nainstalovanou na Macu. Prohlíží jen GitHub metadata a odmítne starší balíček ještě před jeho stažením.
+- **Poškozená či neznámá verze:** pokud nelze z existujícího bundle ověřit číslo verze, instalátor jej odmítne přepsat.
+- **Regresní testy:** scénáře Stable 0.46.0 proti Preview 0.46.6, víceciferná čísla verzí a neplatná metadata, včetně zachování původní instalace.
+- Tyto úpravy vznikají **po vytvoření draftu v0.46.7** a nejsou součástí už připraveného DMG.
+
+### spolehlivější aktualizace
+
+- **Závody při přepínání kanálů:** staré HTTP odpovědi ani jejich chyby nemohou přepsat novější stav po přepnutí Preview → Stable → Preview.
+- **Kontrola aktualizací:** stažený ZIP přestává být nabídnutý jako platný při změně SHA-256 nebo velikosti přílohy na GitHubu, i kdyby název a verze zůstaly stejné.
+- **Stažení:** rozpracovaný požadavek nesmí dokončit aktualizaci, pokud byl v mezidobí přepnut kanál nebo změněn očekávaný digest. Regresní testy pokrývají souběžné požadavky bez skutečné sítě.
+- **Vydání:** stávající neveřejný draft 0.46.7 stále odpovídá dřívějšímu tagu SHA `00daf73b`; tyto následné opravy se do již vytvořeného DMG zpětně nedostanou.
+
+## 0.46.7 – 2026-10-12 · bezpečnější profilová fotografie z Googlu
+
+- **Bezpečné načítání fotografie:** HTTP přesměrování se kontrolují před každým dalším síťovým požadavkem. Profilový obrázek se nikdy vědomě nestahuje z jiné domény než schválené Google CDN.
+- **Přenos a velikost:** stahování fotky hlídá limit 300 kB průběžně; nepřiměřeně velký obrázek odmítne bez načtení celého obsahu.
+- **Regresní testy:** kontrolují nebezpečná přesměrování, bezpečné přesměrování mezi servery Googlu a omezení velikosti streamu. CI workflow už nespouští dvě kolidující sady testů pro jednu vývojovou větev.
+- **Stav ověření:** bezpečnostní scénáře byly ověřeny automatickými testy. Skutečné přihlášení Google, profilová fotografie a upgrade na uživatelském Macu vyžadují samostatné ruční UAT; Preview není stabilní vydání.
+
+## 0.46.6 – 2026-10-12 · srozumitelná rozhodnutí agentů
+
+- **Viditelná žádost o povolení:** stav „možná čeká na tvé povolení“ se zobrazí v Přehledu, seznamu agentů, detailu i projektu, pokud ho model odvodí. Není vydáván za potvrzenou interakci bez příslušných hooků.
+- **Správná cesta ke konverzaci:** konverzace Claude Code nebo Codexu spuštěné z příkazového řádku odkazují primárně na Terminál; u stále běžící konverzace se nevytváří duplicitní nové pokračování.
+- **Otázky v přepisu:** AskUserQuestion může ukázat přesné znění otázky a nabízené možnosti; nabídka je informační, vlastní odpověď probíhá v konverzaci.
+- **Pomocník a živý stav:** „Co na mě čeká?“ bere dostupný stav agentů, místo hledání v historických konverzacích; chybějící načtení ani neověřené živé spojení se neprezentuje jako jistota.
+- **Ověřování:** automatizované testy pokrývají chování konektorů, UI, přepis a odkazy. Otevření reálné konverzace a potvrzení dialogu na uživatelském Macu vyžaduje samostatné UAT.
+
 ## 0.46.5 – 2026-10-12 · volitelné aktualizace Preview
 
 - **Stable / Preview:** v Nastavení lze zapnout testovací aktualizační kanál. Výchozí zůstává Stable. Režimy ručního a automatického stahování se nemění a instalace stále vyžaduje potvrzení.

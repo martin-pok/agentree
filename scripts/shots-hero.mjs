@@ -36,7 +36,9 @@ try {
         await page.clock.setFixedTime(ted + 60000);
         await page.goto(`${demo.url}/#/prehled`, { waitUntil: 'load' });
         // Plovoucí pomocník a bubliny robotů patří živé aplikaci, ne fotce.
-        await page.addStyleTag({ content: '.pm-fab, .rb, .toast { display: none !important; }' });
+        // Zdrojová verze může být neveřejný Draft; marketingový snímek nesmí
+        // vydávat její číslo za aktuálně dostupné ke stažení.
+        await page.addStyleTag({ content: '.pm-fab, .rb, .toast, .source-version { display: none !important; }' });
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(1200);
         const png = await page.screenshot({ type: 'png' });

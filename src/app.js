@@ -48,7 +48,7 @@ import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { createKonecProcesu } from './konec-procesu.js';
-import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
+import { planOdpovedi, lzeOdpovedet, beziVeSlozce } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -57,6 +57,7 @@ import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
 import { UpdateService } from './updates.js';
+import { prehledProRozsireni } from './prehled-rozsireni.js';
 import { watchExactFile } from './watch.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
@@ -263,8 +264,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const mediaRoot = path.join(config.dataDir, 'media');
 
   let apps = {};
+  // Poslední výpis procesů pro volbu akce „Terminál“ (src/openers.js#planOpen). Objekt, ne proměnná
+  // níž: decorate se může volat dřív, než createApp dojde k výpisu procesů.
+  const procesyProOtevreni = { seznam: null };
+  const moznostiOtevreni = (s) => ({ aplikace: config.openApps, bezi: config.processes ? beziVeSlozce(s, procesyProOtevreni.seznam) : null });
   store.decorate = (summary) => {
-    summary.open = openTargets(summary, apps, { aplikace: config.openApps });
+    summary.open = openTargets(summary, apps, moznostiOtevreni(summary));
     Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
@@ -280,7 +285,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         ? ui('Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.')
         : ui('Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.') };
     }
-    const plan = planOpen(s, target, apps, { aplikace: config.openApps });
+    const plan = planOpen(s, target, apps, moznostiOtevreni(s));
     if (!plan) return { status: 422, error: ui('Tuto akci pro konverzaci nelze provést.') };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
@@ -334,6 +339,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let posledniProcesy = null;
   async function beziciAgenti(procesy) {
     posledniProcesy = Array.isArray(procesy) ? procesy.map((p) => ({ runtime: p.runtime, cwd: p.cwd })) : null;
+    procesyProOtevreni.seznam = posledniProcesy;
     for (const p of procesy || []) {
       const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
       if (!domov || !path.isAbsolute(domov)) continue;
@@ -1176,21 +1182,48 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // protože jen ono může skončit samo a spustit novou verzi. Server mu pošle cestu k balíčku a verzi.
   let desktopReport = null;
   function nastavDesktop(report) { desktopReport = typeof report === 'function' ? report : null; }
+
+  // A Chrome extension click is NOT a browser session and must never receive
+  // the WKWebView window key. Send a one-way, strictly scoped navigation request
+  // to the existing native shell instead. No agent process or shell command runs.
+  function focusExtensionAgent(id) {
+    if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
+    if (typeof id !== 'string' || !id || id.length > 200) return { status: 422, error: ui('Neplatný agent.') };
+    // Allow only an ID actually offered to the extension now. An arbitrary
+    // history ID, hidden child session or archived transcript is not eligible.
+    const summary = prehledProRozsireni(store.list());
+    const visible = [...summary.rozhodnuti, ...summary.pracuji].some((s) => s.id === id);
+    if (!visible) return { status: 404, error: ui('Agent už není v aktuálním přehledu. Obnov seznam.') };
+    desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
+    return { ok: true, focused: true };
+  }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    // Persist user state before the final ZIP hash check, minimizing the gap
+    // between verification and native app replacement.
+    if (previouslyDownloaded) await datastore.flush?.();
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
     const version = updates.state().latestVersion;
     if (!/^\d+\.\d+\.\d+$/.test(version || '')) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-    await datastore.flush?.();
     desktopReport({ type: 'install-update', zip: path.resolve(target), version });
     return { ok: true, restarting: true };
   }
 
   async function revealUpdate() {
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
@@ -1673,7 +1706,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,

@@ -27,6 +27,9 @@ on:
       tag:
         description: 'Tag, ze kterého se vydání sestaví (např. v0.12.0)'
         required: true
+      expected_sha:
+        description: 'Optional exact tested commit SHA; automation must pass it to prevent a race with later main pushes'
+        required: false
 
 # Výchozí práva tokenu jen pro čtení. Zápis dostane jen úloha, která ho opravdu potřebuje:
 # „znacka“ (push tagu) a „vydani“ (koncept vydání). Sestavení na runnerech zapisovat nesmí –
@@ -58,7 +61,13 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           TAG: ${{ inputs.tag }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
+          set -euo pipefail
+          if [ -n "$EXPECTED_SHA" ] && [ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]; then
+            echo "::error::Release source changed since verified CI; refuse to create tag."
+            exit 1
+          fi
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
             echo "Tag $TAG už existuje, vydání se sestaví z něj."
             exit 0
@@ -89,8 +98,13 @@ jobs:
       - name: Porovnat tag s verzí balíčku
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
+          if [ -n "$EXPECTED_SHA" ] && [ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]; then
+            echo "::error::Release tag checkout does not match exact tested commit SHA."
+            exit 1
+          fi
           if ! [[ "$TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
             echo "::error::Neplatný release tag"
             exit 1
@@ -251,6 +265,13 @@ jobs:
           VERZE: ${{ steps.popis.outputs.verze }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
+            # Never mutate publicly released binaries/checksums or release notes
+            # through a rebuild. Only an unpublished draft can be refreshed.
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq .isDraft)
+            if [ "$IS_DRAFT" != "true" ]; then
+              echo "::error::Release $TAG is already public; refusing to overwrite published assets."
+              exit 1
+            fi
             gh release upload "$TAG" prilohy/*.zip prilohy/*.dmg prilohy/SHA256SUMS.txt --clobber
             gh release edit "$TAG" --notes-file poznamky.md
           else
@@ -260,3 +281,18 @@ jobs:
               --notes-file poznamky.md
           fi
           gh release view "$TAG" --json isDraft,url,assets
+
+  # This is a NEW GitHub runner after the upload, not a check of the local
+  # output in the build job. It re-downloads ALL 8 stored assets and verifies
+  # them against both GitHub digests and SHA256SUMS before reporting green.
+  # Do not rely on a fourth chained workflow_run, which GitHub can suppress.
+  audit:
+    name: nezávislý audit uloženého Draftu
+    needs: vydani
+    if: ${{ needs.vydani.result == 'success' }}
+    permissions:
+      contents: write # GitHub draft asset API needs write-scoped read access
+      actions: read
+    uses: ./.github/workflows/audit-release-draft.yml
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}

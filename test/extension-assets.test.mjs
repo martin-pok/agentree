@@ -38,7 +38,13 @@ test('rozšíření: loga služeb jsou tatáž jako v aplikaci a licence jde s n
   assert.match(readme, /Copyright \(c\) LobeHub/);
   // Okno odkazuje jen na loga, která v balíčku opravdu jsou.
   const okno = await fs.readFile(path.join(ROOT, 'extension/popup.js'), 'utf8');
-  for (const [, klic] of okno.matchAll(/\['[\w-]+', '[^']+', '(\w+)'\]/g)) assert.ok(loga.includes(`${klic}.svg`), `chybí logo ${klic}.svg`);
+  // Read only the actual SITES logo registry. Other triplets (e.g. compact
+  // conversation filters) are UI state, not service-logo declarations.
+  const registry = okno.match(/const SITES = \[([\s\S]*?)\n\];/);
+  assert.ok(registry, 'chybí centrální registr log služby');
+  const keys = [...registry[1].matchAll(/\['[\w-]+', '[^']+', '(\w+)'\]/g)].map(m => m[1]);
+  assert.ok(keys.length >= 9, 'každá služba musí mít vlastní logo');
+  for (const klic of keys) assert.ok(loga.includes(`${klic}.svg`), `chybí logo ${klic}.svg`);
 });
 
 test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)', async () => {

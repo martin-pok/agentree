@@ -107,7 +107,7 @@ function appPlan(s, apps) {
 // Výchozí je „umí“: tahle funkce jen skládá plán a o schopnostech systému rozhoduje
 // volající (src/app.js podle config.openApps). Kdyby si to funkce zjišťovala sama,
 // nešla by otestovat pro jiný systém, než na kterém zrovna běží test.
-export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
+export function planOpen(s, target, apps = {}, { aplikace = true, bezi = null } = {}) {
   if (!s) return null;
   if (target === 'app') {
     // Odkaz na webovou konverzaci otevře prohlížeč, a ten je všude – na rozdíl od `open -a`.
@@ -117,6 +117,13 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   }
   if (target === 'terminal') {
     if (!aplikace) return null;
+    // Konverzace z příkazové řádky, jejíž program ve složce právě běží, čeká v otevřeném okně.
+    // Nový `--resume` by ji rozdvojil (dva procesy nad jednou konverzací), proto se Terminál
+    // jen přepne do popředí. `--resume` jen když víme, že tam nic neběží, nebo když to nevíme
+    // (dřívější chování – příkaz si jde vždy i zkopírovat).
+    if (zPrikazoveRadky(s) && bezi === true) {
+      return { kind: 'open', args: ['-a', 'Terminal'], label: ui('Terminál'), title: ui('Přepnout do Terminálu') };
+    }
     const command = terminalCommand(s, apps);
     return command ? { kind: 'terminal', command, label: ui('Terminál'), title: ui('Pokračovat v Terminálu') } : null;
   }
@@ -127,9 +134,18 @@ export function planOpen(s, target, apps = {}, { aplikace = true } = {}) {
   return null;
 }
 
-// Nabídka akcí pro UI (pořadí = důležitost).
+// Konverzace z příkazové řádky (Claude Code nebo Codex v Terminálu): otázka na ni čeká v Terminálu.
+// Claude.app konverzace z příkazové řádky neukazuje, takže „Otevřít Claude“ by uživatele poslalo
+// jinam, než kde se čeká na jeho rozhodnutí. Konverzace z Claude Desktop (app „Claude Desktop · Code“)
+// a z aplikace Codex se dál otevírají hlavně v aplikaci. Jména jsou pevná z konektorů
+// (src/connectors/claude-code.js, src/connectors/codex.js#codexAppName).
+export const zPrikazoveRadky = (s) => (s.connector === 'claude-code' && s.app === 'Claude Code')
+  || (s.connector === 'codex' && s.app === 'Codex CLI');
+
+// Nabídka akcí pro UI (pořadí = důležitost; první je hlavní tlačítko). U konverzace z příkazové
+// řádky vede hlavní akce do Terminálu, kde konverzace pokračuje.
 export function openTargets(s, apps = {}, moznosti = {}) {
-  return ['app', 'terminal', 'folder']
+  return (zPrikazoveRadky(s) ? ['terminal', 'app', 'folder'] : ['app', 'terminal', 'folder'])
     .map((id) => {
       const plan = planOpen(s, id, apps, moznosti);
       return plan ? { id, label: plan.title } : null;

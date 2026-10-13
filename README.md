@@ -4,7 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **Stav vydání (12. 10. 2026):** připravujeme kandidáta **0.46.5** Preview s volitelným aktualizačním kanálem. Poslední veřejná testovací verze je [**v0.46.4 Preview**](https://github.com/martin-pok/agentree/releases/tag/v0.46.4), s Mac/Windows balíčky, Chrome extension a souborem `SHA256SUMS.txt` (hlavní CI 8/8). Poslední stabilní verze je nadále **v0.46.0** (`Latest`). Volitelný aktualizační kanál Preview se teprve vyvíjí v samostatném PR; není součástí vydané 0.46.4. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md).
+> **0.46.11** — neveřejný Draft, nyní zablokovaný pro publikaci. Tag na `1e72a0057637ad249e70388444346a80526e7083` prošel [8/8 CI](https://github.com/martin-pok/agentree/actions/runs/38430918556); Draft ID `411899483` má osm příloh ověřených 8/8 proti GitHub SHA-256 a 7/7 proti manifestu. Po výslovném souhlasu byla skutečná aplikace z DMG nainstalována na Apple Silicon Mac, spustila se i po restartu a zachovala viditelný účet, upozornění a projekty. `spctl` však ad-hoc balík odmítl a fyzická kontrola našla v PWA/Apple PNG starší hlavu s fialovou anténou. [Oprava #231](https://github.com/martin-pok/agentree/pull/231) nemění neměnné binárky 0.46.11; tento Draft nezveřejňovat. Google OAuth, Chrome/Windows a celé UAT zůstávají otevřené. Veřejné Preview je [v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6), Stable Latest `v0.46.0`.
+>
+> **Historie nevydaných buildů:** Drafty 0.46.7–0.46.11 jsou neměnné a nejsou veřejnou aktualizací. Nový distribuční kandidát vyžaduje opravené binárky, přesné zelené CI, audit příloh a živé UAT; samotný commit ani Draft dostupnost nedokazuje. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md) · [Brand/UAT #213](https://github.com/martin-pok/agentree/issues/213).
 >
 > **Desktop:** aplikace pro macOS (Apple Silicon). Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
@@ -55,7 +57,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 977 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
+npm test          # 1128 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
@@ -88,6 +90,7 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | [docs/LICENSING.md](docs/LICENSING.md) | Vydávání licencí, placené funkce, distribuce (pro vydavatele) |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vize, zákazník, hodnota, hypotézy monetizace (neověřené) |
 | [docs/BRAND.md](docs/BRAND.md) | Jméno produktu: kde všude žije, co stojí přejmenování a jak ho udělat bez ztráty dat |
+| [docs/legal/README.md](docs/legal/README.md) | **Pracovní, neúčinné právní návrhy k revizi**: CZ/EN Terms, GDPR audit, ochrana značky, IP evidence, bezplatné audity a předkomerční checklist |
 | [docs/REMOTE.md](docs/REMOTE.md) | Přístup z telefonu mimo domácí síť: napojení na Tailscale, veřejné tunely, hranice |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Cesta z lokální bety k SaaS, s akceptačními kritérii |
 | [CHANGELOG.md](CHANGELOG.md) | Historie verzí |

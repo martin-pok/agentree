@@ -1,4 +1,5 @@
-// Pomocník: kulaté tlačítko s robotem vpravo dole, které otevře chat. Rozumí dvěma druhům otázek:
+// Pomocník: kulaté tlačítko s robotem vpravo dole, které otevře chat. Rozumí třem druhům otázek:
+//   - „co na mě čeká?“ → odpoví ze živého stavu agentů (public/js/co-ceka.js) s odkazy na ně;
 //   - „jak zapnu / kde najdu …“ → odpoví z rejstříku stránek a nastavení (public/js/hledani.js)
 //     a nabídne tlačítko, které tam rovnou vede;
 //   - „najdi chat, kde jsme před cca 3 měsíci řešili …“ → zeptá se serveru (src/pomocnik.js),
@@ -8,7 +9,7 @@
 // relaci okna (sessionStorage), nikam se neukládá.
 import { robot } from './home-studio.js';
 import { tr, LOCALE } from './i18n.js';
-import { state } from './state.js';
+import { state, agentsList } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
 import { hledejCile } from './hledani.js';
@@ -17,6 +18,7 @@ import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
+import { jeOtazkaNaCekani, coNaMeCeka } from './co-ceka.js';
 
 const TIPY = () => ({
   prehled: tr('Nový úkol zadáš v poli dole. Přehled nahoře ti ukáže, jestli některý agent čeká na tvoje rozhodnutí.'),
@@ -32,6 +34,7 @@ const TIPY = () => ({
 });
 
 const NAVRHY = () => [
+  tr('Co na mě čeká?'),
   tr('Najdi chat, kde jsme před cca 3 měsíci řešili fakturaci'),
   tr('Jak zapnu upozornění na telefon?'),
   tr('Kde nastavím rozpočet?'),
@@ -131,7 +134,10 @@ async function posli(text) {
   let odpoved;
   try {
     const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
-    const rada = guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
+    // „Co na mě čeká?“ se odpovídá ze živého stavu agentů, ne hledáním ve starých přepisech.
+    const rada = jeOtazkaNaCekani(dotaz)
+      ? coNaMeCeka({ agenti: agentsList(), nacteno: state.loaded, spojeni: state.connection })
+      : guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
     if (rada) {
       odpoved = { kdo: 'on', ...rada };
     } else {

@@ -63,16 +63,20 @@ export function uzivatelZOdpovedi(user) {
 // na obrázkovém serveru Googlu – server na Macu nikdy nestáhne nic odjinud. Google dává 96 px;
 // pro ostré zobrazení na Retině si řekneme o 192 px.
 export function fotoZMetadat(meta) {
-  const raw = meta?.avatar_url || meta?.picture;
-  if (typeof raw !== 'string' || raw.length > 2048) return '';
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== 'https:' || !/(^|\.)googleusercontent\.com$/.test(u.hostname) || u.username || u.password || u.port) return '';
-    u.pathname = u.pathname.replace(/=s\d+(-[a-z]+)*$/, '=s192-c');
-    return u.href;
-  } catch {
-    return '';
+  // Supabase may expose both avatar_url and picture. A malformed or off-domain
+  // avatar_url must not suppress a valid Google picture fallback.
+  // Validate EACH candidate against the same strict CDN allowlist, never pass
+  // arbitrary metadata URLs to the network.
+  for (const raw of [meta?.avatar_url, meta?.picture]) {
+    if (typeof raw !== 'string' || raw.length > 2048) continue;
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'https:' || !/(^|\.)googleusercontent\.com$/.test(u.hostname) || u.username || u.password || u.port) continue;
+      u.pathname = u.pathname.replace(/=s\d+(-[a-z]+)*$/, '=s192-c');
+      return u.href;
+    } catch { /* Try the other Google identity metadata field. */ }
   }
+  return '';
 }
 
 // Typ obrázku podle prvních bajtů – hlavičce Content-Type ze sítě se nevěří.
@@ -215,12 +219,52 @@ export function createUcet({ config, secrets, emit = () => {}, open = async () =
     };
     stahovaniFota = (async () => {
       try {
-        // Přesměrování v rámci CDN Googlu je běžné; konečná adresa ale musí zůstat u Googlu.
-        // Accept: formáty, které umíme rozpoznat – Google by jinak mohl poslat jiný.
-        const res = await fetchImpl(u.fotoUrl, { signal: AbortSignal.timeout(CASOVY_LIMIT_MS), redirect: 'follow', headers: { Accept: 'image/png,image/jpeg,image/webp;q=0.9' } });
+        // Žádný automatický redirect: po následování už by požadavek na cizí server odešel,
+        // i kdybychom konečnou URL později odmítli. Každý hop validujeme PŘED dalším fetch.
+        let url = u.fotoUrl;
+        let res;
+        for (let hop = 0; hop <= 3; hop += 1) {
+          if (!fotoZMetadat({ avatar_url: url })) return nepovedlo('redirect');
+          res = await fetchImpl(url, {
+            signal: AbortSignal.timeout(CASOVY_LIMIT_MS),
+            redirect: 'manual',
+            headers: { Accept: 'image/png,image/jpeg,image/webp;q=0.9' },
+          });
+          if (res.url && res.url !== url) return nepovedlo('redirect');
+          if (res.status < 300 || res.status > 399) break;
+          if (![301, 302, 303, 307, 308].includes(res.status) || hop === 3) return nepovedlo('redirect');
+          const location = res.headers?.get?.('location');
+          if (!location) return nepovedlo('redirect');
+          try { url = new URL(location, url).href; } catch { return nepovedlo('redirect'); }
+        }
         if (!res.ok) return nepovedlo(`HTTP ${res.status}`);
-        if (res.url && !fotoZMetadat({ avatar_url: res.url })) return nepovedlo('redirect');
-        const body = Buffer.from(await res.arrayBuffer());
+        // Hlavička šetří přenos; rozhodující je limit počítaný během samotného streamu.
+        const sizeHeader = res.headers?.get?.('content-length');
+        if (sizeHeader && /^\d+$/.test(sizeHeader) && Number(sizeHeader) > FOTO_MAX) return nepovedlo('size');
+        let body;
+        if (res.body?.getReader) {
+          const reader = res.body.getReader();
+          const chunks = [];
+          let bytes = 0;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              bytes += value.byteLength;
+              if (bytes > FOTO_MAX) {
+                await reader.cancel();
+                return nepovedlo('size');
+              }
+              chunks.push(Buffer.from(value));
+            }
+          } finally {
+            reader.releaseLock();
+          }
+          body = Buffer.concat(chunks, bytes);
+        } else {
+          // Testovací fetch atrapy mohou vracet pouze arrayBuffer().
+          body = Buffer.from(await res.arrayBuffer());
+        }
         const typ = typObrazku(body);
         if (uzivatel?.id !== u.id) return;
         if (!typ) return nepovedlo('format');

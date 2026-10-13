@@ -1,8 +1,35 @@
 # Roadmapa Agenteeq
 
-**Stav k 12. 10. 2026.** Veřejná testovací verze **[v0.46.4 Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.4)** byla publikována s DMG pro Apple Silicon, ZIP pro Windows a Chrome extension a ověřitelným manifestem SHA-256. Přesný hlavní commit prošel **8/8 GitHub CI**. Poslední stabilní **v0.46.0** zůstává `Latest`. Další prioritou je explicitně volitelný kanál aktualizací Preview v aplikaci, který **je teprve rozpracovaný**; skutečný upgrade a OAuth stále vyžadují UAT na Macu.
+**Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
-Roadmapa rozlišuje čtyři stavy: **hotovo v kódu**, **ověřeno v CI**, **ověřeno na skutečném zařízení** a **zveřejněno**. Splnění jedné podmínky neznamená splnění ostatních. Závazný postup pro novou verzi je v [RELEASE-READINESS.md](RELEASE-READINESS.md).
+**Poslední sestavený Draft: v0.46.11, po fyzické kontrole značky zablokovaný pro publikaci.** Anotovaný tag `v0.46.11` na `1e72a0057637ad249e70388444346a80526e7083`; přesné [CI 8/8](https://github.com/martin-pok/agentree/actions/runs/38430918556); úspěšný [release build + nezávislý byte audit](https://github.com/martin-pok/agentree/actions/runs/38432569881): soukromý Draft ID `411899483` s 8 přílohami, SHA-256 skutečně stažených bajtů **8/8 vůči GitHub API a 7/7 vůči manifestu** (report ID `11831787377`). [PR #216](https://github.com/martin-pok/agentree/pull/216) opravila ruční publishing REST workflow a byla sloučena v `af3c1fa`, [8/8 main CI](https://github.com/martin-pok/agentree/actions/runs/38440054592). **Dílčí fyzické Mac UAT 13. 10. proběhlo:** instalace z ověřeného DMG, start/restart, stávající účet, upozornění a projekty obstály; přesný rozsah a Gatekeeper `rejected` jsou v [RELEASE-READINESS.md](RELEASE-READINESS.md). Čistý Finder/Gatekeeper onboarding, nové Google OAuth, Chrome/Windows a úplné UAT jsou stále otevřené. PWA/Apple PNG v tomto neměnném Draftu mají staré proporce a fialovou anténu; [oprava #231](https://github.com/martin-pok/agentree/pull/231) vyžaduje nový binární kandidát. `v0.46.11` nezveřejňovat. Veřejné Preview je dosud `v0.46.6`, Stable Latest `v0.46.0`, veřejný Chrome Store `0.31.4`.
+
+## Právě teď — oprava release blockerů a fyzické UAT
+
+| Priorita | Výsledek | Důkaz a stav | Dokončení |
+|---|---|---|---|
+| **P0** | **Nový Preview kandidát po opravě binárních ikon** | **TAG + 8/8 CI + Draft + 8/8 byte audit hotovo**; ověřená výměna a restart na Apple Silicon Macu, původní data viditelná. Gatekeeper odmítá ad-hoc podpis; čistý onboarding a úplné UAT chybí. REST publish opravené po PR #216; veřejně nevydáno. [#208](https://github.com/martin-pok/agentree/issues/208) | Finder/Gatekeeper, Google SSO/avatar, rollback, Chrome/Windows UAT, nový neměnný tag po opravě, úplném CI a UAT; ruční schválení pouze Preview, veřejné kontrolní součty, CZ/EN web CTA, updater, Stable beze změny |
+| **P0** | **Aktualizovat skutečný Chrome Web Store** | Veřejný Store **0.31.4** vs. zdroj `0.46.11`. Aktuální publisher kit 0.46.11 SHA + obrázky ověřené; Store upload a live Chrome UX nikoli. [#172](https://github.com/martin-pok/agentree/issues/172) | Reálná instalace/párování v Chromu, účet vydavatele nahraje ZIP+obrázky, obchod zveřejní 0.46.11 a má aktuální logo |
+| **P0** | **Bezpečný nativní focus agenta a autentizace** | Zdrojový 403 bug již opraven. `POST /api/extension/focus-agent` validuje token, origin, viditelné ID a existující okno; testy prochází. [#174](https://github.com/martin-pok/agentree/issues/174) | Reálný párovaný Mac+Chrome, čekající/běžící agent kliknutím otevře původní session bez duplikace, offline/unpair/focus je přístupný |
+| **P0** | **Brand na každé platformě, bez trojzubce** | Staré tracked PNG/ICO/ICNS odstraněny, web/404 favicon a Windows ZIP QA hotovy; Mac Dock z 0.46.11 vizuálně ověřen; PWA/Apple PNG v Draftu **prokazatelně staré**, zdroj opravuje PR #231; Explorer a dashboard Vercel avatar neověřeny. [#213](https://github.com/martin-pok/agentree/issues/213) | Pixelová shoda zdrojů, malých ikon, promo i skutečně nainstalovaných UI a avataru |
+| **P0** | **Pravdivé live stavy a první Claude event** | V CI historický timing fail 2s, teď 8/8 na vydávaném SHA; falešně potvrzenou práci nelze tolerovat. [#180](https://github.com/martin-pok/agentree/issues/180) | Reálné Claude/Codex/Chrome statusy, restart/offline, provenance a nejistoty doložené live UAT |
+| **P1** | **WCAG 2.2 AA pro web, app a Chrome rozšíření** | Kontrast/ovládací prvky a část focus/reflow QA v CI; **celá WCAG 2.2 AA shoda nedoložená**. [#217](https://github.com/martin-pok/agentree/issues/217) | Keyboard, VoiceOver/NVDA, reflow 320 CSS px/400% zoom, fokus, cíle 24×24, live announcements, CZ/EN chyby; 0 kritických/serious nálezů |
+| **P1** | **Responzivita, typografie a produkční PSI** | V CI Chromium/WebKit viewporty a design tokeny; iPhone Safari, p75 CWV, 400% zoom, skutečný PSI nejsou doloženy. [#218](https://github.com/martin-pok/agentree/issues/218) | Real-device 320–1920px CZ/EN světlý/tmavý/reduced-motion; LCP ≤2,5 s, INP ≤200 ms, CLS ≤0,1 (p75) s doloženým měřením |
+| **P1** | **Agents UI bez >50ms dlouhých renderů a s 20+ agenty** | Byl zaznamenán 53/61ms long task; nemusí jít o trvalý bug, nesnižovat limit. [#209](https://github.com/martin-pok/agentree/issues/209) | Reprodukovat profil na shodném SHA, optimalizovat skutečný bottleneck, doložit p50/p95/p99 i 20–50 session + Chromium/WebKit |
+| **P1** | **Native/signing, cloud/account a bezpečnost pro světový trh** | DMG funguje na CI, Developer ID/notarizace není hotová; DPA/privacy review a reálné OAuth/live konektory nedokončeny. | Developer ID, notarizace, real-device Gatekeeper/UAT, právní review, origin/permission threat model |
+| **P2** | **Power-user value — attention inbox, saved views, source confidence, Git review** | Existují Upozornění, command palette, projekty a worktree helpers; další návrhy jsou **hypotézy, nikoli hotové funkce**. [#219](https://github.com/martin-pok/agentree/issues/219) | 5–10 rozhovorů, měřený time-to-unblock/time-to-first-value, UX prototyp, bezpečnost, CZ/EN, pilotní UAT a jen ověřená feature do releasu |
+
+## Backlog — podle dopadu na uživatele
+
+**P0 release a aktivace:** [#208](https://github.com/martin-pok/agentree/issues/208), [#172](https://github.com/martin-pok/agentree/issues/172), [#174](https://github.com/martin-pok/agentree/issues/174), [#213](https://github.com/martin-pok/agentree/issues/213). Nespouštět další bump release čísla jen proto, že aktuální Draft není zveřejněný. Neměnit neměnné binárky.
+
+**P1 měřitelná kvalita:** [#217](https://github.com/martin-pok/agentree/issues/217) (WCAG 2.2), [#218](https://github.com/martin-pok/agentree/issues/218) (iOS Safari/responsive/typografie/PSI), [#209](https://github.com/martin-pok/agentree/issues/209) (desktop long-task), [#180](https://github.com/martin-pok/agentree/issues/180) (2s první Claude event), regresní testy spuštění, práce při více sessions, spotřeba baterie a neznámé/offline stavy.
+
+**P2 diferenciace a výzkum:** [#219](https://github.com/martin-pok/agentree/issues/219). Orientace na napříč poskytovateli sjednocenou pozornost, původ dat, kontrolu nákladů a návrat do konkrétní session. Nezasahovat bez produktových důkazů do již existující palety příkazů, worktree/diff ani Alert rozhraní.
+
+**Archiv původních Draftů:** `v0.46.7`, `v0.46.8`, `v0.46.9`, `v0.46.10` jsou historicky sestavené, nepřepisovat/nepropagovat. Nynější stav a podpis publikace vždy doložit přes GitHub API a reálný účet, ne odhad z kódu.
+
+**Úplný zdrojový checklist, kritéria a známé hranice důkazů:** [QUALITY-AUDIT-2026-10-13.md](QUALITY-AUDIT-2026-10-13.md).
 
 ## Rozhodnutí schválená vlastníkem — sledování implementace
 
@@ -47,18 +74,11 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 
 **Otevřeno P0 před tvrzením „PageSpeed 100“ nebo nasazením:** zelený CI run pro přesný PR HEAD; produkční/preview build; skutečné PSI Lighthouse mobile+desktop pro každou URL; reálné Safari+iPhone QA (včetně landscape safe areas), low-end CPU/network a kontrola barevných i funkčních stavů. Laboratorní localhost report z QA není PageSpeed skóre ani důkaz p75 field metrik. Nepoužívat neověřená procenta v marketingu.
 
-## Právě teď — cesta od 0.46.1 k dalšímu releasu
+## Aktuální release gate
 
-| Priorita | Výsledek | Stav k revizi | Hotovo, až když… |
-|---|---|---|---|
-| P0 | Stabilní hlavní větev | CI běží; výsledek nového HEAD zatím nepotvrzen | `check`, unit testy, macOS/Windows/Linux, browser QA a Chrome Store QA na stejném SHA jsou zelené |
-| P0 | Vydání 0.46.1 bez nesouladu souborů | Zdrojová verze 0.46.1; veřejný release zatím 0.46.0 | Workflow z tagu `v0.46.1` sestaví odpovídající Mac, Windows a extension balíčky; kontrola jejich verzí a kontrolních součtů projde; koncept je po výslovném schválení zveřejněn |
-| P0 | Jediná aktuální identita Agenteeq | Aktivní SVG a odstraněná historická robotí předloha; binární assety neprošly úplnou vizuální kontrolou | Vizuálně porovnané PNG/ICO/ICNS, screenshoty, instalátor, Dock a Chrome Store; žádný trojzubec ani staré logo |
-| P0 | Správné údaje a bezpečné připojení | Implementované automatické párování a kontrola původu zpráv; živé poskytovatelské scénáře neověřeny | Reálná kontrola přihlášení, výpadku, obnovení a odvolání přístupu; u odvozených dat viditelný zdroj a stáří |
-| P1 | AI pomocník, který skutečně poradí | Kontextová navigace a první diagnostika z lokálního snapshotu; obecné vysvětlení aplikace CZ/EN a poloha historie opraveny; pokrytí je stále omezené | CZ/EN sada běžných dotazů, neznámé chyby, navazující otázky, správné odkazy; odpovědi nezaměňují domněnky za fakta; měřená latence a spolehlivost |
-| P1 | Udržovatelná Chrome extension | Content skripty a párování mají regresní testy; popup zůstává velký modul | Oddělené UI, stav a transport; bezpečnostní a DOM regresní testy; ruční ověření podporovaných služeb |
-| P1 | Sjednocené texty CZ/EN | Upraven pomocník a vybrané texty landing page; úplný obsahový audit neskončil | Stavové hlášky, onboarding, nastavení, extension, emaily a web ověřeny proti [VOICE-AND-COPY.md](VOICE-AND-COPY.md) |
-| P2 | Komerční připravenost | Právní, platební a distribuční úkoly zůstávají otevřené | DPA, právní posouzení, podpis/notarizace macOS a reálné QA Windows |
+Jediný aktivní kandidát a jeho zbývající UAT jsou v prioritní tabulce nahoře a v [RELEASE-READINESS.md](RELEASE-READINESS.md). Starší Drafty jsou archivní důkaz, nikoli samostatné P0 úkoly ke zveřejnění.
+
+**Doplňující ochrana nativních ikon (po 0.46.10):** již nejsou verzované generované `desktop/Agenteeq.icns` ani `desktop/windows/Agenteeq.ico`; Mac při buildu používá `desktop/Icon.swift` a Windows `extension/icons/icon-128.png`. Jejich výstupy jsou gitignored a nesmí být opětovně nahrány jako historické master soubory. Ověření skutečného Dock/Explorer vzhledu při zařízení UAT zůstává P0 v [#213](https://github.com/martin-pok/agentree/issues/213).
 
 ## Backlog — další vývoj po stabilizaci
 

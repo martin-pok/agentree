@@ -377,6 +377,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if webView === loaderWeb { applyLoaderState() }
+        if webView === web { applyPendingAgentRoute() }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
@@ -459,6 +460,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let script = """
             pid="$1"; current="$2"; stage="$3"; backup="$4"; trash="$5"
             n=0; while kill -0 "$pid" 2>/dev/null && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n+1)); done
+            # Never replace a bundle while its original process is still alive.
+            # The 60-second limit is a failure deadline, NOT permission to force an upgrade.
+            if kill -0 "$pid" 2>/dev/null; then
+              rm -rf "$stage"
+              exit 1
+            fi
             if mv "$current" "$backup"; then
               if mv "$stage" "$current"; then
                 xattr -dr com.apple.quarantine "$current" 2>/dev/null
@@ -483,6 +490,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
 
     // Status/notifications come from our child process, not a throttled hidden webview.
+    // Messages arrive only through the native-owned child stdout, never from a
+    // browser navigation. If WKWebView is loading, retain the last requested
+    // route instead of silently dropping a user click during app startup.
+    var pendingAgentRoute: String?
+    func applyPendingAgentRoute() {
+        guard let route = pendingAgentRoute, !web.isLoading,
+              let data = try? JSONSerialization.data(withJSONObject: [route]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        pendingAgentRoute = nil
+        web.evaluateJavaScript("location.hash=\(json)[0]")
+    }
+
     func handleDesktopEvent(_ data: [String: Any]) {
         guard let type = data["type"] as? String else { return }
         if type == "badge", let count = data["count"] as? Int {
@@ -495,6 +514,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             statusItem.button?.title = " \(active)"
             statusItem.button?.toolTip = "Agenteeq – aktivně pracující agenti: \(active)"
             statusItem.button?.setAccessibilityLabel("Agenteeq, aktivně pracující agenti: \(active)")
+        }
+        if type == "focus-agent", !quitting, !installing, let route = data["route"] as? String,
+           route.hasPrefix("#/agent/"), route.utf8.count <= 600,
+           !route.dropFirst("#/agent/".count).isEmpty,
+           !route.dropFirst("#/agent/".count).contains("/") {
+            // No process creation, shell execution or key transfer. Reuse the
+            // existing authenticated WKWebView and bring its window forward.
+            pendingAgentRoute = route
+            showWindow()
+            applyPendingAgentRoute()
         }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)

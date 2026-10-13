@@ -1300,6 +1300,7 @@ function update(topics) {
       ${['available', 'downloaded'].includes(upd.status) && umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="install-update">${ICON.down}${tr('Aktualizovat na {0} a restartovat', upd.latestVersion)}</button>` : ''}
       ${upd.status === 'available' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
       ${upd.status === 'downloaded' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
+      ${['available', 'downloaded'].includes(upd.status) && /^\d+\.\d+\.\d+$/.test(upd.latestVersion || '') ? `<a class="btn btn--sm" href="https://github.com/martin-pok/agentree/releases/tag/v${esc(upd.latestVersion)}" target="_blank" rel="noopener">${ICON.external}${tr('Co se změnilo ve verzi {0}', upd.latestVersion)}</a>` : ''}
       ${upd.status === 'disabled' ? '' : `<button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>`}
     </div>`);
 

@@ -3,6 +3,11 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.": "The downloaded update package has changed or disappeared. Download the update again.",
+  "Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.": "First open the native Agenteeq app on this computer.",
+  "Neplatný agent.": "Invalid agent.",
+  "Agent už není v aktuálním přehledu. Obnov seznam.": "This agent is no longer in the current overview. Refresh the list.",
+  "Agenta lze otevřít jen na místním počítači.": "You can only open this agent on the local computer.",
   "Agentovi jde odpovědět jen z Macu, na kterém běží.": "You can only reply to the agent from the Mac it runs on.",
   "Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.": "Replying from Agenteeq currently works only in Claude Code conversations.",
   "Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.": "Claude Code can’t resume this conversation. Continue it where it runs.",
@@ -373,6 +378,7 @@ export default {
   "Aktualizace se nepodařilo zkontrolovat.": "Could not check for updates.",
   "Nová aktualizace zatím není připravená ke stažení.": "A new update is not ready to download yet.",
   "Aktualizační balíček se nepodařilo stáhnout.": "Could not download the update package.",
+  "Aktualizační balíček se nepodařilo uložit.": "Could not save the update package.",
 
   // src/http.js
   "Synchronizace je vypnutá – nic se neposlalo.": "Sync is off – nothing was sent.",
@@ -555,6 +561,7 @@ export default {
   "Otevřít v Cursoru": "Open in Cursor",
   "Otevřít ve VS Code": "Open in VS Code",
   "Přepnout do {0}": "Switch to {0}",
+  "Přepnout do Terminálu": "Switch to Terminal",
   "Otevřít konverzaci": "Open conversation",
   "Pokračovat v Terminálu": "Continue in Terminal",
   "Otevřít složku": "Open folder",

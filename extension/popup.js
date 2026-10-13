@@ -265,6 +265,32 @@ $('check-save').addEventListener('click', async () => {
 // kartu, jestli agent odpovídá, kdy začal a kdy skončil. Nic ze stránky.
 const seznam = { konverzace: [], off: [], casovac: null, lastStatus: null, zastarala: false, pripojeno: false };
 
+// Compact, local-only filters. Nothing about the user's activity is sent to
+// storage or any server merely because they switch the popup view.
+const FILTRY_KONVERZACI = new Set(['vse', 'odpovida', 'pozor']);
+let filtrKonverzaci = 'vse';
+function chatOdpovida(k, d) { return Boolean(d ? d.generuje : k?.generating); }
+function chatMaLimit(k, d) { return !chatOdpovida(k, d) && Boolean(d ? d.limit : k?.limit); }
+function odpovidaFiltru(k, d, vypnute) {
+  if (filtrKonverzaci === 'vse') return true;
+  if (vypnute.includes((d || k)?.site)) return false;
+  return filtrKonverzaci === 'odpovida' ? chatOdpovida(k, d) : chatMaLimit(k, d);
+}
+function nastavFiltrKonverzaci(next) {
+  if (!FILTRY_KONVERZACI.has(next) || next === filtrKonverzaci) return;
+  filtrKonverzaci = next;
+  for (const button of $('filtry-konverzaci').querySelectorAll('[data-filtr]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.filtr === next));
+  }
+  delete $('konverzace').dataset.podpis;
+  vykresliSeznam();
+}
+$('filtry-konverzaci').addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-filtr]');
+  if (button) nastavFiltrKonverzaci(button.dataset.filtr);
+});
+
+
 async function nactiKonverzace() {
   try {
     const { otevrene = {} } = (await chrome.storage.session?.get(['otevrene'])) || {};
@@ -316,21 +342,43 @@ async function prepni(k) {
 
 function vykresliSeznam() {
   const box = $('konverzace');
-  if (box.hidden && !seznam.konverzace.length && !overeni.diagnostika) return;
   const d = overeni.diagnostika;
   const off = seznam.off;
   const tato = seznam.konverzace.find((k) => overeni.tab !== null && k.tab === overeni.tab) || null;
-  const ostatni = seznam.konverzace
-    .filter((k) => k !== tato && !off.includes(k.site))
-    .sort((a, b) => (b.generating - a.generating) || (Boolean(b.limit) - Boolean(a.limit)) || (b.at - a.at));
+  // When diagnostics of the current tab are unavailable, preserve its last
+  // confirmed report from the session cache instead of hiding it completely.
+  const ostatniVse = seznam.konverzace
+    .filter((k) => (!d || k !== tato) && !off.includes(k.site))
+    .sort((a, b) => (Boolean(b.generating) - Boolean(a.generating)) || (Boolean(b.limit) - Boolean(a.limit)) || (b.at - a.at));
+  const pocetVse = ostatniVse.length + Number(Boolean(d));
+  const pocetOdpovida = ostatniVse.filter((k) => chatOdpovida(k, null)).length
+    + Number(Boolean(d && !off.includes(d.site) && chatOdpovida(tato, d)));
+  const pocetLimity = ostatniVse.filter((k) => chatMaLimit(k, null)).length
+    + Number(Boolean(d && !off.includes(d.site) && chatMaLimit(tato, d)));
+  const filtry = $('filtry-konverzaci');
+  // When the list shrinks to one chat, hide the toolbar AND restore "All".
+  // Otherwise a previously chosen "Limits" filter could leave the only chat
+  // invisible with no control available to reveal it again.
+  if ((pocetVse <= 1 || !prehled) && filtrKonverzaci !== 'vse') {
+    filtrKonverzaci = 'vse';
+    for (const button of filtry.querySelectorAll('[data-filtr]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.filtr === 'vse'));
+    }
+  }
+  filtry.hidden = !seznam.pripojeno || pocetVse <= 1 || !prehled;
+  for (const [key, count] of [['vse', pocetVse], ['odpovida', pocetOdpovida], ['pozor', pocetLimity]]) {
+    filtry.querySelector('[data-filtr-pocet="' + key + '"]').textContent = String(count);
+  }
+  const zobrazTuto = Boolean(d && odpovidaFiltru(tato, d, off));
+  const ostatni = ostatniVse.filter((k) => odpovidaFiltru(k, null, off));
   // Beze změny dat se nepřekresluje (jen čas), jinak by čtečka i zaostření začínaly znovu.
-  const podpis = JSON.stringify([d && [d.site, d.generuje, d.limit, d.zpravy], tato && [tato.od, tato.konec], ostatni.map((k) => [k.site, k.tab, k.generating, k.limit, k.od, k.konec, Math.floor((Date.now() - (k.konec || 0)) / 60e3)]), off]);
+  const podpis = JSON.stringify([filtrKonverzaci, d && [d.site, d.generuje, d.limit, d.zpravy], tato && [tato.od, tato.konec], ostatni.map((k) => [k.site, k.tab, k.generating, k.limit, k.od, k.konec, Math.floor((Date.now() - (k.konec || 0)) / 60e3)]), off]);
   if (box.dataset.podpis === podpis) { tikni(); return; }
   box.dataset.podpis = podpis;
   box.textContent = '';
   let bezi = false;
 
-  if (d) {
+  if (zobrazTuto) {
     const [, , klic] = sluzba(d.site) || [d.site, d.site, ''];
     const name = nazevSluzby(d.site);
     const li = el('li');
@@ -380,14 +428,22 @@ function vykresliSeznam() {
   }
 
   box.hidden = !box.children.length;
-  $('web-nadpis').hidden = box.hidden || !prehled;
+  $('web-nadpis').hidden = pocetVse === 0 || !prehled;
+  const empty = $('prazdne-konverzace');
+  empty.hidden = !filtrKonverzaci || filtrKonverzaci === 'vse' || pocetVse === 0 || !box.hidden || !seznam.pripojeno;
+  if (!empty.hidden) empty.textContent = tr(filtrKonverzaci === 'odpovida'
+    ? 'Žádný webový chat právě neodpovídá.'
+    : 'Žádný webový chat nehlásí limit.');
   // Čas odpovědi běží po sekundách, jen dokud nějaký agent odpovídá.
   clearInterval(seznam.casovac);
   if (bezi) seznam.casovac = setInterval(tikni, 1000);
   // Dlouhý seznam se posune uvnitř, okno zůstane do 600 px.
   box.style.maxHeight = '';
   const navic = document.body.getBoundingClientRect().height - MAX_VYSKA;
-  if (navic > 0) box.style.maxHeight = `${Math.max(120, Math.floor(box.getBoundingClientRect().height - navic))}px`;
+  // Chrome caps the popup at 600px. After adding status filters the local
+  // agent queue may leave only one row of room for web chats; allow a 56px row
+  // plus scrollbar rather than overflowing the entire popup.
+  if (navic > 0) box.style.maxHeight = `${Math.max(64, Math.floor(box.getBoundingClientRect().height - navic))}px`;
 }
 
 async function obnovSeznam() {
@@ -427,11 +483,11 @@ async function nactiPrehled() {
 }
 
 function radekAgenta(a) {
-  const odkaz = el('a', 'agent');
-  odkaz.href = `${APLIKACE}#/agent/${encodeURIComponent(a.id)}`;
-  odkaz.target = '_blank';
-  odkaz.rel = 'noopener';
-  odkaz.dataset.ton = TON_AGENTA[a.status || 'working'] || 'work';
+  const li = el('li');
+  const tlacitko = el('button', 'agent');
+  tlacitko.type = 'button';
+  tlacitko.dataset.ton = TON_AGENTA[a.status || 'working'] || 'work';
+  tlacitko.setAttribute('aria-label', tr('Otevřít agenta {0} v aplikaci Agenteeq', a.title || a.app || tr('Agent')));
   const bot = el('span', 'bot');
   bot.innerHTML = ROBOT;
   const t = el('span', 't');
@@ -441,10 +497,31 @@ function radekAgenta(a) {
   st.append(el('span', '', sazba(popis)));
   if (a.at) st.title = ago(a.at);
   t.append(st);
-  odkaz.append(bot, t);
-  odkaz.insertAdjacentHTML('beforeend', SIPKA);
-  const li = el('li');
-  li.append(odkaz);
+  tlacitko.append(bot, t);
+  tlacitko.insertAdjacentHTML('beforeend', SIPKA);
+  const chyba = el('p', 'agent-focus-error');
+  chyba.setAttribute('role', 'status');
+  chyba.setAttribute('aria-live', 'polite');
+  chyba.hidden = true;
+  tlacitko.addEventListener('click', async () => {
+    if (tlacitko.disabled) return;
+    tlacitko.disabled = true;
+    tlacitko.setAttribute('aria-busy', 'true');
+    chyba.hidden = true;
+    let result = null;
+    try { result = await chrome.runtime.sendMessage({ type: 'agenteeq:focus-agent', id: a.id }); } catch { /* app offline */ }
+    if (!result?.ok) {
+      chyba.hidden = false;
+      chyba.textContent = result?.unpaired
+        ? tr('Rozšíření není spárované. Otevři Agenteeq a obnov připojení.')
+        : result?.unsupported
+          ? tr('Tato akce vyžaduje nativní aplikaci Agenteeq pro Mac.')
+          : tr('Agenta se nepodařilo otevřít. Ověř, že Agenteeq běží, a obnov seznam.');
+    }
+    tlacitko.disabled = false;
+    tlacitko.removeAttribute('aria-busy');
+  });
+  li.append(tlacitko, chyba);
   return li;
 }
 
@@ -469,6 +546,9 @@ function zakladniStav() {
   seznam.pripojeno = false;
   $('outdated').hidden = true;
   $('konverzace').hidden = true;
+  delete $('konverzace').dataset.podpis; // Reconnect must re-render even unchanged data.
+  $('filtry-konverzaci').hidden = true;
+  $('prazdne-konverzace').hidden = true;
   $('agenti').hidden = true;
   $('web-nadpis').hidden = true;
   $('sites-open').hidden = true;
@@ -476,6 +556,29 @@ function zakladniStav() {
   $('feats').hidden = true;
   $('app-link').href = APLIKACE;
   $('app-link-text').textContent = tr('Otevřít Agenteeq');
+}
+
+// Offline stav je skutečná dostupnost lokální služby, ne přítomnost starého snapshotu.
+// Kontrolujeme jej také při otevřeném popupu: jinak by náhlý restart aplikace nechal
+// zelené „Připojeno“ a čísla agentů označená jako právě živá.
+async function fungujeSluzba() {
+  try {
+    const res = await fetch(`${APLIKACE}api/health`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return false;
+    return (await res.json())?.ok === true;
+  } catch {
+    return false;
+  }
+}
+function ukazVypadek() {
+  zakladniStav();
+  prehled = null;
+  seznam.konverzace = [];
+  overeni.diagnostika = null;
+  $('feats').hidden = false;
+  $('app-link').href = WEB;
+  $('app-link-text').textContent = tr('Stáhnout Agenteeq');
+  setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
 }
 
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
@@ -487,24 +590,19 @@ async function render() {
   if (document.activeElement !== $('port')) $('port').value = String(aktualniPort);
   await renderSites(lastStatus);
 
-  let health = null;
-  try {
-    const res = await fetch(`${APLIKACE}api/health`, { signal: AbortSignal.timeout(2000) });
-    health = await res.json();
-  } catch {
-    health = null;
-  }
-  if (!health?.ok) {
-    zakladniStav();
-    $('feats').hidden = false;
-    $('app-link').href = WEB;
-    $('app-link-text').textContent = tr('Stáhnout Agenteeq');
-    setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
+  if (!await fungujeSluzba()) {
+    ukazVypadek();
     return;
   }
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
+  if (r?.paired && !r.online) {
+    // The local health endpoint may answer while pairing's protected endpoint
+    // fails. Never present the extension as connected on an unsuccessful hello.
+    ukazVypadek();
+    return;
+  }
   if (!r?.paired) {
     zakladniStav();
     $('pairing').hidden = false;
@@ -548,7 +646,9 @@ function hlavicka() {
   const pocet = zive.length + (d && !tataVSeznamu && (d.zpravy?.user || d.zpravy?.assistant || d.generuje) ? 1 : 0);
   const pracuje = zive.filter((k) => (k.tab === overeni.tab && d ? d.generuje : k.generating)).length + (d && !tataVSeznamu && d.generuje ? 1 : 0);
   const failed = Boolean(lastStatus && !lastStatus.ok);
-  const tone = outdated || failed ? 'warn' : 'ok';
+  // Known working agents do not prove the Mac process scan observed everything.
+  const nejisteProcesy = Boolean(prehled?.zdravi?.procesyNevim);
+  const tone = outdated || failed || nejisteProcesy ? 'warn' : 'ok';
   const selhalo = tr('Poslední hlášení se do Agenteeq nedostalo. Rozšíření to zkusí znovu samo.');
   if (!pocet && !prehled) {
     setHero({ tone, pill: 'Připojeno', headline: tr('Žádná otevřená konverzace'), sub: failed ? selhalo : tr('Otevři chat s AI a objeví se tady i v Agenteeq.') });
@@ -558,7 +658,13 @@ function hlavicka() {
   const vsech = pracuje + (prehled?.zdravi.pracuje || 0);
   const popis = vsech === 0 ? tr('agentů teď pracuje') : mnozne(vsech, 'agent právě pracuje', 'agenti právě pracují', 'agentů právě pracuje');
   // Pod číslem stav agentů z aplikace; bez něj počet otevřených chatů v prohlížeči.
-  const sub = failed ? selhalo : prehled ? vetaZdravi(prehled.zdravi) : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  const zakladniPopis = prehled ? vetaZdravi(prehled.zdravi)
+    : `${pocet} ${mnozne(pocet, 'otevřená konverzace', 'otevřené konverzace', 'otevřených konverzací')}`;
+  // Keep actionable failure/approval at the front and independently disclose
+  // missing process visibility. Never repeat the same unknown message twice.
+  const upozorneniProcesy = nejisteProcesy && (failed || prehled?.zdravi?.stav !== 'nevim')
+    ? tr('Nepodařilo se zjistit, co na počítači běží') : '';
+  const sub = [failed ? selhalo : zakladniPopis, upozorneniProcesy].filter(Boolean).join(' · ');
   setHero({ tone, pill: 'Připojeno', headline: popis, sub, pocet: vsech });
   if (prehled && !failed) $('sub').dataset.stav = prehled.zdravi.stav;
 }
@@ -570,12 +676,35 @@ chrome.storage.onChanged?.addListener(async (zmeny, oblast) => {
   hlavicka();
 });
 
-// Stav agentů se mění i při otevřeném okně: každých 5 s se souhrn načte znovu.
+// Otevřený popup musí poznat i skutečný výpadek aplikace a sám se zotavit.
+// Pouhé načítání prehled() nestačilo: při restartu hostitele vracelo null,
+// ale hlavička stále ukazovala zelené „Připojeno“ a stará čísla.
+let probihaKontrolaSpojeni = false;
 setInterval(async () => {
-  if (!seznam.pripojeno || document.hidden) return;
-  prehled = await nactiPrehled();
-  vykresliAgenty();
-  hlavicka();
+  if (document.hidden || probihaKontrolaSpojeni) return;
+  probihaKontrolaSpojeni = true;
+  try {
+    if (!seznam.pripojeno) {
+      await render(); // Recover automatically when the app comes back online.
+      return;
+    }
+    if (!await fungujeSluzba()) {
+      ukazVypadek(); // Clear stale agent counts before telling user we are offline.
+      return;
+    }
+    const aktualniPrehled = await nactiPrehled();
+    if (!aktualniPrehled) {
+      // A protected endpoint may fail independently of /api/health.
+      // Re-check pairing instead of claiming a live connection.
+      await render();
+      return;
+    }
+    prehled = aktualniPrehled;
+    vykresliAgenty();
+    hlavicka();
+  } finally {
+    probihaKontrolaSpojeni = false;
+  }
 }, 5000);
 
 $('retry').addEventListener('click', () => render());

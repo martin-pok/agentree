@@ -45,11 +45,15 @@ try {
                   { id: 'claude-code:c3', title: 'Testy pro přihlášení', app: 'Claude Code', reason: 'Spouští testy', at: Date.now() - 12000 },
                 ],
               } : null;
+              if (m.type === 'agenteeq:focus-agent') {
+                fixture.focusedAgent = m.id;
+                return { ok: true };
+              }
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
               }
-              return { paired: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
+              return { paired: fixture.paired, online: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
             } },
           };
           // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
@@ -165,11 +169,65 @@ try {
           assert.equal(await page.locator('#agenti').isVisible(), true, 'přehled agentů je vidět');
           assert.equal(await page.locator('#rozhodnuti .agent').count(), 1);
           assert.equal(await page.locator('#pracuji .agent').count(), 2);
-          assert.match(await page.locator('#rozhodnuti .agent').getAttribute('href'), /#\/agent\/claude-code%3Aa1$/);
+          const focus = page.locator('#rozhodnuti button.agent');
+          assert.equal(await focus.count(), 1, 'native agent uses explicit button, not an unauthenticated localhost link');
+          assert.equal(await focus.getAttribute('href'), null, 'Chrome must never navigate to a 403 localhost tab');
+          await focus.click();
+          await page.waitForFunction(() => fixture.focusedAgent === 'claude-code:a1');
+          assert.equal(await page.evaluate(() => fixture.focusedAgent), 'claude-code:a1', 'native focus receives existing agent ID only');
+          assert.equal(await focus.getAttribute('aria-busy'), null, 'button always clears busy state after successful focus');
           // ChatGPT test výš vypnul, nahoře tedy zůstanou jen dva agenti z aplikace.
           assert.equal(await page.locator('#hero-num').textContent(), '2');
           const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
           assert.ok(vyska <= 600, `${engine} ${theme} ${state}: okno má ${Math.round(vyska)} px`);
+          // Real Chromium/WebKit interactions: three tracked chats, live counts,
+          // filters, keyboard focus and a truthful empty state.
+          await page.evaluate(async () => {
+            fixture.data.disabledSites = [];
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() },
+              b: { site: 'claude', tab: 6, okno: 2, generating: false, limit: true, at: Date.now() },
+              c: { site: 'gemini', tab: 7, okno: 2, generating: false, limit: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#filtry-konverzaci').isVisible(), true);
+          assert.deepEqual(await page.locator('.pocet-filtr').allTextContents(), ['3', '1', '1']);
+          await page.locator('[data-filtr="odpovida"]').click();
+          assert.equal(await page.locator('#konverzace li').count(), 1);
+          assert.match(await page.locator('#konverzace').innerText(), /ChatGPT/);
+          assert.equal(await page.locator('[data-filtr="odpovida"]').getAttribute('aria-pressed'), 'true');
+          await page.locator('[data-filtr="pozor"]').focus();
+          await page.keyboard.press('Enter');
+          assert.equal(await page.locator('#konverzace li').count(), 1);
+          assert.match(await page.locator('#konverzace').innerText(), /Claude/);
+          assert.equal(await page.locator('[data-filtr="pozor"]').getAttribute('aria-pressed'), 'true');
+          await page.evaluate(async () => {
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, generating: true, at: Date.now() },
+              b: { site: 'claude', tab: 6, generating: false, limit: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#konverzace').isVisible(), false);
+          assert.equal(await page.locator('#prazdne-konverzace').isVisible(), true);
+          assert.match(await page.locator('#prazdne-konverzace').textContent(), /Žádný webový chat nehlásí limit/);
+          assert.ok(await page.evaluate(() => document.body.getBoundingClientRect().height <= 600),
+            'prázdný filtr nesmí schovat ostatní ovládání okna pod hranicí 600 px');
+          await page.locator('[data-filtr="vse"]').click();
+          assert.equal(await page.locator('#konverzace li').count(), 2);
+          assert.equal(await page.locator('#prazdne-konverzace').isVisible(), false);
+          const filtrVyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
+          assert.ok(filtrVyska <= 600, `${engine} ${theme}: filtr nesmí zvětšit Chrome popup nad 600px (měřeno ${Math.round(filtrVyska)}px)`);
+          await page.locator('[data-filtr="pozor"]').click();
+          await page.evaluate(async () => {
+            chrome.storage.session.get = async () => ({ otevrene: {
+              a: { site: 'chatgpt', tab: 5, generating: false, at: Date.now() },
+            } });
+            await render();
+          });
+          assert.equal(await page.locator('#filtry-konverzaci').isVisible(), false, 'jeden chat nemá zbytečné filtry');
+          assert.equal(await page.locator('#konverzace li').count(), 1, 'skrytý filtr nikdy nesmí schovat poslední chat');
         }
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png`, fullPage: true });
@@ -199,7 +257,7 @@ try {
           // Souhrn z aplikace nese českou větu (starší server); okno ji skládá samo v angličtině.
           runtime: { getManifest: () => ({ version: '0.12.0' }), sendMessage: async (m) => (m?.type === 'agenteeq:prehled'
             ? (state === 'paired' ? { zdravi: { stav: 'pozor', veta: 'Na tvé rozhodnutí čeká agentů: 1', pracuje: 0, cekaNaTebe: 1, selhalo: 0, limit: 0 }, rozhodnuti: [], pracuji: [] } : null)
-            : { paired: sparovano, status: { expectedVersion: '0.13.0' } }) },
+            : { paired: sparovano, online: sparovano, status: { expectedVersion: '0.13.0' } }) },
           tabs: { query: async () => [{ id: 1 }], update: async () => {}, sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika'
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'obecne', zpravy: { user: 1, assistant: 2, zdroj: 'obecne' }, generuje: true, limit: true, videl: { generovani: true, konec: false } } : null) },
         };

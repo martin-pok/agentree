@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { unexpectedScreenshotFailures } from './request-qa.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -51,7 +52,7 @@ async function okno(stav, soubor, jazyk) {
     window.chrome = {
       i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
-      runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: verze } }) },
+      runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, online: true, revoked: false, status: { expectedVersion: verze } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
     window.fetch = async () => new Response(JSON.stringify({ ok: stav !== 'odpojeno' }));
@@ -82,16 +83,39 @@ try {
   for (const n of [1, 2, 3]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const chyby = [];
+    const selhanePozadavky = [];
     page.on('pageerror', (e) => chyby.push(e.message));
-    page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
+    page.on('requestfailed', (r) => selhanePozadavky.push({
+      url: r.url(), kind: r.resourceType(), error: r.failure()?.errorText,
+    }));
     await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}&odpojeno=${vysky.odpojeno}`);
     await page.evaluate(() => document.fonts.ready);
+    // Switching lang=en replaces the original Czech <img> URL on the same page.
+    // Chromium cancels the obsolete fetch with ERR_ABORTED; this is expected,
+    // but a missing/unreadable FINAL image is never acceptable for Store media.
+    try {
+      await page.waitForFunction(() => document.images.length > 0
+        && [...document.images].every((img) => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0),
+        null, { timeout: 8000 });
+    } catch {
+      const images = await page.evaluate(() => [...document.images].map((img) => ({
+        src: img.currentSrc || img.src, complete: img.complete, width: img.naturalWidth, height: img.naturalHeight,
+      })));
+      throw new Error(`snímek ${n}: požadované obrázky nejsou dekódované: ${JSON.stringify(images)}`);
+    }
     await page.waitForTimeout(200);
-    const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {
-      const r = el.getBoundingClientRect();
-      return r.width && (r.right > 1280.5 || r.bottom > 800.5 || r.left < -0.5 || r.top < -0.5);
+    const { preteka, obrazky } = await page.evaluate(() => ({
+      preteka: [...document.querySelectorAll('.canvas *')].some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width && (r.right > 1280.5 || r.bottom > 800.5 || r.left < -0.5 || r.top < -0.5);
+      }),
+      obrazky: [...document.images].map(img => img.currentSrc || img.src),
     }));
-    if (chyby.length || preteka) throw new Error(`snímek ${n}: ${preteka ? 'obsah přetéká plátno' : chyby.join('; ')}`);
+    const necekane = unexpectedScreenshotFailures(selhanePozadavky, obrazky)
+      .map((r) => `${r.url} ${r.error}`);
+    if (chyby.length || necekane.length || preteka) {
+      throw new Error(`snímek ${n}: ${preteka ? 'obsah přetéká plátno' : [...chyby, ...necekane].join('; ')}`);
+    }
     await page.screenshot({ path: path.join(cil, `snimek-${n}-1280x800.png`), clip: { x: 0, y: 0, width: 1280, height: 800 } });
     console.log(`✓ ${path.relative(vystup, path.join(cil, `snimek-${n}-1280x800.png`))}`);
     await page.close();

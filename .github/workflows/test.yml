@@ -7,13 +7,15 @@
 name: Testy
 
 on:
+  # Run branches through their PR only; pushing to an open PR otherwise duplicates the
+  # same 8-job matrix and cancel-in-progress can kill half of each run.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
-# One current validation per branch. A PR and its push share the same branch key;
-# superseded workflow runs are cancelled before consuming test runners.
+# One current validation per PR, plus one per main push. Superseded commits cancel
+# earlier runs without competing with a second push event for the same PR branch.
 concurrency:
   group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -87,6 +89,22 @@ jobs:
         run: |
           $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
           '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
+
+      # Audit the REAL generated ZIP, not only the packaging script. Recursively
+      # exclude legacy duplicate icons but require the current brand master.
+      - name: Ověřit brand přímo v distribučním Windows ZIPu
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = (Get-ChildItem dist/Agenteeq-*-Windows-x64.zip | Select-Object -First 1)
+          if (-not $archive) { throw 'Missing Windows installer ZIP' }
+          $out = Join-Path $env:RUNNER_TEMP 'agenteeq-brand-zip-audit'
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath $out -Force
+          $entries = @(Get-ChildItem -Path $out -Recurse -File)
+          $old = @($entries | Where-Object { $_.Name -in @('Agenteeq-icon.png', 'Agenteeq.icns', 'robot-predloha.svg', 'agentree-mark.svg') })
+          if ($old.Count -ne 0) { throw "Legacy icon in Windows ZIP: $($old.FullName -join ', ')" }
+          $marks = @($entries | Where-Object { $_.Name -eq 'agenteeq-mark.svg' -and $_.FullName -match '[\\/]public[\\/]brand[\\/]' })
+          if ($marks.Count -ne 1) { throw "Expected exactly one current brand master, got $($marks.Count)" }
 
       # Rozbalit archiv jako člověk, spustit Agenteeq.exe, počkat na server a na vykreslené
       # rozhraní v okně, nafotit obrazovku, ukončit a ověřit, že server skončil s ním.
@@ -189,7 +207,10 @@ jobs:
     name: Web, rozšíření a kontrast
     runs-on: ubuntu-latest
     # Independently test site/extension/a11y; do not serialize behind long desktop QA.
-    timeout-minutes: 25
+    # Playwright --with-deps can spend >23 min provisioning WebKit system packages
+    # on a fresh GitHub runner. 25 min cancelled qa:site before qa:extension/qa:contrast.
+    # Allow the full QA to finish; never treat cancelled tests as passing.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
         with:
@@ -223,11 +244,17 @@ jobs:
         with: { node-version: '22' }
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium
+
+      - name: Ověřit PWA a Apple ikony proti Dock SVG
+        run: npm run qa:icons
+
       # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
       # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
       - name: Renderovat aktuální Chrome Web Store branding
         run: |
           node branding/chrome-web-store/render.mjs
+      - name: Zabránit tiché změně schválených ikon při renderování
+        run: git diff --exit-code -- extension/icons/icon-16.png extension/icons/icon-32.png extension/icons/icon-48.png extension/icons/icon-128.png
       - name: Vyrenderovat aktuální snímky extension pro obchod
         run: node branding/chrome-web-store/snimky.mjs
       - name: Ověřit úplnost exportů Chrome Web Store
@@ -260,4 +287,19 @@ jobs:
             branding/chrome-web-store/export/promo-small-440x280.png
             branding/chrome-web-store/export/marquee-1400x560.png
             extension/icons/icon-*.png
+          retention-days: 14
+
+      # A release candidate is a single reviewable, content-addressed upload set.
+      # Only main receives this artifact: PR builds are not publisher candidates.
+      # Still requires the entire 8/8 run to finish green and manual Chrome/host UAT.
+      - name: Připravit verifikovatelnou sadu pro ruční nahrání do obchodu
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/prepare-chrome-store-kit.mjs
+      - name: Uložit kompletní balíček obchodu s otisky souborů
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: chrome-store-review-kit
+          path: dist/chrome-store-kit/
+          if-no-files-found: error
           retention-days: 14

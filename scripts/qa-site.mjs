@@ -29,9 +29,24 @@ const output = 'dist/qa-site';
 // Stránka slibuje, že nic nedotahuje z cizích serverů. Tohle to drží: všechno mimo vlastní
 // původ se odmítne a zapíše. Zároveň to brání tomu, aby klik na Stáhnout odvedl kontrolu pryč.
 const puvod = new URL(url).origin;
+// Deterministic, read-only GitHub PUBLIC release metadata. QA must not depend on
+// live internet, nor disable external-request blocking to test Preview links.
+const PREVIEW_API = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=20';
+const PREVIEW_FIXTURE = JSON.stringify([{
+  tag_name: 'v0.46.10', draft: false, prerelease: true,
+  assets: [{
+    name: 'Agenteeq-0.46.10-macOS-arm64.dmg',
+    size: 50_000_000, digest: 'sha256:' + 'a'.repeat(64),
+    browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.10/Agenteeq-0.46.10-macOS-arm64.dmg',
+  }],
+}]);
 async function jenMistni(page, cizi) {
   await page.route('**/*', (route) => {
     const cil = route.request().url();
+    if (cil === PREVIEW_API) return route.fulfill({
+      status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: PREVIEW_FIXTURE,
+    });
     if (cil.startsWith(puvod) || cil.startsWith('data:') || cil.startsWith('blob:')) return route.continue();
     cizi.push(cil);
     return route.abort();
@@ -43,6 +58,28 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Verify real browser/CSP integration, not merely the metadata parser.
+      // Public metadata is intercepted above with an exact deterministic
+      // fixture; the production site fetches only near the download block.
+      {
+        const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+        const cizi = [];
+        const chyby = [];
+        await jenMistni(p, cizi);
+        p.on('pageerror', e => chyby.push(e.message));
+        await p.goto(url + '/instalace');
+        await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
+        await p.waitForFunction(() => document.querySelector('[data-preview-mac]')?.getAttribute('href')
+          ?.includes('/releases/download/v0.46.10/'), null, { timeout: 5000 });
+        assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
+          'https://github.com/martin-pok/agentree/releases/tag/v0.46.10');
+        assert.match(await p.locator('[data-preview-label]').innerText(), /0\.46\.10/);
+        assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
+          /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/);
+        assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');
+        assert.deepEqual(chyby, [], 'Preview must not cause an unhandled browser exception');
+        await p.close();
+      }
       // Robot u karet soukromí sleduje myš jen při povoleném pohybu. Ověřené na
       // skutečně vykresleném SVG v obou jádrech, včetně návratu očí do středu.
       {

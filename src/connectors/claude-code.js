@@ -68,6 +68,17 @@ function toolInputText(name, input) {
   return clip(s === '{}' ? '' : s, 300);
 }
 
+// Otázky agenta i s nabízenými možnostmi pro přepis. AskUserQuestion má vstup
+// { questions: [{ question, header, options: [{ label, description }], multiSelect }] }; do přepisu
+// jdou jen text otázky a popisky možností, oříznuté – je to nedůvěryhodný vstup.
+export function otazkyZVstupu(input) {
+  const otazky = Array.isArray(input?.questions) ? input.questions : [];
+  return otazky.slice(0, 4).map((q) => ({
+    question: clip(q?.question, 300),
+    options: (Array.isArray(q?.options) ? q.options : []).slice(0, 8).map((o) => clip(typeof o === 'string' ? o : o?.label, 120)).filter(Boolean),
+  })).filter((q) => q.question);
+}
+
 export function todosProgress(todos) {
   if (!Array.isArray(todos) || !todos.length) return null;
   const done = todos.filter((t) => t?.status === 'completed').length;
@@ -361,7 +372,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
         aktualizujCekani(st, s);
         s.turnSteps++;
         s.activity = describeTool(part.name, part.input);
-        pushEntry(s, { at: ts, role: 'tool', tool: part.name, text: toolInputText(part.name, part.input) });
+        pushEntry(s, { at: ts, role: 'tool', tool: part.name, text: toolInputText(part.name, part.input), questions: part.name === 'AskUserQuestion' ? otazkyZVstupu(part.input) : undefined });
         if (part.name === 'AskUserQuestion') {
           s.pending = { kind: 'question', text: clip(part.input?.questions?.[0]?.question || ui('Má pro tebe otázku'), 200), at: ts, toolUseId: part.id, source: 'transcript' };
         } else if (part.name === 'ExitPlanMode') {
