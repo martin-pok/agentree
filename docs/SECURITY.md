@@ -101,9 +101,9 @@ Web (landing page, `/app`, přehled účtu `/app?ucet`) posílá na všech adres
 
 - `Content-Security-Policy`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
   img-src 'self' data: https://*.googleusercontent.com; font-src 'self';
-  connect-src 'self' https://quxfenxxdcafcuptucnn.supabase.co; manifest-src 'self'; worker-src 'self';
+  connect-src 'self' https://quxfenxxdcafcuptucnn.supabase.co https://api.github.com; manifest-src 'self'; worker-src 'self';
   object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`. Odpovídá tomu,
-  co web opravdu načítá: vlastní skripty a písma, fotku účtu od Googlu, API účtů v Supabase.
+  co web opravdu načítá: vlastní skripty a písma, fotku účtu od Googlu, API účtů v Supabase a při přiblížení odkazu na Preview pouze veřejná metadata vydání z GitHub API. Žádné cizí skripty.
   `unsafe-inline` jen pro styly (atributy `style` s proměnnými CSS), skripty žádné vložené nejsou.
 - `Strict-Transport-Security: max-age=63072000; includeSubDomains`, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: no-referrer`, `Permissions-Policy` (kamera, mikrofon, poloha, platby, USB vypnuté),
