@@ -1,5 +1,12 @@
 # Changelog
 
+## Připravované změny po 0.46.11 · nevydáno
+
+- PWA a Apple ikony nyní používají stejnou širokou hlavu s bílou anténou jako skutečně instalovaná Mac aplikace. Dřívější rastrové ikony měly odlišný tvar a fialovou anténu; CI je nově obrazově porovnává s oficiálním SVG.
+- Náhledy Přehledu na českém a anglickém webu jsou znovu zachycené ze současné ukázkové aplikace. Číslo neveřejné zdrojové verze je v marketingovém snímku skryté, aby nevypadalo jako dostupná aktualizace.
+
+**Dostupnost:** neměnný Draft `v0.46.11` tyto opravy neobsahuje. Nový binární kandidát vyžaduje vlastní tag, kompletní CI, audit příloh a živé UAT; samotný commit ani nasazení webu není vydání aplikace.
+
 ## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
 
 **Dostupnost:** tato sekce popisuje obsah verze 0.46.11 ve zdrojovém kódu. Až úspěšné CI, nový neměnný tag, skutečné binárky, nezávislý SHA-256 audit, UAT a zveřejnění Preview potvrzují, že je aktualizace dostupná. Nestačí nový commit nebo neveřejný Draft. Stable Latest a Chrome Web Store se aktualizují samostatně.
