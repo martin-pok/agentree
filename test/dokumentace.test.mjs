@@ -75,9 +75,10 @@ test('přeskočený test říká proč', async () => {
 
 test('publikace nesmí vynechat ZIP Chrome extension stejné verze', async () => {
   const workflow = await zdroj('.github/workflows/publish.yml');
-  assert.match(workflow, /const expectedExtension = `agenteeq-extension-\$\{process\.env\.TAG\.slice\(1\)\}\.zip`;/);
+  assert.match(workflow, /const expectedExtension = "agenteeq-extension-" \+ process\.env\.TAG\.slice\(1\) \+ "\.zip";/);
   assert.match(workflow, /"Agenteeq-Windows-x64\.zip", expectedExtension\]/);
-  assert.match(workflow, /if \(!v\.assets\.some\(\(a\) => a\.name === stala\)\)/);
+  assert.match(workflow, /!v\.assets\.some\(a => a\.name === required && a\.size > 0/);
+  assert.match(workflow, /v\.assets\.length !== 8/, 'reject incomplete drafts');
 });
 
 
@@ -93,17 +94,19 @@ test('publikace releasu vyžaduje úspěšné CI přesného označeného commitu
 });
 
 
-test('publish Preview stays prerelease and never overwrites stable Latest', async () => {
+test('publish Preview stays prerelease, leaves Stable Latest unchanged and uses REST by ID', async () => {
   const workflow = await zdroj('.github/workflows/publish.yml');
   assert.match(workflow, /default: preview/, 'manual publish must default to Preview');
   assert.match(workflow, /CONFIRM_STABLE: /, 'Stable needs a separate explicit confirmation');
-  assert.match(workflow, /if \[ "\$CONFIRM_STABLE" != "true" \]/, 'Stable cannot publish without opt-in');
-  assert.match(workflow, /gh release edit "\$TAG" --notes-file poznamky\.md --draft=false --prerelease --latest=false/, 'Preview must not become Latest');
-  assert.match(workflow, /gh release edit "\$TAG" --notes-file poznamky\.md --draft=false --prerelease=false --latest/, 'only Stable may become Latest');
-  assert.match(workflow, /test "\$LATEST" != "\$TAG"/, 'verify Preview did not become Latest');
-  assert.match(workflow, /test "\$LATEST" = "\$TAG"/, 'verify Stable became Latest');
+  assert.match(workflow, /if \[ "\$CONFIRM_STABLE" != "true" \]/);
+  assert.match(workflow, /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID"[\s\\]*-F draft=false -F prerelease=true -f make_latest=false/);
+  assert.match(workflow, /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID"[\s\\]*-F draft=false -F prerelease=false -f make_latest=true/);
+  assert.match(workflow, /test "\$LATEST" != "\$TAG"/);
+  assert.match(workflow, /test "\$LATEST" = "\$\(cat stable-before\.txt\)"/, 'Preview may not change stable Latest even to another old release');
+  assert.match(workflow, /test "\$LATEST" = "\$TAG"/);
+  assert.match(workflow, /concurrency:\n  group: publish-release-\$\{\{ inputs\.tag \}\}/, 'serialize publication for an exact tag');
+  assert.doesNotMatch(workflow, /^\s+gh release (?:view|edit|download)\b/m, 'GitHub Actions cannot reliably see private drafts via gh release CLI');
 });
-
 
 test('roadmap current sprint must not refer to an obsolete release', async () => {
   const doc = await zdroj('docs/ROADMAP.md');
