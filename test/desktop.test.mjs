@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { startTestServer, api, tempDir, waitFor } from './helpers.mjs';
 import { normalizeData } from '../src/datastore.js';
@@ -154,4 +154,37 @@ test('vzhled Koncert: každé pravidlo je v rozsahu svého vzhledu a stránka ho
   for (const sel of selektory) for (const cast of sel.split(/,(?![^(]*\))/)) assert.match(cast, /:where\((?:html)?\[data-look='koncert'\]\)/, cast);
   const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
   assert.ok(html.indexOf('/styles.css') < html.indexOf('/koncert.css') && html.indexOf('/koncert.css') < html.indexOf('/desktop.css'), 'pořadí styles → koncert → desktop');
+});
+
+test('macOS install helper aborts instead of replacing a still-running app after deadline', { skip: process.platform === 'win32' }, async () => {
+  const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
+  const match = swift.match(/let script = """\n([\s\S]*?)\n\s*"""/);
+  assert.ok(match, 'extract the actual native updater helper, not a test-only reimplementation');
+  // Simulate the 300 wait iterations without making the CI job wait a minute,
+  // and do not launch Finder/open against our synthetic .app directory.
+  const script = match[1].split('\n').map(line => line.replace(/^ {12}/, '')).join('\n')
+    .replace('sleep 0.2', 'sleep 0').replace('open "$current"', ':');
+  const home = await tempDir('agenteeq-native-timeout-');
+  const current = home + '/Agenteeq.app';
+  const stage = home + '/.agenteeq-update-stage.app';
+  const backup = home + '/.agenteeq-previous.app';
+  await fs.mkdir(current);
+  await fs.mkdir(stage);
+  await fs.writeFile(current + '/version', 'old');
+  await fs.writeFile(stage + '/version', 'new');
+  const result = spawnSync('/bin/sh', ['-c', script, 'agenteeq-update',
+    String(process.pid), current, stage, backup, ''], { encoding: 'utf8', timeout: 15000 });
+  assert.equal(result.status, 1, 'timed-out helper must exit without swapping any bundle: ' + result.stderr);
+  assert.equal(await fs.readFile(current + '/version', 'utf8'), 'old');
+  await assert.rejects(fs.access(backup), { code: 'ENOENT' });
+  await assert.rejects(fs.access(stage), { code: 'ENOENT' });
+
+  // A process that has already exited must still take the successful path.
+  await fs.mkdir(stage);
+  await fs.writeFile(stage + '/version', 'new');
+  const success = spawnSync('/bin/sh', ['-c', script, 'agenteeq-update',
+    '999999999', current, stage, backup, ''], { encoding: 'utf8', timeout: 15000 });
+  assert.equal(success.status, 0, success.stderr);
+  assert.equal(await fs.readFile(current + '/version', 'utf8'), 'new');
+  assert.equal(await fs.readFile(backup + '/version', 'utf8'), 'old');
 });
