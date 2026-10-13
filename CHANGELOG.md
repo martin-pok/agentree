@@ -1,12 +1,20 @@
 # Changelog
 
-## Nevydané změny po v0.46.10 — úplná shoda oficiálního loga
+## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
 
-- **Žádné verzované duplikáty nativních ikon:** odebrané `desktop/Agenteeq.icns` a `desktop/windows/Agenteeq.ico` ze zdrojového Gitu; oba soubory se vždy generují z aktuálního SVG/Swift masteru při sestavení. Gitignore a automatický test zakazují jejich návrat. Tím mizí riziko starých trojzubců v pomocných zdrojích.
-- **Žádné staré ikony v balíčku pro Windows:** odstraněný starý `desktop/Agenteeq-icon.png` s odlišnou geometrií robota. Windows build jej spolu s případným zastaralým `Agenteeq.icns` explicitně vylučuje z instalačního ZIPu; nový CI test kontroluje **skutečný archiv**, nejen zdrojový kód. Mac už tyto staré kopie vylučoval.
-- **Stejné logo i na chybové stránce:** webová 404 výslovně odkazuje na oficiální robotí `/favicon.ico` a hlavní SVG master, stejně jako všechny jazykové varianty ostatních stránek.
-- **Brand gate:** přidané regresní testy shody SVG pro web/extension/Store a nepřítomnosti starých souborů; kontrola skutečné instalace a vizuální UAT na Macu/Windows/Chrome zůstává samostatně otevřená.
-- **Distribuce:** tyto změny vznikly až **po neměnném tagu `v0.46.10`**, a nejsou proto součástí existujícího osmipřílohového Draftu. Dostupné budou až v novém ověřeném vydání; zveřejnění ani instalace nejsou potvrzené.
+**Dostupnost:** tato sekce popisuje obsah verze 0.46.11 ve zdrojovém kódu. Až úspěšné CI, nový neměnný tag, skutečné binárky, nezávislý SHA-256 audit, UAT a zveřejnění Preview potvrzují, že je aktualizace dostupná. Nestačí nový commit nebo neveřejný Draft. Stable Latest a Chrome Web Store se aktualizují samostatně.
+
+### Co se změnilo
+
+- **Jeden oficiální robot napříč platformami:** odstraněné historické nativní soubory `desktop/Agenteeq-icon.png`, `desktop/Agenteeq.icns` a `desktop/windows/Agenteeq.ico` ze zdrojového Gitu. Mac generuje ICNS ze schváleného `desktop/Icon.swift`; Windows vytváří ICO z aktuálního SVG-odvozeného 128px Chrome/Dock masteru. Všechny malé varianty zachovávají proporce široké hlavy, dvě kapslové oči a jedinou bílou anténu.
+- **Čisté instalační balíčky:** Windows po sestavení odstraňuje staré pomocné obrázky ze své distribuční kopie. CI navíc kontroluje *skutečný rozbalený Windows ZIP*, aby nemohl obsahovat starý PNG/ICNS nebo trojzubec; macOS již generuje a balí čistou nativní ikonu.
+- **Správná ikona i na webu a ve Vercelu:** sedm jazykových webových vstupů a stránka 404 odkazují na stejnou sadu skutečného `favicon.ico` a kanonického robotího SVG. Přidané testy webových cest; samostatný avatar projektu ve Vercel dashboardu vyžaduje vlastní ověření.
+- **Aktuálnější odkazy na veřejné Preview:** český i anglický web umí načíst informace pouze o skutečně zveřejněném GitHub Preview s kontrolovaným instalačním souborem a nabídnout jeho přesný changelog. Neveřejné Drafty, chybné assety ani stahování nepodložené SHA-256 se nikdy nepropagují.
+
+### Ověření a distribuce
+
+- Opravy mají regresní testy značky, nativních buildů, reálného Windows ZIPu a bezpečné volby vydání. Nezávislý audit osmi skutečných souborů verze **0.46.10** prošel, ale neprokazuje nic o nových binárkách **0.46.11**.
+- Změny následují až po neměnném tagu 0.46.10. Staré Drafty 0.46.7 až 0.46.10 zůstávají nepozměněné. Distribuovat se musí pouze nový přesně otestovaný a schválený kandidát 0.46.11; reálné Mac/Windows/Chrome UAT, Google OAuth/avatar a publikace se nesmějí zaměňovat za CI.
 
 ## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
 
