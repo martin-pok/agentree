@@ -1,6 +1,6 @@
 # Agenteeq — commercial readiness & product positioning
 
-**Working strategy, 11 October 2026.** This is a release/marketing decision aid, not a declaration that the product is ready to sell. Detailed technical acceptance gates remain in [RELEASE-READINESS.md](RELEASE-READINESS.md) and [SECURITY.md](SECURITY.md).
+**Pracovní strategie; distribuce ověřena 13. října 2026.** Jediný aktuální kandidát je Draft `v0.46.11` (8/8 CI a bajtový audit, bez veřejné publikace či reálného Mac UAT). Chrome Web Store nabízí stále `0.31.4`. Praktické P0 překážky a důkazy jsou v [QUALITY-AUDIT-2026-10-13.md](QUALITY-AUDIT-2026-10-13.md) a [#208](https://github.com/martin-pok/agentree/issues/208). This is a release/marketing decision aid, not a declaration that the product is ready to sell. Detailed technical acceptance gates remain in [RELEASE-READINESS.md](RELEASE-READINESS.md) and [SECURITY.md](SECURITY.md).
 
 ## Promise grounded in shipped functionality
 
@@ -25,7 +25,7 @@
 
 ## Release tiers and non-negotiable gates
 
-**0.46.1 Preview (test distribution):** full green CI on exact source SHA, Mac/Windows/extension build artifacts, version/tag consistency, installable DMG, truthful signing status, manual Apple Silicon acceptance. A Git tag or draft alone is not a release. Preview should not silently become the Latest stable download.
+**0.46.11 Preview (nejnovější soukromý kandidát, zatím nepublikovaný):** full green CI on exact source SHA, Mac/Windows/extension build artifacts, version/tag consistency, installable DMG, truthful signing status, manual Apple Silicon acceptance. A Git tag or draft alone is not a release. Preview should not silently become the Latest stable download.
 
 **Public paid distribution (not cleared):** Developer ID signing and notarization, clean machine install + upgrade, signed or independently verifiable checksums, verified OAuth login/profile picture and logout, real Chrome Store extension/version parity, legal review of privacy terms/EULA and processor agreements, support/rollback and incident process. Known issues must be documented and never marketed away.
 
