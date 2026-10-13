@@ -157,6 +157,9 @@ export class UpdateService {
   async check(channel = this.channel) {
     if (!['stable', 'preview'].includes(channel)) throw new Error(ui('Neplatný kanál aktualizací.'));
     if (channel !== this.channel) {
+      // Cancel the obsolete network transfer immediately rather than letting
+      // a full installer download continue in the background on the old channel.
+      this.downloadInFlight?.controller.abort();
       this.channel = channel;
       this.requestEpoch += 1;
       // Switching channels invalidates an old available/downloaded update and its
@@ -221,20 +224,21 @@ export class UpdateService {
     const asset = this.value.asset;
     const key = [this.requestEpoch, this.channel, asset.url, asset.sha256, asset.size].join('\0');
     if (this.downloadInFlight?.key === key) return this.downloadInFlight.promise;
-    const promise = this.#download().finally(() => {
+    const controller = new AbortController();
+    const promise = this.#download(controller.signal).finally(() => {
       if (this.downloadInFlight?.promise === promise) this.downloadInFlight = null;
     });
-    this.downloadInFlight = { key, promise };
+    this.downloadInFlight = { key, promise, controller };
     return promise;
   }
 
-  async #download() {
+  async #download(abortSignal) {
     if (this.value.status !== 'available' || !this.value.asset) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
     const asset = this.value.asset;
     const channel = this.channel;
     const epoch = this.requestEpoch;
     try {
-      const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS), redirect: 'follow' });
+      const response = await this.fetch(asset.url, { headers: { Accept: 'application/octet-stream', 'User-Agent': `Agenteeq/${this.version}` }, cache: 'no-store', signal: AbortSignal.any([abortSignal, AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS)]), redirect: 'follow' });
       if (!response.ok) throw new Error(ui('Aktualizační balíček se nepodařilo stáhnout.'));
       const dir = path.join(this.dataDir, 'updates');
       const file = path.join(dir, asset.name);
@@ -257,6 +261,10 @@ export class UpdateService {
         await fs.rm(staging, { force: true }).catch(() => {});
       }
     } catch (err) {
+      // A channel change is intentional cancellation, not a failed installer.
+      if (abortSignal.aborted || epoch !== this.requestEpoch || channel !== this.channel) {
+        return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
+      }
       return { status: 502, error: err?.message || ui('Aktualizační balíček se nepodařilo stáhnout.') };
     }
   }
