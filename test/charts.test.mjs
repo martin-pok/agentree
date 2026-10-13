@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import { stackedColumns, timeLine, miniBars } from '../public/js/charts.js';
 import { providerSeries, chartColor, CATEGORICAL, sessionTotal } from '../public/js/data.js';
 import { limitGauges, currentLimits, limitObnova, limitWindows } from '../public/js/ui.js';
@@ -141,4 +142,26 @@ test('hlavní metrika je vstup + výstup – režie cache ji nesmí nadsadit', (
   assert.equal(sessionTotal({ tokens: { input: 0, output: 0, cacheWrite: 5_000_000, cacheRead: 0 } }), 0,
     'konverzace, která jen plnila cache, nesmí hlásit pětimilionovou spotřebu');
   assert.equal(sessionTotal({}), 0, 'chybějící tokeny nejsou chyba');
+});
+
+// „Vyčerpáno“ v malém ukazateli (detail agenta → Limity) se dotýkalo oblouku: pevných 12 px dalo
+// slovo široké 61 px do vnitřního kruhu o průměru 69 px. Slovo se teď měří podle šířky ciferníku
+// (11 % = zhruba střed ciferníku) a malý ciferník je větší, aby slovo nikdy nekleslo pod 12 px.
+// Skutečnou šířku na vykreslené stránce ověřuje ruční kontrola v prohlížeči (CHANGELOG).
+test('ukazatel: slovní hodnota se měří podle ciferníku a malý ciferník ji pojme bez dotyku oblouku', async () => {
+  const css = await fs.readFile(new URL('../public/styles.css', import.meta.url), 'utf8');
+  const sm = Number(/\.gauge--sm \.gauge-dial \{ max-width: (\d+)px; \}/.exec(css)?.[1]);
+  const podpora = /@supports \(width: 1cqi\) \{([^}]*\}[^}]*\})\s*\}/.exec(css)?.[1] || '';
+  // Kontejnerem je střed ciferníku (inset 22 % = 56 % šířky). Ciferník sám kontejnerem být nesmí:
+  // v zúženém rodiči by se s containmentem smrskl na nulu (Útrata na telefonu).
+  assert.match(podpora, /\.gauge-center \{ container-type: inline-size; \}/);
+  assert.doesNotMatch(css, /\.gauge-dial \{[^}]*container-type/);
+  assert.match(css, /\.gauge-center \{ position: absolute; inset: 22%;/);
+  const pomer = Number(/\.gauge \.gauge-value--text \{ font-size: max\(12px, ([\d.]+)cqi\); \}/.exec(podpora)?.[1]) * 0.56;
+  assert.ok(pomer > 0 && pomer <= 11, 'slovo nejvýš 11 % šířky ciferníku na písmeno');
+  // Satoshi/Onest: „Vyčerpáno“ je asi 5 em široké. Vnitřní kruh oblouku má průměr 86/120 ciferníku.
+  const pismo = Math.max(12, (sm * pomer) / 100);
+  const slovo = 5 * pismo;
+  assert.ok(slovo <= sm * 0.56, `slovo (${slovo} px) se vejde do středu malého ciferníku (${sm} px)`);
+  assert.ok(sm * (86 / 120) - slovo >= 16, 'mezi slovem a obloukem zůstává aspoň 8 px na každé straně');
 });

@@ -40,7 +40,11 @@ function openBudgets(opener = null) {
     wide: true,
     opener,
     submitLabel: tr('Uložit rozpočty'),
+    // Rozpočet se počítá jen z nákladů z připojeného Admin API. Bez něj by se nastavený rozpočet nikde
+    // neukázal ani neupozornil – dialog to říká rovnou. Měna a kurzy platí i pro ruční záznamy a ceník,
+    // proto se dialog nezakazuje.
     body: `<p class="modal-text">${tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.')}</p>
+      ${sp.billing?.connected === false ? `<p class="set-note budget-api-note" data-budget-api>${tr('Rozpočet se počítá z nákladů za API. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní.')}</p>` : ''}
       <div class="form-grid">
         <label class="field"><span>${tr('Celkový měsíční rozpočet')}</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="${tr('bez limitu')}" value="${cfg.total || ''}"></label>
         <label class="field"><span>${tr('Hlavní měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
@@ -236,6 +240,7 @@ function update() {
       <div><span class="eyebrow">${tr('Aktualizováno')}</span><span class="val val--soft">${sp.billing?.at ? `<span data-ago="${sp.billing.at}">${esc(rel(sp.billing.at))}</span>` : '–'}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
+      ${sp.ledger?.length ? `<p class="spend-note">${tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')}</p>` : ''}
     </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
@@ -369,7 +374,7 @@ export function ledgerHtml(sp, openSet = v.otevrene) {
   }).join('');
   return `<div class="table-wrap"><table class="ledger">
         <thead><tr><th scope="col">${tr('Datum')}</th><th scope="col">${tr('Služba')}</th><th scope="col">${tr('Typ')}</th><th scope="col">${tr('Poznámka')}</th><th scope="col" class="num">${tr('Částka')}</th><th scope="col"><span class="sr-only">${tr('Akce')}</span></th></tr></thead>
-        ${rows.length ? `<tbody>${groupRow(tr('Starší ruční záznamy'))}${manualRows}</tbody>` : ''}
+        ${rows.length ? `<tbody>${groupRow(tr('Starší ruční záznamy'), `<span class="ledger-group-note">${tr('nepočítají se do součtů ani rozpočtu')}</span>`)}${manualRows}</tbody>` : ''}
         ${auto.length ? `<tbody>${groupRow(`${tr('Automaticky z Admin API')} · ${esc(vendors.join(' / '))}`, `<span class="badge">${tr('jen ke čtení')}</span><span class="ledger-group-note" title="${esc(tr('Admin API sčítá náklady po dnech v UTC. Na přelomu měsíce proto může den spadnout do jiného měsíce než podle místního kalendáře.'))}">${tr('dny podle UTC, jak je počítá dodavatel')}</span>`)}${autoRows}</tbody>` : ''}
       </table></div>${rateNote(sp, rows, auto)}`;
 }

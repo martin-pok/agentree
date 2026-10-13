@@ -536,7 +536,7 @@ export function createCodexConnector(ctx) {
       const count = files.size;
       return {
         state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays) : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Codex na {0} není.', POCITAC.tomto),
+        detail: count ? ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays) : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Na {0} nejsou žádné konverzace Codexu.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt,

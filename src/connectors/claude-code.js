@@ -86,12 +86,51 @@ export function todosProgress(todos) {
   return { done, total: todos.length, current: clip(current?.activeForm || current?.content || '', 140) };
 }
 
-// "resets 1am (Europe/Prague)" → nejbližší budoucí výskyt daného času v místní zóně.
 // Čas obnovy z hlášky o limitu. Claude Code píše u blízké obnovy jen hodinu („resets 3pm“),
 // u vzdálenější i den („resets Oct 9, 5pm“ / „resets Oct 9 at 5pm“) a starší verze epoch za svislítkem
 // („Claude AI usage limit reached|1759327200“). Dřív se četla jen hodina, takže týdenní limit
 // s datem za šest dní ukazoval obnovu dnes nebo zítra – nepravda. Nerozpoznaný tvar = null.
+//
+// Hodina platí v zóně, kterou hláška uvádí v závorce („resets 11pm (Europe/Prague)“) – je to zóna
+// účtu u Anthropicu, ne nutně zóna počítače. Dřív se brala místní zóna serveru, takže na počítači
+// v jiné zóně (nebo s TZ=UTC) vyšla obnova o hodiny vedle. Zónu převádí Intl (bez závislostí);
+// neznámá zóna se nehádá a platí místní čas jako dřív.
 const MESICE = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const ZONA_RE = /\(\s*(UTC|GMT|[A-Za-z]+(?:\/[A-Za-z0-9_+-]+)+)\s*\)/;
+
+function platnaZona(z) {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: z });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Kalendářní údaje okamžiku `ts` v zóně (nebo v místní zóně, když `zona` chybí).
+function vZone(ts, zona) {
+  if (!zona) {
+    const d = new Date(ts);
+    return { y: d.getFullYear(), mo: d.getMonth(), d: d.getDate(), h: d.getHours(), mi: d.getMinutes() };
+  }
+  const casti = {};
+  for (const p of new Intl.DateTimeFormat('en-US', { timeZone: zona, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(ts)) casti[p.type] = Number(p.value);
+  return { y: casti.year, mo: casti.month - 1, d: casti.day, h: casti.hour % 24, mi: casti.minute };
+}
+
+// Okamžik, kdy hodiny v zóně ukazují dané datum a čas. Posun zóny se zjistí dvakrát, protože se
+// na přechodu letního času mezi odhadem a výsledkem může změnit. Neexistující čas (jarní posun
+// 2:30) skončí o hodinu později, stejně jako u Date v místní zóně.
+function okamzik(y, mo, d, h, mi, zona) {
+  if (!zona) return new Date(y, mo, d, h, mi, 0, 0).getTime();
+  const steny = Date.UTC(y, mo, d, h, mi);
+  const posun = (t) => {
+    const z = vZone(t, zona);
+    return Date.UTC(z.y, z.mo, z.d, z.h, z.mi) - Math.floor(t / 60e3) * 60e3;
+  };
+  const odhad = steny - posun(steny);
+  return steny - posun(odhad);
+}
 
 export function parseResets(text, ts) {
   const t = String(text || '');
@@ -101,19 +140,20 @@ export function parseResets(text, ts) {
   if (!m) return null;
   let h = Number(m[3]) % 12;
   if (m[5].toLowerCase() === 'pm') h += 12;
-  const d = new Date(ts);
+  const mi = Number(m[4] || 0);
+  const z = ZONA_RE.exec(t.slice(m.index))?.[1];
+  const zona = z && platnaZona(z) ? z : null;
+  const dnes = vZone(ts, zona);
   if (m[1]) {
     const mesic = MESICE.indexOf(m[1].toLowerCase());
     if (mesic < 0) return null;
-    d.setMonth(mesic, Number(m[2]));
-    d.setHours(h, Number(m[4] || 0), 0, 0);
+    const kdy = okamzik(dnes.y, mesic, Number(m[2]), h, mi, zona);
     // Hláška z prosince o obnově v lednu míří do dalšího roku.
-    if (d.getTime() < ts - DAY) d.setFullYear(d.getFullYear() + 1);
-    return d.getTime();
+    return kdy < ts - DAY ? okamzik(dnes.y + 1, mesic, Number(m[2]), h, mi, zona) : kdy;
   }
-  d.setHours(h, Number(m[4] || 0), 0, 0);
-  if (d.getTime() <= ts) d.setDate(d.getDate() + 1);
-  return d.getTime();
+  const kdy = okamzik(dnes.y, dnes.mo, dnes.d, h, mi, zona);
+  // Den navíc se přičítá v kalendáři zóny, ne jako 24 h – přes přechod času by vyšla jiná hodina.
+  return kdy <= ts ? okamzik(dnes.y, dnes.mo, dnes.d + 1, h, mi, zona) : kdy;
 }
 
 export function limitKind(text) {
@@ -294,7 +334,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
     if (quota) {
       // Přesný záznam od serveru má přednost před čtením textu: stejná hláška by jinak v přehledu
       // svítila dvakrát („Limit relace · model“ odhadem z textu a „Limit 5 h“ s přesnou obnovou).
-      s.limit = { reached: true, text, at: ts, resetsAt: quota.resetsAt ?? parseResets(text, ts), model: null };
+      s.limit = { reached: true, text, label: quota.label, at: ts, resetsAt: quota.resetsAt ?? parseResets(text, ts), model: null };
       onQuota?.(quota);
       return;
     }
@@ -305,7 +345,7 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
       // i když ten první je zablokovaný do obnovy. Který model narazil, prozradí poslední úspěšná
       // odpověď (chybová hláška sama nese model „<synthetic>“). Útrata je za celý účet, ne za model.
       const model = kind.id === 'claude:spend' ? null : s.model || null;
-      s.limit = { reached: true, text, at: ts, resetsAt, model };
+      s.limit = { reached: true, text, label: kind.label, at: ts, resetsAt, model };
       onLimit?.({
         id: model ? `${kind.id}:${model}` : kind.id,
         provider: 'anthropic', app: 'Claude', label: model ? `${kind.label} · ${model}` : kind.label,
@@ -791,7 +831,7 @@ export function createClaudeCodeConnector(ctx) {
           ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
           : exists
             ? ui('Složka existuje, zatím bez sessions.')
-            : ui('Claude Code na {0} není.', POCITAC.tomto),
+            : ui('Na {0} nejsou žádné konverzace Claude Code.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt: Math.max(lastEventAt, lastHookAt),

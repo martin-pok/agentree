@@ -197,7 +197,7 @@ interface SessionSummary {
   turnStartedAt: number; turnSteps: number;  // jen když working
   lastPrompt: string;
   pending: { kind: 'permission' | 'question' | 'plan'; text: string; at: number; source: string } | null;
-  limit: { reached: boolean; text: string; at: number; resetsAt: number | null } | null;
+  limit: { reached: boolean; text: string; label?: string; at: number; resetsAt: number | null } | null;  // text = surová hláška nástroje; label = rozpoznaný druh limitu (Claude Code), z něj a z resetsAt skládá deriveStatus důvod „{druh} vyčerpán · obnoví se {čas}“
   resume: string | null;      // příkaz pro Terminál
   url: string | null;         // webová konverzace
   hooked: boolean;
