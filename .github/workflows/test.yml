@@ -245,6 +245,9 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium
 
+      - name: Ověřit PWA a Apple ikony proti Dock SVG
+        run: npm run qa:icons
+
       # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
       # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
       - name: Renderovat aktuální Chrome Web Store branding
