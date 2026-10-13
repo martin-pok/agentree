@@ -38,6 +38,11 @@ jobs:
     name: Audit actual draft bytes
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # GitHub hides DRAFT releases from tokens without push access. Scope this
+    # elevated permission to the audit job; every command stays read-only.
+    permissions:
+      contents: write
+      actions: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -72,15 +77,19 @@ jobs:
             echo "::error::Successful build belongs to a different commit than the release tag."
             exit 1
           fi
-          gh release view "$TAG" --json tagName,isDraft,databaseId > draft-header.json
+          # The CLI GraphQL shortcut may hide drafts under GitHub Actions even with
+          # a valid token. Read the authenticated REST inventory, then by ID.
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > release-list.json
           RELEASE_ID=$(node -e '
-            const d = require("./draft-header.json");
-            if (d.tagName !== process.env.TAG || !d.isDraft ||
-                !Number.isSafeInteger(d.databaseId) || d.databaseId < 1) {
-              console.error("::error::Only an exact unpublished draft can be audited.");
+            const list = require("./release-list.json");
+            const matches = Array.isArray(list)
+              ? list.filter(r => r.tag_name === process.env.TAG && r.draft === true)
+              : [];
+            if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id < 1) {
+              console.error("::error::Exact unpublished draft is not visible; check audit token permissions.");
               process.exit(1);
             }
-            console.log(d.databaseId);
+            console.log(matches[0].id);
           ')
           gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" > release-metadata.json
           SHA=$(cat verified-tag-sha.txt)
@@ -102,7 +111,29 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p audited-assets
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir audited-assets
+          # Direct REST asset IDs avoid gh release's draft-visibility GraphQL
+          # shortcut. Asset filenames are validated before touching the disk.
+          node -e '
+            const fs = require("node:fs");
+            const release = require("./release-metadata.json");
+            if (release.tag_name !== process.env.TAG || release.draft !== true ||
+                !Array.isArray(release.assets) || release.assets.length !== 8) {
+              console.error("::error::Expected exact draft with eight assets.");
+              process.exit(1);
+            }
+            const entries = release.assets.map(a => {
+              if (!Number.isSafeInteger(a.id) || a.id < 1 ||
+                  !/^[A-Za-z0-9._-]+$/.test(a.name)) {
+                console.error("::error::Unsafe or invalid asset identifier.");
+                process.exit(1);
+              }
+              return a.id + "\t" + a.name;
+            });
+            fs.writeFileSync("draft-asset-ids.tsv", entries.join("\n") + "\n");
+          '
+          while read -r asset_id asset_name; do
+            gh api -H "Accept: application/octet-stream" "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" > "audited-assets/${asset_name}"
+          done < draft-asset-ids.tsv
           node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
           node scripts/verify-release-assets.mjs "$TAG" audited-assets release-metadata.json
           (cd audited-assets && sha256sum --check SHA256SUMS.txt)
