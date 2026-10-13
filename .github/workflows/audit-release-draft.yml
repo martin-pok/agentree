@@ -56,7 +56,7 @@ jobs:
           if [ -z "$TAG" ]; then
             TAG="v$(node -p 'require("./package.json").version')"
           fi
-          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid tag"; exit 1; }
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid tag"; exit 1; }
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - name: Verify tag, green source CI and unpublished draft
         env:
