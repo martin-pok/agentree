@@ -7,6 +7,8 @@
 ## Obsah
 - [TERMS.cs.md](TERMS.cs.md) — české podmínky používání aplikace a rozšíření, beta, placení, odpovědnost, spotřebitelská práva.
 - [TERMS.en.md](TERMS.en.md) — anglický návrh pro mezinárodní uživatele; sladit s finální českou verzí.
+- [PRIVACY.cs.md](PRIVACY.cs.md) — kompletní český návrh informační povinnosti podle GDPR (vyžaduje doplnění správce, příjemců a uchování).
+- [PRIVACY.en.md](PRIVACY.en.md) — anglický návrh GDPR notice pro mezinárodní web.
 - [PRIVACY-REVIEW.cs.md](PRIVACY-REVIEW.cs.md) — GDPR návrh právních titulů, kategorie údajů, příjemci, retenční lhůty, práva a kritické mezery.
 - [BRAND-POLICY.cs.md](BRAND-POLICY.cs.md) — veřejná pravidla názvu/loga; nenahrazuje přihlášku OZ.
 - [BRAND-POLICY.en.md](BRAND-POLICY.en.md) — EN brand usage pro média, partnery a uživatele.
