@@ -144,3 +144,14 @@ test('independent draft audit re-downloads and checks actual GitHub bytes withou
   assert.match(workflow, /draft-audit-report\.json/);
   assert.doesNotMatch(workflow, /gh release (?:create|edit|upload)|git push|--draft=false/);
 });
+
+test('release 0.46.9 status keeps built Draft distinct from published release', async () => {
+  const readme = await zdroj('README.md');
+  const roadmap = await zdroj('docs/ROADMAP.md');
+  const readiness = await zdroj('docs/RELEASE-READINESS.md');
+  assert.match(readme, /\*\*0\.46\.9\*\* je již sestavená jako neveřejný Preview Draft/);
+  assert.match(roadmap, /audit stažených bajtů/);
+  assert.match(readiness, /assetsVerified=8/);
+  assert.match(readiness, /skutečné Mac\/Windows\/Chrome UAT/);
+  assert.doesNotMatch(readme, /0\.46\.9 zatím nemá tag|0\.46\.9.*není sestavená/);
+});
