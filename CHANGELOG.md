@@ -2,7 +2,7 @@
 
 ## Připravované změny po 0.46.11 · nevydáno
 
-- **Přesnější právní evidence (bez spuštění nových podmínek):** technické CZ/EN privacy upozornění na GitHub kontrolu aktualizací a zákaz citlivých GDPR žádostí ve veřejných Issues pochází z PR #221; pracovní právní přehledy nyní správně rozlišují tuto dílčí opravu od nevyřešené identity správce, neveřejného GDPR kontaktu, retenčních dob a právní revize (#232). Automatický test brání návratu zastaralého interního popisu. Nejde o certifikaci, právní schválení ani zveřejněnou novou verzi aplikace.
+- **Přesnější právní evidence (bez spuštění nových podmínek):** technické CZ/EN privacy upozornění na GitHub kontrolu aktualizací a zákaz citlivých GDPR žádostí ve veřejných Issues pochází z PR #221; obě živé stránky také uvádějí pravdivé datum poslední aktualizace 13. 10. 2026 místo neaktuálního tvrzení o účinnosti od 27. 9.; pracovní právní přehledy nyní správně rozlišují tuto dílčí opravu od nevyřešené identity správce, neveřejného GDPR kontaktu, retenčních dob a právní revize (#232). Automatický test brání návratu zastaralého interního popisu. Nejde o certifikaci, právní schválení ani zveřejněnou novou verzi aplikace.
 - PWA a Apple ikony nyní používají stejnou širokou hlavu s bílou anténou jako skutečně instalovaná Mac aplikace. Dřívější rastrové ikony měly odlišný tvar a fialovou anténu; CI je nově obrazově porovnává s oficiálním SVG.
 - Náhledy Přehledu na českém a anglickém webu jsou znovu zachycené ze současné ukázkové aplikace. Číslo neveřejné zdrojové verze je v marketingovém snímku skryté, aby nevypadalo jako dostupná aktualizace.
 
