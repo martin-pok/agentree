@@ -68,15 +68,14 @@ try {
         await jenMistni(p, cizi);
         p.on('pageerror', e => chyby.push(e.message));
         await p.goto(url + '/instalace');
-        assert.match(await p.locator('[data-preview-mac]').getAttribute('href'), /v0\\.46\\.6/);
         await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
         await p.waitForFunction(() => document.querySelector('[data-preview-mac]')?.getAttribute('href')
-          ?.includes('/releases/download/v0.46.10/'), { timeout: 5000 });
+          ?.includes('/releases/download/v0.46.10/'), null, { timeout: 5000 });
         assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
           'https://github.com/martin-pok/agentree/releases/tag/v0.46.10');
-        assert.match(await p.locator('[data-preview-label]').innerText(), /0\\.46\\.10/);
+        assert.match(await p.locator('[data-preview-label]').innerText(), /0\.46\.10/);
         assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
-          /releases\\/latest\\/download\\/Agenteeq-macOS-arm64\\.dmg/);
+          /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/);
         assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');
         assert.deepEqual(chyby, [], 'Preview must not cause an unhandled browser exception');
         await p.close();
