@@ -90,6 +90,22 @@ jobs:
           $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
           '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
 
+      # Audit the REAL generated ZIP, not only the packaging script. Recursively
+      # exclude legacy duplicate icons but require the current brand master.
+      - name: Ověřit brand přímo v distribučním Windows ZIPu
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = (Get-ChildItem dist/Agenteeq-*-Windows-x64.zip | Select-Object -First 1)
+          if (-not $archive) { throw 'Missing Windows installer ZIP' }
+          $out = Join-Path $env:RUNNER_TEMP 'agenteeq-brand-zip-audit'
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath $out -Force
+          $entries = @(Get-ChildItem -Path $out -Recurse -File)
+          $old = @($entries | Where-Object { $_.Name -in @('Agenteeq-icon.png', 'Agenteeq.icns', 'robot-predloha.svg', 'agentree-mark.svg') })
+          if ($old.Count -ne 0) { throw "Legacy icon in Windows ZIP: $($old.FullName -join ', ')" }
+          $marks = @($entries | Where-Object { $_.Name -eq 'agenteeq-mark.svg' -and $_.FullName -match '[\\/]public[\\/]brand[\\/]' })
+          if ($marks.Count -ne 1) { throw "Expected exactly one current brand master, got $($marks.Count)" }
+
       # Rozbalit archiv jako člověk, spustit Agenteeq.exe, počkat na server a na vykreslené
       # rozhraní v okně, nafotit obrazovku, ukončit a ověřit, že server skončil s ním.
       - name: Aplikace ze zipu nastartuje
