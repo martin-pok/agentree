@@ -484,3 +484,39 @@ test('Preview ignores unrepresentable GitHub SemVer tags and selects the genuine
   assert.equal(result.latestVersion, '0.46.8');
   assert.equal(result.asset.name, 'Agenteeq-0.46.8-macOS-arm64.zip');
 });
+
+test('přepnutí kanálu ruší staré stahování a nezanechává dočasný instalační balíček', async () => {
+  const dir = await tempDir('updates-cancel-switch-');
+  let started;
+  const downloadStarted = new Promise((resolve) => { started = resolve; });
+  const previewRelease = { ...release('0.46.6'), prerelease: true };
+  const fetchImpl = async (url, options = {}) => {
+    if (url === PREVIEW_RELEASES_URL) return new Response(JSON.stringify([previewRelease]), { status: 200 });
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release('0.46.0')), { status: 200 });
+    if (url === previewRelease.assets[0].browser_download_url) {
+      return new Promise((_resolve, reject) => {
+        started(options.signal);
+        options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+      });
+    }
+    throw new Error('Unexpected URL: ' + url);
+  };
+  const service = new UpdateService({
+    version: '0.46.0', channel: 'preview', dataDir: dir,
+    platform: 'darwin', arch: 'arm64', fetchImpl,
+  });
+  assert.equal((await service.check()).status, 'available');
+  const pending = service.download();
+  const signal = await downloadStarted;
+  assert.equal(signal.aborted, false);
+  // Re-checking the SAME channel must not cancel a download for the same asset.
+  assert.equal((await service.check()).status, 'available');
+  assert.equal(signal.aborted, false);
+  const stable = await service.check('stable');
+  assert.equal(stable.channel, 'stable');
+  assert.equal(signal.aborted, true, 'old HTTP transfer must abort immediately');
+  assert.equal((await pending).status, 409, 'user-selected cancellation is not a network error');
+  assert.equal(service.state().status, 'current');
+  const files = await fs.readdir(path.join(dir, 'updates')).catch(() => []);
+  assert.deepEqual(files, [], 'aborted transfer cannot leave a staging or installable archive');
+});

@@ -1,5 +1,11 @@
 # Changelog
 
+## Nezařazeno do vydání · přepnutí kanálu okamžitě ruší staré stahování
+
+- **Rychlejší změna Stable/Preview:** přepnutí kanálu okamžitě ukončí rozběhnutý síťový přenos staršího instalátoru. Nečeká se na jeho dokončení ani na patnáctiminutový timeout.
+- **Bezpečné zotavení:** zrušený přenos nehlásí chybu sítě, nepřepíše nové vydání a nezanechá instalační soubor. Opakovaná kontrola stejného kanálu právě stahovaný instalátor neruší.
+- **Regresní test:** simuluje přenos čekající na odpověď a následnou změnu Preview → Stable. Jde o změnu po sestavení kandidáta 0.46.8.
+
 ## Nezařazeno do vydání · bezpečné porovnávání verzí
 
 - **Ochrana proti chybným GitHub tagům:** aktualizační služba odmítne čísla verzí mimo přesný rozsah JavaScriptových celých čísel. Takový tag již nemůže ovlivnit pořadí Preview vydání nebo se vydávat za platný instalační balíček.
