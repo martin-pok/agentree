@@ -436,6 +436,7 @@ test('privacy CZ/EN accurately discloses update-check network access and optiona
 test('legal templates are unmistakably review-only, do not assert a registered mark or earned security badge', async () => {
   const dir = path.join(ROOT, 'docs/legal');
   for (const file of ['README.md', 'TERMS.cs.md', 'TERMS.en.md', 'PRIVACY-REVIEW.cs.md',
+    'PRIVACY.cs.md', 'PRIVACY.en.md',
     'BRAND-POLICY.cs.md', 'BRAND-POLICY.en.md', 'IP-REGISTER.md', 'FREE-ASSURANCE.md', 'LAUNCH-LEGAL-GATE.md']) {
     const text = await fs.readFile(path.join(dir, file), 'utf8');
     assert.ok(text.length > 800, file + ': nonempty legal template');
