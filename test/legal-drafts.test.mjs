@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 
 const read = (name) => fs.readFile(new URL('../docs/legal/' + name, import.meta.url), 'utf8');
 const drafts = [
-  'README.md', 'TERMS.cs.md', 'TERMS.en.md', 'PRIVACY-REVIEW.cs.md',
+  'README.md', 'TERMS.cs.md', 'TERMS.en.md', 'PRIVACY-REVIEW.cs.md', 'PRIVACY.cs.md', 'PRIVACY.en.md',
   'BRAND-POLICY.cs.md', 'BRAND-POLICY.en.md',
   'IP-REGISTER.md', 'FREE-ASSURANCE.md', 'LAUNCH-LEGAL-GATE.md',
 ];
