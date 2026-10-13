@@ -1,11 +1,18 @@
 # Changelog
 
-## Nevydané změny po 0.46.9 — pouze vývojová větev, nejsou součástí Draftu
+## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
+
+**Dostupnost:** popis změn sám o sobě nepotvrzuje zveřejnění ani instalaci aplikace. Ověř skutečně publikovaný GitHub release a jeho přílohy; soukromý Draft se přes automatický updater nenabízí. Chrome Web Store se aktualizuje samostatně a vyžaduje ověření veřejné verze.
+
+### Co se změnilo
 
 - **Bezpečnější instalace na Macu:** pokud se běžící Agenteeq do 60 sekund neukončí, aktualizační pomocník nepřepíše aplikaci za jejího běhu; odstraní pouze připravenou dočasnou kopii. K běžné výměně dojde teprve po skutečném ukončení procesu.
 - **Přísnější kontrola staženého ZIPu:** před instalací a zobrazením v souborech se kromě velikosti a SHA-256 ověřuje také identita otevřeného souboru a odmítnou se podstrčené symbolické odkazy i při souběžné výměně cesty.
-- **Regresní scénáře:** test simulující timeout pomocníka, bezpečný úspěšný restart po ukončení a souběžnou záměnu ZIPu za stejně velký a stejně hashovaný obsah za symbolickým odkazem.
-- **Distribuce:** tyto změny jsou novější než neměnný tag `v0.46.9`. Nejsou v jeho Draftu ani ve veřejném Preview `0.46.6`; nejdřív musejí projít CI a být sestavené v samostatném budoucím vydání.
+
+### Ověření a distribuce
+
+- Regresní testy simulují timeout pomocníka, bezpečný restart po skončení procesu a souběžnou záměnu ZIPu za symbolický odkaz s totožným obsahem. PR #206 prošel 8/8 CI na své přesné větvi; to není důkaz UAT nového instalačního balíčku 0.46.10.
+- Starší neměnné tagy a přílohy v0.46.9 a v0.46.8 se tímto releasem nepřepisují. Zveřejnění 0.46.10 jako Preview samo o sobě nemění stabilní GitHub Latest; Chrome Web Store vyžaduje zvláštní publikaci.
 
 ## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
 

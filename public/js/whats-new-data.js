@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.10',
+    date: '2026-10-13',
+    title: 'Bezpečnější instalace aktualizací',
+    items: [
+      'Pokud se Mac aplikace při aktualizaci nestihne ukončit, instalační pomocník ji za běhu nepřepíše. Původní aplikace zůstane zachovaná.',
+      'Ověření instalačního ZIPu lépe odhalí podstrčený soubor nebo symbolický odkaz, i kdyby obsah měl stejný kontrolní otisk.',
+    ],
+    en: {
+      title: 'Safer update installation',
+      items: [
+        'If the Mac app fails to quit during an update, the installer helper will not replace it while running. The original app stays intact.',
+        'Downloaded ZIP verification detects substituted files and symbolic links more reliably, even if their bytes have the same checksum.',
+      ],
+    },
+  },
+  {
     version: '0.46.9',
     date: '2026-10-13',
     title: 'Jistější aktualizace a rychlejší první agent',
