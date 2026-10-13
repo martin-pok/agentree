@@ -231,12 +231,12 @@ test('zveřejnění: jen ručně z main, jen koncept a s přílohou pro tlačít
   assert.doesNotMatch(yml, /^\s*(push|schedule|release|workflow_run):/m, 'nikdy samo od sebe');
   assert.match(yml, /\$GITHUB_REF" != "refs\/heads\/main"/);
   assert.match(yml, /\^v\[0-9\]\+/, 'tag se ověří dřív, než se s ním cokoli dělá');
-  assert.match(yml, /if \(!v\.isDraft\)[^\n]*process\.exit\(1\)/, 'zveřejněné vydání se nepřepisuje');
+  assert.match(yml, /v\.draft !== true/, 'zveřejněné vydání se nepřepisuje');
   for (const stala of ['Agenteeq-macOS-arm64.zip', 'Agenteeq-macOS-arm64.dmg', 'Agenteeq-Windows-x64.zip']) {
     assert.ok(yml.includes(`"${stala}"`), `bez stálé přílohy ${stala} by tlačítko na webu vedlo do prázdna`);
     assert.match(yml, new RegExp(`for SOUBOR in [^\\n]*${stala.replace(/\./g, '\\.')}`), `po zveřejnění se ověří odkaz na ${stala}`);
   }
-  assert.match(yml, /a\.name === stala/);
+  assert.match(yml, /a\.name === required/);
   assert.match(yml, /\/releases\/download\/\$TAG\/\$SOUBOR/, 'odkaz musí vést na přílohu právě zveřejněného vydání');
   assert.match(yml, /\\\.\(zip\|dmg\)\$/, 'přegenerovaný popis zná i DMG');
   assert.match(yml, /node scripts\/release-notes\.mjs/, 'popis skládá skript, ne ruka');
