@@ -2,6 +2,7 @@
 
 ## Nevydané změny po v0.46.10 — úplná shoda oficiálního loga
 
+- **Žádné verzované duplikáty nativních ikon:** odebrané `desktop/Agenteeq.icns` a `desktop/windows/Agenteeq.ico` ze zdrojového Gitu; oba soubory se vždy generují z aktuálního SVG/Swift masteru při sestavení. Gitignore a automatický test zakazují jejich návrat. Tím mizí riziko starých trojzubců v pomocných zdrojích.
 - **Žádné staré ikony v balíčku pro Windows:** odstraněný starý `desktop/Agenteeq-icon.png` s odlišnou geometrií robota. Windows build jej spolu s případným zastaralým `Agenteeq.icns` explicitně vylučuje z instalačního ZIPu; nový CI test kontroluje **skutečný archiv**, nejen zdrojový kód. Mac už tyto staré kopie vylučoval.
 - **Stejné logo i na chybové stránce:** webová 404 výslovně odkazuje na oficiální robotí `/favicon.ico` a hlavní SVG master, stejně jako všechny jazykové varianty ostatních stránek.
 - **Brand gate:** přidané regresní testy shody SVG pro web/extension/Store a nepřítomnosti starých souborů; kontrola skutečné instalace a vizuální UAT na Macu/Windows/Chrome zůstává samostatně otevřená.

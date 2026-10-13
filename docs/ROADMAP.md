@@ -67,6 +67,8 @@ Průběžný [audit optimalizace 0.46.1](WEB-PERFORMANCE-AUDIT-0461.md): opraven
 | P1 | AI Pomocník a copy CZ/EN | Implementovaná diagnostika z lokálního stavu; neověřené případy a obsahový audit zbývají | Sada testů CZ/EN, chybové stavy, navazující dotazy, přesná navigace a audit textů |
 | P2 | Komerční připravenost | Developer ID/notarizace, DPA a platby nejsou uzavřené | Zákonné dokumenty, podepsané instalátory, reálné Windows QA a ověřený nákup/licence |
 
+**Doplňující ochrana nativních ikon (po 0.46.10):** již nejsou verzované generované `desktop/Agenteeq.icns` ani `desktop/windows/Agenteeq.ico`; Mac při buildu používá `desktop/Icon.swift` a Windows `extension/icons/icon-128.png`. Jejich výstupy jsou gitignored a nesmí být opětovně nahrány jako historické master soubory. Ověření skutečného Dock/Explorer vzhledu při zařízení UAT zůstává P0 v [#213](https://github.com/martin-pok/agentree/issues/213).
+
 ## Backlog — další vývoj po stabilizaci
 
 **Reliability:** automaticky měřit čerstvost každého zdroje, opakované načtení, bezpečné offline stavy a rychlost klíčových akcí. U každé nové integrace zaznamenat původ dat, datum posledního potvrzení a test selhání.

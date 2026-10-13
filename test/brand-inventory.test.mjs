@@ -1,17 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const fromRoot = (path) => new URL('../' + path, import.meta.url);
 const read = async (path) => fs.readFile(fromRoot(path), 'utf8');
 
-test('brand inventory: obsolete checked-in desktop icon must not exist', async () => {
-  // A generated, gitignored desktop/Agenteeq.icns may exist temporarily during
-  // native QA and must be excluded by packagers, not prohibited on disk.
-  for (const path of ['desktop/Agenteeq-icon.png']) {
-    await assert.rejects(fs.access(fromRoot(path)), { code: 'ENOENT' },
-      path + ' is a legacy duplicate, never include in source or a release');
-  }
+test('brand inventory: no generated native icon may be tracked in Git', async () => {
+  // Native CI legitimately regenerates ICNS and Windows ICO into the working
+  // tree. Assert they are never committed, rather than banning temporary files.
+  const native = ['desktop/Agenteeq-icon.png', 'desktop/Agenteeq.icns', 'desktop/windows/Agenteeq.ico'];
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const indexed = execFileSync('git', ['ls-files', '--cached', '--', ...native], { cwd: root, encoding: 'utf8' });
+  assert.equal(indexed, '', 'generated native icon duplicates are not allowed in version control');
+  const ignore = await read('.gitignore');
+  for (const name of native) assert.ok(ignore.split('\n').includes(name), name + ' must be gitignored');
+  const make = await read('scripts/make-ico.mjs');
+  assert.match(make, /'extension', 'icons', 'icon-128\.png'/,
+    'Windows ICO must be generated from the reviewed 128px Chrome/Dock raster');
 });
 
 test('brand inventory: Windows package removes obsolete icon variants after copy', async () => {

@@ -14,3 +14,9 @@ dist/
 # Písmo Satoshi (ITF FFL 2.0) se do veřejného repozitáře nesmí – stahuje ho scripts/satoshi.mjs
 public/fonts/satoshi/*.woff2
 public/fonts/satoshi/FFL.txt
+
+# Generated native branding is rebuilt from the official wide-head master.
+# Never check in an old Dock/Explorer icon alongside the SVG/Swift sources.
+desktop/Agenteeq.icns
+desktop/Agenteeq-icon.png
+desktop/windows/Agenteeq.ico
