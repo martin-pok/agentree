@@ -17,6 +17,7 @@ const ZAPIS = {
   'release.yml': { znacka: 'push nového tagu', vydani: 'koncept vydání přes gh release' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
+  'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
 
 };
 
@@ -63,6 +64,16 @@ test('workflowy: výchozí práva tokenu jen pro čtení, zápis jen u vyjmenova
     const uloh = ulohy(workflowy.find((w) => w.f === f).yml);
     for (const jmeno of Object.keys(seznam)) assert.ok(uloh[jmeno], `${f}: úloha ${jmeno} zmizela – uprav i ZAPIS v tomto testu`);
   }
+});
+
+test('draft audit: elevated token only views private draft, never changes release or repository', () => {
+  const audit = workflowy.find(({ f }) => f === 'audit-release-draft.yml')?.yml || '';
+  assert.match(audit, /^  verify:\n[\s\S]*?^    permissions:\n      contents: write\n      actions: read/m);
+  const commands = skripty(audit).join('\n');
+  assert.match(commands, /gh api/);
+  assert.match(commands, /verify-release-assets\.mjs/);
+  assert.doesNotMatch(commands, /gh release (?:create|edit|upload)|git push|--draft=false/,
+    'Draft visibility must not grant a path to publication or binary mutation');
 });
 
 test('workflowy: žádný pull_request_target a nic zvenku vložené do textu skriptu', () => {
