@@ -123,8 +123,9 @@ Workflow Vydání sestavuje přílohy, na které vedou tlačítka Stáhnout. Pla
   při ručním spuštění) a `vydani` (koncept vydání přes `gh release`), `publish.yml` → `zverejnit`.
   Sestavení pro Mac, Windows a rozšíření, testy i ostatní workflowy zapisovat nemohou.
   `id-token`, `actions` ani jiná práva nemá nikdo – atestace ani OIDC se nepoužívají.
-- **Cizí akce připnuté na celý commit** s verzí v komentáři (`ilammy/msvc-dev-cmd@0b201ec… # v1.13.0`).
-  Akce GitHubu (`actions/*`) zůstávají na hlavní verzi jako v celém repozitáři.
+- **Všechny akce připnuté na celý commit** s přesnou verzí v komentáři (`actions/checkout@fbc6f39… # v5.1.0`),
+  cizí i GitHubu (`actions/*`); jen lokální `./.github/workflows/…` je bez SHA. Aktualizace navrhuje Dependabot.
+- **Žádný checkout kódu z cizího běhu:** `ref:` nikdy neodkazuje na `workflow_run.head_sha` ani na větev PR.
 - **Nic zvenku ve skriptu:** žádný výraz `${{ … }}` uvnitř `run:`. Jméno tagu, vstup ručního
   spuštění i výstupy kroků jdou přes `env:` a skript je čte jako `"$TAG"`. Žádný `pull_request_target`.
 - **Checkout bez uloženého tokenu** (`persist-credentials: false`) všude kromě úlohy `znacka`,
@@ -133,6 +134,57 @@ Workflow Vydání sestavuje přílohy, na které vedou tlačítka Stáhnout. Pla
   `build:mac` a `build:dmg`, ne v celé úloze ani workflow.
 - **Vydání zůstává konceptem** (`--draft`); zveřejňuje jen člověk (ručně nebo `publish.yml`).
   Běhy pro týž tag se řadí za sebe (`concurrency`), aby nevznikly dva koncepty.
+
+### OpenSSF Scorecard (`.github/workflows/scorecard.yml`)
+
+Naměřený základ: **Scorecard v5.6.0 na `main` 96bfc892, celkem 3,1 / 10** (běh
+[38472060237](https://github.com/martin-pok/agentree/actions/runs/38472060237), 13. 10. 2026). Skóre po
+této změně není známé; ukáže ho až první běh na `main` po sloučení a nesmí se uvádět dřív.
+Zelený běh workflow není bezpečnostní certifikát.
+
+| Kontrola | Základ | Stav po této změně |
+|---|---|---|
+| Pinned-Dependencies | 1 (3 z 50 akcí GitHubu připnuté, 3 z 3 cizích ano, 0 ze 3 příkazů npm) | opraveno ve zdroji: všech 53 `uses:` na celý commit (kromě lokálního znovupoužitelného workflow), `npx` odstraněno |
+| Dangerous-Workflow | 0 (`prepare-preview-draft.yml:31`, `audit-release-draft.yml:56`) | opraveno ve zdroji: checkout `workflow_run.head_sha` odstraněn |
+| Dependency-Update-Tool | 0 | přidán `.github/dependabot.yml` (akce, týdně) |
+| SAST | 0 (0 z 30 commitů) | přidán `.github/workflows/codeql.yml`; skóre roste postupně s commity, které CodeQL prošly |
+| Token-Permissions 10, Security-Policy 10, Binary-Artifacts 10, Vulnerabilities 10, CI-Tests 10 | beze změny | beze změny |
+| Maintained 0, Code-Review 0, Branch-Protection 0, License 0, Signed-Releases 0, CII-Best-Practices 0, Fuzzing 0, Contributors 3 | beze změny | rozhodnutí vlastníka nebo čas, viz níže |
+| Packaging | nelze vyhodnotit (-1) | beze změny |
+
+Co se změnilo a proč:
+
+- **Připnutí.** Každé `uses:` je na celém 40místném commitu přesné verze, za ním komentář `# vX.Y.Z`.
+  Tag jde přepsat, commit ne. Hlídá `test/workflow-opravneni.test.mjs`. Aktualizace navrhuje Dependabot.
+  Příkazy `npx playwright install` jsou nahrazeny `./node_modules/.bin/playwright install`: balíček je
+  hned předtím nainstalovaný ve verzi `playwright@1.62.1`, chování je stejné a při jeho chybě krok
+  selže, místo aby `npx` stáhl libovolnou verzi. `npm install --no-save --package-lock=false playwright@1.62.1`
+  zůstává: verze je pevná, ale bez lockfile (projekt záměrně nemá závislosti) nejde připnout otiskem.
+- **`prepare-preview-draft.yml`.** Checkout už nemá `ref: workflow_run.head_sha`. U `workflow_run` je výchozí
+  checkout nejnovější commit `main`; brána pořád vyžaduje `git rev-parse HEAD` = `TESTED_SHA` = aktuální `main`,
+  jinak se nic nespustí. Chování je stejné, jen už se nevykonává obsah zadaný z cizího běhu.
+- **`audit-release-draft.yml`.** Checkout už nemá `ref:` s `workflow_run.head_sha`. Skripty běží z důvěryhodného
+  commitu (volající u `workflow_call`, `push` a ručního spuštění, nejnovější `main` u `workflow_run`). Přesná
+  kontrola zdroje zůstala: SHA tagu musí sedět s `workflow_run.head_sha` (`EXPECTED_RELEASE_SHA`), pro tag
+  musí existovat úspěšný `test.yml` na přesně tomto SHA a bajty všech osmi příloh se znovu ověřují. U `workflow_run`
+  se verze z `package.json` čte jako data z API na `head_sha`, ne z checkoutu. Jediný rozdíl: ověřovací skripty
+  (`verify-*.mjs`) jsou z aktuálního `main`, ne z commitu vydání.
+- **Práva zůstávají nejmenší možná.** `contents: write` má dál jen `verify` (čtení neveřejného Draftu).
+  `codeql.yml` má `contents: read` + `security-events: write` jen u úlohy.
+
+Zbývá na rozhodnutí vlastníka (nejde opravit ve zdroji a nic se nepředstírá):
+
+- **Branch-Protection a Code-Review:** ochrana `main` a povinné schválení PR v nastavení repozitáře. Code-Review
+  navíc měří schválení jinou osobou; u jednoho vývojáře se skóre nezvedne bez druhého revidujícího.
+- **License:** repozitář je `UNLICENSED` (proprietární). Přidat licenci je právní a obchodní rozhodnutí.
+- **Signed-Releases / provenance:** podepsané přílohy a atestace vydání vyžadují změnu vydávání (OIDC, `id-token`
+  v `release.yml`); dnes je záměrně nepoužíváme (viz práva výše).
+- **Maintained:** 0, dokud repozitář není starý 90 dní. Čas, ne kód.
+- **Contributors:** počet organizací přispěvatelů se nedá ovlivnit.
+- **CII-Best-Practices:** odznak je určený pro open source projekty; proprietární aplikace na něj nemá nárok.
+- **Fuzzing:** nepřidáno; bez smysluplného cíle by to bylo jen kosmetické.
+- **Pozor na CodeQL:** pokud je v nastavení repozitáře zapnuté „CodeQL default setup“, kolidují s ním
+  výsledky z `codeql.yml` (GitHub je odmítne). Zapnuté má být jen jedno z nich.
 
 ## Soukromí
 

@@ -53,21 +53,31 @@ jobs:
       contents: write
       actions: read
     steps:
-      - uses: actions/checkout@v5
+      # Záměrně bez `ref:`. Spouští se jen skripty z důvěryhodného commitu: u workflow_call, push
+      # a ručního spuštění je to commit volajícího, u workflow_run nejnovější main. Zdrojový SHA
+      # sestavení (workflow_run.head_sha) se nikdy nevykonává; jen se porovnává s SHA tagu
+      # a z API se z něj čte verze (viz níže a EXPECTED_RELEASE_SHA).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       - name: Resolve release tag from verified source or manual input
         id: source
         env:
+          GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.tag }}
+          RELEASED_SHA: ${{ github.event.workflow_run.head_sha }}
         shell: bash
         run: |
           set -euo pipefail
           TAG="$REQUESTED_TAG"
-          if [ -z "$TAG" ]; then
+          if [ -z "$TAG" ] && [ -n "$RELEASED_SHA" ]; then
+            # workflow_run: verzi sestavení se čte jako data z API na přesném SHA, ne z checkoutu.
+            [[ "$RELEASED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid source SHA"; exit 1; }
+            VERSION=$(gh api -H "Accept: application/vnd.github.raw+json" "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${RELEASED_SHA}" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')
+            TAG="v$VERSION"
+          elif [ -z "$TAG" ]; then
             TAG="v$(node -p 'require("./package.json").version')"
           fi
           [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid tag"; exit 1; }
@@ -171,7 +181,7 @@ jobs:
             echo "No release was published or installed."
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Save compact audit evidence
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: release-draft-audit
           path: draft-audit-report.json
