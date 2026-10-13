@@ -27,6 +27,17 @@ Repo `martin-pok/agentree` is currently PUBLIC with GitHub API `license=null`. A
 - [ ] Preserve creation-date and first-commercial-use evidence, logo review/approvals, version hashes, licence records and non-confidential examples of brand use.
 - [ ] Design a measured response for infringement reports that respects lawful fair/comparative use. A takedown is not automatically justified by similarity alone.
 
+### Preliminary similarity watchlist — 13 Oct 2026 (NOT legal clearance)
+
+A preliminary public-web search found **AgentEQ** (https://agent-eq.com/en), a separately marketed AI-agent/customer automation product. Its name is visually/phonologically close to `Agenteeq`, and there is at least some AI-software category overlap. A publicly indexed US filing for **AGENTREEF** (https://trademarks.justia.com/997/68/agentreef-99768906.html; application no. 99768906 in class 42) was also found, but the different spelling/market means **no legal infringement inference is justified without prior-rights research**. Public search engines and unofficial trademark pages are not complete, authoritative register searches, and the absence of `Agenteeq` in a web search does **not** prove it is registrable.
+
+- [ ] Run an official **dated EUIPO TMview + ÚPV register** search of exact Agenteeq, AgentEQ, Agent-EQ, AGENTREEF, Agentree and relevant Czech/EU variants with Nice classes 9/42 and related goods/services.
+- [ ] Review similarity of goods, distinctiveness, pronunciation, territories, seniority and actual use with an IP lawyer **before** paying or adopting ™/® marketing.
+- [ ] Record screenshots and full search reports privately with timestamp and responsible person; store only generic watchlist in this public file.
+- [ ] If a material conflict is found, evaluate name/logo risk and alternatives **before** large-scale paid acquisition or domain investment. No assumption that the other companies hold enforceable trademarks is made from their marketing websites.
+
+Authoritative search entry points: https://www.euipo.europa.eu/en/search-ip and https://upv.gov.cz/prumyslova-prava/ochranne-znamky/narodni-prihlaska-ochranne-znamky .
+
 ### Before publication
 Ensure [BRAND-POLICY.cs.md](BRAND-POLICY.cs.md), [BRAND-POLICY.en.md](BRAND-POLICY.en.md), actual official SVG/PNG master, logo set and claims reflect **verified** rights. Keep employee/contractor agreements confidential outside the public repository.
 
