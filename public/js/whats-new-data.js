@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.12',
+    date: '2026-10-14',
+    title: 'Přesnější vzdálení agenti, limity a opravené ikony',
+    items: [
+      'Claude Code spuštěný vzdáleně se v Přehledu rozpozná podle skutečného stavu běhu a čekání. Starý údaj o běžící relaci už není vydáván za dokončený.',
+      'Napojené modely a zdroje agentů teď přesněji rozlišují, zda je program přítomný, přihlášený a zda se na počítači našly konverzace.',
+      'Vyčerpané limity a jejich obnovení se zobrazují česky a ve správné časové zóně; při známém vyčerpaném limitu se nenabízí nefunkční odpověď.',
+      'Ikony Apple a PWA už ve zdrojích odpovídají současnému robotovi. Skutečné instalační balíčky musí touto kontrolou projít před zveřejněním.',
+    ],
+    en: {
+      title: 'More accurate remote agents, limits and corrected icons',
+      items: [
+        'Remote Claude Code sessions now report actual working and waiting states. Stale activity no longer appears as a completed run.',
+        'Connected models and agent sources distinguish detected installations, sign-in status and locally discovered conversations more clearly.',
+        'Used-up limits and reset times appear in the correct time zone, with a clear message when replying is temporarily unavailable.',
+        'Apple and PWA icon sources now match the current robot. Release binaries still require verification before publication.',
+      ],
+    },
+  },
+  {
     version: '0.46.11',
     date: '2026-10-13',
     title: 'Jednotné logo a aktuální instalační balíčky',
