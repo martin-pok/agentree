@@ -38,7 +38,7 @@ test('all legal drafts are explicitly non-effective and not represented as certi
   for (const file of ['TERMS.cs.md','TERMS.en.md','PRIVACY.cs.md','PRIVACY.en.md','BRAND-POLICY.cs.md','BRAND-POLICY.en.md']) {
     const text = await source('docs/legal/' + file);
     assert.match(text, /DRAFT|NÁVRH|PRÁVNÍ NÁVRH/i, file + ' must be flagged as a draft');
-    assert.match(text, /NEPLATÍ|NOT EFFECTIVE|NOT YET EFFECTIVE|ZATÍM NEPLATÍ|NOT A REGISTERED/i,
+    assert.match(text, /NEPLATÍ|NENÍ ÚČINNÝ|NEZAKLÁDÁ|NOT EFFECTIVE|NOT YET EFFECTIVE|ZATÍM NEPLATÍ|NOT A REGISTERED/i,
       file + ' must not claim it is already an operative policy');
   }
   const guide = await source('docs/legal/README.md');
