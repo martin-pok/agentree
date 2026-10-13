@@ -281,3 +281,18 @@ jobs:
               --notes-file poznamky.md
           fi
           gh release view "$TAG" --json isDraft,url,assets
+
+  # This is a NEW GitHub runner after the upload, not a check of the local
+  # output in the build job. It re-downloads ALL 8 stored assets and verifies
+  # them against both GitHub digests and SHA256SUMS before reporting green.
+  # Do not rely on a fourth chained workflow_run, which GitHub can suppress.
+  audit:
+    name: nezávislý audit uloženého Draftu
+    needs: vydani
+    if: ${{ needs.vydani.result == 'success' }}
+    permissions:
+      contents: write # GitHub draft asset API needs write-scoped read access
+      actions: read
+    uses: ./.github/workflows/audit-release-draft.yml
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
