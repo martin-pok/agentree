@@ -151,7 +151,9 @@ const popisSouboru = (jmeno) => POPIS_PRILOHY.find(([vzor]) => vzor.test(jmeno))
  */
 export function bezInternihoStavu(telo) {
   return String(telo).split(/\n{2,}/)
-    .filter((odstavec) => !/^\*\*(Stav\b|Dostupnost\b)/.test(odstavec.trim()))
+    // Za slovem mezera, dvojtečka nebo konec tučného textu: `\b` v JS zná jen ASCII písmena,
+    // takže by „**Stavů …“ považoval za konec slova „Stav“.
+    .filter((odstavec) => !/^\*\*(?:Stav|Dostupnost)(?=[\s:*])/.test(odstavec.trim()))
     .join('\n\n');
 }
 

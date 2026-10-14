@@ -65,9 +65,10 @@ test('popis Preview neposílá do Terminálu pro jinou verzi a interní stav nev
     '- Změna.', '',
     '**Stav 14. 10. 2026: pouze zdrojový kandidát, dosud nevydaný.** Interní záznam.', '',
     '**Dostupnost:** tato sekce popisuje zdroj.', '',
+    '**Stavů agenta přibylo.** Běžný odstavec změn zůstává.', '',
     '- Další změna.', '',
   ].join('\n');
-  assert.equal(bezInternihoStavu(sekceZmen(se, '0.14.0').telo), '- Změna.\n\n- Další změna.');
+  assert.equal(bezInternihoStavu(sekceZmen(se, '0.14.0').telo), '- Změna.\n\n**Stavů agenta přibylo.** Běžný odstavec změn zůstává.\n\n- Další změna.');
   const text = poznamky({ changelog: se, verze: '0.14.0', soubory: [{ jmeno: 'Agenteeq-0.14.0-macOS-arm64.dmg', bajtu: 1 }], kanal: 'preview' });
   assert.doesNotMatch(text, /dosud nevydaný|Dostupnost|Interní záznam/, 'zveřejněné vydání netvrdí, že nevyšlo');
   assert.match(text, /Toto je \*\*Preview\*\*, testovací vydání/);
