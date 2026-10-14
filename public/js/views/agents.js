@@ -280,7 +280,8 @@ function mount(el, _params, query) {
 // Seznam agentů se při živé události slučuje, nepřepisuje (ui.js#sloucit): řádky drží najetí,
 // kotvu posouvání i obrázky a mění se jen to, co se opravdu změnilo.
 // Dávka doplněných řádků pod oknem se neměří pro dojezd – nic z ní se v okně nepohnulo.
-const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'table' && !v.doplnuje });
+// Dávka jen prodlužuje seznam: připojí se nové řádky, dřívější se znovu nerozebírají.
+const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'table' && !v.doplnuje, pripojit: name === 'table' && v.doplnuje });
 
 function update() {
   const el = v.el;
@@ -331,6 +332,7 @@ function update() {
   v.filterKey = filterKey;
   v.visible = list;
   for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
+  if (!list.length) table?.classList.remove('table--roboti');
   if (!all.length) {
     zivy(el, 'table', emptyState({
       title: tr('Zatím tu nejsou žádní agenti'),
@@ -343,8 +345,13 @@ function update() {
       action: `<button class="btn" type="button" data-clear>${tr('Zrušit filtry')}</button>`,
     }));
   } else {
+    const radky = list.slice(0, v.limit);
+    // Karty s robotem (mřížka) poznají styly podle třídy, ne podle `.table:has(.agent-robot-tile)`:
+    // ten závisel na celém obsahu tabulky, takže každé vložení řádku přepočítalo styly všech karet
+    // (35–53 ms na dávku u 140 agentů). V režimu výběru jsou řádky bez robota a mřížka se vypíná.
+    table?.classList.toggle('table--roboti', radky.some((s) => !(f.selecting && !s.proces)));
     zivy(el, 'table', `<div class="row row-head" aria-hidden="true"><span></span><span>${tr('Agent')}</span><span>${tr('Aplikace a model')}</span><span>${tr('Stav')}</span><span class="cell-num">${tr('Tokeny')}</span><span class="cell-time">${tr('Aktivita')}</span><span></span></div>
-      ${list.slice(0, v.limit).map(rowHtml).join('')}`);
+      ${radky.map(rowHtml).join('')}`);
     if (list.length > v.limit && !v.ceka) naplanujDavku(el);
     else if (list.length <= v.limit) v.limit = Infinity;
   }

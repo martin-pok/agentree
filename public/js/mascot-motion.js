@@ -9,7 +9,25 @@ export function initMascotMotion() {
  try { paused = localStorage.getItem('agenteeq:mascot-motion') === 'off'; } catch { /* optional */ }
  let frame = 0, gaze = new Set(), active = null, timer = 0, nextBlink = Date.now() + 9000;
  const allowed = () => !paused && !media.matches && !document.hidden;
- const visible = () => [...document.querySelectorAll('.robot')].filter(r => { const b = r.getBoundingClientRect(); return b.width && b.top >= 0 && b.bottom <= innerHeight && b.right > 0 && b.left < innerWidth; });
+ // Roboty celé v okně hlídá IntersectionObserver. Dřív se při každém pohybu myši a každé dvě sekundy
+ // měřil každý robot na stránce (getBoundingClientRect): u 140 agentů to donutilo prohlížeč vykreslit
+ // i karty mimo okno (content-visibility) a jeden snímek trval přes 150 ms. Měří se jen roboti v okně.
+ const vOkne = new Set();
+ const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((zaznamy) => {
+  for (const z of zaznamy) { if (z.isIntersecting && z.intersectionRatio >= 0.99) vOkne.add(z.target); else vOkne.delete(z.target); }
+ }, { threshold: [0, 1] }) : null;
+ const roboti = (uzel) => (uzel.nodeType !== 1 ? [] : [...(uzel.matches('.robot') ? [uzel] : []), ...uzel.querySelectorAll('.robot')]);
+ if (io) {
+  for (const r of roboti(document.body)) io.observe(r);
+  new MutationObserver((zmeny) => {
+   for (const z of zmeny) {
+    for (const n of z.addedNodes) for (const r of roboti(n)) io.observe(r);
+    for (const n of z.removedNodes) for (const r of roboti(n)) { io.unobserve(r); vOkne.delete(r); }
+   }
+  }).observe(document.body, { childList: true, subtree: true });
+ }
+ const visible = () => io ? [...vOkne].filter(r => r.isConnected)
+  : [...document.querySelectorAll('.robot')].filter(r => { const b = r.getBoundingClientRect(); return b.width && b.top >= 0 && b.bottom <= innerHeight && b.right > 0 && b.left < innerWidth; });
  function reset() {
   cancelAnimationFrame(frame); frame = 0;
   for (const robot of gaze) { robot.style.removeProperty('--gaze-x'); robot.style.removeProperty('--gaze-y'); }
