@@ -350,7 +350,7 @@ ne odhadnutý. Hlídá ho `test/gemini-qwen.test.mjs`.
 
 ### Webové aplikace – `extension/` + `src/connectors/web.js` 🧪
 
-- **Ověření webové služby (od 0.26.0):** okno rozšíření → řádek *tato karta* → *Počty nesedí? Ověřit stránku* (od 0.29.0 samostatný pohled) ukáže, co adaptér
+- **Ověření webové služby (od 0.26.0):** okno rozšíření → kruhové tlačítko *Ověřit tuto stránku* v patě (od 0.47 list nad oknem; dřív *Počty nesedí? Ověřit stránku* u řádku *tato karta*) ukáže, co adaptér
   na stránce našel a čím (přesným selektorem služby, nebo obecnou zálohou), a uloží anonymizovaný
   vzorek stránky. Vzorek v `test/fixtures/web/` je regresní test adaptéru. Služba smí dostat ✅
   až s potvrzeným vzorkem – do té doby 🧪, ať je to zadrátované sebelíp.
@@ -360,6 +360,7 @@ ne odhadnutý. Hlídá ho `test/gemini-qwen.test.mjs`.
 - **Adaptéry:** ChatGPT a Codex na webu (`chatgpt.com/codex`; oba `[data-message-author-role]`, `stop-button`), Claude.ai (`[data-testid="user-message"]`, `[data-is-streaming]`), Gemini (`user-query`, `model-response`); ostatní generický adaptér podle atributů/tříd a tlačítka Stop.
 - **Nová konverzace bez ID:** dokud služba nepřidělí ID v adrese, rozšíření posílá konverzaci pod zástupným ID karty (`tab-…`, `extension/sites.js#tabId`). První hlášení pod skutečným ID nese `nahrazuje: "tab-…"`; server záznam převede (začátek, probíhající tah, počty) a zástupný odebere – v přehledu je jedna konverzace, ne „duch“ vedle skutečné. `nahrazuje` přijme jen tvar zástupného ID a jen u téže služby, takže jím nejde smazat skutečnou konverzaci. Údaj se posílá, dokud server nepotvrdí příjem.
 - **Neověřeno proti živým webům.** Služby DOM často mění. Postup ověření je v `docs/TESTING.md`.
+- **Titulek chatu v okně (od 0.47, heuristika, Beta):** okno si titulek otevřené karty přečte samo přes `chrome.tabs.get` (stačí `host_permissions` na weby služeb, oprávnění `tabs` není potřeba) a odstraní koncovku s názvem služby („… - ChatGPT“, „… - Google Gemini“). Obecný titulek (jen název služby, „New chat“) se nahradí názvem služby. Titulek zůstává v okně, do aplikace ani jinam se neposílá. Koncovky titulků jsou odvozené, neověřené proti živým webům.
 - **Omezení:** port 4620 je v manifestu napevno; u stránek s virtualizovaným seznamem zpráv jsou počty jen z vykreslených zpráv.
 
 ### Náklady z Admin API – `src/connectors/cloud-billing.js` 🧪

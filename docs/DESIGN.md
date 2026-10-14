@@ -119,6 +119,28 @@ lišta neprůhledná, kryje pás nad ní stín v barvě papíru. Dvě nezávisl�
 a způsob aktualizací) mají každá viditelný popisek a mezi skupinami 24 px – víc než 10 px mezi
 kartami uvnitř skupiny, takže se obrysy vybraných karet nikdy nedotknou.
 
+## Okno rozšíření (schváleno 14. 10. 2026)
+
+Vlastník vybral směr „Jedna hlavní věc“ (scéna) s prvky ze směrů „Všechny AI na dlani“ a „Živá
+značka“. Závazná podoba `extension/popup.html`:
+
+- **Žádné velké číslo.** Počty jen drobně: stránkování reflektoru, počty ve skupinách, souhrnná věta.
+- **Hlavička 56 px** (značka, kapsle stavu spojení, kruhová obnova) a **pata** (kapsle „Otevřít
+  Agenteeq“, bez aplikace „Zkusit znovu“; kruhy Ověřit tuto stránku a Sledované služby a port) stojí,
+  roluje jen střed. Okno má 380 × 600 px; obsah pod patou se rozplyne maskou.
+- **Reflektor:** skleněná karta `--r-lg` se září v pigmentu stavu (růže = potřebuje tě / selhalo,
+  okr = limit, šalvěj = pracuje, mlha = klid). Pořadí: rozhodnutí → pracující agent → odpovídající chat
+  v jiné kartě → nezjištěno → klid. Víc rozhodnutí = stránkování se skutečným počtem a šipkami
+  (←/→, tah); nová položka jen tečka na šipce, okno nikdy samo nepřeskočí. Akce říká pravdu:
+  „Otevřít v Agenteeq“ (focus-agent), u chatu „Přepnout na kartu“ – nikdy „Rozhodnout“.
+- **Co se děje:** filtr Vše · Agenti · Chaty (kapsle 32 px), skupiny Teď / Dnes / Dříve, řádek
+  `--r-md` s dlaždicí loga (`--r-logo`) a tečkou stavu, název, „nástroj · činnost“ v `*-ink`
+  pigmentu, čas vpravo. Stav se v řádcích neopakuje jako štítek – nese ho skupina a barva činnosti.
+- **Pravdivé stavy:** nezjištěný výpis procesů i nedostupná aplikace = „nezjištěno“, nikdy nula.
+  Bez aplikace jedna hlavní výzva (Stáhnout) a chaty, které rozšíření vidí samo.
+- **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
+  stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
+
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
@@ -141,7 +163,8 @@ kartami uvnitř skupiny, takže se obrysy vybraných karet nikdy nedotknou.
   vypisuje, a s patičkou uměle vyšší o 48 px: poslední položka navigace je celá vidět, nabídka
   neroluje a profil není oříznutý (smí se jen přeskládat nebo schovat). Měří se až v ustáleném
   stavu po změně velikosti okna, ne po pevném čekání.
-- `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše.
+- `npm run qa:contrast` měří kontrast textů podle WCAG 2.2 AA na téže ploše; v okně rozšíření i po
+  posunu na konec osy a s otevřenými listy.
 
 ## Typografie Satoshi a maskot (od 0.41.0)
 
