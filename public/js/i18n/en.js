@@ -392,6 +392,7 @@ export default {
     "týden · Sonnet": "week · Sonnet",
     "týden": "week",
     "Odhlásit se": "Sign out",
+    "Odhlášením se vypne synchronizace souhrnů. Konverzace a data na tomto počítači zůstanou.": "Signing out stops syncing your summaries. Conversations and data on this computer will remain untouched.",
     "Tvůj Agenteeq odkudkoli": "Your Agenteeq, from anywhere",
     "Přihlas se stejným účtem jako v Agenteeq na Macu. Uvidíš, jestli agenti pracují, kolik spotřebovali a kolik stojí – i když jsi zrovna mimo domov.": "Sign in with the same account as in Agenteeq on your Mac. You’ll see whether agents are working, how much they’ve used and what it costs – even when you’re away from home.",
     "Přihlásit se přes Google": "Sign in with Google",
