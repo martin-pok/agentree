@@ -106,8 +106,8 @@ test('site Preview and changelog always update atomically from one published rel
 test('all four public pages provide a real public fallback, notes and a stable primary CTA', async () => {
   for (const page of ['site/index.html', 'site/en/index.html', 'site/instalace/index.html', 'site/en/install/index.html']) {
     const html = await fs.readFile(new URL('../' + page, import.meta.url), 'utf8');
-    assert.match(html, /data-preview-mac data-preview-version="0\.46\.6"/, page);
-    assert.match(html, /data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.6"/, page);
+    assert.match(html, /data-preview-mac data-preview-version="0\.46\.12"/, page);
+    assert.match(html, /data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.12"/, page);
     assert.match(html, /data-stahnout="mac-arm64"/, page + ' must retain distinct stable CTA');
   }
   const app = await fs.readFile(new URL('../site/lp.js', import.meta.url), 'utf8');
