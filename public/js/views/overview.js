@@ -101,7 +101,7 @@ function mount(el) {
   <div class="ov">
     <div class="ov-col bal-col">
       <section data-enter style="--i:2" aria-labelledby="dec-h">
-        <div class="sec-head"><h2 id="dec-h">${tr('Potřebuje tvé rozhodnutí')}</h2><a class="link" href="#/agenti?stav=needs_input">${tr('Všechny')}</a></div>
+        <div class="sec-head"><h2 id="dec-h">${tr('Vyžaduje pozornost')}</h2><a class="link" href="#/agenti">${tr('Všechny')}</a></div>
         <div data-region="decisions"></div>
       </section>
       <section data-enter style="--i:2" aria-labelledby="tl-h">
@@ -240,6 +240,12 @@ function update(topics = new Set(['all'])) {
   // „čekání na zadání“, proto se drží mimo tento součet a má vlastní jasný popisek v pruhu.
   const failed = all.filter((s) => s.status === 'failed');
   const limited = all.filter((s) => s.status === 'limited');
+  // A blocking limit/failure is actionable information too, not "waiting".
+  // Surface it in the main attention area, without hiding real approval requests.
+  const attention = [...failed, ...limited, ...needs]
+    .sort((a, b) => (a.status === 'failed' ? 0 : a.status === 'limited' ? 1 : 2)
+      - (b.status === 'failed' ? 0 : b.status === 'limited' ? 1 : 2)
+      || b.lastAt - a.lastAt);
   const failedCount = failed.length;
   const decideCount = needs.length;
   const waiting = all.filter((s) => s.status === 'waiting');
@@ -293,9 +299,9 @@ function update(topics = new Set(['all'])) {
   }
 
   const hooks = state.integrations?.claudeHooks;
-  if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', needs.length
-    ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${plural(needs.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', needs.length - 4)}</a>` : ''}`
-    : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Nikdo teď nečeká na tvé rozhodnutí')}</strong>
+  if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', attention.length
+    ? `<ul class="decisions">${attention.slice(0, 4).map(decisionCard).join('')}</ul>${attention.length > 4 ? `<a class="link more" href="#/agenti">${plural(attention.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', attention.length - 4)}</a>` : ''}`
+    : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Momentálně bez upozornění')}</strong>
         ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni" data-karta="claude">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
 
   if (changed(topics, 'sessions', 'tick')) {
