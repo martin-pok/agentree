@@ -57,13 +57,17 @@ test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)'
 
 test('rozšíření: okno používá tokeny aplikace a nekreslí těžší písmo než 500', async () => {
   const popup = await fs.readFile(path.join(ROOT, 'extension/popup.html'), 'utf8');
-  const styles = await fs.readFile(path.join(ROOT, 'public/workbench.css'), 'utf8');
-  // Klíčové barvy aktuální identity (public/workbench.css) musí být shodné, ne přibližné.
+  const styles = await fs.readFile(path.join(ROOT, 'public/styles.css'), 'utf8');
+  // Klíčové barvy vzhledu Obloha (public/styles.css :root a Noc) musí být shodné, ne přibližné:
+  // mlha a inkoust, sklo s bílou hranou, pigmenty stavů a inkoust jako hlavní akce.
   const norm = (t) => t.toLowerCase().replace(/\s+/g, '');
-  for (const token of ['--paper: #fafafa', '--card: #ffffff', '--ink: #17171d', '--action: #5254d8']) {
+  for (const token of ['--paper: #F3F5F8', '--card: #FFFFFF', '--ink: #16203A', '--action: #16203A', '--glass: rgba(255, 255, 255, .56)', '--glass-rim: rgba(255, 255, 255, .88)',
+    '--mute: #4E5772', '--velvet-ink: #983A52', '--teal-ink: #2B6B53', '--brass-ink: #83591A', '--paper: #0B0E15', '--ink: #EEF1F7', '--action: #EEF1F7', '--mute: #9AA1B0']) {
     assert.ok(norm(popup).includes(norm(token)), `okno rozšíření nemá token ${token}`);
     assert.ok(norm(styles).includes(norm(token)), `aplikace nemá token ${token} – sjednoť obě strany`);
   }
+  // Starou paletu okna (papír #FAFAFA, fialová akce) vlastník odmítl; nesmí se vrátit.
+  assert.doesNotMatch(popup, /#5254d8|#fafafa|#8e90ff/i, 'okno nesmí vrátit fialovou akci ani starý papír');
   assert.ok(popup.includes('fonts/fonts.css'), 'okno načítá písma aplikace');
   const vahy = [...popup.matchAll(/font-weight:\s*(\d{3})/g)].map((m) => Number(m[1]));
   assert.equal(vahy.some((v) => v > 500), false, `příliš těžké písmo: ${vahy.filter((v) => v > 500).join(', ')}`);

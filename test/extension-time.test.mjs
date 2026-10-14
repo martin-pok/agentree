@@ -30,3 +30,12 @@ test('extension timestamps show elapsed time from valid millisecond source', () 
  assert.equal(ago(now-120e3),'před 2 min');
  assert.equal(validniCas(now+30e3),true,'tolerate small clock drift');
 });
+test('extension timeline uses short, honest times and rejects unknown ones', () => {
+ const { cas } = vm.runInContext('({cas})', ctx);
+ assert.equal(cas(now - 20e3), 'teď');
+ assert.equal(cas(now - 5 * 60e3), '5 min');
+ assert.equal(cas(now - 59.6 * 60e3), '60 min');
+ assert.equal(cas(undefined), '—');
+ assert.equal(cas(Math.floor(now / 1000)), '—', 'seconds are not milliseconds');
+ assert.match(cas(now - 3 * 86400e3), /^\d+[./]\d+/, 'older than yesterday shows a date');
+});
