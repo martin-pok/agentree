@@ -16,7 +16,6 @@ export default {
     "Přihlášení funguje. Data se objeví, jakmile nástroj zaznamená první aktivitu.": "Sign-in succeeded. Data will appear as soon as the tool records its first activity.",
     "Zaznamenána aktivita: {0}": "Activity observed: {0}",
     "Obnovuji aktuální data": "Refreshing current data",
-    "Kontroluji dostupné zdroje…": "Checking available sources…",
     "Aktualizuji zobrazená data…": "Updating displayed data…",
     "Co dnes posuneme dál?": "What shall we move forward today?",
     "Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.": "Describe the work. Your agents get started while you focus on what matters.",
