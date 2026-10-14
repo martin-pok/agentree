@@ -484,9 +484,17 @@ function mount(el) {
         v.ucetUrl = '';
         update();
       } else if (a.dataset.action === 'ucet-odhlasit') {
-        state.ucet = (await api.ucetOdhlasit()).ucet;
-        toast(tr('Odhlášeno. Agenteeq funguje dál bez účtu.'));
-        update();
+        // Signing out disables cloud sync, so never do it on a stray click.
+        // Keep the local project/session data and make that distinction clear.
+        if (await confirmDialog({
+          title: tr('Odhlásit se'),
+          message: tr('Odhlášením se vypne synchronizace souhrnů. Konverzace a data na tomto počítači zůstanou.'),
+          confirmLabel: tr('Odhlásit se'),
+        })) {
+          state.ucet = (await api.ucetOdhlasit()).ucet;
+          toast(tr('Odhlášeno. Agenteeq funguje dál bez účtu.'));
+          update();
+        }
       } else if (a.dataset.action === 'ucet-smazat') {
         if (await confirmDialog({ title: tr('Smazat účet Agenteeq'), message: tr('Účet a všechno, co je k němu uložené v cloudu, se nevratně smaže. Data na {0} zůstanou, jak jsou.', tomtoPocitaci()), confirmLabel: tr('Smazat účet'), danger: true })) {
           state.ucet = (await api.ucetSmazat()).ucet;
