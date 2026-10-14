@@ -530,7 +530,7 @@ function slideHtml(M) {
     const nadpis = nevim ? (M.neovereno ? tr('Nepodařilo se ověřit spojení s Agenteeq') : M.bezPrehledu ? tr('Přehled agentů se nepodařilo načíst') : tr('Nepodařilo se zjistit, co na počítači běží')) : tr('Všechno je v klidu');
     const text = nevim
       ? (M.neovereno ? tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.') : M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
-      : tr('Nikdo teď nepracuje a nic na tebe nečeká. Ozvu se, jakmile se to změní.');
+      : tr('Nikdo teď nepracuje a žádný agent nepotřebuje tvé rozhodnutí. Ozvu se, jakmile se to změní.');
     return `<div class="calm">
       <span class="calm-bot" data-s="tile"${nevim ? ' data-nevim' : ''}>${ROBOT}</span>
       <div data-s><h2>${esc(sazba(nadpis))}</h2><p>${esc(sazba(text))}</p></div>

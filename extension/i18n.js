@@ -115,7 +115,7 @@
       'v jiné kartě': 'in another tab',
       'Přepnout na kartu': 'Switch to tab',
       'Všechno je v klidu': 'All quiet',
-      'Nikdo teď nepracuje a nic na tebe nečeká. Ozvu se, jakmile se to změní.': 'Nobody is working and nothing is waiting for you. You’ll see it here as soon as that changes.',
+      'Nikdo teď nepracuje a žádný agent nepotřebuje tvé rozhodnutí. Ozvu se, jakmile se to změní.': 'Nobody is working and no agent needs your decision. You’ll see it here as soon as that changes.',
       'Naposledy: {0}': 'Last: {0}',
       'Agenti na počítači: nezjištěno': 'Agents on this computer: unknown',
       'Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.': 'Agenteeq can’t see the process list right now. Below is only what we know for sure.',
