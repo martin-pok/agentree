@@ -12,6 +12,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { unexpectedScreenshotFailures } from './request-qa.mjs';
+import { otevriOkno, OKNO } from '../../scripts/qa-rozsireni.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -33,40 +34,19 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 const vystup = path.join(here, 'export');
 const zdroj = path.join(here, 'source');
-const verzeRozsireni = JSON.parse(await fs.readFile(path.join(root, 'extension', 'manifest.json'), 'utf8')).version;
 
-// 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
-//    „spárováno“: na stránce ChatGPT agent právě odpovídá, v dalších kartách Claude.ai dopsal
-//    a Gemini narazil na limit. „služby“: nastavení sledovaných služeb, Grok vypnutý.
-//    Obojí česky i anglicky: jazyk okna se řídí _locales (chrome.i18n), tady ho volí atrapa.
+// 1) Okno rozšíření ve třech stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
+//    Vykreslí se ze skutečného extension/popup.html se stejnou atrapou a ukázkovými daty jako QA
+//    (scripts/qa-rozsireni.mjs): „spárováno“ = rušno (rozhodnutí v reflektoru, časová osa),
+//    „služby“ = list sledovaných služeb, „odpojeno“ = aplikace neběží. Česky i anglicky.
 async function okno(stav, soubor, jazyk) {
-  const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript(({ jazyk, verze, stav }) => {
-    const ted = Date.now();
-    const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
-    const otevrene = {
-      'chatgpt:a': { site: 'chatgpt', tab: 1, okno: 1, generating: true, od: ted - 42000, at: ted },
-      'claude:b': { site: 'claude', tab: 2, okno: 1, generating: false, konec: ted - 180000, at: ted - 60000 },
-      'gemini:c': { site: 'gemini', tab: 3, okno: 1, generating: false, limit: true, at: ted - 30000 },
-    };
-    window.chrome = {
-      i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
-      storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
-      runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, online: true, revoked: false, status: { expectedVersion: verze } }) },
-      tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
-    };
-    window.fetch = async () => new Response(JSON.stringify({ ok: stav !== 'odpojeno' }));
-  }, { jazyk, verze: verzeRozsireni, stav });
-  await page.goto(`${base}/extension/popup.html`);
-  await page.waitForFunction(() => !['Chvilku…', 'One moment…'].includes(document.getElementById('headline').textContent));
-  if (stav !== 'odpojeno') await page.waitForFunction(() => document.querySelector('.radek--tato'));
-  if (stav === 'sluzby') await page.locator('#sites-open').click();
+  const mapa = { sparovano: 'rušno', sluzby: 'služby', odpojeno: 'neběží' };
+  const page = await otevriOkno(browser, `${base}/extension`, mapa[stav], { jazyk, deviceScaleFactor: 2 });
   await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
   await page.evaluate(() => document.fonts.ready);
-  const vyska = Math.ceil(await page.evaluate(() => document.body.getBoundingClientRect().height));
-  await page.screenshot({ path: path.join(zdroj, soubor), clip: { x: 0, y: 0, width: 344, height: vyska } });
+  await page.screenshot({ path: path.join(zdroj, soubor), clip: { x: 0, y: 0, width: OKNO.width, height: OKNO.height } });
   await page.close();
-  return vyska;
+  return OKNO.height;
 }
 
 try {
