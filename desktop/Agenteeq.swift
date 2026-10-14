@@ -400,7 +400,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "nacitani" {
-            if message.webView === loaderWeb, message.frameInfo.isMainFrame, (message.body as? [String: Any])?["type"] as? String == "znovu" { retry() }
+            guard message.webView === loaderWeb, message.frameInfo.isMainFrame,
+                  let type = (message.body as? [String: Any])?["type"] as? String else { return }
+            if type == "znovu" { retry() }
+            // Always give the user an explicit way out of a long installer.
+            // The quit watchdog below is independent of WebKit/server progress.
+            if type == "ukoncit", installing { NSApp.terminate(nil) }
             return
         }
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
@@ -595,7 +600,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         }
         process.terminationHandler = nil
         try? input?.fileHandleForWriting.close()
-        process.terminate()
+        if process.isRunning { process.terminate() }
         // SIGTERM is a graceful request; escalation must not block the UI.
         DispatchQueue.global().asyncAfter(deadline: .now() + 8) {
             if process.isRunning { kill(process.processIdentifier, SIGKILL) }
