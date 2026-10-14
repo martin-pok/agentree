@@ -45,7 +45,7 @@ export function sekceZmen(changelog, verze) {
  * developer“ (support.apple.com/guide/mac-help/mh40616): Nastavení systému → Soukromí
  * a zabezpečení → Zabezpečení → Přesto otevřít, heslo, potvrdit. Bez Terminálu.
  */
-export function napovedaProMac(podpis, { dmg = false } = {}) {
+export function napovedaProMac(podpis, { dmg = false, kanal = null } = {}) {
   const prenos = dmg
     ? 'Otevři **Agenteeq-macOS-arm64.dmg** a v okně, které se ukáže, přetáhni **Agenteeq** na složku\n**Aplikace**. (Kdo chce ZIP: rozbal ho a přetáhni Agenteeq.app do Aplikací.)'
     : 'Rozbal archiv a přetáhni **Agenteeq.app** do složky Aplikace.';
@@ -68,9 +68,13 @@ export function napovedaProMac(podpis, { dmg = false } = {}) {
     '3. Zadej heslo k Macu a v dalším dotazu potvrď **Otevřít**.',
     '',
     'Příště se Agenteeq otevře dvojklikem. Celý postup je na',
-    `[stránce Instalace](${WEB_AGENTEEQ}instalace). Kdo pracuje v Terminálu, může místo toho`,
-    `použít instalaci jedním příkazem (\`curl -fsSL ${WEB_AGENTEEQ}install.sh | bash\`), která`,
-    'ověří otisk balíčku z GitHubu a krok v Nastavení nepotřebuje.',
+    `[stránce Instalace](${WEB_AGENTEEQ}instalace).`,
+    '',
+    // install.sh bere vždy GitHub `releases/latest`, tedy nejnovější stabilní vydání
+    // (site/install.sh). U Preview by doporučení nainstalovalo jinou, starší verzi.
+    kanal === 'preview'
+      ? `Instalace jedním příkazem v Terminálu (\`curl -fsSL ${WEB_AGENTEEQ}install.sh | bash\`) instaluje\nnejnovější **stabilní** verzi, ne tuto Preview – pro Preview použij DMG nebo ZIP výše.`
+      : `Kdo pracuje v Terminálu, může místo toho použít instalaci jedním příkazem\n(\`curl -fsSL ${WEB_AGENTEEQ}install.sh | bash\`). Ověří otisk balíčku z GitHubu, krok v Nastavení\nnepotřebuje a instaluje vždy nejnovější stabilní verzi.`,
   ].join('\n');
 }
 
@@ -140,11 +144,26 @@ const poradi = (jmeno) => {
 
 const popisSouboru = (jmeno) => POPIS_PRILOHY.find(([vzor]) => vzor.test(jmeno))?.[1] || '';
 
-export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' }) {
-  const { nadpis, telo } = sekceZmen(changelog, verze);
+/**
+ * Odstavce o stavu vydání („**Stav 14. 10.: …**“, „**Dostupnost:** …“) jsou interní záznam
+ * v CHANGELOG.md. V popisu vydání by zastaraly hned po zveřejnění – u 0.46.12 tak veřejné
+ * vydání tvrdilo „dosud nevydaný“. Kanál vydání říká popis sám (viz `poznamky`).
+ */
+export function bezInternihoStavu(telo) {
+  return String(telo).split(/\n{2,}/)
+    // Za slovem mezera, dvojtečka nebo konec tučného textu: `\b` v JS zná jen ASCII písmena,
+    // takže by „**Stavů …“ považoval za konec slova „Stav“.
+    .filter((odstavec) => !/^\*\*(?:Stav|Dostupnost)(?=[\s:*])/.test(odstavec.trim()))
+    .join('\n\n');
+}
+
+export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc', kanal = null }) {
+  const { nadpis, telo: celeTelo } = sekceZmen(changelog, verze);
+  const telo = bezInternihoStavu(celeTelo);
   const maMac = soubory.some((s) => /macOS/.test(s.jmeno));
   // Název je nadpis sekce změn a stojí na stejné úrovni jako „Ke stažení“ a další sekce níž.
   const casti = [`## ${nazevVydani(nadpis)}`, '', nadpisyPodNazev(telo), ''];
+  if (kanal === 'preview') casti.push('Toto je **Preview**, testovací vydání. Stabilní verze (Latest) zůstává beze změny.', '');
 
   if (soubory.length) {
     casti.push('## Ke stažení', '');
@@ -156,7 +175,7 @@ export function poznamky({ changelog, verze, soubory = [], podpisMac = 'ad-hoc' 
   }
 
   const maDmg = soubory.some((s) => /macOS-.*\.dmg$/.test(s.jmeno));
-  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac, { dmg: maDmg }), '');
+  if (maMac) casti.push('## Instalace na Macu', '', napovedaProMac(podpisMac, { dmg: maDmg, kanal }), '');
 
   // Požadavky se píšou jen k tomu, co je opravdu přiložené. Věta o macOS u vydání bez
   // aplikace pro Mac (nebo naopak) je slib, který přílohy nekryjí.
@@ -189,5 +208,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const soubory = await prilohy(slozka);
   // Stav podpisu zapisuje build. Když soubor není, nehádáme „podepsáno“, ale to opatrnější.
   const build = await fs.readFile(path.join(slozka, 'latest-build.json'), 'utf8').then(JSON.parse, () => null);
-  process.stdout.write(poznamky({ changelog, verze, soubory, podpisMac: build?.signature || 'ad-hoc' }));
+  // Kanál zná jen zveřejnění (publish.yml, vstup `channel`). Koncept ho neví – pak popis
+  // nic o kanálu netvrdí a publish.yml ho při zveřejnění přepíše.
+  const kanal = ['preview', 'stable'].includes(process.env.RELEASE_KANAL) ? process.env.RELEASE_KANAL : null;
+  process.stdout.write(poznamky({ changelog, verze, soubory, podpisMac: build?.signature || 'ad-hoc', kanal }));
 }

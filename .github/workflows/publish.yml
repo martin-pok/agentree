@@ -176,6 +176,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          RELEASE_KANAL: ${{ inputs.channel }}
         run: |
           set -euo pipefail
           mkdir -p prilohy

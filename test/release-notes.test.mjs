@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { sekceZmen, napovedaProMac, poznamky, nazevVydani, nadpisyPodNazev } from '../scripts/release-notes.mjs';
+import { sekceZmen, napovedaProMac, poznamky, nazevVydani, nadpisyPodNazev, bezInternihoStavu } from '../scripts/release-notes.mjs';
 
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -49,6 +49,32 @@ test('popis říká pravdu o podpisu a vede cestou bez Terminálu', () => {
   const podepsano = napovedaProMac('Developer ID');
   assert.match(podepsano, /Developer ID a notarizovaná/, 'publish.yml podle téhle věty pozná podepsaný build');
   assert.doesNotMatch(podepsano, /xattr|Přesto otevřít/, 'u podepsaného buildu by návod na blokaci jen strašil');
+});
+
+// install.sh instaluje vždy GitHub `releases/latest` (nejnovější Stable). Popis Preview ho dřív
+// doporučoval jako rovnocennou cestu – a nainstaloval by jinou, starší verzi (v0.46.12 → v0.46.0).
+test('popis Preview neposílá do Terminálu pro jinou verzi a interní stav nevydává za aktuální', async () => {
+  const preview = napovedaProMac('ad-hoc', { dmg: true, kanal: 'preview' });
+  assert.match(preview, /install\.sh[\s\S]*\*\*stabilní\*\* verzi, ne tuto Preview/);
+  for (const kanal of [null, 'stable']) {
+    assert.match(napovedaProMac('ad-hoc', { kanal }), /install\.sh[\s\S]*nejnovější stabilní verzi/, `${kanal}: Terminál říká, co instaluje`);
+  }
+
+  const se = [
+    '# Changelog', '', '## 0.14.0 – 2026-10-14 · Nové vydání', '',
+    '- Změna.', '',
+    '**Stav 14. 10. 2026: pouze zdrojový kandidát, dosud nevydaný.** Interní záznam.', '',
+    '**Dostupnost:** tato sekce popisuje zdroj.', '',
+    '**Stavů agenta přibylo.** Běžný odstavec změn zůstává.', '',
+    '- Další změna.', '',
+  ].join('\n');
+  assert.equal(bezInternihoStavu(sekceZmen(se, '0.14.0').telo), '- Změna.\n\n**Stavů agenta přibylo.** Běžný odstavec změn zůstává.\n\n- Další změna.');
+  const text = poznamky({ changelog: se, verze: '0.14.0', soubory: [{ jmeno: 'Agenteeq-0.14.0-macOS-arm64.dmg', bajtu: 1 }], kanal: 'preview' });
+  assert.doesNotMatch(text, /dosud nevydaný|Dostupnost|Interní záznam/, 'zveřejněné vydání netvrdí, že nevyšlo');
+  assert.match(text, /Toto je \*\*Preview\*\*, testovací vydání/);
+  assert.doesNotMatch(poznamky({ changelog: se, verze: '0.14.0' }), /Toto je \*\*Preview\*\*/, 'koncept bez kanálu o kanálu nic netvrdí');
+  // publish.yml předává kanál skriptu přes env, ne vložením výrazu do textu skriptu.
+  assert.match(await zdroj('.github/workflows/publish.yml'), /RELEASE_KANAL: \$\{\{ inputs\.channel \}\}/);
 });
 
 // Obraz disku je pro běžného uživatele hlavní soubor, ZIP pro aktualizace a Terminál.
