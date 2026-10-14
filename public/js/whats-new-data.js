@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.13',
+    date: '2026-10-14',
+    title: 'Plynulejší Agenti a přesnější texty',
+    items: [
+      'Obrazovka Agenti se ani se stovkou konverzací nezasekává: karty mimo okno se vykreslí, až k nim dojedeš, a oči robotů sledují kurzor bez zbytečného měření.',
+      'Anglické rozhraní už nemá české zbytky a čeština má správné tvary podle počtu: „Další 3 jsou v sekci Agenti“, „1 selhal“, „0 ze 4 hotovo“.',
+      'Při velkém počtu agentů stojí pod časovou osou a pod kartami Právě teď kapsle se zbytkem agentů. Dlouhé názvy konverzací končí celým slovem a „…“.',
+      'Rozšíření porovnává verze podle čísel a nenabízí starší verzi jako novou. Když se s aplikací nepodaří ověřit spojení, řekne to, místo aby tvrdilo, že Agenteeq neběží.',
+      'Pole zadání agenta má při psaní výraznější rámeček, viditelný i ve světlém vzhledu. Vzdálení agenti Claude Code berou stav i z dalších uložených dotazů Claude Desktopu (Beta).',
+    ],
+    en: {
+      title: 'Smoother Agents and more accurate wording',
+      items: [
+        'The Agents screen stays smooth even with a hundred conversations: cards outside the window render when you scroll to them, and the robots’ eyes follow the cursor without needless measuring.',
+        'The English interface no longer contains Czech leftovers, and Czech text now uses the correct plural forms and prepositions for every count.',
+        'With many agents, a pill below the timeline and below Right now leads to the remaining agents. Long conversation titles end on a whole word with “…”.',
+        'The extension compares versions numerically and no longer offers an older version as new. When it cannot verify the connection to the app, it says so instead of claiming Agenteeq is not running.',
+        'The agent prompt field shows a stronger border while you type, visible in light themes too. Remote Claude Code agents also take their state from other saved Claude Desktop requests (Beta).',
+      ],
+    },
+  },
+  {
     version: '0.46.12',
     date: '2026-10-14',
     title: 'Přesnější vzdálení agenti, limity a opravené ikony',

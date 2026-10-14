@@ -1,6 +1,6 @@
 # Changelog
 
-## Připravované změny po 0.46.12 · nevydáno
+## 0.46.13 – 2026-10-14 · plynulejší Agenti a přesnější texty
 
 - **Plynulejší Agenti i se stovkou konverzací.** Při otevření obrazovky se karty doplňují po dávkách a každá dávka přepočítala vzhled všech dosavadních karet; se 140 agenty tak vznikaly zaseknuté snímky 50–110 ms. Karty mimo okno se teď vykreslí, až k nim stránka dojede, dávka jen připojí nové karty a oči robotů sledují kurzor bez měření robotů mimo okno. Vzhled karet se nemění.
 - **Viditelný fokus v poli zadání agenta.** Rámeček, který jediný ukazuje, že píšeš do pole zadání, měl ve světlých vzhledech kontrast jen 2,0:1 proti okolí a snadno splýval. Teď má 3,1:1 proti okolí a 3,9:1 proti ploše pole (WCAG 2.2 AA, kritérium 1.4.11 chce aspoň 3:1), v tmavých vzhledech přes 7:1.
