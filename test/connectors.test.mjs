@@ -202,6 +202,65 @@ test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () 
   assert.equal(deriveStatus(s, Date.now()).status, 'waiting');
 });
 
+test('Codex: exhausted subscription window wins over misleading waiting state; recovery clears it', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createCodexConnector({ config, store });
+  const id = '01a0546a-6679-76d3-9454-ba9f37a24014';
+  const now = Date.now();
+  const ts = (s) => new Date(now - 30000 + s * 1000).toISOString();
+  const file = path.join(home, '.codex', 'sessions', '2026', '10', '14', `rollout-2026-10-14T12-00-00-${id}.jsonl`);
+  const makeLimit = (pct, remainingSeconds) => ({
+    limit_id: 'codex', primary: { used_percent: pct, window_minutes: 300, resets_at: Math.floor(now / 1000) + remainingSeconds },
+    plan_type: 'plus',
+    // No rate_limit_reached_type: the provider supplies only a confirmed 100% window.
+  });
+  await writeJsonl(file, [
+    { timestamp: ts(0), type: 'session_meta', payload: { id, originator: 'Codex Desktop' } },
+    { timestamp: ts(1), type: 'event_msg', payload: { type: 'task_started' } },
+    { timestamp: ts(2), type: 'event_msg', payload: { type: 'token_count', rate_limits: makeLimit(100, 3600) } },
+    { timestamp: ts(3), type: 'event_msg', payload: { type: 'task_complete' } },
+  ]);
+  await connector.start();
+  connector.stop();
+  const s = store.get(`codex:${id}`);
+  assert.equal(deriveStatus(s, Date.now()).status, 'limited', 'do not say waiting after a 100% confirmed limit');
+  assert.match(deriveStatus(s, Date.now()).reason, /Limit 5 h vyčerpán/);
+  assert.equal(store.summary(s.id).status, 'limited', 'the live overview receives the same state');
+  await writeJsonl(file, [
+    { timestamp: ts(4), type: 'event_msg', payload: { type: 'token_count', rate_limits: makeLimit(12, 18000) } },
+  ], { append: true });
+  await connector.scan();
+  assert.equal(deriveStatus(s, Date.now()).status, 'waiting', 'new evidence of available capacity clears the limit');
+
+  // An expired window is historical, not an active blockade.
+  await writeJsonl(file, [
+    { timestamp: ts(5), type: 'event_msg', payload: { type: 'token_count', rate_limits: makeLimit(100, -10) } },
+  ], { append: true });
+  await connector.scan();
+  assert.equal(deriveStatus(s, Date.now()).status, 'waiting');
+});
+
+test('Codex: no extra credits does not by itself mean subscription exhausted', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  const connector = createCodexConnector({ config, store });
+  const id = '01a0546a-6679-76d3-9454-ba9f37a24015';
+  const now = Date.now();
+  await writeJsonl(path.join(home, '.codex', 'sessions', '2026', '10', '14', `rollout-2026-10-14T12-00-00-${id}.jsonl`), [
+    { timestamp: new Date(now - 5000).toISOString(), type: 'session_meta', payload: { id } },
+    { timestamp: new Date(now - 4000).toISOString(), type: 'event_msg', payload: { type: 'task_complete' } },
+    { timestamp: new Date(now - 3000).toISOString(), type: 'event_msg', payload: { type: 'token_count', rate_limits: {
+      primary: { used_percent: 49, window_minutes: 300 }, credits: { has_credits: false, balance: 0 },
+    } } },
+  ]);
+  await connector.start();
+  connector.stop();
+  assert.notEqual(store.summary(`codex:${id}`).status, 'limited');
+});
+
 test('Codex: mapování položek a popisky limitů', () => {
   assert.equal(mapCodexItem({ type: 'UserMessage', content: [{ type: 'text', text: '## Referenced ChatGPT conversation' }] }), null);
   assert.deepEqual(mapCodexItem({ type: 'AgentMessage', content: [{ type: 'Text', text: '4' }] }), { role: 'assistant', text: '4' });
