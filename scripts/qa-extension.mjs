@@ -358,7 +358,11 @@ try {
         await page.goto(`${base}/popup.html`);
         await page.waitForFunction(() => document.body.dataset.stav !== 'nacitam');
         await page.evaluate(() => document.fonts.ready);
-        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${nazev}: nic nepřetéká do strany`);
+        // Při selhání vypíše, které prvky přetékají (CI má novější Chromium než vývojový stroj).
+        const pretok = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, iw: innerWidth,
+          prvky: [...document.querySelectorAll('body *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 0.5).slice(0, 6)
+            .map((e) => `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}${e.classList.length ? '.' + [...e.classList].join('.') : ''} right=${Math.round(e.getBoundingClientRect().right)}`) }));
+        assert.equal(pretok.sw > pretok.iw, false, `${engine} ${nazev}: nic nepřetéká do strany ${JSON.stringify(pretok)}`);
         assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `${engine} ${nazev}: hlavička se vejde`);
         assert.ok(await page.evaluate(() => [...document.querySelectorAll('.filter, #pager, #spot-stage .cta')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `${engine} ${nazev}: ovládání je celé vidět`);
         assert.deepEqual(errors, []);
