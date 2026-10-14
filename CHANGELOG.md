@@ -16,7 +16,7 @@
 - **Aktualizace: dvě volby, dvě skupiny.** Kanál (Stabilní / Preview) a způsob (Ručně / Automaticky) mají vlastní popisek a mezi sebou vzduch, obrysy vybraných karet se už nedotýkají.
 - **Útrata říká, co se počítá.** U starších ručních záznamů i u součtů stojí, že se do součtů, prognózy ani rozpočtu nepočítají. Dialog Rozpočty bez připojených nákladů za API řekne, že se rozpočet do té doby neukáže ani neupozorní.
 
-**Stav 14. 10. 2026: pouze zdrojový kandidát pro nové Preview, dosud nevydaný.** Vadný a neměnný Draft `v0.46.11` tyto opravy neobsahuje a nesmí se publikovat. Pro `v0.46.12` je nutný vlastní neměnný tag, kompletní 8/8 CI na přesném SHA, nový Mac/Windows/Chrome build, nezávislé ověření osmi příloh a skutečné UAT. Zveřejnění Preview až po ověření a schválení, Stable Latest ponechat beze změny. Samotný commit ani zelené testy nejsou aktualizací aplikace na Macu.
+**Stav 14. 10. 2026: zveřejněné Preview** ([v0.46.12](https://github.com/martin-pok/agentree/releases/tag/v0.46.12), 06:45 UTC) s 8 ověřenými přílohami pro Mac, Windows a Chrome. Fyzické vyzkoušení na zařízení (instalace, aktualizace, přihlášení, Windows a Chrome) před zveřejněním neproběhlo. Stable Latest zůstává `v0.46.0`; Chrome Web Store se aktualizuje samostatně.
 
 ## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
 
