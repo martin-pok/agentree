@@ -128,3 +128,12 @@ test('Agenti: zelená tečka pracujícího agenta drží u svého textu', async 
   const css = await zdroj('public/styles.css');
   assert.match(pravidlo(css, '.sub-live') || '', /display: inline-flex/);
 });
+
+// WCAG 1.4.11: fokus pole zadání ukazuje jen rámeček skladby. Se 45 % barvy akce měl ve světlých
+// vzhledech kontrast 2,0:1 proti okolí; 75 % dává 3,1:1 (změřeno na vykreslených pixelech).
+test('fokus pole zadání agenta má rámeček s kontrastem aspoň 3:1', async () => {
+  const css = await zdroj('public/workbench.css');
+  const m = css.match(/\.launch \.launch-compose:focus-within \{ border-color: color-mix\(in srgb, var\(--action\) (\d+)%/);
+  assert.ok(m, 'pravidlo fokusu pole zadání chybí');
+  assert.ok(Number(m[1]) >= 75, `podíl barvy akce ${m[1]} % nedá kontrast 3:1`);
+});

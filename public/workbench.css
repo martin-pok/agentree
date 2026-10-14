@@ -339,7 +339,10 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
    v nabídce s hledáním přímo z lišty, ne z rozbalovacího seznamu nad polem. */
 .launch, .home-desk .launch { overflow: visible; }
 .launch .launch-compose { position: relative; margin: 0; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); transition: border-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
-.launch .launch-compose:focus-within { border-color: color-mix(in srgb, var(--action) 45%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--action) 12%, transparent); }
+/* Rámeček je jediný ukazatel fokusu pole zadání (textarea sama obrys nemá). Změřeno na vykreslených
+   pixelech: 75 % barvy akce dá ve světlých vzhledech 3,1:1 proti prstenci kolem a 3,9:1 proti ploše
+   uvnitř (WCAG 1.4.11 chce 3:1; 45 % dávalo 2,0:1), v tmavých přes 7:1. */
+.launch .launch-compose:focus-within { border-color: color-mix(in srgb, var(--action) 75%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--action) 12%, transparent); }
 .launch .launch-prompt { min-height: 112px; padding: 14px 16px 6px; font-size: 17px; line-height: 1.55; resize: none; background: transparent; }
 .launch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px; }
 .launch .launch-controls { flex: 1 1 auto; min-width: 0; padding: 0; gap: 8px; }
