@@ -164,3 +164,11 @@ Pohyb není jediným nositelem stavu a robot nevydává zvuky.
 
 Ověření jednotlivých pravidel přístupnosti není certifikace celé aplikace:
 kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení pohybu.
+
+## Vzhled konkrétního agenta – rozhodnutí z živého testování 14. 10. 2026
+
+Uživatel mění vzhled **v detailu právě otevřeného agenta**, nikoli v Přehledu pomocí dlouhého seznamu všech agentů. Identita upravované konverzace je pevně daná jejím ID. V Přehledu se nastavení pouze zobrazuje; změna nezasahuje do práv, chování, modelu ani dat agenta.
+
+Editor je vlastní modální dialog s tlačítkovými kapslemi o výšce 48 px, stavem `aria-pressed`, čitelným minimálně 12px textem a zřetelným fokusem; systémové `<select>` se v něm nepoužívají. Kromě jména, barev a čtyř základních siluet nabízí nepovinné vektorové doplňky (čepici, brýle, tričko a skafandr). Každý doplněk žije ve shodném `viewBox="0 0 108 112"`; značka v Docku ani oficiální logo se nikdy nekustomizují. Uložení zachová původní lokální klíč `agenteeq:agent-personas:v1` a přidává jen volitelné pole `accessory`. Chybné hodnoty se ignorují. Klávesnice/Escape, dlouhé jméno, české a anglické UI, 375px viewport a snížený pohyb patří do QA; živé vizuální schválení nelze nahradit pouze jednotkovým testem.
+
+**Stav:** implementováno ve zdroji v PR #261, nikoli dosud schváleno pro vydání.
