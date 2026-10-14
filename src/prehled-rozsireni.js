@@ -2,9 +2,11 @@ import { selectAgents } from '../public/js/agent-selection.js';
 import { ui } from './texty.js';
 
 // Souhrn pro okno rozšíření pro Chrome (POST /api/extension/prehled): stav agentů jednou větou,
-// kdo čeká na rozhodnutí a kdo pracuje. Jen to, co rozšíření ukáže – žádný přepis, žádné cesty.
-// Selhání výpisu procesů se nehlásí jako „nic neběží“ (CLAUDE.md).
+// kdo čeká na rozhodnutí, kdo pracuje a poslední konverzace napříč nástroji. Jen to, co rozšíření
+// ukáže – žádný přepis, žádné cesty. Selhání výpisu procesů se nehlásí jako „nic neběží“ (CLAUDE.md).
 const MAX = 4;
+// Poslední konverzace pro časovou osu okna: jen titulek, nástroj, stav a čas – nic dalšího.
+const MAX_NEDAVNE = 8;
 const kratce = (t, n) => (typeof t === 'string' ? t.replace(/\s+/g, ' ').trim().slice(0, n) : '');
 const polozka = (s) => ({ id: s.id, title: kratce(s.title, 120), app: kratce(s.app, 40), reason: kratce(s.status === 'working' ? s.activity || s.reason : s.reason || s.activity, 160), at: s.lastAt || 0 });
 
@@ -32,9 +34,20 @@ export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
     nevim: ui('Nepodařilo se zjistit, co na počítači běží'),
     ok: pracuji.length ? ui('Vše běží v pořádku') : ui('V pořádku, nikdo nepracuje'),
   }[stav];
+  const rozhodnuti = [...cekaji, ...selhalo, ...limit].slice(0, MAX);
+  const prace = pracuji.slice(0, MAX);
+  // Nedávné = viditelné konverzace, které okno ještě neukazuje v rozhodnutích ani mezi pracujícími
+  // (i ty nad limit čtyř položek, aby se žádná nestratila). Archiv se neukazuje.
+  const ukazane = new Set([...rozhodnuti, ...prace].map((s) => s.id));
+  const nedavne = viditelne
+    .filter((s) => !ukazane.has(s.id) && s.status !== 'archived')
+    .sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0))
+    .slice(0, MAX_NEDAVNE)
+    .map((s) => ({ id: s.id, title: kratce(s.title, 120), app: kratce(s.app, 40), status: s.status, at: s.lastAt || 0 }));
   return {
     zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length, procesyNevim: Boolean(procesyNevim) },
-    rozhodnuti: [...cekaji, ...selhalo, ...limit].slice(0, MAX).map((s) => ({ ...polozka(s), status: s.status })),
-    pracuji: pracuji.slice(0, MAX).map(polozka),
+    rozhodnuti: rozhodnuti.map((s) => ({ ...polozka(s), status: s.status })),
+    pracuji: prace.map(polozka),
+    nedavne,
   };
 }

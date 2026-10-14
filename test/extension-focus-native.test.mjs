@@ -103,3 +103,22 @@ test('native focus route code does not execute shell or accept arbitrary browser
   assert.match(http, /if \(!zTohotoMacu\(req\)\) throw new HttpError\(403/);
   assert.match(http, /if \(!extensionOk\(req\)\) throw new HttpError\(401/);
 });
+
+test('extension focuses a recent conversation it shows in nedavne, never an archived one', async (t) => {
+  const f = await fixture(t);
+  const now = Date.now();
+  const recent = f.server.app.store.ensure({ connector: 'codex', localId: 'focus-recent', provider: 'openai', app: 'Codex' });
+  recent.title = 'Recent finished conversation'; recent.lastAt = now - 60_000; recent.turns = 1;
+  f.server.app.store.commit(recent, now);
+  const old = f.server.app.store.ensure({ connector: 'codex', localId: 'focus-old', provider: 'openai', app: 'Codex' });
+  old.title = 'Old conversation'; old.lastAt = now - 3 * 86_400_000;
+  f.server.app.store.commit(old, now);
+  const prehled = await api(f.server.url).send('POST', '/api/extension/prehled', {}, { Origin: EXTENSION_ORIGIN, 'X-Agenteeq-Token': f.paired.token });
+  assert.equal(prehled.status, 200);
+  const ids = prehled.body.nedavne.map((x) => x.id);
+  assert.ok(ids.includes(recent.id), 'recent conversation is offered');
+  assert.ok(!ids.includes(old.id), 'archived conversation is not offered');
+  assert.equal((await f.send(recent.id)).status, 200);
+  assert.equal((await f.send(old.id)).status, 404);
+  assert.equal(f.messages.length, 1);
+});
