@@ -223,6 +223,12 @@ ve složce, o které Agenteeq neví. Proto:
   Relace nese `id: "session_…"`, `title`, `created_at`, `updated_at`, `session_status`,
   `status_bucket`, `post_turn_summary.status_category` a `session_context.{model,sources}`.
   Datum platnosti stavu je **`state.dataUpdatedAt` tohoto dotazu**, nikoli globální datum cache.
+  **Ostatní uložené dotazy 🧪 (po 0.46.12, nevydáno):** relace se hledá podle tvaru i v dalších dotazech
+  `react-query-cache` (objekt nebo pole s `id: "session_…"`, platným `updated_at` a polem
+  `session_status`/`status_bucket`, i ve stránkách `pages[].data[]`). Má jít o dotaz na jednu otevřenou
+  relaci, který bývá čerstvější než seznam; jeho klíč neznáme a že ho Desktop do trvalé cache ukládá,
+  jsme na disku neověřili. Z každé relace platí záznam s nejnovějším `updated_at`, při shodě ten
+  s pozdějším `dataUpdatedAt`. Jiné objekty (profil účtu apod.) do modelu nevstupují.
 - **Dostupný přepis:** záznam `code:cse_…` s `product: "code"`,
   `tree.kind: "code_session"`, `tree.messages[]`. Zprávy mají `created_at`, `uuid`,
   `type`, případně `message.{content,model,usage}`. `cse_` a `session_` sdílejí stejnou příponu.
