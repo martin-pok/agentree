@@ -22,13 +22,13 @@ try {
   for (const engine of process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit']) {
     const browser = await (engine === 'chromium' ? chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) : webkit.launch());
     try {
-      for (const theme of ['light', 'dark']) for (const state of ['offline', 'unpaired', 'revoked', 'paired', 'outdated', 'overeni', 'overeni-chyby']) {
+      for (const theme of ['light', 'dark']) for (const state of ['offline', 'unpaired', 'revoked', 'paired', 'outdated', 'novejsi', 'neovereno', 'overeni', 'overeni-chyby']) {
         const page = await browser.newPage({ viewport: { width: 344, height: 900 }, colorScheme: theme, reducedMotion: 'reduce' });
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
         await page.addInitScript(({ state }) => {
           const data = { disabledSites: [], lastStatus: { ok: true, site: 'chatgpt', at: Date.now() } };
-          window.fixture = { data, paired: ['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state), fail: true };
+          window.fixture = { data, paired: ['paired', 'outdated', 'novejsi', 'neovereno', 'overeni', 'overeni-chyby'].includes(state), fail: true };
           // Ověření stránky: aktivní karta je podporovaná služba a její skript odpovídá diagnostikou.
           const diagnostika = state === 'overeni'
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 3, assistant: 3, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } }
@@ -37,7 +37,7 @@ try {
             storage: { local: { get: async () => data, set: async o => Object.assign(data, o) }, session: { get: async () => ({ otevrene: { 'chatgpt:a': { site: 'chatgpt', tab: 5, okno: 2, generating: true, od: Date.now() - 42000, at: Date.now() } } }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují.
-              if (m.type === 'agenteeq:prehled') return ['paired', 'outdated'].includes(state) && fixture.paired ? {
+              if (m.type === 'agenteeq:prehled') return ['paired', 'outdated', 'novejsi'].includes(state) && fixture.paired ? {
                 zdravi: { stav: 'pozor', veta: 'Na tvé rozhodnutí čeká agentů: 1', pracuje: 2, cekaNaTebe: 1, selhalo: 0, limit: 0 },
                 rozhodnuti: [{ id: 'claude-code:a1', title: 'Migrace API na v2', app: 'Claude Code', reason: 'Čeká na povolení: Bash', status: 'needs_input', at: Date.now() - 60000 }],
                 pracuji: [
@@ -53,7 +53,9 @@ try {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
               }
-              return { paired: fixture.paired, online: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
+              // „neovereno“: aplikace odpovídá na /api/health, ale ověření rozšíření selže.
+              // „novejsi“: rozšíření (0.12.0) je novější než aplikace (0.11.0), jako Store vs. Stable.
+              return { paired: fixture.paired, online: fixture.paired && state !== 'neovereno', revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : state === 'novejsi' ? '0.11.0' : '0.12.0' } };
             } },
           };
           // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
@@ -100,7 +102,7 @@ try {
         assert.equal(await page.locator('input[type=checkbox]').count(), 9);
         // Přepínače služeb se nabízejí, až rozšíření posílá data; jinde je karta schovaná.
         const sluzbyVidet = await page.locator('#sites-open').isVisible();
-        assert.equal(sluzbyVidet, ['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state), `${state}: viditelnost seznamu služeb`);
+        assert.equal(sluzbyVidet, ['paired', 'outdated', 'novejsi', 'overeni', 'overeni-chyby'].includes(state), `${state}: viditelnost seznamu služeb`);
         assert.equal(await page.locator('.radek--tato').isVisible(), state.startsWith('overeni'), `${state}: aktuální karta jen na podporované stránce`);
         if (state === 'paired') {
           // Řádek konverzace v jiné kartě do ní kliknutím přepne a okno se zavře.
@@ -164,6 +166,16 @@ try {
           assert.match(await page.locator('.radek--tato .st').textContent(), state === 'overeni' ? /sledování této služby je vypnuté/ : /odpovídá/);
         }
         if (state === 'outdated') assert.equal(await page.locator('#outdated').isVisible(), true);
+        // Starší aplikace nesmí rozšíření nabízet „novou“ verzi, která je ve skutečnosti starší.
+        if (state === 'novejsi') assert.equal(await page.locator('#outdated').isVisible(), false, 'aplikace je starší než rozšíření');
+        if (state === 'neovereno') {
+          // Nepodařené ověření není „neběží“ (s odkazem ke stažení) ani „nespárováno“.
+          assert.match(await page.locator('#headline').textContent(), /Nepodařilo se ověřit/);
+          assert.equal(await page.locator('#pill-text').textContent(), 'Neověřeno');
+          assert.equal(await page.locator('#feats').isVisible(), false, 'žádná nabídka ke stažení');
+          assert.equal(await page.locator('#pairing').isVisible(), false, 'žádná výzva ke spárování');
+          assert.equal(await page.locator('#app-link-text').textContent(), 'Otevřít Agenteeq');
+        }
         if (state === 'paired') {
           // Agenti z aplikace: věta o stavu, kdo čeká a kdo pracuje; číslo nahoře sčítá i chat v prohlížeči.
           assert.equal(await page.locator('#agenti').isVisible(), true, 'přehled agentů je vidět');

@@ -10,6 +10,7 @@
       'Zjišťuji…': 'Checking…',
       'Připojeno': 'Connected',
       'Neběží': 'Not running',
+      'Neověřeno': 'Not verified',
       'Nespárováno': 'Not paired',
       'Chvilku…': 'One moment…',
       'Hledám Agenteeq na tomto počítači.': 'Looking for Agenteeq on this computer.',
@@ -100,6 +101,9 @@
       // Aplikace neběží
       'Agenteeq na tomto počítači neběží': 'Agenteeq isn’t running on this computer',
       'Spusť aplikaci, rozšíření se k ní připojí samo.': 'Open the app and the extension connects to it on its own.',
+      // Aplikace běží, ale ověření rozšíření selhalo
+      'Nepodařilo se ověřit spojení s Agenteeq': 'Couldn’t verify the connection to Agenteeq',
+      'Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.': 'The app is running, but the extension got no answer from it. I’ll try again in a few seconds.',
       'Co rozšíření dělá': 'What the extension does',
       'Zkusit znovu': 'Try again',
       'Uvidíš, jestli agent v ChatGPT, Claude.ai nebo Gemini pracuje a kolik má konverzace zpráv.': 'See whether the agent in ChatGPT, Claude.ai or Gemini is working and how many messages the conversation has.',

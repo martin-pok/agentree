@@ -57,7 +57,7 @@ import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
 import { ze } from '../public/js/predlozky.js';
-import { UpdateService } from './updates.js';
+import { UpdateService, compareVersions } from './updates.js';
 import { prehledProRozsireni } from './prehled-rozsireni.js';
 import { watchExactFile } from './watch.js';
 
@@ -1441,7 +1441,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       seenAt: e.seenAt,
       version: e.version,
       expectedVersion: VERSION,
-      outdated: paired && Boolean(e.version) && e.version !== VERSION,
+      // Jen když má aplikace novější verzi. Rozšíření z obchodu bývá novější než Stable aplikace
+      // a rada „aktualizuj rozšíření“ by pak byla nepravdivá.
+      outdated: paired && compareVersions(VERSION, e.version) === 1,
       repair: !paired && e.pairedAt > 0,
     };
   }
