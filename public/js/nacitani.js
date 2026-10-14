@@ -14,7 +14,7 @@
     znovu.hidden = stav.znovu !== true;
     prubeh.hidden = stav.progress !== true;
     ukoncit.hidden = stav.progress !== true;
-    if (!prubeh.hidden) prubeh.setAttribute('aria-valuetext', typeof stav.text === 'string' ? stav.text : 'Probíhá aktualizace');
+    if (!prubeh.hidden) prubeh.setAttribute('aria-valuetext', typeof stav.text === 'string' ? stav.text : text.textContent);
     if (!znovu.hidden) znovu.focus();
   };
   ukoncit.addEventListener('click', () => {
