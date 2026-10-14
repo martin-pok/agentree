@@ -36,3 +36,17 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
   const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží') : '';
   return { stav, veta, poznamka };
 }
+
+/**
+ * Popisek pod číslem v dlaždici s počtem agentů (box Stav agentů, odznak v nabídce, přehled účtu).
+ * Číslo je podmět a sloveso se s ním shoduje: „1 pracuje“, „3 pracují“, „5 pracuje“. Dřív byl
+ * popisek pevný a vycházelo „3 potřebuje tebe“. „Na limitu“ se nečasuje, sedí ke každému počtu.
+ */
+export function popisPoctu(stav, n) {
+  if (stav === 'working') return plural(n, 'pracuje', 'pracují', 'pracuje');
+  if (stav === 'needs_input') return plural(n, 'potřebuje tebe', 'potřebují tebe', 'potřebuje tebe');
+  if (stav === 'failed') return plural(n, 'selhal', 'selhali', 'selhalo');
+  if (stav === 'waiting') return plural(n, 'čeká na zadání', 'čekají na zadání', 'čeká na zadání');
+  if (stav === 'limited') return tr('na limitu');
+  return '';
+}

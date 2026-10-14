@@ -3,6 +3,7 @@ import { ICON, glyph } from './icons.js';
 import { currentLimits, limitState, limitObnova } from './ui.js';
 import { tokensSince } from './data.js';
 import { tr, tomtoPocitaci } from './i18n.js';
+import { ze } from './predlozky.js';
 import { nastrojeBezDat, kdeKdy } from './nastroje.js';
 
 // Rozbalovací přehled „Všechny nástroje“. Nahoře zůstávají jen změřená okna limitů; tady je
@@ -123,7 +124,7 @@ export function limitsAll(state, now = Date.now()) {
   items.push(...bezDat.map((n) => radekBezDat(n, now)));
   const merene = rows.filter((r) => r.okna.length).length;
   return `<details class="lim-all" data-lim-all${otevreno ? ' open' : ''}>
-    <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${tr('z {0} s měřeným limitem', rows.length + bezDat.length)}</span>${ICON.chev}</summary>
+    <summary><span>${tr('Všechny nástroje a služby')}</span><span class="lim-all-count">${merene} ${ze(rows.length + bezDat.length) ? tr('ze {0} s měřeným limitem', rows.length + bezDat.length) : tr('z {0} s měřeným limitem', rows.length + bezDat.length)}</span>${ICON.chev}</summary>
     <ul class="ltool-list">${items.join('')}</ul>
   </details>`;
 }

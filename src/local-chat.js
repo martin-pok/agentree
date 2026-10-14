@@ -68,7 +68,7 @@ export function createLocalChat({ store, ollama }) {
     start({ model, prompt }) {
       const s = store.ensure({ connector: 'local-chat', localId: uid(), provider: 'local', app: `Ollama · ${model}`, source: 'local' });
       s.model = model;
-      s.title = clip(prompt, 90);
+      s.title = clip(prompt, 400);
       chats.set(s.id, { model, messages: [], controller: null });
       runTurn(s, prompt);
       return s.id;

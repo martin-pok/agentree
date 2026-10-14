@@ -2,6 +2,13 @@
 
 ## Připravované změny po 0.46.12 · nevydáno
 
+- **Anglické rozhraní bez českých zbytků.** Titulek průvodce „ChatGPT, Gemini a Claude.ai taky.“, ukázka „Claude · Limit 5 h“, „v“ před počtem konverzací ve Statistikách, průběh úkolů a kontext v detailu agenta, popisky počtů v přehledu účtu i odznak v nabídce už jsou přeložené. `test/i18n.test.mjs` nově hledá i češtinu bez diakritiky: předložku přilepenou před dosazenou hodnotu a větu v poli rozhraní mimo `tr()`.
+- **Správné tvary podle počtu.** „Další 3 jsou v sekci Agenti“ místo „Dalších 3 je“, „3 potřebují tebe“, „1 selhal“, „1 nalezená konverzace“, „1 nepřečtené“ a „A další 2“. Dlaždice Stav agentů, odznak v nabídce a přehled účtu berou popisek z jednoho místa (`public/js/stav-vety.js#popisPoctu`); místo „limit“ stojí „na limitu“, které sedí ke každému číslu.
+- **„ze 4“, „ze 7“, „ze 20“.** Před číslem, které se čte od s, z, š, ž nebo skupiny souhlásek, píše aplikace „ze“ – v průvodci nastavením („0 ze 4 hotovo“), u limitů („0 ze 7 s měřeným limitem“), u rozpočtů i v upozorněních ze serveru. Rozhoduje `public/js/predlozky.js#ze`, společný pro klienta i server.
+- **Hodně agentů už nerozbije tvary.** Pod časovou osou je věta s počtem skrytých agentů a kapsle „Všichni agenti“ (dřív odkaz s ostrými rohy, na telefonu 52 px vysoký). Místo prázdné karty „+5“ pod kartami Právě teď stojí kapsle „Dalších 5 agentů v sekci Agenti“. `npm run qa:tvary` i `qa:contrast` nově měří stav s 16 agenty navíc (`scripts/qa-agenti.mjs`), takže to CI pohlídá.
+- **Dlouhé názvy konverzací končí celým slovem a „…“.** Dřív se useknuly po 100 znacích uprostřed slova. Celý název nese nové pole `fullTitle` a ukáže se v bublině nad kartou Právě teď a na časové ose.
+- **Upozornění na limit bez sekund.** „Obnoví se 13. 10. 2026 04:09“ místo „4:09:56“.
+- **Osa grafu tokenů mluví jako čísla vedle ní:** „2 tis.“ a „1,5 M“ místo „2k“ a „1,5M“.
 - **Vzdálení agenti Claude Code s čerstvějším stavem 🧪.** Stav se dosud bral jen ze seznamu relací v cache Claude Desktopu, který se ukládá jen občas. Agenteeq teď stav relace najde v kterémkoli uloženém dotazu Claude Desktopu – například v detailu otevřené relace, když je čerstvější – a použije nejnovější z nich. Jestli Claude Desktop takový dotaz ukládá, zatím není na Macu ověřené; když ne, nic se nemění.
 
 ## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu

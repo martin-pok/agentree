@@ -660,7 +660,9 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .pb-agent[data-state='waiting'] small { color: var(--pb-wait); }
 .pb-agent[data-state='alert'] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--velvet) 55%, transparent); }
 .pb-agent[data-state='alert'] small { color: var(--pb-alert); }
-.pb-agent--more { padding: 0 16px; font: 500 13px/1 var(--f-mono); }
+/* Agenti nad dvanáct: kapsle s textem místo prázdné dlaždice. V řadě se srovná na střed, v mřížce
+   „Právě teď“ (workbench.css) zabere celý řádek pod kartami. */
+.pb-agents .pb-dalsi { align-self: center; }
 .pb-empty { margin: 0; font-size: 13px; line-height: 48px; color: var(--pb-mute); }
 .discs { display: flex; }
 .disc { width: 38px; height: 38px; border-radius: 50%; margin-left: -10px; border: 3px solid var(--card); display: grid; place-items: center; }
@@ -2745,9 +2747,9 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .nav a { min-height: 48px; }
 }
 .skills-more { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 24px 0 8px; }
-.tl-more { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); text-decoration: none; }
-.tl-more:hover { color: var(--ink); }
-.tl-more .icon { width: 14px; height: 14px; }
+/* Kolik agentů se na osu nevešlo, řekne věta; kam se podívat, ukáže kapsle (odkaz na řádku textu
+   nebyl tlačítko ani odkaz v textu a na telefonu se zalomil do 52 px vysokého bloku). */
+.tl-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; line-height: 1.4; color: var(--ink-2); }
 .side-head [data-notes-status].is-error { color: var(--velvet-ink); font-weight: 500; }
 
 /* Ukázka limitů v průvodci */

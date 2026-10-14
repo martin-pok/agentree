@@ -14,7 +14,8 @@ import { goToExtension } from '../jump.js';
 import { tr, LOCALE, tomtoPocitaci } from '../i18n.js';
 import { pouzivaneNastroje } from '../nastroje.js';
 import { noveNastrojeHtml } from '../detekce-ui.js';
-import { stavAgentu } from '../stav-vety.js';
+import { stavAgentu, popisPoctu } from '../stav-vety.js';
+import { ze } from '../predlozky.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
@@ -81,7 +82,7 @@ function onboardingHtml() {
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return '';
   return `<section class="card onboard" aria-labelledby="ob-h">
-    <div class="onboard-head"><div><h2 id="ob-h">${tr('Začni s Agenteeq')}</h2><p class="muted small">${tr('{0} z {1} hotovo', done, steps.length)}</p></div>
+    <div class="onboard-head"><div><h2 id="ob-h">${tr('Začni s Agenteeq')}</h2><p class="muted small">${ze(steps.length) ? tr('{0} ze {1} hotovo', done, steps.length) : tr('{0} z {1} hotovo', done, steps.length)}</p></div>
       <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="${tr('Průvodce nastavením')}"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
       <button class="link" type="button" data-onboard-dismiss>${tr('Skrýt průvodce')}</button></div>
     <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
@@ -206,6 +207,10 @@ function mount(el) {
   });
 }
 
+// Agenti nad dvanáct se do „Právě teď“ nevejdou. Dřív za ně stála prázdná karta s „+5“ v rohu,
+// bez popisu, kam vede; teď je to kapsle, která to řekne slovy.
+const pbDalsi = (n) => `<li class="pb-dalsi"><a class="link" href="#/agenti">${esc(plural(n, 'Další agent v sekci Agenti', 'Další {0} agenti v sekci Agenti', 'Dalších {0} agentů v sekci Agenti').replace('{0}', n))}</a></li>`;
+
 // Živé oblasti Přehledu se slučují (ui.js#sloucit): karty, které se nezměnily, zůstanou stejnými
 // uzly – nepřehrají znovu nástup, nepřijdou o najetí a logo se znovu nedekóduje.
 const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'activity' || name === 'hero' || name === 'decisions' });
@@ -251,9 +256,9 @@ function update(topics = new Set(['all'])) {
         <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${procesyNevim ? ` · ${tr('nepodařilo se zjistit, co běží')}` : state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
-      <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${tr('potřebuje tebe')}</span></a>
-      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=failed"><b data-odo>${failedCount}</b><span>${tr('selhalo')}</span></a>
-      <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b data-odo>${waiting.length}</b><span>${tr('čeká na zadání')}</span></a>
+      <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${popisPoctu('needs_input', decideCount)}</span></a>
+      <a class="pb-stat${failedCount ? ' is-alert' : ''}" href="#/agenti?stav=failed"><b data-odo>${failedCount}</b><span>${popisPoctu('failed', failedCount)}</span></a>
+      <a class="pb-stat${waiting.length ? ' is-wait' : ''}" href="#/agenti?stav=waiting"><b data-odo>${waiting.length}</b><span>${popisPoctu('waiting', waiting.length)}</span></a>
     </div>
     <a class="link pb-all" href="#/agenti">${tr('Všichni agenti')} ${ICON.arrow}</a>
     <div class="pb-strip">${live.length
@@ -263,9 +268,9 @@ function update(topics = new Set(['all'])) {
         return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''} href="${agentHref(s.id)}">
           ${statusPill(s.status, 'pb-stav')}
           <span class="pb-agent-logo">${glyph(s)}</span>
-          <span class="pb-agent-text"><b>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
+          <span class="pb-agent-text"><b${s.fullTitle ? ` title="${esc(s.fullTitle)}"` : ''}>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
-      }).join('')}${live.length > STRIP_MAX ? `<li><a class="pb-agent pb-agent--more" href="#/agenti">+${live.length - STRIP_MAX}</a></li>` : ''}</ul>`
+      }).join('')}${live.length > STRIP_MAX ? pbDalsi(live.length - STRIP_MAX) : ''}</ul>`
       : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
   }
 
@@ -275,10 +280,10 @@ function update(topics = new Set(['all'])) {
     const problemy = [...failed, ...limited];
     const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim });
     const pocty = [
-      [working.length, tr('pracuje'), 'ok', '#/agenti?stav=working'],
-      [needs.length, tr('potřebuje tebe'), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
-      [failed.length, tr('selhalo'), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
-      [limited.length, tr('limit'), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
+      [working.length, popisPoctu('working', working.length), 'ok', '#/agenti?stav=working'],
+      [needs.length, popisPoctu('needs_input', needs.length), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
+      [failed.length, popisPoctu('failed', failed.length), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
+      [limited.length, popisPoctu('limited', limited.length), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
     ];
     zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
       <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>${poznamka ? `<p class="zdravi-pozn">${esc(poznamka)}</p>` : ''}
@@ -289,7 +294,7 @@ function update(topics = new Set(['all'])) {
 
   const hooks = state.integrations?.claudeHooks;
   if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', needs.length
-    ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${tr('A dalších {0}', needs.length - 4)}</a>` : ''}`
+    ? `<ul class="decisions">${needs.slice(0, 4).map(decisionCard).join('')}</ul>${needs.length > 4 ? `<a class="link more" href="#/agenti?stav=needs_input">${plural(needs.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', needs.length - 4)}</a>` : ''}`
     : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Nikdo teď nečeká na tvé rozhodnutí')}</strong>
         ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni" data-karta="claude">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
 
@@ -349,11 +354,11 @@ function update(topics = new Set(['all'])) {
       .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a));
     const rows = vybrane
       .slice(0, TIMELINE_MAX)
-      .map((s) => ({ id: s.id, title: s.title, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
+      .map((s) => ({ id: s.id, title: s.title, fullTitle: s.fullTitle, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
     const skryto = vybrane.length - rows.length;
     zivy(el, 'timeline', rows.length
       ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
-        ? `<a class="tl-more" href="#/agenti">${tr('Na ose je {0} nejdůležitějších agentů. {1} v sekci Agenti', TIMELINE_MAX, skryto === 1 ? tr('Další je') : tr('Dalších {0} je', skryto))}${ICON.arrow}</a>` : ''}`
+        ? `<p class="tl-more"><span>${esc(tr('Na ose je {0} nejdůležitějších agentů.', TIMELINE_MAX))} ${esc(plural(skryto, 'Další je v sekci Agenti.', 'Další {0} jsou v sekci Agenti.', 'Dalších {0} je v sekci Agenti.').replace('{0}', skryto))}</span><a class="link" href="#/agenti">${tr('Všichni agenti')}</a></p>` : ''}`
       : `<div class="empty-inline">${tr('Za posledních 12 hodin žádná aktivita agentů.')}</div>`);
   }
 
@@ -385,7 +390,7 @@ function update(topics = new Set(['all'])) {
         ${total ? gauge({ pct: bp, color: bp >= 100 ? 'var(--velvet-ink)' : bp >= 80 ? 'var(--brass)' : 'var(--teal)', value: `${Math.round(bp)} %`, label: tr('rozpočtu'), size: 'sm', reached: bp >= 100 }) : ''}
         <div class="spend-mini-num">
           <span class="big">${tween('ov-spend', sp.month.total, `money:${sp.currency}`)}</span>
-          <span class="muted small">${total ? tr('z {0}', fmtMoney(total, sp.currency)) : `<a class="link-inline" href="#/utrata?rozpocty=1">${tr('Nastavit rozpočet')}</a>`}</span>
+          <span class="muted small">${total ? (ze(total) ? tr('ze {0}', fmtMoney(total, sp.currency)) : tr('z {0}', fmtMoney(total, sp.currency))) : `<a class="link-inline" href="#/utrata?rozpocty=1">${tr('Nastavit rozpočet')}</a>`}</span>
           <span class="muted small">${tr('Prognóza do konce měsíce')} ${fmtMoney(sp.forecast, sp.currency)}</span>
         </div>
       </div>

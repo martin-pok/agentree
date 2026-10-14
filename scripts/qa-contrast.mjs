@@ -14,6 +14,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startTestServer, api } from '../test/helpers.mjs';
+import { pridejMnohoAgentu } from './qa-agenti.mjs';
 import { buildSite } from './build-site.mjs';
 import { staticServer } from './qa-server.mjs';
 import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
@@ -134,6 +135,8 @@ const app = await startTestServer(
 );
 // Trocha obsahu, aby se měřily i stavy s daty, ne jen prázdné obrazovky.
 app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-kontrast', provider: 'openai', app: 'Codex' }), { title: 'QA kontrast', status: 'needs_input', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
+// Víc agentů, než se vejde na osu a do Právě teď: měří se i texty, které vzniknou až pak.
+pridejMnohoAgentu(app.app.store);
 for (let i = 0; i < 3; i++) {
   const dir = path.join(app.sourceHome, '.agents', 'skills', `vlastni-${i}`);
   await fs.mkdir(dir, { recursive: true });
@@ -175,6 +178,13 @@ for (const [look, appearance] of [['obloha', 'light'], ['obloha', 'dark'], ['kon
       await page.keyboard.press('Escape'); // „Co je nového“ po aktualizaci
       await page.waitForTimeout(500);
       vypis(`${rezim} ${sirka}px /${trasa}`, await page.evaluate(zmer, PRECHODY));
+      if (trasa === 'prehled') {
+        // Průběh dne (časová osa, grafy, limity, poslední aktivita) je na Přehledu ve sbaleném
+        // <details> a zavřený se nevykreslí – bez otevření by se nikdy neměřil.
+        await page.evaluate(() => { const d = document.querySelector('details.home-history'); if (d) d.open = true; });
+        await page.waitForTimeout(300);
+        vypis(`${rezim} ${sirka}px /${trasa} › průběh dne`, await page.evaluate(zmer, PRECHODY));
+      }
       if (trasa === 'utrata') {
         // Plovoucí karta detekce může tlačítko překrývat – klik se proto pošle přímo prvku.
         await page.evaluate(() => { for (let i = 0, b; i < 20 && (b = document.querySelector('[data-models][aria-expanded="false"]')); i++) b.click(); });

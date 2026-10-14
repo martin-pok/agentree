@@ -5,6 +5,7 @@ import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut } from '../charts.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge } from '../ui.js';
 import { tr, LOCALE, mnozne as plural } from '../i18n.js';
+import { ze } from '../predlozky.js';
 
 // `otevrene` = rozbalené rozpady po modelech (klíč měsíc|služba). Drží se mimo DOM, aby živá
 // aktualizace útraty rozbalený řádek nezavřela.
@@ -261,7 +262,7 @@ function update() {
       return `<div class="card budget-card${over ? ' is-over' : warn ? ' is-warn' : ''}">
         <div class="budget-top">${svc ? glyph(svc.provider) : ''}<span>${esc(b.label)}</span><b>${Math.round(b.pct)} %</b></div>
         <div class="budget-track"><i style="width:${Math.min(100, b.pct).toFixed(1)}%"></i></div>
-        <span class="muted small">${tr('{0} z {1}', money(b.spent), money(b.budget))}</span>
+        <span class="muted small">${ze(b.budget) ? tr('{0} ze {1}', money(b.spent), money(b.budget)) : tr('{0} z {1}', money(b.spent), money(b.budget))}</span>
       </div>`;
     }).join('')}</div>`
     : `<div class="cta-card card">${ICON.wallet}<div><strong>${tr('Nastav si měsíční rozpočet')}</strong><p class="muted small">${tr('Agenteeq tě upozorní, jakmile útrata dosáhne 80 % a 100 %.')}</p></div><button class="btn" type="button" data-action="budgets">${tr('Nastavit rozpočet')}</button></div>`);

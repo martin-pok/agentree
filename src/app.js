@@ -56,6 +56,7 @@ import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSes
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
 import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
+import { ze } from '../public/js/predlozky.js';
 import { UpdateService } from './updates.js';
 import { prehledProRozsireni } from './prehled-rozsireni.js';
 import { watchExactFile } from './watch.js';
@@ -839,7 +840,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         level: hit === 100 ? 'critical' : 'warning',
         kind: 'budget',
         title: hit === 100 ? ui('Projekt {0}: rozpočet tokenů vyčerpán', p.name) : ui('Projekt {0}: {1} % rozpočtu tokenů', p.name, Math.round(pct)),
-        body: ui('{0} z {1} tokenů tento měsíc.', used.toLocaleString('cs-CZ'), budget.toLocaleString('cs-CZ')),
+        body: ze(budget) ? ui('{0} ze {1} tokenů tento měsíc.', used.toLocaleString('cs-CZ'), budget.toLocaleString('cs-CZ')) : ui('{0} z {1} tokenů tento měsíc.', used.toLocaleString('cs-CZ'), budget.toLocaleString('cs-CZ')),
       });
     }
   }
