@@ -37,6 +37,7 @@ import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
 import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
 import { cileHledani, hledejCile, skore } from './hledani.js';
+import { containPopoverWheel } from './scroll-containment.js';
 
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
 
@@ -70,6 +71,8 @@ const updateEl = document.getElementById('update-chip');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
+// Safari/WKWebView can propagate wheel beyond a finished popover list to page.
+pop.addEventListener('wheel', (event) => containPopoverWheel(pop, event), { passive: false });
 const stageEl = document.querySelector('.stage');
 const narrowMq = window.matchMedia('(max-width: 880px)');
 
