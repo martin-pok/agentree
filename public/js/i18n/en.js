@@ -557,7 +557,6 @@ export default {
     "Všichni agenti": "All agents",
     "Aktivní agenti": "Active agents",
     "Žádný agent teď nepracuje ani nečeká na zadání.": "No agent is working or waiting for a task right now.",
-    "Nikdo teď nečeká na tvé rozhodnutí": "No agent needs your decision right now",
     "za den": "per day",
     "Průměr z posledních 7 dokončených dní, bez dneška": "Average of the last 7 completed days, excluding today",
     "(předchozích 7 dní)": "(previous 7 days)",
