@@ -434,6 +434,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func reportUpdateError(_ message: String) {
         installing = false
+        // Failure happened BEFORE the bundle swap. Restore the already-running
+        // application instead of stranding a user behind a permanent loader.
+        if baseURL != nil { hideLoading() }
+        else { setLoading(message, retry: true) }
         guard let data = try? JSONSerialization.data(withJSONObject: [message]), let json = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.agenteeqAktualizaceSelhala && window.agenteeqAktualizaceSelhala(\(json)[0])")
     }
