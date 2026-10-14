@@ -1373,6 +1373,33 @@ html.is-cloud body { background: var(--paper); }
 .topups li + li { box-shadow: 0 -1px 0 var(--line-2); }
 .topups b { font: 500 14px/1 var(--f-mono); color: var(--teal-ink); }
 
+
+/* Notion QA: skills search starts at the left edge; sorting sits to the right.
+   Scope to Skills instead of changing global search bars used by Agents and Projects. */
+.sk-toolbar .search-field { margin-left: 0; flex: 1 1 240px; max-width: 320px; min-width: 0; }
+.sk-toolbar .search-field input { width: 100%; }
+.sk-toolbar .sk-sort { margin-left: auto; }
+@media (max-width: 700px) {
+  .sk-toolbar .search-field { flex-basis: 100%; max-width: none; }
+  .sk-toolbar .sk-sort { margin-left: 0; }
+}
+
+/* Project editor: preserve a stationary action row while only the form body scrolls.
+   File pickers/crop overlays retain the same markup and keyboard behavior. */
+.modal--project { display: flex; flex-direction: column; overflow: hidden; max-height: calc(100dvh - 32px); }
+.modal--project > form { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 32px); }
+.modal--project .modal-head, .modal--project .modal-foot { flex: none; }
+.modal--project .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.modal--project .modal-foot { border-top: 1px solid var(--line-2); padding: 12px 24px; }
+/* Cover and customer logo read as two equal peers instead of vertically stacked cards.
+   At phone sizes the original single-column media controls remain intact. */
+@media (min-width: 680px) {
+  .modal--project .media-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal--project .media-pick { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-content: start; }
+  .modal--project .media-thumb--cover { width: 84px; }
+  .modal--project .media-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
 /* ---------- Dovednosti ---------- */
 /* Souhrn nad seznamem: čtyři čísla, která dávají smysl dřív, než začneš hledat. */
 .sk-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; margin-bottom: 24px; border-radius: var(--r-md); background: var(--line-2); overflow: hidden; box-shadow: var(--shadow-sm); }

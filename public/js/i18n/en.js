@@ -357,8 +357,6 @@ export default {
     "Pro koho a co v projektu děláš": "Who it’s for and what you’re doing in the project",
     "Barva": "Color",
     "Vzhled v přehledu": "Look in the overview",
-    "Nahradí přechod nahoře na kartě.": "Replaces the gradient at the top of the card.",
-    "Objeví se místo barevné tečky.": "Shown instead of the colored dot.",
     "Nahrát": "Upload",
     "Odebrat": "Remove",
     "Složky projektu": "Project folders",
