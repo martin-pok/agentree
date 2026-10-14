@@ -16,7 +16,7 @@
 - **Aktualizace: dvě volby, dvě skupiny.** Kanál (Stabilní / Preview) a způsob (Ručně / Automaticky) mají vlastní popisek a mezi sebou vzduch, obrysy vybraných karet se už nedotýkají.
 - **Útrata říká, co se počítá.** U starších ručních záznamů i u součtů stojí, že se do součtů, prognózy ani rozpočtu nepočítají. Dialog Rozpočty bez připojených nákladů za API řekne, že se rozpočet do té doby neukáže ani neupozorní.
 
-**Stav 14. 10. 2026: pouze zdrojový kandidát pro nové Preview, dosud nevydaný.** Vadný a neměnný Draft `v0.46.11` tyto opravy neobsahuje a nesmí se publikovat. Pro `v0.46.12` je nutný vlastní neměnný tag, kompletní 8/8 CI na přesném SHA, nový Mac/Windows/Chrome build, nezávislé ověření osmi příloh a skutečné UAT. Zveřejnění Preview až po ověření a schválení, Stable Latest ponechat beze změny. Samotný commit ani zelené testy nejsou aktualizací aplikace na Macu.
+**Stav 14. 10. 2026: zveřejněno jako Preview.** Tag `v0.46.12` míří na `0e7faee`, testy na tomto commitu prošly. Workflow Vydání sestavilo osm příloh pro Mac, Windows a Chrome a před zveřejněním je znovu stáhlo a ověřilo podle SHA-256. Zveřejnění 14. 10. v 6:45 UTC proběhlo na výslovný pokyn vlastníka ještě před ručním ověřením na zařízeních: instalace na Macu přes Finder a Gatekeeper, aktualizace z aplikace, přihlášení Googlem, Chrome a Windows zatím ověřené nejsou. Aplikace pro Mac je podepsaná ad-hoc, bez Developer ID a notarizace. Stabilní Latest zůstává `v0.46.0`.
 
 ## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
 

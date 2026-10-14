@@ -413,7 +413,8 @@ test('web: current Preview documentation and published preview links agree witho
   const files = ['README.md', 'docs/ROADMAP.md', 'docs/RELEASE-READINESS.md'];
   for (const name of files) {
     const doc = await fs.readFile(path.join(ROOT, name), 'utf8');
-    assert.ok(doc.includes('v0.46.6'), name + ' must identify the currently published preview');
+    // v0.46.12 je veřejné Preview od 14. 10. 2026 (publish.yml, kanál Preview); Stable Latest zůstal v0.46.0.
+    assert.ok(doc.includes('v0.46.12'), name + ' must identify the currently published preview');
     assert.ok(doc.includes('v0.46.0'), name + ' must keep the stable channel distinct');
   }
 });
