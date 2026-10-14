@@ -7,6 +7,7 @@ import { fill, toast, emptyState } from '../ui.js';
 import { enableReorder } from '../reorder.js';
 import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark, vsechnyStitky } from '../projects-ui.js';
 import { tr } from '../i18n.js';
+import { ze } from '../predlozky.js';
 
 const v = { el: null, tab: 'active', q: '', tag: '' };
 
@@ -116,7 +117,7 @@ function mount(el, _params, query) {
   v.reorder = enableReorder(gridBox, {
     itemSelector: '.pcard[data-pid]',
     idOf: (n) => n.dataset.pid,
-    onMoveKey: (pos, total) => toast(tr('Pozice {0} z {1}', pos, total), { tone: 'info', timeout: 1600 }),
+    onMoveKey: (pos, total) => toast(ze(total) ? tr('Pozice {0} ze {1}', pos, total) : tr('Pozice {0} z {1}', pos, total), { tone: 'info', timeout: 1600 }),
     onCommit: async (ids) => {
       if (!ids) { gridBox._html = null; update(); return; } // Esc: vrátit původní pořadí
       try {

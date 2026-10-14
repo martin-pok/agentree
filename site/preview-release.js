@@ -1,5 +1,5 @@
 // Only show a Preview after GitHub has actually published its exact Mac DMG.
-// The HTML contains a known-good v0.46.6 link, so network/API failures never
+// The HTML contains a known-good published Preview link, so network/API failures never
 // produce a broken CTA or expose a private Draft. The Stable CTA is separate.
 const REPO = 'https://github.com/martin-pok/agentree';
 export const PREVIEW_API = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=20';

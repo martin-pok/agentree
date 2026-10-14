@@ -19,6 +19,7 @@ import { startTestServer, api } from '../test/helpers.mjs';
 import { buildSite } from './build-site.mjs';
 import { staticServer } from './qa-server.mjs';
 import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
+import { pridejMnohoAgentu } from './qa-agenti.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -190,6 +191,8 @@ for (const [rel, name] of [
   await fs.writeFile(path.join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: Kontrola filtru původu\n---\nText.\n`);
 }
 app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', localId: 'qa-tvary', provider: 'openai', app: 'Codex' }), { title: 'QA tvary', lastAt: Date.now(), startedAt: Date.now() - 60000 }));
+// Víc než 7 řádků časové osy a víc než 12 živých agentů: měří se i odkaz pod osou a kapsle s počtem dalších.
+pridejMnohoAgentu(app.app.store);
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
 await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, appearance: 'light' });
 for (const sirka of SIRKY) {
@@ -200,7 +203,20 @@ for (const sirka of SIRKY) {
     await page.evaluate(() => document.fonts.ready);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(400);
+    // „Co je nového“ se může otevřít až po stisku Escape (víc dat = pozdější první snímek). Měří se
+    // až po doběhnutí konečných animací, jinak by dialog v půli nástupu hlásil tlačítko 39,2 px.
+    await page.evaluate(() => Promise.race([
+      Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {}))),
+      new Promise((r) => setTimeout(r, 3000)), // pozastavená animace nikdy nedoběhne
+    ]));
     vypis(`${sirka}px /${trasa}`, await page.evaluate(zmer, PARAM));
+    if (trasa === 'prehled') {
+      // Průběh dne (časová osa, grafy, limity, poslední aktivita) je na Přehledu ve sbaleném
+      // <details> a zavřený se nevykreslí – bez otevření by se nikdy neměřil.
+      await page.evaluate(() => { const d = document.querySelector('details.home-history'); if (d) d.open = true; });
+      await page.waitForTimeout(300);
+      vypis(`${sirka}px /${trasa} › průběh dne`, await page.evaluate(zmer, PARAM));
+    }
     if (trasa === 'nastaveni') {
       const skupiny = await page.$$eval('.set-nav [data-jump]', (b) => b.map((x) => x.dataset.jump));
       for (const skupina of skupiny.slice(1)) {

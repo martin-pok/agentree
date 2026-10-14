@@ -22,6 +22,18 @@ export function clip(s, n = 180) {
   return typeof s === 'string' ? s.replace(/\s+/g, ' ').trim().slice(0, n) : '';
 }
 
+// Zkrácení textu, který se čte (název konverzace): na hranici slova a s „…“, ať je vidět, že
+// pokračuje. clip() řeže natvrdo a hodí se jen na údaje, u kterých na tom nesejde. Výsledek má
+// nejvýš `n` znaků i s výpustkou; slovo delší než třetina limitu (adresa, cesta) se usekne.
+export function clipSlova(s, n = 100) {
+  const t = clip(s, Infinity);
+  if (t.length <= n) return t;
+  const kus = t.slice(0, n);
+  const mezera = kus.lastIndexOf(' ');
+  const konec = mezera >= n * (2 / 3) ? kus.slice(0, mezera) : kus.slice(0, n - 1);
+  return `${konec.replace(/[\s,;:–—-]+$/, '')}…`;
+}
+
 export function clipBlock(s, n = 2000) {
   if (typeof s !== 'string') return '';
   const t = s.replace(/\r/g, '').trim();

@@ -222,7 +222,8 @@ export function createCodexConnector(ctx) {
       const at = toTs(r.updated_at);
       const prev = titles.get(r.id);
       if (prev && prev.at > at) return;
-      titles.set(r.id, { name: clip(r.thread_name, 100), at });
+      // Jen horní mez; na zobrazení zkracuje model.js#summarize na hranici slova s „…“.
+      titles.set(r.id, { name: clip(r.thread_name, 400), at });
       changed.add(r.id);
     });
     for (const id of changed) {

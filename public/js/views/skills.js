@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { esc, norm, rel, fmtNum, shortPath, plural } from '../format.js';
+import { ze } from '../predlozky.js';
 import { ICON } from '../icons.js';
 import { fill, emptyState, toast, copy, modal } from '../ui.js';
 import { renderMarkdown, splitFrontMatter } from '../markdown.js';
@@ -243,7 +244,7 @@ function update() {
   const ukazane = list.slice(0, v.shown);
   fill(el, 'list', list.length
     ? `<div class="skills">${ukazane.map(cardHtml).join('')}</div>${list.length > ukazane.length
-      ? `<div class="skills-more"><span class="muted small">${tr('Zobrazeno {0} z {1}', ukazane.length, list.length)}</span><button class="btn" type="button" data-more>${tr('Zobrazit dalších {0}', Math.min(STRANA, list.length - ukazane.length))}</button></div>` : ''}`
+      ? `<div class="skills-more"><span class="muted small">${ze(list.length) ? tr('Zobrazeno {0} ze {1}', ukazane.length, list.length) : tr('Zobrazeno {0} z {1}', ukazane.length, list.length)}</span><button class="btn" type="button" data-more>${plural(Math.min(STRANA, list.length - ukazane.length), 'Zobrazit další {0}', 'Zobrazit další {0}', 'Zobrazit dalších {0}').replace('{0}', Math.min(STRANA, list.length - ukazane.length))}</button></div>` : ''}`
     : emptyState({
       title: v.items.length ? tr('Tomuto filtru neodpovídá žádná dovednost') : tr('Na {0} zatím žádné dovednosti nejsou', tomtoPocitaci()),
       text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq hledá soubory SKILL.md ve sdílené složce .agents/skills, u Claude (včetně pluginů a plánovaných úloh) a u Codexu.'),

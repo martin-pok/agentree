@@ -32,12 +32,17 @@ const puvod = new URL(url).origin;
 // Deterministic, read-only GitHub PUBLIC release metadata. QA must not depend on
 // live internet, nor disable external-request blocking to test Preview links.
 const PREVIEW_API = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=20';
+// Podvržené vydání je vždy o jednu opravnou verzi novější než záložní odkaz v HTML, aby se
+// přepnutí ověřilo i po každém dalším zveřejněném Preview. Žádné skutečné vydání nepředstírá.
+const [, zalohaMajor, zalohaMinor, zalohaPatch] = (await fs.readFile(path.join(out, 'instalace', 'index.html'), 'utf8'))
+  .match(/data-preview-version="(\d+)\.(\d+)\.(\d+)"/);
+const NOVEJSI_PREVIEW = `${zalohaMajor}.${zalohaMinor}.${Number(zalohaPatch) + 1}`;
 const PREVIEW_FIXTURE = JSON.stringify([{
-  tag_name: 'v0.46.10', draft: false, prerelease: true,
+  tag_name: `v${NOVEJSI_PREVIEW}`, draft: false, prerelease: true,
   assets: [{
-    name: 'Agenteeq-0.46.10-macOS-arm64.dmg',
+    name: `Agenteeq-${NOVEJSI_PREVIEW}-macOS-arm64.dmg`,
     size: 50_000_000, digest: 'sha256:' + 'a'.repeat(64),
-    browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.10/Agenteeq-0.46.10-macOS-arm64.dmg',
+    browser_download_url: `https://github.com/martin-pok/agentree/releases/download/v${NOVEJSI_PREVIEW}/Agenteeq-${NOVEJSI_PREVIEW}-macOS-arm64.dmg`,
   }],
 }]);
 async function jenMistni(page, cizi) {
@@ -69,11 +74,11 @@ try {
         p.on('pageerror', e => chyby.push(e.message));
         await p.goto(url + '/instalace');
         await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
-        await p.waitForFunction(() => document.querySelector('[data-preview-mac]')?.getAttribute('href')
-          ?.includes('/releases/download/v0.46.10/'), null, { timeout: 5000 });
+        await p.waitForFunction((verze) => document.querySelector('[data-preview-mac]')?.getAttribute('href')
+          ?.includes(`/releases/download/v${verze}/`), NOVEJSI_PREVIEW, { timeout: 5000 });
         assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
-          'https://github.com/martin-pok/agentree/releases/tag/v0.46.10');
-        assert.match(await p.locator('[data-preview-label]').innerText(), /0\.46\.10/);
+          `https://github.com/martin-pok/agentree/releases/tag/v${NOVEJSI_PREVIEW}`);
+        assert.ok((await p.locator('[data-preview-label]').innerText()).includes(NOVEJSI_PREVIEW));
         assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
           /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/);
         assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');

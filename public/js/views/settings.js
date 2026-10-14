@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { WEB_AGENTEEQ } from '../obchod.js';
 import { api } from '../api.js';
 import { esc, rel, initials, dateLong, plural } from '../format.js';
+import { ze } from '../predlozky.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
@@ -1054,7 +1055,7 @@ function update(topics) {
     zdravi.unknown + zdravi.pending && tr('Zatím bez události: {0}. Do první události je jejich stav odhad z přepisu.', zdravi.unknown + zdravi.pending),
   ].filter(Boolean);
   const zdraviHtml = !h.installed || !aktivni ? '' : `
-    <div class="set-row-inline"><span><strong>${tr('Propojené konverzace: {0} z {1} aktivních', zdravi.linked, aktivni)}</strong>${zdraviRadky.map((r) => `<small>${r}</small>`).join('')}</span></div>
+    <div class="set-row-inline"><span><strong>${ze(aktivni) ? tr('Propojené konverzace: {0} ze {1} aktivních', zdravi.linked, aktivni) : tr('Propojené konverzace: {0} z {1} aktivních', zdravi.linked, aktivni)}</strong>${zdraviRadky.map((r) => `<small>${r}</small>`).join('')}</span></div>
     ${zdravi.silent ? `<p class="set-note set-note--warn">${nefunguje
       ? tr('Propojení nejspíš nefunguje: z Claude Code nepřišla žádná událost. Spusť Claude Code znovu, a když to nepomůže, propojení přeinstaluj – zapíše se aktuální adresa a klíč Agenteeq. Claude Code s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) propojení nenačte.')
       : tr('Ostatní konverzace události posílají. Ty bez události nejspíš běží v Claude Code spuštěném před zapnutím propojení nebo s vlastní složkou nastavení (CLAUDE_CONFIG_DIR) – spusť je znovu.')}</p>` : ''}`;

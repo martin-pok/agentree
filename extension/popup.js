@@ -581,6 +581,23 @@ function ukazVypadek() {
   setHero({ tone: 'err', pill: 'Neběží', headline: tr('Agenteeq na tomto počítači neběží'), sub: tr('Spusť aplikaci, rozšíření se k ní připojí samo.') });
 }
 
+function ukazNeovereno() {
+  zakladniStav();
+  prehled = null;
+  seznam.konverzace = [];
+  overeni.diagnostika = null;
+  setHero({ tone: 'warn', pill: 'Neověřeno', headline: tr('Nepodařilo se ověřit spojení s Agenteeq'), sub: tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.') });
+}
+
+// Porovnání verzí podle čísel (0.46.12 > 0.46.9), ne jako textu. Nečitelná verze = nevíme = false.
+function novejsiVerze(a, b) {
+  const casti = (v) => (typeof v === 'string' && /^\d+\.\d+\.\d+$/.test(v) ? v.split('.').map(Number) : null);
+  const x = casti(a), y = casti(b);
+  if (!x || !y) return false;
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return false;
+}
+
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
 // načtení na okamžik prázdně bliklo.
 async function render() {
@@ -597,10 +614,10 @@ async function render() {
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
-  if (r?.paired && !r.online) {
-    // The local health endpoint may answer while pairing's protected endpoint
-    // fails. Never present the extension as connected on an unsuccessful hello.
-    ukazVypadek();
+  if (!r || r.chyba || (r.paired && !r.online)) {
+    // Aplikace odpovídá na /api/health, ale ověření rozšíření selhalo nebo se background
+    // neozval. Není to „neběží“ ani „nespárováno“ – jen se to nepodařilo zjistit.
+    ukazNeovereno();
     return;
   }
   if (!r?.paired) {
@@ -617,7 +634,9 @@ async function render() {
 
   const version = chrome.runtime.getManifest().version;
   const expected = r.status?.expectedVersion;
-  const outdated = Boolean(expected && expected !== version);
+  // „Je k dispozici verze X“ jen pro skutečně novější X. Rozšíření z obchodu bývá novější než
+  // stabilní aplikace – pak by se nabízel „update“ na starší verzi.
+  const outdated = novejsiVerze(expected, version);
 
   overeni.tab = await aktivniKarta();
   overeni.diagnostika = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');
