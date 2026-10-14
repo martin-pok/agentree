@@ -442,7 +442,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         web.evaluateJavaScript("window.agenteeqAktualizaceSelhala && window.agenteeqAktualizaceSelhala(\(json)[0])")
     }
     func installUpdate(zip: String, version: String) {
-        guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else { return }
+        guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else {
+            reportUpdateError("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.")
+            return
+        }
         installing = true
         // Feedback must start BEFORE extracting the downloaded archive. Otherwise
         // large ZIPs look like a frozen black screen until the last file is copied.
