@@ -13,23 +13,48 @@ export const remoteId = (value) => typeof value === 'string' && SESSION.test(val
 // Desktop's persisted query cache contains server-reported remote-session metadata.
 // Its separate code conversation cache may hold only an older portion of the transcript.
 // Never infer missing turns/tokens, an elapsed working period, or a fresh process from mtime.
+//
+// Ověřený zdroj je dotaz `sessions_api_list_sessions` (stránky seznamu). Relace se ale hledá podle
+// tvaru ve všech uložených dotazech: když Desktop drží i dotaz na jednu otevřenou relaci (název klíče
+// neznáme, na disku neověřené 🧪), bývá čerstvější než seznam a stav vzdáleného agenta pak neleží
+// minuty. Za relaci se považuje jen objekt s `id: "session_…"`, platným `updated_at` a polem stavu;
+// z každé se nechá záznam s nejnovějším `updated_at`, při shodě ten s pozdějším načtením.
+const LIST = 'sessions_api_list_sessions';
+const jeRelace = (s) => Boolean(s && typeof s === 'object' && !Array.isArray(s)
+  && (s.type === undefined || s.type === 'session') && remoteId(s.id) && Number.isFinite(Date.parse(s.updated_at))
+  && ('session_status' in s || 'status_bucket' in s));
+function relaceVDatech(d) {
+  if (!d || typeof d !== 'object') return [];
+  if (jeRelace(d)) return [d];
+  const out = [];
+  const projdi = (list) => { if (Array.isArray(list)) for (const x of list) if (jeRelace(x)) out.push(x); };
+  projdi(d);
+  projdi(d.data);
+  if (Array.isArray(d.pages)) for (const page of d.pages) { if (jeRelace(page)) out.push(page); else projdi(page?.data); }
+  return out;
+}
 export function remoteSessions(records) {
   const cache = records.find((x) => x.key === 'react-query-cache')?.value;
   const queries = cache?.clientState?.queries;
   if (!Array.isArray(queries)) return null;
-  const matching = queries.filter((q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'sessions_api_list_sessions');
-  if (!matching.length) return null;
   const sessions = new Map();
-  for (const q of matching) {
-    for (const page of q.state?.data?.pages || []) {
-      for (const s of Array.isArray(page?.data) ? page.data : []) {
-        if ((s?.type !== undefined && s.type !== 'session') || !remoteId(s?.id) || !Number.isFinite(Date.parse(s.updated_at))) continue;
-        const old = sessions.get(s.id);
-        if (!old || Date.parse(s.updated_at) > Date.parse(old.updated_at)) sessions.set(s.id, { ...s, _observedAt: Number(q.state?.dataUpdatedAt) || 0 });
-      }
+  let seznam = false, observedAt = 0;
+  for (const q of queries) {
+    const list = Array.isArray(q?.queryKey) && q.queryKey[0] === LIST;
+    const found = relaceVDatech(q?.state?.data);
+    if (!list && !found.length) continue;
+    seznam ||= list;
+    const at = Number(q.state?.dataUpdatedAt) || 0;
+    observedAt = Math.max(observedAt, at);
+    for (const s of found) {
+      const old = sessions.get(s.id);
+      const novejsi = !old || Date.parse(s.updated_at) > Date.parse(old.updated_at)
+        || (Date.parse(s.updated_at) === Date.parse(old.updated_at) && at > old._observedAt);
+      if (novejsi) sessions.set(s.id, { ...s, _observedAt: at });
     }
   }
-  return { sessions: [...sessions.values()], observedAt: Math.max(0, ...matching.map((q) => Number(q.state?.dataUpdatedAt) || 0)) };
+  if (!seznam && !sessions.size) return null;
+  return { sessions: [...sessions.values()], observedAt };
 }
 // Stránka Usage na claude.ai (i v Claude Desktopu) načítá vytížení plánu: `five_hour` a `seven_day`
 // s `utilization` (procenta) a `resets_at` (ISO čas obnovy od serveru) – stejná dvojice, jakou hlásí

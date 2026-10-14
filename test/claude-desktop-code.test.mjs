@@ -213,3 +213,35 @@ test('Claude remote: novější uložený přepis s rozběhnutým tahem pracuje,
   const po = applyRemoteSession(newSession(), meta, { tree: { kind: 'code_session', messages: [zadani, nastroj] } }, now - 5e3, now);
   assert.notEqual(deriveStatus(po, now).status, 'working');
 });
+
+// Relace se hledá podle tvaru ve všech uložených dotazech: dotaz na jednu otevřenou relaci (klíč
+// neznáme) bývá čerstvější než seznam. Data i názvy klíčů jsou umělé.
+test('Claude remote: čerstvější dotaz na jednu relaci přebije starší seznam; nic jiného se nečte', () => {
+  const now = Date.now();
+  const vSeznamu = { ...metadata(now), session_status: 'idle', status_bucket: 'completed', post_turn_summary: { status_category: 'completed' }, updated_at: new Date(now - 10 * 60e3).toISOString() };
+  const bezi = { id, title: 'Ranní práce na repozitáři', session_status: 'running', updated_at: new Date(now - 5e3).toISOString(), created_at: vSeznamu.created_at };
+  const queries = [
+    { queryKey: ['sessions_api_list_sessions', 'org'], state: { dataUpdatedAt: now - 9 * 60e3, data: { pages: [{ data: [vSeznamu] }] } } },
+    { queryKey: ['neznamy_dotaz_relace', id], state: { dataUpdatedAt: now - 3e3, data: bezi } },
+    { queryKey: ['account_profile'], state: { dataUpdatedAt: now, data: { id: 'session_01NotASessionObject', jmeno: 'soukromy profil uctu' } } },
+  ];
+  const data = remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries } } }]);
+  assert.equal(data.sessions.length, 1);
+  assert.equal(data.sessions[0]._observedAt, now - 3e3, 'platí čerstvější načtení');
+  assert.ok(!JSON.stringify(data).includes('soukromy profil uctu'), 'objekt bez pole stavu není relace');
+  const s = applyRemoteSession(newSession(), data.sessions[0], null, data.sessions[0]._observedAt, now);
+  assert.equal(deriveStatus(s, now).status, 'working');
+
+  // Shodný `updated_at`: rozhodne pozdější načtení, ne pořadí dotazů v cache.
+  const stejne = { ...vSeznamu, session_status: 'running' };
+  const shoda = remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries: [
+    { queryKey: ['x'], state: { dataUpdatedAt: now - 1e3, data: [stejne] } },
+    { queryKey: ['sessions_api_list_sessions'], state: { dataUpdatedAt: now - 5 * 60e3, data: { pages: [{ data: [stejne] }] } } },
+  ] } } }]);
+  assert.equal(shoda.sessions[0]._observedAt, now - 1e3);
+
+  // Bez seznamu i bez relací konektor dál hlásí, že cache seznam nenese.
+  assert.equal(remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries: [queries[2]] } } }]), null);
+  // Prázdný seznam je platný stav (žádné relace), ne chyba.
+  assert.deepEqual(remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries: [{ queryKey: ['sessions_api_list_sessions'], state: { dataUpdatedAt: now, data: { pages: [] } } }] } } }]).sessions, []);
+});

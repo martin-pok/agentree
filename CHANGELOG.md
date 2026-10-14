@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.12 · nevydáno
+
+- **Vzdálení agenti Claude Code s čerstvějším stavem 🧪.** Stav se dosud bral jen ze seznamu relací v cache Claude Desktopu, který se ukládá jen občas. Agenteeq teď stav relace najde v kterémkoli uloženém dotazu Claude Desktopu – například v detailu otevřené relace, když je čerstvější – a použije nejnovější z nich. Jestli Claude Desktop takový dotaz ukládá, zatím není na Macu ověřené; když ne, nic se nemění.
+
 ## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu
 
 - **Vzdálení agenti Claude Code znovu pracují.** Claude Code spuštěný v cloudu z Claude Desktopu (nebo z webu a telefonu) se v Přehledu nikdy neukázal jako pracující a čekání na tvé rozhodnutí se od něj nikdy neohlásilo: stav se poznával podle hodnot, které Claude neposílá. Teď se čte stav i ve tvaru, v jakém ho posílá server („SESSION_STATUS_RUNNING“, skupina „WORKING“ / „BLOCKED“ / „FAILED“, „need_input“), a otázka agenta se ukáže v kartě rozhodnutí. Když Claude Desktop novější stav neuložil, karta neříká „Hotovo, čeká na další zadání“, ale „Při posledním načtení pracoval · novější stav Claude Desktop neuložil“; novější uložený přepis s rozběhnutým tahem má přednost. Nastavení → Zdroje agentů ukazuje, kdy Claude Desktop seznam relací naposledy uložil.
