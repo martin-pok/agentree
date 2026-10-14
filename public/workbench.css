@@ -291,32 +291,37 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .agent-portrait[data-state='working'] .robot-body { animation: none; } }
 
 /* Agent collection: individually readable companions rather than a dense ledger. */
-.table:has(.agent-robot-tile) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0; background: none; border: 0; }
-.table:has(.agent-robot-tile) .row-head { display: none; }
-.table:has(.agent-robot-tile) .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 22px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); box-shadow: none; }
-.table:has(.agent-robot-tile) .agent-robot-tile { grid-column: 1; width: 76px; height: 80px; }
-.table:has(.agent-robot-tile) .agent-portrait, .table:has(.agent-robot-tile) .robot { width: 76px; height: 80px; }
-.table:has(.agent-robot-tile) .cell-status { grid-column: 2; grid-row: 1; align-self: start; }
-.table:has(.agent-robot-tile) .cell-title { grid-column: 1 / -1; }
-.table:has(.agent-robot-tile) .cell-title b { font-size: 18px; font-weight: 400; white-space: normal; }
-.table:has(.agent-robot-tile) .cell-sub { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.table.table--roboti { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0; background: none; border: 0; }
+.table.table--roboti .row-head { display: none; }
+/* Karty mimo okno prohlížeč nevykresluje (styl, rozvržení ani kreslení obsahu), dokud k nim stránka
+   nedojede. V Chromiu stačí kterékoli pravidlo s :has() v aplikaci, aby každá dávka doplněných řádků
+   přepočítala styly všech dosavadních karet: u 140 agentů snímek 30–56 ms. Výška 280 px je prostřední
+   změřená výška karty (253–304 px); `auto` si pak pamatuje skutečnou výšku vykreslené karty. */
+.table.table--roboti > .row { content-visibility: auto; contain-intrinsic-size: auto 280px; }
+.table.table--roboti .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 22px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); box-shadow: none; }
+.table.table--roboti .agent-robot-tile { grid-column: 1; width: 76px; height: 80px; }
+.table.table--roboti .agent-portrait, .table.table--roboti .robot { width: 76px; height: 80px; }
+.table.table--roboti .cell-status { grid-column: 2; grid-row: 1; align-self: start; }
+.table.table--roboti .cell-title { grid-column: 1 / -1; }
+.table.table--roboti .cell-title b { font-size: 18px; font-weight: 400; white-space: normal; }
+.table.table--roboti .cell-sub { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
 /* Věta o stavu v kartě smí na dva řádky, ať „… · možná čeká na tvé povolení“ nebo otázka agenta
    na úzké kartě nezmizí za třemi tečkami. */
-.table:has(.agent-robot-tile) :is(.sub-live > span:last-child, .sub-alert) { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-.table:has(.agent-robot-tile) .sub-live { align-items: flex-start; }
-.table:has(.agent-robot-tile) .sub-live .live-dot { margin-top: 6px; }
-.table:has(.agent-robot-tile) .cell-app { display: block; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
-.table:has(.agent-robot-tile) .cell-app small { display: inline; margin-left: 8px; }
-.table:has(.agent-robot-tile) .cell-num { display: block; text-align: left; font-size: 14px; }
+.table.table--roboti :is(.sub-live > span:last-child, .sub-alert) { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.table.table--roboti .sub-live { align-items: flex-start; }
+.table.table--roboti .sub-live .live-dot { margin-top: 6px; }
+.table.table--roboti .cell-app { display: block; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
+.table.table--roboti .cell-app small { display: inline; margin-left: 8px; }
+.table.table--roboti .cell-num { display: block; text-align: left; font-size: 14px; }
 .cell-unit { display: none; }
-.table:has(.agent-robot-tile) .cell-unit { display: inline; color: var(--mute); }
+.table.table--roboti .cell-unit { display: inline; color: var(--mute); }
 .agent-robot-tile .status-dot { display: none; }
 .agent-robot-tile .env-badge { left: auto; right: 2px; bottom: 2px; }
-.table:has(.agent-robot-tile) .cell-time { display: block; font-size: 12px; }
-.table:has(.agent-robot-tile) .row > .icon { display: none; }
-@media(max-width: 1200px) { .table:has(.agent-robot-tile) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media(max-width: 560px) { .table:has(.agent-robot-tile) { grid-template-columns: 1fr; } }
-.table:has(.agent-robot-tile) .row.row-head { display: none; }
+.table.table--roboti .cell-time { display: block; font-size: 12px; }
+.table.table--roboti .row > .icon { display: none; }
+@media(max-width: 1200px) { .table.table--roboti { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media(max-width: 560px) { .table.table--roboti { grid-template-columns: 1fr; } }
+.table.table--roboti .row.row-head { display: none; }
 
 /* Dotažení redesignu (0.41.0): rozbalovací volby jako kapsle, cesty v kartách bez strojového písma. */
 .studio-choice > summary, .studio-options > summary, .home-history > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: var(--r-full); font: 500 14px/1 var(--f-body); color: var(--ink-2); }
@@ -325,7 +330,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .studio-choice[open] > summary::after, .studio-options[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .studio-choice > summary:hover, .studio-options > summary:hover { background: var(--line-2); color: var(--ink); }
 .studio-choice { display: flex; flex-direction: column; align-items: center; }
-.table:has(.agent-robot-tile) .cell-sub code { font-family: var(--f-body); font-size: inherit; background: none; padding: 0; color: var(--mute); }
+.table.table--roboti .cell-sub code { font-family: var(--f-body); font-size: inherit; background: none; padding: 0; color: var(--mute); }
 .guide-label { text-transform: uppercase; }
 
 /* Pole pro zadání (0.42.0): jedna karta jako u moderních AI nástrojů – text nahoře, pod ním

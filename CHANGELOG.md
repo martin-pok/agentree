@@ -2,6 +2,7 @@
 
 ## Připravované změny po 0.46.12 · nevydáno
 
+- **Plynulejší Agenti i se stovkou konverzací.** Při otevření obrazovky se karty doplňují po dávkách a každá dávka přepočítala vzhled všech dosavadních karet; se 140 agenty tak vznikaly zaseknuté snímky 50–110 ms. Karty mimo okno se teď vykreslí, až k nim stránka dojede, dávka jen připojí nové karty a oči robotů sledují kurzor bez měření robotů mimo okno. Vzhled karet se nemění.
 - **Vzdálení agenti Claude Code s čerstvějším stavem 🧪.** Stav se dosud bral jen ze seznamu relací v cache Claude Desktopu, který se ukládá jen občas. Agenteeq teď stav relace najde v kterémkoli uloženém dotazu Claude Desktopu – například v detailu otevřené relace, když je čerstvější – a použije nejnovější z nich. Jestli Claude Desktop takový dotaz ukládá, zatím není na Macu ověřené; když ne, nic se nemění.
 
 ## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu

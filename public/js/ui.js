@@ -11,9 +11,20 @@ import { useky, doplneni } from './hledani.js';
 // liší, a řádky s `data-key` se jen přesunou. Dřív každá živá událost vyměnila na Agentech přes
 // 800 uzlů: WebKit na to potřeboval snímek přes 50 ms, kurzor ztratil najetí, nástupové animace
 // karet se přehrály znovu a prohlížeč přišel o kotvu posouvání (obsah pod čtenářem poskočil).
-export function fill(root, name, html, { sloucit: slouceni = false, presun = false } = {}) {
+//
+// `pripojit: true` – nové HTML jen prodlužuje to, co v oblasti už je (další dávka řádků pod oknem):
+// připojí se jen zbytek. Sloučení by kvůli každé dávce znovu rozebralo a porovnalo i všechny
+// dříve vykreslené řádky (u 140 agentů úloha 45–66 ms na dávku).
+export function fill(root, name, html, { sloucit: slouceni = false, presun = false, pripojit = false } = {}) {
   const el = root.querySelector(`[data-region="${name}"]`);
   if (!el || el._html === html) return false;
+  if (pripojit && el._html && el.firstChild && html.startsWith(el._html)) {
+    el.insertAdjacentHTML('beforeend', html.slice(el._html.length));
+    el._html = html;
+    dorovnejCisla(el);
+    oznacRolovani();
+    return true;
+  }
   if (slouceni && el.firstChild) {
     sloucit(el, html, { presun });
     el._html = html;
