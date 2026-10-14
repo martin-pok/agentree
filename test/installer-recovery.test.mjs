@@ -67,7 +67,7 @@ test('loader shows an honest indeterminate update bar with accessible text and Q
 });
 
 test('updater helper rolls back the previous app on failed relaunch (no black-screen trap)', {
-  skip: process.platform === 'win32' && 'POSIX shell required',
+  skip: process.platform === 'win32' && 'POSIX shell required'
 }, async () => {
   const swift = await fs.readFile(file('desktop/Agenteeq.swift'), 'utf8');
   const match = swift.match(/let script = """\n([\s\S]*?)\n\s*"""/);
