@@ -223,12 +223,12 @@ test('Claude remote: čerstvější dotaz na jednu relaci přebije starší sezn
   const queries = [
     { queryKey: ['sessions_api_list_sessions', 'org'], state: { dataUpdatedAt: now - 9 * 60e3, data: { pages: [{ data: [vSeznamu] }] } } },
     { queryKey: ['neznamy_dotaz_relace', id], state: { dataUpdatedAt: now - 3e3, data: bezi } },
-    { queryKey: ['account_profile'], state: { dataUpdatedAt: now, data: { id: 'session_01NotASessionObject', email: 'x@example.com' } } },
+    { queryKey: ['account_profile'], state: { dataUpdatedAt: now, data: { id: 'session_01NotASessionObject', jmeno: 'soukromy profil uctu' } } },
   ];
   const data = remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries } } }]);
   assert.equal(data.sessions.length, 1);
   assert.equal(data.sessions[0]._observedAt, now - 3e3, 'platí čerstvější načtení');
-  assert.ok(!JSON.stringify(data).includes('example.com'), 'objekt bez pole stavu není relace');
+  assert.ok(!JSON.stringify(data).includes('soukromy profil uctu'), 'objekt bez pole stavu není relace');
   const s = applyRemoteSession(newSession(), data.sessions[0], null, data.sessions[0]._observedAt, now);
   assert.equal(deriveStatus(s, now).status, 'working');
 
