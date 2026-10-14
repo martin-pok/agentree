@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { lzeOdpovedet, planOdpovedi, ODPOVED_MAX } from '../src/odpoved.js';
+import { createSession } from '../src/model.js';
 
 const UUID = 'aaaaaaaa-1111-2222-3333-444444444444';
 const s = { id: `claude-code:${UUID}`, connector: 'claude-code', localId: UUID, cwd: '/Users/x/web' };
@@ -34,6 +35,29 @@ test('odpověď: jen Claude Code s platným id, programem a složkou; text se ov
   assert.equal(planOdpovedi(s, { text: 'x'.repeat(ODPOVED_MAX + 1) }, ok).status, 422);
   assert.equal(planOdpovedi(s, { text: 'x', permission: 'bypassPermissions' }, ok).field, 'permission', 'oprávnění jen z bezpečného seznamu');
   assert.equal(planOdpovedi({ ...s, connector: 'codex' }, { text: 'x' }, ok).status, 409);
+});
+
+// Pole pro odpověď zůstávalo aktivní i u agenta na limitu. Se známým časem obnovy by odpověď
+// skončila stejnou hláškou – nabídne se až po obnově. Bez času obnovy (stav je jen odhad na 5 h)
+// odpovědět jde, s poznámkou: limit se mezitím mohl obnovit.
+test('odpověď: na limitu se známou obnovou ne, bez známé obnovy ano s poznámkou', () => {
+  const now = Date.parse('2026-10-10T20:00:00Z');
+  // Skutečná konverzace z úložiště (stav se z ní odvozuje přes deriveStatus).
+  const konverzace = (limit) => Object.assign(createSession({ connector: 'claude-code', localId: UUID, provider: 'anthropic', app: 'Claude Code' }), { cwd: '/Users/x/web', lastAt: now - 60e3, limit });
+  const sObnovou = konverzace({ reached: true, text: 'x', label: 'Limit relace', at: now - 60e3, resetsAt: now + 3600e3 });
+  const r = lzeOdpovedet(sObnovou, { ...ok, now });
+  assert.equal(r.lze, false);
+  assert.equal(r.kod, 'limit');
+  assert.match(r.proc, /po jeho obnově/);
+  assert.equal(planOdpovedi(sObnovou, { text: 'Pokračuj' }, { ...ok, now }).status, 409);
+  // Po obnově (stav podle deriveStatus už není „limited“) se odpovědět dá a poznámka zmizí.
+  assert.deepEqual(lzeOdpovedet(sObnovou, { ...ok, now: now + 2 * 3600e3 }), { lze: true });
+  const bezObnovy = konverzace({ reached: true, text: 'x', at: now - 60e3, resetsAt: null });
+  const b = lzeOdpovedet(bezObnovy, { ...ok, now });
+  assert.equal(b.lze, true);
+  assert.match(b.pozn, /není známý/);
+  // Ostatní překážky mají dál přednost před poznámkou o limitu.
+  assert.equal(lzeOdpovedet(bezObnovy, { ...ok, now, procesy: null }).kod, 'nevim');
 });
 
 test('HTTP: detail konverzace říká, jestli lze odpovědět, a endpoint vrací důvod, proč ne', async (t) => {

@@ -2,6 +2,7 @@
 // a v historii, ale nesmějí zvýšit graf, rozpočet ani souhrn.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
 const { spendSummary, monthlyTotals, SERVICES, KINDS, CURRENCIES, DEFAULT_SPEND } = await import('../src/spend.js');
@@ -165,4 +166,18 @@ test('Statistiky: tokeny organizace z Admin API stojí zvlášť a jen pro obdob
   assert.match(tyden, /1,5 tis\. vstup · 15 výstup/, 'jen posledních 7 dní (UTC)');
   assert.match(tyden, /nezjištěno/, 'selhaná spotřeba není nula');
   assert.equal(apiTokensHtml('week', now, { 'anthropic-admin': { state: 'missing', tokens: {} } }), '');
+});
+
+// Ruční záznamy se v tabulce vypisovaly s částkami, ale součet měsíce, prognóza a rozpočet je
+// (záměrně, viz CHANGELOG 0.34.2) mlčky vynechávaly. Stránka to teď říká u tabulky i u součtů.
+// A „Rozpočty“ šly nastavit i bez Admin API, kde se rozpočet nikde neukáže – dialog to říká.
+test('Útrata: u ručních záznamů i u součtů stojí, že se nepočítají; rozpočet bez API to řekne', async () => {
+  const spend = { ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger };
+  const html = ledgerHtml(payload(spend));
+  assert.match(html, /Starší ruční záznamy<\/span><span class="ledger-group-note">nepočítají se do součtů ani rozpočtu<\/span>/);
+  const kod = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
+  const hero = kod.slice(kod.indexOf("fill(el, 'hero'"), kod.indexOf("fill(el, 'plans'"));
+  assert.match(hero, /sp\.ledger\?\.length \? `<p class="spend-note">\$\{tr\('Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.'\)\}<\/p>` : ''/);
+  const dialog = kod.slice(kod.indexOf('function openBudgets('), kod.indexOf('onSubmit:', kod.indexOf('function openBudgets(')));
+  assert.match(dialog, /sp\.billing\?\.connected === false \? `<p class="set-note budget-api-note" data-budget-api>\$\{tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\)\}/);
 });

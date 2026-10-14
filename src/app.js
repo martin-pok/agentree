@@ -48,7 +48,7 @@ import { createUcet } from './ucet.js';
 import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { createKonecProcesu } from './konec-procesu.js';
-import { planOdpovedi, lzeOdpovedet } from './odpoved.js';
+import { planOdpovedi, lzeOdpovedet, beziVeSlozce } from './odpoved.js';
 import { spustPrihlaseni } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
@@ -58,6 +58,7 @@ import { fullUserName } from './platform.js';
 import { ui } from './texty.js';
 import { ze } from '../public/js/predlozky.js';
 import { UpdateService } from './updates.js';
+import { prehledProRozsireni } from './prehled-rozsireni.js';
 import { watchExactFile } from './watch.js';
 
 export const BIN_PATH = path.join(ROOT_DIR, 'bin', 'agenteeq.mjs');
@@ -95,7 +96,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
   const datastore = new DataStore(config.dataDir);
   await datastore.load();
-  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
+  const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, channel: datastore.data.settings.updateChannel, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
   const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
   await historie.load();
@@ -215,7 +216,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       const { model, duvod } = await vyberLokalniModel({ ollama });
       modelMimoPocitac = duvod === 'mimo-pocitac';
       if (model) {
-        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language });
+        // Optional wording must not hold the assistant response hostage for 25 seconds.
+        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language, casMs: 4500 });
         if (odpoved) lokalne = { text: odpoved, model };
       }
     }
@@ -263,8 +265,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const mediaRoot = path.join(config.dataDir, 'media');
 
   let apps = {};
+  // Poslední výpis procesů pro volbu akce „Terminál“ (src/openers.js#planOpen). Objekt, ne proměnná
+  // níž: decorate se může volat dřív, než createApp dojde k výpisu procesů.
+  const procesyProOtevreni = { seznam: null };
+  const moznostiOtevreni = (s) => ({ aplikace: config.openApps, bezi: config.processes ? beziVeSlozce(s, procesyProOtevreni.seznam) : null });
   store.decorate = (summary) => {
-    summary.open = openTargets(summary, apps, { aplikace: config.openApps });
+    summary.open = openTargets(summary, apps, moznostiOtevreni(summary));
     Object.assign(summary, resolveProject(summary, projects(), { worktreeRoot }));
     if (summary.connector === 'local-chat') summary.chat = { available: localChat.has(summary.id) };
   };
@@ -280,7 +286,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         ? ui('Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.')
         : ui('Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.') };
     }
-    const plan = planOpen(s, target, apps, { aplikace: config.openApps });
+    const plan = planOpen(s, target, apps, moznostiOtevreni(s));
     if (!plan) return { status: 422, error: ui('Tuto akci pro konverzaci nelze provést.') };
     const r = await executeOpen(plan, { dry });
     if (!r.ok) return { status: 502, error: r.error };
@@ -334,6 +340,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let posledniProcesy = null;
   async function beziciAgenti(procesy) {
     posledniProcesy = Array.isArray(procesy) ? procesy.map((p) => ({ runtime: p.runtime, cwd: p.cwd })) : null;
+    procesyProOtevreni.seznam = posledniProcesy;
     for (const p of procesy || []) {
       const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
       if (!domov || !path.isAbsolute(domov)) continue;
@@ -434,13 +441,24 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
     if (generation !== subscriptionRefreshGeneration) return;
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
-    claudeAccounts = [...new Map([primary, ...extraClaude].filter((item) => item?.account)
-      .map(({ account }, index) => {
-        const plan = claudePlanFromAccount(account);
-        const id = claudeIdentity(account);
-        return [id || `unknown:${index}`, { id, provider: 'anthropic', service: 'claude', plan: plan?.plan || null,
-          observedAt: Date.now(), evidence: plan?.evidence || '', since: plan?.since || null }];
-      })).values()];
+    // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
+    // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
+    const authenticatedClaudeProfiles = [primary, ...extraClaude].filter((item) => item?.account)
+      .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
+      .filter((item) => item.accountId);
+    claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
+      [item.accountId, { id: item.accountId, provider: 'anthropic', service: 'claude',
+        plan: item.plan?.plan || null, observedAt: Date.now(),
+        evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
+    // An account is bound only where authenticated CLI profile and transcript root agree.
+    // Never assign all agents to the currently signed-in global account.
+    const observedAt = Date.now();
+    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
+      home === config.sourceHome
+        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
+          .map((root) => ({ root, accountId, observedAt }))
+        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
@@ -467,13 +485,26 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   function providerAccounts() {
     const current = new Map();
-    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) current.set(claudeAccount.id, { plan: claudeAccount.plan, limits: [], credits: null, observedAt: claudeAccount.observedAt });
+    for (const claudeAccount of claudeAccounts) if (claudeAccount.id) {
+      const limits = store.limitList().filter((l) => l.provider === 'anthropic'
+        && l.accountId === claudeAccount.id && l.source === 'statusline'
+        && Number.isFinite(l.usedPercent) && l.at <= Date.now()
+        && Date.now() - l.at <= 5 * 60_000)
+        .map((l) => ({ key: l.id, label: l.label, primary: {
+          usedPercent: l.usedPercent, windowMinutes: l.windowMinutes, resetsAt: l.resetsAt,
+        }, secondary: null }));
+      current.set(claudeAccount.id, { plan: claudeAccount.plan, limits, credits: null,
+        observedAt: claudeAccount.observedAt });
+    }
     for (const codexAccount of codexAccounts) current.set(codexAccount.id, { plan: codexAccount.plan, limits: codexAccount.limits, credits: codexAccount.credits, observedAt: codexAccount.observedAt });
     const rows = datastore.data.providerAccounts.map((item) => ({ ...item, active: current.has(item.id),
       ...(current.get(item.id) || { limits: [], credits: null, observedAt: item.seenAt }) }));
     if (!rows.some((x) => x.provider === 'anthropic' && x.active)) rows.push({ provider: 'anthropic', service: 'claude', id: null, plan: null, active: false, state: claudeAuth.loggedIn === false ? 'signed_out' : 'unavailable', limits: [], credits: null, observedAt: null });
     if (!rows.some((x) => x.provider === 'openai' && x.active)) rows.push({ provider: 'openai', service: 'chatgpt', id: null, plan: null, active: false, state: 'unavailable', limits: [], credits: null, observedAt: null });
-    return rows.map((row) => ({ ...row, planLabel: row.plan ? describePlan(row).label : null }))
+    return rows.map((row) => ({ ...row, planLabel: row.plan
+      ? (row.service === 'claude' || row.service === 'chatgpt'
+        ? describePlan(row).label : `${row.provider} · ${row.plan}`)
+      : null }))
       .sort((a, b) => Number(b.active) - Number(a.active) || (b.observedAt || 0) - (a.observedAt || 0));
   }
 
@@ -856,10 +887,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Přihlášení běží na pozadí, bez Terminálu; v testech (dry) se nic nespouští.
     prihlas: (bin, args, moznosti) => (dry ? Promise.resolve(PRIHLASENI_NASUCHO) : spustPrihlaseni(bin, args, moznosti)),
     open: (url) => executeOpen({ kind: 'open', args: [url], label: ui('prohlížeč') }, { dry }),
-    emit: (u) => {
-      store.emit('napojeni', u);
-      if (u.id === 'claude-code' && u.udalost === 'napojeno') refreshSubscriptions().catch(() => {});
+    // A completed CLI login must re-read subscriptions/accounts before the success
+    // SSE is sent. This works for both Claude Code and Codex; no stale-plan modal.
+    onVerified: async (id) => {
+      await refreshSubscriptions();
+      return store.list().reduce((latest, session) =>
+        session.connector === id && !session.proces && session.lastAt > latest ? session.lastAt : latest, 0);
     },
+    emit: (u) => store.emit('napojeni', u),
     extension: () => ({ ...extensionStatus(), sites: connectors.web.status().sites || {} }),
     plan: async (id) => {
       if (id === 'claude-code') {
@@ -1127,7 +1162,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function checkForUpdates() {
-    const value = await updates.check();
+    const value = await updates.check(datastore.data.settings.updateChannel === 'preview' ? 'preview' : 'stable');
     store.emit('updates', value);
     // Automatická volba znamená stažení ověřeného balíčku, nikdy tichou výměnu běžící aplikace.
     if (value.status === 'available' && datastore.data.settings.updateMode === 'automatic') {
@@ -1148,21 +1183,48 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // protože jen ono může skončit samo a spustit novou verzi. Server mu pošle cestu k balíčku a verzi.
   let desktopReport = null;
   function nastavDesktop(report) { desktopReport = typeof report === 'function' ? report : null; }
+
+  // A Chrome extension click is NOT a browser session and must never receive
+  // the WKWebView window key. Send a one-way, strictly scoped navigation request
+  // to the existing native shell instead. No agent process or shell command runs.
+  function focusExtensionAgent(id) {
+    if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
+    if (typeof id !== 'string' || !id || id.length > 200) return { status: 422, error: ui('Neplatný agent.') };
+    // Allow only an ID actually offered to the extension now. An arbitrary
+    // history ID, hidden child session or archived transcript is not eligible.
+    const summary = prehledProRozsireni(store.list());
+    const visible = [...summary.rozhodnuti, ...summary.pracuji].some((s) => s.id === id);
+    if (!visible) return { status: 404, error: ui('Agent už není v aktuálním přehledu. Obnov seznam.') };
+    desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
+    return { ok: true, focused: true };
+  }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    // Persist user state before the final ZIP hash check, minimizing the gap
+    // between verification and native app replacement.
+    if (previouslyDownloaded) await datastore.flush?.();
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
     const version = updates.state().latestVersion;
     if (!/^\d+\.\d+\.\d+$/.test(version || '')) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-    await datastore.flush?.();
     desktopReport({ type: 'install-update', zip: path.resolve(target), version });
     return { ok: true, restarting: true };
   }
 
   async function revealUpdate() {
-    const target = updates.downloadedPath();
+    const previouslyDownloaded = Boolean(updates.downloadedPath());
+    const target = await updates.verifiedDownloadedPath();
+    if (previouslyDownloaded && !target) {
+      store.emit('updates', updates.state());
+      return { status: 409, error: ui('Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.') };
+    }
     const updatesDir = path.resolve(config.dataDir, 'updates');
     if (!target || path.dirname(path.resolve(target)) !== updatesDir || path.extname(target) !== '.zip') return { status: 404, error: ui('Aktualizační balíček zatím není stažený.') };
     try { if (!(await fsp.stat(target)).isFile()) throw new Error('missing'); } catch { return { status: 404, error: ui('Aktualizační balíček už na disku není.') }; }
@@ -1645,7 +1707,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,

@@ -4,16 +4,22 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> Stav: **v0.46.0 – desktopová verze pro macOS (Apple Silicon).** Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
+> **0.46.12** — **zveřejněné Preview** ([v0.46.12](https://github.com/martin-pok/agentree/releases/tag/v0.46.12), 14. 10. 2026 06:45 UTC). Tag `v0.46.12` na `0e7faeefae05ddc59347e17b0891b4c830643507` prošel 8/8 CI na `main`; [sestavení](https://github.com/martin-pok/agentree/actions/runs/38522725182) založilo Draft s 8 přílohami, nezávislý audit i [zveřejnění](https://github.com/martin-pok/agentree/actions/runs/38524076913) znovu stáhly a ověřily všech 8 příloh proti SHA-256. Zveřejněno na výslovný pokyn vlastníka **bez dokončeného fyzického UAT** (Mac, Chrome, Windows, Google přihlášení, Gatekeeper) – to zůstává otevřené v [#208](https://github.com/martin-pok/agentree/issues/208). Stable Latest zůstává `v0.46.0`; Chrome Web Store se aktualizuje samostatně.
+>
+> **Historický zablokovaný kandidát:** **0.46.11** — neveřejný Draft, nyní zablokovaný pro publikaci. Tag na `1e72a0057637ad249e70388444346a80526e7083` prošel [8/8 CI](https://github.com/martin-pok/agentree/actions/runs/38430918556); Draft ID `411899483` má osm příloh ověřených 8/8 proti GitHub SHA-256 a 7/7 proti manifestu. Po výslovném souhlasu byla skutečná aplikace z DMG nainstalována na Apple Silicon Mac, spustila se i po restartu a zachovala viditelný účet, upozornění a projekty. `spctl` však ad-hoc balík odmítl a fyzická kontrola našla v PWA/Apple PNG starší hlavu s fialovou anténou. [Oprava #231](https://github.com/martin-pok/agentree/pull/231) nemění neměnné binárky 0.46.11; tento Draft nezveřejňovat. Google OAuth, Chrome/Windows a celé UAT zůstávají otevřené. Veřejné Preview je [v0.46.6](https://github.com/martin-pok/agentree/releases/tag/v0.46.6), Stable Latest `v0.46.0`.
+>
+> **Historie nevydaných buildů:** Drafty 0.46.7–0.46.11 jsou neměnné a nejsou veřejnou aktualizací. Nový distribuční kandidát vyžaduje opravené binárky, přesné zelené CI, audit příloh a živé UAT; samotný commit ani Draft dostupnost nedokazuje. [Roadmapa](docs/ROADMAP.md) · [Kontrola vydání](docs/RELEASE-READINESS.md) · [Brand/UAT #213](https://github.com/martin-pok/agentree/issues/213).
+>
+> **Desktop:** aplikace pro macOS (Apple Silicon). Swift/AppKit + WebKit, přibalený Node, lokální fonty, průvodce, vlastní nabídky a řízený životní cyklus serveru. Build je zatím podepsaný ad-hoc (bez Developer ID a notarizace), proto ho macOS napoprvé zablokuje a jednou ho povolíš v Nastavení systému. Stav konektorů popisuje [docs/CONNECTORS.md](docs/CONNECTORS.md).
 
 ## Instalace
 
-**[Stáhnout pro Mac](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.zip)** · **[Stáhnout pro Windows (beta)](https://github.com/martin-pok/agentree/releases/latest)** · [postup na webu](https://agentree-fawn.vercel.app/instalace)
+**[Stáhnout pro Mac (DMG)](https://github.com/martin-pok/agentree/releases/latest/download/Agenteeq-macOS-arm64.dmg)** · **[Stáhnout pro Windows (beta)](https://github.com/martin-pok/agentree/releases/latest)** · [postup na webu](https://agentree-fawn.vercel.app/instalace)
 
 Mac (Apple Silicon, M1 a novější, macOS 14+; Mac s procesorem Intel nepodporujeme), bez Terminálu:
 
-1. Stáhni a rozbal ZIP.
-2. Přetáhni Agenteeq do složky Aplikace.
+1. Stáhni a otevři obraz disku DMG.
+2. V okně instalátoru přetáhni Agenteeq do složky Aplikace.
 3. Otevři Agenteeq. macOS ohlásí, že aplikaci nemůže ověřit – dialog zavři.
 4. Nastavení systému → Soukromí a zabezpečení → v části Zabezpečení klikni na **Přesto otevřít** a potvrď heslem. Příště se Agenteeq otevře dvojklikem.
 
@@ -53,7 +59,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 977 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
+npm test          # 1128 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/
@@ -86,6 +92,7 @@ Než začneš měnit kód (člověk i AI agent), přečti **[AGENTS.md](AGENTS.m
 | [docs/LICENSING.md](docs/LICENSING.md) | Vydávání licencí, placené funkce, distribuce (pro vydavatele) |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vize, zákazník, hodnota, hypotézy monetizace (neověřené) |
 | [docs/BRAND.md](docs/BRAND.md) | Jméno produktu: kde všude žije, co stojí přejmenování a jak ho udělat bez ztráty dat |
+| [docs/legal/README.md](docs/legal/README.md) | **Pracovní, neúčinné právní návrhy k revizi**: CZ/EN Terms, GDPR audit, ochrana značky, IP evidence, bezplatné audity a předkomerční checklist |
 | [docs/REMOTE.md](docs/REMOTE.md) | Přístup z telefonu mimo domácí síť: napojení na Tailscale, veřejné tunely, hranice |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Cesta z lokální bety k SaaS, s akceptačními kritérii |
 | [CHANGELOG.md](CHANGELOG.md) | Historie verzí |

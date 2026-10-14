@@ -557,6 +557,15 @@ export function createHttpServer(app, existingServer = null) {
       app.extensionSeen();
       return prehledProRozsireni(store.list(), { procesyNevim: app.connectors.processes?.status?.().state === 'error' });
     }, { token: true }],
+    // Explicitní kliknutí v okně spárovaného rozšíření. Chrome nikdy nedostane
+    // lokální klíč WKWebView ani přístup k přepisu: pouze požádá native shell,
+    // aby zobrazil existujícího viditelného agenta. Přes LAN/Tailscale zakázáno.
+    ['POST', /^\/api\/extension\/focus-agent$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Agenta lze otevřít jen na místním počítači.'));
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      const body = await readBody(req);
+      return unwrap(app.focusExtensionAgent(body && typeof body === 'object' ? body.id : null));
+    }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
@@ -712,6 +721,10 @@ export function createHttpServer(app, existingServer = null) {
         if (!['manual', 'automatic'].includes(body.updateMode)) throw new HttpError(422, ui('Aktualizace mohou být ruční nebo automatické.'));
         datastore.data.settings.updateMode = body.updateMode;
       }
+      if (body.updateChannel !== undefined) {
+        if (!['stable', 'preview'].includes(body.updateChannel)) throw new HttpError(422, ui('Neplatný kanál aktualizací.'));
+        datastore.data.settings.updateChannel = body.updateChannel;
+      }
       if (body.avatar !== undefined) {
         const ok = body.avatar === null || (Number.isInteger(body.avatar) && body.avatar >= 0 && body.avatar < 64);
         if (!ok) throw new HttpError(422, ui('Neplatný profilový obrázek.'));
@@ -741,7 +754,7 @@ export function createHttpServer(app, existingServer = null) {
       // skončil jen v logu – po restartu se změna potichu ztratila.
       store.emit('settings', datastore.data.settings);
       if (!(await datastore.flush())) throw new HttpError(500, ui('Nastavení se nepodařilo uložit na disk. Zkontroluj volné místo a oprávnění ke složce ~/.agenteeq.'));
-      if (body.updateMode === 'automatic') app.checkForUpdates().catch(() => {});
+      if (body.updateMode === 'automatic' || body.updateChannel !== undefined) app.checkForUpdates().catch(() => {});
       return { settings: datastore.data.settings };
     }],
     // `check` nic nezapisuje: znovu přečte settings.json, ať je vidět, jestli propojení pořád platí.
@@ -987,7 +1000,12 @@ export function createHttpServer(app, existingServer = null) {
     if (!file.startsWith(PUBLIC_DIR + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
     let body;
     try {
-      body = await fs.readFile(file);
+      // A lexical prefix check is insufficient: a symlink inside public/ could
+      // point to private files outside the web root.
+      const resolvedRoot = await fs.realpath(PUBLIC_DIR);
+      const resolvedFile = await fs.realpath(file);
+      if (!resolvedFile.startsWith(resolvedRoot + path.sep)) throw new HttpError(403, ui('Zakázáno.'));
+      body = await fs.readFile(resolvedFile);
     } catch (err) {
       if (err.code !== 'ENOENT' && err.code !== 'EISDIR') throw err;
       if (path.extname(rel)) throw new HttpError(404, ui('Nenalezeno.'));
@@ -1087,6 +1105,11 @@ export function createHttpServer(app, existingServer = null) {
   };
 
   server = existingServer || http.createServer();
+  // Bound slow headers and never-ending uploads without closing long-lived SSE responses.
+  // Existing desktop server is subject to the same defensive limits.
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.maxHeadersCount = 100;
   server.on('request', onRequest);
 
   // Listener pro místní síť obsluhuje tentýž kód (a tedy i stejnou kontrolu tokenu).

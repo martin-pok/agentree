@@ -7,10 +7,18 @@
 name: Testy
 
 on:
+  # Run branches through their PR only; pushing to an open PR otherwise duplicates the
+  # same 8-job matrix and cancel-in-progress can kill half of each run.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+# One current validation per PR, plus one per main push. Superseded commits cancel
+# earlier runs without competing with a second push event for the same PR branch.
+concurrency:
+  group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -27,12 +35,12 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
       # Projekt nemá žádné závislosti, takže žádná instalace není potřeba — jen Node.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
@@ -60,11 +68,11 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
@@ -82,12 +90,28 @@ jobs:
           $zip = Get-ChildItem dist/Agenteeq-*-Windows-x64.zip
           '{0} — {1:N1} MB' -f $zip.Name, ($zip.Length / 1MB)
 
+      # Audit the REAL generated ZIP, not only the packaging script. Recursively
+      # exclude legacy duplicate icons but require the current brand master.
+      - name: Ověřit brand přímo v distribučním Windows ZIPu
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = (Get-ChildItem dist/Agenteeq-*-Windows-x64.zip | Select-Object -First 1)
+          if (-not $archive) { throw 'Missing Windows installer ZIP' }
+          $out = Join-Path $env:RUNNER_TEMP 'agenteeq-brand-zip-audit'
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath $out -Force
+          $entries = @(Get-ChildItem -Path $out -Recurse -File)
+          $old = @($entries | Where-Object { $_.Name -in @('Agenteeq-icon.png', 'Agenteeq.icns', 'robot-predloha.svg', 'agentree-mark.svg') })
+          if ($old.Count -ne 0) { throw "Legacy icon in Windows ZIP: $($old.FullName -join ', ')" }
+          $marks = @($entries | Where-Object { $_.Name -eq 'agenteeq-mark.svg' -and $_.FullName -match '[\\/]public[\\/]brand[\\/]' })
+          if ($marks.Count -ne 1) { throw "Expected exactly one current brand master, got $($marks.Count)" }
+
       # Rozbalit archiv jako člověk, spustit Agenteeq.exe, počkat na server a na vykreslené
       # rozhraní v okně, nafotit obrazovku, ukončit a ověřit, že server skončil s ním.
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: qa-native-windows
@@ -96,7 +120,7 @@ jobs:
 
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
@@ -110,16 +134,31 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
 
       - name: Sestavit
         run: npm run build:mac
+
+      - name: Verify actual packaged ICNS and no obsolete artwork
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find dist -maxdepth 1 -name 'Agenteeq-*-macOS-arm64.zip' -print -quit)"
+          test -n "$archive"
+          mkdir -p dist/qa-bundle-icons
+          ditto -x -k "$archive" dist/qa-bundle-icons
+          test -s dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/Agenteeq.icns
+          test ! -e dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/app/desktop/Agenteeq.icns
+          test ! -e dist/qa-bundle-icons/Agenteeq.app/Contents/Resources/app/desktop/Agenteeq-icon.png
+          test -s dist/Agenteeq-icon.png
+          sips -g format dist/Agenteeq-icon.png | grep -q 'format: png'
+          echo "Verified signed Mac bundle contains only generated icon and matching preview"
 
       # 0.46 ships a custom Finder DMG; validate the exact installer path before tagging.
       - name: Sestavit a ověřit instalátor DMG
@@ -128,7 +167,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: qa-native-macos
@@ -142,26 +181,127 @@ jobs:
     # Instalace prohlížečů (apt) sama trvá na runneru 1–11 minut, 20 minut na celek nestačilo.
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
       # Výhradně nástroj QA; nevstupuje do runtime balíčku ani package.json.
+      # Prohlížeče se instalují z lokálního binárního souboru (ne `npx`): `npx` by při chybějícím
+      # balíčku tiše stáhl libovolnou verzi; takhle by krok selhal.
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium webkit
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
       - run: npm run qa:desktop
-      - run: npm run qa:site
-      - run: npm run qa:extension
-      - run: npm run qa:contrast
+      - run: npm run qa:desktop-inset
+      - run: npm run qa:assistant
+      - run: npm run qa:refresh
       - run: npm run qa:tvary
       - run: npm run qa:studio
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: browser-qa
           path: |
             dist/qa/
+          retention-days: 14
+
+  browser-web-qa:
+    name: Web, rozšíření a kontrast
+    runs-on: ubuntu-latest
+    # Independently test site/extension/a11y; do not serialize behind long desktop QA.
+    # Playwright --with-deps can spend >23 min provisioning WebKit system packages
+    # on a fresh GitHub runner. 25 min cancelled qa:site before qa:extension/qa:contrast.
+    # Allow the full QA to finish; never treat cancelled tests as passing.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with: { node-version: '22' }
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      - run: npm run qa:site
+      - run: npm run qa:extension
+      - run: npm run qa:contrast
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: browser-web-qa
+          path: |
             dist/qa-site/
             dist/qa-extension/
+            dist/qa-contrast/
+          retention-days: 14
+
+  chrome-store:
+    name: Chrome Web Store branding a screenshoty
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with: { node-version: '22' }
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Ověřit PWA a Apple ikony proti Dock SVG
+        run: npm run qa:icons
+
+      # Chrome Web Store podklady renderujeme ze stejných SVG/HTML zdrojů jako release.
+      # Artefakt umožňuje zkontrolovat nové promo a marquee bez odhadů či generovaných mockupů.
+      - name: Renderovat aktuální Chrome Web Store branding
+        run: |
+          node branding/chrome-web-store/render.mjs
+      - name: Zabránit tiché změně schválených ikon při renderování
+        run: git diff --exit-code -- extension/icons/icon-16.png extension/icons/icon-32.png extension/icons/icon-48.png extension/icons/icon-128.png
+      - name: Vyrenderovat aktuální snímky extension pro obchod
+        run: node branding/chrome-web-store/snimky.mjs
+      - name: Ověřit úplnost exportů Chrome Web Store
+        run: node --test test/chrome-web-store.test.mjs test/brand-robot.test.mjs
+      - name: Sestavit instalační ZIP rozšíření pro Chrome Web Store
+        run: npm run build:extension
+      - name: Uložit ZIP připravený k nahrání do Chrome Web Store
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: agenteeq-extension-store-upload
+          path: dist/agenteeq-extension-*.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Uložit skutečné snímky pro Chrome Web Store
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: chrome-store-screenshots
+          path: |
+            branding/chrome-web-store/export/snimek-*.png
+            branding/chrome-web-store/export/en/snimek-*.png
+          retention-days: 14
+      - name: Uložit skutečně vyrenderované brand assety
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: chrome-store-branding
+          path: |
+            branding/chrome-web-store/export/icon-128.png
+            branding/chrome-web-store/export/promo-small-440x280.png
+            branding/chrome-web-store/export/marquee-1400x560.png
+            extension/icons/icon-*.png
+          retention-days: 14
+
+      # A release candidate is a single reviewable, content-addressed upload set.
+      # Only main receives this artifact: PR builds are not publisher candidates.
+      # Still requires the entire 8/8 run to finish green and manual Chrome/host UAT.
+      - name: Připravit verifikovatelnou sadu pro ruční nahrání do obchodu
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/prepare-chrome-store-kit.mjs
+      - name: Uložit kompletní balíček obchodu s otisky souborů
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: chrome-store-review-kit
+          path: dist/chrome-store-kit/
+          if-no-files-found: error
           retention-days: 14

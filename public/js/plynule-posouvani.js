@@ -138,8 +138,14 @@ export function plynulePosouvani() {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;       // vodorovný posun nechat být
     if (zamceno(e.target) || vnitrniPosuv(e.target, e.deltaY > 0)) return;
     const krok = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
-    // Trackpad posílá v aplikaci malé kroky se setrvačností už od macOS. Další 110ms
-    // dojezd je zdvojoval a působil opožděně; velké kroky myši zůstávají plynulé.
+    // Website trackpads already animate through the browser compositor. Do not
+    // preventDefault or run a second JS easing animation for their small pixel deltas:
+    // on Mac trackpads this previously introduced perceptible latency on every swipe.
+    // Leave desktop app behaviour unchanged (its WebKit scroll path differs).
+    if (window.agenteeqDesktop !== true && plynule && e.deltaMode === 0 && Math.abs(krok) < 50) {
+      if (bezi) zastav();
+      return;
+    }
     const primo = !plynule || (window.agenteeqDesktop === true && e.deltaMode === 0 && Math.abs(krok) < 50);
     if (primo) {
       const kam = Math.min(maximum(), Math.max(0, scrollY + krok));

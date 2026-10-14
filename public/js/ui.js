@@ -449,11 +449,13 @@ export async function copy(text, message = tr('Zkopírováno do schránky')) {
 // detail, projekt i karty Přehledu. Třída navíc mění jen umístění a velikost, nikdy jméno ani barvu.
 export const statusPill = (status, cls = '') => `<span class="pill${cls ? ` ${esc(cls)}` : ''}" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
 
-// Věta pod názvem agenta na kartách „Právě teď“. Mimo práci a proces je to důvod z modelu
-// (src/model.js#deriveStatus), takže „Hotovo…“ zazní jen u agenta, který skutečně doběhl; tah,
-// který jen vypršel, nebo zadání bez odpovědi se za hotové nevydávají.
+// Věta o stavu agenta pod jeho názvem: karty „Právě teď“, řádek na Agentech i pruh v detailu.
+// Je to důvod z modelu (src/model.js#deriveStatus), takže „Hotovo…“ zazní jen u agenta, který
+// skutečně doběhl; tah, který jen vypršel, nebo zadání bez odpovědi se za hotové nevydávají.
+// U práce je důvod obvykle sama činnost. Když model řekne víc („… · možná čeká na tvé povolení“),
+// platí jeho věta – jinak by agent, který možná čeká na tebe, vypadal, že jen pracuje.
 export function vetaStavu(s) {
-  if (s.status === 'working') return s.activity || tr('Pracuje');
+  if (s.status === 'working') return s.reason && s.reason !== s.activity ? s.reason : s.activity || tr('Pracuje');
   if (s.status === 'observed') return tr('Detekovaný proces bez přepisu');
   return s.reason || STATUS[s.status]?.label || '';
 }
@@ -463,6 +465,17 @@ export function kindLabel(kind) {
   if (kind === 'question') return tr('Ptá se tě');
   if (kind === 'plan') return tr('Čeká na schválení plánu');
   return tr('Potřebuje tvé rozhodnutí');
+}
+
+// Otázky agenta v přepisu i s nabízenými možnostmi (src/connectors/claude-code.js#otazkyZVstupu),
+// ať je vidět, na co se čeká – ne jen jméno nástroje. Možnosti jsou jen výpis, ne tlačítka:
+// odpovídá se tam, kde konverzace běží, nebo polem pro odpověď v detailu.
+export function otazkyHtml(questions) {
+  const list = (Array.isArray(questions) ? questions : []).filter((q) => q?.question);
+  if (!list.length) return '';
+  const moznosti = (q) => (Array.isArray(q.options) && q.options.length
+    ? `<ul class="tool-options" aria-label="${esc(tr('Nabízené možnosti'))}">${q.options.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : '');
+  return `<div class="tool-questions">${list.map((q) => `<p class="tool-question">${esc(q.question)}</p>${moznosti(q)}`).join('')}</div>`;
 }
 
 export function howToAnswer(s) {
@@ -482,7 +495,7 @@ export const alertHref = (a) => (typeof a.route === 'string' && /^#\/[\w/?=&%.-]
 
 export function activityItem(s) {
   const meta = s.status === 'working' && s.activity
-    ? `<span class="live-dot" aria-hidden="true"></span>${esc(s.activity)}`
+    ? `<span class="live-dot" aria-hidden="true"></span>${esc(vetaStavu(s))}`
     : s.proces
       ? `${esc(tr('PID {0} · od {1} · bez přepisu', s.proces.pid, timeHM(s.proces.od)))} · ${esc(s.app)}`
       : `<span data-ago="${s.lastAt}">${rel(s.lastAt)}</span> · ${esc(s.app)}`;

@@ -5,7 +5,7 @@ import { api } from './api.js';
 import { esc, rel } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { modal, toast, stateBadge } from './ui.js';
-import { tr, tomtoPocitaci } from './i18n.js';
+import { tr } from './i18n.js';
 
 const DODAVATEL = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', perplexity: 'Perplexity' };
 const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.');
@@ -24,12 +24,14 @@ export function radekNapojeni(n) {
     stav = stateBadge('unavailable', tr('Nepodařilo se zjistit'));
   } else if (n.druh === 'agent' && !n.nainstalovano) {
     // Přepis agenta může být připojený i bez jeho příkazového programu.
-    stav = stateBadge('missing', tr('CLI nenalezeno'));
+    stav = stateBadge('missing', tr('Program nenalezen'));
   } else if (n.druh === 'web' && !n.nainstalovano) {
     stav = stateBadge('missing', tr('Potřebuje rozšíření'));
     akce = `<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button>`;
   } else if (n.napojeno === true) {
-    stav = stateBadge('connected', n.plan ? `${tr('Napojeno')} · ${esc(n.plan)}` : tr('Napojeno'));
+    // A Chrome event confirms that the extension saw a conversation, not an OAuth grant.
+    stav = n.druh === 'web' ? stateBadge('connected', tr('Data z Chromu'))
+      : stateBadge('connected', n.plan ? `${tr('Napojeno')} · ${esc(n.plan)}` : tr('Napojeno'));
   } else {
     stav = n.ceka ? stateBadge('idle', tr('Čeká na přihlášení'))
       : n.napojeno === false ? stateBadge('idle', tr('Nenapojeno'))
@@ -38,8 +40,12 @@ export function radekNapojeni(n) {
       : stateBadge('unavailable', tr('Nepodařilo se zjistit'));
     akce = `<button class="btn btn--sm${n.napojeno === false ? ' btn--primary' : ''}" type="button" data-napojit="${esc(n.id)}">${tr('Napojit')}</button>`;
   }
+  // Podtitulek říká, co to je, a jen ověřená fakta. Dřív tu stálo „Agent na tomto počítači“ bez
+  // ohledu na `nainstalovano` – vedle štítku „Nepodařilo se zjistit“ nebo „Program nenalezen“
+  // a nad Zdroji agentů, které pro tentýž nástroj hlásí, že tu nejsou žádné konverzace. Přítomnost
+  // programu patří štítku (ten rozlišuje nevím / není / je), práce na počítači podtitulku.
   return `<li class="model-row"><span class="model-logo">${logo}</span>
-    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? tr('Webový chat') : `${tr('Agent na {0}', tomtoPocitaci())} · ${posledniPrace(n)}`}</span></div>
+    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? `${tr('Webový chat')}${n.posledni ? ` · ${esc(rel(n.posledni))}` : ''}` : `${tr('Programovací agent')} · ${posledniPrace(n)}`}</span></div>
     ${stav}${akce}</li>`;
 }
 
@@ -108,15 +114,27 @@ function zaloha(n, scrim) {
   });
 }
 
+function uspechTitulek(u) {
+  return u.overeni === 'pozorovano' ? tr('Data z webu dorazila') : tr('Přihlášení ověřeno');
+}
+
 function obsahHotovo(u) {
+  const web = u.overeni === 'pozorovano';
+  const detail = web
+    ? tr('Rozšíření načetlo stav konverzace. Přihlášení k webovému účtu Agenteeq neověřuje.')
+    : u.dataError
+      ? tr('Přihlášení funguje, ale údaje o účtu se zatím nepodařilo obnovit.')
+      : u.posledniData > 0
+        ? tr('Poslední známá aktivita nástroje: {0}.', rel(u.posledniData))
+        : tr('Přihlášení funguje. Data se objeví, jakmile nástroj zaznamená první aktivitu.');
   return `<div class="model-done"><span class="model-done-check" aria-hidden="true">${ICON.check}</span>
-    <b>${esc(u.uz ? `${u.label} ${tr('už je napojený')}` : tr('Napojení {0} proběhlo v pořádku', u.label))}</b>
+    <b>${esc(web ? tr('Zaznamenána aktivita: {0}', u.label) : u.uz ? `${u.label} ${tr('už je napojený')}` : tr('Napojení {0} proběhlo v pořádku', u.label))}</b>
     ${u.plan ? `<span>${esc(u.plan)}</span>` : ''}
-    <p>${tr('Agenteeq teď ukazuje jeho práci, limity a spotřebu.')}</p></div>`;
+    <p>${esc(detail)}</p></div>`;
 }
 
 function ukazHotovo(u) {
-  modal({ title: tr('Model je napojený'), body: obsahHotovo(u), footer: '<button type="submit" class="btn btn--primary">Hotovo</button>' });
+  modal({ title: uspechTitulek(u), body: obsahHotovo(u), footer: '<button type="submit" class="btn btn--primary">Hotovo</button>' });
 }
 
 // Klik na „Napojit“. Vrací, až okno zmizí (napojeno, zrušeno nebo vypršelo).
@@ -135,14 +153,15 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
     throw err;
   }
   const predbehlo = vLetu.get(n.id);
-  vLetu.delete(n.id);
   if (predbehlo) {
+    vLetu.delete(n.id);
     ukazHotovo(predbehlo);
     poZmene();
     return;
   }
   if (r.uz) {
-    ukazHotovo({ label: n.label, plan: r.plan, uz: true });
+    vLetu.delete(n.id);
+    ukazHotovo({ label: n.label, plan: r.plan, uz: true, overeni: 'cli', posledniData: r.posledniData, dataError: r.dataError });
     poZmene();
     return;
   }
@@ -159,6 +178,10 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
     onOpen: (scrim, close) => {
       cekajici = { id: n.id, label: n.label, scrim, close };
       zaloha(n, scrim);
+      // An SSE confirmation may arrive after the HTTP reply but before this modal opens.
+      const pending = vLetu.get(n.id);
+      vLetu.delete(n.id);
+      if (pending) queueMicrotask(() => udalostNapojeni(pending));
     },
   });
   const byloCekani = cekajici?.id === n.id && !cekajici.hotovo;
@@ -174,7 +197,7 @@ export function udalostNapojeni(u) {
     const form = cekajici.scrim.querySelector('form');
     if (u.udalost === 'napojeno') {
       cekajici.hotovo = true;
-      form.querySelector('h2').textContent = tr('Model je napojený');
+      form.querySelector('h2').textContent = uspechTitulek(u);
       form.querySelector('.modal-body').innerHTML = obsahHotovo(u);
       form.querySelector('.modal-foot').innerHTML = '<button type="submit" class="btn btn--primary">Hotovo</button>';
       form.querySelector('.modal-foot .btn').focus();

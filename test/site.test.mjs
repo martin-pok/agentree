@@ -23,7 +23,7 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
   // Kopie se od aplikace smí lišit přesně v jedné věci: značce „tady žádný server není“.
   // Cokoli dalšího by znamenalo, že se rozhraní na webu začalo rozcházet s tím v aplikaci.
   const zdroj = await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8');
-  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">', '');
+  const bezZnacky = aplikace.replace('\n<meta name="agenteeq-staticka-kopie" content="1">\n<meta name="robots" content="noindex, nofollow">', '');
   assert.equal(bezZnacky, zdroj, 'kopie se od aplikace nesmí lišit v ničem jiném než ve značce');
 
   // Rozhraní tahá soubory z kořene (/js/app.js, /styles.css) – musí tam být, jinak je /app rozbité.
@@ -31,7 +31,8 @@ test('web: landing page je v kořeni, rozhraní aplikace na /app a soubory aplik
     assert.ok(r.files.includes(soubor), `v sestavení chybí ${soubor}`);
   }
   assert.ok(r.files.includes('lp.css'), 'styly landing page');
-  assert.match(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), new RegExp(`Disallow: ${APP_PATH}`));
+  assert.doesNotMatch(await fs.readFile(path.join(out, 'robots.txt'), 'utf8'), /Disallow:\s*\/app/, 'crawler must be able to read /app noindex');
+  assert.match(aplikace, /<meta name="robots" content="noindex, nofollow">/, 'static /app must not be indexed');
 
   // Ukázka rozhraní (/app?ukazka) čte data sestavená spolu s webem – bez nich by skončila na rozcestníku.
   assert.ok(r.files.includes('ukazka/data.json'), 'data živé prohlídky');
@@ -213,21 +214,30 @@ test('značka se do stránky nepřidá dvakrát', () => {
   assert.throws(() => znackaStatickeKopie('<html><body>bez hlavičky</body></html>'), /head/);
 });
 
-// Verze ve strukturovaných datech stránky se bere z package.json při sestavení, ne z ruky.
-test('web nese verzi z package.json, ne opsanou z minula', async () => {
-  const { verzeVDatechStranky } = await import('../scripts/build-site.mjs');
-  assert.equal(
-    verzeVDatechStranky('x "softwareVersion":"0.1.0" y', '9.8.7'),
-    'x "softwareVersion":"9.8.7" y',
-  );
-  assert.throws(() => verzeVDatechStranky('<html></html>', '1.0.0'), /softwareVersion/, 'bez pole se nesmí mlčky vrátit stará verze');
-  const fsp = await import('node:fs/promises');
-  const balicek = JSON.parse(await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  const { execFileSync } = await import('node:child_process');
-  const { fileURLToPath } = await import('node:url');
-  execFileSync(process.execPath, ['scripts/build-site.mjs'], { cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'ignore' });
-  const html = await fsp.readFile(new URL('../dist/web/index.html', import.meta.url), 'utf8');
-  assert.match(html, new RegExp(`"softwareVersion":"${balicek.version.replace(/\./g, '\\.')}"`));
+// marketing SEO must not advertise a development/draft version as the public app.
+// The website downloads GitHub Stable Latest, which may lag package.json and
+// an unpublished Preview draft by multiple releases. softwareVersion is optional.
+test('web JSON-LD never mislabels an unpublished package.json version as publicly available', async () => {
+  const out = await tempDir('web-seo-versions-');
+  await buildSite({ out });
+  const packageJson = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8'));
+  assert.match(packageJson.version, /^\d+\.\d+\.\d+$/);
+  for (const locale of JAZYKY) {
+    const html = await fs.readFile(path.join(out, locale.soubor), 'utf8');
+    const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    assert.ok(match, locale.kod + ': JSON-LD must be present');
+    const data = JSON.parse(match[1]);
+    const software = data['@graph'].find(node => node['@type'] === 'SoftwareApplication');
+    assert.ok(software, locale.kod + ': SoftwareApplication must remain in schema');
+    assert.equal(software.name, 'Agenteeq');
+    assert.match(software.operatingSystem, /macOS/);
+    assert.equal(software.isAccessibleForFree, true);
+    assert.equal(Object.hasOwn(software, 'softwareVersion'), false,
+      'unpublished source version must not be represented as publicly downloadable');
+    assert.doesNotMatch(html, /"softwareVersion":/);
+    assert.match(html, /https:\/\/github\.com\/martin-pok\/agentree\/releases\/latest\/download\//,
+      'download CTA must remain anchored to the real published Stable');
+  }
 });
 
 // Na webu nesmí nic běžet donekonečna: návštěvník stránku čte, nedívá se na smyčku.
@@ -373,4 +383,73 @@ test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vyd�
     assert.doesNotMatch(html, /<!-- \/?(?:mac|rozsireni):/, `${jazyk.soubor}: zbyla značka`);
     for (const [, odkaz] of html.matchAll(/data-stahnout="windows-x64" href="([^"]+)"/g)) assert.equal(odkaz, dnes.windows, jazyk.soubor);
   }
+});
+
+
+test('web: published 0.46.6 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
+  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.6/Agenteeq-0.46.6-macOS-arm64.dmg';
+  const destinations = [
+    ['site/index.html', 'index.html', /0\.46\.6 Preview pro Mac/],
+    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.6/],
+    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.6 Preview pro Mac/],
+    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.6/],
+  ];
+  const output = await tempDir('web-preview-');
+  await buildSite({ out: output });
+  for (const [source, built, label] of destinations) {
+    const html = await fs.readFile(path.join(ROOT, source), 'utf8');
+    const rendered = await fs.readFile(path.join(output, built), 'utf8');
+    for (const [where, page] of [[source, html], [built, rendered]]) {
+      assert.equal(page.split(url).length - 1, 1, where + ': one direct versioned Preview DMG link');
+      assert.match(page, label, where + ': must say this is Preview, not stable');
+      assert.match(page, /data-stahnout="mac-arm64"/, where + ': stable Mac download must remain primary');
+    }
+    assert.match(rendered, /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/,
+      built + ': main CTA must keep current stable release instead of silently adopting prerelease');
+  }
+});
+
+test('web: current Preview documentation and published preview links agree without changing stable', async () => {
+  const files = ['README.md', 'docs/ROADMAP.md', 'docs/RELEASE-READINESS.md'];
+  for (const name of files) {
+    const doc = await fs.readFile(path.join(ROOT, name), 'utf8');
+    assert.ok(doc.includes('v0.46.6'), name + ' must identify the currently published preview');
+    assert.ok(doc.includes('v0.46.0'), name + ' must keep the stable channel distinct');
+  }
+});
+
+test('privacy CZ/EN accurately discloses update-check network access and optional cloud connections', async () => {
+  const cz = await fs.readFile(path.join(ROOT, 'site/soukromi/index.html'), 'utf8');
+  const en = await fs.readFile(path.join(ROOT, 'site/en/privacy/index.html'), 'utf8');
+  assert.match(cz, /veřejný seznam vydání Agenteeq na GitHubu/);
+  assert.match(cz, /České národní banky/);
+  assert.match(cz, /síťovou komunikací s jejich provozovateli/);
+  assert.match(en, /checks public Agenteeq releases on GitHub/);
+  assert.match(en, /Czech National Bank/);
+  assert.match(en, /communicate with the providers described above/);
+  assert.match(cz, /Nezveřejňuj zde osobní údaje, žádosti o přístup\/výmaz/);
+  assert.match(en, /Do not publicly post personal data, access or erasure requests/);
+  assert.doesNotMatch(cz, /žádosti podle GDPR posílej přes <a href/);
+  assert.doesNotMatch(en, /Send privacy questions and GDPR requests through the <a href/);
+  assert.doesNotMatch(cz, /sama od sebe jen dotaz na denní kurzy/);
+  assert.doesNotMatch(en, /on its own, only a request for the Czech National Bank/);
+  // This test does not certify GDPR compliance: controller identity, legal
+  // bases, processors and retention still require reviewed policy updates.
+});
+
+test('legal templates are unmistakably review-only, do not assert a registered mark or earned security badge', async () => {
+  const dir = path.join(ROOT, 'docs/legal');
+  for (const file of ['README.md', 'TERMS.cs.md', 'TERMS.en.md', 'PRIVACY-REVIEW.cs.md',
+    'PRIVACY.cs.md', 'PRIVACY.en.md',
+    'BRAND-POLICY.cs.md', 'BRAND-POLICY.en.md', 'IP-REGISTER.md', 'FREE-ASSURANCE.md', 'LAUNCH-LEGAL-GATE.md']) {
+    const text = await fs.readFile(path.join(dir, file), 'utf8');
+    assert.ok(text.length > 800, file + ': nonempty legal template');
+  }
+  const terms = await fs.readFile(path.join(dir, 'TERMS.cs.md'), 'utf8');
+  assert.match(terms, /NENÍ ÚČINNÝ/);
+  assert.match(terms, /DOPLNIT PŘESNOU IDENTITU/);
+  const policy = await fs.readFile(path.join(dir, 'BRAND-POLICY.cs.md'), 'utf8');
+  assert.match(policy, /Nezakládá registrovanou ochrannou známku/);
+  const badges = await fs.readFile(path.join(dir, 'FREE-ASSURANCE.md'), 'utf8');
+  assert.match(badges, /No invented scores/);
 });

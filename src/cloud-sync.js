@@ -58,9 +58,13 @@ export function tokenyPoDnech(sessions, now = Date.now(), dni = uplnychDni(30)) 
     const dnyKonverzace = new Set();
     for (const [hodina, pocet] of Object.entries(s.hourly || {})) {
       const ts = hourKeyTs(hodina);
-      if (!Number.isFinite(ts) || !(pocet > 0)) continue;
+      // Údaje z poškozeného přepisu, budoucnosti nebo neplatné číselné hodnoty
+      // nesmí vytvořit falešný den, přetéct do Infinity ani přepsat platná data v cloudu.
+      // Začátek UTC hodinového bucketu smí být v aktuální hodině, nikdy později.
+      if (!Number.isFinite(ts) || ts > now || typeof pocet !== 'number'
+        || !Number.isFinite(pocet) || pocet <= 0) continue;
       const day = localDay(ts);
-      if (day < od) continue;
+      if (day < od || day > localDay(now)) continue;
       const k = `${day}|${provider}`;
       const r = mapa.get(k) || mapa.set(k, { day, provider, tokens: 0, sessions: 0 }).get(k);
       r.tokens += Math.round(pocet);

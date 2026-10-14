@@ -7,8 +7,12 @@
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
 import { robot } from '/js/robot-svg.js';
+import { enableLivePreview } from '/preview-release.js';
 
 const anglicky = document.documentElement.lang === 'en';
+
+// Published Preview and its changelog move together, without changing Stable.
+enableLivePreview();
 
 // Lišta nahoře splývá s úvodem; jakmile stránka odjede, dostane průhled a oddělí se linkou (site/lp.css).
 const lista = document.querySelector('.nav');
@@ -134,27 +138,57 @@ if (scena) {
   // jeden zápis za snímek. Při omezeném pohybu zůstane okno rovné a roboti stojí.
   if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
     let ceka = false;
+    let scenaViditelna = true;
     const zmer = () => {
       ceka = false;
+      if (!scenaViditelna || document.hidden) return;
       const top = scena.getBoundingClientRect().top;
       const p = Math.min(1, Math.max(0, 1 - (top - innerHeight * 0.12) / (innerHeight * 0.6)));
       scena.style.setProperty('--p', p.toFixed(3));
       scena.classList.toggle('is-rovne', p > 0.995);
     };
-    const naplanuj = () => { if (!ceka) { ceka = true; requestAnimationFrame(zmer); } };
+    const naplanuj = () => {
+      if (scenaViditelna && !document.hidden && !ceka) {
+        ceka = true;
+        requestAnimationFrame(zmer);
+      }
+    };
+    // Většina scrollu návštěvníka probíhá mimo hero. Nečteme tam layout
+    // a neaktualizujeme transformace robota na každý scroll snímek.
+    if ('IntersectionObserver' in window) {
+      const viditelnost = new IntersectionObserver(([entry]) => {
+        scenaViditelna = Boolean(entry?.isIntersecting);
+        if (scenaViditelna) naplanuj();
+      }, { rootMargin: '120px 0px 120px 0px', threshold: 0 });
+      viditelnost.observe(scena);
+    }
     addEventListener('scroll', naplanuj, { passive: true });
     addEventListener('resize', naplanuj);
+    document.addEventListener('visibilitychange', naplanuj);
     zmer();
+
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      let mys = null;
-      addEventListener('pointermove', (e) => {
-        const posun = () => {
-          scena.style.setProperty('--mx', ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
-          scena.style.setProperty('--my', ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
-          mys = null;
-        };
-        if (!mys) mys = requestAnimationFrame(posun);
+      let mys = 0;
+      let x = 0;
+      let y = 0;
+      const posun = () => {
+        mys = 0;
+        if (!scenaViditelna || document.hidden) return;
+        scena.style.setProperty('--mx', ((x / innerWidth) * 2 - 1).toFixed(3));
+        scena.style.setProperty('--my', ((y / innerHeight) * 2 - 1).toFixed(3));
+      };
+      // Jen interakce uvnitř hero; žádné trvalé pointermove výpočty na celém webu.
+      scena.addEventListener('pointermove', (e) => {
+        x = e.clientX;
+        y = e.clientY;
+        if (!mys && scenaViditelna && !document.hidden) mys = requestAnimationFrame(posun);
       }, { passive: true });
+      scena.addEventListener('pointerleave', () => {
+        if (mys) cancelAnimationFrame(mys);
+        mys = 0;
+        scena.style.removeProperty('--mx');
+        scena.style.removeProperty('--my');
+      });
     }
   }
 }
@@ -240,4 +274,43 @@ plynulePosouvani();
      if(e.matches&&overlay.classList.contains('is-open'))setOpen(false);
    });
  }
+}
+
+
+/* Accurate in-page navigation, including iOS Safari.
+   #obsah (the footer's "back to top") means document top, not the start
+   of <main> underneath the sticky site header. */
+{
+ const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const scrollToAnchor=(hash)=>{
+   if(hash==='#obsah'||hash==='#top'){
+     window.scrollTo({top:0,behavior:reduceMotion()?'instant':'smooth'});
+     return true;
+   }
+   let target;
+   try { target=document.getElementById(decodeURIComponent(hash.slice(1))); } catch { return false; }
+   if(!target) return false;
+   // Native fragment navigation expands <details>; preserve that behavior when scrolling manually.
+   if(target.tagName==='DETAILS' && !target.open) target.open=true;
+   // Leave the section's kicker and headline visible below the sticky header.
+   const sticky=document.querySelector('.nav');
+   const headerHeight=sticky?.getBoundingClientRect().height||72;
+   const offset=headerHeight+16;
+   const y=Math.max(0,window.scrollY+target.getBoundingClientRect().top-offset);
+   window.scrollTo({top:y,behavior:reduceMotion()?'instant':'smooth'});
+   return true;
+ };
+ document.addEventListener('click',event=>{
+   const link=event.target.closest('a[href^="#"]');
+   if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+   const hash=link.getAttribute('href');
+   if(!hash||hash==='#')return;
+   const target=hash==='#obsah'||hash==='#top'?true:(()=>{try{return Boolean(document.getElementById(decodeURIComponent(hash.slice(1))));}catch{return false;}})();
+   if(!target)return;
+   event.preventDefault();
+   if(location.hash!==hash)history.pushState(null,'',hash);
+   // Close handler for mobile overlay runs first; scroll after its body unlock.
+   requestAnimationFrame(()=>scrollToAnchor(hash));
+ });
+ window.addEventListener('hashchange',()=>{if(location.hash==='#obsah'||location.hash==='#top')scrollToAnchor(location.hash);});
 }

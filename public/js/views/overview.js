@@ -70,8 +70,10 @@ function onboardingHtml() {
   const ext = state.integrations?.extension;
   // Propojení s Claude Code nabízet jen tomu, kdo Claude Code na Macu má.
   const maClaudeCode = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
+  const nalezeni = state.sessions.size > 0;
   const steps = [
-    { done: state.sessions.size > 0, label: tr('Agenti na {0} nalezeni', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="connectors">${tr('Zdroje dat')}</a>` },
+    // Nesplněný krok je úkol, ne tvrzení: „nalezeni“ u nuly agentů by nebyla pravda.
+    { done: nalezeni, label: nalezeni ? tr('Agenti na {0} nalezeni', tomtoPocitaci()) : tr('Najít agenty na {0}', tomtoPocitaci()), sub: tr('Claude Code, Codex, Cursor, Copilot a další se načítají samy.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="connectors">${tr('Zdroje dat')}</a>` },
     ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && (hooks?.current || hooks?.funguje)), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zapnout')}</a>` }] : []),
     { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
     { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },

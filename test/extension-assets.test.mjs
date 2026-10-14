@@ -38,7 +38,13 @@ test('rozšíření: loga služeb jsou tatáž jako v aplikaci a licence jde s n
   assert.match(readme, /Copyright \(c\) LobeHub/);
   // Okno odkazuje jen na loga, která v balíčku opravdu jsou.
   const okno = await fs.readFile(path.join(ROOT, 'extension/popup.js'), 'utf8');
-  for (const [, klic] of okno.matchAll(/\['[\w-]+', '[^']+', '(\w+)'\]/g)) assert.ok(loga.includes(`${klic}.svg`), `chybí logo ${klic}.svg`);
+  // Read only the actual SITES logo registry. Other triplets (e.g. compact
+  // conversation filters) are UI state, not service-logo declarations.
+  const registry = okno.match(/const SITES = \[([\s\S]*?)\n\];/);
+  assert.ok(registry, 'chybí centrální registr log služby');
+  const keys = [...registry[1].matchAll(/\['[\w-]+', '[^']+', '(\w+)'\]/g)].map(m => m[1]);
+  assert.ok(keys.length >= 9, 'každá služba musí mít vlastní logo');
+  for (const klic of keys) assert.ok(loga.includes(`${klic}.svg`), `chybí logo ${klic}.svg`);
 });
 
 test('rozšíření: licence písem jdou do balíčku s nimi (OFL to vyžaduje)', async () => {
@@ -104,7 +110,7 @@ test('balíček: sestavení projde jen se sjednocenou verzí a nese všechny č�
   assert.match(r.file, /agenteeq-extension-\d+\.\d+\.\d+\.zip$/);
 
   const archiv = await fs.readFile(r.file);
-  for (const musi of ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons/icon-128.png', 'fonts/onest-400.ttf']) {
+  for (const musi of ['manifest.json', 'background.js', 'content.js', 'sites.js', 'popup.html', 'popup.js', 'icons/brand.svg', 'icons/icon-128.png', 'fonts/onest-400.ttf']) {
     assert.ok(archiv.includes(Buffer.from(musi, 'utf8')), `v balíčku chybí ${musi}`);
   }
   // Skryté soubory a smetí z macOS do obchodu nepatří.

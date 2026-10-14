@@ -3,9 +3,15 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.": "The downloaded update package has changed or disappeared. Download the update again.",
+  "Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.": "First open the native Agenteeq app on this computer.",
+  "Neplatný agent.": "Invalid agent.",
+  "Agent už není v aktuálním přehledu. Obnov seznam.": "This agent is no longer in the current overview. Refresh the list.",
+  "Agenta lze otevřít jen na místním počítači.": "You can only open this agent on the local computer.",
   "Agentovi jde odpovědět jen z Macu, na kterém běží.": "You can only reply to the agent from the Mac it runs on.",
   "Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.": "Replying from Agenteeq currently works only in Claude Code conversations.",
   "Tuhle konverzaci Claude Code neumí obnovit. Pokračuj v ní tam, kde běží.": "Claude Code can’t resume this conversation. Continue it where it runs.",
+  "Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.": "Conversation ID collisions between profiles: {0}. Some runs cannot be safely attributed to an account.",
   "Na tomto počítači se nenašel program claude.": "The claude program wasn’t found on this computer.",
   "Odpovídat z Agenteeq jde zatím jen na macOS.": "Replying from Agenteeq works only on macOS for now.",
   "Ještě se zjišťuje, jestli je na tomto počítači program claude.": "Still checking whether the claude program is on this computer.",
@@ -14,6 +20,8 @@ export default {
   "Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.": "Couldn’t check whether the conversation is running elsewhere. Better reply in Terminal.",
   "V této složce právě běží Claude Code. Odpověz tam, ať se konverzace nerozdvojí.": "Claude Code is running in this folder right now. Reply there so the conversation doesn’t split.",
   "Odpověď je moc dlouhá.": "The reply is too long.",
+  "Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.": "The agent has used up its limit. You can reply once it resets.",
+  "Čas obnovy limitu není známý. Odpověď projde, jen pokud se limit už obnovil.": "The limit reset time is unknown. The reply goes through only if the limit has already reset.",
   "Selhal {0} agent": "{0} agent failed",
   "Selhali {0} agenti": "{0} agents failed",
   "Selhalo {0} agentů": "{0} agents failed",
@@ -35,6 +43,8 @@ export default {
   "{0}: vyčerpaný limit": "{0}: limit reached",
   "{0} dokončil úlohu": "{0} finished a task",
   "{0}: {1} vyčerpán": "{0}: {1} used up",
+  "{0} vyčerpán · obnoví se {1}": "{0} used up · resets {1}",
+  "{0} vyčerpán": "{0} used up",
   "Obnoví se {0}.": "Resets {0}.",
   "Limit je vyčerpaný.": "The limit is used up.",
   "{0}: {1} na {2} %": "{0}: {1} at {2} %",
@@ -165,11 +175,12 @@ export default {
   "Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.": "Tracking {0} sessions from the last {1} days. Instant events are active.",
   "Sleduji {0} sessions za {1} dní.": "Tracking {0} sessions from the last {1} days.",
   "Složka existuje, zatím bez sessions.": "The folder exists, no sessions yet.",
-  "Claude Code na {0} není.": "Claude Code isn’t on {0}.",
+  "Na {0} nejsou žádné konverzace Claude Code.": "No Claude Code conversations on {0}.",
 
   // src/connectors/claude-desktop-code.js
   "Claude Desktop · vzdálený Code": "Claude Desktop · remote Code",
   "Pracuje podle stavu v Claude Desktopu": "Working, according to Claude Desktop",
+  "Při posledním načtení pracoval · novější stav Claude Desktop neuložil": "Was working when last loaded · Claude Desktop has not saved a newer status",
   "Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.": "The remote agent ended with an error. Open Claude for details.",
   "Vzdálený agent potřebuje rozhodnutí. Otevři Claude.": "The remote agent needs a decision. Open Claude.",
   "Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.": "The cache has no list of remote agents. Open the Code tab in Claude.",
@@ -177,6 +188,7 @@ export default {
   "Claude/IndexedDB (místní cache vzdálených relací)": "Claude/IndexedDB (local cache of remote sessions)",
   "Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.": "Remote agents, their last reported status and the available part of the transcript. Internal Claude Desktop format; tokens may be incomplete.",
   "Sleduji {0} vzdálených relací z místní cache Claude Desktopu.": "Tracking {0} remote sessions from the local Claude Desktop cache.",
+  "Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.": "Tracking {0} remote sessions from the local Claude Desktop cache. The session list was last saved {1}.",
   "Zatím bez místní cache vzdálených agentů.": "No local cache of remote agents yet.",
 
   // src/connectors/claude-desktop-usage.js
@@ -221,7 +233,7 @@ export default {
   "Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.": "Real-time transcript, task status, tokens, plan limits and credit balance.",
   "Sleduji {0} konverzací za posledních {1} dní.": "Tracking {0} conversations from the last {1} days.",
   "Složka existuje, zatím bez konverzací.": "The folder exists, no conversations yet.",
-  "Codex na {0} není.": "Codex isn’t on {0}.",
+  "Na {0} nejsou žádné konverzace Codexu.": "No Codex conversations on {0}.",
 
   // src/connectors/copilot.js
   "Nástroj": "Tool",
@@ -358,6 +370,7 @@ export default {
   "Aktualizační balíček už na disku není.": "The update package is no longer on disk.",
   "Ukázat aktualizaci ve správci souborů tenhle systém neumí.": "This system cannot show the update in the file manager.",
   "Aktualizace mohou být ruční nebo automatické.": "Updates can be manual or automatic.",
+  "Neplatný kanál aktualizací.": "Invalid update channel.",
   "Aktualizace lze zkontrolovat jen {0}.": "Updates can only be checked {0}.",
   "Aktualizaci lze stáhnout jen {0}.": "The update can only be downloaded {0}.",
   "Aktualizaci lze otevřít jen {0}.": "The update can only be opened {0}.",
@@ -368,6 +381,7 @@ export default {
   "Aktualizace se nepodařilo zkontrolovat.": "Could not check for updates.",
   "Nová aktualizace zatím není připravená ke stažení.": "A new update is not ready to download yet.",
   "Aktualizační balíček se nepodařilo stáhnout.": "Could not download the update package.",
+  "Aktualizační balíček se nepodařilo uložit.": "Could not save the update package.",
 
   // src/http.js
   "Synchronizace je vypnutá – nic se neposlalo.": "Sync is off – nothing was sent.",
@@ -550,6 +564,7 @@ export default {
   "Otevřít v Cursoru": "Open in Cursor",
   "Otevřít ve VS Code": "Open in VS Code",
   "Přepnout do {0}": "Switch to {0}",
+  "Přepnout do Terminálu": "Switch to Terminal",
   "Otevřít konverzaci": "Open conversation",
   "Pokračovat v Terminálu": "Continue in Terminal",
   "Otevřít složku": "Open folder",

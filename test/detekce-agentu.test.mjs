@@ -469,6 +469,58 @@ test('sledování kořene převezme novou složku hned, bez čekání na opakov�
   assert.equal(domov.strazi, '', 'domov uživatele se nehlídá ani nerekurzivně');
 });
 
+// FSEvents may coalesce/drop the rename that announces "projects/" creation.
+// A small fallback probes ONLY that exact missing folder, so the first agent
+// is found promptly even when fs.watch(parent) never invokes its callback.
+test('ztracená událost strážce: první projects/ se aktivuje bez pětisekundového fallbacku', async (t) => {
+  const { performance } = await import('node:perf_hooks');
+  const parent = path.join(await tempDir('agenteeq-ztracena-udalost-'), 'claude cfg');
+  await fs.mkdir(parent);
+  const root = path.join(parent, 'projects');
+  const events = [];
+  const trace = [];
+  let rootCanWatch = false;
+  let closedGuards = 0;
+  const silentWatch = (dir, _options, _callback) => {
+    if (dir !== parent && (dir !== root || !rootCanWatch)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    return {
+      on() { return this; },
+      unref() {},
+      close() { if (dir === parent) closedGuards++; },
+    };
+  };
+  const started = performance.now();
+  const w = watchTree(root, (file) => events.push(file), {
+    retryMs: 3_600_000, hlidatVznik: true, watch: silentWatch,
+    onTrace: (kind) => trace.push({ kind, elapsedMs: performance.now() - started }),
+  });
+  t.after(() => w.close());
+  assert.equal(w.active, false);
+  assert.equal(w.strazi, parent);
+  assert.ok(trace.some((x) => x.kind === 'guard-active'));
+
+  // No callback is emitted by silentWatch: the only way to activate is the
+  // bounded stat of the exact root, not a 5s retry or parent directory scan.
+  await fs.mkdir(root);
+  rootCanWatch = true;
+  await waitFor(() => w.active, 1700);
+  assert.ok(performance.now() - started < 2000, 'lost guard event must recover inside product 2s SLA');
+  assert.equal(w.strazi, '', 'the parent guard is removed after activation');
+  assert.ok(trace.some((x) => x.kind === 'guard-poll-found'), 'fallback actually recovered missing event');
+  assert.ok(trace.some((x) => x.kind === 'watch-active'), 'full scan follows the recovered watcher');
+  assert.ok(events.length >= 1 && events.length <= 2 && events.every((event) => event === null),
+    'newly created root is scanned on activation with at most one bounded follow-up');
+  assert.equal(closedGuards, 1, 'no accumulating fs.watch handles');
+
+  // The guard must not walk above a forbidden directory even if it exists.
+  const blockedRoot = path.join(parent, 'not-allowed-projects');
+  const blocked = watchTree(blockedRoot, () => events.push('not-allowed'), {
+    retryMs: 3_600_000, hlidatVznik: true, bezStrazce: [parent], watch: silentWatch,
+  });
+  t.after(() => blocked.close());
+  assert.equal(blocked.strazi, '', 'no watch of user HOME or disallowed parent');
+});
+
 // Totéž celou cestou: aplikace s nainstalovaným Claude Code bez jediné konverzace ukáže první
 // konverzaci do 2 s. Opakování sledování je 5 s po startu a plný průchod v testech 60 s, takže
 // do 2 s od startu ji může přinést jen strážce.
@@ -485,6 +537,85 @@ test('první konverzace v kořeni bez projects/ se ukáže do 2 s', async () => 
   } finally {
     await srv.close();
   }
+});
+
+// macOS can deliver "projects created" before Claude Code finishes writing its
+// first JSONL and then silently drop/coalesce the child write event. This test
+// intentionally withholds every child event; the new root must still be scanned
+// after the initial write WITHOUT waiting for the 5-second periodic fallback.
+test('první JSONL zapsaný až po vzniku projects/ se najde i bez druhé FSEvents události', async (t) => {
+  const { performance } = await import('node:perf_hooks');
+  const fsSync = await import('node:fs');
+  const parent = path.join(await tempDir('agenteeq-prvni-zapis-'), 'claude cfg');
+  await fs.mkdir(parent);
+  const root = path.join(parent, 'projects');
+  const first = path.join(root, '-tmp-w', 'first.jsonl');
+  const observed = [];
+  const trace = [];
+  let guardEvent;
+  let guardClosed = false;
+  const fakeWatch = (dir, options, callback) => {
+    if (dir === root && !fsSync.existsSync(root)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    if (dir === parent) guardEvent = typeof options === 'function' ? options : callback;
+    return {
+      on() { return this; },
+      unref() {},
+      close() { if (dir === parent) guardClosed = true; },
+    };
+  };
+  const started = performance.now();
+  const watcher = watchTree(root, (file) => {
+    observed.push({ file, found: fsSync.existsSync(first), ms: performance.now() - started });
+  }, {
+    hlidatVznik: true, retryMs: 3_600_000, watch: fakeWatch,
+    onTrace: (kind) => trace.push({ kind, ms: performance.now() - started }),
+  });
+  t.after(() => watcher.close());
+  assert.equal(watcher.active, false);
+  assert.equal(typeof guardEvent, 'function');
+  await fs.mkdir(root);
+  guardEvent('rename', 'projects');
+  assert.equal(watcher.active, true);
+  assert.equal(guardClosed, true, 'no leaked parent watch');
+  assert.deepEqual(observed.map(x => x.found), [false], 'first full scan happened before JSONL write');
+
+  await writeJsonl(first, [radek(crypto.randomUUID(), '/tmp/w')]);
+  // No fake child callback: must NOT rely on another fs.watch event.
+  await waitFor(() => observed.some(x => x.found), 1800);
+  assert.deepEqual(observed.map(x => x.found), [false, true]);
+  assert.ok(observed[1].ms < 2000, 'same 2 s discovery SLA even if child notification is lost');
+  assert.ok(trace.some(x => x.kind === 'new-root-rescan'), 'explicitly exercised the bounded recovery');
+  assert.ok(!trace.some(x => x.kind === 'guard-poll-found'), 'parent watch fast path was used');
+});
+
+test('new-root reconciliation is one-shot, not used on existing roots, and cancelled on close', async (t) => {
+  const fsSync = await import('node:fs');
+  const existing = await tempDir('agenteeq-stary-koren-');
+  let firstCalls = 0;
+  const passive = () => ({ on() { return this; }, unref() {}, close() {} });
+  const old = watchTree(existing, () => { firstCalls++; }, { hlidatVznik: true, watch: passive });
+  t.after(() => old.close());
+  assert.equal(firstCalls, 1);
+  await new Promise(resolve => setTimeout(resolve, 480));
+  assert.equal(firstCalls, 1, 'existing projects/ must not pay for extra reconciliation');
+
+  const parent = path.join(await tempDir('agenteeq-zruseny-koren-'), 'config');
+  await fs.mkdir(parent);
+  const root = path.join(parent, 'projects');
+  let notifyGuard;
+  let calls = 0;
+  const fakeWatch = (dir, options, callback) => {
+    if (dir === root && !fsSync.existsSync(root)) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    if (dir === parent) notifyGuard = typeof options === 'function' ? options : callback;
+    return passive();
+  };
+  const next = watchTree(root, () => { calls++; }, { hlidatVznik: true, watch: fakeWatch, retryMs: 3600000 });
+  await fs.mkdir(root);
+  notifyGuard('rename', 'projects');
+  assert.equal(calls, 1);
+  next.close();
+  await new Promise(resolve => setTimeout(resolve, 480));
+  assert.equal(calls, 1, 'closed watcher must never run the scheduled scan');
 });
 
 test('kořeny přepisů mají strop – podvržené cesty z hooků nevyčerpají sledování souborů', () => {

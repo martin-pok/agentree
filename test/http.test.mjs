@@ -56,7 +56,8 @@ test('HTTP API, realtime stream a zabezpečení', async (t) => {
 
   await t.test('otevření v aplikaci: nabídka akcí, plán, ochrana', async () => {
     const st = await a.get(`/api/sessions/${encodeURIComponent(id)}`);
-    assert.deepEqual(st.body.session.open.map((x) => x.id), ['app', 'terminal', 'folder']);
+    // Konverzace Claude Code z příkazové řádky čeká v Terminálu, proto je hlavní akcí (src/openers.js#openTargets).
+    assert.deepEqual(st.body.session.open.map((x) => x.id), ['terminal', 'app', 'folder']);
     const path = `/api/sessions/${encodeURIComponent(id)}/open`;
     assert.equal((await a.send('POST', path, { target: 'terminal' }, {})).status, 403);
     const r = await a.send('POST', path, { target: 'terminal' });
@@ -300,4 +301,31 @@ test('Vlastní agenti přes API: cizí adresa neprojde, zápis chce hlavičku a 
 
   const stav = await api(s.url).get('/api/state');
   assert.equal(Array.isArray(stav.body.customAgents), true, 'vlastní agenti jsou součástí stavu');
+});
+
+
+test('HTTP static: symlink nesmí zpřístupnit soubory mimo public', { skip: JE_WINDOWS && 'Windows CI nemá oprávnění vytvářet symbolické odkazy' }, async () => {
+  const dir = await tempDir('agenteeq-static-secret-');
+  const secret = path.join(dir, 'private.txt');
+  await fs.writeFile(secret, 'PRIVATE_TEST_SECRET_DO_NOT_SERVE');
+  const link = new URL('../public/.qa-static-escape.txt', import.meta.url);
+  await fs.symlink(secret, link);
+  const server = await startTestServer({ AGENTEEQ_CLOUD: '0' });
+  try {
+    const response = await raw(`${server.url}/.qa-static-escape.txt`);
+    assert.equal(response.status, 403);
+    assert.doesNotMatch(response.body, /PRIVATE_TEST_SECRET_DO_NOT_SERVE/);
+  } finally {
+    await server.close();
+    await fs.rm(link, { force: true });
+  }
+});
+
+
+test('HTTP backend nastavuje pevné limity pomalých požadavků', async () => {
+  const source = await fs.readFile(new URL('../src/http.js', import.meta.url), 'utf8');
+  assert.match(source, /server\.headersTimeout = 15_000/);
+  assert.match(source, /server\.requestTimeout = 30_000/);
+  assert.match(source, /server\.maxHeadersCount = 100/);
+  assert.match(source, /server\.on\('request', onRequest\)/);
 });

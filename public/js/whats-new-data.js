@@ -4,6 +4,226 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.12',
+    date: '2026-10-14',
+    title: 'Přesnější vzdálení agenti, limity a opravené ikony',
+    items: [
+      'Claude Code spuštěný vzdáleně se v Přehledu rozpozná podle skutečného stavu běhu a čekání. Starý údaj o běžící relaci už není vydáván za dokončený.',
+      'Napojené modely a zdroje agentů teď přesněji rozlišují, zda je program přítomný, přihlášený a zda se na počítači našly konverzace.',
+      'Vyčerpané limity a jejich obnovení se zobrazují česky a ve správné časové zóně; při známém vyčerpaném limitu se nenabízí nefunkční odpověď.',
+      'Ikony Apple a PWA už ve zdrojích odpovídají současnému robotovi. Skutečné instalační balíčky musí touto kontrolou projít před zveřejněním.',
+    ],
+    en: {
+      title: 'More accurate remote agents, limits and corrected icons',
+      items: [
+        'Remote Claude Code sessions now report actual working and waiting states. Stale activity no longer appears as a completed run.',
+        'Connected models and agent sources distinguish detected installations, sign-in status and locally discovered conversations more clearly.',
+        'Used-up limits and reset times appear in the correct time zone, with a clear message when replying is temporarily unavailable.',
+        'Apple and PWA icon sources now match the current robot. Release binaries still require verification before publication.',
+      ],
+    },
+  },
+  {
+    version: '0.46.11',
+    date: '2026-10-13',
+    title: 'Jednotné logo a aktuální instalační balíčky',
+    items: [
+      'Ikona robota má na Macu, Windows, webu a v rozšíření stejné proporce. Staré verze ikon se už nepřibalují k aplikaci.',
+      'Web nabízí aktuální skutečně publikovanou Preview verzi pro Mac včetně odkazu na její změny, aniž by zobrazoval neveřejné rozpracované verze.',
+      'Na všech stránkách webu včetně chybové stránky je oficiální ikona Agenteeq. Ověření distribučního ZIPu nyní automaticky hlídá staré logo.',
+    ],
+    en: {
+      title: 'Consistent branding and up-to-date installers',
+      items: [
+        'The robot icon now uses the same proportions across Mac, Windows, the website and the extension. Legacy icon files are no longer bundled.',
+        'The website offers the latest actually published Mac Preview alongside its matching release notes, without advertising unpublished drafts.',
+        'All site pages, including error pages, use the official Agenteeq icon. The packaged Windows ZIP is now checked for old branding.',
+      ],
+    },
+  },
+  {
+    version: '0.46.10',
+    date: '2026-10-13',
+    title: 'Bezpečnější instalace aktualizací',
+    items: [
+      'Pokud se Mac aplikace při aktualizaci nestihne ukončit, instalační pomocník ji za běhu nepřepíše. Původní aplikace zůstane zachovaná.',
+      'Ověření instalačního ZIPu lépe odhalí podstrčený soubor nebo symbolický odkaz, i kdyby obsah měl stejný kontrolní otisk.',
+    ],
+    en: {
+      title: 'Safer update installation',
+      items: [
+        'If the Mac app fails to quit during an update, the installer helper will not replace it while running. The original app stays intact.',
+        'Downloaded ZIP verification detects substituted files and symbolic links more reliably, even if their bytes have the same checksum.',
+      ],
+    },
+  },
+  {
+    version: '0.46.9',
+    date: '2026-10-13',
+    title: 'Jistější aktualizace a rychlejší první agent',
+    items: [
+      'Přepnutí Stable/Preview okamžitě zruší zbytečné stahování včetně rozpracovaného instalátoru.',
+      'Před instalací aplikace znovu ověří celý SHA-256 otisk a velikost ZIPu, aby odmítla změněný nebo chybějící soubor.',
+      'Neplatná extrémně dlouhá čísla verzí z GitHubu již neovlivní výběr aktualizace.',
+      'První konverzace Claude Code se zachytí i po ztracené události při novém založení projects/.',
+      'Ikony v rozšíření a exportech pro Chrome Web Store jsou shodné s ověřenými PNG.',
+    ],
+    en: {
+      title: 'Safer updates and faster first agent detection',
+      items: [
+        'Switching Stable and Preview cancels obsolete downloads immediately, including partially streamed archives.',
+        'Before installation, the Mac app rechecks the entire downloaded ZIP against its SHA-256 and size, and refuses missing or altered files.',
+        'Unrepresentable GitHub version numbers can no longer interfere with update selection.',
+        'The first Claude Code conversation is detected even if a filesystem notification was missed after projects/ was created.',
+        'Store review assets and the packaged extension now share the same verified icon PNG files.',
+      ],
+    },
+  },
+  {
+    version: '0.46.8',
+    date: '2026-10-12',
+    title: 'Rychleji zpátky k agentům a spolehlivější aktualizace',
+    items: [
+      'Z Chrome rozšíření lze přepnout přímo do existujícího agenta v nativní aplikaci bez otevření nepřístupné karty prohlížeče.',
+      'U více webových chatů přibyly přehledné filtry Vše, Odpovídají a Limity. Stav spojení se po výpadku obnovuje bez falešných počtů.',
+      'Přehled a rozšíření používají shodné počítání agentů; po opětovném spojení se už nevrací staré události.',
+      'Aktualizační balíčky se stahují průběžně, atomicky a s ověřením SHA-256; souběžná stejná stažení nespotřebovávají síť opakovaně.',
+      'Google profilová fotografie může použít bezpečně ověřené náhradní metadata. Skutečné přihlášení i návrat do terminálu ještě vyžadují UAT na Macu.',
+      'Před instalací dostupné aktualizace si můžeš v Nastavení otevřít přesné poznámky zveřejněného vydání. Nevydané verze se netváří jako nainstalované.'
+    ],
+    en: {
+      title: 'Faster agent focus and more reliable updates',
+      items: [
+        'Open an existing local agent directly in the native app from Chrome without an unauthorized browser tab.',
+        'Filter multiple web chats by All, Replying and Limits. Connection status recovers after an outage without showing stale counts.',
+        'Desktop and extension share the same agent totals; reconnecting cannot replay obsolete events.',
+        'Update archives download as verified streams with atomic completion and SHA-256; identical simultaneous downloads share one transfer.',
+        'Google profile photos can use a validated fallback metadata field. Live sign-in and terminal navigation still need real-Mac acceptance testing.',
+        'Read the exact published release notes from Settings before installing an update. Unpublished versions are not presented as installed.'
+      ],
+    },
+  },
+  {
+    version: '0.46.7',
+    date: '2026-10-12',
+    title: 'Bezpečnější Google profilová fotografie',
+    items: [
+      'Profilová fotka se načítá pouze z ověřených serverů Googlu, i když odkaz přesměrovává.',
+      'Příliš velký obrázek se zastaví už během stahování; když se fotku nepodaří načíst, aplikace dál funguje s iniciálami.',
+    ],
+    en: {
+      title: 'Safer Google profile photos',
+      items: [
+        'Profile photos load only from verified Google servers, including when the URL redirects.',
+        'Oversized images are stopped during download. If the photo is unavailable, your account continues to work with initials.',
+      ],
+    },
+  },
+  {
+    version: '0.46.6',
+    date: '2026-10-12',
+    title: 'Vidíš, kdy agent potřebuje rozhodnutí',
+    items: [
+      'Když Claude Code možná čeká na povolení, upozornění se ukáže v Přehledu, Agentech i detailu, místo aby agent vypadal jen jako pracující.',
+      'Konverzace spuštěné z terminálu nabízejí pokračování ve správném terminálu; u běžící konverzace se nevytváří druhé spuštění.',
+      'V přepisu uvidíš otázky agenta i nabízené možnosti. Pomocník odpoví na „Co na mě čeká?“ podle právě načteného stavu.',
+    ],
+    en: {
+      title: 'See when your agent needs a decision',
+      items: [
+        'Potential approval waits appear consistently in Overview, Agents and session details instead of looking like ordinary activity.',
+        'Terminal-originated sessions direct you back to Terminal without restarting a session that is already running.',
+        'Agent questions and suggested answers are visible in transcripts. Ask the helper what needs your attention using live app state.',
+      ],
+    },
+  },
+  {
+    version: '0.46.5',
+    date: '2026-10-12',
+    title: 'Volitelné aktualizace Preview',
+    items: [
+      'V Nastavení si zvolíš Stabilní nebo Preview kanál. Testovací verze zůstanou dobrovolné.',
+      'Aktualizace kontrolují skutečný GitHub release i SHA-256 staženého balíčku, ne pouze název verze.',
+      'Při přepnutí kanálu se staré nabídky zneplatní; instalaci vždy potvrdíš.',
+    ],
+    en: {
+      title: 'Opt-in Preview updates',
+      items: [
+        'Choose Stable or Preview in Settings. Experimental releases are always opt-in.',
+        'Updates verify the published GitHub release and SHA-256 checksum, not just a version number.',
+        'Changing channels clears outdated offers; you still confirm installation.',
+      ],
+    },
+  },
+  {
+    version: '0.46.4',
+    date: '2026-10-12',
+    title: 'Jednotné nativní ikony a ověřené balíčky',
+    items: [
+      'Mac používá jednu skutečnou ikonu v Docku a instalátoru bez starých duplicitních souborů.',
+      'Windows aplikace má stejný proporční tvar ikony jako Mac a Chrome.',
+      'Instalační balíčky mají SHA-256 kontrolní součty pro ověření stažených souborů.',
+    ],
+    en: {
+      title: 'Consistent native icons and verified downloads',
+      items: [
+        'The Mac app ships one real Dock and installer icon, without obsolete duplicate assets.',
+        'The Windows application icon preserves the same shape and proportions as Mac and Chrome.',
+        'Downloadable builds include SHA-256 checksums to verify file integrity.',
+      ],
+    },
+  },
+  {
+    version: '0.46.3',
+    date: '2026-10-11',
+    title: 'Stejné proporce loga na Macu i v Chromu',
+    items: [
+      'Ikona v Docku a malé logo používají stejnou robotickou hlavu, oči a anténu, bez deformace při zmenšování.',
+      'Sjednocené jsou ikony v menu baru, Chrome extension, na webu i v Chrome Web Store.',
+    ],
+    en: {
+      title: 'One consistent icon across Mac and Chrome',
+      items: [
+        'Dock and small icons now share the same robot head, eyes and antenna, scaled without changing proportions.',
+        'Menu bar, Chrome extension, website and Chrome Web Store icons use one consistent design.',
+      ],
+    },
+  },
+  {
+    version: '0.46.2',
+    date: '2026-10-11',
+    title: 'Jistější připojení a skutečný stav dat',
+    items: [
+      'Claude Code a Codex: připojení se potvrdí až po ověření přihlášení a novém načtení dostupných údajů o účtu.',
+      'V Nastavení nyní najdeš všech devět podporovaných webových služeb. Uvidíš, kdy rozšíření skutečně poslalo data.',
+      'Opravené návraty z prohlížeče a zabezpečené adresy služeb. Google přihlášení už nezaměňuje úspěch s dokončenou synchronizací.',
+    ],
+    en: {
+      title: 'More reliable connections and honest data status',
+      items: [
+        'Claude Code and Codex connections are confirmed only after login verification and a fresh account-data check.',
+        'Settings now lists all nine supported web services and shows when the extension actually observed their data.',
+        'Safer service URLs and browser return flows. Google sign-in no longer implies cloud sync has already completed.',
+      ],
+    },
+  },
+  {
+    version: '0.46.1',
+    date: '2026-10-10',
+    title: 'Jednotný vzhled a spolehlivější instalace',
+    items: [
+      'Značka Agenteeq má sjednocenou bílou anténu na webu, v aplikaci a rozšíření pro Chrome.',
+      'Opravené podklady pro Chrome Web Store a testování instalace na Macu i Windows.',
+    ],
+    en: {
+      title: 'Consistent branding and more reliable installation',
+      items: [
+        'The Agenteeq robot now has the same white antenna across the website, app and Chrome extension.',
+        'Fixed Chrome Web Store assets and installation checks for Mac and Windows.',
+      ],
+    },
+  },
+  {
     version: '0.46.0',
     date: '2026-10-09',
     title: 'Robotí profilové obrázky',

@@ -2,6 +2,15 @@
 
 Tento soubor je závazný pro každého, kdo mění kód: člověka, Claude Code, Codex i jiné agenty. Je krátký schválně. Detaily jsou v `docs/`.
 
+## Evidence rozhodnutí a předání mezi agenty
+
+- **Schválené zadání okamžitě promítni do repozitáře.** Když je požadavek implementovatelný, změň kód, testy a příslušnou dokumentaci na pracovní větvi a uveď commit. Když realizaci blokuje přístup, stav zařízení nebo nutné ověření, eviduj konkrétní otevřený úkol v `docs/ROADMAP.md`; neslibuj, že je provedeno.
+- **Jeden zdroj pravdy, žádné tiché ztráty kontextu.** Před každým zásahem přečti aktuální HEAD, tento soubor, roadmapu, relevantní architekturu a rozpracované PR. Schválená designová rozhodnutí zapisuj do `docs/DESIGN.md`. Konkrétní incidenty a důvody oprav mají patřit do testů a commitů, ne jen do chatu.
+- **Uživatel versus implementace versus vydání.** Uživatelsky viditelnou změnu zaznamenej do `CHANGELOG.md` lidským jazykem. U interních refaktorů uváděj důvod a regresní test v commitu. Nikdy nezaměňuj „v kódu“, „CI zelené“, „otestované na zařízení“ a „zveřejněné“.
+- **Zákaz regresí návrhu.** Nevytvářej AI napodobeniny skutečného UI. Pro screenshoty produktu používej skutečné vykreslené rozhraní. Nové oficiální schválené logo nahrazuje předchozí varianty, starý trojzubec ani fialová anténa se nesmí vracet. Vektor i PNG/ICNS/ICO kontroluj před vydáním.
+- **Kvalita před marketingem.** Minimalizuj změny, drž zdrojově jednotné komponenty a čistý kód, doplň test podle druhu chyby, spusť relevantní QA a propoj výsledek s commitem/PR. Před zveřejněním dodrž `docs/RELEASE-READINESS.md`.
+- **Neukládej osobní nebo citlivé informace do veřejných souborů.** Repo zachovává produktová rozhodnutí, nikoli osobní paměť, přístupové klíče nebo soukromý obsah konverzací.
+
 ## 1. Poslání a principy produktu
 
 Agenteeq ukazuje **v reálném čase a na jednom místě** všechny AI agenty, kteří pro uživatele pracují, a upozorní ho ve chvíli, kdy je potřeba jeho rozhodnutí.

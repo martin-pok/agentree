@@ -1,4 +1,5 @@
-// Pomocník: kulaté tlačítko s robotem vpravo dole, které otevře chat. Rozumí dvěma druhům otázek:
+// Pomocník: kulaté tlačítko s robotem vpravo dole, které otevře chat. Rozumí třem druhům otázek:
+//   - „co na mě čeká?“ → odpoví ze živého stavu agentů (public/js/co-ceka.js) s odkazy na ně;
 //   - „jak zapnu / kde najdu …“ → odpoví z rejstříku stránek a nastavení (public/js/hledani.js)
 //     a nabídne tlačítko, které tam rovnou vede;
 //   - „najdi chat, kde jsme před cca 3 měsíci řešili …“ → zeptá se serveru (src/pomocnik.js),
@@ -8,16 +9,19 @@
 // relaci okna (sessionStorage), nikam se neukládá.
 import { robot } from './home-studio.js';
 import { tr, LOCALE } from './i18n.js';
-import { state } from './state.js';
+import { state, agentsList } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
 import { hledejCile } from './hledani.js';
+import { guideAnswer } from './assistant-guide.js';
+import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
+import { jeOtazkaNaCekani, coNaMeCeka } from './co-ceka.js';
 
 const TIPY = () => ({
-  prehled: tr('Agenta vybereš tlačítkem v poli pro zadání. Robot nahoře ukazuje, jestli na tebe někdo čeká.'),
+  prehled: tr('Nový úkol zadáš v poli dole. Přehled nahoře ti ukáže, jestli některý agent čeká na tvoje rozhodnutí.'),
   agenti: tr('Filtr „Potřebuje tebe“ ukáže agenty čekající na rozhodnutí. Otevři agenta a pokračuj v jeho nástroji.'),
   agent: tr('Přepis ukazuje kontext. Tlačítko „Pokračovat“ tě přenese do nástroje, kde agent čeká na odpověď.'),
   projekty: tr('Projekt propojí konverzace z různých nástrojů. V Nezařazených najdeš práci, která zatím projekt nemá.'),
@@ -25,11 +29,12 @@ const TIPY = () => ({
   statistiky: tr('Tokeny z přepisů popisují zaznamenanou aktivitu. Skutečné účtované náklady hledej v Útratě po propojení API.'),
   utrata: tr('Bez propojeného API nejsou skutečné náklady dostupné. Ruční záznamy a předplatné uvidíš odděleně.'),
   upozorneni: tr('Otevři souvisejícího agenta a zjisti, co potřebuje. Přečtení upozornění samo požadavek agenta nevyřeší.'),
-  dovednosti: tr('Tady můžeš procházet nalezené dovednosti. Jejich dostupnost závisí na připojených nástrojích a zdrojích.'),
+  dovednosti: tr('Tady najdeš dostupné dovednosti. Které se zobrazí, záleží na nástrojích, které máš připojené.'),
   nastaveni: tr('V části Účet a vzhled změníš téma aplikace. Tam jde i schovat tohle tlačítko pomocníka.'),
 });
 
 const NAVRHY = () => [
+  tr('Co na mě čeká?'),
   tr('Najdi chat, kde jsme před cca 3 měsíci řešili fakturaci'),
   tr('Jak zapnu upozornění na telefon?'),
   tr('Kde nastavím rozpočet?'),
@@ -96,13 +101,14 @@ function zpravaHtml(z, i) {
   </div>`;
 }
 
-function vykresli() {
+function vykresli({ ownMessage = false } = {}) {
   if (!el) return;
   const log = el.querySelector('.pm-log');
-  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Pomocník najde dřívější konverzaci se kterýmkoli agentem nebo poradí, kde co v aplikaci zapnout.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
-  log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Hledáš starý chat, nebo nevíš, kde něco nastavit? Napiš mi, co potřebuješ.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
+  renderChatAtPosition(log, () => {
+    log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+  }, { ownMessage });
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
-  log.scrollTop = log.scrollHeight;
 }
 
 // „Jak zapnu …“: hledání v rejstříku stránek a nastavení bez výplňových slov; když celé spojení
@@ -124,26 +130,35 @@ async function posli(text) {
   if (!dotaz || pracuje) return;
   zpravy.push({ kdo: 'ja', text: dotaz });
   pracuje = true;
-  vykresli();
+  vykresli({ ownMessage: true });
   let odpoved;
   try {
+    const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
+    // „Co na mě čeká?“ se odpovídá ze živého stavu agentů, ne hledáním ve starých přepisech.
+    const rada = jeOtazkaNaCekani(dotaz)
+      ? coNaMeCeka({ agenti: agentsList(), nacteno: state.loaded, spojeni: state.connection })
+      : guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
+    if (rada) {
+      odpoved = { kdo: 'on', ...rada };
+    } else {
     const r = await request('POST', '/api/pomocnik', { dotaz });
     if (r.zamer === 'jak') {
       const cile = poradSNastavenim(dotaz);
       odpoved = cile.length
-        ? { kdo: 'on', text: tr('Tohle najdeš tady – klepnutím se tam dostaneš:'), cile }
-        : { kdo: 'on', text: tr('Taková volba se v aplikaci nenašla. Zkus jiná slova, nebo otevři hledání ({0}).', zkratka('K')) };
+        ? { kdo: 'on', text: tr('Tady to najdeš:'), cile }
+        : { kdo: 'on', text: tr('Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).', zkratka('K')) };
     } else {
       odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [], lokalne: r.lokalne, modelMimo: Boolean(r.modelMimoPocitac) };
       if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledané období: {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
       // V konverzacích nic, ale dotaz vypadá i na nastavení – nabídnout obojí.
       if (!r.vysledky.length) {
         const cile = poradSNastavenim(dotaz);
-        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná hledáš některou z těchto voleb v aplikaci.') });
+        if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná ti pomůže některá z těchto možností.') });
       }
     }
+    }
   } catch (err) {
-    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Agenteeq teď neodpovídá. Zkus to za chvíli.') : err.message };
+    odpoved = { kdo: 'on', text: err.status === 0 ? tr('Spojení s Agenteeq se nepovedlo. Zkontroluj, jestli aplikace běží, a zkus to znovu.') : err.message };
   } finally {
     pracuje = false;
   }
@@ -172,7 +187,7 @@ function sestav() {
     <section class="pm-okno" id="pm-okno" role="dialog" aria-labelledby="pm-nadpis" hidden>
       <header class="pm-hlava">
         <span class="pm-avatar" style="--persona:#6260d8">${robot('Orbit')}</span>
-        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('Hledá jen na tomto počítači')}</small></div>
+        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('Rady a hledání na tvém počítači')}</small></div>
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
@@ -180,7 +195,7 @@ function sestav() {
       <div class="pm-navrhy">${NAVRHY().map((n) => `<button type="button" class="pm-navrh" data-navrh="${esc(n)}">${esc(n)}</button>`).join('')}</div>
       <form class="pm-pole">
         <label class="sr-only" for="pm-vstup">${tr('Zeptej se pomocníka')}</label>
-        <textarea id="pm-vstup" class="pm-vstup" rows="1" maxlength="500" placeholder="${tr('Zeptej se – třeba „najdi chat o …“')}"></textarea>
+        <textarea id="pm-vstup" class="pm-vstup" rows="1" maxlength="500" placeholder="${tr('S čím ti můžu pomoct?')}"></textarea>
         <button type="submit" class="pm-poslat" aria-label="${tr('Poslat')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </form>
     </section>

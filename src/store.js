@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { createSession, summarize, takeDirty, pruneMinutes } from './model.js';
 import { DAY } from './util.js';
+import { sessionAccountBinding } from './provider-accounts.js';
 import { detectTopUps } from './credits.js';
 
 const CREDIT_POINTS_MAX = 400;
@@ -40,6 +41,32 @@ export class Store extends EventEmitter {
       this.sessions.set(id, s);
     }
     return s;
+  }
+
+  // Assign an account only with explicit same-session proof supplied by a connector.
+  // Switching login elsewhere must never silently reassign an existing session.
+  unbindAccount(sessionId) {
+    const s = this.sessions.get(sessionId);
+    if (!s?.accountBinding) return false;
+    s.accountBinding = null;
+    this.commit(s);
+    return true;
+  }
+
+  bindAccount(sessionId, evidence) {
+    const s = this.sessions.get(sessionId);
+    if (!s) return { ok: false, reason: 'session_not_found' };
+    const binding = sessionAccountBinding({ ...evidence, sessionId, provider: s.provider });
+    if (!binding || binding.confidence !== 'verified') return { ok: false, reason: 'unverified_identity' };
+    if (s.accountBinding?.confidence === 'verified' && s.accountBinding.accountId !== binding.accountId) {
+      return { ok: false, reason: 'identity_conflict' };
+    }
+    if (s.accountBinding?.confidence === 'verified' && s.accountBinding.observedAt > binding.observedAt) {
+      return { ok: false, reason: 'stale_evidence' };
+    }
+    s.accountBinding = binding;
+    this.commit(s);
+    return { ok: true, binding };
   }
 
   commit(s, now = Date.now()) {
@@ -111,6 +138,14 @@ export class Store extends EventEmitter {
     if (prev && JSON.stringify(prev) === JSON.stringify(limit)) return;
     this.limits.set(limit.id, limit);
     if (this.ready) this.emit('limits', this.limitList(), limit, prev || null);
+  }
+
+  removeLimit(id) {
+    const prev = this.limits.get(id);
+    if (!prev) return false;
+    this.limits.delete(id);
+    if (this.ready) this.emit('limits', this.limitList(), null, prev);
+    return true;
   }
 
   limitList() {

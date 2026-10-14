@@ -83,6 +83,9 @@ const rc = (await fs.readFile(path.join(zdroje, 'Agenteeq.rc.in'), 'utf8'))
   .replaceAll('__VERZE__', version);
 await fs.writeFile(path.join(zdroje, 'Agenteeq.generated.rc'), rc, 'utf8');
 
+// Always regenerate the Windows resource icon from the proportional SVG-derived
+// Chrome PNG before rc.exe reads it. A checked-in legacy ICO must never win.
+run(process.execPath, ['scripts/make-ico.mjs']);
 const res = path.join(build, 'Agenteeq.res');
 console.log('Prostředky (ikona, manifest, verze)…');
 run('rc.exe', ['/nologo', '/fo', res, path.join(zdroje, 'Agenteeq.generated.rc')]);
@@ -109,6 +112,12 @@ for (const dir of ['src', 'public', 'bin', 'extension', 'desktop']) {
 }
 // Zdroje pláště do balíčku nepatří — uživatel dostává .exe, ne překladač.
 await fs.rm(path.join(balik, 'app', 'desktop', 'windows'), { recursive: true, force: true });
+// Fail-safe: never ship legacy icon previews alongside current Windows ICO.
+// Even if someone accidentally re-adds the old source files later, the
+// packaged app can contain only icon assets generated from the Dock master.
+for (const stale of ['Agenteeq-icon.png', 'Agenteeq.icns']) {
+  await fs.rm(path.join(balik, 'app', 'desktop', stale), { force: true });
+}
 
 // Zákazník dostane jen návod; ostatní dokumenty jsou interní (licence, obchod, QA).
 await fs.mkdir(path.join(balik, 'app', 'docs'), { recursive: true });

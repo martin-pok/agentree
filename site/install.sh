@@ -113,6 +113,26 @@ function run(argv) {
 }' "$1" "$2" "$DOWNLOAD_PREFIX" "$MAX_BYTES" </dev/null
 }
 
+# Compare numeric SemVer (X.Y.Z) without floating point or shell integer overflow.
+# Bash 3.2 on macOS supports read -a; a long component must not wrap signed integers.
+# Returns success only when the installed version is strictly NEWER than the offered Stable.
+installed_newer_than_release() {
+  local installed="$1" offered="$2" i a b
+  local -a lhs rhs
+  [[ "$installed" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || return 2
+  [[ "$offered" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || return 2
+  IFS='.' read -r -a lhs <<< "$installed"
+  IFS='.' read -r -a rhs <<< "$offered"
+  for ((i=0; i<3; i++)); do
+    a="${lhs[i]}"; b="${rhs[i]}"
+    if (( ${#a} > ${#b} )); then return 0; fi
+    if (( ${#a} < ${#b} )); then return 1; fi
+    if [[ "$a" > "$b" ]]; then return 0; fi
+    if [[ "$a" < "$b" ]]; then return 1; fi
+  done
+  return 1
+}
+
 # Starou verzi do Koše. Když Koš nejde použít, zůstane vedle s viditelným jménem – nikdy se nemaže.
 to_trash() {
   local src="$1" label="$2" target
@@ -202,9 +222,25 @@ main() {
   fi
   case "$url" in "$DOWNLOAD_PREFIX"*) ;; *) fail "Adresa balíčku nevede na GitHub. Nic se nezměnilo." "The package URL doesn't point to GitHub. Nothing was changed." ;; esac
 
+  # Stable installer must NEVER silently replace a newer Preview installation.
+  # Published stable Latest may be older than a Preview already installed on this Mac.
+  # Fail before downloading a ZIP or touching the existing app. This is not a generic
+  # rollback mechanism: explicit user-initiated rollback needs a separate backup workflow.
+  local current="$dest/$APP_NAME" installed_version=""
+  if [ -d "$current" ]; then
+    installed_version="$(plist_value "$current" CFBundleShortVersionString)"
+    if [[ ! "$installed_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+      fail "V nainstalované Agenteeq nelze ověřit číslo verze. Kvůli ochraně dat ji nebudu přepisovat. Nic se nezměnilo." \
+           "Cannot verify the installed Agenteeq version. Refusing to overwrite it to protect your data. Nothing changed."
+    fi
+    if installed_newer_than_release "$installed_version" "$version"; then
+      fail "Na tomto Macu je novější Agenteeq ${installed_version} než nabízená stabilní ${version}. Nesmím provést downgrade. Preview aktualizuj v aplikaci (Nastavení → Preview). Nic se nezměnilo." \
+           "Installed Agenteeq ${installed_version} is newer than available Stable ${version}. Downgrade refused. Use the app's Preview update channel. Nothing changed."
+    fi
+  fi
+
   # Stejná verze, která sedí s podpisem, se jen otevře – opakované spuštění nic nerozbije.
-  local current="$dest/$APP_NAME"
-  if [ -d "$current" ] && [ "$(plist_value "$current" CFBundleShortVersionString)" = "$version" ] \
+  if [ -d "$current" ] && [ "$installed_version" = "$version" ] \
       && codesign --verify --deep --strict "$current" >/dev/null 2>&1; then
     say "Agenteeq ${version} už v ${dest} je – nejnovější verze, nic se nestahuje." \
         "Agenteeq ${version} is already in ${dest} – the latest version, nothing to download."

@@ -38,13 +38,11 @@ export const INSTALACE = [
   { kod: 'en', adresa: '/en/install', soubor: path.join('en', 'install', 'index.html') },
 ];
 
-// Přepíše softwareVersion ve strukturovaných datech stránky. Když ji tam nenajde, spadne: tichá
-// změna tvaru stránky by jinak vrátila zastaralou verzi a nikdo by si nevšiml.
-export function verzeVDatechStranky(html, verze) {
-  const vzor = /"softwareVersion":"[^"]*"/;
-  if (!vzor.test(html)) throw new Error('Stránka webu nemá „softwareVersion“ ve strukturovaných datech — uprav scripts/build-site.mjs.');
-  return html.replace(vzor, `"softwareVersion":"${verze}"`);
-}
+// JSON-LD must describe what is PUBLICLY available, not the unshipped package.json
+// version. The download CTA follows GitHub's published Stable /releases/latest,
+// but build-time source version may be an unpublished Preview draft. Omit the
+// optional softwareVersion property entirely until the publication pipeline has
+// an authoritative, automatically maintained public-version source.
 
 // Odkaz na stažení míří na přílohu se stálým jménem v posledním vydání. Adresa s číslem verze
 // by po každém vydání ukazovala do prázdna, dokud by někdo nepřestavěl web — a přesně tak vypadá
@@ -136,13 +134,56 @@ export function serviceWorkerProWeb(text, appPath = APP_PATH) {
   return text.replace(puvodni, `const PRECACHE = ['${appPath}',`);
 }
 
+// Na marketingových stránkách je primární Satoshi (woff2), nikoli záložní Urbanist TTF.
+// Přednačítat jej lze až po ověření, že build daný soubor opravdu přibalil.
+// Bez souboru ponecháme fallback písma a nevytváříme 404 ani zbytečný network request.
+export function preloadPrimarnihoPisma(html, satoshiAvailable = false) {
+  const marker = '<link rel="stylesheet" href="/fonts/fonts.css">';
+  if (!html.includes(marker)) throw new Error('Webu chybí fonts.css, nelze bezpečně připravit preload.');
+  if (!satoshiAvailable) return html;
+  const preload = '<link rel="preload" href="/fonts/satoshi/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin>';
+  return html.includes(preload) ? html : html.replace(marker, `${preload}\n${marker}`);
+}
+
+// Safe production-only CSS compaction. Preserve selectors, declaration whitespace,
+// data strings, URLs and all cascade ordering: *only* remove block comments.
+// The authored site/lp.css stays readable, and the output can be visually compared
+// byte-for-byte after replacing comments with a single whitespace separator.
+export function cssBezKomentaru(css) {
+  let result = '';
+  let quote = '';
+  let escaped = false;
+  for (let i = 0; i < css.length; i++) {
+    const c = css[i];
+    if (quote) {
+      result += c;
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'") { quote = c; result += c; continue; }
+    if (c === '/' && css[i + 1] === '*') {
+      const end = css.indexOf('*/', i + 2);
+      if (end < 0) throw new Error('Nedokončený CSS komentář; odmítám vydat poškozené styly.');
+      result += ' ';
+      i = end + 1;
+      continue;
+    }
+    result += c;
+  }
+  if (quote) throw new Error('Neukončený řetězec v CSS.');
+  return result;
+}
+
 // Značka „tohle je kopie na webu, žádný server tu není“. Vkládá se hned za <head>,
 // aby ji rozhraní našlo dřív, než se stihne na cokoli zeptat.
 export function znackaStatickeKopie(html) {
   const znacka = '<meta name="agenteeq-staticka-kopie" content="1">';
+  const noindex = '<meta name="robots" content="noindex, nofollow">';
   if (html.includes('agenteeq-staticka-kopie')) return html;
   if (!html.includes('<head>')) throw new Error('public/index.html nemá <head> — uprav scripts/build-site.mjs.');
-  return html.replace('<head>', `<head>\n${znacka}`);
+  return html.replace('<head>', `<head>\n${znacka}\n${noindex}`);
 }
 
 async function copyDir(from, to, { skip = () => false } = {}) {
@@ -164,7 +205,9 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await copyDir(path.join(root, 'public'), out, { skip: (rel) => rel === path.join('public', 'index.html') });
 
   // Satoshi: soubor přibalený do sestavení (scripts/satoshi.mjs) dostane pravidlo @font-face.
-  if (await fs.stat(path.join(out, 'fonts', 'satoshi', 'Satoshi-Variable.woff2')).then(() => true, () => false)) {
+  const satoshiAvailable = await fs.stat(path.join(out, 'fonts', 'satoshi', 'Satoshi-Variable.woff2'))
+    .then((st) => st.isFile(), () => false);
+  if (satoshiAvailable) {
     await fs.appendFile(path.join(out, 'fonts', 'fonts.css'), `${SATOSHI_FACE}\n`);
   }
 
@@ -183,17 +226,30 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
 
   // 4. Landing page do kořene. Jde poslední, takže její index.html je ten, který návštěvník uvidí.
   await copyDir(path.join(root, 'site'), out);
-  // Verze v datech pro vyhledávače se bere z package.json při každém sestavení. Napsaná ručně by po
-  // prvním vydání zastarala – přesně jako číslo v Info.plist, které roky svítilo starou verzi.
-  // Stejně se upraví každá jazyková verze stránky – odkaz ke stažení i verze musí sedět v obou.
-  const verze = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
+  // Keep developer CSS intact, but don't transmit 14 KB of source comments to visitors.
+  const cssPath = path.join(out, 'lp.css');
+  await fs.writeFile(cssPath, cssBezKomentaru(await fs.readFile(cssPath, 'utf8')));
+  // Marketing pages must never leak the unpublished package.json version into
+  // JSON-LD. Their Schema.org fields are source-controlled and version-neutral;
+  // download links are still resolved to the published Stable release.
   for (const jazyk of JAZYKY) {
     const stranka = path.join(out, jazyk.soubor);
-    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(verzeVDatechStranky(await fs.readFile(stranka, 'utf8'), verze))));
+    await fs.writeFile(stranka, preloadPrimarnihoPisma(
+      rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))),
+      satoshiAvailable));
   }
   for (const jazyk of INSTALACE) {
     const stranka = path.join(out, jazyk.soubor);
-    await fs.writeFile(stranka, rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))));
+    await fs.writeFile(stranka, preloadPrimarnihoPisma(
+      rozsireniNaWebu(odkazNaStazeni(await fs.readFile(stranka, 'utf8'))),
+      satoshiAvailable));
+  }
+
+  // Privacy-policy routes are also indexable public pages: use the same verified
+  // font hint as the two landing pages and installation guides, in both languages.
+  for (const rel of ['soukromi/index.html', 'en/privacy/index.html']) {
+    const file = path.join(out, rel);
+    await fs.writeFile(file, preloadPrimarnihoPisma(await fs.readFile(file, 'utf8'), satoshiAvailable));
   }
 
   // 5. Data živé prohlídky: rozhraní na /app?ukazka z nich ukazuje smyšlenou scénu místo serveru.
@@ -201,7 +257,7 @@ export async function buildSite({ out = path.join(root, 'dist', 'web') } = {}) {
   await fs.writeFile(path.join(out, 'ukazka', 'data.json'), JSON.stringify(await ukazkoveOdpovedi()));
 
   // 6. Roboti: stránka je veřejná, rozhraní aplikace na hostingu indexovat nemá smysl.
-  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: ${APP_PATH}\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
+  await fs.writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: https://agentree-fawn.vercel.app/sitemap.xml\n`);
 
   // Vrácený seznam popisuje adresy na hostingu, ne soubory na disku: „js/app.js“ je URL.
   // path.relative dá na Windows „js\\app.js“, což jako odkaz na webu nikam nevede – proto
@@ -232,8 +288,26 @@ export async function hlavickyWebu() {
   };
 }
 
+/** Development can use bundled Onest while CI/Vercel must verify the real licensed Satoshi font. */
+export async function prepareSatoshiForWebBuild({
+  ensure = zajistiSatoshi,
+  argv = process.argv,
+  env = process.env,
+  warn = console.warn,
+} = {}) {
+  const required = argv.includes('--povinne') || Boolean(env.CI || env.VERCEL);
+  try {
+    await ensure();
+    return true;
+  } catch (error) {
+    if (required) throw error;
+    warn(`Satoshi: ${error?.message || String(error)} Web se sestaví se záložním písmem Onest.`);
+    return false;
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await zajistiSatoshi();
+  await prepareSatoshiForWebBuild();
   const r = await buildSite();
   console.log(`Web sestaven: ${r.files.length} souborů v ${path.relative(root, r.out)}`);
   console.log(`  /      landing page (site/)`);

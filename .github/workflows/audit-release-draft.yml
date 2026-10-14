@@ -1,0 +1,189 @@
+# Independent read-only verification of the exact bytes GitHub stores in a draft.
+# Does not create tags, upload binaries, or publish a release.
+# A workflow-file push backfills the current unpublished draft; future releases
+# call this as a separate runner inside release.yml, bypassing GitHub's chain-depth cap.
+# Legacy workflow_run and explicit workflow_dispatch remain safe read-only fallbacks.
+name: Audit release draft
+
+on:
+  # Reusable job: verifies the actual GitHub-hosted bytes within release.yml,
+  # avoiding GitHub's workflow_run chain depth limit (Testy → Prepare → Vydání → Audit).
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Exact immutable draft tag to audit'
+        required: true
+        type: string
+  workflow_run:
+    workflows: ['Vydání']
+    types: [completed]
+  # Backfill the currently tagged 0.46.10 draft when THIS workflow changes
+  # on main. Not triggered by unrelated product commits.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-release-draft.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing unpublished tag (for example v0.46.9)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: audit-release-${{ inputs.tag || github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      ${{ github.event_name != 'workflow_run'
+      || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_repository.full_name == github.repository) }}
+    name: Audit actual draft bytes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # GitHub hides DRAFT releases from tokens without push access. Scope this
+    # elevated permission to the audit job; every command stays read-only.
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      # Záměrně bez `ref:`. Spouští se jen skripty z důvěryhodného commitu: u workflow_call, push
+      # a ručního spuštění je to commit volajícího, u workflow_run nejnovější main. Zdrojový SHA
+      # sestavení (workflow_run.head_sha) se nikdy nevykonává; jen se porovnává s SHA tagu
+      # a z API se z něj čte verze (viz níže a EXPECTED_RELEASE_SHA).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with: { node-version: '22' }
+      - name: Resolve release tag from verified source or manual input
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+          RELEASED_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="$REQUESTED_TAG"
+          if [ -z "$TAG" ] && [ -n "$RELEASED_SHA" ]; then
+            # workflow_run: verzi sestavení se čte jako data z API na přesném SHA, ne z checkoutu.
+            [[ "$RELEASED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid source SHA"; exit 1; }
+            VERSION=$(gh api -H "Accept: application/vnd.github.raw+json" "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${RELEASED_SHA}" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')
+            TAG="v$VERSION"
+          elif [ -z "$TAG" ]; then
+            TAG="v$(node -p 'require("./package.json").version')"
+          fi
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid tag"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Verify tag, green source CI and unpublished draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          TAG: ${{ steps.source.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Invalid tag"; exit 1; }
+          node scripts/verify-publish-tag.mjs "$TAG" --write verified-tag-sha.txt
+          if [ -n "$EXPECTED_RELEASE_SHA" ] && [ "$(cat verified-tag-sha.txt)" != "$EXPECTED_RELEASE_SHA" ]; then
+            echo "::error::Successful build belongs to a different commit than the release tag."
+            exit 1
+          fi
+          # The CLI GraphQL shortcut may hide drafts under GitHub Actions even with
+          # a valid token. Read the authenticated REST inventory, then by ID.
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > release-list.json
+          RELEASE_ID=$(node -e '
+            const list = require("./release-list.json");
+            const matches = Array.isArray(list)
+              ? list.filter(r => r.tag_name === process.env.TAG && r.draft === true)
+              : [];
+            if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id < 1) {
+              console.error("::error::Exact unpublished draft is not visible; check audit token permissions.");
+              process.exit(1);
+            }
+            console.log(matches[0].id);
+          ')
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" > release-metadata.json
+          SHA=$(cat verified-tag-sha.txt)
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SHA}&per_page=30" > tested-runs.json
+          node -e '
+            const fs = require("fs");
+            const sha = fs.readFileSync("verified-tag-sha.txt", "utf8").trim();
+            const runs = require("./tested-runs.json").workflow_runs || [];
+            if (!runs.some(r => r.head_sha === sha && r.status === "completed" && r.conclusion === "success")) {
+              console.error("::error::The tag has no successful complete test.yml run at exactly its SHA.");
+              process.exit(1);
+            }
+          '
+      - name: Download and hash every asset from GitHub draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.source.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audited-assets
+          # Direct REST asset IDs avoid gh release's draft-visibility GraphQL
+          # shortcut. Asset filenames are validated before touching the disk.
+          node -e '
+            const fs = require("node:fs");
+            const release = require("./release-metadata.json");
+            if (release.tag_name !== process.env.TAG || release.draft !== true ||
+                !Array.isArray(release.assets) || release.assets.length !== 8) {
+              console.error("::error::Expected exact draft with eight assets.");
+              process.exit(1);
+            }
+            const entries = release.assets.map(a => {
+              if (!Number.isSafeInteger(a.id) || a.id < 1 ||
+                  !/^[A-Za-z0-9._-]+$/.test(a.name)) {
+                console.error("::error::Unsafe or invalid asset identifier.");
+                process.exit(1);
+              }
+              return a.id + "\t" + a.name;
+            });
+            fs.writeFileSync("draft-asset-ids.tsv", entries.join("\n") + "\n");
+          '
+          while read -r asset_id asset_name; do
+            gh api -H "Accept: application/octet-stream" "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" > "audited-assets/${asset_name}"
+          done < draft-asset-ids.tsv
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
+          node scripts/verify-release-assets.mjs "$TAG" audited-assets release-metadata.json
+          (cd audited-assets && sha256sum --check SHA256SUMS.txt)
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const release = JSON.parse(fs.readFileSync("release-metadata.json", "utf8"));
+            const sha = fs.readFileSync("verified-tag-sha.txt", "utf8").trim();
+            const report = {
+              tag: release.tag_name,
+              commitSha: sha,
+              releaseId: release.id,
+              unpublishedDraft: true,
+              verifiedAt: new Date().toISOString(),
+              assetsVerified: release.assets.length,
+              assets: release.assets.map(a => ({
+                name: a.name, size: a.size, sha256: a.digest
+              })).sort((a,b) => a.name.localeCompare(b.name))
+            };
+            fs.writeFileSync("draft-audit-report.json", JSON.stringify(report, null, 2) + "\n");
+          '
+          {
+            echo "### Draft release byte audit passed"
+            echo "Tag: $TAG"
+            echo "Commit: $(cat verified-tag-sha.txt)"
+            echo "All eight real downloaded assets match GitHub SHA-256 and SHA256SUMS."
+            echo "No release was published or installed."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Save compact audit evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: release-draft-audit
+          path: draft-audit-report.json
+          if-no-files-found: error
+          retention-days: 30

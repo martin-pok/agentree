@@ -2,12 +2,12 @@
 #
 # Workflow Vydání (release.yml) zakládá jen koncept, protože zveřejnění je krok ven ke stažení
 # a patří člověku. Tohle je ten krok: běží jen na ruční spuštění, nikdy sám od sebe.
+# Preview je výchozí a nikdy nesmí přepsat stabilní GitHub Latest.
 #
-# Před zveřejněním se popis přegeneruje aktuálním scripts/release-notes.mjs z `main`. Oprava
-# textu se tak dostane i do konceptu, který se sestavil z dřívějšího tagu – přílohy ani tag se
-# nemění. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
+# Před zveřejněním se popis generuje z CHANGELOG.md přesně vydávaného tagu,
+# nikoli z novějšího main. Release notes tak neslibují změny mimo sestavené binárky. Zveřejní se jen koncept (už zveřejněné vydání se nepřepisuje) a jen když má všechny
 # přílohy se stálým jménem, na které vedou tlačítka ke stažení na webu (ZIP a DMG pro Mac,
-# ZIP pro Windows).
+# ZIP pro Windows a verzovaný ZIP rozšíření pro Chrome).
 name: Zveřejnit vydání
 
 on:
@@ -16,10 +16,26 @@ on:
       tag:
         description: 'Tag konceptu, který se zveřejní (např. v0.25.0)'
         required: true
+      channel:
+        description: 'Preview (neovlivní Latest) nebo Stable (změní Latest)'
+        type: choice
+        required: true
+        default: preview
+        options:
+          - preview
+          - stable
+      confirm_stable:
+        description: 'Potvrzuji záměr změnit stabilní Latest (jen pro Stable)'
+        type: boolean
+        default: false
 
 # Výchozí práva tokenu jen pro čtení; zápis má jen úloha, která vydání zveřejňuje.
 permissions:
   contents: read
+
+concurrency:
+  group: publish-release-${{ inputs.tag }}
+  cancel-in-progress: false
 
 jobs:
   zverejnit:
@@ -27,14 +43,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # bez práva zápisu nejde vydání upravit ani zveřejnit
+      contents: write # úprava a zveřejnění GitHub releasu
+      actions: read # čtení výsledků povinného CI pro přesný tag commit
     steps:
       # Do repozitáře se nepushuje (vydání mění `gh` přes GH_TOKEN), token v checkoutu netřeba.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with: { persist-credentials: false }
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with: { node-version: '22' }
 
+      # Tag musí ukazovat na commit, který prošel kompletní maticí CI.
+      # Kontrola přes GitHub API nevyžaduje externí službu ani placenou licenci.
+      - name: Ověřit zelené CI označeného commitu
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          node scripts/verify-publish-tag.mjs "$TAG" --write verified-tag-sha.txt
+          SHA=$(cat verified-tag-sha.txt)
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}" --jq '.sha')" = "$SHA"
+          GH_SHA="$SHA" node --input-type=module -e '
+            if (!/^[a-f0-9]{40}$/.test(process.env.GH_SHA)) process.exit(1);
+          '
+          RUNS=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SHA}&per_page=30")
+          GH_SHA="$SHA" RUNS_JSON="$RUNS" node --input-type=module -e '
+            const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs || [];
+            if (!runs.some(r => r.head_sha === process.env.GH_SHA && r.status === "completed" && r.conclusion === "success")) {
+              console.error("::error::Tag nemá úspěšný kompletní test.yml běh na shodném commitu.");
+              process.exit(1);
+            }
+          '
       - name: Zkontrolovat koncept
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,26 +87,97 @@ jobs:
             echo "::error::Tag $TAG nemá tvar vX.Y.Z."
             exit 1
           fi
-          gh release view "$TAG" --json isDraft,assets,body > vydani.json
+          # GitHub Actions can hide private Drafts from gh release view's GraphQL
+          # shortcut. Resolve the exact unpublished draft through authenticated
+          # REST inventory, the same proven path as the independent byte audit.
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > release-list.json
           node -e '
-            const v = JSON.parse(require("fs").readFileSync("vydani.json", "utf8"));
-            if (!v.isDraft) { console.log("::error::Vydání už je zveřejněné, nic se nemění."); process.exit(1); }
-            for (const stala of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip"]) {
-              if (!v.assets.some((a) => a.name === stala)) {
-                console.log(`::error::Chybí příloha ${stala} – tlačítko ke stažení na webu by vedlo do prázdna.`);
+            const fs = require("node:fs");
+            const all = JSON.parse(fs.readFileSync("release-list.json", "utf8"));
+            const matches = Array.isArray(all)
+              ? all.filter(r => r.tag_name === process.env.TAG && r.draft === true)
+              : [];
+            if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id < 1) {
+              console.error("::error::Exact unpublished draft missing or not visible.");
+              process.exit(1);
+            }
+            fs.writeFileSync("release-id.txt", String(matches[0].id) + "\n");
+          '
+          RELEASE_ID=$(cat release-id.txt)
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > vydani.json
+          node -e '
+            const v = require("./vydani.json");
+            if (v.draft !== true || v.tag_name !== process.env.TAG ||
+                !Number.isSafeInteger(v.id) || String(v.id) !== require("fs").readFileSync("release-id.txt", "utf8").trim() ||
+                !Array.isArray(v.assets) || v.assets.length !== 8) {
+              console.error("::error::Expected exact eight-asset unpublished Draft.");
+              process.exit(1);
+            }
+            const expectedExtension = "agenteeq-extension-" + process.env.TAG.slice(1) + ".zip";
+            for (const required of ["Agenteeq-macOS-arm64.zip", "Agenteeq-macOS-arm64.dmg", "Agenteeq-Windows-x64.zip", expectedExtension]) {
+              if (!v.assets.some(a => a.name === required && a.size > 0 && /^sha256:[0-9a-f]{64}$/.test(a.digest))) {
+                console.error("::error::Missing/unverified asset " + required);
                 process.exit(1);
               }
             }
-            console.log(v.assets.map((a) => `${a.name} ${a.size}`).join("\n"));
+            console.log(v.assets.map(a => a.name + " " + a.size).join("\n"));
           '
+          # Record the existing Stable Latest. Preview is forbidden from changing it.
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name > stable-before.txt
+
+      # Re-download the DRAFT assets from GitHub before changing their visibility.
+      # Compare exact inventory, bytes and sizes against *both* GitHub's published
+      # asset digests and SHA256SUMS.txt. The build already checked local files,
+      # but only this second pass checks the files actually stored by GitHub.
+      - name: Znovu stáhnout a nezávisle ověřit všech 8 příloh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          RELEASE_ID=$(cat release-id.txt)
+          [[ "$RELEASE_ID" =~ ^[0-9]+$ ]] || { echo "::error::Missing draft release ID."; exit 1; }
+          # Download the exact GitHub-hosted bytes by REST asset ID. The CLI
+          # shortcuts can hide Draft assets even with the correct write token.
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > release-metadata.json
+          mkdir -p overene-prilohy
+          node -e '
+            const fs = require("node:fs");
+            const release = require("./release-metadata.json");
+            if (release.tag_name !== process.env.TAG || release.draft !== true ||
+                String(release.id) !== fs.readFileSync("release-id.txt", "utf8").trim() ||
+                !Array.isArray(release.assets) || release.assets.length !== 8) {
+              console.error("::error::Expected exact unchanged Draft and eight assets.");
+              process.exit(1);
+            }
+            const names = new Set();
+            const entries = release.assets.map(a => {
+              if (!Number.isSafeInteger(a.id) || a.id < 1 ||
+                  !/^[A-Za-z0-9._-]+$/.test(a.name) || names.has(a.name)) {
+                console.error("::error::Unsafe, duplicate or invalid asset identifier.");
+                process.exit(1);
+              }
+              names.add(a.name);
+              return a.id + "\t" + a.name;
+            });
+            fs.writeFileSync("draft-asset-ids.tsv", entries.join("\n") + "\n");
+          '
+          while read -r asset_id asset_name; do
+            gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" > "overene-prilohy/$asset_name"
+          done < draft-asset-ids.tsv
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
+          node scripts/verify-release-assets.mjs "$TAG" overene-prilohy release-metadata.json
+          (cd overene-prilohy && sha256sum --check SHA256SUMS.txt)
 
       # Skript popisu čte jména a velikosti příloh ze složky. Soubory se nestahují: stačí prázdné
       # soubory se skutečnou velikostí. Podpis se přebírá z popisu, který napsal build – build
       # je jediný, kdo ví, jestli se podepsal Developer ID.
       - name: Přegenerovat popis
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
+          set -euo pipefail
           mkdir -p prilohy
           node -e '
             const fs = require("fs");
@@ -78,6 +188,12 @@ jobs:
             }
             if (v.body.includes("Developer ID a notarizovaná")) fs.writeFileSync("prilohy/latest-build.json", JSON.stringify({ signature: "Developer ID" }));
           '
+          # Changelog musí pocházet ze stejného commitu jako vydávané binárky.
+          # Checkout main používáme pro bezpečnostní verifier, ne pro release obsah.
+          git fetch --depth=1 origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt --local
+          TAG_SHA=$(cat verified-tag-sha.txt)
+          git show "${TAG_SHA}:CHANGELOG.md" > CHANGELOG.md
           node scripts/release-notes.mjs "${TAG#v}" prilohy > poznamky.md
           cat poznamky.md
 
@@ -85,16 +201,79 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
+          CONFIRM_STABLE: ${{ inputs.confirm_stable }}
         run: |
-          gh release edit "$TAG" --notes-file poznamky.md --draft=false --latest
-          gh release view "$TAG" --json isDraft,url,publishedAt
+          set -euo pipefail
+          node scripts/verify-publish-tag.mjs "$TAG" --check verified-tag-sha.txt
+          RELEASE_ID=$(cat release-id.txt)
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > prepublish.json
+          # Reject asset/tag swaps between download verification and publication.
+          node -e '
+            const before = require("./release-metadata.json");
+            const now = require("./prepublish.json");
+            if (now.id !== before.id || now.tag_name !== process.env.TAG ||
+                now.draft !== true || !Array.isArray(now.assets) || now.assets.length !== 8 ||
+                JSON.stringify(now.assets.map(a => [a.id,a.name,a.size,a.digest]).sort()) !==
+                JSON.stringify(before.assets.map(a => [a.id,a.name,a.size,a.digest]).sort())) {
+              console.error("::error::Draft mutated after the verified byte download.");
+              process.exit(1);
+            }
+          '
+          case "$CHANNEL" in
+            preview)
+              # REST by ID works for private Drafts in Actions. Never alter Stable Latest.
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                -F draft=false -F prerelease=true -f make_latest=false \
+                -f body="$(cat poznamky.md)" > published.json
+              ;;
+            stable)
+              if [ "$CONFIRM_STABLE" != "true" ]; then
+                echo "::error::Stable release requires an explicit confirmation."
+                exit 1
+              fi
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                -F draft=false -F prerelease=false -f make_latest=true \
+                -f body="$(cat poznamky.md)" > published.json
+              ;;
+            *)
+              echo "::error::Unsupported release channel."
+              exit 1
+              ;;
+          esac
+          node -e '
+            const release = require("./published.json");
+            if (release.id !== Number(require("fs").readFileSync("release-id.txt", "utf8")) ||
+                release.tag_name !== process.env.TAG || release.draft !== false ||
+                release.prerelease !== (process.env.CHANNEL === "preview") ||
+                !release.published_at) {
+              console.error("::error::GitHub did not confirm the intended public release channel.");
+              process.exit(1);
+            }
+            console.log(release.html_url);
+          '
 
-      # Tlačítka ke stažení na webu vedou na /releases/latest/download/…; ověří se, že každé
-      # opravdu vede na přílohu tohoto vydání.
-      - name: Ověřit odkazy ke stažení
+      # Preview keeps stable Latest untouched; only a confirmed Stable release changes
+      # /releases/latest/download/… and requires the stable asset-link verification.
+      - name: Ověřit kanál a odkazy ke stažení
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          CHANNEL: ${{ inputs.channel }}
         run: |
+          set -euo pipefail
+          RELEASE_ID=$(cat release-id.txt)
+          IS_PREVIEW=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq .prerelease)
+          LATEST=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)
+          if [ "$CHANNEL" = "preview" ]; then
+            test "$IS_PREVIEW" = "true" || { echo "::error::Preview is not marked prerelease."; exit 1; }
+            test "$LATEST" != "$TAG" || { echo "::error::Preview unexpectedly became Latest."; exit 1; }
+            test "$LATEST" = "$(cat stable-before.txt)" || { echo "::error::Preview changed Stable Latest."; exit 1; }
+            echo "Preview $TAG is public; stable Latest remains $LATEST."
+            exit 0
+          fi
+          test "$IS_PREVIEW" = "false" || { echo "::error::Stable is still marked prerelease."; exit 1; }
+          test "$LATEST" = "$TAG" || { echo "::error::Stable is not Latest."; exit 1; }
           for SOUBOR in Agenteeq-macOS-arm64.zip Agenteeq-macOS-arm64.dmg Agenteeq-Windows-x64.zip; do
             OK=
             for pokus in 1 2 3 4 5 6; do

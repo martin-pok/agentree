@@ -1,3 +1,4 @@
+import { selectAgents } from '../public/js/agent-selection.js';
 import { ui } from './texty.js';
 
 // Souhrn pro okno rozšíření pro Chrome (POST /api/extension/prehled): stav agentů jednou větou,
@@ -8,7 +9,10 @@ const kratce = (t, n) => (typeof t === 'string' ? t.replace(/\s+/g, ' ').trim().
 const polozka = (s) => ({ id: s.id, title: kratce(s.title, 120), app: kratce(s.app, 40), reason: kratce(s.status === 'working' ? s.activity || s.reason : s.reason || s.activity, 160), at: s.lastAt || 0 });
 
 export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
-  const viditelne = sessions.filter((s) => !s.archived);
+  // Align counts with the desktop's agent list: do not count hidden child
+  // threads or multiple runs of the same recurring task as separate agents.
+  // Archived sessions stay excluded from the extension's live summary.
+  const viditelne = selectAgents(sessions.filter((s) => !s.archived));
   const podle = (st) => viditelne.filter((s) => s.status === st).sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0));
   const cekaji = podle('needs_input');
   const pracuji = podle('working');
@@ -29,7 +33,7 @@ export function prehledProRozsireni(sessions, { procesyNevim = false } = {}) {
     ok: pracuji.length ? ui('Vše běží v pořádku') : ui('V pořádku, nikdo nepracuje'),
   }[stav];
   return {
-    zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length },
+    zdravi: { stav, veta, pracuje: pracuji.length, cekaNaTebe: cekaji.length, selhalo: selhalo.length, limit: limit.length, procesyNevim: Boolean(procesyNevim) },
     rozhodnuti: [...cekaji, ...selhalo, ...limit].slice(0, MAX).map((s) => ({ ...polozka(s), status: s.status })),
     pracuji: pracuji.slice(0, MAX).map(polozka),
   };

@@ -28,7 +28,7 @@ html[data-theme='dark']:where([data-look='koncert']) { color-scheme: dark; --bac
 @media (min-width: 881px) and (max-height: 791px) { :where(html[data-look='koncert']) .sidebar { padding-top: 20px; padding-bottom: 16px; }
  }
 :where(html[data-look='koncert']) .dot--live { background: var(--teal); box-shadow: 0 0 0 4px rgba(34, 163, 140, .18); }
-:where(html[data-look='koncert']) .main { position: relative; min-width: 0; padding: calc(var(--band-h) + 32px) 56px 64px 64px; }
+:where(html[data-look='koncert']) .main { --main-top: calc(var(--band-h) + 32px); position: relative; min-width: 0; padding: var(--main-top) 56px 64px 64px; }
 :where(html[data-look='koncert']) .conn-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); background: var(--card); box-shadow: var(--shadow-sm); font-size: 13px; }
 :where(html[data-look='koncert']) .search-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; transition: border-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
 :where(html[data-look='koncert']) .bell { background: var(--card); box-shadow: var(--shadow-sm); }
@@ -98,7 +98,7 @@ html[data-theme='dark']:where([data-look='koncert']) { color-scheme: dark; --bac
  }
 @media (max-width: 880px) { :where(html[data-look='koncert']) .stage { display: none; }
  }
-@media (max-width: 880px) { :where(html[data-look='koncert']) .main { padding: calc(24px + env(safe-area-inset-top)) 24px calc(120px + env(safe-area-inset-bottom)); }
+@media (max-width: 880px) { :where(html[data-look='koncert']) .main { --main-top: calc(24px + env(safe-area-inset-top)); padding: var(--main-top) 24px calc(120px + env(safe-area-inset-bottom)); }
  }
 @media (max-width: 880px) { :where(html[data-look='koncert']) .search-btn { padding: 0 11px; }
  }

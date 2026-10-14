@@ -1,3 +1,4 @@
+import { createLiveEventBacklog } from './sse-backlog.js';
 import { initMascotMotion } from './mascot-motion.js';
 import { initRobotBubliny } from './robot-bubliny.js';
 import { robotGuide } from './robot-guide.js';
@@ -668,24 +669,36 @@ const palette = createPalette(
 function spustObnovu(button) {
   button.setAttribute('aria-busy', 'true');
   button.classList.add('is-refreshing');
-  let uklizeno = false;
-  let pojistka = 0;
-  const uklid = () => {
-    if (uklizeno) return;
-    uklizeno = true;
-    clearTimeout(pojistka);
+  const status = document.createElement('div');
+  status.className = 'refresh-status';
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  status.innerHTML = `<div class="refresh-status__robot" aria-hidden="true">
+    <svg viewBox="0 0 48 48" fill="none"><path d="M24 7v6M24 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM10 20a8 8 0 0 1 8-8h12a8 8 0 0 1 8 8v11a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V20Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path class="refresh-status__eyes" d="M18 25h3m6 0h3" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+  </div><div class="refresh-status__content"><strong></strong><span></span>
+  <div class="refresh-status__track" aria-hidden="true"><i></i></div></div>`;
+  const label = status.querySelector('strong');
+  const detail = status.querySelector('span');
+  label.textContent = tr('Obnovuji aktuální data');
+  detail.textContent = tr('Kontroluji dostupné zdroje…');
+  document.body.append(status);
+  let motif = 0;
+  status.dataset.motif = String(motif);
+  // Variants change only on long-running refreshes. No invented progress percentage.
+  const timer = setInterval(() => { motif = (motif + 1) % 10; status.dataset.motif = String(motif); }, 30000);
+  let cleaned = false;
+  const setStage = (stage) => {
+    if (!cleaned && stage === 'snapshot') detail.textContent = tr('Aktualizuji zobrazená data…');
+  };
+  const finish = () => {
+    if (cleaned) return;
+    cleaned = true;
+    clearInterval(timer);
+    status.remove();
     button.classList.remove('is-refreshing');
     button.removeAttribute('aria-busy');
   };
-  return () => {
-    const ikona = button.querySelector('.icon');
-    const bezi = ikona?.getAnimations?.().some((animace) => animace.playState === 'running');
-    // Při omezeném pohybu CSS animaci správně vypne; v tom případě se stav vrátí hned.
-    if (!bezi) { uklid(); return; }
-    ikona.addEventListener('animationiteration', uklid, { once: true });
-    // Skrytý panel může CSS animace pozastavit, proto je zde hranice jedné otočky.
-    pojistka = setTimeout(uklid, 760);
-  };
+  return { setStage, finish };
 }
 
 document.addEventListener('click', async (e) => {
@@ -712,16 +725,17 @@ document.addEventListener('click', async (e) => {
   if (e.target.closest('#refresh-app')) {
     const button = document.getElementById('refresh-app');
     if (!button || button.getAttribute('aria-busy') === 'true') return;
-    const dokonciObnovu = spustObnovu(button);
+    const obnova = spustObnovu(button);
     try {
       await api.rescan();
       // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
       // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
+      obnova.setStage('snapshot');
       await obnovStav(tr('ruční obnova'), { force: true });
     } catch (err) {
       toast(err.message, { tone: 'err' });
     } finally {
-      dokonciObnovu();
+      obnova.finish();
     }
     return;
   }
@@ -942,7 +956,7 @@ if (UKAZKA) {
 }
 
 let loadingSnapshot = null;
-const queued = [];
+const queued = createLiveEventBacklog();
 
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
@@ -960,7 +974,7 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Souhrny – tokeny, útrata, limity a počty agentů – se teď synchronizují do tvého účtu a uvidíš je i na webu. Konverzace a kód dál zůstávají jen na {0}. Synchronizaci vypneš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
+        <p>${tr('Přihlášení přes Google je ověřené. Synchronizace souhrnů – tokenů, útraty, limitů a počtů agentů – se spustí zvlášť. Na webu se data zobrazí až po úspěšném přenosu. Konverzace a kód zůstávají na {0}. Stav synchronizace ověříš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
       footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
     });
   } else if (u.udalost === 'chyba' && u.chyba) {
@@ -983,10 +997,12 @@ const autorizace = api.state().then((snap) => {
   return true;
 });
 
+let generaceSnimek = 0;
+
 function prijmiSnimek(snap) {
   applySnapshot(snap);
   window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
-  for (const [name, data] of queued.splice(0)) handle(name, data);
+  queued.drain(handle);
 }
 
 // Pojistka pro první načtení: dokud stav není načtený, zkouší se ho stáhnout znovu (4 s, 6 s, 8 s…
@@ -998,7 +1014,9 @@ function hlidejNacteni() {
     if (state.loaded) return;
     if (!loadingSnapshot) {
       try {
-        prijmiSnimek(await api.state());
+        const generace = generaceSnimek;
+        const snap = await api.state();
+        if (generace === generaceSnimek && !loadingSnapshot && !state.loaded) prijmiSnimek(snap);
         return;
       } catch (err) {
         if (err.status === 401) return;
@@ -1013,17 +1031,26 @@ hlidejNacteni();
 const proud = connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
-    loadingSnapshot = api
-      .state()
-      .then(prijmiSnimek)
-      .catch((err) => {
-        if (err.status === 401) return parovaciObrazovka();
-        return toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+    // The preceding stream's undelivered events must not be replayed over a
+    // fresh state snapshot. Events from this handshake will be queued afresh.
+    queued.begin();
+    const generace = ++generaceSnimek;
+    const nacitani = api.state()
+      .then((snap) => {
+        if (generace === generaceSnimek) prijmiSnimek(snap);
       })
-      .finally(() => { loadingSnapshot = null; });
+      .catch((err) => {
+        if (generace !== generaceSnimek) return; // Starší odpověď nesmí přepsat nový pokus ani vyvolat chybu.
+        if (err.status === 401) parovaciObrazovka();
+        else toast(`${tr('Nepodařilo se načíst data:')} ${err.message}`, { tone: 'err', timeout: 8000 });
+        throw err; // SSE remains reconnecting until an actual snapshot succeeds.
+      })
+      .finally(() => { if (generace === generaceSnimek) loadingSnapshot = null; });
+    loadingSnapshot = nacitani;
+    return nacitani;
   },
   onEvent: (name, data) => {
-    if (!state.loaded || loadingSnapshot) queued.push([name, data]);
+    if (!state.loaded || loadingSnapshot) queued.add(name, data);
     else handle(name, data);
   },
 });

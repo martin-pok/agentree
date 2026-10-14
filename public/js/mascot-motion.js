@@ -53,7 +53,7 @@ export function initMascotMotion() {
  window.addEventListener('blur', reset);
  media.addEventListener('change', () => { reset(); syncButtons(); });
  function syncButtons() {
-  document.querySelectorAll('[data-mascot-motion]').forEach(b => { b.setAttribute('aria-pressed', String(!paused && !media.matches)); b.textContent = media.matches ? tr('Pohyb omezen systémem') : paused ? tr('Zapnout pohyb') : tr('Ztišit pohyb'); });
+  document.querySelectorAll('[data-mascot-motion]').forEach(b => { b.setAttribute('aria-pressed', String(!paused && !media.matches)); b.textContent = media.matches ? tr('Pohyb omezen systémem') : paused ? tr('Zapnout pohyb') : tr('Omezit pohyb'); });
  }
  document.addEventListener('robot:guide-ready', syncButtons);
  window.addEventListener('hashchange', () => { reset(); requestAnimationFrame(syncButtons); });

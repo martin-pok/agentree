@@ -5,6 +5,8 @@ const HOST = 'http://127.0.0.1';
 const VYCHOZI_PORT = 4620;
 const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
 let port = null;
+let pairingReset = Promise.resolve();
+let pairingGeneration = 0;
 async function zaklad() {
   if (port === null) {
     const ulozeny = await chrome.storage.local.get(['port']);
@@ -18,11 +20,18 @@ chrome.storage.onChanged?.addListener((zmeny, oblast) => {
   if (oblast !== 'local' || !('port' in zmeny)) return;
   port = null;
   token = null;
+  pairingGeneration++;
   posledniPokus = 0;
+  // A port change can target a different local app instance. Never reuse its persisted token.
+  pairingReset = pairingReset.then(async () => {
+    await chrome.storage.local.remove('token');
+    await chrome.storage.local.set({ parovani: 'nedostupne' });
+  });
 });
 let token = null;
 
 async function getToken() {
+  await pairingReset;
   if (token) return token;
   const stored = await chrome.storage.local.get(['token']);
   if (stored.token) return (token = stored.token);
@@ -44,31 +53,63 @@ async function installationId() {
 // Zkouší se po instalaci, po startu Chromu, při otevření okna a před odesláním – nejvýš jednou
 // za 20 s, ať se neptá pořád dokola, když aplikace neběží. Vrací, jestli je spárováno.
 let posledniPokus = 0;
-async function pripojit({ hned = false } = {}) {
-  if (!hned && Date.now() - posledniPokus < 20000) return false;
-  posledniPokus = Date.now();
+let probihajiciParovani = null;
+
+// A response is valid only for the port generation that initiated the request.
+// This also prevents an old request from overwriting a newer pairing after a port switch.
+async function provedAutomatickeParovani(generation) {
   try {
-    const res = await fetch(`${await zaklad()}/api/extension/pripojit`, { method: 'POST', headers: { 'X-Agenteeq-Installation-Id': await installationId() } });
+    const res = await fetch(`${await zaklad()}/api/extension/pripojit`, {
+      method: 'POST',
+      headers: { 'X-Agenteeq-Installation-Id': await installationId() },
+    });
     const body = await res.json().catch(() => ({}));
+    if (generation !== pairingGeneration) return false;
+
     if (!res.ok || typeof body.token !== 'string') {
       await chrome.storage.local.set({ parovani: res.status === 409 ? 'kod' : 'nedostupne' });
       return false;
     }
+
     token = body.token;
     await chrome.storage.local.set({ token, parovani: 'hotovo' });
     return true;
   } catch {
-    await chrome.storage.local.set({ parovani: 'nedostupne' });
+    if (generation === pairingGeneration) {
+      await chrome.storage.local.set({ parovani: 'nedostupne' });
+    }
     return false;
   }
 }
 
+async function pripojit({ hned = false } = {}) {
+  await pairingReset;
+  const generation = pairingGeneration;
+  if (probihajiciParovani?.generation === generation) return probihajiciParovani.promise;
+  if (!hned && Date.now() - posledniPokus < 20000) return false;
+
+  posledniPokus = Date.now();
+  const promise = provedAutomatickeParovani(generation);
+  probihajiciParovani = { promise, generation };
+  try {
+    return await promise;
+  } finally {
+    if (probihajiciParovani?.promise === promise) probihajiciParovani = null;
+  }
+}
+
 async function pair(code) {
-  const res = await fetch(`${await zaklad()}/api/extension/pair`, {
+  await pairingReset;
+  const generation = pairingGeneration;
+  const base = await zaklad();
+  const id = await installationId();
+  if (generation !== pairingGeneration) throw new Error('Port se změnil. Spusť spárování znovu.');
+  const res = await fetch(`${base}/api/extension/pair`, {
     method: 'POST',
-    headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': await installationId() },
+    headers: { 'X-Agenteeq-Pair-Code': code, 'X-Agenteeq-Installation-Id': id },
   });
   const body = await res.json().catch(() => ({}));
+  if (generation !== pairingGeneration) throw new Error('Port se změnil. Spusť spárování znovu.');
   if (!res.ok || typeof body.token !== 'string') throw new Error(body.error || 'Spárování selhalo.');
   token = body.token;
   await chrome.storage.local.set({ token, parovani: 'hotovo' });
@@ -154,6 +195,7 @@ async function takeHandoff(site) {
 
 // Souhrn agentů pro okno rozšíření. Bez tokenu nebo při chybě vrátí null – okno pak sekci skryje.
 async function prehled() {
+  await pairingReset;
   const t = token || (await chrome.storage.local.get(['token'])).token;
   if (!t) return null;
   try {
@@ -164,9 +206,33 @@ async function prehled() {
   }
 }
 
+// A user click in the popup may bring an EXISTING local agent forward in the
+// native Mac window. This must not be callable by a page content script, must
+// not disclose the desktop's localKey, and never opens a localhost browser tab.
+async function focusExistingAgent(id) {
+  await pairingReset;
+  if (typeof id !== 'string' || !id || id.length > 200) return { ok: false };
+  const t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t) return { ok: false, unpaired: true };
+  try {
+    const res = await fetch(`${await zaklad()}/api/extension/focus-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
+      body: JSON.stringify({ id }),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.status === 401) await forgetToken();
+    const body = await res.json().catch(() => ({}));
+    return res.ok && body.ok ? { ok: true } : { ok: false, unpaired: res.status === 401, unsupported: res.status === 409, error: typeof body.error === 'string' ? body.error.slice(0, 240) : '' };
+  } catch {
+    return { ok: false, offline: true };
+  }
+}
+
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
 async function hello({ hned = false, znovu = false } = {}) {
+  await pairingReset;
   let t = token || (await chrome.storage.local.get(['token'])).token;
   if (!t && (await pripojit({ hned }))) t = token;
   if (!t) return { paired: false, parovani: (await chrome.storage.local.get(['parovani'])).parovani || 'nedostupne' };
@@ -211,7 +277,35 @@ chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
 chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() => {}); });
 
+// Do not trust a content-script payload claiming to originate from a different AI site.
+// The browser-controlled sender.tab.url is stronger evidence than the page-provided site field.
+const SITE_HOSTS = {
+  chatgpt: ['chatgpt.com', 'chat.openai.com'],
+  'codex-web': ['chatgpt.com'],
+  claude: ['claude.ai'],
+  gemini: ['gemini.google.com'],
+  mscopilot: ['copilot.microsoft.com'],
+  perplexity: ['www.perplexity.ai', 'perplexity.ai'],
+  grok: ['grok.com'],
+  qwen: ['chat.qwen.ai'],
+  'github-copilot': ['github.com'],
+};
+function senderMatchesSite(sender, site) {
+  if (!sender?.tab) return true; // Internal popup tests and messages do not carry a tab.
+  try {
+    const url = new URL(sender.tab.url || sender.url);
+    return url.protocol === 'https:' && SITE_HOSTS[site]?.includes(url.hostname) === true
+      && (site !== 'github-copilot' || url.pathname.startsWith('/copilot'));
+  } catch {
+    return false;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === 'agenteeq:update' && !senderMatchesSite(sender, msg.payload?.site)) {
+    sendResponse({ ok: false });
+    return false;
+  }
   if (msg?.type === 'agenteeq:update') {
     send(msg.payload, sender?.tab).then((ok) => sendResponse({ ok }), (err) => {
       chrome.storage.local.set({ lastStatus: { ok: false, error: String(err.message || err), site: msg.payload?.site, at: Date.now() } });
@@ -223,6 +317,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  } else if (msg?.type === 'agenteeq:focus-agent') {
+    // Only the extension's own popup can request native window focus. Scripts
+    // injected into supported AI websites are explicitly excluded.
+    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+      sendResponse({ ok: false }); return false;
+    }
+    focusExistingAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
     prehled().then(sendResponse, () => sendResponse(null));

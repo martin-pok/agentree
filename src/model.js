@@ -11,6 +11,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     provider,
     app,
     source,
+    accountBinding: null, // only verified account provenance, never inferred from provider/model
     title: '',
     firstPrompt: '',
     lastPrompt: '',
@@ -31,6 +32,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
     permissionMode: '',   // režim oprávnění Claude Code, když ho přepis nese
     staleMs: 5 * MIN,
+    staleReason: '',      // vlastní důvod nečerstvého tahu, když ho zdroj zná (claude-desktop-code.js)
     turnStartedAt: 0,
     turnSteps: 0,
     activity: '',
@@ -80,10 +82,11 @@ export function addTokens(s, ts, delta, sign = 1) {
   else delete s.hourly[k];
 }
 
-export function pushEntry(s, { at, role, text = '', tool, status }) {
+export function pushEntry(s, { at, role, text = '', tool, status, questions }) {
   const entry = { seq: ++s.seq, at: at || Date.now(), role, text };
   if (tool) entry.tool = tool;
   if (status) entry.status = status;
+  if (questions?.length) entry.questions = questions;
   s.transcript.push(entry);
   if (s.transcript.length > TRANSCRIPT_MAX) s.transcript.splice(0, s.transcript.length - TRANSCRIPT_MAX);
   s.dirty.push(entry);
@@ -108,6 +111,24 @@ export function takeDirty(s) {
   return out;
 }
 
+// Věta o vyčerpaném limitu z rozpoznaných údajů (druh limitu a čas obnovy), ne surová hláška
+// nástroje – ta je anglicky a do českého rozhraní pronikala doslova („You've hit your session
+// limit · resets 11pm (Europe/Prague)“). Čas se píše po česku v zóně tohoto počítače
+// („10. 10. 23:00“); klient ho v angličtině přepíše do svého zápisu (public/js/texty-serveru.js).
+// Surová hláška zůstává jen tam, kde se ji rozpoznat nepodařilo: bez druhu limitu, nebo když
+// zmiňuje obnovu, jejíž čas se nepřečetl – tu informaci by věta zahodila.
+const CAS_OBNOVY = (ts) => {
+  const d = new Date(ts);
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+export function vetaLimitu(limit) {
+  const text = limit?.text || '';
+  if (!limit?.label) return text || ui('Vyčerpaný limit');
+  if (limit.resetsAt) return ui('{0} vyčerpán · obnoví se {1}', limit.label, CAS_OBNOVY(limit.resetsAt));
+  if (/reset/i.test(text)) return text;
+  return ui('{0} vyčerpán', limit.label);
+}
+
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
@@ -116,7 +137,7 @@ export function deriveStatus(s, now) {
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
-    if (active) return { status: 'limited', reason: s.limit.text || ui('Vyčerpaný limit'), stale: false };
+    if (active) return { status: 'limited', reason: vetaLimitu(s.limit), stale: false };
   }
   // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
   if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {
@@ -130,7 +151,11 @@ export function deriveStatus(s, now) {
   // neskončil odpovědí, takže ne „hotovo“ – ale ani „pracuje“. Nový zápis do přepisu posune
   // `runningAt` za čas zjištění a konverzace zase pracuje.
   const skoncil = Boolean(s.running && s.procesSkoncil && s.procesSkoncil >= (s.runningAt || 0));
-  if (s.running && !skoncil && now - (s.runningAt || s.lastAt) < s.staleMs) {
+  // A future source timestamp must never keep an agent in a live working state.
+  // Allow 60 seconds of clock skew, in line with the limits freshness contract.
+  const runningAt = s.runningAt === 0 ? s.lastAt : s.runningAt;
+  const trustworthyRunningAt = Number.isFinite(runningAt) && runningAt > 0 && runningAt <= now + 60e3;
+  if (s.running && !skoncil && trustworthyRunningAt && now - runningAt < s.staleMs) {
     // Bez hooků žádost o povolení nevidíme, jen nástroj bez výsledku. Co z toho jde vyvodit, záleží
     // na nástroji (s.toolWaitKind, src/connectors/claude-code.js) a režimu oprávnění:
     // - čtení (Read, Grep…) se na povolení neptá nikdy, takže ani „možná“;
@@ -152,7 +177,7 @@ export function deriveStatus(s, now) {
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
   const done = answered && !stale;
-  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
   if (age < DAY) return { status: 'idle', reason: '', stale, done };
   return { status: 'archived', reason: '', stale, done };
 }
@@ -211,6 +236,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,
     subagent: s.subagent || null,
     taskName: s.taskName || '',

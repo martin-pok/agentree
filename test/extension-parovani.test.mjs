@@ -24,6 +24,8 @@ function spust(sit, { ulozeno = {} } = {}) {
     remove: async (k) => { delete data[k]; },
   });
   const kontext = vm.createContext({
+    URL,
+    AbortSignal,
     crypto: { randomUUID: () => 'instalace-1234' },
     Date: { now: () => ted },
     fetch: async (url, init = {}) => {
@@ -37,6 +39,7 @@ function spust(sit, { ulozeno = {} } = {}) {
       storage: { local: oblast(local), session: oblast(session), onChanged: { addListener: (fn) => { zmenaUloziste = fn; } } },
       runtime: {
         getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
+        getURL: (name) => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/' + name,
         onInstalled: { addListener() {} },
         onStartup: { addListener() {} },
         onMessage: { addListener: (fn) => { posluchac = fn; } },
@@ -48,7 +51,7 @@ function spust(sit, { ulozeno = {} } = {}) {
   vm.runInContext(zdroj, kontext);
   const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
   const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
-  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; delete local.token; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
+  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
 }
 
 test('pozadí rozšíření: aplikace neběží → „nedostupné“, bez tokenu a bez zahlcení dotazy', async () => {
@@ -109,7 +112,7 @@ test('pozadí rozšíření: odvolaný token (401) → jedno nové spárování,
 
 test('pozadí rozšíření: otevřené konverzace pro okno – jen stav, staré se zapomenou', async () => {
   const r = spust((url) => (url === '/api/extension/pripojit' ? { status: 200, body: { token: 't'.repeat(43) } } : { status: 200, body: {} }));
-  const karta = (id) => ({ tab: { id, windowId: 3 } });
+  const karta = (id) => ({ tab: { id, windowId: 3, url: id === 12 ? 'https://claude.ai/chat/b' : 'https://chatgpt.com/c/a' } });
   await r.zprava({ type: 'agenteeq:update', payload: { site: 'chatgpt', conversationId: 'a', generating: true, counts: { user: 1, assistant: 1 } } }, karta(11));
   await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude', conversationId: 'b', generating: false, limit: true } }, karta(12));
   assert.deepEqual(Object.keys(r.session.otevrene).sort(), ['chatgpt:a', 'claude:b']);
@@ -156,10 +159,155 @@ test('pozadí rozšíření: port aplikace z nastavení, neplatný se ignoruje, 
   const spatny = spust(odpoved, { ulozeno: { port: 80 } });
   await spatny.zprava({ type: 'agenteeq:hello' });
   assert.ok(spatny.volani.every((v) => v.plna.startsWith('http://127.0.0.1:4620/')), 'port pod 1024 se nepoužije');
+  assert.equal(r.local.token, 'p'.repeat(43), 'old port has a stored token');
   r.zmenPort(6001);
+  // Real Chrome storage is asynchronous: hello immediately after a port change must not read the old token.
+  await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(r.local.token, 'p'.repeat(43), 'immediate reconnect receives a freshly paired token');
+  assert.ok(r.volani.slice(-2).every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), 'immediate reconnect targets the new port');
   r.posun(21e3);
   await r.zprava({ type: 'agenteeq:hello' });
   const poZmene = r.volani.slice(-2);
   assert.ok(poZmene.every((v) => v.plna.startsWith('http://127.0.0.1:6001/')), JSON.stringify(poZmene.map((v) => v.plna)));
-  assert.ok(poZmene.some((v) => v.url === '/api/extension/pripojit'), 'nový port = nové spárování');
+  assert.ok(r.volani.filter((v) => v.url === '/api/extension/pripojit').length >= 2, 'změna portu musí vyvolat nové spárování');
+});
+
+
+test('pozadí rozšíření: souběžné pokusy o párování sdílejí jediný HTTP požadavek', async () => {
+  let calls = 0;
+  const r = spust(async (url) => {
+    if (url === '/api/extension/pripojit') {
+      calls++;
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      return { status: 200, body: { token: 'x'.repeat(43) } };
+    }
+    return { status: 200, body: {} };
+  });
+  const results = await Promise.all(Array.from({ length: 8 }, () => r.zprava({ type: 'agenteeq:hello' })));
+  assert.ok(results.every((v) => v.paired === true));
+  assert.equal(calls, 1, 'simultaneous reconnect events must reuse one pairing request');
+});
+
+
+test('pozadí rozšíření: pozdní odpověď starého portu nesmí přepsat nové párování', async () => {
+  let dokoncitStare;
+  const staraOdpoved = new Promise((resolve) => { dokoncitStare = resolve; });
+  const r = spust(async (url, init) => {
+    if (url === '/api/extension/pripojit') {
+      if (r.volani.at(-1).plna.startsWith('http://127.0.0.1:5123/')) return staraOdpoved;
+      return { status: 200, body: { token: 'n'.repeat(43) } };
+    }
+    return { status: 200, body: {} };
+  }, { ulozeno: { port: 5123 } });
+  const puvodni = r.zprava({ type: 'agenteeq:hello' });
+  // Allow the first fetch to start before changing port.
+  for (let i = 0; i < 20 && r.volani.length === 0; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(r.volani.some((v) => v.plna.startsWith('http://127.0.0.1:5123/')));
+  r.zmenPort(6001);
+  const nove = await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(nove.paired, true);
+  dokoncitStare({ status: 200, body: { token: 'o'.repeat(43) } });
+  await puvodni;
+  assert.equal(r.local.token, 'n'.repeat(43), 'stale server response cannot overwrite current pairing');
+});
+
+
+test('content script is idempotent when Chrome reinjects it after an extension update', async () => {
+  const content = await fs.readFile(fileURLToPath(new URL('../extension/content.js', import.meta.url)), 'utf8');
+  const callbacks = [];
+  let observed = 0;
+  let intervals = 0;
+  const scope = { document: { documentElement: {} }, location: { href: 'https://chatgpt.com/c/1' },
+    window: { AgenteeqSites: { detect: () => ({ id: 'chatgpt' }) }, addEventListener: () => {} },
+    MutationObserver: class { observe() { observed++; } },
+    setInterval: () => { intervals++; }, setTimeout: () => 1,
+    chrome: { runtime: { onMessage: { addListener: (fn) => callbacks.push(fn) }, sendMessage: () => Promise.resolve({ prompt: null }) } },
+  };
+  scope.globalThis = scope;
+  const context = vm.createContext(scope);
+  vm.runInContext(content, context);
+  vm.runInContext(content, context);
+  assert.equal(observed, 1, 'only one DOM observer');
+  assert.equal(intervals, 1, 'only one polling interval');
+  assert.equal(callbacks.length, 1, 'only one message listener');
+});
+
+
+test('late manual pairing from an old port cannot replace the active token', async () => {
+  let completeOld;
+  const oldResponse = new Promise((resolve) => { completeOld = resolve; });
+  const r = spust((path) => {
+    if (path === '/api/extension/pair') return oldResponse;
+    if (path === '/api/extension/pripojit') return { status: 200, body: { token: 'n'.repeat(43) } };
+    return { status: 200, body: {} };
+  }, { ulozeno: { port: 5123 } });
+  const pairing = r.zprava({ type: 'agenteeq:pair', code: '12345678' });
+  for (let i = 0; i < 20 && !r.volani.some((v) => v.url === '/api/extension/pair'); i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.ok(r.volani.some((v) => v.url === '/api/extension/pair'));
+  r.zmenPort(6001);
+  const fresh = await r.zprava({ type: 'agenteeq:hello' });
+  assert.equal(fresh.paired, true);
+  completeOld({ status: 200, body: { token: 'o'.repeat(43) } });
+  const stale = await pairing;
+  assert.equal(stale.ok, false);
+  assert.equal(r.local.token, 'n'.repeat(43));
+});
+
+
+test('content telemetry never sends query strings or fragments that may hold prompts or tokens', async () => {
+  const content = await fs.readFile(fileURLToPath(new URL('../extension/content.js', import.meta.url)), 'utf8');
+  assert.ok(content.includes('url: `${location.origin}${location.pathname}`'), 'query and fragment are excluded');
+  assert.ok(!content.includes('url: location.href'), 'full URL must never be transmitted');
+});
+
+
+test('telemetry from a browser tab cannot impersonate another provider', async () => {
+  const r = spust(() => ({ status: 200, body: { token: 't'.repeat(43) } }), { ulozeno: { token: 't'.repeat(43) } });
+  const payload = { site: 'claude', conversationId: 'abc', generating: false };
+  const rejected = await r.zprava({ type: 'agenteeq:update', payload }, { tab: { id: 4, url: 'https://chatgpt.com/c/abc' } });
+  assert.equal(rejected.ok, false);
+  assert.equal(r.volani.filter((v) => v.url === '/api/ingest/web').length, 0);
+  const accepted = await r.zprava({ type: 'agenteeq:update', payload }, { tab: { id: 4, url: 'https://claude.ai/chat/abc' } });
+  assert.equal(accepted.ok, true);
+  assert.equal(r.volani.filter((v) => v.url === '/api/ingest/web').length, 1);
+});
+
+
+test('native focus: only the extension popup can request the existing agent; content scripts cannot', async () => {
+  const t = 'q'.repeat(43);
+  const calls = [];
+  const r = spust(async (url, init) => {
+    calls.push({ url, method: init.method, body: init.body, headers: init.headers });
+    return { status: 200, body: { ok: true, focused: true } };
+  }, { ulozeno: { token: t } });
+  const popup = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' };
+  const id = 'claude-code:existing-agent';
+  assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id }, popup)).ok, true);
+  const nativeCalls = calls.filter(c => c.url === '/api/extension/focus-agent');
+  assert.equal(nativeCalls.length, 1);
+  assert.equal(nativeCalls[0].method, 'POST');
+  assert.equal(JSON.parse(nativeCalls[0].body).id, id);
+  assert.equal(nativeCalls[0].headers['X-Agenteeq-Token'], t);
+  for (const sender of [
+    { tab: { id: 5 }, url: popup.url },
+    { tab: { id: 8 }, url: 'https://chatgpt.com' },
+    { url: 'https://evil.example' },
+    { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/background.html' },
+    {},
+  ]) assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id }, sender)).ok, false);
+  assert.equal(calls.filter(c => c.url === '/api/extension/focus-agent').length, 1, 'no untrusted website triggers native focus');
+});
+
+test('native focus: an invalid ID or missing token never causes HTTP or hidden pairing', async () => {
+  const r = spust(() => ({ status: 200, body: { ok: true } }));
+  const sender = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' };
+  assert.equal((await r.zprava({ type: 'agenteeq:focus-agent', id: 'agent' }, sender)).unpaired, true);
+  assert.equal(r.volani.length, 0);
+  const joined = spust(() => ({ status: 200, body: { ok: true } }), { ulozeno: { token: 's'.repeat(43) } });
+  for (const id of ['', 1, {}, null, 'x'.repeat(201)]) {
+    assert.equal((await joined.zprava({ type: 'agenteeq:focus-agent', id }, sender)).ok, false);
+  }
+  assert.equal(joined.volani.length, 0);
 });

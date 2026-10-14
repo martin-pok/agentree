@@ -1,5 +1,18 @@
 # Testování a ověření
 
+**Aktuální release evidence — 13. 10. 2026.** `v0.46.11`: přesný `main` zdroj `1e72a00`, [8/8 CI](https://github.com/martin-pok/agentree/actions/runs/38430918556), [release build+audit](https://github.com/martin-pok/agentree/actions/runs/38432569881) 7/7 build jobs, neveřejný Draft ID `411899483` (8 příloh), **8/8 re-download SHA-256 a 7/7 manifest**; audit report ID `11831787377`. Publish REST oprava v #216 prošla 8/8 PR i [8/8 `main` CI](https://github.com/martin-pok/agentree/actions/runs/38440054592); **ani tím není prokázaný reálný Mac/OAuth/Chrome Store UAT nebo publikovaná 0.46.11**. Následující protokoly jsou historické lokální běhy, nelze je vydávat za nový test na zařízení. Všechny další akceptační scénáře a jejich status obsahuje [QUALITY-AUDIT-2026-10-13.md](QUALITY-AUDIT-2026-10-13.md).
+
+**Aktuální inventář automatických testů:** 1128 deklarovaných testů v `test/*.test.mjs` (podle volání `test()` a `t.test()`). Inventář zdrojových testů není tvrzení o počtu testů, které prošly v CI; výsledky níže jsou historické protokoly a nerozšiřují se zpětně.
+
+## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
+
+| Kontrola | Výsledek |
+|---|---|
+| `npm test` | 1013 testů, 1006 prošlo, 7 přeskočeno podle platformy, 0 selhalo. Lokálně použité UTC a přibalený Git; systémový Git blokuje nepřijatá licence Xcode. |
+| `npm run check` | 319 souborů bez syntaktické chyby. |
+| `qa:assistant` | Chromium i WebKit, 1440 a 375 px, CZ/EN: obecná otázka vrací vysvětlení bez nesouvisejících odkazů; ruční čtení historie přežije nové vykreslení i opožděnou odpověď; vlastní zpráva obnoví sledování konce; při chybě hledání 503 zůstane chat použitelný. Bez chyb JavaScriptu; při simulované 503 konzole hlásí jen očekávaný neúspěšný požadavek. |
+| Neověřeno | CI pro nový commit v PR #130, nainstalovaná macOS aplikace a uživatelovo ruční QA. |
+
 ## Protokol ověření – Nevydáno: nejmenší práva workflowů GitHub Actions (10. 10. 2026, Linux, Node 22.22)
 
 | Kontrola | Výsledek |
@@ -584,3 +597,11 @@ Ruční QA běželo na **oddělené instanci** (port 4630, `AGENTEEQ_HOME` v do�
 | Obrazovky v prohlížeči | Přehled, Agenti, Detail agenta (266 položek přepisu), Statistiky, Útrata (validace formuláře, fokus na chybné pole), Nastavení, paleta ⌘K, panel upozornění – konzole bez chyb |
 | Mobil 375 px | bez vodorovného rolování |
 | **Neověřeno** | rozšíření na živých webech, Cursor s aktivním agentem, Copilot CLI / VS Code / Gemini CLI / Qwen Code s reálnými daty, Admin API s klíči, instalace hooků do skutečného `~/.claude/settings.json` (ověřeno jen v dočasném HOME), LaunchAgent (ověřen jen vygenerovaný plist) |
+
+## Chrome extension — neúplný výpis procesů (P0)
+
+- Mock `procesyNevim: true` + známý pracující či selhaný agent musí zobrazit číselné údaje pravdivě, ale i samostatné upozornění na neúplné zjišťování; tón nesmí být zelený.
+- Neznámý výpis jako hlavní stav se nevypisuje dvakrát; chyba odeslání hlášení si zachová prioritu, ale pokud nastanou **obě závady současně**, musí být vidět obě zprávy (odeslání i neúplné procesy). Nová pole jsou jen boolean bez přepisů nebo cest.
+- Jednotkové testy: `test/extension-process-uncertainty.test.mjs`, `test/prehled-rozsireni.test.mjs`; runtime reálného Macu je stále otevřené UAT.
+
+

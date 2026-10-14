@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { unexpectedScreenshotFailures } from './request-qa.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -32,6 +33,7 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 const vystup = path.join(here, 'export');
 const zdroj = path.join(here, 'source');
+const verzeRozsireni = JSON.parse(await fs.readFile(path.join(root, 'extension', 'manifest.json'), 'utf8')).version;
 
 // 1) Okno rozšíření ve dvou stavech, dvojnásobné rozlišení (v kompozici se zmenší – ostré písmo).
 //    „spárováno“: na stránce ChatGPT agent právě odpovídá, v dalších kartách Claude.ai dopsal
@@ -39,7 +41,7 @@ const zdroj = path.join(here, 'source');
 //    Obojí česky i anglicky: jazyk okna se řídí _locales (chrome.i18n), tady ho volí atrapa.
 async function okno(stav, soubor, jazyk) {
   const page = await browser.newPage({ viewport: { width: 344, height: 600 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.addInitScript((jazyk) => {
+  await page.addInitScript(({ jazyk, verze, stav }) => {
     const ted = Date.now();
     const data = { disabledSites: ['grok'], lastStatus: { ok: true, site: 'claude', at: ted - 180000 } };
     const otevrene = {
@@ -50,14 +52,14 @@ async function okno(stav, soubor, jazyk) {
     window.chrome = {
       i18n: { getMessage: (k) => (k === 'jazyk' ? jazyk : '') },
       storage: { local: { get: async () => data, set: async (o) => Object.assign(data, o) }, session: { get: async () => ({ otevrene }), set: async () => {} } },
-      runtime: { getManifest: () => ({ version: '0.29.0' }), sendMessage: async () => ({ paired: true, revoked: false, status: { expectedVersion: '0.29.0' } }) },
+      runtime: { getManifest: () => ({ version: verze }), sendMessage: async () => ({ paired: true, online: true, revoked: false, status: { expectedVersion: verze } }) },
       tabs: { query: async () => [{ id: 1 }], sendMessage: async (_t, m) => (m.type === 'agenteeq:diagnostika' ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 6, assistant: 5, zdroj: 'presne' }, generuje: true, limit: false, videl: { generovani: true, konec: false } } : null) },
     };
-    window.fetch = async () => new Response(JSON.stringify({ ok: true }));
-  }, jazyk);
+    window.fetch = async () => new Response(JSON.stringify({ ok: stav !== 'odpojeno' }));
+  }, { jazyk, verze: verzeRozsireni, stav });
   await page.goto(`${base}/extension/popup.html`);
   await page.waitForFunction(() => !['Chvilku…', 'One moment…'].includes(document.getElementById('headline').textContent));
-  await page.waitForFunction(() => document.querySelector('.radek--tato'));
+  if (stav !== 'odpojeno') await page.waitForFunction(() => document.querySelector('.radek--tato'));
   if (stav === 'sluzby') await page.locator('#sites-open').click();
   await page.mouse.move(0, 0); // kurzor nad řádkem by ho na snímku zvýraznil
   await page.evaluate(() => document.fonts.ready);
@@ -70,23 +72,50 @@ async function okno(stav, soubor, jazyk) {
 try {
   for (const jazyk of ['cs', 'en']) {
   const pripona = jazyk === 'cs' ? '' : `-${jazyk}`;
-  const vysky = { paired: await okno('sparovano', `okno-sparovano${pripona}.png`, jazyk), sluzby: await okno('sluzby', `okno-sluzby${pripona}.png`, jazyk) };
+  const vysky = {
+    paired: await okno('sparovano', `okno-sparovano${pripona}.png`, jazyk),
+    sluzby: await okno('sluzby', `okno-sluzby${pripona}.png`, jazyk),
+    odpojeno: await okno('odpojeno', `okno-odpojeno${pripona}.png`, jazyk),
+  };
   const cil = jazyk === 'cs' ? vystup : path.join(vystup, jazyk);
   await fs.mkdir(cil, { recursive: true });
   // 2) Kompozice přesně 1280 × 800, poměr 1:1 (obchod jiné rozměry odmítne).
   for (const n of [1, 2, 3]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const chyby = [];
+    const selhanePozadavky = [];
     page.on('pageerror', (e) => chyby.push(e.message));
-    page.on('requestfailed', (r) => chyby.push(`${r.url()} ${r.failure()?.errorText}`));
-    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}`);
-    await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(200);
-    const preteka = await page.evaluate(() => [...document.querySelectorAll('.canvas *')].some((el) => {
-      const r = el.getBoundingClientRect();
-      return r.width && (r.right > 1280.5 || r.bottom > 800.5 || r.left < -0.5 || r.top < -0.5);
+    page.on('requestfailed', (r) => selhanePozadavky.push({
+      url: r.url(), kind: r.resourceType(), error: r.failure()?.errorText,
     }));
-    if (chyby.length || preteka) throw new Error(`snímek ${n}: ${preteka ? 'obsah přetéká plátno' : chyby.join('; ')}`);
+    await page.goto(`${base}/branding/chrome-web-store/source/snimek-${n}.html?lang=${jazyk}&paired=${vysky.paired}&sluzby=${vysky.sluzby}&odpojeno=${vysky.odpojeno}`);
+    await page.evaluate(() => document.fonts.ready);
+    // Switching lang=en replaces the original Czech <img> URL on the same page.
+    // Chromium cancels the obsolete fetch with ERR_ABORTED; this is expected,
+    // but a missing/unreadable FINAL image is never acceptable for Store media.
+    try {
+      await page.waitForFunction(() => document.images.length > 0
+        && [...document.images].every((img) => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0),
+        null, { timeout: 8000 });
+    } catch {
+      const images = await page.evaluate(() => [...document.images].map((img) => ({
+        src: img.currentSrc || img.src, complete: img.complete, width: img.naturalWidth, height: img.naturalHeight,
+      })));
+      throw new Error(`snímek ${n}: požadované obrázky nejsou dekódované: ${JSON.stringify(images)}`);
+    }
+    await page.waitForTimeout(200);
+    const { preteka, obrazky } = await page.evaluate(() => ({
+      preteka: [...document.querySelectorAll('.canvas *')].some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width && (r.right > 1280.5 || r.bottom > 800.5 || r.left < -0.5 || r.top < -0.5);
+      }),
+      obrazky: [...document.images].map(img => img.currentSrc || img.src),
+    }));
+    const necekane = unexpectedScreenshotFailures(selhanePozadavky, obrazky)
+      .map((r) => `${r.url} ${r.error}`);
+    if (chyby.length || necekane.length || preteka) {
+      throw new Error(`snímek ${n}: ${preteka ? 'obsah přetéká plátno' : [...chyby, ...necekane].join('; ')}`);
+    }
     await page.screenshot({ path: path.join(cil, `snimek-${n}-1280x800.png`), clip: { x: 0, y: 0, width: 1280, height: 800 } });
     console.log(`✓ ${path.relative(vystup, path.join(cil, `snimek-${n}-1280x800.png`))}`);
     await page.close();

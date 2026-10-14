@@ -25,6 +25,8 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/ingest/web` | Data z rozšíření (token instalace + její `Origin`) → `{ ok, id }`; 401 = rozšíření spárovat znovu |
 | POST | `/api/extension/handoff` | `{ site }` (token instalace + `Origin`) → `{ prompt: string \| null, prefilled? }`; zadání jen jednou a jen pro danou službu |
 | POST | `/api/extension/hello` | `{ version? }` (token instalace + `Origin`) → stav rozšíření |
+| POST | `/api/extension/focus-agent` | Spárovaný **lokální** Chrome popup (per-installation token + ověřený `Origin`; žádný LAN/Tailscale ani content script) → `{ id }` pouze pro právě viditelný existující agent z extension přehledu → `{ ok, focused }` a jednosměrná událost do existujícího nativního macOS WKWebView. Nevrací klíč, text ani adresu přepisu; žádný proces se nespouští. `401` při chybě tokenu, `403` mimo hostitele, `404/422` neplatný či skrytý agent, `409` bez macOS desktopu. |
+| POST | `/api/extension/prehled` | Párované Chrome rozšíření (token instalace + `Origin`) → `{ zdravi: { stav, veta, pracuje, cekaNaTebe, selhalo, limit, procesyNevim: boolean }, rozhodnuti: Agent[], pracuji: Agent[] }`. Čísla odpovídají viditelným agentům na hlavní obrazovce: podřízené vlákno s existujícím rodičem se nezapočítává zvlášť, u opakované plánované úlohy se bere poslední běh; archivované záznamy se v živém souhrnu nezobrazují. `procesyNevim` informuje o neúplném výpisu procesů i při současně známé chybě nebo rozhodnutí, bez přenosu procesních metadat. Max. 4 položky na seznam, **žádné přepisy ani cesty**. |
 | POST | `/api/extension/obchod` | Jen z tohoto Macu → `{ ok, prohlizec, dry? }`; otevře stránku rozšíření v Chrome Web Store v prohlížeči, který rozšíření umí. 409 dokud adresa obchodu v `public/js/obchod.js` není, 422 když se prohlížeč nepodařilo otevřít |
 | POST | `/api/extension/pripojit` | Párování bez kódu. Jen z tohoto Macu, hlavička `Origin: chrome-extension://…` a volitelně `X-Agenteeq-Installation-Id` → `{ token, version }`, když ID rozšíření odpovídá Chrome Web Store nebo složce, kterou připravila aplikace; jinak 409 (spárovat jednorázovým kódem) |
 | POST | `/api/extension/pair-code` | Vytvoří `{ code, expiresAt }` (16 znaků, platí 10 minut); jen z tohoto Macu (403), vyžaduje lokální mutační ochranu |
@@ -196,7 +198,7 @@ interface SessionSummary {
   turnStartedAt: number; turnSteps: number;  // jen když working
   lastPrompt: string;
   pending: { kind: 'permission' | 'question' | 'plan'; text: string; at: number; source: string } | null;
-  limit: { reached: boolean; text: string; at: number; resetsAt: number | null } | null;
+  limit: { reached: boolean; text: string; label?: string; at: number; resetsAt: number | null } | null;  // text = surová hláška nástroje; label = rozpoznaný druh limitu (Claude Code), z něj a z resetsAt skládá deriveStatus důvod „{druh} vyčerpán · obnoví se {čas}“
   resume: string | null;      // příkaz pro Terminál
   url: string | null;         // webová konverzace
   hooked: boolean;
@@ -205,7 +207,9 @@ interface SessionSummary {
   transcriptSeq: number;
 }
 
-interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error' }
+interface TranscriptEntry { seq: number; at: number; role: 'user' | 'assistant' | 'tool' | 'result' | 'system' | 'error'; text: string; tool?: string; status?: 'ok' | 'error'; questions?: { question: string; options: string[] }[] }
+// questions = otázka agenta (Claude Code AskUserQuestion) i s popisky nabízených možností, max. 4 otázky
+// po 8 možnostech, oříznuté. `text` dál nese samotná znění otázek (hledání, starší klienti).
 
 interface Limit { id: string; provider: Provider; app: string; label: string; usedPercent: number | null; windowMinutes: number | null; resetsAt: number | null; reached: boolean; plan: string | null; text: string; at: number; source?: 'statusline' | 'desktop-usage' | 'transcript-quota' | 'plan-history' | string; overage?: 'on' | 'off' | null }
 // resetsAt = přesný čas obnovy od zdroje. Živý přehled neukazuje měření starší než 30 minut

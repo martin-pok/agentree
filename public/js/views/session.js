@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -42,6 +42,8 @@ const isLong = (t) => String(t || '').includes('\n') || String(t || '').length >
 
 // mcp__Claude_Browser__preview_logs → „Claude Browser · preview logs“
 function toolLabel(name) {
+  // Otázka agenta není technický krok: místo jména nástroje stejný popisek jako na kartě rozhodnutí.
+  if (name === 'AskUserQuestion') return kindLabel('question');
   const n = String(name || tr('Nástroj'));
   if (!n.startsWith('mcp__')) return n;
   const parts = n.split('__').slice(1).map((p) => p.replace(/^plugin_/, '').replace(/_/g, ' ').trim()).filter(Boolean);
@@ -60,6 +62,7 @@ function entryHtml(e) {
     case 'assistant':
       return `<div class="msg-head"><span class="msg-who">${tr('Agent')}</span>${time}</div><div class="msg-body md">${md(e.text)}</div>`;
     case 'tool':
+      if (e.questions?.length) return questionsHtml(e, time);
       return `<div class="tool-line"><span class="tool-name" title="${esc(e.tool || '')}">${esc(toolLabel(e.tool))}</span><span class="tool-text">${esc(firstLine(e.text))}</span>${time}</div>${isLong(e.text) ? `<details><summary>${tr('Celý vstup')}</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
     case 'result':
       return `<div class="tool-line result">${e.status === 'error' ? ICON.close : ICON.check}<span class="tool-text">${esc(firstLine(e.text) || tr('Hotovo'))}</span></div>${isLong(e.text) ? `<details><summary>${tr('Výstup')}</summary><pre>${esc(e.text)}</pre></details>` : ''}`;
@@ -68,6 +71,11 @@ function entryHtml(e) {
     default:
       return `<div class="msg-sys"><span>${esc(e.text)}</span>${time}</div>`;
   }
+}
+
+// Otázka agenta (AskUserQuestion): popisek „Ptá se tě“ a pod ním otázky i s možnostmi (ui.js#otazkyHtml).
+function questionsHtml(e, time) {
+  return `<div class="tool-line"><span class="tool-name" title="${esc(e.tool || '')}">${esc(toolLabel(e.tool))}</span>${time}</div>${otazkyHtml(e.questions)}`;
 }
 
 function progressHtml(p) {
@@ -362,7 +370,7 @@ function update() {
   fill(el, 'banner', s.status === 'needs_input'
     ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
     : s.status === 'limited'
-      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.limit?.text || s.reason)}</p>${s.limit?.resetsAt ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
+      ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.reason)}</p>${s.limit?.resetsAt && !s.limit.label ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.proces
@@ -372,7 +380,7 @@ function update() {
   fill(el, 'live', s.status === 'working'
     ? `<div class="live-strip" role="status">
         <span class="pulse" aria-hidden="true"></span>
-        <div class="live-text"><span class="live-activity">${esc(s.activity || tr('Pracuje'))}</span>
+        <div class="live-text"><span class="live-activity">${esc(vetaStavu(s))}</span>
           <span class="live-meta">${s.turnStartedAt ? `${tr('Pracuje už')} <span data-clock-from="${s.turnStartedAt}"></span>` : tr('Pracuje')}${s.turnSteps ? ` · ${s.turnSteps} ${plural(s.turnSteps, 'krok', 'kroky', 'kroků')}` : ''}</span></div>
         ${s.progress?.total ? progressHtml(s.progress) : '<div class="indeterminate" aria-hidden="true"><i></i></div>'}
       </div>`
@@ -432,6 +440,10 @@ function update() {
         </form>`;
         slot._html = '';
       }
+      // Na limitu bez známého času obnovy se odpovědět dá (src/odpoved.js) – poznámka říká, kdy projde.
+      const hint = slot.querySelector('.reply-hint');
+      const hintText = v.odpoved.pozn || tr('Agent pokračuje v této konverzaci na pozadí; průběh uvidíš tady i v přehledu.');
+      if (hint && hint.textContent !== hintText) hint.textContent = hintText;
     } else {
       const note = `<p class="reply-note">${esc(v.odpoved.proc)}${s.open?.length ? ` ${openButtons(s, { small: true, max: 1 })}` : ''}</p>`;
       if (slot._html !== note) { slot.innerHTML = note; slot._html = note; }

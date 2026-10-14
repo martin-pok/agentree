@@ -11,6 +11,7 @@
 <link rel="alternate" hreflang="cs" href="https://agentree-fawn.vercel.app/instalace">
 <link rel="alternate" hreflang="en" href="https://agentree-fawn.vercel.app/en/install">
 <link rel="alternate" hreflang="x-default" href="https://agentree-fawn.vercel.app/instalace">
+<link rel="icon" type="image/x-icon" sizes="32x32" href="/favicon.ico">
 <link rel="icon" type="image/svg+xml" href="/brand/agenteeq-mark-dark.svg">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta property="og:type" content="website">
@@ -22,7 +23,6 @@
 <meta property="og:image" content="https://agentree-fawn.vercel.app/icons/icon-512.png">
 <meta property="og:image:alt" content="Agenteeq logo">
 <meta name="twitter:card" content="summary">
-<link rel="preload" href="/fonts/urbanist-500.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/lp.css">
 <script type="module" src="/lp.js"></script>
@@ -35,7 +35,16 @@
   <nav class="nav-links" aria-label="Page sections"><a href="#mac">Mac</a><a href="#windows">Windows</a><a href="#rozsireni">Extension</a><a href="#potize">Troubleshooting</a></nav>
   <div class="lang" role="group" aria-label="Page language"><a href="/instalace" lang="cs" hreflang="cs" aria-label="Čeština">CZ</a><a href="/en/install" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
   <a class="btn btn--sm" href="/en">Home<span class="nav-cta-extra"> and tour</span></a>
+  <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-site-menu" data-mobile-menu-toggle><span class="hamburger-lines" aria-hidden="true"><i></i><i></i></span></button>
 </div></header>
+<div class="mobile-menu" id="mobile-site-menu" aria-hidden="true" inert data-mobile-menu>
+  <div class="mobile-menu-surface">
+    <div class="mobile-menu-header"><span class="mobile-menu-brand" aria-label="Agenteeq"><img src="/brand-mark-clean.svg" width="48" height="48" alt="" aria-hidden="true"></span><button type="button" class="mobile-menu-close" aria-label="Close menu" data-mobile-menu-close>×</button></div>
+    <nav aria-label="Mobile navigation"><a href="#mac">Mac</a><a href="#windows">Windows</a><a href="#rozsireni">Extension</a><a href="#potize">Troubleshooting</a></nav>
+    <a class="mobile-menu-download" href="/en">Home and tour <span aria-hidden="true">↗</span></a>
+    <div class="mobile-menu-languages" aria-label="Language"><a href="/instalace" lang="cs" hreflang="cs" aria-label="Czech">CZ</a><a href="/en/install" lang="en" hreflang="en" aria-current="page" aria-label="English">EN</a></div>
+  </div>
+</div>
 
 <main id="obsah">
 
@@ -49,6 +58,7 @@
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
     </div>
     <p class="specs"><span>Mac with Apple silicon (M1 or later)</span><span>macOS 14 or later</span><span>Windows 10 and 11 as a beta</span></p>
+    <p class="preview-option">Want to test the latest fixes? <a class="text-link" data-preview-mac data-preview-version="0.46.6" href="https://github.com/martin-pok/agentree/releases/download/v0.46.6/Agenteeq-0.46.6-macOS-arm64.dmg"><span data-preview-label>Download Mac Preview 0.46.6</span> <span aria-hidden="true">↗</span></a> · <a class="text-link" data-preview-notes href="https://github.com/martin-pok/agentree/releases/tag/v0.46.6">Release notes <span aria-hidden="true">↗</span></a>.</p>
     <div class="install-hero-scene" role="img" aria-label="Install Agenteeq: download the app, move to Applications, open">
 <div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Download the app</strong><small>Open the downloaded file</small></span></div>
 <span class="install-hero-link" aria-hidden="true"></span>
@@ -129,7 +139,7 @@
  <div class="extension-display-top"><span class="extension-dot"></span><span class="extension-dot"></span><span class="extension-dot"></span><span class="extension-address">chat.example</span></div>
  <div class="extension-display-body"><div class="extension-app"><img src="/brand-mark-clean.svg" alt="" width="32" height="32"><span>Agenteeq</span><span class="extension-linked">Connected <i></i></span></div>
  <div class="extension-conversation"><span class="extension-profile"><img src="/logos/openai.svg" alt="" width="24" height="24"></span><div><strong>Web conversation</strong><p>Available in your overview</p></div></div>
- <div class="extension-signal"><span></span><i></i><span></span></div><div class="extension-received"><img src="/brand-mark-clean.svg" alt="" width="25" height="25"><div><strong>One overview</strong><small>Your agents, in one place</small></div><b aria-hidden="true">✓</b></div></div>
+ <div class="extension-signal"><span></span><i></i><span></span></div><div class="extension-received"><img class="extension-received-robot" src="/robot-scout.svg" alt="" width="42" height="44"><div><strong>One overview</strong><small>Your agents, in one place</small></div><b aria-hidden="true">✓</b></div></div>
  <div class="extension-mascot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt=""></div></div>
     <div class="gatekeeper extension-instructions extension-store-card"><div class="extension-store-heading"><img src="/logos/chrome.svg" alt="" width="40" height="40"><div><strong>Google Chrome</strong><small>Chrome Web Store</small></div></div>
       <!-- rozsireni:obchod -->

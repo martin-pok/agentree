@@ -30,6 +30,8 @@ class FalesnyProud {
 globalThis.EventSource = FalesnyProud;
 const { connectStream } = await import('../public/js/api.js');
 
+async function flushPozdrav() { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); }
+
 function pripoj() {
   const stavy = [];
   const pozdravy = [];
@@ -37,11 +39,12 @@ function pripoj() {
   return { spojeni, stavy, pozdravy };
 }
 
-test('proud zavřený chybovou odpovědí serveru se znovu naváže sám', (t) => {
+test('proud zavřený chybovou odpovědí serveru se znovu naváže sám', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   FalesnyProud.vsechny.length = 0;
   const { spojeni, stavy, pozdravy } = pripoj();
   FalesnyProud.vsechny[0].pozdrav();
+  await flushPozdrav();
   FalesnyProud.vsechny[0].odmitnuti();
   assert.deepEqual(stavy, ['live', 'offline']);
   assert.equal(FalesnyProud.vsechny.length, 1, 'nové spojení se nezakládá hned, server může být přetížený');
@@ -49,12 +52,13 @@ test('proud zavřený chybovou odpovědí serveru se znovu naváže sám', (t) =
   t.mock.timers.tick(2000);
   assert.equal(FalesnyProud.vsechny.length, 2, 'po krátké prodlevě vznikne nové spojení');
   FalesnyProud.vsechny[1].pozdrav();
+  await flushPozdrav();
   assert.equal(stavy.at(-1), 'live');
   assert.equal(pozdravy.length, 2, 'nový pozdrav = okno si stáhne čerstvý snímek');
   spojeni.close();
 });
 
-test('opakované odmítnutí prodlužuje prodlevu, úspěch ji vrátí na začátek', (t) => {
+test('opakované odmítnutí prodlužuje prodlevu, úspěch ji vrátí na začátek', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   FalesnyProud.vsechny.length = 0;
   const { spojeni } = pripoj();
@@ -69,6 +73,7 @@ test('opakované odmítnutí prodlužuje prodlevu, úspěch ji vrátí na začá
   assert.deepEqual(prodlevy, [2000, 5000, 10000, 30000, 30000, 30000], 'nejvýš jednou za 30 s');
 
   FalesnyProud.vsechny.at(-1).pozdrav();
+  await flushPozdrav();
   const pred = FalesnyProud.vsechny.length;
   FalesnyProud.vsechny.at(-1).odmitnuti();
   t.mock.timers.tick(2000);
@@ -76,11 +81,12 @@ test('opakované odmítnutí prodlužuje prodlevu, úspěch ji vrátí na začá
   spojeni.close();
 });
 
-test('síťový výpadek nechá znovupřipojení na prohlížeči a nezakládá druhé spojení', (t) => {
+test('síťový výpadek nechá znovupřipojení na prohlížeči a nezakládá druhé spojení', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   FalesnyProud.vsechny.length = 0;
   const { spojeni, stavy } = pripoj();
   FalesnyProud.vsechny[0].pozdrav();
+  await flushPozdrav();
   FalesnyProud.vsechny[0].vypadek();
   t.mock.timers.tick(60000);
   assert.equal(FalesnyProud.vsechny.length, 1);
@@ -88,11 +94,12 @@ test('síťový výpadek nechá znovupřipojení na prohlížeči a nezakládá 
   spojeni.close();
 });
 
-test('obnov() po návratu do okna připojí zavřený proud hned, živý nechá být', (t) => {
+test('obnov() po návratu do okna připojí zavřený proud hned, živý nechá být', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   FalesnyProud.vsechny.length = 0;
   const { spojeni } = pripoj();
   FalesnyProud.vsechny[0].pozdrav();
+  await flushPozdrav();
   spojeni.obnov();
   assert.equal(FalesnyProud.vsechny.length, 1, 'živé spojení se nepřerušuje');
 

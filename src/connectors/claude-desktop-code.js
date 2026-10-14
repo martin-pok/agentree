@@ -23,7 +23,7 @@ export function remoteSessions(records) {
   for (const q of matching) {
     for (const page of q.state?.data?.pages || []) {
       for (const s of Array.isArray(page?.data) ? page.data : []) {
-        if (s?.type !== 'session' || !remoteId(s.id) || !Number.isFinite(Date.parse(s.updated_at))) continue;
+        if ((s?.type !== undefined && s.type !== 'session') || !remoteId(s?.id) || !Number.isFinite(Date.parse(s.updated_at))) continue;
         const old = sessions.get(s.id);
         if (!old || Date.parse(s.updated_at) > Date.parse(old.updated_at)) sessions.set(s.id, { ...s, _observedAt: Number(q.state?.dataUpdatedAt) || 0 });
       }
@@ -89,6 +89,9 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
     if (m.type === 'result') { s.running = false; s.toolWaitSince = 0; continue; }
     applyClaudeLine(st, s, { ...m, timestamp: new Date(ts).toISOString() });
   }
+  // Co o běhu říká uložený přepis: tah bez odpovědi a čas poslední zprávy. Seznam relací ho
+  // přebije, jen když je novější (applyReportedStatus).
+  s.remotePrepis = { running: Boolean(s.running), at: s.running ? s.runningAt : 0, activity: s.running ? s.activity : '' };
   const updated = Math.min(Date.parse(metadata.updated_at), now);
   const created = Date.parse(metadata.created_at);
   if (Number.isFinite(created) && created > 0 && created <= updated) s.startedAt = created;
@@ -101,7 +104,9 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   s.url = `https://claude.ai/code/${metadata.id}`;
   s.resume = null; s.cwd = ''; // Remote VM paths are never local folders/resume commands.
   s.model = clip(typeof metadata.session_context?.model === 'string' ? metadata.session_context.model : s.model, 80);
-  const repo = metadata.session_context?.sources?.find((x) => x?.type === 'git_repository');
+  // Zdroj je v REST tvaru `{ type: 'git_repository', url }`, ve výčtovém `{ git_repository: { url } }`.
+  const zdroje = Array.isArray(metadata.session_context?.sources) ? metadata.session_context.sources : [];
+  const repo = zdroje.map((x) => x?.type === 'git_repository' ? x : x?.git_repository).find((x) => x && typeof x === 'object');
   if (repo && typeof repo.url === 'string') {
     const match = /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)(?:\.git)?$/.exec(repo.url);
     if (match) s.repo = match[1].replace(/\.git$/, '');
@@ -114,27 +119,77 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   };
   return s;
 }
+// Hodnoty stavu relace. Interní API Claude Code na webu je píše jako výčet: `session_status`
+// „SESSION_STATUS_RUNNING“ / „…_IDLE“ / „…_ARCHIVED“, `status_bucket` „SESSION_STATUS_BUCKET_WORKING“ /
+// „…_BLOCKED“ / „…_REVIEW_READY“ / „…_COMPLETED“ / „…_FAILED“ a `post_turn_summary.status_category`
+// „need_input“ / „review_ready“ / „completed“ / „failed“ (ověřeno 13. 10. 2026 na skutečných relacích
+// téhož účtu). Seznam v cache Claude Desktopu má REST tvar (`type: 'session'`, zdroje s `type`) a
+// hodnoty v něm se čekají malými písmeny („running“, „requires_action“) – na disku zatím neověřené
+// (docs/CONNECTORS.md), proto se čte obojí. Dřív se čekání poznávalo jen podle „needs_input“ /
+// „needs_action“, které neposílá ani jedna podoba, takže vzdálený agent čekající na rozhodnutí
+// o pozornost nikdy nežádal.
+const hodnota = (v, predpona) => typeof v === 'string' ? v.trim().toLowerCase().replace(predpona, '') : '';
+const STAV_PRACUJE = new Set(['running', 'working', 'busy']);
+const STAV_CEKA = new Set(['requires_action', 'needs_input', 'need_input', 'needs_action', 'blocked']);
+const STAV_SELHAL = new Set(['failed', 'error']);
+export function hlasenyStav(metadata) {
+  const stav = hodnota(metadata?.session_status, /^session_status_/);
+  const skupina = hodnota(metadata?.status_bucket, /^session_status_bucket_/);
+  const kategorie = hodnota(metadata?.post_turn_summary?.status_category, '');
+  // Souhrn po tahu zůstává z minulého tahu i během nového, proto má běh přednost.
+  if (STAV_PRACUJE.has(stav) || STAV_PRACUJE.has(skupina)) return 'working';
+  if (STAV_CEKA.has(stav) || STAV_CEKA.has(skupina) || STAV_CEKA.has(kategorie)) return 'needs_input';
+  if (STAV_SELHAL.has(stav) || STAV_SELHAL.has(skupina) || STAV_SELHAL.has(kategorie)) return 'failed';
+  return '';
+}
+
+// Hlášený stav platí k okamžiku, kdy Claude Desktop seznam načetl (`observedAt`), ne k „teď“.
+// „Pracuje“ drží deriveStatus 2 minuty od načtení; starší hlášení je nečerstvé („stale“) se
+// vlastním důvodem. Dřív se nečerstvé „pracuje“ zahodilo a relace se ukázala jako „Hotovo, čeká
+// na další zadání“ – o agentovi, který podle posledních známých dat pracoval. Čekání na rozhodnutí
+// a selhání se samy nezmění, platí od `updated_at` (změna na serveru) bez ohledu na stáří načtení.
 function applyReportedStatus(s, metadata, observedAt, now) {
   const updated = Math.min(Date.parse(metadata.updated_at), now);
-  const fresh = observedAt > 0 && observedAt <= now + 1000 && now - observedAt < 2 * MIN;
-  s.running = fresh && ['running', 'working', 'busy'].includes(metadata.session_status);
-  s.runningAt = Math.min(observedAt || updated, now);
+  const observed = observedAt > 0 && observedAt <= now + 1000 ? Math.min(observedAt, now) : 0;
+  const hlaseno = hlasenyStav(metadata);
+  const prepis = s.remotePrepis || { running: false, at: 0, activity: '' };
+  const hlasenoAt = observed || updated;
   s.staleMs = 2 * MIN;
   s.toolWaitSince = 0;
-  s.activity = s.running ? ui('Pracuje podle stavu v Claude Desktopu') : '';
   s.pending = null; s.limit = null; s.failure = null;
-  const category = metadata.post_turn_summary?.status_category;
-  if (['failed', 'error'].includes(metadata.status_bucket) || category === 'failed') {
-    s.running = false;
+  s.staleReason = ui('Při posledním načtení pracoval · novější stav Claude Desktop neuložil');
+  if (hlaseno === 'working') {
+    s.running = true;
+    s.runningAt = Math.max(hlasenoAt, prepis.running ? prepis.at : 0);
+    s.activity = prepis.running && prepis.at >= hlasenoAt && prepis.activity ? prepis.activity : ui('Pracuje podle stavu v Claude Desktopu');
+    return;
+  }
+  if (prepis.running && prepis.at > hlasenoAt) {
+    // Uložený přepis je novější než seznam relací a tah v něm ještě neskončil.
+    s.running = true;
+    s.runningAt = prepis.at;
+    s.activity = prepis.activity || ui('Pracuje podle stavu v Claude Desktopu');
+    return;
+  }
+  s.running = false;
+  s.runningAt = hlasenoAt;
+  s.activity = '';
+  if (hlaseno === 'failed') {
     s.failure = { at: updated, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
-  } else if (fresh && (metadata.session_status === 'needs_input' || category === 'needs_action')) {
-    s.pending = { kind: 'question', at: s.runningAt, text: ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
+  } else if (hlaseno === 'needs_input') {
+    const otazka = metadata.post_turn_summary?.needs_action;
+    s.pending = { kind: 'question', at: updated, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
   }
 }
+// Kdy Claude Desktop seznam relací naposledy uložil – stav vzdálených agentů je přesně tak čerstvý.
+const kdy = (ts) => {
+  const d = new Date(ts);
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
 export function createClaudeDesktopCodeConnector({ config, store }) {
   const root = path.join(appSupportDir(config.sourceHome), 'Claude', 'IndexedDB');
   const dir = path.join(root, 'https_claude.ai_0.indexeddb.leveldb');
-  let watcher, exists = false, lastEventAt = 0, error = '', stopped = false;
+  let watcher, exists = false, lastEventAt = 0, error = '', stopped = false, seznamAt = 0;
   const known = new Set(), fingerprints = new Map();
   const queue = createFileQueue(sync, 60);
   async function sync() {
@@ -146,6 +201,7 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
       // Vytížení plánu z uložené stránky Usage – nezávisle na tom, jestli cache nese vzdálené relace.
       if (applyDesktopUsage(store, desktopUsage(records))) lastEventAt = Date.now();
       if (!data) { error = ui('Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'); return; }
+      seznamAt = data.observedAt;
       const cache = new Map();
       for (const { value } of records) {
         if (value?.product !== 'code' || value.tree?.kind !== 'code_session') continue;
@@ -190,6 +246,6 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
     async start() { await queue.run(dir); watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 }); },
     scan: () => queue.run(dir),
     stop() { stopped = true; watcher?.close(); queue.clear(); }, idle: () => queue.idle(),
-    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, watching: Boolean(watcher?.active), lastEventAt }),
+    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? (seznamAt ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.', known.size, kdy(seznamAt)) : ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size)) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, watching: Boolean(watcher?.active), lastEventAt }),
   };
 }

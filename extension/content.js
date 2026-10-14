@@ -1,8 +1,12 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
 // Posílá jen stav a počty – text zpráv ani název konverzace stránku neopustí (docs/ACCOUNTS.md).
 (() => {
+  // Manifest injection and post-update reinjection may both run on the same tab.
+  // Never create duplicate observers, intervals or duplicate telemetry streams.
+  if (globalThis.__agenteeqContentActive) return;
   const adapter = window.AgenteeqSites?.detect(location);
   if (!adapter) return;
+  globalThis.__agenteeqContentActive = true;
 
   let lastSig = '';
   let lastSentAt = 0;
@@ -28,7 +32,8 @@
     return {
       site: adapter.id,
       conversationId: String(adapter.conversationId(location)).slice(0, 200).replace(/[^\w.:-]/g, '-'),
-      url: location.href,
+      // Query and fragment may contain user prompts or access tokens. They never leave the tab.
+      url: `${location.origin}${location.pathname}`,
       generating,
       counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
       model: adapter.model(document) || '',

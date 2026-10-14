@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { ze } from '../predlozky.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
-import { glyph, ICON, BULB } from '../icons.js';
+import { glyph, ICON } from '../icons.js';
 import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
 import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa } from '../qr.js';
@@ -291,14 +291,6 @@ function mount(el) {
         ${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
       </nav>
       <div class="set-main">
-        <section class="guide-banner" data-enter style="--i:0">
-          <span class="guide-art" aria-hidden="true">${BULB}</span>
-          <div class="guide-text">
-            <strong>${tr('Průvodce Agenteeq')}</strong>
-            <p>${tr('Šest obrazovek o tom, co Agenteeq umí: přehled agentů, kdy je řada na tobě, limity a útrata, projekty, chaty z prohlížeče a kde zůstávají tvá data.')}</p>
-          </div>
-          <button class="btn btn--primary" type="button" data-welcome>${tr('Prohlédnout průvodce')}</button>
-        </section>
         ${GROUPS.map(([id, label, regions]) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h"${id === v.tab ? '' : ' hidden'} data-enter style="--i:1">
           <h2 class="set-group-title" id="${id}-h">${label}</h2>
           ${regions.map((r) => `<section class="card set-card" data-region="${r}"></section>`).join('')}
@@ -371,6 +363,16 @@ function mount(el) {
     if (motiv) { await vyberMotiv(motiv.dataset.themePick); return; }
     const lang = e.target.closest('button[data-lang]');
     if (lang) { await setLanguage(lang.dataset.lang); return; }
+    const updateChannel = e.target.closest('button[data-update-channel]');
+    if (updateChannel) {
+      const channel = updateChannel.dataset.updateChannel;
+      if (channel !== state.settings.updateChannel) {
+        state.settings = (await api.saveSettings({ updateChannel: channel })).settings;
+        toast(channel === 'preview' ? tr('Kanál Preview je zapnutý. Testovací verze mohou obsahovat chyby.') : tr('Budou se nabízet jen stabilní vydání.'));
+        update();
+      }
+      return;
+    }
     const updateMode = e.target.closest('button[data-update-mode]');
     if (updateMode) {
       const mode = updateMode.dataset.updateMode;
@@ -1020,7 +1022,7 @@ function update(topics) {
     <div class="set-divider"></div>
     ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko s robotem vpravo dole: najde dřívější konverzaci nebo poradí, kde co zapnout. Hledá jen na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
     ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), desc: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Ztišit pohyb')}</button></div>
+    <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
@@ -1263,8 +1265,9 @@ function update(topics) {
     <div class="set-row-inline"><span><strong>${tr('Otevřít v prohlížeči')}</strong><small>${tr('Odkaz platí jen pro {0} a do restartu aplikace.', tentoPocitac())}</small></span>
       <button class="btn btn--sm" type="button" data-action="browser-link">${tr('Zkopírovat odkaz')}</button></div>`);
 
-  /* Aktualizace: stav vzniká jen z posledního nedraftového releasu stejného repozitáře. */
-  const upd = state.updates || {};
+  /* Kanál aktualizací je výslovná volba: Stable je výchozí, Preview zahrnuje testovací releasy. */
+  const channel = state.settings.updateChannel === 'preview' ? 'preview' : 'stable';
+  const upd = (state.updates?.channel || 'stable') === channel ? (state.updates || {}) : { status: 'checking' };
   const mode = state.settings.updateMode === 'automatic' ? 'automatic' : 'manual';
   // Každý stav služby má vlastní větu: vypnutá kontrola ani vydání bez balíčku pro tento počítač
   // se nesmí tvářit jako probíhající kontrola.
@@ -1283,16 +1286,28 @@ function update(topics) {
           : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
+  const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   fill(el, 'updates', `
     ${head(ICON.refresh, tr('Aktualizace'), updDesc, stateBadge(upd.status === 'error' ? 'error' : upd.status === 'available' || upd.status === 'downloaded' ? 'connected' : 'idle', updTitle))}
-    <div class="appearance-options appearance-options--two" role="group" aria-label="${tr('Způsob aktualizací')}">
-      ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
-      ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+    <div class="set-choice">
+      <p class="set-choice-label" id="upd-channel-l">${tr('Kanál aktualizací')}</p>
+      <div class="appearance-options appearance-options--two" role="group" aria-labelledby="upd-channel-l">
+        ${channelOption('stable', tr('Stabilní'), tr('Pouze ověřená stabilní vydání'))}
+        ${channelOption('preview', tr('Preview · testovací'), tr('Novinky dřív, ale s rizikem chyb'))}
+      </div>
+    </div>
+    <div class="set-choice">
+      <p class="set-choice-label" id="upd-mode-l">${tr('Způsob aktualizací')}</p>
+      <div class="appearance-options appearance-options--two" role="group" aria-labelledby="upd-mode-l">
+        ${updateOption('manual', tr('Ručně'), tr('Nová verze se nejdřív ukáže, stažení potvrdíš'))}
+        ${updateOption('automatic', tr('Automaticky'), umiInstalovat() ? tr('Ověřený balíček se stáhne sám, instaluješ jedním klepnutím') : tr('Ověřený balíček se stáhne sám a počká ve Finderu'))}
+      </div>
     </div>
     <div class="set-actions">
       ${['available', 'downloaded'].includes(upd.status) && umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="install-update">${ICON.down}${tr('Aktualizovat na {0} a restartovat', upd.latestVersion)}</button>` : ''}
       ${upd.status === 'available' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="download-update">${ICON.down}${tr('Stáhnout aktualizaci')}</button>` : ''}
       ${upd.status === 'downloaded' && !umiInstalovat() ? `<button class="btn btn--primary" type="button" data-action="reveal-update">${ICON.folder}${tr('Otevřít aktualizaci')}</button>` : ''}
+      ${['available', 'downloaded'].includes(upd.status) && /^\d+\.\d+\.\d+$/.test(upd.latestVersion || '') ? `<a class="btn btn--sm" href="https://github.com/martin-pok/agentree/releases/tag/v${esc(upd.latestVersion)}" target="_blank" rel="noopener">${ICON.external}${tr('Co se změnilo ve verzi {0}', upd.latestVersion)}</a>` : ''}
       ${upd.status === 'disabled' ? '' : `<button class="btn btn--sm" type="button" data-action="check-updates">${ICON.refresh}${tr('Zkontrolovat nyní')}</button>`}
     </div>`);
 

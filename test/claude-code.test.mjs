@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { createSession, deriveStatus } from '../src/model.js';
+import { vytvorPrekladac } from '../public/js/texty-serveru.js';
+import EN from '../public/js/i18n/en.js';
 import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
 import { applyClaudeLine, newFileState, parseResets, describeTool, todosProgress } from '../src/connectors/claude-code.js';
 
@@ -116,8 +118,8 @@ test('vložený systémový kontext se nepočítá jako zadání', () => {
 });
 
 test('parseResets počítá nejbližší budoucí čas', () => {
-  const late = new Date(2026, 8, 10, 23, 30).getTime();
-  assert.equal(parseResets('resets 1am (Europe/Prague)', late), new Date(2026, 8, 11, 1, 0).getTime());
+  const late = Date.parse('2026-09-10T23:30:00+02:00');
+  assert.equal(parseResets('resets 1am (Europe/Prague)', late), Date.parse('2026-09-11T01:00:00+02:00'));
   const morning = new Date(2026, 8, 10, 10, 0).getTime();
   assert.equal(parseResets('resets 3:30pm', morning), new Date(2026, 8, 10, 15, 30).getTime());
   assert.equal(parseResets('bez času', morning), null);
@@ -126,13 +128,71 @@ test('parseResets počítá nejbližší budoucí čas', () => {
 // Týdenní limit s obnovou za šest dní se dřív četl jen podle hodiny – ukazoval obnovu dnes nebo zítra.
 test('parseResets: hláška s datem a starší tvar s epochou', () => {
   const now = new Date(2026, 8, 26, 10, 0).getTime();
-  assert.equal(parseResets("You've hit your weekly limit · resets Oct 2, 5pm (Europe/Prague)", now), new Date(2026, 9, 2, 17, 0).getTime());
+  assert.equal(parseResets("You've hit your weekly limit · resets Oct 2, 5pm (Europe/Prague)", now), Date.parse('2026-10-02T17:00:00+02:00'));
   assert.equal(parseResets('Weekly limit reached ∙ resets Oct 2 at 9:30am', now), new Date(2026, 9, 2, 9, 30).getTime());
   assert.equal(parseResets('resets Sep 30, 11pm', now), new Date(2026, 8, 30, 23, 0).getTime());
   const prosinec = new Date(2026, 11, 30, 10, 0).getTime();
   assert.equal(parseResets('resets Jan 3, 9am', prosinec), new Date(2027, 0, 3, 9, 0).getTime(), 'přes Nový rok');
   assert.equal(parseResets('Claude AI usage limit reached|1759327200', now), 1759327200000);
   assert.equal(parseResets('resets tomorrow 9am', now), null, 'neznámý tvar se nedomýšlí');
+});
+
+// Hláška uvádí zónu účtu („resets 11pm (Europe/Prague)“). Dřív se hodina brala v místní zóně
+// serveru, takže na počítači v jiné zóně vyšla obnova o hodiny vedle. Test běží schválně v zóně,
+// která není ani pražská, ani UTC.
+test('parseResets: hodina platí v zóně z hlášky, i přes přechod letního času', () => {
+  const puvodni = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  try {
+    const vecer = Date.parse('2026-10-10T20:00:00Z'); // 22:00 v Praze (CEST)
+    assert.equal(parseResets("You've hit your session limit · resets 11pm (Europe/Prague)", vecer), Date.parse('2026-10-10T21:00:00Z'));
+    assert.equal(parseResets('resets 11pm (UTC)', vecer), Date.parse('2026-10-10T23:00:00Z'));
+    // Po 23:00 pražského času míří tatáž hodina na další den.
+    assert.equal(parseResets('resets 11pm (Europe/Prague)', Date.parse('2026-10-10T21:30:00Z')), Date.parse('2026-10-11T21:00:00Z'));
+    assert.equal(parseResets('resets Oct 12, 9am (Europe/Prague)', vecer), Date.parse('2026-10-12T07:00:00Z'));
+    // Podzimní přechod (25. 10. 2026, 3:00 CEST → 2:00 CET): „zítra v 9“ je už v zimním čase,
+    // tedy 8:00 UTC – ne 7:00, jak by vyšlo přičtením 24 hodin k dnešku.
+    assert.equal(parseResets('resets 9am (Europe/Prague)', Date.parse('2026-10-24T12:00:00Z')), Date.parse('2026-10-25T08:00:00Z'));
+    // Jarní přechod (29. 3. 2026, 2:00 CET → 3:00 CEST).
+    assert.equal(parseResets('resets 5am (Europe/Prague)', Date.parse('2026-03-28T22:00:00Z')), Date.parse('2026-03-29T03:00:00Z'));
+    assert.equal(parseResets('resets 1am (Europe/Prague)', Date.parse('2026-03-28T22:00:00Z')), Date.parse('2026-03-29T00:00:00Z'));
+    // Neznámá zóna se nehádá: platí místní čas počítače jako u hlášky bez zóny.
+    assert.equal(parseResets('resets 11pm (Mars/Olympus)', vecer), parseResets('resets 11pm', vecer));
+  } finally {
+    if (puvodni === undefined) delete process.env.TZ;
+    else process.env.TZ = puvodni;
+  }
+});
+
+// Surová anglická hláška („You've hit your session limit · resets 11pm (Europe/Prague)“) se dřív
+// stala důvodem stavu, a tím textem v Agentech, v kartě rozhodnutí, v detailu i v upozornění.
+// Důvod je teď věta z rozpoznaných údajů – česky, a v angličtině přes slovník serverových textů.
+test('limit: důvod stavu je věta z druhu limitu a času obnovy, surová hláška jen jako záloha', () => {
+  const puvodni = process.env.TZ;
+  process.env.TZ = 'Europe/Prague';
+  try {
+    const hlaska = "You've hit your session limit · resets 11pm (Europe/Prague)";
+    const { s } = feed([
+      { type: 'user', timestamp: at(0), message: { content: 'Pokračuj' } },
+      { type: 'assistant', timestamp: at(1), isApiErrorMessage: true, message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: hlaska }] } },
+    ]);
+    const { status, reason } = deriveStatus(s, T0 + 2000);
+    assert.equal(status, 'limited');
+    assert.equal(reason, 'Limit relace vyčerpán · obnoví se 10. 9. 23:00');
+    assert.doesNotMatch(reason, /hit your|resets/);
+    assert.equal(s.limit.text, hlaska, 'surová hláška zůstává v datech');
+    const en = vytvorPrekladac(EN.server, EN.texty, 'en-GB');
+    assert.equal(en(reason), 'Session limit used up · resets 10/09, 23:00');
+
+    // Hláška bez času obnovy: věta bez času. Obnova v nerozpoznaném tvaru: raději surová hláška.
+    const bezCasu = feed([{ type: 'assistant', timestamp: at(1), isApiErrorMessage: true, message: { id: 'e2', model: '<synthetic>', content: [{ type: 'text', text: "You've hit your weekly limit" }] } }]).s;
+    assert.equal(deriveStatus(bezCasu, T0 + 2000).reason, 'Týdenní limit vyčerpán');
+    const divny = feed([{ type: 'assistant', timestamp: at(1), isApiErrorMessage: true, message: { id: 'e3', model: '<synthetic>', content: [{ type: 'text', text: "You've hit your weekly limit · resets tomorrow" }] } }]).s;
+    assert.equal(deriveStatus(divny, T0 + 2000).reason, "You've hit your weekly limit · resets tomorrow");
+  } finally {
+    if (puvodni === undefined) delete process.env.TZ;
+    else process.env.TZ = puvodni;
+  }
 });
 
 test('popis nástrojů a průběh úkolů', () => {

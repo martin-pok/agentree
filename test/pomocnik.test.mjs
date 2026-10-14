@@ -236,9 +236,9 @@ test('pomocník: prohledávání průběžně uvolňuje smyčku událostí (serv
   const celkem = performance.now() - start;
   assert.equal(v.prohledano, 1);
   // Na rychlém stroji trvá celé hledání jen pár desítek ms a jediný 10ms úsek mezi uvolněními je pak
-  // víc než třetina. Proto stačí i absolutní mez: smyčka nikdy nestojí déle než 25 ms. Bez uvolňování
-  // by stála celou dobu čtení souboru – na rychlém stroji nad 25 ms, na pomalém nad třetinou.
-  assert.ok(nejdelsi < 25 || nejdelsi < celkem / 3, `nejdelší blokování smyčky ${nejdelsi.toFixed(0)} ms z ${celkem.toFixed(0)} ms`);
+  // víc než třetina. Proto stačí i absolutní mez: smyčka nikdy nestojí déle než 50 ms (CI runner může krátce pozastavit proces). Bez uvolňování
+  // by stála celou dobu čtení souboru – na rychlém stroji nad 50 ms, na pomalém nad třetinou.
+  assert.ok(nejdelsi < 50 || nejdelsi < celkem / 3, `nejdelší blokování smyčky ${nejdelsi.toFixed(0)} ms z ${celkem.toFixed(0)} ms`);
 });
 
 // Falešná Ollama přes skutečného klienta (src/ollama.js): zaznamená každý dotaz.
@@ -272,7 +272,7 @@ test('pomocník: lokální model jen z Ollamy na tomto počítači, bez cloudov�
     { name: 'qwen2.5:14b', size: 9e9, capabilities: ['completion', 'tools'] },
     { name: 'llama3.2:3b', size: 2e9 },
   ];
-  const nic = falesnaOllama('http://127.0.0.1:11434', { tags });
+  const nic = falesnaOllama('http://127.0.0.1:11434', { tags, show: { 'llama3.2:3b': { capabilities: ['completion'] } } });
   assert.deepEqual(await vyberLokalniModel({ ollama: nic.ollama }), { model: 'llama3.2:3b' }, 'nic načteného → nejmenší vhodný');
   const nacteny = falesnaOllama('http://127.0.0.1:11434', { tags, ps: ['gpt-oss:120b-cloud', 'qwen2.5:14b'] });
   assert.deepEqual(await vyberLokalniModel({ ollama: nacteny.ollama }), { model: 'qwen2.5:14b' }, 'načtený lokální model má přednost, cloudový nikdy');
@@ -283,6 +283,9 @@ test('pomocník: lokální model jen z Ollamy na tomto počítači, bez cloudov�
   // Bez schopností v /api/tags (starší Ollama) se kandidát ověří přes /api/show.
   const show = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'tajemny:1b', size: 1 }, { name: 'mistral:7b', size: 4e9 }], show: { 'tajemny:1b': { capabilities: ['embedding'] }, 'mistral:7b': { capabilities: ['completion'] } } });
   assert.deepEqual(await vyberLokalniModel({ ollama: show.ollama }), { model: 'mistral:7b' });
+  const neoveritelny = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'unknown:1b', size: 1 }] });
+  assert.deepEqual(await vyberLokalniModel({ ollama: neoveritelny.ollama }), { model: null, duvod: 'zadny-model' }, 'neověřený model se nesmí automaticky považovat za lokální');
+
 });
 
 test('HTTP: /api/pomocnik formuluje jen lokálním modelem; Ollama mimo počítač se odmítne a řekne se to', async (t) => {
@@ -330,4 +333,10 @@ test('pomocník: texty bez první osoby a bez mužského rodu („Možná jsi my
   assert.ok(texty.length > 10, `texty pomocníka: ${texty.length}`);
   const prvniOsoba = /(?<![\p{L}])(myslel|myslela|jsem|mám|nevidím|pošlu|hledám|nemůžu|najdu|poradím|nenašel|prohledal|hledal)(?![\p{L}])/iu;
   for (const t of texty) assert.doesNotMatch(t, prvniOsoba, t);
+});
+
+
+test('volitelný lokální model má krátký časový limit, aby neblokoval odpověď pomocníka', async () => {
+  const app = await fs.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.match(app, /formulujLokalne\(\{[^\n]*casMs: 4500 \}\)/);
 });

@@ -1,7 +1,282 @@
 # Changelog
 
+## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu
+
+- **Vzdálení agenti Claude Code znovu pracují.** Claude Code spuštěný v cloudu z Claude Desktopu (nebo z webu a telefonu) se v Přehledu nikdy neukázal jako pracující a čekání na tvé rozhodnutí se od něj nikdy neohlásilo: stav se poznával podle hodnot, které Claude neposílá. Teď se čte stav i ve tvaru, v jakém ho posílá server („SESSION_STATUS_RUNNING“, skupina „WORKING“ / „BLOCKED“ / „FAILED“, „need_input“), a otázka agenta se ukáže v kartě rozhodnutí. Když Claude Desktop novější stav neuložil, karta neříká „Hotovo, čeká na další zadání“, ale „Při posledním načtení pracoval · novější stav Claude Desktop neuložil“; novější uložený přepis s rozběhnutým tahem má přednost. Nastavení → Zdroje agentů ukazuje, kdy Claude Desktop seznam relací naposledy uložil.
+- **Přesnější právní evidence (bez spuštění nových podmínek):** technické CZ/EN privacy upozornění na GitHub kontrolu aktualizací a zákaz citlivých GDPR žádostí ve veřejných Issues pochází z PR #221; obě živé stránky také uvádějí pravdivé datum poslední aktualizace 13. 10. 2026 místo neaktuálního tvrzení o účinnosti od 27. 9.; pracovní právní přehledy nyní správně rozlišují tuto dílčí opravu od nevyřešené identity správce, neveřejného GDPR kontaktu, retenčních dob a právní revize (#232). Automatický test brání návratu zastaralého interního popisu. Nejde o certifikaci, právní schválení ani zveřejněnou novou verzi aplikace.
+- PWA a Apple ikony nyní používají stejnou širokou hlavu s bílou anténou jako skutečně instalovaná Mac aplikace. Dřívější rastrové ikony měly odlišný tvar a fialovou anténu; CI je nově obrazově porovnává s oficiálním SVG.
+- Náhledy Přehledu na českém a anglickém webu jsou znovu zachycené ze současné ukázkové aplikace. Číslo neveřejné zdrojové verze je v marketingovém snímku skryté, aby nevypadalo jako dostupná aktualizace.
+- **Nastavení → Propojení si u nováčka neprotiřečí.** Řádek Claude Code a Codexu v „Napojených modelech“ psal „Agent na tomto počítači“ bez ohledu na to, jestli se program našel, a o dvě karty níž „Zdroje agentů“ hlásily „Claude Code na tomto počítači není“. Teď každá sekce říká jen to, co sama ověřila: Napojené modely ve štítku přítomnost programu a přihlášení (Nepodařilo se zjistit / Program nenalezen / Nenapojeno / Napojeno) a v podtitulku „Programovací agent“ s tím, kdy tu naposledy pracoval; Zdroje agentů to, jestli na počítači našly konverzace („Na tomto počítači nejsou žádné konverzace Claude Code“).
+- **Vyčerpaný limit česky a anglicky.** Místo surové hlášky „You've hit your session limit · resets 11pm (Europe/Prague)“ stojí v Agentech, v kartě rozhodnutí, v detailu i v upozornění věta z rozpoznaných údajů: „Limit relace vyčerpán · obnoví se 12. 10. 23:00“, anglicky „Session limit used up · resets 12/10, 23:00“. Surová hláška zůstává jen tam, kde se ji rozpoznat nepodařilo, a v přepisu konverzace.
+- **Čas obnovy limitu v zóně z hlášky.** Claude Code uvádí u obnovy zónu účtu („resets 11pm (Europe/Prague)“); čas se dřív bral v zóně počítače a na počítači v jiné zóně vyšel o hodiny vedle. Zóna se teď převádí přes Intl, správně i přes přechod letního času; neznámá zóna se nehádá.
+- **Odpověď agentovi na limitu.** Se známým časem obnovy by odpověď skončila stejnou hláškou, proto se pole nenabídne a místo něj stojí „Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.“ Bez známého času obnovy (stav je jen odhad) odpovědět jde – limit se mezitím mohl obnovit – a poznámka pod polem to říká.
+- **„Vyčerpáno“ se vejde do ukazatele.** Slovo v ukazateli limitu se dotýkalo oblouku; teď se jeho velikost řídí šířkou ciferníku a malý ukazatel je o něco větší.
+- **Průvodce na Přehledu.** Nesplněný první krok zní „Najít agenty na tomto počítači“ místo „Agenti na tomto počítači nalezeni“ a tlačítka v kartách stojí na jedné linii.
+- **Nastavení bez kolize s horní lištou.** V aplikaci pro Mac se lepivý nadpis Nastavení s akcemi vpravo nahoře (Připojeno, obnovit, hledat, upozornění) při otevření posunul o 100 px dolů a stál přes první kartu každé sekce. Lišta teď zůstává tam, kde stojí, nahoře v jedné linii s levým panelem, podmenu v jedné linii s nadpisem sekce, a při posouvání akce plynule ustoupí. Na užších oknech už nad lištou neprosvítá posouvaný obsah.
+- **Aktualizace: dvě volby, dvě skupiny.** Kanál (Stabilní / Preview) a způsob (Ručně / Automaticky) mají vlastní popisek a mezi sebou vzduch, obrysy vybraných karet se už nedotýkají.
+- **Útrata říká, co se počítá.** U starších ručních záznamů i u součtů stojí, že se do součtů, prognózy ani rozpočtu nepočítají. Dialog Rozpočty bez připojených nákladů za API řekne, že se rozpočet do té doby neukáže ani neupozorní.
+
+**Stav 14. 10. 2026: zveřejněné Preview** ([v0.46.12](https://github.com/martin-pok/agentree/releases/tag/v0.46.12), 06:45 UTC) s 8 ověřenými přílohami pro Mac, Windows a Chrome. Fyzické vyzkoušení na zařízení (instalace, aktualizace, přihlášení, Windows a Chrome) před zveřejněním neproběhlo. Stable Latest zůstává `v0.46.0`; Chrome Web Store se aktualizuje samostatně.
+
+## 0.46.11 – 2026-10-13 · aktuální značka a bezpečnější distribuce
+
+**Dostupnost:** tato sekce popisuje obsah verze 0.46.11 ve zdrojovém kódu. Až úspěšné CI, nový neměnný tag, skutečné binárky, nezávislý SHA-256 audit, UAT a zveřejnění Preview potvrzují, že je aktualizace dostupná. Nestačí nový commit nebo neveřejný Draft. Stable Latest a Chrome Web Store se aktualizují samostatně.
+
+### Co se změnilo
+
+- **Jeden oficiální robot napříč platformami:** odstraněné historické nativní soubory `desktop/Agenteeq-icon.png`, `desktop/Agenteeq.icns` a `desktop/windows/Agenteeq.ico` ze zdrojového Gitu. Mac generuje ICNS ze schváleného `desktop/Icon.swift`; Windows vytváří ICO z aktuálního SVG-odvozeného 128px Chrome/Dock masteru. Všechny malé varianty zachovávají proporce široké hlavy, dvě kapslové oči a jedinou bílou anténu.
+- **Čisté instalační balíčky:** Windows po sestavení odstraňuje staré pomocné obrázky ze své distribuční kopie. CI navíc kontroluje *skutečný rozbalený Windows ZIP*, aby nemohl obsahovat starý PNG/ICNS nebo trojzubec; macOS již generuje a balí čistou nativní ikonu.
+- **Správná ikona i na webu a ve Vercelu:** sedm jazykových webových vstupů a stránka 404 odkazují na stejnou sadu skutečného `favicon.ico` a kanonického robotího SVG. Přidané testy webových cest; samostatný avatar projektu ve Vercel dashboardu vyžaduje vlastní ověření.
+- **Aktuálnější odkazy na veřejné Preview:** český i anglický web umí načíst informace pouze o skutečně zveřejněném GitHub Preview s kontrolovaným instalačním souborem a nabídnout jeho přesný changelog. Neveřejné Drafty, chybné assety ani stahování nepodložené SHA-256 se nikdy nepropagují.
+
+### Ověření a distribuce
+
+- Opravy mají regresní testy značky, nativních buildů, reálného Windows ZIPu a bezpečné volby vydání. Nezávislý audit osmi skutečných souborů verze **0.46.10** prošel, ale neprokazuje nic o nových binárkách **0.46.11**.
+- Změny následují až po neměnném tagu 0.46.10. Staré Drafty 0.46.7 až 0.46.10 zůstávají nepozměněné. Distribuovat se musí pouze nový přesně otestovaný a schválený kandidát 0.46.11; reálné Mac/Windows/Chrome UAT, Google OAuth/avatar a publikace se nesmějí zaměňovat za CI.
+
+## 0.46.10 – 2026-10-13 · bezpečnější instalace aktualizací
+
+**Dostupnost:** popis změn sám o sobě nepotvrzuje zveřejnění ani instalaci aplikace. Ověř skutečně publikovaný GitHub release a jeho přílohy; soukromý Draft se přes automatický updater nenabízí. Chrome Web Store se aktualizuje samostatně a vyžaduje ověření veřejné verze.
+
+### Co se změnilo
+
+- **Bezpečnější instalace na Macu:** pokud se běžící Agenteeq do 60 sekund neukončí, aktualizační pomocník nepřepíše aplikaci za jejího běhu; odstraní pouze připravenou dočasnou kopii. K běžné výměně dojde teprve po skutečném ukončení procesu.
+- **Přísnější kontrola staženého ZIPu:** před instalací a zobrazením v souborech se kromě velikosti a SHA-256 ověřuje také identita otevřeného souboru a odmítnou se podstrčené symbolické odkazy i při souběžné výměně cesty.
+
+### Ověření a distribuce
+
+- Regresní testy simulují timeout pomocníka, bezpečný restart po skončení procesu a souběžnou záměnu ZIPu za symbolický odkaz s totožným obsahem. PR #206 prošel 8/8 CI na své přesné větvi; to není důkaz UAT nového instalačního balíčku 0.46.10.
+- Starší neměnné tagy a přílohy v0.46.9 a v0.46.8 se tímto releasem nepřepisují. Zveřejnění 0.46.10 jako Preview samo o sobě nemění stabilní GitHub Latest; Chrome Web Store vyžaduje zvláštní publikaci.
+
+## 0.46.9 – 2026-10-13 · jistější aktualizace a rychlejší první agent
+
+**Stav: zdrojový Preview kandidát; zatím není zveřejněný ani nainstalovaný.** Vydání vyžaduje CI pro přesný commit, nový neměnný tag, ověřený draft se skutečnými soubory, UAT a výslovnou publikaci v Preview. Stable Latest a Chrome Web Store se samotným commitem nemění.
+
+### Co se změnilo
+
+- **Přepínání Stable / Preview bez zbytečného stahování:** změna kanálu okamžitě ruší probíhající přenos již nepotřebného instalátoru a bezpečně uklidí částečný soubor. Opakovaná kontrola stejného kanálu stahování nepřeruší.
+- **Ověření těsně před instalací:** Mac znovu kontroluje celé SHA-256 a velikost ZIPu uloženého na disku, odmítá změněný, smazaný i podstrčený soubor a nabídne nové stažení bez spuštění poškozené aktualizace.
+- **Odolnost vůči chybným GitHub tagům:** updater nepřijímá číselné verze, které JavaScript neumí přesně reprezentovat.
+- **První konverzace Claude Code:** když poprvé vznikne adresář `projects/`, jednorázová následná kontrola zachytí JSONL i při ztracené události sledování. Bez trvalého procházení uživatelovy domovské složky.
+- **Stejné ikony rozšíření v balíčku a Store podkladech:** build kontroluje binární shodu schválených PNG, aby podklady obchodu neobsahovaly odlišnou ikonu než skutečné Chrome rozšíření.
+
+### Ověření a dostupnost
+
+- Automatizované regresní testy se vztahují na popsané změny; jejich úspěch sám o sobě nepotvrzuje instalaci ani aktualizaci na skutečném Macu.
+- Soubory v dřívějším neveřejném draftu **v0.46.8** zůstávají beze změny. 0.46.9 bude dostupná teprve po vytvoření a schválení vlastního vydání. Aktuální veřejné Preview zůstává **v0.46.6**, Stable **v0.46.0**.
+
+## 0.46.8 – 2026-10-12 · rychlejší návrat k agentům a spolehlivější aktualizace
+
+**Stav: Preview kandidát.** Tato sekce popisuje kód připravovaný do verze 0.46.8, nikoli
+již publikovanou instalaci. Dostupnost vyžaduje zelené 8/8 CI na přesném SHA, bezpečný
+sestavený balíček, živé UAT a zveřejnění GitHub Preview. Chrome Web Store má vlastní
+publikační proces; žádný soubor z tohoto commitu se automaticky neobjeví v obchodě.
+
+### Co uvidíš po instalaci vydané verze
+
+- **Kliknutí z Chrome do aplikace:** existující lokální agent se otevře přímo v nativním okně, bez neautorizované karty localhostu a bez spuštění duplicitního procesu.
+- **Filtry rozšíření:** Vše / Odpovídají / Limity; pravdivé upozornění na offline stav a automatické zotavení bez historických počtů.
+- **Stejný počet agentů:** Chrome a desktop vycházejí ze stejného výběru; SSE po opětovném připojení nepřehraje staré události přes nový snapshot.
+- **Lepší aktualizace:** velký archiv se ukládá po částech a dokončí až po ověření SHA-256; stejný současný požadavek sdílí jeden download, přepnutí kanálu nespustí starý instalační balíček.
+- **Google fotografie:** při chybném primárním odkazu se zkusí pouze bezpečně ověřený alternativní obrázek; žádné libovolné externí hosty.
+- **Poctivý web:** strukturovaná data nepředstírají zveřejnění vývojové verze; publikovaná verze se musí shodovat se stažitelnými přílohami.
+
+### Před zveřejněním
+
+- Kandidát musí projít CI na konkrétním commitu a musí být připravené, ověřené a nepřepisované release přílohy.
+- Google OAuth/avatar, skutečný návrat do Terminálu/iTerm/Warp a průchod instalace/aktualizace na Apple Silicon Macu **nejsou potvrzené** pouze automatickými testy.
+- Vydání Preview neovlivní stabilní Latest. Aktuální Chrome Store se nepovažuje za aktualizovaný bez ověření jeho veřejné verze.
+
+### Technický přehled změn od 0.46.7
+
+### automaticky sestavené release drafty
+
+- Po kompletním zeleném CI na přesném commitu `main` se nová správně verzovaná aplikace sama připraví k sestavení jako **neveřejný** GitHub release draft, bez dalšího ručního kroku tagování či spouštění buildu.
+- Přenos používá pouze již existující `release.yml`, očekávaný SHA commitu a kontrolu stejné verze v balíčku, extension, changelogu i „Co je nového“; nový commit nesmí dohnat zastaralý build.
+- Žádné automatické publikování do Stable, Preview ani Chrome Web Store. Před zveřejněním zůstávají vyžadovány podpis/checksumy, reálný Mac UAT a schválení vlastníka.
+
+### Chrome extension: pravdivá částečná detekce
+
+- Pokud macOS výpis procesů selže, Chrome popup zobrazí varování i v okamžiku, kdy zná několik běžících nebo chybových agentů. Známé počty zůstávají, nejistota se neskrývá ani neduplikuje.
+- API přenáší pouze boolean `procesyNevim`, žádný přepis, cestu ani soukromé údaje. Současné filtry konverzací zůstávají beze změny.
+- Změna je **po tagu v0.46.7**; žádný už sestavený DMG ani veřejné rozšíření se nepřepisuje.
+
+### přístup ke změnám přímo před aktualizací
+
+- **Jasný changelog:** když je nová ověřená verze dostupná, Nastavení → Aktualizace nabízí odkaz na poznámky příslušného zveřejněného GitHub releasu, nikoli pouze číslo aktualizace.
+- **Bez záměny draftu:** dialog „Co je nového“ ukazuje jen vydání, která jsou nanejvýš ve verzi skutečně nainstalované aplikace. Budoucí zdrojové záznamy se nevydávají za hotové a nainstalované.
+- **CZ/EN a QA:** odkaz a historické filtrování mají anglickou lokalizaci a regresní testy. Novinka se projeví až v nové verzi aplikace; není to změna ve starších instalátorech.
+
+
+### rychlejší a úspornější aktualizace
+
+- **Jeden skutečný download:** souběžné kliknutí na stažení stejného balíčku využije jediný HTTP přenos a jeden bezpečně ověřený archiv místo zbytečného vícenásobného stahování.
+- **Oddělené generace:** při přepnutí Stable / Preview či změně SHA-256 se starý požadavek nepřipojí k novému; nové vydání má vlastní stahování.
+- **Obnova po chybě:** přerušený společný přenos uvolní stav pro opakování a na disku nenechá neúplný balíček. Tři regresní testy ověřují deduplikaci, výměnu otisku a retry.
+- Změna vzniká po tagu v0.46.7; existující neveřejný draft a instalátory tím nejsou změněné.
+
+### otevření existujícího agenta z Chrome extension
+
+- **Přechod do nativní aplikace:** kliknutí na již zobrazeného lokálního agenta nově prochází pouze ověřeným tokenem rozšíření a přepne existující macOS okno. Neslibuje otevření localhostu v nové kartě Chromu, kde chyběla autorizace.
+- **Oprávnění:** žádný klíč WKWebView, text přepisu, nový agent, shell ani širší oprávnění pro Chrome; požadavek musí být z tohoto Macu a z vlastní stránky popupu.
+- **Ověření:** automatické testy tokenu, podvrženého původu, neznámého/archivovaného ID, nepřítomného desktopu a opakovaného kliknutí. Reálné UAT macOS zůstává samostatná podmínka.
+- **Distribuce:** není součástí již sestaveného 0.46.7 draftu ani aktuálního Chrome Store balíčku.
+
+### spolehlivější načtení profilové fotky
+
+- **Google foto:** pokud Supabase vrátí neplatné `avatar_url`, aplikace zkusí alternativní `picture` místo prázdné profilovky. Obě adresy musí vždy projít stejnou kontrolou HTTPS a povolené Google CDN.
+- **Testy:** kontrola škodlivé adresy, neplatného formátu, příliš dlouhé URL a priority validního primárního obrázku. Bez odesílání údajů mimo Google obrázkovou CDN.
+- **Ověření:** jde o automaticky testovanou opravu metadat; skutečné zobrazení Google fotky v macOS UI stále vyžaduje UAT a není touto změnou prohlášeno za hotové.
+
+### Chrome extension: pracovní filtr konverzací
+
+- **Rychlé soustředění:** při více otevřených webových AI chatech je možné filtrovat Vše / Odpovídají / Limity, s pravdivým počtem v každém stavu. Přepnutí nevyvolá žádné síťové ani cloudové požadavky a respektuje uživatelem vypnuté služby.
+- **Čerstvý stav má přednost:** otevřená karta používá diagnostiku skutečné stránky, ne starou hodnotu z background cache; ztráta aktuální diagnostiky nesmí skrýt dříve potvrzený chat.
+- **Přístupnost a minimalismus:** tlačítka mají `aria-pressed`, fungují z klávesnice, při nulovém výsledku se zobrazí věta, nikoliv prázdná plocha. Filtry se u jedné konverzace neukazují.
+- **Design QA:** odstraněna jednostranná mosazná linka u aktuální karty, místo ní subtilní celoplošné zvýraznění v design tokenech; nepřidává nové roboty ani ilustrace.
+- **Kontroly:** regresní `node:test` + skutečné popup interakce v Chromium/WebKit při světlém a tmavém tématu, kontrola limitu Chrome 600 px. Tento kód **není** v již vytvořeném draftu v0.46.7 ani v Chrome Web Store.
+
+### pravdivá verze na veřejném webu
+
+- **SEO bez zavádějícího čísla:** veřejné JSON-LD `SoftwareApplication` už neuvádí vývojovou verzi z `package.json` jako veřejně stažitelnou. Nejnovější Stable a nepublikovaný Preview draft nejsou totéž.
+- **Stejná pravidla CZ/EN:** obě jazykové varianty zachovávají validní strukturovaná data i odkaz ke skutečně zveřejněnému Stable a odstraňují neověřené `softwareVersion`.
+- **Regresní testy:** sestaví skutečný web, parsují JSON-LD v obou jazycích a kontrolují existující odkazy GitHubu. Bez placených služeb, bez změny release tagů.
+
+### živý stav po opětovném připojení
+
+- **SSE a obnova spojení:** události ze starého spojení se po restartu místní služby už nedohrají přes nový snapshot. Tím se nemůže znovu objevit odstraněný agent ani přepsat novější stav.
+- **20 současných agentů:** deterministické testy kontrolují obnovu, pořadí a jednorázové zpracování událostí bez přenosu přepisů nebo soukromých dat na cloud.
+- **Bez vizuální regrese:** žádné nové UI ani runtime závislosti; Mac, webové zobrazení a přístup z telefonu používají stejnou logiku připojení.
+- Tyto úpravy patří až do dalšího kandidáta, nikoli do už hotového draftu v0.46.7.
+
+### jednotné počty agentů
+
+- **Chrome extension počítá stejné agenty jako aplikace:** podřízené konverzace s viditelným rodičem se nezapočítají podruhé, u opakovaných naplánovaných úloh je v souhrnu pouze poslední běh.
+- **Jeden výběr v kódu:** nativní/dashboard rozhraní i souhrn pro Chrome používají stejnou čistou funkci, takže se pravidla nerozcházejí při dalších změnách.
+- **Regresní ověření:** syntetických 20 běžících agentů, rodič/pomocná vlákna, opakované úlohy, chybějící rodič a archiv; žádný text přepisu se rozšíření neposílá.
+- Tato oprava je určená až pro nové vydání po draftu 0.46.7; nevkládá se zpětně do hotového DMG ani Chrome Store.
+
+### úsporné a bezpečné stahování velkých aktualizací
+
+- **Nižší paměťové nároky:** aktualizační ZIP se nepřidržuje celý v RAM; ověřuje se jeho SHA-256 postupně a ukládá se přímo do privátního dočasného souboru.
+- **Atomické dokončení:** teprve po ověření přesné velikosti, obsahu a kanálu se soubor přejmenuje na finální ZIP; po chybě ani přerušeném spojení nezůstává neúplný balíček.
+- **Souběžnost:** paralelní požadavky používají různé dočasné názvy; starý požadavek nesmí dokončit aktualizaci jiného kanálu.
+- **Regresní testy:** osmimegabajtový proud bez volání `arrayBuffer`, přerušený přenos, špatný digest, překročená velikost i dva souběžné downloady.
+- Jde o změnu zdrojového kódu pro budoucí vydání; již sestavený draft v0.46.7 se nemění.
+
+### Chrome extension: pravdivý živý stav
+
+- **Živá dostupnost:** otevřený popup každých 5 sekund ověří skutečnou dostupnost lokální aplikace, nejen cache posledních agentů.
+- **Žádná falešná „Připojeno“:** při výpadku nebo selhání chráněného endpointu skryje staré počty a nabídne obnovení. Návrat aplikace se rozpozná automaticky, bez zavírání a otevírání popupu.
+- **Subtilní značka:** rozhraní nepřidává dekorace ani roboty navíc, používá existující vizuální stavy a české/anglické texty.
+- **Regresní ověření:** testy pokrývají neúspěšný HTTP health check, síťový výpadek, vyčištění starého stavu a návrat spojení.
+- **Distribuce:** existující Chrome Store verze ani již sestavený macOS draft v0.46.7 se tím nemění.
+
+### ochrana instalace Stable / Preview
+
+- **Bez downgrade:** terminálový instalátor Stable nesmí přepsat novější Preview verzi již nainstalovanou na Macu. Prohlíží jen GitHub metadata a odmítne starší balíček ještě před jeho stažením.
+- **Poškozená či neznámá verze:** pokud nelze z existujícího bundle ověřit číslo verze, instalátor jej odmítne přepsat.
+- **Regresní testy:** scénáře Stable 0.46.0 proti Preview 0.46.6, víceciferná čísla verzí a neplatná metadata, včetně zachování původní instalace.
+- Tyto úpravy vznikají **po vytvoření draftu v0.46.7** a nejsou součástí už připraveného DMG.
+
+### spolehlivější aktualizace
+
+- **Závody při přepínání kanálů:** staré HTTP odpovědi ani jejich chyby nemohou přepsat novější stav po přepnutí Preview → Stable → Preview.
+- **Kontrola aktualizací:** stažený ZIP přestává být nabídnutý jako platný při změně SHA-256 nebo velikosti přílohy na GitHubu, i kdyby název a verze zůstaly stejné.
+- **Stažení:** rozpracovaný požadavek nesmí dokončit aktualizaci, pokud byl v mezidobí přepnut kanál nebo změněn očekávaný digest. Regresní testy pokrývají souběžné požadavky bez skutečné sítě.
+- **Vydání:** stávající neveřejný draft 0.46.7 stále odpovídá dřívějšímu tagu SHA `00daf73b`; tyto následné opravy se do již vytvořeného DMG zpětně nedostanou.
+
+## 0.46.7 – 2026-10-12 · bezpečnější profilová fotografie z Googlu
+
+- **Bezpečné načítání fotografie:** HTTP přesměrování se kontrolují před každým dalším síťovým požadavkem. Profilový obrázek se nikdy vědomě nestahuje z jiné domény než schválené Google CDN.
+- **Přenos a velikost:** stahování fotky hlídá limit 300 kB průběžně; nepřiměřeně velký obrázek odmítne bez načtení celého obsahu.
+- **Regresní testy:** kontrolují nebezpečná přesměrování, bezpečné přesměrování mezi servery Googlu a omezení velikosti streamu. CI workflow už nespouští dvě kolidující sady testů pro jednu vývojovou větev.
+- **Stav ověření:** bezpečnostní scénáře byly ověřeny automatickými testy. Skutečné přihlášení Google, profilová fotografie a upgrade na uživatelském Macu vyžadují samostatné ruční UAT; Preview není stabilní vydání.
+
+## 0.46.6 – 2026-10-12 · srozumitelná rozhodnutí agentů
+
+- **Viditelná žádost o povolení:** stav „možná čeká na tvé povolení“ se zobrazí v Přehledu, seznamu agentů, detailu i projektu, pokud ho model odvodí. Není vydáván za potvrzenou interakci bez příslušných hooků.
+- **Správná cesta ke konverzaci:** konverzace Claude Code nebo Codexu spuštěné z příkazového řádku odkazují primárně na Terminál; u stále běžící konverzace se nevytváří duplicitní nové pokračování.
+- **Otázky v přepisu:** AskUserQuestion může ukázat přesné znění otázky a nabízené možnosti; nabídka je informační, vlastní odpověď probíhá v konverzaci.
+- **Pomocník a živý stav:** „Co na mě čeká?“ bere dostupný stav agentů, místo hledání v historických konverzacích; chybějící načtení ani neověřené živé spojení se neprezentuje jako jistota.
+- **Ověřování:** automatizované testy pokrývají chování konektorů, UI, přepis a odkazy. Otevření reálné konverzace a potvrzení dialogu na uživatelském Macu vyžaduje samostatné UAT.
+
+## 0.46.5 – 2026-10-12 · volitelné aktualizace Preview
+
+- **Stable / Preview:** v Nastavení lze zapnout testovací aktualizační kanál. Výchozí zůstává Stable. Režimy ručního a automatického stahování se nemění a instalace stále vyžaduje potvrzení.
+- **Bezpečné nabídky:** Preview vyhledá nejnovější veřejné vydání podle čísla verze, nikdy ne koncept, a nabídne pouze balíček se správnou platformou, tagem, velikostí a SHA-256. Stažený obsah se dál kontroluje kryptografickým otiskem.
+- **Bez nežádoucího downgradu:** návrat na Stable zruší starou nabídku Preview; opožděná odpověď ani stahování ji nemohou obnovit. Instalaci a chování na skutečném Macu je nutné před produkcí ověřit samostatně.
+
+## 0.46.4 – 2026-10-12 · ověřené nativní ikony a bezpečnější instalace
+
+- **macOS:** Dock používá skutečný distribuovaný `Agenteeq.icns` jako jediný zdroj ikony. Staré duplicitní ikony se do instalačního ZIPu nepřibalují; PNG náhled se generuje ze stejného souboru.
+- **Windows:** ikona EXE se vytváří proporčně ze stejného zdrojového Dock masteru jako Mac a Chrome extension; její vzhled kontroluje automatický regresní test.
+- **Ověřitelné stažení:** vydání obsahuje `SHA256SUMS.txt` s otisky skutečných instalačních příloh a během release buildu probíhá nezávislé ověření přes `sha256sum --check`.
+- **Stav instalace:** testy sestavení ověřují artefakty a balení, nikoli to, jak se ikona vykresluje na konkrétním uživatelském Macu. Developer ID notarizace a živé UAT zůstávají otevřené.
+
+## 0.46.3 – 2026-10-11 · stejná ikona v každé velikosti
+
+- **Jednotný vizuální master:** stejný poměr stran bílé robotické hlavy, očí a antény na Docku, v menu baru, na webu a v Chrome extension; menší verze se jen proporčně škálují, nikoli překreslují.
+- **Nativní a distribuční assety:** sjednocená macOS menu-bar kresba, reálné Chrome PNG soubory v rozlišení 16/32/48/128 px a stejná 128px ikona v Chrome Web Store.
+- **Ověření:** regresní testy hlídají identitu SVG masterů, soulad exportů a rozměry PNG. Skutečná instalace macOS a finální zobrazení v Docku stále vyžadují kontrolu na zařízení.
+
+## 0.46.2 – 2026-10-11 · spolehlivější připojení AI nástrojů
+
+### Co se mění pro uživatele
+
+- **Připojení Claude Code a Codexu:** stav „přihlášeno“ se potvrzuje až po ověření oficiálním CLI příkazem. Údaje o účtu a limitech se znovu načtou před potvrzením; případná nedostupnost dat je zobrazena místo nepravdivého úspěchu.
+- **Všech devět podporovaných webových služeb v Nastavení:** ChatGPT, Codex web, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot. U webových chatů aplikace správně označuje přijatá data z rozšíření, nikoliv neexistující OAuth autorizaci.
+- **Spolehlivější návrat z prohlížeče:** první událost rozšíření se neztratí při otevírání webu a opožděný výsledek zrušeného přihlášení nepřepíše rozhodnutí uživatele.
+- **Ochrana soukromí:** příchozí webové adresy musí odpovídat oficiální HTTPS doméně služby a neukládají se z nich parametry dotazu ani fragment.
+- **Přihlášení do Agenteeq přes Google:** potvrzení přihlášení nezaměňuje autentizaci s dokončenou cloudovou synchronizací; ta má samostatný stav.
+
+### Rozsah ověření
+
+Automatizované regresní testy kontrolují autorizaci, běh dialogů, zrušení, datovou čerstvost, bezpečné domény a jazykové verze. **Živé přihlášení a instalace na skutečném Macu s daným účtem stále vyžadují UAT.** Nejde o potvrzení, že všechny služby nabízejí OAuth integraci nebo že okamžitě poskytují kompletní spotřebu a předplatné.
+
 ## Nevydáno
 
+- **Web: instalace je plně ovladatelná i na telefonu (ve vývoji).** Česká i anglická instalační stránka nově používají totožné přístupné mobilní menu jako landing page; odkazy na Mac/Windows/rozšíření/potíže nezmizí pod breakpointem 900px. Automatické QA pokrývá i krátkou landscape obrazovku.
+- **Web: lehčí produkční CSS (ve vývoji).** Build zachovává všechny vizuální deklarace i pořadí kaskády, ale odstraňuje pouze komentáře mimo CSS řetězce. Responzivita počítá s dotykovými tablety širšími než 900px. Nové regresní testy chrání pravidla i obsah řetězců.
+
+
+- **Web: rychlejší a přesnější vykreslení (ve vývoji).** Odstraněno přednačítání nepotřebného Urbanist TTF; build přednačítá Satoshi WOFF2 jen tehdy, když je dostupné. Webové trackpady používají nativní plynulý posun a robotická hero scéna nepočítá parallax mimo viewport. CSS/JS mohou znovu použít validovanou cache.
+- **Web: citlivá responzivita a přístupnost (ve vývoji).** Safe-area odsazení pro iPhone v landscape, čitelná šířka na velkých monitorech a minimálně 44px navigační dotykové cíle. Přidány breakpointové a laboratorní Web Vitals testy pro CZ/EN homepage, instalaci a zásady soukromí v Chromiu a WebKitu.
+- **SEO (ve vývoji).** Webová ukázka rozhraní `/app` má vlastní `noindex` a crawler ji smí navštívit, aby značku respektoval. Šest veřejných stránek má regresní kontrolu canonical, hreflang, OG a priorit assetů. Skutečné Google PSI výsledky dosud nejsou ověřené; viz `docs/WEB-PERFORMANCE-AUDIT-0461.md`.
+
+
+- **Oddělení limitů více Claude účtů (ve vývoji).** Pokud aplikace bezpečně rozpozná účet konkrétního běhu, jeho 5hodinové, týdenní a extra-usage okno již nebude sdílet stejné ID s jinou licencí. Úspěch u jiné licence nesmí odstranit její vyčerpaný limit. Neověřené víceúčtové údaje zůstávají neznámé, nikoli sloučené. Čeká na CI a ověření na skutečných účtech.
+
+
+- **Přesnější přiřazení konverzací ke správnému profilu Claude Code (ve vývoji).** Když je identita konkrétního CLI profilu ověřená a přepis patří jednoznačně tomuto profilu, Agenteeq ji přiřadí ke konverzaci a aktualizuje její živý souhrn. Neznámé a kolidující profily se nepřiřazují odhadem. Ostatní poskytovatelé a kompletní per-account limity zatím zůstávají nedokončené.
+
+## Nevydáno
+
+### Co se změní pro uživatele ve verzi 0.46.1
+
+> Následující změny jsou ve vývojové větvi. Nejsou automaticky dostupné v instalované aplikaci ani ve veřejném Chrome Web Store. Označení „vydáno“ vyžaduje samostatné ověření release.
+
+- **Přehlednější hlavní okno na Macu:** obsah a horní akce už nezasahují do prostoru systémového záhlaví; banner průvodce byl odstraněn z Nastavení, kde překrýval horní ovládání. Průvodce samotný zůstává dostupný.
+- **Živý počet pracujících agentů v horní liště macOS:** vedle ikony se zobrazuje aktuální počet; upozornění se s ním nepletou. Nula znamená žádnou právě evidovanou práci a pomlčka neznámý stav při výpadku. Počet se přepočítává i při časovém vypršení stavu.
+- **Spolehlivější živý přehled:** aplikace odolává překrývajícím se SSE spojením a opožděným odpovědím API, které by jinak mohly vrátit staré údaje.
+- **Srozumitelnější Pomocník:** drží polohu při čtení starších zpráv, poradí s fungováním aplikace a méně často nabízí nerelevantní navigaci.
+- **Dovednosti mají v navigaci ikonu blesku.** Popisek nastavení pohybu se mění na „Omezit pohyb“ (EN „Reduce motion“).
+- **Čistší identita značky:** rozšíření a podklady pro Chrome Web Store mají sjednocenou robotí hlavu; starý trojzubec a fialová anténa nejsou schválené motivy. Nový rozšířený filled logomark byl schválen pro Dock, jeho finální pixelově přesný vektor a aplikace do všech distribuovaných assetů stále vyžadují ověření.
+- **Rozšíření pro Chrome:** přehlednější časové stavy a lepší zotavení z přerušení spojení; nové CZ/EN snímky jsou připravené v repozitáři, **nejsou dosud potvrzené jako veřejně zveřejněné**.
+- **Sdílení prodejního webu:** česká i anglická landing page mají doplněná metadata pro obrázky na sociálních sítích. Produkční nasazení a SEO audit zůstávají samostatnými úkoly.
+
+### Ověření a dostupnost
+
+- **Zdrojový kód:** pracovní větev `work/app-extension-reliability-0461`, PR #130.
+- **Automatické testy:** stav se posuzuje výhradně podle CI na přesném HEAD commitu.
+- **Reálný Mac, Windows a Chrome:** ruční UAT dosud nelze označit jako hotové.
+- **Veřejné vydání:** poslední ověřené GitHub vydání je `v0.46.0`; Chrome Web Store ještě vyžaduje nové publikování a kontrolu veřejné verze.
+
+
+- **Hlava robota je stejná v macOS liště i ikonách aplikace.** Ikona vedle živého počtu agentů používá přesný tvar z oficiální značky. Náhled aplikace a ikona pro Windows už nemají starou fialovou anténu.
+- **Rozšíření a podklady pro Chrome Web Store používají současnou značku.** Ikony rozšíření, hlavička okna a malí roboti v seznamu mají stejné proporce jako logo Agenteeq. České i anglické snímky a propagační plochy vycházejí z aktuálního světlého vzhledu a skutečného okna rozšíření.
+- **Horní obsah v aplikaci pro Mac už nekoliduje se záhlavím.** Nadpis a horní akce začínají na stejné výšce jako levý panel, pod 44px oblastí tlačítek okna a tažného pruhu. Při zúžení okna zůstává hlavní obsah pod touto oblastí a navigace přejde dolů.
+- **Pomocník drží místo v historii a odpovídá na obecné otázky.** Při čtení starších zpráv už nové vykreslení neposune chat na konec; automatický posun zůstává při vlastní zprávě a u dna. Na „Jak tahle app funguje?“ v češtině i angličtině vysvětlí Přehled, agenty, projekty a rozdíl mezi tokeny a účtovanými náklady bez nesouvisejících odkazů.
 - **„Hotovo“ jen u agenta, který opravdu doběhl.** Karty v „Právě teď“ psaly „Hotovo“ u každé konverzace, která čeká na zadání – i když agent uprostřed práce přestal odpovídat nebo na zadání vůbec neodpověděl. Teď mají karty stejný štítek a barvu jako seznam Agentů a detail („Čeká na zadání“, „Potřebuje tebe“, „Pracuje“…) a pod ním skutečný důvod: „Hotovo, čeká na další zadání“, „Delší dobu bez aktivity“, nebo „Zatím bez odpovědi agenta“. Stejný důvod je u nedoběhlé konverzace vidět i na Agentech a v detailu a robot u ní neříká „Hotovo“. V boxu Stav agentů se počet jmenuje „potřebuje tebe“ jako všude jinde.
 - **Detail konverzace neukazuje odpověď z předchozí konverzace.** Při přechodu z jedné konverzace do druhé se pod přepisem chvíli (a když se načtení nepovedlo, natrvalo) ukazovalo pole „Odpovědět agentovi“ nebo důvod, proč odpovědět nejde, z té předchozí.
 - **Odpověď agentovi bez rizika rozdvojené konverzace.** Když se u běžícího Claude Code nepodaří zjistit, v jaké složce pracuje, nebo když se běh z Agenteeq teprve zastavuje, aplikace odpověď nepošle a řekne to. Složku běžícího agenta se navíc pokusí zjistit znovu, když se to napoprvé nepovede.
@@ -38,6 +313,13 @@
 
 - Robot v sekci Soukromí jemně sleduje kurzor, když návštěvník používá myš; na dotyku a při omezeném pohybu zůstává v klidu.
 - Ukázkový projekt má střídmý monogram místo výrazného provizorního loga. Český text na úvodu a stránce instalace prošel jazykovou úpravou; anglické texty zachovávají stejný význam.
+
+## 0.46.1 – 2026-10-10 · Opravy brandingu a instalace
+
+- Sjednocená dvoubarevná značka Agenteeq s bílou anténou napříč desktopovou aplikací, webem a Chrome extension.
+- Nahrazeny zastaralé ikonové podklady rozšíření a odstraněn původní větvený symbol ze zdrojů propagačních vizuálů.
+- Opraveno renderování podkladů Chrome Web Store pomocí Playwright; automatické snímky nyní čtou aktuální verzi rozšíření z manifestu.
+- Rozšířené regresní testy brandingu a kontroly instalace na macOS a Windows.
 
 ## 0.46.0 – 2026-10-09 · Nový úvod webu s roboty, robotí profilové obrázky
 

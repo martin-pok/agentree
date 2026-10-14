@@ -29,9 +29,24 @@ const output = 'dist/qa-site';
 // Stránka slibuje, že nic nedotahuje z cizích serverů. Tohle to drží: všechno mimo vlastní
 // původ se odmítne a zapíše. Zároveň to brání tomu, aby klik na Stáhnout odvedl kontrolu pryč.
 const puvod = new URL(url).origin;
+// Deterministic, read-only GitHub PUBLIC release metadata. QA must not depend on
+// live internet, nor disable external-request blocking to test Preview links.
+const PREVIEW_API = 'https://api.github.com/repos/martin-pok/agentree/releases?per_page=20';
+const PREVIEW_FIXTURE = JSON.stringify([{
+  tag_name: 'v0.46.10', draft: false, prerelease: true,
+  assets: [{
+    name: 'Agenteeq-0.46.10-macOS-arm64.dmg',
+    size: 50_000_000, digest: 'sha256:' + 'a'.repeat(64),
+    browser_download_url: 'https://github.com/martin-pok/agentree/releases/download/v0.46.10/Agenteeq-0.46.10-macOS-arm64.dmg',
+  }],
+}]);
 async function jenMistni(page, cizi) {
   await page.route('**/*', (route) => {
     const cil = route.request().url();
+    if (cil === PREVIEW_API) return route.fulfill({
+      status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+      body: PREVIEW_FIXTURE,
+    });
     if (cil.startsWith(puvod) || cil.startsWith('data:') || cil.startsWith('blob:')) return route.continue();
     cizi.push(cil);
     return route.abort();
@@ -43,6 +58,28 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Verify real browser/CSP integration, not merely the metadata parser.
+      // Public metadata is intercepted above with an exact deterministic
+      // fixture; the production site fetches only near the download block.
+      {
+        const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+        const cizi = [];
+        const chyby = [];
+        await jenMistni(p, cizi);
+        p.on('pageerror', e => chyby.push(e.message));
+        await p.goto(url + '/instalace');
+        await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
+        await p.waitForFunction(() => document.querySelector('[data-preview-mac]')?.getAttribute('href')
+          ?.includes('/releases/download/v0.46.10/'), null, { timeout: 5000 });
+        assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
+          'https://github.com/martin-pok/agentree/releases/tag/v0.46.10');
+        assert.match(await p.locator('[data-preview-label]').innerText(), /0\.46\.10/);
+        assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
+          /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/);
+        assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');
+        assert.deepEqual(chyby, [], 'Preview must not cause an unhandled browser exception');
+        await p.close();
+      }
       // Robot u karet soukromí sleduje myš jen při povoleném pohybu. Ověřené na
       // skutečně vykresleném SVG v obou jádrech, včetně návratu očí do středu.
       {
@@ -183,7 +220,13 @@ try {
             const box = (s) => document.querySelector(s)?.getBoundingClientRect();
             const lang = box('.nav .lang'), cta = box('.nav .btn'), znacka = box('.nav .brand');
             const pres = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && cta && cta.right <= innerWidth), prekryv: Boolean(pres(lang, cta) || pres(lang, znacka)) };
+            const mobileMenu = document.querySelector('[data-mobile-menu-toggle]');
+            const mb = mobileMenu?.getBoundingClientRect();
+            const actionVisible = innerWidth <= 900
+              ? Boolean(mb && mb.width >= 44 && mb.height >= 44 && mb.right <= innerWidth)
+              : Boolean(cta && cta.width > 0 && cta.right <= innerWidth);
+            return { videt: Boolean(lang && lang.left >= 0 && lang.right <= innerWidth && actionVisible),
+              prekryv: Boolean(pres(lang, innerWidth > 900 ? cta : mb) || pres(lang, znacka)) };
           });
           assert.deepEqual(lista, { videt: true, prekryv: false }, `${kde}: lišta`);
           const okraje = await page.evaluate(() => {
@@ -349,10 +392,12 @@ try {
         // Wait for the actual target position instead of mistaking that pause for completion.
         await p.waitForFunction(() => {
           const top = document.getElementById('soukromi').getBoundingClientRect().top;
-          return top >= 0 && top <= 80;
+          const header = document.querySelector('.nav').getBoundingClientRect().height;
+          return top >= header && top <= header + 20;
         }, null, { timeout: 7000 });
         const sekce = await p.evaluate(() => document.getElementById('soukromi').getBoundingClientRect().top);
-        assert.ok(sekce >= 0 && sekce <= 80, `${engine}: odkaz na sekci skončil s nadpisem na ${sekce} px`);
+        const hlavicka = await p.evaluate(() => document.querySelector('.nav').getBoundingClientRect().height);
+        assert.ok(sekce >= hlavicka && sekce <= hlavicka + 20, `${engine}: odkaz na sekci skončil na ${sekce} px, hlavička má ${hlavicka} px`);
         await p.waitForFunction(() => document.querySelector('.nav-links a[href="#soukromi"]')?.getAttribute('aria-current') === 'location');
         assert.deepEqual(chyby, [], `${engine}: chyby při plynulém posouvání`);
         await p.close();
@@ -446,6 +491,151 @@ try {
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 4000 });
       assert.equal(await motionPage.evaluate(podleHodin), 0, 'No perpetual decorative animation');
       await motionPage.close();
+      // Repeatable local Core Web Vitals diagnostics for desktop and mobile.
+      // These are lab readings under localhost and MUST NOT be advertised as
+      // Google PageSpeed scores or 75th-percentile real-user experience.
+      const vitals = [];
+      for (const width of [390, 1440]) {
+        const page = await browser.newPage({ viewport: { width, height: 900 },
+          reducedMotion: 'reduce', colorScheme: 'light' });
+        await jenMistni(page, []);
+        await page.addInitScript(() => {
+          // Null means unsupported/unavailable, not a claimed perfect zero.
+          window.__agenteeqVitals = { lcp: null, cls: null, longTasks: null };
+          const watch = (kind, cb) => {
+            if (!window.PerformanceObserver?.supportedEntryTypes?.includes(kind)) return false;
+            try {
+              new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) cb(entry);
+              }).observe({ type: kind, buffered: true });
+              return true;
+            } catch { return false; }
+          };
+          watch('largest-contentful-paint', entry => { window.__agenteeqVitals.lcp = entry.startTime; });
+          if (watch('layout-shift', entry => {
+            if (!entry.hadRecentInput) window.__agenteeqVitals.cls += entry.value;
+          })) window.__agenteeqVitals.cls = 0;
+          if (watch('longtask', () => { window.__agenteeqVitals.longTasks++; })) {
+            window.__agenteeqVitals.longTasks = 0;
+          }
+        });
+        const resp = await page.goto(url, { waitUntil: 'load' });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(250);
+        const values = await page.evaluate(() => {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const resources = performance.getEntriesByType('resource');
+          return {
+            ...window.__agenteeqVitals,
+            domContentLoaded: Math.round(nav?.domContentLoadedEventEnd ?? 0),
+            loadEvent: Math.round(nav?.loadEventEnd ?? 0),
+            resources: resources.length,
+            resourceBytes: Math.round(resources.reduce((sum, item) =>
+              sum + (item.transferSize || 0), 0)),
+          };
+        });
+        vitals.push({ engine, viewport: width, ...values });
+        assert.equal(resp.status(), 200, `${engine} ${width}: landing request`);
+        assert.ok(values.cls === null || (Number.isFinite(values.cls) && values.cls <= 0.1),
+          `${engine} ${width}: layout shift score ${values.cls}`);
+        await page.close();
+      }
+      await fs.writeFile(`${output}/web-vitals-${engine}.json`, JSON.stringify(vitals, null, 2));
+      // Installation guide must never lose its section navigation on mobile,
+      // including very short landscape viewports with safe-area constraints.
+      for (const route of ['/instalace', '/en/install']) {
+        const mobile = await browser.newPage({
+          viewport: { width: 390, height: 844 }, reducedMotion: 'reduce',
+        });
+        await jenMistni(mobile, []);
+        await mobile.goto(url + route);
+        for (const [width, height] of [[390, 844], [568, 320], [844, 390]]) {
+          await mobile.setViewportSize({ width, height });
+          const toggle = mobile.locator('[data-mobile-menu-toggle]');
+          assert.equal(await toggle.isVisible(), true, `${engine} ${route} ${width}: mobile menu missing`);
+          await toggle.click();
+          const state = await mobile.evaluate(() => {
+            const overlay = document.querySelector('[data-mobile-menu]');
+            const close = overlay.querySelector('[data-mobile-menu-close]');
+            const r = close.getBoundingClientRect();
+            return {
+              expanded: document.querySelector('[data-mobile-menu-toggle]').getAttribute('aria-expanded'),
+              hidden: overlay.getAttribute('aria-hidden'),
+              locked: document.body.style.overflow,
+              focus: document.activeElement === close,
+              accessibleClose: r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 2
+                && r.left >= -2 && r.bottom <= innerHeight + 2,
+              horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+            };
+          });
+          assert.deepEqual(state, { expanded: 'true', hidden: 'false', locked: 'hidden',
+            focus: true, accessibleClose: true, horizontalOverflow: false },
+          `${engine} ${route} ${width}x${height}: menu accessibility or layout`);
+          await mobile.keyboard.press('Escape');
+          assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+          assert.equal(await mobile.evaluate(() => document.body.style.overflow), '');
+        }
+        await mobile.close();
+      }
+      // Breakpoint sweep: recycle two pages instead of reloading dozens of times.
+      // Covers narrow phones, foldable/dual-pane logical widths, both sides of every
+      // major CSS breakpoint, tablets, laptops and ultrawide monitors.
+      // A future phone's exact panel size is unknown; use fluid layout assertions.
+      for (const language of ['/', '/en', '/instalace', '/en/install', '/soukromi', '/en/privacy']) {
+        const responsive = await browser.newPage({
+          viewport: { width: 390, height: 844 },
+          reducedMotion: 'reduce',
+          colorScheme: 'light',
+        });
+        const errors = [];
+        await jenMistni(responsive, errors);
+        responsive.on('pageerror', e => errors.push(e.message));
+        await responsive.goto(url + (language === '/' ? '' : language));
+        for (const width of [320, 344, 360, 390, 402, 430, 600, 620, 621, 700,
+          720, 760, 768, 820, 900, 901, 1024, 1280, 1536, 1920, 2560, 3840]) {
+          await responsive.setViewportSize({ width, height: width <= 430 ? 844 : 950 });
+          const layout = await responsive.evaluate(() => {
+            const vw = document.documentElement.clientWidth;
+            const selectors = ['.nav-in', '.hero .unit-head', '.hero-figure',
+              '#prohlidka .tiles', '#propojeni .integration-tools', '.site-footer .foot-in',
+              '.install-page .install-hero-scene', '.install-page .extension-layout', '.doc-body'];
+            const overflow = selectors.flatMap(selector => [...document.querySelectorAll(selector)]
+              .filter(el => {
+                const r = el.getBoundingClientRect();
+                return r.width > 0 && (r.right > vw + 2 || r.left < -2);
+              }).map(el => el.className || el.tagName));
+            const menu = document.querySelector('[data-mobile-menu-toggle]');
+            const mobile = Boolean(menu && getComputedStyle(menu).display !== 'none');
+            const screenHasOverflow = document.documentElement.scrollWidth > vw + 2;
+            const shortTargets = [...document.querySelectorAll(
+              '.nav .brand, .nav .lang a, [data-mobile-menu-toggle], .site-footer .brand')]
+              .filter(el => getComputedStyle(el).display !== 'none')
+              .filter(el => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 && (rect.width < 43.5 || rect.height < 43.5);
+              }).map(el => el.className || el.tagName);
+            const heading = document.querySelector('h1')?.getBoundingClientRect();
+            const cta = document.querySelector('.hero .btn, .install-page .btn')?.getBoundingClientRect();
+            const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
+              .every(el => el.getBoundingClientRect().width > 0);
+            return { vw, screenHasOverflow, overflow, shortTargets, mobile,
+              hasMenu: Boolean(menu), heading: heading?.width,
+              cta: cta?.width || null, links };
+          });
+          assert.equal(layout.screenHasOverflow, false,
+            `${engine} ${language} ${width}px: horizontal page overflow`);
+          assert.deepEqual(layout.overflow, [],
+            `${engine} ${language} ${width}px: key content crosses viewport`);
+          if (width <= 900) assert.deepEqual(layout.shortTargets, [],
+            `${engine} ${language} ${width}px: navigation touch targets below 44px`);
+          assert.ok(layout.heading > 0 && (layout.cta === null || layout.cta >= 44) && layout.links,
+            `${engine} ${language} ${width}px: missing heading, CTA, or logo`);
+          assert.equal(layout.mobile, layout.hasMenu && width <= 900,
+            `${engine} ${language} ${width}px: mobile navigation breakpoint`);
+        }
+        assert.deepEqual(errors, [], `${engine} ${language}: errors during breakpoint sweep`);
+        await responsive.close();
+      }
     } finally { await browser.close(); }
   }
   await fs.writeFile(`${output}/results.json`, JSON.stringify(results, null, 2));

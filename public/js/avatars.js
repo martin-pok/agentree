@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
 
-// Profilové obrázky: roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
+// Profilové obrázky: anténa má vždy stejnou barvu jako hlava (žádný fialový akcent). Roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
 // anténa a oči. Liší se barvou, tvarem očí a anténou. Počet zůstává stejný jako u původních
 // abstraktních obrázků, takže uložená volba (settings.avatar = index) ukazuje dál na obrázek.
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
@@ -34,8 +34,16 @@ const HLAVY = {
   kulata: (c) => `<rect x="18" y="27" width="44" height="42" rx="21" fill="${c}"/>`,
 };
 
+// Every profile robot uses the EXACT silhouette and eye placement of the official
+// public/brand/agenteeq-mark.svg. Only palette variants change; no second robot design.
 const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
-  svg(pozadi, ANTENY[antena](antBarva) + HLAVY[tvar](hlava) + OCI[oci](ocBarva));
+  svg(pozadi, `<g transform="scale(0.7407407407407407)">
+    <path d="M54 25V34" stroke="${hlava}" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="54" cy="22" r="4" fill="${hlava}"/>
+    <rect x="15" y="34" width="78" height="53" rx="20" fill="${hlava}"/>
+    <rect x="36" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
+    <rect x="64" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
+  </g>`);
 
 // Paleta značky: fialová, inkoust, papír, šalvěj, okr, růže a jejich světlé odstíny.
 const AVATARS = [

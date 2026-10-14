@@ -231,12 +231,12 @@ test('zveřejnění: jen ručně z main, jen koncept a s přílohou pro tlačít
   assert.doesNotMatch(yml, /^\s*(push|schedule|release|workflow_run):/m, 'nikdy samo od sebe');
   assert.match(yml, /\$GITHUB_REF" != "refs\/heads\/main"/);
   assert.match(yml, /\^v\[0-9\]\+/, 'tag se ověří dřív, než se s ním cokoli dělá');
-  assert.match(yml, /if \(!v\.isDraft\)[^\n]*process\.exit\(1\)/, 'zveřejněné vydání se nepřepisuje');
+  assert.match(yml, /v\.draft !== true/, 'zveřejněné vydání se nepřepisuje');
   for (const stala of ['Agenteeq-macOS-arm64.zip', 'Agenteeq-macOS-arm64.dmg', 'Agenteeq-Windows-x64.zip']) {
     assert.ok(yml.includes(`"${stala}"`), `bez stálé přílohy ${stala} by tlačítko na webu vedlo do prázdna`);
     assert.match(yml, new RegExp(`for SOUBOR in [^\\n]*${stala.replace(/\./g, '\\.')}`), `po zveřejnění se ověří odkaz na ${stala}`);
   }
-  assert.match(yml, /a\.name === stala/);
+  assert.match(yml, /a\.name === required/);
   assert.match(yml, /\/releases\/download\/\$TAG\/\$SOUBOR/, 'odkaz musí vést na přílohu právě zveřejněného vydání');
   assert.match(yml, /\\\.\(zip\|dmg\)\$/, 'přegenerovaný popis zná i DMG');
   assert.match(yml, /node scripts\/release-notes\.mjs/, 'popis skládá skript, ne ruka');
@@ -253,6 +253,25 @@ test('ruční spuštění založí tag jen z main a jen pro verzi z package.json
   assert.match(znacka, /"v\$VERZE" != "\$TAG"/, 'tag musí sedět s verzí v package.json');
   assert.match(znacka, /git ls-remote --exit-code --tags origin/, 'existující tag se jen použije, nepřepíše');
   for (const uloha of ['mac', 'windows', 'rozsireni']) {
-    assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: znacka\\n`), `${uloha} čeká na tag`);
+    assert.match(yml, new RegExp(`\\n  ${uloha}:\\n    name: [^\\n]+\\n    needs: overeni\\n`), `${uloha} čeká na validaci tagu`);
   }
+});
+
+test('release runs the independent eight-asset audit as a same-workflow reusable job', async () => {
+  const release = await zdroj('.github/workflows/release.yml');
+  const audit = await zdroj('.github/workflows/audit-release-draft.yml');
+  assert.match(release, /^  audit:\n    name: nezávislý audit uloženého Draftu\n    needs: vydani\n/m,
+    'audit must wait for successful artifact upload, not an unreliable fourth workflow_run');
+  assert.match(release, /uses: \.\/\.github\/workflows\/audit-release-draft\.yml/);
+  assert.match(release, /tag: \$\{\{ inputs\.tag \|\| github\.ref_name \}\}/,
+    'verify the exact tag, not the moving main branch');
+  assert.match(audit, /workflow_call:\n    inputs:\n      tag:/,
+    'audit must be callable after each successful draft upload');
+  assert.match(audit, /Download and hash every asset from GitHub draft/);
+  assert.match(audit, /sha256sum --check SHA256SUMS\.txt/,
+    'audit must inspect the actual downloaded archive bytes');
+  assert.match(audit, /release\.assets\.length !== 8/,
+    'a missing alias or checksum manifest must fail verification');
+  assert.match(audit, /github\.event_name != 'workflow_run'/,
+    'direct, reusable and one-time backfill runs must be allowed');
 });

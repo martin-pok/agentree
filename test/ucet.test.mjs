@@ -379,6 +379,27 @@ test('fotka: jen https z obrázkového serveru Googlu, v rozlišení pro Retinu'
   }
 });
 
+test('Google avatar fallback: invalid avatar_url cannot hide valid picture, off-domain URLs remain blocked', () => {
+  const google = 'https://lh5.googleusercontent.com/a/FALLBACK=s96-c';
+  const expected = 'https://lh5.googleusercontent.com/a/FALLBACK=s192-c';
+  for (const invalid of [
+    'https://evil.example/private.jpg',
+    'http://lh3.googleusercontent.com/a/image',
+    'https://googleusercontent.com.evil.example/a',
+    'not a URL',
+    'x'.repeat(2049),
+  ]) {
+    assert.equal(fotoZMetadat({ avatar_url: invalid, picture: google }), expected, invalid.slice(0, 70));
+  }
+  assert.equal(fotoZMetadat({ avatar_url: FOTO_URL, picture: google }),
+    'https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c', 'preferred valid avatar_url wins');
+  assert.equal(fotoZMetadat({ avatar_url: 'https://evil.example', picture: 'https://evil.example/2' }), '',
+    'fallback cannot weaken the Google-only origin policy');
+  assert.equal(uzivatelZOdpovedi({
+    id: 'u1', email: 'user@example.com', user_metadata: { full_name: 'User', avatar_url: 'https://bad.invalid', picture: google },
+  }).fotoUrl, expected, 'actual Supabase user metadata must use the valid fallback');
+});
+
 test('po přihlášení si Mac fotku stáhne, uloží k sobě a ukáže ji i po startu bez sítě', async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-ucet-'));
   try {
@@ -457,6 +478,103 @@ test('fotka přesměrovaná mimo Google se nepřijme', async () => {
   await ucet.start();
   ucet.stop();
   await new Promise((r) => setTimeout(r, 30));
+  assert.equal(ucet.status().foto, '');
+});
+
+
+test('fotka: přesměrování mimo Google je odmítnuto před dalším síťovým požadavkem', async () => {
+  const navstivene = [];
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, options) => {
+      if (url.startsWith('https://ucty.example')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      navstivene.push(url);
+      assert.equal(options.redirect, 'manual', 'HTTP client must not auto-follow redirects');
+      return { status: 302, url, headers: { get: (key) => key === 'location' ? 'http://127.0.0.1:4620/api/state' : null } };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.deepEqual(navstivene, ['https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c']);
+  assert.equal(ucet.status().foto, '');
+});
+
+test('fotka: bezpečný redirect mezi CDN Googlu je povolen, ale nejvýš tři hops', async () => {
+  const pozadavky = [];
+  const dalsi = 'https://lh4.googleusercontent.com/real-photo';
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, options) => {
+      if (!url.startsWith('https://lh')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      pozadavky.push(url);
+      assert.equal(options.redirect, 'manual');
+      if (url.startsWith('https://lh3.')) return { status: 302, url, headers: { get: (key) => key === 'location' ? dalsi : null } };
+      return { ...obrazek(JPEG), url };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().foto);
+  assert.deepEqual(pozadavky, ['https://lh3.googleusercontent.com/a/ACg8ocK-test=s192-c', dalsi]);
+});
+
+test('fotka: velikost streamu se omezí během čtení, ne až po arrayBuffer()', async () => {
+  let read = 0;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url) => {
+      if (!url.startsWith('https://lh')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      return {
+        status: 200, ok: true, url, headers: { get: () => null },
+        body: new ReadableStream({
+          pull(controller) {
+            read += 1;
+            controller.enqueue(new Uint8Array(180_000));
+          },
+        }),
+        arrayBuffer: () => { throw Error('unbounded arrayBuffer must not be called'); },
+      };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(ucet.status().foto, '');
+  assert.ok(read <= 3, 'oversized image should cancel reading promptly');
+});
+
+
+test('fotka: chybné Content-Length odmítne přenos bez načtení těla', async () => {
+  let stazeno = false;
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url) => url.startsWith('https://lh')
+      ? { status: 200, ok: true, url, headers: { get: (name) => name === 'content-length' ? '500000' : null }, arrayBuffer: async () => { stazeno = true; throw Error('should not read'); } }
+      : odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU }),
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(stazeno, false, 'oversized Content-Length must fail before loading');
+  assert.equal(ucet.status().foto, '');
+});
+
+test('fotka: více než tři CDN redirecty jsou odmítnuty', async () => {
+  const requests = [];
+  const ucet = createUcet({
+    config, secrets: falesneTajemstvi('obnova-1'),
+    fetchImpl: async (url, opts) => {
+      if (!url.startsWith('https://lh3.googleusercontent.com')) return odpoved(200, { access_token: 'a1', refresh_token: 'obnova-2', expires_in: 3600, user: SE_FOTKOU });
+      assert.equal(opts.redirect, 'manual');
+      requests.push(url);
+      return { status: 302, url, headers: { get: (name) => name === 'location' ? '/photo?hop=' + requests.length : null } };
+    },
+  });
+  await ucet.start();
+  ucet.stop();
+  await waitFor(() => ucet.status().fotoStav === 'chyba');
+  assert.equal(requests.length, 4, 'initial request plus at most three redirects');
   assert.equal(ucet.status().foto, '');
 });
 

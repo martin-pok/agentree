@@ -145,23 +145,44 @@ export function connectStream({ onHello, onEvent, onStatus }) {
   let pokus = 0;
   let casovac = null;
   let ukonceno = false;
+  let posledniPozdrav = 0;
 
   function pripoj() {
     casovac = null;
     const proud = new EventSource('/api/stream');
     es = proud;
     proud.addEventListener('hello', (e) => {
-      pokus = 0;
-      onStatus('live');
-      onHello(JSON.parse(e.data));
+      if (ukonceno || proud !== es) return;
+      const cisloPozdravu = ++posledniPozdrav;
+      let payload;
+      try { payload = JSON.parse(e.data); } catch {
+        // A corrupt handshake cannot mark the app connected or suppress recovery.
+        onStatus('reconnecting');
+        proud.close();
+        naplanuj();
+        return;
+      }
+      // The stream is only healthy once its matching state snapshot has loaded.
+      // Reconnects must not report "live" while the UI still has stale data.
+      Promise.resolve().then(() => onHello(payload)).then(() => {
+        if (ukonceno || proud !== es || cisloPozdravu !== posledniPozdrav) return;
+        pokus = 0;
+        onStatus('live');
+      }).catch(() => {
+        if (ukonceno || proud !== es || cisloPozdravu !== posledniPozdrav) return;
+        onStatus('reconnecting');
+        proud.close();
+        naplanuj();
+      });
     });
     for (const name of EVENTS) {
       proud.addEventListener(name, (e) => {
+        if (ukonceno || proud !== es) return;
         try { onEvent(name, prelozData(JSON.parse(e.data))); } catch (err) { console.error('Agenteeq: chybná událost', name, err); }
       });
     }
     proud.onerror = () => {
-      if (proud !== es) return;
+      if (ukonceno || proud !== es) return;
       if (proud.readyState !== EventSource.CLOSED) return onStatus('reconnecting');
       onStatus('offline');
       naplanuj();

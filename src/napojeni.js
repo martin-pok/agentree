@@ -11,6 +11,8 @@ import { ui } from './texty.js';
 
 const INTERVAL_MS = 2000;
 const LIMIT_MS = 10 * 60 * 1000;
+// A past browser event proves observation, not a permanent authenticated connection.
+const WEB_FRESH_MS = 5 * 60 * 1000;
 
 // Ověřeno proti skutečným nástrojům (24. 9. 2026): `claude auth --help` v Claude Code a zdroj
 // `codex-rs/cli/src/login.rs` v Codexu. Neznámý výstup = null („nepodařilo se zjistit“), ne „ne“.
@@ -54,9 +56,14 @@ export const AGENTI = {
 // a otevřít chat. Napojeno je ve chvíli, kdy rozšíření z té služby pošle první stav.
 export const WEBY = {
   chatgpt: { label: 'ChatGPT', provider: 'openai', logo: 'openai', url: 'https://chatgpt.com/' },
+  'codex-web': { label: 'Codex · web', provider: 'openai', logo: 'codex', url: 'https://chatgpt.com/codex' },
   claude: { label: 'Claude.ai', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/new' },
   gemini: { label: 'Gemini', provider: 'google', logo: 'gemini', url: 'https://gemini.google.com/app' },
+  mscopilot: { label: 'Microsoft Copilot', provider: 'microsoft', logo: 'copilot', url: 'https://copilot.microsoft.com/' },
   perplexity: { label: 'Perplexity', provider: 'perplexity', logo: 'perplexity', url: 'https://www.perplexity.ai/' },
+  grok: { label: 'Grok', provider: 'xai', logo: 'grok', url: 'https://grok.com/' },
+  qwen: { label: 'Qwen Chat', provider: 'alibaba', logo: 'qwen', url: 'https://chat.qwen.ai/' },
+  'github-copilot': { label: 'GitHub Copilot', provider: 'github', logo: 'copilot', url: 'https://github.com/copilot' },
 };
 
 // Kód z prohlížeče (ruční cesta Claude Code) je jeden řádek tisknutelných znaků. Nic jiného se
@@ -67,7 +74,7 @@ const KOD = /^[\x21-\x7e]{8,512}$/;
 // (nainstalovano: null), nikdy „není“. `posledni(id)` = kdy agent na tomhle Macu naposledy
 // pracoval (0 = za sledované období nic); podle toho člověk pozná, proč jsou tokeny nulové.
 // `prihlas(bin, args, { naKonec })` spustí přihlášení na pozadí (src/prihlaseni.js).
-export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
+export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', onVerified = async () => 0, extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
   const ceka = new Map(); // id → { od, casovac?, proces? }
 
   async function zjisti(id) {
@@ -77,7 +84,10 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     const bin = nalezene[a.bin];
     if (!bin) return { nainstalovano: false, napojeno: null };
     const r = await run(bin, a.stav, { timeout: 10000, env: prostrediPro(bin) });
-    return { nainstalovano: true, napojeno: a.precti(r) };
+    // A nonzero exit can still be an explicit "Not logged in" from the CLI.
+    // It must never prove a positive login. Other failure output stays unknown.
+    const observed = a.precti(r);
+    return { nainstalovano: true, napojeno: r?.ok === false ? (observed === false ? false : null) : observed };
   }
 
   async function prehled() {
@@ -86,11 +96,18 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       return { id, druh: 'agent', label: a.label, provider: a.provider, logo: a.logo, ...z, plan: z.napojeno ? await plan(id).catch(() => '') : '', ceka: ceka.has(id), posledni: posledni(id) || 0, oknoDni };
     }));
     const rozsireni = extension();
-    const weby = Object.entries(WEBY).map(([id, w]) => ({
-      id: `web:${id}`, druh: 'web', label: w.label, provider: w.provider, logo: w.logo,
-      nainstalovano: rozsireni.state !== 'missing', napojeno: rozsireni.sites?.[id] ? true : rozsireni.state === 'missing' ? false : null,
-      ceka: ceka.has(`web:${id}`),
-    }));
+    const weby = Object.entries(WEBY).map(([id, w]) => {
+      const lastSeen = Number(rozsireni.sites?.[id]) || 0;
+      const fresh = lastSeen > 0 && lastSeen <= now() && now() - lastSeen < WEB_FRESH_MS;
+      return {
+        id: `web:${id}`, druh: 'web', label: w.label, provider: w.provider, logo: w.logo,
+        nainstalovano: rozsireni.state !== 'missing',
+        // Seeing browser activity never establishes OAuth authorization or a lasting connection.
+        napojeno: fresh ? true : rozsireni.state === 'missing' ? false : null,
+        posledni: lastSeen, zdroj: 'chrome-extension', overeni: fresh ? 'pozorovano' : 'nezname',
+        ceka: ceka.has(`web:${id}`),
+      };
+    });
     return [...agenti, ...weby];
   }
 
@@ -104,6 +121,26 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
   function hotovo(id, label, extra = {}) {
     ukonci(id);
     emit({ id, label, udalost: 'napojeno', ...extra });
+  }
+
+  // CLI authentication is only one part of connection. Refresh the account and
+  // local source snapshot before confirming success, then report whether there
+  // was actually any previously observed provider data.
+  async function potvrditAgenta(id, { uz = false } = {}) {
+    const a = AGENTI[id];
+    const aktualniPokus = ceka.get(id);
+    let posledniData = 0;
+    let dataError = false;
+    try { posledniData = Number(await onVerified(id)) || 0; }
+    catch { dataError = true; }
+    const p = await plan(id).catch(() => '');
+    // If a user cancelled or restarted login while refreshing account data,
+    // never emit a success from the previous attempt.
+    if (aktualniPokus && ceka.get(id) !== aktualniPokus) return { ok: false, zruseno: true };
+    ukonci(id);
+    const vysledek = { id, label: a.label, udalost: 'napojeno', overeni: 'cli', posledniData, dataError, plan: p, ...(uz ? { uz: true } : {}) };
+    emit(vysledek);
+    return { ok: true, uz, plan: p, posledniData, dataError };
   }
 
   // Hlídá, dokud se nástroj nepřihlásí. Selhání dotazu není „nepřihlášeno“ – jen se zkusí znovu.
@@ -123,7 +160,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       }
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
       if (ceka.get(id) !== c) return;
-      if (z.napojeno === true) return hotovo(id, a.label, { plan: await plan(id).catch(() => '') });
+      if (z.napojeno === true) return potvrditAgenta(id);
       // Přihlášení skončilo, a přihlášen není: proces to vzdal (zavřená stránka, chyba). Čekat
       // dál by znamenalo tvrdit „čekám“, i když už není na co.
       if (c.skoncil) {
@@ -186,11 +223,7 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       const bin = nalezene[a.bin];
       if (!bin) return { status: 422, error: ui('{0} se na {1} nepodařilo najít.', a.label, POCITAC.tomto) };
       const z = await zjisti(id).catch(() => ({ napojeno: null }));
-      if (z.napojeno === true) {
-        const p = await plan(id).catch(() => '');
-        emit({ id, label: a.label, udalost: 'napojeno', plan: p, uz: true });
-        return { ok: true, uz: true, plan: p };
-      }
+      if (z.napojeno === true) return potvrditAgenta(id, { uz: true });
       ukonci(id);
       const r = await spust(id, bin, a.prihlaseni);
       if (!r.ok) return { status: 422, error: r.error || ui('Přihlášení {0} se nepodařilo spustit.', a.label) };
@@ -199,24 +232,31 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;
     if (!web) return { status: 404, error: ui('Tuhle službu napojit nejde.') };
     if (extension().state === 'missing') return { status: 409, error: ui('Webové chaty se napojují přes rozšíření pro Chrome. Nejdřív ho přidej a spáruj.'), rozsireni: true };
-    const r = await open(web.url);
-    if (!r.ok) return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
+    // Arm the observer before launching the browser. An already-open website can
+    // send the first extension event while open() is still resolving.
     ukonci(id);
-    ceka.set(id, { od: now() });
-    const c = ceka.get(id);
-    c.casovac = setTimeout(() => {
-      if (!ceka.has(id)) return;
+    const attempt = { od: now() };
+    ceka.set(id, attempt);
+    attempt.casovac = setTimeout(() => {
+      if (ceka.get(id) !== attempt) return;
       ukonci(id);
       emit({ id, label: web.label, udalost: 'vyprselo' });
     }, limitMs);
-    c.casovac.unref?.();
-    return { ok: true, ceka: true, dry: Boolean(r.dry) };
+    attempt.casovac.unref?.();
+    let r;
+    try { r = await open(web.url); }
+    catch { r = { ok: false }; }
+    if (!r.ok) {
+      if (ceka.get(id) === attempt) ukonci(id);
+      return { status: 422, error: r.error || ui('Prohlížeč se nepodařilo otevřít.') };
+    }
+    return { ok: true, ceka: ceka.get(id) === attempt, dry: Boolean(r.dry) };
   }
 
   // Rozšíření poslalo stav z webové služby. Když na ni člověk právě čeká, je napojeno.
   function webOzvalo(site) {
     const id = `web:${site}`;
-    if (ceka.has(id)) hotovo(id, WEBY[site]?.label || site);
+    if (ceka.has(id) && WEBY[site]) hotovo(id, WEBY[site].label, { overeni: 'pozorovano' });
   }
 
   // „Prohlížeč se neotevřel?“ – otevře záložní odkaz, který přihlášení vypsalo. Odkaz se objeví
