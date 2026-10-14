@@ -598,7 +598,7 @@ html[data-theme] .launch::before { content: none; }
 .studio-dialog--single .appearance-form { display: grid; gap: 13px; }
 .studio-dialog--single header { align-items: flex-start; }
 .studio-dialog--single h2 { font-size: 20px; line-height: 1.2; font-weight: 500; overflow-wrap: anywhere; }
-.studio-dialog--single .appearance-eyebrow { margin: 0 0 3px; color: var(--mute); font-size: 11px; }
+.studio-dialog--single .appearance-eyebrow { margin: 0 0 3px; color: var(--mute); font-size: 12px; }
 .studio-dialog--single label { margin: 0; }
 .studio-dialog--single .appearance-options { min-width: 0; padding: 0; border: 0; margin: 0; }
 .studio-dialog--single .appearance-options legend { padding: 0 0 8px; font-size: 12px; font-weight: 500; }
@@ -609,7 +609,7 @@ html[data-theme] .launch::before { content: none; }
   min-width: 0; height: 48px; padding: 4px 6px; display: flex; flex-direction: column;
   gap: 2px; align-items: center; justify-content: center;
   border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
-  color: var(--ink); font: inherit; font-size: 10px; font-weight: 500; cursor: pointer;
+  color: var(--ink); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
 }
 .appearance-choice:hover { border-color: var(--ink-2); }
 .appearance-choice:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
@@ -635,6 +635,6 @@ html[data-theme] .launch::before { content: none; }
 .robot-accessory--spacesuit rect:first-of-type { fill: var(--card); stroke: var(--persona); }
 @media (max-width: 480px) {
   .studio-dialog--single { padding: 16px; }
-  .appearance-choice { font-size: 10px; padding: 4px 2px; }
+  .appearance-choice { font-size: 12px; padding: 4px 2px; }
   .session-appearance-btn { margin-left: 0; }
 }
