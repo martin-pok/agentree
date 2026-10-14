@@ -1,6 +1,6 @@
 # Changelog
 
-## Připravované změny po 0.46.12 · nevydáno
+## 0.46.13 – 2026-10-14 · plynulejší Agenti, čistší texty a pravdivější rozšíření
 
 - **Plynulejší Agenti i se stovkou konverzací.** Při otevření obrazovky se karty doplňují po dávkách a každá dávka přepočítala vzhled všech dosavadních karet; se 140 agenty tak vznikaly zaseknuté snímky 50–110 ms. Karty mimo okno se teď vykreslí, až k nim stránka dojede, dávka jen připojí nové karty a oči robotů sledují kurzor bez měření robotů mimo okno. Vzhled karet se nemění.
 - **Popis vydání na GitHubu říká pravdu o kanálu.** U Preview už nedoporučuje instalaci jedním příkazem v Terminálu jako rovnocennou cestu – ta instaluje vždy nejnovější stabilní verzi, takže by místo Preview nainstalovala starší vydání. Interní odstavce o stavu z CHANGELOGu („dosud nevydaný“, „Dostupnost“) se do veřejného popisu nepřepisují; u 0.46.12 tak zveřejněné vydání tvrdilo, že nevyšlo. Kanál zná až zveřejnění (`publish.yml`), koncept o něm nic netvrdí.

@@ -6,6 +6,8 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+**Další kandidát: `0.46.13 Preview` (v0.46.13)** se změnami po 0.46.12 (#244–#249). Zveřejnit až po 8/8 CI, auditovaném Draftu; UAT na zařízení zůstává otevřené.
+
 **`0.46.12 Preview` je zveřejněné ([v0.46.12](https://github.com/martin-pok/agentree/releases/tag/v0.46.12), 14. 10. 2026), ale fyzické UAT neproběhlo.** 8/8 `main` CI, neměnný tag, Draft s osmi přílohami, nezávislý audit i znovu ověřené přílohy při zveřejnění prošly. Zveřejněno na výslovný pokyn vlastníka před UAT na zařízení; to je teď první otevřený úkol. Existující `v0.46.11` Draft nikdy nepřepisovat.
 
 | Priorita | Výsledek | Důkaz a stav | Dokončení |

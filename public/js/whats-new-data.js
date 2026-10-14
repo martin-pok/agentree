@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.13',
+    date: '2026-10-14',
+    title: 'Plynulejší Agenti, čistší texty a pravdivější rozšíření',
+    items: [
+      'Obrazovka Agenti se ani se stovkou konverzací nezasekává: karty mimo okno se vykreslí, až k nim dojedeš.',
+      'Správné tvary podle počtu („3 potřebují tebe“, „1 selhal“, „ze 4“) a anglické rozhraní bez českých zbytků.',
+      'Rozšíření už nehlásí „Agenteeq neběží“, když se jen nepodařilo ověřit spojení, a nenabízí starší verzi jako novou.',
+      'Dlouhé názvy konverzací končí celým slovem, upozornění na limit jsou bez sekund a osa tokenů píše „2 tis.“.',
+    ],
+    en: {
+      title: 'Smoother Agents, cleaner wording and a more truthful extension',
+      items: [
+        'The Agents screen stays smooth even with a hundred conversations: cards outside the window render when you scroll to them.',
+        'Correct plural forms and an English interface without leftover Czech text.',
+        'The extension no longer says Agenteeq is not running when it only failed to verify the connection, and never offers an older version as new.',
+        'Long conversation titles end on a whole word, limit alerts drop the seconds and the token chart axis uses the same number format as the values beside it.',
+      ],
+    },
+  },
+  {
     version: '0.46.12',
     date: '2026-10-14',
     title: 'Přesnější vzdálení agenti, limity a opravené ikony',
