@@ -5,6 +5,11 @@ import { prekladac } from './texty.js';
 
 const KEY_TTL = 60 * DAY;
 
+// Čas obnovy limitu v těle upozornění: hodiny a minuty jako všude jinde v aplikaci, bez sekund
+// („13. 10. 2026 04:09“, ne „13. 10. 2026 4:09:56“). Upozornění se ukládá česky; anglické rozhraní
+// stejné datum přepíše do svého zápisu (public/js/texty-serveru.js#preformatuj).
+export const casObnovy = (ts) => new Date(ts).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
 // Náraz: v klouzavé minutě přijdou nejvýš tři oznámení (souhrn se počítá taky). Co se nevejde,
 // počká a spojí se do jednoho souhrnu, který odejde, jakmile je v minutě zase místo – nejpozději
 // minutu po prvním odloženém upozornění.
@@ -152,7 +157,7 @@ export class AlertEngine {
         kind: 'limit',
         title: `${limit.app}: ${limit.label} vyčerpán`,
         limitId: limit.id,
-        body: limit.resetsAt ? `Obnoví se ${new Date(limit.resetsAt).toLocaleString('cs-CZ')}.` : limit.text || 'Limit je vyčerpaný.',
+        body: limit.resetsAt ? `Obnoví se ${casObnovy(limit.resetsAt)}.` : limit.text || 'Limit je vyčerpaný.',
       });
       return;
     }
@@ -165,7 +170,7 @@ export class AlertEngine {
       kind: 'limit_near',
       title: `${limit.app}: ${limit.label} na ${Math.round(limit.usedPercent)} %`,
       limitId: limit.id,
-      body: limit.resetsAt ? `Obnoví se ${new Date(limit.resetsAt).toLocaleString('cs-CZ')}.` : 'Blížíš se k limitu.',
+      body: limit.resetsAt ? `Obnoví se ${casObnovy(limit.resetsAt)}.` : 'Blížíš se k limitu.',
     });
   }
 

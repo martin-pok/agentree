@@ -47,6 +47,30 @@ test('extension popup clears stale agent counts, diagnostics and live badge when
   assert.equal(env.znovuChaty, true, 'browser chats are reloaded from the browser, they never depended on the app');
 });
 
+test('failed verification with a running app is unverified, never offline or unpaired', async () => {
+  const code = cut(await read(), 'function ukazVypadek() {', '// Viditelnost se přepíná');
+  const env = {
+    seznam: { pripojeno: true, konverzace: [{ id: 'old' }] },
+    overeni: { diagnostika: { generating: true } },
+    prehled: { zdravi: { pracuje: 3 } },
+    rezim: 'sparovano',
+    zakladniStav() { env.seznam.pripojeno = false; },
+    nastavPill(tone, text) { env.pill = { tone, text }; },
+    vykresli() { env.vykreslenyRezim = env.rezim; },
+    obnovSeznam() { env.znovuChaty = true; },
+  };
+  vm.runInNewContext(code + '\nukazNeovereno()', env);
+  assert.equal(env.rezim, 'neovereno');
+  assert.deepEqual(env.pill, { tone: 'warn', text: 'Neověřeno' });
+  assert.equal(env.prehled, null, 'stale agent counts are not shown as live');
+  assert.equal(env.vykreslenyRezim, 'neovereno');
+  assert.equal(env.znovuChaty, true);
+  const novejsi = (a, b) => vm.runInNewContext(code + `\nnovejsiVerze(${JSON.stringify(a)}, ${JSON.stringify(b)})`, env);
+  assert.equal(novejsi('0.46.12', '0.46.9'), true, 'numbers, not text');
+  assert.equal(novejsi('0.46.0', '0.46.12'), false, 'an older app never offers an update');
+  assert.equal(novejsi('neznámá', '0.46.12'), false);
+});
+
 test('extension refresh loop tests actual health and auto-recovers after restart', async () => {
   const code = await read();
   const start = code.indexOf('let probihaKontrolaSpojeni = false;');
@@ -60,5 +84,7 @@ test('extension refresh loop tests actual health and auto-recovers after restart
   assert.ok(loop.indexOf('await fungujeSluzba()') < loop.indexOf('prehled = aktualniPrehled'),
     'health must precede publishing new live state');
   assert.match(loop, /finally \{[\s\S]*?probihaKontrolaSpojeni = false/);
-  assert.match(code, /if \(r\?\.paired && !r\.online\) \{[\s\S]*?ukazVypadek\(\)/);
+  // Nepodařené ověření (hello) při běžící aplikaci se nikdy nehlásí jako „připojeno“, ale ani jako
+  // „neběží“ či „nespárováno“: je to „nepodařilo se ověřit“.
+  assert.match(code, /if \(!r \|\| r\.chyba \|\| \(r\.paired && !r\.online\)\) \{[\s\S]*?ukazNeovereno\(\)/);
 });

@@ -478,6 +478,7 @@ function modelReflektoru() {
   if (rezim === 'nacitam') return { klic: 'nacitam', druh: 'nacitam', ton: 'mist' };
   if (rezim === 'offline') return { klic: 'intro', druh: 'intro', ton: 'mist' };
   if (rezim === 'nesparovano') return { klic: 'pair', druh: 'pair', ton: 'brass' };
+  if (rezim === 'neovereno') return { klic: 'neovereno', druh: 'nevim', ton: 'mist', neovereno: true };
   const roz = prehled?.rozhodnuti || [];
   if (roz.length) {
     // Zobrazená položka drží své místo i ve chvíli, kdy nová přibude před ni.
@@ -527,9 +528,9 @@ function slideHtml(M) {
     const fakt = nevim
       ? `<span class="chip chip--glass"><span class="dot"></span><span>${esc(tr('Agenti na počítači: nezjištěno'))}</span></span>`
       : posledni ? `<span class="chip chip--glass"><span class="dot"></span><span>${esc(tr('Naposledy: {0}', posledni.title))} · <span data-at="${posledni.at}">${esc(cas(posledni.at))}</span></span></span>` : '';
-    const nadpis = nevim ? (M.bezPrehledu ? tr('Přehled agentů se nepodařilo načíst') : tr('Nepodařilo se zjistit, co na počítači běží')) : tr('Všechno je v klidu');
+    const nadpis = nevim ? (M.neovereno ? tr('Nepodařilo se ověřit spojení s Agenteeq') : M.bezPrehledu ? tr('Přehled agentů se nepodařilo načíst') : tr('Nepodařilo se zjistit, co na počítači běží')) : tr('Všechno je v klidu');
     const text = nevim
-      ? (M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
+      ? (M.neovereno ? tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.') : M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
       : tr('Nikdo teď nepracuje a nic na tebe nečeká. Ozvu se, jakmile se to změní.');
     return `<div class="calm">
       <span class="calm-bot" data-s="tile"${nevim ? ' data-nevim' : ''}>${ROBOT}</span>
@@ -898,6 +899,28 @@ function ukazVypadek() {
   obnovSeznam();
 }
 
+function ukazNeovereno() {
+  zakladniStav();
+  prehled = null;
+  seznam.konverzace = [];
+  overeni.diagnostika = null;
+  // Aplikace odpovídá, jen ověření selhalo: žádná nabídka ke stažení ani spárování. Okno to
+  // za pár sekund zkusí znovu samo (kontrola spojení níž) a chaty v kartách ukazuje dál.
+  rezim = 'neovereno';
+  nastavPill('warn', 'Neověřeno');
+  vykresli();
+  obnovSeznam();
+}
+
+// Porovnání verzí podle čísel (0.46.12 > 0.46.9), ne jako textu. Nečitelná verze = nevíme = false.
+function novejsiVerze(a, b) {
+  const casti = (v) => (typeof v === 'string' && /^\d+\.\d+\.\d+$/.test(v) ? v.split('.').map(Number) : null);
+  const x = casti(a), y = casti(b);
+  if (!x || !y) return false;
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return false;
+}
+
 // Viditelnost se přepíná až ve chvíli, kdy je nový stav známý – jinak by okno při každém
 // načtení na okamžik prázdně bliklo.
 async function render() {
@@ -915,10 +938,10 @@ async function render() {
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
   const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
-  if (r?.paired && !r.online) {
-    // The local health endpoint may answer while pairing's protected endpoint
-    // fails. Never present the extension as connected on an unsuccessful hello.
-    ukazVypadek();
+  if (!r || r.chyba || (r.paired && !r.online)) {
+    // Aplikace odpovídá na /api/health, ale ověření rozšíření selhalo nebo se background
+    // neozval. Není to „neběží“ ani „nespárováno“ – jen se to nepodařilo zjistit.
+    ukazNeovereno();
     return;
   }
   if (!r?.paired) {
@@ -936,7 +959,9 @@ async function render() {
 
   const version = chrome.runtime.getManifest().version;
   const expected = r.status?.expectedVersion;
-  const outdated = Boolean(expected && expected !== version);
+  // „Je k dispozici verze X“ jen pro skutečně novější X. Rozšíření z obchodu bývá novější než
+  // stabilní aplikace – pak by se nabízel „update“ na starší verzi.
+  const outdated = novejsiVerze(expected, version);
 
   overeni.tab = await aktivniKarta();
   overeni.diagnostika = await zeptejSe(overeni.tab, 'agenteeq:diagnostika');

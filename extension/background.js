@@ -330,7 +330,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     prehled().then(sendResponse, () => sendResponse(null));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
-    hello({ hned: true }).then(sendResponse, () => sendResponse({ paired: false }));
+    hello({ hned: true }).then(sendResponse, () => sendResponse({ chyba: true }));
     return true;
   }
 });

@@ -1,6 +1,7 @@
 import { uid, round2 } from './util.js';
 import { csv } from './csv.js';
 import { ui } from './texty.js';
+import { ze } from '../public/js/predlozky.js';
 
 export const SERVICES = {
   chatgpt: { label: 'ChatGPT', provider: 'openai' },
@@ -341,7 +342,7 @@ export function budgetAlertCandidates(summary) {
       level: hit === 100 ? 'critical' : 'warning',
       kind: 'budget',
       title: hit === 100 ? ui('Rozpočet překročen: {0}', b.label) : ui('Vyčerpáno {0} % rozpočtu: {1}', Math.round(b.pct), b.label),
-      body: ui('Tento měsíc {0} z {1}.', money(b.spent, summary.currency), money(b.budget, summary.currency)),
+      body: ze(b.budget) ? ui('Tento měsíc {0} ze {1}.', money(b.spent, summary.currency), money(b.budget, summary.currency)) : ui('Tento měsíc {0} z {1}.', money(b.spent, summary.currency), money(b.budget, summary.currency)),
     });
   }
   return out;

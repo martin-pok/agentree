@@ -180,7 +180,8 @@ interface SessionSummary {
   parentId: string | null;    // pomocné vlákno (automatická kontrola, pomocný agent) → ID rodičovské konverzace; mimo seznamy a počty agentů, tokeny se počítají
   subagent: { kind: 'review' | 'agent' | 'other'; label: string } | null;
   taskName: string;           // plánovaná úloha ze značky <scheduled-task>; spuštění téže úlohy jsou v seznamu agentů jedním řádkem
-  title: string;              // název vlákna → první skutečné zadání → „Plánovaná úloha · <název>“ / popis pomocného vlákna → název složky
+  title: string;              // název vlákna → první skutečné zadání → „Plánovaná úloha · <název>“ / popis pomocného vlákna → název složky; nejvýš 100 znaků, delší zkrácený na hranici slova s „…“
+  fullTitle: string;          // celý název (nejvýš 400 znaků) pro bublinu nad zkráceným textem; '' když title zkrácený není
   cwd: string; project: string; model: string; branch: string;
   status: Status;
   reason: string;             // důvod stavu (co agent dělá / co potřebuje)

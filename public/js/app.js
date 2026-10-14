@@ -31,6 +31,7 @@ import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
+import { popisPoctu } from './stav-vety.js';
 import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
@@ -325,8 +326,8 @@ function updateChrome() {
     if (b.dataset.tone !== tone) b.dataset.tone = tone;
     if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
   };
-  setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} ${tr('potřebuje tebe')}` : `${working} pracuje`);
-  setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} ${tr('nepřečtených')}`);
+  setBadge('agenti', needs || working, needs ? 'coral' : 'lagoon', needs ? `${needs} ${popisPoctu('needs_input', needs)}` : `${working} ${popisPoctu('working', working)}`);
+  setBadge('upozorneni', state.alerts.unread, 'coral', `${state.alerts.unread} ${plural(state.alerts.unread, 'nepřečtené', 'nepřečtená', 'nepřečtených')}`);
   setBadge('more', state.alerts.unread, 'coral', `${state.alerts.unread} ${tr('nepřečtených upozornění')}`);
   const sheetBadge = sheet.querySelector('[data-sheet-badge="upozorneni"]');
   if (sheetBadge) {

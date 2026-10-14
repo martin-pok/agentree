@@ -52,7 +52,7 @@ try {
   for (const engine of process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit']) {
     const browser = await launch(engine);
     try {
-      for (const theme of ['light', 'dark']) for (const state of ['offline', 'unpaired', 'revoked', 'paired', 'outdated', 'overeni', 'overeni-chyby']) {
+      for (const theme of ['light', 'dark']) for (const state of ['offline', 'unpaired', 'revoked', 'paired', 'outdated', 'novejsi', 'neovereno', 'overeni', 'overeni-chyby']) {
         const page = await browser.newPage({ viewport: OKNO, colorScheme: theme, reducedMotion: 'reduce' });
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
@@ -60,7 +60,7 @@ try {
         await page.addInitScript(({ state }) => {
           const ted = Date.now();
           const data = { disabledSites: [], lastStatus: { ok: true, site: 'chatgpt', at: ted } };
-          window.fixture = { data, paired: ['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state), fail: true };
+          window.fixture = { data, paired: ['paired', 'outdated', 'novejsi', 'neovereno', 'overeni', 'overeni-chyby'].includes(state), fail: true };
           // Ověření stránky: aktivní karta je podporovaná služba a její skript odpovídá diagnostikou.
           const diagnostika = state === 'overeni'
             ? { site: 'chatgpt', konverzace: 'adresa', pole: 'presne', zpravy: { user: 3, assistant: 3, zdroj: 'presne' }, generuje: false, limit: false, videl: { generovani: true, konec: true } }
@@ -79,13 +79,15 @@ try {
             storage: { local: { get: async () => data, set: async o => Object.assign(data, o), remove: async () => {} }, session: { get: async () => ({ otevrene: window.otevrene }), set: async () => {} } },
             runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují, jedna nedávná.
-              if (m.type === 'agenteeq:prehled') return ['paired', 'outdated'].includes(state) && fixture.paired ? window.prehledFixture : null;
+              if (m.type === 'agenteeq:prehled') return ['paired', 'outdated', 'novejsi'].includes(state) && fixture.paired ? window.prehledFixture : null;
               if (m.type === 'agenteeq:focus-agent') { fixture.focusedAgent = m.id; return { ok: true }; }
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
               }
-              return { paired: fixture.paired, online: fixture.paired, revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : '0.12.0' } };
+              // „neovereno“: aplikace odpovídá na /api/health, ale ověření rozšíření selže.
+              // „novejsi“: rozšíření (0.12.0) je novější než aplikace (0.11.0), jako Store vs. Stable.
+              return { paired: fixture.paired, online: fixture.paired && state !== 'neovereno', revoked: state === 'revoked', status: { expectedVersion: state === 'outdated' ? '0.13.0' : state === 'novejsi' ? '0.11.0' : '0.12.0' } };
             } },
           };
           // Aktivní karta mimo podporované služby (skript v ní neběží); kliknutí na řádek přepne kartu.
@@ -112,14 +114,14 @@ try {
           await page.waitForFunction(() => fixture.refreshes === 1 && !document.getElementById('refresh-popup').disabled);
           assert.equal(await page.evaluate(() => fixture.refreshes), 1, 'obnova znovu načte stav otevřené karty');
         }
-        if (['paired', 'outdated', 'overeni', 'overeni-chyby'].includes(state)) {
+        if (['paired', 'outdated', 'novejsi', 'overeni', 'overeni-chyby'].includes(state)) {
           assert.equal(await page.locator('#pill-text').textContent(), 'Připojeno');
           // Odpovídající chat ukazuje, jak dlouho už odpovídá, a titulek z karty bez názvu služby.
           assert.match(await page.locator('#scroll').innerText(), /odpovídá · 0:4\d/);
         }
         assert.equal(await page.locator('.radek--tato').isVisible(), state.startsWith('overeni'), `${state}: aktuální karta jen na podporované stránce`);
         assert.equal(await page.locator('#check-open').isVisible(), state.startsWith('overeni'), `${state}: ověření jen na podporované stránce`);
-        if (['paired', 'outdated'].includes(state)) {
+        if (['paired', 'outdated', 'novejsi'].includes(state)) {
           // Reflektor: jedna hlavní věc s pravdivou akcí. Agenteeq neumí schvalovat, jen otevřít agenta.
           assert.match(await page.locator('#spot').innerText(), /Potřebuje tě[\s\S]*Migrace API na v2[\s\S]*Čeká na povolení: Bash/);
           const cta = page.locator('#spot-stage .cta');
@@ -266,6 +268,20 @@ try {
           assert.match(await page.locator('#konverzace').innerText(), /Plán marketingu na Q4[\s\S]*odpovídá/);
         }
         if (state === 'outdated') assert.match(await page.locator('#outdated').innerText(), /0\.13\.0/);
+        // Starší aplikace nesmí rozšíření nabízet „novou“ verzi, která je ve skutečnosti starší.
+        if (state === 'novejsi') assert.equal(await page.locator('#outdated').isVisible(), false, 'aplikace je starší než rozšíření');
+        if (state === 'neovereno') {
+          // Nepodařené ověření není „neběží“ (s odkazem ke stažení) ani „nespárováno“.
+          assert.match((await page.locator('#spot').innerText()).replace(/\u00a0/g, ' '), /Nepodařilo se ověřit spojení s Agenteeq[\s\S]*Aplikace běží/);
+          assert.equal(await page.locator('#pill-text').textContent(), 'Neověřeno');
+          assert.equal(await page.locator('#spot-intro').isVisible(), false, 'žádná nabídka ke stažení');
+          assert.equal(await page.locator('#download').isVisible(), false);
+          assert.equal(await page.locator('#pairing').isVisible(), false, 'žádná výzva ke spárování');
+          assert.doesNotMatch(await text(), /neběží|Stáhnout|Nespárováno|nikdo nepracuje/i);
+          assert.match(await text(), /nezjištěno/);
+          // Chaty v kartách rozšíření ukazuje dál.
+          assert.match(await page.locator('#konverzace').innerText(), /Plán marketingu na Q4/);
+        }
         await page.mouse.move(0, 0);
         await spolecne(page, kde, errors);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-${state}.png` });
