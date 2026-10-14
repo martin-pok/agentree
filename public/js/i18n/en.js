@@ -7,6 +7,14 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "Vzhled agenta": "Agent appearance",
+    "Upravit vzhled": "Customize appearance",
+    "Doplňky a oblečení": "Accessories and outfits",
+    "Bez doplňku": "None",
+    "Čepice": "Cap",
+    "Brýle": "Glasses",
+    "Tričko": "T-shirt",
+    "Skafandr": "Spacesuit",
     "Data z Chromu": "Data from Chrome",
     "Data z webu dorazila": "Website data received",
     "Přihlášení ověřeno": "Sign-in verified",
