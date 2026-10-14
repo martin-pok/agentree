@@ -60,5 +60,7 @@ test('extension refresh loop tests actual health and auto-recovers after restart
   assert.ok(loop.indexOf('await fungujeSluzba()') < loop.indexOf('prehled = aktualniPrehled'),
     'health must precede publishing new live state');
   assert.match(loop, /finally \{[\s\S]*?probihaKontrolaSpojeni = false/);
-  assert.match(code, /if \(r\?\.paired && !r\.online\) \{[\s\S]*?ukazVypadek\(\)/);
+  // Nepodařené ověření (hello) při běžící aplikaci se nikdy nehlásí jako „připojeno“, ale ani jako
+  // „neběží“ či „nespárováno“: je to „nepodařilo se ověřit“.
+  assert.match(code, /if \(!r \|\| r\.chyba \|\| \(r\.paired && !r\.online\)\) \{[\s\S]*?ukazNeovereno\(\)/);
 });

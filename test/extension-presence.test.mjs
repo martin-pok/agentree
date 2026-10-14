@@ -54,6 +54,14 @@ test('stav rozšíření: nespárováno, spárováno, ozvalo se, zastaralá verz
     const ok = await hello({ version: verze });
     assert.equal(ok.body.outdated, false);
     assert.equal(ok.body.expectedVersion, verze);
+    // Rozšíření z obchodu bývá novější než stabilní aplikace: rada „aktualizuj rozšíření“ by lhala.
+    const novejsi = await hello({ version: '999.0.0' });
+    assert.equal(novejsi.body.outdated, false, 'novější rozšíření není zastaralé');
+    // Číselné, ne textové porovnání: 0.9.0 je starší než 0.10.0 i než aktuální verze.
+    const [maj, min] = verze.split('.').map(Number);
+    const starsi = await hello({ version: `${maj}.${Math.max(0, min - 1)}.99` });
+    assert.equal(starsi.body.outdated, min > 0, 'starší rozšíření je zastaralé i s vyšší opravnou verzí');
+    await hello({ version: verze }); // další test čeká uloženou aktuální verzi
   });
 
   await t.test('nesmyslná verze se ignoruje, stará zůstane', async () => {
