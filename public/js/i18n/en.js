@@ -21,6 +21,8 @@ export default {
     "Co dnes posuneme dál?": "What shall we move forward today?",
     "Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.": "Describe the work. Your agents get started while you focus on what matters.",
     "Právě teď": "Right now",
+    "Vyžaduje pozornost": "Needs attention",
+    "Momentálně bez upozornění": "Nothing needs attention right now",
     "Průběh dne a spotřeba": "Daily activity and usage",
     "Aktivita, tokeny a náklady": "Activity, tokens and costs",
 
@@ -553,7 +555,6 @@ export default {
     "Všichni agenti": "All agents",
     "Aktivní agenti": "Active agents",
     "Žádný agent teď nepracuje ani nečeká na zadání.": "No agent is working or waiting for a task right now.",
-    "Nikdo teď nečeká na tvé rozhodnutí": "No agent needs your decision right now",
     "za den": "per day",
     "Průměr z posledních 7 dokončených dní, bez dneška": "Average of the last 7 completed days, excluding today",
     "(předchozích 7 dní)": "(previous 7 days)",

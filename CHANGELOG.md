@@ -2,6 +2,10 @@
 
 ## Připravované změny po 0.46.12 · nevydáno
 
+- **Aktualizace Macu se nesmí změnit v past.** Nativní instalátor před rozbalováním ukazuje stav, nabízí ukončení, po selhání vrátí původní rozhraní a při chybném spuštění nového balíčku obnoví předchozí verzi. Opravy jsou zatím ve zdroji, nikoli v již vydaných 0.46.12 binárkách; skutečný upgrade na Macu se ještě musí ověřit.
+- **Kolečko myši uvnitř upozornění už nescrolluje podklad.** Konec seznamu zastaví scrollování uvnitř popupu. Odhlášení vyžaduje potvrzení; smazání účtu ho mělo již dříve.
+- **Vyčerpaný limit Codexu nesmí vypadat jako čekání na zadání.** Potvrzené 100% vyčerpání 5hodinového nebo týdenního okna se promítá do stavu agenta, upozornění a hlavního panelu „Vyžaduje pozornost“. Po obnovení kapacity se blokace odstraní; samotný nulový zůstatek dodatečných kreditů neblokuje předplatné.
+
 - **Plynulejší Agenti i se stovkou konverzací.** Při otevření obrazovky se karty doplňují po dávkách a každá dávka přepočítala vzhled všech dosavadních karet; se 140 agenty tak vznikaly zaseknuté snímky 50–110 ms. Karty mimo okno se teď vykreslí, až k nim stránka dojede, dávka jen připojí nové karty a oči robotů sledují kurzor bez měření robotů mimo okno. Vzhled karet se nemění.
 - **Viditelný fokus v poli zadání agenta.** Rámeček, který jediný ukazuje, že píšeš do pole zadání, měl ve světlých vzhledech kontrast jen 2,0:1 proti okolí a snadno splýval. Teď má 3,1:1 proti okolí a 3,9:1 proti ploše pole (WCAG 2.2 AA, kritérium 1.4.11 chce aspoň 3:1), v tmavých vzhledech přes 7:1.
 - **Popis vydání na GitHubu říká pravdu o kanálu.** U Preview už nedoporučuje instalaci jedním příkazem v Terminálu jako rovnocennou cestu – ta instaluje vždy nejnovější stabilní verzi, takže by místo Preview nainstalovala starší vydání. Interní odstavce o stavu z CHANGELOGu („dosud nevydaný“, „Dostupnost“) se do veřejného popisu nepřepisují; u 0.46.12 tak zveřejněné vydání tvrdilo, že nevyšlo. Kanál zná až zveřejnění (`publish.yml`), koncept o něm nic netvrdí.
