@@ -9,6 +9,7 @@
 - **Dlouhé názvy konverzací končí celým slovem a „…“.** Dřív se useknuly po 100 znacích uprostřed slova. Celý název nese nové pole `fullTitle` a ukáže se v bublině nad kartou Právě teď a na časové ose.
 - **Upozornění na limit bez sekund.** „Obnoví se 13. 10. 2026 04:09“ místo „4:09:56“.
 - **Osa grafu tokenů mluví jako čísla vedle ní:** „2 tis.“ a „1,5 M“ místo „2k“ a „1,5M“.
+- **Web nabízí aktuální Preview i bez spojení s GitHubem.** Odkaz „0.46.12 Preview pro Mac“ na hlavní stránce a na stránce Instalace (česky i anglicky) vede přímo na zveřejněné 0.46.12; dřív na 0.46.6 ukazoval, dokud se stránce nepodařilo dotázat GitHubu na novější verzi. README, ROADMAP a RELEASE-READINESS uvádějí 0.46.6 jen jako předchozí Preview.
 - **Vzdálení agenti Claude Code s čerstvějším stavem 🧪.** Stav se dosud bral jen ze seznamu relací v cache Claude Desktopu, který se ukládá jen občas. Agenteeq teď stav relace najde v kterémkoli uloženém dotazu Claude Desktopu – například v detailu otevřené relace, když je čerstvější – a použije nejnovější z nich. Jestli Claude Desktop takový dotaz ukládá, zatím není na Macu ověřené; když ne, nic se nemění.
 
 ## 0.46.12 – 2026-10-14 · živé stavy vzdálených agentů a vyladění produktu
