@@ -21,6 +21,8 @@ export default {
     "Co dnes posuneme dál?": "What shall we move forward today?",
     "Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.": "Describe the work. Your agents get started while you focus on what matters.",
     "Právě teď": "Right now",
+    "Vyžaduje pozornost": "Needs attention",
+    "Momentálně bez upozornění": "Nothing needs attention right now",
     "Průběh dne a spotřeba": "Daily activity and usage",
     "Aktivita, tokeny a náklady": "Activity, tokens and costs",
 
