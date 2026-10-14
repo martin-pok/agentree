@@ -74,7 +74,7 @@ test('failed verification with a running app is unverified, never offline or unp
 test('extension refresh loop tests actual health and auto-recovers after restart', async () => {
   const code = await read();
   const start = code.indexOf('let probihaKontrolaSpojeni = false;');
-  const end = code.indexOf("$('retry').addEventListener", start);
+  const end = code.indexOf('// Agenteeq běží na jiném portu', start);
   assert.ok(start >= 0 && end > start);
   const loop = code.slice(start, end);
   assert.match(loop, /if \(document\.hidden \|\| probihaKontrolaSpojeni\) return/);

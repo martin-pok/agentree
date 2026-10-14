@@ -37,7 +37,15 @@ async function spolecne(page, kde, errors) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${kde}: nic nepřetéká do strany`);
   const vyska = await page.evaluate(() => document.body.getBoundingClientRect().height);
   assert.ok(vyska <= 600, `${kde}: okno má ${Math.round(vyska)} px, Chrome ukáže jen 600`);
-  assert.ok(await page.evaluate(() => document.querySelector('footer').getBoundingClientRect().height <= 64), `${kde}: pata se láme`);
+  // Žádná pata s „Otevřít Agenteeq“: aplikaci otevírá jen značka v hlavičce a dvě viditelná
+  // ovládání nikdy nenesou stejný nebo podobný popisek (vlastník: „nesmí to být tak zmatečné“).
+  assert.equal(await page.locator('footer, #app-link, #retry').count(), 0, `${kde}: žádná pata s druhým „Otevřít“`);
+  const popisky = await page.evaluate(() => [...document.querySelectorAll('a, button')].filter((x) => x.getClientRects().length && !x.closest('[hidden], #konverzace'))
+    .map((x) => (x.getAttribute('aria-label') || x.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase()).filter(Boolean));
+  assert.equal(new Set(popisky).size, popisky.length, `${kde}: dvě ovládání se stejným popiskem: ${popisky.join(' | ')}`);
+  assert.equal(popisky.filter((x) => /^otevřít( v)? agenteeq|^open( in)? agenteeq/.test(x)).length, 0, `${kde}: nejasné „Otevřít Agenteeq“`);
+  // Hlavička se vejde: značka, stav, obnova a služby na jednom řádku.
+  assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5 && x.getBoundingClientRect().height <= 32.5)), `${kde}: hlavička přetéká`);
   assert.equal(await page.locator('#sites input[type=checkbox]').count(), 9);
   assert.equal(await page.locator('#sites-open').isVisible(), true, `${kde}: služby a port jsou dostupné vždy`);
   // Obrys zaostření nemění tvar: kapsle zůstane kapslí, kruh kruhem.
@@ -125,7 +133,10 @@ try {
           // Reflektor: jedna hlavní věc s pravdivou akcí. Agenteeq neumí schvalovat, jen otevřít agenta.
           assert.match(await page.locator('#spot').innerText(), /Potřebuje tě[\s\S]*Migrace API na v2[\s\S]*Čeká na povolení: Bash/);
           const cta = page.locator('#spot-stage .cta');
-          assert.equal((await cta.innerText()).trim().replace(/\u00a0/g, ' '), 'Otevřít v Agenteeq');
+          assert.equal((await cta.innerText()).trim().replace(/\u00a0/g, ' '), 'Otevřít konverzaci');
+          // Aplikaci otevírá značka v hlavičce s jasným jménem pro čtečku.
+          assert.equal(await page.locator('#brand').getAttribute('aria-label'), 'Otevřít aplikaci Agenteeq');
+          assert.equal(await page.locator('#brand').getAttribute('href'), 'http://127.0.0.1:4620/');
           assert.doesNotMatch(await text(), /Rozhodnout|Otevřít v Claude Code/, 'akce neslibuje, co Agenteeq neumí');
           assert.equal(await page.locator('#pager').isVisible(), false, 'jedna položka nemá stránkování');
           assert.equal(await page.locator('#souhrn').textContent(), 'Potřebuje tě 1 agent · 2 pracují');
@@ -259,8 +270,9 @@ try {
           assert.equal(await page.locator('#pill-text').textContent(), 'Neběží');
           assert.match(await page.locator('#spot').innerText(), /Agenteeq na tomto počítači neběží[\s\S]*Stáhnout Agenteeq/);
           assert.equal(await page.locator('#download').getAttribute('href'), 'https://agentree-fawn.vercel.app/');
-          assert.equal(await page.locator('#retry').isVisible(), true, 'pata nabízí jen „Zkusit znovu“ – jedna hlavní výzva');
-          assert.equal(await page.locator('#app-link').isVisible(), false);
+          // Jediná hlavní výzva je „Stáhnout“; znovu to zkusí obnova v hlavičce, značka není odkaz na nedostupnou adresu.
+          assert.equal(await page.locator('.btn--primary:visible').count(), 1, 'jedna hlavní výzva');
+          assert.equal(await page.locator('#brand').getAttribute('href'), null);
           // Nezjištěno ≠ nic neběží: bez aplikace okno počty agentů nehádá.
           assert.match(await page.locator('#souhrn').textContent(), /nezjištěno/);
           assert.doesNotMatch(await text(), /nikdo nepracuje|nic neběží|V pořádku/i);
@@ -302,7 +314,7 @@ try {
         const kde = `${engine} ${theme} ${stav}`;
         // Co je vidět bez posunu: řádky osy celé nad patou a kolik různých log na nich je.
         const videt = () => page.evaluate(() => {
-          const pata = document.querySelector('footer').getBoundingClientRect().top;
+          const pata = innerHeight;
           const radky = [...document.querySelectorAll('#konverzace .radek')].filter((r) => r.getBoundingClientRect().bottom <= pata + 1);
           return { radky: radky.length, loga: new Set(radky.map((r) => r.querySelector('.tile img')?.getAttribute('src')).filter(Boolean)).size };
         });
@@ -347,8 +359,8 @@ try {
         await page.waitForFunction(() => document.body.dataset.stav !== 'nacitam');
         await page.evaluate(() => document.fonts.ready);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine} ${nazev}: nic nepřetéká do strany`);
-        assert.ok(await page.evaluate(() => document.querySelector('footer').getBoundingClientRect().height <= 64), `${engine} ${nazev}: pata se neláme`);
-        assert.ok(await page.evaluate(() => [...document.querySelectorAll('.filter, #pager, .cta')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `${engine} ${nazev}: ovládání je celé vidět`);
+        assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `${engine} ${nazev}: hlavička se vejde`);
+        assert.ok(await page.evaluate(() => [...document.querySelectorAll('.filter, #pager, #spot-stage .cta')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `${engine} ${nazev}: ovládání je celé vidět`);
         assert.deepEqual(errors, []);
         await page.screenshot({ path: `dist/qa-extension/${engine}-${nazev}.png`, fullPage: true });
         results.push({ engine, theme: 'light', state: nazev, passed: true }); await page.close();
@@ -396,14 +408,15 @@ try {
       assert.doesNotMatch(text, /[ěščřžýáíéůúďťňó]/i, `en ${state}: v okně zůstala čeština`);
       // Čeština bez diakritiky: „z“ v počtu („8 z 9“) a slova, která v angličtině nejsou.
       assert.doesNotMatch(text, /\d\s+z\s+\d|(^|\s)(ve|na|se|je|pro|nebo|tady|jsi)\s/i, `en ${state}: v okně zůstala čeština bez diakritiky`);
-      assert.ok(await page.evaluate(() => document.querySelector('footer').getBoundingClientRect().height <= 64), `en ${state}: pata se láme`);
+      assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `en ${state}: hlavička se vejde`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `en ${state}: nic nepřetéká do strany`);
       const ocekavane = { offline: 'Agenteeq isn’t running on this computer', unpaired: 'Pair the extension with a code', paired: 'What’s happening', sluzby: 'Tracked services', overeni: 'Page check' }[state];
       assert.ok(text.includes(ocekavane), `en ${state}: chybí „${ocekavane}“`);
       if (state === 'paired') {
         assert.match(text, /replying · 0:4\d/);
         assert.match(text, /1 agent needs you · 1 working/);
-        assert.match(text, /Open in Agenteeq/);
+        assert.match(text, /Open conversation/);
+        assert.match(text, /Open the Agenteeq app/);
         assert.match(text, /Codex on the web/);
         assert.match(text, /reply finished/);
         assert.match(text, /Earlier|Today|Now/);

@@ -125,19 +125,24 @@ Vlastník vybral směr „Jedna hlavní věc“ (scéna) s prvky ze směrů „V
 značka“. Závazná podoba `extension/popup.html`:
 
 - **Žádné velké číslo.** Počty jen drobně: stránkování reflektoru, počty ve skupinách, souhrnná věta.
-- **Hlavička 56 px** (značka, kapsle stavu spojení, kruhová obnova) a **pata** (kapsle „Otevřít
-  Agenteeq“, bez aplikace „Zkusit znovu“; kruhy Ověřit tuto stránku a Sledované služby a port) stojí,
-  roluje jen střed. Okno má 380 × 600 px; obsah pod patou se rozplyne maskou.
+- **Hlavička 56 px** stojí, roluje jen zbytek: značka „Agenteeq ↗“ je odkaz, který otevírá aplikaci
+  (jediné místo s touto akcí; bez běžící aplikace jen značka), kapsle stavu spojení, kruhová obnova
+  a kruh Sledované služby a port. **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
+  vedle „Otevřít v Agenteeq“ bylo matoucí. Ověření stránky je kapsle u řádku aktuální karty. Dvě
+  viditelná ovládání nikdy nenesou stejný nebo podobný popisek (hlídá qa-extension). Okno má
+  380 × 600 px; obsah na spodním okraji se rozplyne maskou.
 - **Reflektor:** skleněná karta `--r-lg` se září v pigmentu stavu (růže = potřebuje tě / selhalo,
   okr = limit, šalvěj = pracuje, mlha = klid). Pořadí: rozhodnutí → pracující agent → odpovídající chat
   v jiné kartě → nezjištěno → klid. Víc rozhodnutí = stránkování se skutečným počtem a šipkami
   (←/→, tah); nová položka jen tečka na šipce, okno nikdy samo nepřeskočí. Akce říká pravdu:
-  „Otevřít v Agenteeq“ (focus-agent), u chatu „Přepnout na kartu“ – nikdy „Rozhodnout“.
+  „Otevřít konverzaci“ (focus-agent otevře tu konverzaci v aplikaci), u chatu „Přepnout na kartu“ –
+  nikdy „Rozhodnout“.
 - **Co se děje:** filtr Vše · Agenti · Chaty (kapsle 32 px), skupiny Teď / Dnes / Dříve, řádek
   `--r-md` s dlaždicí loga (`--r-logo`) a tečkou stavu, název, „nástroj · činnost“ v `*-ink`
   pigmentu, čas vpravo. Stav se v řádcích neopakuje jako štítek – nese ho skupina a barva činnosti.
 - **Pravdivé stavy:** nezjištěný výpis procesů i nedostupná aplikace = „nezjištěno“, nikdy nula.
-  Bez aplikace jedna hlavní výzva (Stáhnout) a chaty, které rozšíření vidí samo.
+  Bez aplikace jedna hlavní výzva (Stáhnout) a chaty, které rozšíření vidí samo. Aplikace běží, ale
+  ověření selže = „Nepodařilo se ověřit spojení s Agenteeq“, nikdy „neběží“ ani „nespárováno“.
 - **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
   stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
 

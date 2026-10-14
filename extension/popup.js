@@ -145,7 +145,7 @@ function ukaz(pohled) {
   list.overeni.hidden = pohled !== 'overeni';
   $('sites-open').setAttribute('aria-expanded', String(pohled === 'sluzby'));
   // Pod otevřeným listem nic jiného zaostřit nejde (dialog je modální).
-  for (const x of [document.querySelector('.top'), $('scroll'), document.querySelector('.foot')]) x.toggleAttribute('inert', pohled !== 'hlavni');
+  for (const x of [document.querySelector('.top'), $('scroll')]) x.toggleAttribute('inert', pohled !== 'hlavni');
   clearInterval(overeni.casovac);
   if (pohled === 'overeni') {
     obnovOvereni();
@@ -158,7 +158,6 @@ function ukaz(pohled) {
   } else list[pohled].querySelector('[data-close].icon-btn').focus({ preventScroll: true });
 }
 $('sites-open').addEventListener('click', () => ukaz('sluzby'));
-$('check-open').addEventListener('click', () => ukaz('overeni'));
 for (const sheet of [$('view-sluzby'), $('view-overeni')]) {
   sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) ukaz('hlavni'); });
   sheet.addEventListener('keydown', (e) => {
@@ -508,7 +507,7 @@ function slideHtml(M) {
       <div class="who"><span class="tile tile--48" data-s="tile">${logoHtml(logoKlic(it.app), 26)}${M.druh === 'prace' ? '<span class="badge badge--work"></span>' : ''}</span>
         <div data-s><h2 class="spot-title">${esc(sazba(nazev))}</h2><p class="spot-meta"><span>${esc(it.app || '')}${it.app ? ' · ' : ''}<span data-at="${Number(it.at) || 0}" data-format="pred">${esc(ago(it.at))}</span></span></p></div></div>
       ${duvod ? `<p class="say" data-s>${ikona(M.druh === 'prace' ? 'terminal' : ikonaDuvodu(duvod, it.status))}<span class="say-text">${esc(sazba(duvod))}</span></p>` : ''}
-      ${tlacitko(tr('Otevřít v Agenteeq'), `data-agent="${esc(it.id)}" aria-label="${esc(tr('Otevřít agenta {0} v aplikaci Agenteeq', nazev))}"`)}
+      ${tlacitko(tr('Otevřít konverzaci'), `data-agent="${esc(it.id)}" aria-label="${esc(tr('Otevřít agenta {0} v aplikaci Agenteeq', nazev))}"`)}
       <p class="spot-err" role="status" hidden></p>`;
   }
   if (M.druh === 'chat') {
@@ -745,7 +744,7 @@ function radekHtml(p) {
   const obsah = `<span class="tile">${logoHtml(p.logo, 22, p.druh)}${badge ? `<span class="badge ${badge}"></span>` : ''}</span>
     <span class="row-main"><span class="row-title">${esc(sazba(p.title))}</span>
       <span class="row-meta">${ikona(p.druh === 'agent' ? 'terminal' : 'web', 'druh')}${zdroj}<span class="act${p.ton ? ` t-${p.ton}` : ''}"${p.od ? ` data-od="${Number(p.od)}"` : ''}>${esc(sazba(p.act))}</span></span></span>
-    <span class="row-side">${p.tato ? `<span class="tag">${esc(tr('tato karta'))}</span>` : `<span class="row-time" data-at="${Number(p.at) || 0}">${esc(cas(p.at))}</span>`}</span>`;
+    <span class="row-side">${p.tato ? `<span class="tag">${esc(tr('tato karta'))}</span><button type="button" class="btn btn--32" id="check-open" aria-haspopup="dialog" aria-controls="view-overeni">${esc(tr('Ověřit stránku'))}</button>` : `<span class="row-time" data-at="${Number(p.at) || 0}">${esc(cas(p.at))}</span>`}</span>`;
   if (!p.cil) return `<li data-klic="${esc(p.klic)}"><div class="radek${p.tato ? ' radek--tato' : ''}">${obsah}</div></li>`;
   return `<li data-klic="${esc(p.klic)}"><button type="button" class="radek" aria-label="${esc(p.popis)}">${obsah}${ikona('chev', 'chev')}</button></li>`;
 }
@@ -802,6 +801,8 @@ function vykresliOsu({ kaskada = false } = {}) {
 }
 
 $('konverzace').addEventListener('click', (e) => {
+  // Ověření stránky je u řádku aktuální karty – patří k ní, ne k celému oknu.
+  if (e.target.closest('#check-open')) { ukaz('overeni'); return; }
   const tlacitko = e.target.closest('button.radek');
   const p = tlacitko && poslednePolozky.get(tlacitko.closest('[data-klic]').dataset.klic);
   if (!p?.cil) return;
@@ -856,11 +857,9 @@ function vykresli() {
   }
   souhrn.hidden = !s;
   if (s) { souhrn.textContent = sazba(s.text); souhrn.dataset.tone = s.ton; }
-  // Pata: jedna hlavní výzva v místě. Bez aplikace je jí „Stáhnout“ v reflektoru, tady „Zkusit znovu“.
-  $('app-link').hidden = rezim === 'offline';
-  $('retry').hidden = rezim !== 'offline';
-  $('app-link').href = APLIKACE;
-  $('check-open').hidden = !(pripojeno && overeni.diagnostika);
+  // Aplikaci otevírá značka v hlavičce – jediné místo s touto akcí. Bez běžící aplikace je to jen
+  // značka (odkaz by vedl na nedostupnou adresu); hlavní výzvou je pak „Stáhnout“ v reflektoru.
+  nastavZnacku(rezim !== 'offline');
   const out = $('outdated');
   out.hidden = !(pripojeno && seznam.zastarala);
   if (!out.hidden) out.textContent = sazba(tr('Je k dispozici verze {0}. Chrome ji nainstaluje sám; hned ji získáš na stránce chrome://extensions tlačítkem Aktualizovat.', seznam.ocekavana));
@@ -871,8 +870,15 @@ function zakladniStav() {
   seznam.pripojeno = false;
   seznam.zastarala = false;
   delete $('konverzace').dataset.podpis; // Po obnovení spojení se osa vykreslí znovu i se stejnými daty.
-  $('app-link').href = APLIKACE;
-  $('app-link-text').textContent = tr('Otevřít Agenteeq');
+  nastavZnacku(true);
+}
+function nastavZnacku(odkaz) {
+  const z = $('brand');
+  if (odkaz) {
+    z.href = APLIKACE;
+    z.setAttribute('aria-label', tr('Otevřít aplikaci Agenteeq'));
+    z.title = tr('Otevřít aplikaci Agenteeq');
+  } else for (const a of ['href', 'aria-label', 'title']) z.removeAttribute(a);
 }
 
 // Offline stav je skutečná dostupnost lokální služby, ne přítomnost starého snapshotu.
@@ -1013,13 +1019,6 @@ setInterval(async () => {
     probihaKontrolaSpojeni = false;
   }
 }, 5000);
-
-$('retry').addEventListener('click', async () => {
-  const button = $('retry');
-  if (!omezitPohyb()) button.querySelector('svg').animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  await render();
-  if (rezim === 'offline') toast(tr('Agenteeq na tomto počítači neběží'));
-});
 
 // Agenteeq běží na jiném portu (PORT): rozšíření si ho uloží. Jiný než výchozí port
 // potřebuje oprávnění pro 127.0.0.1 na libovolném portu – Chrome se zeptá jednou, v tomhle kliknutí.

@@ -90,7 +90,6 @@
       // Aplikace běží, ale ověření rozšíření selhalo
       'Nepodařilo se ověřit spojení s Agenteeq': 'Couldn’t verify the connection to Agenteeq',
       'Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.': 'The app is running, but the extension got no answer from it. I’ll try again in a few seconds.',
-      'Zkusit znovu': 'Try again',
       'Stáhnout Agenteeq': 'Get Agenteeq',
       // Agenti na tomto počítači
       'Chaty v prohlížeči': 'Chats in the browser',
@@ -110,7 +109,8 @@
       'Potřebuje tě: {0} z {1}. Šipkami vlevo a vpravo přepneš.': 'Needs you: {0} of {1}. Use the left and right arrow keys to switch.',
       'Nově tě potřebuje: {0}': 'Now needs you: {0}',
       'Potřebuje tě': 'Needs you',
-      'Otevřít v Agenteeq': 'Open in Agenteeq',
+      'Otevřít konverzaci': 'Open conversation',
+      'Otevřít aplikaci Agenteeq': 'Open the Agenteeq app',
       'Odpovídá': 'Replying',
       'v jiné kartě': 'in another tab',
       'Přepnout na kartu': 'Switch to tab',
@@ -145,12 +145,10 @@
       'Nic dalšího se teď neděje.': 'Nothing else is happening right now.',
       'Otevři chat s AI a objeví se tady.': 'Open an AI chat and it shows up here.',
       'Rozšíření je sleduje samo, i bez spárování.': 'The extension tracks them on its own, even before pairing.',
-      'Ověřit tuto stránku': 'Check this page',
+      'Ověřit stránku': 'Check page',
       'Sledované služby a port': 'Tracked services and port',
       'Zavřít': 'Close',
       'odpověď je hotová': 'reply finished',
-      // Patička
-      'Otevřít Agenteeq': 'Open Agenteeq',
     },
     // Tvary podle počtu: klíč jsou tři české tvary, hodnota anglické [jednotné, množné].
     mnozne: {
