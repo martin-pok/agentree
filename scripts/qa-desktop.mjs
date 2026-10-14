@@ -570,25 +570,15 @@ for (const engine of engines) {
     assert.equal(page.url(), adresaPredObnovou, `${engine}: ruční obnova nesmí znovu načíst stránku`);
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     assert.equal(await page.locator('.welcome-dialog[open]').count(), 0);
-    // Schválený redesign používá čistou bílou plochu karet.
-    for (const selector of ['.token-card', '.calm']) {
-      assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
-    }
+    // P0 change: failed/limited agents belong in the attention panel. Previous
+    // test required an empty-state card and missed the very issue being fixed.
+    assert.equal(await page.locator('.token-card').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)');
     assert.equal(await page.locator('.pb-stat').nth(0).locator('b').textContent(), '0', `${engine}: selhání není otázka pro uživatele`);
     assert.equal(await page.locator('.pb-stat').nth(1).locator('b').textContent(), '1', `${engine}: selhání zůstává v hlavním pásu`);
-    assert.equal(await page.locator('.decision').count(), 0, `${engine}: selhání se nesmí objevit mezi rozhodnutími`);
-    assert.equal(await page.locator('.calm p').count(), 0, `${engine}: prázdný stav rozhodnutí nesmí slibovat zobrazení vyčerpaného limitu`);
-    const prazdnyStav = await page.locator('.calm--empty').evaluate((el) => {
-      const card = el.getBoundingClientRect();
-      const content = el.querySelector('.calm-content').getBoundingClientRect();
-      const style = getComputedStyle(el);
-      return {
-        left: Math.abs((content.left - card.left) - parseFloat(style.paddingLeft)),
-        vertical: Math.abs((card.top + card.height / 2) - (content.top + content.height / 2)),
-        alignItems: style.alignItems,
-      };
-    });
-    assert.ok(prazdnyStav.left <= 1 && prazdnyStav.vertical <= 1 && prazdnyStav.alignItems === 'center', `${engine}: prázdný stav rozhodnutí nemá přirozené levé odsazení a svislé vystředění: ${JSON.stringify(prazdnyStav)}`);
+    assert.equal(await page.locator('.decision').count(), 1, `${engine}: selhání musí být viditelné v panelu pozornosti`);
+    assert.match(await page.locator('.decision-kicker').first().textContent(), /selhal|Selhalo|Failed|Spuštění/i, `${engine}: pozornost musí uvádět skutečný důvod selhání`);
+    assert.equal(await page.locator('.calm--empty').count(), 0, `${engine}: kritická chyba nesmí být nahrazena prázdným stavem`);
+    assert.equal(await page.locator('.decision').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)', `${engine}: panel pozornosti musí zachovat povrch karet`);
     const odsazeniOdznaku = await page.locator('.nav [data-nav="upozorneni"]').evaluate((item) => {
       const row = item.getBoundingClientRect();
       const badge = item.querySelector('.nav-badge').getBoundingClientRect();

@@ -59,6 +59,32 @@
 
 .loader-text { color: var(--ink-2); font: 500 14px/1.5 var(--f-body, system-ui, sans-serif); }
 
+/* Indeterminate by design: extraction and signature validation do not expose
+   reliable byte progress. Never fake a percentage or a promised finish time. */
+.nacitani .loader-progress {
+  width: min(256px, 80vw);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(82, 84, 216, .14);
+  overflow: hidden;
+}
+.nacitani .loader-progress[hidden] { display: none; }
+.nacitani .loader-progress > span {
+  display: block;
+  width: 36%;
+  height: 100%;
+  border-radius: inherit;
+  background: #5254d8;
+  transform: translateX(-110%);
+  animation: update-progress 1.65s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+@keyframes update-progress {
+  to { transform: translateX(285%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nacitani .loader-progress > span { animation: none; transform: none; width: 100%; opacity: .7; }
+}
+
 /* Odlesk projede za 62 % cyklu zleva doprava (pás 30 jednotek z −30 až za pravý okraj 48),
    zbytek je klid, aby pohyb nepůsobil zběsile. */
 @keyframes lr-lesk {

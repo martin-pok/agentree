@@ -205,3 +205,16 @@ test('průvodce: nesplněný krok s agenty je úkol a tlačítka karet stojí na
   assert.match(/\n\.onboard-step \.btn \{([^}]*)\}/.exec(css)[1], /align-self: end/);
   assert.match(/\n\.onboard-text \{([^}]*)\}/.exec(css)[1], /align-content: start/, 'nadpis a popis drží u sebe i v nižší kartě');
 });
+
+
+test('P0 Codex limit appears in the overview attention inbox and does not masquerade as waiting', async () => {
+  const prehled = await zdroj('public/js/views/overview.js');
+  assert.match(prehled, /const attention = \[\.\.\.failed, \.\.\.limited, \.\.\.needs\]/);
+  assert.match(prehled, /attention\.slice\(0, 4\)\.map\(decisionCard\)/);
+  assert.match(prehled, /tr\('Vyžaduje pozornost'\)/);
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /const limited = s\.status === 'limited'/);
+  assert.match(ui, /limited \? tr\('Vyčerpaný limit'\)/);
+  const en = await zdroj('public/js/i18n/en.js');
+  assert.match(en, /"Vyžaduje pozornost": "Needs attention"/);
+});

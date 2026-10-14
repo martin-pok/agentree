@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var loaderURL: URL?
     var loaderText = "Připravujeme tvůj pracovní prostor…"
     var loaderRetry = false
+    var loaderProgress = false
     // Záloha, kdyby stránka scény v balíčku chyběla: prostý text a tlačítko v AppKitu.
     var fallback: NSStackView!
     var statusLabel: NSTextField!
@@ -239,13 +240,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
 
     // Jediné místo, které mění text a tlačítko načítací scény – ve stránce i v záloze.
-    func setLoading(_ text: String, retry: Bool = false) {
-        loaderText = text; loaderRetry = retry
+    func setLoading(_ text: String, retry: Bool = false, progress: Bool = false) {
+        loaderText = text; loaderRetry = retry; loaderProgress = progress
         statusLabel.stringValue = text; retryButton.isHidden = !retry
         applyLoaderState()
     }
     func applyLoaderState() {
-        guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: ["text": loaderText, "znovu": loaderRetry]), let json = String(data: data, encoding: .utf8) else { return }
+        guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: ["text": loaderText, "znovu": loaderRetry, "progress": loaderProgress]), let json = String(data: data, encoding: .utf8) else { return }
         loaderWeb.evaluateJavaScript("window.agenteeqNacitani && window.agenteeqNacitani(\(json))")
     }
     func showLoading() {
@@ -399,7 +400,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "nacitani" {
-            if message.webView === loaderWeb, message.frameInfo.isMainFrame, (message.body as? [String: Any])?["type"] as? String == "znovu" { retry() }
+            guard message.webView === loaderWeb, message.frameInfo.isMainFrame,
+                  let type = (message.body as? [String: Any])?["type"] as? String else { return }
+            if type == "znovu" { retry() }
+            // Always give the user an explicit way out of a long installer.
+            // The quit watchdog below is independent of WebKit/server progress.
+            if type == "ukoncit", installing { NSApp.terminate(nil) }
             return
         }
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
@@ -428,12 +434,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func reportUpdateError(_ message: String) {
         installing = false
+        // Failure happened BEFORE the bundle swap. Restore the already-running
+        // application instead of stranding a user behind a permanent loader.
+        if baseURL != nil { hideLoading() }
+        else { setLoading(message, retry: true) }
         guard let data = try? JSONSerialization.data(withJSONObject: [message]), let json = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.agenteeqAktualizaceSelhala && window.agenteeqAktualizaceSelhala(\(json)[0])")
     }
     func installUpdate(zip: String, version: String) {
-        guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else { return }
+        guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else {
+            reportUpdateError("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.")
+            return
+        }
         installing = true
+        // Feedback must start BEFORE extracting the downloaded archive. Otherwise
+        // large ZIPs look like a frozen black screen until the last file is copied.
+        showLoading()
+        setLoading("Ověřujeme a připravujeme Agenteeq \(version)…", progress: true)
         let current = Bundle.main.bundleURL.standardizedFileURL
         let dest = current.deletingLastPathComponent()
         let bundleID = Bundle.main.bundleIdentifier ?? "cz.agenteeq.desktop"
@@ -443,12 +460,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let fail = { (message: String) in DispatchQueue.main.async { self.reportUpdateError(message) } }
             guard fm.isWritableFile(atPath: dest.path) else { fail("Do složky \(dest.path) nejde zapisovat. Spusť aktualizaci příkazem z Terminálu."); return }
             let work = fm.temporaryDirectory.appendingPathComponent("agenteeq-update-\(UUID().uuidString)", isDirectory: true)
+            DispatchQueue.main.async { self.setLoading("Rozbalujeme aktualizaci…", progress: true) }
             guard (try? fm.createDirectory(at: work, withIntermediateDirectories: true)) != nil, self.runTool("/usr/bin/ditto", ["-x", "-k", zip, work.path]) == 0 else { fail("Balíček aktualizace nejde rozbalit. Nic se nezměnilo."); return }
             let fresh = work.appendingPathComponent("Agenteeq.app")
             let info = NSDictionary(contentsOf: fresh.appendingPathComponent("Contents/Info.plist"))
             guard info?["CFBundleIdentifier"] as? String == bundleID, info?["CFBundleShortVersionString"] as? String == version else { fail("V balíčku není Agenteeq \(version). Nic se nezměnilo."); return }
+            DispatchQueue.main.async { self.setLoading("Kontrolujeme podpis aplikace…", progress: true) }
             guard self.runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path]) == 0 else { fail("Podpis nové verze neprošel kontrolou. Nic se nezměnilo."); return }
             // Kopie vedle cíle (stejný disk): výměna po ukončení je jen přejmenování.
+            DispatchQueue.main.async { self.setLoading("Připravujeme bezpečnou výměnu…", progress: true) }
             let stage = dest.appendingPathComponent(".agenteeq-update-\(UUID().uuidString).app")
             guard self.runTool("/usr/bin/ditto", [fresh.path, stage.path]) == 0 else { fail("Novou verzi se nepodařilo připravit (místo na disku?). Nic se nezměnilo."); return }
             self.runTool("/usr/bin/xattr", ["-dr", "com.apple.quarantine", stage.path])
@@ -468,22 +488,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             fi
             if mv "$current" "$backup"; then
               if mv "$stage" "$current"; then
-                xattr -dr com.apple.quarantine "$current" 2>/dev/null
-                [ -n "$trash" ] && mv "$backup" "$trash" 2>/dev/null
-              else
-                mv "$backup" "$current"; rm -rf "$stage"
+                xattr -dr com.apple.quarantine "$current" 2>/dev/null || :
+                # Retain the old app until macOS confirms that the new one can
+                # at least be opened; never trash the only recoverable bundle.
+                if open "$current"; then
+                  [ -n "$trash" ] && mv "$backup" "$trash" 2>/dev/null || :
+                  exit 0
+                fi
+                rm -rf "$current"
+                mv "$backup" "$current" || exit 1
+                open "$current" || :
+                exit 1
               fi
-            else
-              rm -rf "$stage"
+              mv "$backup" "$current" || exit 1
             fi
-            open "$current"
+            rm -rf "$stage"
+            open "$current" || :
+            exit 1
             """
             let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
             helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, stage.path, backup.path, trash?.path ?? ""]
             helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
             do { try helper.run() } catch { try? fm.removeItem(at: stage); fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
             DispatchQueue.main.async {
-                self.showLoading(); self.setLoading("Instalujeme Agenteeq \(version)…")
+                self.showLoading(); self.setLoading("Spouštíme Agenteeq \(version)…", progress: true)
                 NSApp.terminate(nil)
             }
         }
@@ -564,22 +592,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func applicationDidBecomeActive(_ notification: Notification) { relaunchIfReplaced() }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { relaunchIfReplaced(); showWindow(); return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    var terminateReplyPending = false
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard child?.isRunning == true else { return .terminateNow }
         quitting = true
-        let process = child!
-        // AppKit's terminateLater runs a special run-loop mode: a default-mode
-        // Timer can stop firing here and leave the GUI/instance lock alive.
-        // Reap off the UI thread, including an exit racing this callback.
+        guard let process = child, process.isRunning else { return .terminateNow }
+        // Never allow a dead/unresponsive backend to trap the Dock Quit action.
+        // AppKit's terminateLater uses a special runloop: do NOT wait on main,
+        // or rely on a default-mode Timer as the only completion mechanism.
+        terminateReplyPending = true
+        let finish: () -> Void = { [weak self] in
+            guard let self, self.terminateReplyPending else { return }
+            self.terminateReplyPending = false
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
         process.terminationHandler = nil
-        try? input?.fileHandleForWriting.close(); process.terminate()
-        DispatchQueue.global().asyncAfter(deadline: .now() + 10) {
+        try? input?.fileHandleForWriting.close()
+        if process.isRunning { process.terminate() }
+        // SIGTERM is a graceful request; escalation must not block the UI.
+        DispatchQueue.global().asyncAfter(deadline: .now() + 8) {
             if process.isRunning { kill(process.processIdentifier, SIGKILL) }
         }
         DispatchQueue.global().async {
             process.waitUntilExit()
-            DispatchQueue.main.async { NSApp.reply(toApplicationShouldTerminate: true) }
+            DispatchQueue.main.async(execute: finish)
         }
+        // Even an uninterruptible child must not strand the native window
+        // indefinitely. The OS will close remaining process-owned resources.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: finish)
         return .terminateLater
     }
 }
