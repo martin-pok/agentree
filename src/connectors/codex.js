@@ -277,7 +277,7 @@ export function createCodexConnector(ctx) {
     const exhausted = ['primary', 'secondary']
       .map((slot) => {
         const w = rl[slot];
-        if (!w || w.used_percent < 100) return null;
+        if (!w || typeof w.used_percent !== 'number' || w.used_percent < 100) return null;
         const resetsAt = toTs(w.resets_at)
           || (typeof w.resets_in_seconds === 'number' ? ts + w.resets_in_seconds * 1000 : null);
         // Old snapshots should never resurrect an already reset limit.
