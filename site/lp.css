@@ -113,7 +113,7 @@ html[data-os="mac"] [data-os-only="windows"],
 html[data-os="windows"] [data-os-only="mac"] { display:none!important; }
 [data-os-switcher] { display:none; }
 html[data-os-ready] [data-os-switcher] { display:inline-flex; align-items:center; gap:3px; padding:4px; border:1px solid currentColor; border-radius:999px; }
-[data-os-choice] { min-width:76px; min-height:44px; padding:5px 14px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+[data-os-choice] { min-width:76px; min-height:48px; padding:5px 14px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
 [data-os-choice][aria-pressed="true"] { background:var(--on-stage); color:var(--backdrop); }
 [data-os-choice]:focus-visible { outline:2px solid var(--accent-violet); outline-offset:3px; }
 html[data-os="windows"] .cta-row [data-stahnout="windows-x64"] { order:-1; }
