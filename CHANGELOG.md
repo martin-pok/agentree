@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.13 · nevydáno
+
+- **Nenápadné obnovení dat.** Při ruční aktualizaci již nepřekáží velký animovaný robot a dvě informační věty. Zobrazuje se jediný srozumitelný stav, drobný indikátor a jemná průběžná linka bez vymyšlených procent. Běžné ovládání aplikace zůstává dostupné a omezený pohyb je respektován. Jde o zdrojovou změnu čekající na ověření a další vydání.
+
 ## 0.46.13 – 2026-10-14 · bezpečnější aktualizace a pravdivé stavy
 
 - **Aktualizace Macu se nesmí změnit v past.** Nativní instalátor před rozbalováním ukazuje stav, nabízí ukončení, po selhání vrátí původní rozhraní a při chybném spuštění nového balíčku obnoví předchozí verzi. Opravy jsou zatím ve zdroji, nikoli v již vydaných 0.46.12 binárkách; skutečný upgrade na Macu se ještě musí ověřit.
