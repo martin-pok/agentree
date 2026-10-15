@@ -139,13 +139,16 @@ try {
     await pockej(async () => (await udalosti(hlaseni)).some((u) => u.udalost === 'qa-ukonceni'), 20000);
     const start = Date.now();
     const konec = await Promise.race([skoncil, cekej(30000).then(() => null)]);
-    zapis(konec !== null && konec - start <= 20000, konec ? `C ukončení: aplikace skončila za ${((konec - start) / 1000).toFixed(1)} s i se zaseknutým serverem` : 'C ukončení: aplikace se do 30 s neukončila');
+    zapis(konec !== null && konec - start <= 12000, konec ? `C ukončení: aplikace skončila za ${((konec - start) / 1000).toFixed(1)} s i se zaseknutým serverem` : 'C ukončení: aplikace se do 30 s neukončila');
     const serverPryc = await pockej(() => !bezi(path.join(bundle, 'Contents', 'Resources', 'node')), 10000);
     zapis(serverPryc, serverPryc ? 'C ukončení: server skončil s aplikací' : 'C ukončení: server běží dál bez aplikace');
   }
   plast.kill('SIGKILL');
-  const log = await fs.readFile(denik, 'utf8').catch(() => '');
-  zapis(/nová verze spuštěna/.test(log), 'denik aktualizace zaznamenal úspěšné spuštění nové verze');
+  // Text z pomocníka předává macOS v rozloženém tvaru Unicode (NFD) – porovnává se po normalizaci.
+  const log = (await fs.readFile(denik, 'utf8').catch(() => '')).normalize('NFC');
+  zapis(/nová verze spuštěna/.test(log), 'deník aktualizace zaznamenal úspěšné spuštění nové verze');
+  // Pojistka je poslední záchrana. Běžné ukončení i aktualizace musí doběhnout bez ní.
+  zapis(!/pojistkou/.test(log), log.includes('pojistkou') ? 'ukončení skončilo až pojistkou – běžná cesta se zasekla' : 'ukončení i aktualizace doběhly běžnou cestou, bez pojistky');
   await fs.writeFile(path.join(vystup, 'update.log'), log);
 } finally {
   await ukonciVse();

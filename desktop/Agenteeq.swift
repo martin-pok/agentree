@@ -705,6 +705,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { relaunchIfReplaced(); showWindow(); return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     var terminateReplyPending = false
+    var stoppingForQuit = false
     // Odhlášení, restart nebo vypnutí Macu nese v události důvod. Tam se neptáme – systém by čekal.
     var quitIsSystemInitiated: Bool {
         NSAppleEventManager.shared().currentAppleEvent?.attributeDescriptor(forKeyword: AEKeyword(0x7768_793F)) != nil // 'why?' = kAEQuitReason
@@ -729,6 +730,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         // Ukončení se nesmí zaseknout ani při zaseknutém serveru nebo ztracené odpovědi AppKitu.
         armExitWatchdog(seconds: 15)
         guard let process = child, process.isRunning else { return .terminateNow }
+        // ⌘Q a Ukončit z Docku: server se zastaví mimo hlavní vlákno s pevným limitem a pak se
+        // aplikace ukončí znovu – už bez běžícího serveru, tedy okamžitě. Na odpověď AppKitu
+        // (terminateLater) se nečeká; v praxi se uměla ztratit a aplikace pak visela.
+        // Odhlášení a vypnutí Macu nejde zrušit a znovu spustit, ty jdou cestou níže.
+        if !quitIsSystemInitiated {
+            if !stoppingForQuit {
+                stoppingForQuit = true
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                    self?.stopServerBounded()
+                    DispatchQueue.main.async { NSApp.terminate(nil) }
+                }
+            }
+            return .terminateCancel
+        }
         // Never allow a dead/unresponsive backend to trap the Dock Quit action.
         // AppKit's terminateLater uses a special runloop: do NOT wait on main,
         // or rely on a default-mode Timer as the only completion mechanism.

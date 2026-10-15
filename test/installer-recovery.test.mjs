@@ -48,6 +48,10 @@ test('update and Quit never depend solely on AppKit termination', async () => {
   assert.doesNotMatch(bounded, /waitUntilExit/, 'bounded polling only; never an unbounded wait');
   const quit = swift.slice(swift.indexOf('func applicationShouldTerminate('));
   assert.match(quit, /armExitWatchdog\(seconds: 15\)/, 'Dock/⌘Q Quit is guaranteed even with a wedged server');
+  // Na Macu v CI se ukázalo, že odpověď na terminateLater se při zaseknutém serveru ztratí
+  // (ukončení doběhlo až pojistkou). Uživatelské ukončení proto server zastaví samo a pak
+  // ukončí aplikaci znovu – bez terminateLater.
+  assert.match(quit, /if !quitIsSystemInitiated \{[\s\S]*?self\?\.stopServerBounded\(\)[\s\S]*?NSApp\.terminate\(nil\)[\s\S]*?return \.terminateCancel/);
   assert.match(quit, /ownedRuns > 0, !quitIsSystemInitiated, !confirmQuitWithRunningAgents\(\)/,
     'Quit asks before stopping agents started from Agenteeq, but never blocks logout/shutdown');
   assert.match(swift, /if type == "owned-runs", let count = data\["count"\] as\? Int \{ ownedRuns = max\(0, count\) \}/);
