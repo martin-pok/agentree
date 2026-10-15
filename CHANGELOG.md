@@ -2,6 +2,7 @@
 
 ## Připravované změny po 0.46.13 · nevydáno
 
+- **Web podle systému návštěvníka.** Česká i anglická úvodní stránka a návod k instalaci ukazují na Windows nejdřív Windows beta verzi s vlastním postupem a na Macu postup pro Mac. Návštěvník může systém ručně přepnout. Odkazy Stable míří na skutečné přílohy v0.46.0; přepnutí nemění kanál vydání ani obsah konverzací.
 - **Nenápadné obnovení dat.** Při ruční aktualizaci již nepřekáží velký animovaný robot a dvě informační věty. Zobrazuje se jediný srozumitelný stav, drobný indikátor a jemná průběžná linka bez vymyšlených procent. Běžné ovládání aplikace zůstává dostupné a omezený pohyb je respektován. Jde o zdrojovou změnu čekající na ověření a další vydání.
 
 ## 0.46.13 – 2026-10-14 · bezpečnější aktualizace a pravdivé stavy

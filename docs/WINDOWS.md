@@ -16,9 +16,10 @@ Plášť (`desktop/windows/Agenteeq.cpp`) je protějšek toho ve Swiftu: vlastn�
 WebView2, ikona v hlavním panelu s odznakem, ikona v oznamovací oblasti a systémová
 oznámení. CI ho překládá při každé změně a hotový balíček přikládá k běhu.
 
-**Co zbývá, je jediná věc, kterou z Macu ani z CI udělat nejde: pustit to na skutečném
-Windows a podívat se na to.** Překlad dokazuje, že je co spustit. Nedokazuje, že okno
-vypadá, jak má.
+**Uživatel 15. 10. 2026 předal rychlou kontrolu od kolegy na skutečném Windows:** aplikaci
+spustil a podle jeho dojmu fungovala překvapivě dobře, zároveň našel prostor k doladění.
+Není znám přesný build, verze Windows ani kontrolované scénáře. Tento check potvrzuje
+první reálné spuštění, ale nenahrazuje cílené UAT okna, konektorů, aktualizace a instalace.
 
 ## Co je doložené
 
@@ -29,7 +30,7 @@ vypadá, jak má.
 | Rozhraní, stav, konektory přes HTTP | ✅ | ✅ |
 | Zákaz cesty ven z `public/`, ochrana proti CSRF | ✅ | ✅ |
 | Plášť se přeloží a sestaví se balíček | ✅ | ✅ |
-| **Okno opravdu vypadá a chová se, jak má** | ✅ | ⛔ **neověřeno** – chce skutečný stroj |
+| **Okno na skutečném zařízení** | ✅ | 🟡 **rychle spuštěno kolegou**, bez detailního protokolu a vizuálního UAT |
 
 Smoke nesahá do vnitřku aplikace – mluví s ní jen přes HTTP, stejně jako prohlížeč. To, že
 projde na `windows-latest`, znamená, že se aplikace na Windows opravdu spustí a rozhraní
@@ -180,9 +181,9 @@ zvolit Další informace → Přesto spustit. Varování SmartScreen u nepodepsa
 
 ## Co ještě chybí, než půjde Windows nabízet bez štítku beta
 
-1. **Spustit Agenteeq na skutečném Windows a projít rozhraní očima.** Balíček je ke stažení
-   u každého běhu CI (artefakt „Agenteeq-Windows“). Tohle je jediný zbývající krok, který
-   nejde udělat odjinud.
+1. **Dokončit UAT na skutečném Windows.** Rychlé spuštění kolegou 15. 10. dopadlo podle
+   jeho dojmu dobře, ale neobsahuje přesný build, screenshoty, zkoušku klávesnice, ověření
+   aktualizace ani chybných stavů. Balíček je u každého běhu CI (artefakt „Agenteeq-Windows“).
 2. Ověřit, kam na Windows ukládají Claude Code, Codex, Cursor, VS Code a Claude Desktop,
    a zapsat to do `docs/CONNECTORS.md`.
 3. Přepsat katalog běžících aplikací na windowsové názvy.

@@ -11,6 +11,36 @@ import { enableLivePreview } from '/preview-release.js';
 
 const anglicky = document.documentElement.lang === 'en';
 
+// A Windows visitor sees the Windows path first. The platform control remains available when
+// detection is wrong or someone is downloading for another computer.
+const osRoot = document.documentElement;
+function nastavPlatformu(os, remember = false) {
+  if (!['mac', 'windows'].includes(os)) return;
+  osRoot.dataset.os = os;
+  for (const choice of document.querySelectorAll('[data-os-choice]')) {
+    choice.setAttribute('aria-pressed', String(choice.dataset.osChoice === os));
+  }
+  if (document.body.classList.contains('install-page')) {
+    const mac = document.getElementById('mac');
+    const windows = document.getElementById('windows');
+    if (mac && windows) (os === 'windows' ? mac : windows).before(os === 'windows' ? windows : mac);
+  }
+  if (remember) {
+    try { sessionStorage.setItem('agenteeq-site-os', os); } catch { /* private browsing */ }
+    const url = new URL(location.href);
+    url.searchParams.set('os', os);
+    if (['#mac', '#windows'].includes(url.hash) && url.hash !== `#${os}`) url.hash = '';
+    history.replaceState(history.state, '', url);
+  }
+}
+nastavPlatformu(osRoot.dataset.os);
+for (const choice of document.querySelectorAll('[data-os-choice]')) {
+  choice.addEventListener('click', () => nastavPlatformu(choice.dataset.osChoice, true));
+}
+for (const link of document.querySelectorAll('a[href="#mac"], a[href="#windows"]')) {
+  link.addEventListener('click', () => nastavPlatformu(link.getAttribute('href').slice(1), true));
+}
+
 // Published Preview and its changelog move together, without changing Stable.
 enableLivePreview();
 

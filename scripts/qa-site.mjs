@@ -63,6 +63,61 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // Real platform paths: first paint, the correct download, keyboard switching,
+      // language/install continuity, and the Windows instructions before Mac instructions.
+      for (const platform of ['Win32', 'MacIntel']) {
+        const expected = platform === 'Win32' ? 'windows' : 'mac';
+        const p = await browser.newPage({ viewport: { width: 375, height: 900 }, reducedMotion: 'reduce' });
+        const errors = [];
+        const external = [];
+        await p.addInitScript(({ platform }) => {
+          Object.defineProperty(navigator, 'platform', { configurable: true, value: platform });
+          Object.defineProperty(navigator, 'userAgentData', { configurable: true, value: { platform: platform === 'Win32' ? 'Windows' : 'macOS' } });
+        }, { platform });
+        await jenMistni(p, external);
+        p.on('pageerror', error => errors.push(error.message));
+        await p.goto(url);
+        assert.equal(await p.locator('html').getAttribute('data-os'), expected, `${engine}: ${platform} detection`);
+        assert.equal(await p.locator('.hero [data-stahnout]:visible').getAttribute('data-stahnout'), expected === 'windows' ? 'windows-x64' : 'mac-arm64');
+        assert.match(await p.locator('.hero [data-stahnout]:visible').getAttribute('href'), expected === 'windows' ? /Agenteeq-Windows-x64\.zip$/ : /Agenteeq-macOS-arm64\.dmg$/);
+        assert.equal(await p.locator('#vyzkouset .steps:visible').count(), 1, `${engine}: one install procedure`);
+        await p.evaluate(async () => { for (const img of document.querySelectorAll('.detail img')) { img.loading = 'eager'; await img.decode().catch(() => {}); } });
+        await p.screenshot({ path: path.join(output, `${engine}-${expected}-375-home.png`), fullPage: true });
+        await p.locator(`[data-os-choice="${expected === 'windows' ? 'mac' : 'windows'}"]`).focus();
+        await p.keyboard.press('Enter');
+        assert.equal(await p.locator('html').getAttribute('data-os'), expected === 'windows' ? 'mac' : 'windows', `${engine}: manual switch`);
+        await p.reload();
+        assert.equal(await p.locator('html').getAttribute('data-os'), expected === 'windows' ? 'mac' : 'windows', `${engine}: switch persists`);
+        await p.goto(`${url}/instalace`);
+        assert.equal(await p.locator('html').getAttribute('data-os'), expected === 'windows' ? 'mac' : 'windows', `${engine}: install route keeps selection`);
+        await p.locator('[data-os-choice="windows"]').click();
+        assert.equal(await p.locator('.install-page .hero .install-hero-scene:visible').count(), 1, `${engine}: one hero diagram`);
+        assert.equal(await p.locator('#windows').isVisible(), true, `${engine}: Windows installation visible`);
+        assert.equal(await p.locator('#mac').isVisible(), false, `${engine}: Mac installation hidden on Windows`);
+        assert.equal(await p.locator('.install-page .hero .specs:visible').count(), 1, `${engine}: one platform requirement`);
+        assert.equal(await p.locator('#potize details:visible').count(), 4, `${engine}: Windows-specific installation help`);
+        assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${engine}: Windows mobile overflow`);
+        assert.equal(await p.locator('main > section').nth(1).getAttribute('id'), 'windows', `${engine}: Windows steps first`);
+        await p.screenshot({ path: path.join(output, `${engine}-windows-375-install.png`), fullPage: true });
+        if (expected === 'windows') {
+          await p.setViewportSize({ width: 1440, height: 900 });
+          await p.screenshot({ path: path.join(output, `${engine}-windows-1440-install.png`), fullPage: true });
+          await p.goto(url);
+          await p.screenshot({ path: path.join(output, `${engine}-windows-1440-home.png`), fullPage: true });
+          await p.goto(`${url}/en`);
+          assert.equal(await p.locator('html').getAttribute('data-os'), 'windows', `${engine}: English page keeps Windows`);
+          assert.equal(await p.locator('.hero [data-stahnout]:visible').textContent(), 'Download for Windows');
+          await p.goto(`${url}/en/install`);
+          assert.equal(await p.locator('#windows').isVisible(), true, `${engine}: English Windows installation visible`);
+          assert.equal(await p.locator('#mac').isVisible(), false, `${engine}: English Mac installation hidden`);
+          await p.goto(`${url}/instalace#mac`);
+          assert.equal(await p.locator('html').getAttribute('data-os'), 'mac', `${engine}: direct Mac anchor overrides Windows device preference`);
+          assert.equal(await p.locator('#mac').isVisible(), true, `${engine}: direct Mac instructions visible`);
+        }
+        assert.deepEqual(errors, [], `${engine}: platform path errors`);
+        assert.deepEqual(external, [], `${engine}: platform path external requests`);
+        await p.close();
+      }
       // Verify real browser/CSP integration, not merely the metadata parser.
       // Public metadata is intercepted above with an exact deterministic
       // fixture; the production site fetches only near the download block.
@@ -144,7 +199,7 @@ try {
           // Hlavní obsah lícuje s navigací. FAQ ani instalační postup nemají vlastní užší sloupec.
           const okraje = await page.evaluate(() => {
             const vzor = document.querySelector('.nav > .wrap').getBoundingClientRect();
-            return [...document.querySelectorAll('.unit > .wrap:not(.note), footer > .wrap')].map(el => {
+            return [...document.querySelectorAll('.unit > .wrap:not(.note), footer > .wrap')].filter(el => el.getBoundingClientRect().width > 0).map(el => {
               const r = el.getBoundingClientRect();
               return { sekce: el.closest('section')?.id || 'footer', rozdil: Math.max(Math.abs(r.left - vzor.left), Math.abs(r.right - vzor.right)) };
             });
@@ -236,7 +291,7 @@ try {
           assert.deepEqual(lista, { videt: true, prekryv: false }, `${kde}: lišta`);
           const okraje = await page.evaluate(() => {
             const vzor = document.querySelector('.nav > .wrap').getBoundingClientRect();
-            return [...document.querySelectorAll('.unit > .wrap, footer > .wrap')].map(el => {
+            return [...document.querySelectorAll('.unit > .wrap, footer > .wrap')].filter(el => el.getBoundingClientRect().width > 0).map(el => {
               const r = el.getBoundingClientRect();
               return { sekce: el.closest('section')?.id || 'footer', rozdil: Math.max(Math.abs(r.left - vzor.left), Math.abs(r.right - vzor.right)) };
             }).filter(x => x.rozdil > 1);
@@ -475,7 +530,7 @@ try {
       // prvek jeví ustálený i uprostřed animace (dva snímky se stejným rámečkem),
       // takže bez tohoto čekání test chytal doběh nástupu místo skutečné smyčky.
       await motionPage.waitForFunction(() => document.getAnimations().filter(a => a.playState === 'running' && (!a.timeline || a.timeline instanceof DocumentTimeline)).length === 0, null, { timeout: 5000 });
-      const button = motionPage.locator('.hero .btn');
+      const button = motionPage.locator('.hero .btn:visible');
       await button.hover();
       // Najetí zvedá, stisk stlačuje. Dvě rozlišitelné odezvy, ne jedna pro obojí.
       await motionPage.waitForFunction(() => {
@@ -622,6 +677,7 @@ try {
             const heading = document.querySelector('h1')?.getBoundingClientRect();
             const cta = document.querySelector('.hero .btn, .install-page .btn')?.getBoundingClientRect();
             const links = [...document.querySelectorAll('.hero .btn, .nav .brand')]
+              .filter(el => getComputedStyle(el).display !== 'none')
               .every(el => el.getBoundingClientRect().width > 0);
             return { vw, screenHasOverflow, overflow, shortTargets, mobile,
               hasMenu: Boolean(menu), heading: heading?.width,

@@ -24,6 +24,7 @@
 <meta property="og:image:alt" content="Agenteeq logo">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/fonts/fonts.css">
+<script src="/platform.js"></script>
 <link rel="stylesheet" href="/lp.css">
 <script type="module" src="/lp.js"></script>
 </head>
@@ -52,14 +53,17 @@
   <div class="wrap unit-head">
     <p class="kicker">Install</p>
     <h1 id="hero-title"><span class="radek"><span>Install Agenteeq.</span></span> <span class="radek radek--tichy"><span>No Terminal needed.</span></span></h1>
-    <p class="lead">Download the app for your computer, move it into place and allow it once. You don’t need an account or anything else.</p>
+    <p class="lead" data-os-only="mac">Download the app for your computer, move it into place and allow it once. You don’t need an account or anything else.</p>
+    <p class="lead" data-os-only="windows">Download the ZIP, extract it and run Agenteeq.exe. The Windows app is still in beta.</p>
+    <div class="platform-choice" data-os-switcher role="group" aria-label="Choose your system"><button type="button" data-os-choice="mac" aria-pressed="true">Mac</button><button type="button" data-os-choice="windows" aria-pressed="false">Windows</button></div>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Download for Mac</a>
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Download for Windows</a>
     </div>
-    <p class="specs"><span>Mac with Apple silicon (M1 or later)</span><span>macOS 14 or later</span><span>Windows 10 and 11 as a beta</span></p>
-    <p class="preview-option">Want to test the latest fixes? <a class="text-link" data-preview-mac data-preview-version="0.46.12" href="https://github.com/martin-pok/agentree/releases/download/v0.46.12/Agenteeq-0.46.12-macOS-arm64.dmg"><span data-preview-label>Download Mac Preview 0.46.12</span> <span aria-hidden="true">↗</span></a> · <a class="text-link" data-preview-notes href="https://github.com/martin-pok/agentree/releases/tag/v0.46.12">Release notes <span aria-hidden="true">↗</span></a>.</p>
-    <div class="install-hero-scene" role="img" aria-label="Install Agenteeq: download the app, move to Applications, open">
+    <p class="specs" data-os-only="mac"><span>Mac with Apple silicon (M1 or later)</span><span>macOS 14 or later</span></p>
+    <p class="specs" data-os-only="windows"><span>Windows 10 and 11</span><span>64-bit beta</span></p>
+    <p class="preview-option" data-os-only="mac">Want to test the latest fixes? <a class="text-link" data-preview-mac data-preview-version="0.46.12" href="https://github.com/martin-pok/agentree/releases/download/v0.46.12/Agenteeq-0.46.12-macOS-arm64.dmg"><span data-preview-label>Download Mac Preview 0.46.12</span> <span aria-hidden="true">↗</span></a> · <a class="text-link" data-preview-notes href="https://github.com/martin-pok/agentree/releases/tag/v0.46.12">Release notes <span aria-hidden="true">↗</span></a>.</p>
+    <div class="install-hero-scene" data-os-only="mac" role="img" aria-label="Install Agenteeq: download the app, move to Applications, open">
 <div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Download the app</strong><small>Open the downloaded file</small></span></div>
 <span class="install-hero-link" aria-hidden="true"></span>
 <div class="install-hero-step install-hero-step--featured"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2H10l2 2h6.5a2 2 0 0 1 2 2v10h-17V7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Move to Applications</strong><small>Drag the app to the folder</small></span><span class="install-hero-robot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt="" width="50" height="50"></span></div>
@@ -67,10 +71,11 @@
 <div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4.3 4.3L19 6.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Open Agenteeq</strong><small>Allow once if prompted</small></span></div>
 </div>
 
+<div class="install-hero-scene" data-os-only="windows" role="img" aria-label="Installing Agenteeq for Windows: download the ZIP, extract it, run Agenteeq.exe"><div class="install-hero-step"><span class="install-node-icon">↓</span><span class="install-hero-step-copy"><strong>Download ZIP</strong></span></div><span class="install-hero-link" aria-hidden="true"></span><div class="install-hero-step install-hero-step--featured"><span class="install-node-icon">▣</span><span class="install-hero-step-copy"><strong>Extract all</strong></span></div><span class="install-hero-link" aria-hidden="true"></span><div class="install-hero-step"><span class="install-node-icon">✓</span><span class="install-hero-step-copy"><strong>Run Agenteeq.exe</strong></span></div></div>
   </div>
 </section>
 
-<section class="unit" id="mac" aria-labelledby="mac-heading">
+<section class="unit" id="mac" aria-labelledby="mac-heading" data-os-only="mac">
   <div class="wrap unit-head">
     <p class="kicker">Mac</p>
     <h2 id="mac-heading"><span class="radek"><span>Four steps, once.</span></span></h2>
@@ -106,7 +111,7 @@
   </div>
 </section>
 
-<section class="unit unit--tint" id="windows" aria-labelledby="windows-heading">
+<section class="unit unit--tint" id="windows" aria-labelledby="windows-heading" data-os-only="windows">
   <div class="wrap unit-head">
     <p class="kicker">Windows 10 and 11 · beta</p>
     <h2 id="windows-heading"><span class="radek"><span>A trial version for Windows.</span></span></h2>
@@ -150,7 +155,7 @@
       <ol class="rozsireni-kroky">
         <li>In the app, open <b>Settings → Connections → Chrome extension</b> and click <b>Copy path</b>.</li>
         <li>In Chrome, open <code class="kopirovat" data-kopirovat="chrome://extensions">chrome://extensions</code> and turn on <b>Developer mode</b> in the top right.</li>
-        <li>Click <b>Load unpacked</b> and choose the copied folder (on a Mac, press <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> in the dialog and paste the path).</li>
+        <li>Click <b>Load unpacked</b> and choose the copied folder<span data-os-only="mac"> (on a Mac, press <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> in the dialog and paste the path)</span>.</li>
         <li>That’s it. The extension pairs with the app on its own.</li>
       </ol>
       <!-- /rozsireni:rucne -->
@@ -163,10 +168,13 @@
     <h2 id="faq-heading"><span class="radek"><span>Help with installation.</span></span></h2>
   </div>
   <div class="wrap rows">
-    <details><summary>I can’t find “Open Anyway”</summary><p>The button appears after you try to launch the app and stays for about an hour. Open Agenteeq from Applications again, close the warning, then return to System Settings → Privacy &amp; Security.</p></details>
-    <details><summary>My Mac says the app is damaged</summary><p>Move the downloaded copy to the Trash, download it again and repeat the steps. If the warning appears again and you still can’t find “Open Anyway” in System Settings, try the one-command install above. Files downloaded in Terminal aren’t quarantined. You can also contact us on <a href="https://github.com/martin-pok/agentree/issues">GitHub</a>.</p></details>
-    <details><summary>How do I update Agenteeq?</summary><p>The app checks for new releases itself and offers them in the top bar and in Settings → Updates. It opens the downloaded package in Finder; quit Agenteeq (⌘Q) and replace it in Applications. Your data and settings stay.</p></details>
-    <details><summary>How do I uninstall Agenteeq?</summary><p>First, turn off the Claude Code connection in Agenteeq (Settings → Connections). Then quit the app and move it to the Trash. To remove your data too, delete the <code>~/.agenteeq</code> folder from your home folder.</p></details>
+    <details data-os-only="mac"><summary>I can’t find “Open Anyway”</summary><p>The button appears after you try to launch the app and stays for about an hour. Open Agenteeq from Applications again, close the warning, then return to System Settings → Privacy &amp; Security.</p></details>
+    <details data-os-only="mac"><summary>My Mac says the app is damaged</summary><p>Move the downloaded copy to the Trash, download it again and repeat the steps. If the warning appears again and you still can’t find “Open Anyway” in System Settings, try the one-command install above. Files downloaded in Terminal aren’t quarantined. You can also contact us on <a href="https://github.com/martin-pok/agentree/issues">GitHub</a>.</p></details>
+    <details data-os-only="mac"><summary>How do I update Agenteeq?</summary><p>The app checks for new releases itself and offers them in the top bar and in Settings → Updates. It opens the downloaded package in Finder; quit Agenteeq (⌘Q) and replace it in Applications. Your data and settings stay.</p></details>
+    <details data-os-only="mac"><summary>How do I uninstall Agenteeq?</summary><p>First, turn off the Claude Code connection in Agenteeq (Settings → Connections). Then quit the app and move it to the Trash. To remove your data too, delete the <code>~/.agenteeq</code> folder from your home folder.</p></details>
+    <details data-os-only="windows"><summary>Windows blocks the app from opening</summary><p>The unsigned beta build may trigger a SmartScreen warning. If you downloaded the ZIP from this page, extract it and choose <b>More info → Run anyway</b>. If the file came from elsewhere, download it again from the official link.</p></details>
+    <details data-os-only="windows"><summary>How do I update Agenteeq on Windows?</summary><p>The Windows app does not yet update itself. Download the new ZIP from this page, quit Agenteeq, extract the new copy and run its <b>Agenteeq.exe</b>. Keep the previous ZIP until the new copy opens successfully.</p></details>
+    <details data-os-only="windows"><summary>How do I uninstall Agenteeq on Windows?</summary><p>Quit Agenteeq and remove the folder extracted from the ZIP. Your local data remains in <code>%USERPROFILE%\.agenteeq</code>; back it up first if you also want to remove it.</p></details>
     <details><summary>Can a colleague install Agenteeq too?</summary><p>Yes. Send them a link to this page. They can install their own copy and connect their agents. This won’t link them to your account or computer.</p></details>
   </div>
 </section>
