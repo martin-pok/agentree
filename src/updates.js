@@ -74,7 +74,7 @@ function newestPreviewRelease(payload, version, target) {
   return latest ? validRelease(latest, version, target, true) : { latestVersion: version, asset: null };
 }
 
-async function streamVerifiedPackage(response, expected, temporaryFile) {
+async function streamVerifiedPackage(response, expected, temporaryFile, onProgress = () => {}) {
   // A signed GitHub digest identifies the exact bytes. Never buffer an entire
   // installer (tens or hundreds of MB) in RAM: stream directly to a unique,
   // mode-0600 staging file. Only rename it after size and SHA-256 match.
@@ -103,6 +103,7 @@ async function streamVerifiedPackage(response, expected, temporaryFile) {
         if (!bytesWritten) throw new Error(ui('Aktualizační balíček se nepodařilo uložit.'));
         offset += bytesWritten;
       }
+      onProgress(received);
     }
     if (response.body?.getReader) {
       const reader = response.body.getReader();
@@ -251,15 +252,28 @@ export class UpdateService {
       if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });
       const staging = path.join(dir, `.${asset.name}.${crypto.randomUUID()}.tmp`);
+      // Průběh stahování pro rozhraní: bez něj vypadá stahování stovky MB jako zaseknutá aplikace.
+      // Hlásí se nejvýš pětkrát za sekundu a jen dokud jde o totéž vydání.
+      let hlaseno = 0;
+      const prubeh = (received) => {
+        if (!unchanged()) return;
+        const ted = Date.now();
+        if (received < asset.size && ted - hlaseno < 200) return;
+        hlaseno = ted;
+        this.value = { ...this.value, transfer: { received, total: asset.size } };
+        try { this.onProgress?.(this.state()); } catch { /* posluchač nesmí shodit stahování */ }
+      };
+      prubeh(0);
       try {
-        const size = await streamVerifiedPackage(response, asset, staging);
+        const size = await streamVerifiedPackage(response, asset, staging, prubeh);
         if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
         await fs.rename(staging, file);
         if (!unchanged()) return { status: 409, error: ui('Nová aktualizace zatím není připravená ke stažení.') };
-        this.value = { ...this.value, status: 'downloaded', downloaded: { name: asset.name, path: file, size, at: this.now() } };
+        this.value = { ...this.value, status: 'downloaded', transfer: null, downloaded: { name: asset.name, path: file, size, at: this.now() } };
         return { ok: true, update: this.state() };
       } finally {
         await fs.rm(staging, { force: true }).catch(() => {});
+        if (this.value.transfer && unchanged()) this.value = { ...this.value, transfer: null };
       }
     } catch (err) {
       // A channel change is intentional cancellation, not a failed installer.

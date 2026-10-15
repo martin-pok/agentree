@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var loaderText = "Připravujeme tvůj pracovní prostor…"
     var loaderRetry = false
     var loaderProgress = false
+    var loaderValue: Double? = nil
     // Záloha, kdyby stránka scény v balíčku chyběla: prostý text a tlačítko v AppKitu.
     var fallback: NSStackView!
     var statusLabel: NSTextField!
@@ -46,6 +47,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // Tajemství tohoto spuštění (64 znaků). Server ho vyžaduje od každého požadavku z tohoto Macu.
     let localKey = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "")
     var quitting = false
+    // Agenti spuštění z Agenteeq (hlásí server, desktop/server.mjs). Ukončení aplikace je zastaví.
+    var ownedRuns = 0
+    var exitWatchdogArmed = false
     var retries = 0
     var generation = 0
     var buffer = ""
@@ -67,6 +71,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
         guard let handle = FileHandle(forWritingAtPath: path) else { return }
         handle.seekToEndOfFile(); handle.write(Data((line + "\n").utf8)); try? handle.close()
+    }
+
+    // Scénáře pro scripts/qa-update.mjs (jen v režimu QA): skutečná aktualizace sestavené aplikace
+    // a ukončení, volitelně se zaseknutým serverem (SIGSTOP) – přesně situace, ve které dřív
+    // aplikace visela na „Instalujeme…“ a nešla ukončit.
+    var qaScenarioDone = false
+    func runQaScenario() {
+        guard qa, !qaScenarioDone else { return }
+        let env = ProcessInfo.processInfo.environment
+        let zip = env["AGENTEEQ_DESKTOP_QA_INSTALL"] ?? "", version = env["AGENTEEQ_DESKTOP_QA_INSTALL_VERSION"] ?? ""
+        let quit = env["AGENTEEQ_DESKTOP_QA_QUIT"] == "1"
+        guard !zip.isEmpty || quit else { return }
+        qaScenarioDone = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self else { return }
+            if env["AGENTEEQ_DESKTOP_QA_WEDGE"] == "1", let pid = self.child?.processIdentifier {
+                kill(pid, SIGSTOP)
+                self.qaWrite(["udalost": "qa-zaseknuty-server", "pid": Int(pid)])
+            }
+            if !zip.isEmpty { self.installUpdate(zip: zip, version: version) }
+            else { self.qaWrite(["udalost": "qa-ukonceni"]); NSApp.terminate(nil) }
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -240,13 +266,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
 
     // Jediné místo, které mění text a tlačítko načítací scény – ve stránce i v záloze.
-    func setLoading(_ text: String, retry: Bool = false, progress: Bool = false) {
-        loaderText = text; loaderRetry = retry; loaderProgress = progress
+    func setLoading(_ text: String, retry: Bool = false, progress: Bool = false, value: Double? = nil) {
+        loaderText = text; loaderRetry = retry; loaderProgress = progress; loaderValue = value
         statusLabel.stringValue = text; retryButton.isHidden = !retry
         applyLoaderState()
     }
     func applyLoaderState() {
-        guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: ["text": loaderText, "znovu": loaderRetry, "progress": loaderProgress]), let json = String(data: data, encoding: .utf8) else { return }
+        var state: [String: Any] = ["text": loaderText, "znovu": loaderRetry, "progress": loaderProgress]
+        if let value = loaderValue { state["hodnota"] = value }
+        guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: state), let json = String(data: data, encoding: .utf8) else { return }
         loaderWeb.evaluateJavaScript("window.agenteeqNacitani && window.agenteeqNacitani(\(json))")
     }
     func showLoading() {
@@ -409,7 +437,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             return
         }
         guard message.frameInfo.isMainFrame, local(message.frameInfo.request.url), let data = message.body as? [String: Any], let type = data["type"] as? String else { return }
-        if type == "ready" { hideLoading(); if qaReport != nil { web.evaluateJavaScript(qaProbe) } }
+        if type == "ready" { hideLoading(); if qaReport != nil { web.evaluateJavaScript(qaProbe) }; runQaScenario() }
         if type == "qa-sonda", qaReport != nil { qaWrite(["udalost": "nacteno", "zprava": data]) }
         if type == "appearance", let theme = data["theme"] as? String {
             let dark = theme == "dark"
@@ -420,10 +448,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         }
     }
     // Aktualizace jedním klepnutím. Balíček stáhl a otiskem SHA-256 ověřil server (src/updates.js).
-    // Tady se rozbalí, zkontroluje (identifikátor, verze, podpis) a připraví vedle současné aplikace,
-    // zatímco Agenteeq ještě běží. Pak se aplikace ukončí jako po ⌘Q a malý pomocník počká, až
-    // skončí, vymění balíčky (stará verze jde do Koše) a spustí novou verzi. Když cokoli selže
-    // před ukončením, nic se nemění a rozhraní dostane chybu. Stejný postup jako site/install.sh.
+    // Tady se rozbalí rovnou vedle současné aplikace (stejný disk, žádná druhá kopie), zkontroluje
+    // (identifikátor, verze, podpis) a připraví, zatímco Agenteeq ještě běží. Pak plášť sám zastaví
+    // server (data se uloží), ukončí se a malý pomocník vymění balíčky (stará verze jde do Koše)
+    // a spustí novou verzi. Když cokoli selže před ukončením, nic se nemění a rozhraní dostane chybu.
+    //
+    // Ukončení nikdy nestojí jen na AppKitu: pojistka (armExitWatchdog) proces ukončí i tehdy, když
+    // by se odpověď na applicationShouldTerminate ztratila, a pomocník si poradí i se zaseknutým
+    // procesem. Uživatel se tak nikdy nedostane do stavu, kdy aplikace visí a nejde zavřít.
     var installing = false
     @discardableResult
     func runTool(_ path: String, _ args: [String]) -> Int32 {
@@ -432,8 +464,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         do { try p.run() } catch { return -1 }
         p.waitUntilExit(); return p.terminationStatus
     }
+    // Deník aktualizací v ~/Library/Logs/Agenteeq/update.log: když se výměna nepovede, je z něj
+    // vidět, v kterém kroku. Zapisuje do něj plášť i pomocník.
+    lazy var updateLogPath: String = {
+        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Agenteeq", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("update.log").path
+    }()
+    func updateLog(_ message: String) {
+        let line = "\(ISO8601DateFormatter().string(from: Date())) [\(ProcessInfo.processInfo.processIdentifier)] \(message)\n"
+        let path = updateLogPath
+        if !FileManager.default.fileExists(atPath: path) { FileManager.default.createFile(atPath: path, contents: nil) }
+        guard let handle = FileHandle(forWritingAtPath: path) else { return }
+        handle.seekToEndOfFile(); handle.write(Data(line.utf8)); try? handle.close()
+    }
     func reportUpdateError(_ message: String) {
         installing = false
+        updateLog("chyba: \(message)")
+        qaWrite(["udalost": "aktualizace", "krok": "chyba", "zprava": message])
         // Failure happened BEFORE the bundle swap. Restore the already-running
         // application instead of stranding a user behind a permanent loader.
         if baseURL != nil { hideLoading() }
@@ -441,77 +489,140 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         guard let data = try? JSONSerialization.data(withJSONObject: [message]), let json = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.agenteeqAktualizaceSelhala && window.agenteeqAktualizaceSelhala(\(json)[0])")
     }
+    // Zbytky po dřívější přerušené aktualizaci (rozbalené složky vedle aplikace) starší než hodina.
+    // Mažou se jen soubory, které vytvořil tenhle pomocník, podle jejich přesného prefixu.
+    func removeStaleUpdateStages(in dest: URL) {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(at: dest, includingPropertiesForKeys: [.contentModificationDateKey], options: []) else { return }
+        for item in items where item.lastPathComponent.hasPrefix(".agenteeq-update-") {
+            let modified = (try? item.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
+            if Date().timeIntervalSince(modified) > 3600 { try? fm.removeItem(at: item) }
+        }
+    }
+    // Zastaví server (uloží data, ukončí agenty spuštěné z Agenteeq) s pevným časovým limitem.
+    // Volá se mimo hlavní vlákno; nikdy nečeká déle než ~10 s.
+    func stopServerBounded() {
+        guard let process = child else { return }
+        DispatchQueue.main.sync { self.quitting = true; process.terminationHandler = nil; try? self.input?.fileHandleForWriting.close() }
+        if process.isRunning { process.terminate() }
+        var waited = 0
+        while process.isRunning && waited < 80 { usleep(100_000); waited += 1 }
+        if process.isRunning { kill(process.processIdentifier, SIGKILL); updateLog("server neskončil do 8 s, ukončen násilně") }
+        waited = 0
+        while process.isRunning && waited < 20 { usleep(100_000); waited += 1 }
+    }
+    // Poslední pojistka: když proces po žádosti o ukončení do `seconds` nezmizí (ztracená odpověď
+    // AppKitu, zaseknuté hlavní vlákno), ukončí se sám. Server v tu chvíli už neběží nebo skončí
+    // sám, jakmile zjistí, že rodič zmizel (desktop/server.mjs hlídá rodiče každých 500 ms).
+    func armExitWatchdog(seconds: Double) {
+        guard !exitWatchdogArmed else { return }
+        exitWatchdogArmed = true
+        let serverPid: pid_t? = (child?.isRunning == true) ? child?.processIdentifier : nil
+        let log = updateLogPath
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + seconds) {
+            if let pid = serverPid { kill(pid, SIGKILL) }
+            let line = "\(ISO8601DateFormatter().string(from: Date())) [\(ProcessInfo.processInfo.processIdentifier)] ukončení nedoběhlo do \(Int(seconds)) s, aplikace končí pojistkou\n"
+            if let handle = FileHandle(forWritingAtPath: log) { handle.seekToEndOfFile(); handle.write(Data(line.utf8)); try? handle.close() }
+            _exit(0)
+        }
+    }
     func installUpdate(zip: String, version: String) {
         guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else {
             reportUpdateError("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.")
             return
         }
         installing = true
+        updateLog("aktualizace \(runningVersion) → \(version) začíná")
         // Feedback must start BEFORE extracting the downloaded archive. Otherwise
         // large ZIPs look like a frozen black screen until the last file is copied.
         showLoading()
-        setLoading("Ověřujeme a připravujeme Agenteeq \(version)…", progress: true)
+        setLoading("Připravujeme Agenteeq \(version)…", progress: true, value: 0.05)
         let current = Bundle.main.bundleURL.standardizedFileURL
         let dest = current.deletingLastPathComponent()
         let bundleID = Bundle.main.bundleIdentifier ?? "cz.agenteeq.desktop"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             let fm = FileManager.default
-            let fail = { (message: String) in DispatchQueue.main.async { self.reportUpdateError(message) } }
-            guard fm.isWritableFile(atPath: dest.path) else { fail("Do složky \(dest.path) nejde zapisovat. Spusť aktualizaci příkazem z Terminálu."); return }
-            let work = fm.temporaryDirectory.appendingPathComponent("agenteeq-update-\(UUID().uuidString)", isDirectory: true)
-            DispatchQueue.main.async { self.setLoading("Rozbalujeme aktualizaci…", progress: true) }
+            let started = Date()
+            let step = { (text: String, value: Double, key: String) in
+                self.updateLog("krok \(key) (\(String(format: "%.1f", Date().timeIntervalSince(started))) s)")
+                DispatchQueue.main.async { self.qaWrite(["udalost": "aktualizace", "krok": key]); self.setLoading(text, progress: true, value: value) }
+            }
+            guard fm.isWritableFile(atPath: dest.path) else {
+                DispatchQueue.main.async { self.reportUpdateError("Do složky \(dest.path) nejde zapisovat. Stáhni Agenteeq z webu a nahraď aplikaci ručně.") }
+                return
+            }
+            self.removeStaleUpdateStages(in: dest)
+            // Rozbalení přímo vedle aplikace: stejný disk, takže výměna je jen přejmenování a nová
+            // verze se nekopíruje podruhé (dřív rozbalení do dočasné složky + celá kopie).
+            let work = dest.appendingPathComponent(".agenteeq-update-\(UUID().uuidString)", isDirectory: true)
+            let fail = { (message: String) in
+                try? fm.removeItem(at: work)
+                DispatchQueue.main.async { self.reportUpdateError(message) }
+            }
+            step("Rozbalujeme Agenteeq \(version)…", 0.15, "rozbaleni")
             guard (try? fm.createDirectory(at: work, withIntermediateDirectories: true)) != nil, self.runTool("/usr/bin/ditto", ["-x", "-k", zip, work.path]) == 0 else { fail("Balíček aktualizace nejde rozbalit. Nic se nezměnilo."); return }
             let fresh = work.appendingPathComponent("Agenteeq.app")
             let info = NSDictionary(contentsOf: fresh.appendingPathComponent("Contents/Info.plist"))
             guard info?["CFBundleIdentifier"] as? String == bundleID, info?["CFBundleShortVersionString"] as? String == version else { fail("V balíčku není Agenteeq \(version). Nic se nezměnilo."); return }
-            DispatchQueue.main.async { self.setLoading("Kontrolujeme podpis aplikace…", progress: true) }
+            step("Kontrolujeme podpis aplikace…", 0.5, "podpis")
             guard self.runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path]) == 0 else { fail("Podpis nové verze neprošel kontrolou. Nic se nezměnilo."); return }
-            // Kopie vedle cíle (stejný disk): výměna po ukončení je jen přejmenování.
-            DispatchQueue.main.async { self.setLoading("Připravujeme bezpečnou výměnu…", progress: true) }
-            let stage = dest.appendingPathComponent(".agenteeq-update-\(UUID().uuidString).app")
-            guard self.runTool("/usr/bin/ditto", [fresh.path, stage.path]) == 0 else { fail("Novou verzi se nepodařilo připravit (místo na disku?). Nic se nezměnilo."); return }
-            self.runTool("/usr/bin/xattr", ["-dr", "com.apple.quarantine", stage.path])
-            try? fm.removeItem(at: work)
+            self.runTool("/usr/bin/xattr", ["-dr", "com.apple.quarantine", fresh.path])
             let backup = dest.appendingPathComponent(".agenteeq-previous-\(UUID().uuidString).app")
-            let trash = fm.urls(for: .trashDirectory, in: .userDomainMask).first?.appendingPathComponent("Agenteeq \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") \(Int(Date().timeIntervalSince1970)).app")
-            // Pomocník: počká na konec tohoto procesu (nejvýš 60 s), vymění balíčky, při chybě vrátí
-            // původní aplikaci a v každém případě Agenteeq znovu otevře.
+            let trash = fm.urls(for: .trashDirectory, in: .userDomainMask).first?.appendingPathComponent("Agenteeq \(self.runningVersion) \(Int(Date().timeIntervalSince1970)).app")
+            // Pomocník počká na konec tohoto procesu. Když by proces po 30 s pořád běžel, ukončí ho
+            // (TERM, pak KILL) – aktualizace se nesmí zaseknout. Pak vymění balíčky, při chybě vrátí
+            // původní aplikaci a v každém případě Agenteeq znovu otevře. Vše zapisuje do deníku.
             let script = """
-            pid="$1"; current="$2"; stage="$3"; backup="$4"; trash="$5"
-            n=0; while kill -0 "$pid" 2>/dev/null && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n+1)); done
-            # Never replace a bundle while its original process is still alive.
-            # The 60-second limit is a failure deadline, NOT permission to force an upgrade.
-            if kill -0 "$pid" 2>/dev/null; then
-              rm -rf "$stage"
+            pid="$1"; current="$2"; stage="$3"; work="$4"; backup="$5"; trash="$6"; log="$7"
+            say() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [pomocnik] $*" >> "$log" 2>/dev/null || :; }
+            # Jen proces Agenteeq: kdyby PID mezitím dostal jiný program, nikdy ho neukončíme. Porovnává se
+            # konec cesty, ne celá cesta – /var a /private/var jsou na Macu totéž místo.
+            ours() { kill -0 "$pid" 2>/dev/null && ps -p "$pid" -o args= 2>/dev/null | grep -qF ".app/Contents/MacOS/Agenteeq"; }
+            wait_gone() { n=0; while ours && [ "$n" -lt "$1" ]; do sleep 0.2; n=$((n+1)); done; }
+            say "čekám na ukončení procesu $pid"
+            wait_gone 150
+            if ours; then say "proces běží i po 30 s, posílám TERM"; kill -TERM "$pid" 2>/dev/null; wait_gone 25; fi
+            if ours; then say "posílám KILL"; kill -KILL "$pid" 2>/dev/null; wait_gone 25; fi
+            if ours; then
+              say "proces nejde ukončit, aktualizace zrušena"
+              rm -rf "$work"
               exit 1
             fi
             if mv "$current" "$backup"; then
               if mv "$stage" "$current"; then
+                rm -rf "$work"
                 xattr -dr com.apple.quarantine "$current" 2>/dev/null || :
                 # Retain the old app until macOS confirms that the new one can
                 # at least be opened; never trash the only recoverable bundle.
                 if open "$current"; then
+                  say "nová verze spuštěna"
                   [ -n "$trash" ] && mv "$backup" "$trash" 2>/dev/null || :
                   exit 0
                 fi
+                say "novou verzi nejde otevřít, vracím původní"
                 rm -rf "$current"
                 mv "$backup" "$current" || exit 1
                 open "$current" || :
                 exit 1
               fi
+              say "výměna se nepovedla, vracím původní"
               mv "$backup" "$current" || exit 1
             fi
-            rm -rf "$stage"
+            rm -rf "$work"
             open "$current" || :
             exit 1
             """
+            step("Ukládáme data a restartujeme…", 0.75, "ukonceni")
             let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
-            helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, stage.path, backup.path, trash?.path ?? ""]
+            helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, fresh.path, work.path, backup.path, trash?.path ?? "", self.updateLogPath]
             helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
-            do { try helper.run() } catch { try? fm.removeItem(at: stage); fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
+            do { try helper.run() } catch { fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
+            // Server se zastaví tady, s časovým limitem, ne až uvnitř ukončení AppKitu.
+            self.stopServerBounded()
+            step("Spouštíme Agenteeq \(version)…", 0.9, "restart")
             DispatchQueue.main.async {
-                self.showLoading(); self.setLoading("Spouštíme Agenteeq \(version)…", progress: true)
+                self.armExitWatchdog(seconds: 6)
                 NSApp.terminate(nil)
             }
         }
@@ -553,6 +664,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             showWindow()
             applyPendingAgentRoute()
         }
+        if type == "owned-runs", let count = data["count"] as? Int { ownedRuns = max(0, count) }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)
         }
@@ -593,8 +705,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { relaunchIfReplaced(); showWindow(); return true }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     var terminateReplyPending = false
+    // Odhlášení, restart nebo vypnutí Macu nese v události důvod. Tam se neptáme – systém by čekal.
+    var quitIsSystemInitiated: Bool {
+        NSAppleEventManager.shared().currentAppleEvent?.attributeDescriptor(forKeyword: AEKeyword(0x7768_793F)) != nil // 'why?' = kAEQuitReason
+    }
+    func confirmQuitWithRunningAgents() -> Bool {
+        let n = ownedRuns
+        let agenti = n == 1 ? "1 agent spuštěný" : (2...4).contains(n) ? "\(n) agenti spuštění" : "\(n) agentů spuštěných"
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Ukončit Agenteeq?"
+        alert.informativeText = "Běží \(agenti) z Agenteeq. Ukončením je zastavíš. Agenti v Terminálu a jiných aplikacích poběží dál."
+        alert.addButton(withTitle: "Ukončit")
+        alert.addButton(withTitle: "Zrušit")
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn
+    }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if !quitting, !installing, !qa, ownedRuns > 0, !quitIsSystemInitiated, !confirmQuitWithRunningAgents() {
+            return .terminateCancel
+        }
         quitting = true
+        // Ukončení se nesmí zaseknout ani při zaseknutém serveru nebo ztracené odpovědi AppKitu.
+        armExitWatchdog(seconds: 15)
         guard let process = child, process.isRunning else { return .terminateNow }
         // Never allow a dead/unresponsive backend to trap the Dock Quit action.
         // AppKit's terminateLater uses a special runloop: do NOT wait on main,
