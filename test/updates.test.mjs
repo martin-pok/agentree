@@ -594,3 +594,23 @@ test('swapping a verified ZIP for a same-byte symlink between lstat and open is 
     fs.lstat = originalLstat;
   }
 });
+
+// Stahování stovky MB bez průběhu vypadalo jako zaseknutá aplikace. Server proto hlásí přijaté
+// bajty (nejvýš pětkrát za sekundu, poslední vždy) a po dokončení průběh smaže.
+test('aktualizace: stahování hlásí skutečný průběh a po dokončení ho uklidí', async () => {
+  const dir = await tempDir('agenteeq-updates-progress-');
+  const fetchImpl = async (url) => {
+    if (url === RELEASE_URL) return new Response(JSON.stringify(release()), { status: 200, headers: { 'content-type': 'application/json' } });
+    const body = new ReadableStream({ start(c) { c.enqueue(Buffer.from('zi')); c.enqueue(Buffer.from('p!')); c.close(); } });
+    return new Response(body, { status: 200 });
+  };
+  const service = new UpdateService({ version: '0.29.9', dataDir: dir, fetchImpl, platform: 'darwin', arch: 'arm64' });
+  await service.check();
+  const hlaseni = [];
+  service.onProgress = (state) => hlaseni.push(state.transfer);
+  const result = await service.download();
+  assert.equal(result.ok, true);
+  assert.deepEqual(hlaseni[0], { received: 0, total: 4 });
+  assert.deepEqual(hlaseni.at(-1), { received: 4, total: 4 }, 'final byte count is always reported');
+  assert.equal(service.state().transfer, null, 'no stale progress after the download finished');
+});
