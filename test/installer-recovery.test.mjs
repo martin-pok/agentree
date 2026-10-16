@@ -46,6 +46,13 @@ test('update and Quit never depend solely on AppKit termination', async () => {
   const bounded = swift.slice(swift.indexOf('func stopServerBounded('), swift.indexOf('func armExitWatchdog('));
   assert.match(bounded, /kill\(process\.processIdentifier, SIGKILL\)/);
   assert.doesNotMatch(bounded, /waitUntilExit/, 'bounded polling only; never an unbounded wait');
+  // Regression: 16 Oct main macOS qa:update passed real replacements but a
+  // SIGSTOP backend triggered the 15s emergency _exit because main.sync
+  // delayed the ordinary SIGTERM/SIGKILL path. This must remain nonblocking.
+  assert.doesNotMatch(bounded, /DispatchQueue\\.main\\.sync/,
+    'server termination must not synchronously wait on a stalled AppKit/WKWebView main thread');
+  assert.match(bounded, /process\\.terminationHandler = nil[\\s\\S]*?process\\.terminate\\(\\)/,
+    'bounded worker begins server termination without requiring AppKit');
   const quit = swift.slice(swift.indexOf('func applicationShouldTerminate('));
   assert.match(quit, /armExitWatchdog\(seconds: 15\)/, 'Dock/⌘Q Quit is guaranteed even with a wedged server');
   // Na Macu v CI se ukázalo, že odpověď na terminateLater se při zaseknutém serveru ztratí
