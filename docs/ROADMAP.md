@@ -6,7 +6,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release kandidát 0.46.15 (16. 10.):** Nový immutable tag v0.46.14 vznikl na starším main commitu dřív, než byl sloučen kompletní aktualizovaný CZ/EN changelog. Tag neměnit. Pro nejnovější zdroj vytvářet 0.46.15; před publikací vyžadovat 8/8 main CI, osmi-asset SHA-256 audit, zálohu a fyzické Mac UAT. Žádná nová verze zatím nebyla instalována na uživatelův Mac.
+**Aktuální release kandidát 0.46.15 Preview (16. 10.):** Nový immutable tag v0.46.14 vznikl na starším main commitu dřív, než byl sloučen kompletní aktualizovaný CZ/EN changelog. Tag neměnit. Pro nejnovější zdroj vytvářet 0.46.15; před publikací vyžadovat 8/8 main CI, osmi-asset SHA-256 audit, zálohu a fyzické Mac UAT. Žádná nová verze zatím nebyla instalována na uživatelův Mac.
 
 
 **Rozpracovaný web po kandidátu 0.46.14:** Windows/Mac adaptivní CZ/EN vstupy a instalační cesta s ruční volbou OS jsou součástí PR #263, jejich produkční nasazení a skutečné Windows UAT zůstávají otevřené. Nejprve musí projít nejnovější zelené CI a samostatná kontrola na živé doméně. Neodvozovat veřejné vydání ze stavu `main`.
