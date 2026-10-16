@@ -503,7 +503,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // Volá se mimo hlavní vlákno; nikdy nečeká déle než ~10 s.
     func stopServerBounded() {
         guard let process = child else { return }
-        DispatchQueue.main.sync { self.quitting = true; process.terminationHandler = nil; try? self.input?.fileHandleForWriting.close() }
+        // Do not synchronously hop to the AppKit thread here. Under a stalled
+        // WKWebView/runloop that hop can consume the entire 15-second Quit deadline
+        // before SIGTERM even reaches the child (observed in postmerge Mac CI).
+        // Shut down the child immediately from this worker; the callers already
+        // schedule the final NSApp.terminate on the main thread.
+        self.quitting = true
+        process.terminationHandler = nil
+        try? self.input?.fileHandleForWriting.close()
         if process.isRunning { process.terminate() }
         var waited = 0
         while process.isRunning && waited < 80 { usleep(100_000); waited += 1 }
