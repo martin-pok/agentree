@@ -66,7 +66,7 @@ test('update and Quit never depend solely on AppKit termination', async () => {
     'reentrant Dock Quit must terminate after the worker completes, despite stale child.isRunning');
   assert.match(quit, /self\.stopServerBounded\(\)[\s\S]*?DispatchQueue\.main\.async \{ \[weak self\] in[\s\S]*?self\.quitStopFinished = true[\s\S]*?NSApp\.terminate\(nil\)/,
     'only the completed bounded-stop callback may approve the second Quit');
-  assert.match(quit, /if !quitIsSystemInitiated \{[\s\S]*?self\?\.stopServerBounded\(\)[\s\S]*?NSApp\.terminate\(nil\)[\s\S]*?return \.terminateCancel/);
+  assert.match(quit, /if !quitIsSystemInitiated \{[\s\S]*?self\.stopServerBounded\(\)[\s\S]*?NSApp\.terminate\(nil\)[\s\S]*?return \.terminateCancel/);
   assert.match(quit, /ownedRuns > 0, !quitIsSystemInitiated, !confirmQuitWithRunningAgents\(\)/,
     'Quit asks before stopping agents started from Agenteeq, but never blocks logout/shutdown');
   assert.match(swift, /if type == "owned-runs", let count = data\["count"\] as\? Int \{ ownedRuns = max\(0, count\) \}/);
