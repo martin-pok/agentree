@@ -90,7 +90,11 @@ export function plynulePosouvani() {
     // Stránku mezitím posunulo něco jiného (přepnutí obrazovky, klávesnice) a událost scroll
     // ještě nedorazila – dojezd by to přepsal zpátky.
     if (!zapnuto() || posunutoJinak()) { zastav(); return; }
-    const dt = Math.min(48, cas ? t - cas : 16);
+    // A headless/loaded WebKit can throttle requestAnimationFrame to 3–5 fps.
+    // Capping elapsed time at 48ms makes a 400px wheel take seconds and fail
+    // to reach its actual target. Account for real elapsed time while retaining
+    // a bounded catch-up after a background-tab pause.
+    const dt = Math.min(250, cas ? t - cas : 16);
     cas = t;
     // Exponenciální dojezd se posledním pixelům blíží donekonečna (0,1 px za snímek). WebKit
     // zlomkovou polohu ořízne na celé pixely, takže okno desítky snímků stálo a pak samo
