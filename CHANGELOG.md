@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.15 – 2026-10-16 · Kompletní Preview po bezpečnostních a vizuálních opravách
+
+- **Nový neměnný release kandidát místo přepisu 0.46.14.** Workflow již vytvořil tag `v0.46.14` na `43fbc39f8b72036e939469519a3630b4be649ed9`; tento tag a případný Draft zůstávají nedotčené. Verze `0.46.15` zahrnuje i následně schválené CZ/EN poznámky k aktuálnímu webu a rozšíření. Nový kandidát musí samostatně projít zeleným 8/8 CI, vydáním osmi příloh a nezávislým SHA-256 auditem.
+- **Připravené opravy aktualizace a ukončení na Macu.** Reálné nativní QA na macOS runneru prověřuje běžný update, zaseknutý server, automatický restart i ukončení bez nouzové pojistky; fyzická instalace na Macu uživatele stále čeká na zálohu a UAT.
+- **Chrome a web odpovídají skutečné implementaci.** Okno rozšíření obsahuje prioritní kartu, časovou osu agentů a konverzací a pravdivé neznámé stavy. Instalační web vede Mac a Windows návštěvníky odpovídající cestou. Velikost cloud ikony a plynulý WebKit scroll mají regresní kontroly.
+
 ## 0.46.14 – 2026-10-16 · Aktualizace Macu bez zaseknutí a vlastní vzhled agentů
 
 - **Nové okno rozšíření pro Chrome: jedna hlavní věc.** Velké číslo s počtem agentů zmizelo. Nahoře je skleněná karta s tím, co tě teď potřebuje – nástroj, název, důvod („Čeká na povolení: Bash“) a tlačítko **Otevřít konverzaci**, které ji otevře přímo v aplikaci (schválit z okna nic nejde, proto netvrdí „Rozhodnout“). Aplikaci jako celek otevírá značka **Agenteeq ↗** v hlavičce – v okně tak nejsou dvě skoro stejná tlačítka „Otevřít“ a pata zmizela; sledované služby a port jsou v hlavičce vedle obnovy, ověření stránky u řádku aktuální karty. Když tě potřebuje víc agentů, karta má stránkování se skutečným počtem („1 / 3“), šipky a ovládání šipkami na klávesnici; nové rozhodnutí jen označí šipku tečkou, okno samo nikam nepřeskočí. Bez rozhodnutí karta ukáže pracujícího agenta, odpovídající chat v jiné kartě (**Přepnout na kartu**), nebo klid.
