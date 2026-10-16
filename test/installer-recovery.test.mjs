@@ -58,6 +58,14 @@ test('update and Quit never depend solely on AppKit termination', async () => {
   // Na Macu v CI se ukázalo, že odpověď na terminateLater se při zaseknutém serveru ztratí
   // (ukončení doběhlo až pojistkou). Uživatelské ukončení proto server zastaví samo a pak
   // ukončí aplikaci znovu – bez terminateLater.
+  // 17 Oct: postmerge main QA failed 2/17 after SIGSTOP backend; the bounded
+  // shutdown finished, but reentrant NSApp.terminate(nil) saw stale Process.isRunning,
+  // returned .terminateCancel again and only the 15s watchdog could end the app.
+  // The worker completion flag must be set on main BEFORE retrying Quit.
+  assert.match(quit, /if stoppingForQuit \{\s*return quitStopFinished \? \.terminateNow : \.terminateCancel\s*\}\s*guard let process = child, process\.isRunning/,
+    'reentrant Dock Quit must terminate after the worker completes, despite stale child.isRunning');
+  assert.match(quit, /self\.stopServerBounded\(\)[\s\S]*?DispatchQueue\.main\.async \{ \[weak self\] in[\s\S]*?self\.quitStopFinished = true[\s\S]*?NSApp\.terminate\(nil\)/,
+    'only the completed bounded-stop callback may approve the second Quit');
   assert.match(quit, /if !quitIsSystemInitiated \{[\s\S]*?self\?\.stopServerBounded\(\)[\s\S]*?NSApp\.terminate\(nil\)[\s\S]*?return \.terminateCancel/);
   assert.match(quit, /ownedRuns > 0, !quitIsSystemInitiated, !confirmQuitWithRunningAgents\(\)/,
     'Quit asks before stopping agents started from Agenteeq, but never blocks logout/shutdown');
