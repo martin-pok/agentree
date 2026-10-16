@@ -4,6 +4,30 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.15',
+    date: '2026-10-16',
+    title: 'Spolehlivější aktualizace, nový Chrome přehled a aktuální rozhraní',
+    items: [
+      'Aktualizace aplikace pro Mac má přehledný postup, skutečný průběh stahování a obnovu původní verze při chybě. I se zaseknutou službou jde aplikaci bezpečně ukončit.',
+      'Vyčerpaný limit Codexu se hlásí jako problém, ne jako čekání na zadání. Upozornění při rolování nepohybují zbytkem aplikace a odhlášení vyžaduje potvrzení.',
+      'Každému agentovi upravíš vzhled přímo v jeho detailu včetně doplňků. Hledání v Dovednostech, editor projektu a ruční obnovení jsou přehlednější.',
+      'Chrome rozšíření ukazuje jednu prioritní kartu a časovou osu agentů i chatů. Ovládání funguje klávesnicí a při ztrátě spojení rozlišuje nezjištěný stav od nečinnosti.',
+      'Web při instalaci rozliší Mac a Windows, nabídne odpovídající kroky v češtině i angličtině a ruční přepnutí. Kolečko ve WebKitu dojíždí přesně i při pomalejším vykreslování.',
+      'Synchronizační ikona má vyváženou velikost, vzhled webu a rozšíření je sjednocený a popis novinek odpovídá skutečnému obsahu této verze.',
+    ],
+    en: {
+      title: 'Safer updates, a new Chrome overview, and a current interface',
+      items: [
+        'Mac app updates now show clear steps and real download progress, with a rollback if the new app fails to launch. Quitting remains bounded even when the backend is stuck.',
+        'Confirmed exhausted Codex limits appear as problems, not as waiting for a prompt. Scrolling notifications stays inside the popup and signing out asks for confirmation.',
+        'Customize each agent in its own detail, including accessories. Skills search, the project editor, and manual refresh are cleaner and easier to navigate.',
+        'The Chrome extension now shows one priority card and a timeline of agents and chats. Keyboard controls work, and a lost connection is never mistaken for no activity.',
+        'The install site distinguishes Mac and Windows, offering accurate Czech and English instructions plus a manual switch. WebKit wheel scrolling reaches its target even on slower frames.',
+        'The sync cloud icon is optically balanced, the website and extension share a consistent look, and the release notes now match what this version contains.',
+      ],
+    },
+  },
+  {
     version: '0.46.14',
     date: '2026-10-16',
     title: 'Opravené aktualizace Macu a vzhled agentů',
