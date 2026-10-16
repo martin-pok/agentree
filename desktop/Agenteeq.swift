@@ -713,6 +713,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     var terminateReplyPending = false
     var stoppingForQuit = false
+    // The worker finishes the bounded shutdown before the second AppKit Quit.
+    // Process.isRunning can still report the stopped child as running after SIGKILL;
+    // never schedule another stop or return terminateCancel on that second Quit.
+    var quitStopFinished = false
     // Odhlášení, restart nebo vypnutí Macu nese v události důvod. Tam se neptáme – systém by čekal.
     var quitIsSystemInitiated: Bool {
         NSAppleEventManager.shared().currentAppleEvent?.attributeDescriptor(forKeyword: AEKeyword(0x7768_793F)) != nil // 'why?' = kAEQuitReason
@@ -736,6 +740,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         quitting = true
         // Ukončení se nesmí zaseknout ani při zaseknutém serveru nebo ztracené odpovědi AppKitu.
         armExitWatchdog(seconds: 15)
+        if stoppingForQuit {
+            // The worker has completed: the second terminate must succeed even
+            // if Foundation still reports a killed SIGSTOP child as isRunning.
+            return quitStopFinished ? .terminateNow : .terminateCancel
+        }
         guard let process = child, process.isRunning else { return .terminateNow }
         // ⌘Q a Ukončit z Docku: server se zastaví mimo hlavní vlákno s pevným limitem a pak se
         // aplikace ukončí znovu – už bez běžícího serveru, tedy okamžitě. Na odpověď AppKitu
@@ -745,8 +754,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             if !stoppingForQuit {
                 stoppingForQuit = true
                 DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                    self?.stopServerBounded()
-                    DispatchQueue.main.async { NSApp.terminate(nil) }
+                    guard let self else { return }
+                    self.stopServerBounded()
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        // Serialize the completion on main before retrying AppKit Quit.
+                        self.quitStopFinished = true
+                        self.updateLog("server zastaven; dokončuji běžné ukončení")
+                        NSApp.terminate(nil)
+                    }
                 }
             }
             return .terminateCancel
