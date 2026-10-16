@@ -24,6 +24,7 @@
 <meta property="og:image:alt" content="Značka Agenteeq">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/fonts/fonts.css">
+<script src="/platform.js"></script>
 <link rel="stylesheet" href="/lp.css">
 <script type="module" src="/lp.js"></script>
 </head>
@@ -52,14 +53,17 @@
   <div class="wrap unit-head">
     <p class="kicker">Instalace</p>
     <h1 id="hero-title"><span class="radek"><span>Nainstaluj Agenteeq.</span></span> <span class="radek radek--tichy"><span>Bez příkazového řádku.</span></span></h1>
-    <p class="lead">Stáhni aplikaci pro svůj počítač, přesuň ji na místo a jednou ji povol. Účet ani nic dalšího k tomu nepotřebuješ.</p>
+    <p class="lead" data-os-only="mac">Stáhni aplikaci pro svůj počítač, přesuň ji na místo a jednou ji povol. Účet ani nic dalšího k tomu nepotřebuješ.</p>
+    <p class="lead" data-os-only="windows">Stáhni ZIP, rozbal ho a spusť Agenteeq.exe. Windows verze je zatím v betě.</p>
+    <div class="platform-choice" data-os-switcher role="group" aria-label="Vyber systém"><button type="button" data-os-choice="mac" aria-pressed="true">Mac</button><button type="button" data-os-choice="windows" aria-pressed="false">Windows</button></div>
     <div class="cta-row">
       <a class="btn btn--lg" data-stahnout="mac-arm64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Mac</a>
       <a class="btn btn--lg btn--vedlejsi" data-stahnout="windows-x64" href="https://github.com/martin-pok/agentree/releases">Stáhnout pro Windows</a>
     </div>
-    <p class="specs"><span>Mac s čipem Apple (M1 a novější)</span><span>macOS 14 a novější</span><span>Windows 10/11 · beta</span></p>
-    <p class="preview-option">Chceš vyzkoušet nejnovější opravy? <a class="text-link" data-preview-mac data-preview-version="0.46.12" href="https://github.com/martin-pok/agentree/releases/download/v0.46.12/Agenteeq-0.46.12-macOS-arm64.dmg"><span data-preview-label>Stáhnout 0.46.12 Preview pro Mac</span> <span aria-hidden="true">↗</span></a> · <a class="text-link" data-preview-notes href="https://github.com/martin-pok/agentree/releases/tag/v0.46.12">Co je nového <span aria-hidden="true">↗</span></a>.</p>
-    <div class="install-hero-scene" role="img" aria-label="Instalace Agenteeq: stáhnout aplikaci, přesunout do Aplikací, otevřít">
+    <p class="specs" data-os-only="mac"><span>Mac s čipem Apple (M1 a novější)</span><span>macOS 14 a novější</span></p>
+    <p class="specs" data-os-only="windows"><span>Windows 10 a 11</span><span>64bitová beta</span></p>
+    <p class="preview-option" data-os-only="mac">Chceš vyzkoušet nejnovější opravy? <a class="text-link" data-preview-mac data-preview-version="0.46.12" href="https://github.com/martin-pok/agentree/releases/download/v0.46.12/Agenteeq-0.46.12-macOS-arm64.dmg"><span data-preview-label>Stáhnout 0.46.12 Preview pro Mac</span> <span aria-hidden="true">↗</span></a> · <a class="text-link" data-preview-notes href="https://github.com/martin-pok/agentree/releases/tag/v0.46.12">Co je nového <span aria-hidden="true">↗</span></a>.</p>
+    <div class="install-hero-scene" data-os-only="mac" role="img" aria-label="Instalace Agenteeq: stáhnout aplikaci, přesunout do Aplikací, otevřít">
 <div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4.5 17.5v2h15v-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Stáhni balíček</strong><small>Otevři stažený soubor</small></span></div>
 <span class="install-hero-link" aria-hidden="true"></span>
 <div class="install-hero-step install-hero-step--featured"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2H10l2 2h6.5a2 2 0 0 1 2 2v10h-17V7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Přesuň do Aplikací</strong><small>Přetáhni aplikaci do složky</small></span><span class="install-hero-robot" aria-hidden="true"><img src="/brand-mark-clean.svg" alt="" width="50" height="50"></span></div>
@@ -67,10 +71,11 @@
 <div class="install-hero-step"><span class="install-node-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4.3 4.3L19 6.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="install-hero-step-copy"><strong>Otevři Agenteeq</strong><small>Při prvním spuštění povol</small></span></div>
 </div>
 
+<div class="install-hero-scene" data-os-only="windows" role="img" aria-label="Instalace Agenteeq pro Windows: stáhnout ZIP, rozbalit, spustit Agenteeq.exe"><div class="install-hero-step"><span class="install-node-icon">↓</span><span class="install-hero-step-copy"><strong>Stáhni ZIP</strong></span></div><span class="install-hero-link" aria-hidden="true"></span><div class="install-hero-step install-hero-step--featured"><span class="install-node-icon">▣</span><span class="install-hero-step-copy"><strong>Extrahuj vše</strong></span></div><span class="install-hero-link" aria-hidden="true"></span><div class="install-hero-step"><span class="install-node-icon">✓</span><span class="install-hero-step-copy"><strong>Spusť Agenteeq.exe</strong></span></div></div>
   </div>
 </section>
 
-<section class="unit" id="mac" aria-labelledby="mac-heading">
+<section class="unit" id="mac" aria-labelledby="mac-heading" data-os-only="mac">
   <div class="wrap unit-head">
     <p class="kicker">Mac</p>
     <h2 id="mac-heading"><span class="radek"><span>Instalace na Macu</span></span></h2>
@@ -106,7 +111,7 @@
   </div>
 </section>
 
-<section class="unit unit--tint" id="windows" aria-labelledby="windows-heading">
+<section class="unit unit--tint" id="windows" aria-labelledby="windows-heading" data-os-only="windows">
   <div class="wrap unit-head">
     <p class="kicker">Windows 10 a 11 · beta</p>
     <h2 id="windows-heading"><span class="radek"><span>Agenteeq pro Windows je zatím v beta verzi.</span></span></h2>
@@ -150,7 +155,7 @@
       <ol class="rozsireni-kroky">
         <li>V aplikaci otevři <b>Nastavení → Propojení → Rozšíření pro Chrome</b> a klikni na <b>Zkopírovat cestu</b>.</li>
         <li>V Chromu otevři <code class="kopirovat" data-kopirovat="chrome://extensions">chrome://extensions</code> a vpravo nahoře zapni <b>Režim pro vývojáře</b>.</li>
-        <li>Klikni na <b>Načíst rozbalené</b> a vyber zkopírovanou složku (na Macu v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> a cestu vlož).</li>
+        <li>Klikni na <b>Načíst rozbalené</b> a vyber zkopírovanou složku<span data-os-only="mac"> (na Macu v dialogu stiskni <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> a cestu vlož)</span>.</li>
         <li>Rozšíření se s aplikací automaticky propojí.</li>
       </ol>
       <!-- /rozsireni:rucne -->
@@ -163,10 +168,13 @@
     <h2 id="faq-heading"><span class="radek"><span>Pomoc s instalací.</span></span></h2>
   </div>
   <div class="wrap rows">
-    <details><summary>Nevidím tlačítko „Přesto otevřít“</summary><p>Tlačítko se objeví až po pokusu o spuštění aplikace a zůstane tam přibližně hodinu. Otevři Agenteeq ze složky Aplikace znovu, zavři upozornění a vrať se do Nastavení systému → Soukromí a zabezpečení.</p></details>
-    <details><summary>Mac hlásí, že je aplikace poškozená</summary><p>Přesuň staženou kopii do Koše, stáhni ji znovu a postup zopakuj. Pokud se hláška objeví znovu a v Nastavení systému neuvidíš „Přesto otevřít“, zkus instalaci jedním příkazem výše. Soubor stažený v Terminálu nedostane příznak karantény. Případně nám napiš na <a href="https://github.com/martin-pok/agentree/issues">GitHub</a>.</p></details>
-    <details><summary>Jak Agenteeq aktualizuju?</summary><p>Aplikace sama hlídá nová vydání a nabídne je v horní liště a v Nastavení → Aktualizace. Stažený balíček otevře ve Finderu; Agenteeq ukonči (⌘Q) a nahraď ho v Aplikacích. Data i nastavení zůstanou.</p></details>
-    <details><summary>Jak Agenteeq odinstaluju?</summary><p>V Agenteeq nejdřív vypni propojení s Claude Code (Nastavení → Propojení). Pak aplikaci ukonči a přesuň do Koše. Pokud chceš smazat i data, odstraň složku <code>~/.agenteeq</code> ze své domovské složky.</p></details>
+    <details data-os-only="mac"><summary>Nevidím tlačítko „Přesto otevřít“</summary><p>Tlačítko se objeví až po pokusu o spuštění aplikace a zůstane tam přibližně hodinu. Otevři Agenteeq ze složky Aplikace znovu, zavři upozornění a vrať se do Nastavení systému → Soukromí a zabezpečení.</p></details>
+    <details data-os-only="mac"><summary>Mac hlásí, že je aplikace poškozená</summary><p>Přesuň staženou kopii do Koše, stáhni ji znovu a postup zopakuj. Pokud se hláška objeví znovu a v Nastavení systému neuvidíš „Přesto otevřít“, zkus instalaci jedním příkazem výše. Soubor stažený v Terminálu nedostane příznak karantény. Případně nám napiš na <a href="https://github.com/martin-pok/agentree/issues">GitHub</a>.</p></details>
+    <details data-os-only="mac"><summary>Jak Agenteeq aktualizuju?</summary><p>Aplikace sama hlídá nová vydání a nabídne je v horní liště a v Nastavení → Aktualizace. Stažený balíček otevře ve Finderu; Agenteeq ukonči (⌘Q) a nahraď ho v Aplikacích. Data i nastavení zůstanou.</p></details>
+    <details data-os-only="mac"><summary>Jak Agenteeq odinstaluju?</summary><p>V Agenteeq nejdřív vypni propojení s Claude Code (Nastavení → Propojení). Pak aplikaci ukonči a přesuň do Koše. Pokud chceš smazat i data, odstraň složku <code>~/.agenteeq</code> ze své domovské složky.</p></details>
+    <details data-os-only="windows"><summary>Windows blokuje spuštění aplikace</summary><p>Nepodepsaný beta build může zobrazit varování SmartScreen. Pokud jsi ZIP stáhl z odkazu na této stránce, po rozbalení zvol <b>Další informace → Přesto spustit</b>. Jestli soubor přišel odjinud, stáhni ho znovu z oficiálního odkazu.</p></details>
+    <details data-os-only="windows"><summary>Jak Agenteeq na Windows aktualizuju?</summary><p>Windows verze zatím nemá aktualizaci přímo v aplikaci. Stáhni nový ZIP z této stránky, ukonči Agenteeq, rozbal novou kopii a spusť její <b>Agenteeq.exe</b>. Starý ZIP můžeš odstranit až po ověření nové kopie.</p></details>
+    <details data-os-only="windows"><summary>Jak Agenteeq na Windows odinstaluju?</summary><p>Ukonči Agenteeq a odstraň složku, kterou jsi rozbalil ze ZIPu. Místní data tím zůstanou zachovaná v <code>%USERPROFILE%\.agenteeq</code>; pokud je chceš také smazat, nejdřív si je zálohuj.</p></details>
     <details><summary>Může si Agenteeq nainstalovat i kolega?</summary><p>Ano. Pošli mu odkaz na tuto stránku. Nainstaluje si vlastní kopii a připojí své agenty. S tvým účtem ani počítačem se tím nepropojí.</p></details>
   </div>
 </section>

@@ -35,7 +35,8 @@ try {
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
   await page.locator('.refresh-status').waitFor();
-  assert.equal(await page.locator('.refresh-status').getAttribute('data-motif'), '0');
+  assert.equal(await page.locator('.refresh-status__robot').count(), 0, 'no distracting robot scene');
+  assert.equal(await page.locator('.refresh-status__indicator').count(), 1, 'minimal status indicator');
   assert.equal(await page.locator('.refresh-status strong').textContent(), 'Obnovuji aktuální data');
   assert.equal(await page.locator('.refresh-status__track').count(), 1);
   assert.equal(await page.locator('.refresh-status [role="progressbar"]').count(), 0, 'no fictional numerical progress');
@@ -51,7 +52,8 @@ try {
   const reducedResponse = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  assert.equal(await page.locator('.refresh-status__robot svg').evaluate((element) => getComputedStyle(element).animationName), 'none', 'reduced motion disables robot animation');
+  assert.equal(await page.locator('.refresh-status__indicator').evaluate((element) => getComputedStyle(element).animationName), 'none', 'reduced motion disables indicator animation');
+  assert.equal(await page.locator('.refresh-status__track i').evaluate((element) => getComputedStyle(element).animationName), 'none', 'reduced motion disables track animation');
   await reducedResponse;
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   assert.deepEqual(errors, [], `chyby prohlížeče: ${errors.join('; ')}`);

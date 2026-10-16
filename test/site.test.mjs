@@ -158,7 +158,7 @@ test('web: stránka je česky a nabízí skutečnou prohlídku a instalační po
   assert.ok(html.includes('href="#vyzkouset"'), 'výzva vede na dostupný instalační postup');
   assert.match(html, /data-stahnout="mac-arm64"/, 'stránka musí mít tlačítko ke stažení');
   assert.match(html, /chrome:\/\/extensions/);
-  assert.match(html, /tvůj Mac neopustí/, 'soukromí: obsah konverzací zůstává na Macu');
+  assert.match(html, /tvůj počítač neopustí/, 'soukromí: obsah konverzací zůstává na počítači');
   const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
   assert.equal(graph[0].about['@id'], graph[1]['@id']);
   assert.match(html, /rel="canonical" href="https:\/\/agentree-fawn.vercel.app\/"/);
@@ -230,7 +230,7 @@ test('web JSON-LD never mislabels an unpublished package.json version as publicl
     const software = data['@graph'].find(node => node['@type'] === 'SoftwareApplication');
     assert.ok(software, locale.kod + ': SoftwareApplication must remain in schema');
     assert.equal(software.name, 'Agenteeq');
-    assert.match(software.operatingSystem, /macOS/);
+    assert.deepEqual(software.operatingSystem, ['macOS 14 or later', 'Windows 10 or later']);
     assert.equal(software.isAccessibleForFree, true);
     assert.equal(Object.hasOwn(software, 'softwareVersion'), false,
       'unpublished source version must not be represented as publicly downloadable');

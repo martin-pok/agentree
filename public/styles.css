@@ -425,6 +425,7 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .bell-wrap { position: relative; }
 .notif-pop { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 32px)); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
 .pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
+.notif-pop { overscroll-behavior: contain; }
 .pop-list { list-style: none; margin: 0; padding: 8px; max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
 .pop-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 10px 12px; border-radius: var(--r-sm); text-decoration: none; position: relative; }
 .pop-item:hover { background: var(--paper); }
@@ -1372,6 +1373,33 @@ html.is-cloud body { background: var(--paper); }
 .topups li + li { box-shadow: 0 -1px 0 var(--line-2); }
 .topups b { font: 500 14px/1 var(--f-mono); color: var(--teal-ink); }
 
+
+/* Notion QA: skills search starts at the left edge; sorting sits to the right.
+   Scope to Skills instead of changing global search bars used by Agents and Projects. */
+.sk-toolbar .search-field { margin-left: 0; flex: 1 1 240px; max-width: 320px; min-width: 0; }
+.sk-toolbar .search-field input { width: 100%; }
+.sk-toolbar .sk-sort { margin-left: auto; }
+@media (max-width: 700px) {
+  .sk-toolbar .search-field { flex-basis: 100%; max-width: none; }
+  .sk-toolbar .sk-sort { margin-left: 0; }
+}
+
+/* Project editor: preserve a stationary action row while only the form body scrolls.
+   File pickers/crop overlays retain the same markup and keyboard behavior. */
+.modal--project { display: flex; flex-direction: column; overflow: hidden; max-height: calc(100dvh - 32px); }
+.modal--project > form { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 32px); }
+.modal--project .modal-head, .modal--project .modal-foot { flex: none; }
+.modal--project .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.modal--project .modal-foot { border-top: 1px solid var(--line-2); padding: 12px 24px; }
+/* Cover and customer logo read as two equal peers instead of vertically stacked cards.
+   At phone sizes the original single-column media controls remain intact. */
+@media (min-width: 680px) {
+  .modal--project .media-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal--project .media-pick { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-content: start; }
+  .modal--project .media-thumb--cover { width: 84px; }
+  .modal--project .media-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
 /* ---------- Dovednosti ---------- */
 /* Souhrn nad seznamem: čtyři čísla, která dávají smysl dřív, než začneš hledat. */
 .sk-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; margin-bottom: 24px; border-radius: var(--r-md); background: var(--line-2); overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -1704,6 +1732,19 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .modal-scrim.is-closing { animation: fade .18s reverse both; }
 .modal { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); animation: pop .25s var(--ease) both; touch-action: pan-y; }
 .modal--wide { width: min(780px, 100%); }
+/* Průběh aktualizace (public/js/aktualizace.js): stahování s opravdovým podílem, pak převezme okno aplikace. */
+.aktualizace-prubeh { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(30, 27, 34, .4); backdrop-filter: blur(3px); animation: fade .2s both; overscroll-behavior: contain; }
+.aktualizace-prubeh-karta { display: grid; justify-items: center; gap: 16px; width: min(400px, 100%); padding: 32px 24px 24px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); text-align: center; animation: pop .25s var(--ease) both; }
+.aktualizace-prubeh-titulek { margin: 0; font: 400 22px/1.25 var(--f-display); letter-spacing: -.01em; }
+.aktualizace-prubeh-pruh { position: relative; width: 100%; height: 4px; border-radius: var(--r-full); background: var(--line); overflow: hidden; }
+.aktualizace-prubeh-pruh > span { position: absolute; inset: 0 auto 0 0; width: calc(var(--podil, 0) * 100%); border-radius: inherit; background: var(--action); transition: width var(--motion-move) var(--ease); }
+.aktualizace-prubeh-pruh.is-neurcity > span { width: 36%; animation: aktualizace-neurcity 1.6s cubic-bezier(.4, 0, .2, 1) infinite; }
+@keyframes aktualizace-neurcity { from { transform: translateX(-110%); } to { transform: translateX(285%); } }
+.aktualizace-prubeh-text { margin: 0; font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .aktualizace-prubeh-pruh > span { transition: none; }
+  .aktualizace-prubeh-pruh.is-neurcity > span { animation: none; width: 100%; opacity: .5; }
+}
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 24px 8px; }
 .modal-head h2 { margin: 0; font: 400 26px/1.2 var(--f-display); letter-spacing: -.01em; }
 .modal-body { padding: 8px 24px 16px; }
@@ -2772,50 +2813,35 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .link[href]:hover::after { translate: none; }
 }
 
-/* Refresh: compact, contextual, non-blocking. Never imply a measured percentage. */
+/* Refresh: one-line status, a restrained activity dot and an honest indeterminate track.
+   Refresh never obscures or disables the rest of the application. */
 #refresh-app[aria-busy='true'] { cursor: progress; color: var(--ink); }
 #refresh-app.is-refreshing .icon { animation: none; }
 .refresh-status {
-  position: fixed; z-index: 110; top: 76px; right: 24px; width: min(340px, calc(100vw - 32px));
-  display: flex; gap: 12px; align-items: center; box-sizing: border-box;
-  padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 16px;
+  position: fixed; z-index: 110; top: 76px; right: 24px; width: min(274px, calc(100vw - 32px));
+  display: flex; gap: 10px; align-items: center; box-sizing: border-box;
+  padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 12px;
   background: var(--surface, var(--bg)); color: var(--ink);
-  box-shadow: 0 12px 36px #00000018; pointer-events: none;
+  box-shadow: 0 8px 24px #00000012; pointer-events: none;
 }
-.refresh-status__robot {
-  flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center;
-  border-radius: 14px; color: var(--ink);
-  background: radial-gradient(circle at 25% 25%, #9a80f426, transparent 72%), radial-gradient(circle at 80% 80%, #63b8d326, transparent 70%);
+.refresh-status__indicator {
+  flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--action); animation: refresh-breathe 1.6s ease-in-out infinite;
 }
-.refresh-status__robot svg { width: 38px; height: 38px; }
-.refresh-status__content { min-width: 0; flex: 1; display: grid; gap: 5px; font-size: 12px; }
-.refresh-status__content strong { font-size: 13px; font-weight: 650; }
-.refresh-status__content span { color: var(--ink-2); }
-.refresh-status__track { overflow: hidden; height: 3px; border-radius: 8px; background: var(--line-2); margin-top: 3px; }
-.refresh-status__track i { display: block; width: 35%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#8a6fe8,#7bc0c8); animation: refresh-scan 1.8s ease-in-out infinite alternate; }
-@keyframes refresh-scan { from { transform: translateX(-105%); } to { transform: translateX(295%); } }
-@keyframes refresh-float { 50% { transform: translateY(-4px); } }
-@keyframes refresh-tilt { 50% { transform: rotate(8deg); } }
-@keyframes refresh-wink { 45% { transform: scaleY(.12); } 50% { transform: scaleY(1); } }
-@keyframes refresh-sway { 50% { transform: translateX(4px); } }
-@keyframes refresh-pulse { 50% { transform: scale(.93); opacity: .7; } }
-@keyframes refresh-roll { 50% { transform: rotate(-9deg) translateY(-2px); } }
-@keyframes refresh-turn { 50% { transform: rotate(6deg) translateX(2px); } }
-@keyframes refresh-bob { 25% { transform: translateY(-3px); } 75% { transform: translateY(2px); } }
-@keyframes refresh-drift { 50% { transform: translate(3px,-3px); } }
-@keyframes refresh-nod { 50% { transform: rotate(5deg) translateY(2px); } }
-.refresh-status__robot svg { animation: refresh-float 2.5s ease-in-out infinite; transform-origin: center; }
-.refresh-status[data-motif='1'] svg { animation-name: refresh-tilt; }
-.refresh-status[data-motif='2'] .refresh-status__eyes { animation: refresh-wink 2.2s ease-in-out infinite; transform-origin: center; }
-.refresh-status[data-motif='3'] svg { animation-name: refresh-sway; }
-.refresh-status[data-motif='4'] svg { animation-name: refresh-pulse; }
-.refresh-status[data-motif='5'] svg { animation-name: refresh-roll; }
-.refresh-status[data-motif='6'] svg { animation-name: refresh-turn; }
-.refresh-status[data-motif='7'] svg { animation-name: refresh-bob; }
-.refresh-status[data-motif='8'] svg { animation-name: refresh-drift; }
-.refresh-status[data-motif='9'] svg { animation-name: refresh-nod; }
+.refresh-status__content { min-width: 0; flex: 1; display: grid; gap: 8px; }
+.refresh-status__content strong {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; line-height: 1.3; font-weight: 600;
+}
+.refresh-status__track { overflow: hidden; height: 2px; border-radius: 2px; background: var(--line-2); }
+.refresh-status__track i {
+  display: block; width: 34%; height: 100%; border-radius: inherit;
+  background: var(--action); animation: refresh-scan 1.9s ease-in-out infinite alternate;
+}
+@keyframes refresh-scan { from { transform: translateX(-101%); } to { transform: translateX(295%); } }
+@keyframes refresh-breathe { 50% { opacity: .35; } }
 @media (max-width: 880px) { .refresh-status { top: 68px; right: 12px; } }
 @media (prefers-reduced-motion: reduce) {
-  .refresh-status__robot svg, .refresh-status__eyes, .refresh-status__track i { animation: none !important; }
+  .refresh-status__indicator, .refresh-status__track i { animation: none !important; }
   .refresh-status__track i { width: 100%; opacity: .55; }
 }

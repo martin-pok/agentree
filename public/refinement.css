@@ -14,7 +14,7 @@ button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0;
 .home-intro h2 { font-size: clamp(2rem, 3.1vw, var(--type-hero)); font-weight: 400; line-height: 1.15; letter-spacing: -.035em; margin: 16px 0; }
 .home-intro p { font-size: var(--type-body); line-height: 1.6; }
 .sec-head :is(h2,h3), .home-live > h2, .set-card-head :is(h2,h3), .pcard-name, .studio-nickname { font-size: var(--type-title); line-height: 1.35; letter-spacing: -.015em; font-weight: 400; }
-.table:has(.agent-robot-tile) .cell-title b, .decision-title { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
+.table.table--roboti .cell-title b, .decision-title { font-size: var(--type-lead); line-height: 1.4; letter-spacing: -.01em; }
 :is(.small, .cell-app, .cell-sub, .guide-copy p, .studio-dialog label, .nav a, .lchip, .chip, .btn, .link, .set-nav) { font-size: var(--type-small); line-height: 1.5; letter-spacing: 0; }
 :is(.muted, .guide-copy p, .cell-sub, .cell-time) { color: var(--mute); }
 :is(.guide-label, .side-foot, .decision-kicker, .badge, .pill, .cell-time) { font-size: var(--type-caption); line-height: 1.5; }

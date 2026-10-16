@@ -4,6 +4,48 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.14',
+    date: '2026-10-16',
+    title: 'Opravené aktualizace Macu a vzhled agentů',
+    items: [
+      'Aktualizace na Macu teď zastaví službu s časovým limitem a restartuje aplikaci. I když se služba zasekne, ukončení má nezávislou pojistku a původní verze se při chybě spuštění nové obnoví.',
+      'Stahování aktualizace ukazuje skutečně přenesené megabajty a jde nechat běžet na pozadí. Instalace přehledně ukazuje dokončené kroky, bez vymyšlených procent nebo zbývajícího času.',
+      'Vzhled konkrétního agenta upravíš v jeho detailu: barva, podoba robota, jméno a volitelné doplňky. Výběr už neobsahuje dlouhou systémovou nabídku ostatních agentů.',
+      'Ruční obnovení přehledu má nenápadný stavový indikátor místo velké animované scény a respektuje nastavení omezeného pohybu.',
+    ],
+    en: {
+      title: 'Reliable Mac updates and personalized agents',
+      items: [
+        'On Mac, updating now shuts down the service with a fixed timeout before restarting. Even a stuck service cannot block quitting indefinitely, and a failed relaunch restores the previous app.',
+        'Update downloads show actual megabytes transferred and can continue in the background. Installation shows completed steps without inventing percentages or time estimates.',
+        'Customize each agent in its own detail: name, robot, color and optional accessories. There is no longer a long system dropdown listing every agent.',
+        'Manual refresh uses a subtle nonblocking status indicator instead of a large animated scene, and respects reduced-motion settings.',
+      ],
+    },
+  },
+  {
+    version: '0.46.13',
+    date: '2026-10-14',
+    title: 'Bezpečnější aktualizace a pravdivé stavy agentů',
+    items: [
+      'Na Macu aktualizace ukazuje jednotlivé fáze. Při selhání instalace se vrátí ovládání a ukončení aplikace zůstane dostupné; pokud se nová verze nespustí, instalátor obnoví předchozí.',
+      'Codex s potvrzeným vyčerpaným limitem už nepůsobí, jako by čekal na nové zadání. Selhání a limity najdeš přímo v Přehledu v části Vyžaduje pozornost.',
+      'Upozornění při rolování neposouvají stránku pod sebou. Odhlášení od Google účtu má potvrzení a neodstraňuje data uložená na tomto počítači.',
+      'Hledání v Dovednostech začíná vlevo; editor projektu lépe využívá místo a drží Uložit a Zrušit na obrazovce. Úpravy obrázku projektu zůstávají dostupné.',
+      'Agenti jsou plynulejší i se stovkou konverzací, anglické popisky a české počty jsou opravené a rozšíření neoznačuje nejisté spojení za vypnutou aplikaci.',
+    ],
+    en: {
+      title: 'Safer updates and accurate agent status',
+      items: [
+        'On Mac, updates show distinct installation phases. If installation fails, the interface recovers and Quit remains available; a failed new-app launch restores the previous version.',
+        'Codex with a confirmed exhausted plan limit no longer pretends to be waiting for a new prompt. Failures and limits appear directly in the Overview under Needs attention.',
+        'Scrolling notifications no longer scrolls the page underneath. Google account sign-out asks for confirmation and leaves data saved on this computer intact.',
+        'Skills search now starts on the left; the project editor uses space more effectively and keeps Save and Cancel accessible. Image editing remains available.',
+        'Agents stay smoother with a hundred conversations, English wording and Czech plural forms improve, and the extension no longer mistakes uncertain connections for a stopped app.',
+      ],
+    },
+  },
+  {
     version: '0.46.12',
     date: '2026-10-14',
     title: 'Přesnější vzdálení agenti, limity a opravené ikony',

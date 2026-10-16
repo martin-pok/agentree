@@ -106,6 +106,21 @@ section[id], details[id] { scroll-margin-top: 96px; }\n#obsah { scroll-margin-to
    byla mezera z `gap` místo obyčejné mezery; ta zůstává v textu kvůli čtečkám. */
 .nav .btn { gap: 0; }
 .nav-cta-extra { white-space: pre; }
+
+/* One static page serves both systems. The tiny head script chooses before first paint;
+   with scripts disabled, the Mac baseline and both download links remain usable. */
+html[data-os="mac"] [data-os-only="windows"],
+html[data-os="windows"] [data-os-only="mac"] { display:none!important; }
+[data-os-switcher] { display:none; }
+html[data-os-ready] [data-os-switcher] { display:inline-flex; align-items:center; gap:3px; padding:4px; border:1px solid currentColor; border-radius:999px; }
+[data-os-choice] { min-width:76px; min-height:48px; padding:5px 14px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+[data-os-choice][aria-pressed="true"] { background:var(--on-stage); color:var(--backdrop); }
+[data-os-choice]:focus-visible { outline:2px solid var(--accent-violet); outline-offset:3px; }
+html[data-os="windows"] .cta-row [data-stahnout="windows-x64"] { order:-1; }
+html[data-os="windows"] #vyzkouset [data-stahnout="windows-x64"],
+html[data-os="windows"] .install-page .hero [data-stahnout="windows-x64"] { background:var(--accent-violet); color:#fff; border-color:var(--accent-violet); }
+html[data-os="windows"] #vyzkouset [data-stahnout="mac-arm64"],
+html[data-os="windows"] .install-page .hero [data-stahnout="mac-arm64"] { background:transparent; color:inherit; border:1px solid currentColor; }
 .btn--lg { min-height: 56px; padding: 8px 30px; font-size: 17px; }
 .nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
 .nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
@@ -1782,6 +1797,10 @@ body:not(.install-page) .hero h1 .radek--tichy { color:#B2A4F6; }
   overflow:visible!important;
   border-radius:0!important;
 }
+/* Later editorial step styling uses an ID and !important. Match its weight so
+   only the selected platform's instructions occupy space. */
+html[data-os="windows"] #vyzkouset ol.steps[data-os-only="mac"],
+html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!important; }
 #vyzkouset ol.steps > li {
   display:grid!important;
   grid-template-columns:52px minmax(0,1fr)!important;

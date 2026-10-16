@@ -193,6 +193,7 @@ export function projectForm(existing = null) {
     title: existing ? tr('Upravit projekt') : tr('Nový projekt'),
     submitLabel: existing ? tr('Uložit změny') : tr('Vytvořit projekt'),
     wide: true,
+    size: 'project',
     body: `<div class="form-grid">
         <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
         <label class="field field--wide"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
@@ -207,7 +208,7 @@ export function projectForm(existing = null) {
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
           <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
-          <span class="media-text"><b>${kind === 'cover' ? tr('Obrázek karty') : tr('Logo klienta')}</b><small>${esc(TARGETS[kind].hint)} ${kind === 'cover' ? tr('Nahradí přechod nahoře na kartě.') : tr('Objeví se místo barevné tečky.')}</small></span>
+          <span class="media-text"><b>${kind === 'cover' ? tr('Obrázek karty') : tr('Logo klienta')}</b><small>${esc(TARGETS[kind].hint)}</small></span>
           <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>${tr('Nahrát')}</button><button class="btn btn--sm" type="button" data-media-remove hidden>${tr('Odebrat')}</button></span>
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
           <div class="media-crop" data-media-crop hidden></div>

@@ -142,3 +142,21 @@ test('nástup obrazovky začíná v prvním snímku a dotyková obrazovka nenech
   assert.match(css, /\.view\.is-entering \[data-enter\] \{ animation: rise 480ms var\(--ease-settle\) both; animation-delay: calc\(max\(var\(--i, 0\) - 1, 0\) \* 40ms\); \}/);
   assert.match(css, /@media \(hover: none\) \{\s*\.skill:hover, \.appearance-option:hover, \.avatar-pick:hover, \.pcard:hover/);
 });
+
+// #209: s 140 agenty měla každá dávka doplněných karet dlouhou úlohu 30–70 ms. Příčiny změřené
+// v trase Chromia: `.table:has(.agent-robot-tile)` přepočítal styly všech karet při každém vložení
+// řádku, dávka znovu rozebírala a porovnávala všechny dřívější řádky a pohyb robotů měřil
+// getBoundingClientRect u každého robota na stránce (i u karet mimo okno).
+test('Agenti: karty bez :has(), mimo okno se nevykreslují, dávka jen připojuje a roboti se neměří všichni', async () => {
+  const css = (await zdroj('public/workbench.css')) + (await zdroj('public/refinement.css'));
+  assert.doesNotMatch(css, /:has\(\.agent-robot-tile\)/, 'styl karty nesmí záviset na :has() nad celou tabulkou');
+  assert.match(css, /\.table\.table--roboti > \.row \{[^}]*content-visibility: auto;[^}]*contain-intrinsic-size: auto \d+px;/);
+  const agents = await zdroj('public/js/views/agents.js');
+  assert.match(agents, /classList\.toggle\('table--roboti'/);
+  assert.match(agents, /pripojit: name === 'table' && v\.doplnuje/);
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /if \(pripojit && el\._html && el\.firstChild && html\.startsWith\(el\._html\)\) \{\s*el\.insertAdjacentHTML\('beforeend', html\.slice\(el\._html\.length\)\);/);
+  const pohyb = await zdroj('public/js/mascot-motion.js');
+  assert.match(pohyb, /new IntersectionObserver\(/);
+  assert.match(pohyb, /const visible = \(\) => io \? \[\.\.\.vOkne\]/, 'viditelné roboty určuje IntersectionObserver, ne měření každého robota');
+});

@@ -26,7 +26,7 @@ const STRANKY = () => [
 
 // Sekce uvnitř stránek: [stránka, data-region, popisek, synonyma, tlačítko k otevření?].
 const SEKCE = () => [
-  ['prehled', 'decisions', tr('Potřebuje tvé rozhodnutí'), 'ceka povoleni schvaleni otazka needs input approval permission'],
+  ['prehled', 'decisions', tr('Vyžaduje pozornost'), 'ceka povoleni schvaleni otazka limit selhani needs input approval permission failed exhausted'],
   ['prehled', 'timeline', tr('Dnešní směna'), 'casova osa dnes prubeh timeline today'],
   ['prehled', 'chart', tr('Tokeny z přepisů'), 'graf tokens chart'],
   ['prehled', 'today-apps', tr('Kam dnes šly tokeny'), 'dnes aplikace tokeny today apps'],

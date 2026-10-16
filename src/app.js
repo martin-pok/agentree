@@ -98,6 +98,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   await datastore.load();
   const updates = updateService || new UpdateService({ version: VERSION, dataDir: config.dataDir, enabled: config.cloudFetch, channel: datastore.data.settings.updateChannel, ...(updateFetch ? { fetchImpl: updateFetch } : {}) });
   const store = new Store({ config, datastore });
+  // Průběh stahování aktualizace jde do rozhraní stejnou cestou jako ostatní stav aktualizací.
+  updates.onProgress = (value) => { if (store.ready) store.emit('updates', value); };
   const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
   await historie.load();
   const secrets = createSecrets({ keychain: config.keychain });

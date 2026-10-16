@@ -37,6 +37,7 @@ import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
 import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
 import { cileHledani, hledejCile, skore } from './hledani.js';
+import { containPopoverWheel } from './scroll-containment.js';
 
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
 
@@ -70,6 +71,8 @@ const updateEl = document.getElementById('update-chip');
 const bell = document.getElementById('bell');
 const bellBadge = document.getElementById('bell-badge');
 const pop = document.getElementById('notif-pop');
+// Safari/WKWebView can propagate wheel beyond a finished popover list to page.
+pop.addEventListener('wheel', (event) => containPopoverWheel(pop, event), { passive: false });
 const stageEl = document.querySelector('.stage');
 const narrowMq = window.matchMedia('(max-width: 880px)');
 
@@ -673,32 +676,28 @@ function spustObnovu(button) {
   status.className = 'refresh-status';
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
-  status.innerHTML = `<div class="refresh-status__robot" aria-hidden="true">
-    <svg viewBox="0 0 48 48" fill="none"><path d="M24 7v6M24 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM10 20a8 8 0 0 1 8-8h12a8 8 0 0 1 8 8v11a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V20Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path class="refresh-status__eyes" d="M18 25h3m6 0h3" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-  </div><div class="refresh-status__content"><strong></strong><span></span>
-  <div class="refresh-status__track" aria-hidden="true"><i></i></div></div>`;
+  // One clear state line, a small branded indicator and indeterminate motion.
+  // Never imply a measured download percentage; never block the current page.
+  status.innerHTML = `<span class="refresh-status__indicator" aria-hidden="true"></span>
+    <div class="refresh-status__content"><strong></strong>
+      <div class="refresh-status__track" aria-hidden="true"><i></i></div>
+    </div>`;
   const label = status.querySelector('strong');
-  const detail = status.querySelector('span');
   label.textContent = tr('Obnovuji aktuální data');
-  detail.textContent = tr('Kontroluji dostupné zdroje…');
   document.body.append(status);
-  let motif = 0;
-  status.dataset.motif = String(motif);
-  // Variants change only on long-running refreshes. No invented progress percentage.
-  const timer = setInterval(() => { motif = (motif + 1) % 10; status.dataset.motif = String(motif); }, 30000);
   let cleaned = false;
-  const setStage = (stage) => {
-    if (!cleaned && stage === 'snapshot') detail.textContent = tr('Aktualizuji zobrazená data…');
+  return {
+    setStage(stage) {
+      if (!cleaned && stage === 'snapshot') label.textContent = tr('Aktualizuji zobrazená data…');
+    },
+    finish() {
+      if (cleaned) return;
+      cleaned = true;
+      status.remove();
+      button.classList.remove('is-refreshing');
+      button.removeAttribute('aria-busy');
+    },
   };
-  const finish = () => {
-    if (cleaned) return;
-    cleaned = true;
-    clearInterval(timer);
-    status.remove();
-    button.classList.remove('is-refreshing');
-    button.removeAttribute('aria-busy');
-  };
-  return { setStage, finish };
 }
 
 document.addEventListener('click', async (e) => {

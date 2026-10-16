@@ -270,8 +270,26 @@ export function createCodexConnector(ctx) {
     const c = rl.credits;
     const zustatek = zustatekKreditu(c);
     if (zustatek !== null) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
-    if (rl.rate_limit_reached_type) {
-      s.limit = { reached: true, text: rl.plan_type ? ui('Limit plánu {0} je vyčerpaný', rl.plan_type) : ui('Limit plánu je vyčerpaný'), at: ts, resetsAt: toTs(rl.primary?.resets_at) || null };
+    // The snapshot can report an exhausted primary/secondary window without
+    // rate_limit_reached_type. The global quota tile already knows this, but
+    // without a session limit deriveStatus wrongly says "čeká na zadání".
+    // A zero credit balance alone is NOT evidence that a subscription is blocked.
+    const exhausted = ['primary', 'secondary']
+      .map((slot) => {
+        const w = rl[slot];
+        if (!w || typeof w.used_percent !== 'number' || w.used_percent < 100) return null;
+        const resetsAt = toTs(w.resets_at)
+          || (typeof w.resets_in_seconds === 'number' ? ts + w.resets_in_seconds * 1000 : null);
+        // Old snapshots should never resurrect an already reset limit.
+        if (resetsAt && resetsAt <= ts) return null;
+        return { label: windowLabel(w.window_minutes), resetsAt };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b.resetsAt || 0) - (a.resetsAt || 0))[0];
+    if (rl.rate_limit_reached_type || exhausted) {
+      s.limit = exhausted
+        ? { reached: true, label: exhausted.label, text: '', at: ts, resetsAt: exhausted.resetsAt }
+        : { reached: true, text: rl.plan_type ? ui('Limit plánu {0} je vyčerpaný', rl.plan_type) : ui('Limit plánu je vyčerpaný'), at: ts, resetsAt: toTs(rl.primary?.resets_at) || null };
     } else if (s.limit && ts > s.limit.at) {
       s.limit = null;
     }
