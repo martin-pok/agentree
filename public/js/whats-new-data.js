@@ -4,6 +4,32 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.15',
+    date: '2026-10-16',
+    title: 'Spolehlivější Mac a nové rozšíření',
+    items: [
+      'Aktualizace na Macu teď zastaví službu s časovým limitem a restartuje aplikaci. I když se služba zasekne, ukončení má nezávislou pojistku a původní verze se při chybě spuštění nové obnoví.',
+      'Stahování aktualizace ukazuje skutečně přenesené megabajty a jde nechat běžet na pozadí. Instalace přehledně ukazuje dokončené kroky, bez vymyšlených procent nebo zbývajícího času.',
+      'Vzhled konkrétního agenta upravíš v jeho detailu: barva, podoba robota, jméno a volitelné doplňky. Výběr už neobsahuje dlouhou systémovou nabídku ostatních agentů.',
+      'Ruční obnovení přehledu má nenápadný stavový indikátor místo velké animované scény a respektuje nastavení omezeného pohybu.',
+      'Okno Chrome rozšíření má novou prioritní kartu „Jedna hlavní věc“, časovou osu agentů a chatů, ovládání klávesnicí a pravdivé stavy i při odpojení.',
+      'Instalační web česky i anglicky rozlišuje Mac a Windows, nabídne správné kroky pro daný systém a umožní ruční přepnutí.',
+      'V nastavení je opticky větší mrak synchronizace a webové posouvání plynule dojíždí i při zpomaleném WebKitu.',
+    ],
+    en: {
+      title: 'Reliable Mac updates and a redesigned extension',
+      items: [
+        'On Mac, updating now shuts down the service with a fixed timeout before restarting. Even a stuck service cannot block quitting indefinitely, and a failed relaunch restores the previous app.',
+        'Update downloads show actual megabytes transferred and can continue in the background. Installation shows completed steps without inventing percentages or time estimates.',
+        'Customize each agent in its own detail: name, robot, color and optional accessories. There is no longer a long system dropdown listing every agent.',
+        'Manual refresh uses a subtle nonblocking status indicator instead of a large animated scene, and respects reduced-motion settings.',
+        'The Chrome extension now has a priority-first card, an agents-and-chats timeline, keyboard navigation and accurate disconnected states.',
+        'The Czech and English install pages distinguish Mac and Windows, show matching instructions and let you switch platforms manually.',
+        'The account sync cloud icon is optically balanced, and web wheel scrolling reaches its target even in throttled WebKit.',
+      ],
+    },
+  },
+  {
     version: '0.46.14',
     date: '2026-10-16',
     title: 'Opravené aktualizace Macu a vzhled agentů',
