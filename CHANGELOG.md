@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.14 · nevydáno
+
+- **Web rozlišuje Mac a Windows:** úvodní stránka i instalace (CZ/EN) automaticky volí postup pro návštěvníkův systém a nabízejí ruční přepnutí. Windows je nadále označené jako beta; přímé odkazy na systém respektují volbu, stránka funguje i bez JavaScriptu. Produkční nasazení a fyzické Windows UAT jsou samostatné brány.
+
 ## 0.46.14 – 2026-10-16 · Aktualizace Macu bez zaseknutí a vlastní vzhled agentů
 
 - **Aktualizace z aplikace se už nezasekne a aplikace jde vždy ukončit.** Po „Aktualizovat a restartovat“ zůstávala aplikace na „Instalujeme…“ a nešla zavřít ani z Docku. Teď plášť před restartem sám zastaví službu s pevným časovým limitem a pojistka aplikaci ukončí i tehdy, když by macOS ukončení nedokončil. Pomocník výměny si poradí i se zaseknutým starým procesem (vždy ověří, že jde o Agenteeq). Stejná pojistka platí pro ⌘Q a Ukončit z Docku: aplikace skončí nejpozději do 15 s, i když služba neodpovídá. Ověřuje to nový test `npm run qa:update`, který na macOS v CI skutečně aktualizuje sestavenou aplikaci, a to i se zaseknutou službou.
