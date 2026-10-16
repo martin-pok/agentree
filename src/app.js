@@ -1195,7 +1195,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Allow only an ID actually offered to the extension now. An arbitrary
     // history ID, hidden child session or archived transcript is not eligible.
     const summary = prehledProRozsireni(store.list());
-    const visible = [...summary.rozhodnuti, ...summary.pracuji].some((s) => s.id === id);
+    const visible = [...summary.rozhodnuti, ...summary.pracuji, ...summary.nedavne].some((s) => s.id === id);
     if (!visible) return { status: 404, error: ui('Agent už není v aktuálním přehledu. Obnov seznam.') };
     desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
     return { ok: true, focused: true };

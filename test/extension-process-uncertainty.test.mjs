@@ -3,52 +3,46 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
 
-// Execute the actual popup header function without Chrome/network to verify
+// Execute the actual popup summary functions without Chrome/network to verify
 // the words and state the user sees (rather than only matching source strings).
 const src = await fs.readFile(new URL('../extension/popup.js', import.meta.url), 'utf8');
-const start = src.indexOf('function hlavicka() {');
-const end = src.indexOf('// Konverzace se mění', start);
-assert.ok(start >= 0 && end > start, 'popup header function located');
+const start = src.indexOf('function vetaZdravi(');
+const end = src.indexOf('async function nactiPrehled()', start);
+assert.ok(start >= 0 && end > start, 'popup summary functions located');
 const code = src.slice(start, end);
-
-function paint({ unknown, status = 'problem', working = 1, deliveryFailed = false } = {}) {
-  const sub = { dataset: {} };
-  const screen = { hero: null };
-  const context = {
-    seznam: { pripojeno: true, lastStatus: deliveryFailed ? { ok: false } : null, zastarala: false, off: [], konverzace: [] },
-    overeni: { diagnostika: null, tab: null },
-    prehled: { zdravi: { stav: status, pracuje: working, cekaNaTebe: 0, selhalo: status === 'problem' ? 1 : 0, limit: 0, procesyNevim: unknown } },
-    tr: s => s,
-    mnozne: () => 'agentů právě pracuje',
-    vetaZdravi: () => (status === 'problem' ? 'Selhal 1 agent' : 'Nepodařilo se zjistit, co na počítači běží'),
-    $: key => key === 'sub' ? sub : ({ dataset: {} }),
-    setHero: h => { screen.hero = h; },
-  };
-  vm.runInNewContext(code + '\nhlavicka()', context);
-  return screen.hero;
-}
+const ctx = vm.createContext({ tr: (s) => s, mnozne: (n, a, b, c) => (n === 1 ? a : n >= 2 && n <= 4 ? b : c) });
+vm.runInContext(code, ctx);
+const souhrn = (z, o) => vm.runInContext('souhrnStavu(z, o)', Object.assign(ctx, { z, o }));
+const z = (stav, x = {}) => ({ stav, pracuje: 0, cekaNaTebe: 0, selhalo: 0, limit: 0, procesyNevim: false, ...x });
 
 test('extension never claims a fully healthy state when process scan is incomplete', () => {
-  const result = paint({ unknown: true });
-  assert.equal(result.tone, 'warn');
-  assert.match(result.sub, /Selhal 1 agent/);
-  assert.match(result.sub, /Nepodařilo se zjistit, co na počítači běží/);
-  assert.equal(paint({ unknown: false }).sub, 'Selhal 1 agent');
-  assert.equal(paint({ unknown: false }).tone, 'ok');
+  const result = souhrn(z('problem', { selhalo: 1, pracuje: 1, procesyNevim: true }));
+  assert.equal(result.ton, 'warn');
+  assert.match(result.text, /Selhal 1 agent/);
+  assert.match(result.text, /1 pracuje/);
+  assert.match(result.text, /Nepodařilo se zjistit, co na počítači běží/);
+  const known = souhrn(z('problem', { selhalo: 1, pracuje: 1 }));
+  assert.equal(known.text, 'Selhal 1 agent · 1 pracuje');
+  assert.equal(known.ton, '');
 });
 
 test('extension does not duplicate the unknown-process message when it is already primary', () => {
-  const result = paint({ unknown: true, status: 'nevim', working: 0 });
-  assert.equal(result.tone, 'warn');
-  assert.equal(result.sub, 'Nepodařilo se zjistit, co na počítači běží');
+  const result = souhrn(z('nevim', { procesyNevim: true }));
+  assert.equal(result.ton, 'warn');
+  assert.equal(result.text, 'Nepodařilo se zjistit, co na počítači běží');
 });
 
 test('extension shows BOTH delivery failure and unknown process coverage without duplicating either', () => {
-  const result = paint({ unknown: true, status: 'nevim', working: 0, deliveryFailed: true });
-  assert.equal(result.tone, 'warn');
-  assert.match(result.sub, /Poslední hlášení se do Agenteeq nedostalo/);
-  assert.match(result.sub, /Nepodařilo se zjistit, co na počítači běží/);
-  assert.equal(result.sub.match(/Nepodařilo se zjistit, co na počítači běží/g)?.length, 1);
-  const known = paint({ unknown: false, status: 'nevim', working: 0, deliveryFailed: true });
-  assert.doesNotMatch(known.sub, /Nepodařilo se zjistit/);
+  const result = souhrn(z('nevim', { procesyNevim: true }), { selhaloHlaseni: true });
+  assert.equal(result.ton, 'warn');
+  assert.match(result.text, /^Poslední hlášení se do Agenteeq nedostalo/);
+  assert.equal(result.text.match(/Nepodařilo se zjistit, co na počítači běží/g)?.length, 1);
+  assert.equal(result.text.match(/Poslední hlášení/g)?.length, 1);
+});
+
+test('missing app overview is reported as unknown, never as nobody working', () => {
+  const result = souhrn(null);
+  assert.equal(result.ton, 'warn');
+  assert.equal(result.text, 'Agenti na počítači: nezjištěno');
+  assert.doesNotMatch(result.text, /nikdo nepracuje|0/);
 });

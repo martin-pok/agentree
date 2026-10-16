@@ -31,7 +31,8 @@ const SIRKY = [1440, 375];
 const MAX_JEDNORADKOVY = 48;
 // Řádky seznamů a karty s náhledem mají více vrstev. Aby jejich tvar zůstal stejný i ve chvíli,
 // kdy se text vejde na jeden řádek, měří se jako plochy s --r-md, ne jako jednořádkové kapsle.
-const RADKY = ['.choice', '.pick', '.theme-pick'];
+// Řádek služby v okně rozšíření (.site) nese pod názvem i „naposledy …“, je to tedy taky řádek seznamu.
+const RADKY = ['.choice', '.pick', '.theme-pick', '.site'];
 // Stupnice výšek ovládacích prvků (docs/DESIGN.md, oddíl Tlačítka) a jediné povolené výjimky:
 // vnitřní kapsle malé segmentové volby (28 px v rámu 32 px; v aplikaci `.seg--sm`, na webu
 // přepínač jazyka `.lang`) a hlavní výzva webu `.btn--lg` (56 px).
@@ -282,7 +283,7 @@ console.log('Rozšíření pro Chrome');
 const ext = await staticServer(path.join(root, 'extension'));
 for (const stav of STAVY_OKNA) {
   const page = await otevriOkno(browser, ext.url, stav);
-  vypis(`344px okno (${stav})`, await page.evaluate(zmer, PARAM));
+  vypis(`380px okno (${stav})`, await page.evaluate(zmer, PARAM));
   await page.close();
 }
 await new Promise((r) => ext.server.close(r));

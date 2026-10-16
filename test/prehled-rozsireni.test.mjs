@@ -107,3 +107,35 @@ test('extension reports incomplete process scan even when important agents are v
       'only the boolean, never process metadata or private text, crosses into Chrome');
   }
 });
+
+test('rozšíření: nedávné konverzace napříč nástroji – jen titulek, nástroj, stav a čas', () => {
+  const p = prehledProRozsireni([
+    s('n1', 'needs_input'),
+    s('n2', 'working', { activity: 'Upravuje src/platby.js' }),
+    s('n3', 'waiting', { app: 'Codex', title: '  Úklid\n závislostí  ', cwd: '/Users/x/tajne', transcript: [{ role: 'user', text: 'tajný prompt' }], reason: 'Hotovo, čeká na další zadání' }),
+    s('n4', 'idle', { app: 'Ollama', title: 'x'.repeat(300) }),
+    s('n5', 'archived'),
+    s('n6', 'waiting', { archived: true }),
+    s('n7', 'observed', { app: 'Cursor' }),
+  ]);
+  assert.deepEqual(p.nedavne.map((x) => x.id), ['n7', 'n4', 'n3'], 'nejnovější první, bez archivu a bez položek z rozhodnutí a pracujících');
+  assert.deepEqual(Object.keys(p.nedavne[2]).sort(), ['app', 'at', 'id', 'status', 'title']);
+  assert.equal(p.nedavne[2].title, 'Úklid závislostí');
+  assert.equal(p.nedavne[2].status, 'waiting');
+  assert.equal(p.nedavne[1].title.length, 120, 'titulek je zkrácený');
+  assert.doesNotMatch(JSON.stringify(p.nedavne), /tajne|tajný|cwd|transcript|Hotovo/, 'žádné cesty, přepisy ani důvody');
+});
+
+test('rozšíření: nedávné nejvýš 8 a zahrnují i rozhodnutí nad limit čtyř položek', () => {
+  const p = prehledProRozsireni([
+    ...Array.from({ length: 6 }, (_, i) => s(`r${i + 1}`, 'needs_input', { lastAt: 100 + i })),
+    ...Array.from({ length: 12 }, (_, i) => s(`w${i + 1}`, 'waiting', { lastAt: 10 + i })),
+  ]);
+  assert.equal(p.rozhodnuti.length, 4);
+  assert.equal(p.nedavne.length, 8);
+  assert.deepEqual(p.nedavne.slice(0, 2).map((x) => [x.id, x.status]), [['r2', 'needs_input'], ['r1', 'needs_input']],
+    'rozhodnutí, která se do čtyř nevešla, se neztratí');
+  const vse = [...p.rozhodnuti, ...p.pracuji, ...p.nedavne].map((x) => x.id);
+  assert.equal(new Set(vse).size, vse.length, 'žádná konverzace se neukazuje dvakrát');
+  assert.equal(p.zdravi.cekaNaTebe, 6, 'počty jsou skutečné, ne zkrácené');
+});

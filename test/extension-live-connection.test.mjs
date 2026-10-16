@@ -27,30 +27,54 @@ test('extension popup rejects inaccessible host, non-OK HTTP, invalid body and r
 
 test('extension popup clears stale agent counts, diagnostics and live badge when disconnected', async () => {
   const code = cut(await read(), 'function ukazVypadek() {', '// Viditelnost se přepíná');
-  const elements = new Map(['feats', 'app-link', 'app-link-text'].map(k => [k, { hidden: true, href: '', textContent: '' }]));
   const env = {
     seznam: { pripojeno: true, konverzace: [{ id: 'old' }] },
     overeni: { diagnostika: { generating: true } },
     prehled: { zdravi: { pracuje: 20 } },
-    WEB: 'https://agentree-fawn.vercel.app/',
-    tr: s => s,
-    $: id => elements.get(id),
+    rezim: 'sparovano',
     zakladniStav() { env.seznam.pripojeno = false; },
-    setHero(value) { env.hero = value; },
+    nastavPill(tone, text) { env.pill = { tone, text }; },
+    vykresli() { env.vykresleno = { prehled: env.prehled, rezim: env.rezim, konverzace: env.seznam.konverzace.length }; },
+    obnovSeznam() { env.znovuChaty = true; },
   };
   vm.runInNewContext(code + '\nukazVypadek()', env);
   assert.equal(env.prehled, null);
   assert.equal(env.overeni.diagnostika, null);
-  assert.equal(env.seznam.konverzace.length, 0);
   assert.equal(env.seznam.pripojeno, false);
-  assert.equal(env.hero.tone, 'err');
-  assert.equal(env.hero.pill, 'Neběží');
+  assert.equal(env.rezim, 'offline');
+  assert.deepEqual(env.pill, { tone: 'err', text: 'Neběží' });
+  assert.deepEqual(env.vykresleno, { prehled: null, rezim: 'offline', konverzace: 0 }, 'stale agents and chats are gone before the offline screen is drawn');
+  assert.equal(env.znovuChaty, true, 'browser chats are reloaded from the browser, they never depended on the app');
+});
+
+test('failed verification with a running app is unverified, never offline or unpaired', async () => {
+  const code = cut(await read(), 'function ukazVypadek() {', '// Viditelnost se přepíná');
+  const env = {
+    seznam: { pripojeno: true, konverzace: [{ id: 'old' }] },
+    overeni: { diagnostika: { generating: true } },
+    prehled: { zdravi: { pracuje: 3 } },
+    rezim: 'sparovano',
+    zakladniStav() { env.seznam.pripojeno = false; },
+    nastavPill(tone, text) { env.pill = { tone, text }; },
+    vykresli() { env.vykreslenyRezim = env.rezim; },
+    obnovSeznam() { env.znovuChaty = true; },
+  };
+  vm.runInNewContext(code + '\nukazNeovereno()', env);
+  assert.equal(env.rezim, 'neovereno');
+  assert.deepEqual(env.pill, { tone: 'warn', text: 'Neověřeno' });
+  assert.equal(env.prehled, null, 'stale agent counts are not shown as live');
+  assert.equal(env.vykreslenyRezim, 'neovereno');
+  assert.equal(env.znovuChaty, true);
+  const novejsi = (a, b) => vm.runInNewContext(code + `\nnovejsiVerze(${JSON.stringify(a)}, ${JSON.stringify(b)})`, env);
+  assert.equal(novejsi('0.46.12', '0.46.9'), true, 'numbers, not text');
+  assert.equal(novejsi('0.46.0', '0.46.12'), false, 'an older app never offers an update');
+  assert.equal(novejsi('neznámá', '0.46.12'), false);
 });
 
 test('extension refresh loop tests actual health and auto-recovers after restart', async () => {
   const code = await read();
   const start = code.indexOf('let probihaKontrolaSpojeni = false;');
-  const end = code.indexOf("$('retry').addEventListener", start);
+  const end = code.indexOf('// Agenteeq běží na jiném portu', start);
   assert.ok(start >= 0 && end > start);
   const loop = code.slice(start, end);
   assert.match(loop, /if \(document\.hidden \|\| probihaKontrolaSpojeni\) return/);

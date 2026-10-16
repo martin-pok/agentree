@@ -2,10 +2,12 @@
 
 Kopie souborů z `public/logos` (tatáž loga jako v aplikaci; shodu hlídá `test/extension-assets.test.mjs`).
 Pocházejí z balíčku [`@lobehub/icons-static-svg`](https://github.com/lobehub/lobe-icons) verze 1.95.0,
-licence MIT, autor LobeHub – plné znění licence a původ jednotlivých souborů je v `public/logos/README.md`.
+licence MIT, autor LobeHub. Výjimkou jsou `warp.svg` a `zed.svg` ze [Simple Icons](https://simpleicons.org) 16.34.0
+(licence CC0 1.0). Plné znění licence a původ jednotlivých souborů je v `public/logos/README.md`.
+Kromě webových služeb okno ukazuje i loga nástrojů na počítači (Cursor, Ollama…) u konverzací z aplikace.
 
-Loga jsou ochranné známky svých vlastníků. Agenteeq je používá výhradně k označení služeb, které
-rozšíření sleduje, a nenaznačuje spolupráci ani podporu ze strany těchto společností.
+Loga jsou ochranné známky svých vlastníků. Agenteeq je používá výhradně k označení služeb a nástrojů,
+které rozšíření a aplikace sledují, a nenaznačuje spolupráci ani podporu ze strany těchto společností.
 
 ## Licence balíčku (MIT)
 
