@@ -63,7 +63,7 @@
     /* Okno má pevnou výšku 600 px (víc Chrome neukáže): hlavička a pata stojí, roluje jen střed. */
     body {
       position: relative; isolation: isolate; display: flex; flex-direction: column; overflow: hidden;
-      width: var(--w); height: 600px; background: var(--atmosphere), var(--backdrop); color: var(--ink);
+      width: min(var(--w), 100vw); height: 600px; background: var(--atmosphere), var(--backdrop); color: var(--ink);
       font: 400 14px/1.5 var(--f-body); font-variant-numeric: tabular-nums; font-kerning: normal; -webkit-font-smoothing: antialiased;
       container-type: inline-size; container-name: okno;
     }

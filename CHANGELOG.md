@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
+
+- **Všechna funkční vylepšení od veřejné 0.46.12 v jednom kandidátu.** Bezpečnější aktualizace a restart Apple Silicon aplikace (včetně zaseknuté služby, potvrzení před ukončením vlastních agentů, návratu původního balíčku při chybě), pravdivý průběh přenesených dat a fáze instalace. Běžný Quit a skutečná výměna balíčku mají nativní macOS regresní QA.
+- **Agentovy limity a rozhodnutí jsou pravdivější.** Potvrzený vyčerpaný Codex limit patří mezi problémy vyžadující pozornost, ne mezi čekání na další zadání; upozornění nepřetékají scrollováním do pozadí a odhlášení účtu vyžaduje potvrzení.
+- **Nové prémiové rozhraní.** V detailu jednotlivého agenta je volba vzhledu včetně doplňků; přehlednější Dovednosti a kompaktnější editor projektu; minimalistické ruční obnovení; opticky větší symbol synchronizace.
+- **Chrome rozšíření: jedna hlavní věc a časová osa.** Prioritní karta, agenti i chaty napříč nástroji, pravdivé stavy připojení, klávesové ovládání, světlo/tma a aktuální promo screenshoty. Okno se nyní při 320px šířce či větším přiblížení vejde celé bez vodorovného scrollu; skutečné browser QA hlídá pravý okraj hlavičky.
+- **Web Mac i Windows.** Česká i anglická úvodní a instalační stránka přizpůsobí postup systému návštěvníka s možností ručního přepnutí. Opravena přesnost plynulého scrollování ve WebKitu i při zpomaleném vykreslování.
+- **Integrita vydání.** Starší neměnný tag `v0.46.14` je na již otestovaném commitu `43fbc39`, který předcházel opravě textů `CHANGELOG` a in-app `Co je nového` v PR #268. V0.46.15 je nový kandidát z novějšího zdroje, nikoli přepsání tagu ani dřívějšího Draftu. Vydání smí vzniknout až po vlastním 8/8 main CI, CodeQL a nezávislém auditu osmi příloh. Veřejné Preview, Chrome Web Store a instalovaný Mac se automaticky nezmění pouze změnou čísla.
+
 ## 0.46.14 – 2026-10-16 · Aktualizace Macu bez zaseknutí a vlastní vzhled agentů
 
 - **Nové okno rozšíření pro Chrome: jedna hlavní věc.** Velké číslo s počtem agentů zmizelo. Nahoře je skleněná karta s tím, co tě teď potřebuje – nástroj, název, důvod („Čeká na povolení: Bash“) a tlačítko **Otevřít konverzaci**, které ji otevře přímo v aplikaci (schválit z okna nic nejde, proto netvrdí „Rozhodnout“). Aplikaci jako celek otevírá značka **Agenteeq ↗** v hlavičce – v okně tak nejsou dvě skoro stejná tlačítka „Otevřít“ a pata zmizela; sledované služby a port jsou v hlavičce vedle obnovy, ověření stránky u řádku aktuální karty. Když tě potřebuje víc agentů, karta má stránkování se skutečným počtem („1 / 3“), šipky a ovládání šipkami na klávesnici; nové rozhodnutí jen označí šipku tečkou, okno samo nikam nepřeskočí. Bez rozhodnutí karta ukáže pracujícího agenta, odpovídající chat v jiné kartě (**Přepnout na kartu**), nebo klid.
