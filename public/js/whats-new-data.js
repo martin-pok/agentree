@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.14',
+    date: '2026-10-16',
+    title: 'Opravené aktualizace Macu a vzhled agentů',
+    items: [
+      'Aktualizace na Macu teď zastaví službu s časovým limitem a restartuje aplikaci. I když se služba zasekne, ukončení má nezávislou pojistku a původní verze se při chybě spuštění nové obnoví.',
+      'Stahování aktualizace ukazuje skutečně přenesené megabajty a jde nechat běžet na pozadí. Instalace přehledně ukazuje dokončené kroky, bez vymyšlených procent nebo zbývajícího času.',
+      'Vzhled konkrétního agenta upravíš v jeho detailu: barva, podoba robota, jméno a volitelné doplňky. Výběr už neobsahuje dlouhou systémovou nabídku ostatních agentů.',
+      'Ruční obnovení přehledu má nenápadný stavový indikátor místo velké animované scény a respektuje nastavení omezeného pohybu.',
+    ],
+    en: {
+      title: 'Reliable Mac updates and personalized agents',
+      items: [
+        'On Mac, updating now shuts down the service with a fixed timeout before restarting. Even a stuck service cannot block quitting indefinitely, and a failed relaunch restores the previous app.',
+        'Update downloads show actual megabytes transferred and can continue in the background. Installation shows completed steps without inventing percentages or time estimates.',
+        'Customize each agent in its own detail: name, robot, color and optional accessories. There is no longer a long system dropdown listing every agent.',
+        'Manual refresh uses a subtle nonblocking status indicator instead of a large animated scene, and respects reduced-motion settings.',
+      ],
+    },
+  },
+  {
     version: '0.46.13',
     date: '2026-10-14',
     title: 'Bezpečnější aktualizace a pravdivé stavy agentů',

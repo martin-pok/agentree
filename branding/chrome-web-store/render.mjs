@@ -50,7 +50,18 @@ try {
       }
       await page.evaluate(() => document.fonts.ready);
       if (errors.length) throw new Error(`${job.source}: ${errors.join('; ')}`);
-      const png = await page.screenshot({ omitBackground: Boolean(job.transparent), animations: 'disabled' });
+      // Headless Chromium can transiently reject Page.captureScreenshot on a loaded page.
+      // Retry exactly once for that transport error; never swallow render failures
+      // or relax the canonical-SVG pixel comparison below.
+      let png;
+      try {
+        png = await page.screenshot({ omitBackground: Boolean(job.transparent), animations: 'disabled' });
+      } catch (error) {
+        if (!/Page\.captureScreenshot|Unable to capture screenshot/.test(String(error))) throw error;
+        console.warn(`Chromium screenshot transport retry: ${job.name}`);
+        await page.waitForTimeout(200);
+        png = await page.screenshot({ omitBackground: Boolean(job.transparent), animations: 'disabled' });
+      }
       let published = png;
       if (job.svg) {
         // The extension ZIP is built from tracked, approved raster icons on release

@@ -139,7 +139,8 @@ try {
     await pockej(async () => (await udalosti(hlaseni)).some((u) => u.udalost === 'qa-ukonceni'), 20000);
     const start = Date.now();
     const konec = await Promise.race([skoncil, cekej(30000).then(() => null)]);
-    zapis(konec !== null && konec - start <= 12000, konec ? `C ukončení: aplikace skončila za ${((konec - start) / 1000).toFixed(1)} s i se zaseknutým serverem` : 'C ukončení: aplikace se do 30 s neukončila');
+    // Quit watchdog targets 15 s; the gate must enforce the product promise, not an arbitrary 12 s.
+    zapis(konec !== null && konec - start <= 15000, konec ? `C ukončení: aplikace skončila za ${((konec - start) / 1000).toFixed(1)} s i se zaseknutým serverem` : 'C ukončení: aplikace se do 30 s neukončila');
     const serverPryc = await pockej(() => !bezi(path.join(bundle, 'Contents', 'Resources', 'node')), 10000);
     zapis(serverPryc, serverPryc ? 'C ukončení: server skončil s aplikací' : 'C ukončení: server běží dál bez aplikace');
   }
