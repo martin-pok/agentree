@@ -57,7 +57,7 @@ try {
       try {
         png = await page.screenshot({ omitBackground: Boolean(job.transparent), animations: 'disabled' });
       } catch (error) {
-        if (!/Page\\.captureScreenshot|Unable to capture screenshot/.test(String(error))) throw error;
+        if (!/Page\.captureScreenshot|Unable to capture screenshot/.test(String(error))) throw error;
         console.warn(`Chromium screenshot transport retry: ${job.name}`);
         await page.waitForTimeout(200);
         png = await page.screenshot({ omitBackground: Boolean(job.transparent), animations: 'disabled' });
