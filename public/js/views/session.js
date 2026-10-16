@@ -1,4 +1,5 @@
 import { agentRobot } from '../home-studio.js';
+import { editAgentAppearance } from '../agent-appearance.js';
 import { state, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
@@ -208,6 +209,10 @@ function mount(el, [id]) {
     jump.hidden = true;
   });
   el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-agent-appearance]')) {
+      editAgentAppearance(v.id, { onSaved: update });
+      return;
+    }
     if (e.target.closest('[data-action="assign"]')) {
       const s = state.sessions.get(v.id);
       if (s) assignDialog([s.id], { current: s.projectId });
@@ -362,7 +367,7 @@ function update() {
   fill(el, 'head', `
     <div class="session-kicker"><span class="icon-tile agent-robot-tile">${agentRobot(s)}</span><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}<button class="btn btn--sm session-appearance-btn" type="button" data-agent-appearance>${tr('Upravit vzhled')}</button></div>
     ${propojeniNote(s)}
     ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     ${akce ? `<div class="session-actions">${akce}</div>` : ''}`);
