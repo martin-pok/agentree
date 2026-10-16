@@ -62,7 +62,7 @@ test('update and Quit never depend solely on AppKit termination', async () => {
   // shutdown finished, but reentrant NSApp.terminate(nil) saw stale Process.isRunning,
   // returned .terminateCancel again and only the 15s watchdog could end the app.
   // The worker completion flag must be set on main BEFORE retrying Quit.
-  assert.match(quit, /if stoppingForQuit \{\s*return quitStopFinished \? \.terminateNow : \.terminateCancel\s*\}\s*guard let process = child, process\.isRunning/,
+  assert.match(quit, /if stoppingForQuit \{[\s\S]*?return quitStopFinished \? \.terminateNow : \.terminateCancel\s*\}\s*guard let process = child, process\.isRunning/,
     'reentrant Dock Quit must terminate after the worker completes, despite stale child.isRunning');
   assert.match(quit, /self\.stopServerBounded\(\)[\s\S]*?DispatchQueue\.main\.async \{ \[weak self\] in[\s\S]*?self\.quitStopFinished = true[\s\S]*?NSApp\.terminate\(nil\)/,
     'only the completed bounded-stop callback may approve the second Quit');
