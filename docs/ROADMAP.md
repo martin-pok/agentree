@@ -6,6 +6,9 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+**Aktuální release kandidát 0.46.15 (16. 10.):** Nový immutable tag v0.46.14 vznikl na starším main commitu dřív, než byl sloučen kompletní aktualizovaný CZ/EN changelog. Tag neměnit. Pro nejnovější zdroj vytvářet 0.46.15; před publikací vyžadovat 8/8 main CI, osmi-asset SHA-256 audit, zálohu a fyzické Mac UAT. Žádná nová verze zatím nebyla instalována na uživatelův Mac.
+
+
 **Rozpracovaný web po kandidátu 0.46.14:** Windows/Mac adaptivní CZ/EN vstupy a instalační cesta s ruční volbou OS jsou součástí PR #263, jejich produkční nasazení a skutečné Windows UAT zůstávají otevřené. Nejprve musí projít nejnovější zelené CI a samostatná kontrola na živé doméně. Neodvozovat veřejné vydání ze stavu `main`.
 
 **Nový P0 kandidát 0.46.14 Preview (`v0.46.14`, 16. 10. 2026):** zdrojové opravy #262 (macOS update/Quit, úspěšných 17/17 nativních QA kroků na macOS runneru), #261 (editor vzhledu v detailu agenta) a #260 (minimalistický refresh) jsou v `main`. Verze 0.46.14 teprve prochází PR, finálním 8/8 CI, automatickým sestavením privátního Draftu a nezávislým auditem. **Žádná instalace na uživatelově Macu nebyla tímto commitem provedena.** Protože starý instalovaný aktualizátor může zablokovat proces, první přechod na novou verzi vyžaduje ověřený DMG a bezpečnou zálohu; potom prověřit následující update z nové verze. Veřejné Preview 0.46.12 a Stable Latest 0.46.0 se nemění. Viz [#255](https://github.com/martin-pok/agentree/issues/255) a [#208](https://github.com/martin-pok/agentree/issues/208).
