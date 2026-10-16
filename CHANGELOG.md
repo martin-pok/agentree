@@ -1,9 +1,17 @@
 # Changelog
 
-## Připravované změny po 0.46.13 · nevydáno
+## Připravované změny po 0.46.14 · nevydáno
 
-- **Web podle systému návštěvníka.** Česká i anglická úvodní stránka a návod k instalaci ukazují na Windows nejdřív Windows beta verzi s vlastním postupem a na Macu postup pro Mac. Návštěvník může systém ručně přepnout. Odkazy Stable míří na skutečné přílohy v0.46.0; přepnutí nemění kanál vydání ani obsah konverzací.
-- **Nenápadné obnovení dat.** Při ruční aktualizaci již nepřekáží velký animovaný robot a dvě informační věty. Zobrazuje se jediný srozumitelný stav, drobný indikátor a jemná průběžná linka bez vymyšlených procent. Běžné ovládání aplikace zůstává dostupné a omezený pohyb je respektován. Jde o zdrojovou změnu čekající na ověření a další vydání.
+- **Web rozlišuje Mac a Windows:** úvodní stránka i instalace (CZ/EN) automaticky volí postup pro návštěvníkův systém a nabízejí ruční přepnutí. Windows je nadále označené jako beta; přímé odkazy na systém respektují volbu, stránka funguje i bez JavaScriptu. Produkční nasazení a fyzické Windows UAT jsou samostatné brány.
+
+## 0.46.14 – 2026-10-16 · Aktualizace Macu bez zaseknutí a vlastní vzhled agentů
+
+- **Aktualizace z aplikace se už nezasekne a aplikace jde vždy ukončit.** Po „Aktualizovat a restartovat“ zůstávala aplikace na „Instalujeme…“ a nešla zavřít ani z Docku. Teď plášť před restartem sám zastaví službu s pevným časovým limitem a pojistka aplikaci ukončí i tehdy, když by macOS ukončení nedokončil. Pomocník výměny si poradí i se zaseknutým starým procesem (vždy ověří, že jde o Agenteeq). Stejná pojistka platí pro ⌘Q a Ukončit z Docku: aplikace skončí nejpozději do 15 s, i když služba neodpovídá. Ověřuje to nový test `npm run qa:update`, který na macOS v CI skutečně aktualizuje sestavenou aplikaci, a to i se zaseknutou službou.
+- **Rychlejší aktualizace se skutečným průběhem.** Stahování ukazuje opravdová data (stažené MB z celku) a jde schovat na pozadí. Nová verze se rozbaluje rovnou vedle aplikace, takže odpadla jedna celá kopie. Načítací scéna při instalaci ukazuje pruh, který se doplňuje po skutečně dokončených krocích (rozbalení, podpis, uložení, restart). Průběh každé aktualizace se zapisuje do `~/Library/Logs/Agenteeq/update.log`.
+- **Ukončení s běžícími agenty se zeptá.** Když běží agenti spuštění z Agenteeq, ⌘Q, Ukončit z Docku i aktualizace se nejdřív zeptají, protože je ukončení zastaví. Při odhlášení nebo vypnutí Macu se aplikace neptá a skončí hned.
+- **Nenápadné obnovení dat.** Při ruční aktualizaci již nepřekáží velký animovaný robot a dvě informační věty. Zobrazuje se jediný srozumitelný stav, drobný indikátor a jemná průběžná linka bez vymyšlených procent. Běžné ovládání aplikace zůstává dostupné a omezený pohyb je respektován. Nový vzhled průběhu je součástí kandidáta 0.46.14.
+
+- **Vzhled agenta upravíš přímo v jeho detailu.** Odpadl globální výběr agenta z Přehledu i systémové rozbalovací nabídky. Přidal se výběr barvy, podoby a drobných vektorových doplňků; změna je uložená jen pro vybraného agenta a jeho oprávnění se nemění.
 
 ## 0.46.13 – 2026-10-14 · bezpečnější aktualizace a pravdivé stavy
 

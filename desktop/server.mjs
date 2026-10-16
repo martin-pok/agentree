@@ -63,6 +63,14 @@ try {
   };
   let badgeTimer;
   const scheduleBadge = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(badge, 100); badgeTimer.unref(); };
+  // Agenti spuštění z Agenteeq skončí s ním. Plášť se podle tohoto počtu před ukončením zeptá.
+  let lastOwnedRuns = null;
+  const ownedRuns = () => {
+    const count = app.runs.children.size;
+    if (count !== lastOwnedRuns) { report({ type: 'owned-runs', count }); lastOwnedRuns = count; }
+  };
+  app.store.on('runs', ownedRuns);
+  ownedRuns();
   app.store.on('session', scheduleBadge);
   app.store.on('session:remove', scheduleBadge);
   // A working session can expire without another store event. Re-evaluate time-based

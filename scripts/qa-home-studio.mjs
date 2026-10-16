@@ -154,6 +154,29 @@ try {
       assert.ok(await page.locator('.pm-msg--ja').count() >= 2, 'rozhovor zůstal');
       await page.keyboard.press('Escape');
 
+      // Notion: vzhled se upravuje pouze v detailu konkrétního agenta, nikoli z Přehledu.
+      await page.locator('[data-agent-appearance]').waitFor();
+      await page.locator('[data-agent-appearance]').click();
+      await page.locator('.studio-dialog--single[open]').waitFor();
+      assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
+      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"]').count(), 5, '5 vektorových variant');
+      await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').click();
+      await page.locator('.studio-dialog--single [data-pick="color"][data-value="#367b68"]').click();
+      await page.locator('.studio-dialog--single input[name="nickname"]').fill('Testovací agent');
+      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
+      await page.locator('.studio-dialog--single .studio-preview .robot-accessory--cap').waitFor();
+      await page.screenshot({ path: `${out}/${typ}-vzhled-agenta.png` });
+      await page.locator('.studio-dialog--single button[type="submit"]').click();
+      await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+      await page.locator('.session-kicker .robot-accessory--cap').waitFor();
+      await page.locator('[data-agent-appearance]').click();
+      assert.equal(await page.locator('.studio-dialog--single input[name="nickname"]').inputValue(), 'Testovací agent', 'vzhled se uloží právě tomuto agentovi');
+      await page.keyboard.press('Escape');
+      await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+      await page.goto(`${demo.url}/#/prehled`);
+      assert.equal(await page.locator('.studio-customize').count(), 0, 'na Přehledu nesmí být globální editor');
+      await page.goto(`${demo.url}/#/nastaveni`);
+
       // Nastavení: tlačítko nekoliduje s nadpisem; skrýt a zase zobrazit přepínačem.
       await page.goto(`${demo.url}/#/nastaveni`);
       await page.locator('.pm-fab').waitFor();
