@@ -589,50 +589,90 @@ html[data-theme] .launch::before { content: none; }
 .reply--agent .reply-actions .btn--primary { margin-left: auto; }
 .reply--agent .reply-hint { margin: 0; }
 
-/* Agent-specific appearance: compact on-brand button groups, never a browser-native select.
-   Keep the selected agent identity in the detail context, not as another huge dropdown. */
+/* Vzhled agenta: dialog z vlastních prvků (žádný systémový select), vlevo živý náhled, vpravo šatník.
+   Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat. */
 .session-appearance-btn { margin-left: auto; }
-.studio-dialog--single { width: min(500px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 22px; }
-.studio-dialog--single .appearance-form { display: grid; gap: 13px; }
-.studio-dialog--single header { align-items: flex-start; }
-.studio-dialog--single h2 { font-size: 20px; line-height: 1.2; font-weight: 500; overflow-wrap: anywhere; }
-.studio-dialog--single .appearance-eyebrow { margin: 0 0 3px; color: var(--mute); font-size: 12px; }
-.studio-dialog--single label { margin: 0; }
-.studio-dialog--single .appearance-options { min-width: 0; padding: 0; border: 0; margin: 0; }
-.studio-dialog--single .appearance-options legend { padding: 0 0 8px; font-size: 12px; font-weight: 500; }
-.appearance-grid { display: grid; gap: 6px; }
-.appearance-grid--robots, .appearance-grid--colors { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.appearance-grid--accessories { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.appearance-choice {
-  min-width: 0; height: 48px; padding: 4px 6px; display: flex; flex-direction: column;
-  gap: 2px; align-items: center; justify-content: center;
-  border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
-  color: var(--ink); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+.studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px 32px; }
+.look-form { display: grid; gap: 22px; }
+.look-head { align-items: flex-start; }
+.look-head h2 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 500; overflow-wrap: anywhere; }
+.look-eyebrow { margin: 0 0 4px !important; color: var(--mute); font-size: 12px !important; line-height: 1.4; }
+.look-body { display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: 32px; align-items: start; }
+.look-left, .look-right { display: grid; gap: 20px; min-width: 0; }
+.look-stage {
+  display: grid; justify-items: center; align-content: center; gap: 8px; min-height: 196px; padding: 16px;
+  border-radius: var(--r-xl); background: color-mix(in srgb, var(--persona) 9%, var(--paper));
+  transition: background var(--motion-enter, 180ms) var(--ease, ease);
 }
-.appearance-choice:hover { border-color: var(--ink-2); }
-.appearance-choice:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
-.appearance-choice[aria-pressed='true'] {
-  border-color: var(--action); background: color-mix(in srgb, var(--action) 8%, var(--paper));
-  box-shadow: inset 0 0 0 1px var(--action);
+.look-stage .studio-avatar { width: 128px; height: 132px; background: none; }
+.look-stage .robot { width: 128px; height: 132px; }
+.look-stage-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; color: var(--ink); }
+.look-name { display: grid; gap: 8px; margin: 0; font-size: 14px; }
+.look-set { min-width: 0; margin: 0; padding: 0; border: 0; }
+.look-set legend { padding: 0 0 10px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.look-row { display: grid; gap: 8px; }
+.look-row--robots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.look-row--colors { grid-template-columns: repeat(4, 40px); justify-content: space-between; }
+.look-tile {
+  min-width: 0; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 10px 4px 8px;
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--paper);
+  color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 500; line-height: 1.25; text-align: center; cursor: pointer;
+  transition: border-color var(--motion-enter, 180ms) var(--ease, ease), background var(--motion-enter, 180ms) var(--ease, ease);
 }
-.appearance-choice__robot { width: 24px; height: 24px; display: grid; place-items: center; }
-.appearance-choice__robot .robot { width: 24px; height: 24px; }
-.appearance-choice__symbol { font-size: 19px; line-height: 1; color: var(--action); }
-.appearance-swatch { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch); }
-.studio-dialog--single .studio-preview { min-height: 72px; gap: 12px; padding: 5px 0; font-size: 16px; }
-.studio-dialog--single .studio-preview .studio-avatar { width: 74px; height: 76px; }
-.studio-dialog--single .studio-preview .robot { width: 74px; height: 76px; }
-.studio-dialog--single footer { padding-top: 11px; border-top: 1px solid var(--line); }
-.robot-accessory { fill: var(--persona); stroke: var(--persona); }
-.robot-accessory--cap { opacity: .95; }
-.robot-accessory--glasses { opacity: .95; }
-.robot-accessory--shirt { fill: color-mix(in srgb, var(--persona) 62%, var(--card)); }
-.robot-accessory--shirt path + path { stroke: var(--persona); }
-.robot-accessory--spacesuit { fill: color-mix(in srgb, var(--persona) 34%, var(--card)); stroke-width: 2; }
-.robot-accessory--spacesuit rect, .robot-accessory--spacesuit circle { fill: var(--persona); }
-.robot-accessory--spacesuit rect:first-of-type { fill: var(--card); stroke: var(--persona); }
-@media (max-width: 480px) {
-  .studio-dialog--single { padding: 16px; }
-  .appearance-choice { font-size: 12px; padding: 4px 2px; }
+.look-tile:hover { border-color: var(--ink-2); }
+.look-tile:focus-visible, .look-swatch:focus-visible, .look-tab:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+.look-tile[aria-pressed='true'] { border-color: var(--action); background: color-mix(in srgb, var(--action) 8%, var(--paper)); color: var(--ink); box-shadow: inset 0 0 0 1px var(--action); }
+.look-tile .robot { width: 64px; height: 66px; }
+.look-row--robots .look-tile .robot { width: 42px; height: 44px; }
+.look-tile-none { width: 64px; height: 66px; display: grid; place-items: center; color: var(--mute); }
+.look-tile-none svg { width: 22px; height: 22px; }
+.look-swatch {
+  width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 2px solid transparent; border-radius: 50%;
+  background: var(--swatch); color: #fff; cursor: pointer; background-clip: content-box; box-sizing: border-box;
+}
+.look-swatch { box-shadow: inset 0 0 0 4px var(--paper); }
+.look-swatch svg { width: 16px; height: 16px; opacity: 0; transition: opacity var(--motion-enter, 180ms) var(--ease, ease); position: relative; }
+.look-swatch[aria-pressed='true'] { border-color: var(--swatch); }
+.look-swatch[aria-pressed='true'] svg { opacity: 1; }
+.look-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.look-tab {
+  height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
+  color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.look-tab:hover { border-color: var(--ink-2); }
+.look-tab[aria-selected='true'] { border-color: var(--action); background: color-mix(in srgb, var(--action) 10%, var(--paper)); color: var(--ink); }
+.look-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-content: start; min-height: 396px; }
+.look-form footer { padding-top: 18px; border-top: 1px solid var(--line); }
+.look-reset { margin-right: auto; }
+.look-form footer [data-error] { margin-right: auto; }
+@media (max-width: 720px) {
+  .studio-dialog--single { padding: 20px 16px; }
+  .look-body { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .look-left, .look-right { display: contents; }
+  /* Živý náhled zůstane nahoře, i když se dole listuje šatníkem. */
+  .look-stage { position: sticky; top: -8px; z-index: 2; grid-auto-flow: column; justify-content: center; align-content: center; min-height: 0; padding: 8px 12px; box-shadow: 0 8px 14px -10px var(--ink); }
+  .look-stage .studio-avatar, .look-stage .robot { width: 72px; height: 75px; }
+  .look-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; }
   .session-appearance-btn { margin-left: 0; }
 }
+/* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. */
+.robot-wear * { stroke: none; }
+.robot-wear { stroke-linecap: round; stroke-linejoin: round; }
+.rf-main { fill: var(--persona); }
+.rf-deep { fill: color-mix(in srgb, var(--persona) 66%, #0d1018); }
+.rf-soft { fill: color-mix(in srgb, var(--persona) 28%, #fff); }
+.rf-dark { fill: #1d2130; }
+.rf-light { fill: #f7f4ee; stroke: #d6cfbf; stroke-width: .8; }
+.rf-gold { fill: #e8b93f; }
+.rf-goldd { fill: #c99a2a; }
+.rf-warm { fill: #c98a4b; }
+.rf-glass { fill: #fff; fill-opacity: .16; }
+.rk-main { stroke: var(--persona); }
+.rk-deep { stroke: color-mix(in srgb, var(--persona) 66%, #0d1018); }
+.rk-light { stroke: #f7f4ee; }
+.rk-dark { stroke: #1d2130; }
+.rk-gold { stroke: #e8b93f; }
+.rk-shade { stroke: #b9b3a6; }
+.robot--worn .robot-aerial { display: none; }
+.look-tile .studio-avatar { width: 64px; height: 66px; background: none; border-radius: 0; }
+.look-row--robots .look-tile .studio-avatar { width: 42px; height: 44px; }

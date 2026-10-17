@@ -2,6 +2,7 @@ import { esc } from './format.js';
 export { robot } from './robot-svg.js';
 import { robot } from './robot-svg.js';
 import { loadPersonas, renderAgentRobot, PERSONA_COLORS, PERSONA_AVATARS } from './agent-appearance.js';
+import { normalizeLook } from './robot-wardrobe.js';
 import { tr } from './i18n.js';
 import { agentsList } from './state.js';
 import { vetaPozdravu } from './stav-vety.js';
@@ -37,9 +38,8 @@ export function createHomeStudio(el) {
       logo.classList.add('studio-avatar');
       logo.style.setProperty('--persona', colors.includes(p.color) ? p.color : colors[index]);
       const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
-      const accessory = p.accessory || 'none';
-      const variant = type + ':' + accessory;
-      if (logo.dataset.robot !== variant || !logo.querySelector('.robot')) { logo.innerHTML = renderAgentRobot(type, accessory); logo.dataset.robot = variant; }
+      const variant = type + ':' + JSON.stringify(normalizeLook(p));
+      if (logo.dataset.robot !== variant || !logo.querySelector('.robot')) { logo.innerHTML = renderAgentRobot(type, p); logo.dataset.robot = variant; }
       logo.style.setProperty('--robot-delay', `${i * -1.3}s`);
       let nick = li.querySelector('.studio-nickname');
       if (!nick) { nick = document.createElement('span'); nick.className = 'studio-nickname'; li.querySelector('.pb-agent-text').prepend(nick); }
@@ -56,5 +56,5 @@ export function agentRobot(s) {
   const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
-  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p.accessory || 'none')}</span>`;
+  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p)}</span>`;
 }
