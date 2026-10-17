@@ -38,6 +38,25 @@ try {
       page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
       await page.goto(`${demo.url}/#/prehled`);
       await page.locator('.lpick-btn').waitFor();
+      // Okno upozornění: seznam se při překreslení shellu (změna spojení, agentů…) nesmí postavit
+      // znovu, jinak posuvník uprostřed rolování skočí nahoru.
+      await page.evaluate(async () => {
+        const { state, emit } = await import('/js/state.js');
+        state.alerts.items = Array.from({ length: 12 }, (_, i) => ({ id: `qa${i}`, title: `Upozornění ${i}`, body: `Text ${i}`, level: 'info', kind: 'x', at: Date.now() - i * 60000, read: false }));
+        state.alerts.unread = 12;
+        emit('alerts');
+      });
+      await page.locator('#bell').click();
+      const seznam = page.locator('.pop-list');
+      await seznam.waitFor();
+      await seznam.evaluate((l) => { l.scrollTop = l.scrollHeight; });
+      const predPrekreslenim = await seznam.evaluate((l) => l.scrollTop);
+      assert.ok(predPrekreslenim > 40, `${typ}: seznam upozornění má co rolovat`);
+      await page.evaluate(async () => { const { emit } = await import('/js/state.js'); emit('conn', 'sessions', 'alerts'); });
+      await page.waitForTimeout(400);
+      assert.equal(await seznam.evaluate((l) => l.scrollTop), predPrekreslenim, `${typ}: překreslení shellu vrátilo seznam upozornění nahoru`);
+      await page.keyboard.press('Escape');
+      await page.locator('.pop-list').waitFor({ state: 'hidden' });
       await page.evaluate(() => document.fonts.ready);
 
       // Pole pro zadání a výběr agenta.
