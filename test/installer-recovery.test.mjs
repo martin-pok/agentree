@@ -260,7 +260,9 @@ test('native updater: aplikace z AppTranslocation se aktualizuje do složky Apli
   assert.doesNotMatch(install, /\.app\/Contents\/MacOS\/Agenteeq.*AppTranslocation/s, 'proces se pořád pozná jen podle konce cesty');
 });
 
-test('native updater: skript výměny zvládne chybějící aplikaci na cíli a vrátí zálohu, když existovala', async () => {
+test('native updater: skript výměny zvládne chybějící aplikaci na cíli a vrátí zálohu, když existovala', {
+  skip: process.platform === 'win32' && 'POSIX shell required'
+}, async () => {
   const swift = await fs.readFile(file('desktop/Agenteeq.swift'), 'utf8');
   const start = swift.indexOf('let script = """') + 'let script = """'.length;
   const script = swift.slice(start, swift.indexOf('"""', start)).replace(/^ {12}/gm, '');
