@@ -503,20 +503,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // Volá se mimo hlavní vlákno; nikdy nečeká déle než ~10 s.
     func stopServerBounded() {
         guard let process = child else { return }
-        // Do not synchronously hop to the AppKit thread here. Under a stalled
-        // WKWebView/runloop that hop can consume the entire 15-second Quit deadline
-        // before SIGTERM even reaches the child (observed in postmerge Mac CI).
-        // Shut down the child immediately from this worker; the callers already
-        // schedule the final NSApp.terminate on the main thread.
+        // The backend may be SIGSTOP'ed: SIGTERM cannot be processed until it
+        // runs again. Never depend on Process.isRunning polling iterations as
+        // a time limit; macOS runner scheduling can stretch 80 × 100ms past
+        // the 15-second native Quit watchdog.
         self.quitting = true
         process.terminationHandler = nil
         try? self.input?.fileHandleForWriting.close()
-        if process.isRunning { process.terminate() }
-        var waited = 0
-        while process.isRunning && waited < 80 { usleep(100_000); waited += 1 }
-        if process.isRunning { kill(process.processIdentifier, SIGKILL); updateLog("server neskončil do 8 s, ukončen násilně") }
-        waited = 0
-        while process.isRunning && waited < 20 { usleep(100_000); waited += 1 }
+        guard process.isRunning else { return }
+        process.terminate()
+        let clock = ProcessInfo.processInfo
+        let gracefulDeadline = clock.systemUptime + 3.0
+        while process.isRunning && clock.systemUptime < gracefulDeadline {
+            usleep(50_000)
+        }
+        if process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+            updateLog("server po 3 s nereagoval na SIGTERM; ukončen násilně")
+        }
+        // SIGKILL is asynchronous. Wait briefly for reaping, but never let
+        // a zombie or overloaded runner consume the app's Quit deadline.
+        let killDeadline = clock.systemUptime + 2.0
+        while process.isRunning && clock.systemUptime < killDeadline {
+            usleep(50_000)
+        }
+        if process.isRunning {
+            updateLog("server stále hlášen jako běžící po SIGKILL; dokončuji ukončení pláště")
+        }
     }
     // Poslední pojistka: když proces po žádosti o ukončení do `seconds` nezmizí (ztracená odpověď
     // AppKitu, zaseknuté hlavní vlákno), ukončí se sám. Server v tu chvíli už neběží nebo skončí
@@ -713,6 +726,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     var terminateReplyPending = false
     var stoppingForQuit = false
+    // The worker finishes the bounded shutdown before the second AppKit Quit.
+    // Process.isRunning can still report the stopped child as running after SIGKILL;
+    // never schedule another stop or return terminateCancel on that second Quit.
+    var quitStopFinished = false
     // Odhlášení, restart nebo vypnutí Macu nese v události důvod. Tam se neptáme – systém by čekal.
     var quitIsSystemInitiated: Bool {
         NSAppleEventManager.shared().currentAppleEvent?.attributeDescriptor(forKeyword: AEKeyword(0x7768_793F)) != nil // 'why?' = kAEQuitReason
@@ -736,6 +753,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         quitting = true
         // Ukončení se nesmí zaseknout ani při zaseknutém serveru nebo ztracené odpovědi AppKitu.
         armExitWatchdog(seconds: 15)
+        if stoppingForQuit {
+            // The worker has completed: the second terminate must succeed even
+            // if Foundation still reports a killed SIGSTOP child as isRunning.
+            return quitStopFinished ? .terminateNow : .terminateCancel
+        }
         guard let process = child, process.isRunning else { return .terminateNow }
         // ⌘Q a Ukončit z Docku: server se zastaví mimo hlavní vlákno s pevným limitem a pak se
         // aplikace ukončí znovu – už bez běžícího serveru, tedy okamžitě. Na odpověď AppKitu
@@ -745,8 +767,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             if !stoppingForQuit {
                 stoppingForQuit = true
                 DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                    self?.stopServerBounded()
-                    DispatchQueue.main.async { NSApp.terminate(nil) }
+                    guard let self else { return }
+                    self.stopServerBounded()
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        // Serialize the completion on main before retrying AppKit Quit.
+                        self.quitStopFinished = true
+                        self.updateLog("server zastaven; dokončuji běžné ukončení")
+                        NSApp.terminate(nil)
+                    }
                 }
             }
             return .terminateCancel
