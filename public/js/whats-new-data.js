@@ -4,6 +4,32 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.16',
+    date: '2026-10-17',
+    title: 'Nový vzhled agenta, klidná upozornění a pravdivější stavy',
+    items: [
+      'Vzhled agenta má nový dialog s živým náhledem a šatníkem: 8 čepic, 5 doplňků na obličej, 6 kusů oblečení a 8 převleků na celé tělo. Čepici, brýle a oblečení můžeš kombinovat.',
+      'Při otevřeném seznamu upozornění stojí stránka pod ním a seznam už neskáče nahoru, když se na pozadí změní data.',
+      'Lišta na Macu ukazuje „?“, když Agenteeq nezná čerstvý stav agentů, místo falešné nuly.',
+      'Telefon se páruje naskenováním QR kódu v Nastavení, adresu už nikdo nemusí opisovat. Funguje i přes samotný Tailscale.',
+      'Čistá instalace ukazuje na každé obrazovce jeden prázdný stav s jednou akcí místo nul a prázdných grafů.',
+      'Texty v aplikaci a rozšíření jsou kratší a přesněji vysvětlují, co Agenteeq skutečně zjistí a co vyžaduje připojení.',
+      'Pomocník v aplikaci odpovídá na běžné otázky česky i anglicky a ukazuje přímo na odpovídající místo v rozhraní.',
+    ],
+    en: {
+      title: 'New agent look, steady alerts and more truthful states',
+      items: [
+        'Agent appearance has a new editor with a live preview and a wardrobe: 8 hats, 5 face accessories, 6 outfits and 8 full-body costumes. Hats, glasses and outfits can be combined.',
+        'While the alert list is open the page underneath stays still, and the list no longer jumps back to the top when data changes in the background.',
+        'The Mac menu bar shows “?” when Agenteeq does not know the current agent state, instead of a false zero.',
+        'You pair a phone by scanning a QR code in Settings, so nobody has to retype an address. It also works with Tailscale alone.',
+        'A fresh install shows one empty state with a single action on every screen instead of zeros and empty charts.',
+        'App and extension text is shorter and more precise about what Agenteeq detects and what needs a connection.',
+        'The in-app guide answers common questions in Czech and English and takes you to the relevant place in the interface.',
+      ],
+    },
+  },
+  {
     version: '0.46.15',
     date: '2026-10-16',
     title: 'Spolehlivější aktualizace, nový Chrome přehled a aktuální rozhraní',

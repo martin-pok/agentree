@@ -59,6 +59,45 @@ try {
       await page.locator('.pop-list').waitFor({ state: 'hidden' });
       await page.evaluate(() => document.fonts.ready);
 
+      // Při otevřeném zvonečku se smí posouvat seznam, nikdy dlouhá stránka pod ním.
+      const initialScroll = await page.evaluate(() => {
+        document.querySelector('#view').style.minHeight = '2000px';
+        document.documentElement.style.scrollBehavior = 'auto';
+        scrollTo(0, 20);
+        document.documentElement.style.scrollBehavior = '';
+        return scrollY;
+      });
+      await page.locator('#bell').click();
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'hidden', `${typ}: pozadí upozornění je zamčené`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: otevření upozornění nemění polohu stránky`);
+      const popCenter = await page.locator('.notif-pop').boundingBox();
+      await page.mouse.move(popCenter.x + popCenter.width / 2, popCenter.y + 28);
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: kolečko nad hlavičkou upozornění nesmí posunout stránku`);
+      await page.locator('.pop-list').evaluate((list) => {
+        while (list.children.length < 12) list.append(list.firstElementChild.cloneNode(true));
+      });
+      const listCenter = await page.locator('.pop-list').boundingBox();
+      await page.mouse.move(listCenter.x + listCenter.width / 2, listCenter.y + listCenter.height / 2);
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.ok(await page.locator('.pop-list').evaluate((list) => list.scrollTop > 0), `${typ}: dlouhý seznam upozornění se posouvá`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: kolečko v seznamu nesmí posunout stránku`);
+      await page.locator('.pop-list').evaluate((list) => { list.scrollTop = list.scrollHeight; });
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: konec seznamu upozornění nesmí posunout stránku`);
+      await page.locator('#bell').click();
+      assert.notEqual(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'hidden', `${typ}: zavření upozornění odemkne stránku`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: zavření upozornění nemění polohu stránky`);
+      await page.evaluate(() => {
+        document.querySelector('#view').style.minHeight = '';
+        document.documentElement.style.scrollBehavior = 'auto';
+        scrollTo(0, 0);
+        document.documentElement.style.scrollBehavior = '';
+      });
+
       // Pole pro zadání a výběr agenta.
       assert.equal(await page.locator('.lchip:visible').count(), 0, 'nabídka agentů je zavřená');
       await page.locator('[data-l-prompt]').fill('Ověř navigaci');
@@ -210,6 +249,10 @@ try {
         assert.ok(rozmer.scroll <= rozmer.vyska + 1 && rozmer.vyska <= rozmer.okno, `${typ}: dialog vzhledu se vejde bez scrollování ${JSON.stringify(rozmer)}`);
       }
       await page.screenshot({ path: `${out}/${typ}-vzhled-agenta.png` });
+      await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('dark'); });
+      await page.waitForFunction(() => !document.documentElement.classList.contains('meni-motiv'));
+      await page.screenshot({ path: `${out}/${typ}-vzhled-agenta-tma.png` });
+      await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('light'); });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
       await page.locator('.session-kicker .robot-wear').waitFor();
