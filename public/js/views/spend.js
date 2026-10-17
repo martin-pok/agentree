@@ -229,8 +229,6 @@ function update() {
   fill(el, 'month', esc(monthLabel(sp.monthKey)));
   el.querySelector('[data-region="hero"]').classList.toggle('is-unavailable', !billingConnected);
   el.querySelector('[data-region="budgets"]').hidden = !billingConnected;
-  // Rozpočet se počítá jen z připojeného API; bez něj by tlačítko otevřelo nastavení bez účinku.
-  el.querySelector('.toolbar [data-action="budgets"]').hidden = !billingConnected;
   el.querySelector('[data-region="analytics"]').hidden = !billingConnected;
   el.querySelector('[data-region="ledger-section"]').hidden = !billingConnected && !sp.ledger?.length && !sp.automatic?.length;
 
