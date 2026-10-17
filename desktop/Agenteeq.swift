@@ -670,9 +670,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         if type == "running-agents", let count = data["count"] as? Int {
             // Explicit zero matters: the menu bar must not retain a stale count.
             let active = max(0, min(count, 999))
-            statusItem.button?.title = " \(active)"
-            statusItem.button?.toolTip = "Agenteeq – aktivně pracující agenti: \(active)"
-            statusItem.button?.setAccessibilityLabel("Agenteeq, aktivně pracující agenti: \(active)")
+            // Agents whose last known state was working but whose fresh state is missing
+            // (e.g. remote Claude Code when Claude Desktop has not reloaded its session list).
+            // They must never be shown as a confident zero.
+            let uncertain = max(0, min(data["uncertain"] as? Int ?? 0, 999))
+            let title = uncertain == 0 ? " \(active)" : (active == 0 ? " ?" : " \(active)+")
+            let tip = uncertain == 0
+                ? "Agenteeq – aktivně pracující agenti: \(active)"
+                : "Agenteeq – aktivně pracující agenti: \(active); u dalších \(uncertain) chybí čerstvý stav (naposledy pracovali)"
+            statusItem.button?.title = title
+            statusItem.button?.toolTip = tip
+            statusItem.button?.setAccessibilityLabel(tip)
         }
         if type == "focus-agent", !quitting, !installing, let route = data["route"] as? String,
            route.hasPrefix("#/agent/"), route.utf8.count <= 600,
