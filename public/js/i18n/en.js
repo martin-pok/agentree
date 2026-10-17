@@ -1628,6 +1628,7 @@ export default {
     "Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).": "I couldn't find that setting. Try describing it differently or open search ({0}).",
     "Hledané období: {0} – {1}.": "Period searched: {0} – {1}.",
     "Možná ti pomůže některá z těchto možností.": "One of these options might help.",
+    "Ptáš se na něco jiného? Pomáhám jen s Agenteeq – zkus třeba „Kde nastavím rozpočet?“.": "Asking about something else? I only help with Agenteeq – try “Where do I set a budget?”.",
     "Lokální model odpověď neformuloval: adresa Ollamy (AGENTEEQ_OLLAMA_URL) nevede na tento počítač, a úryvky konverzací proto nikam neodešly.": "The local model didn’t phrase this answer: the Ollama address (AGENTEEQ_OLLAMA_URL) doesn’t point to this computer, so no conversation excerpts were sent anywhere.",
     "Spojení s Agenteeq se nepovedlo. Zkontroluj, jestli aplikace běží, a zkus to znovu.": "Couldn't connect to Agenteeq. Check that the desktop app is running, then try again.",
     "Rady a hledání na tvém počítači": "Guidance and search on your computer",

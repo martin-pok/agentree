@@ -8,8 +8,8 @@ const source = await fs.readFile(new URL('../public/js/assistant-guide.js', impo
 const ui = await fs.readFile(new URL('../public/js/robot-guide.js', import.meta.url), 'utf8');
 
 test('pomocník používá průvodce před obecným vyhledáváním', () => {
-  assert.match(ui, /import \{ guideAnswer \} from '\.\/assistant-guide\.js'/);
-  const guideIndex = ui.indexOf('guideAnswer(dotaz');
+  assert.match(ui, /import \{ odpovedPruvodce, poradSNastavenim \} from '\.\/assistant-guide\.js'/);
+  const guideIndex = ui.indexOf('odpovedPruvodce(dotaz');
   const serverIndex = ui.indexOf("request('POST', '/api/pomocnik', { dotaz })");
   assert.ok(guideIndex >= 0 && serverIndex > guideIndex);
   assert.match(ui, /previousTopic/);
@@ -35,15 +35,9 @@ test('assistant guidance uses actual app snapshot without claiming provider stat
 });
 
 
-test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale', () => {
-  // Run actual guide implementation (not a source-only regex) with a deterministic nav registry.
-  const body = source.replace(/^import .*;\s*/m, '').replace('export function guideAnswer(', 'function guideAnswer(');
-  const guide = new Function('cileHledani', 'hledejCile', body + '\nreturn guideAnswer;')(
-    () => [{ id: 'karta:extension', label: 'Chrome Extension', route: '#/nastaveni', karta: 'extension' },
-      { id: 'karta:updates', label: 'Updates', route: '#/nastaveni', karta: 'updates' },
-      { id: 'stranka:agenti', label: 'Agents', route: '#/agenti' }],
-    () => []
-  );
+test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale', async () => {
+  // Run the actual guide implementation (not a source-only regex) against the real nav registry.
+  const { guideAnswer: guide } = await import('../public/js/assistant-guide.js');
   const cs = guide('Proč mi nefunguje rozšíření v Chromu?', { language: 'cs-CZ' });
   assert.equal(cs.topic, 'extension');
   assert.match(cs.text, /Nastavení/);

@@ -12,13 +12,11 @@ import { tr, LOCALE } from './i18n.js';
 import { state, agentsList } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
-import { hledejCile } from './hledani.js';
-import { guideAnswer } from './assistant-guide.js';
+import { odpovedPruvodce, poradSNastavenim } from './assistant-guide.js';
 import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
 import { zkratka } from './system.js';
-import { jeOtazkaNaCekani, coNaMeCeka } from './co-ceka.js';
 
 const TIPY = () => ({
   prehled: tr('Nový úkol zadáš v poli dole. Přehled nahoře ti ukáže, jestli některý agent čeká na tvoje rozhodnutí.'),
@@ -43,9 +41,6 @@ const NAVRHY = () => [
 const ULOZENO = 'agenteeq:pomocnik:zpravy';
 const trasa = () => location.hash.replace(/^#\//, '').split(/[/?]/)[0] || 'prehled';
 const bezDiakritiky = (s) => String(s || '').toLocaleLowerCase(LOCALE).normalize('NFD').replace(/[̀-ͯ]/g, '');
-// Slova otázky, která v názvech nastavení nejsou („jak“, „zapnu“…) – hledá se jen podle zbytku.
-const VYPLN = new Set('jak kde kam co mam muzu lze se da na v ve o u k s z do pro za si mi je jsou zapnu zapnout zapnuti vypnu vypnout vypnuti nastavim nastavit nastaveni zmenim zmenit prepnu prepnout skryju skryt zobrazim zobrazit najdu najit funkci funkce moznost moznosti tu tam to ten ta how where do i can enable disable turn on off set change find the a an to is in of'.split(' '));
-
 let el = null;
 let zpravy = [];
 let pracuje = false;
@@ -111,20 +106,6 @@ function vykresli({ ownMessage = false } = {}) {
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
 }
 
-// „Jak zapnu …“: hledání v rejstříku stránek a nastavení bez výplňových slov; když celé spojení
-// nic nenajde, zkusí se slova jednotlivě a vezmou se nejlepší shody.
-function poradSNastavenim(dotaz) {
-  const slova = bezDiakritiky(dotaz).replace(/[?!.,„“"]/g, ' ').split(/\s+/).filter((w) => w && !VYPLN.has(w));
-  if (!slova.length) return [];
-  let cile = hledejCile(slova.join(' '));
-  if (!cile.length) {
-    const mapa = new Map();
-    for (const w of slova) for (const c of hledejCile(w)) mapa.set(c.id, { ...c, skore: (mapa.get(c.id)?.skore || 0) + c.skore });
-    cile = [...mapa.values()].sort((a, b) => b.skore - a.skore);
-  }
-  return cile.slice(0, 4);
-}
-
 async function posli(text) {
   const dotaz = text.trim();
   if (!dotaz || pracuje) return;
@@ -134,10 +115,9 @@ async function posli(text) {
   let odpoved;
   try {
     const previousTopic = [...zpravy].reverse().find((z) => z.kdo === 'on' && z.topic)?.topic || null;
-    // „Co na mě čeká?“ se odpovídá ze živého stavu agentů, ne hledáním ve starých přepisech.
-    const rada = jeOtazkaNaCekani(dotaz)
-      ? coNaMeCeka({ agenti: agentsList(), nacteno: state.loaded, spojeni: state.connection })
-      : guideAnswer(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state });
+    // Bez serveru: „co na mě čeká?“ ze živého stavu agentů, otázky k aplikaci z průvodce,
+    // otázky mimo Agenteeq poctivé „s tím neporadím“ (public/js/assistant-guide.js).
+    const rada = odpovedPruvodce(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state, agenti: agentsList });
     if (rada) {
       odpoved = { kdo: 'on', ...rada };
     } else {
@@ -154,6 +134,7 @@ async function posli(text) {
       if (!r.vysledky.length) {
         const cile = poradSNastavenim(dotaz);
         if (cile.length) Object.assign(odpoved, { cile, pozn: tr('Možná ti pomůže některá z těchto možností.') });
+        else odpoved.pozn = tr('Ptáš se na něco jiného? Pomáhám jen s Agenteeq – zkus třeba „Kde nastavím rozpočet?“.');
       }
     }
     }
