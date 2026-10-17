@@ -96,7 +96,7 @@ test('prázdný profil: každá obrazovka má prázdný stav s hlavní akcí a s
     'nenačtená historie se nevydává za prázdnou');
 
   const session = await pohled('session');
-  assert.match(session, /t\.nenalezeno = err\.status === 404;/, '„nenalezeno“ a „nepodařilo se načíst“ jsou dvě různé věci');
+  assert.match(session, /t\.nenalezeno = err\.status === 404 \|\| err\.status === 410;/, '„nenalezeno“ (404, 410 skončený proces) a „nepodařilo se načíst“ jsou dvě různé věci');
   assert.match(session, /!t\.nenalezeno \? tr\('Agenta se nepodařilo načíst'\)/);
 
   for (const [jmeno, kod] of [['overview', overview], ['agents', agents], ['alerts', alerts], ['projects', projects], ['stats', stats], ['session', session], ['skills', await pohled('skills')]]) {
