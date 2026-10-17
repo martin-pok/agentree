@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 17. 10. 2026:** veřejné Preview je `v0.46.15` a aplikace této verze běží na uživatelově Macu. Nalezený překryv voleb vzhledu agenta a pohyb stránky pod upozorněními se opravují pro nový kandidát `v0.46.16`; nový balíček, instalace a UAT dosud nebyly dokončeny. Stable Latest je `v0.46.0`.
+**Stav 17. 10. 2026:** veřejné Preview je `v0.46.16`. Aplikace spuštěná z Downloads nebo z DMG se z `AppTranslocation` neuměla aktualizovat; oprava je v kandidátu `v0.46.17`. Stable Latest je `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 17. 10. 2026:** po zveřejnění `v0.46.15` a spuštění na Macu byly zjištěny dvě chyby UI: překryté volby vzhledu agenta a posouvání stránky pod upozorněními. Připravuje se **0.46.16 Preview** jako nový neměnný tag. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a opakované Mac UAT. Vydané `v0.46.15` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
+**Aktuální release vlak 17. 10. 2026:** `v0.46.16` je zveřejněné Preview. Připravuje se **0.46.17 Preview** s opravou aktualizace z dočasné cesty macOS. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a Mac UAT. Vydané `v0.46.16` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

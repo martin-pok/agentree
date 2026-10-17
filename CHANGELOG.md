@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.17 – 2026-10-17 · Aktualizace funguje i z Downloads a z DMG
+
+- **Aktualizace aplikace spuštěné z Downloads nebo z DMG už nekončí chybou (#255).** Dřív po stažení aktualizace vyskočilo „Do složky …/AppTranslocation/… nejde zapisovat“: macOS spouští aplikaci otevřenou rovnou z Downloads nebo z DMG z dočasné cesty jen ke čtení a tam se nová verze nedala uložit. Agenteeq teď v takovém případě nainstaluje novou verzi do složky Aplikace (a když do ní nejde zapisovat, do `~/Applications`), restartuje se odtud a dřívější verzi vrátí, kdyby se nová nedala otevřít. Aplikace, která už je ve složce se zápisem, se vyměňuje na místě jako dřív. Poprvé z 0.46.16 na 0.46.17 ještě poběží starý aktualizátor: pokud Agenteeq spouštíš z Downloads nebo z DMG, přetáhni ho jednou do složky Aplikace.
+
 ## 0.46.16 – 2026-10-17 · Nový vzhled agenta, klidná upozornění a pravdivější stavy
 
 - **Při otevřeném zvonečku stojí stránka pod ním.** Posouvá se jen seznam upozornění; po zavření jde stránka opět posouvat.
