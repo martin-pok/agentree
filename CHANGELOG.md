@@ -1,7 +1,8 @@
 # Changelog
 
-## Připravované změny po 0.46.15
+## Připravované změny po 0.46.15 · nevydáno
 
+- **Kratší a pravdivější texty v aplikaci i rozšíření (#255).** Zmizela vata typu „na jednom místě“, „ty máš prostor na to podstatné“ nebo „Nainstaluješ ho za minutu“ a vysvětlivky, které opakovaly text o řádek níž (Tailscale, rozšíření v Nastavení, výčty služeb). Opravené jsou věty, které slibovaly víc, než aplikace dělá: úvod už netvrdí, že Agenteeq sám rozpozná plány a ověřené náklady za API (doplní je správcovský klíč), okno rozšíření neslibuje „Ozvu se“, Nápověda neodkazuje na průvodce, který na stránce není, a věta o soukromí u napojených modelů říká totéž co dialog napojení: hesla ani klíče Agenteeq neuvidí a z webových chatů nedostane text zpráv. Upozornění o soukromí, bezpečnosti, štítky Beta i „Nepodařilo se zjistit“ zůstaly beze změny.
 - **Čistá instalace vypadá záměrně, ne rozbitě.** Bez agentů, projektů a připojených zdrojů ukazuje každá obrazovka jeden prázdný stav s robotem, krátkou větou, co tu bude, a jednou hlavní akcí, která opravdu něco udělá (zkontrolovat zdroje dat, spustit agenta, založit projekt, nastavit upozornění, propojit API). Zmizely dlaždice s nulami a prázdná mapa aktivity ve Statistikách, „V pořádku, nikdo nepracuje“ se čtyřmi nulami na Přehledu, filtry s nulami nad prázdným seznamem Agentů a Upozornění a zdvojené „Nový projekt“. Útrata už neukazuje účty Claude Code a Codexu jako „Nelze ověřit“, když na počítači vůbec nejsou, a detail agenta rozliší „nenalezen“ od „nepodařilo se načíst“ s nabídkou zkusit znovu. Česky i anglicky; prázdný profil teď měří i `qa:tvary` a `qa:contrast` (issue #255).
 
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí

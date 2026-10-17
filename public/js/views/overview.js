@@ -77,7 +77,7 @@ function onboardingHtml() {
     ...(maClaudeCode ? [{ done: Boolean(hooks?.installed && (hooks?.current || hooks?.funguje)), label: tr('Propojení s Claude Code'), sub: tr('Žádost o povolení a přesné limity uvidíš hned.'), cta: `<a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zapnout')}</a>` }] : []),
     { done: Boolean(ext && ext.state !== 'missing'), label: tr('Rozšíření pro Chrome'), sub: tr('Agenti z ChatGPT, Gemini a Claude.ai v přehledu. Zadání se do nich vloží samo.'), cta: `<button class="btn btn--sm" type="button" data-go-extension>${ext?.repair ? tr('Spárovat znovu') : tr('Nainstalovat')}</button>` },
     { done: state.projects.items.length > 0, label: tr('První projekt'), sub: tr('Konverzace ze všech služeb seřazené podle klientů.'), cta: `<a class="btn btn--sm" href="#/projekty">${tr('Založit')}</a>` },
-    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Zadání, složka a projekt na jednom místě.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
+    { done: (state.usage?.launches || 0) > 0, label: tr('Spusť agenta přímo z Agenteeq'), sub: tr('Složku a projekt vybereš rovnou u zadání.'), cta: `<button class="btn btn--sm" type="button" data-onboard-launch>${tr('Zkusit')}</button>` },
   ];
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return '';
@@ -141,7 +141,7 @@ function mount(el) {
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
   workspace.className = 'home-workspace';
-  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
   // Rozhodnutí a stav agentů stojí vedle sebe: vlevo co čeká na tebe, vpravo jestli všechno běží.
@@ -455,7 +455,7 @@ function update(topics = new Set(['all'])) {
         ? `<button class="rt-item rt-item--go" type="button" data-focus-runtime="${esc(r.id)}" title="${tr('Přepnout do {0} –', esc(r.name))} ${popis}">${vnitrek}</button>`
         : `<div class="rt-item${r.running ? '' : ' is-off'}" title="${popis}">${vnitrek}</div>`;
     }).join('') + (webChybi
-      ? `<a class="rt-item rt-item--note" href="#/nastaveni" data-go-extension title="${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu sleduje rozšíření pro Chrome.')}">
+      ? `<a class="rt-item rt-item--note" href="#/nastaveni" data-go-extension title="${tr('Chaty z ChatGPT, Claude.ai, Gemini a dalších webových služeb sleduje rozšíření pro Chrome.')}">
           <span class="rt-disc">${ICON.cloud}</span>
           <span class="rt-name">${tr('Web')}</span>
           <span class="rt-meta">${tr('nesleduje se')}</span>
