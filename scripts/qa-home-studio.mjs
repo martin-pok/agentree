@@ -40,6 +40,45 @@ try {
       await page.locator('.lpick-btn').waitFor();
       await page.evaluate(() => document.fonts.ready);
 
+      // Při otevřeném zvonečku se smí posouvat seznam, nikdy dlouhá stránka pod ním.
+      const initialScroll = await page.evaluate(() => {
+        document.querySelector('#view').style.minHeight = '2000px';
+        document.documentElement.style.scrollBehavior = 'auto';
+        scrollTo(0, 20);
+        document.documentElement.style.scrollBehavior = '';
+        return scrollY;
+      });
+      await page.locator('#bell').click();
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'hidden', `${typ}: pozadí upozornění je zamčené`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: otevření upozornění nemění polohu stránky`);
+      const popCenter = await page.locator('.notif-pop').boundingBox();
+      await page.mouse.move(popCenter.x + popCenter.width / 2, popCenter.y + 28);
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: kolečko nad hlavičkou upozornění nesmí posunout stránku`);
+      await page.locator('.pop-list').evaluate((list) => {
+        while (list.children.length < 12) list.append(list.firstElementChild.cloneNode(true));
+      });
+      const listCenter = await page.locator('.pop-list').boundingBox();
+      await page.mouse.move(listCenter.x + listCenter.width / 2, listCenter.y + listCenter.height / 2);
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.ok(await page.locator('.pop-list').evaluate((list) => list.scrollTop > 0), `${typ}: dlouhý seznam upozornění se posouvá`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: kolečko v seznamu nesmí posunout stránku`);
+      await page.locator('.pop-list').evaluate((list) => { list.scrollTop = list.scrollHeight; });
+      await page.mouse.wheel(0, 360);
+      await page.waitForTimeout(180);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: konec seznamu upozornění nesmí posunout stránku`);
+      await page.locator('#bell').click();
+      assert.notEqual(await page.evaluate(() => getComputedStyle(document.documentElement).overflowY), 'hidden', `${typ}: zavření upozornění odemkne stránku`);
+      assert.equal(await page.evaluate(() => scrollY), initialScroll, `${typ}: zavření upozornění nemění polohu stránky`);
+      await page.evaluate(() => {
+        document.querySelector('#view').style.minHeight = '';
+        document.documentElement.style.scrollBehavior = 'auto';
+        scrollTo(0, 0);
+        document.documentElement.style.scrollBehavior = '';
+      });
+
       // Pole pro zadání a výběr agenta.
       assert.equal(await page.locator('.lchip:visible').count(), 0, 'nabídka agentů je zavřená');
       await page.locator('[data-l-prompt]').fill('Ověř navigaci');
@@ -160,12 +199,51 @@ try {
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
       assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"]').count(), 5, '5 vektorových variant');
+      for (const width of [1440, 375]) {
+        await page.setViewportSize({ width, height: 1000 });
+        const geometry = await page.locator('.studio-dialog--single').evaluate((dialog) => {
+          const groups = [...dialog.querySelectorAll('.appearance-options')];
+          return groups.map((group) => {
+            const row = group.querySelector('.appearance-grid');
+            const buttons = [...row.querySelectorAll('.appearance-choice')];
+            const rowBox = row.getBoundingClientRect();
+            const groupBox = group.getBoundingClientRect();
+            return {
+              groupWidth: groupBox.width, rowWidth: rowBox.width,
+              choices: buttons.map((button) => {
+                const box = button.getBoundingClientRect();
+                const label = button.lastElementChild.getBoundingClientRect();
+                return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+                  labelLeft: label.left, labelRight: label.right, labelTop: label.top, labelBottom: label.bottom };
+              }),
+            };
+          });
+        });
+        for (const group of geometry) {
+          assert.ok(group.groupWidth > 250 && group.rowWidth > 250, `${typ} ${width}px: volby musí využít šířku dialogu`);
+          for (let i = 0; i < group.choices.length; i++) {
+            const c = group.choices[i];
+            assert.ok(c.labelLeft >= c.left - 1 && c.labelRight <= c.right + 1 && c.labelTop >= c.top - 1 && c.labelBottom <= c.bottom + 1,
+              `${typ} ${width}px: popisek volby se musí vejít do tlačítka`);
+            for (const other of group.choices.slice(i + 1)) {
+              assert.ok(c.right <= other.left + 1 || other.right <= c.left + 1 || c.bottom <= other.top + 1 || other.bottom <= c.top + 1,
+                `${typ} ${width}px: volby se nesmějí překrývat`);
+            }
+          }
+        }
+        if (width === 375) await page.screenshot({ path: `${out}/${typ}-vzhled-agenta-mobil.png` });
+      }
+      await page.setViewportSize({ width: 1440, height: 1000 });
       await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').click();
       await page.locator('.studio-dialog--single [data-pick="color"][data-value="#367b68"]').click();
       await page.locator('.studio-dialog--single input[name="nickname"]').fill('Testovací agent');
       assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
       await page.locator('.studio-dialog--single .studio-preview .robot-accessory--cap').waitFor();
       await page.screenshot({ path: `${out}/${typ}-vzhled-agenta.png` });
+      await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('dark'); });
+      await page.waitForFunction(() => !document.documentElement.classList.contains('meni-motiv'));
+      await page.screenshot({ path: `${out}/${typ}-vzhled-agenta-tma.png` });
+      await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('light'); });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
       await page.locator('.session-kicker .robot-accessory--cap').waitFor();

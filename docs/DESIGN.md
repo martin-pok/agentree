@@ -112,6 +112,8 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
 
 ## Rozestupy v Nastavení
 
+Dialog vzhledu konkrétního agenta používá pro každou skupinu voleb celou šířku. Na širokém okně jsou podoby a barvy ve čtyřech sloupcích, doplňky v pěti; na telefonu ve dvou a třech. Ikona i popisek leží uvnitř jedné kapsle vysoké alespoň 72 px. Obecná třísloupcová mřížka nastavení se na tyto skupiny nesmí použít.
+
 Lepivá horní lišta a podmenu Nastavení se odvozují z `--main-top` (horní odsazení `.main`, které
 si každý režim – web, macOS okno, telefon, Koncert – nastaví sám). Žádné jiné číslo: lišta, která
 se lepí níž, než kde v toku stojí, při otevření sjede přes první kartu. Na užších oknech, kde je

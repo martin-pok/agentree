@@ -506,14 +506,18 @@ function renderPopover() {
 }
 
 function openPopover() {
+  // Stop any wheel easing already in flight before the background is locked.
+  skocNa(scrollY);
   renderPopover();
   pop.hidden = false;
+  document.documentElement.classList.add('notif-open');
   bell.setAttribute('aria-expanded', 'true');
 }
 
 function closePopover() {
   if (pop.hidden) return;
   pop.hidden = true;
+  document.documentElement.classList.remove('notif-open');
   bell.setAttribute('aria-expanded', 'false');
 }
 

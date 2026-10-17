@@ -423,6 +423,7 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .bell { background: var(--glass-strong); box-shadow: var(--shadow-sm); }
 .bell-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 12px/20px var(--f-body); font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--paper); }
 .bell-wrap { position: relative; }
+html.notif-open { overflow: hidden; }
 .notif-pop { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 32px)); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
 .pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
 .notif-pop { overscroll-behavior: contain; }

@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.16',
+    date: '2026-10-17',
+    title: 'Čitelný vzhled agenta a klidná upozornění',
+    items: [
+      'Volby podoby, barvy a doplňků agenta se už nemačkají do úzkých sloupců. Popisky zůstávají uvnitř tlačítek i na telefonu.',
+      'Při otevřeném seznamu upozornění stojí stránka pod ním. Posouvá se jen seznam; po zavření jde stránka opět posouvat.',
+      'Texty v aplikaci a rozšíření jsou kratší a přesněji vysvětlují, co Agenteeq skutečně zjistí a co vyžaduje připojení.',
+      'Pomocník v aplikaci odpovídá na běžné otázky česky i anglicky a ukazuje přímo na odpovídající místo v rozhraní.',
+    ],
+    en: {
+      title: 'Readable agent appearance and steady alerts',
+      items: [
+        'Robot, color, and accessory choices use the full width of the agent editor. Labels stay inside their buttons, including on phones.',
+        'Opening the alert list keeps the page underneath still. Only the list scrolls, and closing it restores page scrolling.',
+        'App and extension text is shorter and more precise about what Agenteeq detects and what needs a connection.',
+        'The in-app guide answers common questions in Czech and English and takes you to the relevant place in the interface.',
+      ],
+    },
+  },
+  {
     version: '0.46.15',
     date: '2026-10-16',
     title: 'Spolehlivější aktualizace, nový Chrome přehled a aktuální rozhraní',
