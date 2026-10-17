@@ -2,6 +2,9 @@
 
 ## Připravované změny po 0.46.15 · nevydáno
 
+## Připravované změny po 0.46.15 · nevydáno
+
+- **Kratší a pravdivější texty v aplikaci i rozšíření (#255).** Zmizela vata typu „na jednom místě“, „ty máš prostor na to podstatné“ nebo „Nainstaluješ ho za minutu“ a vysvětlivky, které opakovaly text o řádek níž (Tailscale, rozšíření v Nastavení, výčty služeb). Opravené jsou věty, které slibovaly víc, než aplikace dělá: úvod už netvrdí, že Agenteeq sám rozpozná plány a ověřené náklady za API (doplní je správcovský klíč), okno rozšíření neslibuje „Ozvu se“, Nápověda neodkazuje na průvodce, který na stránce není, a věta o soukromí u napojených modelů říká totéž co dialog napojení: hesla ani klíče Agenteeq neuvidí a z webových chatů nedostane text zpráv. Upozornění o soukromí, bezpečnosti, štítky Beta i „Nepodařilo se zjistit“ zůstaly beze změny.
 - **Lišta na Macu neukazuje jistou nulu, když stav agentů chybí.** Vzdálený Claude Code (spuštěný v cloudu, z webu nebo z telefonu) zná Agenteeq jen ze seznamu relací, který si ukládá Claude Desktop. Když ho Claude Desktop delší dobu nenačetl, lišta hlásila „0“, i když agent podle posledních dat pracoval. Teď ukáže „?“ (nebo „2+“, když další pracují jistě) a popisek řekne, u kolika agentů chybí čerstvý stav. Číslo se navíc počítá ze stejného výběru jako Přehled a rozšíření, takže podřízený agent ani starší běh plánované úlohy se nepočítají dvakrát.
 
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
