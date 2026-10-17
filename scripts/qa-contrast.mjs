@@ -18,6 +18,7 @@ import { pridejMnohoAgentu } from './qa-agenti.mjs';
 import { buildSite } from './build-site.mjs';
 import { staticServer } from './qa-server.mjs';
 import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
+import { projdiPrazdnyProfil } from './qa-prazdny-profil.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -209,6 +210,20 @@ for (const [look, appearance] of [['obloha', 'light'], ['obloha', 'dark'], ['kon
   }
 }
 await app.close();
+
+/* ---------- Prázdný profil ---------- */
+// Čerstvá instalace bez agentů, projektů a zdrojů (issue #255): prázdné stavy ve Dni i v Noci.
+console.log('Aplikace – prázdný profil');
+await projdiPrazdnyProfil(browser, {
+  sirky: SIRKY,
+  rezimy: ['light', 'dark'],
+  mer: async (page, kde) => vypis(kde, await page.evaluate(zmer, PRECHODY)),
+  chyby: (kde, chyby) => {
+    if (!chyby.length) return;
+    console.log(`  ${kde}: NEVYHOVUJE (${chyby.length})`);
+    for (const chyba of chyby) { console.log(`     ${chyba}`); problemy.push({ kde, text: chyba }); }
+  },
+});
 
 /* ---------- Landing page ---------- */
 console.log('Landing page');
