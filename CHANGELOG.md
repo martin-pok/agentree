@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.15
+
+- **Vyváženější značka v hlavičce.** Hlava robota vedle nápisu „Agenteeq“ byla opticky menší než písmena. Teď je zhruba stejně vysoká jako velká písmena nápisu a mezera mezi logem a nápisem je všude stejná – v postranním panelu aplikace, v okně rozšíření pro Chrome i v hlavičce webu (na počítači i na telefonu). Samotné logo ani jeho proporce se nemění.
+
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
 
 - **Všechna funkční vylepšení od veřejné 0.46.12 v jednom kandidátu.** Bezpečnější aktualizace a restart Apple Silicon aplikace (včetně zaseknuté služby, potvrzení před ukončením vlastních agentů, návratu původního balíčku při chybě), pravdivý průběh přenesených dat a fáze instalace. Běžný Quit a skutečná výměna balíčku mají nativní macOS regresní QA.

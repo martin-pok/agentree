@@ -13,7 +13,7 @@ test('brand: extension and Chrome Store logo is the two-tone robot, no legacy tr
     assert.doesNotMatch(svg, /#9C8CFF|#C99A3E|M64 50V82|M8 6\.5V11\.5/, p + ': legacy accent or trident');
   }
   const popup = await read('extension/popup.html');
-  assert.match(popup, /<img src="icons\/brand\.svg" width="22" height="22" alt="">/);
+  assert.match(popup, /<img src="icons\/brand\.svg" width="30" height="30" alt="">/);
   assert.equal(await read('extension/icons/brand.svg'), await read('public/brand/agenteeq-mark.svg'),
     'popup mark stays byte-identical to the product brand');
   const popupScript = await read('extension/popup.js');
