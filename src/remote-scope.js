@@ -27,8 +27,9 @@ const ZAKAZANE_CTENI = [
   [/^\/api\/runs\/[\w-]+\/log$/, () => ui('Výstup agenta je vidět jen {0}. Telefon ukazuje souhrn.', POCITAC.naHostiteli)],
 ];
 
-// Událost SSE, která nese text přepisu – telefonu se neposílá.
-export const JEN_NA_HOSTITELI_UDALOSTI = new Set(['transcript']);
+// Události SSE jen pro hostitele: text přepisu a stav párování (jednorázový kód a seznam
+// spárovaných zařízení – telefon nesmí vidět ani jedno).
+export const JEN_NA_HOSTITELI_UDALOSTI = new Set(['transcript', 'lan']);
 
 export function remoteScope(method, pathname) {
   if (!pathname.startsWith('/api/')) return { ok: true };
