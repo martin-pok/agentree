@@ -178,16 +178,41 @@ try {
       await page.locator('[data-agent-appearance]').click();
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
-      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"]').count(), 5, '5 vektorových variant');
-      await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').click();
-      await page.locator('.studio-dialog--single [data-pick="color"][data-value="#367b68"]').click();
-      await page.locator('.studio-dialog--single input[name="nickname"]').fill('Testovací agent');
-      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
-      await page.locator('.studio-dialog--single .studio-preview .robot-accessory--cap').waitFor();
+      const dlg = page.locator('.studio-dialog--single');
+      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 9, 'záložka Hlava: žádná + 8 čepic');
+      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
+      await dlg.locator('input[name="nickname"]').fill('Testovací agent');
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('.studio-preview .robot-wear--head').waitFor();
+      // Obličej a oblečení se s čepicí kombinují, převlek na celé tělo je nahradí (a naopak).
+      await dlg.locator('[data-tab="face"]').click();
+      await dlg.locator('[data-pick="face"][data-value="sunglasses"]').click();
+      await dlg.locator('[data-tab="outfit"]').click();
+      await dlg.locator('[data-pick="outfit"][data-value="scarf"]').click();
+      assert.equal(await dlg.locator('.studio-preview .robot-wear').count(), 2, 'čepice + brýle sdílejí vrstvu hlavy, šála je další');
+      await dlg.locator('[data-tab="costume"]').click();
+      await dlg.locator('[data-pick="costume"][data-value="astronaut"]').click();
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="astronaut"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('[data-tab="hat"]').click();
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek vyčistí čepici');
+      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      await dlg.locator('[data-tab="costume"]').click();
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'čepice vyčistí převlek');
+      await dlg.locator('[data-tab="hat"]').click();
+      // Klávesnice: šipky přepínají záložky.
+      await dlg.locator('[data-tab="hat"]').focus();
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await dlg.locator('[data-tab="face"]').getAttribute('aria-selected'), 'true');
+      await dlg.locator('[data-tab="hat"]').click();
+      if ((page.viewportSize()?.width || 0) > 720) {
+        const rozmer = await dlg.evaluate((d) => ({ scroll: d.scrollHeight, vyska: d.clientHeight, okno: innerHeight }));
+        assert.ok(rozmer.scroll <= rozmer.vyska + 1 && rozmer.vyska <= rozmer.okno, `${typ}: dialog vzhledu se vejde bez scrollování ${JSON.stringify(rozmer)}`);
+      }
       await page.screenshot({ path: `${out}/${typ}-vzhled-agenta.png` });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
-      await page.locator('.session-kicker .robot-accessory--cap').waitFor();
+      await page.locator('.session-kicker .robot-wear').waitFor();
       await page.locator('[data-agent-appearance]').click();
       assert.equal(await page.locator('.studio-dialog--single input[name="nickname"]').inputValue(), 'Testovací agent', 'vzhled se uloží právě tomuto agentovi');
       await page.keyboard.press('Escape');

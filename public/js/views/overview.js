@@ -7,7 +7,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -104,12 +104,12 @@ function mount(el) {
         <div class="sec-head"><h2 id="dec-h">${tr('Vyžaduje pozornost')}</h2><a class="link" href="#/agenti">${tr('Všechny')}</a></div>
         <div data-region="decisions"></div>
       </section>
-      <section data-enter style="--i:2" aria-labelledby="tl-h">
+      <section data-enter style="--i:2" aria-labelledby="tl-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="tl-h">${tr('Dnešní směna')}</h2><span class="muted small">${tr('posledních 12 hodin')}</span></div>
         <div class="card tl-card" data-region="timeline"></div>
       </section>
-      <section data-enter style="--i:3" data-region="meter" aria-label="${tr('Zaznamenané tokeny dnes')}"></section>
-      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h">
+      <section data-enter style="--i:3" data-region="meter" data-jen-s-daty aria-label="${tr('Zaznamenané tokeny dnes')}"></section>
+      <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="chart-h">${tr('Tokeny z přepisů')}</h2>
           <label class="select"><span class="sr-only">${tr('Období')}</span><select data-action="period"><option value="today">${tr('Dnes')}</option><option value="day">${tr('24 hodin')}</option><option value="week">${tr('Týden')}</option><option value="fortnight">${tr('14 dní')}</option><option value="month">${tr('30 dní')}</option></select></label>
         </div>
@@ -118,7 +118,7 @@ function mount(el) {
       </section>
     </div>
     <div class="ov-col bal-col">
-      <section data-enter style="--i:4" aria-labelledby="td-h">
+      <section data-enter style="--i:4" aria-labelledby="td-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="td-h">${tr('Kam dnes šly tokeny')}</h2><a class="link" href="#/statistiky">${tr('Statistiky')}</a></div>
         <div class="card pad" data-region="today-apps"></div>
       </section>
@@ -127,7 +127,7 @@ function mount(el) {
         <div class="sec-head"><h2 id="sp-h">${tr('Náklady z API')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
         <div class="card spend-mini" data-region="spend"></div>
       </section>
-      <section data-enter style="--i:5" aria-labelledby="act-h" data-float>
+      <section data-enter style="--i:5" aria-labelledby="act-h" data-float data-jen-s-daty>
         <div class="sec-head"><h2 id="act-h">${tr('Poslední aktivita')}</h2><a class="link" href="#/agenti">${tr('Zobrazit vše')}</a></div>
         <ul class="activity" data-region="activity"></ul>
       </section>
@@ -141,15 +141,21 @@ function mount(el) {
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
   workspace.className = 'home-workspace';
-  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}"><h2>${tr('Právě teď')}</h2></aside>`;
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
   // Rozhodnutí a stav agentů stojí vedle sebe: vlevo co čeká na tebe, vpravo jestli všechno běží.
   const dvojice = document.createElement('div');
   dvojice.className = 'home-dvojice';
+  dvojice.dataset.jenSDaty = '';
   dvojice.innerHTML = `<section class="home-zdravi" aria-labelledby="zdravi-h"><div class="sec-head"><h2 id="zdravi-h">${tr('Stav agentů')}</h2><a class="link" href="#/agenti">${tr('Agenti')}</a></div><div data-region="zdravi"></div></section>`;
   dvojice.prepend(el.querySelector('[aria-labelledby="dec-h"]'));
-  desk.append(el.querySelector('[data-launch]'), dvojice);
+  // Bez jediného agenta stojí místo dvojice „pozornost + stav“ (a místo „Právě teď“) jeden prázdný
+  // stav s cestou dál – nuly a „v pořádku“ by nad prázdným profilem vypadaly jako změřená data.
+  const prazdno = document.createElement('div');
+  prazdno.dataset.region = 'prazdno';
+  prazdno.className = 'home-prazdno';
+  desk.append(el.querySelector('[data-launch]'), dvojice, prazdno);
   live.append(el.querySelector('[data-region="hero"]'), el.querySelector('[data-region="limits"]'));
   const history = document.createElement('details');
   history.className = 'home-history';
@@ -207,6 +213,14 @@ function mount(el) {
   });
 }
 
+export function prazdnyProfil() {
+  return emptyState({
+    title: tr('Zatím tu není žádný agent'),
+    text: esc(tr('Agenteeq ho najde sám, jakmile na {0} poběží Claude Code, Codex nebo Cursor.', tomtoPocitaci())),
+    action: `<a class="btn btn--primary" href="#/nastaveni" data-karta="connectors">${tr('Zkontrolovat zdroje dat')}</a>`,
+  });
+}
+
 // Agenti nad dvanáct se do „Právě teď“ nevejdou. Dřív za ně stála prázdná karta s „+5“ v rohu,
 // bez popisu, kam vede; teď je to kapsle, která to řekne slovy.
 const pbDalsi = (n) => `<li class="pb-dalsi"><a class="link" href="#/agenti">${esc(plural(n, 'Další agent v sekci Agenti', 'Další {0} agenti v sekci Agenti', 'Dalších {0} agentů v sekci Agenti').replace('{0}', n))}</a></li>`;
@@ -235,6 +249,12 @@ function update(topics = new Set(['all'])) {
   // Výpis procesů selhal: o běžících aplikacích víme jen to, co platilo naposledy. „0 aplikací
   // běží“ by tu byla nepravda – uživatel musí poznat, že se to nepodařilo zjistit.
   const procesyNevim = (state.connectors || []).find((c) => c.id === 'processes')?.state === 'error';
+  // Prázdný profil: Agenteeq zatím nevidí žádnou konverzaci ani proces. Selhání výpisu procesů
+  // mezi „prázdno“ nepatří – tam se ukáže stav agentů s větou „nepodařilo se zjistit“.
+  const prazdno = !everything.length && !all.length && !procesyNevim;
+  for (const n of el.querySelectorAll('[data-jen-s-daty]')) n.hidden = prazdno;
+  el.querySelector('.ov').classList.toggle('ov--prazdno', prazdno);
+  fill(el, 'prazdno', prazdno ? `<div class="card">${prazdnyProfil()}</div>` : '');
 
   // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti. Proces bez přepisu není
   // „čekání na zadání“, proto se drží mimo tento součet a má vlastní jasný popisek v pruhu.

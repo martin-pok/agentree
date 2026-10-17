@@ -155,6 +155,16 @@ značka“. Závazná podoba `extension/popup.html`:
 - **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
   stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
 
+## Prázdné stavy (issue #255)
+
+Obrazovka bez dat ukáže **jeden** prázdný stav přes `emptyState()` (`public/js/ui.js`): robot,
+krátký nadpis, jedna věta, co tu bude, a jedna hlavní akce (kapsle `btn--primary`), která opravdu
+něco udělá. Ovládání, které nemá co ovládat (filtry s nulami, hledání, řazení, „Označit vše“),
+a dlaždice, grafy a mapy nad prázdnými daty se schovají – nula se ukazuje jen tam, kde je to
+skutečně změřená hodnota v období, ve kterém data jsou. Selhání zjišťování (výpis procesů,
+načtení historie, chyba sítě) prázdno netvrdí. Pokrytí měří `scripts/qa-prazdny-profil.mjs`
+v `qa:tvary` i `qa:contrast`.
+
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
@@ -205,6 +215,6 @@ kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení
 
 Uživatel mění vzhled **v detailu právě otevřeného agenta**, nikoli v Přehledu pomocí dlouhého seznamu všech agentů. Identita upravované konverzace je pevně daná jejím ID. V Přehledu se nastavení pouze zobrazuje; změna nezasahuje do práv, chování, modelu ani dat agenta.
 
-Editor je vlastní modální dialog s tlačítkovými kapslemi o výšce 48 px, stavem `aria-pressed`, čitelným minimálně 12px textem a zřetelným fokusem; systémové `<select>` se v něm nepoužívají. Kromě jména, barev a čtyř základních siluet nabízí nepovinné vektorové doplňky (čepici, brýle, tričko a skafandr). Každý doplněk žije ve shodném `viewBox="0 0 108 112"`; značka v Docku ani oficiální logo se nikdy nekustomizují. Uložení zachová původní lokální klíč `agenteeq:agent-personas:v1` a přidává jen volitelné pole `accessory`. Chybné hodnoty se ignorují. Klávesnice/Escape, dlouhé jméno, české a anglické UI, 375px viewport a snížený pohyb patří do QA; živé vizuální schválení nelze nahradit pouze jednotkovým testem.
+Editor je vlastní modální dialog, systémové `<select>` se v něm nepoužívají. Vlevo je živý náhled robota s vlastním jménem, podoba (čtyři siluety) a barva; vpravo šatník se záložkami **Hlava · Obličej · Oblečení · Převleky** (WAI-ARIA tabs, přepínání šipkami). Každá dlaždice ukazuje robota přesně v tom, co by po kliknutí měl na sobě, takže se nic nevybírá naslepo. Čepici, brýle a oblečení lze kombinovat; **převlek** (kosmonaut, dinosaurus, čaroděj, nindža, kuchař, pirát, superhrdina, kočka) je celé tělo a ostatní položky nahradí, a naopak (`pickLook` v `public/js/robot-wardrobe.js`). Dialog se na počítači vejde bez scrollování; na telefonu zůstává náhled nahoře. Starší uložený vzhled s jedním „accessory“ se načte dál (`normalizeLook`). Každá položka žije ve shodném `viewBox="0 0 108 112"` robota a barví se tokeny (`--persona`, `rf-*`/`rk-*` v `workbench.css`), takže funguje ve světlém i tmavém režimu. Jde jen o vzhled; nic nemění oprávnění ani chování agenta.
 
-**Stav:** implementováno ve zdroji v PR #261, nikoli dosud schváleno pro vydání.
+**Stav:** šatník a dialog přepracované na zadání majitele z reportu (bod 10.5); čeká na ověření na Macu.
