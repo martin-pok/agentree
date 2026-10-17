@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.15 · nevydáno
+
+- **Lišta na Macu neukazuje jistou nulu, když stav agentů chybí.** Vzdálený Claude Code (spuštěný v cloudu, z webu nebo z telefonu) zná Agenteeq jen ze seznamu relací, který si ukládá Claude Desktop. Když ho Claude Desktop delší dobu nenačetl, lišta hlásila „0“, i když agent podle posledních dat pracoval. Teď ukáže „?“ (nebo „2+“, když další pracují jistě) a popisek řekne, u kolika agentů chybí čerstvý stav. Číslo se navíc počítá ze stejného výběru jako Přehled a rozšíření, takže podřízený agent ani starší běh plánované úlohy se nepočítají dvakrát.
+
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
 
 - **Všechna funkční vylepšení od veřejné 0.46.12 v jednom kandidátu.** Bezpečnější aktualizace a restart Apple Silicon aplikace (včetně zaseknuté služby, potvrzení před ukončením vlastních agentů, návratu původního balíčku při chybě), pravdivý průběh přenesených dat a fáze instalace. Běžný Quit a skutečná výměna balíčku mají nativní macOS regresní QA.
