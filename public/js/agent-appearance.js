@@ -1,25 +1,19 @@
 import { esc } from './format.js';
 import { tr } from './i18n.js';
 import { state } from './state.js';
+import { ICON } from './icons.js';
 import { robot } from './robot-svg.js';
+import { WARDROBE, SLOTS, normalizeLook, pickLook, renderWardrobe } from './robot-wardrobe.js';
 
 export const PERSONA_KEY = 'agenteeq:agent-personas:v1';
 export const PERSONA_COLORS = ['#6260d8', '#367b68', '#a85c44', '#92609a'];
 export const PERSONA_AVATARS = ['Scout', 'Orbit', 'Pixel', 'Nova'];
-export const PERSONA_ACCESSORIES = ['none', 'cap', 'glasses', 'shirt', 'spacesuit'];
 
-// Vector accessories use exactly the same 108x112 viewBox as the robot; nothing rescales the
-// canonical avatar. Shapes are decorative only, never an implied change to agent permissions.
-const EXTRAS = {
-  cap: '<g class="robot-accessory robot-accessory--cap"><path d="M32 26c2-11 13-17 22-17s20 6 22 17Z"/><path d="M28 27h52" fill="none" stroke-width="4" stroke-linecap="round"/></g>',
-  glasses: '<g class="robot-accessory robot-accessory--glasses" fill="none" stroke-width="2.5"><rect x="32" y="38" width="21" height="20" rx="7"/><rect x="55" y="38" width="21" height="20" rx="7"/><path d="M53 46h2"/></g>',
-  shirt: '<g class="robot-accessory robot-accessory--shirt"><path d="M33 70 25 77l8 9 5-4v7c0 3 3 5 6 5h20c3 0 6-2 6-5v-7l5 4 8-9-8-7H33Z"/><path d="M48 72q6 9 12 0" fill="none" stroke-width="2" stroke-linecap="round"/></g>',
-  spacesuit: '<g class="robot-accessory robot-accessory--spacesuit"><path d="M28 68h52l5 22-8 8H31l-8-8Z"/><rect x="39" y="75" width="30" height="13" rx="6"/><rect x="17" y="20" width="74" height="57" rx="26" fill="none" stroke-width="5"/><circle cx="71" cy="81" r="2.5"/></g>',
-};
-export function renderAgentRobot(type, accessory = 'none') {
+// Robot s oblečením. `look` je buď uložená volba ({hat, face, outfit, costume}), nebo starý
+// text „accessory“ z dřívější verze. Robot samotný se nepřeškálovává ani nemění.
+export function renderAgentRobot(type, look = 'none') {
   const kind = PERSONA_AVATARS.includes(type) ? type : PERSONA_AVATARS[0];
-  const extra = EXTRAS[accessory] || '';
-  return robot(kind).replace('</svg>', extra + '</svg>');
+  return renderWardrobe(robot(kind), look);
 }
 export function loadPersonas() {
   try {
@@ -28,67 +22,138 @@ export function loadPersonas() {
   } catch { return {}; }
 }
 
+// Agent bez vlastní volby má robota i barvu odvozené z id. Dialog z nich vychází, aby po otevření
+// ukazoval to, co agent právě má, a ne vždycky první možnost.
+export function defaultPersona(id) {
+  const index = [...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % PERSONA_COLORS.length;
+  return { avatar: PERSONA_AVATARS[index], color: PERSONA_COLORS[index] };
+}
+
+const TABS = [
+  { slot: 'hat', label: () => tr('Hlava'), none: () => tr('Bez čepice') },
+  { slot: 'face', label: () => tr('Obličej'), none: () => tr('Bez doplňku') },
+  { slot: 'outfit', label: () => tr('Oblečení'), none: () => tr('Bez oblečení') },
+  { slot: 'costume', label: () => tr('Převleky'), none: () => tr('Bez převleku') },
+];
+const COLOR_NAMES = () => [tr('Indigo'), tr('Šalvěj'), tr('Terakota'), tr('Orchidej')];
+const NONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M6.3 17.7 17.7 6.3"/></svg>';
+
 export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
   const agent = state.sessions.get(id);
   if (!agent) return false;
   const saved = loadPersonas();
   const p = saved[id] || {};
+  const fallback = defaultPersona(id);
   const choice = {
     name: String(p.name || '').slice(0, 32),
-    avatar: PERSONA_AVATARS.includes(p.avatar) ? p.avatar : 'Scout',
-    color: PERSONA_COLORS.includes(p.color) ? p.color : PERSONA_COLORS[0],
-    accessory: PERSONA_ACCESSORIES.includes(p.accessory) ? p.accessory : 'none',
+    avatar: PERSONA_AVATARS.includes(p.avatar) ? p.avatar : fallback.avatar,
+    color: PERSONA_COLORS.includes(p.color) ? p.color : fallback.color,
+    look: normalizeLook(p),
   };
+  let tab = SLOTS.find((slot) => choice.look[slot] !== 'none') || 'hat';
+
   const dialog = document.createElement('dialog');
   dialog.className = 'studio-dialog studio-dialog--single';
-  const choices = (kind, values, labels) => values.map((value, i) =>
-    '<button type="button" class="appearance-choice" data-pick="' + kind + '" data-value="' + esc(value) +
-    '" aria-pressed="false" title="' + esc(labels[i]) + '">' +
-    (kind === 'color' ? '<span class="appearance-swatch" style="--swatch:' + value + '"></span>' :
-      kind === 'avatar' ? '<span class="appearance-choice__robot" style="--persona:' + choice.color + '">' + renderAgentRobot(value) + '</span>' :
-      '<span class="appearance-choice__symbol" aria-hidden="true">' + ['—', '⌒', '◎', '▱', '◉'][i] + '</span>') +
-    '<span>' + esc(labels[i]) + '</span></button>'
-  ).join('');
-  dialog.innerHTML = '<form class="appearance-form">' +
-    '<header><div><p class="appearance-eyebrow">' + tr('Vzhled agenta') + '</p><h2>' + esc(agent.title || agent.app || tr('Agent')) + '</h2></div>' +
-    '<button type="button" class="btn btn--sm" data-close aria-label="' + tr('Zavřít') + '">✕</button></header>' +
-    '<label>' + tr('Vlastní jméno') + '<input name="nickname" maxlength="32" autocomplete="off"></label>' +
-    '<fieldset class="appearance-options"><legend>' + tr('Podoba robota') + '</legend><div class="appearance-grid appearance-grid--robots">' +
-    choices('avatar', PERSONA_AVATARS, PERSONA_AVATARS) + '</div></fieldset>' +
-    '<fieldset class="appearance-options"><legend>' + tr('Barva') + '</legend><div class="appearance-grid appearance-grid--colors">' +
-    choices('color', PERSONA_COLORS, [tr('Indigo'), tr('Šalvěj'), tr('Terakota'), tr('Orchidej')]) + '</div></fieldset>' +
-    '<fieldset class="appearance-options"><legend>' + tr('Doplňky a oblečení') + '</legend><div class="appearance-grid appearance-grid--accessories">' +
-    choices('accessory', PERSONA_ACCESSORIES, [tr('Bez doplňku'), tr('Čepice'), tr('Brýle'), tr('Tričko'), tr('Skafandr')]) +
-    '</div></fieldset><div class="studio-preview" role="status" aria-live="polite"></div>' +
-    '<footer><span class="muted small" data-error role="status"></span><button class="btn btn--primary" type="submit">' +
-    tr('Uložit vzhled') + '</button></footer></form>';
+  dialog.setAttribute('aria-labelledby', 'look-title');
+  const tile = (attrs, robotHtml, label, extra = '') =>
+    '<button type="button" class="look-tile" ' + attrs + ' aria-pressed="false"' + extra + '>' + robotHtml + '<span>' + esc(label) + '</span></button>';
+  dialog.innerHTML = '<form class="look-form">' +
+    '<header class="look-head"><div><p class="look-eyebrow">' + tr('Vzhled agenta') + '</p><h2 id="look-title">' + esc(agent.title || agent.app || tr('Agent')) + '</h2></div>' +
+    '<button type="button" class="icon-btn icon-btn--line" data-close aria-label="' + tr('Zavřít') + '">' + ICON.close + '</button></header>' +
+    '<div class="look-body"><div class="look-left">' +
+    '<div class="look-stage studio-preview" role="status" aria-live="polite"></div>' +
+    '<label class="look-name">' + tr('Vlastní jméno') + '<input name="nickname" maxlength="32" autocomplete="off"></label>' +
+    '<fieldset class="look-set"><legend>' + tr('Podoba') + '</legend><div class="look-row look-row--robots">' +
+    PERSONA_AVATARS.map((a) => tile('data-pick="avatar" data-value="' + a + '"', '<span class="studio-avatar" data-robot="' + a + '"></span>', a)).join('') +
+    '</div></fieldset>' +
+    '<fieldset class="look-set"><legend>' + tr('Barva') + '</legend><div class="look-row look-row--colors">' +
+    PERSONA_COLORS.map((c, i) => '<button type="button" class="look-swatch" data-pick="color" data-value="' + c + '" style="--swatch:' + c +
+      '" aria-pressed="false" aria-label="' + esc(COLOR_NAMES()[i]) + '" title="' + esc(COLOR_NAMES()[i]) + '">' + ICON.check + '</button>').join('') +
+    '</div></fieldset></div>' +
+    '<div class="look-right"><div class="look-tabs" role="tablist" aria-label="' + tr('Doplňky a oblečení') + '">' +
+    TABS.map((t) => '<button type="button" class="look-tab" role="tab" id="look-tab-' + t.slot + '" aria-controls="look-grid" data-tab="' + t.slot + '">' + esc(t.label()) + '</button>').join('') +
+    '</div><div class="look-grid" id="look-grid" role="tabpanel"></div></div></div>' +
+    '<footer><button type="button" class="btn btn--sm look-reset" data-reset>' + tr('Obnovit výchozí') + '</button>' +
+    '<span class="muted small" data-error role="status"></span>' +
+    '<button class="btn btn--primary" type="submit">' + tr('Uložit vzhled') + '</button></footer></form>';
   document.body.append(dialog);
+
   const form = dialog.querySelector('form');
   const nickname = form.elements.namedItem('nickname');
   nickname.value = choice.name;
-  const preview = dialog.querySelector('.studio-preview');
-  const redraw = () => {
-    for (const control of dialog.querySelectorAll('[data-pick]')) {
-      const selected = choice[control.dataset.pick] === control.dataset.value;
-      control.setAttribute('aria-pressed', String(selected));
-      control.classList.toggle('is-selected', selected);
-    }
-    for (const el of dialog.querySelectorAll('.appearance-choice__robot')) el.style.setProperty('--persona', choice.color);
-    preview.innerHTML = '<span class="studio-avatar" style="--persona:' + choice.color + '">' +
-      renderAgentRobot(choice.avatar, choice.accessory) + '</span><span>' +
-      esc(nickname.value.trim() || agent.app || tr('Agent')) + '</span>';
+  nickname.placeholder = agent.app || tr('Agent');
+  const stage = dialog.querySelector('.look-stage');
+  const grid = dialog.querySelector('.look-grid');
+  const worn = (look) => renderAgentRobot(choice.avatar, look);
+
+  const drawGrid = () => {
+    const t = TABS.find((x) => x.slot === tab);
+    const items = [['none', t.none()], ...Object.entries(WARDROBE[tab]).map(([key, def]) => [key, def.label()])];
+    grid.setAttribute('aria-labelledby', 'look-tab-' + tab);
+    grid.innerHTML = items.map(([key, label]) => {
+      // Dlaždice ukazuje robota přesně v tom, co by po kliknutí měl na sobě.
+      const robotHtml = key === 'none' && tab !== 'costume' && choice.look[tab] === 'none'
+        ? '<span class="look-tile-none">' + NONE_ICON + '</span>'
+        : '<span class="studio-avatar">' + worn(pickLook(choice.look, tab, key)) + '</span>';
+      return tile('data-pick="' + tab + '" data-value="' + esc(key) + '"', robotHtml, label);
+    }).join('');
   };
+  const redraw = ({ grid: again = true } = {}) => {
+    dialog.style.setProperty('--persona', choice.color);
+    for (const control of dialog.querySelectorAll('[data-pick]')) {
+      const slot = control.dataset.pick;
+      const selected = slot === 'avatar' ? choice.avatar === control.dataset.value
+        : slot === 'color' ? choice.color === control.dataset.value
+          : choice.look[slot] === control.dataset.value;
+      control.setAttribute('aria-pressed', String(selected));
+    }
+    for (const el of dialog.querySelectorAll('[data-robot]')) el.innerHTML = renderAgentRobot(el.dataset.robot, 'none');
+    for (const control of dialog.querySelectorAll('[data-tab]')) {
+      const on = control.dataset.tab === tab;
+      control.setAttribute('aria-selected', String(on));
+      control.tabIndex = on ? 0 : -1;
+    }
+    stage.innerHTML = '<span class="studio-avatar">' + worn(choice.look) + '</span><span class="look-stage-name">' +
+      esc(nickname.value.trim() || agent.app || tr('Agent')) + '</span>';
+    if (again) drawGrid();
+    for (const control of grid.querySelectorAll('[data-pick]')) {
+      const selected = choice.look[control.dataset.pick] === control.dataset.value;
+      control.setAttribute('aria-pressed', String(selected));
+    }
+  };
+
   form.addEventListener('click', (e) => {
+    const tabButton = e.target.closest('[data-tab]');
+    if (tabButton) { tab = tabButton.dataset.tab; redraw(); return; }
+    if (e.target.closest('[data-reset]')) {
+      Object.assign(choice, { name: '', ...fallback, look: normalizeLook(null) });
+      nickname.value = '';
+      redraw();
+      return;
+    }
     const button = e.target.closest('button[data-pick]');
     if (!button) return;
-    choice[button.dataset.pick] = button.dataset.value;
+    const slot = button.dataset.pick;
+    if (slot === 'avatar' || slot === 'color') choice[slot] = button.dataset.value;
+    else choice.look = pickLook(choice.look, slot, button.dataset.value);
     redraw();
   });
-  nickname.addEventListener('input', redraw);
+  // Šipky přepínají záložky (WAI-ARIA tabs); Tab pak skočí rovnou do mřížky.
+  dialog.querySelector('.look-tabs').addEventListener('keydown', (e) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (!step && e.key !== 'Home' && e.key !== 'End') return;
+    e.preventDefault();
+    const at = TABS.findIndex((t) => t.slot === tab);
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : (at + step + TABS.length) % TABS.length;
+    tab = TABS[next].slot;
+    redraw();
+    dialog.querySelector('#look-tab-' + tab).focus();
+  });
+  nickname.addEventListener('input', () => redraw({ grid: false }));
   dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    saved[id] = { name: nickname.value.trim(), avatar: choice.avatar, color: choice.color, accessory: choice.accessory };
+    saved[id] = { name: nickname.value.trim(), avatar: choice.avatar, color: choice.color, ...choice.look };
     try { localStorage.setItem(PERSONA_KEY, JSON.stringify(saved)); }
     catch { dialog.querySelector('[data-error]').textContent = tr('Vzhled se nepodařilo uložit.'); return; }
     dialog.close();

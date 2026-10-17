@@ -2,6 +2,7 @@
 import { loadConfig, VERSION } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
+import { pocetProListu } from '../public/js/agent-selection.js';
 import http from 'node:http';
 import { bindDesktop, alive } from './lifecycle.mjs';
 
@@ -46,19 +47,19 @@ try {
   createHttpServer(app, server);
   await app.start();
   let lastAttentionCount = null;
-  let lastRunningCount = null;
+  let lastRunningKey = null;
   const badge = () => {
     const sessions = app.store.list();
     const attention = sessions.filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length;
-    const running = sessions.filter((s) => s.status === 'working').length;
+    const { pracuje: running, nejiste } = pocetProListu(sessions);
     if (attention !== lastAttentionCount) {
       report({ type: 'badge', count: attention });
       lastAttentionCount = attention;
     }
     // Menu bar tracks active work, separately from Dock alerts.
-    if (running !== lastRunningCount) {
-      report({ type: 'running-agents', count: running });
-      lastRunningCount = running;
+    if (`${running}/${nejiste}` !== lastRunningKey) {
+      report({ type: 'running-agents', count: running, uncertain: nejiste });
+      lastRunningKey = `${running}/${nejiste}`;
     }
   };
   let badgeTimer;

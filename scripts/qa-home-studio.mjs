@@ -38,6 +38,25 @@ try {
       page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
       await page.goto(`${demo.url}/#/prehled`);
       await page.locator('.lpick-btn').waitFor();
+      // Okno upozornění: seznam se při překreslení shellu (změna spojení, agentů…) nesmí postavit
+      // znovu, jinak posuvník uprostřed rolování skočí nahoru.
+      await page.evaluate(async () => {
+        const { state, emit } = await import('/js/state.js');
+        state.alerts.items = Array.from({ length: 12 }, (_, i) => ({ id: `qa${i}`, title: `Upozornění ${i}`, body: `Text ${i}`, level: 'info', kind: 'x', at: Date.now() - i * 60000, read: false }));
+        state.alerts.unread = 12;
+        emit('alerts');
+      });
+      await page.locator('#bell').click();
+      const seznam = page.locator('.pop-list');
+      await seznam.waitFor();
+      await seznam.evaluate((l) => { l.scrollTop = l.scrollHeight; });
+      const predPrekreslenim = await seznam.evaluate((l) => l.scrollTop);
+      assert.ok(predPrekreslenim > 40, `${typ}: seznam upozornění má co rolovat`);
+      await page.evaluate(async () => { const { emit } = await import('/js/state.js'); emit('conn', 'sessions', 'alerts'); });
+      await page.waitForTimeout(400);
+      assert.equal(await seznam.evaluate((l) => l.scrollTop), predPrekreslenim, `${typ}: překreslení shellu vrátilo seznam upozornění nahoru`);
+      await page.keyboard.press('Escape');
+      await page.locator('.pop-list').waitFor({ state: 'hidden' });
       await page.evaluate(() => document.fonts.ready);
 
       // Při otevřeném zvonečku se smí posouvat seznam, nikdy dlouhá stránka pod ním.
@@ -198,47 +217,37 @@ try {
       await page.locator('[data-agent-appearance]').click();
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
-      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"]').count(), 5, '5 vektorových variant');
-      for (const width of [1440, 375]) {
-        await page.setViewportSize({ width, height: 1000 });
-        const geometry = await page.locator('.studio-dialog--single').evaluate((dialog) => {
-          const groups = [...dialog.querySelectorAll('.appearance-options')];
-          return groups.map((group) => {
-            const row = group.querySelector('.appearance-grid');
-            const buttons = [...row.querySelectorAll('.appearance-choice')];
-            const rowBox = row.getBoundingClientRect();
-            const groupBox = group.getBoundingClientRect();
-            return {
-              groupWidth: groupBox.width, rowWidth: rowBox.width,
-              choices: buttons.map((button) => {
-                const box = button.getBoundingClientRect();
-                const label = button.lastElementChild.getBoundingClientRect();
-                return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
-                  labelLeft: label.left, labelRight: label.right, labelTop: label.top, labelBottom: label.bottom };
-              }),
-            };
-          });
-        });
-        for (const group of geometry) {
-          assert.ok(group.groupWidth > 250 && group.rowWidth > 250, `${typ} ${width}px: volby musí využít šířku dialogu`);
-          for (let i = 0; i < group.choices.length; i++) {
-            const c = group.choices[i];
-            assert.ok(c.labelLeft >= c.left - 1 && c.labelRight <= c.right + 1 && c.labelTop >= c.top - 1 && c.labelBottom <= c.bottom + 1,
-              `${typ} ${width}px: popisek volby se musí vejít do tlačítka`);
-            for (const other of group.choices.slice(i + 1)) {
-              assert.ok(c.right <= other.left + 1 || other.right <= c.left + 1 || c.bottom <= other.top + 1 || other.bottom <= c.top + 1,
-                `${typ} ${width}px: volby se nesmějí překrývat`);
-            }
-          }
-        }
-        if (width === 375) await page.screenshot({ path: `${out}/${typ}-vzhled-agenta-mobil.png` });
+      const dlg = page.locator('.studio-dialog--single');
+      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 9, 'záložka Hlava: žádná + 8 čepic');
+      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
+      await dlg.locator('input[name="nickname"]').fill('Testovací agent');
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('.studio-preview .robot-wear--head').waitFor();
+      // Obličej a oblečení se s čepicí kombinují, převlek na celé tělo je nahradí (a naopak).
+      await dlg.locator('[data-tab="face"]').click();
+      await dlg.locator('[data-pick="face"][data-value="sunglasses"]').click();
+      await dlg.locator('[data-tab="outfit"]').click();
+      await dlg.locator('[data-pick="outfit"][data-value="scarf"]').click();
+      assert.equal(await dlg.locator('.studio-preview .robot-wear').count(), 2, 'čepice + brýle sdílejí vrstvu hlavy, šála je další');
+      await dlg.locator('[data-tab="costume"]').click();
+      await dlg.locator('[data-pick="costume"][data-value="astronaut"]').click();
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="astronaut"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('[data-tab="hat"]').click();
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek vyčistí čepici');
+      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      await dlg.locator('[data-tab="costume"]').click();
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'čepice vyčistí převlek');
+      await dlg.locator('[data-tab="hat"]').click();
+      // Klávesnice: šipky přepínají záložky.
+      await dlg.locator('[data-tab="hat"]').focus();
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await dlg.locator('[data-tab="face"]').getAttribute('aria-selected'), 'true');
+      await dlg.locator('[data-tab="hat"]').click();
+      if ((page.viewportSize()?.width || 0) > 720) {
+        const rozmer = await dlg.evaluate((d) => ({ scroll: d.scrollHeight, vyska: d.clientHeight, okno: innerHeight }));
+        assert.ok(rozmer.scroll <= rozmer.vyska + 1 && rozmer.vyska <= rozmer.okno, `${typ}: dialog vzhledu se vejde bez scrollování ${JSON.stringify(rozmer)}`);
       }
-      await page.setViewportSize({ width: 1440, height: 1000 });
-      await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').click();
-      await page.locator('.studio-dialog--single [data-pick="color"][data-value="#367b68"]').click();
-      await page.locator('.studio-dialog--single input[name="nickname"]').fill('Testovací agent');
-      assert.equal(await page.locator('.studio-dialog--single [data-pick="accessory"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
-      await page.locator('.studio-dialog--single .studio-preview .robot-accessory--cap').waitFor();
       await page.screenshot({ path: `${out}/${typ}-vzhled-agenta.png` });
       await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('dark'); });
       await page.waitForFunction(() => !document.documentElement.classList.contains('meni-motiv'));
@@ -246,7 +255,7 @@ try {
       await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('light'); });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
-      await page.locator('.session-kicker .robot-accessory--cap').waitFor();
+      await page.locator('.session-kicker .robot-wear').waitFor();
       await page.locator('[data-agent-appearance]').click();
       assert.equal(await page.locator('.studio-dialog--single input[name="nickname"]').inputValue(), 'Testovací agent', 'vzhled se uloží právě tomuto agentovi');
       await page.keyboard.press('Escape');

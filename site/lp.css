@@ -30,6 +30,10 @@
   --r-tile: 28px; --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-xs: 6px; --r-full: 999px;
   --ease: cubic-bezier(.2, .8, .2, 1);
   --page: 1120px;
+  /* Značka v hlavičce: velikost loga se odvozuje z nápisu (docs/DESIGN.md, Značka v hlavičce).
+     Logo bez dlaždice má rámeček 2,1× písmo (hlava ≈ výška verzálek, s anténou ≈ 1,4×), logo
+     v dlaždici 1,9× jako v aplikaci. Mezera se měří od viditelného tvaru: .55em. */
+  --brand-word: 19px; --brand-mark-clean: 2.1; --brand-mark-tile: 1.9;
   --unit-y: clamp(96px, 11vw, 160px);
   color-scheme: light;
 }
@@ -773,8 +777,12 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .nav { background:#111017; }
 .nav.is-odjeto { background:rgba(17,16,23,.85); backdrop-filter:blur(24px) saturate(135%); -webkit-backdrop-filter:blur(24px) saturate(135%); border-bottom-color:rgba(255,255,255,.1); box-shadow:0 12px 35px -28px rgba(0,0,0,.8); }
 .nav-in { min-height:76px; gap:clamp(18px,2.5vw,36px); }
-.nav .brand { font-size:19px; gap:12px; letter-spacing:-.025em; }
-.nav .brand img { width:34px; height:34px; }
+.nav .brand { --brand-ratio:var(--brand-mark-clean); --brand-bearing:.226; --brand-mark:round(calc(var(--brand-word) * var(--brand-ratio)), 1px); font-size:var(--brand-word); letter-spacing:-.025em;
+  /* Rámeček loga má po stranách prázdno (bez dlaždice 22,6 %, dlaždice 6,8 %), proto se mezera
+     počítá od viditelného tvaru: všude .55em, stejně jako v aplikaci a rozšíření. */
+  gap:max(0px, calc(.55em - var(--brand-mark) * var(--brand-bearing))); }
+.nav .brand--tile { --brand-ratio:var(--brand-mark-tile); --brand-bearing:.068; }
+.nav .brand img { width:var(--brand-mark); height:var(--brand-mark); }
 .nav-links { gap:clamp(12px,2vw,26px); }
 .nav-links a { display:inline-flex; align-items:center; min-height:40px; border-radius:var(--r-full); padding:0 9px; transition:color .2s var(--ease),background-color .2s var(--ease); }
 .nav-links a:hover { background:rgba(255,255,255,.06); }
@@ -801,7 +809,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
  #vyzkouset .steps li:hover::before { transform:translate3d(10%,8%,0); }
 }
 @media(max-width:900px) { #vyzkouset .steps li { min-height:unset; } }
-@media(max-width:620px) { .nav-in { min-height:68px; gap:12px; } .nav .brand { gap:8px; font-size:17px; } .nav .brand img { width:30px; height:30px; } #vyzkouset .steps { gap:12px; } }
+@media(max-width:620px) { .nav-in { min-height:68px; gap:12px; } .nav .brand { --brand-word:17px; } #vyzkouset .steps { gap:12px; } }
 @media(prefers-reduced-motion:reduce) { #vyzkouset .steps li,#vyzkouset .steps li::before,.nav .btn--sm { transition:none!important; transform:none!important; } }
 
 /* Compact editorial bento: one full-width real app overview, two compact pairs.

@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.16: zdrojový kandidát s opravami UI po zjištění na Macu.** V0.46.15 bylo 17. 10. zveřejněno jako Preview a běží na uživatelově Macu, ale dialog vzhledu agenta měl stlačené a překryté volby a kolečko v upozorněních ještě posouvalo stránku pod nabídkou. Oprava vyžaduje nový neměnný tag, zelené PR i přesné `main` CI, osm nových příloh s nezávislým SHA-256 auditem a nové ověření nainstalované aplikace. `v0.46.15`, historické tagy a Drafty se nepřepisují; Stable Latest zůstává `v0.46.0`.
+- **v0.46.16: zdrojový kandidát s opravami UI po zjištění na Macu.** V0.46.15 bylo 17. 10. zveřejněno jako Preview a běží na uživatelově Macu, ale dialog vzhledu agenta měl stlačené a překryté volby (nahrazen novým dialogem) a kolečko v upozorněních ještě posouvalo stránku pod nabídkou. Oprava vyžaduje nový neměnný tag, zelené PR i přesné `main` CI, osm nových příloh s nezávislým SHA-256 auditem a nové ověření nainstalované aplikace. `v0.46.15`, historické tagy a Drafty se nepřepisují; Stable Latest zůstává `v0.46.0`.
 
 - **v0.46.15: zveřejněné Preview a běžící aplikace na Macu.** [Veřejné vydání](https://github.com/martin-pok/agentree/releases/tag/v0.46.15) má osm příloh, `draft=false`, `prerelease=true`; [publikační workflow](https://github.com/martin-pok/agentree/actions/runs/39025980781) prošlo. Záloha původní 0.46.13 a dat byla vytvořena před výměnou. Lokální služba 0.46.15 hlásila `ready=true` a uživatelský snímek potvrdil vykreslené Agenty, ale zároveň odhalil dvě chyby UI popsané u 0.46.16. Celé UAT účtu, rozšíření a dalších platforem z toho neplyne. Stabilní `releases/latest` zůstává `v0.46.0`.
 

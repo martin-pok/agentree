@@ -6,18 +6,22 @@ export const RELEASES = [
   {
     version: '0.46.16',
     date: '2026-10-17',
-    title: 'Čitelný vzhled agenta a klidná upozornění',
+    title: 'Nový vzhled agenta, klidná upozornění a pravdivější stavy',
     items: [
-      'Volby podoby, barvy a doplňků agenta se už nemačkají do úzkých sloupců. Popisky zůstávají uvnitř tlačítek i na telefonu.',
-      'Při otevřeném seznamu upozornění stojí stránka pod ním. Posouvá se jen seznam; po zavření jde stránka opět posouvat.',
+      'Vzhled agenta má nový dialog s živým náhledem a šatníkem: 8 čepic, 5 doplňků na obličej, 6 kusů oblečení a 8 převleků na celé tělo. Čepici, brýle a oblečení můžeš kombinovat.',
+      'Při otevřeném seznamu upozornění stojí stránka pod ním a seznam už neskáče nahoru, když se na pozadí změní data.',
+      'Lišta na Macu ukazuje „?“, když Agenteeq nezná čerstvý stav agentů, místo falešné nuly.',
+      'Čistá instalace ukazuje na každé obrazovce jeden prázdný stav s jednou akcí místo nul a prázdných grafů.',
       'Texty v aplikaci a rozšíření jsou kratší a přesněji vysvětlují, co Agenteeq skutečně zjistí a co vyžaduje připojení.',
       'Pomocník v aplikaci odpovídá na běžné otázky česky i anglicky a ukazuje přímo na odpovídající místo v rozhraní.',
     ],
     en: {
-      title: 'Readable agent appearance and steady alerts',
+      title: 'New agent look, steady alerts and more truthful states',
       items: [
-        'Robot, color, and accessory choices use the full width of the agent editor. Labels stay inside their buttons, including on phones.',
-        'Opening the alert list keeps the page underneath still. Only the list scrolls, and closing it restores page scrolling.',
+        'Agent appearance has a new editor with a live preview and a wardrobe: 8 hats, 5 face accessories, 6 outfits and 8 full-body costumes. Hats, glasses and outfits can be combined.',
+        'While the alert list is open the page underneath stays still, and the list no longer jumps back to the top when data changes in the background.',
+        'The Mac menu bar shows “?” when Agenteeq does not know the current agent state, instead of a false zero.',
+        'A fresh install shows one empty state with a single action on every screen instead of zeros and empty charts.',
         'App and extension text is shorter and more precise about what Agenteeq detects and what needs a connection.',
         'The in-app guide answers common questions in Czech and English and takes you to the relevant place in the interface.',
       ],

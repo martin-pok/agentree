@@ -10,7 +10,9 @@
 // Stejným průchodem hlídá dvě další pravidla z DESIGN.md:
 //   – výška jednořádkového ovládacího prvku s vlastní plochou je ze stupnice 32 / 40 / 48 px
 //     (vnitřní tlačítko malé segmentové volby 28 px a hlavní výzva webu 56 px jsou jediné výjimky),
-//   – řez písma se při výběru nemění: vybraná volba má stejnou váhu písma jako nevybraná vedle ní.
+//   – řez písma se při výběru nemění: vybraná volba má stejnou váhu písma jako nevybraná vedle ní,
+//   – značka v hlavičce (logo + nápis) má všude stejný poměr: hlava robota ≈ výška verzálek nápisu
+//     a viditelná mezera .55em (issue #255, docs/DESIGN.md, Značka v hlavičce).
 import { createRequire } from 'node:module';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -20,6 +22,7 @@ import { buildSite } from './build-site.mjs';
 import { staticServer } from './qa-server.mjs';
 import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
 import { pridejMnohoAgentu } from './qa-agenti.mjs';
+import { projdiPrazdnyProfil } from './qa-prazdny-profil.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -150,6 +153,32 @@ function zmer({ maxJednoradkovy, radky, stupnice, vyjimky }) {
   return nalezy;
 }
 
+// Značka v hlavičce: velikost a mezera loga vůči nápisu, měřené na vykreslené ploše. Hlava robota má
+// v rámečku 1024 výšku 53 × 7,2; prázdný okraj rámečku je 6,8 % u loga v dlaždici a 22,6 % u loga
+// bez dlaždice (site/brand-mark-clean.svg). Hlava ≈ 0,7–0,8 velikosti písma = zhruba výška verzálek.
+function zmerZnacku(vyber) {
+  const a = document.querySelector(vyber);
+  const img = a?.querySelector('img');
+  if (!img || !img.getBoundingClientRect().width) return [{ prvek: vyber, text: '', rozmer: '', zaobleni: '', chyba: 'značka v hlavičce chybí' }];
+  const r = img.getBoundingClientRect();
+  const textovy = [...a.querySelectorAll('*'), a].find((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+  const pismo = parseFloat(getComputedStyle(textovy).fontSize);
+  if (!pismo) return []; // nápis schovaný (úzké okno rozšíření): zůstává jen logo
+  const uzel = [...textovy.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+  const rozsah = document.createRange(); rozsah.selectNodeContents(uzel);
+  const t = rozsah.getBoundingClientRect();
+  const cista = img.src.includes('clean');
+  const hlava = r.height * (53 * 7.2) / 1024;
+  const mezera = t.left - (r.right - r.width * (cista ? 0.226 : 0.068));
+  const nalezy = [];
+  const popis = { prvek: vyber, text: textovy.textContent.trim(), rozmer: `${Math.round(r.width)}×${Math.round(r.height)} px, písmo ${pismo} px`, zaobleni: '' };
+  if (Math.abs(r.width - r.height) > 0.5) nalezy.push({ ...popis, chyba: 'logo v hlavičce není čtvercové (deformace poměru 78:53)' });
+  if (hlava / pismo < 0.68 || hlava / pismo > 0.82) nalezy.push({ ...popis, chyba: `hlava robota ${hlava.toFixed(1)} px = ${(hlava / pismo).toFixed(2)}× písmo, má být 0,68–0,82× (≈ výška verzálek)` });
+  if (mezera / pismo < 0.45 || mezera / pismo > 0.65) nalezy.push({ ...popis, chyba: `mezera loga a nápisu ${mezera.toFixed(1)} px = ${(mezera / pismo).toFixed(2)} em, má být ≈ .55 em` });
+  if (Math.abs((r.top + r.bottom) / 2 - (t.top + t.bottom) / 2) > 2) nalezy.push({ ...popis, chyba: 'logo není svisle na středu nápisu' });
+  return nalezy;
+}
+
 const problemy = [];
 function vypis(kde, nalezy) {
   if (!nalezy.length) { console.log(`  ${kde}: v pořádku`); return; }
@@ -158,6 +187,12 @@ function vypis(kde, nalezy) {
 }
 const PARAM = { maxJednoradkovy: MAX_JEDNORADKOVY, radky: RADKY, stupnice: STUPNICE, vyjimky: VYJIMKY_APLIKACE };
 const PARAM_WEB = { ...PARAM, vyjimky: VYJIMKY_WEBU };
+// Kontrola prázdných stavů (scripts/qa-prazdny-profil.mjs) hlásí věty, ne prvky.
+function vypisPrazdno(kde, chyby) {
+  if (!chyby.length) return;
+  console.log(`  ${kde}: NEVYHOVUJE (${chyby.length})`);
+  for (const chyba of chyby) { console.log(`     ${chyba}`); problemy.push({ kde, chyba }); }
+}
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 
 /* ---------- Aplikace ---------- */
@@ -211,6 +246,7 @@ for (const sirka of SIRKY) {
       new Promise((r) => setTimeout(r, 3000)), // pozastavená animace nikdy nedoběhne
     ]));
     vypis(`${sirka}px /${trasa}`, await page.evaluate(zmer, PARAM));
+    if (trasa === 'prehled' && sirka > 900) vypis(`${sirka}px značka v hlavičce`, await page.evaluate(zmerZnacku, '.sidebar > .brand'));
     if (trasa === 'prehled') {
       // Průběh dne (časová osa, grafy, limity, poslední aktivita) je na Přehledu ve sbaleném
       // <details> a zavřený se nevykreslí – bez otevření by se nikdy neměřil.
@@ -261,6 +297,11 @@ for (const sirka of SIRKY) {
 }
 await app.close();
 
+/* ---------- Prázdný profil ---------- */
+// Čerstvá instalace bez agentů, projektů a zdrojů: prázdné stavy mají stejná pravidla tvaru.
+console.log('Aplikace – prázdný profil');
+await projdiPrazdnyProfil(browser, { sirky: SIRKY, mer: async (page, kde) => vypis(kde, await page.evaluate(zmer, PARAM)), chyby: vypisPrazdno });
+
 /* ---------- Web ---------- */
 console.log('Web');
 const { out } = await buildSite();
@@ -273,6 +314,7 @@ for (const stranka of ['/', '/en', '/instalace', '/en/install', '/soukromi', '/e
     if (stranka === '/app/') await page.waitForSelector('.pair-box');
     // Hlavní výzva 56 px patří jen landing page; /app/ je rozhraní aplikace a drží její stupnici.
     vypis(`${sirka}px ${stranka}`, await page.evaluate(zmer, stranka === '/app/' ? PARAM : PARAM_WEB));
+    if (stranka !== '/app/') vypis(`${sirka}px ${stranka} značka v hlavičce`, await page.evaluate(zmerZnacku, '.nav .brand'));
     await page.close();
   }
 }
@@ -284,6 +326,7 @@ const ext = await staticServer(path.join(root, 'extension'));
 for (const stav of STAVY_OKNA) {
   const page = await otevriOkno(browser, ext.url, stav);
   vypis(`380px okno (${stav})`, await page.evaluate(zmer, PARAM));
+  vypis(`380px okno (${stav}) značka v hlavičce`, await page.evaluate(zmerZnacku, '#brand'));
   await page.close();
 }
 await new Promise((r) => ext.server.close(r));

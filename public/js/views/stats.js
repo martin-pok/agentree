@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { state, sessionsList, agentsList } from '../state.js';
 import { esc, fmtNum, fmtTok, plural, dateLong } from '../format.js';
-import { glyph } from '../icons.js';
+import { glyph, ICON } from '../icons.js';
 import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
@@ -21,18 +21,19 @@ function mount(el) {
   if (v.usage === undefined) v.usage = null;
   loadUsage();
   el.innerHTML = `
-    <div class="toolbar" data-enter style="--i:1">
+    <div class="toolbar" data-enter style="--i:1" data-jen-s-daty>
       <div class="seg" role="group" aria-label="${tr('Období')}" data-region="period"></div>
     </div>
-    <div class="kpis" data-enter style="--i:2" data-region="kpis"></div>
-    <section class="card pad" data-enter style="--i:3" aria-labelledby="st-chart-h">
+    <div class="card" data-enter style="--i:1" data-region="prazdno" hidden></div>
+    <div class="kpis" data-enter style="--i:2" data-region="kpis" data-jen-s-daty></div>
+    <section class="card pad" data-enter style="--i:3" aria-labelledby="st-chart-h" data-jen-s-daty>
       <div class="sec-head"><h2 id="st-chart-h">${tr('Tokeny podle poskytovatele')}</h2></div>
       <div data-region="chart"></div>
       <div class="legend" data-region="legend"></div>
       <div data-region="history-note"></div>
       <div data-region="api-tokens"></div>
     </section>
-    <div class="grid-2 st-cards" data-enter style="--i:4">
+    <div class="grid-2 st-cards" data-enter style="--i:4" data-jen-s-daty>
       <div class="bal-col">
         <section class="card pad" data-float aria-labelledby="heat-h"><div class="sec-head"><h2 id="heat-h">${tr('Kdy agenti pracují')}</h2><span class="muted small">${tr('30 dní')}</span></div><div data-region="heat"></div></section>
         <section class="card pad" data-float aria-labelledby="proj-h"><div class="sec-head"><h2 id="proj-h">${tr('Tokeny podle složky')}</h2></div><div data-region="projects"></div></section>
@@ -42,7 +43,7 @@ function mount(el) {
         <section class="card pad" data-float aria-labelledby="mod-h"><div class="sec-head"><h2 id="mod-h">${tr('Tokeny podle modelu')}</h2></div><div data-region="models"></div></section>
       </div>
     </div>
-    <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h">
+    <section class="card pad" id="limity" data-enter style="--i:6" aria-labelledby="lim-h" data-region="limity-karta">
       <div class="sec-head"><h2 id="lim-h">${tr('Limity a kredity')}</h2></div>
       <div data-region="limits"></div>
       <div data-region="usage-history"></div>
@@ -73,10 +74,13 @@ async function nactiHistorii() {
     v.historieAt = Date.now();
   } catch {
     v.historie = v.historie || { od: '', dny: {}, chyba: true };
+    v.historieAt = Date.now(); // další pokus nejdřív za minutu, ne při každé živé události
   } finally {
     v.historieNacita = false;
   }
-  if (v.el && DLOUHA_OBDOBI.has(v.period)) { v.drawn = false; update(); }
+  if (!v.el) return;
+  if (DLOUHA_OBDOBI.has(v.period)) v.drawn = false;
+  update();
 }
 
 // Historie vytížení plánu Claude (30 dní) – čte se na vyžádání ze souboru aplikace Claude Desktop.
@@ -143,9 +147,33 @@ export function apiTokensHtml(period, now = Date.now(), cloud = state.integratio
   return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title">${tr('Organizace přes API')}</span> <span class="muted">${tr('Tokeny z Admin API za posledních {0} dní (dny UTC). Celá organizace, nejsou v grafu ani v součtu výše.', dny)}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
 }
 
+// Prázdný profil: žádná živá konverzace ani uložený den historie. Místo čtyř nul, prázdné mapy
+// aktivity a „Bez dat.“ ve třech kartách stojí jeden prázdný stav. Dokud se historie načítá, platí
+// prázdno jen podle živých dat; když se načíst nepodaří, prázdno se netvrdí a ukáže se běžný pohled.
+function jePrazdno() {
+  if (sessionsList().length || agentsList().length) return false;
+  nactiHistorii();
+  return !(v.historie && (v.historie.chyba || Object.keys(v.historie.dny || {}).length));
+}
+
+function ukazPrazdno(el, now) {
+  const prazdno = jePrazdno();
+  for (const n of el.querySelectorAll('[data-jen-s-daty]')) n.hidden = prazdno;
+  const box = el.querySelector('[data-region="prazdno"]');
+  box.hidden = !prazdno;
+  fill(el, 'prazdno', prazdno ? emptyState({
+    title: tr('Zatím není co měřit'),
+    text: tr('Tokeny, aktivní hodiny a mapa práce se začnou plnit s prvním agentem, kterého Agenteeq uvidí.'),
+    action: `<button class="btn btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button>`,
+  }) : '');
+  if (prazdno) aktualizujLimity(el, now);
+  return prazdno;
+}
+
 function update() {
   const el = v.el;
   if (!el) return;
+  if (ukazPrazdno(el, Date.now())) return;
   if (DLOUHA_OBDOBI.has(v.period)) { updateDlouhe(); return; }
   fill(el, 'history-note', '');
   const now = Date.now();
@@ -208,8 +236,12 @@ function aktualizujLimity(el, now) {
       return `<div class="credit-chart"><div class="sec-head"><h3>${esc(c.label)}</h3><span class="muted small">${tr('zůstatek')} ${c.balance.toLocaleString(LOCALE, { maximumFractionDigits: 1 })}${zjisteno}${markers.length ? ` ${tr('· {0}× doplněno', markers.length)}` : ''}</span></div>
         ${timeLine({ id: `credits-${c.id}`, points: h.map((p) => ({ at: p.at, value: p.balance })), height: 160, color: chartColor(c.provider), format: (x) => x.toLocaleString(LOCALE, { maximumFractionDigits: 1 }), axisFormat: (x) => fmtNum(x), label: c.label, riseLabel: tr('Doplněno') })}</div>`;
     });
-  fill(el, 'usage-history', usageHistoryHtml());
+  const historie = usageHistoryHtml();
+  fill(el, 'usage-history', historie);
   zivy(el, 'limits', `${gauges.length ? `<div class="gauges">${gauges.join('')}</div>` : ''}${creditCharts.join('')}${limitsAll(state, now)}`);
+  // V prázdném profilu zůstane karta limitů jen tehdy, když je v ní skutečné měření.
+  el.querySelector('[data-region="limity-karta"]').hidden = !el.querySelector('[data-region="prazdno"]').hidden
+    && !gauges.length && !creditCharts.length && !historie;
 }
 
 const hbarRadky = (radky, celkem, sPocty) => (radky.length

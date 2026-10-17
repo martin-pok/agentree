@@ -15,3 +15,15 @@ export function selectAgents(sessions) {
   return all.filter((s) => (!s.parentId || !ids.has(s.parentId))
     && (!taskKey(s) || latest.get(taskKey(s)) === s));
 }
+
+// Číslo na liště macOS. Počítá se z téhož výběru jako přehled a rozšíření (podřízený agent ani
+// starší běh plánované úlohy se nepočítá dvakrát). `nejiste` = agenti, kteří podle posledních
+// známých dat pracovali, ale čerstvý stav chybí (`stale`) – typicky vzdálený Claude Code, když
+// Claude Desktop seznam relací delší dobu nenačetl. Takové agenty nelze vydávat za „0 pracuje“.
+export function pocetProListu(sessions) {
+  const vybrani = selectAgents(sessions);
+  return {
+    pracuje: vybrani.filter((s) => s.status === 'working').length,
+    nejiste: vybrani.filter((s) => s.status === 'waiting' && s.stale).length,
+  };
+}

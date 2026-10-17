@@ -22,6 +22,15 @@ nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg
 binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
 zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
 
+**Značka v hlavičce (logo + nápis, issue #255).** Velikost loga se odvozuje z velikosti nápisu,
+nikdy se nezapisuje číslem: `--brand-word` (aplikace 20 px, rozšíření 16 px, web 19 px / na
+telefonu 17 px) × poměr varianty. Logo v dlaždici (aplikace, rozšíření, stránky se zásadami)
+má rámeček **1,9×** písmo (`--brand-mark-tile`): dlaždice ≈ 2,2× výška verzálek, hlava ≈ výška
+verzálek. Logo bez dlaždice (tmavá hlavička webu) má rámeček **2,1×** (`--brand-mark-clean`):
+hlava ≈ 1,05× verzálek, s anténou ≈ 1,4×. Mezera se měří od viditelného tvaru (ne od rámečku
+SVG) a je všude **0,55 em**. Logo je svisle na středu nápisu a nikdy se nedeformuje. Hlídá
+`test/znacka-hlavicka.test.mjs` a na vykreslené ploše `npm run qa:tvary`.
+
 ## Písmo Satoshi a licence
 
 Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).
@@ -112,8 +121,6 @@ tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice
 
 ## Rozestupy v Nastavení
 
-Dialog vzhledu konkrétního agenta používá pro každou skupinu voleb celou šířku. Na širokém okně jsou podoby a barvy ve čtyřech sloupcích, doplňky v pěti; na telefonu ve dvou a třech. Ikona i popisek leží uvnitř jedné kapsle vysoké alespoň 72 px. Obecná třísloupcová mřížka nastavení se na tyto skupiny nesmí použít.
-
 Lepivá horní lišta a podmenu Nastavení se odvozují z `--main-top` (horní odsazení `.main`, které
 si každý režim – web, macOS okno, telefon, Koncert – nastaví sám). Žádné jiné číslo: lišta, která
 se lepí níž, než kde v toku stojí, při otevření sjede přes první kartu. Na užších oknech, kde je
@@ -147,6 +154,16 @@ značka“. Závazná podoba `extension/popup.html`:
   ověření selže = „Nepodařilo se ověřit spojení s Agenteeq“, nikdy „neběží“ ani „nespárováno“.
 - **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
   stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
+
+## Prázdné stavy (issue #255)
+
+Obrazovka bez dat ukáže **jeden** prázdný stav přes `emptyState()` (`public/js/ui.js`): robot,
+krátký nadpis, jedna věta, co tu bude, a jedna hlavní akce (kapsle `btn--primary`), která opravdu
+něco udělá. Ovládání, které nemá co ovládat (filtry s nulami, hledání, řazení, „Označit vše“),
+a dlaždice, grafy a mapy nad prázdnými daty se schovají – nula se ukazuje jen tam, kde je to
+skutečně změřená hodnota v období, ve kterém data jsou. Selhání zjišťování (výpis procesů,
+načtení historie, chyba sítě) prázdno netvrdí. Pokrytí měří `scripts/qa-prazdny-profil.mjs`
+v `qa:tvary` i `qa:contrast`.
 
 ## Kontrola
 
@@ -198,6 +215,6 @@ kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení
 
 Uživatel mění vzhled **v detailu právě otevřeného agenta**, nikoli v Přehledu pomocí dlouhého seznamu všech agentů. Identita upravované konverzace je pevně daná jejím ID. V Přehledu se nastavení pouze zobrazuje; změna nezasahuje do práv, chování, modelu ani dat agenta.
 
-Editor je vlastní modální dialog s tlačítkovými kapslemi o výšce 48 px, stavem `aria-pressed`, čitelným minimálně 12px textem a zřetelným fokusem; systémové `<select>` se v něm nepoužívají. Kromě jména, barev a čtyř základních siluet nabízí nepovinné vektorové doplňky (čepici, brýle, tričko a skafandr). Každý doplněk žije ve shodném `viewBox="0 0 108 112"`; značka v Docku ani oficiální logo se nikdy nekustomizují. Uložení zachová původní lokální klíč `agenteeq:agent-personas:v1` a přidává jen volitelné pole `accessory`. Chybné hodnoty se ignorují. Klávesnice/Escape, dlouhé jméno, české a anglické UI, 375px viewport a snížený pohyb patří do QA; živé vizuální schválení nelze nahradit pouze jednotkovým testem.
+Editor je vlastní modální dialog, systémové `<select>` se v něm nepoužívají. Vlevo je živý náhled robota s vlastním jménem, podoba (čtyři siluety) a barva; vpravo šatník se záložkami **Hlava · Obličej · Oblečení · Převleky** (WAI-ARIA tabs, přepínání šipkami). Každá dlaždice ukazuje robota přesně v tom, co by po kliknutí měl na sobě, takže se nic nevybírá naslepo. Čepici, brýle a oblečení lze kombinovat; **převlek** (kosmonaut, dinosaurus, čaroděj, nindža, kuchař, pirát, superhrdina, kočka) je celé tělo a ostatní položky nahradí, a naopak (`pickLook` v `public/js/robot-wardrobe.js`). Dialog se na počítači vejde bez scrollování; na telefonu zůstává náhled nahoře. Starší uložený vzhled s jedním „accessory“ se načte dál (`normalizeLook`). Každá položka žije ve shodném `viewBox="0 0 108 112"` robota a barví se tokeny (`--persona`, `rf-*`/`rk-*` v `workbench.css`), takže funguje ve světlém i tmavém režimu. Jde jen o vzhled; nic nemění oprávnění ani chování agenta.
 
-**Stav:** implementováno ve zdroji v PR #261, nikoli dosud schváleno pro vydání.
+**Stav:** šatník a dialog přepracované na zadání majitele z reportu (bod 10.5); čeká na ověření na Macu.
