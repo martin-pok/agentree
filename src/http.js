@@ -207,6 +207,9 @@ export function createHttpServer(app, existingServer = null) {
       if (disconnectRemote && !zTohotoMacu(req)) { clients.delete(res); res.destroy(); }
       else authorizedStream(res, req);
     }
+    // Okno na Macu se dozví hned, že telefon spárování dokončil (kód je spotřebovaný, přibylo
+    // zařízení) nebo že zařízení zmizelo. Bez toho by dál ukazovalo použitý QR kód.
+    if (app.lan) broadcast('lan', app.lan.status());
   };
   store.on('remote:authorization', authorizationChanged);
 

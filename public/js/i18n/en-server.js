@@ -469,6 +469,7 @@ export default {
   // src/lan.js
   "Tailscale na {0} neběží nebo nejsi přihlášený.": "Tailscale isn’t running on {0}, or you’re not signed in.",
   "Kód vypršel. Vytvoř {0} nový.": "The code has expired. Create a new one {0}.",
+  "Tenhle kód už jednou posloužil. Platí jen na jedno spárování – vytvoř {0} nový.": "This code has already been used. It works for a single pairing – create a new one {0}.",
   "Příliš mnoho pokusů. Vytvoř {0} nový kód.": "Too many attempts. Create a new code {0}.",
   "Kód nesouhlasí. Zbývá poslední pokus.": "The code doesn’t match. One attempt left.",
   "Kód nesouhlasí. Zbývají {0} pokusy.": "The code doesn’t match. {0} attempts left.",

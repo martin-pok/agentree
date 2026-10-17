@@ -161,8 +161,11 @@ Přes Tailscale to vypadá takhle:
    účtem** na obou. Na Macu ověř příkazem `tailscale status`, že jsi přihlášený.
 2. V Agenteeq zapni **Nastavení → Aplikace na tomto Macu → Přístup přes Tailscale**. Karta ukáže
    adresu tvého Macu, například `mac-mini.tvuj-tailnet.ts.net:4620`.
-3. Tamtéž o kartu výš klikni na **Vytvořit kód pro telefon** (šestimístný, platí 5 minut, na jedno použití).
-4. Na telefonu otevři adresu z bodu 2 a kód zadej. Od té chvíle vidíš přehled odkudkoli.
+3. Tamtéž o kartu výš (**Otevřít na telefonu**) klikni na **Spárovat telefon**. Funguje to i bez
+   zapnutého přístupu z domácí sítě. Ukáže se QR kód a šestimístný kód (platí 5 minut, na jedno
+   použití); když máš zapnuté obě cesty, přepínačem zvolíš, jakou adresu má QR nést.
+4. Telefonem naskenuj QR kód – otevře Agenteeq už spárovaný. Bez foťáku otevři adresu z bodu 2
+   a kód zadej. Od té chvíle vidíš přehled odkudkoli.
 
 Žádná veřejná adresa přitom nevzniká: provoz jde šifrovaným tunelem přímo mezi tvými zařízeními
 a mimo tvůj tailnet se na tu adresu nikdo nepřipojí. Agenteeq Tailscale neinstaluje ani nespouští,

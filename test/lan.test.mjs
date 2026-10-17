@@ -56,7 +56,10 @@ test('párování: kód platí jen jednou, chybný pokus se počítá a po pěti
   assert.equal(lan.tokenOk(ok.token), true);
   assert.equal(lan.tokenOk(`${ok.token}x`), false);
   assert.equal(lan.tokenOk(''), false);
-  assert.equal((await lan.pair(code)).status, 410, 'tentýž kód podruhé neprojde');
+  const podruhe = await lan.pair(code);
+  assert.equal(podruhe.status, 410, 'tentýž kód podruhé neprojde');
+  assert.match(podruhe.error, /už jednou posloužil/, 'a hláška neříká „vypršel“, když kód ve skutečnosti posloužil');
+  assert.doesNotMatch((await lan.pair('111111')).error, /už jednou posloužil/, 'jiný kód to o sobě netvrdí');
 
   const p2 = lan.newPin();
   for (let i = 0; i < 5; i++) await lan.pair('999999');
@@ -222,4 +225,10 @@ test('přístup z telefonu: vypnutý zůstane vypnutý i na serveru, který už 
     await new Promise((resolve) => server.close(resolve));
     await app.stop?.();
   }
+});
+
+test('párování: stav párování (jednorázový kód, zařízení) je událost jen pro hostitele', async () => {
+  const { JEN_NA_HOSTITELI_UDALOSTI } = await import('../src/remote-scope.js');
+  assert.equal(JEN_NA_HOSTITELI_UDALOSTI.has('lan'), true, 'telefon nesmí dostat kód ani seznam zařízení');
+  assert.equal(JEN_NA_HOSTITELI_UDALOSTI.has('transcript'), true);
 });

@@ -126,7 +126,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'detekce', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'detekce', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni', 'lan'];
 
 // Prodlevy před novým spojením po chybové odpovědi serveru; poslední se opakuje.
 const PRODLEVY_PROUDU = [2000, 5000, 10000, 30000];

@@ -5,7 +5,8 @@ import { selectAgents, taskKey } from './agent-selection.js';
 // bez tohoto bloku nesmí shodit Nastavení, takže výchozí tvar vzniká vždycky znovu a čerstvý.
 // Detekce agentů (src/detekce.js); starší server ji neposílá vůbec.
 const prazdnaDetekce = () => ({ nove: [], moje: [], ignorovane: [], videne: [] });
-const prazdnyLan = () => ({ enabled: false, addresses: [], devices: [], tailscale: { enabled: false, available: false, listening: false, addresses: [], name: '', url: '', error: '' } });
+const slozLan = (l) => (l ? { ...prazdnyLan(), ...l, tailscale: { ...prazdnyLan().tailscale, ...(l.tailscale || {}) } } : prazdnyLan());
+const prazdnyLan = () => ({ enabled: false, listening: false, addresses: [], devices: [], pin: null, tailscale: { enabled: false, available: false, listening: false, addresses: [], name: '', url: '', error: '' } });
 
 export const state = {
   loaded: false,
@@ -80,7 +81,7 @@ export function applySnapshot(s) {
     customAgents: s.customAgents || [],
     localAgents: s.localAgents || [],
     detekce: s.detekce || prazdnaDetekce(),
-    lan: s.lan ? { ...prazdnyLan(), ...s.lan, tailscale: { ...prazdnyLan().tailscale, ...(s.lan.tailscale || {}) } } : prazdnyLan(),
+    lan: slozLan(s.lan),
     tunnels: s.tunnels || { at: 0, list: [], advice: null },
     limits: s.limits,
     credits: s.credits,
@@ -129,6 +130,12 @@ export function applyEvent(name, data) {
       emit(`transcript:${data.id}`);
       return null;
     }
+    // Stav párování telefonu (jen okno na hostiteli): telefon dokončil párování, kód je spotřebovaný,
+    // zařízení přibylo nebo ubylo.
+    case 'lan':
+      state.lan = slozLan(data);
+      emit('lan');
+      return null;
     case 'storage':
       state.storage = data;
       emit('storage');
